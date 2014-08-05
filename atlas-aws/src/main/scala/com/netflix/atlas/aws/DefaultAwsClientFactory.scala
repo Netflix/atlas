@@ -1,0 +1,79 @@
+/*
+ * Copyright 2014 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.netflix.atlas.aws
+
+import com.amazonaws.AmazonWebServiceClient
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.auth.AWSCredentialsProvider
+import com.typesafe.config.Config
+
+
+class DefaultAwsClientFactory(credentials: AWSCredentialsProvider, config: Config)
+    extends AwsClientFactory {
+
+  private val clientConfig: ClientConfiguration = {
+    val settings = new ClientConfiguration
+    if (config.hasPath("client.maxConnections"))
+      settings.setUserAgent(config.getString("client.userAgent"))
+    if (config.hasPath("client.maxConnections"))
+      settings.setMaxConnections(config.getInt("client.maxConnections"))
+    if (config.hasPath("client.maxErrorRetry"))
+      settings.setMaxErrorRetry(config.getInt("client.maxErrorRetry"))
+    if (config.hasPath("client.connectionTimeout"))
+      settings.setConnectionTimeout(config.getInt("client.connectionTimeout"))
+    if (config.hasPath("client.socketTimeout"))
+      settings.setSocketTimeout(config.getInt("client.socketTimeout"))
+    if (config.hasPath("client.proxyPort"))
+      settings.setProxyPort(config.getInt("client.proxyPort"))
+    settings.setProxyHost(getOrNull("client.proxyHost"))
+    settings.setProxyDomain(getOrNull("client.proxyDomain"))
+    settings.setProxyWorkstation(getOrNull("client.proxyWorkstation"))
+    settings.setProxyUsername(getOrNull("client.proxyUsername"))
+    settings.setProxyPassword(getOrNull("client.proxyPassword"))
+    settings
+  }
+
+  private def getOrNull(key: String): String = {
+    if (config.hasPath(key)) config.getString(key) else null
+  }
+
+  private def configure[T <: AmazonWebServiceClient](key: String, client: T): T = {
+    val region = config.getString("region")
+    client.setEndpoint(config.getString(s"endpoint.$key.$region"))
+    client
+  }
+
+  // Assumed to be the last part of the package name
+  private def awsServiceName(c: Class[_]): String = {
+    val pkg = c.getPackage.getName
+    val pos = pkg.lastIndexOf(".")
+    pkg.substring(pos + 1)
+  }
+
+  /**
+   * Create a new instance of an AWS client. The client must have a constructor that takes a
+   * credential provider and client configuration.
+   *
+   * @param c
+   *     Class for the client to create.
+   * @return
+   *     New instance of the client.
+   */
+  def newInstance[T <: AmazonWebServiceClient](c: Class[T]): T = {
+    val ctor = c.getConstructor(classOf[AWSCredentialsProvider], classOf[ClientConfiguration])
+    configure(awsServiceName(c), ctor.newInstance(credentials, clientConfig))
+  }
+}

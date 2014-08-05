@@ -1,0 +1,26 @@
+
+# Tmp files created by vim
+*.swp
+
+# Compiled sources
+*.class
+
+# Anything in target dirs
+build
+gh-pages-build
+target
+
+# Ivy caches
+.gradle
+.ivy2.cache
+.sbt
+
+# Intellij
+*.iml
+*.ipr
+*.iws
+
+# anything in .idea dirs
+.idea
+.idea_modules
+out

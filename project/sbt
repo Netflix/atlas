@@ -1,0 +1,18 @@
+# This script is used to launch sbt on developer workstations.
+
+# Additional options to add in when calling java
+OPTIONS=""
+
+# On jenkins the colors should be disabled for the console log
+[ -n "$BUILD_ID" ] && OPTIONS="$OPTIONS -Dsbt.log.noformat=true"
+
+java \
+  -XX:+UseG1GC \
+  -Xms2g \
+  -Xmx2g \
+  -XX:ReservedCodeCacheSize=128m \
+  -XX:+UseCodeCacheFlushing \
+  -Dsbt.boot.directory=$WORKSPACE/.sbt \
+  -Dsbt.ivy.home=$WORKSPACE/.ivy2 \
+  $OPTIONS \
+  -jar `dirname $0`/sbt-launch.jar "$@"
