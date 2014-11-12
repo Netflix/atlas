@@ -1,0 +1,96 @@
+
+// Establish version and status
+ext.githubProjectName = 'atlas'
+
+buildscript {
+  repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+  }
+  apply from: file('gradle/buildscript.gradle'), to: buildscript 
+}
+
+allprojects {
+  apply plugin: 'idea'
+  apply plugin: 'project-report'
+  apply plugin: 'com.github.ben-manes.versions'
+}
+
+apply from: file('gradle/convention.gradle')
+apply from: file('gradle/maven.gradle')
+apply from: file('gradle/check.gradle')
+apply from: file('gradle/license.gradle')
+apply from: file('gradle/release.gradle')
+
+subprojects {
+  group = "com.netflix.${githubProjectName}"
+
+  apply plugin: 'scala'
+
+  sourceCompatibility = 1.7
+  targetCompatibility = 1.7
+
+  repositories {
+    mavenLocal()
+    mavenCentral()
+  }
+
+  dependencies {
+    compile 'org.scala-lang:scala-library:2.11.4'
+    compile 'org.slf4j:slf4j-api:1.7.7'
+    testCompile 'org.pegdown:pegdown:1.4.2' // For scalatest html report
+    testCompile 'org.scala-lang:scala-library-all:2.11.4'
+    testCompile 'org.scalatest:scalatest_2.11:2.2.1'
+  }
+
+  build {
+    it.dependsOn licenseMain
+    it.dependsOn licenseTest
+  }
+
+  tasks.withType(ScalaCompile) {
+    scalaCompileOptions.setAdditionalParameters([
+      '-deprecation',
+      '-unchecked',
+      '-Xlint:_,-infer-any',
+      '-feature',
+      '-target:jvm-1.7',
+      '-Ybackend:GenBCode',
+      '-Ydelambdafy:method'])
+  }
+
+  test << {
+    ant.taskdef(
+      name: 'scalatest',
+      classname: 'org.scalatest.tools.ScalaTestAntTask',
+      classpath: classpath.asPath)
+
+    ant.scalatest(
+        runpath: testClassesDir,
+        fork: 'false',
+        haltonfailure: 'true',
+        suffixes: 'Suite') {
+      wildcard(package: 'com.netflix')
+      reporter(type: 'html', directory: "${buildDir}/reports/tests")
+      reporter(type: 'junitxml', directory: "${buildDir}/test-results/junit")
+      //reporter(type: 'stderr', config: 'WDF')
+    }
+  }
+
+  test.outputs.upToDateWhen { false }
+
+  task copyDepsToBuild << {
+    ['compile', 'runtime', 'testCompile', 'testRuntime'].each { conf ->
+      delete "${buildDir}/dependencies/${conf}"
+      copy {
+        from configurations[conf]
+        into "${buildDir}/dependencies/${conf}"
+      }
+    }
+  }
+}
+
+project(':atlas-core') {
+}
+

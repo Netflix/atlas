@@ -1,0 +1,34 @@
+subprojects {
+  apply plugin: 'build-dashboard'
+
+  // Checkstyle
+  apply plugin: 'checkstyle'
+  checkstyle {
+    ignoreFailures = false 
+    configFile = rootProject.file('codequality/checkstyle.xml')
+    sourceSets = [sourceSets.main]
+  }
+  
+  // FindBugs
+  apply plugin: 'findbugs'
+  findbugs {
+    ignoreFailures = false
+    sourceSets = [sourceSets.main]
+  }
+  tasks.withType(FindBugs) {
+    findbugs.toolVersion "3.0.0"
+    reports {
+      xml.enabled = false
+      html.enabled = true
+    }
+  }
+  
+  // PMD
+  apply plugin: 'pmd'
+  pmd {
+    ignoreFailures = false
+    sourceSets = [sourceSets.main]
+  }
+  //tasks.withType(Pmd) { reports.html.enabled true }
+
+}
