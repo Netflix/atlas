@@ -21,7 +21,7 @@ apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
 apply from: file('gradle/license.gradle')
 apply from: file('gradle/release.gradle')
-apply from: file('dependencies.gradle')
+apply from: file('gradle/dependencies.gradle')
 
 subprojects {
   group = "com.netflix.${githubProjectName}"
