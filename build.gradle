@@ -91,6 +91,3 @@ subprojects {
   }
 }
 
-project(':atlas-core') {
-}
-

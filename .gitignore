@@ -8,6 +8,7 @@
 # Anything in target dirs
 build
 gh-pages-build
+target
 
 # Ivy caches
 .gradle

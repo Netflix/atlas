@@ -1,0 +1,12 @@
+
+project(':atlas-json') {
+  dependencies {
+    compile guava
+    compile jacksonCore2
+    compile jacksonJoda2
+    compile jacksonMapper2
+    compile jacksonScala2
+    compile jacksonSmile2
+    compile jodaConvert
+  }
+}
