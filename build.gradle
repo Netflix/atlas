@@ -11,13 +11,17 @@ buildscript {
   apply from: file('gradle/buildscript.gradle'), to: buildscript 
 }
 
+task wrapper(type: Wrapper) {
+  gradleVersion = '2.2'
+}
+
 allprojects {
   apply plugin: 'idea'
   apply plugin: 'project-report'
   apply plugin: 'com.github.ben-manes.versions'
 }
 
-apply from: file('gradle/convention.gradle')
+//apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
 apply from: file('gradle/license.gradle')
 apply from: file('gradle/release.gradle')
