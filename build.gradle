@@ -21,6 +21,7 @@ apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
 apply from: file('gradle/license.gradle')
 apply from: file('gradle/release.gradle')
+apply from: file('dependencies.gradle')
 
 subprojects {
   group = "com.netflix.${githubProjectName}"
@@ -36,11 +37,11 @@ subprojects {
   }
 
   dependencies {
-    compile 'org.scala-lang:scala-library:2.11.4'
-    compile 'org.slf4j:slf4j-api:1.7.7'
-    testCompile 'org.pegdown:pegdown:1.4.2' // For scalatest html report
-    testCompile 'org.scala-lang:scala-library-all:2.11.4'
-    testCompile 'org.scalatest:scalatest_2.11:2.2.1'
+    compile scalaLibrary 
+    compile slf4jApi
+    testCompile pegdown // For scalatest html report
+    testCompile scalaLibraryAll
+    testCompile scalatest
   }
 
   build {
