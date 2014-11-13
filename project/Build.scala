@@ -7,7 +7,8 @@ object MainBuild extends Build {
     organization   := BuildSettings.organization,
     version        := BuildSettings.appVersion,
     scalaVersion   := BuildSettings.scalaVersion,
-    crossPaths     := false
+    crossPaths     := false,
+    sourcesInBase  := false
   )
 
   lazy val root = project.in(file("."))

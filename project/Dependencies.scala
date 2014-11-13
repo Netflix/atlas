@@ -6,7 +6,7 @@ object Dependencies {
   val akkaTestkit     = "com.typesafe.akka" % "akka-testkit_2.11" % "2.3.6"
   val awsJavaSdk      = "com.amazonaws" % "aws-java-sdk" % "1.9.3"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.13"
-  val guava           = "com.google.guava" % "guava" % "14.0.1"
+  val guava           = "com.google.guava" % "guava" % "15.0"
   val hadoopCommon    = "org.apache.hadoop" % "hadoop-common" % "2.5.1"
   val jacksonAnno2    = "com.fasterxml.jackson.core" % "jackson-annotations" % "2.4.3"
   val jacksonCore2    = "com.fasterxml.jackson.core" % "jackson-core" % "2.4.3"
