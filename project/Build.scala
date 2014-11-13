@@ -22,7 +22,6 @@ object MainBuild extends Build {
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
-      Dependencies.guava,
       Dependencies.jacksonCore2,
       Dependencies.jacksonJoda2,
       Dependencies.jacksonMapper2,

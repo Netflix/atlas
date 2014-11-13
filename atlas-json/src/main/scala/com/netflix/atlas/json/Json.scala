@@ -31,8 +31,6 @@ import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import com.fasterxml.jackson.datatype.joda.JodaModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.google.common.base.Charsets
-import com.google.common.io.Resources
 
 
 object Json {
@@ -149,9 +147,10 @@ object Json {
   }
 
   def decodeResource[T: Manifest](name: String): T = {
-    val url = Resources.getResource(name)
-    val data = Resources.toString(url, Charsets.UTF_8)
-    decode[T](data)
+    val url = getClass.getClassLoader.getResource(name)
+    require(url != null, s"could not find resource: $name")
+    val input = url.openStream()
+    try decode[T](input) finally input.close()
   }
 
   def decode[T: Manifest](json: Array[Byte]): T = decoder[T].decode(json)
