@@ -20,7 +20,7 @@ object MainBuild extends Build {
     .aggregate(`atlas-core`, `atlas-json`)
     .settings(buildSettings: _*)
     .settings(BuildSettings.noPackaging: _*)
-    .settings(Sonatype.noPublishing: _*)
+    //.settings(Sonatype.noPublishing: _*)
 
   lazy val `atlas-core` = project
     .settings(buildSettings: _*)
