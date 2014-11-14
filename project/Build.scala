@@ -1,24 +1,27 @@
 import sbt._
 import sbt.Keys._
+import com.typesafe.sbt.pgp.PgpKeys._
 
 object MainBuild extends Build {
 
   lazy val buildSettings = Seq(
-    organization   := BuildSettings.organization,
-    version        := BuildSettings.appVersion,
-    scalaVersion   := BuildSettings.scalaVersion,
-    crossPaths     := false,
-    sourcesInBase  := false
-  )
+    organization      := BuildSettings.organization,
+    version           := BuildSettings.appVersion,
+    scalaVersion      := BuildSettings.scalaVersion,
+    crossPaths        := false,
+    sourcesInBase     := false
+  ) ++ Sonatype.settings
 
   lazy val root = project.in(file("."))
-    .aggregate(core, json)
+    .aggregate(`atlas-core`, `atlas-json`)
+    .settings(BuildSettings.noPackaging: _*)
+    .settings(Sonatype.noPublishing: _*)
 
-  lazy val core = project.in(file("atlas-core"))
+  lazy val `atlas-core` = project
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
 
-  lazy val json = project.in(file("atlas-json"))
+  lazy val `atlas-json` = project
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
