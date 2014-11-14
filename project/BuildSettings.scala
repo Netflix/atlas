@@ -3,7 +3,6 @@ import sbt.Keys._
 
 object BuildSettings {
   val organization = "com.netflix.atlas"
-  val appVersion   = "1.4.0-SNAPSHOT"
   val scalaVersion = "2.11.4"
 
   // Don't create root.jar, from:
