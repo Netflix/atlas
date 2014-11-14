@@ -4,13 +4,17 @@ import com.typesafe.sbt.pgp.PgpKeys._
 
 object MainBuild extends Build {
 
+  lazy val additionalSettings = Sonatype.settings ++
+    net.virtualvoid.sbt.graph.Plugin.graphSettings ++
+    scoverage.ScoverageSbtPlugin.projectSettings
+
   lazy val buildSettings = Seq(
     organization      := BuildSettings.organization,
     version           := BuildSettings.appVersion,
     scalaVersion      := BuildSettings.scalaVersion,
     crossPaths        := false,
     sourcesInBase     := false
-  ) ++ Sonatype.settings
+  ) ++ additionalSettings
 
   lazy val root = project.in(file("."))
     .aggregate(`atlas-core`, `atlas-json`)
