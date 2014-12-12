@@ -51,8 +51,8 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   val bless = false
 
   override def afterAll() {
-    graphAssertions.generateReport(getClass)
-    genMarkdown
+    //graphAssertions.generateReport(getClass)
+    //genMarkdown
   }
 
   test("simple line") {
@@ -61,7 +61,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
-  template.filter(_.startsWith("/api/v1/graph")).zipWithIndex.foreach { case (uri, i) =>
+  /*template.filter(_.startsWith("/api/v1/graph")).zipWithIndex.foreach { case (uri, i) =>
     test(uri) {
       Get(uri) ~> endpoint.routes ~> check {
         val image = PngImage(response.entity.data.toByteArray)
@@ -86,7 +86,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
         }
       }
     }
-  }
+  }*/
 
   def formatQuery(line: String): String = {
     val uri = URI.create(line)
