@@ -8,7 +8,7 @@ object Dependencies {
     val lucene     = "4.10.2"
     val scala      = "2.11.4"
     val slf4j      = "1.7.7"
-    val spectator  = "0.16-SNAPSHOT"
+    val spectator  = "0.14.1"
     val spray      = "1.3.2"
   }
 
