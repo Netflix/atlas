@@ -12,6 +12,7 @@ target
 
 # Ivy caches
 .gradle
+.ivy2
 .ivy2.cache
 .sbt
 
