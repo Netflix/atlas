@@ -26,7 +26,7 @@ class DefaultAwsClientFactory(credentials: AWSCredentialsProvider, config: Confi
 
   private val clientConfig: ClientConfiguration = {
     val settings = new ClientConfiguration
-    if (config.hasPath("client.maxConnections"))
+    if (config.hasPath("client.userAgent"))
       settings.setUserAgent(config.getString("client.userAgent"))
     if (config.hasPath("client.maxConnections"))
       settings.setMaxConnections(config.getInt("client.maxConnections"))
