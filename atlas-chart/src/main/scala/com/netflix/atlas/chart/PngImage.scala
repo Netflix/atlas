@@ -16,8 +16,10 @@
 package com.netflix.atlas.chart
 
 import java.awt.Color
+import java.awt.Font
 import java.awt.Rectangle
 import java.awt.font.LineBreakMeasurer
+import java.awt.font.TextAttribute
 import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
 import java.awt.image.RenderedImage
@@ -68,11 +70,21 @@ object PngImage {
     val image = newBufferedImage(width, height)
     val g = image.createGraphics
 
+    // Try to avoid problems with different default fonts on various platforms. Java will use the
+    // "Dialog" font by default which can get mapped differently on various systems. It looks like
+    // passing a bad font name into the font constructor will just silently fall back to the
+    // default so it should still function if this font isn't present. However, the lucida font
+    // was chosen as it is expected to be widely available:
+    // https://docs.oracle.com/javase/tutorial/2d/text/fonts.html
+    val font = new Font("Lucida Sans Regular", Font.PLAIN, 12)
+    g.setFont(font)
+
     g.setPaint(Color.BLACK)
     g.fill(new Rectangle(0, 0, width, height))
 
     g.setPaint(Color.WHITE)
     val attrStr = new AttributedString(fullMsg)
+    attrStr.addAttribute(TextAttribute.FONT, font)
     val iterator = attrStr.getIterator
     val measurer = new LineBreakMeasurer(iterator, g.getFontRenderContext)
 

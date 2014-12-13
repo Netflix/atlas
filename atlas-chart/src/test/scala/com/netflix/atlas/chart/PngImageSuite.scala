@@ -49,57 +49,53 @@ class PngImageSuite extends FunSuite {
     PngImage(getInputStream(file))
   }
 
-  if (System.getenv("JENKINS_URL") != null) {
-    ignore("fonts render differently on jenkins box causing image diffs") {}
-  } else {
-    test("load image") {
-      val image = getImage("test.png")
-      assert(image.metadata.size === 2)
-      assert(image.metadata("identical") === "false")
-      assert(image.metadata("diff-pixel-count") === "48302")
-    }
+  test("load image") {
+    val image = getImage("test.png")
+    assert(image.metadata.size === 2)
+    assert(image.metadata("identical") === "false")
+    assert(image.metadata("diff-pixel-count") === "48302")
+  }
 
-    test("diff image, identical") {
-      val i1 = PngImage.error("", 800, 100)
-      val i2 = PngImage.error("", 800, 100)
-      val diff = PngImage.diff(i1.data, i2.data)
-      assert(diff.metadata("identical") === "true")
-      assert(diff.metadata("diff-pixel-count") === "0")
-    }
+  test("diff image, identical") {
+    val i1 = PngImage.error("", 800, 100)
+    val i2 = PngImage.error("", 800, 100)
+    val diff = PngImage.diff(i1.data, i2.data)
+    assert(diff.metadata("identical") === "true")
+    assert(diff.metadata("diff-pixel-count") === "0")
+  }
 
-    test("diff image, with delta") {
-      val i1 = PngImage.error("", 800, 100)
-      val i2 = PngImage.error("", 801, 121)
-      val diff = PngImage.diff(i1.data, i2.data)
-      assert(diff.metadata("identical") === "false")
-      assert(diff.metadata("diff-pixel-count") === "16921")
-    }
+  test("diff image, with delta") {
+    val i1 = PngImage.error("", 800, 100)
+    val i2 = PngImage.error("", 801, 121)
+    val diff = PngImage.diff(i1.data, i2.data)
+    assert(diff.metadata("identical") === "false")
+    assert(diff.metadata("diff-pixel-count") === "16921")
+  }
 
-    test("error image, 400x300") {
-      val expected = getImage("test_error_400x300.png")
-      val found = PngImage.error(sampleText, 400, 300)
-      val diff = PngImage.diff(expected.data, found.data)
-      assert(diff.metadata("identical") === "true")
-    }
+  test("error image, 400x300") {
+    val expected = getImage("test_error_400x300.png")
+    val found = PngImage.error(sampleText, 400, 300)
+    val diff = PngImage.diff(expected.data, found.data)
+    assert(diff.metadata("identical") === "true")
+  }
 
-    test("error image, 800x100") {
-      val expected = getImage("test_error_800x100.png")
-      val found = PngImage.error(sampleText, 800, 100)
-      val diff = PngImage.diff(expected.data, found.data)
-      assert(diff.metadata("identical") === "true")
-    }
+  test("error image, 800x100") {
+    val expected = getImage("test_error_800x100.png")
+    val found = PngImage.error(sampleText, 800, 100)
+    val diff = PngImage.diff(expected.data, found.data)
+    assert(diff.metadata("identical") === "true")
+  }
 
-    test("error diff image, 800x100") {
-      val expected = getImage("test_diff.png")
-      val i1 = PngImage.error(sampleText, 800, 100)
-      val i2 = PngImage.error(sampleText.toLowerCase, 800, 120)
-      val diff = PngImage.diff(i1.data, i2.data)
-      assert(diff.metadata("identical") === "false")
-      assert(diff.metadata("diff-pixel-count") === "32430")
+  test("error diff image, 800x100") {
+    val expected = getImage("test_diff.png")
+    val i1 = PngImage.error(sampleText, 800, 100)
+    val i2 = PngImage.error(sampleText.toLowerCase, 800, 120)
+    val diff = PngImage.diff(i1.data, i2.data)
+    assert(diff.metadata("identical") === "false")
+    assert(diff.metadata("diff-pixel-count") === "32529")
 
-      val diff2 = PngImage.diff(expected.data, diff.data)
-      assert(diff2.metadata("identical") === "true")
-      assert(diff2.metadata("diff-pixel-count") === "0")
-    }
+    val diff2 = PngImage.diff(expected.data, diff.data)
+    assert(diff2.metadata("identical") === "true")
+    assert(diff2.metadata("diff-pixel-count") === "0")
   }
 }
