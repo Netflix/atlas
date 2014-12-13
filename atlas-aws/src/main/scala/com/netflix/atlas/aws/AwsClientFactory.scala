@@ -15,7 +15,12 @@
  */
 package com.netflix.atlas.aws
 
+import java.util.concurrent.TimeUnit
+
 import com.amazonaws.AmazonWebServiceClient
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.Protocol
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
 
@@ -28,6 +33,45 @@ object AwsClientFactory {
 
   def default: AwsClientFactory = {
     new DefaultAwsClientFactory(new NflxCredentialsProviderChain, defaultConfig)
+  }
+
+  val defaultClientConfig: ClientConfiguration = {
+    createClientConfig(defaultConfig.getConfig("client"))
+  }
+
+  def createClientConfig(implicit config: Config): ClientConfiguration = {
+    val settings = new ClientConfiguration
+
+    // Should be the default, but just to make it explicit
+    settings.setProtocol(Protocol.HTTPS)
+
+    // Typically use the defaults
+    setIfPresent("useGzip",           config.getBoolean, settings.setUseGzip)
+    setIfPresent("useReaper",         config.getBoolean, settings.setUseReaper)
+    setIfPresent("useTcpKeepAlive",   config.getBoolean, settings.setUseTcpKeepAlive)
+    setIfPresent("maxConnections",    config.getInt,     settings.setMaxConnections)
+    setIfPresent("maxErrorRetry",     config.getInt,     settings.setMaxErrorRetry)
+    setIfPresent("connectionTTL",     getMillis,         settings.setConnectionTTL)
+    setIfPresent("connectionTimeout", getTimeout,        settings.setConnectionTimeout)
+    setIfPresent("socketTimeout",     getTimeout,        settings.setSocketTimeout)
+    setIfPresent("userAgent",         config.getString,  settings.setUserAgent)
+    setIfPresent("proxyPort",         config.getInt,     settings.setProxyPort)
+    setIfPresent("proxyHost",         config.getString,  settings.setProxyHost)
+    setIfPresent("proxyDomain",       config.getString,  settings.setProxyDomain)
+    setIfPresent("proxyWorkstation",  config.getString,  settings.setProxyWorkstation)
+    setIfPresent("proxyUsername",     config.getString,  settings.setProxyUsername)
+    setIfPresent("proxyPassword",     config.getString,  settings.setProxyPassword)
+    settings
+  }
+
+  private def getMillis(key: String)(implicit config: Config): Long = {
+    config.getDuration(key, TimeUnit.MILLISECONDS)
+  }
+
+  private def getTimeout(key: String)(implicit config: Config): Int = getMillis(key).toInt
+
+  private def setIfPresent[T](key: String, g: String => T, s: T => Unit)(implicit config: Config): Unit = {
+    if (config.hasPath(key)) s(g(key))
   }
 }
 

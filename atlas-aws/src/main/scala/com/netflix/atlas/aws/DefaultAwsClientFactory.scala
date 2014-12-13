@@ -24,32 +24,6 @@ import com.typesafe.config.Config
 class DefaultAwsClientFactory(credentials: AWSCredentialsProvider, config: Config)
     extends AwsClientFactory {
 
-  private val clientConfig: ClientConfiguration = {
-    val settings = new ClientConfiguration
-    if (config.hasPath("client.userAgent"))
-      settings.setUserAgent(config.getString("client.userAgent"))
-    if (config.hasPath("client.maxConnections"))
-      settings.setMaxConnections(config.getInt("client.maxConnections"))
-    if (config.hasPath("client.maxErrorRetry"))
-      settings.setMaxErrorRetry(config.getInt("client.maxErrorRetry"))
-    if (config.hasPath("client.connectionTimeout"))
-      settings.setConnectionTimeout(config.getInt("client.connectionTimeout"))
-    if (config.hasPath("client.socketTimeout"))
-      settings.setSocketTimeout(config.getInt("client.socketTimeout"))
-    if (config.hasPath("client.proxyPort"))
-      settings.setProxyPort(config.getInt("client.proxyPort"))
-    settings.setProxyHost(getOrNull("client.proxyHost"))
-    settings.setProxyDomain(getOrNull("client.proxyDomain"))
-    settings.setProxyWorkstation(getOrNull("client.proxyWorkstation"))
-    settings.setProxyUsername(getOrNull("client.proxyUsername"))
-    settings.setProxyPassword(getOrNull("client.proxyPassword"))
-    settings
-  }
-
-  private def getOrNull(key: String): String = {
-    if (config.hasPath(key)) config.getString(key) else null
-  }
-
   private def configure[T <: AmazonWebServiceClient](key: String, client: T): T = {
     val region = config.getString("region")
     client.setEndpoint(config.getString(s"endpoint.$key.$region"))
@@ -74,6 +48,7 @@ class DefaultAwsClientFactory(credentials: AWSCredentialsProvider, config: Confi
    */
   def newInstance[T <: AmazonWebServiceClient](c: Class[T]): T = {
     val ctor = c.getConstructor(classOf[AWSCredentialsProvider], classOf[ClientConfiguration])
-    configure(awsServiceName(c), ctor.newInstance(credentials, clientConfig))
+    val client = ctor.newInstance(credentials, AwsClientFactory.defaultClientConfig)
+    configure(awsServiceName(c), client)
   }
 }
