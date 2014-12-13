@@ -1,0 +1,7 @@
+language: scala
+jdk:
+  - oraclejdk8
+scala:
+  - 2.11.4
+script:
+  - "make build"
