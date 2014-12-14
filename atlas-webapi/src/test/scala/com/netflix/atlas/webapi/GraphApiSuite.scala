@@ -24,6 +24,8 @@ import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 import org.scalatest.FunSuite
+import spray.http.MediaTypes._
+import spray.http.HttpEntity
 import spray.http.StatusCodes
 import spray.testkit.ScalatestRouteTest
 
@@ -51,8 +53,8 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   val bless = false
 
   override def afterAll() {
-    //graphAssertions.generateReport(getClass)
-    //genMarkdown
+    graphAssertions.generateReport(getClass)
+    genMarkdown
   }
 
   test("simple line") {
@@ -61,9 +63,19 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
-  /*template.filter(_.startsWith("/api/v1/graph")).zipWithIndex.foreach { case (uri, i) =>
+  // Run examples found in template. This serves two purposes:
+  // 1. Verify the api is generating the right images for these examples.
+  // 2. Generate the images and create an updated markdown output that we can save to the wiki.
+  template.filter(_.startsWith("/api/v1/graph")).zipWithIndex.foreach { case (uri, i) =>
     test(uri) {
       Get(uri) ~> endpoint.routes ~> check {
+        // Note: will fail prior to 8u20:
+        // https://github.com/Netflix/atlas/issues/9
+        assert(response.status === StatusCodes.OK)
+        response.entity match {
+          case e: HttpEntity.NonEmpty => assert(e.contentType.mediaType === `image/png`)
+          case _                      => fail("empty response")
+        }
         val image = PngImage(response.entity.data.toByteArray)
         graphAssertions.assertEquals(image, f"$i%03d.png", bless)
       }
@@ -86,7 +98,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
         }
       }
     }
-  }*/
+  }
 
   def formatQuery(line: String): String = {
     val uri = URI.create(line)

@@ -74,11 +74,11 @@ class GraphApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
       width = params.get("w").fold(ApiSettings.width)(_.toInt),
       height = params.get("h").fold(ApiSettings.height)(_.toInt),
       axes = axes,
-      axisPerLine = params.get("axis_per_line") == Some("1"),
-      showLegend = params.get("no_legend") != Some("1"),
-      showLegendStats = params.get("no_legend_stats") != Some("1"),
-      showBorder = params.get("no_border") != Some("1"),
-      showOnlyGraph = params.get("only_graph") == Some("1"),
+      axisPerLine = params.get("axis_per_line").contains("1"),
+      showLegend = !params.get("no_legend").contains("1"),
+      showLegendStats = !params.get("no_legend_stats").contains("1"),
+      showBorder = !params.get("no_border").contains("1"),
+      showOnlyGraph = params.get("only_graph").contains("1"),
       vision = vision.getOrElse(VisionType.normal),
       palette = params.get("palette").getOrElse(ApiSettings.palette)
     )
