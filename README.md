@@ -7,6 +7,7 @@ Backend for managing dimensional time series data.
 * [Documentation](https://github.com/Netflix/atlas/wiki)
 * [Issues](https://github.com/Netflix/atlas/issues)
 * [Releases](https://github.com/Netflix/atlas/releases)
+* [![Build Status](https://travis-ci.org/Netflix/atlas.svg)](https://travis-ci.org/Netflix/atlas)
 
 ## License
 
