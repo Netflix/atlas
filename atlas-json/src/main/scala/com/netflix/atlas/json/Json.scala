@@ -33,7 +33,7 @@ import com.fasterxml.jackson.datatype.joda.JodaModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
 
-object Json {
+object Json
 
   final class Decoder[T: Manifest](reader: ObjectReader, factory: JsonFactory) {
 
