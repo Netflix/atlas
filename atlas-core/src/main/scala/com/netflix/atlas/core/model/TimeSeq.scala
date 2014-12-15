@@ -180,7 +180,7 @@ class MapStepTimeSeq(ts: TimeSeq, val step: Long, cf: ConsolidationFunction) ext
         v = cf match {
           case Sum => Math.addNaN(v, n)
           case Avg => Math.addNaN(v, n / m)
-          case Max => Math.minNaN(v, n)
+          case Max => Math.maxNaN(v, n)
           case Min => Math.minNaN(v, n)
         }
         i += 1
