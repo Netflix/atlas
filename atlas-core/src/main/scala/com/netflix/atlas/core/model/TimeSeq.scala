@@ -133,7 +133,7 @@ final class ArrayTimeSeq(
     var hc = prime
     hc = hc * prime + JLong.valueOf(step).hashCode()
     hc = hc * prime + JLong.valueOf(start).hashCode()
-    hc = hc * prime + data.hashCode()
+    hc = hc * prime + java.util.Arrays.hashCode(data)
     hc
   }
 

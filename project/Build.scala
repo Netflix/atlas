@@ -72,7 +72,8 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= Seq(
       Dependencies.guava,
       Dependencies.jsr305,
-      Dependencies.trove
+      Dependencies.trove,
+      Dependencies.equalsVerifier % "test"
     ))
 
   lazy val `atlas-jmh` = project
