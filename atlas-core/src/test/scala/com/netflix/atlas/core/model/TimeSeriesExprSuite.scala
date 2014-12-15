@@ -22,6 +22,8 @@ import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.util.Math
 import org.scalatest.FunSuite
 
+import scala.language.postfixOps
+
 class TimeSeriesExprSuite extends FunSuite {
 
   import com.netflix.atlas.core.model.TimeSeriesExprSuite._

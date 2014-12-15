@@ -159,33 +159,43 @@ class OffsetTimeSeq(seq: TimeSeq, offset: Long) extends TimeSeq {
 }
 
 class MapStepTimeSeq(ts: TimeSeq, val step: Long, cf: ConsolidationFunction) extends TimeSeq {
+  import com.netflix.atlas.core.model.ConsolidationFunction._
 
   private val isConsolidation = (step > ts.step)
-  //private val multiple = if (isConsolidation) step / ts.step else ts.step / step
 
   require(if (isConsolidation) step % ts.step == 0 else ts.step % step == 0,
     "consolidated step must be multiple of primary step")
 
+  private val consolidate = cf match {
+    case Sum => Math.addNaN _
+    case Avg => Math.addNaN _
+    case Max => Math.maxNaN _
+    case Min => Math.minNaN _
+  }
+
   def dsType: DsType = ts.dsType
 
   def apply(timestamp: Long): Double = {
-    import com.netflix.atlas.core.model.ConsolidationFunction._
     if (isConsolidation) {
       val t = timestamp / step * step
       val m = (step / ts.step).toInt
       var i = 0
-      var v = 0.0
+      var v = Double.NaN
+      var c = 0
       while (i < m) {
         val n = ts(t + i * ts.step)
-        v = cf match {
-          case Sum => Math.addNaN(v, n)
-          case Avg => Math.addNaN(v, n / m)
-          case Max => Math.minNaN(v, n)
-          case Min => Math.minNaN(v, n)
-        }
+        v = consolidate(v, n)
+        if (!n.isNaN) c += 1
         i += 1
       }
-      v
+
+      // If it is a rate the average rate per second for the consolidated data point should
+      // consider the entire interval. For gauges the value is sampled and we don't want a false
+      // drop so use the intervals with data. Example, gauge showing current temperature that
+      // starts reporting in the middle of an consolidated interval has primary points NaN, 90.0.
+      // The consolidated value should be 90.0 not 45.0.
+      val denominator = if (dsType == DsType.Rate) m else c
+      if (c > 0 && cf == Avg) v / denominator else v
     } else {
       val t = timestamp / ts.step * ts.step
       ts(t)
