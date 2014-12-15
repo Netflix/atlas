@@ -494,7 +494,7 @@ class TimeSeriesBufferSuite extends FunSuite {
   test("normalize") {
     val start = 1366746900000L
     val b1 = new TimeSeriesBuffer(Map.empty, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
-    val b1e = new TimeSeriesBuffer(Map.empty, 120000, start, Array(0.5, 2.5, 4.5))
+    val b1e = new TimeSeriesBuffer(Map.empty, 120000, start, Array(1.0, 2.5, 4.5))
     assert(b1.normalize(60000, start, 5) === b1)
     assert(b1.normalize(120000, start, 3) === b1e)
 
