@@ -3,7 +3,7 @@ import sbt.Keys._
 import com.typesafe.sbt.pgp.PgpKeys._
 import com.github.retronym.SbtOneJar._
 
-object MainBuild extends Build {
+object MainBuild extends Build
 
   lazy val baseSettings = Sonatype.settings ++
     sbtrelease.ReleasePlugin.releaseSettings ++
