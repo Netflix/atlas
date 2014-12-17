@@ -17,6 +17,7 @@ package com.netflix.atlas.aws
 
 import java.net.InetAddress
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
@@ -45,7 +46,7 @@ class DefaultAwsClientFactorySuite extends FunSuite {
     classOf[com.amazonaws.services.s3.AmazonS3Client]
   )
   clientClasses.foreach { c =>
-    val credentials = new NflxCredentialsProviderChain
+    val credentials = new DefaultAWSCredentialsProviderChain
     val factory = new DefaultAwsClientFactory(credentials, config.getConfig("atlas.aws"))
     test(s"newInstance: ${c.getSimpleName}") {
       val client = factory.newInstance(c)

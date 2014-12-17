@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit
 import com.amazonaws.AmazonWebServiceClient
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.Protocol
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -32,7 +33,7 @@ object AwsClientFactory {
   private val defaultConfig = ConfigFactory.load().getConfig("atlas.aws")
 
   def default: AwsClientFactory = {
-    new DefaultAwsClientFactory(new NflxCredentialsProviderChain, defaultConfig)
+    new DefaultAwsClientFactory(new DefaultAWSCredentialsProviderChain, defaultConfig)
   }
 
   val defaultClientConfig: ClientConfiguration = {
