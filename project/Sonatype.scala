@@ -4,6 +4,7 @@ import com.typesafe.sbt.SbtPgp
 import java.io.File
 import java.io.FileInputStream
 import java.util.Properties
+import sbtrelease.ReleasePlugin.ReleaseKeys._
 
 object Sonatype {
 
@@ -46,6 +47,8 @@ object Sonatype {
     
     publishArtifact in Test := false,
     
+    publishArtifactsAction := SbtPgp.PgpKeys.publishSigned.value,
+
     pomIncludeRepository := { _ => false },
     
     pomExtra := (
@@ -61,6 +64,13 @@ object Sonatype {
         <url>git@github.com:netflix/atlas.git</url>
         <connection>scm:git:git@github.com:netflix/atlas.git</connection>
       </scm>
+      <developers>
+        <developer>
+          <id>brharrington</id>
+          <name>Brian Harrington</name>
+          <email>brharrington@netflix.com</email>
+        </developer>
+      </developers>
     )
   )
 
