@@ -11,6 +11,6 @@ addSbtPlugin("com.sksamuel.sbt-versions" % "sbt-versions" % "0.2.0")
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8.5")
 
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.1.6")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.1.8")
 
 addSbtPlugin("org.scala-sbt.plugins" % "sbt-onejar" % "0.8")
