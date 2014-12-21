@@ -3,7 +3,6 @@ import sbt.Keys._
 
 object BuildSettings {
   val organization = "com.netflix.atlas"
-  val scalaVersion = "2.11.4"
 
   val compilerFlags = Seq(
     "-deprecation",

@@ -13,7 +13,7 @@ object MainBuild extends Build {
 
   lazy val buildSettings = baseSettings ++ Seq(
             organization := BuildSettings.organization,
-            scalaVersion := BuildSettings.scalaVersion,
+            scalaVersion := Dependencies.Versions.scala,
               crossPaths := false,
            sourcesInBase := false,
               exportJars := true,   // Needed for one-jar, with multi-project
@@ -109,6 +109,7 @@ object MainBuild extends Build {
 
   val commonDeps = Seq(
     Dependencies.scalaLogging,
+    Dependencies.scalaReflect,
     Dependencies.slf4jApi,
     Dependencies.spectatorApi,
     Dependencies.typesafeConfig,
