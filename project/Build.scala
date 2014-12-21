@@ -109,6 +109,7 @@ object MainBuild extends Build {
 
   val commonDeps = Seq(
     Dependencies.scalaLogging,
+    Dependencies.scalaReflect,
     Dependencies.slf4jApi,
     Dependencies.spectatorApi,
     Dependencies.typesafeConfig,
