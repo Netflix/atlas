@@ -14,6 +14,7 @@ object MainBuild extends Build {
   lazy val buildSettings = baseSettings ++ Seq(
             organization := BuildSettings.organization,
             scalaVersion := Dependencies.Versions.scala,
+           scalacOptions ++= BuildSettings.compilerFlags,
               crossPaths := false,
            sourcesInBase := false,
               exportJars := true,   // Needed for one-jar, with multi-project
