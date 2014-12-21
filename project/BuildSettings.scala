@@ -9,7 +9,7 @@ object BuildSettings {
     "-unchecked",
     "-Xlint:_,-infer-any",
     "-feature",
-    "-target:jvm-1.7")
+    "-target:jvm-1.8")
 
   // Don't create root.jar, from:
   // http://stackoverflow.com/questions/20747296/producing-no-artifact-for-root-project-with-package-under-multi-project-build-in
