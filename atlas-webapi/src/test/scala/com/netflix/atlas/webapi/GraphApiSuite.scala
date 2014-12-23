@@ -21,6 +21,7 @@ import java.net.URI
 import akka.actor.Props
 import com.netflix.atlas.chart.PngImage
 import com.netflix.atlas.core.db.StaticDatabase
+import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 import org.scalatest.FunSuite
@@ -66,7 +67,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   // Run examples found in template. This serves two purposes:
   // 1. Verify the api is generating the right images for these examples.
   // 2. Generate the images and create an updated markdown output that we can save to the wiki.
-  template.filter(_.startsWith("/api/v1/graph")).zipWithIndex.foreach { case (uri, i) =>
+  template.filter(_.startsWith("/api/v1/graph")).foreach { uri =>
     test(uri) {
       Get(uri) ~> endpoint.routes ~> check {
         // Note: will fail prior to 8u20:
@@ -77,7 +78,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
           case _                      => fail("empty response")
         }
         val image = PngImage(response.entity.data.toByteArray)
-        graphAssertions.assertEquals(image, f"$i%03d.png", bless)
+        graphAssertions.assertEquals(image, imageFileName(uri), bless)
       }
     }
   }
@@ -86,18 +87,20 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
     val baseUri = "http://netflix.github.io/atlas/images/wiki/examples"
     Streams.scope(Streams.fileOut(s"$targetDir/examples.md")) { out =>
       val ps = new PrintStream(out)
-      var i = 0
       template.foreach { line =>
         if (line.startsWith("/api/v1/graph")) {
-          val name = f"$i%03d.png"
+          val name = imageFileName(line)
           ps.println(formatQuery(line.trim))
           ps.println(s"![$name]($baseUri/$name)")
-          i += 1
         } else {
           ps.println(line)
         }
       }
     }
+  }
+
+  private def imageFileName(uri: String): String = {
+    s"${"%040x".format(Hash.sha1(uri)).substring(0, 8)}.png"
   }
 
   def formatQuery(line: String): String = {
