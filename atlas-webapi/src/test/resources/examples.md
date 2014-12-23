@@ -1,3 +1,4 @@
+
 ## Single Line
 
 /api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum
@@ -23,6 +24,10 @@ Same graph, but with the timezone set to `UTC`:
 ## Time Shift
 
 /api/v1/graph?e=2012-01-01T00:00&q=(,0h,1d,1w,),(,name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,:swap,:offset,),:each
+
+This adds an `$(atlas.offset)` variable for use in showing the offset in the legends:
+
+/api/v1/graph?e=2012-01-01T00:00&q=(,0h,1d,1w,),(,name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,:swap,:offset,$(name)+(offset%3D$(atlas.offset)),:legend,),:each
 
 ## Group By and Stack
 
