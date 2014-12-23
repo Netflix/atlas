@@ -83,7 +83,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
-  def genMarkdown: Unit = {
+  def genMarkdown(): Unit = {
     val baseUri = "http://netflix.github.io/atlas/images/wiki/examples"
     Streams.scope(Streams.fileOut(s"$targetDir/examples.md")) { out =>
       val ps = new PrintStream(out)
