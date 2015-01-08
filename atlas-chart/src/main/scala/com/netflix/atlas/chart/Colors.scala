@@ -16,9 +16,8 @@
 package com.netflix.atlas.chart
 
 import java.awt.Color
-import java.nio.charset.Charset
 
-import com.google.common.io.Resources
+import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 
 
@@ -27,9 +26,8 @@ object Colors {
    * Load a list of colors from a resource file.
    */
   def load(name: String): List[Color] = {
-    import scala.collection.JavaConversions._
-    val url = Resources.getResource(name)
-    val data = Resources.readLines(url, Charset.forName("UTF-8"))
-    data.toList.map(Strings.parseColor)
+    Streams.scope(Streams.resource(name)) { in =>
+      Streams.lines(in).map(Strings.parseColor).toList
+    }
   }
 }

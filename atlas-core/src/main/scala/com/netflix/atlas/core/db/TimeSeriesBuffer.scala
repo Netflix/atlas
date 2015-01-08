@@ -17,7 +17,6 @@ package com.netflix.atlas.core.db
 
 import java.util
 
-import com.google.common.base.Objects
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.ConsolidationFunction
@@ -31,6 +30,10 @@ import com.netflix.atlas.core.util.Math
 
 
 object TimeSeriesBuffer {
+
+  def apply(tags: Map[String, String], step: Long, start: Long, vs: Array[Double]): TimeSeriesBuffer = {
+    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType.Gauge, start / step * step, step, vs))
+  }
 
   def apply(tags: Map[String, String], step: Long, start: Long, end: Long): TimeSeriesBuffer = {
     val s = start / step
@@ -116,12 +119,8 @@ object TimeSeriesBuffer {
 /**
  * Mutable buffer for efficiently manipulating metric data.
  */
-class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeSeq)
+final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeSeq)
     extends TimeSeries with TimeSeq with LazyTaggedItem {
-
-  def this(tags: Map[String, String], step: Long, start: Long, vs: Array[Double]) = {
-    this(tags, new ArrayTimeSeq(DsType.Gauge, start / step * step, step, vs))
-  }
 
   def label: String = TimeSeries.toLabel(tags)
   def dsType: DsType = data.dsType
@@ -482,17 +481,18 @@ class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeSeq)
     // Follows guidelines from: http://www.artima.com/pins1ed/object-equality.html#28.4
     other match {
       case that: TimeSeriesBuffer =>
-        that.canEqual(this) &&
-          tags == that.tags &&
-          step == that.step &&
-          start == that.start &&
-          util.Arrays.equals(values, that.values)
+        that.canEqual(this) && tags == that.tags && data == that.data
       case _ => false
     }
   }
 
   override def hashCode: Int = {
-    Objects.hashCode(tags, java.lang.Long.valueOf(step), java.lang.Long.valueOf(start), values)
+    import java.lang.{Long => JLong}
+    val prime = 31
+    var hc = prime
+    hc = hc * prime + tags.hashCode()
+    hc = hc * prime + data.hashCode()
+    hc
   }
 
   def canEqual(other: Any): Boolean = {

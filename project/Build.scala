@@ -17,6 +17,7 @@ object MainBuild extends Build {
            scalacOptions ++= BuildSettings.compilerFlags,
               crossPaths := false,
            sourcesInBase := false,
+            fork in Test := true,   // Needed to avoid ClassNotFoundException with equalsverifier
               exportJars := true,   // Needed for one-jar, with multi-project
                resolvers += Resolver.sonatypeRepo("snapshots"),
                resolvers += "rrd4j" at "https://raw.githubusercontent.com/brharrington/rrd4j/repo",

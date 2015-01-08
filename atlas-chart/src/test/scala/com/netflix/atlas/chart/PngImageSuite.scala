@@ -17,7 +17,7 @@ package com.netflix.atlas.chart
 
 import java.io.InputStream
 
-import com.google.common.io.Resources
+import com.netflix.atlas.core.util.Streams
 import org.scalatest.FunSuite
 
 
@@ -42,7 +42,7 @@ class PngImageSuite extends FunSuite {
   """.stripMargin
 
   def getInputStream(file: String): InputStream = {
-    Resources.getResource("pngimage/" + file).openStream()
+    Streams.resource("pngimage/" + file)
   }
 
   def getImage(file: String): PngImage = {
