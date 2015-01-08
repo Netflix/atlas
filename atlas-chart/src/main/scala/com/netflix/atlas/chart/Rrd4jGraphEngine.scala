@@ -32,6 +32,7 @@ import java.util.TimeZone
 import com.netflix.atlas.core.model.SummaryStats
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Math
+import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.UnitPrefix
 import org.joda.time.Period
 import org.joda.time.format.DateTimeFormat

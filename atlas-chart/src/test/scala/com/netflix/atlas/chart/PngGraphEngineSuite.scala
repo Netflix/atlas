@@ -26,8 +26,10 @@ import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
+import com.netflix.atlas.test.GraphAssertions
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuite
 

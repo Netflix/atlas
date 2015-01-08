@@ -25,11 +25,11 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.chart.AxisDef
 import com.netflix.atlas.chart.LineStyle
 import com.netflix.atlas.chart.PlotDef
-import com.netflix.atlas.chart.PngImage
 import com.netflix.atlas.chart.SeriesDef
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.StandardVocabulary
+import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.Spectator
 import spray.can.Http

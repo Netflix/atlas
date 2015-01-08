@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.chart
+package com.netflix.atlas.test
 
 import java.awt.image.RenderedImage
 import java.io.File
@@ -21,6 +21,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 
+import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
 import org.scalatest.Assertions
 
