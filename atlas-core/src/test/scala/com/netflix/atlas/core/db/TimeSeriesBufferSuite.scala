@@ -20,6 +20,8 @@ import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.ConsolidationFunction
 import com.netflix.atlas.core.model.ConstantBlock
 import com.netflix.atlas.core.util.Math
+import nl.jqno.equalsverifier.EqualsVerifier
+import nl.jqno.equalsverifier.Warning
 import org.scalatest.FunSuite
 import org.scalactic.Tolerance._
 
@@ -30,12 +32,14 @@ class TimeSeriesBufferSuite extends FunSuite {
 
   import java.lang.{Double => JDouble}
 
+  private val emptyTags = Map.empty[String, String]
+
   private def newBuffer(v: Double, start: Long = 0L) = {
-    new TimeSeriesBuffer(Map.empty, 60000, start, Array.fill(1)(v))
+    TimeSeriesBuffer(emptyTags, 60000, start, Array.fill(1)(v))
   }
 
   private def newBufferN(v: Double, n: Int, start: Long = 0L) = {
-    new TimeSeriesBuffer(Map.empty, 60000, start, Array.fill(n)(v))
+    TimeSeriesBuffer(emptyTags, 60000, start, Array.fill(n)(v))
   }
 
   private def newBlock(start: Long, size: Int): Block = {
@@ -55,7 +59,7 @@ class TimeSeriesBufferSuite extends FunSuite {
   }
 
   test("apply List[Block]") {
-    val tags = Map.empty[String, String]
+    val tags = emptyTags
     val step = 60000L
     val blocks = List(
       ConstantBlock(0 * step, 6, 1.0),
@@ -73,7 +77,7 @@ class TimeSeriesBufferSuite extends FunSuite {
   }
 
   test("add Block") {
-    val tags = Map.empty[String, String]
+    val tags = emptyTags
     val step = 60000L
     val blocks = List(
       ConstantBlock(0 * step, 6, 1.0),
@@ -92,7 +96,7 @@ class TimeSeriesBufferSuite extends FunSuite {
   }
 
   test("add Block with cf 6") {
-    val tags = Map.empty[String, String]
+    val tags = emptyTags
     val step = 60000L
     val blocks = List(
       ConstantBlock(0 * step, 6, 1.0),
@@ -111,7 +115,7 @@ class TimeSeriesBufferSuite extends FunSuite {
   }
 
   test("add Block with step 10s cf 6m") {
-    val tags = Map.empty[String, String]
+    val tags = emptyTags
     val step = 10000L
     val blockSize = 6 * 60
     val blocks = (0 until 1000).map(i => ConstantBlock(i * blockSize * step, blockSize, 4.0)).toList
@@ -127,7 +131,7 @@ class TimeSeriesBufferSuite extends FunSuite {
   }
 
   ignore("cf with start") {
-    val tags = Map.empty[String, String]
+    val tags = emptyTags
     val step = 60000L
     val block = ArrayBlock(0L, 60)
     (8 until 60).foreach { i => block.buffer(i) = 1.0 }
@@ -147,7 +151,7 @@ class TimeSeriesBufferSuite extends FunSuite {
     case (name, af) =>
       test(s"$name: consolidate then aggregate === aggregate then consolidate") {
         val cf = name
-        val tags = Map.empty[String, String]
+        val tags = emptyTags[String, String]
         val step = 60000L
         val blocks = (0 until 1000).map(_ => newBlock(0, 60))
 
@@ -166,7 +170,7 @@ class TimeSeriesBufferSuite extends FunSuite {
 
       test(s"$name with NaN: consolidate then aggregate === aggregate then consolidate") {
         val cf = name
-        val tags = Map.empty[String, String]
+        val tags = emptyTags[String, String]
         val step = 60000L
         val blocks = (0 until 1000).map(_ => newBlockWithNaN(0, 60))
 
@@ -188,8 +192,8 @@ class TimeSeriesBufferSuite extends FunSuite {
     val common = Map("a" -> "b", "c" -> "d")
     val t1 = common + ("c" -> "e")
     val t2 = common + ("z" -> "y")
-    val b1 = new TimeSeriesBuffer(t1, 60000, 0, Array.fill(1)(0.0))
-    val b2 = new TimeSeriesBuffer(t2, 60000, 0, Array.fill(1)(0.0))
+    val b1 = TimeSeriesBuffer(t1, 60000, 0, Array.fill(1)(0.0))
+    val b2 = TimeSeriesBuffer(t2, 60000, 0, Array.fill(1)(0.0))
     b1.add(b2)
     assert(b1.tags === Map("a" -> "b"))
   }
@@ -476,30 +480,30 @@ class TimeSeriesBufferSuite extends FunSuite {
 
   test("consolidate") {
     val start = 1366746900000L
-    val b = new TimeSeriesBuffer(Map.empty, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
+    val b = TimeSeriesBuffer(emptyTags, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
 
-    val b2 = new TimeSeriesBuffer(Map.empty, 120000, start, Array(1.0, 5.0, 9.0))
+    val b2 = TimeSeriesBuffer(emptyTags, 120000, start, Array(1.0, 5.0, 9.0))
     assert(b.consolidate(2, ConsolidationFunction.Sum) === b2)
 
-    val b3 = new TimeSeriesBuffer(Map.empty, 180000, start, Array(3.0, 12.0))
+    val b3 = TimeSeriesBuffer(emptyTags, 180000, start, Array(3.0, 12.0))
     assert(b.consolidate(3, ConsolidationFunction.Sum) === b3)
 
-    val b4 = new TimeSeriesBuffer(Map.empty, 240000, start, Array(1.0, 14.0))
+    val b4 = TimeSeriesBuffer(emptyTags, 240000, start, Array(1.0, 14.0))
     assert(b.consolidate(4, ConsolidationFunction.Sum) === b4)
 
-    val b5 = new TimeSeriesBuffer(Map.empty, 300000, start, Array(15.0))
+    val b5 = TimeSeriesBuffer(emptyTags, 300000, start, Array(15.0))
     assert(b.consolidate(5, ConsolidationFunction.Sum) === b5)
   }
 
   test("normalize") {
     val start = 1366746900000L
-    val b1 = new TimeSeriesBuffer(Map.empty, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
-    val b1e = new TimeSeriesBuffer(Map.empty, 120000, start, Array(1.0, 2.5, 4.5))
+    val b1 = TimeSeriesBuffer(emptyTags, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
+    val b1e = TimeSeriesBuffer(emptyTags, 120000, start, Array(1.0, 2.5, 4.5))
     assert(b1.normalize(60000, start, 5) === b1)
     assert(b1.normalize(120000, start, 3) === b1e)
 
-    val b2 = new TimeSeriesBuffer(Map.empty, 120000, start, Array(3.0, 7.0))
-    val b2e = new TimeSeriesBuffer(Map.empty, 60000, start, Array(3.0, 7.0, 7.0, Double.NaN, Double.NaN))
+    val b2 = TimeSeriesBuffer(emptyTags, 120000, start, Array(3.0, 7.0))
+    val b2e = TimeSeriesBuffer(emptyTags, 60000, start, Array(3.0, 7.0, 7.0, Double.NaN, Double.NaN))
     assert(b2.normalize(60000, start, 5) === b2e)
   }
 
@@ -513,9 +517,17 @@ class TimeSeriesBufferSuite extends FunSuite {
     val step = 300000L
     val bufStart = start + step * 4
     val end = bufStart + step * 12
-    val buffer = TimeSeriesBuffer(Map.empty, step, bufStart, end)
+    val buffer = TimeSeriesBuffer(emptyTags, step, bufStart, end)
 
-    buffer.aggrBlock(Map.empty, block, Block.Sum, ConsolidationFunction.Avg, 5, Math.addNaN)
+    buffer.aggrBlock(emptyTags, block, Block.Sum, ConsolidationFunction.Avg, 5, Math.addNaN)
     buffer.values.foreach { v => assert(v.isNaN || v <= 0.0) }
+  }
+
+  test("equals") {
+    EqualsVerifier
+      .forClass(classOf[TimeSeriesBuffer])
+      .suppress(Warning.NULL_FIELDS)
+      .suppress(Warning.NONFINAL_FIELDS)
+      .verify()
   }
 }

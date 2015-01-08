@@ -21,7 +21,7 @@ object Dependencies {
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.4.1"
+  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.5.1"
   val eureka          = "com.netflix.eureka" % "eureka-client" % "1.1.142"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.13"
   val guava           = "com.google.guava" % "guava" % "15.0"
