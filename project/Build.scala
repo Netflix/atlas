@@ -33,6 +33,7 @@ object MainBuild extends Build {
       `atlas-core`,
       `atlas-jmh`,
       `atlas-json`,
+      `atlas-test`,
       `atlas-webapi`)
     .settings(buildSettings: _*)
     .settings(BuildSettings.noPackaging: _*)
@@ -62,7 +63,7 @@ object MainBuild extends Build {
     ))
 
   lazy val `atlas-chart` = project
-    .dependsOn(`atlas-core`, `atlas-json`)
+    .dependsOn(`atlas-core`, `atlas-json`, `atlas-test` % "test")
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
@@ -97,8 +98,15 @@ object MainBuild extends Build {
       Dependencies.jodaConvert
     ))
 
+  lazy val `atlas-test` = project
+    .dependsOn(`atlas-core`)
+    .settings(buildSettings: _*)
+    .settings(libraryDependencies ++= Seq(
+      Dependencies.scalatest
+    ))
+
   lazy val `atlas-webapi` = project
-    .dependsOn(`atlas-akka`, `atlas-chart`, `atlas-core`, `atlas-json`)
+    .dependsOn(`atlas-akka`, `atlas-chart`, `atlas-core`, `atlas-json`, `atlas-test` % "test")
     .settings(buildSettings: _*)
     .settings(oneJarSettings: _*)
     .settings(mainClass in oneJar := Some("com.netflix.atlas.webapi.Main"))

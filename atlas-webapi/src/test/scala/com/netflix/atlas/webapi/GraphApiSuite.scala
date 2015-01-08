@@ -19,11 +19,12 @@ import java.io.PrintStream
 import java.net.URI
 
 import akka.actor.Props
-import com.netflix.atlas.chart.PngImage
 import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.util.Hash
+import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
+import com.netflix.atlas.test.GraphAssertions
 import org.scalatest.FunSuite
 import spray.http.MediaTypes._
 import spray.http.HttpEntity
