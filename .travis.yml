@@ -5,3 +5,4 @@ scala:
   - 2.11.4
 script:
   - "make build"
+sudo: false
