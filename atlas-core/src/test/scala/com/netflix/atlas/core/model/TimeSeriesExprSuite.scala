@@ -162,7 +162,7 @@ class TimeSeriesExprSuite extends FunSuite {
           val c = ctxt.copy(state = state)
           val results = expr.eval(c, bounded(p.input, ctxt))
           state = results.state
-          val boundedResults = results.data.map(_.copy(_.bounded(ctxt.start, ctxt.end)))
+          val boundedResults = results.data.map(_.mapTimeSeq(_.bounded(ctxt.start, ctxt.end)))
           boundedResults.groupBy(_.id)
         }
         val incrRS = ResultSet(expr, rs.data.map { t =>
@@ -228,7 +228,7 @@ class TimeSeriesExprSuite extends FunSuite {
   }
 
   def bounded(data: List[TimeSeries], ctxt: EvalContext): List[TimeSeries] = {
-    data.sortWith(_.label < _.label).map { ts => ts.copy(_.bounded(ctxt.start, ctxt.end)) }
+    data.sortWith(_.label < _.label).map { ts => ts.mapTimeSeq(_.bounded(ctxt.start, ctxt.end)) }
   }
 
   def constants: List[TimeSeries] = {

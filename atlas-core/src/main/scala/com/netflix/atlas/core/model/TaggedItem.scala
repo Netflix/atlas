@@ -123,7 +123,7 @@ object TaggedItem {
     tagsInterner.intern(smallMap)
   }
 
-  private[model] def internTagsShallow(tags: Map[String, String]): Map[String, String] = {
+  def internTagsShallow(tags: Map[String, String]): Map[String, String] = {
     tagsInterner.intern(tags)
   }
 
