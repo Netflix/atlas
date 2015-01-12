@@ -128,6 +128,7 @@ object GraphEngine {
 }
 
 trait GraphEngine {
+  def name: String
   def contentType: String
   def write(config: GraphDef, output: OutputStream)
 }

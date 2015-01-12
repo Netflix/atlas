@@ -31,7 +31,8 @@ class StatsJsonGraphEngine extends GraphEngine {
 
 import com.netflix.atlas.chart.GraphEngine._
 
-  val contentType: String = "application/json"
+  def name: String = "stats.json"
+  def contentType: String = "application/json"
 
   private def writeRawField(gen: JsonGenerator, name: String, value: String) {
     gen.writeFieldName(name)

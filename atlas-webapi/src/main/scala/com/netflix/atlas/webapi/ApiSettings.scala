@@ -17,6 +17,7 @@ package com.netflix.atlas.webapi
 
 import java.util.concurrent.TimeUnit
 
+import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.core.db.Database
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -52,4 +53,12 @@ object ApiSettings {
   def palette: String = config.getString("graph.palette")
 
   def maxDatapoints: Int = config.getInt("graph.max-datapoints")
+
+  def engines: List[GraphEngine] = {
+    import scala.collection.JavaConversions._
+    config.getStringList("graph.engines").toList.map { cname =>
+      val cls = Class.forName(cname)
+      cls.newInstance().asInstanceOf[GraphEngine]
+    }
+  }
 }

@@ -77,6 +77,7 @@ class Rrd4jGraphEngine extends PngGraphEngine {
   private val isoDateFmt = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm z")
   private val isoPeriodFmt = ISOPeriodFormat.standard
 
+  def name: String = "png"
 
   private def dashedStroke: Stroke = {
     new BasicStroke(

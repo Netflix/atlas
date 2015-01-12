@@ -20,7 +20,7 @@ import java.io.OutputStreamWriter
 import java.time.Instant
 import java.time.ZonedDateTime
 
-class CsvGraphEngine(val contentType: String, sep: String) extends GraphEngine {
+class CsvGraphEngine(val name: String, val contentType: String, sep: String) extends GraphEngine {
 
   def write(config: GraphDef, output: OutputStream) {
     val writer = new OutputStreamWriter(output, "UTF-8")

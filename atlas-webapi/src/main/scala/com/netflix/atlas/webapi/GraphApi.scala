@@ -21,12 +21,8 @@ import java.time.ZoneId
 import akka.actor.ActorRefFactory
 import akka.actor.Props
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.chart.CsvGraphEngine
 import com.netflix.atlas.chart.GraphDef
 import com.netflix.atlas.chart.GraphEngine
-import com.netflix.atlas.chart.JsonGraphEngine
-import com.netflix.atlas.chart.Rrd4jGraphEngine
-import com.netflix.atlas.chart.StatsJsonGraphEngine
 import com.netflix.atlas.chart.VisionType
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
@@ -117,21 +113,11 @@ object GraphApi {
 
   private val interpreter = new Interpreter(StyleVocabulary.words ::: StandardVocabulary.words)
 
-  import spray.http.MediaTypes._
+  private val engines = ApiSettings.engines.map(e => e.name -> e).toMap
 
-  private val engines = Map(
-    "png" -> new Rrd4jGraphEngine,
-    "csv" -> new CsvGraphEngine("text/csv", ","),
-    "txt" -> new CsvGraphEngine("text/plain", "\t"),
-    "json" -> new JsonGraphEngine,
-    "stats.json" -> new StatsJsonGraphEngine)
-
-  private val contentTypes = Map(
-    "png" -> `image/png`,
-    "csv" -> `text/csv`,
-    "txt" -> `text/plain`,
-    "json" -> `application/json`,
-    "stats.json" -> `application/json`)
+  private val contentTypes = engines.map { case (k, e) =>
+    k -> MediaType.custom(e.contentType)
+  }
 
   case class Request(
       query: String,
