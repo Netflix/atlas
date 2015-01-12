@@ -376,7 +376,7 @@ class Rrd4jGraphEngine extends PngGraphEngine {
 
   private class SeriesPlottable(s: SeriesDef) extends Plottable {
 
-    val ts = if (s.style == STACK) s.data.copy(_.mapValues(v => Math.addNaN(v, 0.0))) else s.data
+    val ts = if (s.style == STACK) s.data.mapTimeSeq(_.mapValues(v => Math.addNaN(v, 0.0))) else s.data
 
     override def getValue(timestamp: Long): Double = {
       ts.data(timestamp * 1000)

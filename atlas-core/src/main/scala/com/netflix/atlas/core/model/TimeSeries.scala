@@ -98,7 +98,7 @@ trait TimeSeries extends TaggedItem {
   }
 
   // Create a copy with a modified time sequence.
-  def copy(f: TimeSeq => TimeSeq): TimeSeries = {
+  def mapTimeSeq(f: TimeSeq => TimeSeq): TimeSeries = {
     LazyTimeSeries(tags, label, f(data))
   }
 
