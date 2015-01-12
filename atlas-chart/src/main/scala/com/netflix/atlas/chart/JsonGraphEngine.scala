@@ -22,7 +22,8 @@ class JsonGraphEngine extends GraphEngine {
 
   import com.netflix.atlas.chart.GraphEngine._
 
-  val contentType: String = "application/json"
+  def name: String = "json"
+  def contentType: String = "application/json"
 
   def write(config: GraphDef, output: OutputStream) {
     val writer = new OutputStreamWriter(output, "UTF-8")
