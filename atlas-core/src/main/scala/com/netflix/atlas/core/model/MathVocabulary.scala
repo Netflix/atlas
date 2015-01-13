@@ -45,6 +45,8 @@ object MathVocabulary extends Vocabulary {
 
     Sum, Count, Min, Max,
 
+    Macro("avg", List(":dup", ":sum", ":swap", ":count", ":div"), List("a,b,:eq,(,name,),:by")),
+
     Macro("pct", List(":dup", ":sum", ":div", "100", ":mul"), List("a,b,:eq,(,name,),:by")),
 
     Macro("dist-avg", List(
@@ -515,6 +517,7 @@ object MathVocabulary extends Vocabulary {
       case DataExpr.GroupBy(a: DataExpr.Sum, _) :: stack if this == Sum => a :: stack
       case DataExpr.GroupBy(a: DataExpr.Min, _) :: stack if this == Min => a :: stack
       case DataExpr.GroupBy(a: DataExpr.Max, _) :: stack if this == Max => a :: stack
+      case (a: DataExpr.AggregateFunction) :: stack if this != Count    => a :: stack
       case (t: TimeSeriesExpr) :: stack                                 => newInstance(t) :: stack
     }
 
