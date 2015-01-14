@@ -150,6 +150,23 @@ class TimeSeriesExprSuite extends FunSuite {
     "42"                          -> const(ts(42))
   )
 
+  // Tests that cannot be executed with incremental evaluation
+  val globalTests = List(
+    "1,:integral,min,:stat"                          -> const(ts(Map("name" -> "1.0"), "stat-min(integral(1.0))", 1.0)),
+    "1,:integral,max,:stat"                          -> const(ts(Map("name" -> "1.0"), "stat-max(integral(1.0))", 10.0)),
+    "1,:integral,avg,:stat"                          -> const(ts(Map("name" -> "1.0"), "stat-avg(integral(1.0))", 5.5)),
+    "1,:integral,total,:stat"                        -> const(ts(Map("name" -> "1.0"), "stat-total(integral(1.0))", 55.0)),
+    ":true,(,name,),:by,1,:filter"                   -> const(byName),
+    ":true,(,name,),:by,0,:filter"                   -> const(Nil),
+    ":true,(,name,),:by,:stat-max,50,:gt,:filter"    -> const(Nil),
+    ":true,(,name,),:by,:stat-min,:over,:lt,:filter" -> const(Nil),
+    ":true,(,name,),:by,:stat-avg,1,:lt,:filter"     -> const(ts(Map("name" -> "0", constTag), "(name=0)", 0)),
+    "1,min,:stat"                                    -> const(ts(Map("name" -> "1.0"), "stat-min(1.0)", 1.0)),
+    "1,max,:stat"                                    -> const(ts(Map("name" -> "1.0"), "stat-max(1.0)", 1.0)),
+    "1,avg,:stat"                                    -> const(ts(Map("name" -> "1.0"), "stat-avg(1.0)", 1.0)),
+    "1,total,:stat"                                  -> const(ts(Map("name" -> "1.0"), "stat-total(1.0)", 10.0))
+  )
+
   tests.map { case (prg, p) =>
     test(s"eval global: $prg") {
       val c = interpreter.execute(prg)
@@ -185,6 +202,17 @@ class TimeSeriesExprSuite extends FunSuite {
         assert(incrRS.expr === expr)
         assert(bounded(incrRS.data, p.ctxt) === bounded(p.output, p.ctxt))
       }
+    }
+  }
+
+  globalTests.map { case (prg, p) =>
+    test(s"eval global: $prg") {
+      val c = interpreter.execute(prg)
+      assert(c.stack.size === 1)
+      val expr = c.stack.collect { case Extractors.TimeSeriesType(t) => t} head
+      val rs = expr.eval(p.ctxt, p.input)
+      assert(rs.expr === expr)
+      assert(bounded(rs.data, p.ctxt) === bounded(p.output, p.ctxt))
     }
   }
 
