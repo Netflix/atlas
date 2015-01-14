@@ -25,7 +25,7 @@ object StyleVocabulary extends Vocabulary {
 
   import com.netflix.atlas.core.model.Extractors._
 
-  val words: List[Word] = StatefulVocabulary.words ::: List(
+  val words: List[Word] = FilterVocabulary.words ::: List(
     Alpha, Color, LineStyle, LineWidth, Legend, Axis, Offset,
     Macro("area", List("area", ":ls"), List("42")),
     Macro("line", List("line", ":ls"), List("42")),
