@@ -44,6 +44,8 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   val endpoint = new GraphApi
 
   val template = Streams.scope(Streams.resource("examples.md")) { in => Streams.lines(in).toList }
+  val others = Streams.scope(Streams.resource("others.md")) { in => Streams.lines(in).toList }
+  val all = template ::: others
 
   private val dataDir   = s"graph/data"
 
@@ -68,7 +70,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   // Run examples found in template. This serves two purposes:
   // 1. Verify the api is generating the right images for these examples.
   // 2. Generate the images and create an updated markdown output that we can save to the wiki.
-  template.filter(_.startsWith("/api/v1/graph")).foreach { uri =>
+  all.filter(_.startsWith("/api/v1/graph")).foreach { uri =>
     test(uri) {
       Get(uri) ~> endpoint.routes ~> check {
         // Note: will fail prior to 8u20:
