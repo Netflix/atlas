@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.SimpleWord
+import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
 
@@ -24,7 +25,10 @@ object FilterVocabulary extends Vocabulary {
   import com.netflix.atlas.core.model.Extractors._
 
   val words: List[Word] = StatefulVocabulary.words ::: List(
-    Stat, StatMax, StatMin, StatAvg, StatTotal, Filter
+    Stat, StatMax, StatMin, StatAvg, StatTotal, Filter,
+
+    // Legacy operation equivalent to `max,:stat`
+    Macro("stat-max-mf", List("max", ":stat"), List("42"))
   )
 
   object Stat extends SimpleWord {
