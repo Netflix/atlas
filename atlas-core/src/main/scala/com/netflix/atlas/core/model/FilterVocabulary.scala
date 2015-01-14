@@ -27,8 +27,10 @@ object FilterVocabulary extends Vocabulary {
   val words: List[Word] = StatefulVocabulary.words ::: List(
     Stat, StatMax, StatMin, StatAvg, StatTotal, Filter,
 
-    // Legacy operation equivalent to `max,:stat`
-    Macro("stat-max-mf", List("max", ":stat"), List("42"))
+    // Legacy operations equivalent to `max,:stat`
+    Macro("stat-min-mf", List("min", ":stat"), List("42")),
+    Macro("stat-max-mf", List("max", ":stat"), List("42")),
+    Macro("stat-avg-mf", List("avg", ":stat"), List("42"))
   )
 
   object Stat extends SimpleWord {
