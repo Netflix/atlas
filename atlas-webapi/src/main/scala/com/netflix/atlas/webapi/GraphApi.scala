@@ -183,8 +183,8 @@ object GraphApi {
     }
 
     def exprs: List[StyleExpr] = {
-      interpreter.execute(query).stack.reverse.map {
-        case Extractors.PresentationType(s) => s
+      interpreter.execute(query).stack.reverse.flatMap {
+        case Extractors.PresentationType(s) => s.perOffset
       }
     }
 

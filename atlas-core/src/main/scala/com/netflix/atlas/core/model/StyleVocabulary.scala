@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
 import com.netflix.atlas.core.stacklang.Vocabulary
@@ -25,7 +26,7 @@ object StyleVocabulary extends Vocabulary {
   import com.netflix.atlas.core.model.Extractors._
 
   val words: List[Word] = StatefulVocabulary.words ::: List(
-    Alpha, Color, LineStyle, LineWidth, Legend, Axis,
+    Alpha, Color, LineStyle, LineWidth, Legend, Axis, Offset,
     Macro("area", List("area", ":ls"), List("42")),
     Macro("line", List("line", ":ls"), List("42")),
     Macro("stack", List("stack", ":ls"), List("42")),
@@ -116,6 +117,33 @@ object StyleVocabulary extends Vocabulary {
       """.stripMargin.trim
 
     override def examples: List[String] = List("a,b,:eq,:sum,1")
+  }
+
+  case object Offset extends SimpleWord {
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case StringListType(_) :: PresentationType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case StringListType(vs) :: PresentationType(t) :: s =>
+        val v = Interpreter.toString(List(vs))
+        t.copy(settings = t.settings + (name -> v)) :: s
+    }
+
+    override def signature: String = "TimeSeriesExpr List -- StyleExpr"
+
+    override def name: String = "offset"
+
+    override def summary: String =
+      """
+        |> :warning: **Deprecated**. Use the variant with signature
+        |> `TimeSeriesExpr Duration -- TimeSeriesExpr` instead.
+        |
+        |Shift the time frame to use when fetching the data. The expression will be copied for
+        |each shift value in the list.
+      """.stripMargin.trim
+
+    override def examples: List[String] = List("a,b,:eq,:sum,(,0h,1d,1w,)")
   }
 
 }
