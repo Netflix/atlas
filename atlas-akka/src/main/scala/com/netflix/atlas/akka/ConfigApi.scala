@@ -19,6 +19,7 @@ import java.io.StringWriter
 import java.util.Properties
 
 import akka.actor.ActorRefFactory
+import com.netflix.atlas.config.ConfigManager
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
@@ -58,7 +59,7 @@ class ConfigApi(val actorRefFactory: ActorRefFactory) extends WebApi {
   private def doGet(ctx: RequestContext, path: Option[String]): Unit = {
     val format = ctx.request.uri.query.get("format").getOrElse("json")
     if (formats.contains(format)) {
-      val config = ConfigFactory.load
+      val config = ConfigManager.current
       path match {
         case Some(p) if !config.hasPath(p) =>
           sendError(ctx, NotFound, s"no matching path '$p'")

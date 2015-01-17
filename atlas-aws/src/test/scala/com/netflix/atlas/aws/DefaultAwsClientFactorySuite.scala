@@ -18,14 +18,14 @@ package com.netflix.atlas.aws
 import java.net.InetAddress
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
-import com.typesafe.config.ConfigFactory
+import com.netflix.atlas.config.ConfigManager
 import org.scalatest.FunSuite
 
 class DefaultAwsClientFactorySuite extends FunSuite {
 
   import scala.collection.JavaConversions._
 
-  val config = ConfigFactory.load()
+  val config = ConfigManager.current
 
   // Double check that the endpoints can be resolved, helps catch silly mistakes and typos
   val endpoints = config.getConfig("atlas.aws.endpoint").entrySet.toList

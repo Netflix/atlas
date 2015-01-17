@@ -18,6 +18,7 @@ package com.netflix.atlas.akka
 import java.io.StringReader
 import java.util.Properties
 
+import com.netflix.atlas.config.ConfigManager
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
@@ -28,7 +29,7 @@ import spray.testkit.ScalatestRouteTest
 class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
 
   val endpoint = new ConfigApi(system)
-  val sysConfig = ConfigFactory.load()
+  val sysConfig = ConfigManager.current
 
   test("/config") {
     Get("/api/v2/config") ~> endpoint.routes ~> check {

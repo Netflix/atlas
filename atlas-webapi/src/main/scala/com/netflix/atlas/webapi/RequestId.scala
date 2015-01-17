@@ -18,7 +18,7 @@ package com.netflix.atlas.webapi
 import java.lang.management.ManagementFactory
 import java.util.concurrent.atomic.AtomicLong
 
-import com.typesafe.config.ConfigFactory
+import com.netflix.atlas.config.ConfigManager
 
 /**
  * Identifier for a request to another instance. The identifier consists of a unique string for
@@ -33,7 +33,7 @@ import com.typesafe.config.ConfigFactory
  */
 object RequestId {
 
-  private val config = ConfigFactory.load()
+  private val config = ConfigManager.current
 
   private val instanceId = {
     val prop = "atlas.environment.instanceId"
