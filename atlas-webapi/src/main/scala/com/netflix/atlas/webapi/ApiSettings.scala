@@ -35,6 +35,10 @@ object ApiSettings {
 
   def port: Int = config.getInt("main.port")
 
+  def shouldRestrictJmxPort: Boolean = config.getBoolean("main.jmx.restrict-port")
+
+  def jmxPort: Int = config.getInt("main.jmx.port")
+
   def maxTagLimit: Int = config.getInt("tags.max-limit")
 
   def stepSize: Long = DefaultSettings.stepSize

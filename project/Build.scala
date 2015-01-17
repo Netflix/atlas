@@ -119,6 +119,7 @@ object MainBuild extends Build {
     .settings(mainClass in oneJar := Some("com.netflix.atlas.webapi.Main"))
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
+      Dependencies.iepJmxPort,
       Dependencies.slf4jSimple,
       Dependencies.akkaTestkit % "test",
       Dependencies.sprayTestkit % "test"
