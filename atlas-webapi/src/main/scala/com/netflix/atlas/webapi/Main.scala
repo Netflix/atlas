@@ -20,6 +20,7 @@ import java.io.File
 import akka.actor.Props
 import com.netflix.atlas.akka.WebServer
 import com.netflix.atlas.config.ConfigManager
+import com.netflix.atlas.core.db.MemoryDatabase
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
@@ -45,6 +46,12 @@ object Main extends StrictLogging {
       override protected def configure(): Unit = {
         val db = ApiSettings.newDbInstance
         actorSystem.actorOf(Props(new LocalDatabaseActor(db)), "db")
+        db match {
+          case mem: MemoryDatabase =>
+            logger.info("enabling local publish to memory database")
+            actorSystem.actorOf(Props(new LocalPublishActor(mem)), "publish")
+          case _ =>
+        }
       }
     }
     server.start(ApiSettings.port)
