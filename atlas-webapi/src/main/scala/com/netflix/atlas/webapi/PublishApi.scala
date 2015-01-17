@@ -16,11 +16,9 @@
 package com.netflix.atlas.webapi
 
 import akka.actor.ActorRefFactory
-import akka.actor.Props
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.chart.VisionType
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.DefaultSettings
@@ -29,10 +27,8 @@ import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
-import spray.http.HttpRequest
 import spray.http.HttpResponse
 import spray.http.StatusCodes
-import spray.http.Uri
 import spray.routing.RequestContext
 
 class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
