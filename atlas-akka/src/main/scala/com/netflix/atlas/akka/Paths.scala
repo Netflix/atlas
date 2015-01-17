@@ -16,11 +16,11 @@
 package com.netflix.atlas.akka
 
 import akka.actor.ActorPath
-import com.typesafe.config.ConfigFactory
+import com.netflix.atlas.config.ConfigManager
 
 
 object Paths {
-  private val config = ConfigFactory.load()
+  private val config = ConfigManager.current
   private val Path = config.getString("atlas.akka.pathPattern").r
 
   /**

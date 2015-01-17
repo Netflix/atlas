@@ -15,14 +15,12 @@
  */
 package com.netflix.atlas.core.db
 
-import java.util.concurrent.TimeUnit
-
-import com.typesafe.config.ConfigFactory
+import com.netflix.atlas.config.ConfigManager
 
 
 object Limits {
 
-  private val config = ConfigFactory.load.getConfig("atlas.core.db")
+  private val config = ConfigManager.current.getConfig("atlas.core.db")
 
   def maxLines: Int = config.getInt("max-lines")
 

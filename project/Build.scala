@@ -30,6 +30,7 @@ object MainBuild extends Build {
       `atlas-akka`,
       `atlas-aws`,
       `atlas-chart`,
+      `atlas-config`,
       `atlas-core`,
       `atlas-jmh`,
       `atlas-json`,
@@ -39,7 +40,7 @@ object MainBuild extends Build {
     .settings(BuildSettings.noPackaging: _*)
 
   lazy val `atlas-akka` = project
-    .dependsOn(`atlas-json`)
+    .dependsOn(`atlas-config`, `atlas-json`)
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
@@ -53,6 +54,7 @@ object MainBuild extends Build {
     ))
 
   lazy val `atlas-aws` = project
+    .dependsOn(`atlas-config`)
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
@@ -70,7 +72,12 @@ object MainBuild extends Build {
       Dependencies.rrd4j
     ))
 
+  lazy val `atlas-config` = project
+    .settings(buildSettings: _*)
+    .settings(libraryDependencies ++= commonDeps)
+
   lazy val `atlas-core` = project
+    .dependsOn(`atlas-config`)
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(

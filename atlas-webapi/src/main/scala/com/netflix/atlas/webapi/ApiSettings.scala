@@ -18,14 +18,14 @@ package com.netflix.atlas.webapi
 import java.util.concurrent.TimeUnit
 
 import com.netflix.atlas.chart.GraphEngine
+import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.db.Database
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 object ApiSettings {
 
-  private val root = ConfigFactory.load
-  private val config = root.getConfig("atlas.webapi")
+  private def root = ConfigManager.current
+  private def config = root.getConfig("atlas.webapi")
 
   def newDbInstance: Database = {
     val db = root.getConfig("atlas.core.db")

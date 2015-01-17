@@ -19,9 +19,8 @@ import java.math.BigInteger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
+import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.index.BatchUpdateTagIndex
-import com.netflix.atlas.core.index.LazyTagIndex
-import com.netflix.atlas.core.index.TagIndex
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.DataExpr
@@ -30,10 +29,8 @@ import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
-import scala.collection.SeqView
 
 class MemoryDatabase(config: Config) extends Database {
 
@@ -229,7 +226,7 @@ class MemoryDatabase(config: Config) extends Database {
 
 object MemoryDatabase {
   def apply(k: String): MemoryDatabase = {
-    val cfg = ConfigFactory.load()
+    val cfg = ConfigManager.current
     new MemoryDatabase(cfg.getConfig(k))
   }
 

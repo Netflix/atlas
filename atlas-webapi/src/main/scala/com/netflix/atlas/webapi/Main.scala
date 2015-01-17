@@ -15,15 +15,32 @@
  */
 package com.netflix.atlas.webapi
 
+import java.io.File
+
 import akka.actor.Props
 import com.netflix.atlas.akka.WebServer
-import com.netflix.atlas.core.db.StaticDatabase
+import com.netflix.atlas.config.ConfigManager
+import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.StrictLogging
 
-object Main {
+/**
+ * Provides a simple way to start up a standalone server. Usage:
+ *
+ * ```
+ * $ java -jar atlas.jar config1.conf config2.conf
+ * ```
+ */
+object Main extends StrictLogging {
 
   var server: WebServer = _
 
   def main(args: Array[String]) {
+    args.foreach { f =>
+      logger.info(s"loading config file: $f")
+      val c = ConfigFactory.parseFileAnySyntax(new File(f))
+      ConfigManager.update(c)
+    }
+
     server = new WebServer("atlas") {
       override protected def configure(): Unit = {
         val db = ApiSettings.newDbInstance

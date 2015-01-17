@@ -21,8 +21,8 @@ import com.amazonaws.AmazonWebServiceClient
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.Protocol
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+import com.netflix.atlas.config.ConfigManager
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 
 /**
@@ -30,7 +30,7 @@ import com.typesafe.config.ConfigFactory
  */
 object AwsClientFactory {
 
-  private val defaultConfig = ConfigFactory.load().getConfig("atlas.aws")
+  private val defaultConfig = ConfigManager.current.getConfig("atlas.aws")
 
   def default: AwsClientFactory = {
     new DefaultAwsClientFactory(new DefaultAWSCredentialsProviderChain, defaultConfig)

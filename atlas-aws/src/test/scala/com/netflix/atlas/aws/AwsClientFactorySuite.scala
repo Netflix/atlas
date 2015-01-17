@@ -16,12 +16,13 @@
 package com.netflix.atlas.aws
 
 import com.amazonaws.ClientConfiguration
+import com.netflix.atlas.config.ConfigManager
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 class AwsClientFactorySuite extends FunSuite {
 
-  val config = ConfigFactory.load()
+  val config = ConfigManager.current
 
   test("client config") {
     val awsDflt = new ClientConfiguration
