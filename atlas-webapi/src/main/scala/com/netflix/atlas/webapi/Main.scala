@@ -21,6 +21,7 @@ import akka.actor.Props
 import com.netflix.atlas.akka.WebServer
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.db.MemoryDatabase
+import com.netflix.iep.jmxport.JmxPort
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
@@ -35,13 +36,21 @@ object Main extends StrictLogging {
 
   var server: WebServer = _
 
-  def main(args: Array[String]) {
-    args.foreach { f =>
+  private def loadAdditionalConfigFiles(files: Array[String]): Unit = {
+    files.foreach { f =>
       logger.info(s"loading config file: $f")
       val c = ConfigFactory.parseFileAnySyntax(new File(f))
       ConfigManager.update(c)
     }
+  }
 
+  private def restrictJmxPort(): Unit = {
+    if (ApiSettings.shouldRestrictJmxPort) {
+      JmxPort.configure(null, ApiSettings.jmxPort)
+    }
+  }
+
+  private def startServer(): Unit = {
     server = new WebServer("atlas") {
       override protected def configure(): Unit = {
         val db = ApiSettings.newDbInstance
@@ -55,6 +64,12 @@ object Main extends StrictLogging {
       }
     }
     server.start(ApiSettings.port)
+  }
+
+  def main(args: Array[String]) {
+    loadAdditionalConfigFiles(args)
+    restrictJmxPort()
+    startServer()
   }
 
   def shutdown(): Unit = {

@@ -4,6 +4,7 @@ object Dependencies {
   object Versions {
     val akka       = "2.3.8"
     val aws        = "1.9.13"
+    val iep        = "0.1.0-SNAPSHOT"
     val jackson    = "2.4.4"
     val lucene     = "4.10.2"
     val scala      = "2.11.5"
@@ -26,6 +27,7 @@ object Dependencies {
   val frigga          = "com.netflix.frigga" % "frigga" % "0.13"
   val guava           = "com.google.guava" % "guava" % "15.0"
   val hadoopCommon    = "org.apache.hadoop" % "hadoop-common" % "2.5.1"
+  val iepJmxPort      = "com.netflix.iep" % "iep-jmxport" % iep
   val jacksonAnno2    = "com.fasterxml.jackson.core" % "jackson-annotations" % jackson
   val jacksonCore2    = "com.fasterxml.jackson.core" % "jackson-core" % jackson
   val jacksonJoda2    = "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % jackson
