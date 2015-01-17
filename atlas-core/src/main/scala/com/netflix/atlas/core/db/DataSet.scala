@@ -178,7 +178,7 @@ private[db] object DataSet {
     ds.withTags(tags)
   }
 
-  val step = 60000
+  val step = DefaultSettings.stepSize
 
   def constant(v: Double): TimeSeries = {
     TimeSeries(Map("name" -> v.toString), new FunctionTimeSeq(DsType.Gauge, step, _ => v))

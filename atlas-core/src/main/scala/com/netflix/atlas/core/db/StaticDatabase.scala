@@ -19,6 +19,7 @@ import com.netflix.atlas.core.index.LazyTagIndex
 import com.netflix.atlas.core.index.TagIndex
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.FunctionTimeSeq
@@ -56,7 +57,8 @@ object StaticDatabase {
       tagsBuilder += "class" -> (if (i % 2 == 1) "odd" else "even")
       if (probablyPrime(i))
         tagsBuilder += "prime" -> "probably"
-      TimeSeries(tagsBuilder.result(), new FunctionTimeSeq(DsType.Gauge, 60000, _ => i))
+      val seq = new FunctionTimeSeq(DsType.Gauge, DefaultSettings.stepSize, _ => i)
+      TimeSeries(tagsBuilder.result(), seq)
     }
     new StaticDatabase(ts.toList)
   }
