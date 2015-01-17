@@ -43,7 +43,7 @@ class ConfigManagerSuite extends FunSuite {
   }
 
   test("update with var") {
-    ConfigManager.update(ConfigFactory.parseString("foo = ${user.home}"))
+    ConfigManager.update(ConfigFactory.parseString(s"foo = $${user.home}"))
     assert(ConfigManager.current.getString("foo") === s"foo$home")
   }
 
@@ -53,9 +53,9 @@ class ConfigManagerSuite extends FunSuite {
   }
 
   test("re-resolve with update") {
-    ConfigManager.update(ConfigFactory.parseString("""
+    ConfigManager.update(ConfigFactory.parseString(s"""
       test.foo = 1
-      test.bar = ${test.foo}
+      test.bar = $${test.foo}
       """))
     assert(ConfigManager.current.getInt("test.bar") === 1)
 
