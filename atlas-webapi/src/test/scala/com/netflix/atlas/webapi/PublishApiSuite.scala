@@ -15,121 +15,106 @@
  */
 package com.netflix.atlas.webapi
 
+import java.io.PrintStream
+import java.net.URI
+
+import akka.actor.Actor
+import akka.actor.Props
+import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.util.Hash
+import com.netflix.atlas.core.util.PngImage
+import com.netflix.atlas.core.util.Streams
+import com.netflix.atlas.core.util.Strings
+import com.netflix.atlas.test.GraphAssertions
+import com.netflix.atlas.webapi.PublishApi.PublishRequest
 import org.scalatest.FunSuite
+import spray.http.MediaTypes._
+import spray.http.HttpEntity
+import spray.http.StatusCodes
+import spray.testkit.ScalatestRouteTest
 
 
-class PublishApiSuite extends FunSuite {
+class PublishApiSuite extends FunSuite with ScalatestRouteTest {
 
-  test("encode and decode datapoint") {
-    val original = Datapoint(Map("name" -> "foo", "id" -> "bar"), 42L, 1024.0)
-    val decoded = PublishApi.decodeDatapoint(PublishApi.encodeDatapoint(original))
-    assert(original === decoded)
+  import scala.concurrent.duration._
+  import PublishApiSuite._
+
+  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+
+  system.actorOf(Props(new TestActor), "publish")
+
+  val endpoint = new PublishApi
+
+  test("publish no content") {
+    Post("/api/v1/publish") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
   }
 
-  test("encode and decode batch") {
-    val commonTags = Map("id" -> "bar")
-    val original = List(Datapoint(Map("name" -> "foo"), 42L, 1024.0))
-    val decoded = PublishApi.decodeBatch(PublishApi.encodeBatch(commonTags, original))
-    assert(original.map(d => d.copy(tags = d.tags ++ commonTags)) === decoded)
+  test("publish empty object") {
+    Post("/api/v1/publish", "{}") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(lastUpdate === Nil)
+    }
   }
 
-  test("decode with legacy array value") {
-    val expected = Datapoint(Map("name" -> "foo"), 42L, 1024.0)
-    val decoded = PublishApi.decodeDatapoint(
-      """{"tags":{"name":"foo"},"timestamp":42,"values":[1024.0]}""")
-    assert(expected === decoded)
-  }
-
-  test("decode legacy batch empty") {
-    val decoded = PublishApi.decodeBatch("""
-      {
-        "tags": {},
-        "metrics": []
-      }
-      """)
-    assert(decoded.size === 0)
-  }
-
-  test("decode legacy batch no tags") {
-    val decoded = PublishApi.decodeBatch("""
-      {
-        "metrics": []
-      }
-      """)
-    assert(decoded.size === 0)
-  }
-
-  test("decode legacy batch with tags before") {
-    val decoded = PublishApi.decodeBatch("""
-      {
+  test("publish simple batch") {
+    val json = s"""{
         "tags": {
-          "foo": "bar"
+          "cluster": "foo",
+          "node": "i-123"
         },
         "metrics": [
           {
-            "tags": {"name": "test"},
-            "start": 123456789,
-            "values": [1.0]
+            "tags": {"name": "cpuUser"},
+            "timestamp": ${System.currentTimeMillis()},
+            "value": 42.0
           }
         ]
-      }
-      """)
-    assert(decoded.size === 1)
-    assert(decoded.head.tags === Map("name" -> "test", "foo" -> "bar"))
+      }"""
+    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(lastUpdate === PublishApi.decodeBatch(json))
+    }
   }
 
-  test("decode legacy batch with tags after") {
-    val decoded = PublishApi.decodeBatch("""
-      {
+  test("publish too old") {
+    val json = s"""{
         "metrics": [
           {
-            "tags": {"name": "test"},
-            "start": 123456789,
-            "values": [1.0]
-          }
-        ],
-        "tags": {
-          "foo": "bar"
-        }
-      }
-      """)
-    assert(decoded.size === 1)
-    assert(decoded.head.tags === Map("name" -> "test", "foo" -> "bar"))
-  }
-
-  test("decode legacy batch no tags metric") {
-    val decoded = PublishApi.decodeBatch("""
-      {
-        "metrics": [
-          {
-            "tags": {"name": "test"},
-            "start": 123456789,
-            "values": [1.0]
+            "tags": {"name": "cpuUser"},
+            "timestamp": ${System.currentTimeMillis() / 1000},
+            "value": 42.0
           }
         ]
-      }
-      """)
-    assert(decoded.size === 1)
+      }"""
+    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
   }
 
-  test("decode list empty") {
-    val decoded = PublishApi.decodeList("""
-      []
-      """)
-    assert(decoded.size === 0)
+  test("publish bad json") {
+    Post("/api/v1/publish", "fubar") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
   }
 
-  test("decode list") {
-    val decoded = PublishApi.decodeList("""
-      [
-        {
-          "tags": {"name": "test"},
-          "timestamp": 123456789,
-          "values": 1.0
-        }
-      ]
-      """)
-    assert(decoded.size === 1)
+  test("publish-fast alias") {
+    Post("/api/v1/publish-fast", "{}") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(lastUpdate === Nil)
+    }
+  }
+}
+
+object PublishApiSuite {
+
+  @volatile var lastUpdate: List[Datapoint] = Nil
+
+  class TestActor extends Actor {
+    def receive = {
+      case PublishRequest(vs) => lastUpdate = vs
+    }
   }
 }

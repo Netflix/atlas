@@ -17,6 +17,7 @@ package com.netflix.atlas.core.db
 
 import java.math.BigInteger
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.index.BatchUpdateTagIndex
@@ -62,7 +63,7 @@ class MemoryDatabase(config: Config) extends Database {
   val index = BatchUpdateTagIndex.newLazyIndex[BlockStoreItem]
 
   // If the last update time for the index is older than the rebuild age force an update
-  private val rebuildAge = 40000L
+  private val rebuildAge = config.getDuration("rebuild-frequency", TimeUnit.MILLISECONDS)
 
   private val data = new ConcurrentHashMap[BigInteger, BlockStore]
 

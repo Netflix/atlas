@@ -15,8 +15,11 @@
  */
 package com.netflix.atlas.webapi
 
+import akka.actor.ActorRefFactory
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
+import com.netflix.atlas.akka.WebApi
+import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.TaggedItem
@@ -24,6 +27,57 @@ import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
+import spray.http.HttpResponse
+import spray.http.StatusCodes
+import spray.routing.RequestContext
+
+class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+
+  import com.netflix.atlas.webapi.PublishApi._
+
+  private val publishRef = actorRefFactory.actorSelection("/user/publish")
+
+  private val config = ConfigManager.current.getConfig("atlas.webapi.publish")
+
+  private val internWhileParsing = config.getBoolean("intern-while-parsing")
+
+  def routes: RequestContext => Unit = {
+    post {
+      path("api" / "v1" / "publish") { ctx =>
+        handleReq(ctx)
+      } ~
+      path("api" / "v1" / "publish-fast") { ctx =>
+        // Legacy path from when there was more than one publish mode
+        handleReq(ctx)
+      }
+    }
+  }
+
+  private def handleReq(ctx: RequestContext): Unit = {
+    try {
+      getJsonParser(ctx.request) match {
+        case Some(parser) =>
+          val data = decodeBatch(parser, internWhileParsing)
+          validate(data)
+          publishRef ! PublishRequest(data)
+          ctx.responder ! HttpResponse(StatusCodes.OK)
+        case None =>
+          throw new IllegalArgumentException("empty request body")
+      }
+    } catch handleException(ctx)
+  }
+
+  private def validate(vs: List[Datapoint]): Unit = {
+    // Temporary until rules get moved to oss. Just include basic sanity check on timestamps
+    val now = System.currentTimeMillis()
+    val step = DefaultSettings.stepSize
+    vs.foreach { v =>
+      val diff = now - v.timestamp
+      if (diff > step)
+        throw new IllegalArgumentException("data is too old")
+    }
+  }
+}
 
 object PublishApi {
   private final val step = DefaultSettings.stepSize
@@ -101,7 +155,14 @@ object PublishApi {
         foreachItem(parser) { builder += decode(parser, tags, intern) }
         metrics = builder.result
     }
-    if (tagsLoadedFirst || tags == null) metrics else metrics.map(d => d.copy(tags = d.tags ++ tags))
+
+    // If the tags were loaded first they got merged with the datapoints while parsing. Otherwise
+    // they need to be merged here.
+    if (tagsLoadedFirst || tags == null) {
+      if (metrics == null) Nil else metrics
+    } else {
+      metrics.map(d => d.copy(tags = d.tags ++ tags))
+    }
   }
 
   def decodeBatch(json: String): List[Datapoint] = {
@@ -159,4 +220,6 @@ object PublishApi {
       Streams.scope(Json.newJsonGenerator(w)) { gen => encodeBatch(gen, tags, values) }
     }
   }
+
+  case class PublishRequest(values: List[Datapoint])
 }
