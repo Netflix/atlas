@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.config
 
-import java.util.concurrent.atomic.AtomicReference
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -25,19 +23,23 @@ import com.typesafe.config.ConfigFactory
  */
 object ConfigManager {
 
-  private val configRef: AtomicReference[Config] = new AtomicReference(ConfigFactory.load())
+  // Copy of the unresolved config object so it can be re-resolved if later updates are applied.
+  private var unresolvedRef: Config = ConfigFactory.load()
+
+  @volatile private var configRef: Config = unresolvedRef.resolve()
 
   /** Return the current global config object. */
-  def current: Config = configRef.get
+  def current: Config = configRef
 
   /** Set the global config to `c`. */
-  def set(c: Config): Unit = configRef.set(c)
+  def set(c: Config): Unit = synchronized {
+    unresolvedRef = c
+    configRef = unresolvedRef.resolve()
+  }
 
   /** Update the global config object setting it to `c.withFallback(current)`. */
-  def update(c: Config): Unit = {
-    var tmp = configRef.get
-    while (!configRef.compareAndSet(tmp, c.withFallback(tmp).resolve())) {
-      tmp = configRef.get
-    }
+  def update(c: Config): Unit = synchronized {
+    unresolvedRef = c.withFallback(unresolvedRef)
+    configRef = unresolvedRef.resolve()
   }
 }

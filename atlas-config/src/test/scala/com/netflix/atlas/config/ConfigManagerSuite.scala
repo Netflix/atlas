@@ -51,5 +51,16 @@ class ConfigManagerSuite extends FunSuite {
     ConfigManager.set(ConfigFactory.empty())
     intercept[ConfigException] { ConfigManager.current.getString("user.home") }
   }
+
+  test("re-resolve with update") {
+    ConfigManager.update(ConfigFactory.parseString("""
+      test.foo = 1
+      test.bar = ${test.foo}
+      """))
+    assert(ConfigManager.current.getInt("test.bar") === 1)
+
+    ConfigManager.update(ConfigFactory.parseString("test.foo = 2"))
+    assert(ConfigManager.current.getInt("test.bar") === 2)
+  }
 }
 

@@ -17,7 +17,6 @@ package com.netflix.atlas.core.db
 
 import java.math.BigInteger
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.index.BatchUpdateTagIndex
@@ -25,6 +24,7 @@ import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.spectator.api.Spectator
@@ -52,7 +52,7 @@ class MemoryDatabase(config: Config) extends Database {
   /** How many output datapoints are being processed for transform queries. */
   private val queryOutputDatapoints = Spectator.registry.counter("atlas.db.queryOutputDatapoints")
 
-  private val step = config.getDuration("step", TimeUnit.MILLISECONDS)
+  private val step = DefaultSettings.stepSize
   private val blockSize = config.getInt("block-size")
   private val numBlocks = config.getInt("num-blocks")
   private val testMode = config.getBoolean("test-mode")

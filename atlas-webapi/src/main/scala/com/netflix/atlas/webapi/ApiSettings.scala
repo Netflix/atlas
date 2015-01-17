@@ -15,11 +15,10 @@
  */
 package com.netflix.atlas.webapi
 
-import java.util.concurrent.TimeUnit
-
 import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.db.Database
+import com.netflix.atlas.core.model.DefaultSettings
 import com.typesafe.config.Config
 
 object ApiSettings {
@@ -38,7 +37,7 @@ object ApiSettings {
 
   def maxTagLimit: Int = config.getInt("tags.max-limit")
 
-  def stepSize: Long = config.getDuration("graph.step", TimeUnit.MILLISECONDS)
+  def stepSize: Long = DefaultSettings.stepSize
 
   def startTime: String = config.getString("graph.start-time")
 
