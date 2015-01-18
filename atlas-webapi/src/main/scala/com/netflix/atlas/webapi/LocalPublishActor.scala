@@ -23,6 +23,8 @@ import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.norm.NormalizationCache
 import com.netflix.spectator.api.Spectator
+import spray.http.HttpResponse
+import spray.http.StatusCodes
 
 
 class LocalPublishActor(db: MemoryDatabase) extends Actor with ActorLogging {
@@ -34,7 +36,9 @@ class LocalPublishActor(db: MemoryDatabase) extends Actor with ActorLogging {
   private val cache = new NormalizationCache(DefaultSettings.stepSize, db.update)
 
   def receive = {
-    case PublishRequest(vs) => update(vs)
+    case PublishRequest(vs) =>
+      update(vs)
+      sender() ! HttpResponse(StatusCodes.OK)
   }
 
   private def update(vs: List[Datapoint]): Unit = {
