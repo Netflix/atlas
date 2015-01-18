@@ -59,8 +59,7 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
         case Some(parser) =>
           val data = decodeBatch(parser, internWhileParsing)
           validate(data)
-          publishRef ! PublishRequest(data)
-          ctx.responder ! HttpResponse(StatusCodes.OK)
+          publishRef.tell(PublishRequest(data), ctx.responder)
         case None =>
           throw new IllegalArgumentException("empty request body")
       }

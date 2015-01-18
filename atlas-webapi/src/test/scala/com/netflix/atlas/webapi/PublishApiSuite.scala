@@ -29,6 +29,7 @@ import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.test.GraphAssertions
 import com.netflix.atlas.webapi.PublishApi.PublishRequest
 import org.scalatest.FunSuite
+import spray.http.HttpResponse
 import spray.http.MediaTypes._
 import spray.http.HttpEntity
 import spray.http.StatusCodes
@@ -114,7 +115,9 @@ object PublishApiSuite {
 
   class TestActor extends Actor {
     def receive = {
-      case PublishRequest(vs) => lastUpdate = vs
+      case PublishRequest(vs) =>
+        lastUpdate = vs
+        sender() ! HttpResponse(StatusCodes.OK)
     }
   }
 }
