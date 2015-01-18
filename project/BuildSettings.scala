@@ -7,6 +7,7 @@ object BuildSettings {
   val compilerFlags = Seq(
     "-deprecation",
     "-unchecked",
+    "-Xexperimental",
     "-Xlint:_,-infer-any",
     "-feature",
     "-target:jvm-1.8")
