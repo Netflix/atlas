@@ -106,13 +106,7 @@ class MemoryDatabase(config: Config) extends Database {
   }
 
   private def getOrCreateBlockStore(id: BigInteger): BlockStore = {
-    val bs = data.get(id)
-    if (bs != null) bs else {
-      var mbs: BlockStore = new MemoryBlockStore(step, blockSize, numBlocks)
-      var tmp = data.putIfAbsent(id, mbs)
-      if (tmp != null) mbs = tmp
-      mbs
-    }
+    data.computeIfAbsent(id, _ => new MemoryBlockStore(step, blockSize, numBlocks))
   }
 
   def update(dp: Datapoint): Unit = {
