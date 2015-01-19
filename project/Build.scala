@@ -121,6 +121,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= Seq(
       Dependencies.iepJmxPort,
       Dependencies.slf4jSimple,
+      Dependencies.spectatorSandbox,
       Dependencies.akkaTestkit % "test",
       Dependencies.sprayTestkit % "test"
     ))
