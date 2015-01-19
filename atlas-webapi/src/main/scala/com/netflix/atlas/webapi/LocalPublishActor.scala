@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.webapi
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import com.netflix.atlas.core.db.MemoryDatabase
@@ -23,6 +25,8 @@ import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.norm.NormalizationCache
 import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.sandbox.BucketCounter
+import com.netflix.spectator.sandbox.BucketFunctions
 import spray.http.HttpResponse
 import spray.http.StatusCodes
 
@@ -31,7 +35,13 @@ class LocalPublishActor(db: MemoryDatabase) extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.PublishApi._
 
-  private val numReceived = Spectator.registry.distributionSummary("atlas.db.numMetricsReceived")
+  // Track the ages of data flowing into the system. Data is expected to arrive quickly and
+  // should hit the backend within the step interval used.
+  private val numReceived = {
+    val registry = Spectator.registry
+    val f = BucketFunctions.age(DefaultSettings.stepSize, TimeUnit.MILLISECONDS)
+    BucketCounter.get(registry, registry.createId("atlas.db.numMetricsReceived"), f)
+  }
 
   private val cache = new NormalizationCache(DefaultSettings.stepSize, db.update)
 

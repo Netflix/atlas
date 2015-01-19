@@ -59,6 +59,7 @@ object Dependencies {
   val spectatorApi    = "com.netflix.spectator" % "spectator-api" % spectator
   val spectatorM2     = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
   val spectatorNflx   = "com.netflix.spectator" % "spectator-nflx" % spectator
+  val spectatorSandbox= "com.netflix.spectator" % "spectator-ext-sandbox" % spectator
   val sprayCan        = "io.spray" % "spray-can_2.11" % spray
   val sprayClient     = "io.spray" % "spray-client_2.11" % spray
   val sprayRouting    = "io.spray" % "spray-routing_2.11" % spray
