@@ -27,37 +27,39 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
   class TestService(val actorRefFactory: ActorRefFactory) extends HttpService {
 
     def routes: RequestContext => Unit = {
-      CustomDirectives.corsFilter {
-        CustomDirectives.jsonpFilter {
-          path("text") {
-            get { ctx =>
-              val entity = HttpEntity(MediaTypes.`text/plain`, "text response")
-              ctx.responder ! HttpResponse(status = StatusCodes.OK, entity = entity)
-            }
-          } ~
-          path("json") {
-            get { ctx =>
-              val entity = HttpEntity(MediaTypes.`application/json`, "[1,2,3]")
-              ctx.responder ! HttpResponse(status = StatusCodes.OK, entity = entity)
-            }
-          } ~
-          path("binary") {
-            get { ctx =>
-              val entity = HttpEntity(MediaTypes.`application/octet-stream`, "text response")
-              ctx.responder ! HttpResponse(status = StatusCodes.OK, entity = entity)
-            }
-          } ~
-          path("error") {
-            get { ctx =>
-              val entity = HttpEntity(MediaTypes.`text/plain`, "error")
-              ctx.responder ! HttpResponse(status = StatusCodes.BadRequest, entity = entity)
-            }
-          } ~
-          path("empty") {
-            get { ctx =>
-              val headers = List(HttpHeaders.RawHeader("foo", "bar"))
-              ctx.responder ! HttpResponse(status = StatusCodes.OK, headers = headers)
-            }
+      CustomDirectives.accessLog {
+        CustomDirectives.corsFilter {
+          CustomDirectives.jsonpFilter {
+            path("text") {
+              get { ctx =>
+                val entity = HttpEntity(MediaTypes.`text/plain`, "text response")
+                ctx.responder ! HttpResponse(status = StatusCodes.OK, entity = entity)
+              }
+            } ~
+              path("json") {
+                get { ctx =>
+                  val entity = HttpEntity(MediaTypes.`application/json`, "[1,2,3]")
+                  ctx.responder ! HttpResponse(status = StatusCodes.OK, entity = entity)
+                }
+              } ~
+              path("binary") {
+                get { ctx =>
+                  val entity = HttpEntity(MediaTypes.`application/octet-stream`, "text response")
+                  ctx.responder ! HttpResponse(status = StatusCodes.OK, entity = entity)
+                }
+              } ~
+              path("error") {
+                get { ctx =>
+                  val entity = HttpEntity(MediaTypes.`text/plain`, "error")
+                  ctx.responder ! HttpResponse(status = StatusCodes.BadRequest, entity = entity)
+                }
+              } ~
+              path("empty") {
+                get { ctx =>
+                  val headers = List(HttpHeaders.RawHeader("foo", "bar"))
+                  ctx.responder ! HttpResponse(status = StatusCodes.OK, headers = headers)
+                }
+              }
           }
         }
       }

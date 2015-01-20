@@ -46,6 +46,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= Seq(
       Dependencies.akkaActor,
       Dependencies.akkaSlf4j,
+      Dependencies.spectatorSandbox,
       Dependencies.sprayCan,
       Dependencies.sprayRouting,
       Dependencies.typesafeConfig,
