@@ -16,14 +16,20 @@
 package com.netflix.atlas.akka
 
 import java.io.StringWriter
+import java.net.URI
 
 import com.netflix.atlas.json.Json
+import com.netflix.spectator.sandbox.HttpLogEntry
+import org.slf4j.LoggerFactory
 import spray.http.HttpMethods._
 import spray.http.MediaTypes._
 import spray.http._
 import spray.routing._
 import spray.routing.directives.BasicDirectives._
+import spray.routing.directives.DebuggingDirectives._
 import spray.routing.directives.HeaderDirectives._
+import spray.routing.directives.LoggingMagnet
+import spray.routing.directives.MiscDirectives._
 import spray.routing.directives.ParameterDirectives._
 import spray.routing.directives.RespondWithDirectives._
 
@@ -133,5 +139,52 @@ object CustomDirectives {
           HttpResponse(status = StatusCodes.OK, entity = entity)
         }
     }
+  }
+
+  // Logger to use for access logging. Uses the class of the web server as it is more relevant
+  // to the user than this class.
+  private val logger = LoggerFactory.getLogger(classOf[WebServer])
+
+  // Helper function to finish constructing the log entry and writing to the logger.
+  private def log(entry: HttpLogEntry)(req: HttpRequest)(obj: Any): Unit = {
+    entry
+      .mark("logging")
+      .withMethod(req.method.name)
+      .withRequestUri(URI.create(req.uri.render(new StringRendering).get))
+      .withRequestContentLength(req.entity.data.length)
+    req.headers.foreach(h => entry.withRequestHeader(h.name, h.value))
+
+    obj match {
+      case res: HttpResponse =>
+        entry
+          .withStatusCode(res.status.intValue)
+          .withStatusReason(res.status.reason)
+          .withResponseContentLength(res.entity.data.length)
+        res.headers.foreach(h => entry.withResponseHeader(h.name, h.value))
+      case t: Throwable =>
+        entry.withException(t)
+      case _ =>
+        val cls = obj.getClass
+        entry.withException(new IllegalStateException(s"unexpected response type: ${cls.getName}"))
+    }
+
+    entry.mark("complete")
+    HttpLogEntry.logServerRequest(logger, entry)
+  }
+
+  /**
+   * Generate an access log using spectator HttpLogEntry utility.
+   */
+  def accessLog: Directive0 = {
+    val d1 = clientIP.flatMap { ip =>
+      val addr = ip.toOption.fold("unknown")(_.getHostAddress)
+      val entry = (new HttpLogEntry).withRemoteAddr(addr).mark("start")
+      logRequestResponse(LoggingMagnet(log(entry)))
+    }
+    val d2 = requestInstance.flatMap { _ =>
+      val entry = (new HttpLogEntry).mark("start")
+      logRequestResponse(LoggingMagnet(log(entry)))
+    }
+    d1 | d2
   }
 }

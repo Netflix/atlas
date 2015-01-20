@@ -39,9 +39,11 @@ class RequestHandlerActor extends Actor with ActorLogging with HttpService {
     if (endpoints.isEmpty) default else {
       default.orElse {
         runRoute {
-          compressResponseIfRequested() {
-            corsFilter {
-              endpoints.tail.foldLeft(endpoints.head.routes) { case (acc, r) => acc ~ r.routes }
+          accessLog {
+            compressResponseIfRequested() {
+              corsFilter {
+                endpoints.tail.foldLeft(endpoints.head.routes) { case (acc, r) => acc ~ r.routes}
+              }
             }
           }
         }
