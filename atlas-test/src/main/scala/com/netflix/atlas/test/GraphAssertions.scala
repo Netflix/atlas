@@ -100,7 +100,7 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
 
   def assertEquals(i1: PngImage, f: String, bless: Boolean = false) {
     val file = new File(new File(goldenDir), f)
-    if (bless || !file.exists) blessImage(i1, f)
+    if (bless) blessImage(i1, f)
     val i2 = getImage(f)
     val diff = PngImage.diff(i1.data, i2.data)
     writeImage(i1, targetDir, f)

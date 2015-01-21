@@ -145,8 +145,8 @@ class TimeSeriesExprSuite extends FunSuite {
     "NaN,1.0,:fdiv"               -> const(ts(Map("name" -> "NaN"), "(NaN / 1.0)", Double.NaN)),
     "1.0,NaN,:fdiv"               -> const(ts(Map("name" -> "1.0"), "(1.0 / NaN)", Double.NaN)),
     "2.0,1.0,:fdiv"               -> const(ts(Map("name" -> "2.0"), "(2.0 / 1.0)", 2.0)),
-    ":true,1w,:offset"            -> const(ts(constTag, 55)),
-    ":true,5,:add,1w,:offset"     -> const(ts(constTag, "(type=constant + 5.0)", 60)),
+    ":true,1w,:offset"            -> const(ts(constTag, "type=constant (offset=PT168H)", 55)),
+    ":true,5,:add,1w,:offset"     -> const(ts(constTag, "(type=constant (offset=PT168H) + 5.0)", 60)),
     "42"                          -> const(ts(42))
   )
 

@@ -87,6 +87,10 @@ trait TimeSeries extends TaggedItem {
     LazyTimeSeries(ts, label, data)
   }
 
+  def withLabel(s: String): TimeSeries = {
+    LazyTimeSeries(tags, s, data)
+  }
+
   def consolidate(step: Long, cf: ConsolidationFunction): TimeSeries = {
     val newData = new MapStepTimeSeq(data, step, cf)
     LazyTimeSeries(tags, label, newData)

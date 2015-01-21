@@ -38,7 +38,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
   private val dataDir   = s"graphengine/data"
 
-  private val baseDir = "atlas-chart"
+  // SBT working directory gets updated with fork to be the dir for the project
+  private val baseDir = "."
   private val goldenDir = s"$baseDir/src/test/resources/graphengine/${getClass.getSimpleName}"
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
   private val graphAssertions = new GraphAssertions(goldenDir, targetDir)

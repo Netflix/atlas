@@ -37,8 +37,9 @@ sealed trait DataExpr extends TimeSeriesExpr {
 
   protected def consolidate(step: Long, ts: List[TimeSeries]): List[TimeSeries] = {
     ts.map { t =>
-      if (step == t.data.step) t else {
-        TimeSeries(t.tags, t.label, new MapStepTimeSeq(t.data, step, cf))
+      val label = if (offset.isZero) t.label else s"${t.label} (offset=$offset)"
+      if (step == t.data.step) t.withLabel(label) else {
+        TimeSeries(t.tags, label, new MapStepTimeSeq(t.data, step, cf))
       }
     }
   }
