@@ -258,6 +258,39 @@ class StringsSuite extends FunSuite {
     assert(parseDuration("PT42M") === Duration.ofMinutes(42))
   }
 
+  test("toString Duration: weeks") {
+    assert(Strings.toString(Duration.ofDays(5 * 7)) === "5w")
+  }
+
+  test("toString Duration: weeks + 10h") {
+    // P5WT10H would be preferred, but it doesn't parse with java.time:
+    // scala> Duration.parse("P5WT10H")
+    // java.time.format.DateTimeParseException: Text cannot be parsed to a Duration
+    //
+    // P35DT10H would be better than 850h, but Duration.toString returns PT850H
+    // scala> Duration.parse("P35DT10H")
+    // res6: java.time.Duration = PT850H
+    //
+    // If it becomes enough of a pain point we can customize the output for the fallback
+    assert(Strings.toString(Duration.ofDays(5 * 7).plusHours(10)) === "850h")
+  }
+
+  test("toString Duration: days") {
+    assert(Strings.toString(Duration.ofDays(5)) === "5d")
+  }
+
+  test("toString Duration: hours") {
+    assert(Strings.toString(Duration.ofHours(5)) === "5h")
+  }
+
+  test("toString Duration: minutes") {
+    assert(Strings.toString(Duration.ofMinutes(5)) === "5m")
+  }
+
+  test("toString Duration: seconds") {
+    assert(Strings.toString(Duration.ofSeconds(5)) === "5s")
+  }
+
   test("parseDate, iso date only") {
     val expected = ZonedDateTime.of(2012, 2, 1, 0, 0, 0, 0, ZoneOffset.UTC)
     assert(parseDate("2012-02-01") === expected)
