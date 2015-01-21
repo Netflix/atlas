@@ -49,7 +49,8 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
 
   private val dataDir   = s"graph/data"
 
-  private val baseDir = "atlas-webapi"
+  // SBT working directory gets updated with fork to be the dir for the project
+  private val baseDir = "."
   private val goldenDir = s"$baseDir/src/test/resources/${getClass.getSimpleName}"
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
   private val graphAssertions = new GraphAssertions(goldenDir, targetDir)
