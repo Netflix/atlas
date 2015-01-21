@@ -33,10 +33,8 @@ import com.netflix.atlas.core.model.SummaryStats
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.PngImage
+import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
-import org.joda.time.Period
-import org.joda.time.format.DateTimeFormat
-import org.joda.time.format.ISOPeriodFormat
 import org.rrd4j.data.Plottable
 import org.rrd4j.graph.RrdAxisDef
 import org.rrd4j.graph.RrdGraph
@@ -73,9 +71,6 @@ class Rrd4jGraphEngine extends PngGraphEngine {
   import com.netflix.atlas.chart.LineStyle._
 
   type PaletteMap = collection.mutable.Map[String, Palette]
-
-  private val isoDateFmt = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm z")
-  private val isoPeriodFmt = ISOPeriodFormat.standard
 
   def name: String = "png"
 
@@ -296,9 +291,9 @@ class Rrd4jGraphEngine extends PngGraphEngine {
       }
     }
 
-    val frame = Duration.between(config.startTime, config.endTime).toString
+    val frame = Strings.toString(Duration.between(config.startTime, config.endTime))
     val endTime = ZonedDateTime.ofInstant(config.endTime, config.timezone).toString
-    val step = isoPeriodFmt.print(new Period(config.step))
+    val step = Strings.toString(Duration.ofMillis(config.step))
     val comment = "Frame: %s, End: %s, Step: %s\\l".format(frame, endTime, step)
     graphDef.comment(comment)
 

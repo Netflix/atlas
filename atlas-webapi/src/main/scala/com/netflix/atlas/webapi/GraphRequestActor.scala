@@ -30,6 +30,7 @@ import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.util.PngImage
+import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.Spectator
 import spray.can.Http
@@ -87,8 +88,8 @@ class GraphRequestActor extends Actor with ActorLogging {
       val ts = s.expr.eval(request.evalContext, data).data
       val exprStr = s.expr.toString
       val tmp = ts.map { t =>
-        val offset = Duration.ofMillis(s.offset)
-        val newT = t.withTags(t.tags + (TagKey.offset -> offset.toString))
+        val offset = Strings.toString(Duration.ofMillis(s.offset))
+        val newT = t.withTags(t.tags + (TagKey.offset -> offset))
         val series = new SeriesDef
         series.data = newT
         series.query = exprStr

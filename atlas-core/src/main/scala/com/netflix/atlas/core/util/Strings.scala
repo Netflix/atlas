@@ -88,14 +88,6 @@ object Strings {
     .toFormatter
 
   /**
-   * Constant for the unix epoch.
-   */
-  /*private val epoch = new DateTime(0L, UTC)
-
-  private val isoDateFmt = ISODateTimeFormat.dateTimeParser.withZone(UTC)
-  private val isoPeriodFmt = ISOPeriodFormat.standard*/
-
-  /**
    * Conversion functions that map a string value to an instance of a given
    * class.
    */
@@ -396,10 +388,26 @@ object Strings {
       new Color(java.lang.Long.parseLong(colorStr, 16).toInt, true)
   }
 
+  // Standardized date/time constants:
+  private final val oneSecond = 1000L
+  private final val oneMinute = oneSecond * 60L
+  private final val oneHour = oneMinute * 60L
+  private final val oneDay = oneHour * 24L
+  private final val oneWeek = oneDay * 7L
+
   /**
    * Returns a string representation of a period.
    */
-  def toString(p: Duration): String = p.toString
+  def toString(d: Duration): String = {
+    d.toMillis match {
+      case t if t % oneWeek   == 0 => s"${t / oneWeek}w"
+      case t if t % oneDay    == 0 => s"${t / oneDay}d"
+      case t if t % oneHour   == 0 => s"${t / oneHour}h"
+      case t if t % oneMinute == 0 => s"${t / oneMinute}m"
+      case t if t % oneSecond == 0 => s"${t / oneSecond}s"
+      case _                       => d.toString
+    }
+  }
 
   /**
    * Strip the margin from multi-line strings.

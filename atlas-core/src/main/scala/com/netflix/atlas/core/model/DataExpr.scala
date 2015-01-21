@@ -19,6 +19,7 @@ import java.time.Duration
 
 import com.netflix.atlas.core.model.ConsolidationFunction.SumOrAvgCf
 import com.netflix.atlas.core.util.Math
+import com.netflix.atlas.core.util.Strings
 
 sealed trait DataExpr extends TimeSeriesExpr {
   def query: Query
@@ -37,7 +38,8 @@ sealed trait DataExpr extends TimeSeriesExpr {
 
   protected def consolidate(step: Long, ts: List[TimeSeries]): List[TimeSeries] = {
     ts.map { t =>
-      val label = if (offset.isZero) t.label else s"${t.label} (offset=$offset)"
+      val offsetStr = Strings.toString(offset)
+      val label = if (offset.isZero) t.label else s"${t.label} (offset=$offsetStr)"
       if (step == t.data.step) t.withLabel(label) else {
         TimeSeries(t.tags, label, new MapStepTimeSeq(t.data, step, cf))
       }
