@@ -2,7 +2,9 @@
 # build script.
 SBT := cat /dev/null | project/sbt
 
-.PHONY: build coverage license
+WIKI_PRG := atlas-wiki/runMain com.netflix.atlas.wiki.Main
+
+.PHONY: build coverage license update-wiki publish-wiki
 
 build:
 	$(SBT) clean test checkLicenseHeaders
@@ -13,3 +15,14 @@ coverage:
 
 license:
 	$(SBT) formatLicenseHeaders
+
+update-wiki:
+	mkdir -p target
+	rm -rf target/atlas.wiki
+	git clone https://github.com/Netflix/atlas.wiki.git target/atlas.wiki
+	$(SBT) "$(WIKI_PRG) atlas-wiki/src/main/resources target/atlas.wiki"
+
+publish-wiki: update-wiki
+	cd target/atlas.wiki
+	git commit -a -m "update wiki"
+	git push origin master
