@@ -42,8 +42,6 @@ A typical example of this is a process that runs over a longer time period. For 
 
 In this example, a better design would use a gauge that reports the loading time and a gauge that reports the age of the cache.  You can then add alerts when the gauges for these error conditions exceed unacceptable thresholds.
 
-**Why is absence of information bad?**
-
 ### Reduction in Success
 
 Let's say we have a server that is taking traffic and we want to know if users are experiencing problems.  How should we go about this? It is often tempting to look for things like a drop in the number of successful requests, because this can be a generic catch-all for many types of problems.
@@ -135,3 +133,4 @@ So why not check all alerts on the client or poller? The primary disadvantages:
 
 * **Client and poller scopes can only use data that is available at that location.** For a client, that means only the data that is reported by the plugin on that instance. For the poller, it means only data about health checks, discovery, and system stats from SNMP.
 * **Data cannot be aggregated across nodes for the cluster.** This can make it harder to do things like outlier detection using a cluster-level aggregate as a baseline. However, keep in mind that for middle-tier services there is often an option to check on the plugin for the client.
+

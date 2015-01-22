@@ -3,11 +3,15 @@
 SBT := cat /dev/null | project/sbt
 
 WIKI_PRG := atlas-wiki/runMain com.netflix.atlas.wiki.Main
+WIKI_DIR := target/atlas.wiki
 
-.PHONY: build coverage license update-wiki publish-wiki
+.PHONY: build clean coverage license update-wiki publish-wiki
 
 build:
 	$(SBT) clean test checkLicenseHeaders
+
+clean:
+	$(SBT) clean
 
 coverage:
 	$(SBT) clean coverage test coverageReport
@@ -16,13 +20,15 @@ coverage:
 license:
 	$(SBT) formatLicenseHeaders
 
-update-wiki:
+$(WIKI_DIR):
 	mkdir -p target
-	rm -rf target/atlas.wiki
-	git clone https://github.com/Netflix/atlas.wiki.git target/atlas.wiki
-	$(SBT) "$(WIKI_PRG) atlas-wiki/src/main/resources target/atlas.wiki"
+	git clone https://github.com/Netflix/atlas.wiki.git $(WIKI_DIR)
+
+update-wiki: $(WIKI_DIR)
+	cd $(WIKI_DIR) && git rm -rf *
+	$(SBT) "$(WIKI_PRG) atlas-wiki/src/main/resources $(WIKI_DIR)"
 
 publish-wiki: update-wiki
-	cd target/atlas.wiki
-	git commit -a -m "update wiki"
-	git push origin master
+	cd $(WIKI_DIR) && git add * && git status
+	cd $(WIKI_DIR) && git commit -a -m "update wiki"
+	cd $(WIKI_DIR) && git push origin master
