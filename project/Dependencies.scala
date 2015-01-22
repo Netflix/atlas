@@ -45,6 +45,7 @@ object Dependencies {
   val pegdown         = "org.pegdown" % "pegdown" % "1.4.2"
   val ribbonTransport = "com.netflix.ribbon" % "ribbon-transport" % "2.0-RC9"
   val rrd4j           = "com.netflix.rrd4j" % "rrd4j" % "2.2.5"
+  val scalaCompiler   = "org.scala-lang" % "scala-compiler" % scala
   val scalaLibrary    = "org.scala-lang" % "scala-library" % scala
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all" % scala
   val scalaLogging    = "com.typesafe.scala-logging" % "scala-logging_2.11" % "3.1.0"

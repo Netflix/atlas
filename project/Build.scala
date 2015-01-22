@@ -35,7 +35,8 @@ object MainBuild extends Build {
       `atlas-jmh`,
       `atlas-json`,
       `atlas-test`,
-      `atlas-webapi`)
+      `atlas-webapi`,
+      `atlas-wiki`)
     .settings(buildSettings: _*)
     .settings(BuildSettings.noPackaging: _*)
 
@@ -125,6 +126,15 @@ object MainBuild extends Build {
       Dependencies.spectatorSandbox,
       Dependencies.akkaTestkit % "test",
       Dependencies.sprayTestkit % "test"
+    ))
+
+  lazy val `atlas-wiki` = project
+    .dependsOn(`atlas-core`, `atlas-webapi`)
+    .settings(buildSettings: _*)
+    .settings(oneJarSettings: _*)
+    .settings(mainClass in oneJar := Some("com.netflix.atlas.wiki.Main"))
+    .settings(libraryDependencies ++= Seq(
+      Dependencies.scalaCompiler
     ))
 
   val commonDeps = Seq(
