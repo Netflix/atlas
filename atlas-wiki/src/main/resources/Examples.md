@@ -1,11 +1,13 @@
 
 ## Single Line
 
-```wiki.script
-graph.image("/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum")
-```
+Sample graph showing a single line representing the number of starts per second (SPS) for a cluster called `nccp-silverlight`.
+
+/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum
 
 ## Multiple Lines
+
+This updates the single line example and adds another line representing the number of starts per second for the cluster `nccp-xbox`. In addition the line style for the second line is set to [area](Stack-Language-Reference#area).
 
 /api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,name,sps,:eq,nf.cluster,nccp-xbox,:eq,:and,:sum,:area
 
@@ -25,11 +27,13 @@ Same graph, but with the timezone set to `UTC`:
 
 ## Time Shift
 
-/api/v1/graph?e=2012-01-01T00:00&q=(,0h,1d,1w,),(,name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,:swap,:offset,),:each
+A common use-case is to compare a given line with a shifted line to compare week-over-week or day-over-day. 
 
-This adds an `$(atlas.offset)` variable for use in showing the offset in the legends:
+/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,:dup,1w,:offset
 
-/api/v1/graph?e=2012-01-01T00:00&q=(,0h,1d,1w,),(,name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,:swap,:offset,$(name)+(offset%3D$(atlas.offset)),:legend,),:each
+The `$(atlas.offset)` variable can be used to show the offset in a custom legend:
+
+/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,:dup,1w,:offset,:list,(,$nf.cluster+(offset%3D$atlas.offset),:legend,),:each
 
 ## Group By and Stack
 
