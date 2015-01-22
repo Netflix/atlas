@@ -15,15 +15,11 @@
  */
 package com.netflix.atlas.webapi
 
-import java.io.PrintStream
-import java.net.URI
-
 import akka.actor.Props
 import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
-import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.test.GraphAssertions
 import org.scalatest.FunSuite
 import spray.http.MediaTypes._
@@ -59,7 +55,6 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
 
   override def afterAll() {
     graphAssertions.generateReport(getClass)
-    genMarkdown
   }
 
   test("simple line") {
@@ -68,9 +63,8 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
-  // Run examples found in template. This serves two purposes:
-  // 1. Verify the api is generating the right images for these examples.
-  // 2. Generate the images and create an updated markdown output that we can save to the wiki.
+  // Run examples found in template to verify images are generated correctly. To see diffs view
+  // the report: $ open ./atlas-webapi/target/GraphApiSuite/report.html
   all.filter(_.startsWith("/api/v1/graph")).foreach { uri =>
     test(uri) {
       Get(uri) ~> endpoint.routes ~> check {
@@ -87,47 +81,8 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
-  def genMarkdown(): Unit = {
-    val baseUri = "http://netflix.github.io/atlas/images/wiki/examples"
-    Streams.scope(Streams.fileOut(s"$targetDir/examples.md")) { out =>
-      val ps = new PrintStream(out)
-      template.foreach { line =>
-        if (line.startsWith("/api/v1/graph")) {
-          val name = imageFileName(line)
-          ps.println(formatQuery(line.trim))
-          ps.println(s"![$name]($baseUri/$name)")
-        } else {
-          ps.println(line)
-        }
-      }
-    }
-  }
-
   private def imageFileName(uri: String): String = {
     s"${"%040x".format(Hash.sha1(uri)).substring(0, 8)}.png"
-  }
-
-  def formatQuery(line: String): String = {
-    val uri = URI.create(line)
-    val params = Strings.parseQueryString(uri.getQuery)
-    val pstr = params.toList.sortWith(_._1 < _._1).flatMap { case (k, vs) =>
-      vs.map { v => if (k == "q") formatQueryExpr(v) else s"$k=$v" }
-    }
-    s"```\n${uri.getPath}?\n  ${pstr.mkString("\n  &")}\n```\n"
-  }
-
-  def formatQueryExpr(q: String): String = {
-    val parts = q.split(",").toList
-    val buf = new StringBuilder
-    buf.append("q=\n    ")
-    parts.foreach { p =>
-      if (p.startsWith(":"))
-        buf.append(p).append(',').append("\n    ")
-      else
-        buf.append(p).append(',')
-    }
-    val s = buf.toString
-    s.substring(0, s.lastIndexOf(","))
   }
 
 }
