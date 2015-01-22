@@ -1,29 +1,14 @@
 
-## Single Line
-
 /api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum
 
-## Multiple Lines
-
-/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,name,sps,:eq,nf.cluster,nccp-xbox,:eq,:and,:sum,:area
-
-## Time Zone
-
-The graphs for this example are not pinned to a fixed end time, so the default of now is used. The graph below is using the default timezone of `US/Pacific`:
+## Time Zones
 
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,name,sps,:eq,nf.cluster,nccp-xbox,:eq,:and,:sum,:area
-
-Same graph, but with the timezone set to `UTC`:
-
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,name,sps,:eq,nf.cluster,nccp-xbox,:eq,:and,:sum,:area&tz=UTC
 
 ## Customizing Line Colors and Legend Text
 
 /api/v1/graph?s=e-1w&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,000000,:color,silverlight,:legend,name,sps,:eq,nf.cluster,nccp-xbox,:eq,:and,:sum,ccccff,:color,xbox,:legend
-
-## Time Shift
-
-/api/v1/graph?e=2012-01-01T00:00&q=(,0h,1d,1w,),(,name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,:swap,:offset,),:each
 
 This adds an `$(atlas.offset)` variable for use in showing the offset in the legends:
 
@@ -43,8 +28,6 @@ This adds an `$(atlas.offset)` variable for use in showing the offset in the leg
 
 ## Basic Math and Logarithmic Axis
 
-/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:dup,:sum,:swap,:count,:over,:over,:div,average,:legend,:rot,sum,:legend,:rot,count,:legend
-
 /api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:dup,:sum,:swap,:count,:over,:over,:div,average,:legend,:rot,sum,:legend,:rot,count,:legend&o=1
 
 ## Average
@@ -52,8 +35,6 @@ This adds an `$(atlas.offset)` variable for use in showing the offset in the leg
 /api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:avg,avg+sps+for+silverlight,:legend
 
 ## Titles and Legends
-
-Graph with a custom title, y-axis label, and suppressed legend.
 
 /api/v1/graph?s=e-1w&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:avg,avg+sps+for+silverlight,:legend&no_legend=1&title=Silverlight+SPS&ylabel=Starts+per+second
 
@@ -92,10 +73,6 @@ Basic example, subtract value from 1 week ago with current value:
 Compute average for the previous 3 weeks and show percentage of the change:
 
 /api/v1/graph?e=2012-01-01T12:00&s=e-12h&tz=UTC&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum,:dup,1w,:offset,:over,2w,:offset,:add,:over,3w,:offset,:add,3,:div,:2over,:swap,:over,:sub,:abs,:swap,:div,100,:mul,:rot,requestsPerSecond,:legend,:rot,average+for+previous+3+weeks,:legend,:rot,:area,40,:alpha,percent+delta,:legend&h=150&w=750
-
-Same as the previous graph, but with the start time adjusted to show the week after the big drop:
-
-/api/v1/graph?e=2012-01-08T12:00&s=e-12h&tz=UTC&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum,:dup,1w,:offset,:over,2w,:offset,:add,:over,3w,:offset,:add,3,:div,:2over,:swap,:over,:sub,:abs,:swap,:div,100,:mul,:rot,requestsPerSecond,:legend,:rot,average+for+previous+3+weeks,:legend,:rot,:area,40,:alpha,percent+delta,:legend&h=150&w=750
 
 ## Smoothing a Line
 
