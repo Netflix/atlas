@@ -1,0 +1,1 @@
+The default color palette used is based on the paper [A Colour Alphabet and the Limits of Colour Coding](http://aic-colour-journal.org/index.php/JAIC/article/view/19). 
