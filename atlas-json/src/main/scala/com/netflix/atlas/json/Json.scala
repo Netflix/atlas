@@ -162,7 +162,7 @@ object Json {
   def decode[T: Manifest](stream: InputStream): T = decoder[T].decode(stream)
 
   def decode[T: Manifest](parser: JsonParser): T = {
-    val reader =
+    val reader: ObjectReader =
       if (manifest.runtimeClass.isArray)
         jsonMapper.reader(manifest.runtimeClass.asInstanceOf[Class[T]])
       else
@@ -173,7 +173,7 @@ object Json {
   }
 
   def decoder[T: Manifest]: Decoder[T] = {
-    val reader =
+    val reader: ObjectReader =
       if (manifest.runtimeClass.isArray)
         jsonMapper.reader(manifest.runtimeClass.asInstanceOf[Class[T]])
       else
@@ -194,7 +194,7 @@ object Json {
   def smileDecode[T: Manifest](json: Array[Byte]): T = smileDecoder[T].decode(json)
 
   def smileDecoder[T: Manifest]: Decoder[T] = {
-    val reader =
+    val reader: ObjectReader =
       if (manifest.runtimeClass.isArray)
         jsonMapper.reader(manifest.runtimeClass.asInstanceOf[Class[T]])
       else
