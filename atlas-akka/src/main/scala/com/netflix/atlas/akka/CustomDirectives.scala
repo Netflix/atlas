@@ -20,7 +20,6 @@ import java.net.URI
 
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.sandbox.HttpLogEntry
-import org.slf4j.LoggerFactory
 import spray.http.HttpMethods._
 import spray.http.MediaTypes._
 import spray.http._
@@ -141,10 +140,6 @@ object CustomDirectives {
     }
   }
 
-  // Logger to use for access logging. Uses the class of the web server as it is more relevant
-  // to the user than this class.
-  private val logger = LoggerFactory.getLogger(classOf[WebServer])
-
   // Helper function to finish constructing the log entry and writing to the logger.
   private def log(entry: HttpLogEntry)(req: HttpRequest)(obj: Any): Unit = {
     entry
@@ -169,7 +164,7 @@ object CustomDirectives {
     }
 
     entry.mark("complete")
-    HttpLogEntry.logServerRequest(logger, entry)
+    HttpLogEntry.logServerRequest(entry)
   }
 
   /**
