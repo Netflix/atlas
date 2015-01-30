@@ -6,6 +6,7 @@ object Dependencies {
     val aws        = "1.9.16"
     val iep        = "0.1.0-SNAPSHOT"
     val jackson    = "2.5.0"
+    val log4j      = "2.1"
     val lucene     = "4.10.2"
     val scala      = "2.11.5"
     val slf4j      = "1.7.10"
@@ -38,7 +39,11 @@ object Dependencies {
   val jodaConvert     = "org.joda" % "joda-convert" % "1.7"
   val jodaTime        = "joda-time" % "joda-time" % "2.5"
   val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.0"
-  val log4j           = "log4j" % "log4j" % "1.2.17"
+  val log4jApi        = "org.apache.logging.log4j" % "log4j-api" % log4j
+  val log4jCore       = "org.apache.logging.log4j" % "log4j-core" % log4j
+  val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
+  val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
+  val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val luceneCore      = "org.apache.lucene" % "lucene-core" % lucene
   val luceneQueries   = "org.apache.lucene" % "lucene-queries" % lucene
   val luceneRegex     = "org.apache.lucene" % "lucene-sandbox" % lucene
@@ -58,8 +63,9 @@ object Dependencies {
   val slf4jSimple     = "org.slf4j" % "slf4j-simple" % slf4j
   val snmp4j          = "org.snmp4j" % "snmp4j" % "2.3.0"
   val spectatorApi    = "com.netflix.spectator" % "spectator-api" % spectator
+  val spectatorLog4j  = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2     = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
-  val spectatorNflx   = "com.netflix.spectator" % "spectator-nflx" % spectator
+  val spectatorNflx   = "com.netflix.spectator" % "spectator-nflx-plugin" % spectator
   val spectatorSandbox= "com.netflix.spectator" % "spectator-ext-sandbox" % spectator
   val sprayCan        = "io.spray" % "spray-can_2.11" % spray
   val sprayClient     = "io.spray" % "spray-client_2.11" % spray

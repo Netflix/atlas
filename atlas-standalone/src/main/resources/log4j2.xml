@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+  <Properties>
+    <Property name="dfltPattern">%d{yyyy-MM-dd'T'HH:mm:ss.SSS} %-5level [%t] %class: %msg%n</Property>
+  </Properties>
+  <Appenders>
+    <Console name="STDERR" target="SYSTEM_ERR">
+      <PatternLayout pattern="${dfltPattern}"/>
+    </Console>
+    <Spectator name="Spectator"/>
+  </Appenders>
+  <Loggers>
+    <Logger name="com.netflix.spectator" level="debug"/>
+    <Logger name="com.netflix.spectator.sandbox.HttpLogEntry" level="debug"/>
+    <Root level="info">
+      <AppenderRef ref="STDERR"/>
+      <AppenderRef ref="Spectator"/>
+    </Root>
+  </Loggers>
+</Configuration>

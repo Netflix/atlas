@@ -34,6 +34,7 @@ object MainBuild extends Build {
       `atlas-core`,
       `atlas-jmh`,
       `atlas-json`,
+      `atlas-standalone`,
       `atlas-test`,
       `atlas-webapi`,
       `atlas-wiki`)
@@ -107,6 +108,19 @@ object MainBuild extends Build {
       Dependencies.jodaConvert
     ))
 
+  lazy val `atlas-standalone` = project
+    .dependsOn(`atlas-webapi`)
+    .settings(buildSettings: _*)
+    .settings(oneJarSettings: _*)
+    .settings(mainClass in oneJar := Some("com.netflix.atlas.webapi.Main"))
+    .settings(libraryDependencies ++= Seq(
+      Dependencies.log4jApi,
+      Dependencies.log4jCore,
+      Dependencies.log4jSlf4j,
+      Dependencies.spectatorLog4j,
+      Dependencies.spectatorM2
+    ))
+
   lazy val `atlas-test` = project
     .dependsOn(`atlas-core`)
     .settings(buildSettings: _*)
@@ -117,12 +131,9 @@ object MainBuild extends Build {
   lazy val `atlas-webapi` = project
     .dependsOn(`atlas-akka`, `atlas-chart`, `atlas-core`, `atlas-json`, `atlas-test` % "test")
     .settings(buildSettings: _*)
-    .settings(oneJarSettings: _*)
-    .settings(mainClass in oneJar := Some("com.netflix.atlas.webapi.Main"))
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.iepJmxPort,
-      Dependencies.slf4jSimple,
       Dependencies.spectatorSandbox,
       Dependencies.akkaTestkit % "test",
       Dependencies.sprayTestkit % "test"
