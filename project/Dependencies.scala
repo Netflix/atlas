@@ -4,13 +4,13 @@ object Dependencies {
   object Versions {
     val akka       = "2.3.8"
     val aws        = "1.9.16"
-    val iep        = "0.1.0-SNAPSHOT"
+    val iep        = "0.1.6"
     val jackson    = "2.5.0"
     val log4j      = "2.1"
     val lucene     = "4.10.2"
     val scala      = "2.11.5"
     val slf4j      = "1.7.10"
-    val spectator  = "0.17-SNAPSHOT"
+    val spectator  = "0.17"
     val spray      = "1.3.2"
   }
 

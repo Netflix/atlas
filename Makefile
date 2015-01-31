@@ -5,6 +5,8 @@ SBT := cat /dev/null | project/sbt
 WIKI_PRG := atlas-wiki/runMain com.netflix.atlas.wiki.Main
 WIKI_DIR := target/atlas.wiki
 
+IVY_CACHE_URL := https://www.dropbox.com/s/zx5yq86nk6q19w1/ivy2.tar.gz?dl=0
+
 .PHONY: build clean coverage license update-wiki publish-wiki
 
 build:
@@ -32,3 +34,7 @@ publish-wiki: update-wiki
 	cd $(WIKI_DIR) && git add * && git status
 	cd $(WIKI_DIR) && git commit -a -m "update wiki"
 	cd $(WIKI_DIR) && git push origin master
+
+get-ivy-cache:
+	curl -L $(IVY_CACHE_URL) -o $(HOME)/ivy.tar.gz
+	tar -C $(HOME) -xzf $(HOME)/ivy.tar.gz
