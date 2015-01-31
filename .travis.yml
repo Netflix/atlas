@@ -4,5 +4,5 @@ jdk:
 scala:
   - 2.11.4
 script:
-  - "make build"
+  - "make get-ivy-cache build"
 sudo: false
