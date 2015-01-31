@@ -24,6 +24,10 @@ import spray.testkit.ScalatestRouteTest
 
 class TagsApiSuite extends FunSuite with ScalatestRouteTest {
 
+  import scala.concurrent.duration._
+
+  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+
   val db = StaticDatabase.range(0, 11)
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
 

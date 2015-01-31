@@ -28,6 +28,10 @@ import spray.testkit.ScalatestRouteTest
 
 class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
 
+  import scala.concurrent.duration._
+
+  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+
   val endpoint = new ConfigApi(system)
   val sysConfig = ConfigManager.current
 
