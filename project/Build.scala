@@ -112,7 +112,7 @@ object MainBuild extends Build {
     .dependsOn(`atlas-webapi`)
     .settings(buildSettings: _*)
     .settings(oneJarSettings: _*)
-    .settings(mainClass in oneJar := Some("com.netflix.atlas.webapi.Main"))
+    .settings(mainClass in oneJar := Some("com.netflix.atlas.standalone.Main"))
     .settings(libraryDependencies ++= Seq(
       Dependencies.log4jApi,
       Dependencies.log4jCore,

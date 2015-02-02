@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.webapi
+package com.netflix.atlas.standalone
 
 import java.io.File
 
@@ -21,6 +21,9 @@ import akka.actor.Props
 import com.netflix.atlas.akka.WebServer
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.db.MemoryDatabase
+import com.netflix.atlas.webapi.ApiSettings
+import com.netflix.atlas.webapi.LocalDatabaseActor
+import com.netflix.atlas.webapi.LocalPublishActor
 import com.netflix.iep.jmxport.JmxPort
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
