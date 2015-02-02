@@ -28,6 +28,7 @@ object Dependencies {
   val frigga          = "com.netflix.frigga" % "frigga" % "0.13"
   val guava           = "com.google.guava" % "guava" % "15.0"
   val hadoopCommon    = "org.apache.hadoop" % "hadoop-common" % "2.5.1"
+  val iepGovernator   = "com.netflix.iep" % "iep-governator" % iep
   val iepJmxPort      = "com.netflix.iep" % "iep-jmxport" % iep
   val jacksonAnno2    = "com.fasterxml.jackson.core" % "jackson-annotations" % jackson
   val jacksonCore2    = "com.fasterxml.jackson.core" % "jackson-core" % jackson
