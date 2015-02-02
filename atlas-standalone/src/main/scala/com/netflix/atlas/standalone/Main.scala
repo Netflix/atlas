@@ -24,7 +24,7 @@ import com.netflix.atlas.core.db.MemoryDatabase
 import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.webapi.LocalPublishActor
-import com.netflix.iep.jmxport.JmxPort
+import com.netflix.iep.gov.Governator
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
@@ -47,12 +47,6 @@ object Main extends StrictLogging {
     }
   }
 
-  private def restrictJmxPort(): Unit = {
-    if (ApiSettings.shouldRestrictJmxPort) {
-      JmxPort.configure(null, ApiSettings.jmxPort)
-    }
-  }
-
   private def startServer(): Unit = {
     server = new WebServer("atlas") {
       override protected def configure(): Unit = {
@@ -71,11 +65,13 @@ object Main extends StrictLogging {
 
   def main(args: Array[String]) {
     loadAdditionalConfigFiles(args)
-    restrictJmxPort()
+    Governator.getInstance().start()
     startServer()
+    Governator.addShutdownHook(() => shutdown())
   }
 
   def shutdown(): Unit = {
     server.shutdown()
+    Governator.getInstance.shutdown()
   }
 }

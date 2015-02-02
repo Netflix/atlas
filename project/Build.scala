@@ -114,6 +114,7 @@ object MainBuild extends Build {
     .settings(oneJarSettings: _*)
     .settings(mainClass in oneJar := Some("com.netflix.atlas.standalone.Main"))
     .settings(libraryDependencies ++= Seq(
+      Dependencies.iepGovernator,
       Dependencies.log4jApi,
       Dependencies.log4jCore,
       Dependencies.log4jSlf4j,
@@ -133,7 +134,6 @@ object MainBuild extends Build {
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
-      Dependencies.iepJmxPort,
       Dependencies.spectatorSandbox,
       Dependencies.akkaTestkit % "test",
       Dependencies.sprayTestkit % "test"
