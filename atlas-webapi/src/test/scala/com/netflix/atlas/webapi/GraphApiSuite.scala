@@ -32,7 +32,9 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  // Set to high value to avoid spurious failures with code coverage. Typically 5s shows no
+  // issues outside of running with code coverage.
+  implicit val routeTestTimeout = RouteTestTimeout(600.seconds)
 
   val db = StaticDatabase.demo
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
