@@ -1,7 +1,7 @@
 ###[Home](Home)
 * [[Overview]]
 * [[Getting Started]]
-* [[Examples]]
+* [Examples](Single-Line)
 * [[Concepts]]
 * API
   * [[Graph]]
