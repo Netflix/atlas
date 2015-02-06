@@ -112,6 +112,11 @@ private[db] object DataSet {
     noise(31, 25.0, idealF)
   }
 
+  def noisyWaveSeries2h: TimeSeries = {
+    val idealF = wave(50.0, 300.0, Duration.ofMinutes(137))
+    noise(31, 25.0, idealF)
+  }
+
   def noisyWave: TimeSeries = {
     val noiseF = noisyWaveSeries
     val name = "requestPerSecond"
@@ -126,13 +131,18 @@ private[db] object DataSet {
     val start2 = ZonedDateTime.of(2012, 2, 1, 7, 4, 0, 0, ZoneOffset.UTC).toInstant
     val end2 = ZonedDateTime.of(2012, 2, 1, 7, 5, 0, 0, ZoneOffset.UTC).toInstant
 
+    val start3 = ZonedDateTime.of(2012, 1, 2, 4, 22, 0, 0, ZoneOffset.UTC).toInstant
+    val end3 = ZonedDateTime.of(2012, 1, 2, 6, 0, 0, 0, ZoneOffset.UTC).toInstant
+
+    val input = noisyWaveSeries
     val bad = constant(0)
-    val ds1 = interval(noisyWaveSeries, bad, start1.toEpochMilli, end1.toEpochMilli)
+    val ds1 = interval(input, bad, start1.toEpochMilli, end1.toEpochMilli)
     val ds2 = interval(ds1, bad, start2.toEpochMilli, end2.toEpochMilli)
+    val ds3 = interval(ds2, noisyWaveSeries2h, start3.toEpochMilli, end3.toEpochMilli)
 
     val name = ("name" -> "requestsPerSecond")
     val tags = mkTags("alerttest", "alert1", None, Some(42)) + name
-    ds2.withTags(tags)
+    ds3.withTags(tags)
   }
 
   def cpuSpikes: TimeSeries = {
