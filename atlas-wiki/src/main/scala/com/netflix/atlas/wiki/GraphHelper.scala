@@ -41,6 +41,8 @@ class GraphHelper(webApi: ActorRef, dir: File) extends StrictLogging {
 
   private val baseUri = "https://raw.githubusercontent.com/wiki/Netflix/atlas/gen-images"
 
+  private val wordLinkBaseUri = "https://github.com/Netflix/atlas/wiki/Stack-Language-Reference"
+
   def image(uri: String, showQuery: Boolean = true): String = {
     logger.info(s"creating image for: $uri")
     val fname = imageFileName(uri)
@@ -70,7 +72,11 @@ class GraphHelper(webApi: ActorRef, dir: File) extends StrictLogging {
     val pstr = params.toList.sortWith(_._1 < _._1).flatMap { case (k, vs) =>
       vs.map { v => if (k == "q") formatQueryExpr(v) else s"$k=$v" }
     }
-    s"```\n${uri.getPath}?\n  ${pstr.mkString("\n  &")}\n```\n"
+    s"<pre>\n${uri.getPath}?\n  ${pstr.mkString("\n  &")}\n</pre>\n"
+  }
+
+  private def mkLink(name: String): String = {
+    s"""<a href="$wordLinkBaseUri#$name">:$name</a>"""
   }
 
   private def formatQueryExpr(q: String): String = {
@@ -79,7 +85,7 @@ class GraphHelper(webApi: ActorRef, dir: File) extends StrictLogging {
     buf.append("q=\n    ")
     parts.foreach { p =>
       if (p.startsWith(":"))
-        buf.append(p).append(',').append("\n    ")
+        buf.append(mkLink(p.substring(1))).append(',').append("\n    ")
       else
         buf.append(p).append(',')
     }
