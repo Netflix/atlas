@@ -19,11 +19,11 @@ import org.scalatest.FunSuite
 
 abstract class BaseExamplesSuite extends FunSuite {
 
-  def vocabulary: List[Word]
+  def vocabulary: Vocabulary
 
-  val i = new Interpreter(vocabulary)
+  val i = new Interpreter(vocabulary.allWords)
 
-  for (w <- vocabulary; ex <- w.examples) {
+  for (w <- vocabulary.words; ex <- w.examples) {
     if (ex.startsWith("UNK:")) {
       test(s"noException -- $ex,:${w.name}") {
         val prg = ex.substring("UNK:".length)

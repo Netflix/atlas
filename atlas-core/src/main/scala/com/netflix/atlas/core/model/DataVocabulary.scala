@@ -23,7 +23,11 @@ import com.netflix.atlas.core.stacklang.Word
 object DataVocabulary extends Vocabulary {
   import com.netflix.atlas.core.model.Extractors._
 
-  val words: List[Word] = QueryVocabulary.words ::: List(
+  val name: String = "data"
+
+  val dependsOn: List[Vocabulary] = List(QueryVocabulary)
+
+  val words: List[Word] = List(
     All,
     Sum, Count, Min, Max,
     GroupBy,
@@ -44,7 +48,7 @@ object DataVocabulary extends Vocabulary {
 
     override def signature: String = "Query -- DataExpr"
 
-    override def examples: List[String] = List("a,b,:eq")
+    override def examples: List[String] = List("name,sps,:eq")
   }
 
   object All extends DataWord {
@@ -57,7 +61,7 @@ object DataVocabulary extends Vocabulary {
         |Fetch all time series that match the query.
         |
         |> :warning: This operation is primarily intended for debugging and can have strange
-        |behaviour when used with rollups. Most users should use [:by](#by) instead.
+        |behaviour when used with rollups. Most users should use [:by](data-by) instead.
       """.stripMargin.trim
   }
 
@@ -68,7 +72,8 @@ object DataVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Compute the sum of all the time series that match the query.
+        |Compute the sum of all the time series that match the query. Sum is the default aggregate
+        |used if a query is specified with no explicit aggregate function.
       """.stripMargin.trim
   }
 
@@ -130,8 +135,9 @@ object DataVocabulary extends Vocabulary {
     override def signature: String = "af:AggregateFunction keys:List -- DataExpr"
 
     override def examples: List[String] = List(
-      "a,b,:eq,(,name,)",
-      "a,b,:eq,:max,(,name,)")
+      "name,sps,:eq,(,name,)",
+      "name,sps,:eq,:max,(,nf.cluster,)",
+      "name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,(,nf.asg,nf.zone,)")
   }
 
   object Offset extends SimpleWord {
@@ -154,8 +160,8 @@ object DataVocabulary extends Vocabulary {
     override def signature: String = "TimeSeriesExpr Duration -- TimeSeriesExpr"
 
     override def examples: List[String] = List(
-      "a,b,:eq,(,name,),:by,1w",
-      "a,b,:eq,:max,PT1H")
+      "name,sps,:eq,(,name,),:by,1w",
+      "name,sps,:eq,:max,PT1H")
   }
 
   sealed trait CfWord extends SimpleWord {
@@ -171,11 +177,11 @@ object DataVocabulary extends Vocabulary {
     override def signature: String = "AggregateFunction -- DataExpr"
 
     override def examples: List[String] = List(
-      "a,b,:eq",
-      "a,b,:eq,:min",
-      "a,b,:eq,:max",
-      "a,b,:eq,:sum",
-      "a,b,:eq,:count")
+      "name,sps,:eq",
+      "name,sps,:eq,:min",
+      "name,sps,:eq,:max",
+      "name,sps,:eq,:sum",
+      "name,sps,:eq,:count")
   }
 
   object CfSum extends CfWord {

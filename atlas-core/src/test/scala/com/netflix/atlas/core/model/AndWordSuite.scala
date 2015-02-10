@@ -23,7 +23,7 @@ import com.netflix.atlas.core.stacklang.Word
 class AndWordSuite extends BaseWordSuite {
 
   def interpreter: Interpreter = Interpreter(
-    QueryVocabulary.words ::: StandardVocabulary.words)
+    QueryVocabulary.allWords ::: StandardVocabulary.allWords)
 
   def word: Word = QueryVocabulary.And
 

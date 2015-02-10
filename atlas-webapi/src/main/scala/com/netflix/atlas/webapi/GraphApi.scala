@@ -111,7 +111,7 @@ class GraphApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
 object GraphApi {
 
-  private val interpreter = new Interpreter(StyleVocabulary.words ::: StandardVocabulary.words)
+  private val interpreter = new Interpreter(StyleVocabulary.allWords ::: StandardVocabulary.allWords)
 
   private val engines = ApiSettings.engines.map(e => e.name -> e).toMap
 

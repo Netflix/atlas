@@ -72,7 +72,7 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
 }
 
 object StyleExpr {
-  private val interpreter = new Interpreter(StandardVocabulary.words)
+  private val interpreter = new Interpreter(StandardVocabulary.allWords)
 
   private def parseDurationList(s: String): List[Duration] = {
     import Extractors._

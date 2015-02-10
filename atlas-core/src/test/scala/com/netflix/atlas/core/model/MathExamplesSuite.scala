@@ -16,9 +16,8 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.BaseExamplesSuite
-import com.netflix.atlas.core.stacklang.StandardVocabulary
-import com.netflix.atlas.core.stacklang.Word
+import com.netflix.atlas.core.stacklang.Vocabulary
 
 class MathExamplesSuite extends BaseExamplesSuite {
-  override def vocabulary: List[Word] = MathVocabulary.words
+  override def vocabulary: Vocabulary = MathVocabulary
 }
