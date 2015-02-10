@@ -66,7 +66,7 @@ object TagsApi {
 
   val offsetHeader = "x-nflx-atlas-next-offset"
 
-  private val queryInterpreter = new Interpreter(QueryVocabulary.words ::: StandardVocabulary.words)
+  private val queryInterpreter = new Interpreter(QueryVocabulary.allWords ::: StandardVocabulary.allWords)
 
   def databaseActor: Class[_] = classOf[TagsRequestActor]
 

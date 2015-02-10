@@ -24,7 +24,11 @@ object FilterVocabulary extends Vocabulary {
 
   import com.netflix.atlas.core.model.Extractors._
 
-  val words: List[Word] = StatefulVocabulary.words ::: List(
+  val name: String = "filter"
+
+  val dependsOn: List[Vocabulary] = List(StatefulVocabulary)
+
+  val words: List[Word] = List(
     Stat, StatMax, StatMin, StatAvg, StatTotal, Filter,
 
     // Legacy operations equivalent to `max,:stat`

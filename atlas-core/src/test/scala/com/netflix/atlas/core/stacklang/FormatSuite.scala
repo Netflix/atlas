@@ -17,7 +17,7 @@ package com.netflix.atlas.core.stacklang
 
 class FormatSuite extends BaseWordSuite {
 
-  def interpreter: Interpreter = Interpreter(StandardVocabulary.words)
+  def interpreter: Interpreter = Interpreter(StandardVocabulary.allWords)
 
   def word: Word = StandardVocabulary.Format
 

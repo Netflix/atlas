@@ -42,7 +42,7 @@ class GraphRequestActor extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.GraphApi._
 
-  private def queryInterpreter = new Interpreter(QueryVocabulary.words ::: StandardVocabulary.words)
+  private def queryInterpreter = new Interpreter(QueryVocabulary.allWords ::: StandardVocabulary.allWords)
 
   private val errorId = Spectator.registry().createId("atlas.graph.errorImages")
 

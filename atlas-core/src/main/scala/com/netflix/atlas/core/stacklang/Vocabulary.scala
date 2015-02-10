@@ -21,7 +21,16 @@ import scala.util.Try
 
 
 trait Vocabulary {
+  def name: String
+
+  def dependsOn: List[Vocabulary]
+
   def words: List[Word]
+
+  /**
+   * Return a flattened list of all words from this vocabulary plus words from all dependencies.
+   */
+  def allWords: List[Word] = dependsOn.flatMap(_.allWords) ::: words
 
   private def renderStack(vs: List[Any]): String = {
     val rows = vs.zipWithIndex.map { case (v, i) =>
@@ -33,9 +42,9 @@ trait Vocabulary {
   private def renderExample(example: String, name: String): String = {
     val expr = if (example.startsWith("ERROR:")) example.substring("ERROR:".length) else example
 
-    val in = renderStack(Interpreter(words).execute(expr).stack)
+    val in = renderStack(Interpreter(allWords).execute(expr).stack)
 
-    val out = Try(Interpreter(words).execute(s"$expr,:$name")) match {
+    val out = Try(Interpreter(allWords).execute(s"$expr,:$name")) match {
       case Success(c) => renderStack(c.stack)
       case Failure(t) => s"${t.getClass.getSimpleName}: ${t.getMessage}"
     }
@@ -67,6 +76,6 @@ trait Vocabulary {
   }
 
   def toMarkdown: String = {
-    words.sortWith(_.name < _.name).map(renderWord).mkString("\n\n")
+    allWords.sortWith(_.name < _.name).map(renderWord).mkString("\n\n")
   }
 }

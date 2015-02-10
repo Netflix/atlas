@@ -25,7 +25,11 @@ object StyleVocabulary extends Vocabulary {
 
   import com.netflix.atlas.core.model.Extractors._
 
-  val words: List[Word] = FilterVocabulary.words ::: List(
+  val name: String = "style"
+
+  val dependsOn: List[Vocabulary] = List(FilterVocabulary)
+
+  val words: List[Word] = List(
     Alpha, Color, LineStyle, LineWidth, Legend, Axis, Offset,
     Macro("area", List("area", ":ls"), List("42")),
     Macro("line", List("line", ":ls"), List("42")),
@@ -55,7 +59,7 @@ object StyleVocabulary extends Vocabulary {
         |where `00` is transparent and `ff` is opague.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("a,b,:eq,:sum,40")
+    override def examples: List[String] = List("name,sps,:eq,:sum,:stack,40")
   }
 
   case object Color extends StyleWord {
@@ -72,7 +76,7 @@ object StyleVocabulary extends Vocabulary {
         |  to use with the color.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("a,b,:eq,:sum,ff0000", "a,b,:eq,:sum,f00")
+    override def examples: List[String] = List("name,sps,:eq,:sum,ff0000", "name,sps,:eq,:sum,f00")
   }
 
   case object LineStyle extends StyleWord {
@@ -83,7 +87,7 @@ object StyleVocabulary extends Vocabulary {
         |Set the line style. The value should be one of `line`, `area`, `stack`, or `vspan`.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("a,b,:eq,:sum,(,name,),:by,area")
+    override def examples: List[String] = List("name,sps,:eq,:sum,(,name,),:by,area")
   }
 
   case object LineWidth extends StyleWord {
@@ -94,7 +98,7 @@ object StyleVocabulary extends Vocabulary {
         |The width of the stroke used when drawing the line.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("a,b,:eq,:sum,(,name,),:by,2")
+    override def examples: List[String] = List("name,sps,:eq,:sum,(,name,),:by,2")
   }
 
   case object Legend extends StyleWord {
@@ -105,7 +109,7 @@ object StyleVocabulary extends Vocabulary {
         |Set the legend text.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("a,b,:eq,:sum,(,name,),:by,$name")
+    override def examples: List[String] = List("name,sps,:eq,:sum,(,name,),:by,$name")
   }
 
   case object Axis extends StyleWord {
@@ -116,7 +120,7 @@ object StyleVocabulary extends Vocabulary {
         |Specify which Y-axis to use for the line.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("a,b,:eq,:sum,1")
+    override def examples: List[String] = List("name,sps,:eq,:sum,1")
   }
 
   case object Offset extends SimpleWord {
@@ -143,7 +147,7 @@ object StyleVocabulary extends Vocabulary {
         |each shift value in the list.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("a,b,:eq,:sum,(,0h,1d,1w,)")
+    override def examples: List[String] = List("name,sps,:eq,:sum,(,0h,1d,1w,)")
   }
 
 }

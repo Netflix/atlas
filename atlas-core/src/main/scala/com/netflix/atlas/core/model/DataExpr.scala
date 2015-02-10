@@ -73,7 +73,9 @@ object DataExpr {
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       val filtered = data.filter(t => query.matches(t.tags))
-      val aggr = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+      val aggr = if (filtered.isEmpty) TimeSeries.noData(context.step) else {
+        TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+      }
       val rs = consolidate(context.step, List(aggr))
       ResultSet(this, rs, context.state)
     }

@@ -23,10 +23,25 @@ import javax.script.ScriptEngineManager
 import akka.actor.ActorSystem
 import akka.actor.Props
 import com.netflix.atlas.akka.RequestHandlerActor
+import com.netflix.atlas.core.model.DataVocabulary
+import com.netflix.atlas.core.model.FilterVocabulary
+import com.netflix.atlas.core.model.MathVocabulary
+import com.netflix.atlas.core.model.QueryVocabulary
+import com.netflix.atlas.core.model.StatefulVocabulary
+import com.netflix.atlas.core.model.StyleExpr
+import com.netflix.atlas.core.model.StyleVocabulary
+import com.netflix.atlas.core.model.TimeSeriesExpr
+import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.stacklang.StandardVocabulary
+import com.netflix.atlas.core.stacklang.Word
 import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.typesafe.scalalogging.StrictLogging
+
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * Simple script for processing the wiki docs:
@@ -53,6 +68,8 @@ import com.typesafe.scalalogging.StrictLogging
  */
 object Main extends StrictLogging {
 
+  import com.netflix.atlas.core.model.Extractors._
+
   class UseForDefaults
 
   type ListBuilder = scala.collection.mutable.Builder[String, List[String]]
@@ -67,7 +84,7 @@ object Main extends StrictLogging {
     val settings = engine.asInstanceOf[scala.tools.nsc.interpreter.IMain].settings
     settings.embeddedDefaults[UseForDefaults]
     assert(engine != null, s"could not find ScriptEngine for scala")
-    engine.createBindings().put("graphObj", new GraphHelper(webApi, dir))
+    engine.createBindings().put("graphObj", new GraphHelper(webApi, dir, "gen-images"))
     engine.eval(s"val graph = graphObj.asInstanceOf[${classOf[GraphHelper].getName}]")
     val script = lines.mkString("", "\n", "\n")
     val result = engine.eval(script)
@@ -138,6 +155,102 @@ object Main extends StrictLogging {
     }
   }
 
+  private def renderStack(vs: List[Any]): String = {
+    val rows = vs.zipWithIndex.map { case (v, i) =>
+      f"${i + 1}%5d. ${v.toString}%s"
+    }
+    rows.reverse.mkString("\n|")
+  }
+
+  private def zipStacks(in: List[Any], out: List[Any]): List[(Option[Any], Option[Any])] = {
+    in.map(v => Some(v)).zipAll(out.map(v => Some(v)), None, None)
+  }
+
+  private def imageUri(expr: StyleExpr, params: String): String = {
+    s"/api/v1/graph?q=${expr.toString}&w=200&h=100&$params"
+  }
+
+  private def renderCell(opt: Option[Any], graph: GraphHelper, params: String): String = opt match {
+    case Some(v: String)           => s"<td>$v</td>"
+    case Some(v: Number)           => s"<td>$v</td>"
+    case Some(PresentationType(v)) => s"<td>${graph.imageHtml(imageUri(v, params))}</td>"
+    case Some(v)                   => s"<td>$v</td>"
+    case None                      => "<td></td>"
+  }
+
+  private def renderExample(example: String, name: String, graph: GraphHelper): String = {
+    val expr = if (example.startsWith("ERROR:")) example.substring("ERROR:".length) else example
+
+    val in = Interpreter(StyleVocabulary.allWords).execute(expr).stack
+
+    val out = Try(Interpreter(StyleVocabulary.allWords).execute(s"$expr,:$name")) match {
+      case Success(c) => c.stack
+      case Failure(t) => List(s":bangbang: <b>${t.getClass.getSimpleName}:</b> ${t.getMessage}")
+    }
+
+    val params = if (name.startsWith("cf-")) "step=5m" else ""
+
+    val buf = new StringBuilder
+    buf.append(s"### `$example,:$name`")
+    buf.append("<table><thead><th>Pos</th><th>Input</th><th>Output</th></thead><tbody>")
+    zipStacks(in, out).zipWithIndex.reverse.foreach { case ((i, o), p) =>
+      buf.append(s"<tr>\n<td>${p + 1}</td>\n")
+         .append(s"${renderCell(i, graph, params)}\n")
+         .append(s"${renderCell(o, graph, params)}\n<s/tr>")
+    }
+    buf.append("</tbody></table>\n")
+    buf.toString()
+  }
+
+  private def renderWord(w: Word, graph: GraphHelper): String = {
+    s"""
+       |## Signature
+       |
+       |`${w.signature}`
+       |
+       |## Summary
+       |
+       |${w.summary}
+       |
+       |## Examples
+       |
+       |${w.examples.map(ex => renderExample(ex, w.name, graph)).mkString("\n|\n|")}
+    """.stripMargin.trim
+  }
+
+  private def generateStackLangRef(output: File): Unit = {
+    val dir = new File(output, "stacklang")
+    dir.mkdirs()
+
+    val graph = new GraphHelper(webApi, new File(dir, "gen-images"), "stacklang/gen-images")
+
+    val vocabs = List(
+      StandardVocabulary,
+      QueryVocabulary,
+      DataVocabulary,
+      MathVocabulary,
+      StatefulVocabulary,
+      StyleVocabulary
+    )
+
+    val sidebar = new StringBuilder
+    sidebar.append("###[Home](Home) > Stack Language Reference\n")
+
+    vocabs.foreach { vocab =>
+      sidebar.append(s"\n**${vocab.name}**\n")
+      vocab.words.foreach { w =>
+        // Using unicode hyphen is a hack to get around:
+        // https://github.com/github/markup/issues/345
+        val fname = s"${vocab.name}-${w.name.replace('-', '\u2010')}"
+        sidebar.append(s"* [${w.name}]($fname)\n")
+        val f = new File(dir, s"$fname.md")
+        writeFile(renderWord(w, graph), f)
+      }
+    }
+
+    writeFile(sidebar.toString(), new File(dir, "_Sidebar.md"))
+  }
+
   def main(args: Array[String]): Unit = {
     try {
       if (args.length != 2) {
@@ -153,6 +266,8 @@ object Main extends StrictLogging {
       require(output.isDirectory, s"could not find or create output directry: $output")
 
       copy(input, output)
+
+      generateStackLangRef(output)
     } finally {
       system.shutdown()
     }

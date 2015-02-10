@@ -25,7 +25,11 @@ object StatefulVocabulary extends Vocabulary {
 
   import com.netflix.atlas.core.model.Extractors._
 
-  val words: List[Word] = MathVocabulary.words ::: List(
+  val name: String = "stateful"
+
+  val dependsOn: List[Vocabulary] = List(MathVocabulary)
+
+  val words: List[Word] = List(
     RollingCount, Des, Trend, Integral, Derivative,
     Macro("des-simple", List("10", "0.1",  "0.5",  ":des"), List("42")),
     Macro("des-fast",   List("10", "0.1",  "0.02", ":des"), List("42")),
@@ -53,7 +57,7 @@ object StatefulVocabulary extends Vocabulary {
 
     override def signature: String = "TimeSeriesExpr n:Int -- TimeSeriesExpr"
 
-    override def examples: List[String] = List("a,b,:eq,:sum,5")
+    override def examples: List[String] = List(":random,0.4,:gt,5")
   }
 
   object Des extends SimpleWord {
@@ -76,7 +80,7 @@ object StatefulVocabulary extends Vocabulary {
     override def signature: String =
       "TimeSeriesExpr training:Int alpha:Double beta:Double -- TimeSeriesExpr"
 
-    override def examples: List[String] = List("a,b,:eq,:sum,5,0.1,0.5")
+    override def examples: List[String] = List("name,requestsPerSecond,:eq,:sum,5,0.1,0.5")
   }
 
   object Trend extends SimpleWord {
@@ -99,7 +103,7 @@ object StatefulVocabulary extends Vocabulary {
     override def signature: String =
       "TimeSeriesExpr window:Duration -- TimeSeriesExpr"
 
-    override def examples: List[String] = List("a,b,:eq,:sum,PT5M", "a,b,:eq,:sum,5m")
+    override def examples: List[String] = List(":random,PT5M", ":random,20m")
   }
 
   object Integral extends SimpleWord {
@@ -121,7 +125,9 @@ object StatefulVocabulary extends Vocabulary {
     override def signature: String =
       "TimeSeriesExpr -- TimeSeriesExpr"
 
-    override def examples: List[String] = List("a,b,:eq,:sum")
+    override def examples: List[String] = List(
+      "1",
+      "name,requestsPerSecond,:eq,:sum,:per-step")
   }
 
   object Derivative extends SimpleWord {
@@ -144,7 +150,7 @@ object StatefulVocabulary extends Vocabulary {
     override def signature: String =
       "TimeSeriesExpr -- TimeSeriesExpr"
 
-    override def examples: List[String] = List("a,b,:eq,:sum")
+    override def examples: List[String] = List("1", "1,:integral")
   }
 
   private def desEpicSignal = List(

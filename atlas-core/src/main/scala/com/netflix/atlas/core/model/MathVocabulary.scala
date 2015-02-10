@@ -25,8 +25,11 @@ object MathVocabulary extends Vocabulary {
 
   import com.netflix.atlas.core.model.Extractors._
 
-  val words: List[Word] = DataVocabulary.words ::: List(
-    Avg,
+  val name: String = "math"
+
+  val dependsOn: List[Vocabulary] = List(DataVocabulary)
+
+  val words: List[Word] = List(
     GroupBy,
     Const,
     Random,
@@ -45,16 +48,16 @@ object MathVocabulary extends Vocabulary {
 
     Sum, Count, Min, Max,
 
-    Macro("avg", List(":dup", ":sum", ":swap", ":count", ":div"), List("a,b,:eq,(,name,),:by")),
+    Macro("avg", List(":dup", ":sum", ":swap", ":count", ":div"), List("name,sps,:eq,(,nf.cluster,),:by")),
 
-    Macro("pct", List(":dup", ":sum", ":div", "100", ":mul"), List("a,b,:eq,(,name,),:by")),
+    Macro("pct", List(":dup", ":sum", ":div", "100", ":mul"), List("name,sps,:eq,(,nf.cluster,),:by")),
 
     Macro("dist-avg", List(
         "statistic", "(", "totalTime", "totalAmount", ")", ":in", ":sum",
         "statistic", "count", ":eq", ":sum",
         ":div"
       ),
-      List(":dist-avg,a,b,:eq,:cq,(,name,),:by")),
+      List(":dist-avg,name,sps,:eq,:cq,(,name,),:by")),
 
     Macro("dist-stddev", List(
         // N
@@ -84,30 +87,8 @@ object MathVocabulary extends Vocabulary {
         // stddev = sqrt(v)
         ":sqrt"
       ),
-      List(":dist-stddev,a,b,:eq,:cq"))
+      List(":dist-stddev,name,sps,:eq,:cq"))
   )
-
-  object Avg extends SimpleWord {
-    override def name: String = "avg"
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: _ => true
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q: Query) :: stack =>
-        MathExpr.Divide(DataExpr.Sum(q), DataExpr.Count(q)) :: stack
-    }
-
-    override def summary: String =
-      """
-        |Shorthand for `:dup,:sum,:swap,:count,:div`.
-      """.stripMargin.trim
-
-    override def signature: String = "Query -- TimeSeriesExpr"
-
-    override def examples: List[String] = List("a,b,:eq")
-  }
 
   object GroupBy extends SimpleWord {
     override def name: String = "by"
@@ -132,7 +113,7 @@ object MathVocabulary extends Vocabulary {
 
     override def signature: String = "TimeSeriesExpr keys:List -- TimeSeriesExpr"
 
-    override def examples: List[String] = List("a,b,:eq,:avg,(,a,b,)")
+    override def examples: List[String] = List("name,sps,:eq,:avg,(,nf.cluster,)")
   }
 
   object Const extends SimpleWord {
@@ -222,7 +203,8 @@ object MathVocabulary extends Vocabulary {
 
     override def signature: String = "Expr Query -- Expr"
 
-    override def examples: List[String] = List("a,b,:eq,42,:add,c,d,:eq,:mul,app,foo,:eq")
+    override def examples: List[String] = List(
+      "name,ssCpuUser,:eq,name,DiscoveryStatus_UP,:eq,:mul,nf.app,alerttest,:eq")
   }
 
   sealed trait UnaryWord extends SimpleWord {
@@ -304,8 +286,8 @@ object MathVocabulary extends Vocabulary {
     override def signature: String = "TimeSeriesExpr TimeSeriesExpr -- TimeSeriesExpr"
 
     override def examples: List[String] = List(
-      "a,b,:eq,42",
-      "a,b,:eq,:sum,a,b,:eq,:max,(,name,),:by")
+      "name,sps,:eq,42",
+      "name,sps,:eq,:sum,name,requestsPerSecond,:eq,:max,(,name,),:by")
   }
 
   object Add extends BinaryWord {
@@ -523,7 +505,9 @@ object MathVocabulary extends Vocabulary {
 
     override def signature: String = "TimeSeriesExpr -- TimeSeriesExpr"
 
-    override def examples: List[String] = List("a,b,:eq,:sum", "a,b,:eq,:max,(,name,),:by")
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum",
+      "name,sps,:eq,:max,(,nf.cluster,),:by")
   }
 
   object Sum extends AggrWord {

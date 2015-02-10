@@ -18,7 +18,11 @@ package com.netflix.atlas.core.stacklang
 
 object StandardVocabulary extends Vocabulary {
 
-  val words = List(
+  val name: String = "std"
+
+  val dependsOn: List[Vocabulary] = Nil
+
+  val words: List[Word] = List(
     Call,
     Clear,
     Drop,

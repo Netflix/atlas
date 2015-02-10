@@ -32,7 +32,7 @@ class TagsRequestActor extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.TagsApi._
 
-  private def queryInterpreter = new Interpreter(QueryVocabulary.words ::: StandardVocabulary.words)
+  private def queryInterpreter = new Interpreter(QueryVocabulary.allWords ::: StandardVocabulary.allWords)
 
   val dbRef = context.actorSelection("/user/db")
 

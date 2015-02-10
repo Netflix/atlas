@@ -18,13 +18,18 @@ package com.netflix.atlas.core.model
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.stacklang.Vocabulary
+import com.netflix.atlas.core.stacklang.Word
 
 
 object QueryVocabulary extends Vocabulary {
 
   import com.netflix.atlas.core.model.Extractors._
 
-  val words = StandardVocabulary.words ::: List(
+  val name: String = "query"
+
+  val dependsOn: List[Vocabulary] = List(StandardVocabulary)
+
+  val words: List[Word] = List(
     True,
     False,
     HasKey,
@@ -97,7 +102,7 @@ object QueryVocabulary extends Vocabulary {
 
     override def signature: String = "k:String -- Query"
 
-    override def examples: List[String] = List("a", "ERROR:")
+    override def examples: List[String] = List("a", "name", "ERROR:")
   }
 
   trait KeyValueWord extends SimpleWord {
@@ -113,7 +118,10 @@ object QueryVocabulary extends Vocabulary {
 
     override def signature: String = "k:String v:String -- Query"
 
-    override def examples: List[String] = List("a,b", "ERROR:a")
+    override def examples: List[String] = List(
+      "a,b",
+      "nf.node,silverlight-003e",
+      "ERROR:name")
   }
 
   object Equal extends KeyValueWord {
@@ -183,6 +191,11 @@ object QueryVocabulary extends Vocabulary {
         |> :warning: Regular expressions without a clear prefix force a full scan and should be
         |avoided.
       """.stripMargin.trim
+
+    override def examples: List[String] = List(
+      "name,DiscoveryStatus_(UP|DOWN)",
+      "name,discoverystatus_(Up|Down)",
+      "ERROR:name")
   }
 
   object RegexIgnoreCase extends KeyValueWord {
@@ -197,6 +210,11 @@ object QueryVocabulary extends Vocabulary {
         |> :warning: This operation requires a full scan and should be avoided it at all
         |possible.
       """.stripMargin.trim
+
+    override def examples: List[String] = List(
+      "name,DiscoveryStatus_(UP|DOWN)",
+      "name,discoverystatus_(Up|Down)",
+      "ERROR:name")
   }
 
   object In extends SimpleWord {
@@ -219,7 +237,11 @@ object QueryVocabulary extends Vocabulary {
 
     override def signature: String = "k:String vs:List -- Query"
 
-    override def examples: List[String] = List("a,(,b,c,d,)", "a,(,b,)", "a,(,)", "ERROR:a,b")
+    override def examples: List[String] = List(
+      "name,(,sps,)",
+      "name,(,requestsPerSecond,sps,)",
+      "name,(,)",
+      "ERROR:name,sps")
   }
 
   object And extends SimpleWord {

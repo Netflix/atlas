@@ -20,6 +20,8 @@ import java.time.Duration
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.util.Strings
 
+import scala.util.Try
+
 object Extractors {
   case object IntType {
     def unapply(value: Any): Option[Int] = value match {
@@ -62,10 +64,10 @@ object Extractors {
 
   case object TimeSeriesType {
     def unapply(value: Any): Option[TimeSeriesExpr] = value match {
-      case v: String         => Some(MathExpr.Constant(v.toDouble))
-      case v: Query          => Some(DataExpr.Sum(v))
-      case v: TimeSeriesExpr => Some(v)
-      case _                 => None
+      case v: String if Try(v.toDouble).isSuccess => Some(MathExpr.Constant(v.toDouble))
+      case v: Query                               => Some(DataExpr.Sum(v))
+      case v: TimeSeriesExpr                      => Some(v)
+      case _                                      => None
     }
   }
 
