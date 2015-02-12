@@ -1,7 +1,6 @@
 import sbt._
 import sbt.Keys._
 import com.typesafe.sbt.pgp.PgpKeys._
-import com.github.retronym.SbtOneJar._
 
 object MainBuild extends Build {
 
@@ -111,15 +110,12 @@ object MainBuild extends Build {
   lazy val `atlas-standalone` = project
     .dependsOn(`atlas-webapi`)
     .settings(buildSettings: _*)
-    .settings(oneJarSettings: _*)
-    .settings(mainClass in oneJar := Some("com.netflix.atlas.standalone.Main"))
     .settings(libraryDependencies ++= Seq(
       Dependencies.iepGovernator,
       Dependencies.log4jApi,
       Dependencies.log4jCore,
       Dependencies.log4jSlf4j,
-      Dependencies.spectatorLog4j,
-      Dependencies.spectatorM2
+      Dependencies.spectatorLog4j
     ))
 
   lazy val `atlas-test` = project
@@ -142,8 +138,6 @@ object MainBuild extends Build {
   lazy val `atlas-wiki` = project
     .dependsOn(`atlas-core`, `atlas-webapi`)
     .settings(buildSettings: _*)
-    .settings(oneJarSettings: _*)
-    .settings(mainClass in oneJar := Some("com.netflix.atlas.wiki.Main"))
     .settings(libraryDependencies ++= Seq(
       Dependencies.scalaCompiler
     ))
