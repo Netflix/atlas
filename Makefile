@@ -6,6 +6,7 @@ WIKI_PRG := atlas-wiki/runMain com.netflix.atlas.wiki.Main
 WIKI_DIR := target/atlas.wiki
 
 IVY_CACHE_URL := https://www.dropbox.com/s/zx5yq86nk6q19w1/ivy2.tar.gz?dl=0
+LAUNCHER_JAR_URL := https://repo1.maven.org/maven2/com/netflix/iep/iep-launcher/0.1.7/iep-launcher-0.1.7.jar
 
 .PHONY: build clean coverage license update-wiki publish-wiki
 
@@ -38,3 +39,10 @@ publish-wiki: update-wiki
 get-ivy-cache:
 	curl -L $(IVY_CACHE_URL) -o $(HOME)/ivy.tar.gz
 	tar -C $(HOME) -xzf $(HOME)/ivy.tar.gz
+
+one-jar:
+	mkdir -p target
+	curl -L $(LAUNCHER_JAR_URL) -o target/iep-launcher.jar
+	java -classpath target/iep-launcher.jar com.netflix.iep.launcher.JarBuilder \
+		target/standalone.jar com.netflix.atlas.standalone.Main \
+		`$(SBT) "export atlas-standalone/runtime:fullClasspath" | tail -n1 | sed 's/:/ /g'`

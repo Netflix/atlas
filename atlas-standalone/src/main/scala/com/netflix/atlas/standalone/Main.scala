@@ -71,6 +71,7 @@ object Main extends StrictLogging {
   }
 
   def shutdown(): Unit = {
+    logger.info("starting shutdown")
     server.shutdown()
     Governator.getInstance.shutdown()
   }
