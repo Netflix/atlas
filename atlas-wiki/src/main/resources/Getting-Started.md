@@ -8,8 +8,8 @@
 To quickly run a version with some synthetic sample data:
 
 ```
-$ curl -LO https://github.com/Netflix/atlas/releases/download/v1.4.1/atlas-1.4.1-standalone.jar
-$ java -jar atlas-1.4.1-standalone.jar
+$ curl -LO https://github.com/Netflix/atlas/releases/download/v1.4.2/atlas-1.4.2-standalone.jar
+$ java -jar atlas-1.4.2-standalone.jar
 ```
 
 ## Explore Available Tags
@@ -44,6 +44,26 @@ $ curl -Lo graph.png 'http://localhost:7101/api/v1/graph?q=name,ssCpuUser,:eq,:a
 $ curl -Lo graph.png 'http://localhost:7101/api/v1/graph?q=name,ssCpuUser,:eq,:avg,:dup,22.8,:gt,:vspan,30,:alpha'
 ```
 
-## What's Next?
+## Running Demo with Memory Storage
 
-We still have some work to do to get it usable externally. The main part of this is planned for the next version with a rough ETA for the end of January 2015. 
+Run an instance with a configuration to use the memory storage:
+
+```
+$ curl -Lo memory.conf https://raw.githubusercontent.com/Netflix/atlas/master/conf/memory.conf
+$ java -jar atlas-1.4.2-standalone.jar memory.conf
+```
+
+Now we can send some data to it. To quickly get started there is a sample script to send in
+some data:
+
+```
+$ curl -Lo publish-test.sh https://raw.githubusercontent.com/Netflix/atlas/master/scripts/publish-test.sh
+$ chmod 755 publish-test.sh
+$ ./publish-test.sh
+```
+
+Then view the data in a web browser:
+
+```
+$ open 'http://localhost:7101/api/v1/graph?q=name,randomValue,:eq,:sum,(,name,),:by'
+```
