@@ -18,6 +18,7 @@ package com.netflix.atlas.akka
 import akka.actor._
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.spectator.api.Spectator
+import com.typesafe.config.Config
 import spray.can.Http
 import spray.can.server.Stats
 import spray.http.HttpMethods._
@@ -25,7 +26,9 @@ import spray.http._
 import spray.routing._
 
 
-class RequestHandlerActor extends Actor with ActorLogging with HttpService {
+class RequestHandlerActor(config: Config) extends Actor with ActorLogging with HttpService {
+
+  def this() = this(ConfigManager.current)
 
   import com.netflix.atlas.akka.CustomDirectives._
   import scala.concurrent.duration._
@@ -41,8 +44,10 @@ class RequestHandlerActor extends Actor with ActorLogging with HttpService {
         runRoute {
           accessLog {
             compressResponseIfRequested() {
-              corsFilter {
-                endpoints.tail.foldLeft(endpoints.head.routes) { case (acc, r) => acc ~ r.routes}
+              decompressRequest() {
+                corsFilter {
+                  endpoints.tail.foldLeft(endpoints.head.routes) { case (acc, r) => acc ~ r.routes}
+                }
               }
             }
           }
@@ -76,7 +81,6 @@ class RequestHandlerActor extends Actor with ActorLogging with HttpService {
 
   private def loadRoutesFromConfig(): List[WebApi] = {
     import scala.collection.JavaConversions._
-    val config = ConfigManager.current
     val routeClasses = config.getStringList("atlas.akka.api-endpoints").toList
     routeClasses.map { cls =>
       val c = Class.forName(cls)
