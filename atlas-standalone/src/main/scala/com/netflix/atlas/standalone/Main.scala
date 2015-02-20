@@ -25,6 +25,8 @@ import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.webapi.LocalPublishActor
 import com.netflix.iep.gov.Governator
+import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.log4j.SpectatorAppender
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
@@ -64,6 +66,7 @@ object Main extends StrictLogging {
   }
 
   def main(args: Array[String]) {
+    SpectatorAppender.addToRootLogger(Spectator.registry(), "spectator", false)
     loadAdditionalConfigFiles(args)
     Governator.getInstance().start()
     startServer()
