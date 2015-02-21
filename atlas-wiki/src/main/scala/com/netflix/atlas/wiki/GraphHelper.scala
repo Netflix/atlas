@@ -46,6 +46,8 @@ class GraphHelper(webApi: ActorRef, dir: File, path: String) extends StrictLoggi
 
   private val wordLinkBaseUri = "https://github.com/Netflix/atlas/wiki/Stack-Language-Reference"
 
+  override def toString: String = s"GraphHelper($dir, $path)"
+
   def image(uri: String, showQuery: Boolean = true): String = {
     logger.info(s"creating image for: $uri")
     val fname = imageFileName(uri)

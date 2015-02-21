@@ -79,14 +79,20 @@ object Main extends StrictLogging {
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
   val webApi = system.actorOf(Props[RequestHandlerActor])
 
-  private def eval(lines: List[String], dir: File): List[String] = {
-    val engine = new ScriptEngineManager().getEngineByName("scala")
-    val settings = engine.asInstanceOf[scala.tools.nsc.interpreter.IMain].settings
+  val engine = {
+    val scalaEngine = new ScriptEngineManager().getEngineByName("scala")
+    val settings = scalaEngine.asInstanceOf[scala.tools.nsc.interpreter.IMain].settings
     settings.embeddedDefaults[UseForDefaults]
-    assert(engine != null, s"could not find ScriptEngine for scala")
+    assert(scalaEngine != null, s"could not find ScriptEngine for scala")
+    scalaEngine
+  }
+
+  private def eval(lines: List[String], dir: File): List[String] = {
     engine.createBindings().put("graphObj", new GraphHelper(webApi, dir, "gen-images"))
-    engine.eval(s"val graph = graphObj.asInstanceOf[${classOf[GraphHelper].getName}]")
-    val script = lines.mkString("", "\n", "\n")
+    val script = s"""
+      val graph = graphObj.asInstanceOf[${classOf[GraphHelper].getName}]
+      ${lines.mkString("", "\n", "\n")}
+      """
     val result = engine.eval(script)
     List(result.toString)
   }
@@ -167,7 +173,7 @@ object Main extends StrictLogging {
   }
 
   private def imageUri(expr: StyleExpr, params: String): String = {
-    s"/api/v1/graph?q=${expr.toString}&w=200&h=100&$params"
+    s"/api/v1/graph?q=${expr.toString}&w=200&h=100&e=2014-02-20T15:00&$params"
   }
 
   private def renderCell(opt: Option[Any], graph: GraphHelper, params: String): String = opt match {
