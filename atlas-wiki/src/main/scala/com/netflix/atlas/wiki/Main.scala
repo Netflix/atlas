@@ -193,8 +193,8 @@ object Main extends StrictLogging {
     val buf = new StringBuilder
     buf.append(s"### `$example,:$name`")
     buf.append("<table><thead><th>Pos</th><th>Input</th><th>Output</th></thead><tbody>")
-    zipStacks(in, out).zipWithIndex.reverse.foreach { case ((i, o), p) =>
-      buf.append(s"<tr>\n<td>${p + 1}</td>\n")
+    zipStacks(in, out).zipWithIndex.foreach { case ((i, o), p) =>
+      buf.append(s"<tr>\n<td>$p</td>\n")
          .append(s"${renderCell(i, graph, params)}\n")
          .append(s"${renderCell(o, graph, params)}\n<s/tr>")
     }
