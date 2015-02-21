@@ -114,7 +114,8 @@ object MainBuild extends Build {
       Dependencies.log4jApi,
       Dependencies.log4jCore,
       Dependencies.log4jSlf4j,
-      Dependencies.spectatorLog4j
+      Dependencies.spectatorLog4j,
+      Dependencies.spectatorM2
     ))
 
   lazy val `atlas-test` = project
