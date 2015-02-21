@@ -21,7 +21,7 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
 
 object DataVocabulary extends Vocabulary {
-  import com.netflix.atlas.core.model.Extractors._
+  import com.netflix.atlas.core.model.ModelExtractors._
 
   val name: String = "data"
 

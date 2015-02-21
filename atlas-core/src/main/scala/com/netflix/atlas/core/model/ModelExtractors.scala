@@ -22,22 +22,7 @@ import com.netflix.atlas.core.util.Strings
 
 import scala.util.Try
 
-object Extractors {
-  case object IntType {
-    def unapply(value: Any): Option[Int] = value match {
-      case v: String         => Some(v.toInt)
-      case v: Int            => Some(v)
-      case _                 => None
-    }
-  }
-
-  case object DoubleType {
-    def unapply(value: Any): Option[Double] = value match {
-      case v: String         => Some(v.toDouble)
-      case v: Double         => Some(v)
-      case _                 => None
-    }
-  }
+object ModelExtractors {
 
   case object DurationType {
     def unapply(value: Any): Option[Duration] = value match {

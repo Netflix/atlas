@@ -25,23 +25,33 @@ object StandardVocabulary extends Vocabulary {
   val words: List[Word] = List(
     Call,
     Clear,
+    Depth,
     Drop,
     Dup,
     Each,
     Format,
     Get,
+    Pick,
     Map,
+    NDrop,
+    NList,
     Over,
     ReverseRot,
+    Roll,
     Rot,
     Set,
     Swap,
     ToList,
 
     Macro("2over", List(":over", ":over"), List("a,b")),
+    Macro("nip", List(":swap", ":drop"), List("a,b")),
+    Macro("tuck", List(":swap", ":over"), List("a,b")),
+
     Macro("fcall", List(":get", ":call"), List("duplicate,(,:dup,),:set,a,duplicate")),
     Macro("sset", List(":swap", ":set"), List("a,b"))
   )
+
+  import Extractors._
 
   /** A word defined as a sequence of other commands. */
   case class Macro(name: String, body: List[Any], examples: List[String] = Nil) extends Word {
@@ -103,6 +113,29 @@ object StandardVocabulary extends Vocabulary {
     override def signature: String = "* -- <empty>"
 
     override def examples: List[String] = List("a,b,c")
+  }
+
+  /** Compute the depth of the stack. */
+  object Depth extends SimpleWord {
+    override def name: String = "depth"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      // The depth is pushed as a string because we don't currently have a way to indicate the
+      // type. The IntType extractor will match the string for operations that need to extract
+      // and int.
+      case vs => vs.size.toString :: vs
+    }
+
+    override def summary: String =
+      """
+        |Push the depth of the stack.
+      """.stripMargin.trim
+
+    override def signature: String = " -- N"
+
+    override def examples: List[String] = List("", "a", "a,b")
   }
 
   /** Remove the item on the top of the stack. */
@@ -223,6 +256,28 @@ object StandardVocabulary extends Vocabulary {
     override def examples: List[String] = List("k,v,:set,k")
   }
 
+  /** Pick an item in the stack and put a copy on the top. */
+  object Pick extends SimpleWord {
+    override def name: String = "pick"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: vs => vs.nonEmpty
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(n) :: vs => vs(n) :: vs
+    }
+
+    override def summary: String =
+      """
+        |Pick an item in the stack and put a copy on the top.
+      """.stripMargin.trim
+
+    override def signature: String = "aN ... a0 N -- aN ... a0 aN"
+
+    override def examples: List[String] = List("a,0", "a,b,0", "a,b,1", "ERROR:a")
+  }
+
   /** Create a new list by applying a function to all elements of a list. */
   object Map extends Word {
     override def name: String = "map"
@@ -255,6 +310,50 @@ object StandardVocabulary extends Vocabulary {
     override def examples: List[String] = List("(,a%s,b%s,),(,(,.netflix.com,),:format,)")
   }
 
+  /** Drop the top N items from the stack. */
+  object NDrop extends SimpleWord {
+    override def name: String = "ndrop"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(n) :: vs => vs.drop(n)
+    }
+
+    override def summary: String =
+      """
+        |Remove the top N items on the stack.
+      """.stripMargin.trim
+
+    override def signature: String = "aN ... a0 N -- aN"
+
+    override def examples: List[String] = List("a,0", "a,b,c,2", "a,b,c,4", "ERROR:")
+  }
+
+  /** Create a list with the top N items from the stack. */
+  object NList extends SimpleWord {
+    override def name: String = "nlist"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(n) :: vs => vs.take(n).reverse :: vs.drop(n)
+    }
+
+    override def summary: String =
+      """
+        |Create a list with the top N items on the stack.
+      """.stripMargin.trim
+
+    override def signature: String = "aN ... a0 N -- aN List(aN-1 ... a0)"
+
+    override def examples: List[String] = List("a,0", "a,b,c,2", "a,b,c,4", "ERROR:")
+  }
+
   /** Copy the item in the second position on the stack to the top. */
   object Over extends SimpleWord {
     override def name: String = "over"
@@ -275,6 +374,29 @@ object StandardVocabulary extends Vocabulary {
     override def signature: String = "a b -- a b a"
 
     override def examples: List[String] = List("a,b")
+  }
+
+  /** Rotate an item in the stack and put it on the top. */
+  object Roll extends SimpleWord {
+    override def name: String = "roll"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: vs => vs.nonEmpty
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(n) :: vs =>
+        if (n == 0) vs else vs(n) :: (vs.take(n) ::: vs.drop(n + 1))
+    }
+
+    override def summary: String =
+      """
+        |Rotate an item in the stack and put it on the top.
+      """.stripMargin.trim
+
+    override def signature: String = "aN ... a0 N -- aN-1 ... a0 aN"
+
+    override def examples: List[String] = List("a,0", "a,b,0", "a,b,1", "ERROR:a")
   }
 
   /** Rotate the stack so that the item at the bottom is now at the top. */

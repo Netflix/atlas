@@ -23,7 +23,7 @@ import com.netflix.atlas.core.stacklang.Word
 
 object QueryVocabulary extends Vocabulary {
 
-  import com.netflix.atlas.core.model.Extractors._
+  import com.netflix.atlas.core.model.ModelExtractors._
 
   val name: String = "query"
 
