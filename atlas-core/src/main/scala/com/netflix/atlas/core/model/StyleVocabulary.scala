@@ -23,7 +23,7 @@ import com.netflix.atlas.core.stacklang.Word
 
 object StyleVocabulary extends Vocabulary {
 
-  import com.netflix.atlas.core.model.Extractors._
+  import com.netflix.atlas.core.model.ModelExtractors._
 
   val name: String = "style"
 

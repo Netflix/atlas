@@ -68,7 +68,7 @@ import scala.util.Try
  */
 object Main extends StrictLogging {
 
-  import com.netflix.atlas.core.model.Extractors._
+  import com.netflix.atlas.core.model.ModelExtractors._
 
   class UseForDefaults
 

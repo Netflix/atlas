@@ -75,7 +75,7 @@ object StyleExpr {
   private val interpreter = new Interpreter(StandardVocabulary.allWords)
 
   private def parseDurationList(s: String): List[Duration] = {
-    import Extractors._
+    import ModelExtractors._
     val ctxt = interpreter.execute(s)
     ctxt.stack match {
       case StringListType(vs) :: Nil => vs.map { v => Strings.parseDuration(v) }
