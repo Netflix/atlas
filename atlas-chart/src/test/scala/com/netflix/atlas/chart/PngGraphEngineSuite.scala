@@ -992,6 +992,26 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     graphAssertions.assertEquals(image, name, bless)
   }
 
+  // https://github.com/Netflix/atlas/issues/119
+  // TODO: fix to show label
+  test("issue-119_missing_y_labels") {
+    val name = prefix + "_issue-119_missing_y_labels.png"
+
+    val seriesDef = new SeriesDef
+    seriesDef.data = constant(2027)
+
+    val plotDef = new PlotDef
+    plotDef.series = label(seriesDef)
+
+    val graphDef = new GraphDef
+    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
+    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
+    graphDef.plots = List(plotDef)
+
+    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    graphAssertions.assertEquals(image, name, bless)
+  }
+
   test("too_many_lines") {
     val name = prefix + "_too_many_lines.png"
 
