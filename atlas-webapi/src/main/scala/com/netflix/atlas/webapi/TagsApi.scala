@@ -23,7 +23,6 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.atlas.core.stacklang.StandardVocabulary
 import spray.routing.RequestContext
 
 class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
@@ -66,7 +65,7 @@ object TagsApi {
 
   val offsetHeader = "x-nflx-atlas-next-offset"
 
-  private val queryInterpreter = new Interpreter(QueryVocabulary.allWords ::: StandardVocabulary.allWords)
+  private val queryInterpreter = new Interpreter(QueryVocabulary.allWords)
 
   def databaseActor: Class[_] = classOf[TagsRequestActor]
 

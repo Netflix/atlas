@@ -19,11 +19,14 @@ import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.model.DefaultSettings
+import com.netflix.atlas.core.model.StyleVocabulary
+import com.netflix.atlas.core.stacklang.Vocabulary
 import com.typesafe.config.Config
 
-object ApiSettings {
+object ApiSettings extends ApiSettings(ConfigManager.current)
 
-  private def root = ConfigManager.current
+class ApiSettings(root: => Config) {
+
   private def config = root.getConfig("atlas.webapi")
 
   def newDbInstance: Database = {
@@ -62,6 +65,13 @@ object ApiSettings {
     config.getStringList("graph.engines").toList.map { cname =>
       val cls = Class.forName(cname)
       cls.newInstance().asInstanceOf[GraphEngine]
+    }
+  }
+
+  def graphVocabulary: Vocabulary = {
+    config.getString("graph.vocabulary") match {
+      case "default" => StyleVocabulary
+      case cls       => Class.forName(cls).newInstance().asInstanceOf[Vocabulary]
     }
   }
 }
