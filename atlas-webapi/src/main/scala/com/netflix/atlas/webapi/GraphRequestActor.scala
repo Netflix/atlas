@@ -28,7 +28,6 @@ import com.netflix.atlas.chart.PlotDef
 import com.netflix.atlas.chart.SeriesDef
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
@@ -42,7 +41,7 @@ class GraphRequestActor extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.GraphApi._
 
-  private def queryInterpreter = new Interpreter(QueryVocabulary.allWords ::: StandardVocabulary.allWords)
+  private def queryInterpreter = new Interpreter(QueryVocabulary.allWords)
 
   private val errorId = Spectator.registry().createId("atlas.graph.errorImages")
 

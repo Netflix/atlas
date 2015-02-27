@@ -28,10 +28,8 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
-import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.util.Step
 import com.netflix.atlas.core.util.Strings
 import spray.http.HttpRequest
@@ -111,7 +109,7 @@ class GraphApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
 object GraphApi {
 
-  private val interpreter = new Interpreter(StyleVocabulary.allWords ::: StandardVocabulary.allWords)
+  private val interpreter = new Interpreter(ApiSettings.graphVocabulary.allWords)
 
   private val engines = ApiSettings.engines.map(e => e.name -> e).toMap
 

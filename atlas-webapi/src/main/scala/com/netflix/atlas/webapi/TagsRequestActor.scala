@@ -21,7 +21,6 @@ import akka.actor.ActorRef
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.json.Json
 import spray.can.Http
 import spray.http.MediaTypes._
@@ -32,7 +31,7 @@ class TagsRequestActor extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.TagsApi._
 
-  private def queryInterpreter = new Interpreter(QueryVocabulary.allWords ::: StandardVocabulary.allWords)
+  private def queryInterpreter = new Interpreter(QueryVocabulary.allWords)
 
   val dbRef = context.actorSelection("/user/db")
 
