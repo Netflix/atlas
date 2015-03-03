@@ -140,31 +140,62 @@ object CustomDirectives {
     }
   }
 
-  // Helper function to finish constructing the log entry and writing to the logger.
-  private def log(entry: HttpLogEntry)(req: HttpRequest)(obj: Any): Unit = {
+  private def addRequestInfo(entry: HttpLogEntry, req: HttpRequest): Unit = {
     entry
       .mark("logging")
       .withMethod(req.method.name)
       .withRequestUri(URI.create(req.uri.render(new StringRendering).get))
       .withRequestContentLength(req.entity.data.length)
     req.headers.foreach(h => entry.withRequestHeader(h.name, h.value))
+  }
 
-    obj match {
-      case res: HttpResponse =>
-        entry
-          .withStatusCode(res.status.intValue)
-          .withStatusReason(res.status.reason)
-          .withResponseContentLength(res.entity.data.length)
-        res.headers.foreach(h => entry.withResponseHeader(h.name, h.value))
-      case t: Throwable =>
-        entry.withException(t)
-      case _ =>
-        val cls = obj.getClass
-        entry.withException(new IllegalStateException(s"unexpected response type: ${cls.getName}"))
-    }
+  private def addResponseInfo(entry: HttpLogEntry, res: HttpResponse): Unit = {
+    entry
+      .withStatusCode(res.status.intValue)
+      .withStatusReason(res.status.reason)
+      .withResponseContentLength(res.entity.data.length)
+    res.headers.foreach(h => entry.withResponseHeader(h.name, h.value))
+  }
 
-    entry.mark("complete")
+  private def log(entry: HttpLogEntry, req: HttpRequest, res: HttpResponse, step: String): Unit = {
+    addRequestInfo(entry, req)
+    addResponseInfo(entry, res)
+    entry.mark(step)
     HttpLogEntry.logServerRequest(entry)
+  }
+
+  private def log(entry: HttpLogEntry, req: HttpRequest, t: Throwable, step: String): Unit = {
+    addRequestInfo(entry, req)
+    entry.withException(t)
+    entry.mark(step)
+    HttpLogEntry.logServerRequest(entry)
+  }
+
+  // Helper function to finish constructing the log entry and writing to the logger.
+  private def log(entry: HttpLogEntry)(req: HttpRequest)(obj: Any): Unit = {
+    obj match {
+      case Confirmed(v, _) =>
+        log(entry)(req)(v)
+      case ChunkedResponseStart(res: HttpResponse) =>
+        // We go ahead and log on the chunk-start so we can see how long it to start sending the
+        // response in the logs. Also for cases where a TCP error occurs this logger doesn't
+        // get notified so the complete message will be missing.
+        log(entry, req, res, "chunked-start")
+      case MessageChunk(_, _) =>
+      case ChunkedMessageEnd =>
+        // Log again on end with complete time marked.
+        entry.mark("complete")
+        HttpLogEntry.logServerRequest(entry)
+      case res: HttpResponse =>
+        log(entry, req, res, "complete")
+      case t: Throwable =>
+        log(entry, req, t, "complete")
+      case _ =>
+        addRequestInfo(entry, req)
+        val cls = obj.getClass
+        val t = new IllegalStateException(s"unexpected response type: ${cls.getName}")
+        log(entry, req, t, "complete")
+    }
   }
 
   /**

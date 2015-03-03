@@ -16,6 +16,7 @@
 package com.netflix.atlas.akka
 
 import akka.actor.ActorRefFactory
+import akka.actor.Props
 import com.netflix.atlas.json.Json
 import spray.http._
 import spray.routing._
@@ -23,6 +24,7 @@ import spray.routing._
 
 class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
 
+  import CustomDirectives._
   import spray.http.StatusCodes._
 
   def routes: RequestContext => Unit = {
@@ -38,6 +40,14 @@ class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
             ctx.responder ! HttpResponse(status = BadRequest, entity = e.getMessage)
         } finally {
           parser.close()
+        }
+      }
+    } ~
+    accessLog {
+      path("chunked") {
+        get { ctx =>
+          val ref = actorRefFactory.actorOf(Props(new ChunkResponseActor))
+          ref.tell("start", ctx.responder)
         }
       }
     }
