@@ -31,10 +31,12 @@ class DefaultAwsClientFactorySuite extends FunSuite {
   val endpoints = config.getConfig("atlas.aws.endpoint").entrySet.toList
   endpoints.sortWith(_.getKey < _.getKey).foreach { endpoint =>
     val service = endpoint.getKey
-      test(s"resolve: $service") {
-        val host = endpoint.getValue.unwrapped.asInstanceOf[String]
-        InetAddress.getByName(host)
-      }
+    // Can be slow (~30s) to run and we don't update the list that often. Can be enabled when
+    // the list is updated.
+    ignore(s"resolve: $service") {
+      val host = endpoint.getValue.unwrapped.asInstanceOf[String]
+      InetAddress.getByName(host)
+    }
   }
 
   // Try a few key services
