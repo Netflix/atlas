@@ -55,9 +55,10 @@ object MathVocabulary extends Vocabulary {
     Macro("dist-avg", List(
         "statistic", "(", "totalTime", "totalAmount", ")", ":in", ":sum",
         "statistic", "count", ":eq", ":sum",
-        ":div"
+        ":div",
+        ":swap", ":cq"
       ),
-      List(":dist-avg,name,sps,:eq,:cq,(,name,),:by")),
+      List("name,sps,:eq")),
 
     Macro("dist-stddev", List(
         // N
@@ -85,9 +86,12 @@ object MathVocabulary extends Vocabulary {
         ":div",
 
         // stddev = sqrt(v)
-        ":sqrt"
+        ":sqrt",
+
+        // Swap and use :cq to apply a common query
+        ":swap", ":cq"
       ),
-      List(":dist-stddev,name,sps,:eq,:cq"))
+      List("name,sps,:eq"))
   )
 
   object GroupBy extends SimpleWord {
