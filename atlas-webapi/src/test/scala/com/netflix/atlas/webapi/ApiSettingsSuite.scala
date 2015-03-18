@@ -33,6 +33,11 @@ class ApiSettingsSuite extends FunSuite {
     val cfg = new ApiSettings(ConfigFactory.parseString(s"atlas.webapi.graph.vocabulary=$cls"))
     assert(cfg.graphVocabulary.isInstanceOf[TestVocabulary])
   }
+
+  test("load validation rules") {
+    // Throws if there is a problem loading the rules
+    ApiSettings.validationRules
+  }
 }
 
 class TestVocabulary extends Vocabulary {

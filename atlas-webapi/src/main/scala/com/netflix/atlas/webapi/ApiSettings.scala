@@ -15,12 +15,15 @@
  */
 package com.netflix.atlas.webapi
 
+import java.util.concurrent.TimeUnit
+
 import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Vocabulary
+import com.netflix.atlas.core.validation.Rule
 import com.typesafe.config.Config
 
 object ApiSettings extends ApiSettings(ConfigManager.current)
@@ -74,4 +77,8 @@ class ApiSettings(root: => Config) {
       case cls       => Class.forName(cls).newInstance().asInstanceOf[Vocabulary]
     }
   }
+
+  def maxDatapointAge: Long = config.getDuration("publish.max-age", TimeUnit.MILLISECONDS)
+
+  def validationRules: List[Rule] = Rule.load(config.getConfigList("publish.rules"))
 }
