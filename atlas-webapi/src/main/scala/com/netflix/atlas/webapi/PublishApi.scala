@@ -18,6 +18,7 @@ package com.netflix.atlas.webapi
 import akka.actor.ActorRefFactory
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
+import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.model.Datapoint
@@ -26,9 +27,10 @@ import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.Streams
+import com.netflix.atlas.core.validation.Rule
+import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.atlas.json.Json
-import spray.http.HttpResponse
-import spray.http.StatusCodes
+import com.netflix.atlas.json.JsonSupport
 import spray.routing.RequestContext
 
 class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
@@ -40,6 +42,8 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   private val config = ConfigManager.current.getConfig("atlas.webapi.publish")
 
   private val internWhileParsing = config.getBoolean("intern-while-parsing")
+
+  private val rules = ApiSettings.validationRules
 
   def routes: RequestContext => Unit = {
     post {
@@ -58,23 +62,34 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
       getJsonParser(ctx.request) match {
         case Some(parser) =>
           val data = decodeBatch(parser, internWhileParsing)
-          validate(data)
-          publishRef.tell(PublishRequest(data), ctx.responder)
+          val req = validate(data)
+          publishRef.tell(req, ctx.responder)
         case None =>
           throw new IllegalArgumentException("empty request body")
       }
     } catch handleException(ctx)
   }
 
-  private def validate(vs: List[Datapoint]): Unit = {
-    // Temporary until rules get moved to oss. Just include basic sanity check on timestamps
+  private def validate(vs: List[Datapoint]): PublishRequest = {
+    val validDatapoints = List.newBuilder[Datapoint]
+    val failures = List.newBuilder[ValidationResult]
     val now = System.currentTimeMillis()
-    val step = DefaultSettings.stepSize
+    val limit = ApiSettings.maxDatapointAge
     vs.foreach { v =>
       val diff = now - v.timestamp
-      if (diff > step)
-        throw new IllegalArgumentException("data is too old")
+      val result = diff match {
+        case d if d > limit =>
+          val msg = s"data is too old: now = $now, timestamp = ${v.timestamp}, $d > $limit"
+          ValidationResult.Fail("DataTooOld", msg)
+        case d if d < -limit =>
+          val msg = s"data is from future: now = $now, timestamp = ${v.timestamp}"
+          ValidationResult.Fail("DataFromFuture", msg)
+        case _ =>
+          Rule.validate(v.tags, rules)
+      }
+      if (result.isSuccess) validDatapoints += v else failures += result
     }
+    PublishRequest(validDatapoints.result(), failures.result())
   }
 }
 
@@ -220,5 +235,21 @@ object PublishApi {
     }
   }
 
-  case class PublishRequest(values: List[Datapoint])
+  case class PublishRequest(values: List[Datapoint], failures: List[ValidationResult])
+
+  case class FailureMessage(`type`: String, message: List[String]) extends JsonSupport {
+    def typeName: String = `type`
+  }
+
+  object FailureMessage {
+    def error(message: List[ValidationResult]): FailureMessage = {
+      val failures = message.collect { case ValidationResult.Fail(_, reason) => reason }
+      new FailureMessage(DiagnosticMessage.Error, failures)
+    }
+
+    def partial(message: List[ValidationResult]): FailureMessage = {
+      val failures = message.collect { case ValidationResult.Fail(_, reason) => reason }
+      new FailureMessage("partial", failures)
+    }
+  }
 }

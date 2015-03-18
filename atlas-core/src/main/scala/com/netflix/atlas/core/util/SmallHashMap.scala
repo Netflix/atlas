@@ -23,7 +23,8 @@ object SmallHashMap {
   }
 
   def apply[K <: AnyRef, V <: AnyRef](ts: Iterable[(K, V)]): SmallHashMap[K, V] = {
-    apply(ts.toSeq)
+    val seq = ts.toSeq
+    apply(seq.size, seq.iterator)
   }
 
   def apply[K <: AnyRef, V <: AnyRef](length: Int, iter: Iterator[(K, V)]): SmallHashMap[K, V] = {
@@ -95,6 +96,35 @@ object SmallHashMap {
       }
     }
   }
+
+  class EntryIterator[K <: AnyRef, V <: AnyRef](map: SmallHashMap[K, V]) extends Iterator[(K, V)] {
+    private final val len = map.data.length
+    var pos = 0
+    skipEmptyEntries()
+
+    def hasNext: Boolean = pos < len
+
+    def next(): (K, V) = {
+      val t = map.data(pos).asInstanceOf[K] -> map.data(pos + 1).asInstanceOf[V]
+      nextEntry()
+      t
+    }
+
+    def nextEntry(): Unit = {
+      pos += 2
+      skipEmptyEntries()
+    }
+
+    private def skipEmptyEntries(): Unit = {
+      while (pos < len && map.data(pos) == null) {
+        pos += 2
+      }
+    }
+
+    def key: K = map.data(pos).asInstanceOf[K]
+
+    def value: V = map.data(pos + 1).asInstanceOf[V]
+  }
 }
 
 /**
@@ -110,8 +140,7 @@ object SmallHashMap {
  * it may be a good fit.
  *
  * @param data        array with the items
- * @param dataLength  number of pairs contained within the array starting at index 0. Everything
- *                    in the array after 2 * dataLength will be ignored.
+ * @param dataLength  number of pairs contained within the array starting at index 0.
  */
 class SmallHashMap[K <: AnyRef, V <: AnyRef](val data: Array[AnyRef], dataLength: Int)
     extends scala.collection.immutable.Map[K, V] {
@@ -157,48 +186,40 @@ class SmallHashMap[K <: AnyRef, V <: AnyRef](val data: Array[AnyRef], dataLength
     }
   }
 
-  def iterator: Iterator[(K, V)] = new Iterator[(K, V)] {
+  def find(f: (K, V) => Boolean): Option[(K, V)] = {
     var i = 0
-    var pos = 0
-    def hasNext: Boolean = i < dataLength
-    def next(): (K, V) = {
-      while (data(pos) == null) {
-        pos += 2
+    while (i < data.length) {
+      if (data(i) != null && f(data(i).asInstanceOf[K], data(i + 1).asInstanceOf[V])) {
+        return Some(data(i).asInstanceOf[K] -> data(i + 1).asInstanceOf[V])
       }
-      val t = data(pos).asInstanceOf[K] -> data(pos + 1).asInstanceOf[V]
-      pos += 2
-      i += 1
-      t
+      i += 2
     }
+    None
   }
 
+  def entriesIterator: SmallHashMap.EntryIterator[K, V] = {
+    new SmallHashMap.EntryIterator[K, V](this)
+  }
+
+  def iterator: Iterator[(K, V)] = entriesIterator
+
   override def keysIterator: Iterator[K] = new Iterator[K] {
-    var i = 0
-    var pos = 0
-    def hasNext: Boolean = i < dataLength
+    val iter = entriesIterator
+    def hasNext: Boolean = iter.hasNext
     def next(): K = {
-      while (data(pos) == null) {
-        pos += 2
-      }
-      val t = data(pos).asInstanceOf[K]
-      pos += 2
-      i += 1
-      t
+      val k = iter.key
+      iter.nextEntry()
+      k
     }
   }
 
   override def valuesIterator: Iterator[V] = new Iterator[V] {
-    var i = 0
-    var pos = 0
-    def hasNext: Boolean = i < dataLength
+    val iter = entriesIterator
+    def hasNext: Boolean = iter.hasNext
     def next(): V = {
-      while (data(pos) == null) {
-        pos += 2
-      }
-      val t = data(pos + 1).asInstanceOf[V]
-      pos += 2
-      i += 1
-      t
+      val v = iter.value
+      iter.nextEntry()
+      v
     }
   }
 
