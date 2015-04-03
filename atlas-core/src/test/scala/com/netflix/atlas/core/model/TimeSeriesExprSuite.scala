@@ -130,6 +130,8 @@ class TimeSeriesExprSuite extends FunSuite {
     "NaN,1.0,:div"                -> const(ts(Map("name" -> "NaN"), "(NaN / 1.0)", Double.NaN)),
     "1.0,NaN,:div"                -> const(ts(Map("name" -> "1.0"), "(1.0 / NaN)", Double.NaN)),
     "2.0,1.0,:div"                -> const(ts(Map("name" -> "2.0"), "(2.0 / 1.0)", 2.0)),
+    "2.0,0.0,:div"                -> const(ts(Map("name" -> "2.0"), "(2.0 / 0.0)", Double.NaN)),
+    "0.0,0.0,:div"                -> const(ts(Map("name" -> "0.0"), "(0.0 / 0.0)", 0.0)),
     "NaN,NaN,:fadd"               -> const(ts(Map("name" -> "NaN"), "(NaN + NaN)", Double.NaN)),
     "NaN,1.0,:fadd"               -> const(ts(Map("name" -> "NaN"), "(NaN + 1.0)", Double.NaN)),
     "1.0,NaN,:fadd"               -> const(ts(Map("name" -> "1.0"), "(1.0 + NaN)", Double.NaN)),
@@ -146,6 +148,8 @@ class TimeSeriesExprSuite extends FunSuite {
     "NaN,1.0,:fdiv"               -> const(ts(Map("name" -> "NaN"), "(NaN / 1.0)", Double.NaN)),
     "1.0,NaN,:fdiv"               -> const(ts(Map("name" -> "1.0"), "(1.0 / NaN)", Double.NaN)),
     "2.0,1.0,:fdiv"               -> const(ts(Map("name" -> "2.0"), "(2.0 / 1.0)", 2.0)),
+    "2.0,0.0,:fdiv"               -> const(ts(Map("name" -> "2.0"), "(2.0 / 0.0)", Double.PositiveInfinity)),
+    "0.0,0.0,:fdiv"               -> const(ts(Map("name" -> "0.0"), "(0.0 / 0.0)", Double.NaN)),
     ":true,1w,:offset"            -> const(ts(constTag, "type=constant (offset=1w)", 55)),
     ":true,5,:add,1w,:offset"     -> const(ts(constTag, "(type=constant (offset=1w) + 5.0)", 60)),
     "42"                          -> const(ts(42))

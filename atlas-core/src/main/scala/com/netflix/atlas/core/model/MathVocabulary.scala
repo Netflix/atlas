@@ -346,8 +346,11 @@ object MathVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Compute a new time series where each interval has the value `(a / b)` where `a`
-        | and `b` are the corresponding intervals in the input time series. If `b` is 0, then
-        | NaN will be returned as the value for the interval.
+        | and `b` are the corresponding intervals in the input time series. If `a` and `b` are 0,
+        | then 0 will be returned for the interval. If only `b` is 0, then NaN will be returned as
+        | the value for the interval.
+        |
+        |Use the [fdiv](math-fdiv) operator to get strict floating point behavior.
       """.stripMargin.trim
   }
 
