@@ -224,7 +224,25 @@ object MathExpr {
   case class Divide(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
     def name: String = "div"
     def labelFmt: String = "(%s / %s)"
-    def apply(v1: Double, v2: Double): Double = if (v2 == 0.0) Double.NaN else v1 / v2
+    def apply(v1: Double, v2: Double): Double = {
+      if (v2 == 0.0) {
+        // Infinite is not very useful as a value in a visualization and tends to make other
+        // values difficult to see. So normally a divide by 0 will report a value of NaN so the
+        // user can visually see the value is unknown/misbehaving for that time.
+        //
+        // However, if the numerator is also 0, this likely means no activity on the counters
+        // during a given interval. Reporting NaN can become confusing as users think there is an
+        // issue with the data not getting reported. If both are 0 we report 0 as it tends to
+        // convey the intent that we received data, but there was no activity rather than we
+        // failed to receive any data.
+        //
+        // The :fdiv operator can be used if a strict floating point division is actually
+        // desirable.
+        if (v1 == 0.0) 0.0 else Double.NaN
+      } else {
+        v1 / v2
+      }
+    }
   }
 
   case class GreaterThan(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
@@ -272,7 +290,7 @@ object MathExpr {
   case class FDivide(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
     def name: String = "fdiv"
     def labelFmt: String = "(%s / %s)"
-    def apply(v1: Double, v2: Double): Double = if (v2 == 0.0) Double.NaN else v1 / v2
+    def apply(v1: Double, v2: Double): Double = v1 / v2
   }
 
   case class And(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
