@@ -68,8 +68,10 @@ class LocalPublishActor(db: MemoryDatabase) extends Actor with ActorLogging {
   }
 
   private def updateStats(failures: List[ValidationResult]): Unit = {
-    failures.foreach { case ValidationResult.Fail(error, _) =>
-      Spectator.registry.counter(numInvalid.withTag("error", error))
+    failures.foreach {
+      case ValidationResult.Pass           => // Ignored
+      case ValidationResult.Fail(error, _) =>
+        Spectator.registry.counter(numInvalid.withTag("error", error))
     }
   }
 
