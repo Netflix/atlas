@@ -40,71 +40,16 @@ import spray.routing.RequestContext
 
 class GraphApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
-  import com.netflix.atlas.webapi.GraphApi._
-
   def routes: RequestContext => Unit = {
     path("api" / "v1" / "graph") {
       get { ctx =>
         try {
           val reqHandler = actorRefFactory.actorOf(Props(new GraphRequestActor))
-          reqHandler.tell(toRequest(ctx.request), ctx.responder)
+          reqHandler.tell(GraphApi.toRequest(ctx.request), ctx.responder)
         } catch handleException(ctx)
       }
     }
   }
-
-  private def toRequest(req: HttpRequest): Request = {
-    val params = req.uri.query
-    val id = "default"
-
-    import com.netflix.atlas.chart.GraphConstants._
-    val axes = (0 to MaxYAxis).map(i => i -> newAxis(params, i)).toMap
-
-    val vision = params.get("vision").map(v => VisionType.valueOf(v))
-
-    val flags = ImageFlags(
-      title = params.get("title"),
-      fontSize = params.get("font_size").map(_.toInt),
-      width = params.get("w").fold(ApiSettings.width)(_.toInt),
-      height = params.get("h").fold(ApiSettings.height)(_.toInt),
-      axes = axes,
-      axisPerLine = params.get("axis_per_line").contains("1"),
-      showLegend = !params.get("no_legend").contains("1"),
-      showLegendStats = !params.get("no_legend_stats").contains("1"),
-      showBorder = !params.get("no_border").contains("1"),
-      showOnlyGraph = params.get("only_graph").contains("1"),
-      vision = vision.getOrElse(VisionType.normal),
-      palette = params.get("palette").getOrElse(ApiSettings.palette)
-    )
-
-    val q = params.get("q")
-    if (!q.isDefined) {
-      throw new IllegalArgumentException("missing required parameter 'q'")
-    }
-
-    Request(
-      query = q.get,
-      start = params.get("s"),
-      end = params.get("e"),
-      timezone = params.get("tz"),
-      step = params.get("step"),
-      flags = flags,
-      format = params.get("format").getOrElse("png"),
-      numberFormat = params.get("number_format").getOrElse("%f"),
-      id = id,
-      isBrowser = false,
-      isAllowedFromBrowser = true)
-  }
-
-  private def newAxis(params: Uri.Query, id: Int): Axis = {
-    Axis(
-      upper = params.get(s"u.$id").orElse(params.get("u")).map(_.toDouble),
-      lower = params.get(s"l.$id").orElse(params.get("l")).map(_.toDouble),
-      logarithmic = params.get(s"o.$id").orElse(params.get("o")) == Some("1"),
-      stack = params.get(s"stack.$id").orElse(params.get("stack")) == Some("1"),
-      ylabel = params.get(s"ylabel.$id").orElse(params.get("ylabel")))
-  }
-
 }
 
 object GraphApi {
@@ -237,4 +182,56 @@ object GraphApi {
       showOnlyGraph: Boolean,
       vision: VisionType,
       palette: String)
+
+  private def newAxis(params: Uri.Query, id: Int): Axis = {
+    Axis(
+      upper = params.get(s"u.$id").orElse(params.get("u")).map(_.toDouble),
+      lower = params.get(s"l.$id").orElse(params.get("l")).map(_.toDouble),
+      logarithmic = params.get(s"o.$id").orElse(params.get("o")) == Some("1"),
+      stack = params.get(s"stack.$id").orElse(params.get("stack")) == Some("1"),
+      ylabel = params.get(s"ylabel.$id").orElse(params.get("ylabel")))
+  }
+
+  def toRequest(req: HttpRequest): Request = {
+    val params = req.uri.query
+    val id = "default"
+
+    import com.netflix.atlas.chart.GraphConstants._
+    val axes = (0 to MaxYAxis).map(i => i -> newAxis(params, i)).toMap
+
+    val vision = params.get("vision").map(v => VisionType.valueOf(v))
+
+    val flags = ImageFlags(
+      title = params.get("title"),
+      fontSize = params.get("font_size").map(_.toInt),
+      width = params.get("w").fold(ApiSettings.width)(_.toInt),
+      height = params.get("h").fold(ApiSettings.height)(_.toInt),
+      axes = axes,
+      axisPerLine = params.get("axis_per_line").contains("1"),
+      showLegend = !params.get("no_legend").contains("1"),
+      showLegendStats = !params.get("no_legend_stats").contains("1"),
+      showBorder = !params.get("no_border").contains("1"),
+      showOnlyGraph = params.get("only_graph").contains("1"),
+      vision = vision.getOrElse(VisionType.normal),
+      palette = params.get("palette").getOrElse(ApiSettings.palette)
+    )
+
+    val q = params.get("q")
+    if (!q.isDefined) {
+      throw new IllegalArgumentException("missing required parameter 'q'")
+    }
+
+    Request(
+      query = q.get,
+      start = params.get("s"),
+      end = params.get("e"),
+      timezone = params.get("tz"),
+      step = params.get("step"),
+      flags = flags,
+      format = params.get("format").getOrElse("png"),
+      numberFormat = params.get("number_format").getOrElse("%f"),
+      id = id,
+      isBrowser = false,
+      isAllowedFromBrowser = true)
+  }
 }
