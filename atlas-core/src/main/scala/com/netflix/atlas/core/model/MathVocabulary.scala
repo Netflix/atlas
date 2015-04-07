@@ -133,7 +133,7 @@ object MathVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Sum/count
+        |Generates a line where each datapoint is a constant value.
       """.stripMargin.trim
 
     override def signature: String = "Double -- TimeSeriesExpr"
@@ -152,7 +152,7 @@ object MathVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Sum/count
+        |Generates a line where each datapoint is a random value between 0.0 and 1.0.
       """.stripMargin.trim
 
     override def signature: String = " -- TimeSeriesExpr"
