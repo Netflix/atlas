@@ -18,41 +18,18 @@ package com.netflix.atlas.core.db
 import java.time.Duration
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
-import java.util.UUID
 
 import com.netflix.atlas.core.model._
+import com.netflix.atlas.core.util.TimeWave
 
 
 private[db] object DataSet {
 
-  private val ec2Bandwidth = Map(
-    "m1.xlarge" -> 1000,
-    "m2.xlarge" -> 300,
-    "m2.2xlarge" -> 700,
-    "m2.4xlarge" -> 1000,
-    "m3.xlarge" -> 1000,
-    "m3.2xlarge" -> 1000,
-    "c3.medium" -> 300,
-    "c3.large" -> 300,
-    "c3.xlarge" -> 700,
-    "c3.2xlarge" -> 1000,
-    "c3.4xlarge" -> 2000,
-    "c3.8xlarge" -> 2000,
-    "r3.large" -> 300,
-    "r3.xlarge" -> 700,
-    "r3.2xlarge" -> 1000,
-    "i2.large" -> 300,
-    "i2.xlarge" -> 700,
-    "i2.2xlarge" -> 1000,
-    "i2.4xlarge" -> 2000,
-    "i2.8xlarge" -> 2000
-  )
-
   private def mkTags(
-    app: String,
-    node: String,
-    stack: Option[String],
-    version: Option[Int]): Map[String, String] = {
+      app: String,
+      node: String,
+      stack: Option[String],
+      version: Option[Int]): Map[String, String] = {
     val cluster = stack match {
       case Some(s) => "%s-%s".format(app, s)
       case None    => app
@@ -214,11 +191,12 @@ private[db] object DataSet {
   }
 
   def wave(min: Double, max: Double, wavelength: Duration): TimeSeries = {
+    val sin = TimeWave.get(wavelength, step)
     val lambda = 2 * scala.math.Pi / wavelength.toMillis
     def f(t: Long): Double = {
       val amp = (max - min) / 2.0
       val yoffset = min + amp
-      amp * scala.math.sin(t * lambda) + yoffset
+      amp * sin(t) + yoffset
     }
     TimeSeries(Map("name" -> "wave"), new FunctionTimeSeq(DsType.Gauge, step, f))
   }
@@ -229,18 +207,6 @@ private[db] object DataSet {
       ts.data(t)
     }
     TimeSeries(Map("name" -> "interval"), new FunctionTimeSeq(DsType.Gauge, step, f))
-  }
-
-  def finegrainWave(min: Int, max: Int, hours: Int): TimeSeries = {
-    wave(min, max, Duration.ofHours(hours))
-  }
-
-  def simpleWave(min: Int, max: Int): TimeSeries = {
-    wave(min, max, Duration.ofDays(1))
-  }
-
-  def simpleWave(max: Int): TimeSeries = {
-    simpleWave(0, max)
   }
 
   /**
@@ -256,64 +222,11 @@ private[db] object DataSet {
   def smallStaticSet: List[TimeSeries] = staticSps
 
   /**
-   * Returns static list with 100k metrics per cluster.
-   */
-  def largeStaticSet(n: Int): List[TimeSeries] = {
-    // size, min, max, noise
-    val settings = Map(
-      "silverlight" -> ((300, 50.0, 300.0, 5.0)),
-      "xbox" -> ((120, 40.0, 220.0, 5.0)),
-      "wii" -> ((111, 20.0, 240.0, 8.0)),
-      "ps3" -> ((220, 40.0, 260.0, 15.0)),
-      "appletv" -> ((10, 3.0, 40.0, 5.0)),
-      "psvita" -> ((3, 0.2, 1.2, 0.6)))
-
-    val metrics = settings.flatMap { t =>
-      val stack = Some(t._1)
-      val conf = t._2
-      (0 until conf._1).flatMap { i =>
-        val node = "%s-%04x".format(t._1, i)
-        val app = mkTags("nccp", node, stack, Some(42))
-        (0 until n).map { j =>
-          val sps = app + ("name" -> ("sps_" + j))
-
-          val idealF = wave(conf._2, conf._3, Duration.ofDays(1))
-          idealF.withTags(sps + ("type" -> "ideal", "type2" -> "IDEAL"))
-        }
-      }
-    }
-    metrics.toList
-  }
-
-  /**
-   * Returns static list with legacy metrics, only have a cluster and large names.
-   */
-  def largeLegacySet(n: Int): List[TimeSeries] = {
-    val metrics = (0 until n).map { i =>
-      val name = UUID.randomUUID.toString
-      val tags = Map("nf.cluster" -> "silverlight", "name" -> name)
-      val idealF = wave(50.0, 300.0, Duration.ofDays(1))
-      idealF.withTags(tags)
-    }
-    metrics.toList
-  }
-
-  def constants: List[TimeSeries] = {
-    val metrics = ec2Bandwidth.map { case (vmtype, bandwidth) =>
-      val tags = Map("name" -> "ec2.networkBandwidth", "nf.vmtype" -> vmtype)
-      constant(bandwidth).withTags(tags)
-    }
-    metrics.toList
-  }
-
-  /**
    * Returns a data set with a given name.
    */
   def get(name: String): List[TimeSeries] = name match {
     case "alert"     => staticAlertSet
     case "small"     => smallStaticSet
-    case "sps"       => staticSps
-    case "constants" => constants
     case _           => throw new NoSuchElementException(name)
   }
 }
