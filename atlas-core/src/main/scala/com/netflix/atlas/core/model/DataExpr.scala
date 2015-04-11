@@ -205,15 +205,32 @@ object DataExpr {
     override def exprString: String = s"$af,(,${keys.mkString(",")},),:by"
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
-      val newData = data.groupBy(t => keyString(t.tags)).flatMap {
+      val groups = data.groupBy(t => keyString(t.tags)).toList
+      val sorted = groups.sortWith(_._1 < _._1)
+      val newData = sorted.flatMap {
         case (null, _) => Nil
         case (k, ts) =>
           af.eval(context, ts).data.map { t =>
             TimeSeries(t.tags, s"(${k.trim})", t.data)
           }
       }
-      val rs = consolidate(context.step, newData.toList)
+      val rs = consolidate(context.step, newData)
       ResultSet(this, rs, context.state)
+    }
+  }
+
+  case class Head(expr: DataExpr, n: Int) extends DataExpr {
+    require(n > 0, "number of matches must be > 0")
+
+    override def query: Query = expr.query
+    override def cf: ConsolidationFunction = expr.cf
+    override def offset: Duration = expr.offset
+
+    override def exprString: String = s"$expr,$n,:head"
+
+    override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
+      val rs = expr.eval(context, data)
+      ResultSet(this, rs.data.take(n), rs.state)
     }
   }
 }

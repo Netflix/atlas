@@ -22,6 +22,7 @@ import com.netflix.atlas.core.stacklang.Word
 
 object DataVocabulary extends Vocabulary {
   import com.netflix.atlas.core.model.ModelExtractors._
+  import com.netflix.atlas.core.stacklang.Extractors._
 
   val name: String = "data"
 
@@ -31,6 +32,7 @@ object DataVocabulary extends Vocabulary {
     All,
     Sum, Count, Min, Max,
     GroupBy,
+    Head,
     Offset,
     CfAvg, CfSum, CfMin, CfMax
   )
@@ -138,6 +140,36 @@ object DataVocabulary extends Vocabulary {
       "name,sps,:eq,(,name,)",
       "name,sps,:eq,:max,(,nf.cluster,)",
       "name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,(,nf.asg,nf.zone,)")
+  }
+
+  object Head extends SimpleWord {
+    override def name: String = "head"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: DataExprType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(_) :: AggrType(af) :: stack        => af :: stack
+      case IntType(n) :: DataExprType(expr) :: stack  => DataExpr.Head(expr, n) :: stack
+    }
+
+    override def summary: String =
+      """
+        |Restrict the output to the first `N` lines from the input expression. The lines will be
+        |chosen based on a lexical ordering of the group by keys.
+      """.stripMargin.trim
+
+    override def signature: String = "DataExpr Int -- DataExpr"
+
+    override def examples: List[String] = List(
+      "name,sps,:eq,4",
+      "name,sps,:eq,:sum,4",
+      "name,sps,:eq,:all,2",
+      "name,sps,:eq,(,nf.asg,nf.zone,),:by,2",
+      "ERROR:name,sps,:eq,(,nf.asg,nf.zone,),:by,0",
+      "ERROR:name,sps,:eq,(,nf.asg,nf.zone,),:by,-1",
+      "ERROR:42,1")
   }
 
   object Offset extends SimpleWord {

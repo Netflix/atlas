@@ -47,6 +47,14 @@ object ModelExtractors {
     }
   }
 
+  case object DataExprType {
+    def unapply(value: Any): Option[DataExpr] = value match {
+      case v: Query      => Some(DataExpr.Sum(v))
+      case v: DataExpr   => Some(v)
+      case _             => None
+    }
+  }
+
   case object TimeSeriesType {
     def unapply(value: Any): Option[TimeSeriesExpr] = value match {
       case v: String if Try(v.toDouble).isSuccess => Some(MathExpr.Constant(v.toDouble))

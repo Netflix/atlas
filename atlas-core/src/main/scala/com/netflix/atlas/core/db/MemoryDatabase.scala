@@ -126,6 +126,7 @@ class MemoryDatabase(config: Config) extends Database {
     case _: DataExpr.Count             => Block.Count
     case _: DataExpr.Min               => Block.Min
     case _: DataExpr.Max               => Block.Max
+    case DataExpr.Head(expr, _)        => blockAggr(expr)
     case DataExpr.Consolidation(af, _) => blockAggr(af)
   }
 
