@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   object Versions {
     val akka       = "2.3.9"
-    val aws        = "1.9.23"
+    val aws        = "1.9.30"
     val iep        = "0.1.11"
     val jackson    = "2.5.2"
     val log4j      = "2.1"
