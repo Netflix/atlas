@@ -6,9 +6,9 @@ object Dependencies {
     val aws        = "1.9.30"
     val iep        = "0.1.11"
     val jackson    = "2.5.2"
-    val log4j      = "2.1"
+    val log4j      = "2.2"
     val scala      = "2.11.6"
-    val slf4j      = "1.7.10"
+    val slf4j      = "1.7.12"
     val spectator  = "0.20.0"
     val spray      = "1.3.3"
   }
