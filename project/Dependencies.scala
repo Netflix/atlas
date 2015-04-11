@@ -3,14 +3,14 @@ import sbt._
 object Dependencies {
   object Versions {
     val akka       = "2.3.9"
-    val aws        = "1.9.23"
+    val aws        = "1.9.30"
     val iep        = "0.1.11"
     val jackson    = "2.5.2"
-    val log4j      = "2.1"
+    val log4j      = "2.2"
     val scala      = "2.11.6"
-    val slf4j      = "1.7.10"
+    val slf4j      = "1.7.12"
     val spectator  = "0.20.0"
-    val spray      = "1.3.2"
+    val spray      = "1.3.3"
   }
 
   import Versions._
@@ -22,7 +22,7 @@ object Dependencies {
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.5.1"
+  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.2"
   val guava           = "com.google.guava" % "guava" % "15.0"
   val iepGovernator   = "com.netflix.iep" % "iep-governator" % iep
   val iepJmxPort      = "com.netflix.iep" % "iep-jmxport" % iep
