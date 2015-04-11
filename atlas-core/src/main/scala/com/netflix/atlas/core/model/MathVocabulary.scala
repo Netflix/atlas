@@ -58,7 +58,13 @@ object MathVocabulary extends Vocabulary {
         ":div",
         ":swap", ":cq"
       ),
-      List("name,sps,:eq")),
+      List("name,playback.startLatency,:eq")),
+
+    Macro("dist-max", List(
+        "statistic", "max", ":eq", ":max",
+        ":swap", ":cq"
+      ),
+      List("name,playback.startLatency,:eq")),
 
     Macro("dist-stddev", List(
         // N
@@ -91,7 +97,7 @@ object MathVocabulary extends Vocabulary {
         // Swap and use :cq to apply a common query
         ":swap", ":cq"
       ),
-      List("name,sps,:eq"))
+      List("name,playback.startLatency,:eq"))
   )
 
   object GroupBy extends SimpleWord {
