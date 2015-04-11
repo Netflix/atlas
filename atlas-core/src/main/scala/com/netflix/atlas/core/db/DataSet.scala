@@ -42,8 +42,7 @@ private[db] object DataSet {
       TagKey.application -> app,
       TagKey.cluster -> cluster,
       TagKey.autoScalingGroup -> asg,
-      TagKey.node -> node,
-      TagKey.legacy -> "epic")
+      TagKey.node -> node)
   }
 
   /**
@@ -82,6 +81,63 @@ private[db] object DataSet {
       }
     }
     metrics.toList
+  }
+
+  /**
+   * Some SPS-like wave metrics modeled like a timer in spectator.
+   */
+  def staticSpsTimer: List[TimeSeries] = {
+    // size, min, max, noise
+    val settings = Map(
+      "silverlight" -> ((300, 50.0, 300.0, 5.0)),
+      "xbox" -> ((120, 40.0, 220.0, 5.0)),
+      "wii" -> ((111, 20.0, 240.0, 8.0)),
+      "ps3" -> ((220, 40.0, 260.0, 15.0)),
+      "appletv" -> ((10, 3.0, 40.0, 5.0)),
+      "psvita" -> ((3, 0.2, 1.2, 0.6)))
+
+    val metrics = settings.flatMap { t =>
+      val stack = Some(t._1)
+      val conf = t._2
+      (0 until conf._1).flatMap { i =>
+        val node = "%s-%04x".format(t._1, i)
+        val app = mkTags("nccp", node, stack, Some(42))
+        val sps = app + ("name" -> "playback.startLatency")
+
+        val idealF = wave(conf._2, conf._3, Duration.ofDays(1))
+        val highNoiseF = noise(31, 4.0 * conf._4, idealF)
+        val highNoise = highNoiseF.withTags(sps + ("statistic" -> "count"))
+
+        val exists = constant(1.0).withTags(app + ("name" -> "poller.asg.instance"))
+
+        val isUp = if (i % 2 == 0) 1.0 else 0.0
+        val up = constant(isUp).withTags(app + ("name" -> "DiscoveryStatus_nccp_UP"))
+        exists :: up :: statistics(0.25, highNoise)
+      }
+    }
+    metrics.toList
+  }
+
+  def statistics(maxValue: Double, series: TimeSeries): List[TimeSeries] = {
+    // A fixed set of random offsets that will get applied to values from the
+    // wrapped time series.
+    val size = 41
+    val offsets = {
+      val r = new java.util.Random(series.tags("nf.node").hashCode)
+      Array.fill(size) { maxValue * math.abs(r.nextGaussian()) }
+    }
+    def total(t: Long): Double = series.data(t) * offsets((t % size).toInt)
+    def totalOfSquares(t: Long): Double = series.data(t) * offsets((t % size).toInt)
+    def max(t: Long): Double = offsets((t % size).toInt)
+
+    def stat(name: String, f: Long => Double): TimeSeries = {
+      TimeSeries(series.tags + ("statistic" -> name), new FunctionTimeSeq(DsType.Gauge, step, f))
+    }
+
+    List(series,
+      stat("totalTime", total),
+      stat("totalOfSquares", totalOfSquares),
+      stat("max", max))
   }
 
   def noisyWaveSeries: TimeSeries = {
@@ -213,7 +269,7 @@ private[db] object DataSet {
    * Some metrics with problems that are used to test alerting.
    */
   def staticAlertSet: List[TimeSeries] = {
-    smallStaticSet ::: List(waveWithOutages, cpuSpikes, discoveryStatusUp, discoveryStatusDown)
+    smallStaticSet ::: staticSpsTimer ::: List(waveWithOutages, cpuSpikes, discoveryStatusUp, discoveryStatusDown)
   }
 
   /**
