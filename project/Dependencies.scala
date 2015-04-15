@@ -30,7 +30,7 @@ object Dependencies {
   val jacksonCore2    = "com.fasterxml.jackson.core" % "jackson-core" % jackson
   val jacksonJoda2    = "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % jackson
   val jacksonMapper2  = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
-  val jacksonScala2   = "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % "2.5.1"
+  val jacksonScala2   = "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % jackson
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jodaConvert     = "org.joda" % "joda-convert" % "1.7"
   val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.0"
