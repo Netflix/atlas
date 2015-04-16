@@ -19,18 +19,19 @@ import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.io.IO
 import akka.io.Inet
+import com.netflix.iep.service.AbstractService
 import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
 
 
-class WebServer(name: String) extends StrictLogging {
+class WebServer(name: String, port: Int) extends AbstractService with StrictLogging {
 
   private implicit var system: ActorSystem = null
 
   protected def configure(): Unit = {
   }
 
-  def start(port: Int) {
+  protected def startImpl(): Unit = {
     assert(system == null, "actor system has already been started")
     logger.info(s"starting $name on port $port")
     system = ActorSystem(name)
@@ -45,7 +46,7 @@ class WebServer(name: String) extends StrictLogging {
     IO(Http).tell(bind, handler)
   }
 
-  def shutdown() {
+  protected def stopImpl(): Unit = {
     system.shutdown()
     system = null
   }

@@ -18,15 +18,21 @@ package com.netflix.atlas.standalone
 import java.io.File
 
 import akka.actor.Props
+import com.google.inject.AbstractModule
+import com.google.inject.Module
+import com.google.inject.multibindings.Multibinder
+import com.google.inject.util.Modules
 import com.netflix.atlas.akka.WebServer
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.db.MemoryDatabase
 import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.webapi.LocalPublishActor
-import com.netflix.iep.gov.Governator
+import com.netflix.iep.guice.Governator
+import com.netflix.iep.service.Service
 import com.netflix.spectator.api.Spectator
 import com.netflix.spectator.log4j.SpectatorAppender
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
@@ -39,8 +45,6 @@ import com.typesafe.scalalogging.StrictLogging
  */
 object Main extends StrictLogging {
 
-  var server: WebServer = _
-
   private def loadAdditionalConfigFiles(files: Array[String]): Unit = {
     files.foreach { f =>
       logger.info(s"loading config file: $f")
@@ -49,33 +53,43 @@ object Main extends StrictLogging {
     }
   }
 
-  private def startServer(): Unit = {
-    server = new WebServer("atlas") {
-      override protected def configure(): Unit = {
-        val db = ApiSettings.newDbInstance
-        actorSystem.actorOf(Props(new LocalDatabaseActor(db)), "db")
-        db match {
-          case mem: MemoryDatabase =>
-            logger.info("enabling local publish to memory database")
-            actorSystem.actorOf(Props(new LocalPublishActor(mem)), "publish")
-          case _ =>
-        }
-      }
-    }
-    server.start(ApiSettings.port)
-  }
-
   def main(args: Array[String]) {
     SpectatorAppender.addToRootLogger(Spectator.registry(), "spectator", false)
     loadAdditionalConfigFiles(args)
-    Governator.getInstance().start()
-    startServer()
-    Governator.addShutdownHook(() => shutdown())
-  }
 
-  def shutdown(): Unit = {
-    logger.info("starting shutdown")
-    server.shutdown()
-    Governator.getInstance.shutdown()
+    val serviceModule = new AbstractModule {
+      override def configure(): Unit = {
+        Governator.getModulesUsingServiceLoader.forEach(install)
+
+        val server = new WebServer("atlas", ApiSettings.port) {
+          override protected def configure(): Unit = {
+            val db = ApiSettings.newDbInstance
+            actorSystem.actorOf(Props(new LocalDatabaseActor(db)), "db")
+            db match {
+              case mem: MemoryDatabase =>
+                logger.info("enabling local publish to memory database")
+                actorSystem.actorOf(Props(new LocalPublishActor(mem)), "publish")
+              case _ =>
+            }
+          }
+        }
+
+        val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
+        serviceBinder.addBinding().toInstance(server)
+      }
+    }
+
+    val overrides = Modules.`override`(serviceModule).`with`(new AbstractModule {
+      override def configure(): Unit = {
+        bind(classOf[Config]).toInstance(ConfigManager.current)
+      }
+    })
+
+    val modules = new java.util.ArrayList[Module]()
+    modules.add(overrides)
+
+    val gov = new Governator
+    gov.start(modules)
+    gov.addShutdownHook()
   }
 }

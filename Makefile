@@ -6,7 +6,7 @@ WIKI_PRG := atlas-wiki/runMain com.netflix.atlas.wiki.Main
 WIKI_DIR := target/atlas.wiki
 
 IVY_CACHE_URL := https://www.dropbox.com/s/zx5yq86nk6q19w1/ivy2.tar.gz?dl=0
-LAUNCHER_JAR_URL := https://repo1.maven.org/maven2/com/netflix/iep/iep-launcher/0.1.7/iep-launcher-0.1.7.jar
+LAUNCHER_JAR_URL := https://repo1.maven.org/maven2/com/netflix/iep/iep-launcher/0.1.14/iep-launcher-0.1.14.jar
 
 .PHONY: build clean coverage license update-wiki publish-wiki
 
