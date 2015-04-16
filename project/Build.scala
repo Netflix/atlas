@@ -46,6 +46,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= Seq(
       Dependencies.akkaActor,
       Dependencies.akkaSlf4j,
+      Dependencies.iepService,
       Dependencies.spectatorSandbox,
       Dependencies.sprayCan,
       Dependencies.sprayRouting,
@@ -111,11 +112,12 @@ object MainBuild extends Build {
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= Seq(
       Dependencies.iepGovernator,
+      Dependencies.guiceCore,
+      Dependencies.guiceMulti,
       Dependencies.log4jApi,
       Dependencies.log4jCore,
       Dependencies.log4jSlf4j,
-      Dependencies.spectatorLog4j,
-      Dependencies.spectatorM2
+      Dependencies.spectatorLog4j
     ))
 
   lazy val `atlas-test` = project

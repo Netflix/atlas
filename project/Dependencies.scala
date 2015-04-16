@@ -4,12 +4,13 @@ object Dependencies {
   object Versions {
     val akka       = "2.3.9"
     val aws        = "1.9.30"
-    val iep        = "0.1.11"
+    val iep        = "0.1.14"
+    val guice      = "4.0-beta5"
     val jackson    = "2.5.2"
     val log4j      = "2.2"
     val scala      = "2.11.6"
     val slf4j      = "1.7.12"
-    val spectator  = "0.20.0"
+    val spectator  = "0.22.0"
     val spray      = "1.3.3"
   }
 
@@ -24,8 +25,10 @@ object Dependencies {
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.2"
   val guava           = "com.google.guava" % "guava" % "15.0"
-  val iepGovernator   = "com.netflix.iep" % "iep-governator" % iep
-  val iepJmxPort      = "com.netflix.iep" % "iep-jmxport" % iep
+  val guiceCore       = "com.google.inject" % "guice" % guice
+  val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
+  val iepGovernator   = "com.netflix.iep" % "iep-guice" % iep
+  val iepService      = "com.netflix.iep" % "iep-service" % iep
   val jacksonAnno2    = "com.fasterxml.jackson.core" % "jackson-annotations" % jackson
   val jacksonCore2    = "com.fasterxml.jackson.core" % "jackson-core" % jackson
   val jacksonJoda2    = "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % jackson
