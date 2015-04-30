@@ -36,7 +36,14 @@ class ServerStats(registry: ExtendedRegistry) {
   private val maxOpenConnections = registry.gauge("spray.maxOpenConnections", new AtomicLong(0L))
 
   // Previous value used to compute the delta
-  private var serverStats: Stats = Stats(0.seconds, 0L, 0L, 0L, 0L, 0L, 0L, 0L)
+  private var serverStats: Stats = Stats(uptime = 0.seconds,
+                                          totalRequests = 0L,
+                                          openRequests = 0L,
+                                          maxOpenRequests = 0L,
+                                          totalConnections = 0L,
+                                          openConnections = 0L,
+                                          maxOpenConnections = 0L,
+                                          requestTimeouts = 0L)
 
   /** Update the counts with the most recent stats. */
   def update(s: Stats): Unit = {
@@ -49,5 +56,4 @@ class ServerStats(registry: ExtendedRegistry) {
     maxOpenConnections.set(s.maxOpenConnections)
     serverStats = s
   }
-
 }
