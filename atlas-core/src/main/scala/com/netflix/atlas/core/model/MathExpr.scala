@@ -248,7 +248,7 @@ object MathExpr {
   case class GreaterThan(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
     def name: String = "gt"
     def labelFmt: String = "(%s > %s)"
-    def apply(v1: Double, v2: Double): Double = Math.gtNaN(v1, v2)
+    def apply(v1: Double, v2: Double): Double = if (v1 > v2) 1.0 else 0.0
   }
 
   case class GreaterThanEqual(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
@@ -260,7 +260,7 @@ object MathExpr {
   case class LessThan(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
     def name: String = "lt"
     def labelFmt: String = "(%s < %s)"
-    def apply(v1: Double, v2: Double): Double = Math.ltNaN(v1, v2)
+    def apply(v1: Double, v2: Double): Double = if (v1 < v2) 1.0 else 0.0
   }
 
   case class LessThanEqual(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
