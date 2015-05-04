@@ -37,7 +37,7 @@ object StatefulVocabulary extends Vocabulary {
     Macro("des-slower", List("10", "0.05", "0.03", ":des"), List("42")),
     Macro("des-slow",   List("10", "0.03", "0.04", ":des"), List("42")),
 
-    Macro("des-epic-signal", desEpicSignal, List("42,10,0.1,0.5,0.2,0.2,4"))
+    Macro("des-epic-signal", desEpicSignal, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
   )
 
   object RollingCount extends SimpleWord {
@@ -185,8 +185,8 @@ object StatefulVocabulary extends Vocabulary {
       "pred",       ":get",
       "1.0",        ":const",
       "minPercent", ":get", ":const",
-      ":sub",
-      ":mul",
+      ":fsub",
+      ":fmul",
     ":set",
 
     // Line for maximum bound using noise param
@@ -202,9 +202,9 @@ object StatefulVocabulary extends Vocabulary {
       "2.0",        ":const",
       "1.0",        ":const",
       "maxPercent", ":get", ":const",
-      ":sub",
-      ":sub",
-      ":mul",
+      ":fsub",
+      ":fsub",
+      ":fmul",
     ":set",
 
     // Signal indicating if it is below both lower bounds

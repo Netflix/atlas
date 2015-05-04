@@ -34,7 +34,9 @@ object StyleVocabulary extends Vocabulary {
     Macro("area", List("area", ":ls"), List("42")),
     Macro("line", List("line", ":ls"), List("42")),
     Macro("stack", List("stack", ":ls"), List("42")),
-    Macro("vspan", List("vspan", ":ls"), List("42"))
+    Macro("vspan", List("vspan", ":ls"), List("42")),
+
+    Macro("des-epic-viz", desEpicViz, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
   )
 
   sealed trait StyleWord extends SimpleWord {
@@ -149,5 +151,22 @@ object StyleVocabulary extends Vocabulary {
 
     override def examples: List[String] = List("name,sps,:eq,:sum,(,0h,1d,1w,)")
   }
+
+  private def desEpicViz = List(
+    // Show signal line as a vertical span
+    ":des-epic-signal",
+    ":vspan", "40", ":alpha", "triggered", ":legend",
+
+    // Raw input line
+    "line", ":get", "line", ":legend",
+
+    // Lower bounds
+    "minPredNoiseBound", ":get", "minPredNoiseBound", ":legend",
+    "minPredPercentBound", ":get", "minPredPercentBound", ":legend",
+
+    // Upper bounds
+    "maxPredNoiseBound", ":get", "maxPredNoiseBound", ":legend",
+    "maxPredPercentBound", ":get", "maxPredPercentBound",":legend"
+  )
 
 }
