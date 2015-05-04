@@ -92,7 +92,7 @@ object MainBuild extends Build {
   lazy val `atlas-jmh` = project
     .dependsOn(`atlas-core`)
     .settings(buildSettings: _*)
-    .settings(pl.project13.scala.sbt.SbtJmh.jmhSettings: _*)
+    .settings(pl.project13.scala.sbt.SbtJmh.projectSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
 
   lazy val `atlas-json` = project
