@@ -114,3 +114,27 @@ graph.image("/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-6h&w=750&h=150&q=:true,
 graph.image("/api/v1/graph?tz=UTC&e=2012-01-02T09:00&s=e-6h&w=750&h=150&q=:true,:true,0.85,:mul,:des-fast,:2over,:lt,:vspan,40,:alpha,:rot,input,:legend,:rot,des-fast,:legend,:rot,triggered,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0", false)
 ```
 
+## Epic Macros
+
+There are two helper macros, [des-epic-signal](stateful-des‐epic‐signal) and [des-epic-viz](style-des‐epic‐viz), that match the behavior of the previous epic DES alarms. The first generates a signal line for the alarm. The second creates a visualization to make it easier to see what is happening. Both take the following arguments:
+
+* `line` - input line
+* `trainingSize` - training size parameter for DES
+* `alpha` - alpha parameter for DES
+* `beta` - beta parameter for DES
+* `maxPercent` - percentage offset to use for the upper bound. Can be set to NaN to disable the upper bound check.
+* `minPercent` - percentage offset to use for the lower bound. Can be set to NaN to disable the lower bound check.
+* `noise` - a fixed offset that is the minimum difference between the signal and prediction that is required before the signal should trigger. This is primarily used to avoid false alarms where the percentage bound can become ineffective for routine noise during the troughs.
+
+Examples:
+
+```wiki.script
+graph.image("/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-6h&w=750&h=150&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum,10,0.1,0.02,0.15,0.15,10,:des-epic-viz&l=0", true)
+```
+
+Example with no lower bound:
+
+```wiki.script
+graph.image("/api/v1/graph?tz=UTC&e=2012-01-02T09:00&s=e-6h&w=750&h=150&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum,10,0.1,0.02,0.15,NaN,10,:des-epic-viz&l=0", true)
+```
+
