@@ -46,7 +46,7 @@ object QueryVocabulary extends Vocabulary {
     Not
   )
 
-  object True extends SimpleWord {
+  case object True extends SimpleWord {
     override def name: String = "true"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
@@ -65,7 +65,7 @@ object QueryVocabulary extends Vocabulary {
     override def examples: List[String] = List("")
   }
 
-  object False extends SimpleWord {
+  case object False extends SimpleWord {
     override def name: String = "false"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
@@ -84,7 +84,7 @@ object QueryVocabulary extends Vocabulary {
     override def examples: List[String] = List("")
   }
 
-  object HasKey extends SimpleWord {
+  case object HasKey extends SimpleWord {
     override def name: String = "has"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -124,7 +124,7 @@ object QueryVocabulary extends Vocabulary {
       "ERROR:name")
   }
 
-  object Equal extends KeyValueWord {
+  case object Equal extends KeyValueWord {
     override def name: String = "eq"
 
     def newInstance(k: String, v: String): Query = Query.Equal(k, v)
@@ -135,7 +135,7 @@ object QueryVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object LessThan extends KeyValueWord {
+  case object LessThan extends KeyValueWord {
     override def name: String = "lt"
 
     def newInstance(k: String, v: String): Query = Query.LessThan(k, v)
@@ -146,7 +146,7 @@ object QueryVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object LessThanEqual extends KeyValueWord {
+  case object LessThanEqual extends KeyValueWord {
     override def name: String = "le"
 
     def newInstance(k: String, v: String): Query = Query.LessThanEqual(k, v)
@@ -157,7 +157,7 @@ object QueryVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object GreaterThan extends KeyValueWord {
+  case object GreaterThan extends KeyValueWord {
     override def name: String = "gt"
 
     def newInstance(k: String, v: String): Query = Query.GreaterThan(k, v)
@@ -168,7 +168,7 @@ object QueryVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object GreaterThanEqual extends KeyValueWord {
+  case object GreaterThanEqual extends KeyValueWord {
     override def name: String = "ge"
 
     def newInstance(k: String, v: String): Query = Query.GreaterThanEqual(k, v)
@@ -179,7 +179,7 @@ object QueryVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Regex extends KeyValueWord {
+  case object Regex extends KeyValueWord {
     override def name: String = "re"
 
     def newInstance(k: String, v: String): Query = Query.Regex(k, v)
@@ -198,7 +198,7 @@ object QueryVocabulary extends Vocabulary {
       "ERROR:name")
   }
 
-  object RegexIgnoreCase extends KeyValueWord {
+  case object RegexIgnoreCase extends KeyValueWord {
     override def name: String = "reic"
 
     def newInstance(k: String, v: String): Query = Query.RegexIgnoreCase(k, v)
@@ -217,7 +217,7 @@ object QueryVocabulary extends Vocabulary {
       "ERROR:name")
   }
 
-  object In extends SimpleWord {
+  case object In extends SimpleWord {
     override def name: String = "in"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -244,7 +244,7 @@ object QueryVocabulary extends Vocabulary {
       "ERROR:name,sps")
   }
 
-  object And extends SimpleWord {
+  case object And extends SimpleWord {
     override def name: String = "and"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -270,7 +270,7 @@ object QueryVocabulary extends Vocabulary {
       List(":false,:false", ":false,:true", ":true,:false", ":true,:true")
   }
 
-  object Or extends SimpleWord {
+  case object Or extends SimpleWord {
     override def name: String = "or"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -296,7 +296,7 @@ object QueryVocabulary extends Vocabulary {
       List(":false,:false", ":false,:true", ":true,:false", ":true,:true")
   }
 
-  object Not extends SimpleWord {
+  case object Not extends SimpleWord {
     override def name: String = "not"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {

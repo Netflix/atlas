@@ -40,7 +40,7 @@ object StatefulVocabulary extends Vocabulary {
     Macro("des-epic-signal", desEpicSignal, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
   )
 
-  object RollingCount extends SimpleWord {
+  case object RollingCount extends SimpleWord {
     override def name: String = "rolling-count"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -61,7 +61,7 @@ object StatefulVocabulary extends Vocabulary {
     override def examples: List[String] = List(":random,0.4,:gt,5")
   }
 
-  object Des extends SimpleWord {
+  case object Des extends SimpleWord {
     override def name: String = "des"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -84,7 +84,7 @@ object StatefulVocabulary extends Vocabulary {
     override def examples: List[String] = List("name,requestsPerSecond,:eq,:sum,5,0.1,0.5")
   }
 
-  object Trend extends SimpleWord {
+  case object Trend extends SimpleWord {
     override def name: String = "trend"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -107,7 +107,7 @@ object StatefulVocabulary extends Vocabulary {
     override def examples: List[String] = List(":random,PT5M", ":random,20m")
   }
 
-  object Integral extends SimpleWord {
+  case object Integral extends SimpleWord {
     override def name: String = "integral"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -131,7 +131,7 @@ object StatefulVocabulary extends Vocabulary {
       "name,requestsPerSecond,:eq,:sum,:per-step")
   }
 
-  object Derivative extends SimpleWord {
+  case object Derivative extends SimpleWord {
     override def name: String = "derivative"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {

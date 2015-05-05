@@ -27,6 +27,9 @@ trait Vocabulary {
 
   def words: List[Word]
 
+  /** Return a flattened list of all dependency vocabularies. */
+  def dependencies: List[Vocabulary] = dependsOn.flatMap(d => d :: d.dependencies)
+
   /**
    * Return a flattened list of all words from this vocabulary plus words from all dependencies.
    */

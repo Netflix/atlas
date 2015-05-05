@@ -20,6 +20,8 @@ import java.net.URI
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorRef
+import com.netflix.atlas.core.model.StyleVocabulary
+import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams._
@@ -31,8 +33,6 @@ import spray.http.HttpResponse
 import spray.http.Uri
 
 import scala.concurrent.Await
-import scala.util.Failure
-import scala.util.Success
 
 class GraphHelper(webApi: ActorRef, dir: File, path: String) extends StrictLogging {
 
@@ -44,7 +44,9 @@ class GraphHelper(webApi: ActorRef, dir: File, path: String) extends StrictLoggi
 
   private val baseUri = s"https://raw.githubusercontent.com/wiki/Netflix/atlas/$path"
 
-  private val wordLinkBaseUri = "https://github.com/Netflix/atlas/wiki/Stack-Language-Reference"
+  private val wordLinkBaseUri = "https://github.com/Netflix/atlas/wiki"
+  private val interpreter = Interpreter(StyleVocabulary.allWords)
+  private val vocabularies = StyleVocabulary :: StyleVocabulary.dependencies
 
   override def toString: String = s"GraphHelper($dir, $path)"
 
@@ -99,17 +101,28 @@ class GraphHelper(webApi: ActorRef, dir: File, path: String) extends StrictLoggi
     s"<pre>\n${uri.getPath}?\n  ${pstr.mkString("\n  &")}\n</pre>\n"
   }
 
-  private def mkLink(name: String): String = {
-    s"""<a href="$wordLinkBaseUri#$name">:$name</a>"""
+  private def mkLink(prg: List[Any], name: String): String = {
+    try {
+      val ctxt = interpreter.execute(prg)
+      val candidates = interpreter.candidates(name, ctxt.stack)
+      val vocab = vocabularies.find(v => v.words.contains(candidates.head)).get
+      s"""<a href="$wordLinkBaseUri/${vocab.name}-${Utils.fileName(name)}">:$name</a>"""
+    } catch {
+      // For words inside a list, the execution is delayed. So the stack would depend on
+      // when it gets executed. For these we link to the main index section showing the
+      // alternatives for a name.
+      case e: Exception =>
+        s"""<a href="$wordLinkBaseUri/Stack-Language-Reference#${Utils.fileName(name)}">:$name</a>"""
+    }
   }
 
   private def formatQueryExpr(q: String): String = {
     val parts = q.split(",").toList
     val buf = new StringBuilder
     buf.append("q=\n    ")
-    parts.foreach { p =>
+    parts.zipWithIndex.foreach { case (p, i) =>
       if (p.startsWith(":"))
-        buf.append(mkLink(p.substring(1))).append(',').append("\n    ")
+        buf.append(mkLink(parts.take(i), p.substring(1))).append(',').append("\n    ")
       else
         buf.append(p).append(',')
     }

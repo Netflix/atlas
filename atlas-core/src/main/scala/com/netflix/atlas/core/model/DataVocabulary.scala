@@ -53,7 +53,7 @@ object DataVocabulary extends Vocabulary {
     override def examples: List[String] = List("name,sps,:eq")
   }
 
-  object All extends DataWord {
+  case object All extends DataWord {
     override def name: String = "all"
 
     def newInstance(q: Query): DataExpr = DataExpr.All(q)
@@ -67,7 +67,7 @@ object DataVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Sum extends DataWord {
+  case object Sum extends DataWord {
     override def name: String = "sum"
 
     def newInstance(q: Query): DataExpr = DataExpr.Sum(q)
@@ -79,7 +79,7 @@ object DataVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Count extends DataWord {
+  case object Count extends DataWord {
     override def name: String = "count"
 
     def newInstance(q: Query): DataExpr = DataExpr.Count(q)
@@ -91,7 +91,7 @@ object DataVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Min extends DataWord {
+  case object Min extends DataWord {
     override def name: String = "min"
 
     def newInstance(q: Query): DataExpr = DataExpr.Min(q)
@@ -102,7 +102,7 @@ object DataVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Max extends DataWord {
+  case object Max extends DataWord {
     override def name: String = "max"
 
     def newInstance(q: Query): DataExpr = DataExpr.Max(q)
@@ -113,7 +113,7 @@ object DataVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object GroupBy extends SimpleWord {
+  case object GroupBy extends SimpleWord {
     override def name: String = "by"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -142,7 +142,7 @@ object DataVocabulary extends Vocabulary {
       "name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,(,nf.asg,nf.zone,)")
   }
 
-  object Head extends SimpleWord {
+  case object Head extends SimpleWord {
     override def name: String = "head"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -172,7 +172,7 @@ object DataVocabulary extends Vocabulary {
       "ERROR:42,1")
   }
 
-  object Offset extends SimpleWord {
+  case object Offset extends SimpleWord {
     override def name: String = "offset"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -216,7 +216,7 @@ object DataVocabulary extends Vocabulary {
       "name,sps,:eq,:count")
   }
 
-  object CfSum extends CfWord {
+  case object CfSum extends CfWord {
     override def cf: ConsolidationFunction = ConsolidationFunction.Sum
     override def name: String = "cf-sum"
 
@@ -226,7 +226,7 @@ object DataVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object CfAvg extends CfWord {
+  case object CfAvg extends CfWord {
     override def cf: ConsolidationFunction = ConsolidationFunction.Avg
     override def name: String = "cf-avg"
 
@@ -236,7 +236,7 @@ object DataVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object CfMin extends CfWord {
+  case object CfMin extends CfWord {
     override def cf: ConsolidationFunction = ConsolidationFunction.Min
     override def name: String = "cf-min"
 
@@ -246,7 +246,7 @@ object DataVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object CfMax extends CfWord {
+  case object CfMax extends CfWord {
     override def cf: ConsolidationFunction = ConsolidationFunction.Max
     override def name: String = "cf-max"
 

@@ -100,7 +100,7 @@ object MathVocabulary extends Vocabulary {
       List("name,playback.startLatency,:eq"))
   )
 
-  object GroupBy extends SimpleWord {
+  case object GroupBy extends SimpleWord {
     override def name: String = "by"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -126,7 +126,7 @@ object MathVocabulary extends Vocabulary {
     override def examples: List[String] = List("name,sps,:eq,:avg,(,nf.cluster,)")
   }
 
-  object Const extends SimpleWord {
+  case object Const extends SimpleWord {
     override def name: String = "const"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -147,7 +147,7 @@ object MathVocabulary extends Vocabulary {
     override def examples: List[String] = List("42")
   }
 
-  object Random extends SimpleWord {
+  case object Random extends SimpleWord {
     override def name: String = "random"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
@@ -166,7 +166,7 @@ object MathVocabulary extends Vocabulary {
     override def examples: List[String] = List("")
   }
 
-  object Time extends SimpleWord {
+  case object Time extends SimpleWord {
     override def name: String = "time"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -191,7 +191,7 @@ object MathVocabulary extends Vocabulary {
     override def examples: List[String] = List("hourOfDay", "HOUR_OF_DAY")
   }
 
-  object CommonQuery extends SimpleWord {
+  case object CommonQuery extends SimpleWord {
     override def name: String = "cq"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -233,7 +233,7 @@ object MathVocabulary extends Vocabulary {
     override def examples: List[String] = List("0", "64", "-64")
   }
 
-  object Abs extends UnaryWord {
+  case object Abs extends UnaryWord {
     override def name: String = "abs"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Abs(t)
@@ -245,7 +245,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Negate extends UnaryWord {
+  case object Negate extends UnaryWord {
     override def name: String = "neg"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Negate(t)
@@ -257,7 +257,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Sqrt extends UnaryWord {
+  case object Sqrt extends UnaryWord {
     override def name: String = "sqrt"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Sqrt(t)
@@ -269,7 +269,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object PerStep extends UnaryWord {
+  case object PerStep extends UnaryWord {
     override def name: String = "per-step"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.PerStep(t)
@@ -300,7 +300,7 @@ object MathVocabulary extends Vocabulary {
       "name,sps,:eq,:sum,name,requestsPerSecond,:eq,:max,(,name,),:by")
   }
 
-  object Add extends BinaryWord {
+  case object Add extends BinaryWord {
     override def name: String = "add"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -314,7 +314,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Subtract extends BinaryWord {
+  case object Subtract extends BinaryWord {
     override def name: String = "sub"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -328,7 +328,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Multiply extends BinaryWord {
+  case object Multiply extends BinaryWord {
     override def name: String = "mul"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -342,7 +342,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Divide extends BinaryWord {
+  case object Divide extends BinaryWord {
     override def name: String = "div"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -360,7 +360,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object GreaterThan extends BinaryWord {
+  case object GreaterThan extends BinaryWord {
     override def name: String = "gt"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -374,7 +374,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object GreaterThanEqual extends BinaryWord {
+  case object GreaterThanEqual extends BinaryWord {
     override def name: String = "ge"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -388,7 +388,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object LessThan extends BinaryWord {
+  case object LessThan extends BinaryWord {
     override def name: String = "lt"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -402,7 +402,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object LessThanEqual extends BinaryWord {
+  case object LessThanEqual extends BinaryWord {
     override def name: String = "le"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -416,7 +416,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object FAdd extends BinaryWord {
+  case object FAdd extends BinaryWord {
     override def name: String = "fadd"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -430,7 +430,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object FSubtract extends BinaryWord {
+  case object FSubtract extends BinaryWord {
     override def name: String = "fsub"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -444,7 +444,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object FMultiply extends BinaryWord {
+  case object FMultiply extends BinaryWord {
     override def name: String = "fmul"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -458,7 +458,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object FDivide extends BinaryWord {
+  case object FDivide extends BinaryWord {
     override def name: String = "fdiv"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -473,7 +473,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object And extends BinaryWord {
+  case object And extends BinaryWord {
     override def name: String = "and"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -487,7 +487,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Or extends BinaryWord {
+  case object Or extends BinaryWord {
     override def name: String = "or"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -523,7 +523,7 @@ object MathVocabulary extends Vocabulary {
       "name,sps,:eq,:max,(,nf.cluster,),:by")
   }
 
-  object Sum extends AggrWord {
+  case object Sum extends AggrWord {
     override def name: String = "sum"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Sum(t)
@@ -534,7 +534,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Count extends AggrWord {
+  case object Count extends AggrWord {
     override def name: String = "count"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Count(t)
@@ -545,7 +545,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Min extends AggrWord {
+  case object Min extends AggrWord {
     override def name: String = "min"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Min(t)
@@ -556,7 +556,7 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Max extends AggrWord {
+  case object Max extends AggrWord {
     override def name: String = "max"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Max(t)

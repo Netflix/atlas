@@ -123,6 +123,22 @@ case class Interpreter(vocabulary: List[Word]) {
     debug(program, Context(this, Nil, Map.empty))
   }
 
+  /**
+   * Return a list of all words in the vocabulary for this interpreter that match the provided
+   * stack.
+   */
+  final def candidates(stack: List[Any]): List[Word] = {
+    vocabulary.filter(_.matches(stack))
+  }
+
+  /**
+   * Return a list of overloaded variants that match. The first word in the list is what would
+   * get used when executing.
+   */
+  final def candidates(name: String, stack: List[Any]): List[Word] = {
+    words(name).filter(_.matches(stack))
+  }
+
   override def toString: String = s"Interpreter(${vocabulary.size} words)"
 }
 
