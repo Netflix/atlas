@@ -33,6 +33,7 @@ import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.model.TimeSeriesExpr
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.StandardVocabulary
+import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
 import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.webapi.ApiSettings
@@ -89,8 +90,10 @@ object Main extends StrictLogging {
 
   private def eval(lines: List[String], dir: File): List[String] = {
     engine.createBindings().put("graphObj", new GraphHelper(webApi, dir, "gen-images"))
+    engine.createBindings().put("vocabObj", StyleVocabulary)
     val script = s"""
       val graph = graphObj.asInstanceOf[${classOf[GraphHelper].getName}]
+      val vocab = vocabObj.asInstanceOf[${classOf[Vocabulary].getName}]
       ${lines.mkString("", "\n", "\n")}
       """
     val result = engine.eval(script)
@@ -245,9 +248,7 @@ object Main extends StrictLogging {
     vocabs.foreach { vocab =>
       sidebar.append(s"\n**${vocab.name}**\n")
       vocab.words.foreach { w =>
-        // Using unicode hyphen is a hack to get around:
-        // https://github.com/github/markup/issues/345
-        val fname = s"${vocab.name}-${w.name.replace('-', '\u2010')}"
+        val fname = s"${vocab.name}-${Utils.fileName(w.name)}"
         sidebar.append(s"* [${w.name}]($fname)\n")
         val f = new File(dir, s"$fname.md")
         writeFile(renderWord(w, graph), f)

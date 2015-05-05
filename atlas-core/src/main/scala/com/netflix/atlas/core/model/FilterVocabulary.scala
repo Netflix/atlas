@@ -37,7 +37,7 @@ object FilterVocabulary extends Vocabulary {
     Macro("stat-avg-mf", List("avg", ":stat"), List("42"))
   )
 
-  object Stat extends SimpleWord {
+  case object Stat extends SimpleWord {
     override def name: String = "stat"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -101,7 +101,7 @@ object FilterVocabulary extends Vocabulary {
     def value: FilterExpr
   }
 
-  object StatMax extends StatWord {
+  case object StatMax extends StatWord {
     override def name: String = "stat-max"
 
     def value: FilterExpr = FilterExpr.StatMax
@@ -112,7 +112,7 @@ object FilterVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object StatMin extends StatWord {
+  case object StatMin extends StatWord {
     override def name: String = "stat-min"
 
     def value: FilterExpr = FilterExpr.StatMin
@@ -123,7 +123,7 @@ object FilterVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object StatAvg extends StatWord {
+  case object StatAvg extends StatWord {
     override def name: String = "stat-avg"
 
     def value: FilterExpr = FilterExpr.StatAvg
@@ -134,7 +134,7 @@ object FilterVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object StatTotal extends StatWord {
+  case object StatTotal extends StatWord {
     override def name: String = "stat-total"
 
     def value: FilterExpr = FilterExpr.StatTotal
@@ -145,7 +145,7 @@ object FilterVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  object Filter extends SimpleWord {
+  case object Filter extends SimpleWord {
     override def name: String = "filter"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
