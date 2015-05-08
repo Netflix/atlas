@@ -239,6 +239,7 @@ object Main extends StrictLogging {
       DataVocabulary,
       MathVocabulary,
       StatefulVocabulary,
+      FilterVocabulary,
       StyleVocabulary
     )
 
@@ -247,7 +248,7 @@ object Main extends StrictLogging {
 
     vocabs.foreach { vocab =>
       sidebar.append(s"\n**${vocab.name}**\n")
-      vocab.words.foreach { w =>
+      vocab.words.sortWith(_.name < _.name).foreach { w =>
         val fname = s"${vocab.name}-${Utils.fileName(w.name)}"
         sidebar.append(s"* [${w.name}]($fname)\n")
         val f = new File(dir, s"$fname.md")
