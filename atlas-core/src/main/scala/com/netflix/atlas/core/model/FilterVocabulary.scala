@@ -83,7 +83,11 @@ object FilterVocabulary extends Vocabulary {
         |call to `stat` on the first expression passed to `filter`.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("a,b,:eq,max")
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,max",
+      "name,sps,:eq,:sum,min",
+      "name,sps,:eq,:sum,avg",
+      "name,sps,:eq,:sum,total")
   }
 
   trait StatWord extends SimpleWord {
@@ -96,7 +100,7 @@ object FilterVocabulary extends Vocabulary {
 
     override def signature: String = " -- FilterExpr"
 
-    override def examples: List[String] = List("", "a,b,:eq")
+    override def examples: List[String] = List("", "name,sps,:eq,:sum")
 
     def value: FilterExpr
   }
@@ -172,6 +176,7 @@ object FilterVocabulary extends Vocabulary {
         |a value greater than 50.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("a,b,:eq,:dup,:stat-max,50,:gt")
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,30e3,:gt")
   }
 }
