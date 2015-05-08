@@ -36,7 +36,7 @@ object Step {
   }
 
   private final val autoStepSizes = {
-    val div60 = List(1, 5, 10, 30)
+    val div60 = List(1, 5, 10, 20, 30)
     val subMinute = div60.map(_ * oneSecond)
     val subHour = div60.map(_ * oneMinute)
     val subDay = List(1, 6, 12).map(_ * oneHour)
