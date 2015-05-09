@@ -2,8 +2,9 @@
 # build script.
 SBT := cat /dev/null | project/sbt
 
-WIKI_PRG := atlas-wiki/runMain com.netflix.atlas.wiki.Main
-WIKI_DIR := target/atlas.wiki
+WIKI_PRG        := atlas-wiki/runMain com.netflix.atlas.wiki.Main
+WIKI_INPUT_DIR  := $(shell pwd)/atlas-wiki/src/main/resources
+WIKI_OUTPUT_DIR := $(shell pwd)/target/atlas.wiki
 
 IVY_CACHE_URL := https://www.dropbox.com/s/zx5yq86nk6q19w1/ivy2.tar.gz?dl=0
 LAUNCHER_JAR_URL := https://repo1.maven.org/maven2/com/netflix/iep/iep-launcher/0.1.14/iep-launcher-0.1.14.jar
@@ -23,18 +24,18 @@ coverage:
 license:
 	$(SBT) formatLicenseHeaders
 
-$(WIKI_DIR):
+$(WIKI_OUTPUT_DIR):
 	mkdir -p target
-	git clone https://github.com/Netflix/atlas.wiki.git $(WIKI_DIR)
+	git clone https://github.com/Netflix/atlas.wiki.git $(WIKI_OUTPUT_DIR)
 
-update-wiki: $(WIKI_DIR)
-	cd $(WIKI_DIR) && git rm -rf *
-	$(SBT) "$(WIKI_PRG) atlas-wiki/src/main/resources $(WIKI_DIR)"
+update-wiki: $(WIKI_OUTPUT_DIR)
+	cd $(WIKI_OUTPUT_DIR) && git rm -rf *
+	$(SBT) "$(WIKI_PRG) $(WIKI_INPUT_DIR) $(WIKI_OUTPUT_DIR)"
 
 publish-wiki: update-wiki
-	cd $(WIKI_DIR) && git add * && git status
-	cd $(WIKI_DIR) && git commit -a -m "update wiki"
-	cd $(WIKI_DIR) && git push origin master
+	cd $(WIKI_OUTPUT_DIR) && git add * && git status
+	cd $(WIKI_OUTPUT_DIR) && git commit -a -m "update wiki"
+	cd $(WIKI_OUTPUT_DIR) && git push origin master
 
 get-ivy-cache:
 	curl -L $(IVY_CACHE_URL) -o $(HOME)/ivy.tar.gz
