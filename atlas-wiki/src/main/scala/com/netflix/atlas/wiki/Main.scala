@@ -82,8 +82,10 @@ object Main extends StrictLogging {
 
   val engine = {
     val scalaEngine = new ScriptEngineManager().getEngineByName("scala")
+    // http://stackoverflow.com/questions/25042806/scala-2-11-2-scriptengine-throws-error
     val settings = scalaEngine.asInstanceOf[scala.tools.nsc.interpreter.IMain].settings
     settings.embeddedDefaults[UseForDefaults]
+    settings.usejavacp.value = true
     assert(scalaEngine != null, s"could not find ScriptEngine for scala")
     scalaEngine
   }
