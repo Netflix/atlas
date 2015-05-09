@@ -15,16 +15,28 @@
  */
 package com.netflix.atlas.akka
 
+import java.net.BindException
+
 import akka.actor.ActorSystem
 import akka.actor.Props
+import akka.io.Tcp
+import akka.pattern.ask
 import akka.io.IO
 import akka.io.Inet
+import akka.util.Timeout
 import com.netflix.iep.service.AbstractService
 import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
 
+import scala.concurrent.Await
+import scala.util.Failure
+import scala.util.Success
+
 
 class WebServer(name: String, port: Int) extends AbstractService with StrictLogging {
+
+  import scala.concurrent.duration._
+  private implicit val bindTimeout = Timeout(1.second)
 
   private implicit var system: ActorSystem = null
 
@@ -43,7 +55,17 @@ class WebServer(name: String, port: Int) extends AbstractService with StrictLogg
       port = port,
       backlog = 2048,
       options = options)
-    IO(Http).tell(bind, handler)
+    Await.ready(IO(Http).ask(bind), Duration.Inf).value.get match {
+      case Success(Tcp.CommandFailed(_)) =>
+        logger.error("server failed to start")
+        throw new BindException(s"could not bind: $bind")
+      case Success(b) =>
+        logger.info(s"server started on port $port")
+        handler.tell(b, handler)
+      case Failure(t) =>
+        logger.error("server failed to start", t)
+        throw t;
+    }
   }
 
   protected def stopImpl(): Unit = {
