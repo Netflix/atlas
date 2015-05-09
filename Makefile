@@ -26,7 +26,7 @@ license:
 
 $(WIKI_OUTPUT_DIR):
 	mkdir -p target
-	git clone https://github.com/Netflix/atlas.wiki.git $(WIKI_OUTPUT_DIR)
+	git clone git@github.com:Netflix/atlas.wiki.git $(WIKI_OUTPUT_DIR)
 
 update-wiki: $(WIKI_OUTPUT_DIR)
 	cd $(WIKI_OUTPUT_DIR) && git rm -rf *
