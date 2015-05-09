@@ -88,8 +88,14 @@ object Main extends StrictLogging {
     val modules = new java.util.ArrayList[Module]()
     modules.add(overrides)
 
-    val gov = new Governator
-    gov.start(modules)
-    gov.addShutdownHook()
+    try {
+      val gov = new Governator
+      gov.start(modules)
+      gov.addShutdownHook()
+    } catch {
+      case t: Throwable =>
+        logger.error("server failed to start, shutting down", t)
+        System.exit(1)
+    }
   }
 }
