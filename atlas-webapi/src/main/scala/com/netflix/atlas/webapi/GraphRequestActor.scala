@@ -81,8 +81,6 @@ class GraphRequestActor extends Actor with ActorLogging {
   }
 
   private def sendImage(data: Map[DataExpr, List[TimeSeries]]): Unit = {
-    val ts = data.values.flatten
-
     val seriesList = request.exprs.flatMap { s =>
       val ts = s.expr.eval(request.evalContext, data).data
       val exprStr = s.expr.toString
