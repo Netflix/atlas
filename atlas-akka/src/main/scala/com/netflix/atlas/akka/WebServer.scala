@@ -16,6 +16,7 @@
 package com.netflix.atlas.akka
 
 import java.net.BindException
+import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.actor.Props
@@ -24,6 +25,7 @@ import akka.pattern.ask
 import akka.io.IO
 import akka.io.Inet
 import akka.util.Timeout
+import com.netflix.atlas.config.ConfigManager
 import com.netflix.iep.service.AbstractService
 import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
@@ -36,7 +38,10 @@ import scala.util.Success
 class WebServer(name: String, port: Int) extends AbstractService with StrictLogging {
 
   import scala.concurrent.duration._
-  private implicit val bindTimeout = Timeout(1.second)
+
+  private val config = ConfigManager.current
+  private val timeout = config.getDuration("atlas.akka.bind-timeout", TimeUnit.MILLISECONDS)
+  private implicit val bindTimeout = Timeout(timeout, TimeUnit.MILLISECONDS)
 
   private implicit var system: ActorSystem = null
 
