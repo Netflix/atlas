@@ -29,6 +29,9 @@ sealed trait Query extends Expr {
    * used for doing some initial filtering based on a partial list of common tags.
    */
   def couldMatch(tags: Map[String, String]): Boolean
+
+  /** Returns a string that summarizes the query expression in a human readable format. */
+  def labelString: String
 }
 
 object Query {
@@ -52,6 +55,7 @@ object Query {
     def matches(tags: Map[String, String]): Boolean = true
     def matchesAny(tags: Map[String, List[String]]): Boolean = true
     def couldMatch(tags: Map[String, String]): Boolean = true
+    def labelString: String = "true"
     override def toString: String = ":true"
   }
 
@@ -59,6 +63,7 @@ object Query {
     def matches(tags: Map[String, String]): Boolean = false
     def matchesAny(tags: Map[String, List[String]]): Boolean = false
     def couldMatch(tags: Map[String, String]): Boolean = false
+    def labelString: String = "false"
     override def toString: String = ":false"
   }
 
@@ -77,31 +82,37 @@ object Query {
     def matches(tags: Map[String, String]): Boolean = tags.contains(k)
     def matchesAny(tags: Map[String, List[String]]): Boolean = tags.contains(k)
     def couldMatch(tags: Map[String, String]): Boolean = true
+    def labelString: String = s"has($k)"
     override def toString: String = s"$k,:has"
   }
 
   case class Equal(k: String, v: String) extends KeyValueQuery {
     def check(s: String): Boolean = s == v
+    def labelString: String = s"$k=$v"
     override def toString: String = s"$k,$v,:eq"
   }
 
   case class LessThan(k: String, v: String) extends KeyValueQuery {
     def check(s: String): Boolean = s < v
+    def labelString: String = s"$k<$v"
     override def toString: String = s"$k,$v,:lt"
   }
 
   case class LessThanEqual(k: String, v: String) extends KeyValueQuery {
     def check(s: String): Boolean = s <= v
+    def labelString: String = s"$k<=$v"
     override def toString: String = s"$k,$v,:le"
   }
 
   case class GreaterThan(k: String, v: String) extends KeyValueQuery {
     def check(s: String): Boolean = s > v
+    def labelString: String = s"$k>$v"
     override def toString: String = s"$k,$v,:gt"
   }
 
   case class GreaterThanEqual(k: String, v: String) extends KeyValueQuery {
     def check(s: String): Boolean = s >= v
+    def labelString: String = s"$k>=$v"
     override def toString: String = s"$k,$v,:ge"
   }
 
@@ -112,18 +123,21 @@ object Query {
   case class Regex(k: String, v: String) extends PatternQuery {
     val pattern = StringMatcher.compile(s"^$v")
     def check(s: String): Boolean = pattern.matches(s)
+    def labelString: String = s"$k~/^$v/"
     override def toString: String = s"$k,$v,:re"
   }
 
   case class RegexIgnoreCase(k: String, v: String) extends PatternQuery {
     val pattern = StringMatcher.compile(s"^$v", false)
     def check(s: String): Boolean = pattern.matches(s)
+    def labelString: String = s"$k~/^$v/i"
     override def toString: String = s"$k,$v,:reic"
   }
 
   case class In(k: String, vs: List[String]) extends KeyValueQuery {
     private val values = vs.toSet
     def check(s: String): Boolean = values.contains(s)
+    def labelString: String = s"$k in (${vs.mkString(",")})"
     override def toString: String = s"$k,(,${vs.mkString(",")},),:in"
 
     /** Convert this to a sequence of OR'd together equal queries. */
@@ -138,6 +152,7 @@ object Query {
     def matches(tags: Map[String, String]): Boolean = q1.matches(tags) && q2.matches(tags)
     def matchesAny(tags: Map[String, List[String]]): Boolean = q1.matchesAny(tags) && q2.matchesAny(tags)
     def couldMatch(tags: Map[String, String]): Boolean = q1.couldMatch(tags) && q2.couldMatch(tags)
+    def labelString: String = s"(${q1.labelString}) and (${q2.labelString})"
     override def toString: String = s"$q1,$q2,:and"
   }
 
@@ -145,6 +160,7 @@ object Query {
     def matches(tags: Map[String, String]): Boolean = q1.matches(tags) || q2.matches(tags)
     def matchesAny(tags: Map[String, List[String]]): Boolean = q1.matchesAny(tags) || q2.matchesAny(tags)
     def couldMatch(tags: Map[String, String]): Boolean = q1.couldMatch(tags) || q2.couldMatch(tags)
+    def labelString: String = s"(${q1.labelString}) or (${q2.labelString})"
     override def toString: String = s"$q1,$q2,:or"
   }
 
@@ -152,6 +168,7 @@ object Query {
     def matches(tags: Map[String, String]): Boolean = !q.matches(tags)
     def matchesAny(tags: Map[String, List[String]]): Boolean = !q.matchesAny(tags)
     def couldMatch(tags: Map[String, String]): Boolean = true
+    def labelString: String = s"not(${q.labelString})"
     override def toString: String = s"$q,:not"
   }
 }
