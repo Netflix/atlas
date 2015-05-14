@@ -56,6 +56,18 @@ sealed trait DataExpr extends TimeSeriesExpr {
 }
 
 object DataExpr {
+
+  def withDefaultLabel(expr: DataExpr, ts: TimeSeries): TimeSeries = {
+    val label = expr match {
+      case af: AggregateFunction => af.labelString
+      case by: GroupBy           => s"(${by.keyString(ts.tags).trim})"
+      case _                     => TimeSeries.toLabel(ts.tags)
+    }
+    val offset = expr.offset
+    val offsetLabel = if (offset.isZero) label else s"$label (offset=${Strings.toString(offset)})"
+    ts.withLabel(offsetLabel)
+  }
+
   case class All(query: Query, offset: Duration = Duration.ZERO) extends DataExpr {
     def cf: ConsolidationFunction = ConsolidationFunction.Sum
     override def withOffset(d: Duration): All = copy(offset = d)
@@ -68,6 +80,7 @@ object DataExpr {
   }
 
   sealed trait AggregateFunction extends DataExpr with BinaryOp {
+    def labelString: String
 
     def withConsolidation(f: ConsolidationFunction): AggregateFunction
 
@@ -98,6 +111,8 @@ object DataExpr {
 
     override def withOffset(d: Duration): Sum = copy(offset = d)
 
+    def labelString: String = s"sum(${query.labelString})"
+
     override def exprString: String = {
       if (cf == ConsolidationFunction.Avg) s"$query,:sum" else s"$query,:sum,$cf"
     }
@@ -126,6 +141,8 @@ object DataExpr {
 
     override def withOffset(d: Duration): Count = copy(offset = d)
 
+    def labelString: String = s"count(${query.labelString})"
+
     override def exprString: String = {
       if (cf == ConsolidationFunction.Avg) s"$query,:count" else s"$query,:count,$cf"
     }
@@ -141,7 +158,11 @@ object DataExpr {
     }
 
     override def withOffset(d: Duration): Min = copy(offset = d)
+
+    def labelString: String = s"min(${query.labelString})"
+
     override def exprString: String = s"$query,:min"
+
     def apply(v1: Double, v2: Double): Double = Math.minNaN(v1, v2)
   }
 
@@ -153,7 +174,11 @@ object DataExpr {
     }
 
     override def withOffset(d: Duration): Max = copy(offset = d)
+
+    def labelString: String = s"max(${query.labelString})"
+
     override def exprString: String = s"$query,:max"
+
     def apply(v1: Double, v2: Double): Double = Math.maxNaN(v1, v2)
   }
 
@@ -174,6 +199,8 @@ object DataExpr {
     override def withOffset(d: Duration): Consolidation = {
       Consolidation(af.withOffset(d).asInstanceOf[AggregateFunction], cf)
     }
+
+    def labelString: String = af.labelString
 
     override def exprString: String = s"$af,$cf"
     def apply(v1: Double, v2: Double): Double = af(v1, v2)
