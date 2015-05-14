@@ -57,13 +57,19 @@ sealed trait DataExpr extends TimeSeriesExpr {
 
 object DataExpr {
 
-  def withDefaultLabel(expr: DataExpr, ts: TimeSeries): TimeSeries = {
-    expr match {
-      case af: AggregateFunction => ts.withLabel(af.labelString)
-      case by: GroupBy           => ts.withLabel(s"(${by.keyString(ts.tags).trim})")
-      case Head(df, _)           => withDefaultLabel(df, ts)
-      case _                     => ts.withLabel(TimeSeries.toLabel(ts.tags))
+  private def defaultLabel(expr: DataExpr, ts: TimeSeries): String = {
+    val label = expr match {
+      case af: AggregateFunction => af.labelString
+      case by: GroupBy           => s"(${by.keyString(ts.tags).trim})"
+      case Head(df, _)           => defaultLabel(df, ts)
+      case _                     => TimeSeries.toLabel(ts.tags)
     }
+    val offset = expr.offset
+    if (offset.isZero) label else s"$label (offset=${Strings.toString(offset)})"
+  }
+
+  def withDefaultLabel(expr: DataExpr, ts: TimeSeries): TimeSeries = {
+    ts.withLabel(defaultLabel(expr, ts))
   }
 
   case class All(query: Query, offset: Duration = Duration.ZERO) extends DataExpr {
