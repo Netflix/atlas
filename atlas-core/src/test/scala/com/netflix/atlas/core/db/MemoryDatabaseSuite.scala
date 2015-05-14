@@ -88,6 +88,10 @@ class MemoryDatabaseSuite extends FunSuite {
     assert(exec("name,:has") === List(ts("sum(has(name))", 1, 4.0, 4.0, 4.0)))
   }
 
+  test(":offset expr") {
+    assert(exec(":true,:sum,1m,:offset") === List(ts("sum(true) (offset=1m)", 1, Double.NaN, 4.0, 4.0)))
+  }
+
   test(":sum expr") {
     assert(exec(":true,:sum") === List(ts("sum(true)", 1, 4.0, 4.0, 4.0)))
   }
