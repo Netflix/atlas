@@ -130,82 +130,51 @@ class MemoryDatabase(config: Config) extends Database {
   }
 
   private def executeImpl(context: EvalContext, expr: DataExpr): List[TimeSeries] = {
-    val query = TagQuery(Some(expr.query))
+    val cfStep = context.step
+    require(cfStep >= step, "step for query must be >= step for the database")
+    require(cfStep % step == 0, "consolidated step must be multiple of db step")
 
+    val query = TagQuery(Some(expr.query))
     val aggr = blockAggr(expr)
     val collector = AggregateCollector(expr)
 
-    val cfStep = context.step
-    if (cfStep >= step) {
-      require(cfStep % step == 0, "consolidated step must be multiple of db step")
+    val end = context.end
+    val multiple = (cfStep / step).asInstanceOf[Int]
+    val s = context.start / cfStep
+    val e = end / cfStep
+    val bs = s * multiple
+    val be = e * multiple
 
-      val end = context.end
-      val multiple = (cfStep / step).asInstanceOf[Int]
-      val s = context.start / cfStep
-      val e = end / cfStep
-      val bs = s * multiple
-      val be = e * multiple
+    val stepLength = be - bs + 1
+    val cfStepLength = stepLength / multiple
+    val bufStart = bs * step
+    val bufEnd = bufStart + cfStepLength * cfStep - cfStep
 
-      val stepLength = be - bs + 1
-      val cfStepLength = stepLength / multiple
-      val bufStart = bs * step
-      val bufEnd = bufStart + cfStepLength * cfStep - cfStep
-
-      def newBuffer(tags: Map[String, String]): TimeSeriesBuffer = {
-        TimeSeriesBuffer(tags, cfStep, bufStart, bufEnd)
-      }
-
-      index.findItems(query).foreach { item =>
-        item.blocks.blockList.foreach { b =>
-          queryBlocks.increment()
-          // Check if the block has data for the desired time range
-          val blockEnd = b.start + (b.size + 1) * step
-          if (b.start <= be * step && blockEnd >= bs * step) {
-            aggrBlocks.increment()
-            collector.add(item.tags, List(b), aggr, expr.cf, multiple, newBuffer)
-          }
-        }
-      }
-
-      val stats = collector.stats
-      queryMetrics.increment(stats.inputLines)
-      queryLines.increment(stats.outputLines)
-      queryInputDatapoints.increment(stats.inputDatapoints)
-      queryOutputDatapoints.increment(stats.outputDatapoints)
-
-      expr.eval(context, collector.result).data
-    } else {
-      require(step % cfStep == 0, "db step must be multiple of consolidated step")
-
-      val end = context.end
-      val multiple = (step / cfStep).asInstanceOf[Int]
-      val s = context.start / step
-      val e = end / step
-
-      def newBuffer(tags: Map[String, String]): TimeSeriesBuffer = {
-        TimeSeriesBuffer(tags, step, s * step, e * step)
-      }
-
-      index.findItems(query).foreach { item =>
-        item.blocks.blockList.foreach { b =>
-          queryBlocks.increment()
-          // Check if the block has data for the desired time range
-          val blockEnd = b.start + (b.size + 1) * step
-          if (b.start <= s * step && blockEnd >= e * step) {
-            aggrBlocks.increment()
-            collector.add(item.tags, List(b), aggr, expr.cf, multiple, newBuffer)
-          }
-        }
-      }
-
-      val stats = collector.stats
-      queryMetrics.increment(stats.inputLines)
-      queryLines.increment(stats.outputLines)
-      queryInputDatapoints.increment(stats.inputDatapoints)
-      queryOutputDatapoints.increment(stats.outputDatapoints)
-
-      expr.eval(context, collector.result).data
+    def newBuffer(tags: Map[String, String]): TimeSeriesBuffer = {
+      TimeSeriesBuffer(tags, cfStep, bufStart, bufEnd)
     }
+
+    index.findItems(query).foreach { item =>
+      item.blocks.blockList.foreach { b =>
+        queryBlocks.increment()
+        // Check if the block has data for the desired time range
+        val blockEnd = b.start + (b.size + 1) * step
+        if (b.start <= be * step && blockEnd >= bs * step) {
+          aggrBlocks.increment()
+          collector.add(item.tags, List(b), aggr, expr.cf, multiple, newBuffer)
+        }
+      }
+    }
+
+    val stats = collector.stats
+    queryMetrics.increment(stats.inputLines)
+    queryLines.increment(stats.outputLines)
+    queryInputDatapoints.increment(stats.inputDatapoints)
+    queryOutputDatapoints.increment(stats.outputDatapoints)
+
+    collector.result
+      .map { t => DataExpr.withDefaultLabel(expr, t) }
+      .sortWith { _.label < _.label }
   }
 
   def execute(context: EvalContext, expr: DataExpr): List[TimeSeries] = {
