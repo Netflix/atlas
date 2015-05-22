@@ -21,17 +21,20 @@ import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
+import com.netflix.atlas.chart.model.GraphDef
+import com.netflix.atlas.chart.model.LineDef
+
 class CsvGraphEngine(val name: String, val contentType: String, sep: String) extends GraphEngine {
 
   def write(config: GraphDef, output: OutputStream) {
     val writer = new OutputStreamWriter(output, "UTF-8")
-    val seriesList = config.plots.flatMap(_.series)
+    val seriesList = config.plots.flatMap(_.lines)
     val count = seriesList.size
     val numberFmt = config.numberFormat
     writer.append("\"timestamp\"")
     (0 until count).zip(seriesList).map {
       case (i, series) =>
-        val label = "\"%s\"".format(series.label)
+        val label = "\"%s\"".format(series.data.label)
         writer.append(sep).append(label)
     }
     writer.append("\n")

@@ -94,6 +94,8 @@ object Json {
     }
   }
 
+  def newMapper: ObjectMapper = newMapper(jsonFactory)
+
   def newJsonGenerator(writer: Writer): JsonGenerator = {
     jsonFactory.createGenerator(writer)
   }

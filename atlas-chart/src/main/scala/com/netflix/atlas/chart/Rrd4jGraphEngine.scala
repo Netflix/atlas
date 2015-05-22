@@ -29,9 +29,9 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model.SummaryStats
 import com.netflix.atlas.core.model.TimeSeries
-import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
@@ -68,11 +68,11 @@ object Rrd4jGraphEngine {
 
 class Rrd4jGraphEngine extends PngGraphEngine {
 
-  import com.netflix.atlas.chart.LineStyle._
+  import com.netflix.atlas.chart.model.LineStyle._
 
   type PaletteMap = collection.mutable.Map[String, Palette]
 
-  def name: String = "png"
+  def name: String = "rrd"
 
   private def dashedStroke: Stroke = {
     new BasicStroke(
@@ -84,10 +84,10 @@ class Rrd4jGraphEngine extends PngGraphEngine {
       0.0f)
   }
 
-  private def addStats(config: GraphDef, graphDef: RrdGraphDef, s: SeriesDef) {
+  private def addStats(config: GraphDef, graphDef: RrdGraphDef, s: LineDef) {
 
-    if (s.style != LineStyle.VSPAN) {
-      if (config.showLegendStats) {
+    if (s.lineStyle != LineStyle.VSPAN) {
+      if (config.legendType == LegendType.LABELS_WITH_STATS) {
         val stats = SummaryStats(s.data, config.startTime.toEpochMilli, config.endTime.toEpochMilli)
 
         graphDef.comment("%s%s%s%s\\l".format(
@@ -205,81 +205,65 @@ class Rrd4jGraphEngine extends PngGraphEngine {
       setMessage(graphDef, s"restricted graph width to ${GraphConstants.MaxWidth}")
     }
 
-    val graphLines = config.plots.map(_.series.size).sum
-    val axisPerLine = config.axisPerLine && graphLines <= (GraphConstants.MaxYAxis + 1)
-    if (axisPerLine != config.axisPerLine) {
-      setMessage(graphDef, s"axis per line disabled, $graphLines lines")
-    }
+    val graphLines = config.plots.map(_.data.size).sum
 
-    graphDef.setNoLegend(!config.showLegend || graphLines > GraphConstants.MaxLinesInLegend)
-    if (config.showLegend && graphLines > GraphConstants.MaxLinesInLegend) {
+    val showLegend = config.legendType != LegendType.OFF
+    graphDef.setNoLegend(!showLegend || graphLines > GraphConstants.MaxLinesInLegend)
+    if (showLegend && graphLines > GraphConstants.MaxLinesInLegend) {
       setMessage(graphDef, s"legend suppressed, $graphLines lines")
     }
 
-    config.verticalSpans.foreach { span =>
-      val t1 = span.t1.toEpochMilli / 1000
-      val t2 = span.t2.toEpochMilli / 1000
-      graphDef.vspan(t1, t2, span.color, null)
-    }
+    config.plots.zipWithIndex.foreach { case (plotDef, i) =>
+      val rrdAxisDef = new RrdAxisDef()
+      rrdAxisDef.setOpposite(i != 0)
+      rrdAxisDef.setColor(plotDef.getAxisColor)
 
-    val axes = collection.mutable.Map.empty[Int, AxisDef]
-    (0 to GraphConstants.MaxYAxis).foreach { k =>
-      if ((axisPerLine && k < graphLines) || config.axis.contains(k)) {
-        val axisConfig = config.axis.getOrElse(k, new AxisDef(k != 0))
-        axes += k -> axisConfig
+      plotDef.lower.foreach(m => rrdAxisDef.setMinValue(m))
+      plotDef.upper.foreach(m => rrdAxisDef.setMaxValue(m))
+      plotDef.ylabel.foreach(rrdAxisDef.setVerticalLabel)
 
-        val rrdAxisDef = new RrdAxisDef()
-        rrdAxisDef.setOpposite(axisConfig.rightSide)
+      rrdAxisDef.setLogarithmic(plotDef.scale == Scale.LOGARITHMIC)
 
-        axisConfig.min.foreach(m => rrdAxisDef.setMinValue(m))
-        axisConfig.max.foreach(m => rrdAxisDef.setMaxValue(m))
-        axisConfig.label.foreach(rrdAxisDef.setVerticalLabel)
+      graphDef.addValueAxis(i, rrdAxisDef)
 
-        rrdAxisDef.setLogarithmic(axisConfig.logarithmic)
-
-        graphDef.addValueAxis(k, rrdAxisDef)
-      }
     }
 
     val palettes = newPaletteMap
     var nextID = -1
-    val firstStack = new Array[Boolean](graphDef.getAxisCount)
 
-    config.plots.foreach { plotConfig =>
+    config.plots.zipWithIndex.foreach { case (plotConfig, yaxis) =>
+      var firstStack = false
 
-      plotConfig.horizontalSpans.foreach { span =>
-        graphDef.hspan(span.axis, span.v1, span.v2, span.color, null)
+      plotConfig.verticalSpans.foreach { span =>
+        val t1 = span.t1.toEpochMilli / 1000
+        val t2 = span.t2.toEpochMilli / 1000
+        graphDef.vspan(t1, t2, span.color, null)
       }
 
-      plotConfig.series.foreach { series =>
+      plotConfig.horizontalSpans.foreach { span =>
+        graphDef.hspan(0, span.v1, span.v2, span.color, null)
+      }
+
+      plotConfig.lines.foreach { series =>
         nextID += 1
         val id = nextID.toString
-        val yaxis = if (axisPerLine) nextID else series.axis.getOrElse(0)
-        val axisDef = axes(yaxis)
-        val label = series.label
+        val label = series.data.label
 
-        val color = resolveColors(palettes, graphDef, series, yaxis)
-        val vcolor = config.visionType.convert(color)
+        val vcolor = series.color
 
         val legend = label + "\\l"
         graphDef.datasource(id, new SeriesPlottable(series))
 
-        if (axisDef.stack) {
-          if (series.style != VSPAN) {
-            series.style = STACK
-          }
-        }
-
-        series.style match {
+        series.lineStyle match {
           case LINE =>
             val lw = new BasicStroke(series.lineWidth)
             graphDef.line(yaxis, id, vcolor, legend, lw, false)
           case AREA =>
             graphDef.area(yaxis, id, vcolor, legend, false)
           case STACK =>
-            if (!firstStack(yaxis)) {
+            if (!firstStack) {
               graphDef.area(yaxis, id, vcolor, legend, false)
-              firstStack(yaxis) = true
+              firstStack = true
             } else {
               graphDef.stack(yaxis, id, vcolor, legend)
             }
@@ -298,7 +282,7 @@ class Rrd4jGraphEngine extends PngGraphEngine {
     graphDef.comment(comment)
 
     if (config.loadTime > 0 && config.stats.inputLines > 0) {
-      val graphLines = config.plots.map(_.series.size).sum
+      val graphLines = config.plots.map(_.data.size).sum
       val graphDatapoints = graphLines * ((end - start) / (config.step / 1000) + 1)
       val stats = "Fetch: %sms (L: %s, %s, %s; D: %s, %s, %s)\\l".format(
         config.loadTime.toString,
@@ -315,53 +299,13 @@ class Rrd4jGraphEngine extends PngGraphEngine {
       graphDef.comment(stats)
     }
 
-    config.notices.foreach { n =>
+    config.warnings.foreach { msg =>
       graphDef.comment("\\l")
-      n match {
-        case Info(msg)    => graphDef.comment("INFO: " + msg + "\\j")
-        case Warning(msg) => graphDef.comment("WARNING: " + msg + "\\j")
-        case Error(msg)   => graphDef.comment("ERROR: " + msg + "\\j")
-      }
+      graphDef.comment(s"$msg\\j")
     }
 
     val graph = new RrdGraph(graphDef)
     output.write(graph.getRrdGraphInfo.getBytes)
-  }
-
-  def resolveColors(pp: PaletteMap, graphDef: RrdGraphDef, s: SeriesDef, axis: Int): Color  = {
-    if (graphDef.getAxisCount == 1)  {
-      s.color.getOrElse(applyAlpha(s.alpha, pickColor(pp,s)))
-    } else {
-      val axisDef =  graphDef.getAxisDef(axis)
-      if (s.color.isEmpty) {
-          val axisColor = setAxisColorFromSeriesPallette(axisDef, pp, s)
-          applyAlpha(s.alpha, axisColor)
-      }  else {
-          setAxisColorFromSeriesColor(axisDef, pp, s)
-          s.color.get
-      }
-    }
-  }
-
-  def pickColor(pp: PaletteMap, s: SeriesDef) : Color = {
-    val p = s.palette
-    val color = pp.getOrElseUpdate(p, Palette(p)).nextColor
-    color
-  }
-
-  def setAxisColorFromSeriesPallette(axisDef: RrdAxisDef, pp: PaletteMap, s: SeriesDef): Color = {
-     if (axisDef.getColor == null) {
-        axisDef.setColor(pickColor(pp, s))
-     }
-    axisDef.getColor.asInstanceOf[Color]
-  }
-
-  def setAxisColorFromSeriesColor(axisDef: RrdAxisDef, pp: PaletteMap, s: SeriesDef): Color = {
-    if (axisDef.getColor == null) {
-      val c = s.color.get
-      axisDef.setColor(new Color(c.getRed, c.getGreen, c.getBlue))
-    }
-    axisDef.getColor.asInstanceOf[Color]
   }
 
   def createImage(config: GraphDef): RenderedImage = {
@@ -370,9 +314,9 @@ class Rrd4jGraphEngine extends PngGraphEngine {
     PngImage(buf.toByteArray).data
   }
 
-  private class SeriesPlottable(s: SeriesDef) extends Plottable {
+  private class SeriesPlottable(s: LineDef) extends Plottable {
 
-    val ts = if (s.style == STACK) s.data.mapTimeSeq(_.mapValues(v => Math.addNaN(v, 0.0))) else s.data
+    val ts = s.data
 
     override def getValue(timestamp: Long): Double = {
       ts.data(timestamp * 1000)

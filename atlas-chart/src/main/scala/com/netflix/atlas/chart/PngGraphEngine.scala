@@ -18,6 +18,7 @@ package com.netflix.atlas.chart
 import java.awt.image.RenderedImage
 import java.io.OutputStream
 
+import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.core.util.PngImage
 
 

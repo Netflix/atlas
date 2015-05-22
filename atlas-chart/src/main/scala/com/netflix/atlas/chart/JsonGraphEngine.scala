@@ -18,6 +18,8 @@ package com.netflix.atlas.chart
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 
+import com.netflix.atlas.chart.model._
+
 class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
 
   import com.netflix.atlas.chart.GraphEngine._
@@ -29,7 +31,7 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
 
   def write(config: GraphDef, output: OutputStream) {
     val writer = new OutputStreamWriter(output, "UTF-8")
-    val seriesList = config.plots.flatMap(_.series)
+    val seriesList = config.plots.flatMap(_.lines)
     val count = seriesList.size
     val numberFmt = config.numberFormat
     val gen = jsonFactory.createGenerator(writer)
@@ -41,7 +43,7 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
     gen.writeArrayFieldStart("legend")
     (0 until count).zip(seriesList).foreach {
       case (i, series) =>
-        val label = series.label
+        val label = series.data.label
         gen.writeString(label)
     }
     gen.writeEndArray()
@@ -49,7 +51,7 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
     gen.writeArrayFieldStart("metrics")
     seriesList.foreach { series =>
       gen.writeStartObject()
-      series.tags.toList.sortWith(_._1 < _._1).foreach { t =>
+      series.data.tags.toList.sortWith(_._1 < _._1).foreach { t =>
         gen.writeStringField(t._1, t._2)
       }
       gen.writeEndObject()
@@ -75,17 +77,13 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
     gen.writeEndArray()
 
     gen.writeArrayFieldStart("notices")
-    config.notices.foreach {
-      case Info(msg)    => gen.writeString("INFO: " + msg)
-      case Warning(msg) => gen.writeString("WARNING: " + msg)
-      case Error(msg)   => gen.writeString("ERROR: " + msg)
-    }
+    config.warnings.foreach(gen.writeString)
     gen.writeEndArray()
 
     if (config.stats.inputLines > 0) {
       val start = config.startTime.toEpochMilli / 1000
       val end = config.endTime.toEpochMilli / 1000
-      val graphLines = config.plots.map(_.series.size).sum
+      val graphLines = config.plots.map(_.data.size).sum
       val graphDatapoints = graphLines * ((end - start) / (config.step / 1000) + 1)
 
       gen.writeObjectFieldStart("explain")

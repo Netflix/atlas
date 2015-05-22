@@ -22,6 +22,11 @@ import com.netflix.atlas.core.util.Strings
 
 
 object Colors {
+
+  def withAlpha(c: Color, alpha: Int): Color = {
+    new Color(c.getRed, c.getGreen, c.getBlue, alpha)
+  }
+
   /**
    * Load a list of colors from a resource file.
    */
