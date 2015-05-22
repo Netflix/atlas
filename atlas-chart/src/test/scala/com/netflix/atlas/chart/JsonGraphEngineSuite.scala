@@ -18,6 +18,9 @@ package com.netflix.atlas.chart
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
+import com.netflix.atlas.chart.model.GraphDef
+import com.netflix.atlas.chart.model.LineDef
+import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
@@ -33,15 +36,10 @@ class JsonGraphEngineSuite extends FunSuite {
     TimeSeries(Map("name" -> v.toString), new FunctionTimeSeq(DsType.Gauge, step, _ => v))
   }
 
-  def constantSeriesDef(value: Double) : SeriesDef = {
-    val seriesDef = new SeriesDef
-    seriesDef.data = constant(value)
-    seriesDef
-  }
+  def constantSeriesDef(value: Double): LineDef = LineDef(constant(value))
 
-  def label(vs: SeriesDef*): List[SeriesDef] = {
-    vs.zipWithIndex.foreach { case (v, i) => v.label = i.toString }
-    vs.toList
+  def label(vs: LineDef*): List[LineDef] = {
+    vs.toList.zipWithIndex.map { case (v, i) => v.copy(data = v.data.withLabel(i.toString)) }
   }
 
   def strip(expected: String): String = {
@@ -49,13 +47,13 @@ class JsonGraphEngineSuite extends FunSuite {
   }
 
   def process(engine: GraphEngine, expected: String) {
-    val plotDef = new PlotDef
-    plotDef.series = label(constantSeriesDef(42), constantSeriesDef(Double.NaN))
+    val data = PlotDef(label(constantSeriesDef(42), constantSeriesDef(Double.NaN)))
 
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 1, 0, 3, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
+    val graphDef = GraphDef(
+      plots = List(data),
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 1, 0, 3, 0, 0, ZoneOffset.UTC).toInstant
+    )
 
     val bytes = Streams.byteArray { out => engine.write(graphDef, out) }
     val json = new String(bytes, "UTF-8")
@@ -68,7 +66,7 @@ class JsonGraphEngineSuite extends FunSuite {
         |"start":1325376000000,
         |"step":60000,
         |"legend":["0","1"],
-        |"metrics":[{},{}],
+        |"metrics":[{"name":"42.0"},{"name":"NaN"}],
         |"values":[[42.000000,NaN],[42.000000,NaN],[42.000000,NaN],[42.000000,NaN]],
         |"notices":[]
         |}"""
@@ -82,7 +80,7 @@ class JsonGraphEngineSuite extends FunSuite {
         |"start":1325376000000,
         |"step":60000,
         |"legend":["0","1"],
-        |"metrics":[{},{}],
+        |"metrics":[{"name":"42.0"},{"name":"NaN"}],
         |"values":[[42.000000,"NaN"],[42.000000,"NaN"],[42.000000,"NaN"],[42.000000,"NaN"]],
         |"notices":[]
         |}"""

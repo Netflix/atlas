@@ -19,6 +19,7 @@ import java.io.OutputStream
 import java.io.OutputStreamWriter
 
 import com.fasterxml.jackson.core.JsonGenerator
+import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model.SummaryStats
 
 
@@ -27,9 +28,7 @@ import com.netflix.atlas.core.model.SummaryStats
  */
 class StatsJsonGraphEngine extends GraphEngine {
 
-  import java.lang.{Double => JDouble}
-
-import com.netflix.atlas.chart.GraphEngine._
+  import com.netflix.atlas.chart.GraphEngine._
 
   def name: String = "stats.json"
   def contentType: String = "application/json"
@@ -45,7 +44,7 @@ import com.netflix.atlas.chart.GraphEngine._
 
   def write(config: GraphDef, output: OutputStream) {
     val writer = new OutputStreamWriter(output, "UTF-8")
-    val seriesList = config.plots.flatMap(_.series)
+    val seriesList = config.plots.flatMap(_.lines)
     val count = seriesList.size
     val numberFmt = config.numberFormat
     val gen = jsonFactory.createGenerator(writer)
@@ -58,7 +57,7 @@ import com.netflix.atlas.chart.GraphEngine._
     gen.writeArrayFieldStart("legend")
     (0 until count).zip(seriesList).foreach {
       case (i, series) =>
-        val label = series.label
+        val label = series.data.label
         gen.writeString(label)
     }
     gen.writeEndArray()
@@ -66,7 +65,7 @@ import com.netflix.atlas.chart.GraphEngine._
     gen.writeArrayFieldStart("metrics")
     seriesList.foreach { series =>
       gen.writeStartObject()
-      series.tags.toList.sortWith(_._1 < _._1).foreach { t =>
+      series.data.tags.toList.sortWith(_._1 < _._1).foreach { t =>
         gen.writeStringField(t._1, t._2)
       }
       gen.writeEndObject()
@@ -91,11 +90,7 @@ import com.netflix.atlas.chart.GraphEngine._
     gen.writeEndArray()
 
     gen.writeArrayFieldStart("notices")
-    config.notices.foreach {
-      case Info(msg)    => gen.writeString("INFO: " + msg)
-      case Warning(msg) => gen.writeString("WARNING: " + msg)
-      case Error(msg)   => gen.writeString("ERROR: " + msg)
-    }
+    config.warnings.foreach(gen.writeString)
     gen.writeEndArray()
 
     gen.writeEndObject()

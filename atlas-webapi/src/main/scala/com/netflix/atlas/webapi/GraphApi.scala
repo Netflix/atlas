@@ -21,14 +21,9 @@ import java.time.ZoneId
 import akka.actor.ActorRefFactory
 import akka.actor.Props
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.chart.GraphDef
-import com.netflix.atlas.chart.GraphEngine
-import com.netflix.atlas.chart.VisionType
-import com.netflix.atlas.core.model.DataExpr
-import com.netflix.atlas.core.model.EvalContext
-import com.netflix.atlas.core.model.ModelExtractors
-import com.netflix.atlas.core.model.StyleExpr
-import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.chart._
+import com.netflix.atlas.chart.model._
+import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Step
 import com.netflix.atlas.core.util.Strings
@@ -73,7 +68,8 @@ object GraphApi {
       numberFormat: String,
       id: String,
       isBrowser: Boolean,
-      isAllowedFromBrowser: Boolean) {
+      isAllowedFromBrowser: Boolean,
+      includeMeta: Boolean) {
 
     def shouldOutputImage: Boolean = (format == "png")
 
@@ -138,23 +134,85 @@ object GraphApi {
     }
 
     def newGraphDef: GraphDef = {
-      val graphDef = new GraphDef
-      graphDef.title = flags.title
-      graphDef.timezone = tz
-      graphDef.startTime = fstart
-      graphDef.endTime = fend
-      graphDef.step = stepSize
-      graphDef.width = flags.width
-      graphDef.height = flags.height
-      graphDef.axisPerLine = flags.axisPerLine
-      graphDef.showLegend = flags.showLegend
-      graphDef.showLegendStats = flags.showLegendStats
-      graphDef.showBorder = flags.showBorder
-      graphDef.onlyGraph = flags.showOnlyGraph
-      graphDef.fontSize  = flags.fontSize
-      graphDef.numberFormat = numberFormat
-      graphDef.visionType = flags.vision
-      graphDef
+      val legendType = (flags.showLegend, flags.showLegendStats) match {
+        case (false, _) => LegendType.OFF
+        case (_, false) => LegendType.LABELS_ONLY
+        case (_, true)  => LegendType.LABELS_WITH_STATS
+      }
+
+      GraphDef(
+        title = flags.title,
+        timezone = tz,
+        startTime = fstart,
+        endTime = fend,
+        step = stepSize,
+        width = flags.width,
+        height = flags.height,
+        legendType = legendType,
+        showBorder = flags.showBorder,
+        onlyGraph = flags.showOnlyGraph,
+        fontSize = flags.fontSize,
+        numberFormat = numberFormat,
+        plots = Nil
+      )
+    }
+
+    def metadata: Map[String, String] = {
+      val params = List.newBuilder[(String, String)]
+
+      params ++= List(
+        "tz"              -> tz.toString,
+        "s"               -> fstart.toEpochMilli.toString,
+        "start"           -> fstart.toString,
+        "e"               -> fend.toEpochMilli.toString,
+        "end"             -> fend.toString,
+        "step"            -> stepSize.toString,
+        "w"               -> flags.width.toString,
+        "h"               -> flags.height.toString,
+        "axis_per_line"   -> flags.axisPerLine.toString,
+        "no_legend"       -> (!flags.showLegend).toString,
+        "no_legend_stats" -> (!flags.showLegendStats).toString,
+        "no_border"       -> (!flags.showBorder).toString,
+        "only_graph"      -> flags.showOnlyGraph.toString,
+        "vision"          -> flags.vision.toString
+      )
+
+      flags.title.foreach { t => params += "title" -> t }
+
+      params.result().toMap
+    }
+  }
+
+  case class Response(
+      start: Long,
+      step: Long,
+      legend: List[String],
+      metrics: List[Map[String, String]],
+      values: Array[Array[Double]]) {
+
+    private def toTimeSeries(label: String, pos: Int): TimeSeries = {
+      val data = new Array[Double](values.length)
+      var i = 0
+      while (i < values.length) {
+        data(i) = values(i)(pos)
+        i += 1
+      }
+      TimeSeries(Map.empty, label, new ArrayTimeSeq(DsType.Gauge, start, step, data))
+    }
+
+    def toLineDefs: List[LineDef] = {
+      legend.zipWithIndex.map { case (label, i) => LineDef(toTimeSeries(label, i)) }
+    }
+
+    def toGraphDef: GraphDef = {
+      val plotDef = PlotDef(toLineDefs)
+
+      GraphDef(
+        startTime = Instant.ofEpochMilli(start),
+        endTime = Instant.ofEpochMilli(start + step * values.length),
+        step = step,
+        plots = List(plotDef)
+      )
     }
   }
 
@@ -232,6 +290,7 @@ object GraphApi {
       numberFormat = params.get("number_format").getOrElse("%f"),
       id = id,
       isBrowser = false,
-      isAllowedFromBrowser = true)
+      isAllowedFromBrowser = true,
+      includeMeta = params.get("meta").contains("1"))
   }
 }

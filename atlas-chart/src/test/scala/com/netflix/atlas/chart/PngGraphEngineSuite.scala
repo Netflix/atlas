@@ -22,6 +22,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
+import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
@@ -77,10 +78,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     wave(min, max, Duration.ofHours(hours))
   }
 
-  def finegrainSeriesDef(min: Int, max: Int, hours: Int): SeriesDef = {
-    val seriesDef = new SeriesDef
-    seriesDef.data = finegrainWave(min ,max, hours)
-    seriesDef
+  def finegrainSeriesDef(min: Int, max: Int, hours: Int): LineDef = {
+    LineDef(finegrainWave(min ,max, hours))
   }
 
   def simpleWave(min: Int, max: Int): TimeSeries = {
@@ -88,20 +87,18 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   def simpleWave(max: Int): TimeSeries = {
-      simpleWave(0, max)
+    simpleWave(0, max)
   }
 
-  def simpleSeriesDef(min: Int, max: Int): SeriesDef = {
-    val seriesDef = new SeriesDef
-    seriesDef.data = simpleWave(min ,max)
-    seriesDef
+  def simpleSeriesDef(min: Int, max: Int): LineDef = {
+    LineDef(simpleWave(min ,max))
   }
 
-  def simpleSeriesDef(max: Int) : SeriesDef = {
+  def simpleSeriesDef(max: Int) : LineDef = {
     simpleSeriesDef(0, max)
   }
 
-  def outageSeriesDef(max: Int): SeriesDef = {
+  def outageSeriesDef(max: Int): LineDef = {
     val start1 = ZonedDateTime.of(2012, 1, 1, 5, 0, 0, 0, ZoneOffset.UTC).toInstant
     val end1 = ZonedDateTime.of(2012, 1, 1, 6, 38, 0, 0, ZoneOffset.UTC).toInstant
 
@@ -110,15 +107,11 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
     val bad = constant(0)
     val normal = interval(simpleWave(max), bad, start1.toEpochMilli, end1.toEpochMilli)
-    val seriesDef = new SeriesDef
-    seriesDef.data = interval(normal, bad, start2.toEpochMilli, end2.toEpochMilli)
-    seriesDef
+    LineDef(interval(normal, bad, start2.toEpochMilli, end2.toEpochMilli))
   }
 
-  def constantSeriesDef(value: Double) : SeriesDef = {
-    val seriesDef = new SeriesDef
-    seriesDef.data = constant(value)
-    seriesDef
+  def constantSeriesDef(value: Double): LineDef = {
+    LineDef(constant(value))
   }
 
   def makeTranslucent(c: Color): Color = {
@@ -129,9 +122,13 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     graphAssertions.generateReport(getClass)
   }
 
-  def label(vs: SeriesDef*): List[SeriesDef] = {
-    vs.zipWithIndex.foreach { case (v, i) => v.label = i.toString }
-    vs.toList
+  def label(vs: LineDef*): List[LineDef] = label(0, Palette.default, vs: _*)
+
+  def label(offset: Int, p: Palette, vs: LineDef*): List[LineDef] = {
+    vs.toList.zipWithIndex.map { case (v, i) =>
+      val c = p.withAlpha(v.color.getAlpha).colors(i + offset)
+      v.copy(data = v.data.withLabel(i.toString), color = c)
+    }
   }
 
   def load(resource: String): GraphDef = {
@@ -150,11 +147,11 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     val name         = prefix + "_non_uniformly_drawn_spikes.png"
     val dataFileName = prefix + "_non_uniformly_drawn_spikes.json"
 
-    val graphDef = load(s"$dataDir/$dataFileName")
+    val graphDef = load(s"$dataDir/$dataFileName").copy(width = 700)
+      .adjustPlots(_.copy(axisColor = Some(Color.BLACK)))
     //atlas generated sample is 780 wide less 64 origin less 16 r side padding == 700
     //expect to see width of spikes vary as x values repeat due to rounding
     //RrdGraph calculates x values based on number of pixels/second
-    graphDef.width = 700
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     graphAssertions.assertEquals(image, name, bless)
   }
@@ -163,13 +160,6 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
     val name = prefix + "_one_data_point_wide_spike.png"
     val tags = Map("name" -> "beehive_honeycomb.counter.full.index.success")
-
-    val graphDef = new GraphDef
-    graphDef.width = 1100
-    graphDef.height = 200
-    graphDef.startTime = ZonedDateTime.of(2013, 6,  9, 18, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2013, 6, 11, 18, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.step = 3*60000  // one sample every 3 minute
 
     // 2 days of samples with 3 minute intervals inclusive start-end
     val sampleCnt =  1 +  (2 * 1440) / 3
@@ -188,916 +178,301 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     //(e.g. one pixel wide trailing bar)
     values(sampleCnt-1)  =  0.005553
 
-    val seq = new ArrayTimeSeq(DsType.Gauge,
-      graphDef.startTime.toEpochMilli, graphDef.step, values)
-    val seriesDef = new SeriesDef
-    seriesDef.data = TimeSeries(tags, seq)
-
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-    graphDef.axis(0).max = Some(0.005553 * 1.5)
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line") {
-    val name = prefix + "_single_line.png"
-
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(400))
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_with_load_time") {
-    val name = prefix + "_single_line_with_load_time.png"
-
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(400))
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime   = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-    graphDef.loadTime = 5123L
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_only_graph") {
-    val name = prefix + "_single_line_only_graph.png"
-
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(400))
-
-    val graphDef = new GraphDef
-    graphDef.onlyGraph = true
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_no_border") {
-    val name = prefix + "_single_line_no_border.png"
-
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(400))
-
-    val graphDef = new GraphDef
-    graphDef.showBorder = false
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_title") {
-    val name = prefix + "_single_line_title.png"
-
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(400))
-
-    val graphDef = new GraphDef
-    graphDef.title = Some("A sample title")
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_timezone") {
-    val name = prefix + "_single_line_timezone.png"
-
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(400))
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.timezone = ZoneId.of("US/Pacific")
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_no_legend") {
-    val name = prefix + "_single_line_no_legend.png"
-
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(400))
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.showLegend = false
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_no_legend_stats") {
-    val name = prefix + "_single_line_no_legend_stats.png"
-
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(400))
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.showLegendStats = false
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_linewidth") {
-    val name = prefix + "_single_line_linewidth.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    seriesDef.lineWidth = 3.0f
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_logarithmic") {
-    val name = prefix + "_single_line_logarithmic.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.axis(0).logarithmic = true
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_upper") {
-    val name = prefix + "_single_line_upper.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.axis(0).max = Some(200)
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_lower") {
-    val name = prefix + "_single_line_lower.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.axis(0).min = Some(200)
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_ylabel") {
-    val name = prefix + "_single_line_ylabel.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.axis(0).label = Some("something useful")
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_area") {
-    val name = prefix + "_single_line_area.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    seriesDef.style = LineStyle.AREA
-
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_color") {
-    val name = prefix + "_single_line_color.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    seriesDef.color = Some(Color.BLUE)
-
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_stack") {
-    val name = prefix + "_single_line_stack.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.axis.get(0).get.stack = true
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_stack_negative") {
-    val name = prefix + "_single_line_stack_negative.png"
-
-    val seriesDef = simpleSeriesDef(-400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.axis.get(0).get.stack = true
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_hspans") {
-    val name = prefix + "_single_line_hspans.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-    plotDef.horizontalSpans = List(
-      HSpan(0, 300, 400, Color.RED, None),
-      HSpan(0, 5, 42, Color.BLUE, Some("really bad error")))
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("single_line_vspans") {
-    val name = prefix + "_single_line_vspans.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-
-    val errStart = ZonedDateTime.of(2012, 1, 1, 4, 0, 0, 0, ZoneOffset.UTC).toInstant
-    val errEnd = ZonedDateTime.of(2012, 1, 1, 8, 30, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.verticalSpans = List(VSpan(errStart, errEnd, Color.RED, None))
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("double_line") {
-    val name = prefix + "_double_line.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef, simpleSeriesDef(150))
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("axis_per_line") {
-    val name = prefix + "_axis_per_line.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef, simpleSeriesDef(150))
-
-    val graphDef = new GraphDef
-    graphDef.axisPerLine = true
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("double_line_stack") {
-    val name = prefix + "_double_line_stack.png"
-
-    val seriesDef = simpleSeriesDef(400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef, simpleSeriesDef(150))
-
-    val graphDef = new GraphDef
-    graphDef.axis.get(0).get.stack = true
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("double_line_stack_on_NaN") {
-    val name = prefix + "_double_line_stack_on_NaN.png"
-
-    val plotDef = new PlotDef
-    plotDef.series = label(constantSeriesDef(Double.NaN), simpleSeriesDef(150))
-
-    val graphDef = new GraphDef
-    graphDef.axis.get(0).get.stack = true
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("double_line_stack_middle_NaN") {
-    val name = prefix + "_double_line_stack_middle_NaN.png"
-
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(150),constantSeriesDef(Double.NaN), simpleSeriesDef(300))
-
-    val graphDef = new GraphDef
-    graphDef.axis.get(0).get.stack = true
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("double_line_stack_negative") {
-    val name = prefix + "_double_line_stack_negative.png"
-
-    val seriesDef = simpleSeriesDef(-400)
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef, simpleSeriesDef(150))
-
-    val graphDef = new GraphDef
-    graphDef.axis.get(0).get.stack = true
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("double_yaxis") {
-    val name = prefix + "_double_yaxis.png"
-
-    val plotDef1 = new PlotDef
-    plotDef1.series = label(simpleSeriesDef(40000), simpleSeriesDef(42))
-
-    val plotDef2 = new PlotDef
-    plotDef2.series = label(simpleSeriesDef(400), simpleSeriesDef(150))
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef1, plotDef2)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("vspans_from_line") {
-    val name = prefix + "_vspans_from_line.png"
-
-    val dataDef = outageSeriesDef(400)
-    dataDef.lineWidth = 2.0f
-
-    val spanDef = outageSeriesDef(400)
-    spanDef.style = LineStyle.VSPAN
-    spanDef.alpha = Some(40)
-
-    val plotDef = new PlotDef
-    plotDef.series = label(dataDef, spanDef)
-
-    val graphDef = new GraphDef
-    graphDef.width = 1200
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 4, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 1, 8, 0, 0, 0, ZoneOffset.UTC).toInstant
-
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  /*
-   * Multi - Y Axis Test Suite
-   * Default axis 0 on the left and axis 1 and 2 on the right
-   *
-   * Graph Element       Default Palette
-   * Axis 0              RED
-   *   Line A
-   *   Line B
-   *
-   * Axis 1              GREEN
-   *   Line C
-   *
-   * Axis 2              BLUE
-   *   Line D
-   *   Line E
-   */
-  private val LINE_A_COLOR     = new Color(247,109, 17) //orange
-  private val LINE_B_COLOR     = new Color(188, 96,235) //purple
-  private val LINE_C_COLOR     = new Color(139,181, 47) //yellow green
-  private val LINE_D_COLOR     = new Color(123,132,138) //gray
-  private val LINE_E_COLOR     = new Color(84 ,154,204) //medium blue
-
-  def multiYDataSet(title: String, positive: Boolean = true): GraphDef = {
-    val graphDef = new GraphDef
-    graphDef.title = Some(title)
-
-    val axis1Def = new AxisDef
-    axis1Def.rightSide = true
-
-    val axis2Def = new AxisDef
-    axis2Def.rightSide = true
-
-    graphDef.axis += (1 -> axis1Def, 2 -> axis2Def)
-
-    val seriesDefA = if (positive) finegrainSeriesDef(200000, 400000, 12)
-                     else  finegrainSeriesDef(-200000, -400000, 12)
-
-    val seriesDefB = if (positive) finegrainSeriesDef(100000, 900000, 6)
-                     else finegrainSeriesDef(-100000, -900000, 6)
-
-    val seriesDefC = if (positive) constantSeriesDef(150)
-                     else constantSeriesDef(150)
-
-    val seriesDefD = if (positive) simpleSeriesDef(20000000)
-                     else simpleSeriesDef(-20000000)
-
-    val seriesDefE = if (positive) simpleSeriesDef(10000000, 30000000)
-                     else simpleSeriesDef(-10000000, -30000000)
-
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDefA, seriesDefB, seriesDefC, seriesDefD, seriesDefE)
-
-    plotDef.series(2).axis = Some(1)
-    plotDef.series(3).axis = Some(2)
-    plotDef.series(4).axis = Some(2)
-
-    graphDef.plots = List(plotDef)
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-
-    graphDef
-  }
-
-  test("MultiY_axis_no_lines") {
-    val name = prefix + "_MultiY_axis_no_lines.png"
-
-    val graphDef = new GraphDef
-    graphDef.title = Some("Axis without data plotted")
-
-    val axis1Def = new AxisDef
-    val axis2Def = new AxisDef
-
-    val axis3Def = new AxisDef
-    axis3Def.rightSide = true
-
-    val axis4Def = new AxisDef
-    axis4Def.rightSide = true
-
-    val axis5Def = new AxisDef
-    axis5Def.rightSide = true
-
-    val axis6Def = new AxisDef
-    axis6Def.rightSide = true
-
-    val axis7Def = new AxisDef
-    axis7Def.rightSide = true
-
-    graphDef.axis += (1 -> axis1Def, 2 -> axis2Def, 3 -> axis3Def, 4 -> axis4Def, 5 -> axis5Def, 6 -> axis6Def, 7 -> axis7Def)
-
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_only_graph") {
-    val name = prefix + "_MultiY_only_graph.png"
-
-    val graphDef = multiYDataSet("Data plotted for axis 0, 1, 2")
-    graphDef.onlyGraph = true
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_vertical_Label") {
-    val name = prefix + "_MultiY_vertical_Label.png"
-
-    val graphDef = multiYDataSet("Vertical Labels for each axis drawn in same color as axis")
-
-    graphDef.axis.get(0).get.label  = Some("Default y axis  - 0")
-    graphDef.axis.get(1).get.label  = Some("y axis - 1")
-    graphDef.axis.get(2).get.label  = Some("y axis - 2")
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_color_default") {
-    val name = prefix + "_MultiY_color_default.png"
-
-    val graphDef = multiYDataSet("Atlas Chooses axis color from default palette, line color pinned to axis color")
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_color_override_line") {
-    val name = prefix + "_MultiY_color_override_line.png"
-
-    val graphDef = multiYDataSet("Line Colors specified & Opaque Axis Color chosen from 1st line on the Axis")
-
-    graphDef.plots(0).series(0).color = Some(makeTranslucent(LINE_A_COLOR))
-    graphDef.plots(0).series(1).color = Some(LINE_B_COLOR)
-    graphDef.plots(0).series(2).color = Some(LINE_C_COLOR)
-    graphDef.plots(0).series(3).color = Some(LINE_D_COLOR)
-    graphDef.plots(0).series(4).color = Some(LINE_E_COLOR)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_area") {
-    val name = prefix + "_MultiY_area.png"
-
-    val graphDef = multiYDataSet("Opaque Area 0 & 1 on Axis 0, Translucent Area 3 & 4 on Axis 2")
-
-    graphDef.plots(0).series(0).style = LineStyle.AREA
-    graphDef.plots(0).series(1).style = LineStyle.AREA
-    graphDef.plots(0).series(3).style = LineStyle.AREA
-    graphDef.plots(0).series(4).style = LineStyle.AREA
-
-    graphDef.plots(0).series(0).color = Some(LINE_A_COLOR)
-    graphDef.plots(0).series(1).color = Some(LINE_B_COLOR)
-    graphDef.plots(0).series(2).color = Some(LINE_C_COLOR)
-    graphDef.plots(0).series(3).color = Some(makeTranslucent(LINE_D_COLOR))
-    graphDef.plots(0).series(4).color = Some(makeTranslucent(LINE_E_COLOR))
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_stack") {
-    val name = prefix + "_MultiY_stack.png"
-
-    val graphDef = multiYDataSet("Opaque stack on axis 0, Translucent stack on axis 2")
-
-    graphDef.axis(0).stack = true
-    graphDef.axis(2).stack = true
-
-    graphDef.plots(0).series(0).color = Some(LINE_A_COLOR)
-    graphDef.plots(0).series(1).color = Some(LINE_B_COLOR)
-    graphDef.plots(0).series(2).color = Some(LINE_C_COLOR)
-    graphDef.plots(0).series(3).color = Some(makeTranslucent(LINE_D_COLOR))
-    graphDef.plots(0).series(4).color = Some(makeTranslucent(LINE_E_COLOR))
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_stack_negative") {
-    val name = prefix + "_MultiY_stack_negative.png"
-
-    val graphDef = multiYDataSet("Negative Stack: Opaque stack on axis 0, Translucent stack on axis 2", false)
-
-    graphDef.axis(0).stack = true
-    graphDef.axis(2).stack = true
-
-    graphDef.plots(0).series(0).color = Some(LINE_A_COLOR)
-    graphDef.plots(0).series(1).color = Some(LINE_B_COLOR)
-    graphDef.plots(0).series(2).color = Some(LINE_C_COLOR)
-    graphDef.plots(0).series(3).color = Some(makeTranslucent(LINE_D_COLOR))
-    graphDef.plots(0).series(4).color = Some(makeTranslucent(LINE_E_COLOR))
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_stack_multiple_lines") {
-    val name = prefix + "_MultiY_stack_multiple_lines.png"
-
-    val graphDef = new GraphDef
-    graphDef.title = Some("9 Lines stacked on Axis 2")
-
-    val axis1Def = new AxisDef
-    axis1Def.rightSide = true
-
-    val axis2Def = new AxisDef
-    axis2Def.rightSide = true
-    axis2Def.stack = true
-
-    graphDef.axis += (1 -> axis1Def, 2 -> axis2Def)
-
-    val plotDef = new PlotDef
-    plotDef.series = label((0 until 9).map(_ => simpleSeriesDef(100)): _*)
-    plotDef.series.foreach(_.axis = Some(2))
-
-    plotDef.series(0).color = Some(LINE_A_COLOR)
-    plotDef.series(1).color = Some(LINE_B_COLOR)
-    plotDef.series(2).color = Some(LINE_C_COLOR)
-    plotDef.series(3).color = Some(LINE_D_COLOR)
-    plotDef.series(4).color = Some(LINE_E_COLOR)
-    plotDef.series(5).color = Some(Color.YELLOW)
-    plotDef.series(6).color = Some(Color.CYAN)
-    plotDef.series(7).color = Some(Color.BLUE)
-    plotDef.series(8).color = Some(Color.LIGHT_GRAY)
-
-    graphDef.plots = List(plotDef)
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_logarithmic") {
-    val name = prefix + "_MultiY_logarithmic.png"
-
-    val graphDef = multiYDataSet("Axis 0 Logarithmic Grid, Axis 2 Logarithmic")
-
-    graphDef.axis(0).logarithmic = true
-    graphDef.axis(2).logarithmic = true
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_logarithmic_non_primary_axis") {
-    val name = prefix + "_MultiY_logarithmic_non_primary_axis.png"
-
-    val graphDef = multiYDataSet("Axis 0 Linear Grid,  Axis 2 Logarithmic")
-
-    graphDef.axis(2).logarithmic = true
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
-
-  test("MultiY_hspans") {
-    val name = prefix + "_MultiY_hspans.png"
-
-    val graphDef = multiYDataSet("HSpans on all Axis")
-
-    graphDef.plots(0).horizontalSpans = List(
-      HSpan(0, 700000, 800000, Color.RED, Some("HSpan 0 on yaxis 0")),
-      HSpan(1, 149.5, 150.5, Color.GREEN, Some("HSpan 1 on yaxis 1")),
-      HSpan(2, 5000000, 8000000, Color.BLUE, Some("HSpan 2 on yaxis 0"))
+    val start = ZonedDateTime.of(2013, 6,  9, 18, 0, 0, 0, ZoneOffset.UTC).toInstant
+    val end = ZonedDateTime.of(2013, 6, 11, 18, 0, 0, 0, ZoneOffset.UTC).toInstant
+    val step = 3 * 60000 // one sample every 3 minutes
+
+    val seq = new ArrayTimeSeq(DsType.Gauge, start.toEpochMilli, step, values)
+    val seriesDef = LineDef(TimeSeries(tags, "0", seq))
+
+    val plotDef = PlotDef(List(seriesDef), upper = Some(0.005553 * 1.5), axisColor = Some(Color.BLACK))
+
+    val graphDef = GraphDef(
+      width = 1100,
+      height = 200,
+      startTime = start,
+      endTime = end,
+      step = step,  // one sample every 3 minute
+      plots = List(plotDef)
     )
 
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     graphAssertions.assertEquals(image, name, bless)
   }
 
-  test("MultiY_vspans") {
-    val name = prefix + "_MultiY_vspans.png"
+  private def lines(name: String, vs: Seq[Double], f: GraphDef => GraphDef): Unit = {
+    test(name) {
+      val series = vs.map { v => if (v.isNaN) constantSeriesDef(v) else simpleSeriesDef(v.toInt) }
+      val plotDef = PlotDef(label(series: _*), axisColor = Some(Color.BLACK))
 
-    val graphDef = multiYDataSet("1 VSpan on X Axis")
+      val graphDef = GraphDef(
+        startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+        endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+        plots = List(plotDef)
+      )
 
+      val image = PngImage(graphEngine.createImage(f(graphDef)), Map.empty)
+      val fname = s"${prefix}_$name.png"
+      graphAssertions.assertEquals(image, fname, bless)
+    }
+  }
+
+  private def singleLine(name: String, f: GraphDef => GraphDef): Unit = {
+    lines(name, Seq(400), f)
+  }
+
+  singleLine("single_line",                v => v)
+  singleLine("single_line_with_load_time", v => v.copy(loadTime = 5123L))
+  singleLine("single_line_only_graph",     v => v.copy(onlyGraph = true))
+  singleLine("single_line_no_border",      v => v.copy(showBorder = false))
+  singleLine("single_line_title",          v => v.copy(title = Some("A sample title")))
+  singleLine("single_line_timezone",       v => v.copy(timezone = ZoneId.of("US/Pacific")))
+  singleLine("single_line_no_legend",      v => v.copy(legendType = LegendType.OFF))
+  singleLine("single_line_no_legend_stats",v => v.copy(legendType = LegendType.LABELS_ONLY))
+  singleLine("single_line_linewidth",      v => v.adjustLines(_.copy(lineWidth = 3.0f)))
+  singleLine("single_line_upper",          v => v.adjustPlots(_.copy(upper = Some(200))))
+  singleLine("single_line_lower",          v => v.adjustPlots(_.copy(lower = Some(200))))
+  singleLine("single_line_ylabel",         v => v.adjustPlots(_.copy(ylabel = Some("something useful"))))
+  singleLine("single_line_area",           v => v.adjustLines(_.copy(lineStyle = LineStyle.AREA)))
+  singleLine("single_line_stack",          v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
+  singleLine("single_line_color",          v => v.adjustLines(_.copy(color = Color.BLUE)))
+  singleLine("single_line_logarithmic",    v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC)))
+
+
+  val longLabel =
+    """
+      |A long ylabel that should cause it to wrap when displayed on the chart. Some more text to
+      | ensure that it will wrap when showing in the legend.
+    """.stripMargin
+  singleLine("single_line_ylabel_wrap",    v => v.adjustPlots(_.copy(ylabel = Some(longLabel))))
+
+  lines("single_line_log_negative", Seq(-400), v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC)))
+  lines("single_line_log_large", Seq(4.123e9), v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC)))
+
+  lines("single_line_stack_negative", Seq(-400), v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
+
+  test("single_line_hspans") {
+    def alpha(c: Color): Color = new Color(c.getRed, c.getGreen, c.getBlue, 50)
+    val spans = List(
+      HSpanDef(300, 400, alpha(Color.RED), None),
+      HSpanDef(5, 42, alpha(Color.BLUE), Some("really bad error")))
+
+    val plotDef = PlotDef(spans ::: label(simpleSeriesDef(400)), axisColor = Some(Color.BLACK))
+
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(plotDef)
+    )
+
+    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val fname = s"${prefix}_single_line_hspans.png"
+    graphAssertions.assertEquals(image, fname, bless)
+  }
+
+  test("single_line_vspans") {
+    def alpha(c: Color): Color = new Color(c.getRed, c.getGreen, c.getBlue, 50)
     val errStart = ZonedDateTime.of(2012, 1, 1, 4, 0, 0, 0, ZoneOffset.UTC).toInstant
     val errEnd = ZonedDateTime.of(2012, 1, 1, 8, 30, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.verticalSpans = List(VSpan(errStart, errEnd, Color.YELLOW, None))
+    val spans = List(VSpanDef(errStart, errEnd, alpha(Color.RED), None))
+
+    val plotDef = PlotDef(spans ::: label(simpleSeriesDef(400)), axisColor = Some(Color.BLACK))
+
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(plotDef)
+    )
 
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val fname = s"${prefix}_single_line_vspans.png"
+    graphAssertions.assertEquals(image, fname, bless)
+  }
+
+  private def doubleLine(name: String, f: GraphDef => GraphDef): Unit = {
+    lines(name, Seq(400, 150), f)
+  }
+
+  doubleLine("double_line",        v => v)
+  doubleLine("axis_per_line",      v => v.axisPerLine)
+  doubleLine("double_line_stack",  v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
+
+  lines("double_line_stack_on_NaN",     Seq(Double.NaN, 150),       v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
+  lines("double_line_stack_middle_NaN", Seq(150, Double.NaN, 300),  v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
+  lines("double_line_stack_negative",   Seq(-400, 150),             v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
+
+  test("double_yaxis") {
+    // Keeping output the same, this is a hold-over from before the rendering supported multi-y.
+    // Will fix in a later iteration as I'm trying to ensure all results are the same for
+    // refactoring the model.
+    val plotDef1 = PlotDef(
+      label(0, Palette.default, simpleSeriesDef(40000), simpleSeriesDef(42)) ++
+      label(2, Palette.default, simpleSeriesDef(400), simpleSeriesDef(150)),
+      axisColor = Some(Color.BLACK))
+
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(plotDef1)
+    )
+
+    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val fname = s"${prefix}_double_yaxis.png"
+    graphAssertions.assertEquals(image, fname, bless)
+  }
+
+  test("vspans_from_line") {
+    val dataDef = outageSeriesDef(400).copy(lineWidth = 2.0f, color = Color.RED)
+    val spanDef = outageSeriesDef(400).copy(lineStyle = LineStyle.VSPAN, color = Colors.withAlpha(Color.GREEN, 40))
+    val plotDef = PlotDef(label(dataDef, spanDef), axisColor = Some(Color.BLACK))
+
+    val graphDef = GraphDef(
+      width = 1200,
+      startTime = ZonedDateTime.of(2012, 1, 1, 4, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 1, 8, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(plotDef))
+
+    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val name = prefix + "_vspans_from_line.png"
     graphAssertions.assertEquals(image, name, bless)
   }
 
-  test("MultiY_lower") {
-    val name = prefix + "_MultiY_lower.png"
-
-    val graphDef = multiYDataSet("Lower Limit on Axis 0 & Axis 2")
-
-    graphDef.axis(0).min = Some(300000)
-    graphDef.axis(2).min = Some(15000000)
-
+  test("multiy_no_lines") {
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(PlotDef(Nil), PlotDef(Nil))
+    )
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val name = prefix + "_multiy_no_lines.png"
     graphAssertions.assertEquals(image, name, bless)
   }
 
-  test("MultiY_upper") {
-    val name = prefix + "_MultiY_upper.png"
-
-    val graphDef = multiYDataSet("Upper Limit on Axis 0 & Axis 2")
-
-    graphDef.axis(0).max = Some(300000)
-    graphDef.axis(2).max = Some(15000000)
-
+  test("multiy_two") {
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(PlotDef(label(simpleSeriesDef(100))), PlotDef(label(simpleSeriesDef(100000))))
+    )
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val name = prefix + "_multiy_two.png"
     graphAssertions.assertEquals(image, name, bless)
   }
 
-  ignore("nearly_zero") {
-    val name = prefix + "_nearly_zero.png"
-
-    val seriesDef = new SeriesDef
-    seriesDef.data = constant(java.lang.Double.MIN_VALUE)
-
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
+  test("multiy_two_colors") {
+    val p = Palette.default
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(
+        PlotDef(label(0, p, simpleSeriesDef(100))),
+        PlotDef(label(1, p, simpleSeriesDef(100000))))
+    )
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val name = prefix + "_multiy_two_colors.png"
     graphAssertions.assertEquals(image, name, bless)
   }
+
+  def multiy(name: String, f: PlotDef => PlotDef): Unit = {
+    test(name) {
+      val plots = (0 until GraphConstants.MaxYAxis).map { i =>
+        val p = PlotDef(label(i, Palette.default, finegrainSeriesDef(i, 50 * i, i)))
+        if (i == 1) f(p) else p
+      }
+      val graphDef = GraphDef(
+        startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+        endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+        plots = plots.toList
+      )
+      val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+      val fname = s"${prefix}_multiy_n_${name}.png"
+      graphAssertions.assertEquals(image, fname, bless)
+    }
+  }
+
+  multiy("identity",    v => v)
+  multiy("upper",       v => v.copy(upper = Some(25.0)))
+  multiy("lower",       v => v.copy(lower = Some(25.0)))
+  multiy("ylabel",      v => v.copy(ylabel = Some("something useful")))
+  multiy("ylabel_wrap", v => v.copy(ylabel = Some(longLabel)))
+  multiy("color",       v => v.copy(axisColor = Some(Color.LIGHT_GRAY)))
+  multiy("logarithmic", v => v.copy(scale = Scale.LOGARITHMIC))
 
   // https://github.com/Netflix/atlas/issues/119
   // TODO: fix to show label
   test("issue-119_missing_y_labels") {
+    val plotDef = PlotDef(label(constantSeriesDef(2027)), axisColor = Some(Color.BLACK))
+
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(plotDef))
+
+    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_issue-119_missing_y_labels.png"
-
-    val seriesDef = new SeriesDef
-    seriesDef.data = constant(2027)
-
-    val plotDef = new PlotDef
-    plotDef.series = label(seriesDef)
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     graphAssertions.assertEquals(image, name, bless)
   }
 
-  test("too_many_lines") {
-    val name = prefix + "_too_many_lines.png"
+  test("issue-119_small_range_large_base") {
+    val plotDef = PlotDef(label(simpleSeriesDef(2026, 2027)), axisColor = Some(Color.BLACK))
 
-    val plotDef = new PlotDef
-    plotDef.series = (0 until 1024).map(simpleSeriesDef).toList
-
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(plotDef))
 
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val name = prefix + "_issue-119_small_range_large_base.png"
     graphAssertions.assertEquals(image, name, bless)
   }
 
-  test("excessive_height") {
-    val name = prefix + "_excessive_height.png"
+  test("issue-119_small_range_large_negative") {
+    val plotDef = PlotDef(label(simpleSeriesDef(-2027, -2026)), axisColor = Some(Color.BLACK))
 
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(100))
-
-    val graphDef = new GraphDef
-    graphDef.height = 2048
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(plotDef))
 
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val name = prefix + "_issue-119_small_range_large_negative.png"
     graphAssertions.assertEquals(image, name, bless)
   }
 
-  test("excessive_width") {
-    val name = prefix + "_excessive_width.png"
+  lines("too_many_lines", (0 until 1024).map(_.toDouble).toSeq, v => v)
 
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(100))
-
-    val graphDef = new GraphDef
-    graphDef.width = 2048
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
-  }
+  lines("excessive_height", Seq(100), v => v.copy(height = 2048))
+  lines("excessive_width",  Seq(100), v => v.copy(width = 2048))
 
   test("notices") {
-    val name = prefix + "_notices.png"
 
-    val plotDef = new PlotDef
-    plotDef.series = label(simpleSeriesDef(400))
+    val plotDef = PlotDef(label(simpleSeriesDef(400)), axisColor = Some(Color.BLACK))
 
-    val graphDef = new GraphDef
-    graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-    graphDef.plots = List(plotDef)
-
-    graphDef.notices = List(
-      Info("This is an information message that is shown on the graph to let the user know about " +
-        "something important. It should be long enough to force the message to wrap."),
-      Warning("Something bad happened and we wanted you to know."),
-      Error("Something really bad happened."))
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(plotDef),
+      warnings = List(
+          """
+            |This is an information message that is shown on the graph to let the user know
+            | about something important. It should be long enough to force the message to wrap.
+          """.stripMargin,
+          "Something bad happened and we wanted you to know.",
+          "Something really bad happened.")
+    )
 
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val name = prefix + "_notices.png"
     graphAssertions.assertEquals(image, name, bless)
   }
 
   VisionType.values.foreach { vt =>
-    test("vision_" + vt.name) {
-      val name = s"${prefix}_vision_${vt.name}.png"
-
-      val plotDef = new PlotDef
-      plotDef.series = label((0 until 9).map(_ => simpleSeriesDef(100)): _*)
-
-      val graphDef = new GraphDef
-      graphDef.axis.get(0).get.stack = true
-      graphDef.visionType = vt
-      graphDef.startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-      graphDef.endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
-      graphDef.plots = List(plotDef)
-
-      val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-      graphAssertions.assertEquals(image, name, bless)
+    def f(gdef: GraphDef): GraphDef = {
+      gdef.adjustLines(_.copy(lineStyle = LineStyle.STACK)).withVisionType(vt)
     }
+    lines(s"vision_${vt.name}", (0 until 9).map(_ => 100.0).toSeq, f)
   }
+
 }
 
 case class GraphData(
@@ -1108,23 +483,14 @@ case class GraphData(
     values: List[List[Double]]) {
 
   def toGraphDef: GraphDef = {
-    val graphDef = new GraphDef
-    graphDef.step = step
-    graphDef.startTime = Instant.ofEpochMilli(start)
     val nbrSteps = values.length - 1
-    graphDef.endTime =  graphDef.startTime.plusMillis(graphDef.step * nbrSteps)
+    val s = Instant.ofEpochMilli(start)
+    val e = s.plusMillis(step * nbrSteps)
 
-    val seq = new ArrayTimeSeq(DsType.Gauge,
-      graphDef.startTime.toEpochMilli, graphDef.step, values.flatten.toArray)
+    val seq = new ArrayTimeSeq(DsType.Gauge, s.toEpochMilli, step, values.flatten.toArray)
+    val seriesDef = LineDef(TimeSeries(Map.empty, "0", seq))
+    val plotDef = PlotDef(List(seriesDef))
 
-    val seriesDef = new SeriesDef
-    seriesDef.data = TimeSeries(Map.empty, "test", seq)
-    seriesDef.label = "0"
-
-    val plotDef = new PlotDef
-    plotDef.series = List(seriesDef)
-    graphDef.plots = List(plotDef)
-
-    graphDef
+    GraphDef(startTime = s, endTime = e, step = step, plots = List(plotDef))
   }
 }

@@ -19,14 +19,16 @@ object SummaryStats {
 
   import java.lang.{Double => JDouble}
 
-  def apply(ts: TimeSeries, start: Long, end: Long): SummaryStats = {
+  def apply(ts: TimeSeries, start: Long, end: Long): SummaryStats = apply(ts.data, start, end)
+
+  def apply(ts: TimeSeq, start: Long, end: Long): SummaryStats = {
     var total = 0.0
     var count = 0
     var max = JDouble.MIN_VALUE
     var min = JDouble.MAX_VALUE
     var last = JDouble.NaN
 
-    ts.data.foreach(start, end) { (t, v) =>
+    ts.foreach(start, end) { (t, v) =>
       if (!JDouble.isNaN(v)) {
         total += v
         count += 1

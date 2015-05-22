@@ -83,6 +83,7 @@ class RequestHandlerActor(config: Config) extends Actor with ActorLogging with H
     import scala.collection.JavaConversions._
     val routeClasses = config.getStringList("atlas.akka.api-endpoints").toList
     routeClasses.map { cls =>
+      log.info(s"loading webapi class: $cls")
       val c = Class.forName(cls)
       val ctor = c.getConstructor(classOf[ActorRefFactory])
       ctor.newInstance(context).asInstanceOf[WebApi]

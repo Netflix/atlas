@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.webapi
 
+import java.awt.Color
 import java.io.ByteArrayOutputStream
 import java.time.Duration
 
@@ -22,10 +23,8 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.chart.AxisDef
-import com.netflix.atlas.chart.LineStyle
-import com.netflix.atlas.chart.PlotDef
-import com.netflix.atlas.chart.SeriesDef
+import com.netflix.atlas.chart._
+import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.PngImage
@@ -81,7 +80,52 @@ class GraphRequestActor extends Actor with ActorLogging {
   }
 
   private def sendImage(data: Map[DataExpr, List[TimeSeries]]): Unit = {
-    val seriesList = request.exprs.flatMap { s =>
+    val ts = data.values.flatten
+
+    val plotExprs = request.exprs.groupBy(_.axis.getOrElse(0))
+    val multiY = plotExprs.size > 1
+
+    val palette = Palette.fromResource(request.flags.palette).iterator
+    val shiftPalette = Palette.fromResource("bw").iterator
+
+    val plots = plotExprs.toList.sortWith(_._1 < _._1).map { case (yaxis, exprs) =>
+
+      val axisCfg = request.flags.axes(yaxis)
+      val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
+      var axisColor: Option[Color] = None
+
+      val lines = exprs.flatMap { s =>
+        val ts = s.expr.eval(request.evalContext, data).data
+        val exprStr = s.expr.toString
+
+        val tmp = ts.map { t =>
+          val color = s.color.getOrElse {
+            axisColor.getOrElse {
+              if (s.offset > 0L) shiftPalette.next() else palette.next()
+            }
+          }
+          val colorWithAlpha = s.alpha.fold(color)(a => Colors.withAlpha(color, a))
+          if (multiY) axisColor = Some(colorWithAlpha)
+
+          val offset = Strings.toString(Duration.ofMillis(s.offset))
+          val newT = t.withTags(t.tags + (TagKey.offset -> offset))
+          LineDef(
+            data = newT.withLabel(s.legend(newT)),
+            color = colorWithAlpha,
+            lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
+            lineWidth = s.lineWidth)
+        }
+        tmp.sortWith(_.data.label < _.data.label)
+      }
+
+      PlotDef(lines,
+        lower = axisCfg.lower,
+        upper = axisCfg.upper,
+        ylabel = axisCfg.ylabel,
+        scale = if (axisCfg.logarithmic) Scale.LOGARITHMIC else Scale.LINEAR,
+        axisColor = if (multiY) None else Some(Color.BLACK))
+    }
+    /*val seriesList = request.exprs.flatMap { s =>
       val ts = s.expr.eval(request.evalContext, data).data
       val exprStr = s.expr.toString
       val tmp = ts.map { t =>
@@ -100,17 +144,17 @@ class GraphRequestActor extends Actor with ActorLogging {
         series
       }
       tmp.sortWith(_.label < _.label)
-    }
+    }*/
 
-    val graphDef = request.newGraphDef
+    val graphDef = request.newGraphDef.copy(plots = plots)
 
     //default axis
-    val axisDef = new AxisDef
-    graphDef.axis = Map(0 -> axisDef)
+    //val axisDef = new AxisDef
+    //graphDef.axis = Map(0 -> axisDef)
 
     //add default axis definitions on the right side of the graph for any
     //series which specified axis but did not specify a corresponding axis definition
-    seriesList.foreach { seriesDef =>
+    /*seriesList.foreach { seriesDef =>
       val yaxis = seriesDef.axis.getOrElse(0)
       if (!graphDef.axis.contains(yaxis)) {
         val ax = new AxisDef
@@ -130,7 +174,7 @@ class GraphRequestActor extends Actor with ActorLogging {
 
     val plotDef = new PlotDef
     plotDef.series = seriesList
-    graphDef.plots = List(plotDef)
+    graphDef.plots = List(plotDef)*/
 
     val baos = new ByteArrayOutputStream
     request.engine.write(graphDef, baos)
