@@ -70,6 +70,7 @@ case class GraphDef(
     step: Long = 60000,
     width: Int = 400,
     height: Int = 200,
+    zoom: Double = 1.0,
     title: Option[String] = None,
     legendType: LegendType = LegendType.LABELS_WITH_STATS,
     onlyGraph: Boolean = false,

@@ -140,8 +140,11 @@ class DefaultGraphEngine extends PngGraphEngine {
       acc + element.getHeight(Constants.refGraphics, imgWidth)
     }
 
-    val image = new BufferedImage(imgWidth, imgHeight, BufferedImage.TYPE_INT_ARGB)
+    val zoomWidth = (imgWidth * config.zoom).toInt
+    val zoomHeight = (imgHeight * config.zoom).toInt
+    val image = new BufferedImage(zoomWidth, zoomHeight, BufferedImage.TYPE_INT_ARGB)
     val g = image.createGraphics()
+    g.scale(config.zoom, config.zoom)
     g.setColor(Constants.canvasBackgroundColor)
     g.fillRect(0, 0, imgWidth, imgHeight)
 

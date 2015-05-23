@@ -237,7 +237,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   singleLine("single_line_stack",          v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
   singleLine("single_line_color",          v => v.adjustLines(_.copy(color = Color.BLUE)))
   singleLine("single_line_logarithmic",    v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC)))
-
+  singleLine("single_line_zoom_2.0",       v => v.copy(zoom = 2.0))
+  singleLine("single_line_zoom_4.0",       v => v.copy(zoom = 4.0))
 
   val longLabel =
     """
