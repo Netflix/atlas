@@ -123,6 +123,10 @@ case class Interpreter(vocabulary: List[Word]) {
     debug(program, Context(this, Nil, Map.empty))
   }
 
+  final def debug(program: String): List[Step] = {
+    debug(program.trim.split("\\s*,\\s*").filter(_.nonEmpty).toList)
+  }
+
   /**
    * Return a list of all words in the vocabulary for this interpreter that match the provided
    * stack.
