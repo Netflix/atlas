@@ -19,6 +19,8 @@ import akka.actor._
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config
+import com.typesafe.scalalogging.StrictLogging
+import org.slf4j.LoggerFactory
 import spray.can.Http
 import spray.can.server.Stats
 import spray.http.HttpMethods._
@@ -26,7 +28,7 @@ import spray.http._
 import spray.routing._
 
 
-class RequestHandlerActor(config: Config) extends Actor with ActorLogging with HttpService {
+class RequestHandlerActor(config: Config) extends Actor with StrictLogging with HttpService {
 
   def this() = this(ConfigManager.current)
 
@@ -79,11 +81,16 @@ class RequestHandlerActor(config: Config) extends Actor with ActorLogging with H
       sender ! HttpResponse(status = StatusCodes.InternalServerError, entity)
   }
 
+  /**
+   * In many cases the final list will come from several config files with values getting appended
+   * to the list. To avoid unnecessary duplication the class list will be deduped so that only
+   * the first instance of a class will be used. The order in the list is otherwise maintained.
+   */
   private def loadRoutesFromConfig(): List[WebApi] = {
     import scala.collection.JavaConversions._
-    val routeClasses = config.getStringList("atlas.akka.api-endpoints").toList
+    val routeClasses = config.getStringList("atlas.akka.api-endpoints").toList.distinct
     routeClasses.map { cls =>
-      log.info(s"loading webapi class: $cls")
+      logger.info(s"loading webapi class: $cls")
       val c = Class.forName(cls)
       val ctor = c.getConstructor(classOf[ActorRefFactory])
       ctor.newInstance(context).asInstanceOf[WebApi]
