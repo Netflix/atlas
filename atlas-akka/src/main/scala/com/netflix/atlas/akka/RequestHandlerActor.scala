@@ -20,7 +20,6 @@ import com.netflix.atlas.config.ConfigManager
 import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import org.slf4j.LoggerFactory
 import spray.can.Http
 import spray.can.server.Stats
 import spray.http.HttpMethods._
