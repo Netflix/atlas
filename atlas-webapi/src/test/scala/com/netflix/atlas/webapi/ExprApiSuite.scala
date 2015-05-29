@@ -51,14 +51,30 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
     assert(data.size === 7)
   }
 
-  testGet("/api/v1/expr?q=name,sps,:eq,:sum,$name,:legend,foo,:sset") {
+  testGet("/api/v1/expr?q=name,sps,:eq,:sum,$name,:legend,foo,:sset,foo,:get") {
     assert(response.status === StatusCodes.OK)
     val data = Json.decode[List[ExprApiSuite.Output]](responseAs[String])
-    assert(data.size === 9)
+    assert(data.size === 11)
     assert(data.last.context.variables("foo") == "name,sps,:eq,:sum,$name,:legend")
   }
 
   testGet("/api/v1/expr?q=name,sps,:eq,:sum,$name,:legend&vocab=query") {
+    assert(response.status === StatusCodes.BadRequest)
+  }
+
+  testGet("/api/v1/expr?q=name,sps,:eq,cluster,:has&vocab=query") {
+    assert(response.status === StatusCodes.BadRequest)
+  }
+
+  testGet("/api/v1/expr?q=name,sps,:eq,:clear&vocab=query") {
+    assert(response.status === StatusCodes.BadRequest)
+  }
+
+  testGet("/api/v1/expr?q=name,sps,:eq,:sum,$name,:legend,foo") {
+    assert(response.status === StatusCodes.BadRequest)
+  }
+
+  testGet("/api/v1/expr?q=name,sps,:eq,:sum,$name,:legend,foo,:clear") {
     assert(response.status === StatusCodes.BadRequest)
   }
 
