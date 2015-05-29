@@ -14,4 +14,7 @@
 
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,2,:lw,(,0h,1d,1w,),:offset,:stack&zoom=2.0
 
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=42,:area
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=42,:area&l=30
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=-42,:area
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=-42,:area&u=-30
