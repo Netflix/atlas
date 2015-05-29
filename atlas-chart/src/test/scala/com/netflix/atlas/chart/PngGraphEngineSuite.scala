@@ -45,7 +45,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
   private val graphAssertions = new GraphAssertions(goldenDir, targetDir)
 
-  val bless = true
+  val bless = false
 
   def prefix: String
   def graphEngine: PngGraphEngine

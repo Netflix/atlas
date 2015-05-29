@@ -38,6 +38,7 @@ case class ValueGrid(
     val ticks = yaxis.ticks(y1, y2)
 
     // Draw minor grid lines
+    val majorGridPos = ticks.map(t => yscale(t.v)).toSet
     ticks match {
       case a :: b :: _ =>
         minor.configure(g)
@@ -46,7 +47,7 @@ case class ValueGrid(
         while (y < yaxis.max) {
           if (y > yaxis.min) {
             val py = yscale(y)
-            if (py != y1 && py != y2) {
+            if (!majorGridPos.contains(py) && py != y1 && py != y2) {
               g.drawLine(x1, py, x2, py)
             }
           }

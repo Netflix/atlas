@@ -53,7 +53,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
   private val graphAssertions = new GraphAssertions(goldenDir, targetDir)
 
-  val bless = true
+  val bless = false
 
   override def afterAll() {
     graphAssertions.generateReport(getClass)
