@@ -49,10 +49,11 @@ case class TimeSeriesArea(
     while (t < xaxis.end) {
       val px1 = xscale(t - step)
       val px2 = xscale(t)
-      val ny = yscale(ts(t))
+      val nv = ts(t)
+      val ny = yscale(nv)
       val py1 = math.min(axisy, ny)
       val py2 = math.max(axisy, ny) + 1
-      g.fillRect(px1, py1, px2 - px1, py2 - py1)
+      if (!nv.isNaN) g.fillRect(px1, py1, px2 - px1, py2 - py1)
       t += step
       py = ny
     }

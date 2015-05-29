@@ -89,11 +89,10 @@ object GraphApi {
     }
 
     // Final start and end time rounded to step boundaries
-    val fstart = roundToStep(resStart)
-    val fend = roundToStep(resEnd)
+    val (fstart, fend) = roundToStep(resStart, resEnd)
 
     private def timeRange(s: String, e: String, tz: ZoneId): (Instant, Instant) = {
-      if (Strings.isRelativeDate(s, true)) {
+      if (Strings.isRelativeDate(s, true) || s == "e") {
         require(!Strings.isRelativeDate(e, true), "start and end are both relative")
         val end = Strings.parseDate(e, tz)
         val start = Strings.parseDate(end, s, tz)
@@ -105,8 +104,11 @@ object GraphApi {
       }
     }
 
-    private def roundToStep(t: (Instant, Instant)): (Instant, Instant) = {
-      roundToStep(t._1) -> roundToStep(t._2)
+    private def roundToStep(s: Instant, e: Instant): (Instant, Instant) = {
+      val rs = roundToStep(s)
+      val re = roundToStep(e)
+      val adjustedStart = if (rs.equals(re)) rs.minusMillis(stepSize) else rs
+      adjustedStart -> re
     }
 
     private def roundToStep(i: Instant): Instant = {
@@ -143,8 +145,8 @@ object GraphApi {
       GraphDef(
         title = flags.title,
         timezone = tz,
-        startTime = fstart,
-        endTime = fend,
+        startTime = fstart.plusMillis(stepSize),
+        endTime = fend.plusMillis(stepSize),
         step = stepSize,
         width = flags.width,
         height = flags.height,

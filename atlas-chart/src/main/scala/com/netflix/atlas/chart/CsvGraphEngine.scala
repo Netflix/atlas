@@ -41,7 +41,7 @@ class CsvGraphEngine(val name: String, val contentType: String, sep: String) ext
     val step = config.step
     val endTime = config.endTime.toEpochMilli
     var timestamp = config.startTime.toEpochMilli
-    while (timestamp <= endTime) {
+    while (timestamp < endTime) {
       val t = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), config.timezone)
       writer.append(t.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
       seriesList.foreach { series =>

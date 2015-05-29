@@ -95,9 +95,9 @@ case class PlotDef(
         line.lineStyle == LineStyle.AREA || line.lineStyle == LineStyle.STACK
       }
       if (!hasArea) bounds else {
-        if (bounds._1 > 0.0)
+        if (bounds._1 > 0.0 && !lower.isDefined)
           0.0 -> bounds._2
-        else if (bounds._2 < 0.0)
+        else if (bounds._2 < 0.0 && !upper.isDefined)
           bounds._1 -> 0.0
         else
           bounds

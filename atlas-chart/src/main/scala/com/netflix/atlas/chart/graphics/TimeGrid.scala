@@ -38,6 +38,7 @@ case class TimeGrid(
     val xscale = xaxis.scale(x1, x2)
 
     // Draw minor grid lines
+    val majorGridPos = ticks.map(t => xscale(t.timestamp)).toSet
     ticks match {
       case a :: b :: _ =>
         minor.configure(g)
@@ -45,7 +46,9 @@ case class TimeGrid(
         var t = xaxis.start / minorGap * minorGap
         while (t < xaxis.end) {
           val px = xscale(t)
-          g.drawLine(px, y1, px, y2)
+          if (!majorGridPos.contains(px) && px != x1 && px != x2) {
+            g.drawLine(px, y1, px, y2)
+          }
           t += minorGap
         }
       case _ =>
@@ -59,7 +62,9 @@ case class TimeGrid(
     major.configure(g)
     ticks.foreach { tick =>
       val px = xscale(tick.timestamp)
-      g.drawLine(px, y1, px, y2)
+      if (px != x1 && px != x2) {
+        g.drawLine(px, y1, px, y2)
+      }
     }
   }
 }
