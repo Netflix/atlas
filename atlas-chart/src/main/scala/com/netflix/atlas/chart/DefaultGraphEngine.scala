@@ -92,33 +92,33 @@ class DefaultGraphEngine extends PngGraphEngine {
           }
         }
       }
-    }
 
-    val start = config.startTime.toEpochMilli
-    val end = config.endTime.toEpochMilli
-    val frame = Strings.toString(Duration.between(config.startTime, config.endTime))
-    val endTime = ZonedDateTime.ofInstant(config.endTime, config.timezone).toString
-    val step = Strings.toString(Duration.ofMillis(config.step))
-    val comment = "Frame: %s, End: %s, Step: %s".format(frame, endTime, step)
-    parts += HorizontalPadding(15)
-    parts += Text(comment, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+      val start = config.startTime.toEpochMilli
+      val end = config.endTime.toEpochMilli
+      val frame = Strings.toString(Duration.between(config.startTime, config.endTime))
+      val endTime = ZonedDateTime.ofInstant(config.endTime, config.timezone).toString
+      val step = Strings.toString(Duration.ofMillis(config.step))
+      val comment = "Frame: %s, End: %s, Step: %s".format(frame, endTime, step)
+      parts += HorizontalPadding(15)
+      parts += Text(comment, font = Constants.smallFont, alignment = TextAlignment.LEFT)
 
-    if (config.loadTime > 0 && config.stats.inputLines > 0) {
-      val graphLines = config.plots.map(_.data.size).sum
-      val graphDatapoints = graphLines * ((end - start) / (config.step / 1000) + 1)
-      val stats = "Fetch: %sms (L: %s, %s, %s; D: %s, %s, %s)".format(
-        config.loadTime.toString,
-        UnitPrefix.format(config.stats.inputLines),
-        UnitPrefix.format(config.stats.outputLines),
-        UnitPrefix.format(graphLines),
-        UnitPrefix.format(config.stats.inputDatapoints),
-        UnitPrefix.format(config.stats.outputDatapoints),
-        UnitPrefix.format(graphDatapoints)
-      )
-      parts += Text(stats, font = Constants.smallFont, alignment = TextAlignment.LEFT)
-    } else if (config.loadTime > 0) {
-      val stats = "Fetch: %sms".format(config.loadTime.toString)
-      parts += Text(stats, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+      if (config.loadTime > 0 && config.stats.inputLines > 0) {
+        val graphLines = config.plots.map(_.data.size).sum
+        val graphDatapoints = graphLines * ((end - start) / (config.step / 1000) + 1)
+        val stats = "Fetch: %sms (L: %s, %s, %s; D: %s, %s, %s)".format(
+          config.loadTime.toString,
+          UnitPrefix.format(config.stats.inputLines),
+          UnitPrefix.format(config.stats.outputLines),
+          UnitPrefix.format(graphLines),
+          UnitPrefix.format(config.stats.inputDatapoints),
+          UnitPrefix.format(config.stats.outputDatapoints),
+          UnitPrefix.format(graphDatapoints)
+        )
+        parts += Text(stats, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+      } else if (config.loadTime > 0) {
+        val stats = "Fetch: %sms".format(config.loadTime.toString)
+        parts += Text(stats, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+      }
     }
 
     val noticeList = notices.result()
