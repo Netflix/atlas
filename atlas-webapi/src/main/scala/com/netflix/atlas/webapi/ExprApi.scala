@@ -18,6 +18,7 @@ package com.netflix.atlas.webapi
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.model.Expr
+import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
 import spray.http.HttpEntity
@@ -51,6 +52,38 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     new Interpreter(vocab.allWords)
   }
 
+  private def verifyStackContents(vocab: String, stack: List[Any]): Unit = {
+    vocab match {
+      case "std"   =>
+        // Don't need to do anything, any stack should be considered valid
+      case "query" =>
+        // Expectation is that there would be a single query on the stack
+        stack match {
+          case v :: Nil =>
+          case v :: vs =>
+            val summary = Interpreter.typeSummary(stack)
+            throw new IllegalArgumentException(s"expected a single query, found $summary")
+          case Nil =>
+            throw new IllegalArgumentException(s"expected a single query, stack is empty")
+        }
+      case _ =>
+        // Expecting a style expression that can be used in a graph
+        val invalidItem = stack.find {
+          case ModelExtractors.PresentationType(_) => false
+          case _ => true
+        }
+
+        invalidItem.foreach { item =>
+          val summary = Interpreter.typeSummary(List(item))
+          throw new IllegalArgumentException(s"expected an expression, found $summary")
+        }
+
+        if (stack.isEmpty) {
+          throw new IllegalArgumentException(s"expected an expression, stack is empty")
+        }
+    }
+  }
+
   /**
    * Currently the values just get converted to a string as the automatic json mapping doesn't
    * provide enough context. Also, the formatter when laying out the expressions for the debug
@@ -70,7 +103,13 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     val vocabName = ctx.request.uri.query.getOrElse("vocab", vocabulary.name)
 
     val interpreter = newInterpreter(vocabName)
-    val steps = interpreter.debug(query).map { step =>
+
+    val execSteps = interpreter.debug(query)
+    if (execSteps.nonEmpty) {
+      verifyStackContents(vocabName, execSteps.last.context.stack)
+    }
+
+    val steps = execSteps.map { step =>
       val stack = step.context.stack.map(valueString)
       val vars = step.context.variables.map(t => t._1 -> valueString(t._2))
       val ctxt = Map("stack" -> stack, "variables" -> vars)
