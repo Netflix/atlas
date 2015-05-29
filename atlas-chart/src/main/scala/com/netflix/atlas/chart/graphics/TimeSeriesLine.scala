@@ -43,15 +43,17 @@ case class TimeSeriesLine(
     val xscale = xaxis.scale(x1, x2)
     val yscale = yaxis.scale(y1, y2)
     var t = xaxis.start
-    var py = yscale(ts(t))
+    var pv = ts(t)
     while (t < xaxis.end) {
       val px1 = xscale(t - step)
       val px2 = xscale(t)
-      val ny = yscale(ts(t))
-      g.drawLine(px1, py, px1, ny)
-      g.drawLine(px1, ny, px2, ny)
+      val nv = ts(t)
+      val py = yscale(pv)
+      val ny = yscale(nv)
+      if (!pv.isNaN) g.drawLine(px1, py, px1, ny)
+      if (!nv.isNaN) g.drawLine(px1, ny, px2, ny)
       t += step
-      py = ny
+      pv = nv
     }
   }
 }
