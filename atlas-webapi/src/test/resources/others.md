@@ -22,3 +22,5 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=NaN
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=NaN,:area
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=NaN,:stack,1,:stack
+
+/api/v1/graph?e=2015-05-26T19:52&q=minuteOfHour,:time&s=e-10m

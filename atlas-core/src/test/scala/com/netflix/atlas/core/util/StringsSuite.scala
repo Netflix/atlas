@@ -382,6 +382,18 @@ class StringsSuite extends FunSuite {
     assert(received === ref)
   }
 
+  test("parseDate, s=e-0h") {
+    val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
+    val expected = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
+    assert(parseDate(ref, "e-0h", ZoneOffset.UTC) === expected)
+  }
+
+  test("parseDate, s=e") {
+    val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
+    val expected = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
+    assert(parseDate(ref, "e", ZoneOffset.UTC) === expected)
+  }
+
   test("parseColor") {
     assert(parseColor("FF0000") === Color.RED)
     assert(parseColor("ff0000") === Color.RED)

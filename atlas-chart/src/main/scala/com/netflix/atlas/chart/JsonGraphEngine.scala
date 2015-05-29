@@ -62,7 +62,7 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
     val step = config.step.asInstanceOf[Int]
     val endTime = config.endTime.toEpochMilli
     var timestamp = config.startTime.toEpochMilli
-    while (timestamp <= endTime) {
+    while (timestamp < endTime) {
       gen.writeStartArray()
       seriesList.foreach { series =>
         val v = series.data.data(timestamp)
