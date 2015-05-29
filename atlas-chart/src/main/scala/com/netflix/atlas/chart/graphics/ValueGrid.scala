@@ -46,7 +46,9 @@ case class ValueGrid(
         while (y < yaxis.max) {
           if (y > yaxis.min) {
             val py = yscale(y)
-            g.drawLine(x1, py, x2, py)
+            if (py != y1 && py != y2) {
+              g.drawLine(x1, py, x2, py)
+            }
           }
           y += minorGap
         }
@@ -60,7 +62,9 @@ case class ValueGrid(
     major.configure(g)
     ticks.foreach { tick =>
       val py = yscale(tick.v)
-      g.drawLine(x1, py, x2, py)
+      if (py != y1 && py != y2) {
+        g.drawLine(x1, py, x2, py)
+      }
     }
   }
 }

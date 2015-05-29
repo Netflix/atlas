@@ -45,7 +45,9 @@ case class TimeGrid(
         var t = xaxis.start / minorGap * minorGap
         while (t < xaxis.end) {
           val px = xscale(t)
-          g.drawLine(px, y1, px, y2)
+          if (px != x1 && px != x2) {
+            g.drawLine(px, y1, px, y2)
+          }
           t += minorGap
         }
       case _ =>
@@ -59,7 +61,9 @@ case class TimeGrid(
     major.configure(g)
     ticks.foreach { tick =>
       val px = xscale(tick.timestamp)
-      g.drawLine(px, y1, px, y2)
+      if (px != x1 && px != x2) {
+        g.drawLine(px, y1, px, y2)
+      }
     }
   }
 }
