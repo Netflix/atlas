@@ -28,7 +28,7 @@ import com.netflix.atlas.core.db.MemoryDatabase
 import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.webapi.LocalPublishActor
-import com.netflix.iep.guice.Governator
+import com.netflix.iep.guice.GuiceHelper
 import com.netflix.iep.service.Service
 import com.netflix.spectator.api.Spectator
 import com.netflix.spectator.log4j.SpectatorAppender
@@ -59,7 +59,7 @@ object Main extends StrictLogging {
 
     val serviceModule = new AbstractModule {
       override def configure(): Unit = {
-        Governator.getModulesUsingServiceLoader.forEach(install)
+        GuiceHelper.getModulesUsingServiceLoader.forEach(install)
 
         val server = new WebServer("atlas", ApiSettings.port) {
           override protected def configure(): Unit = {
@@ -89,9 +89,9 @@ object Main extends StrictLogging {
     modules.add(overrides)
 
     try {
-      val gov = new Governator
-      gov.start(modules)
-      gov.addShutdownHook()
+      val guice = new GuiceHelper
+      guice.start(modules)
+      guice.addShutdownHook()
     } catch {
       case t: Throwable =>
         logger.error("server failed to start, shutting down", t)
