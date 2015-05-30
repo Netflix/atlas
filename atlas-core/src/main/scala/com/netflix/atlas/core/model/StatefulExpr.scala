@@ -25,18 +25,6 @@ trait StatefulExpr extends TimeSeriesExpr {
 }
 
 object StatefulExpr {
-  /*case class RollingCount(expr: TimeSeriesExpr, n: Int) extends StatefulExpr {
-    def dataExprs: List[DataExpr] = expr.dataExprs
-    override def toString: String = s"$expr,$n,:rolling-count"
-
-    def isGrouped: Boolean = expr.isGrouped
-
-    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
-
-    def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
-      ResultSet(this, Nil)
-    }
-  }*/
 
   case class RollingCount(expr: TimeSeriesExpr, n: Int) extends StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.RollingCount._
@@ -52,7 +40,7 @@ object StatefulExpr {
       val data = ts.data
       var pos = s.pos
       var value = s.value
-      var buf = s.buf
+      val buf = s.buf
       var i = 0
       while (i < data.length) {
         if (pos < n) {
@@ -171,7 +159,7 @@ object StatefulExpr {
       var nanCount = s.nanCount
       var pos = s.pos
       var value = s.value
-      var buf = s.buf
+      val buf = s.buf
       var i = 0
       while (i < data.length) {
         if (data(i).isNaN) nanCount += 1

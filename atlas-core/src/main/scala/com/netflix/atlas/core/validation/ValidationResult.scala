@@ -15,9 +15,6 @@
  */
 package com.netflix.atlas.core.validation
 
-/**
- * Created by brharrington on 3/14/15.
- */
 sealed trait ValidationResult {
   def isSuccess: Boolean
   def isFailure: Boolean = !isSuccess

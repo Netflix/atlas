@@ -41,7 +41,6 @@ class StringMatching {
   private val flags = Pattern.CASE_INSENSITIVE
 
   private val startsWithMatcher = StringMatcher.StartsWith(prefix)
-  private val indexOfMatcher = StringMatcher.IndexOf(prefix)
   private val ssIndexOfMatcher = StringMatcher.IndexOf(substr)
   private val icIndexOfMatcher = StringMatcher.IndexOfIgnoreCase(substr)
   private val regexMatcher = StringMatcher.Regex(None, Pattern.compile(s"^$prefix"))

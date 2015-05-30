@@ -43,7 +43,7 @@ object BlockStats {
       case b: ArrayBlock    => inc(block, arrayCount, arrayBytes)
       case b: ConstantBlock => inc(block, constantCount, constantBytes)
       case b: SparseBlock   => inc(block, sparseCount, sparseBytes)
-      case _ => {}
+      case _ =>
     }
   }
 
@@ -57,7 +57,7 @@ object BlockStats {
       case b: ArrayBlock    => dec(block, arrayCount, arrayBytes)
       case b: ConstantBlock => dec(block, constantCount, constantBytes)
       case b: SparseBlock   => dec(block, sparseCount, sparseBytes)
-      case _ => {}
+      case _ =>
     }
   }
 

@@ -386,7 +386,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
         plots = plots.toList
       )
       val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-      val fname = s"${prefix}_multiy_n_${name}.png"
+      val fname = s"${prefix}_multiy_n_$name.png"
       graphAssertions.assertEquals(image, fname, bless)
     }
   }

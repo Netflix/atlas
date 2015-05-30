@@ -36,8 +36,6 @@ class NormalizeValueFunction(step: Long, heartbeat: Long, next: ValueFunction)
   require(step >= 1, "step must be >= 1")
   require(heartbeat >= 1, "heartbeat must be >= 1")
 
-  private var sinceStart: Boolean = true
-
   /**
    * The last time an update was received.
    */

@@ -129,7 +129,6 @@ class StringsSuite extends FunSuite {
   }
 
   test("conversionsDateTime") {
-    val timeStr = "1983-03-24T14:32:27"
     val time = ZonedDateTime.of(1983, 3, 24, 14, 32, 27, 0, ZoneOffset.UTC)
     assert(conversions(classOf[ZonedDateTime])("1983-03-24T14:32:27Z") == time)
     intercept[IllegalArgumentException] {

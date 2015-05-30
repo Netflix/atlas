@@ -49,7 +49,7 @@ trait TimeSeq {
   def bounded(s: Long, e: Long): ArrayTimeSeq = {
     require(s <= e, "start must be <= end")
     val end = e / step * step
-    var start = s / step * step
+    val start = s / step * step
     val length = ((end - start) / step).toInt
     val data = new Array[Double](length)
     var i = 0

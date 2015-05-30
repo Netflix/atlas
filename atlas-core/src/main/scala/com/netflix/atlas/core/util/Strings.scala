@@ -83,10 +83,6 @@ object Strings {
    */
   private val UnixDate = """^([0-9]+)$""".r
 
-  private val isoDateFmt = (new DateTimeFormatterBuilder)
-    .appendPattern("yyyy-MM-dd")
-    .toFormatter
-
   /**
    * Conversion functions that map a string value to an instance of a given
    * class.

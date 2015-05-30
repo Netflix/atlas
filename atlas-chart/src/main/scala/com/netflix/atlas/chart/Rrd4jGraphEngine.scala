@@ -104,14 +104,6 @@ class Rrd4jGraphEngine extends PngGraphEngine {
     }
   }
 
-  private def newPaletteMap: collection.mutable.Map[String, Palette] = {
-    collection.mutable.Map.empty[String, Palette]
-  }
-
-  private def applyAlpha(alpha: Option[Int], color: Color): Color = {
-    alpha.fold(color)(a => new Color(color.getRed, color.getGreen, color.getBlue, a))
-  }
-
   private def isNearlyZero(v: Double): Boolean = {
     scala.math.abs(v - 0.0) < 1e-12
   }
@@ -228,7 +220,6 @@ class Rrd4jGraphEngine extends PngGraphEngine {
 
     }
 
-    val palettes = newPaletteMap
     var nextID = -1
 
     config.plots.zipWithIndex.foreach { case (plotConfig, yaxis) =>

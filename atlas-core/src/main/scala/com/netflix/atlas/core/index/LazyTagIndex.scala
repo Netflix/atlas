@@ -302,7 +302,6 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
     val vidx = itemIndex.get(internedK)
     if (vidx == null) LazySet.empty else {
       val set = LazySet.emptyBitMaskSet
-      val prefix = v
       val tag = Tag(internedK, v, -1)
       var i = tagOffset(tag)
       // Skip if equal
@@ -323,7 +322,6 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
     val vidx = itemIndex.get(internedK)
     if (vidx == null) LazySet.empty else {
       val set = LazySet.emptyBitMaskSet
-      val prefix = v
       val tag = Tag(internedK, v, -1)
       var i = tagOffset(tag)
       // Skip if equal

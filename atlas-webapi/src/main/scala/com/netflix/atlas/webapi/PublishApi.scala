@@ -94,7 +94,6 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 }
 
 object PublishApi {
-  private final val step = DefaultSettings.stepSize
 
   import com.netflix.atlas.json.JsonParserHelper._
 

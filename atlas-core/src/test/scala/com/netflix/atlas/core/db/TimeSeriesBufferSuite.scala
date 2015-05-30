@@ -23,7 +23,6 @@ import com.netflix.atlas.core.util.Math
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
 import org.scalatest.FunSuite
-import org.scalactic.Tolerance._
 
 import scala.util.Random
 
@@ -40,22 +39,6 @@ class TimeSeriesBufferSuite extends FunSuite {
 
   private def newBufferN(v: Double, n: Int, start: Long = 0L) = {
     TimeSeriesBuffer(emptyTags, 60000, start, Array.fill(n)(v))
-  }
-
-  private def newBlock(start: Long, size: Int): Block = {
-    val block = ArrayBlock(start, size)
-    (0 until size).foreach { i =>
-      block.buffer(i) = Random.nextDouble
-    }
-    block
-  }
-
-  private def newBlockWithNaN(start: Long, size: Int): Block = {
-    val block = ArrayBlock(start, size)
-    (0 until size).foreach { i =>
-      block.buffer(i) = if (Random.nextBoolean) Double.NaN else Random.nextDouble
-    }
-    block
   }
 
   test("apply List[Block]") {

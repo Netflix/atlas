@@ -202,7 +202,7 @@ class TimeSeriesExprSuite extends FunSuite {
     "1,total,:stat"                                  -> const(ts(Map("name" -> "1.0"), "stat-total(1.0)", 10.0))
   )
 
-  tests.map { case (prg, p) =>
+  tests.foreach { case (prg, p) =>
     test(s"eval global: $prg") {
       val c = interpreter.execute(prg)
       assert(c.stack.size === 1)
@@ -240,7 +240,7 @@ class TimeSeriesExprSuite extends FunSuite {
     }
   }
 
-  globalTests.map { case (prg, p) =>
+  globalTests.foreach { case (prg, p) =>
     test(s"eval global: $prg") {
       val c = interpreter.execute(prg)
       assert(c.stack.size === 1)
