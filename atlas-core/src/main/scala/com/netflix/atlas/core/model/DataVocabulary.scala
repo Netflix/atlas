@@ -76,6 +76,11 @@ object DataVocabulary extends Vocabulary {
       """
         |Compute the sum of all the time series that match the query. Sum is the default aggregate
         |used if a query is specified with no explicit aggregate function.
+        |
+        || Sum     | 3.0 | 4.0 | NaN |
+        ||---------|-----|-----|-----|
+        || Input 1 | 2.0 | 4.0 | NaN |
+        || Input 2 | 1.0 | NaN | NaN |
       """.stripMargin.trim
   }
 
@@ -88,6 +93,11 @@ object DataVocabulary extends Vocabulary {
       """
         |Compute the number of time series that match the query and have a value for a given
         |interval.
+        |
+        || Count   | 2.0 | 1.0 | NaN |
+        ||---------|-----|-----|-----|
+        || Input 1 | 2.0 | 4.0 | NaN |
+        || Input 2 | 1.0 | NaN | NaN |
       """.stripMargin.trim
   }
 
@@ -98,7 +108,13 @@ object DataVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Compute the min of all the time series that match the query.
+        |For each interval compute the min of the values from all the time series that match
+        |the query.
+        |
+        || Min     | 1.0 | 4.0 | NaN |
+        ||---------|-----|-----|-----|
+        || Input 1 | 2.0 | 4.0 | NaN |
+        || Input 2 | 1.0 | NaN | NaN |
       """.stripMargin.trim
   }
 
@@ -109,7 +125,13 @@ object DataVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Compute the sum of all the time series that match the query.
+        |For each interval compute the max of the values from all the time series that match
+        |the query.
+        |
+        || Max     | 2.0 | 4.0 | NaN |
+        ||---------|-----|-----|-----|
+        || Input 1 | 2.0 | 4.0 | NaN |
+        || Input 2 | 1.0 | NaN | NaN |
       """.stripMargin.trim
   }
 
