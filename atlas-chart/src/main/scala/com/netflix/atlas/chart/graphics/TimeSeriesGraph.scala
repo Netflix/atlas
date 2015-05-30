@@ -23,7 +23,7 @@ import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineStyle
 
 /**
- * Created by brharrington on 5/18/15.
+ * Draws a time series graph.
  */
 case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight with FixedWidth {
   override def height: Int = graphDef.height + timeAxis.height

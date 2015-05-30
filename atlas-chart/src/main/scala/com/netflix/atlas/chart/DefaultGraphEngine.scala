@@ -39,8 +39,6 @@ class DefaultGraphEngine extends PngGraphEngine {
     val notices = List.newBuilder[String]
     notices ++= config.warnings
 
-    val graphHeight = math.min(config.height, GraphConstants.MaxHeight)
-    val graphWidth = math.min(config.width, GraphConstants.MaxWidth)
     if (config.height > GraphConstants.MaxHeight) {
       notices += s"Restricted graph height to ${GraphConstants.MaxHeight}."
     }

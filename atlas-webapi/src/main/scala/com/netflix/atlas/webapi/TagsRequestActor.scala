@@ -20,7 +20,6 @@ import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model._
-import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
 import spray.can.Http
 import spray.http.MediaTypes._
@@ -30,8 +29,6 @@ import spray.http._
 class TagsRequestActor extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.TagsApi._
-
-  private def queryInterpreter = new Interpreter(QueryVocabulary.allWords)
 
   val dbRef = context.actorSelection("/user/db")
 
@@ -79,8 +76,6 @@ class TagsRequestActor extends Actor with ActorLogging {
     responseRef ! HttpResponse(StatusCodes.OK, entity, headers)
     context.stop(self)
   }
-
-  private def encodeStringList(data: List[String]): String = data.mkString("\n")
 
   private def sendText(data: String, offset: Option[String]): Unit = {
     val entity = HttpEntity(`text/plain`, data)

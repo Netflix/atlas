@@ -458,7 +458,7 @@ object SparseBlock {
  * @param values   set of distinct values
  */
 case class SparseBlock(start: Long, indexes: Array[Byte], values: Array[Double]) extends Block {
-  require(indexes.size > 0, "indexes cannot be empty")
+  require(indexes.length > 0, "indexes cannot be empty")
 
   def size: Int = indexes.length
 

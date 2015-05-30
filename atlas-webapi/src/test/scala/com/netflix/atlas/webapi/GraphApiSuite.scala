@@ -45,8 +45,6 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   val others = Streams.scope(Streams.resource("others.md")) { in => Streams.lines(in).toList }
   val all = template ::: others
 
-  private val dataDir   = s"graph/data"
-
   // SBT working directory gets updated with fork to be the dir for the project
   private val baseDir = "."
   private val goldenDir = s"$baseDir/src/test/resources/${getClass.getSimpleName}"

@@ -166,13 +166,6 @@ object Main extends StrictLogging {
     }
   }
 
-  private def renderStack(vs: List[Any]): String = {
-    val rows = vs.zipWithIndex.map { case (v, i) =>
-      f"${i + 1}%5d. ${v.toString}%s"
-    }
-    rows.reverse.mkString("\n|")
-  }
-
   private def zipStacks(in: List[Any], out: List[Any]): List[(Option[Any], Option[Any])] = {
     in.map(v => Some(v)).zipAll(out.map(v => Some(v)), None, None)
   }

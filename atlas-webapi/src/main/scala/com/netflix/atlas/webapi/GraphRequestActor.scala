@@ -40,8 +40,6 @@ class GraphRequestActor extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.GraphApi._
 
-  private def queryInterpreter = new Interpreter(QueryVocabulary.allWords)
-
   private val errorId = Spectator.registry().createId("atlas.graph.errorImages")
 
   private val dbRef = context.actorSelection("/user/db")
@@ -80,8 +78,6 @@ class GraphRequestActor extends Actor with ActorLogging {
   }
 
   private def sendImage(data: Map[DataExpr, List[TimeSeries]]): Unit = {
-    val ts = data.values.flatten
-
     val plotExprs = request.exprs.groupBy(_.axis.getOrElse(0))
     val multiY = plotExprs.size > 1
 
@@ -96,7 +92,6 @@ class GraphRequestActor extends Actor with ActorLogging {
 
       val lines = exprs.flatMap { s =>
         val ts = s.expr.eval(request.evalContext, data).data
-        val exprStr = s.expr.toString
 
         val tmp = ts.map { t =>
           val color = s.color.getOrElse {
@@ -125,73 +120,13 @@ class GraphRequestActor extends Actor with ActorLogging {
         scale = if (axisCfg.logarithmic) Scale.LOGARITHMIC else Scale.LINEAR,
         axisColor = if (multiY) None else Some(Color.BLACK))
     }
-    /*val seriesList = request.exprs.flatMap { s =>
-      val ts = s.expr.eval(request.evalContext, data).data
-      val exprStr = s.expr.toString
-      val tmp = ts.map { t =>
-        val offset = Strings.toString(Duration.ofMillis(s.offset))
-        val newT = t.withTags(t.tags + (TagKey.offset -> offset))
-        val series = new SeriesDef
-        series.data = newT
-        series.query = exprStr
-        series.label = s.legend(newT)
-        series.axis = s.axis
-        series.color = s.color
-        series.alpha = s.alpha
-        series.style = s.lineStyle.fold(LineStyle.LINE)(s => LineStyle.valueOf(s.toUpperCase))
-        series.lineWidth = s.lineWidth
-        series.palette = if (s.offset > 0L) "bw" else request.flags.palette
-        series
-      }
-      tmp.sortWith(_.label < _.label)
-    }*/
 
     val graphDef = request.newGraphDef.copy(plots = plots)
-
-    //default axis
-    //val axisDef = new AxisDef
-    //graphDef.axis = Map(0 -> axisDef)
-
-    //add default axis definitions on the right side of the graph for any
-    //series which specified axis but did not specify a corresponding axis definition
-    /*seriesList.foreach { seriesDef =>
-      val yaxis = seriesDef.axis.getOrElse(0)
-      if (!graphDef.axis.contains(yaxis)) {
-        val ax = new AxisDef
-        ax.rightSide = true
-        graphDef.axis += (yaxis -> ax)
-      }
-    }
-
-    for ((yax, axdef) <- graphDef.axis) {
-      val axis = request.flags.axes(yax)
-      axdef.min = axis.lower
-      axdef.max = axis.upper
-      axdef.label = axis.ylabel
-      axdef.logarithmic = axis.logarithmic
-      axdef.stack = axis.stack
-    }
-
-    val plotDef = new PlotDef
-    plotDef.series = seriesList
-    graphDef.plots = List(plotDef)*/
 
     val baos = new ByteArrayOutputStream
     request.engine.write(graphDef, baos)
 
     val entity = HttpEntity(request.contentType, baos.toByteArray)
-    responseRef ! HttpResponse(StatusCodes.OK, entity)
-    context.stop(self)
-  }
-
-  private def sendJson(data: AnyRef): Unit = {
-    val entity = HttpEntity(`application/json`, Json.encode(data))
-    responseRef ! HttpResponse(StatusCodes.OK, entity)
-    context.stop(self)
-  }
-
-  private def sendText(data: String): Unit = {
-    val entity = HttpEntity(`text/plain`, data)
     responseRef ! HttpResponse(StatusCodes.OK, entity)
     context.stop(self)
   }

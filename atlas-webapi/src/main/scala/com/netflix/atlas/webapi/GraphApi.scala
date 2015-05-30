@@ -249,8 +249,8 @@ object GraphApi {
     Axis(
       upper = params.get(s"u.$id").orElse(params.get("u")).map(_.toDouble),
       lower = params.get(s"l.$id").orElse(params.get("l")).map(_.toDouble),
-      logarithmic = params.get(s"o.$id").orElse(params.get("o")) == Some("1"),
-      stack = params.get(s"stack.$id").orElse(params.get("stack")) == Some("1"),
+      logarithmic = params.get(s"o.$id").orElse(params.get("o")).contains("1"),
+      stack = params.get(s"stack.$id").orElse(params.get("stack")).contains("1"),
       ylabel = params.get(s"ylabel.$id").orElse(params.get("ylabel")))
   }
 

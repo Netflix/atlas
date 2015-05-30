@@ -109,8 +109,6 @@ case class RightValueAxis(
   protected def angle: Double = Math.PI / 2.0
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-    val labelX = x1 + tickMarkLength + 1 + tickLabelWidth
-
     style.configure(g)
     g.drawLine(x1, y1, x1, y2)
     val yscale = scale(y1, y2)

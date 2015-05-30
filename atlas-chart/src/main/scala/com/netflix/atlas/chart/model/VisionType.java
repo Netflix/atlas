@@ -87,7 +87,7 @@ public enum VisionType {
 
   private final double[] m;
 
-  private VisionType(double[] m) {
+  VisionType(double[] m) {
     this.m = m;
   }
 

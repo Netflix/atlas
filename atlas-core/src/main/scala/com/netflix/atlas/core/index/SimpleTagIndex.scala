@@ -90,7 +90,7 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
 
   def findTags(query: TagQuery): List[Tag] = {
     val matches = findItemsImpl(query.query)
-    val uniq = matches.flatMap(_.tags.map(t => Tag(t._1, t._2))).toSet.toList
+    val uniq = matches.flatMap(_.tags.map(t => Tag(t._1, t._2))).distinct
 
     val forKey = query.key.fold(uniq)(k => uniq.filter(_.key == k))
     val filtered = forKey.filter(_ > query.offsetTag)
@@ -105,7 +105,7 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
 
   def findValues(query: TagQuery): List[String] = {
     val matches = findItemsImpl(query.query)
-    val uniq = matches.flatMap(_.tags).toSet.toList
+    val uniq = matches.flatMap(_.tags).distinct
 
     val forKey = query.key.fold(uniq.map(_._2))(k => uniq.filter(_._1 == k).map(_._1))
     val filtered = forKey.filter(_ > query.offset)
