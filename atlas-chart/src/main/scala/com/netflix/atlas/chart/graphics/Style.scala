@@ -20,6 +20,8 @@ import java.awt.Color
 import java.awt.Graphics2D
 import java.awt.Stroke
 
+import com.netflix.atlas.chart.Colors
+
 /**
  * Style attributes associated with elements.
  *
@@ -35,6 +37,10 @@ case class Style(
   def configure(g: Graphics2D): Unit = {
     g.setColor(color)
     g.setStroke(stroke)
+  }
+
+  def withAlpha(alpha: Int): Style = {
+    copy(color = Colors.withAlpha(color, alpha))
   }
 }
 

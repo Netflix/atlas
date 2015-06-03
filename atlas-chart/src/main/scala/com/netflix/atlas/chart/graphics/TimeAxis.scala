@@ -54,11 +54,13 @@ case class TimeAxis(
   }
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-    style.configure(g)
 
-    // Horizontal line across the bottom of the chart
+    // Horizontal line across the bottom of the chart. The main horizontal line for the axis is
+    // made faint so it is easier to see lines in the chart that are directly against the axis.
+    style.withAlpha(40).configure(g)
     g.drawLine(x1, y1, x2, y1)
 
+    style.configure(g)
     val xscale = scale(x1, x2)
     val majorTicks = ticks(x1, x2)
     majorTicks.foreach { tick =>
