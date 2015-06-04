@@ -15,10 +15,15 @@
  */
 package com.netflix.atlas.akka
 
+import java.io.ByteArrayOutputStream
+import java.util.zip.GZIPOutputStream
+
 import akka.actor.ActorSystem
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActorRef
 import akka.testkit.TestKit
+import com.netflix.atlas.json.Json
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuiteLike
 import spray.http.HttpMethods._
@@ -31,7 +36,14 @@ class RequestHandlerActorSuite extends TestKit(ActorSystem())
     with FunSuiteLike
     with BeforeAndAfterAll {
 
-  private val ref = TestActorRef(new RequestHandlerActor)
+  private val config = ConfigFactory.parseString(
+    """
+      |atlas.akka.api-endpoints = [
+      |  "com.netflix.atlas.akka.TestApi"
+      |]
+    """.stripMargin)
+
+  private val ref = TestActorRef(new RequestHandlerActor(config))
 
   override def afterAll() {
     system.shutdown()
@@ -48,6 +60,64 @@ class RequestHandlerActorSuite extends TestKit(ActorSystem())
     ref ! HttpRequest(OPTIONS, Uri("/api/v2/ip"))
     expectMsgPF() {
       case HttpResponse(OK, _, _, _) =>
+    }
+  }
+
+  private def gzip(data: Array[Byte]): Array[Byte] = {
+    val baos = new ByteArrayOutputStream
+    val out = new GZIPOutputStream(baos)
+    out.write(data)
+    out.close()
+    baos.toByteArray
+  }
+
+  private def gzip(s: String): Array[Byte] = gzip(s.getBytes("UTF-8"))
+
+  private val gzipHeaders = List(HttpHeaders.`Content-Encoding`(HttpEncodings.gzip))
+
+  test("/jsonparse") {
+    ref ! HttpRequest(POST, Uri("/jsonparse"), entity = "\"foo\"")
+    expectMsgPF() {
+      case HttpResponse(OK, entity, _, _) =>
+        assert(entity.asString(HttpCharsets.`UTF-8`) === "foo")
+    }
+  }
+
+  test("/jsonparse with smile content") {
+    val content = HttpEntity(
+      ContentType(CustomMediaTypes.`application/x-jackson-smile`),
+      Json.smileEncode("foo"))
+    ref ! HttpRequest(POST, Uri("/jsonparse"), entity = content)
+    expectMsgPF() {
+      case HttpResponse(OK, entity, _, _) =>
+        assert(entity.asString(HttpCharsets.`UTF-8`) === "foo")
+    }
+  }
+
+  test("/jsonparse with smile but wrong content-type") {
+    val content = HttpEntity(Json.smileEncode("foo"))
+    ref ! HttpRequest(POST, Uri("/jsonparse"), entity = content)
+    expectMsgPF() {
+      case HttpResponse(BadRequest, _, _, _) =>
+    }
+  }
+
+  test("/jsonparse with gzipped request") {
+    ref ! HttpRequest(POST, Uri("/jsonparse"), headers = gzipHeaders, entity = gzip("\"foo\""))
+    expectMsgPF() {
+      case HttpResponse(OK, entity, _, _) =>
+        assert(entity.asString(HttpCharsets.`UTF-8`) === "foo")
+    }
+  }
+
+  test("/jsonparse with smile content and gzipped") {
+    val content = HttpEntity(
+      ContentType(CustomMediaTypes.`application/x-jackson-smile`),
+      gzip(Json.smileEncode("foo")))
+    ref ! HttpRequest(POST, Uri("/jsonparse"), headers = gzipHeaders, entity = content)
+    expectMsgPF() {
+      case HttpResponse(OK, entity, _, _) =>
+        assert(entity.asString(HttpCharsets.`UTF-8`) === "foo")
     }
   }
 }
