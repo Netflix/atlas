@@ -58,7 +58,8 @@ object StyleVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Set the alpha value for the colors on the line. The value should be a two digit hex number
-        |where `00` is transparent and `ff` is opague.
+        |where `00` is transparent and `ff` is opague. This setting will be ignored if the
+        |[color](style-color) setting is used for the same line.
       """.stripMargin.trim
 
     override def examples: List[String] = List("name,sps,:eq,:sum,:stack,40")
@@ -74,8 +75,8 @@ object StyleVocabulary extends Vocabulary {
         |* [Hex triplet]
         |  (http://en.wikipedia.org/wiki/Web_colors#Hex_triplet), e.g. f00 is red.
         |* 6 digit hex RBG, e.g. ff0000 is red.
-        |* 8 digit hex ARGB, e.g. ffff0000 is red. The first byte is the [alpha](#alpha) setting
-        |  to use with the color.
+        |* 8 digit hex ARGB, e.g. ffff0000 is red. The first byte is the [alpha](style-alpha)
+        |  setting to use with the color.
       """.stripMargin.trim
 
     override def examples: List[String] = List("name,sps,:eq,:sum,ff0000", "name,sps,:eq,:sum,f00")
