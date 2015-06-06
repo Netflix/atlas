@@ -87,7 +87,7 @@ class TimeSeriesExprSuite extends FunSuite {
     "1,:per-step"                 -> const(ts(Map("name" -> "1.0"), "per-step(1.0)", 60)),
     "1,:integral"                 -> const(integral(Map("name" -> "1.0"), "integral(1.0)", 1.0)),
     "minuteOfDay,:time,1,:add"    -> const(integral(Map("name" -> "minuteOfDay"), "(minuteOfDay + 1.0)", 1.0)),
-    "1,:integral,:derivative"     -> const(ts(Map("name" -> "1.0"), "derivative(integral(1.0))", 1.0)),
+    "1,:integral,:derivative"     -> const(integralDerivative),
     "8,:integral"                 -> const(integral(Map("name" -> "8.0"), "integral(8.0)", 8.0)),
     ":true,:integral"             -> const(integral(Map(constTag), "integral(type=constant)", 55.0)),
     //"1,PT5M,:trend"               -> const(ts(Map("name" -> "1.0"), "trend(1.0, PT5M)", 1.0)),
@@ -276,6 +276,11 @@ class TimeSeriesExprSuite extends FunSuite {
     // Assumes starting at time 0, for amount calculation
     val seq = new FunctionTimeSeq(DsType.Gauge, 60000, t => amount + amount * (t / 60000))
     TimeSeries(tags, label, seq)
+  }
+
+  def integralDerivative: TimeSeries = {
+    val seq = new FunctionTimeSeq(DsType.Gauge, 60000, t => if (t == 0L) Double.NaN else 1.0)
+    TimeSeries(Map("name" -> "1.0"), "derivative(integral(1.0))", seq)
   }
 
   def const(t: TimeSeries): Params = Params(constants, List(t))

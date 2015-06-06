@@ -223,9 +223,9 @@ object StatefulExpr {
         val bounded = t.data.bounded(context.start, context.end)
         val length = bounded.data.length
         var i = 1
-        bounded.data(0) += state.getOrElse(t.id, 0.0)
+        bounded.data(0) = Math.addNaN(bounded.data(0), state.getOrElse(t.id, Double.NaN))
         while (i < length) {
-          bounded.data(i) += bounded.data(i - 1)
+          bounded.data(i) = Math.addNaN(bounded.data(i), bounded.data(i - 1))
           i += 1
         }
         state(t.id) = bounded.data(i - 1)
@@ -253,7 +253,7 @@ object StatefulExpr {
         val length = bounded.data.length
         var i = 1
         var prev = bounded.data(0)
-        bounded.data(0) -= state.getOrElse(t.id, 0.0)
+        bounded.data(0) -= state.getOrElse(t.id, Double.NaN)
         while (i < length) {
           val tmp = prev
           prev = bounded.data(i)
