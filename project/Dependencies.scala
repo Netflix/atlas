@@ -24,7 +24,7 @@ object Dependencies {
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.2"
-  val guava           = "com.google.guava" % "guava" % "15.0"
+  val guava           = "com.google.guava" % "guava" % "18.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
   val iepGovernator   = "com.netflix.iep" % "iep-guice" % iep
