@@ -96,17 +96,20 @@ class GraphRequestActor extends Actor with ActorLogging {
         val tmp = ts.map { t =>
           val color = s.color.getOrElse {
             axisColor.getOrElse {
-              if (s.offset > 0L) shiftPalette.next() else palette.next()
+              val c = if (s.offset > 0L) shiftPalette.next() else palette.next()
+              // Alpha setting if present will set the alpha value for the color automatically
+              // assigned by the palette. If using an explicit color it will have no effect as the
+              // alpha can be set directly using an ARGB hex format for the color.
+              s.alpha.fold(c)(a => Colors.withAlpha(c, a))
             }
           }
-          val colorWithAlpha = s.alpha.fold(color)(a => Colors.withAlpha(color, a))
-          if (multiY) axisColor = Some(colorWithAlpha)
+          if (multiY) axisColor = Some(color)
 
           val offset = Strings.toString(Duration.ofMillis(s.offset))
           val newT = t.withTags(t.tags + (TagKey.offset -> offset))
           LineDef(
             data = newT.withLabel(s.legend(newT)),
-            color = colorWithAlpha,
+            color = color,
             lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
             lineWidth = s.lineWidth)
         }
