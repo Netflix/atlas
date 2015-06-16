@@ -253,6 +253,27 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
   lines("single_line_stack_negative", Seq(-400), v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
 
+  private def constantLine(name: String, vs: Seq[Double], f: GraphDef => GraphDef): Unit = {
+    val testName = s"constant_line_$name"
+    test(testName) {
+      val series = vs.map { v => constantSeriesDef(v) }
+      val plotDef = PlotDef(label(series: _*), axisColor = Some(Color.BLACK))
+
+      val graphDef = GraphDef(
+        startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+        endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+        plots = List(plotDef)
+      )
+
+      val image = PngImage(graphEngine.createImage(f(graphDef)), Map.empty)
+      val fname = s"${prefix}_$testName.png"
+      graphAssertions.assertEquals(image, fname, bless)
+    }
+  }
+
+  constantLine("lower_bound_0", Seq(0), v => v.adjustPlots(_.copy(lower = Some(0))))
+  constantLine("lower_bound_4", Seq(4), v => v.adjustPlots(_.copy(lower = Some(4))))
+
   test("single_line_hspans") {
     def alpha(c: Color): Color = new Color(c.getRed, c.getGreen, c.getBlue, 50)
     val spans = List(
