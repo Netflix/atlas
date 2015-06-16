@@ -48,6 +48,10 @@ case class TimeSeriesStack(
       lines.foreach { line =>
         line.style.configure(g)
         line.ts(t) match {
+          case v if v == 0.0 && posY == 0.0 && negY == 0.0 =>
+            // Provides a line along the xaxis to avoid confusion between 0 and NaN (no data)
+            val py1 = yscale(posY)
+            g.fillRect(px1, py1, px2 - px1, 1)
           case v if v > 0.0 =>
             val axisy = yscale(posY)
             val py = yscale(v + posY)

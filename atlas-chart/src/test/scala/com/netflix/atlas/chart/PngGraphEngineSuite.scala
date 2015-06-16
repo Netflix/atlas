@@ -273,6 +273,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
   constantLine("lower_bound_0", Seq(0), v => v.adjustPlots(_.copy(lower = Some(0))))
   constantLine("lower_bound_4", Seq(4), v => v.adjustPlots(_.copy(lower = Some(4))))
+  constantLine("stack", Seq(0), v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
+  constantLine("area", Seq(0), v => v.adjustLines(_.copy(lineStyle = LineStyle.AREA)))
 
   test("single_line_hspans") {
     def alpha(c: Color): Color = new Color(c.getRed, c.getGreen, c.getBlue, 50)
