@@ -42,14 +42,12 @@ case class TimeGrid(
     ticks match {
       case a :: b :: _ =>
         minor.configure(g)
-        val minorGap = (b.timestamp - a.timestamp) / 6
-        var t = xaxis.start / minorGap * minorGap
-        while (t < xaxis.end) {
-          val px = xscale(t)
+        val minorTicks = Ticks.time(xaxis.start, xaxis.end, xaxis.zone, 6 * ticks.size)
+        minorTicks.foreach { tick =>
+          val px = xscale(tick.timestamp)
           if (!majorGridPos.contains(px) && px != x1 && px != x2) {
             g.drawLine(px, y1, px, y2)
           }
-          t += minorGap
         }
       case _ =>
         // If there aren't at least two major tick marks, then don't bother with a
