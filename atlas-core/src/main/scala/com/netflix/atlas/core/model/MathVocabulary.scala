@@ -310,7 +310,14 @@ object MathVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Compute a new time series where each interval has the value `(a addNaN b)` where `a`
-        | and `b` are the corresponding intervals in the input time series.
+        | and `b` are the corresponding intervals in the input time series. Sample:
+        |
+        || :add    | 3.0 | 0.0 | 1.0 | 1.0 | NaN |
+        ||---------|-----|-----|-----|-----|-----|
+        || Input 1 | 1.0 | 0.0 | 1.0 | 1.0 | NaN |
+        || Input 2 | 2.0 | 0.0 | 0.0 | NaN | NaN |
+        |
+        |Use the [fadd](math-fadd) operator to get strict floating point behavior.
       """.stripMargin.trim
   }
 
@@ -325,6 +332,13 @@ object MathVocabulary extends Vocabulary {
       """
         |Compute a new time series where each interval has the value `(a subtractNaN b)` where `a`
         | and `b` are the corresponding intervals in the input time series.
+        |
+        || :sub    | 1.0 | 0.0 | 1.0 | 1.0 | NaN |
+        ||---------|-----|-----|-----|-----|-----|
+        || Input 1 | 2.0 | 0.0 | 1.0 | 1.0 | NaN |
+        || Input 2 | 1.0 | 0.0 | 0.0 | NaN | NaN |
+        |
+        |Use the [fsub](math-fsub) operator to get strict floating point behavior.
       """.stripMargin.trim
   }
 
@@ -354,7 +368,12 @@ object MathVocabulary extends Vocabulary {
         |Compute a new time series where each interval has the value `(a / b)` where `a`
         | and `b` are the corresponding intervals in the input time series. If `a` and `b` are 0,
         | then 0 will be returned for the interval. If only `b` is 0, then NaN will be returned as
-        | the value for the interval.
+        | the value for the interval. Sample data:
+        |
+        || :div    | 0.5 | 0.0 | NaN | NaN | NaN |
+        ||---------|-----|-----|-----|-----|-----|
+        || Input 1 | 1.0 | 0.0 | 1.0 | 1.0 | NaN |
+        || Input 2 | 2.0 | 0.0 | 0.0 | NaN | NaN |
         |
         |Use the [fdiv](math-fdiv) operator to get strict floating point behavior.
       """.stripMargin.trim
@@ -425,8 +444,20 @@ object MathVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Compute a new time series where each interval has the value `(a + b)` where `a`
-        | and `b` are the corresponding intervals in the input time series.
+        |Floating point addition operator. Compute a new time series where each interval has the
+        | value `(a + b)` where `a` and `b` are the corresponding intervals in the input time
+        | series.
+        |
+        || :fadd   | 3.0 | 0.0 | 1.0 | NaN | NaN |
+        ||---------|-----|-----|-----|-----|-----|
+        || Input 1 | 2.0 | 0.0 | 1.0 | 1.0 | NaN |
+        || Input 2 | 1.0 | 0.0 | 0.0 | NaN | NaN |
+        |
+        |Note in many cases `NaN` will appear in data, e.g., if a node was brought up and started
+        |reporting in the middle of the time window for the graph. This can lead to confusing
+        |behavior if added to a line that does have data as the result will be `NaN`. Use the
+        |[add](math-add) operator to treat `NaN` values as zero for combining with other time
+        |series.
       """.stripMargin.trim
   }
 
@@ -439,8 +470,20 @@ object MathVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Compute a new time series where each interval has the value `(a - b)` where `a`
-        | and `b` are the corresponding intervals in the input time series.
+        |Floating point subtraction operator. Compute a new time series where each interval has the
+        | value `(a - b)` where `a` and `b` are the corresponding intervals in the input time
+        | series.
+        |
+        || :fsub   | 1.0 | 0.0 | 1.0 | NaN | NaN |
+        ||---------|-----|-----|-----|-----|-----|
+        || Input 1 | 2.0 | 0.0 | 1.0 | 1.0 | NaN |
+        || Input 2 | 1.0 | 0.0 | 0.0 | NaN | NaN |
+        |
+        |Note in many cases `NaN` will appear in data, e.g., if a node was brought up and started
+        |reporting in the middle of the time window for the graph. This can lead to confusing
+        |behavior if added to a line that does have data as the result will be `NaN`. Use the
+        |[sub](math-sub) operator to treat `NaN` values as zero for combining with other time
+        |series.
       """.stripMargin.trim
   }
 
@@ -467,9 +510,20 @@ object MathVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Compute a new time series where each interval has the value `(a / b)` where `a`
-        | and `b` are the corresponding intervals in the input time series. If `b` is 0, then
-        | NaN will be returned as the value for the interval.
+        |Floating point division operator. Compute a new time series where each interval has the
+        | value `(a / b)` where `a` and `b` are the corresponding intervals in the input time
+        | series. If `b` is 0, then NaN will be returned as the value for the interval.
+        |
+        || :fdiv   | 2.0 | NaN | Inf | NaN | NaN |
+        ||---------|-----|-----|-----|-----|-----|
+        || Input 1 | 2.0 | 0.0 | 1.0 | 1.0 | NaN |
+        || Input 2 | 1.0 | 0.0 | 0.0 | NaN | NaN |
+        |
+        |Note in many cases `NaN` will appear in data, e.g., if a node was brought up and started
+        |reporting in the middle of the time window for the graph. Zero divided by zero can also
+        |occur due to lack of activity in some windows. Unless you really need strict floating
+        |point behavior, use the [div](math-div) operator to get behavior more appropriate for
+        |graphs.
       """.stripMargin.trim
   }
 
