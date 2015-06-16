@@ -43,6 +43,10 @@ case class PlotDef(
 
   import java.lang.{ Double => JDouble }
 
+  for (l <- lower; u <- upper) {
+    require(l < u, s"lower bound must be less than upper bound ($l >= $u)")
+  }
+
   def bounds(start: Long, end: Long): (Double, Double) = {
 
     val dataLines = lines
@@ -82,26 +86,30 @@ case class PlotDef(
         t += step
       }
 
-      val lowerBound = lower.getOrElse(min)
-      val upperBound = upper.getOrElse(max)
-      val bounds = (lowerBound, upperBound) match {
-        case (l, u) if l > u  => 0.0 -> 1.0
-        case (l, u) if l == u => (l - 1) -> (u + 1)
-        case (l, u)           => l -> u
-      }
-
       // If an area or stack is shown it will fill to zero and the filled area should be shown
       val hasArea = dataLines.exists { line =>
         line.lineStyle == LineStyle.AREA || line.lineStyle == LineStyle.STACK
       }
-      if (!hasArea) bounds else {
-        if (bounds._1 > 0.0 && !lower.isDefined)
-          0.0 -> bounds._2
-        else if (bounds._2 < 0.0 && !upper.isDefined)
-          bounds._1 -> 0.0
-        else
-          bounds
-      }
+      finalBounds(hasArea, min, max)
+    }
+  }
+
+  private def finalBounds(hasArea: Boolean, min: Double, max: Double): (Double, Double) = {
+    // Try to figure out bounds following the guidelines:
+    // * An explicit bound should always get used.
+    // * If an area is present, then automatic bounds should go to the 0 line.
+    // * If an automatic bound equals or is on the wrong side of an explicit bound, then pad by 1.
+    (hasArea, lower, upper) match {
+      case (_,     Some(l), Some(u))               =>         l -> u
+      case (_,     None,    None)    if min == max => (min - 1) -> (max + 1)
+      case (_,     None,    None)    if min >  max =>       0.0 -> 1.0
+      case (_,     None,    None)                  =>       min -> max
+      case (false, None,    Some(u)) if min >= u   =>   (u - 1) -> u
+      case (false, None,    Some(u))               =>       min -> u
+      case (false, Some(l), None)    if l >= max   =>         l -> (l + 1)
+      case (false, Some(l), None)                  =>         l -> max
+      case (true,  None,    Some(u)) if min > 0.0  =>       0.0 -> u
+      case (true,  Some(l), None)    if max < 0.0  =>         l -> 0.0
     }
   }
 
