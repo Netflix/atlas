@@ -26,7 +26,6 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeFormatterBuilder
 import java.util.regex.Pattern
 
 
@@ -39,17 +38,6 @@ object Strings {
    * URL query parameter.
    */
   private val QueryParam = """^([^=]+)=(.*)$""".r
-
-  /**
-   * Simple variable syntax with $varname.
-   */
-  private val SimpleVar = """\$([-_.a-zA-Z0-9]+)""".r
-
-  /**
-   * Simple variable syntax where variable name is enclosed in parenthesis,
-   * e.g., $(varname).
-   */
-  private val ParenVar = """\$\(([^\(\)]+)\)""".r
 
   /**
    * Period following conventions of unix `at` command.
@@ -256,14 +244,69 @@ object Strings {
     }
   }
 
+  private val allowedInVarName = {
+    val alphabet = new Array[Boolean](128)
+    alphabet('.') = true
+    alphabet('-') = true
+    alphabet('_') = true
+    ('a' to 'z').foreach(c => alphabet(c) = true)
+    ('A' to 'Z').foreach(c => alphabet(c) = true)
+    ('0' to '9').foreach(c => alphabet(c) = true)
+    alphabet
+  }
+
+  private def simpleVar(str: String, i: Int, key: StringBuilder): Int = {
+    var j = i
+    while (j < str.length) {
+      val c = str.charAt(j)
+      if (c < allowedInVarName.length && allowedInVarName(c))
+        key.append(c)
+      else
+        return j
+      j += 1
+    }
+    j
+  }
+
+  private def parenVar(str: String, i: Int, key: StringBuilder): Int = {
+    var j = i
+    while (j < str.length) {
+      val c = str.charAt(j)
+      if (c != ')')
+        key.append(c)
+      else
+        return j + 1
+      j += 1
+    }
+    key.clear()
+    i
+  }
+
+  private def getKey(str: String, i: Int, key: StringBuilder): Int = {
+    var c = str.charAt(i + 1)
+    if (c == '(') parenVar(str, i + 2, key) else simpleVar(str, i + 1, key)
+  }
+
   /**
    * Substitute variables into a string.
    */
   def substitute(str: String, vars: Map[String, String]): String = {
-    import scala.util.matching.Regex
-    def f(m: Regex.Match): String = vars.getOrElse(m.group(1), m.group(1))
-    val tmp = SimpleVar.replaceAllIn(str, f _)
-    ParenVar.replaceAllIn(tmp, f _)
+    val key = new StringBuilder(str.length)
+    val buf = new StringBuilder(str.length * 2)
+    var i = 0
+    while (i < str.length) {
+      val c = str.charAt(i)
+      if (c != '$') {
+        buf.append(c)
+        i += 1
+      } else {
+        i = getKey(str, i, key)
+        val k = key.toString()
+        if (!k.isEmpty) buf.append(vars.getOrElse(k, k))
+        key.clear()
+      }
+    }
+    buf.toString()
   }
 
   /**

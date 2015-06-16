@@ -60,7 +60,7 @@ object DataExpr {
   private def defaultLabel(expr: DataExpr, ts: TimeSeries): String = {
     val label = expr match {
       case af: AggregateFunction => af.labelString
-      case by: GroupBy           => s"(${by.keyString(ts.tags).trim})"
+      case by: GroupBy           => by.keyString(ts.tags)
       case Head(df, _)           => defaultLabel(df, ts)
       case _                     => TimeSeries.toLabel(ts.tags)
     }
@@ -222,12 +222,15 @@ object DataExpr {
     override def isGrouped: Boolean = true
 
     def keyString(tags: Map[String, String]): String = {
-      val builder = new StringBuilder
+      // 32 is typically big enough to prevent a resize with a single key
+      val builder = new StringBuilder(32 * keys.size)
+      builder.append('(')
       keys.foreach { k =>
         val v = tags.get(k)
         if (v.isEmpty) return null
-        builder.append(k).append("=").append(v.get).append(" ")
+        builder.append(k).append('=').append(v.get).append(' ')
       }
+      builder(builder.length - 1) = ')'
       builder.toString
     }
 
@@ -242,7 +245,7 @@ object DataExpr {
         case (null, _) => Nil
         case (k, ts) =>
           af.eval(context, ts).data.map { t =>
-            TimeSeries(t.tags, s"(${k.trim})", t.data)
+            TimeSeries(t.tags, k, t.data)
           }
       }
       val rs = consolidate(context.step, newData)
