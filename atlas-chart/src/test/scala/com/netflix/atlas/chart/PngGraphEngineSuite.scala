@@ -21,6 +21,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model.ArrayTimeSeq
@@ -437,6 +438,30 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_issue-119_small_range_large_negative.png"
+    graphAssertions.assertEquals(image, name, bless)
+  }
+
+  test("zero_line_with_end_gap") {
+    val start1 = ZonedDateTime.of(2012, 1, 1, 5, 0, 0, 0, ZoneOffset.UTC).toInstant
+    val end1 = ZonedDateTime.of(2012, 1, 1, 6, 38, 0, 0, ZoneOffset.UTC).toInstant
+
+    val start2 = ZonedDateTime.of(2012, 1, 1, 7, 4, 0, 0, ZoneOffset.UTC).toInstant
+    val end2 = ZonedDateTime.of(2012, 1, 1, 7, 5, 0, 0, ZoneOffset.UTC).toInstant
+
+    val gap = constant(Double.NaN)
+    val normal = constant(0.0)
+    val dataDef = LineDef(interval(normal, gap, start2.toEpochMilli, end2.toEpochMilli))
+
+    val plotDef = PlotDef(label(dataDef), axisColor = Some(Color.BLACK))
+
+    val graphDef = GraphDef(
+      width = 1200,
+      startTime = ZonedDateTime.of(2012, 1, 1, 4, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = start2.plus(1, ChronoUnit.MINUTES),
+      plots = List(plotDef))
+
+    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val name = prefix + "_zero_line_with_end_gap.png"
     graphAssertions.assertEquals(image, name, bless)
   }
 
