@@ -15,13 +15,9 @@
  */
 package com.netflix.atlas.chart.model
 
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
-
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
-import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
 
 

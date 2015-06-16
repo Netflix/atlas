@@ -94,22 +94,26 @@ case class PlotDef(
     }
   }
 
-  private def finalBounds(hasArea: Boolean, min: Double, max: Double): (Double, Double) = {
+  private[model] def finalBounds(hasArea: Boolean, min: Double, max: Double): (Double, Double) = {
     // Try to figure out bounds following the guidelines:
     // * An explicit bound should always get used.
     // * If an area is present, then automatic bounds should go to the 0 line.
     // * If an automatic bound equals or is on the wrong side of an explicit bound, then pad by 1.
     (hasArea, lower, upper) match {
-      case (_,     Some(l), Some(u))               =>         l -> u
-      case (_,     None,    None)    if min == max => (min - 1) -> (max + 1)
-      case (_,     None,    None)    if min >  max =>       0.0 -> 1.0
-      case (_,     None,    None)                  =>       min -> max
+      case (false, None,    None)    if min == max => (min - 1) -> (max + 1)
       case (false, None,    Some(u)) if min >= u   =>   (u - 1) -> u
       case (false, None,    Some(u))               =>       min -> u
       case (false, Some(l), None)    if l >= max   =>         l -> (l + 1)
       case (false, Some(l), None)                  =>         l -> max
+      case (true,  None,    None)    if min > 0.0  =>       0.0 -> max
+      case (true,  None,    None)    if max < 0.0  =>       min -> 0.0
       case (true,  None,    Some(u)) if min > 0.0  =>       0.0 -> u
+      case (true,  None,    Some(u))               =>       min -> u
       case (true,  Some(l), None)    if max < 0.0  =>         l -> 0.0
+      case (true,  Some(l), None)                  =>         l -> max
+      case (_,     Some(l), Some(u))               =>         l -> u
+      case (_,     None,    None)    if min >  max =>       0.0 -> 1.0
+      case (_,     None,    None)                  =>       min -> max
     }
   }
 
