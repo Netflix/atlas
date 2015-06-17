@@ -49,8 +49,10 @@ case class TimeAxis(
   }
 
   def ticks(x1: Int, x2: Int): List[TimeTick] = {
+    // The first interval will displayed will end at the start time. For calculating ticks the
+    // start time is adjusted so we can see minor ticks within the first interval
     val numTicks = (x2 - x1) / TimeAxis.minTickLabelWidth
-    Ticks.time(start, end, zone, numTicks)
+    Ticks.time(start - step, end, zone, numTicks)
   }
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
@@ -62,7 +64,7 @@ case class TimeAxis(
 
     style.configure(g)
     val xscale = scale(x1, x2)
-    val majorTicks = ticks(x1, x2)
+    val majorTicks = ticks(x1, x2).filter(_.major)
     majorTicks.foreach { tick =>
       // Vertical tick mark
       val px = xscale(tick.timestamp)
