@@ -17,6 +17,7 @@ package com.netflix.atlas.chart
 
 import java.awt.Color
 import java.awt.Font
+import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.awt.image.RenderedImage
 import java.time.Duration
@@ -24,10 +25,25 @@ import java.time.ZonedDateTime
 
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LegendType
+import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
 
 class DefaultGraphEngine extends PngGraphEngine {
+
+  private val renderingHints = {
+    import scala.collection.JavaConversions._
+    val config = ConfigManager.current.getConfig("atlas.chart.rendering-hints")
+    config.entrySet.toList.map { entry =>
+      val k = getField(entry.getKey).asInstanceOf[RenderingHints.Key]
+      val v = getField(entry.getValue.unwrapped.asInstanceOf[String])
+      k -> v
+    }
+  }
+
+  private def getField(name: String): AnyRef = {
+    classOf[RenderingHints].getField(name).get(null)
+  }
 
   override def name: String = "png"
 
@@ -142,6 +158,7 @@ class DefaultGraphEngine extends PngGraphEngine {
     val zoomHeight = (imgHeight * config.zoom).toInt
     val image = new BufferedImage(zoomWidth, zoomHeight, BufferedImage.TYPE_INT_ARGB)
     val g = image.createGraphics()
+    renderingHints.foreach(h => g.setRenderingHint(h._1, h._2))
     g.scale(config.zoom, config.zoom)
     g.setColor(Constants.canvasBackgroundColor)
     g.fillRect(0, 0, imgWidth, imgHeight)
