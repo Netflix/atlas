@@ -28,4 +28,12 @@
 
 /api/v1/graph?e=2015-05-26T19:52&q=minuteOfHour,:time&s=e-10m
 
+# Make sure significant time boundaries adjust to time zone
+/api/v1/graph?q=name,sps,:eq,:sum&s=e-2d&e=2015-06-17T13:13&no_legend=1&tz=US/Pacific
+/api/v1/graph?q=name,sps,:eq,:sum&s=e-2d&e=2015-06-17T13:13&no_legend=1&tz=UTC
+
+# Daylight savings time transition
+/api/v1/graph?q=name,sps,:eq,:sum&s=e-4d&e=2015-03-10T13:13&no_legend=1&tz=US/Pacific
+/api/v1/graph?q=name,sps,:eq,:sum&s=e-4d&e=2015-03-10T13:13&no_legend=1&tz=US/Pacific&step=1d
+
 

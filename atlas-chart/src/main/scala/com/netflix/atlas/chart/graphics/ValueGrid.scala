@@ -37,31 +37,8 @@ case class ValueGrid(
     val yscale = yaxis.scale(y1, y2)
     val ticks = yaxis.ticks(y1, y2)
 
-    // Draw minor grid lines
-    val majorGridPos = ticks.map(t => yscale(t.v)).toSet
-    ticks match {
-      case a :: b :: _ =>
-        minor.configure(g)
-        val minorGap = (b.v - a.v) / 5.0
-        var y = a.v - minorGap * 5.0
-        while (y < yaxis.max) {
-          if (y > yaxis.min) {
-            val py = yscale(y)
-            if (!majorGridPos.contains(py) && py != y1 && py != y2) {
-              g.drawLine(x1, py, x2, py)
-            }
-          }
-          y += minorGap
-        }
-      case _ =>
-        // If there aren't at least two major tick marks, then don't bother with a
-        // minor grid. Two major ticks are needed to work out the amount for each minor
-        // interval in the grid.
-    }
-
-    // Draw major grid lines
-    major.configure(g)
     ticks.foreach { tick =>
+      if (tick.major) major.configure(g) else minor.configure(g)
       val py = yscale(tick.v)
       if (py != y1 && py != y2) {
         g.drawLine(x1, py, x2, py)

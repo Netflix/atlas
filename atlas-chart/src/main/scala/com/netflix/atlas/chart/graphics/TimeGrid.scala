@@ -37,28 +37,8 @@ case class TimeGrid(
     val ticks = xaxis.ticks(x1, x2)
     val xscale = xaxis.scale(x1, x2)
 
-    // Draw minor grid lines
-    val majorGridPos = ticks.map(t => xscale(t.timestamp)).toSet
-    ticks match {
-      case a :: b :: _ =>
-        minor.configure(g)
-        val minorTicks = Ticks.time(xaxis.start, xaxis.end, xaxis.zone, 6 * ticks.size)
-        minorTicks.foreach { tick =>
-          val px = xscale(tick.timestamp)
-          if (!majorGridPos.contains(px) && px != x1 && px != x2) {
-            g.drawLine(px, y1, px, y2)
-          }
-        }
-      case _ =>
-        // If there aren't at least two major tick marks, then don't bother with a
-        // minor grid. Two major ticks are needed to work out the amount for each minor
-        // interval in the grid.
-    }
-
-
-    // Draw major grid lines
-    major.configure(g)
     ticks.foreach { tick =>
+      if (tick.major) major.configure(g) else minor.configure(g)
       val px = xscale(tick.timestamp)
       if (px != x1 && px != x2) {
         g.drawLine(px, y1, px, y2)

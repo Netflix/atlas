@@ -53,12 +53,6 @@ sealed trait ValueAxis extends Element with FixedWidth {
   }
 }
 
-// TODO
-// - tick labels
-// - major/minor ticks
-// - right or left for labels
-// - labels optional
-// - ylabel
 case class LeftValueAxis(
     min: Double,
     max: Double,
@@ -75,7 +69,7 @@ case class LeftValueAxis(
     style.configure(g)
     g.drawLine(x2, y1, x2, y2)
     val yscale = scale(y1, y2)
-    val majorTicks = ticks(y1, y2)
+    val majorTicks = ticks(y1, y2).filter(_.major)
     majorTicks.foreach { tick =>
       val py = yscale(tick.v)
       g.drawLine(x2, py, x2 - tickMarkLength, py)
@@ -112,7 +106,7 @@ case class RightValueAxis(
     style.configure(g)
     g.drawLine(x1, y1, x1, y2)
     val yscale = scale(y1, y2)
-    val majorTicks = ticks(y1, y2)
+    val majorTicks = ticks(y1, y2).filter(_.major)
     majorTicks.foreach { tick =>
       val py = yscale(tick.v)
       g.drawLine(x1, py, x1 + tickMarkLength, py)
