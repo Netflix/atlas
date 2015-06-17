@@ -22,8 +22,11 @@ import java.awt.Stroke
 import java.awt.image.BufferedImage
 
 import com.netflix.atlas.chart.Colors
+import com.typesafe.config.ConfigFactory
 
 object Constants {
+
+  val config = ConfigFactory.load()
 
   val canvasBackgroundColor = new Color(245, 245, 245)
 
@@ -58,12 +61,12 @@ object Constants {
   // default so it should still function if this font isn't present. However, the lucida font
   // was chosen as it is expected to be widely available:
   // https://docs.oracle.com/javase/tutorial/2d/text/fonts.html
-  val regularFont = new Font("Lucida Sans Regular", Font.PLAIN, 12)
+  val regularFont = new Font(config.getString("atlas.chart.fonts.regular"), Font.PLAIN, 12)
 
   /**
    * Base monospaced font used for graphics. Monospace is used to make the layout easier.
    */
-  val monospaceFont = new Font("Lucida Sans Typewriter Regular", Font.PLAIN, 12)
+  val monospaceFont = new Font(config.getString("atlas.chart.fonts.monospace"), Font.PLAIN, 12)
 
   /** Small sized monospaced font. */
   val smallFont = monospaceFont.deriveFont(10.0f)
