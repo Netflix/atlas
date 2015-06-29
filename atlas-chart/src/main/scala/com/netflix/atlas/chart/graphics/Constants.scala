@@ -22,13 +22,16 @@ import java.awt.Stroke
 import java.awt.image.BufferedImage
 
 import com.netflix.atlas.chart.Colors
+import com.netflix.atlas.core.util.Strings
 import com.typesafe.config.ConfigFactory
 
 object Constants {
 
-  val config = ConfigFactory.load()
+  private val config = ConfigFactory.load().getConfig("atlas.chart")
 
-  val canvasBackgroundColor = new Color(245, 245, 245)
+  private def color(name: String): Color = Strings.parseColor(config.getString(s"colors.$name"))
+
+  val canvasBackgroundColor = color("canvas")
 
   /**
    * For some of the font operations a graphics context is needed. This is a simple dummy instance
@@ -49,10 +52,10 @@ object Constants {
       0.0f)
   }
 
-  val minorGridColor = Colors.withAlpha(Color.LIGHT_GRAY, 0x77)
+  val minorGridColor = color("grid-minor")
   val minorGridStyle = Style(color = minorGridColor, stroke = dashedStroke)
 
-  val majorGridColor = Colors.withAlpha(Color.RED, 0x66)
+  val majorGridColor = color("grid-major")
   val majorGridStyle = Style(color = majorGridColor, stroke = dashedStroke)
 
   // Try to avoid problems with different default fonts on various platforms. Java will use the
@@ -61,12 +64,12 @@ object Constants {
   // default so it should still function if this font isn't present. However, the lucida font
   // was chosen as it is expected to be widely available:
   // https://docs.oracle.com/javase/tutorial/2d/text/fonts.html
-  val regularFont = new Font(config.getString("atlas.chart.fonts.regular"), Font.PLAIN, 12)
+  val regularFont = new Font(config.getString("fonts.regular"), Font.PLAIN, 12)
 
   /**
    * Base monospaced font used for graphics. Monospace is used to make the layout easier.
    */
-  val monospaceFont = new Font(config.getString("atlas.chart.fonts.monospace"), Font.PLAIN, 12)
+  val monospaceFont = new Font(config.getString("fonts.monospace"), Font.PLAIN, 12)
 
   /** Small sized monospaced font. */
   val smallFont = monospaceFont.deriveFont(10.0f)
