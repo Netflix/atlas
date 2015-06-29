@@ -66,14 +66,16 @@ case class TimeAxis(
     val xscale = scale(x1, x2)
     val majorTicks = ticks(x1, x2).filter(_.major)
     majorTicks.foreach { tick =>
-      // Vertical tick mark
       val px = xscale(tick.timestamp)
-      g.drawLine(px, y1, px, y1 + 4)
+      if (px >= x1 && px <= x2) {
+        // Vertical tick mark
+        g.drawLine(px, y1, px, y1 + 4)
 
-      // Label for the tick mark
-      val txt = Text(tick.label, font = Constants.smallFont, style = style)
-      val txtH = Constants.smallFontDims.height
-      txt.draw(g, px - 25, y1 + txtH / 2, px + 25, y1 + txtH)
+        // Label for the tick mark
+        val txt = Text(tick.label, font = Constants.smallFont, style = style)
+        val txtH = Constants.smallFontDims.height
+        txt.draw(g, px - 25, y1 + txtH / 2, px + 25, y1 + txtH)
+      }
     }
   }
 }

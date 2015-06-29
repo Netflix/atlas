@@ -49,7 +49,7 @@ class PlotDefSuite extends FunSuite {
 
   test("finalBounds constant, auto") {
     val plotDef = PlotDef(Nil, lower = None, upper = None)
-    assert(plotDef.finalBounds(false, 0.0, 0.0) === -1.0 -> 1.0)
+    assert(plotDef.finalBounds(false, 0.0, 0.0) === 0.0 -> 1.0)
   }
 
   test("finalBounds constant, explicit lower") {
