@@ -40,7 +40,7 @@ case class TimeGrid(
     ticks.foreach { tick =>
       if (tick.major) major.configure(g) else minor.configure(g)
       val px = xscale(tick.timestamp)
-      if (px != x1 && px != x2) {
+      if (px > x1 && px < x2) {
         g.drawLine(px, y1, px, y2)
       }
     }

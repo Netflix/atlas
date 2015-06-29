@@ -100,7 +100,7 @@ case class PlotDef(
     // * If an area is present, then automatic bounds should go to the 0 line.
     // * If an automatic bound equals or is on the wrong side of an explicit bound, then pad by 1.
     (hasArea, lower, upper) match {
-      case (false, None,    None)    if min == max => (min - 1) -> (max + 1)
+      case (false, None,    None)    if min == max =>       min -> (max + 1)
       case (false, None,    Some(u)) if min >= u   =>   (u - 1) -> u
       case (false, None,    Some(u))               =>       min -> u
       case (false, Some(l), None)    if l >= max   =>         l -> (l + 1)
