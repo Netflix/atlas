@@ -39,11 +39,19 @@ case class LegendEntry(line: LineDef, showStats: Boolean) extends Element with F
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     val d = Constants.normalFontDims.height - 4
 
+    // Draw the color box for the legend entry. If the color has an alpha setting, then the
+    // background can impact the color so we first fill with white to make it the same as the
+    // background color of the chart.
+    g.setColor(Color.WHITE)
+    g.fillRect(x1 + 2, y1 + 2, d, d)
     g.setColor(line.color)
     g.fillRect(x1 + 2, y1 + 2, d, d)
+
+    // Border for the color box
     g.setColor(Color.BLACK)
     g.drawRect(x1 + 2, y1 + 2, d, d)
 
+    // Draw the label
     val txt = Text(line.data.label, alignment = TextAlignment.LEFT)
     val truncated = txt.truncate(x2 - x1 - d - 4)
     truncated.draw(g, x1 + d + 4, y1, x2, y2)
