@@ -124,7 +124,7 @@ class GraphRequestActor extends Actor with ActorLogging {
         axisColor = if (multiY) None else Some(Color.BLACK))
     }
 
-    val graphDef = request.newGraphDef.copy(plots = plots)
+    val graphDef = request.newGraphDef.copy(plots = plots).withVisionType(request.flags.vision)
 
     val baos = new ByteArrayOutputStream
     request.engine.write(graphDef, baos)

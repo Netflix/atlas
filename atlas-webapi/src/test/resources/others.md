@@ -36,4 +36,7 @@
 /api/v1/graph?q=name,sps,:eq,:sum&s=e-4d&e=2015-03-10T13:13&no_legend=1&tz=US/Pacific
 /api/v1/graph?q=name,sps,:eq,:sum&s=e-4d&e=2015-03-10T13:13&no_legend=1&tz=US/Pacific&step=1d
 
+# Vision flag
+/api/v1/graph?s=e-1d&e=2015-03-10T13:13&q=(,1,2,3,4,5,6,7,8,9,),(,nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum,:swap,:legend,),:each&vision=protanopia&no_legend=1&stack=1
+
 
