@@ -19,7 +19,7 @@ import java.io.ByteArrayOutputStream
 
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.chart.Rrd4jGraphEngine
+import com.netflix.atlas.chart.DefaultGraphEngine
 import com.netflix.atlas.json.Json
 import spray.http.StatusCodes
 import spray.http._
@@ -28,7 +28,7 @@ import spray.routing.RequestContext
 
 class RenderApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
-  private val engine = new Rrd4jGraphEngine
+  private val engine = new DefaultGraphEngine
 
   def routes: RequestContext => Unit = {
     path("api" / "v1" / "render") {

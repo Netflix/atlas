@@ -42,7 +42,6 @@ object Dependencies {
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val rrd4j           = "com.netflix.rrd4j" % "rrd4j" % "2.2.5"
   val scalaCompiler   = "org.scala-lang" % "scala-compiler" % scala
   val scalaLibrary    = "org.scala-lang" % "scala-library" % scala
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all" % scala
