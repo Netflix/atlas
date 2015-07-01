@@ -70,9 +70,6 @@ object MainBuild extends Build {
     .dependsOn(`atlas-core`, `atlas-json`, `atlas-test` % "test")
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
-    .settings(libraryDependencies ++= Seq(
-      Dependencies.rrd4j
-    ))
 
   lazy val `atlas-config` = project
     .settings(buildSettings: _*)
