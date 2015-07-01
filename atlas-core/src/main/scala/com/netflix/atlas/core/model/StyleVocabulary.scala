@@ -112,7 +112,7 @@ object StyleVocabulary extends Vocabulary {
         |Set the legend text.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("name,sps,:eq,:sum,(,name,),:by,$name")
+    override def examples: List[String] = List(s"name,sps,:eq,:sum,(,name,),:by,$$name")
   }
 
   case object Axis extends StyleWord {
