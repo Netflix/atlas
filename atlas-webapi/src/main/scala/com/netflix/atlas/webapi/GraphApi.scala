@@ -152,7 +152,6 @@ object GraphApi {
         height = flags.height,
         zoom = flags.zoom,
         legendType = legendType,
-        showBorder = flags.showBorder,
         onlyGraph = flags.showOnlyGraph,
         fontSize = flags.fontSize,
         numberFormat = numberFormat,
@@ -175,7 +174,6 @@ object GraphApi {
         "axis_per_line"   -> flags.axisPerLine.toString,
         "no_legend"       -> (!flags.showLegend).toString,
         "no_legend_stats" -> (!flags.showLegendStats).toString,
-        "no_border"       -> (!flags.showBorder).toString,
         "only_graph"      -> flags.showOnlyGraph.toString,
         "vision"          -> flags.vision.toString
       )
@@ -240,7 +238,6 @@ object GraphApi {
       axisPerLine: Boolean,
       showLegend: Boolean,
       showLegendStats: Boolean,
-      showBorder: Boolean,
       showOnlyGraph: Boolean,
       vision: VisionType,
       palette: String)
@@ -273,7 +270,6 @@ object GraphApi {
       axisPerLine = params.get("axis_per_line").contains("1"),
       showLegend = !params.get("no_legend").contains("1"),
       showLegendStats = !params.get("no_legend_stats").contains("1"),
-      showBorder = !params.get("no_border").contains("1"),
       showOnlyGraph = params.get("only_graph").contains("1"),
       vision = vision.getOrElse(VisionType.normal),
       palette = params.get("palette").getOrElse(ApiSettings.palette)
