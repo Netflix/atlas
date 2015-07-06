@@ -46,10 +46,6 @@ import com.netflix.atlas.core.model.SummaryStats
  *     How to show the legend when rendering the graph.
  * @param onlyGraph
  *     Show only the chart without other details like axes, legends, labels, etc.
- * @param showBorder
- *     Should a border be drawn around the image. Deprecated, this can typically be performed with
- *     CSS and is not needed for use-cases where we still need images rather than dynamic client
- *     side charts.
  * @param fontSize
  *     Default font size to use. Deprecated, will get replaced by generic zoom setting in a future
  *     update.
@@ -74,7 +70,6 @@ case class GraphDef(
     title: Option[String] = None,
     legendType: LegendType = LegendType.LABELS_WITH_STATS,
     onlyGraph: Boolean = false,
-    showBorder: Boolean = true,
     fontSize: Option[Int] = None,
     numberFormat: String = "%f",
     loadTime: Long = -1,

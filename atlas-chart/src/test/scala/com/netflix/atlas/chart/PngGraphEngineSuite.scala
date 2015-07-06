@@ -225,7 +225,6 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   singleLine("single_line",                v => v)
   singleLine("single_line_with_load_time", v => v.copy(loadTime = 5123L))
   singleLine("single_line_only_graph",     v => v.copy(onlyGraph = true))
-  singleLine("single_line_no_border",      v => v.copy(showBorder = false))
   singleLine("single_line_title",          v => v.copy(title = Some("A sample title")))
   singleLine("single_line_timezone",       v => v.copy(timezone = ZoneId.of("US/Pacific")))
   singleLine("single_line_no_legend",      v => v.copy(legendType = LegendType.OFF))
