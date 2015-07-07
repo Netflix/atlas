@@ -248,7 +248,7 @@ object GraphApi {
       lower = params.get(s"l.$id").orElse(params.get("l")).map(_.toDouble),
       logarithmic = params.get(s"o.$id").orElse(params.get("o")).contains("1"),
       stack = params.get(s"stack.$id").orElse(params.get("stack")).contains("1"),
-      ylabel = params.get(s"ylabel.$id").orElse(params.get("ylabel")))
+      ylabel = params.get(s"ylabel.$id").orElse(params.get("ylabel")).filter(_ != ""))
   }
 
   def toRequest(req: HttpRequest): Request = {
@@ -261,7 +261,7 @@ object GraphApi {
     val vision = params.get("vision").map(v => VisionType.valueOf(v))
 
     val flags = ImageFlags(
-      title = params.get("title"),
+      title = params.get("title").filter(_ != ""),
       fontSize = params.get("font_size").map(_.toInt),
       width = params.get("w").fold(ApiSettings.width)(_.toInt),
       height = params.get("h").fold(ApiSettings.height)(_.toInt),
