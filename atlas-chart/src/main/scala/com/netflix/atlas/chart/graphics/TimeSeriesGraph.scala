@@ -19,6 +19,7 @@ import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Graphics2D
 
+import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineStyle
 
@@ -26,11 +27,17 @@ import com.netflix.atlas.chart.model.LineStyle
  * Draws a time series graph.
  */
 case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight with FixedWidth {
-  override def height: Int = graphDef.height + timeAxis.height
+  override def height: Int = {
+    val max = GraphConstants.MaxHeight
+    val h = if (graphDef.height > max) max else graphDef.height
+    h + timeAxis.height
+  }
 
   override def width: Int = {
+    val max = GraphConstants.MaxWidth
+    val w = if (graphDef.width > max) max else graphDef.width
     val rightPadding = if (yaxes.tail.nonEmpty) 0 else TimeSeriesGraph.minRightSidePadding
-    graphDef.width + yaxes.map(_.width).sum + rightPadding
+    w + yaxes.map(_.width).sum + rightPadding
   }
 
   val start = graphDef.startTime.toEpochMilli

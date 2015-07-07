@@ -15,9 +15,13 @@
  */
 package com.netflix.atlas.chart
 
+import com.netflix.atlas.config.ConfigManager
+
 object GraphConstants {
-  final val MaxYAxis = 4
-  final val MaxLinesInLegend = 50
-  final val MaxWidth = 2000
-  final val MaxHeight = 1000
+  private final val config = ConfigManager.current.getConfig("atlas.chart.limits")
+  final val MaxYAxis = config.getInt("max-yaxes")
+  final val MaxLinesInLegend = config.getInt("max-lines-in-legend")
+  final val MaxWidth = config.getInt("max-width")
+  final val MaxHeight = config.getInt("max-height")
+  final val MaxZoom = config.getDouble("max-zoom")
 }

@@ -63,6 +63,10 @@ class DefaultGraphEngine extends PngGraphEngine {
       notices += s"Restricted graph width to ${GraphConstants.MaxWidth}."
     }
 
+    if (config.zoom > GraphConstants.MaxZoom) {
+      notices += s"Restricted zoom to ${GraphConstants.MaxZoom}."
+    }
+
     val parts = List.newBuilder[Element]
 
     config.title.foreach { str =>
@@ -154,12 +158,13 @@ class DefaultGraphEngine extends PngGraphEngine {
       acc + element.getHeight(Constants.refGraphics, imgWidth)
     }
 
-    val zoomWidth = (imgWidth * config.zoom).toInt
-    val zoomHeight = (imgHeight * config.zoom).toInt
+    val zoom = if (config.zoom > GraphConstants.MaxZoom) GraphConstants.MaxZoom else config.zoom
+    val zoomWidth = (imgWidth * zoom).toInt
+    val zoomHeight = (imgHeight * zoom).toInt
     val image = new BufferedImage(zoomWidth, zoomHeight, BufferedImage.TYPE_INT_ARGB)
     val g = image.createGraphics()
     renderingHints.foreach(h => g.setRenderingHint(h._1, h._2))
-    g.scale(config.zoom, config.zoom)
+    g.scale(zoom, zoom)
     g.setColor(Constants.canvasBackgroundColor)
     g.fillRect(0, 0, imgWidth, imgHeight)
 
