@@ -39,4 +39,5 @@
 # Vision flag
 /api/v1/graph?s=e-1d&e=2015-03-10T13:13&q=(,1,2,3,4,5,6,7,8,9,),(,nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum,:swap,:legend,),:each&vision=protanopia&no_legend=1&stack=1
 
-
+# Z-Order of stacked lines
+/api/v1/graph?q=t,name,sps,:eq,:sum,:set,t,:get,:stack,t,:get,1.1,:mul,6h,:offset,t,:get,4,:div,:stack&s=e-2d&e=2015-03-10T13:13

@@ -79,27 +79,17 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     clip(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd + 1)
     graphDef.plots.zip(yaxes).foreach { case (plot, axis) =>
 
-      val (regular, stacked) = plot.lines.partition(_.lineStyle != LineStyle.STACK)
-
-      regular.foreach { line =>
+      val offsets = TimeSeriesStack.Offsets(timeAxis)
+      plot.lines.foreach { line =>
         val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
         val lineElement = line.lineStyle match {
           case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, axis)
           case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
           case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
-          case LineStyle.STACK => throw new IllegalStateException("invalid line style")
+          case LineStyle.STACK => TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
         }
 
         lineElement.draw(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd)
-      }
-
-      if (stacked.nonEmpty) {
-        val entries = stacked.map { line =>
-          val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
-          StackEntry(style, line.data.data)
-        }
-        val stackElement = TimeSeriesStack(entries, timeAxis, axis)
-        stackElement.draw(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd)
       }
 
       plot.horizontalSpans.foreach { hspan =>
