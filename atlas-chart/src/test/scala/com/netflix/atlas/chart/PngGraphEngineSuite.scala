@@ -226,7 +226,6 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   singleLine("single_line_with_load_time", v => v.copy(loadTime = 5123L))
   singleLine("single_line_only_graph",     v => v.copy(onlyGraph = true))
   singleLine("single_line_title",          v => v.copy(title = Some("A sample title")))
-  singleLine("single_line_timezone",       v => v.copy(timezone = ZoneId.of("US/Pacific")))
   singleLine("single_line_no_legend",      v => v.copy(legendType = LegendType.OFF))
   singleLine("single_line_no_legend_stats",v => v.copy(legendType = LegendType.LABELS_ONLY))
   singleLine("single_line_linewidth",      v => v.adjustLines(_.copy(lineWidth = 3.0f)))
@@ -239,6 +238,16 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   singleLine("single_line_logarithmic",    v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC)))
   singleLine("single_line_zoom_2.0",       v => v.copy(zoom = 2.0))
   singleLine("single_line_zoom_4.0",       v => v.copy(zoom = 4.0))
+
+  private val zones = List(
+    ZoneId.of("US/Pacific"),
+    ZoneId.of("UTC"),
+    ZoneId.of("Europe/Berlin"),
+    ZoneId.of("Australia/Eucla"))
+  singleLine("single_line_timezone",       v => v.copy(timezones = zones.take(1)))
+  singleLine("single_line_timezones_ab",    v => v.copy(timezones = zones.take(2)))
+  singleLine("single_line_timezones_ba",    v => v.copy(timezones = zones.take(2).reverse))
+  singleLine("single_line_timezones_many", v => v.copy(timezones = zones))
 
   val longLabel =
     """
