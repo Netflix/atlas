@@ -244,10 +244,10 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     ZoneId.of("UTC"),
     ZoneId.of("Europe/Berlin"),
     ZoneId.of("Australia/Eucla"))
-  singleLine("single_line_timezone",       v => v.copy(timezones = zones.take(1)))
+  singleLine("single_line_timezone",        v => v.copy(timezones = zones.take(1)))
   singleLine("single_line_timezones_ab",    v => v.copy(timezones = zones.take(2)))
   singleLine("single_line_timezones_ba",    v => v.copy(timezones = zones.take(2).reverse))
-  singleLine("single_line_timezones_many", v => v.copy(timezones = zones))
+  singleLine("single_line_timezones_many",  v => v.copy(timezones = zones))
 
   val longLabel =
     """
