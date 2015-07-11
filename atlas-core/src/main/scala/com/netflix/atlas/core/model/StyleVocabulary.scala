@@ -15,11 +15,14 @@
  */
 package com.netflix.atlas.core.model
 
+import java.awt.Color
+
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
+import com.netflix.atlas.core.util.Strings
 
 object StyleVocabulary extends Vocabulary {
 
@@ -52,7 +55,7 @@ object StyleVocabulary extends Vocabulary {
     override def signature: String = "TimeSeriesExpr String -- StyleExpr"
   }
 
-  case object Alpha extends StyleWord {
+  case object Alpha extends SimpleWord {
     override def name: String = "alpha"
 
     override def summary: String =
@@ -62,10 +65,35 @@ object StyleVocabulary extends Vocabulary {
         |[color](style-color) setting is used for the same line.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("name,sps,:eq,:sum,:stack,40")
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case (_: String) :: PresentationType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case (v: String) :: PresentationType(t) :: s =>
+        val settings = t.settings.get("color") match {
+          case Some(c) => t.settings + ("color" -> withAlpha(c, v)) - "alpha"
+          case None    => t.settings + ("alpha" -> v)
+        }
+        t.copy(settings = settings) :: s
+    }
+
+    private def withAlpha(color: String, alpha: String): String = {
+      val a = Integer.parseInt(alpha, 16)
+      val c = Strings.parseColor(color)
+      val nc = new Color(c.getRed, c.getGreen, c.getBlue, a)
+      "%08x".format(nc.getRGB)
+    }
+
+    override def signature: String = "TimeSeriesExpr String -- StyleExpr"
+
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,:stack,40",
+      "name,sps,:eq,:sum,:stack,f00,:color,40"
+    )
   }
 
-  case object Color extends StyleWord {
+  case object Color extends SimpleWord {
     override def name: String = "color"
 
     override def summary: String =
@@ -79,7 +107,23 @@ object StyleVocabulary extends Vocabulary {
         |  setting to use with the color.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("name,sps,:eq,:sum,ff0000", "name,sps,:eq,:sum,f00")
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case (_: String) :: PresentationType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case (v: String) :: PresentationType(t) :: s =>
+        val settings = t.settings + ("color" -> v) - "alpha"
+        t.copy(settings = settings) :: s
+    }
+
+    override def signature: String = "TimeSeriesExpr String -- StyleExpr"
+
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,ff0000",
+      "name,sps,:eq,:sum,f00",
+      "name,sps,:eq,:sum,40,:alpha,f00"
+    )
   }
 
   case object LineStyle extends StyleWord {
