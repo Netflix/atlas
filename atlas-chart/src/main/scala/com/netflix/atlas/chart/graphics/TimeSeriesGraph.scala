@@ -30,7 +30,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   override def height: Int = {
     val max = GraphConstants.MaxHeight
     val h = if (graphDef.height > max) max else graphDef.height
-    h + timeAxis.height
+    h + timeAxes.map(_.height).sum
   }
 
   override def width: Int = {
@@ -43,7 +43,12 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   val start = graphDef.startTime.toEpochMilli
   val end = graphDef.endTime.toEpochMilli
 
-  val timeAxis = TimeAxis(Style.default, start, end, graphDef.step, graphDef.timezone)
+  private val showZone = graphDef.timezones.tail.nonEmpty
+  val timeAxes = graphDef.timezones.zipWithIndex.map { case (tz, i) =>
+    TimeAxis(Style.default, start, end, graphDef.step, tz, if (i == 0) 40 else 0xff, showZone)
+  }
+
+  val timeAxis = timeAxes.head
 
   val yaxes = graphDef.plots.zipWithIndex.map { case (plot, i) =>
     val scale = Scales.factory(plot.scale)
@@ -73,7 +78,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     val timeAxisH = timeAxis.height
     val timeGrid = TimeGrid(timeAxis)
 
-    val chartEnd = y2 - timeAxisH
+    val chartEnd = y2 - timeAxisH * timeAxes.size
 
     val prevClip = g.getClip
     clip(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd + 1)
@@ -107,7 +112,11 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     g.setClip(prevClip)
 
     timeGrid.draw(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd)
-    timeAxis.draw(g, x1 + leftAxisW, chartEnd + 1, x2 - rightSideW, y2)
+
+    timeAxes.zipWithIndex.foreach { case (axis, i) =>
+      val offset = chartEnd + 1 + timeAxisH * i
+      axis.draw(g, x1 + leftAxisW, offset, x2 - rightSideW, y2)
+    }
 
     val valueGrid = ValueGrid(yaxes.head)
     valueGrid.draw(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd)

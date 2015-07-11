@@ -18,6 +18,8 @@ package com.netflix.atlas.chart.graphics
 import java.awt.Graphics2D
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.format.TextStyle
+import java.util.Locale
 
 /**
  * Draws a time based X-axis.
@@ -33,14 +35,23 @@ import java.time.ZoneOffset
  * @param zone
  *     Time zone to use for the labels. This is a presentation detail only and can sometimes
  *     result in duplicates. For example, during a daylight savings transition the same hour
- *     can be used for multiple tick marks.
+ *     can be used for multiple tick marks. Defaults to UTC.
+ * @param alpha
+ *     Alpha setting to use for the horizontal line of the axis. If the time axis is right next to
+ *     the chart, then increasing the transparency can help make it easier to see lines that are
+ *     right next to axis. Defaults to 40.
+ * @param showZone
+ *     If set to true, then the abbreviation for the time zone will be shown to the left of the
+ *     axis labels.
  */
 case class TimeAxis(
     style: Style,
     start: Long,
     end: Long,
     step: Long,
-    zone: ZoneId = ZoneOffset.UTC) extends Element with FixedHeight {
+    zone: ZoneId = ZoneOffset.UTC,
+    alpha: Int = 40,
+    showZone: Boolean = false) extends Element with FixedHeight {
 
   override def height: Int = 10 + Constants.smallFontDims.height
 
@@ -56,11 +67,14 @@ case class TimeAxis(
   }
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
+    val txtH = Constants.smallFontDims.height
+    val labelPadding = TimeAxis.minTickLabelWidth / 2
 
     // Horizontal line across the bottom of the chart. The main horizontal line for the axis is
     // made faint so it is easier to see lines in the chart that are directly against the axis.
-    style.withAlpha(40).configure(g)
+    style.withAlpha(alpha).configure(g)
     g.drawLine(x1, y1, x2, y1)
+
 
     style.configure(g)
     val xscale = scale(x1, x2)
@@ -73,9 +87,20 @@ case class TimeAxis(
 
         // Label for the tick mark
         val txt = Text(tick.label, font = Constants.smallFont, style = style)
-        val txtH = Constants.smallFontDims.height
-        txt.draw(g, px - 25, y1 + txtH / 2, px + 25, y1 + txtH)
+        txt.draw(g, px - labelPadding, y1 + txtH / 2, px + labelPadding, y1 + txtH)
       }
+    }
+
+    // Show short form of time zone as a label for the axis
+    if (showZone) {
+      val name = zone.getDisplayName(TextStyle.NARROW_STANDALONE, Locale.US)
+      val zoneLabel = Text(name,
+        font = Constants.smallFont,
+        style = style,
+        alignment = TextAlignment.RIGHT)
+      val labelW = (name.length + 2) * Constants.smallFontDims.width
+      val padding = labelPadding + 2
+      zoneLabel.draw(g, x1 - labelW - padding, y1 + txtH / 2, x1 - padding, y1 + txtH)
     }
   }
 }

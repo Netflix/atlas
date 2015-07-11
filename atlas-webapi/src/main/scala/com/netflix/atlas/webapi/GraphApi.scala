@@ -61,7 +61,7 @@ object GraphApi {
       query: String,
       start: Option[String],
       end: Option[String],
-      timezone: Option[String],
+      timezones: List[String],
       step: Option[String],
       flags: ImageFlags,
       format: String,
@@ -73,7 +73,12 @@ object GraphApi {
 
     def shouldOutputImage: Boolean = (format == "png")
 
-    val tz: ZoneId = ZoneId.of(timezone.getOrElse(ApiSettings.timezone))
+    val timezoneIds = {
+      val zoneStrs = if (timezones.isEmpty) List(ApiSettings.timezone) else timezones
+      zoneStrs.map { z => ZoneId.of(z) }
+    }
+
+    val tz: ZoneId = timezoneIds.head
 
     // Resolved start and end time
     val (resStart, resEnd) = timeRange(
@@ -144,7 +149,7 @@ object GraphApi {
 
       GraphDef(
         title = flags.title,
-        timezone = tz,
+        timezones = timezoneIds,
         startTime = fstart.plusMillis(stepSize),
         endTime = fend.plusMillis(stepSize),
         step = stepSize,
@@ -157,30 +162,6 @@ object GraphApi {
         numberFormat = numberFormat,
         plots = Nil
       )
-    }
-
-    def metadata: Map[String, String] = {
-      val params = List.newBuilder[(String, String)]
-
-      params ++= List(
-        "tz"              -> tz.toString,
-        "s"               -> fstart.toEpochMilli.toString,
-        "start"           -> fstart.toString,
-        "e"               -> fend.toEpochMilli.toString,
-        "end"             -> fend.toString,
-        "step"            -> stepSize.toString,
-        "w"               -> flags.width.toString,
-        "h"               -> flags.height.toString,
-        "axis_per_line"   -> flags.axisPerLine.toString,
-        "no_legend"       -> (!flags.showLegend).toString,
-        "no_legend_stats" -> (!flags.showLegendStats).toString,
-        "only_graph"      -> flags.showOnlyGraph.toString,
-        "vision"          -> flags.vision.toString
-      )
-
-      flags.title.foreach { t => params += "title" -> t }
-
-      params.result().toMap
     }
   }
 
@@ -284,7 +265,7 @@ object GraphApi {
       query = q.get,
       start = params.get("s"),
       end = params.get("e"),
-      timezone = params.get("tz"),
+      timezones = params.getAll("tz").reverse,
       step = params.get("step"),
       flags = flags,
       format = params.get("format").getOrElse("png"),

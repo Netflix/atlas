@@ -30,8 +30,10 @@ import com.netflix.atlas.core.model.SummaryStats
  *     Start time (inclusive) for the first datapoint.
  * @param endTime
  *     End time (exclusive) for the last datapoint.
- * @param timezone
- *     Time zone to use when dislaying time stamps.
+ * @param timezones
+ *     Time zones to show as time axes on the chart. The first time zone in the list will be the
+ *     primary used when dislaying time stamps or for formats that don't support multiple time
+ *     zone rendering.
  * @param step
  *     Step size for each datapoint.
  * @param width
@@ -62,7 +64,7 @@ case class GraphDef(
     plots: List[PlotDef],
     startTime: Instant,
     endTime: Instant,
-    timezone: ZoneId = ZoneOffset.UTC,
+    timezones: List[ZoneId] = List(ZoneOffset.UTC),
     step: Long = 60000,
     width: Int = 400,
     height: Int = 200,
@@ -78,6 +80,11 @@ case class GraphDef(
 
   /** Total number of lines for all plots. */
   val numLines = plots.foldLeft(0) { (acc, p) => acc + p.data.size }
+
+  require(timezones.nonEmpty, "at least one timezone must be specified for the chart")
+
+  /** Return the primary timezone to use for the graph. */
+  def timezone: ZoneId = timezones.head
 
   /** Convert the defintion from a single axis to using one per line in the chart. */
   def axisPerLine: GraphDef = {
