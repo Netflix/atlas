@@ -35,6 +35,12 @@ class ScalesSuite extends FunSuite {
     assert(scale(100.0) === 100)
   }
 
+  test("ylinear_l1_u2_h300") {
+    val scale = Scales.ylinear(1.0, 2.0, 0, 300)
+    assert(scale(1.0) === 300)
+    assert(scale(2.0) === 0)
+  }
+
   test("logarithmic") {
     val scale = Scales.logarithmic(0.0, 100.0, 0, 100)
     assert(scale(0.0) === 0)

@@ -64,51 +64,49 @@ object Ticks {
   )
 
   // Major and minor tick sizes for value axis
-  private val valueTickSizes = List(
+  private val baseValueTickSizes = List(
     10   -> 2,
-    15   -> 5,
     20   -> 5,
-    25   -> 5,
     30   -> 10,
     40   -> 10,
-    50   -> 10,
-    100  -> 20
+    50   -> 10
   )
+
+  // Major and minor tick sizes for value axis
+  private val valueTickSizes = (-25 to 25).toList.flatMap { i =>
+    val f = math.pow(10, i)
+    baseValueTickSizes.map { t => (t._1 * f, t._2 * f, t._1 / t._2) }
+  }
 
   /** Round to multiple of `s`. */
   private def round(v: Double, s: Double): Double = s * math.floor(v / s)
 
-  private def digits(v: Double): Double = {
+  private def needsOffset(v: Double): Boolean = {
     val prefix = UnitPrefix.decimal(v)
-    math.pow(10, math.ceil(math.log10(v / prefix.factor)))
-  }
-
-  private def offsetForRange(range: Double, v: Double): Double = {
-    val absV = math.abs(v)
-    if (range < absV / digits(absV)) v else 0.0
+    val value = v / prefix.factor * 10.0
+    val rounded = math.round(value)
+    math.abs(rounded - value) > 0.01
   }
 
   def value(v1: Double, v2: Double, n: Int): List[ValueTick] = {
     val range = v2 - v1
-    val offset = offsetForRange(range, v1)
-
     val r = if (range < 1e-12) 1.0 else range
-    val p = math.log10(r).toInt
 
-    val fs = List(math.pow(10.0, p), math.pow(10.0, p + 1))
-    val candidates = for (f <- fs; v <- valueTickSizes) yield (f / 100.0, v._1, v._2)
-    val (f, major, minor) = candidates.filter(v => r / (v._1 * v._2) <= n).head
-
-    val base = round(v1, f * major)
-    val end = v2 - base
+    val (major, minor, minorPerMajor) = valueTickSizes.filter(t => r / t._1 <= n).head
     val ticks = List.newBuilder[ValueTick]
+
+    val base = round(v1, major)
+    val end = ((v2 - base) / minor).toInt + 1
     var pos = 0
-    while (pos * f <= end) {
-      val v = base + pos * f
-      if (v >= v1) ticks += ValueTick(v, offset, pos % major == 0)
-      pos += minor
+    while (pos <= end) {
+      val v = base + pos * minor
+      if (v >= v1 && v <= v2) ticks += ValueTick(v, 0.0, pos % minorPerMajor == 0)
+      pos += 1
     }
-    ticks.result()
+    val ts = ticks.result()
+
+    val useOffset = ts.filter(_.major).exists(t => needsOffset(t.v))
+    if (useOffset) ts.map(t => t.copy(offset = base)) else ts
   }
 
   def time(s: Long, e: Long, zone: ZoneId, n: Int): List[TimeTick] = {
