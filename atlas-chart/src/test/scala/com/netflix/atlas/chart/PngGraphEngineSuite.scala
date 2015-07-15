@@ -238,6 +238,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   singleLine("single_line_logarithmic",    v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC)))
   singleLine("single_line_zoom_2.0",       v => v.copy(zoom = 2.0))
   singleLine("single_line_zoom_4.0",       v => v.copy(zoom = 4.0))
+  singleLine("single_line_no_tick_labels", v => v.adjustPlots(_.copy(showTickLabels = false)))
 
   private val zones = List(
     ZoneId.of("US/Pacific"),

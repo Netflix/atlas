@@ -18,6 +18,7 @@ package com.netflix.atlas.chart.model
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.SummaryStats
 
@@ -90,8 +91,15 @@ case class GraphDef(
   def axisPerLine: GraphDef = {
     require(plots.size == 1, "axisPerLine cannot be used with explicit multi axis")
     val plot = plots.head
-    val newPlots = plot.data.map { d => plot.copy(data = List(d), axisColor = None) }
-    copy(plots = newPlots)
+
+    val size = plot.data.size
+    if (size > GraphConstants.MaxYAxis) {
+      val msg = s"Too many Y-axes, ${size} > ${GraphConstants.MaxYAxis}, axis per line disabled."
+      copy(warnings = msg :: warnings)
+    } else {
+      val newPlots = plot.data.map { d => plot.copy(data = List(d), axisColor = None) }
+      copy(plots = newPlots)
+    }
   }
 
   /** Helper to map the plots for the graph. */

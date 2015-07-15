@@ -116,15 +116,10 @@ class GraphRequestActor extends Actor with ActorLogging {
         tmp.sortWith(_.data.label < _.data.label)
       }
 
-      PlotDef(lines,
-        lower = axisCfg.lower,
-        upper = axisCfg.upper,
-        ylabel = axisCfg.ylabel,
-        scale = if (axisCfg.logarithmic) Scale.LOGARITHMIC else Scale.LINEAR,
-        axisColor = if (multiY) None else Some(Color.BLACK))
+      PlotDef(lines)
     }
 
-    val graphDef = request.newGraphDef.copy(plots = plots).withVisionType(request.flags.vision)
+    val graphDef = request.newGraphDef(plots)
 
     val baos = new ByteArrayOutputStream
     request.engine.write(graphDef, baos)
