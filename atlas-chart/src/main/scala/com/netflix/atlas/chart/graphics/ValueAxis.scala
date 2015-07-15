@@ -17,6 +17,8 @@ package com.netflix.atlas.chart.graphics
 
 import java.awt.Graphics2D
 
+import com.netflix.atlas.chart.model.PlotDef
+
 sealed trait ValueAxis extends Element with FixedWidth {
 
   import ValueAxis._
@@ -25,10 +27,15 @@ sealed trait ValueAxis extends Element with FixedWidth {
     labelHeight + tickLabelWidth + tickMarkLength + 1
   }
 
+  def plotDef: PlotDef
+
   def min: Double
   def max: Double
 
-  def valueScale: Scales.DoubleFactory
+  val style: Style = Style(color = plotDef.getAxisColor)
+  val label: Option[Text] = plotDef.ylabel.map { str => Text(str, style = style) }
+
+  val valueScale: Scales.DoubleFactory = Scales.factory(plotDef.scale)
 
   def scale(y1: Int, y2: Int): Scales.DoubleScale = valueScale(min, max, y1, y2)
 
@@ -54,11 +61,9 @@ sealed trait ValueAxis extends Element with FixedWidth {
 }
 
 case class LeftValueAxis(
+    plotDef: PlotDef,
     min: Double,
-    max: Double,
-    label: Option[Text] = None,
-    style: Style = Style.default,
-    valueScale: Scales.DoubleFactory = Scales.ylinear) extends ValueAxis {
+    max: Double) extends ValueAxis {
 
   import ValueAxis._
 
@@ -73,14 +78,17 @@ case class LeftValueAxis(
     majorTicks.foreach { tick =>
       val py = yscale(tick.v)
       g.drawLine(x2, py, x2 - tickMarkLength, py)
-      val txt = Text(tick.label, font = Constants.smallFont, alignment = TextAlignment.RIGHT, style = style)
-      val txtH = Constants.smallFontDims.height
-      val ty = py - txtH / 2
-      txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
+
+      if (plotDef.showTickLabels) {
+        val txt = Text(tick.label, font = Constants.smallFont, alignment = TextAlignment.RIGHT, style = style)
+        val txtH = Constants.smallFontDims.height
+        val ty = py - txtH / 2
+        txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
+      }
     }
 
     val offset = if (majorTicks.isEmpty) 0.0 else majorTicks.head.offset
-    if (offset == 0.0) {
+    if (offset == 0.0 || !plotDef.showTickLabels) {
       label.foreach { t => drawLabel(t, g, x1, y1, x1 + labelHeight, y2) }
     } else {
       val offsetStr = s"[$offset+y]"
@@ -92,11 +100,9 @@ case class LeftValueAxis(
 }
 
 case class RightValueAxis(
+    plotDef: PlotDef,
     min: Double,
-    max: Double,
-    label: Option[Text] = None,
-    style: Style = Style.default,
-    valueScale: Scales.DoubleFactory = Scales.ylinear) extends ValueAxis {
+    max: Double) extends ValueAxis {
 
   import ValueAxis._
 
@@ -110,14 +116,16 @@ case class RightValueAxis(
     majorTicks.foreach { tick =>
       val py = yscale(tick.v)
       g.drawLine(x1, py, x1 + tickMarkLength, py)
-      val txt = Text(tick.label, font = Constants.smallFont, alignment = TextAlignment.LEFT, style = style)
-      val txtH = Constants.smallFontDims.height
-      val ty = py - txtH / 2
-      txt.draw(g, x1 + tickMarkLength + 1, ty, x2, ty + txtH)
+      if (plotDef.showTickLabels) {
+        val txt = Text(tick.label, font = Constants.smallFont, alignment = TextAlignment.LEFT, style = style)
+        val txtH = Constants.smallFontDims.height
+        val ty = py - txtH / 2
+        txt.draw(g, x1 + tickMarkLength + 1, ty, x2, ty + txtH)
+      }
     }
 
     val offset = if (majorTicks.isEmpty) 0.0 else majorTicks.head.offset
-    if (offset == 0.0) {
+    if (offset == 0.0 || !plotDef.showTickLabels) {
       label.foreach { t => drawLabel(t, g, x2 - labelHeight, y1, x2, y2) }
     } else {
       val offsetStr = s"[$offset+y]"
