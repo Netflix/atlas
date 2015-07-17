@@ -66,9 +66,9 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     val text = plot.ylabel.map { str => Text(str, style = style) }
     val bounds = plot.bounds(start, end)
     if (i == 0)
-      LeftValueAxis(bounds._1, bounds._2, text, style = style, valueScale = scale)
+      LeftValueAxis(plot, bounds._1, bounds._2)
     else
-      RightValueAxis(bounds._1, bounds._2, text, style = style, valueScale = scale)
+      RightValueAxis(plot, bounds._1, bounds._2)
   }
 
   private def clip(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {

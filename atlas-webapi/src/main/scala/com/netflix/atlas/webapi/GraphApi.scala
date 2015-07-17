@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.webapi
 
+import java.awt.Color
 import java.time.Instant
 import java.time.ZoneId
 
@@ -140,14 +141,14 @@ object GraphApi {
       DataRequest(evalContext, deduped)
     }
 
-    def newGraphDef: GraphDef = {
+    def newGraphDef(plots: List[PlotDef]): GraphDef = {
       val legendType = (flags.showLegend, flags.showLegendStats) match {
         case (false, _) => LegendType.OFF
         case (_, false) => LegendType.LABELS_ONLY
         case (_, true)  => LegendType.LABELS_WITH_STATS
       }
 
-      GraphDef(
+      var gdef = GraphDef(
         title = flags.title,
         timezones = timezoneIds,
         startTime = fstart.plusMillis(stepSize),
@@ -161,8 +162,24 @@ object GraphApi {
         onlyGraph = flags.showOnlyGraph,
         fontSize = flags.fontSize,
         numberFormat = numberFormat,
-        plots = Nil
+        plots = plots
       )
+
+      gdef = gdef.withVisionType(flags.vision)
+      gdef = if (flags.axisPerLine) gdef.axisPerLine else gdef
+      val multiY = gdef.plots.size > 1
+      val styledPlots = gdef.plots.zipWithIndex.map { case (plot, i) =>
+        val axisCfg = flags.axes(i)
+        plot.copy(
+          lower = axisCfg.lower,
+          upper = axisCfg.upper,
+          ylabel = axisCfg.ylabel,
+          scale = if (axisCfg.logarithmic) Scale.LOGARITHMIC else Scale.LINEAR,
+          axisColor = if (multiY) None else Some(Color.BLACK),
+          showTickLabels = axisCfg.showTickLabels)
+      }
+
+      gdef.copy(plots = styledPlots)
     }
   }
 
@@ -208,7 +225,8 @@ object GraphApi {
       lower: Option[Double] = None,
       logarithmic: Boolean = false,
       stack: Boolean = false,
-      ylabel: Option[String] = None)
+      ylabel: Option[String] = None,
+      showTickLabels: Boolean = true)
 
   case class ImageFlags(
       title: Option[String],
@@ -225,13 +243,18 @@ object GraphApi {
       palette: String,
       layout: Layout)
 
+  private def getAxisParam(params: Uri.Query, k: String, id: Int): Option[String] = {
+    params.get(s"$k.$id").orElse(params.get(k))
+  }
+
   private def newAxis(params: Uri.Query, id: Int): Axis = {
     Axis(
-      upper = params.get(s"u.$id").orElse(params.get("u")).map(_.toDouble),
-      lower = params.get(s"l.$id").orElse(params.get("l")).map(_.toDouble),
-      logarithmic = params.get(s"o.$id").orElse(params.get("o")).contains("1"),
-      stack = params.get(s"stack.$id").orElse(params.get("stack")).contains("1"),
-      ylabel = params.get(s"ylabel.$id").orElse(params.get("ylabel")).filter(_ != ""))
+      upper = getAxisParam(params, "u", id).map(_.toDouble),
+      lower = getAxisParam(params, "l", id).map(_.toDouble),
+      logarithmic = getAxisParam(params, "o", id).contains("1"),
+      stack = getAxisParam(params, "stack", id).contains("1"),
+      ylabel = getAxisParam(params, "ylabel", id).filter(_ != ""),
+      showTickLabels = !getAxisParam(params, "no_tick_labels", id).contains("1"))
   }
 
   def toRequest(req: HttpRequest): Request = {

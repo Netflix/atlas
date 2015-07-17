@@ -32,6 +32,10 @@ import java.awt.Color
  *     Upper limit for the axis.
  * @param lower
  *     Lower limit for the axis.
+ * @param showTickLabels
+ *     Indicates whether or not major tick mark labels should be displayed. In some case it can
+ *     be useful to suppress the labels for including the charts in presentations or support
+ *     tickets where it is not desirable to share the exact numbers.
  */
 case class PlotDef(
     data: List[DataDef],
@@ -39,7 +43,8 @@ case class PlotDef(
     axisColor: Option[Color] = None,
     scale: Scale = Scale.LINEAR,
     upper: Option[Double] = None,
-    lower: Option[Double] = None) {
+    lower: Option[Double] = None,
+    showTickLabels: Boolean = true) {
 
   import java.lang.{ Double => JDouble }
 

@@ -53,3 +53,14 @@
 /api/v1/graph?q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stack&s=e-3h&e=2015-03-10T13:13&w=270&h=70&layout=iw
 /api/v1/graph?q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stack&s=e-3h&e=2015-03-10T13:13&w=70&h=70&layout=ih
 /api/v1/graph?q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stack&s=e-3h&e=2015-03-10T13:13&w=70&h=7500&layout=iw&title=foo+bar+baz+dlfdkfdsfd
+
+# Axis per line
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by&axis_per_line=1
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.node,),:by&axis_per_line=1
+
+# Turning off tick labels
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by&no_tick_labels=1
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=42,name,sps,:eq,:sum,(,nf.cluster,),:by,1,:axis&no_tick_labels.1=1
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by&no_tick_labels=1&axis_per_line=1
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by&no_tick_labels.2=1&axis_per_line=1
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by&no_tick_labels.2=1&axis_per_line=1&no_legend_stats=1
