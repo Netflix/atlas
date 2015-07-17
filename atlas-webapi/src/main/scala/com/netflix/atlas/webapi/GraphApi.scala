@@ -156,6 +156,7 @@ object GraphApi {
         step = stepSize,
         width = flags.width,
         height = flags.height,
+        layout = flags.layout,
         zoom = flags.zoom,
         legendType = legendType,
         onlyGraph = flags.showOnlyGraph,
@@ -239,7 +240,8 @@ object GraphApi {
       showLegendStats: Boolean,
       showOnlyGraph: Boolean,
       vision: VisionType,
-      palette: String)
+      palette: String,
+      layout: Layout)
 
   private def getAxisParam(params: Uri.Query, k: String, id: Int): Option[String] = {
     params.get(s"$k.$id").orElse(params.get(k))
@@ -276,7 +278,8 @@ object GraphApi {
       showLegendStats = !params.get("no_legend_stats").contains("1"),
       showOnlyGraph = params.get("only_graph").contains("1"),
       vision = vision.getOrElse(VisionType.normal),
-      palette = params.get("palette").getOrElse(ApiSettings.palette)
+      palette = params.get("palette").getOrElse(ApiSettings.palette),
+      layout = Layout.create(params.get("layout").getOrElse("canvas"))
     )
 
     val q = params.get("q")

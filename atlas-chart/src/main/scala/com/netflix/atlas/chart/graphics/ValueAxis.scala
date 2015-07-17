@@ -23,9 +23,7 @@ sealed trait ValueAxis extends Element with FixedWidth {
 
   import ValueAxis._
 
-  override def width: Int = {
-    labelHeight + tickLabelWidth + tickMarkLength + 1
-  }
+  override def width: Int = labelHeight + tickLabelWidth + tickMarkLength + 1
 
   def plotDef: PlotDef
 

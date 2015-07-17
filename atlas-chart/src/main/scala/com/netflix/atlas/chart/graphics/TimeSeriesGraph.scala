@@ -29,15 +29,25 @@ import com.netflix.atlas.chart.model.LineStyle
 case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight with FixedWidth {
   override def height: Int = {
     val max = GraphConstants.MaxHeight
-    val h = if (graphDef.height > max) max else graphDef.height
-    h + timeAxes.map(_.height).sum
+    val h = if (graphDef.height > max) max else {
+      val min = GraphConstants.MinCanvasHeight
+      if (graphDef.height < min)  min else graphDef.height
+    }
+    if (graphDef.layout.isFixedHeight) h else {
+      h + timeAxes.map(_.height).sum
+    }
   }
 
   override def width: Int = {
     val max = GraphConstants.MaxWidth
-    val w = if (graphDef.width > max) max else graphDef.width
-    val rightPadding = if (yaxes.tail.nonEmpty) 0 else TimeSeriesGraph.minRightSidePadding
-    w + yaxes.map(_.width).sum + rightPadding
+    val w = if (graphDef.width > max) max else {
+      val min = GraphConstants.MinCanvasWidth
+      if (graphDef.width < min)  min else graphDef.width
+    }
+    if (graphDef.layout.isFixedWidth) w else {
+      val rightPadding = if (yaxes.tail.nonEmpty) 0 else TimeSeriesGraph.minRightSidePadding
+      w + yaxes.map(_.width).sum + rightPadding
+    }
   }
 
   val start = graphDef.startTime.toEpochMilli
@@ -75,13 +85,17 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     val axisW = leftAxisW + rightSideW
     val width = x2 - x1 - axisW
 
+    val showAxes = width >= GraphConstants.MinCanvasWidth
+    val leftOffset = if (showAxes) leftAxisW else TimeSeriesGraph.minRightSidePadding
+    val rightOffset = if (showAxes) rightSideW else TimeSeriesGraph.minRightSidePadding
+
     val timeAxisH = timeAxis.height
     val timeGrid = TimeGrid(timeAxis)
 
     val chartEnd = y2 - timeAxisH * timeAxes.size
 
     val prevClip = g.getClip
-    clip(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd + 1)
+    clip(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd + 1)
     graphDef.plots.zip(yaxes).foreach { case (plot, axis) =>
 
       val offsets = TimeSeriesStack.Offsets(timeAxis)
@@ -94,36 +108,38 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
           case LineStyle.STACK => TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
         }
 
-        lineElement.draw(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd)
+        lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
       }
 
       plot.horizontalSpans.foreach { hspan =>
         val style = Style(color = hspan.color)
         val spanElement = ValueSpan(style, hspan.v1, hspan.v2, axis)
-        spanElement.draw(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd)
+        spanElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
       }
 
       plot.verticalSpans.foreach { vspan =>
         val style = Style(color = vspan.color)
         val spanElement = TimeSpan(style, vspan.t1.toEpochMilli, vspan.t2.toEpochMilli, timeAxis)
-        spanElement.draw(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd)
+        spanElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
       }
     }
     g.setClip(prevClip)
 
-    timeGrid.draw(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd)
+    timeGrid.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
 
     timeAxes.zipWithIndex.foreach { case (axis, i) =>
       val offset = chartEnd + 1 + timeAxisH * i
-      axis.draw(g, x1 + leftAxisW, offset, x2 - rightSideW, y2)
+      axis.draw(g, x1 + leftOffset, offset, x2 - rightOffset, y2)
     }
 
     val valueGrid = ValueGrid(yaxes.head)
-    valueGrid.draw(g, x1 + leftAxisW, y1, x2 - rightSideW, chartEnd)
-    yaxes.head.draw(g, x1, y1, x1 + leftAxisW - 1, chartEnd)
-    yaxes.tail.zipWithIndex.foreach { case (axis, i) =>
-      val offset = leftAxisW + width + leftAxisW * i
-      axis.draw(g, x1 + offset, y1, x1 + offset + leftAxisW, chartEnd)
+    valueGrid.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+    if (showAxes) {
+      yaxes.head.draw(g, x1, y1, x1 + leftAxisW - 1, chartEnd)
+      yaxes.tail.zipWithIndex.foreach { case (axis, i) =>
+        val offset = leftAxisW + width + leftAxisW * i
+        axis.draw(g, x1 + offset, y1, x1 + offset + leftAxisW, chartEnd)
+      }
     }
   }
 }

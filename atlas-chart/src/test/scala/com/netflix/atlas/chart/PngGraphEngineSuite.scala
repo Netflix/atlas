@@ -240,6 +240,15 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   singleLine("single_line_zoom_4.0",       v => v.copy(zoom = 4.0))
   singleLine("single_line_no_tick_labels", v => v.adjustPlots(_.copy(showTickLabels = false)))
 
+  singleLine("single_line_layout_image",   v => v.copy(layout = Layout.IMAGE))
+  singleLine("single_line_layout_ih",      v => v.copy(layout = Layout.IMAGE_HEIGHT))
+  singleLine("single_line_layout_iw",      v => v.copy(layout = Layout.IMAGE_WIDTH))
+
+  singleLine("single_line_layout_iw_50",   v => v.copy(layout = Layout.IMAGE_WIDTH, width = 50))
+  singleLine("single_line_layout_iw_100",  v => v.copy(layout = Layout.IMAGE_WIDTH, width = 100))
+  singleLine("single_line_layout_iw_1000", v => v.copy(layout = Layout.IMAGE_WIDTH, width = 1000))
+  singleLine("single_line_layout_iw_10000",v => v.copy(layout = Layout.IMAGE_WIDTH, width = 10000))
+
   private val zones = List(
     ZoneId.of("US/Pacific"),
     ZoneId.of("UTC"),
