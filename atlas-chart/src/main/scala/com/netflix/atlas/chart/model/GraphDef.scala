@@ -18,6 +18,8 @@ package com.netflix.atlas.chart.model
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import com.netflix.atlas.chart.GraphConstants
+import com.netflix.atlas.chart.graphics.Constants
 import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.SummaryStats
 
@@ -42,6 +44,8 @@ import com.netflix.atlas.core.model.SummaryStats
  * @param height
  *     Height in pixels for the chart area. This excludes the title, time axis, legend, etc. The
  *     final image size will get calculated using this height as a starting point.
+ * @param layout
+ *     Layout mode to use for rendering the image. Default is CANVAS.
  * @param title
  *     Title of the graph.
  * @param legendType
@@ -68,6 +72,7 @@ case class GraphDef(
     step: Long = 60000,
     width: Int = 400,
     height: Int = 200,
+    layout: Layout = Layout.CANVAS,
     zoom: Double = 1.0,
     title: Option[String] = None,
     legendType: LegendType = LegendType.LABELS_WITH_STATS,
@@ -85,6 +90,14 @@ case class GraphDef(
 
   /** Return the primary timezone to use for the graph. */
   def timezone: ZoneId = timezones.head
+
+  def showText: Boolean = {
+    width >= Constants.minWidthForText
+  }
+
+  def legendTypeForLayout: LegendType = {
+    if (layout.isFixedHeight) LegendType.OFF else legendType
+  }
 
   /** Convert the defintion from a single axis to using one per line in the chart. */
   def axisPerLine: GraphDef = {

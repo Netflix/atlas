@@ -31,7 +31,7 @@ object Constants {
 
   private def color(name: String): Color = Strings.parseColor(config.getString(s"colors.$name"))
 
-  val canvasBackgroundColor = color("canvas")
+  val backgroundColor = color("background")
 
   /**
    * For some of the font operations a graphics context is needed. This is a simple dummy instance
@@ -88,6 +88,19 @@ object Constants {
 
   /** Dimensions for a character using the large font. */
   val largeFontDims = dimensions(largeFont)
+
+  /**
+   * Minimum width required for text elements. Value was chosen to allow typical messages to
+   * display with a reasonable level of wrapping.
+   */
+  val minWidthForText = smallFontDims.width * "Warnings: abcdef".length
+
+  /**
+   * Minimum width required for text elements. Value was chosen to allow the typical legend with
+   * stats to show cleanly. It also keeps the cutoff below the level of sizes that are frequently
+   * used in practice.
+   */
+  val minWidthForStats = smallFontDims.width * 45
 
   /**
    * Determine the dimensions for a single character using `font`. It is assumed that the font

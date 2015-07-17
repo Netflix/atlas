@@ -23,6 +23,8 @@ import java.awt.image.RenderedImage
 import java.time.Duration
 import java.time.ZonedDateTime
 
+import com.netflix.atlas.chart.graphics.Constants
+import com.netflix.atlas.chart.graphics.Element
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LegendType
 import com.netflix.atlas.config.ConfigManager
@@ -67,17 +69,19 @@ class DefaultGraphEngine extends PngGraphEngine {
       notices += s"Restricted zoom to ${GraphConstants.MaxZoom}."
     }
 
-    val parts = List.newBuilder[Element]
+    val aboveCanvas = List.newBuilder[Element]
 
     config.title.foreach { str =>
-      parts += Text(str, font = Constants.largeFont)
+      if (config.showText)
+        aboveCanvas += Text(str, font = Constants.largeFont).truncate(config.width)
     }
-    parts += HorizontalPadding(5)
+    aboveCanvas += HorizontalPadding(5)
 
-    val graph = TimeSeriesGraph(config)
-    parts += graph
+    val hoffset = if (config.layout.isFixedHeight) height(aboveCanvas.result(), config.width) else 0
+    val graph = TimeSeriesGraph(config.copy(height = config.height - hoffset))
 
-    if (config.legendType != LegendType.OFF) {
+    val belowCanvas = List.newBuilder[Element]
+    if (config.legendTypeForLayout != LegendType.OFF && config.showText) {
       if (config.numLines > GraphConstants.MaxLinesInLegend) {
         notices +=
           s"""
@@ -85,27 +89,30 @@ class DefaultGraphEngine extends PngGraphEngine {
             | was suppressed.
           """.stripMargin
       } else {
-        parts += HorizontalPadding(5)
+        val showStats =
+          config.legendType == LegendType.LABELS_WITH_STATS &&
+          graph.width >= Constants.minWidthForStats
+        belowCanvas += HorizontalPadding(5)
         if (config.plots.size > 1) {
           val bold = Constants.normalFont.deriveFont(Font.BOLD)
           config.plots.zipWithIndex.foreach { case (plot, i) =>
-            parts += HorizontalPadding(5)
+            belowCanvas += HorizontalPadding(5)
             val label = plot.ylabel.map(s => s"Axis $i: $s").getOrElse(s"Axis $i")
-            parts += Text(label,
+            belowCanvas += Text(label,
               font = bold,
               alignment = TextAlignment.LEFT,
               style = Style(color = plot.getAxisColor))
             plot.lines.foreach { line =>
-              parts += HorizontalPadding(2)
-              parts += LegendEntry(line, config.legendType == LegendType.LABELS_WITH_STATS)
+              belowCanvas += HorizontalPadding(2)
+              belowCanvas += LegendEntry(line, showStats)
             }
           }
         } else {
           config.plots.foreach { plot =>
-            parts += HorizontalPadding(5)
+            belowCanvas += HorizontalPadding(5)
             plot.lines.foreach { line =>
-              parts += HorizontalPadding(2)
-              parts += LegendEntry(line, config.legendType == LegendType.LABELS_WITH_STATS)
+              belowCanvas += HorizontalPadding(2)
+              belowCanvas += LegendEntry(line, showStats)
             }
           }
         }
@@ -117,8 +124,8 @@ class DefaultGraphEngine extends PngGraphEngine {
       val endTime = ZonedDateTime.ofInstant(config.endTime, config.timezone).toString
       val step = Strings.toString(Duration.ofMillis(config.step))
       val comment = "Frame: %s, End: %s, Step: %s".format(frame, endTime, step)
-      parts += HorizontalPadding(15)
-      parts += Text(comment, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+      belowCanvas += HorizontalPadding(15)
+      belowCanvas += Text(comment, font = Constants.smallFont, alignment = TextAlignment.LEFT)
 
       if (config.loadTime > 0 && config.stats.inputLines > 0) {
         val graphLines = config.plots.map(_.data.size).sum
@@ -132,31 +139,45 @@ class DefaultGraphEngine extends PngGraphEngine {
           UnitPrefix.format(config.stats.outputDatapoints),
           UnitPrefix.format(graphDatapoints)
         )
-        parts += Text(stats, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+        belowCanvas += Text(stats, font = Constants.smallFont, alignment = TextAlignment.LEFT)
       } else if (config.loadTime > 0) {
         val stats = "Fetch: %sms".format(config.loadTime.toString)
-        parts += Text(stats, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+        belowCanvas += Text(stats, font = Constants.smallFont, alignment = TextAlignment.LEFT)
       }
     }
 
     val noticeList = notices.result()
-    if (noticeList.nonEmpty) {
+    if (noticeList.nonEmpty && config.showText) {
       val warnings = List.newBuilder[Element]
-      warnings += Text("Warnings", font = Constants.normalFont.deriveFont(Font.BOLD), alignment = TextAlignment.LEFT)
+      warnings += Text("Warnings",
+        font = Constants.normalFont.deriveFont(Font.BOLD),
+        alignment = TextAlignment.LEFT)
       noticeList.foreach { notice =>
         warnings += HorizontalPadding(2)
         warnings += ListItem(Text(notice, alignment = TextAlignment.LEFT))
       }
-      parts += HorizontalPadding(15)
-      parts += Block(warnings.result(), background = Some(Color.ORANGE))
+      belowCanvas += HorizontalPadding(15)
+      belowCanvas += Block(warnings.result(), background = Some(Color.ORANGE))
     }
 
+    val bgColor =
+      if (noticeList.nonEmpty && (!config.showText || config.layout.isFixedHeight))
+        Color.ORANGE
+      else
+        Constants.backgroundColor
+
+    val above = aboveCanvas.result()
+    val below = belowCanvas.result()
+
+    val parts = List.newBuilder[Element]
+    parts ++= above
+    parts += graph
+    if (!config.layout.isFixedHeight)
+      parts ++= below
     val elements = parts.result()
 
     val imgWidth = graph.width
-    val imgHeight = elements.foldLeft(0) { (acc, element) =>
-      acc + element.getHeight(Constants.refGraphics, imgWidth)
-    }
+    val imgHeight = height(elements, imgWidth)
 
     val zoom = if (config.zoom > GraphConstants.MaxZoom) GraphConstants.MaxZoom else config.zoom
     val zoomWidth = (imgWidth * zoom).toInt
@@ -165,7 +186,7 @@ class DefaultGraphEngine extends PngGraphEngine {
     val g = image.createGraphics()
     renderingHints.foreach(h => g.setRenderingHint(h._1, h._2))
     g.scale(zoom, zoom)
-    g.setColor(Constants.canvasBackgroundColor)
+    g.setColor(bgColor)
     g.fillRect(0, 0, imgWidth, imgHeight)
 
     var y = 0
@@ -176,6 +197,10 @@ class DefaultGraphEngine extends PngGraphEngine {
     }
 
     image
+  }
+
+  private def height(elements: List[Element], w: Int): Int = {
+    elements.foldLeft(0) { (acc, e) => acc + e.getHeight(Constants.refGraphics, w) }
   }
 }
 
