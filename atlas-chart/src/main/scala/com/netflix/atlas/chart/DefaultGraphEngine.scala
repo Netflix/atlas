@@ -82,39 +82,24 @@ class DefaultGraphEngine extends PngGraphEngine {
 
     val belowCanvas = List.newBuilder[Element]
     if (config.legendTypeForLayout != LegendType.OFF && config.showText) {
-      if (config.numLines > GraphConstants.MaxLinesInLegend) {
-        notices +=
-          s"""
-            |Too many lines, ${config.numLines} > ${GraphConstants.MaxLinesInLegend}, legend
-            | was suppressed.
-          """.stripMargin
-      } else {
-        val showStats =
-          config.legendType == LegendType.LABELS_WITH_STATS &&
-          graph.width >= Constants.minWidthForStats
-        belowCanvas += HorizontalPadding(5)
-        if (config.plots.size > 1) {
-          val bold = Constants.normalFont.deriveFont(Font.BOLD)
-          config.plots.zipWithIndex.foreach { case (plot, i) =>
-            belowCanvas += HorizontalPadding(5)
-            val label = plot.ylabel.map(s => s"Axis $i: $s").getOrElse(s"Axis $i")
-            belowCanvas += Text(label,
-              font = bold,
-              alignment = TextAlignment.LEFT,
-              style = Style(color = plot.getAxisColor))
-            plot.lines.foreach { line =>
-              belowCanvas += HorizontalPadding(2)
-              belowCanvas += LegendEntry(line, showStats)
-            }
-          }
+      val entriesPerPlot =
+        if (config.numLines <= GraphConstants.MaxLinesInLegend) {
+          GraphConstants.MaxLinesInLegend
         } else {
-          config.plots.foreach { plot =>
-            belowCanvas += HorizontalPadding(5)
-            plot.lines.foreach { line =>
-              belowCanvas += HorizontalPadding(2)
-              belowCanvas += LegendEntry(line, showStats)
-            }
-          }
+          GraphConstants.MaxLinesInLegend / config.plots.size
+        }
+      val showStats =
+        config.legendType == LegendType.LABELS_WITH_STATS &&
+        graph.width >= Constants.minWidthForStats
+      belowCanvas += HorizontalPadding(5)
+      if (config.plots.size > 1) {
+        config.plots.zipWithIndex.foreach { case (plot, i) =>
+          val label = plot.ylabel.map(s => s"Axis $i: $s").getOrElse(s"Axis $i")
+          belowCanvas += Legend(plot, Some(label), showStats, entriesPerPlot)
+        }
+      } else {
+        config.plots.foreach { plot =>
+          belowCanvas += Legend(plot, None, showStats, entriesPerPlot)
         }
       }
 
