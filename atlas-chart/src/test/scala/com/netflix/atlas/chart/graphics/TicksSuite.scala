@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import com.netflix.atlas.core.util.UnitPrefix
 import org.scalatest.FunSuite
 
 import scala.util.Random
@@ -23,24 +22,12 @@ import scala.util.Random
 
 class TicksSuite extends FunSuite {
 
-  private def checkForRounding(v: Double): Unit = {
-    val prefix = UnitPrefix.decimal(v)
-    val value = v / prefix.factor * 10.0
-    val rounded = math.round(value)
-    assert(math.abs(value - rounded) < 0.001)
-  }
-
-  private def checkForRounding(ticks: List[ValueTick]): Unit = {
-    ticks.filter(_.major).foreach(t => checkForRounding(t.v - t.offset))
-  }
-
   private def checkForDuplicates(ticks: List[ValueTick]): Unit = {
     val duplicates = ticks.filter(_.major).map(_.label).groupBy(v => v).filter(_._2.size > 1)
     assert(duplicates === Map.empty, "duplicate tick labels")
   }
 
   private def sanityCheck(ticks: List[ValueTick]): Unit = {
-    checkForRounding(ticks)
     checkForDuplicates(ticks)
   }
 
@@ -90,6 +77,26 @@ class TicksSuite extends FunSuite {
     assert(ticks.filter(_.major).map(_.label).mkString(",") === "0.0,2.0,4.0,6.0")
   }
 
+  test("values [0.96, 1.0]") {
+    val ticks = Ticks.value(0.96, 1.0, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 21)
+    assert(ticks.filter(_.major).size === 5)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "0.96")
+    assert(ticks.last.label === "1.00")
+  }
+
+  test("values [835, 1068]") {
+    val ticks = Ticks.value(835.0, 1068, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 23)
+    assert(ticks.filter(_.major).size === 5)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.filter(_.major).head.label === "0.85k")
+    assert(ticks.filter(_.major).last.label === "1.05k")
+  }
+
   test("values [2026, 2027]") {
     val ticks = Ticks.value(2026.0, 2027.0, 5)
     sanityCheck(ticks)
@@ -125,9 +132,9 @@ class TicksSuite extends FunSuite {
     sanityCheck(ticks)
     assert(ticks.size === 22)
     assert(ticks.filter(_.major).size === 4)
-    assert(ticks.head.offset === 2025.0)
-    assert(ticks.head.label === "1.0")
-    assert(ticks.last.label === "22.0")
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.filter(_.major).head.label === "2.030k")
+    assert(ticks.filter(_.major).last.label === "2.045k")
   }
 
   test("values [20, 21.8]") {
@@ -156,8 +163,8 @@ class TicksSuite extends FunSuite {
     assert(ticks.size === 21)
     assert(ticks.filter(_.major).size === 6)
     assert(ticks.head.offset === -2027.0)
-    assert(ticks.head.label === "0.0")
-    assert(ticks.last.label === "1.0")
+    assert(ticks.filter(_.major).head.label === "0.0")
+    assert(ticks.filter(_.major).last.label === "1.0")
   }
 
   test("values [42.0, 8.123456e12]") {
@@ -166,7 +173,7 @@ class TicksSuite extends FunSuite {
     assert(ticks.size === 16)
     assert(ticks.filter(_.major).size === 4)
     assert(ticks.head.offset === 0.0)
-    assert(ticks.head.label === "500.0G")
+    assert(ticks.head.label === "0.5T")
     assert(ticks.last.label === "8.0T")
   }
 
