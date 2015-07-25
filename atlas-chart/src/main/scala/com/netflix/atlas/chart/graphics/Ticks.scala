@@ -81,13 +81,27 @@ object Ticks {
   /** Round to multiple of `s`. */
   private def round(v: Double, s: Double): Double = s * math.floor(v / s)
 
-  private def needsOffset(v: Double): Boolean = {
-    val prefix = UnitPrefix.decimal(v)
-    val value = v / prefix.factor * 10.0
-    val rounded = math.round(value)
-    math.abs(rounded - value) > 0.01
+  /**
+   * Determines the string format pattern to use for showing the label. This is primarily focused
+   * on where the decimal point should go such that:
+   *
+   * 1. All tick labels will have the decimal point in the same position to make visual scanning
+   *    easier.
+   * 2. Avoid the use of an offset when the number can be shown without an offset by shifting
+   *    the decimal point.
+   */
+  private def labelFormat(prefix: UnitPrefix, v: Double): (String, Double) = {
+    val f = v / prefix.factor
+    (f * 1000.0).toInt match {
+      case i if (i %  10) > 0 => "%.3f%s" -> prefix.factor * 10.0   // 1.234
+      case i if (i % 100) > 0 => "%.2f%s" -> prefix.factor * 100.0  // 12.34
+      case _                  => "%.1f%s" -> prefix.factor * 1000.0 // 123.4
+    }
   }
 
+  /**
+   * Generate value tick marks with approximately `n` major ticks for the range `[v1, v2]`.
+   */
   def value(v1: Double, v2: Double, n: Int): List[ValueTick] = {
     val range = v2 - v1
     val r = if (range < 1e-12) 1.0 else range
@@ -95,20 +109,30 @@ object Ticks {
     val (major, minor, minorPerMajor) = valueTickSizes.filter(t => r / t._1 <= n).head
     val ticks = List.newBuilder[ValueTick]
 
+    val prefix = UnitPrefix.forRange(math.abs(v2), 3)
+    val (labelFmt, maxValue) = labelFormat(prefix, major)
+
     val base = round(v1, major)
     val end = ((v2 - base) / minor).toInt + 1
     var pos = 0
     while (pos <= end) {
       val v = base + pos * minor
-      if (v >= v1 && v <= v2) ticks += ValueTick(v, 0.0, pos % minorPerMajor == 0)
+      if (v >= v1 && v <= v2) {
+        val label = prefix.format(v, labelFmt)
+        ticks += ValueTick(v, 0.0, pos % minorPerMajor == 0, Some(label))
+      }
       pos += 1
     }
     val ts = ticks.result()
 
-    val useOffset = ts.filter(_.major).exists(t => needsOffset(t.v))
-    if (useOffset) ts.map(t => t.copy(offset = base)) else ts
+    val useOffset = major < math.abs(v1) / 1e3
+    if (useOffset) ts.map(t => t.copy(offset = base, labelOpt = None)) else ts
   }
 
+  /**
+   * Generate value tick marks with approximately `n` major ticks for the range `[s, e]`. Tick
+   * marks will be on significant time boundaries for the specified time zone.
+   */
   def time(s: Long, e: Long, zone: ZoneId, n: Int): List[TimeTick] = {
     // To keep even placement of major grid lines the shift amount for the timezone is computed
     // based on the start. If there is a change such as DST during the interval, then labels
@@ -142,9 +166,17 @@ object Ticks {
  *     label should be the difference between the value and the offset.
  * @param major
  *     True if the position is a major tick mark.
+ * @param labelOpt
+ *     Label to use for the tick mark. If set to None then a default will be generated using
+ *     `UnitPrefix`.
  */
-case class ValueTick(v: Double, offset: Double, major: Boolean = true) {
-  def label: String = UnitPrefix.format(v - offset)
+case class ValueTick(
+    v: Double,
+    offset: Double,
+    major: Boolean = true,
+    labelOpt: Option[String] = None) {
+
+  def label: String = labelOpt.fold(UnitPrefix.format(v - offset))(v => v)
 }
 
 /**

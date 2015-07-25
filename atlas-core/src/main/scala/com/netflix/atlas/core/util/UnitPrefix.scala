@@ -46,7 +46,7 @@ object UnitPrefix {
 
   def format(v: Double, fmtstr: String = "%.1f%s"): String = {
     val unit = decimal(v)
-    unit.format(v / unit.factor, fmtstr)
+    unit.format(v, fmtstr)
   }
 
   /** Returns an appropriate prefix for `value`. */
@@ -56,6 +56,22 @@ object UnitPrefix {
       case v if v >= kilo.factor  => decimalBigPrefixes.find(_.factor <= v).getOrElse(yotta)
       case v if v < 1.0           => decimalSmallPrefixes.find(_.factor <= v).getOrElse(yocto)
       case _                      => one
+    }
+  }
+
+  /** Returns an appropriate prefix for `value`. */
+  def forRange(value: Double, digits: Double): UnitPrefix = {
+    val f = math.pow(10.0, digits)
+    def withinRange(prefix: UnitPrefix, v: Double): Boolean = {
+      val a = math.abs(v)
+      a >= prefix.factor / f && a < prefix.factor * f
+    }
+    math.abs(value) match {
+      case v if isNearlyZero(v)      => one
+      case v if withinRange(one, v)  => one
+      case v if v >= kilo.factor / f => decimalBigPrefixes.reverse.find(withinRange(_, v)).getOrElse(yotta)
+      case v if v < 1.0 / f          => decimalSmallPrefixes.find(withinRange(_, v)).getOrElse(yocto)
+      case _                         => one
     }
   }
 
@@ -73,6 +89,12 @@ object UnitPrefix {
  */
 case class UnitPrefix(symbol: String, text: String, factor: Double) {
   def format(value: Double, fmtstr: String): String = {
-    fmtstr.format(value, symbol)
+    fmtstr.format(value / factor, symbol)
+  }
+
+  def next: UnitPrefix = {
+    UnitPrefix.decimalSmallPrefixes.reverse.find(_.factor > factor).getOrElse {
+      UnitPrefix.decimalBigPrefixes.reverse.find(_.factor > factor).getOrElse(UnitPrefix.yotta)
+    }
   }
 }
