@@ -18,6 +18,7 @@ package com.netflix.atlas.chart.graphics
 import java.awt.Graphics2D
 
 import com.netflix.atlas.chart.model.PlotDef
+import com.netflix.atlas.core.util.UnitPrefix
 
 sealed trait ValueAxis extends Element with FixedWidth {
 
@@ -68,12 +69,23 @@ case class LeftValueAxis(
   protected def angle: Double = -Math.PI / 2.0
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-
     style.configure(g)
     g.drawLine(x2, y1, x2, y2)
-    val yscale = scale(y1, y2)
+
     val majorTicks = ticks(y1, y2).filter(_.major)
-    majorTicks.foreach { tick =>
+    val offset = if (majorTicks.isEmpty) 0.0 else majorTicks.head.offset
+    if (offset == 0.0 || !plotDef.showTickLabels) {
+      drawNormal(majorTicks, g, x1, y1, x2, y2)
+    } else {
+      drawWithOffset(majorTicks, g, x1, y1, x2, y2)
+    }
+
+    label.foreach { t => drawLabel(t, g, x1, y1, x1 + labelHeight, y2) }
+  }
+
+  private def drawNormal(ticks: List[ValueTick], g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
+    val yscale = scale(y1, y2)
+    ticks.foreach { tick =>
       val py = yscale(tick.v)
       g.drawLine(x2, py, x2 - tickMarkLength, py)
 
@@ -84,15 +96,35 @@ case class LeftValueAxis(
         txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
       }
     }
+  }
 
-    val offset = if (majorTicks.isEmpty) 0.0 else majorTicks.head.offset
-    if (offset == 0.0 || !plotDef.showTickLabels) {
-      label.foreach { t => drawLabel(t, g, x1, y1, x1 + labelHeight, y2) }
-    } else {
-      val offsetStr = s"[$offset+y]"
-      val labelStr = label.fold(offsetStr)(t => s"$offsetStr ${t.str}")
-      val labelTxt = Text(labelStr)
-      drawLabel(labelTxt, g, x1, y1, x1 + labelHeight, y2)
+  private def drawWithOffset(ticks: List[ValueTick], g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
+    val offset = ticks.head.v
+    val prefix = UnitPrefix.decimal(ticks.last.v - offset)
+    val offsetStr = prefix.format(offset, "%.1f%s")
+    val offsetTxt = Text(offsetStr, font = Constants.smallFont, alignment = TextAlignment.LEFT, style = style)
+    val offsetH = Constants.smallFontDims.height * 2
+    val offsetW = Constants.smallFontDims.width * (offsetStr.length + 3)
+
+    val yscale = scale(y1, y2)
+    val oy = yscale(offset)
+    val otop = oy - offsetW - tickMarkLength
+    val obottom = oy - tickMarkLength
+    drawLabel(offsetTxt, g, x2 - offsetH - tickMarkLength, otop, x2 - tickMarkLength, obottom)
+    g.drawLine(x2, oy, x2 - offsetH - tickMarkLength, oy)
+
+    ticks.tail.foreach { tick =>
+      val py = yscale(tick.v)
+      g.drawLine(x2, py, x2 - tickMarkLength, py)
+
+      if (plotDef.showTickLabels) {
+        val label = s"+${prefix.format(tick.v - offset, "%.1f%s")}"
+        val txt = Text(label, font = Constants.smallFont, alignment = TextAlignment.RIGHT, style = style)
+        val txtH = Constants.smallFontDims.height
+        val ty = py - txtH / 2
+        if (ty + txtH < otop)
+          txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
+      }
     }
   }
 }
@@ -109,11 +141,24 @@ case class RightValueAxis(
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     style.configure(g)
     g.drawLine(x1, y1, x1, y2)
-    val yscale = scale(y1, y2)
+
     val majorTicks = ticks(y1, y2).filter(_.major)
-    majorTicks.foreach { tick =>
+    val offset = if (majorTicks.isEmpty) 0.0 else majorTicks.head.offset
+    if (offset == 0.0 || !plotDef.showTickLabels) {
+      drawNormal(majorTicks, g, x1, y1, x2, y2)
+    } else {
+      drawWithOffset(majorTicks, g, x1, y1, x2, y2)
+    }
+
+    label.foreach { t => drawLabel(t, g, x2 - labelHeight, y1, x2, y2) }
+  }
+
+  def drawNormal(ticks: List[ValueTick], g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
+    val yscale = scale(y1, y2)
+    ticks.foreach { tick =>
       val py = yscale(tick.v)
       g.drawLine(x1, py, x1 + tickMarkLength, py)
+
       if (plotDef.showTickLabels) {
         val txt = Text(tick.label, font = Constants.smallFont, alignment = TextAlignment.LEFT, style = style)
         val txtH = Constants.smallFontDims.height
@@ -121,15 +166,35 @@ case class RightValueAxis(
         txt.draw(g, x1 + tickMarkLength + 1, ty, x2, ty + txtH)
       }
     }
+  }
 
-    val offset = if (majorTicks.isEmpty) 0.0 else majorTicks.head.offset
-    if (offset == 0.0 || !plotDef.showTickLabels) {
-      label.foreach { t => drawLabel(t, g, x2 - labelHeight, y1, x2, y2) }
-    } else {
-      val offsetStr = s"[$offset+y]"
-      val labelStr = label.fold(offsetStr)(t => s"$offsetStr ${t.str}")
-      val labelTxt = Text(labelStr)
-      drawLabel(labelTxt, g, x2 - labelHeight, y1, x2, y2)
+  private def drawWithOffset(ticks: List[ValueTick], g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
+    val offset = ticks.head.v
+    val prefix = UnitPrefix.decimal(ticks.last.v - offset)
+    val offsetStr = prefix.format(offset, "%.1f%s")
+    val offsetTxt = Text(offsetStr, font = Constants.smallFont, alignment = TextAlignment.RIGHT, style = style)
+    val offsetH = Constants.smallFontDims.height * 2
+    val offsetW = Constants.smallFontDims.width * (offsetStr.length + 3)
+
+    val yscale = scale(y1, y2)
+    val oy = yscale(offset)
+    val otop = oy - offsetW - tickMarkLength
+    val obottom = oy - tickMarkLength
+    drawLabel(offsetTxt, g, x1 + tickMarkLength, otop, x1 + offsetH + tickMarkLength, obottom)
+    g.drawLine(x1 + offsetH + tickMarkLength, oy, x1, oy)
+
+    ticks.tail.foreach { tick =>
+      val py = yscale(tick.v)
+      g.drawLine(x1, py, x1 + tickMarkLength, py)
+
+      if (plotDef.showTickLabels) {
+        val label = s"+${prefix.format(tick.v - offset, "%.1f%s")}"
+        val txt = Text(label, font = Constants.smallFont, alignment = TextAlignment.LEFT, style = style)
+        val txtH = Constants.smallFontDims.height
+        val ty = py - txtH / 2
+        if (ty + txtH < otop)
+          txt.draw(g, x1 + tickMarkLength + 1, ty, x2, ty + txtH)
+      }
     }
   }
 }

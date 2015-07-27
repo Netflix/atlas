@@ -83,19 +83,19 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     LineDef(finegrainWave(min ,max, hours))
   }
 
-  def simpleWave(min: Int, max: Int): TimeSeries = {
+  def simpleWave(min: Double, max: Double): TimeSeries = {
     wave(min, max, Duration.ofDays(1))
   }
 
-  def simpleWave(max: Int): TimeSeries = {
+  def simpleWave(max: Double): TimeSeries = {
     simpleWave(0, max)
   }
 
-  def simpleSeriesDef(min: Int, max: Int): LineDef = {
+  def simpleSeriesDef(min: Double, max: Double): LineDef = {
     LineDef(simpleWave(min ,max))
   }
 
-  def simpleSeriesDef(max: Int) : LineDef = {
+  def simpleSeriesDef(max: Double) : LineDef = {
     simpleSeriesDef(0, max)
   }
 
@@ -401,6 +401,20 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     )
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_multiy_two.png"
+    graphAssertions.assertEquals(image, name, bless)
+  }
+
+  test("multiy_issue-119") {
+    val p = Palette.default
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(
+        PlotDef(label(0, p, simpleSeriesDef(123456.0, 123457.0))),
+        PlotDef(label(1, p, simpleSeriesDef(1e15, 1e15 - 9e2))))
+    )
+    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    val name = prefix + "_multiy_issue-119.png"
     graphAssertions.assertEquals(image, name, bless)
   }
 
