@@ -75,6 +75,12 @@ object TagKey {
   /** Image id for the instance reporting the metric. */
   final val image = netflixPrefix + "ami"
 
+  /** Name for a job running in a framework like hadoop. */
+  final val job = netflixPrefix + "job"
+
+  /** Id for a task that runs as part of a job.  */
+  final val task = netflixPrefix + "task"
+
   /** ISO country code. */
   final val country = netflixPrefix + "country"
 
@@ -91,6 +97,7 @@ object TagKey {
     application, cluster, autoScalingGroup, node,
     region, availabilityZone,
     vmType, image,
+    job, task,
     country, countryRollup)
 
   /** A list of standard tags. */
