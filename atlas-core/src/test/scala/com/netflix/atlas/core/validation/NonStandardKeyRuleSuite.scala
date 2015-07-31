@@ -33,4 +33,12 @@ class NonStandardKeyRuleSuite extends FunSuite {
     assert(res.isFailure)
   }
 
+  test("job") {
+    assert(rule.validate("nf.job", "def") === ValidationResult.Pass)
+  }
+
+  test("task") {
+    assert(rule.validate("nf.task", "def") === ValidationResult.Pass)
+  }
+
 }
