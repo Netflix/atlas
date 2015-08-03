@@ -26,7 +26,7 @@ object ModelExtractors {
 
   case object DurationType {
     def unapply(value: Any): Option[Duration] = value match {
-      case v: String         => Some(Strings.parseDuration(v))
+      case v: String         => Try(Strings.parseDuration(v)).toOption
       case v: Duration       => Some(v)
       case _                 => None
     }
