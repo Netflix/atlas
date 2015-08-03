@@ -28,7 +28,6 @@ class ModelExtractorsSuite extends FunSuite {
   def completionTest(expr: String, expected: Int): Unit = {
     test(expr) {
       val result = interpreter.execute(expr)
-      candidates.filter(_.matches(result.stack)).foreach(System.err.println)
       assert(candidates.count(_.matches(result.stack)) === expected)
     }
   }
