@@ -6,13 +6,24 @@ WIKI_PRG        := atlas-wiki/runMain com.netflix.atlas.wiki.Main
 WIKI_INPUT_DIR  := $(shell pwd)/atlas-wiki/src/main/resources
 WIKI_OUTPUT_DIR := $(shell pwd)/target/atlas.wiki
 
-IVY_CACHE_URL := https://www.dropbox.com/s/zx5yq86nk6q19w1/ivy2.tar.gz?dl=0
 LAUNCHER_JAR_URL := https://repo1.maven.org/maven2/com/netflix/iep/iep-launcher/0.1.14/iep-launcher-0.1.14.jar
 
-.PHONY: build clean coverage license update-wiki publish-wiki
+.PHONY: build snapshot release clean coverage license update-wiki publish-wiki
 
 build:
 	$(SBT) clean test checkLicenseHeaders
+
+snapshot:
+	$(SBT) clean test checkLicenseHeaders storeBintrayCredentials publish
+
+release:
+	# Storing the bintray credentials needs to be done as a separate command so they will
+	# be available early enough for the publish task.
+	#
+	# The storeBintrayCredentials still needs to be on the subsequent command or we get:
+	# [error] (iep-service/*:bintrayEnsureCredentials) java.util.NoSuchElementException: None.get
+	$(SBT) storeBintrayCredentials
+	$(SBT) clean test checkLicenseHeaders storeBintrayCredentials publish bintrayRelease
 
 clean:
 	$(SBT) clean
@@ -36,10 +47,6 @@ publish-wiki: update-wiki
 	cd $(WIKI_OUTPUT_DIR) && git add * && git status
 	cd $(WIKI_OUTPUT_DIR) && git commit -a -m "update wiki"
 	cd $(WIKI_OUTPUT_DIR) && git push origin master
-
-get-ivy-cache:
-	curl -L $(IVY_CACHE_URL) -o $(HOME)/ivy.tar.gz
-	tar -C $(HOME) -xzf $(HOME)/ivy.tar.gz
 
 one-jar:
 	mkdir -p target
