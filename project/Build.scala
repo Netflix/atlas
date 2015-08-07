@@ -1,6 +1,5 @@
 import sbt._
 import sbt.Keys._
-import com.typesafe.sbt.pgp.PgpKeys._
 
 object MainBuild extends Build {
 
