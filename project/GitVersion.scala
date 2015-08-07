@@ -46,9 +46,8 @@ object GitVersion {
 
   lazy val settings: Seq[Def.Setting[_]] = Seq(
     version in ThisBuild := {
-      val branch = git.gitCurrentBranch.value
+      val branch = sys.env.getOrElse("TRAVIS_BRANCH", git.gitCurrentBranch.value)
       val branchVersion = if (branch == "master") baseVersion else branch
-      println(s"here $branch, $branchVersion, ${git.gitDescribedVersion.value}")
       git.gitDescribedVersion.value getOrElse "0.1-SNAPSHOT" match {
         case _ if isPullRequest       => s"0.0.0-PULLREQUEST"
         case snapshotVersion(v)       => toSnapshotVersion(branchVersion, v)
