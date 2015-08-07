@@ -1,12 +1,12 @@
 import sbt._
 import sbt.Keys._
-import com.typesafe.sbt.pgp.PgpKeys._
 
 object MainBuild extends Build {
 
   lazy val baseSettings =
     sbtrelease.ReleasePlugin.releaseSettings ++
-    Sonatype.settings ++
+    GitVersion.settings ++
+    Bintray.settings ++
     net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     scoverage.ScoverageSbtPlugin.projectSettings
 
