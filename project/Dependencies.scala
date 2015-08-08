@@ -8,7 +8,7 @@ object Dependencies {
     val jackson    = "2.5.0"
     val log4j      = "2.1"
     val lucene     = "4.10.2"
-    val scala      = "2.11.5"
+    val scala      = "2.11.7"
     val slf4j      = "1.7.10"
     val spectator  = "0.19"
     val spray      = "1.3.2"

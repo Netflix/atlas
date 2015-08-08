@@ -15,23 +15,13 @@
  */
 package com.netflix.atlas.webapi
 
-import java.io.PrintStream
-import java.net.URI
-
 import akka.actor.Actor
 import akka.actor.Props
-import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.model.Datapoint
-import com.netflix.atlas.core.util.Hash
-import com.netflix.atlas.core.util.PngImage
-import com.netflix.atlas.core.util.Streams
-import com.netflix.atlas.core.util.Strings
-import com.netflix.atlas.test.GraphAssertions
+import com.netflix.atlas.webapi.PublishApi.FailureMessage
 import com.netflix.atlas.webapi.PublishApi.PublishRequest
 import org.scalatest.FunSuite
 import spray.http.HttpResponse
-import spray.http.MediaTypes._
-import spray.http.HttpEntity
 import spray.http.StatusCodes
 import spray.testkit.ScalatestRouteTest
 
@@ -55,7 +45,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
 
   test("publish empty object") {
     Post("/api/v1/publish", "{}") ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assert(response.status === StatusCodes.BadRequest)
       assert(lastUpdate === Nil)
     }
   }
@@ -95,6 +85,28 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
+  test("partial failure") {
+    val json = s"""{
+        "metrics": [
+          {
+            "tags": {"name": "cpuUser"},
+            "timestamp": ${System.currentTimeMillis() /  1000},
+            "value": 42.0
+          },
+          {
+            "tags": {"name": "cpuSystem"},
+            "timestamp": ${System.currentTimeMillis()},
+            "value": 42.0
+          }
+        ]
+      }"""
+    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.Accepted)
+      assert(lastUpdate === PublishApi.decodeBatch(json).tail)
+      println(responseAs[String])
+    }
+  }
+
   test("publish bad json") {
     Post("/api/v1/publish", "fubar") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
@@ -102,9 +114,22 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("publish-fast alias") {
-    Post("/api/v1/publish-fast", "{}") ~> endpoint.routes ~> check {
+    val json = s"""{
+        "tags": {
+          "cluster": "foo",
+          "node": "i-123"
+        },
+        "metrics": [
+          {
+            "tags": {"name": "cpuUser"},
+            "timestamp": ${System.currentTimeMillis()},
+            "value": 42.0
+          }
+        ]
+      }"""
+    Post("/api/v1/publish-fast", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
-      assert(lastUpdate === Nil)
+      assert(lastUpdate === PublishApi.decodeBatch(json))
     }
   }
 }
@@ -115,9 +140,20 @@ object PublishApiSuite {
 
   class TestActor extends Actor {
     def receive = {
-      case PublishRequest(vs) =>
-        lastUpdate = vs
+      case PublishRequest(Nil, Nil) =>
+        lastUpdate = Nil
+        sender() ! HttpResponse(StatusCodes.BadRequest)
+      case PublishRequest(Nil, failures) =>
+        lastUpdate = Nil
+        val msg = FailureMessage.error(failures)
+        sender() ! HttpResponse(StatusCodes.BadRequest, msg.toJson)
+      case PublishRequest(values, Nil) =>
+        lastUpdate = values
         sender() ! HttpResponse(StatusCodes.OK)
+      case PublishRequest(values, failures) =>
+        lastUpdate = values
+        val msg = FailureMessage.partial(failures)
+        sender() ! HttpResponse(StatusCodes.Accepted, msg.toJson)
     }
   }
 }
