@@ -1,12 +1,12 @@
 import sbt._
 import sbt.Keys._
-import com.typesafe.sbt.pgp.PgpKeys._
 
 object MainBuild extends Build {
 
   lazy val baseSettings =
     sbtrelease.ReleasePlugin.releaseSettings ++
-    Sonatype.settings ++
+    GitVersion.settings ++
+    Bintray.settings ++
     net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     scoverage.ScoverageSbtPlugin.projectSettings
 
@@ -91,8 +91,8 @@ object MainBuild extends Build {
 
   lazy val `atlas-jmh` = project
     .dependsOn(`atlas-core`)
+    .enablePlugins(pl.project13.scala.sbt.SbtJmh)
     .settings(buildSettings: _*)
-    .settings(pl.project13.scala.sbt.SbtJmh.jmhSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
 
   lazy val `atlas-json` = project
