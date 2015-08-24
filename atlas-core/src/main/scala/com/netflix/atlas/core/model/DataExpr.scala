@@ -133,7 +133,9 @@ object DataExpr {
       val filtered = data.filter(t => query.matches(t.tags)).map { t =>
         TimeSeries(t.tags, t.label, t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0))
       }
-      val aggr = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+      val aggr = if (filtered.isEmpty) TimeSeries.noData(context.step) else {
+        TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+      }
       val rs = consolidate(context.step, List(aggr))
       ResultSet(this, rs, context.state)
     }
