@@ -19,6 +19,7 @@ import java.time.Duration
 
 import com.netflix.atlas.core.model.ConsolidationFunction.SumOrAvgCf
 import com.netflix.atlas.core.util.Math
+import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.Strings
 
 sealed trait DataExpr extends TimeSeriesExpr {
@@ -46,6 +47,12 @@ sealed trait DataExpr extends TimeSeriesExpr {
     }
   }
 
+  protected def commonTags(tags: Map[String, String]): Map[String, String] = {
+    val keys = Query.exactKeys(query)
+    val result = tags.filter(t => keys.contains(t._1))
+    if (result.isEmpty) DataExpr.unknown else result
+  }
+
   def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
     ResultSet(this, data.getOrElse(this, Nil), context.state)
   }
@@ -56,6 +63,8 @@ sealed trait DataExpr extends TimeSeriesExpr {
 }
 
 object DataExpr {
+
+  private val unknown = SmallHashMap("name" -> "unknown")
 
   private def defaultLabel(expr: DataExpr, ts: TimeSeries): String = {
     val label = expr match {
@@ -91,7 +100,9 @@ object DataExpr {
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       val filtered = data.filter(t => query.matches(t.tags))
       val aggr = if (filtered.isEmpty) TimeSeries.noData(context.step) else {
-        TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+        val tags = commonTags(filtered.head.tags)
+        val t = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+        TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
       }
       val rs = consolidate(context.step, List(aggr))
       ResultSet(this, rs, context.state)
@@ -134,7 +145,9 @@ object DataExpr {
         TimeSeries(t.tags, t.label, t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0))
       }
       val aggr = if (filtered.isEmpty) TimeSeries.noData(context.step) else {
-        TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+        val tags = commonTags(filtered.head.tags)
+        val t = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+        TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
       }
       val rs = consolidate(context.step, List(aggr))
       ResultSet(this, rs, context.state)
@@ -241,13 +254,16 @@ object DataExpr {
     override def exprString: String = s"$af,(,${keys.mkString(",")},),:by"
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
+      val ks = Query.exactKeys(query) ++ keys
       val groups = data.groupBy(t => keyString(t.tags)).toList
       val sorted = groups.sortWith(_._1 < _._1)
       val newData = sorted.flatMap {
         case (null, _) => Nil
-        case (k, ts) =>
+        case (k, Nil)  => List(TimeSeries.noData(context.step))
+        case (k, ts)   =>
+          val tags = ts.head.tags.filter(e => ks.contains(e._1))
           af.eval(context, ts).data.map { t =>
-            TimeSeries(t.tags, k, t.data)
+            TimeSeries(tags, k, t.data)
           }
       }
       val rs = consolidate(context.step, newData)
