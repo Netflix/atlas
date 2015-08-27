@@ -66,44 +66,7 @@ presentable in a graph.
 </table>
 
 ### End time (e)
-Specifies the end time of the graph. Permitted values:
-
-<table>
-  <tbody>
-    <tr>
-      <th>
-        <p>Value</p>
-      </th>
-      <th>
-        <p>Description</p>
-      </th>
-    </tr>
-    <tr>
-      <td>
-        <p>now</p>
-      </td>
-      <td>
-        <p>Current time, this is the default.</p>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <p>unix timestamp</p>
-      </td>
-      <td>
-        <p>A number representing the number of seconds since the epoch, e.g. <code>date +%s</code>.</p>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <p>ISO8601 timestamp</p>
-      </td>
-      <td>
-        <p>A string following the ISO8601 date time format, e.g. <code>date +%Y-%m-%dT%H:%M</code>.</p>
-      </td>
-    </tr>
-  </tbody>
-</table>
+Specifies the end time of the graph. See docs on [time parameters](Time-Parameters).
 
 ### Format (format)
 
@@ -220,44 +183,7 @@ Acceptable values are 0 (false, the default) and 1 (true).  For example,
 
 ### Start time (s)
 
-Specifies the start time of the graph. Permitted values:
-
-<table>
-  <tbody>
-    <tr>
-      <th>
-        <p>Value</p>
-      </th>
-      <th>
-        <p>Description</p>
-      </th>
-    </tr>
-    <tr>
-      <td>
-        <p>relative time</p>
-      </td>
-      <td>
-        <p>Time relative to the specified end time. The default is <code>e-3h</code>.</p>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <p>unix timestamp</p>
-      </td>
-      <td>
-        <p>A number representing the number of seconds since the epoch, e.g. <code>date +%s</code>.</p>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <p>ISO8601 timestamp</p>
-      </td>
-      <td>
-        <p>A string following the ISO8601 date time format, e.g. <code>date +%Y-%m-%dT%H:%M</code>.</p>
-      </td>
-    </tr>
-  </tbody>
-</table>
+Specifies the start time of the graph. See docs on [time parameters](Time-Parameters).
 
 ### Step size (step)
 
