@@ -39,6 +39,7 @@ import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.wiki.pages.DES
+import com.netflix.atlas.wiki.pages.TimeZones
 import com.netflix.atlas.wiki.pages.`Stack-Language-Reference`
 import com.typesafe.scalalogging.StrictLogging
 
@@ -230,7 +231,8 @@ object Main extends StrictLogging {
       generateStackLangRef(output)
       generateScriptedPages(output, List(
         new DES,
-        new `Stack-Language-Reference`
+        new `Stack-Language-Reference`,
+        new TimeZones
       ))
     } finally {
       system.shutdown()
