@@ -36,7 +36,6 @@ class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
           ctx.responder ! HttpResponse(status = OK, entity = v)
         } catch {
           case e: Exception =>
-            e.printStackTrace()
             ctx.responder ! HttpResponse(status = BadRequest, entity = e.getMessage)
         } finally {
           parser.close()

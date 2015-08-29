@@ -103,7 +103,6 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
     Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.Accepted)
       assert(lastUpdate === PublishApi.decodeBatch(json).tail)
-      println(responseAs[String])
     }
   }
 
