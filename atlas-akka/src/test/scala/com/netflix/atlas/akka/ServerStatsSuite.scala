@@ -16,7 +16,6 @@
 package com.netflix.atlas.akka
 
 import com.netflix.spectator.api.DefaultRegistry
-import com.netflix.spectator.api.ExtendedRegistry
 import org.scalatest.FunSuite
 import spray.can.server.Stats
 
@@ -25,7 +24,7 @@ class ServerStatsSuite extends FunSuite {
 
   import scala.concurrent.duration._
 
-  val registry = new ExtendedRegistry(new DefaultRegistry())
+  val registry = new DefaultRegistry()
   val stats = new ServerStats(registry)
 
   test("init") {

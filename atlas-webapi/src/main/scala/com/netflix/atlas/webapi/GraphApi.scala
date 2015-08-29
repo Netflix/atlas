@@ -28,6 +28,7 @@ import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Step
 import com.netflix.atlas.core.util.Strings
+import com.netflix.spectator.api.Spectator
 import spray.http.HttpRequest
 import spray.http.MediaType
 import spray.http.Uri
@@ -36,11 +37,13 @@ import spray.routing.RequestContext
 
 class GraphApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
+  private val registry = Spectator.globalRegistry()
+
   def routes: RequestContext => Unit = {
     path("api" / "v1" / "graph") {
       get { ctx =>
         try {
-          val reqHandler = actorRefFactory.actorOf(Props(new GraphRequestActor))
+          val reqHandler = actorRefFactory.actorOf(Props(new GraphRequestActor(registry)))
           reqHandler.tell(GraphApi.toRequest(ctx.request), ctx.responder)
         } catch handleException(ctx)
       }

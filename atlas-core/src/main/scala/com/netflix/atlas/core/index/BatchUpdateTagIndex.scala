@@ -43,7 +43,7 @@ object BatchUpdateTagIndex {
 class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: Array[T] => TagIndex[T])
     extends MutableTagIndex[T] {
 
-  private def registry = Spectator.registry()
+  private def registry = Spectator.globalRegistry()
 
   // Current index used for all query operations
   private val currentIndex = new AtomicReference[TagIndex[T]](newIndex(Array.empty[T]))

@@ -26,21 +26,20 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.chart._
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model._
-import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Strings
-import com.netflix.atlas.json.Json
+import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Spectator
 import spray.can.Http
 import spray.http.MediaTypes._
 import spray.http._
 
 
-class GraphRequestActor extends Actor with ActorLogging {
+class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.GraphApi._
 
-  private val errorId = Spectator.registry().createId("atlas.graph.errorImages")
+  private val errorId = registry.createId("atlas.graph.errorImages")
 
   private val dbRef = context.actorSelection("/user/db")
 
@@ -71,7 +70,7 @@ class GraphRequestActor extends Actor with ActorLogging {
 
   private def sendErrorImage(t: Throwable, w: Int, h: Int, responder: ActorRef) {
     val simpleName = t.getClass.getSimpleName
-    Spectator.registry().counter(errorId.withTag("error", simpleName)).increment()
+    registry.counter(errorId.withTag("error", simpleName)).increment()
     val msg = s"$simpleName: ${t.getMessage}"
     val image = HttpEntity(`image/png`, PngImage.error(msg, w, h).toByteArray)
     responder ! HttpResponse(status = StatusCodes.OK, entity = image)

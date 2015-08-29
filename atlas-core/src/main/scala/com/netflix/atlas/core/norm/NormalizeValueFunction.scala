@@ -20,7 +20,7 @@ import com.netflix.spectator.api.Spectator
 object NormalizeValueFunction {
   private final val NO_PREVIOUS_UPDATE = -1L
 
-  private val heartbeatExpireCount = Spectator.registry().counter("atlas.norm.heartbeatExpireCount")
+  private val heartbeatExpireCount = Spectator.globalRegistry().counter("atlas.norm.heartbeatExpireCount")
 }
 
 /**

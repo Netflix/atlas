@@ -166,9 +166,9 @@ object Json {
   def decode[T: Manifest](parser: JsonParser): T = {
     val reader: ObjectReader =
       if (manifest.runtimeClass.isArray)
-        jsonMapper.reader(manifest.runtimeClass.asInstanceOf[Class[T]])
+        jsonMapper.readerFor(manifest.runtimeClass.asInstanceOf[Class[T]])
       else
-        jsonMapper.reader(typeReference[T])
+        jsonMapper.readerFor(typeReference[T])
     val value = reader.readValue[T](parser)
     require(parser.nextToken() == null, "invalid json, additional content after value")
     value
@@ -177,9 +177,9 @@ object Json {
   def decoder[T: Manifest]: Decoder[T] = {
     val reader: ObjectReader =
       if (manifest.runtimeClass.isArray)
-        jsonMapper.reader(manifest.runtimeClass.asInstanceOf[Class[T]])
+        jsonMapper.readerFor(manifest.runtimeClass.asInstanceOf[Class[T]])
       else
-        jsonMapper.reader(typeReference[T])
+        jsonMapper.readerFor(typeReference[T])
     new Decoder[T](reader, jsonFactory)
   }
 
@@ -198,9 +198,9 @@ object Json {
   def smileDecoder[T: Manifest]: Decoder[T] = {
     val reader: ObjectReader =
       if (manifest.runtimeClass.isArray)
-        jsonMapper.reader(manifest.runtimeClass.asInstanceOf[Class[T]])
+        jsonMapper.readerFor(manifest.runtimeClass.asInstanceOf[Class[T]])
       else
-        jsonMapper.reader(typeReference[T])
+        jsonMapper.readerFor(typeReference[T])
     new Decoder[T](reader, smileFactory)
   }
 }

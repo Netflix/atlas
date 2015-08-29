@@ -38,7 +38,7 @@ object UnboundedMeteredMailbox {
 
     private final val queue = new ConcurrentLinkedQueue[Entry]
 
-    private val registry = Spectator.registry()
+    private val registry = Spectator.globalRegistry()
     private val insertCounter = registry.counter("akka.queue.insert", "path", path)
     private val waitTimer = registry.timer("akka.queue.wait", "path", path)
     private val deadLettersCounter = registry.counter("akka.queue.deadLetters", "path", path)

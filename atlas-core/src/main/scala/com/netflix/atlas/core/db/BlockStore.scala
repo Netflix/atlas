@@ -25,7 +25,7 @@ import com.netflix.spectator.api.Spectator
 
 
 object BlockStats {
-  private val registry = Spectator.registry
+  private val registry = Spectator.globalRegistry
   private val arrayCount = registry.gauge("atlas.block.arrayCount", new AtomicLong(0L))
   private val constantCount = registry.gauge("atlas.block.constantCount", new AtomicLong(0L))
   private val sparseCount = registry.gauge("atlas.block.sparseCount", new AtomicLong(0L))

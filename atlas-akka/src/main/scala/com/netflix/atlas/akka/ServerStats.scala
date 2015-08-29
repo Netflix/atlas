@@ -17,13 +17,13 @@ package com.netflix.atlas.akka
 
 import java.util.concurrent.atomic.AtomicLong
 
-import com.netflix.spectator.api.ExtendedRegistry
+import com.netflix.spectator.api.Registry
 import spray.can.server.Stats
 
 /**
  * Reports metrics based on the spray server stats.
  */
-class ServerStats(registry: ExtendedRegistry) {
+class ServerStats(registry: Registry) {
 
   import scala.concurrent.duration._
 

@@ -17,6 +17,7 @@ package com.netflix.atlas.akka
 
 import akka.actor._
 import com.netflix.atlas.config.ConfigManager
+import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
@@ -27,14 +28,15 @@ import spray.http._
 import spray.routing._
 
 
-class RequestHandlerActor(config: Config) extends Actor with StrictLogging with HttpService {
+class RequestHandlerActor(registry: Registry, config: Config)
+    extends Actor with StrictLogging with HttpService {
 
-  def this() = this(ConfigManager.current)
+  def this() = this(Spectator.globalRegistry(), ConfigManager.current)
 
   import com.netflix.atlas.akka.CustomDirectives._
   import scala.concurrent.duration._
 
-  private val serverStats: ServerStats = new ServerStats(Spectator.registry())
+  private val serverStats: ServerStats = new ServerStats(registry)
 
   def actorRefFactory = context
 
