@@ -47,7 +47,7 @@ public enum Layout {
   private final boolean fixedWidth;
   private final boolean fixedHeight;
 
-  private Layout(boolean fixedWidth, boolean fixedHeight) {
+  Layout(boolean fixedWidth, boolean fixedHeight) {
     this.fixedWidth = fixedWidth;
     this.fixedHeight = fixedHeight;
   }

@@ -28,30 +28,33 @@ import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
 
-class MemoryDatabase(config: Config) extends Database {
+class MemoryDatabase(registry: Registry, config: Config) extends Database {
+
+  def this(config: Config) = this(Spectator.globalRegistry, config)
 
   /** How many metrics are being processed for transform queries. */
-  private val queryMetrics = Spectator.registry.counter("atlas.db.queryMetrics")
+  private val queryMetrics = registry.counter("atlas.db.queryMetrics")
 
   /** How many blocks are being processed for transform queries. */
-  private val queryBlocks = Spectator.registry.counter("atlas.db.queryBlocks")
+  private val queryBlocks = registry.counter("atlas.db.queryBlocks")
 
   /** How many blocks are being processed for transform queries. */
-  private val aggrBlocks = Spectator.registry.counter("atlas.db.aggrBlocks")
+  private val aggrBlocks = registry.counter("atlas.db.aggrBlocks")
 
   /** How many lines are being returned for transform queries. */
-  private val queryLines = Spectator.registry.counter("atlas.db.queryLines")
+  private val queryLines = registry.counter("atlas.db.queryLines")
 
   /** How many input datapoints are being processed for transform queries. */
-  private val queryInputDatapoints = Spectator.registry.counter("atlas.db.queryInputDatapoints")
+  private val queryInputDatapoints = registry.counter("atlas.db.queryInputDatapoints")
 
   /** How many output datapoints are being processed for transform queries. */
-  private val queryOutputDatapoints = Spectator.registry.counter("atlas.db.queryOutputDatapoints")
+  private val queryOutputDatapoints = registry.counter("atlas.db.queryOutputDatapoints")
 
   private val step = DefaultSettings.stepSize
   private val blockSize = config.getInt("block-size")

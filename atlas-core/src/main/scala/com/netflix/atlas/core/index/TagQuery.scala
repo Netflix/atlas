@@ -40,7 +40,7 @@ case class TagQuery(
   }
 
   /** Check if key matches. */
-  def checkKey(k: String): Boolean = !key.isDefined || key.get == k
+  def checkKey(k: String): Boolean = key.forall(_ == k)
 
   /** Extend the limit if possible without overflowing. */
   def extendedLimit(amount: Int): Int = {

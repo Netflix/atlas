@@ -54,7 +54,8 @@ object Main extends StrictLogging {
   }
 
   def main(args: Array[String]) {
-    SpectatorAppender.addToRootLogger(Spectator.registry(), "spectator", false)
+    val registry = Spectator.globalRegistry()
+    SpectatorAppender.addToRootLogger(registry, "spectator", false)
     loadAdditionalConfigFiles(args)
 
     val serviceModule = new AbstractModule {
@@ -68,7 +69,7 @@ object Main extends StrictLogging {
             db match {
               case mem: MemoryDatabase =>
                 logger.info("enabling local publish to memory database")
-                actorSystem.actorOf(Props(new LocalPublishActor(mem)), "publish")
+                actorSystem.actorOf(Props(new LocalPublishActor(registry, mem)), "publish")
               case _ =>
             }
           }

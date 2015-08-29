@@ -23,6 +23,7 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestActorRef
 import akka.testkit.TestKit
 import com.netflix.atlas.json.Json
+import com.netflix.spectator.api.DefaultRegistry
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuiteLike
@@ -43,7 +44,7 @@ class RequestHandlerActorSuite extends TestKit(ActorSystem())
       |]
     """.stripMargin)
 
-  private val ref = TestActorRef(new RequestHandlerActor(config))
+  private val ref = TestActorRef(new RequestHandlerActor(new DefaultRegistry(), config))
 
   override def afterAll() {
     system.shutdown()
