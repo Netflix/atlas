@@ -82,6 +82,16 @@ object Ticks {
   private def round(v: Double, s: Double): Double = s * math.floor(v / s)
 
   /**
+   * Determine the prefix associated with the data. Use the value for the delta between major
+   * tick marks if possible. If this will require too many digits to render the largest value, then
+   * use the unit prefix found for the largest value.
+   */
+  private def getPrefix(v: Double, major: Double): UnitPrefix = {
+    val m = UnitPrefix.forRange(major, 3)
+    if (v < 10.0 * m.factor) m else UnitPrefix.forRange(v, 3)
+  }
+
+  /**
    * Determines the string format pattern to use for showing the label. This is primarily focused
    * on where the decimal point should go such that:
    *
@@ -109,7 +119,7 @@ object Ticks {
     val (major, minor, minorPerMajor) = valueTickSizes.filter(t => r / t._1 <= n).head
     val ticks = List.newBuilder[ValueTick]
 
-    val prefix = UnitPrefix.forRange(math.abs(v2), 3)
+    val prefix = getPrefix(math.abs(v2), major)
     val (labelFmt, maxValue) = labelFormat(prefix, major)
 
     val base = round(v1, major)
