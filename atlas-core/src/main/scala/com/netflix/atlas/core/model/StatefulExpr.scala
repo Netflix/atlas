@@ -18,6 +18,8 @@ package com.netflix.atlas.core.model
 import java.math.BigInteger
 import java.time.Duration
 
+import com.netflix.atlas.core.algorithm.OnlineDes
+import com.netflix.atlas.core.algorithm.OnlineSlidingDes
 import com.netflix.atlas.core.util.Math
 
 trait StatefulExpr extends TimeSeriesExpr {
@@ -92,6 +94,8 @@ object StatefulExpr {
       beta: Double) extends StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.Des._
 
+    private val desF = new OnlineDes(trainingSize, alpha, beta)
+
     def dataExprs: List[DataExpr] = expr.dataExprs
     override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:des"
 
@@ -101,26 +105,16 @@ object StatefulExpr {
 
     private def eval(ts: ArrayTimeSeq, s: State): State = {
       var pos = s.pos
-      var currentSample = s.currentSample
-      var sp = s.sp
-      var bp = s.bp
+      desF.currentSample = s.currentSample
+      desF.sp = s.sp
+      desF.bp = s.bp
       val data = ts.data
       while (pos < data.length) {
         val yn = data(pos)
-        data(pos) = if (currentSample > trainingSize) sp else Double.NaN
-        if (!yn.isNaN) {
-          if (currentSample == 0) {
-            sp = yn; bp = 0.0
-          } else {
-            val sn = alpha * yn + (1 - alpha) * (sp + bp)
-            val bn = beta * (sn - sp) + (1 - beta) * bp
-            sp = sn; bp = bn
-          }
-          currentSample += 1
-        }
+        data(pos) = desF.next(yn)
         pos += 1
       }
-      State(pos, currentSample, sp, bp)
+      State(pos, desF.currentSample, desF.sp, desF.bp)
     }
 
     private def newState: State = State(0, 0, 0.0, 0.0)
@@ -139,6 +133,69 @@ object StatefulExpr {
   }
 
   object Des {
+    case class State(pos: Int, currentSample: Int, sp: Double, bp: Double)
+
+    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
+  }
+
+  case class SlidingDes(
+      expr: TimeSeriesExpr,
+      trainingSize: Int,
+      alpha: Double,
+      beta: Double) extends StatefulExpr {
+    import com.netflix.atlas.core.model.StatefulExpr.Des._
+
+    private val desF = new OnlineSlidingDes(trainingSize, alpha, beta)
+
+    def dataExprs: List[DataExpr] = expr.dataExprs
+    override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:sliding-des"
+
+    def isGrouped: Boolean = expr.isGrouped
+
+    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    private def eval(ts: ArrayTimeSeq, s: State, skip: Int): State = {
+      var pos = s.pos
+      desF.reset()
+      desF.currentSample = s.currentSample
+      val data = ts.data
+      while (pos < data.length) {
+        if (pos < skip) {
+          data(pos) = Double.NaN
+        } else {
+          val yn = data(pos)
+          data(pos) = desF.next(yn)
+        }
+        pos += 1
+      }
+      State(pos, desF.currentSample, 0.0, 0.0)
+    }
+
+    private def newState: State = State(0, 0, 0.0, 0.0)
+
+    private def getAlignedStartTime(context: EvalContext): Long = {
+      val trainingStep = context.step * trainingSize
+      if (context.start % trainingStep == 0)
+        context.start
+      else
+        context.start / trainingStep * trainingStep + trainingStep
+    }
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      val alignedSkip = (getAlignedStartTime(context) - context.start) / context.step
+      val rs = expr.eval(context, data)
+      val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
+      val newData = rs.data.map { t =>
+        val bounded = t.data.bounded(context.start, context.end)
+        val s = state.getOrElse(t.id, newState)
+        state(t.id) = eval(bounded, s, alignedSkip.toInt)
+        TimeSeries(t.tags, s"sliding-des(${t.label})", bounded)
+      }
+      ResultSet(this, newData, rs.state + (this -> state))
+    }
+  }
+
+  object SlidingDes {
     case class State(pos: Int, currentSample: Int, sp: Double, bp: Double)
 
     type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
