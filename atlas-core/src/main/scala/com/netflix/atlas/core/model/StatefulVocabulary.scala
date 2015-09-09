@@ -31,11 +31,15 @@ object StatefulVocabulary extends Vocabulary {
   val dependsOn: List[Vocabulary] = List(MathVocabulary)
 
   val words: List[Word] = List(
-    RollingCount, Des, Trend, Integral, Derivative,
+    RollingCount, Des, SlidingDes, Trend, Integral, Derivative,
     Macro("des-simple", List("10", "0.1",  "0.5",  ":des"), List("42")),
     Macro("des-fast",   List("10", "0.1",  "0.02", ":des"), List("42")),
     Macro("des-slower", List("10", "0.05", "0.03", ":des"), List("42")),
     Macro("des-slow",   List("10", "0.03", "0.04", ":des"), List("42")),
+    Macro("sdes-simple", List("10", "0.1",  "0.5",  ":sliding-des"), List("42")),
+    Macro("sdes-fast",   List("10", "0.1",  "0.02", ":sliding-des"), List("42")),
+    Macro("sdes-slower", List("10", "0.05", "0.03", ":sliding-des"), List("42")),
+    Macro("sdes-slow",   List("10", "0.03", "0.04", ":sliding-des"), List("42")),
 
     Macro("des-epic-signal", desEpicSignal, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
   )
@@ -76,6 +80,30 @@ object StatefulVocabulary extends Vocabulary {
     override def summary: String =
       """
         |[Double exponential smoothing](DES).
+      """.stripMargin.trim
+
+    override def signature: String =
+      "TimeSeriesExpr training:Int alpha:Double beta:Double -- TimeSeriesExpr"
+
+    override def examples: List[String] = List("name,requestsPerSecond,:eq,:sum,5,0.1,0.5")
+  }
+
+  case object SlidingDes extends SimpleWord {
+    override def name: String = "sliding-des"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case (_: String) :: (_: String) :: (_: String) :: TimeSeriesType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case DoubleType(b) :: DoubleType(a) :: IntType(n) :: TimeSeriesType(t) :: s =>
+        StatefulExpr.SlidingDes(t, n, a, b) :: s
+    }
+
+    override def summary: String =
+      """
+        |Experimental alternative to DES. Should only be used for testing and may change or be
+        |removed in the future with no notice.
       """.stripMargin.trim
 
     override def signature: String =
