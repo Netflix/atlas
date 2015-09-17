@@ -51,9 +51,9 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
       case t: Exception if request != null && request.shouldOutputImage =>
         // When viewing a page in a browser an error response is not rendered. To make it more
         // clear to the user we return a 200 with the error information encoded into an image.
-        sendErrorImage(t, request.flags.width, request.flags.height, sender())
+        sendErrorImage(t, request.flags.width, request.flags.height)
       case t: Throwable =>
-        DiagnosticMessage.handleException(sender())(t)
+        DiagnosticMessage.handleException(responseRef)(t)
     }
   }
 
@@ -69,7 +69,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
       context.stop(self)
   }
 
-  private def sendErrorImage(t: Throwable, w: Int, h: Int, responder: ActorRef) {
+  private def sendErrorImage(t: Throwable, w: Int, h: Int) {
     val simpleName = t.getClass.getSimpleName
     registry.counter(errorId.withTag("error", simpleName)).increment()
     val msg = s"$simpleName: ${t.getMessage}"
