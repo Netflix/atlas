@@ -62,7 +62,8 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
       request = req
       responseRef = sender()
       dbRef.tell(req.toDbRequest, self)
-    case DataResponse(data) => sendImage(data)
+    case DataResponse(data) =>
+      sendImage(data)
     case ev: Http.ConnectionClosed =>
       log.info("connection closed")
       context.stop(self)
@@ -73,7 +74,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
     registry.counter(errorId.withTag("error", simpleName)).increment()
     val msg = s"$simpleName: ${t.getMessage}"
     val image = HttpEntity(`image/png`, PngImage.error(msg, w, h).toByteArray)
-    responder ! HttpResponse(status = StatusCodes.OK, entity = image)
+    responseRef ! HttpResponse(status = StatusCodes.OK, entity = image)
   }
 
   private def sendImage(data: Map[DataExpr, List[TimeSeries]]): Unit = {
