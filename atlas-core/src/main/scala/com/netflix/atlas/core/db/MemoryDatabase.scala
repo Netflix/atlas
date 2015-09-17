@@ -179,9 +179,14 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     val vs = collector.result
       .map { t => DataExpr.withDefaultLabel(expr, t) }
       .sortWith { _.label < _.label }
+    finalValues(context, expr, vs)
+  }
+
+  private def finalValues(context: EvalContext, expr: DataExpr, vs: List[TimeSeries]): List[TimeSeries] = {
     expr match {
-      case DataExpr.Head(_, n) => vs.take(n)
-      case _                   => vs
+      case DataExpr.Head(e, n)                         => finalValues(context, e, vs).take(n)
+      case _: DataExpr.AggregateFunction if vs.isEmpty => List(TimeSeries.noData(context.step))
+      case _                                           => vs
     }
   }
 

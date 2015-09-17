@@ -69,7 +69,7 @@ class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
 
   test("txt: IAE if not match for arguement to binary op") {
     Get("/api/v1/graph?q=name,foo,:eq,:sum,name,bar,:eq,:sum,:add&format=txt") ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
+      assert(response.status === StatusCodes.OK)
     }
   }
 
