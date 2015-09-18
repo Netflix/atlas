@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.index
 
+import java.math.BigInteger
 import java.util
 import java.util.Comparator
 
@@ -71,12 +72,12 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
   // * itemTags: itemTags(i) has an array of indexes into tags array for items(i)
   private val (tagIndex, itemTags) = buildTagIndex()
 
-  private def buildItemIndex(): (Array[String], LazyKeyMap, LazyValueMap) = {
+  private def buildItemIndex(): (Array[BigInteger], LazyKeyMap, LazyValueMap) = {
     // Sort items array based on the id, allows for efficient paging of requests using the id
     // as the offset
     logger.debug(s"building index with ${items.length} items, starting sort")
     util.Arrays.sort(items, idComparator)
-    val itemIds = new Array[String](items.length)
+    val itemIds = new Array[BigInteger](items.length)
 
     // Build the main index
     logger.debug(s"building index with ${items.length} items, create main key map")
@@ -84,7 +85,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
     val idx = new KeyMap
     var pos = 0
     while (pos < items.length) {
-      itemIds(pos) = items(pos).idString
+      itemIds(pos) = items(pos).id
       items(pos).foreach { (k, v) =>
         val internedK = interner.intern(k)
         var vidx = idx.get(internedK)
@@ -387,7 +388,8 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
 
   private def itemOffset(v: String): Int = {
     if (v == null || v == "") 0 else {
-      val pos = util.Arrays.binarySearch(itemIds.asInstanceOf[Array[AnyRef]], v)
+      val offsetV = new BigInteger(v, 16)
+      val pos = util.Arrays.binarySearch(itemIds.asInstanceOf[Array[AnyRef]], offsetV)
       if (pos < 0) -pos - 1 else pos
     }
   }
