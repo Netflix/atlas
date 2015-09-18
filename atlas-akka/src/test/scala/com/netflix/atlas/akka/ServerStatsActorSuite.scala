@@ -15,20 +15,32 @@
  */
 package com.netflix.atlas.akka
 
+import akka.actor.ActorSystem
+import akka.testkit.ImplicitSender
+import akka.testkit.TestActorRef
+import akka.testkit.TestKit
 import com.netflix.spectator.api.DefaultRegistry
-import org.scalatest.FunSuite
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.FunSuiteLike
+import spray.can.Http
 import spray.can.server.Stats
 
+import scala.concurrent.Promise
 
-class ServerStatsSuite extends FunSuite {
+
+class ServerStatsActorSuite extends TestKit(ActorSystem())
+    with ImplicitSender
+    with FunSuiteLike
+    with BeforeAndAfterAll {
 
   import scala.concurrent.duration._
 
-  val registry = new DefaultRegistry()
-  val stats = new ServerStats(registry)
+  private val registry = new DefaultRegistry()
+  private val bindPromise = Promise[Http.Bound]()
+  private val ref = TestActorRef(new ServerStatsActor(registry, bindPromise))
 
-  test("init") {
-    assert(0L === registry.counter("spray.requests").count())
+  override def afterAll() {
+    system.shutdown()
   }
 
   private def get(k: String): Long = {
@@ -37,14 +49,14 @@ class ServerStatsSuite extends FunSuite {
   }
 
   test("update") {
-    stats.update(Stats(5.seconds,
+    ref ! Stats(5.seconds,
       totalRequests = 100L,
       openRequests = 4L,
       maxOpenRequests = 7L,
       totalConnections = 50L,
       openConnections = 5L,
       maxOpenConnections = 8L,
-      requestTimeouts = 2L))
+      requestTimeouts = 2L)
 
     // counters
     assert(100L === registry.counter("spray.requests").count())
@@ -59,14 +71,14 @@ class ServerStatsSuite extends FunSuite {
   }
 
   test("update 2") {
-    stats.update(Stats(5.seconds,
+    ref ! Stats(5.seconds,
       totalRequests = 200L,
       openRequests = 5L,
       maxOpenRequests = 8L,
       totalConnections = 100L,
       openConnections = 6L,
       maxOpenConnections = 9L,
-      requestTimeouts = 4L))
+      requestTimeouts = 4L)
 
     // counters
     assert(200L === registry.counter("spray.requests").count())
@@ -79,4 +91,5 @@ class ServerStatsSuite extends FunSuite {
     assert(6L === get("spray.openConnections"))
     assert(9L === get("spray.maxOpenConnections"))
   }
+
 }

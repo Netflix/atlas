@@ -22,7 +22,6 @@ import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
-import spray.can.server.Stats
 import spray.http.HttpMethods._
 import spray.http._
 import spray.routing._
@@ -34,9 +33,6 @@ class RequestHandlerActor(registry: Registry, config: Config)
   def this() = this(Spectator.globalRegistry(), ConfigManager.current)
 
   import com.netflix.atlas.akka.CustomDirectives._
-  import scala.concurrent.duration._
-
-  private val serverStats: ServerStats = new ServerStats(registry)
 
   def actorRefFactory = context
 
@@ -60,14 +56,7 @@ class RequestHandlerActor(registry: Registry, config: Config)
   }
 
   private val default: Actor.Receive = {
-    case _: Http.Bound =>
-      val sys = context.system
-      sys.scheduler.schedule(0.seconds, 10.seconds, sender(), Http.GetStats)(sys.dispatcher, self)
-
     case _: Http.Connected => sender() ! Http.Register(self)
-
-    case stats: Stats =>
-      serverStats.update(stats)
 
     // For CORS pre-flight
     case HttpRequest(OPTIONS, _, _, _, _) =>

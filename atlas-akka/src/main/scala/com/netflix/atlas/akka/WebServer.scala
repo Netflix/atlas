@@ -27,10 +27,12 @@ import akka.io.Inet
 import akka.util.Timeout
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.iep.service.AbstractService
+import com.netflix.spectator.api.Spectator
 import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
 
 import scala.concurrent.Await
+import scala.concurrent.Promise
 import scala.util.Failure
 import scala.util.Success
 
@@ -53,6 +55,8 @@ class WebServer(name: String, port: Int) extends AbstractService with StrictLogg
     logger.info(s"starting $name on port $port")
     system = ActorSystem(name)
     configure()
+    val bindPromise = Promise[Http.Bound]()
+    val stats = system.actorOf(Props(new ServerStatsActor(Spectator.globalRegistry(), bindPromise)))
     val handler = system.actorOf(Props[RequestHandlerActor], "request-handler")
     val options = List(Inet.SO.ReuseAddress(true))
     val bind = Http.Bind(handler,
@@ -60,13 +64,10 @@ class WebServer(name: String, port: Int) extends AbstractService with StrictLogg
       port = port,
       backlog = 2048,
       options = options)
-    Await.ready(IO(Http).ask(bind), Duration.Inf).value.get match {
-      case Success(Tcp.CommandFailed(_)) =>
-        logger.error("server failed to start")
-        throw new BindException(s"could not bind: $bind")
-      case Success(b) =>
+    IO(Http).tell(bind, stats)
+    Await.ready(bindPromise.future, Duration.Inf).value.get match {
+      case Success(_) =>
         logger.info(s"server started on port $port")
-        handler.tell(b, handler)
       case Failure(t) =>
         logger.error("server failed to start", t)
         throw t;
