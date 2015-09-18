@@ -74,7 +74,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   if (!testMode) rebuildThread.start()
 
   private final class RebuildTask extends Runnable {
-    def run() {
+    def run(): Unit = {
       while (true) {
         try {
           rebuild()
@@ -87,7 +87,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     }
   }
 
-  def rebuild() {
+  def rebuild(): Unit = {
     if (!testMode && System.currentTimeMillis - index.buildTime > rebuildAge) {
       logger.info("rebuilding metadata index")
       index.rebuildIndex()

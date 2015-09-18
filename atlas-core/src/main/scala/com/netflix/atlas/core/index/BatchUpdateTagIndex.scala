@@ -67,7 +67,7 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: Array[T] => TagIn
    * Rebuild the index to include all of the pending updates that have accumulated. Any expired
    * items will also be removed.
    */
-  def rebuildIndex() {
+  def rebuildIndex(): Unit = {
     val timerId = rebuildTimer.start()
     try {
       import scala.collection.JavaConversions._
@@ -91,16 +91,16 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: Array[T] => TagIn
     }
   }
 
-  def rebuildIndex(items: List[T]) {
+  def rebuildIndex(items: List[T]): Unit = {
     currentIndex.set(newIndex(items.toArray))
     lastRebuildTime.set(System.currentTimeMillis)
   }
 
-  def update(item: T) {
+  def update(item: T): Unit = {
     pendingUpdates.add(item)
   }
 
-  def update(items: List[T]) {
+  def update(items: List[T]): Unit = {
     items.foreach(i => pendingUpdates.add(i))
   }
 

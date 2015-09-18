@@ -33,12 +33,12 @@ object BlockStats {
   private val constantBytes = registry.gauge("atlas.block.constantBytes", new AtomicLong(0L))
   private val sparseBytes = registry.gauge("atlas.block.sparseBytes", new AtomicLong(0L))
 
-  private def inc(block: Block, count: AtomicLong, bytes: AtomicLong) {
+  private def inc(block: Block, count: AtomicLong, bytes: AtomicLong): Unit = {
     count.incrementAndGet
     bytes.addAndGet(block.byteCount)
   }
 
-  def inc(block: Block) {
+  def inc(block: Block): Unit = {
     block match {
       case b: ArrayBlock    => inc(block, arrayCount, arrayBytes)
       case b: ConstantBlock => inc(block, constantCount, constantBytes)
@@ -47,12 +47,12 @@ object BlockStats {
     }
   }
 
-  private def dec(block: Block, count: AtomicLong, bytes: AtomicLong) {
+  private def dec(block: Block, count: AtomicLong, bytes: AtomicLong): Unit = {
     count.decrementAndGet
     bytes.addAndGet(-block.byteCount)
   }
 
-  def dec(block: Block) {
+  def dec(block: Block): Unit = {
     block match {
       case b: ArrayBlock    => dec(block, arrayCount, arrayBytes)
       case b: ConstantBlock => dec(block, constantCount, constantBytes)
@@ -61,7 +61,7 @@ object BlockStats {
     }
   }
 
-  def update(oldBlock: Block, newBlock: Block) {
+  def update(oldBlock: Block, newBlock: Block): Unit = {
     dec(oldBlock)
     inc(newBlock)
   }
@@ -108,7 +108,7 @@ trait BlockStore {
 object MemoryBlockStore {
   private val freeArrayBlocks = new ArrayBlockingQueue[ArrayBlock](100000)
 
-  def freeArrayBlock(b: ArrayBlock) {
+  def freeArrayBlock(b: ArrayBlock): Unit = {
     freeArrayBlocks.offer(b)
   }
 
@@ -143,7 +143,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     start - start % blockStep
   }
 
-  private def newBlock(start: Long) {
+  private def newBlock(start: Long): Unit = {
     require(start % blockStep == 0, "start time " + start + " is not on block boundary")
     val oldBlock = Block.compress(currentBlock)
     val newBlock =
@@ -166,7 +166,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
 
   def hasData: Boolean = (currentBlock != null)
 
-  def cleanup(cutoff: Long) {
+  def cleanup(cutoff: Long): Unit = {
     var pos = 0
     while (pos < numBlocks) {
       val block = blocks(pos)
@@ -182,7 +182,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     }
   }
 
-  def update(timestamp: Long, value: Double) {
+  def update(timestamp: Long, value: Double): Unit = {
     if (currentBlock == null) {
       currentBlock = newArrayBlock(alignStart(timestamp), blockSize)
       currentPos = next(currentPos)
@@ -198,7 +198,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     currentBlock.buffer(pos) = value
   }
 
-  def update(start: Long, values: List[Double]) {
+  def update(start: Long, values: List[Double]): Unit = {
     var t = start
     values.foreach { v =>
       update(t, v)
@@ -206,7 +206,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     }
   }
 
-  private def fill(blk: Block, buf: Array[Double], start: Long, end: Long, aggr: Int) {
+  private def fill(blk: Block, buf: Array[Double], start: Long, end: Long, aggr: Int): Unit = {
     val s = start / step
     val e = end / step
     val bs = blk.start

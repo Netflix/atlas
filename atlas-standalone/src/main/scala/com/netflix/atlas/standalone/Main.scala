@@ -53,7 +53,7 @@ object Main extends StrictLogging {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val registry = Spectator.globalRegistry()
     SpectatorAppender.addToRootLogger(registry, "spectator", false)
     loadAdditionalConfigFiles(args)

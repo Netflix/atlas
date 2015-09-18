@@ -92,7 +92,7 @@ class OpenHashInternMap[K <: AnyRef : Manifest](initialCapacity: Int, clock: Clo
     intern(k, clock.wallTime)
   }
 
-  def retain(f: Long => Boolean) {
+  def retain(f: Long => Boolean): Unit = {
     resize(data.length, f)
   }
 
@@ -130,7 +130,7 @@ class ConcurrentInternMap[K <: AnyRef](newMap: => InternMap[K], concurrencyLevel
     lock(k) { m => m.intern(k) }
   }
 
-  def retain(f: Long => Boolean) {
+  def retain(f: Long => Boolean): Unit = {
     (0 until concurrencyLevel).foreach { i =>
       locks(i).lock()
       try segments(i).retain(f) finally {

@@ -189,7 +189,7 @@ class EmptySetIterator extends SetIterator {
  */
 class BitMaskSet(val mask: util.BitSet) extends AbstractLazySet {
 
-  def mutableDiff(s: LazySet) {
+  def mutableDiff(s: LazySet): Unit = {
     s match {
       case set: BitMaskSet =>
         mask.andNot(set.mask)
@@ -199,7 +199,7 @@ class BitMaskSet(val mask: util.BitSet) extends AbstractLazySet {
     }
   }
 
-  def mutableIntersect(s: LazySet) {
+  def mutableIntersect(s: LazySet): Unit = {
     s match {
       case set: BitMaskSet =>
         mask.and(set.mask)
@@ -211,7 +211,7 @@ class BitMaskSet(val mask: util.BitSet) extends AbstractLazySet {
     }
   }
 
-  def mutableUnion(s: LazySet) {
+  def mutableUnion(s: LazySet): Unit = {
     s match {
       case set: BitMaskSet =>
         mask.or(set.mask)

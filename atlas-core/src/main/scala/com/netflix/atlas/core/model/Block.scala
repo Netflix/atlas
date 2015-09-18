@@ -257,13 +257,13 @@ case class ArrayBlock(var start: Long, size: Int) extends Block {
   override def toArrayBlock: ArrayBlock = this
 
   /** Reset this block so it can be re-used. */
-  def reset(t: Long) {
+  def reset(t: Long): Unit = {
     start = t
     util.Arrays.fill(buffer, Double.NaN)
   }
 
   /** Add contents of another block to this block. */
-  def add(b: Block, aggr: Int = Block.Sum) {
+  def add(b: Block, aggr: Int = Block.Sum): Unit = {
     var i = 0
     while (i < size) {
       buffer(i) = Math.addNaN(buffer(i), b.get(i, aggr))
@@ -272,7 +272,7 @@ case class ArrayBlock(var start: Long, size: Int) extends Block {
   }
 
   /** Select the minimum value of this block or `b`. */
-  def min(b: Block, aggr: Int = Block.Min) {
+  def min(b: Block, aggr: Int = Block.Min): Unit = {
     var i = 0
     while (i < size) {
       buffer(i) = Math.minNaN(buffer(i), b.get(i, aggr))
@@ -281,7 +281,7 @@ case class ArrayBlock(var start: Long, size: Int) extends Block {
   }
 
   /** Select the maximum value of this block or `b`. */
-  def max(b: Block, aggr: Int = Block.Max) {
+  def max(b: Block, aggr: Int = Block.Max): Unit = {
     var i = 0
     while (i < size) {
       buffer(i) = Math.maxNaN(buffer(i), b.get(i, aggr))
@@ -538,7 +538,7 @@ case class RollupBlock(sum: Block, count: Block, min: Block, max: Block) extends
     }
   }
 
-  def rollup(block: Block) {
+  def rollup(block: Block): Unit = {
     require(sum.start == block.start, s"invalid start time: ${sum.start} != ${block.start}")
     require(sum.size == block.size, s"invalid size: ${sum.size} != ${block.size}")
     sum.asInstanceOf[ArrayBlock].add(block, Block.Sum)

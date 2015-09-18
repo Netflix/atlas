@@ -50,7 +50,7 @@ object TaggedItem {
     }
   }
 
-  private def writePair(p: Pair, buf: ByteBuffer, enc: CharsetEncoder, md: MessageDigest) {
+  private def writePair(p: Pair, buf: ByteBuffer, enc: CharsetEncoder, md: MessageDigest): Unit = {
     enc.encode(CharBuffer.wrap(p._1), buf, true)
     buf.flip()
     md.update(buf)
@@ -127,7 +127,7 @@ object TaggedItem {
     tagsInterner.intern(tags)
   }
 
-  def retain(keep: Long => Boolean) {
+  def retain(keep: Long => Boolean): Unit = {
     idInterner.retain(keep)
     tagsInterner.retain(keep)
   }
@@ -160,7 +160,7 @@ trait TaggedItem {
    * Code that just needs to iterate over all tags should use this method. Allows for
    * implementations to optimize how the tag data is stored and traversed.
    */
-  def foreach(f: (String, String) => Unit) {
+  def foreach(f: (String, String) => Unit): Unit = {
     tags match {
       case m: SmallHashMap[String, String] => m.foreachItem(f)
       case m: Map[String, String]          => m.foreach { t => f(t._1, t._2) }

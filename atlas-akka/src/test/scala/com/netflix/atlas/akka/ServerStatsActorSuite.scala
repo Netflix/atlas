@@ -39,7 +39,7 @@ class ServerStatsActorSuite extends TestKit(ActorSystem())
   private val bindPromise = Promise[Http.Bound]()
   private val ref = TestActorRef(new ServerStatsActor(registry, bindPromise))
 
-  override def afterAll() {
+  override def afterAll(): Unit = {
     system.shutdown()
   }
 

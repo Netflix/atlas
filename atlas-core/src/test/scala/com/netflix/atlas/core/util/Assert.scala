@@ -19,14 +19,14 @@ import org.scalatest.Assertions
 
 object Assert extends Assertions {
 
-  def assertEquals(v1: Double, v2: Double, delta: Double) {
+  def assertEquals(v1: Double, v2: Double, delta: Double): Unit = {
     val diff = scala.math.abs(v1 - v2)
     if (diff > delta) {
       throw new AssertionError("%f != %f".format(v1, v2))
     }
   }
 
-  def assertEquals(v1: Double, v2: Double, delta: Double, msg: String) {
+  def assertEquals(v1: Double, v2: Double, delta: Double, msg: String): Unit = {
     val diff = scala.math.abs(v1 - v2)
     if (diff > delta) {
       throw new AssertionError("%f != %f, %s".format(v1, v2, msg))

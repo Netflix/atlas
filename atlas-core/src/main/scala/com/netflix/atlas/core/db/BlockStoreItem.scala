@@ -37,7 +37,7 @@ object BlockStoreItem {
     metricInterner.intern(m)
   }
 
-  def retain(keep: Long => Boolean) {
+  def retain(keep: Long => Boolean): Unit = {
     TaggedItem.retain(keep)
     metricInterner.retain(keep)
   }

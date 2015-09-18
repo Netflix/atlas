@@ -46,7 +46,7 @@ class RequestHandlerActorSuite extends TestKit(ActorSystem())
 
   private val ref = TestActorRef(new RequestHandlerActor(new DefaultRegistry(), config))
 
-  override def afterAll() {
+  override def afterAll(): Unit = {
     system.shutdown()
   }
 

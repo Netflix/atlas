@@ -21,7 +21,7 @@ import com.netflix.atlas.core.model.TaggedItem
 class UpdateValueFunction(meta: TaggedItem, step: Long, updateF: Datapoint => Unit)
     extends ValueFunction {
 
-  def apply(timestamp: Long, value: Double) {
+  def apply(timestamp: Long, value: Double): Unit = {
     updateF(Datapoint(meta.tags, timestamp, value))
   }
 }

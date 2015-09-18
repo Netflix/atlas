@@ -28,7 +28,7 @@ object Bintray {
 
     publishTo := {
       if (isSnapshot.value)
-        Some("OJO" at s"https://oss.jfrog.org/oss-snapshot-local;build.timestamp=${now}/")
+        Some("OJO" at s"https://oss.jfrog.org/oss-snapshot-local;build.timestamp=$now/")
       else
         publishTo in bintray value
     },

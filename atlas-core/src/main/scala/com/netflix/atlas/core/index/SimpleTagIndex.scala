@@ -30,7 +30,7 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
   type ValueMap = Map[String, Set[Int]]
   type KeyMap = Map[String, ValueMap]
 
-  private val all = (0 until items.length).toSet
+  private val all = items.indices.toSet
 
   private val index: KeyMap = init()
 

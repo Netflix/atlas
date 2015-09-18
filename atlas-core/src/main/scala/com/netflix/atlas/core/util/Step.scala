@@ -48,7 +48,7 @@ object Step {
 
   private final val stepSet = allowedStepSizes.toSet
 
-  private def validate(s: Long) {
+  private def validate(s: Long): Unit = {
     require(stepSet.contains(s), s"step size must a member of the set: $allowedStepSizes")
   }
 
