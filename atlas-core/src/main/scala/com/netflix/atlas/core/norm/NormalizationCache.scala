@@ -54,7 +54,7 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
     }
   }
 
-  def updateCounter(m: Datapoint) {
+  def updateCounter(m: Datapoint): Unit = {
     val meta = BasicTaggedItem(m.tags)
     var value = counterCache.get(meta)
     if (value == null) {
@@ -68,7 +68,7 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
     value.f(m.timestamp, m.value)
   }
 
-  def updateRate(m: Datapoint) {
+  def updateRate(m: Datapoint): Unit = {
     val meta = BasicTaggedItem(m.tags)
     var value = rateCache.get(meta)
     if (value == null) {
@@ -81,7 +81,7 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
     value.f(m.timestamp, m.value)
   }
 
-  def updateGauge(m: Datapoint) {
+  def updateGauge(m: Datapoint): Unit = {
     val meta = BasicTaggedItem(m.tags)
     var value = gaugeCache.get(meta)
     if (value == null) {

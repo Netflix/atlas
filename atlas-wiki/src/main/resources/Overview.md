@@ -236,7 +236,7 @@ window of data they contain.
 With this setup we can show the last 6h of data as long as clients can successfully publish. The
 data is all in memory sharded across machines in the 6h clusters. Because the data and index are
 all in memory on the local node each instance is self contained and doesn't need any external
-service to function. We typically run multple mirrors of the 6h cluster so data is replicated and
+service to function. We typically run multiple mirrors of the 6h cluster so data is replicated and
 we can handle loss of an instance. In AWS we run each mirror in a different zone so that a zone
 failure will only impact a single mirror.
 

@@ -22,7 +22,7 @@ class RateValueFunction(next: ValueFunction) extends ValueFunction {
   private var lastUpdateTime: Long = -1L
   private var lastValue: Double = 0.0
 
-  def apply(timestamp: Long, value: Double) {
+  def apply(timestamp: Long, value: Double): Unit = {
     if (lastUpdateTime > 0L) {
       val duration = (timestamp - lastUpdateTime) / 1000.0
       val delta = value - lastValue

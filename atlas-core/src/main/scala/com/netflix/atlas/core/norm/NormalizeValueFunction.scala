@@ -51,7 +51,7 @@ class NormalizeValueFunction(step: Long, heartbeat: Long, next: ValueFunction)
    * Update with a new sample and return the value for a complete interval if
    * one is available.
    */
-  def apply(timestamp: Long, value: Double) {
+  def apply(timestamp: Long, value: Double): Unit = {
     if (timestamp > lastUpdateTime) {
       if (lastUpdateTime > 0 && timestamp - lastUpdateTime > heartbeat) {
         NormalizeValueFunction.heartbeatExpireCount.increment()

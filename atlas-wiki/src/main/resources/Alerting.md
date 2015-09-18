@@ -1,4 +1,4 @@
-The stack langauge provides some basic techniques to convert an input line into a set of signals that can be used to trigger and visualize alert conditions. This section assumes a familiarity with the stack language and the [alerting philosphy](Alerting-Philosophy)
+The stack language provides some basic techniques to convert an input line into a set of signals that can be used to trigger and visualize alert conditions. This section assumes a familiarity with the stack language and the [alerting philosophy](Alerting-Philosophy)
 
 ## Example Application
 

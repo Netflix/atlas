@@ -173,7 +173,7 @@ case class PngImage(data: RenderedImage, metadata: Map[String, String]) {
     buffer.toByteArray
   }
 
-  def write(output: OutputStream) {
+  def write(output: OutputStream): Unit = {
     try {
       val iterator = ImageIO.getImageWritersBySuffix("png")
       require(iterator.hasNext, "no image writers for png")

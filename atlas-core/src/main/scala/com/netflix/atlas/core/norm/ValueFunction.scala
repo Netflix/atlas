@@ -34,7 +34,7 @@ class ListValueFunction extends ValueFunction {
     builder.result
   }
 
-  def apply(timestamp: Long, value: Double) {
+  def apply(timestamp: Long, value: Double): Unit = {
     builder += timestamp -> value
   }
 }

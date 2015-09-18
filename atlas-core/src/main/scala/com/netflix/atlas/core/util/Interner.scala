@@ -23,7 +23,7 @@ object Interner {
   private val stringInternerRef = new AtomicReference[Interner[String]](StringInterner)
 
   /** Set the default interner to use for strings. */
-  def setStringInterner(interner: Interner[String]) {
+  def setStringInterner(interner: Interner[String]): Unit = {
     stringInternerRef.set(interner)
   }
 

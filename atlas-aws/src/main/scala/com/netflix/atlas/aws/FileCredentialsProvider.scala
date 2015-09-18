@@ -37,7 +37,7 @@ class FileCredentialsProvider(file: File) extends AWSCredentialsProvider {
 
   def getCredentials: AWSCredentials = ref
 
-  def refresh() {
+  def refresh(): Unit = {
     ref = newCredentials
   }
 }

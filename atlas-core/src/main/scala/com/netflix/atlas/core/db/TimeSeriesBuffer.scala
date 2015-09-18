@@ -64,7 +64,7 @@ object TimeSeriesBuffer {
     new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType.Gauge, start, step, buffer))
   }
 
-  private def fill(blk: Block, buf: Array[Double], step: Long, s: Long, e: Long, aggr: Int) {
+  private def fill(blk: Block, buf: Array[Double], step: Long, s: Long, e: Long, aggr: Int): Unit = {
     val bs = blk.start / step
     val be = bs + blk.size - 1
     if (e >= bs && s <= be) {
@@ -190,7 +190,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /** Aggregate the data from the block into this buffer. */
-  private[db] def valueMask(mask: JBitSet, block: Block, multiple: Int) {
+  private[db] def valueMask(mask: JBitSet, block: Block, multiple: Int): Unit = {
     val blkStep = step / multiple
     val s = start / blkStep
     val e = values.length * multiple + s - 1
@@ -208,7 +208,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     }
   }
 
-  private[db] def average(mask: JBitSet, multiple: Int) {
+  private[db] def average(mask: JBitSet, multiple: Int): Unit = {
     val end = values.length * multiple
     var count = 0
     var i = 0
@@ -229,7 +229,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
    * Add the corresponding positions of the two buffers. The buffers must have
    * the same settings. The tags for the new buffer will be the intersection.
    */
-  def add(ts: TimeSeriesBuffer) {
+  def add(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
@@ -247,7 +247,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   /**
    * Add a constant value to all positions of this buffer.
    */
-  def add(v: Double) {
+  def add(v: Double): Unit = {
     var pos = 0
     while (pos < values.length) {
       values(pos) = Math.addNaN(values(pos), v)
@@ -260,7 +260,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
    * have the same settings. The tags for the new buffer will be the
    * intersection.
    */
-  def subtract(ts: TimeSeriesBuffer) {
+  def subtract(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
@@ -274,7 +274,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   /**
    * Subtract a constant value to all positions of this buffer.
    */
-  def subtract(v: Double) {
+  def subtract(v: Double): Unit = {
     var pos = 0
     while (pos < values.length) {
       values(pos) = values(pos) - v
@@ -287,7 +287,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
    * have the same settings. The tags for the new buffer will be the
    * intersection.
    */
-  def multiply(ts: TimeSeriesBuffer) {
+  def multiply(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
@@ -301,7 +301,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   /**
    * Multiply a constant value to all positions of this buffer.
    */
-  def multiply(v: Double) {
+  def multiply(v: Double): Unit = {
     var pos = 0
     while (pos < values.length) {
       values(pos) = values(pos) * v
@@ -314,7 +314,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
    * have the same settings. The tags for the new buffer will be the
    * intersection.
    */
-  def divide(ts: TimeSeriesBuffer) {
+  def divide(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
@@ -328,7 +328,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   /**
    * Divide a constant value to all positions of this buffer.
    */
-  def divide(v: Double) {
+  def divide(v: Double): Unit = {
     var pos = 0
     while (pos < values.length) {
       values(pos) = values(pos) / v
@@ -341,7 +341,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
    * buffers must have the same settings. The tags for the new buffer will be
    * the intersection.
    */
-  def max(ts: TimeSeriesBuffer) {
+  def max(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
@@ -363,7 +363,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
    * buffers must have the same settings. The tags for the new buffer will be
    * the intersection.
    */
-  def min(ts: TimeSeriesBuffer) {
+  def min(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
@@ -383,7 +383,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   /**
    * Setup this buffer array as a count.
    */
-  def initCount() {
+  def initCount(): Unit = {
     var pos = 0
     while (pos < values.length) {
       values(pos) = if (JDouble.isNaN(values(pos))) 0.0 else 1.0
@@ -396,7 +396,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
    * buffer is a valid number, i.e., is not equal NaN. The buffers must have
    * the same settings. The tags for the new buffer will be the intersection.
    */
-  def count(ts: TimeSeriesBuffer) {
+  def count(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
@@ -416,7 +416,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   /**
    * Merge with another metric buffer.
    */
-  def merge(ts: TimeSeriesBuffer) {
+  def merge(ts: TimeSeriesBuffer): Unit = {
     require(step == ts.step, "step sizes must be the same")
     require(start == ts.start, "start times must be the same")
     tags = aggrTags(ts.tags)

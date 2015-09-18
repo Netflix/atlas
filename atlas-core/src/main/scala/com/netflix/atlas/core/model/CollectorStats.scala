@@ -46,12 +46,12 @@ class CollectorStatsBuilder {
   private var outputLines: Long = 0L
   private var outputDatapoints: Long = 0L
 
-  def updateInput(datapoints: Int) {
+  def updateInput(datapoints: Int): Unit = {
     inputLines += 1
     inputDatapoints += datapoints
   }
 
-  def updateInput(blocks: List[Block]) {
+  def updateInput(blocks: List[Block]): Unit = {
     val size = blocks.size
     if (size > 0) {
       val b = blocks.head
@@ -60,12 +60,12 @@ class CollectorStatsBuilder {
     }
   }
 
-  def updateOutput(datapoints: Int) {
+  def updateOutput(datapoints: Int): Unit = {
     outputLines += 1
     outputDatapoints += datapoints
   }
 
-  def update(s: CollectorStats) {
+  def update(s: CollectorStats): Unit = {
     if (s.inputLines >= 0) {
       inputLines += s.inputLines
       inputDatapoints += s.inputDatapoints

@@ -16,8 +16,7 @@
 package com.netflix.atlas.chart.model;
 
 /**
- * Created by brharrington on 4/13/15.
- * map int coordinates to
+ * Type of scale to use for mapping raw input values into y-coordinates on the chart.
  */
 public enum Scale {
   LINEAR,

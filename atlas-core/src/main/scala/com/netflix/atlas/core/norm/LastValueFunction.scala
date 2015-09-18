@@ -39,7 +39,7 @@ class LastValueFunction(step: Long, next: ValueFunction)
    * Truncate the timestamp to the step boundary and pass the value to the next function if the
    * actual timestamp on the measurement is newer than the last timestamp seen by this function.
    */
-  def apply(timestamp: Long, value: Double) {
+  def apply(timestamp: Long, value: Double): Unit = {
     if (timestamp > lastUpdateTime) {
       lastUpdateTime = timestamp
       val stepBoundary = timestamp / step * step

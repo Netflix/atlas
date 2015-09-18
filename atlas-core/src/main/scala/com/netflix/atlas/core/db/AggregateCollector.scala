@@ -79,7 +79,7 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
 
   protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer)
 
-  def add(b: TimeSeriesBuffer) {
+  def add(b: TimeSeriesBuffer): Unit = {
     statBuffer.updateInput(b.values.length)
     if (!b.isAllNaN) {
       valueCount = 1
@@ -156,12 +156,12 @@ class MaxAggregateCollector extends SimpleAggregateCollector {
 }
 
 abstract class LimitedAggregateCollector extends AggregateCollector {
-  protected def checkLimits(numLines: Int, numDatapoints: Int) {
+  protected def checkLimits(numLines: Int, numDatapoints: Int): Unit = {
     check("lines", numLines, Limits.maxLines)
     check("datapoints", numDatapoints, Limits.maxDatapoints)
   }
 
-  private def check(what: String, actual: Int, limit: Int) {
+  private def check(what: String, actual: Int, limit: Int): Unit = {
     require(actual <= limit, s"too many $what: $actual > $limit")
   }
 }
@@ -172,7 +172,7 @@ class GroupByAggregateCollector(ft: DataExpr.GroupBy) extends LimitedAggregateCo
   private val buffers = collection.mutable.HashMap.empty[KeyType, AggregateCollector]
   private var bufferSize = -1
 
-  def add(b: TimeSeriesBuffer) {
+  def add(b: TimeSeriesBuffer): Unit = {
     // Create key and exit early on failure
     val k = ft.keyString(b.tags)
     if (k == null) return
@@ -225,7 +225,7 @@ class AllAggregateCollector extends LimitedAggregateCollector {
   private var numLines = 0
   val statBuffer = new CollectorStatsBuilder
 
-  def add(b: TimeSeriesBuffer) {
+  def add(b: TimeSeriesBuffer): Unit = {
     numLines += 1
     checkLimits(numLines, numLines * b.values.length)
     statBuffer.updateInput(b.values.length)

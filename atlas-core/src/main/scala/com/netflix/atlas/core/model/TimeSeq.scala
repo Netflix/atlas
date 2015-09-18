@@ -36,7 +36,7 @@ trait TimeSeq {
   def mapValues(f: Double => Double): TimeSeq = new UnaryOpTimeSeq(this, f)
 
   /** Fast loop with no intermediate object creation. */
-  def foreach(s: Long, e: Long)(f: (Long, Double) => Unit) {
+  def foreach(s: Long, e: Long)(f: (Long, Double) => Unit): Unit = {
     require(s <= e, "start must be <= end")
     val end = e / step * step
     var t = s / step * step
@@ -82,7 +82,7 @@ final class ArrayTimeSeq(
    * and uses array lookups directly in the core loop to avoid expensive operations on long
    * values when using the timestamp as the index.
    */
-  def update(ts: ArrayTimeSeq)(op: BinaryOp) {
+  def update(ts: ArrayTimeSeq)(op: BinaryOp): Unit = {
     require(step == ts.step, "step sizes must be the same")
     val s = math.max(start, ts.start)
     val e = math.min(end, ts.end)
@@ -98,7 +98,7 @@ final class ArrayTimeSeq(
     }
   }
 
-  def update(ts: TimeSeq)(op: BinaryOp) {
+  def update(ts: TimeSeq)(op: BinaryOp): Unit = {
     require(step == ts.step, "step sizes must be the same")
     var i = 0
     ts.foreach(start, end) { (t, v) =>
@@ -107,7 +107,7 @@ final class ArrayTimeSeq(
     }
   }
 
-  def update(op: Double => Double) {
+  def update(op: Double => Double): Unit = {
     var i = 0
     while (i < data.length) {
       data(i) = op(data(i))

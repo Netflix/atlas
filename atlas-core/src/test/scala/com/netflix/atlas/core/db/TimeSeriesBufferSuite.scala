@@ -54,8 +54,8 @@ class TimeSeriesBufferSuite extends FunSuite {
     assert(m.step === step)
     assert(m.start === step)
     assert(m.values.take(5).forall(_ == 1.0))
-    assert(m.values.drop(5).take(6).forall(_ == 2.0))
-    assert(m.values.drop(11).take(6).forall(v => JDouble.isNaN(v)))
+    assert(m.values.slice(5, 11).forall(_ == 2.0))
+    assert(m.values.slice(11, 17).forall(v => JDouble.isNaN(v)))
     assert(m.values.drop(17).forall(_ == 4.0))
   }
 
@@ -73,8 +73,8 @@ class TimeSeriesBufferSuite extends FunSuite {
     assert(m.step === step)
     assert(m.start === step)
     assert(m.values.take(5).forall(_ == 1.0))
-    assert(m.values.drop(5).take(6).forall(_ == 2.0))
-    assert(m.values.drop(11).take(6).forall(v => JDouble.isNaN(v)))
+    assert(m.values.slice(5, 11).forall(_ == 2.0))
+    assert(m.values.slice(11, 17).forall(v => JDouble.isNaN(v)))
     assert(m.values.drop(17).forall(_ == 4.0))
   }
 
@@ -92,8 +92,8 @@ class TimeSeriesBufferSuite extends FunSuite {
     assert(m.step === 6 * step)
     assert(m.start === 0L)
     assert(m.values.take(1).forall(_ == 1.0))
-    assert(m.values.drop(1).take(1).forall(_ == 2.0))
-    assert(m.values.drop(2).take(1).forall(v => JDouble.isNaN(v)))
+    assert(m.values.slice(1, 2).forall(_ == 2.0))
+    assert(m.values.slice(2, 3).forall(v => JDouble.isNaN(v)))
     assert(m.values.drop(3).forall(_ == 4.0))
   }
 

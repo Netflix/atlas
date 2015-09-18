@@ -406,7 +406,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
     val offset = tagOffset(query.offsetTag)
     if (q.isDefined || k.isDefined) {
       // If key is restricted add a has query to search
-      val finalQ = if (!k.isDefined) q.get else {
+      val finalQ = if (k.isEmpty) q.get else {
         if (q.isDefined) And(HasKey(k.get), q.get) else HasKey(k.get)
       }
 
@@ -419,7 +419,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
         var i = 0
         while (i < tags.length) {
           val t = tags(i)
-          if (t >= offset && (!k.isDefined || tagIndex(t).key == k.get)) {
+          if (t >= offset && (k.isEmpty || tagIndex(t).key == k.get)) {
             counts.adjustOrPutValue(t, 1, 1)
           }
           i += 1
