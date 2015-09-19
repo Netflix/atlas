@@ -19,7 +19,7 @@ import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.wiki.GraphHelper
 import com.netflix.atlas.wiki.Page
 
-class `Stack-Language-Reference` extends Page {
+class StackLanguageReference extends Page {
   override def name: String = "Stack-Language-Reference"
   override def path: Option[String] = Some("stacklang")
 
