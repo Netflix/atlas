@@ -255,7 +255,10 @@ object DataExpr {
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       val ks = Query.exactKeys(query) ++ keys
-      val groups = data.groupBy(t => keyString(t.tags)).toList
+      val groups = data
+        .filter(t => query.matches(t.tags))
+        .groupBy(t => keyString(t.tags))
+        .toList
       val sorted = groups.sortWith(_._1 < _._1)
       val newData = sorted.flatMap {
         case (null, _) => Nil
