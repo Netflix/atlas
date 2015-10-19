@@ -94,8 +94,6 @@ object StatefulExpr {
       beta: Double) extends StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.Des._
 
-    private val desF = new OnlineDes(trainingSize, alpha, beta)
-
     def dataExprs: List[DataExpr] = expr.dataExprs
     override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:des"
 
@@ -104,11 +102,13 @@ object StatefulExpr {
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
     private def eval(ts: ArrayTimeSeq, s: State): State = {
-      var pos = s.pos
+      val desF = new OnlineDes(trainingSize, alpha, beta)
       desF.currentSample = s.currentSample
       desF.sp = s.sp
       desF.bp = s.bp
+
       val data = ts.data
+      var pos = s.pos
       while (pos < data.length) {
         val yn = data(pos)
         data(pos) = desF.next(yn)
@@ -145,8 +145,6 @@ object StatefulExpr {
       beta: Double) extends StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.Des._
 
-    private val desF = new OnlineSlidingDes(trainingSize, alpha, beta)
-
     def dataExprs: List[DataExpr] = expr.dataExprs
     override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:sliding-des"
 
@@ -155,10 +153,12 @@ object StatefulExpr {
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
     private def eval(ts: ArrayTimeSeq, s: State, skip: Int): State = {
-      var pos = s.pos
+      val desF = new OnlineSlidingDes(trainingSize, alpha, beta)
       desF.reset()
       desF.currentSample = s.currentSample
+
       val data = ts.data
+      var pos = s.pos
       while (pos < data.length) {
         if (pos < skip) {
           data(pos) = Double.NaN
