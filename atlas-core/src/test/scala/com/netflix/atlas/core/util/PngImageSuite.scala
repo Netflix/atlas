@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.util
 
 import java.io.InputStream
+
 import org.scalatest.FunSuite
 
 

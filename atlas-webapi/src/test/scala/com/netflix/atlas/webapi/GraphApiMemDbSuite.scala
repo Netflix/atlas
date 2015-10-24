@@ -17,15 +17,8 @@ package com.netflix.atlas.webapi
 
 import akka.actor.Props
 import com.netflix.atlas.core.db.MemoryDatabase
-import com.netflix.atlas.core.db.StaticDatabase
-import com.netflix.atlas.core.util.Hash
-import com.netflix.atlas.core.util.PngImage
-import com.netflix.atlas.core.util.Streams
-import com.netflix.atlas.test.GraphAssertions
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
-import spray.http.MediaTypes._
-import spray.http.HttpEntity
 import spray.http.StatusCodes
 import spray.testkit.ScalatestRouteTest
 

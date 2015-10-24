@@ -46,7 +46,7 @@ case class PlotDef(
     lower: Option[Double] = None,
     showTickLabels: Boolean = true) {
 
-  import java.lang.{ Double => JDouble }
+  import java.lang.{Double => JDouble}
 
   for (l <- lower; u <- upper) {
     require(l < u, s"lower bound must be less than upper bound ($l >= $u)")

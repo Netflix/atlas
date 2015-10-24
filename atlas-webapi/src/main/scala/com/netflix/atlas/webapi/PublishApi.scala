@@ -22,7 +22,6 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.model.Datapoint
-import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.SmallHashMap

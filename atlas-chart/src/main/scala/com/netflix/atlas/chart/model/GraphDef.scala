@@ -18,6 +18,7 @@ package com.netflix.atlas.chart.model
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+
 import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.chart.graphics.Constants
 import com.netflix.atlas.core.model.CollectorStats

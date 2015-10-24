@@ -28,8 +28,9 @@ import spray.testkit.ScalatestRouteTest
 
 class PublishApiSuite extends FunSuite with ScalatestRouteTest {
 
-  import scala.concurrent.duration._
   import PublishApiSuite._
+
+  import scala.concurrent.duration._
 
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 

@@ -29,7 +29,6 @@ import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Strings
 import com.netflix.spectator.api.Registry
-import com.netflix.spectator.api.Spectator
 import spray.can.Http
 import spray.http.MediaTypes._
 import spray.http._

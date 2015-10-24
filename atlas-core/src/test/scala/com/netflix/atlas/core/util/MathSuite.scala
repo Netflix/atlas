@@ -21,6 +21,7 @@ import org.scalatest.FunSuite
 class MathSuite extends FunSuite {
 
   import java.lang.{Double => JDouble}
+
   import com.netflix.atlas.core.util.Math._
 
   test("isNearlyZero") {

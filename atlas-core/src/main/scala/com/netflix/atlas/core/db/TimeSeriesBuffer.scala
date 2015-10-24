@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.db
 
-import java.util
-
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.ConsolidationFunction

@@ -36,7 +36,6 @@ import scala.concurrent.Await
 
 class GraphHelper(webApi: ActorRef, dir: File, path: String) extends StrictLogging {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
   import scala.concurrent.duration._
 
   implicit val timeout = akka.util.Timeout(1, TimeUnit.MINUTES)

@@ -24,8 +24,6 @@ import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
 import org.scalatest.FunSuite
 
-import scala.util.Random
-
 
 class TimeSeriesBufferSuite extends FunSuite {
 

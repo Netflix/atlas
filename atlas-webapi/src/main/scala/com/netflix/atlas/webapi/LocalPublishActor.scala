@@ -27,7 +27,6 @@ import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.norm.NormalizationCache
 import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.spectator.api.Registry
-import com.netflix.spectator.api.Spectator
 import com.netflix.spectator.sandbox.BucketCounter
 import com.netflix.spectator.sandbox.BucketFunctions
 import spray.http.HttpResponse

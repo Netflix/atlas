@@ -23,7 +23,6 @@ import spray.http.HttpResponse
 import spray.http.MediaTypes
 import spray.http.StatusCode
 import spray.http.StatusCodes
-import spray.routing.RequestContext
 
 object DiagnosticMessage {
   final val Info: String = "info"

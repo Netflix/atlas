@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.util
 
-import java.util.regex.Pattern
-
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
