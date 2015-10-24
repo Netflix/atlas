@@ -75,7 +75,7 @@ class WebServer(name: String, port: Int) extends AbstractService with StrictLogg
   }
 
   protected def stopImpl(): Unit = {
-    system.shutdown()
+    Await.ready(system.terminate(), Duration.Inf)
     system = null
   }
 
