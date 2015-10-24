@@ -15,13 +15,10 @@
  */
 package com.netflix.atlas.akka
 
-import java.net.BindException
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.actor.Props
-import akka.io.Tcp
-import akka.pattern.ask
 import akka.io.IO
 import akka.io.Inet
 import akka.util.Timeout

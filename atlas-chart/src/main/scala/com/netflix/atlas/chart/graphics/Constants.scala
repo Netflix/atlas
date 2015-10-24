@@ -21,7 +21,6 @@ import java.awt.Font
 import java.awt.Stroke
 import java.awt.image.BufferedImage
 
-import com.netflix.atlas.chart.Colors
 import com.netflix.atlas.core.util.Strings
 import com.typesafe.config.ConfigFactory
 

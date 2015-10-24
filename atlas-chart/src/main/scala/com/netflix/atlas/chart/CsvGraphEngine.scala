@@ -22,7 +22,6 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.chart.model.LineDef
 
 class CsvGraphEngine(val name: String, val contentType: String, sep: String) extends GraphEngine {
 

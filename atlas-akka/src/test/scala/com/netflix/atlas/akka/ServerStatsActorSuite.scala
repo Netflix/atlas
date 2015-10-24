@@ -40,7 +40,7 @@ class ServerStatsActorSuite extends TestKit(ActorSystem())
   private val ref = TestActorRef(new ServerStatsActor(registry, bindPromise))
 
   override def afterAll(): Unit = {
-    system.shutdown()
+    system.terminate()
   }
 
   private def get(k: String): Long = {

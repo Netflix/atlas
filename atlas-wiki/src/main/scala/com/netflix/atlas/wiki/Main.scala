@@ -34,8 +34,8 @@ import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.wiki.pages.DES
 import com.netflix.atlas.wiki.pages.DistStddev
-import com.netflix.atlas.wiki.pages.TimeZones
 import com.netflix.atlas.wiki.pages.StackLanguageReference
+import com.netflix.atlas.wiki.pages.TimeZones
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.Await

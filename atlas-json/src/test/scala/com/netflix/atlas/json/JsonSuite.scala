@@ -36,7 +36,7 @@ class JsonSuite extends FunSuite {
 
   import java.lang.{Double => JDouble}
 
-import com.netflix.atlas.json.Json._
+  import com.netflix.atlas.json.Json._
 
   test("garbage") {
     intercept[JsonParseException] { decode[Boolean]("true dklfjal;k;hfnklanf'") }
