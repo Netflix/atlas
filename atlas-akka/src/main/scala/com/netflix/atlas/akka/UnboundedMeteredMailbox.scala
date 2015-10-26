@@ -41,7 +41,6 @@ object UnboundedMeteredMailbox {
     private val registry = Spectator.globalRegistry()
     private val insertCounter = registry.counter("akka.queue.insert", "path", path)
     private val waitTimer = registry.timer("akka.queue.wait", "path", path)
-    private val deadLettersCounter = registry.counter("akka.queue.deadLetters", "path", path)
     registry.collectionSize(registry.createId("akka.queue.size", "path", path), queue)
 
     def enqueue(receiver: ActorRef, handle: Envelope): Unit = {
@@ -61,7 +60,6 @@ object UnboundedMeteredMailbox {
     def numberOfMessages: Int = queue.size
     def hasMessages: Boolean = !queue.isEmpty
     def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
-      deadLettersCounter.increment(queue.size)
       queue.clear()
     }
   }

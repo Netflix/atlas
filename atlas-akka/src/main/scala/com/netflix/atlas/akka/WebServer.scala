@@ -18,13 +18,14 @@ package com.netflix.atlas.akka
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
+import akka.actor.AllDeadLetters
 import akka.actor.Props
 import akka.io.IO
 import akka.io.Inet
 import akka.util.Timeout
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.iep.service.AbstractService
-import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
 
@@ -34,7 +35,8 @@ import scala.util.Failure
 import scala.util.Success
 
 
-class WebServer(name: String, port: Int) extends AbstractService with StrictLogging {
+class WebServer(registry: Registry, name: String, port: Int)
+    extends AbstractService with StrictLogging {
 
   import scala.concurrent.duration._
 
@@ -45,6 +47,9 @@ class WebServer(name: String, port: Int) extends AbstractService with StrictLogg
   private implicit var system: ActorSystem = null
 
   protected def configure(): Unit = {
+    val ref = system.actorOf(
+      Props(new DeadLetterStatsActor(registry, Paths.tagValue)), "deadLetterStats")
+    system.eventStream.subscribe(ref, classOf[AllDeadLetters])
   }
 
   protected def startImpl(): Unit = {
@@ -52,8 +57,9 @@ class WebServer(name: String, port: Int) extends AbstractService with StrictLogg
     logger.info(s"starting $name on port $port")
     system = ActorSystem(name)
     configure()
+
     val bindPromise = Promise[Http.Bound]()
-    val stats = system.actorOf(Props(new ServerStatsActor(Spectator.globalRegistry(), bindPromise)))
+    val stats = system.actorOf(Props(new ServerStatsActor(registry, bindPromise)))
     val handler = system.actorOf(Props[RequestHandlerActor], "request-handler")
     val options = List(Inet.SO.ReuseAddress(true))
     val bind = Http.Bind(handler,

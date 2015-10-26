@@ -62,8 +62,9 @@ object Main extends StrictLogging {
       override def configure(): Unit = {
         GuiceHelper.getModulesUsingServiceLoader.forEach(install)
 
-        val server = new WebServer("atlas", ApiSettings.port) {
+        val server = new WebServer(registry, "atlas", ApiSettings.port) {
           override protected def configure(): Unit = {
+            super.configure()
             val db = ApiSettings.newDbInstance
             actorSystem.actorOf(Props(new LocalDatabaseActor(db)), "db")
             db match {
