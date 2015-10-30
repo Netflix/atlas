@@ -29,7 +29,11 @@ trait Expr extends Product {
   def rewrite(f: PartialFunction[Expr, Expr]): Expr = {
     if (f.isDefinedAt(this)) f(this) else {
       this match {
-        case p: Product =>
+        // If the productArity is 0 we cannot change instance so return the existing class. A
+        // common case where the arity is 0 are case objects. If they go through the product
+        // case it causes duplicate instances of the objects to get created leading to strange
+        // failures in other places.
+        case p: Product if p.productArity > 0 =>
           val params = p.productIterator.map {
             case e: Expr => e.rewrite(f)
             case v       => v.asInstanceOf[AnyRef]
