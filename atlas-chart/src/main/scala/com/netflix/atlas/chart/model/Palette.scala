@@ -16,9 +16,11 @@
 package com.netflix.atlas.chart.model
 
 import java.awt.Color
+import java.io.FileNotFoundException
 import java.util.concurrent.ConcurrentHashMap
 
 import com.netflix.atlas.chart.Colors
+import com.netflix.atlas.core.util.Strings
 
 case class Palette(name: String, colors: Int => Color) {
   def withAlpha(alpha: Int): Palette = {
@@ -74,17 +76,47 @@ object Palette {
 
   private val palettes = new ConcurrentHashMap[String, Palette]
 
+  /**
+    * Creates a palette instance from a description string. The description can be an explicit
+    * list of colors or the name of a palette file in the classpath. An explicit list is specified
+    * with a prefix of 'colors:' followed by a comma separated list of color values. For example:
+    *
+    * ```
+    * colors:f00,00ff00,000000ff
+    * ```
+    *
+    * The color values will be parsed using [[com.netflix.atlas.core.util.Strings.parseColor]].
+    * Otherwise the description will be used to find a palette file in the classpath named
+    * 'palettes/${desc}_palette.txt' that has one color per line.
+    */
+  def create(desc: String): Palette = {
+    if (desc.startsWith("colors:"))
+      fromArray("colors", desc.substring("colors:".length).split(",").map(Strings.parseColor))
+    else
+      fromResource(desc)
+  }
+
   def fromArray(name: String, colors: Array[Color]): Palette = {
     Palette(name, i => colors(math.abs(i) % colors.length))
   }
 
+  /**
+    * Create a palette from a file in the classpath named 'palettes/${name}_palette.txt'. The
+    * file should have one color per line in a format supported by
+    * [[com.netflix.atlas.core.util.Strings.parseColor]].
+    */
   def fromResource(name: String): Palette = {
     palettes.computeIfAbsent(name, loadFromResource)
   }
 
   private def loadFromResource(name: String): Palette = {
-    val colors = Colors.load(s"palettes/${name}_palette.txt").toArray
-    Palette.fromArray(name, colors)
+    try {
+      val colors = Colors.load(s"palettes/${name}_palette.txt").toArray
+      Palette.fromArray(name, colors)
+    } catch {
+      case _: FileNotFoundException =>
+        throw new IllegalArgumentException(s"invalid palette name: '$name'")
+    }
   }
 
   def singleColor(c: Color): Palette = {

@@ -64,3 +64,9 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by&no_tick_labels=1&axis_per_line=1
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by&no_tick_labels.2=1&axis_per_line=1
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by&no_tick_labels.2=1&axis_per_line=1&no_legend_stats=1
+
+# Palettes
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=armytage
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=epic
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=bw
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027
