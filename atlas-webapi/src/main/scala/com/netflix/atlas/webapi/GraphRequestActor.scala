@@ -80,8 +80,8 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
     val plotExprs = request.exprs.groupBy(_.axis.getOrElse(0))
     val multiY = plotExprs.size > 1
 
-    val palette = Palette.fromResource(request.flags.palette).iterator
-    val shiftPalette = Palette.fromResource("bw").iterator
+    val palette = Palette.create(request.flags.palette).iterator
+    val shiftPalette = Palette.create("bw").iterator
 
     val plots = plotExprs.toList.sortWith(_._1 < _._1).map { case (yaxis, exprs) =>
 
