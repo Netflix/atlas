@@ -146,7 +146,7 @@ object StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.Des._
 
     def dataExprs: List[DataExpr] = expr.dataExprs
-    override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:sliding-des"
+    override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:sdes"
 
     def isGrouped: Boolean = expr.isGrouped
 
@@ -189,7 +189,7 @@ object StatefulExpr {
         val bounded = t.data.bounded(context.start, context.end)
         val s = state.getOrElse(t.id, newState)
         state(t.id) = eval(bounded, s, alignedSkip.toInt)
-        TimeSeries(t.tags, s"sliding-des(${t.label})", bounded)
+        TimeSeries(t.tags, s"sdes(${t.label})", bounded)
       }
       ResultSet(this, newData, rs.state + (this -> state))
     }
