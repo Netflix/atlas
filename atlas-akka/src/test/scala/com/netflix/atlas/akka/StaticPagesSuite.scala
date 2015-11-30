@@ -33,12 +33,14 @@ class StaticPagesSuite extends FunSuite with ScalatestRouteTest {
   test("/static") {
     Get("/static") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
+      assert(responseAs[String].contains("Index Page"))
     }
   }
 
   test("/static/") {
     Get("/static/") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
+      assert(responseAs[String].contains("Index Page"))
     }
   }
 
@@ -46,7 +48,21 @@ class StaticPagesSuite extends FunSuite with ScalatestRouteTest {
     Get("/") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.MovedPermanently)
       val loc = response.headers.find(_.is("location")).map(_.value)
-      assert(loc === Some("/static/index.html"))
+      assert(loc === Some("/ui"))
+    }
+  }
+
+  test("/ui") {
+    Get("/ui") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(responseAs[String].contains("Index Page"))
+    }
+  }
+
+  test("/ui/foo/bar") {
+    Get("/ui/foo/bar") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(responseAs[String].contains("Index Page"))
     }
   }
 }
