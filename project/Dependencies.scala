@@ -2,15 +2,15 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.4.0"
-    val aws        = "1.10.28"
-    val iep        = "0.1.49"
+    val akka       = "2.4.1"
+    val aws        = "1.10.38"
+    val iep        = "0.3.1"
     val guice      = "4.0"
-    val jackson    = "2.6.1"
+    val jackson    = "2.6.3"
     val log4j      = "2.4.1"
     val scala      = "2.11.7"
-    val slf4j      = "1.7.12"
-    val spectator  = "0.32.0"
+    val slf4j      = "1.7.13"
+    val spectator  = "0.33.0"
     val spray      = "1.3.3"
   }
 
@@ -35,8 +35,8 @@ object Dependencies {
   val jacksonMapper2  = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
   val jacksonScala2   = "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % jackson
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
-  val jodaConvert     = "org.joda" % "joda-convert" % "1.7"
-  val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.0"
+  val jodaConvert     = "org.joda" % "joda-convert" % "1.8.1"
+  val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.1"
   val log4jApi        = "org.apache.logging.log4j" % "log4j-api" % log4j
   val log4jCore       = "org.apache.logging.log4j" % "log4j-core" % log4j
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
@@ -47,7 +47,7 @@ object Dependencies {
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all" % scala
   val scalaLogging    = "com.typesafe.scala-logging" % "scala-logging_2.11" % "3.1.0"
   val scalaReflect    = "org.scala-lang" % "scala-reflect" % scala
-  val scalatest       = "org.scalatest" % "scalatest_2.11" % "2.2.1"
+  val scalatest       = "org.scalatest" % "scalatest_2.11" % "2.2.5"
   val slf4jApi        = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j      = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple     = "org.slf4j" % "slf4j-simple" % slf4j
