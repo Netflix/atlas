@@ -39,20 +39,35 @@ class RequestHandlerActor(registry: Registry, config: Config)
   def receive: Receive = {
     val endpoints = loadRoutesFromConfig()
     if (endpoints.isEmpty) default else {
+      // Routes defined by the included WebApi classes from the `atlas.akka.api-endpoints`
+      // config setting
+      val routes = endpoints.tail.foldLeft(endpoints.head.routes) {
+        case (acc, r) => acc ~ r.routes
+      }
+
+      // Allow all endpoints to be access cross-origin
+      val cors = corsFilter { routes }
+
+      // Automatically deal with compression
+      val gzip = compressResponseIfRequested() {
+        decompressRequest() { cors }
+      }
+
+      // Include all requests in the access log
+      val log = accessLog { gzip }
+
+      // Add a default exception handler
+      val error = handleExceptions(exceptionHandler) { log }
+
+      // Final set of routes
       default.orElse {
-        runRoute {
-          accessLog {
-            compressResponseIfRequested() {
-              decompressRequest() {
-                corsFilter {
-                  endpoints.tail.foldLeft(endpoints.head.routes) { case (acc, r) => acc ~ r.routes}
-                }
-              }
-            }
-          }
-        }
+        runRoute { error }
       }
     }
+  }
+
+  private def exceptionHandler: PartialFunction[Throwable, Route] = {
+    case t: Throwable => { ctx => DiagnosticMessage.handleException(ctx.responder)(t) }
   }
 
   private val default: Actor.Receive = {

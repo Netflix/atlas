@@ -34,9 +34,6 @@ class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
         try {
           val v = Json.decode[String](parser)
           ctx.responder ! HttpResponse(status = OK, entity = v)
-        } catch {
-          case e: Exception =>
-            ctx.responder ! HttpResponse(status = BadRequest, entity = e.getMessage)
         } finally {
           parser.close()
         }
