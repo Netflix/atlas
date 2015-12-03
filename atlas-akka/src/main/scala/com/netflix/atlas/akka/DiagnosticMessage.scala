@@ -16,7 +16,7 @@
 package com.netflix.atlas.akka
 
 import akka.actor.ActorRef
-import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.core.JsonProcessingException
 import com.netflix.atlas.json.JsonSupport
 import spray.http.HttpEntity
 import spray.http.HttpResponse
@@ -51,7 +51,7 @@ object DiagnosticMessage {
   }
 
   def handleException(ref: ActorRef): PartialFunction[Throwable, Unit] = {
-    case e @ (_: IllegalArgumentException | _: IllegalStateException | _: JsonParseException) =>
+    case e @ (_: IllegalArgumentException | _: IllegalStateException | _: JsonProcessingException) =>
       sendError(ref, StatusCodes.BadRequest, e)
     case e: NoSuchElementException =>
       sendError(ref, StatusCodes.NotFound, e)
