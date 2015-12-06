@@ -180,6 +180,8 @@ object DataVocabulary extends Vocabulary {
       """
         |Restrict the output to the first `N` lines from the input expression. The lines will be
         |chosen based on a lexical ordering of the group by keys.
+        |
+        |Since: 1.5.0
       """.stripMargin.trim
 
     override def signature: String = "DataExpr Int -- DataExpr"
