@@ -104,6 +104,8 @@ object StatefulVocabulary extends Vocabulary {
       """
         |Experimental alternative to DES. Should only be used for testing and may change or be
         |removed in the future with no notice.
+        |
+        |Since: 1.5.0
       """.stripMargin.trim
 
     override def signature: String =

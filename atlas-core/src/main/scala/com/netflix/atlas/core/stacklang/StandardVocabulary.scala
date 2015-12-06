@@ -131,6 +131,8 @@ object StandardVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Push the depth of the stack.
+        |
+        |Since: 1.5.0
       """.stripMargin.trim
 
     override def signature: String = " -- N"
@@ -271,6 +273,8 @@ object StandardVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Pick an item in the stack and put a copy on the top.
+        |
+        |Since: 1.5.0
       """.stripMargin.trim
 
     override def signature: String = "aN ... a0 N -- aN ... a0 aN"
@@ -325,6 +329,8 @@ object StandardVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Remove the top N items on the stack.
+        |
+        |Since: 1.5.0
       """.stripMargin.trim
 
     override def signature: String = "aN ... a0 N -- aN"
@@ -347,6 +353,8 @@ object StandardVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Create a list with the top N items on the stack.
+        |
+        |Since: 1.5.0
       """.stripMargin.trim
 
     override def signature: String = "aN ... a0 N -- aN List(aN-1 ... a0)"
@@ -392,6 +400,8 @@ object StandardVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Rotate an item in the stack and put it on the top.
+        |
+        |Since: 1.5.0
       """.stripMargin.trim
 
     override def signature: String = "aN ... a0 N -- aN-1 ... a0 aN"
