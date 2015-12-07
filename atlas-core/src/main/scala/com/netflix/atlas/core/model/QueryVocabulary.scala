@@ -97,7 +97,21 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that matches time series with `tags.contains(k)`.
+        |Query expression that matches time series that have a key with the specified name.
+        |Suppose you have three time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=http.requests, status=400, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=server`
+        |
+        |The query `status,:has` would match:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=http.requests, status=400, nf.app=server`
+        |
+        |The query `type,:has` would match:
+        |
+        |* `name=sys.cpu, type=user, nf.app=server`
       """.stripMargin.trim
 
     override def signature: String = "k:String -- Query"
@@ -131,7 +145,18 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that matches time series with `tags[k] == v`.
+        |Query expression that matches time series where the value for a given key is an exact
+        |match for the provided value. Suppose you have three time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=http.requests, status=400, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=server`
+        |
+        |The query `name,http.requests,:eq` would be equivalent to an infix query like
+        |`name = http.requests` and would match:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=http.requests, status=400, nf.app=server`
       """.stripMargin.trim
   }
 
@@ -142,7 +167,20 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that matches time series with `tags[k] < v`.
+        |Query expression that matches time series where the value for a given key is less than
+        |the provided value. Suppose you have three time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=http.requests, status=400, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=server`
+        |
+        |The query `status,400,:lt` would be equivalent to an infix query like
+        |`status < 400` and would match:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |
+        |Note that all tag values are strings and will be compared lexically not numerically. So
+        |for example 100 would be less than 2.
       """.stripMargin.trim
   }
 
@@ -153,7 +191,22 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that matches time series with `tags[k] <= v`.
+        |Query expression that matches time series where the value for a given key is less than
+        |or equal to the provided value. Suppose you have four time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=http.requests, status=202, nf.app=server`
+        |* `name=http.requests, status=400, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=server`
+        |
+        |The query `status,202,:le` would be equivalent to an infix query like
+        |`status <= 202` and would match:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=http.requests, status=202, nf.app=server`
+        |
+        |Note that all tag values are strings and will be compared lexically not numerically. So
+        |for example 100 would be less than 2.
       """.stripMargin.trim
   }
 
@@ -164,7 +217,20 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that matches time series with `tags[k] > v`.
+        |Query expression that matches time series where the value for a given key is greater than
+        |the provided value. Suppose you have three time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=http.requests, status=400, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=server`
+        |
+        |The query `status,399,:gt` would be equivalent to an infix query like
+        |`status > 399` and would match:
+        |
+        |* `name=http.requests, status=400, nf.app=server`
+        |
+        |Note that all tag values are strings and will be compared lexically not numerically. So
+        |for example 2 would be greater than 100.
       """.stripMargin.trim
   }
 
@@ -175,7 +241,20 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that matches time series with `tags[k] >= v`.
+        |Query expression that matches time series where the value for a given key is greater than
+        |or equal to the provided value. Suppose you have three time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=http.requests, status=400, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=server`
+        |
+        |The query `status,400,:ge` would be equivalent to an infix query like
+        |`status >= 400` and would match:
+        |
+        |* `name=http.requests, status=400, nf.app=server`
+        |
+        |Note that all tag values are strings and will be compared lexically not numerically. So
+        |for example 2 would be greater than 100.
       """.stripMargin.trim
   }
 
@@ -186,10 +265,26 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that matches time series with `tags[k] =~ /^v/`.
+        |Query expression that matches time series with a value that matches the provided regular
+        |expression.
         |
         |> :warning: Regular expressions without a clear prefix force a full scan and should be
         |avoided.
+        |
+        |See the [java regular expression](https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html)
+        |docs for more information about supported patterns. The regex will be anchored to the start
+        |and should have a clear prefix.
+        |
+        |Suppose you have four time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=http.requests, status=400, nf.app=server`
+        |* `name=http.requests, status=404, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=server`
+        |
+        |The query `status,4(?!04),:re` would match 4xx status codes other than 404:
+        |
+        |* `name=http.requests, status=400, nf.app=server`
       """.stripMargin.trim
 
     override def examples: List[String] = List(
@@ -205,10 +300,24 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that matches time series with `tags[k] =~ /^v/i`.
+        |Query expression that matches time series with a value that matches the provided regular
+        |expression with case insensitive matching enabled.
         |
-        |> :warning: This operation requires a full scan and should be avoided it at all
-        |possible.
+        |> :warning: This operation always requires a full scan and should be avoided if at all
+        |possible. Queries using this operation may be de-priortized.
+        |
+        |See the [java regular expression](https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html)
+        |
+        |Suppose you have three time series:
+        |
+        |* `name=http.numRequests, status=200, nf.app=server`
+        |* `name=http.numrequests, status=400, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=server`
+        |
+        |The query `name,http.numrequests,:reic` would match:
+        |
+        |* `name=http.numRequests, status=200, nf.app=server`
+        |* `name=http.numrequests, status=400, nf.app=server`
       """.stripMargin.trim
 
     override def examples: List[String] = List(
@@ -232,7 +341,17 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that matches time series with `vs.contains(tags[k])`.
+        |Query expression that matches time series where the value for a given key is in the
+        |provided set. Suppose you have three time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=foo`
+        |* `name=sys.cpu, type=user, nf.app=bar`
+        |
+        |The query `nf.app,(,foo,bar,),:in` would match:
+        |
+        |* `name=sys.cpu, type=user, nf.app=foo`
+        |* `name=sys.cpu, type=user, nf.app=bar`
       """.stripMargin.trim
 
     override def signature: String = "k:String vs:List -- Query"
@@ -261,7 +380,16 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that will match iff both sub queries match.
+        |Query expression that matches if both sub queries match. Suppose you have three time
+        |series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=foo`
+        |* `name=sys.cpu, type=user, nf.app=bar`
+        |
+        |The query `name,sys.cpu,:eq,nf.app,foo,:eq,:and` would match:
+        |
+        |* `name=sys.cpu, type=user, nf.app=foo`
       """.stripMargin.trim
 
     override def signature: String = "Query Query -- Query"
@@ -287,7 +415,20 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that will match if either sub query matches.
+        |Query expression that matches if either sub query matches. Suppose you have three time
+        |series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=foo`
+        |* `name=sys.cpu, type=user, nf.app=bar`
+        |
+        |The query `nf.app,foo,:eq,nf.app,bar,:eq,:or` would match:
+        |
+        |* `name=sys.cpu, type=user, nf.app=foo`
+        |* `name=sys.cpu, type=user, nf.app=bar`
+        |
+        |Note for the example above where both sides are for the same key, [:in](query-in) is a
+        |better option.
       """.stripMargin.trim
 
     override def signature: String = "Query Query -- Query"
@@ -311,7 +452,16 @@ object QueryVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Query expression that will match if the sub query doesn't match.
+        |Query expression that matches if the sub query does not matches.
+        |Suppose you have three time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=foo`
+        |* `name=sys.cpu, type=user, nf.app=bar`
+        |
+        |The query `name,sys.cpu,:eq,:not` would match:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
       """.stripMargin.trim
 
     override def signature: String = "Query -- Query"
