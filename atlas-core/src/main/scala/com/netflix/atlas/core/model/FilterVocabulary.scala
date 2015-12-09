@@ -62,8 +62,8 @@ object FilterVocabulary extends Vocabulary {
         || `avg,:stat`    |  2 |  2 |  2 |  2 |  2 |
         || `total,:stat`  | 10 | 10 | 10 | 10 | 10 |
         |
-        |When used with [filter](#filter) the corresponding `stat-$(name)` operation can be used
-        |to simplify filtering based on stats.
+        |When used with [filter](filter-filter) the corresponding `stat-$(name)` operation can be
+        |used to simplify filtering based on stats.
         |
         |```
         |name,requestsPerSecond,:eq,:sum,
