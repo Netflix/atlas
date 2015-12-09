@@ -33,6 +33,8 @@ import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.wiki.pages.DES
+import com.netflix.atlas.wiki.pages.DesEpicSignal
+import com.netflix.atlas.wiki.pages.DesEpicViz
 import com.netflix.atlas.wiki.pages.DistStddev
 import com.netflix.atlas.wiki.pages.StackLanguageReference
 import com.netflix.atlas.wiki.pages.TimeZones
@@ -129,7 +131,9 @@ object Main extends StrictLogging {
     )
 
     val overrides = Map(
-      DistStddev.word -> DistStddev
+      DesEpicSignal.word -> DesEpicSignal,
+      DesEpicViz.word    -> DesEpicViz,
+      DistStddev.word    -> DistStddev
     )
 
     val sidebar = new StringBuilder
