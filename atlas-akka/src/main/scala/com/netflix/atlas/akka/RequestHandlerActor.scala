@@ -22,7 +22,6 @@ import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
-import spray.http.HttpMethods._
 import spray.http._
 import spray.routing._
 
@@ -45,8 +44,19 @@ class RequestHandlerActor(registry: Registry, config: Config)
         case (acc, r) => acc ~ r.routes
       }
 
+      // Default paths to always include
+      val corsPreflight = options {
+        // Used for CORS pre-flight checks
+        complete(StatusCodes.OK)
+      }
+      val healthcheck = path("healthcheck") {
+        // Default endpoint for testing that always returns 200
+        complete(StatusCodes.OK)
+      }
+      val finalRoutes = corsPreflight ~ healthcheck ~ routes
+
       // Allow all endpoints to be access cross-origin
-      val cors = corsFilter { routes }
+      val cors = corsFilter { finalRoutes }
 
       // Automatically deal with compression
       val gzip = compressResponseIfRequested() {
@@ -72,13 +82,6 @@ class RequestHandlerActor(registry: Registry, config: Config)
 
   private val default: Actor.Receive = {
     case _: Http.Connected => sender() ! Http.Register(self)
-
-    // For CORS pre-flight
-    case HttpRequest(OPTIONS, _, _, _, _) =>
-      sender() ! HttpResponse(status = StatusCodes.OK)
-
-    case HttpRequest(_, Uri.Path("/healthcheck"), _, _, _) =>
-      sender() ! HttpResponse(status = StatusCodes.OK)
 
     case Timedout(HttpRequest(method, uri, _, _, _)) =>
       val errorMsg = DiagnosticMessage.error(s"request timed out: $method $uri")
