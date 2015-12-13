@@ -19,13 +19,21 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 
-class NonStandardKeyRuleSuite extends FunSuite {
+class ReservedKeyRuleSuite extends FunSuite {
 
-  private val config = ConfigFactory.parseString("")
-  private val rule = new NonStandardKeyRule(config)
+  private val config = ConfigFactory.parseString(
+    """
+      |prefix = "nf."
+      |allowed-keys = ["region", "job", "task"]
+    """.stripMargin)
+  private val rule = new ReservedKeyRule(config)
 
   test("valid") {
     assert(rule.validate("nf.region", "def") === ValidationResult.Pass)
+  }
+
+  test("valid, no reserved prefix") {
+    assert(rule.validate("foo", "def") === ValidationResult.Pass)
   }
 
   test("invalid") {
