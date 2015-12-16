@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
+import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
 import com.netflix.atlas.core.stacklang.Vocabulary
@@ -104,12 +105,26 @@ object MathVocabulary extends Vocabulary {
     override def name: String = "by"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case (StringListType(ks) :: (t: AggrMathExpr) :: _) if t.expr.isGrouped =>
+        // Multi-level group by with an explicit aggregate specified
+        true
+      case (StringListType(ks) :: TimeSeriesType(t) :: _) if t.isGrouped =>
+        // Multi-level group by with an implicit aggregate of :sum
+        true
       case StringListType(_) :: TimeSeriesType(t) :: _ =>
+        // Default data group by applied across math operations
         t.dataExprs.forall(_.isInstanceOf[DataExpr.AggregateFunction])
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case (StringListType(keys) :: (t: AggrMathExpr) :: stack) if t.expr.isGrouped =>
+        // Multi-level group by with an explicit aggregate specified
+        MathExpr.GroupBy(t, keys) :: stack
+      case (StringListType(keys) :: TimeSeriesType(t) :: stack) if t.isGrouped =>
+        // Multi-level group by with an implicit aggregate of :sum
+        MathExpr.GroupBy(MathExpr.Sum(t), keys) :: stack
       case StringListType(keys) :: TimeSeriesType(t) :: stack =>
+        // Default data group by applied across math operations
         val f = t.rewrite {
           case af: AggregateFunction => DataExpr.GroupBy(af, keys)
         }
