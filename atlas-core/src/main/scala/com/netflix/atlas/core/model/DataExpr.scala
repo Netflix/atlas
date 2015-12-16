@@ -81,6 +81,23 @@ object DataExpr {
     ts.withLabel(defaultLabel(expr, ts))
   }
 
+  /**
+    * Create a group by key string from the set of keys and a tag list. If a key from the input
+    * is missing from the tags, then it will return null.
+    */
+  def keyString(keys: List[String], tags: Map[String, String]): String = {
+    // 32 is typically big enough to prevent a resize with a single key
+    val builder = new StringBuilder(32 * keys.size)
+    builder.append('(')
+    keys.foreach { k =>
+      val v = tags.get(k)
+      if (v.isEmpty) return null
+      builder.append(k).append('=').append(v.get).append(' ')
+    }
+    builder(builder.length - 1) = ')'
+    builder.toString
+  }
+
   case class All(query: Query, offset: Duration = Duration.ZERO) extends DataExpr {
     def cf: ConsolidationFunction = ConsolidationFunction.Sum
     override def withOffset(d: Duration): All = copy(offset = d)
@@ -236,18 +253,7 @@ object DataExpr {
 
     override def isGrouped: Boolean = true
 
-    def keyString(tags: Map[String, String]): String = {
-      // 32 is typically big enough to prevent a resize with a single key
-      val builder = new StringBuilder(32 * keys.size)
-      builder.append('(')
-      keys.foreach { k =>
-        val v = tags.get(k)
-        if (v.isEmpty) return null
-        builder.append(k).append('=').append(v.get).append(' ')
-      }
-      builder(builder.length - 1) = ')'
-      builder.toString
-    }
+    def keyString(tags: Map[String, String]): String = DataExpr.keyString(keys, tags)
 
     override def groupByKey(tags: Map[String, String]): Option[String] = Option(keyString(tags))
 

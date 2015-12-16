@@ -355,6 +355,62 @@ object MathExpr {
     def apply(v1: Double, v2: Double): Double = Math.maxNaN(v1, v2)
   }
 
+  case class GroupBy(expr: AggrMathExpr, keys: List[String]) extends TimeSeriesExpr {
+    // This variant should only be used if the data is already grouped and we are adding another
+    // level. See DataExpr.GroupBy for the first level based on the raw data.
+    require(expr.expr.isGrouped, "input expression must already be grouped with DataExpr.GroupBy")
+
+    // We can only group using a subset of the previous group by results.
+    private val dataGroups = expr.dataExprs.collect { case e: DataExpr.GroupBy => e }
+    dataGroups.foreach { grp =>
+      require(grp.keys.containsSlice(keys),
+        s"(,${keys.mkString(",")},) is not a subset of (,${grp.keys.mkString(",")},)")
+    }
+
+    // Extract the common keys from queries so we can retain those tags in in the final output
+    // to the user.
+    private val queryKeys = {
+      val queries = expr.dataExprs.map(_.query)
+      if (queries.isEmpty) Set.empty[String] else {
+        queries.tail.foldLeft(Query.exactKeys(queries.head)) { (acc, q) =>
+          acc intersect Query.exactKeys(q)
+        }
+      }
+    }
+
+    override def toString: String = s"$expr,(,${keys.mkString(",")},),:by"
+
+    def dataExprs: List[DataExpr] = expr.dataExprs
+
+    def isGrouped: Boolean = true
+    def groupByKey(tags: Map[String, String]): Option[String] = Option(DataExpr.keyString(keys, tags))
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      val inner = expr.expr.eval(context, data)
+
+      val ks = queryKeys ++ keys
+      val groups = inner.data
+        .groupBy(t => DataExpr.keyString(keys, t.tags))
+        .toList
+      val sorted = groups.sortWith(_._1 < _._1)
+      val newData = sorted.flatMap {
+        case (null, _) => Nil
+        case (k, Nil)  => List(TimeSeries.noData(context.step))
+        case (k, ts)   =>
+          val tags = ts.head.tags.filter(e => ks.contains(e._1))
+          val init = expr match {
+            case c: Count => ts.map { t =>
+              TimeSeries(t.tags, t.label, t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0))
+            }
+            case _ => ts
+          }
+          val t = TimeSeries.aggregate(init.iterator, context.start, context.end, expr)
+          List(TimeSeries(tags, k, t.data))
+      }
+
+      ResultSet(this, newData, context.state)
+    }
+  }
 }
 
 
