@@ -8,8 +8,8 @@
 To quickly run a version with some synthetic sample data:
 
 ```
-$ curl -LO https://github.com/Netflix/atlas/releases/download/v1.4.2/atlas-1.4.2-standalone.jar
-$ java -jar atlas-1.4.2-standalone.jar
+$ curl -LO https://github.com/Netflix/atlas/releases/download/v1.4.5/atlas-1.4.5-standalone.jar
+$ java -jar atlas-1.4.5-standalone.jar
 ```
 
 ## Explore Available Tags
