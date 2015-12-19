@@ -43,7 +43,7 @@ class DES extends SimplePage {
       |### Training
       |
       |The training parameter defines how many intervals to allow the DES to warmup. In the graph
-      |below the gaps from the start of the chart to the smooted lines reflects the training window
+      |below the gaps from the start of the chart to the smoothed lines reflects the training window
       |used:
       |
       |${graph.image("/api/v1/graph?q=:true,800,:fadd,input,:legend,:true,400,:fadd,30,0.1,1,:des,training+%3D+30,:legend,:true,90,0.1,1,:des,training+%3D+90,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0&s=e-2d", false)}

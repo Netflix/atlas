@@ -45,7 +45,7 @@ class TimeZones extends SimplePage {
        |## By Display Name
        |
        |Short display names are used in some views, such as multi-timezone plots. This table
-       |provides a reference of the diplay name to the id.
+       |provides a reference of the display name to the id.
        |
        |$displayNameToZoneId
     """.stripMargin

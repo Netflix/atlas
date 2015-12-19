@@ -3,13 +3,7 @@
 Atlas Stack Language is designed to be a stable method of representing complex data queries in
 a URL-friendly format. It is loosely based on the
 [RPN expressions](http://oss.oetiker.ch/rrdtool/doc/rrdgraph_rpn.en.html) supported by
-[Tobias Oetiker](https://tobi.oetiker.ch/hp/)'s [rrdtool](http://oss.oetiker.ch/rrdtool/). The
-language uses postfix expressions with comma-separated arguments and all commands begin with a
-colon. Lists can be created by using an open parenthesis '(' to start the list and a closing
-parenthesis ')' to end the list and commands are provided which can iterate over lists. The
-parentheses punctuation is also used separately as a part of `:re` expressions, in which case it
-is not separated by commas.
-
+[Tobias Oetiker](https://tobi.oetiker.ch/hp/)'s [rrdtool](http://oss.oetiker.ch/rrdtool/).
 The following is an example of a stack language expression:
 
 `nf.cluster,discovery,:eq,(,nf.zone,),:by`
@@ -59,7 +53,7 @@ to drill down into the data. The tag keys are similar to columns in a traditiona
 it is important to note that not all time series will have the same set of tag keys.
 
 The tags are used to identify a time series, which conceptually is a set of timestamp value pairs.
-Here is a simplifed data set shown as a table:
+Here is a simplified data set shown as a table:
 
 | name        | app   | node   | values                         |
 |-------------|-------|--------|--------------------------------|
