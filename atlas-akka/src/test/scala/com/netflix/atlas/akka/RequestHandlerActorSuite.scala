@@ -30,6 +30,7 @@ import org.scalatest.FunSuiteLike
 import spray.http.HttpMethods._
 import spray.http.StatusCodes._
 import spray.http._
+import spray.routing.MethodRejection
 
 
 class RequestHandlerActorSuite extends TestKit(ActorSystem())
@@ -48,6 +49,13 @@ class RequestHandlerActorSuite extends TestKit(ActorSystem())
 
   override def afterAll(): Unit = {
     system.terminate()
+  }
+
+  test("/not-found") {
+    ref ! HttpRequest(GET, Uri("/not-found"))
+    expectMsgPF() {
+      case HttpResponse(NotFound, _, _, _) =>
+    }
   }
 
   test("/healthcheck") {
@@ -119,6 +127,13 @@ class RequestHandlerActorSuite extends TestKit(ActorSystem())
     expectMsgPF() {
       case HttpResponse(OK, entity, _, _) =>
         assert(entity.asString(HttpCharsets.`UTF-8`) === "foo")
+    }
+  }
+
+  test("/chunked with wrong method") {
+    ref ! HttpRequest(POST, Uri("/chunked"))
+    expectMsgPF() {
+      case HttpResponse(MethodNotAllowed, _, _, _) =>
     }
   }
 }
