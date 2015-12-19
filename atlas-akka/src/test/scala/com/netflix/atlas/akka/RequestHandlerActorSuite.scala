@@ -30,7 +30,6 @@ import org.scalatest.FunSuiteLike
 import spray.http.HttpMethods._
 import spray.http.StatusCodes._
 import spray.http._
-import spray.routing.MethodRejection
 
 
 class RequestHandlerActorSuite extends TestKit(ActorSystem())
