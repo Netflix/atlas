@@ -63,21 +63,33 @@ class RequestHandlerActor(registry: Registry, config: Config)
         decompressRequest() { cors }
       }
 
-      // Include all requests in the access log
-      val log = accessLog { gzip }
-
       // Add a default exception handler
-      val error = handleExceptions(exceptionHandler) { log }
+      val error = handleExceptions(exceptionHandler) {
+        handleRejections(rejectionHandler) { gzip }
+      }
+
+      // Include all requests in the access log
+      val log = accessLog { error }
 
       // Final set of routes
       default.orElse {
-        runRoute { error }
+        runRoute { log }
       }
     }
   }
 
   private def exceptionHandler: PartialFunction[Throwable, Route] = {
     case t: Throwable => { ctx => DiagnosticMessage.handleException(ctx.responder)(t) }
+  }
+
+  private def rejectionHandler: PartialFunction[List[Rejection], Route] = {
+    case MethodRejection(HttpMethods.OPTIONS) :: Nil => notFound
+    case Nil => notFound
+  }
+
+  private def notFound: Route = { ctx =>
+    val msg = s"path not found: ${ctx.request.uri.path.toString()}"
+    DiagnosticMessage.sendError(ctx.responder, StatusCodes.NotFound, msg)
   }
 
   private val default: Actor.Receive = {
