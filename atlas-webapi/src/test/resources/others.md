@@ -70,3 +70,11 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=epic
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=bw
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=colors:1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=blues
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=greens
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=oranges
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=purples
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=reds
+
+# Axis palette
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,name,sps,:eq,:sum,(,nf.node,),:by,1,:axis,1,2,:axis&palette=epic&palette.1=oranges

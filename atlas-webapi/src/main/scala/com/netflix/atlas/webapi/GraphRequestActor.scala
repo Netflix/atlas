@@ -87,6 +87,9 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
       val axisCfg = request.flags.axes(yaxis)
       val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
+
+      val hasAxisPalette = axisCfg.palette.nonEmpty
+      val axisPalette = axisCfg.palette.fold(palette) { v => Palette.create(v).iterator }
       var axisColor: Option[Color] = None
 
       val lines = exprs.flatMap { s =>
@@ -95,14 +98,14 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
         val tmp = ts.map { t =>
           val color = s.color.getOrElse {
             axisColor.getOrElse {
-              val c = if (s.offset > 0L) shiftPalette.next() else palette.next()
+              val c = if (s.offset > 0L) shiftPalette.next() else axisPalette.next()
               // Alpha setting if present will set the alpha value for the color automatically
               // assigned by the palette. If using an explicit color it will have no effect as the
               // alpha can be set directly using an ARGB hex format for the color.
               s.alpha.fold(c)(a => Colors.withAlpha(c, a))
             }
           }
-          if (multiY) axisColor = Some(color)
+          if (multiY && !hasAxisPalette) axisColor = Some(color)
 
           val offset = Strings.toString(Duration.ofMillis(s.offset))
           val newT = t.withTags(t.tags + (TagKey.offset -> offset))
