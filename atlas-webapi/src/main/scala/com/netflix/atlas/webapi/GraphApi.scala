@@ -229,7 +229,8 @@ object GraphApi {
       logarithmic: Boolean = false,
       stack: Boolean = false,
       ylabel: Option[String] = None,
-      showTickLabels: Boolean = true)
+      showTickLabels: Boolean = true,
+      palette: Option[String] = None)
 
   case class ImageFlags(
       title: Option[String],
@@ -257,7 +258,8 @@ object GraphApi {
       logarithmic = getAxisParam(params, "o", id).contains("1"),
       stack = getAxisParam(params, "stack", id).contains("1"),
       ylabel = getAxisParam(params, "ylabel", id).filter(_ != ""),
-      showTickLabels = !getAxisParam(params, "no_tick_labels", id).contains("1"))
+      showTickLabels = !getAxisParam(params, "no_tick_labels", id).contains("1"),
+      palette = params.get(s"palette.$id"))
   }
 
   def toRequest(req: HttpRequest): Request = {
