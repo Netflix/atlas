@@ -77,7 +77,8 @@ object Main extends StrictLogging {
   }
 
   private def processTemplate(f: File, output: File): Unit = {
-    val graph = new GraphHelper(webApi, new File(output, "gen-images"), "gen-images")
+    val path = s"${output.getName}/gen-images"
+    val graph = new GraphHelper(webApi, new File(output, "gen-images"), path)
     val template = scope(fileIn(f)) { in => lines(in).toList }
     val processed = process(template, List.newBuilder[String], graph)
     writeFile(processed.mkString("\n"), new File(output, f.getName))
