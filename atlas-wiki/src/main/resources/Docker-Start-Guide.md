@@ -50,7 +50,10 @@ curl -s http://localhost:7101/api/v1/tags
 
 ## Testing with Vagrant
 
-The [Vagrant](https://www.vagrantup.com/) project leverages [Virtual Box](https://www.virtualbox.org/) and [published guest boxes](https://vagrantcloud.com/boxes/search) to automate the provisioning of virtual machines on your local workstation.  You can use the following `Vagrantfile` to stand up an environment for testing the Docker container.
+The [Vagrant](https://www.vagrantup.com/) project leverages
+[Virtual Box](https://www.virtualbox.org/) and [published guest boxes](https://vagrantcloud.com/boxes/search)
+to automate the provisioning of virtual machines on your local workstation.  You can use the
+following `Vagrantfile` to stand up an environment for testing the Docker container.
 
 ```
 # -*- mode: ruby -*-
@@ -97,7 +100,11 @@ sudo docker ...
 
 ## Testing with Boot2Docker
 
-The [Boot2Docker](http://boot2docker.io/) project leverages [Virtual Box](https://www.virtualbox.org/) and [Tiny Core Linux](http://distro.ibiblio.org/tinycorelinux/) to provide a thin execution environment for Docker containers.  To allow access to the Edda container in the VM from your terminal, you need to configure a [port forwarding rule](https://github.com/docker/docker/issues/4007) on the Virtual Box guest.
+The [Boot2Docker](http://boot2docker.io/) project leverages
+[Virtual Box](https://www.virtualbox.org/) and [Tiny Core Linux](http://distro.ibiblio.org/tinycorelinux/)
+to provide a thin execution environment for Docker containers. To allow access to the Edda
+container in the VM from your terminal, you need to configure a
+[port forwarding rule](https://github.com/docker/docker/issues/4007) on the Virtual Box guest.
 
 ```
 boot2docker init
