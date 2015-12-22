@@ -43,10 +43,11 @@ case class Text(
   lazy val dims = Constants.dimensions(font)
 
   def truncate(width: Int): Text = {
-    val maxChars = width / dims.width
-    if (str.length <= maxChars) this else {
-      if (maxChars < 5) copy(str = "") else
-      copy(str = str.substring(0, maxChars - 5) + "...")
+    val maxChars = (width - Text.rightPadding) / dims.width
+    if (str.length < maxChars) this else {
+      if (maxChars < 5) copy(str = "") else {
+        copy(str = str.substring(0, maxChars - 5) + "...")
+      }
     }
   }
 
@@ -58,7 +59,7 @@ case class Text(
     val iterator = attrStr.getIterator
     val measurer = new LineBreakMeasurer(iterator, g.getFontRenderContext)
 
-    val wrap = width - 8.0f
+    val wrap = width - Text.rightPadding
     var y = 0.0f
     while (measurer.getPosition < str.length) {
       val layout = measurer.nextLayout(wrap)
@@ -76,7 +77,7 @@ case class Text(
     val measurer = new LineBreakMeasurer(iterator, g.getFontRenderContext)
 
     val width = x2 - x1
-    val wrap = width - 8.0f
+    val wrap = width - Text.rightPadding
     var y = y1.toFloat
     while (measurer.getPosition < str.length) {
       val layout = measurer.nextLayout(wrap)
@@ -96,5 +97,9 @@ case class Text(
       y += layout.getDescent + layout.getLeading
     }
   }
+}
+
+object Text {
+  private val rightPadding = 8
 }
 
