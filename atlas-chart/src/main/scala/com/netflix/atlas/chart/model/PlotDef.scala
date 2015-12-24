@@ -87,8 +87,12 @@ case class PlotDef(
         }
 
         if (stacked.nonEmpty) {
-          max = if (posSum > max) posSum else max
-          min = if (negSum < min) negSum else min
+          val v = stacked.head.data.data(t)
+          max = if (v > max) v else max
+          min = if (v < min) v else min
+
+          max = if (posSum > 0.0 && posSum > max) posSum else max
+          min = if (negSum < 0.0 && negSum < min) negSum else min
         }
 
         posSum = 0.0
@@ -100,10 +104,10 @@ case class PlotDef(
       val hasArea = dataLines.exists { line =>
         line.lineStyle == LineStyle.AREA || line.lineStyle == LineStyle.STACK
       }
-      if (min > max)
-        finalBounds(hasArea, 0.0, 1.0)
-      else
-        finalBounds(hasArea, min, max)
+
+      min = if (min == JDouble.MAX_VALUE) 0.0 else min
+      max = if (max == -JDouble.MAX_VALUE) 1.0 else max
+      finalBounds(hasArea, min, max)
     }
   }
 

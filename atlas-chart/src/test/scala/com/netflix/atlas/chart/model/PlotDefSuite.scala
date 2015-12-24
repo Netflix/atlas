@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.chart.model
 
+import com.netflix.atlas.chart.model.PlotBound.AutoData
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 import org.scalatest.FunSuite
@@ -107,5 +108,25 @@ class PlotDefSuite extends FunSuite {
   test("finalBounds area, explicit upper < 0") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = Explicit(-42.0))
     assert(plotDef.finalBounds(true, -50.0, -45.0) === -50.0 -> -42.0)
+  }
+
+  test("finalBounds area, auto-data") {
+    val plotDef = PlotDef(Nil, lower = AutoData, upper = AutoData)
+    assert(plotDef.finalBounds(true, 2.0, 2.0) === 2.0 -> 3.0)
+  }
+
+  test("finalBounds area, auto-data spans 0") {
+    val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoStyle)
+    assert(plotDef.finalBounds(true, -42.0, 42.0) === -42.0 -> 42.0)
+  }
+
+  test("finalBounds area, auto-data lower > 0") {
+    val plotDef = PlotDef(Nil, lower = AutoData, upper = AutoStyle)
+    assert(plotDef.finalBounds(true, 50.0, 55.0) === 50.0 -> 55.0)
+  }
+
+  test("finalBounds area, auto-data upper < 0") {
+    val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoData)
+    assert(plotDef.finalBounds(true, -50.0, -45.0) === -50.0 -> -45.0)
   }
 }

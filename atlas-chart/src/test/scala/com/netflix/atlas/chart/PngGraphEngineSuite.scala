@@ -23,6 +23,7 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
+import com.netflix.atlas.chart.model.PlotBound.AutoData
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model.ArrayTimeSeq
@@ -294,6 +295,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   constantLine("lower_bound_4", Seq(4), v => v.adjustPlots(_.copy(lower = Explicit(4))))
   constantLine("stack", Seq(0), v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
   constantLine("area", Seq(0), v => v.adjustLines(_.copy(lineStyle = LineStyle.AREA)))
+  constantLine("stack_auto", Seq(200,100), v => v.adjustPlots(_.copy(lower = AutoData)).adjustLines(_.copy(lineStyle = LineStyle.STACK)))
 
   constantLine("l1_u2_h300", Seq(1), v => v.copy(height = 300))
 
@@ -342,6 +344,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   doubleLine("double_line",        v => v)
   doubleLine("axis_per_line",      v => v.axisPerLine)
   doubleLine("double_line_stack",  v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
+  doubleLine("double_line_auto",   v => v.adjustPlots(_.copy(lower = AutoData)).adjustLines(_.copy(lineStyle = LineStyle.STACK)))
 
   lines("double_line_stack_on_NaN",     Seq(Double.NaN, 150),       v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
   lines("double_line_stack_middle_NaN", Seq(150, Double.NaN, 300),  v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
