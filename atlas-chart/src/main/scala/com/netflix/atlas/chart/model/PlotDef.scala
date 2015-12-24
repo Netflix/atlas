@@ -17,6 +17,9 @@ package com.netflix.atlas.chart.model
 
 import java.awt.Color
 
+import com.netflix.atlas.chart.model.PlotBound.AutoStyle
+import com.netflix.atlas.chart.model.PlotBound.Explicit
+
 /**
  * Definition for a plot, i.e., a y-axis and associated data elements.
  *
@@ -95,7 +98,10 @@ case class PlotDef(
       val hasArea = dataLines.exists { line =>
         line.lineStyle == LineStyle.AREA || line.lineStyle == LineStyle.STACK
       }
-      finalBounds(hasArea, min, max)
+      if (min > max)
+        finalBounds(hasArea, 0.0, 1.0)
+      else
+        finalBounds(hasArea, min, max)
     }
   }
 
@@ -104,21 +110,22 @@ case class PlotDef(
     // * An explicit bound should always get used.
     // * If an area is present, then automatic bounds should go to the 0 line.
     // * If an automatic bound equals or is on the wrong side of an explicit bound, then pad by 1.
-    (hasArea, lower, upper) match {
-      case (false, None,    None)    if min == max =>       min -> (max + 1)
-      case (false, None,    Some(u)) if min >= u   =>   (u - 1) -> u
-      case (false, None,    Some(u))               =>       min -> u
-      case (false, Some(l), None)    if l >= max   =>         l -> (l + 1)
-      case (false, Some(l), None)                  =>         l -> max
-      case (true,  None,    None)    if min > 0.0  =>       0.0 -> max
-      case (true,  None,    None)    if max < 0.0  =>       min -> 0.0
-      case (true,  None,    Some(u)) if min > 0.0  =>       0.0 -> u
-      case (true,  None,    Some(u))               =>       min -> u
-      case (true,  Some(l), None)    if max < 0.0  =>         l -> 0.0
-      case (true,  Some(l), None)                  =>         l -> max
-      case (_,     Some(l), Some(u))               =>         l -> u
-      case (_,     None,    None)    if min >  max =>       0.0 -> 1.0
-      case (_,     None,    None)                  =>       min -> max
+    val lb = lower.fold[PlotBound](AutoStyle)(v => Explicit(v))
+    val l = lb.lower(hasArea, min)
+
+    val ub = upper.fold[PlotBound](AutoStyle)(v => Explicit(v))
+    val u = ub.upper(hasArea, max)
+
+    // If upper and lower bounds are equal or automatic/explicit combination causes lower to be
+    // greater than the upper, then pad automatic bounds by 1. Explicit bounds should
+    // be honored.
+    if (l < u) l -> u else {
+      (lb, ub) match {
+        case (Explicit(_), Explicit(_))  =>       l -> u
+        case (_,           Explicit(_))  => (u - 1) -> u
+        case (Explicit(_), _          )  =>       l -> (l + 1)
+        case (_,           _          )  =>       l -> (u + 1)
+      }
     }
   }
 
