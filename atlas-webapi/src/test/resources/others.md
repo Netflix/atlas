@@ -78,3 +78,11 @@
 
 # Axis palette
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,name,sps,:eq,:sum,(,nf.node,),:by,1,:axis,1,2,:axis&palette=epic&palette.1=oranges
+
+# Auto bounds
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=200,:stack,100,:stack&l=auto-data
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=200,:stack,100,:stack&l=auto-style
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=200,:stack,100,:stack&l=47
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=-200,:stack,-100,:stack&u=auto-data
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=-200,:stack,-100,:stack&u=auto-style
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=-200,:stack,-100,:stack&u=-47
