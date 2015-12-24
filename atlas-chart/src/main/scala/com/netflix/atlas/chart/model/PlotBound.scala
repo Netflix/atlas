@@ -25,6 +25,18 @@ sealed trait PlotBound {
 
 object PlotBound {
 
+  import java.lang.{Double => JDouble}
+
+  /**
+    * Create a bound from a string representation. Acceptable values are: `auto-style`,
+    * `auto-data`, or a floating point number.
+    */
+  def apply(s: String): PlotBound = s match {
+    case "auto-style" => AutoStyle
+    case "auto-data"  => AutoData
+    case n            => Explicit(JDouble.parseDouble(n))
+  }
+
   /**
     * Automatically set the bounds so the visual settings for the lines. In particular, if a line
     * style is set to area or stack, then the bounds will be adjusted so it goes to the axis.

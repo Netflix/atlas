@@ -23,6 +23,7 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
+import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
@@ -186,7 +187,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     val seq = new ArrayTimeSeq(DsType.Gauge, start.toEpochMilli, step, values)
     val seriesDef = LineDef(TimeSeries(tags, "0", seq))
 
-    val plotDef = PlotDef(List(seriesDef), upper = Some(0.005553 * 1.5), axisColor = Some(Color.BLACK))
+    val plotDef = PlotDef(List(seriesDef), upper = Explicit(0.005553 * 1.5), axisColor = Some(Color.BLACK))
 
     val graphDef = GraphDef(
       width = 1100,
@@ -229,8 +230,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   singleLine("single_line_no_legend",      v => v.copy(legendType = LegendType.OFF))
   singleLine("single_line_no_legend_stats",v => v.copy(legendType = LegendType.LABELS_ONLY))
   singleLine("single_line_linewidth",      v => v.adjustLines(_.copy(lineWidth = 3.0f)))
-  singleLine("single_line_upper",          v => v.adjustPlots(_.copy(upper = Some(200))))
-  singleLine("single_line_lower",          v => v.adjustPlots(_.copy(lower = Some(200))))
+  singleLine("single_line_upper",          v => v.adjustPlots(_.copy(upper = Explicit(200))))
+  singleLine("single_line_lower",          v => v.adjustPlots(_.copy(lower = Explicit(200))))
   singleLine("single_line_ylabel",         v => v.adjustPlots(_.copy(ylabel = Some("something useful"))))
   singleLine("single_line_area",           v => v.adjustLines(_.copy(lineStyle = LineStyle.AREA)))
   singleLine("single_line_stack",          v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
@@ -289,8 +290,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     }
   }
 
-  constantLine("lower_bound_0", Seq(0), v => v.adjustPlots(_.copy(lower = Some(0))))
-  constantLine("lower_bound_4", Seq(4), v => v.adjustPlots(_.copy(lower = Some(4))))
+  constantLine("lower_bound_0", Seq(0), v => v.adjustPlots(_.copy(lower = Explicit(0))))
+  constantLine("lower_bound_4", Seq(4), v => v.adjustPlots(_.copy(lower = Explicit(4))))
   constantLine("stack", Seq(0), v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
   constantLine("area", Seq(0), v => v.adjustLines(_.copy(lineStyle = LineStyle.AREA)))
 
@@ -450,8 +451,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   multiy("identity",    v => v)
-  multiy("upper",       v => v.copy(upper = Some(25.0)))
-  multiy("lower",       v => v.copy(lower = Some(25.0)))
+  multiy("upper",       v => v.copy(upper = Explicit(25.0)))
+  multiy("lower",       v => v.copy(lower = Explicit(25.0)))
   multiy("ylabel",      v => v.copy(ylabel = Some("something useful")))
   multiy("ylabel_wrap", v => v.copy(ylabel = Some(longLabel)))
   multiy("color",       v => v.copy(axisColor = Some(Color.LIGHT_GRAY)))

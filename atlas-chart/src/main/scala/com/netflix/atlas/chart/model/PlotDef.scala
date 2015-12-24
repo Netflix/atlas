@@ -45,14 +45,16 @@ case class PlotDef(
     ylabel: Option[String] = None,
     axisColor: Option[Color] = None,
     scale: Scale = Scale.LINEAR,
-    upper: Option[Double] = None,
-    lower: Option[Double] = None,
+    upper: PlotBound = AutoStyle,
+    lower: PlotBound = AutoStyle,
     showTickLabels: Boolean = true) {
 
   import java.lang.{Double => JDouble}
 
-  for (l <- lower; u <- upper) {
-    require(l < u, s"lower bound must be less than upper bound ($l >= $u)")
+  (lower, upper) match {
+    case (Explicit(l), Explicit(u)) =>
+      require(l < u, s"lower bound must be less than upper bound ($l >= $u)")
+    case (_, _) =>
   }
 
   def bounds(start: Long, end: Long): (Double, Double) = {
@@ -110,17 +112,14 @@ case class PlotDef(
     // * An explicit bound should always get used.
     // * If an area is present, then automatic bounds should go to the 0 line.
     // * If an automatic bound equals or is on the wrong side of an explicit bound, then pad by 1.
-    val lb = lower.fold[PlotBound](AutoStyle)(v => Explicit(v))
-    val l = lb.lower(hasArea, min)
-
-    val ub = upper.fold[PlotBound](AutoStyle)(v => Explicit(v))
-    val u = ub.upper(hasArea, max)
+    val l = lower.lower(hasArea, min)
+    val u = upper.upper(hasArea, max)
 
     // If upper and lower bounds are equal or automatic/explicit combination causes lower to be
     // greater than the upper, then pad automatic bounds by 1. Explicit bounds should
     // be honored.
     if (l < u) l -> u else {
-      (lb, ub) match {
+      (lower, upper) match {
         case (Explicit(_), Explicit(_))  =>       l -> u
         case (_,           Explicit(_))  => (u - 1) -> u
         case (Explicit(_), _          )  =>       l -> (l + 1)
