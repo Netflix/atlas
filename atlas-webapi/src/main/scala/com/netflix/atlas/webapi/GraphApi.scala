@@ -23,6 +23,8 @@ import akka.actor.ActorRefFactory
 import akka.actor.Props
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.chart._
+import com.netflix.atlas.chart.model.PlotBound.AutoStyle
+import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
@@ -174,8 +176,8 @@ object GraphApi {
       val styledPlots = gdef.plots.zipWithIndex.map { case (plot, i) =>
         val axisCfg = flags.axes(i)
         plot.copy(
-          lower = axisCfg.lower,
-          upper = axisCfg.upper,
+          lower = axisCfg.lower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
+          upper = axisCfg.upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
           ylabel = axisCfg.ylabel,
           scale = if (axisCfg.logarithmic) Scale.LOGARITHMIC else Scale.LINEAR,
           axisColor = if (multiY) None else Some(Color.BLACK),
@@ -224,8 +226,8 @@ object GraphApi {
   case class DataResponse(ts: Map[DataExpr, List[TimeSeries]])
 
   case class Axis(
-      upper: Option[Double] = None,
-      lower: Option[Double] = None,
+      upper: Option[String] = None,
+      lower: Option[String] = None,
       logarithmic: Boolean = false,
       stack: Boolean = false,
       ylabel: Option[String] = None,
@@ -253,8 +255,8 @@ object GraphApi {
 
   private def newAxis(params: Uri.Query, id: Int): Axis = {
     Axis(
-      upper = getAxisParam(params, "u", id).map(_.toDouble),
-      lower = getAxisParam(params, "l", id).map(_.toDouble),
+      upper = getAxisParam(params, "u", id),
+      lower = getAxisParam(params, "l", id),
       logarithmic = getAxisParam(params, "o", id).contains("1"),
       stack = getAxisParam(params, "stack", id).contains("1"),
       ylabel = getAxisParam(params, "ylabel", id).filter(_ != ""),
