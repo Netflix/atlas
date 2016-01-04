@@ -20,7 +20,7 @@ object License {
 
   val apache2 = s"""
    |/*
-   | * Copyright $year Netflix, Inc.
+   | * Copyright 2014-$year Netflix, Inc.
    | *
    | * Licensed under the Apache License, Version 2.0 (the "License");
    | * you may not use this file except in compliance with the License.
