@@ -14,7 +14,7 @@ The main query param is `q` which is the [query expression](Stack-Language) used
 | Name   | Description           | Default                    | Type                                 |
 |--------|-----------------------|----------------------------|--------------------------------------|
 | `q`    | Query expression      | must be specified by user  | [expr](Stack-Language)               |
-| `step` | Step size for data    | auto                       | [duration](Time-Parameters#duration) |
+| `step` | Step size for data    | auto                       | [duration](Time-Parameters#durations) |
 
 > :warning: In most cases users should not set `step` directly. The `step` parameter
 > is deprecated.
@@ -25,8 +25,8 @@ There are three parameters to control the time range used for a graph:
 
 | Name   | Description | Default                    | Type |
 |--------|-------------|----------------------------|------|
-| `s`    | Start time  | `e-3h`[*](#defaults)       | [Absolute](Time-Parameters#absolute-times) or [Relative](Time-Parameters#relative-times) time |
-| `e`    | End time    | `now`[*](#defaults)        | [Absolute](Time-Parameters#absolute-times) or [Relative](Time-Parameters#relative-times) time |
+| `s`    | Start time  | `e-3h`[*](#defaults)       | [Time](Time-Parameters#time)              |
+| `e`    | End time    | `now`[*](#defaults)        | [Time](Time-Parameters#time)              |
 | `tz`   | Time zone   | `US/Pacific`[*](#defaults) | [Time zone ID](Time-Parameters#time-zone) |
 
 For more information on the behavior see the [time parameters](Time-Parameters) page.

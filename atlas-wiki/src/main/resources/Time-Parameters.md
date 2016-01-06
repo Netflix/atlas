@@ -8,11 +8,13 @@ APIs that accept time ranges support three parameters:
 
 Time zone can be any valid [time zone id](Time-Zones) string.
 
-## Absolute Times
+## Time
+
+### Absolute Times
 
 Absolute times can be specified by [name](#named-times) or as a [timestamp](#timestamps). 
 
-### Named Times
+#### Named Times
 
 Named times are references that will get resolved to a timestamp when a query is
 executed. For example, with graphs it is common to set the end time to `now`.
@@ -24,7 +26,7 @@ executed. For example, with graphs it is common to set the end time to `now`.
 | `now` | Current time. |
 | `epoch` | January 1, 1970 UTC. |
 
-### Timestamps
+#### Timestamps
 
 Explicit timestamps can use the following [formats](http://pubs.opengroup.org/onlinepubs/009695399/functions/strftime.html):
 
@@ -46,7 +48,7 @@ this limitation has not been a problem.
 
 The first three formats above can also be used with an [explicit time zone](#zone-offsets).
 
-### Zone Offsets
+#### Zone Offsets
 
 An explicit time zone can be specified as `Z` to indicate UTC or by using an offset
 in hours and minutes. For example:
@@ -69,7 +71,7 @@ file. For practical purposes in Atlas a `-00:00` offset timezone can be thought 
 as UTC, but depending on the source may have some
 [additional meaning](https://tools.ietf.org/html/rfc3339#section-4.3).
 
-## Relative Times
+### Relative Times
 
 Relative times consist of a [named time](#named-times) used for an anchor and
 an offset duration.
@@ -88,7 +90,9 @@ For example:
 | s+6h    | Six hours after the start time. |
 | s+P2DT6H5M | Two days, 6 hours, and 5 minutes after the start time. |
 
-### Duration vs Period
+#### Durations
+
+##### Duration vs Period
 
 This section is using the definition of duration and period from the
 [java time libraries](https://docs.oracle.com/javase/tutorial/datetime/iso/period.html). In short:
@@ -112,7 +116,7 @@ The offset used for relative times in Atlas are durations because:
   reflects human behavior, such as playing movies, then the week over week pattern
   will typically line up better if using a period. 
 
-### Simple Duration
+##### Simple Duration
 
 A simple offset uses a positive integer followed by one of these units:
 
@@ -127,7 +131,7 @@ A simple offset uses a positive integer followed by one of these units:
 All durations are a fixed number of seconds. A day is 24 hours, week is 7 days,
 month is 30 days, and a year is 365 days.
 
-### ISO Duration
+##### ISO Duration
 
 The duration can also be specified as an
 [ISO duration string](https://tools.ietf.org/html/rfc3339#appendix-A), but day (`D`)
