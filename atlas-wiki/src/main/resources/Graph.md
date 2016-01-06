@@ -3,238 +3,100 @@ Atlas. For a quick overview by example see the [[Examples]] page.
 
 ### URI
 
-`/api/v1/graph?q=<expr>&[CLOUD:OPTIONS]`
+`/api/v1/graph?q=<expr>&[OPTIONS]`
 
 ## Query Parameters
 
-### Callback (callback)
+### Data
 
-If the format is `json`, the callback is used for providing
-[JSONP](http://en.wikipedia.org/wiki/JSONP) output. This parameter is
-ignored for all other formats.
+The main query param is `q` which is the [query expression](Stack-Language) used by the user to select data. All query params related to fetching data:
 
-### Consolidation Function (cf)
+| Name   | Description           | Default                    | Type                                 |
+|--------|-----------------------|----------------------------|--------------------------------------|
+| `q`    | Query expression      | must be specified by user  | [expr](Stack-Language)               |
+| `step` | Step size for data    | auto                       | [duration](Time-Parameters#duration) |
 
-Consolidation is used to convert between the step size used for storage
-and the step size used in the graph, e.g., converting data stored with a
-value each minute to data with a value every 5 minutes that will look
-presentable in a graph.
+> :warning: In most cases users should not set `step` directly. The `step` parameter
+> is deprecated.
 
-<table>
-  <tbody>
-    <tr>
-      <th>
-        <p>Value</p>
-      </th>
-      <th>
-        <p>Description</p>
-      </th>
-    </tr>
-    <tr>
-      <td>
-        <p>avg</p>
-      </td>
-      <td>
-        <p>Average of all the values in the interval.</p>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <p>min</p>
-      </td>
-      <td>
-        <p>Minimum value for the interval.</p>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <p>max</p>
-      </td>
-      <td>
-        <p>Maximum value for the interval.</p>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <p>total</p>
-      </td>
-      <td>
-        <p>Sum of all values in the interval.</p>
-      </td>
-    </tr>
-  </tbody>
-</table>
+### Time
 
-### End time (e)
-Specifies the end time of the graph. See docs on [time parameters](Time-Parameters).
+There are three parameters to control the time range used for a graph:
 
-### Format (format)
+| Name   | Description | Default                    | Type |
+|--------|-------------|----------------------------|------|
+| `s`    | Start time  | `e-3h`[*](#defaults)       | [Absolute](Time-Parameters#absolute-times) or [Relative](Time-Parameters#relative-times) time |
+| `e`    | End time    | `now`[*](#defaults)        | [Absolute](Time-Parameters#absolute-times) or [Relative](Time-Parameters#relative-times) time |
+| `tz`   | Time zone   | `US/Pacific`[*](#defaults) | [Time zone ID](Time-Parameters#time-zone) |
 
-Specifies the output format to use. The default is `png`.
+For more information on the behavior see the [time parameters](Time-Parameters) page.
 
-<table>
-  <tbody>
-    <tr>
-      <th>
-        <p>Value</p>
-      </th>
-      <th>
-        <p>Description</p>
-      </th>
-    </tr>
-    <tr>
-      <td>
-        <p>csv</p>
-      </td>
-      <td>
-        <p>Comma-separated value file that can be imported into a spreadsheet.</p>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <p>json</p>
-      </td>
-      <td>
-        <p>Outputs the graph data as a JSON object.</p>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <p>png</p>
-      </td>
-      <td>
-        <p>Output will be a png image of the graph.</p>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <p>txt</p>
-      </td>
-      <td>
-        <p>Similar to CSV, but uses mime-type <code>text/plain</code> so it will render in the browser and uses tabs instead of commas to make it easier to read.</p>
-      </td>
-    </tr>
-  </tbody>
-</table>
+### Image Flags
 
-### Height (h)
+| Name              | Description                              | Default      | Type                        |
+|-------------------|------------------------------------------|--------------|-----------------------------|
+| `title`           | Set the graph title                      | no title     | String                      |
+| `no_legend`       | Suppresses the legend                    | `0`          | [boolean](#boolean-flags)   |
+| `no_legend_stats` | Suppresses summary stats for the legend  | `0`          | [boolean](#boolean-flags)   |
+| `axis_per_line`   | Put each line on a separate Y-axis       | `0`          | [boolean](#boolean-flags)   |
+| `only_graph`      | Only show the graph canvas               | `0`          | [boolean](#boolean-flags)   |
+| `vision`          | Simulate different vision types          | `normal`     | [vision type](Vision#types) |
 
-Integer representing the height of the chart area (see
-[rrdgraph](http://oss.oetiker.ch/rrdtool/doc/rrdgraph.en.html#ISize)).
-This is not the size of the final image. The final image size will be
-determined after titles, legends, etc have been added in. If you want a
-consistent image size, then disable legends.
+### Image Size
 
-### Hide Legend (no\_legend)
+There are four parameters to control the image size and layout used for a graph:
 
-Turns off the legend that is normally shown at the bottom of the graph.
-Acceptable values are 0 (false, the default) and 1 (true).
+| Name     | Description                                    | Default             | Type                              |
+|----------|------------------------------------------------|---------------------|-----------------------------------|
+| `layout` | Mode for controlling exact or relative sizing  | `canvas`            | [layout mode](Graph-Layout#modes) |
+| `w`      | Width of the canvas or image                   | `700`[*](#defaults) | int                               |
+| `h`      | Height of the canvas or image                  | `300`[*](#defaults) | int                               |
+| `zoom`   | Transform the size by a zoom factor            | `1.0`               | float                             |
 
-### Logarithmic Y-Axis Scale (o)
+For more information on the behavior see the [graph layout](Graph-Layout) page.
 
-Configures the default Y-Axis scale to be logarithmic. Acceptable values
-are 0 (false, the default) and 1 (true).
+### Text Flags
 
-### Logarithmic Y-Axis Scale (o.n)
+| Name            | Description                                  | Default   | Type                                  |
+|-----------------|----------------------------------------------|-----------|---------------------------------------|
+| `number_format` | How to format numbers for text output types  | `%f`     | [float format](https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html#dndec) |
 
-Configures the  scale of the Y-Axis specified by 'n' to be logarithmic,
-where n is an integer in range 0 - 4.  Acceptable values are 0 (false,
-the default) and 1 (true). 
+### Axis
 
-For example, &0.1=1 sets the scale of axis 1 to be logarithmic
+| Name             | Description                          | Default      | Type                          |
+|------------------|--------------------------------------|--------------|-------------------------------|
+| `stack`          | Set the default line style to stack  | `0`          | [boolean](#boolean-flags)     |
+| `l`              | Lower bound for the axis             | `auto-style` | [axis bound](Axis-Bounds)     |
+| `u`              | Upper bound for the axis             | `auto-style` | [axis bound](Axis-Bounds)     |
+| `ylabel`         | Label for the axis                   | no label     | String                        |
+| `palette`        | Color palette to use                 | `armytage`   | [palette](Color-Palettes)     |
+| `o`              | Use a logarithmic scale              | `0`          | [boolean](#boolean-flags)     |
+| `no_tick_labels` | Suppress tick labels                 | `1.0`        | [boolean](#boolean-flags)     |
 
-### Lower Limit (l)
+### Output Format
 
-Integer representing the default lower bound for all y-axis. If a lower
-bound is not set, then one will be determined automatically based on the
-data to be shown in the graph.
+| Name        | Description                            | Default   | Type                                  |
+|-------------|----------------------------------------|-----------|---------------------------------------|
+| `format`    | Output format to use                   | `png`     | [output format](Graph-Output-Formats) |
+| `callback`  | Method name to use for JSONP callback  | none      | String                                |
 
-### Lower Limit (l.n)
+### Defaults
 
-Integer representing the lower bound for the particular y-axis specified
-by 'n', where n is an integer in range 0 - 4.  If a lower bound is not
-set, then one will be determined automatically based on the data to be
-shown in the graph. 
+If marked with an `*` the default shown can be changed by the administrator for the Atlas server. As a result
+the default in the table may not match the default you see. The defaults listed do match those used for the
+primary Atlas backends in use at Netflix.
 
-For example, &l.1=100.0 sets the lower bound of axis 1
+For users running their own server, the config settings and corresponding query params are:
 
-### Metric Query (q)
+| Key                                   | Query Param |
+|---------------------------------------|-------------|
+| `atlas.webapi.graph.start-time`       | `s`         |
+| `atlas.webapi.graph.end-time`         | `e`         |
+| `atlas.webapi.graph.timezone`         | `tz`        |
+| `atlas.webapi.graph.width`            | `w`         |
+| `atlas.webapi.graph.height`           | `h`         |
+| `atlas.webapi.graph.palette`          | `palette`   |
 
-Query expression used to select a set of metrics and manipulate them for
-presentation in a graph. The query expression can use db, query, graph,
-and std commands described in the reference. For examples see the graph
-examples page .
+### Boolean Flags
 
-### Stack (stack)
-
-Configures the default stack setting for all y-axis.  All lines in the
-graph will be plotted as filled areas stacked on top of each other, per
-y-axis. Acceptable values are 0 (false, the default) and 1 (true).
-
-### Stack (stack.n)
-
-Configures the  stack setting for the particular y-axis indicated by
-'n', where n is an integer in range 0 - 4.  All lines in the graph which
-are assigned to the specified y-axis will be plotted as filled areas
-stacked on top of each other. 
-
-Acceptable values are 0 (false, the default) and 1 (true).  For example,
-&stack.1=1 turns the stacking behavior on for y-axis 1.
-
-### Start time (s)
-
-Specifies the start time of the graph. See docs on [time parameters](Time-Parameters).
-
-### Step size (step)
-
-Integer representing the number of seconds separating each data point.
-The default is calculated based on the width of the graph so that there
-is at least one pixel for each point. A maximum of 10080 points (1 week
-at minute resolution) can be returned. Use ISO 8601 syntax for
-durations. For example, step=PT60S represents 60 seconds.
-
-### Time Zone (tz)
-
-String representing the timezone to use when displaying the data. The
-default is `US/Pacific`.
-
-### Title (title)
-
-String used for the title of the graph. By default a graph will not have
-a title.
-
-### Upper Limit (u)
-
-Integer representing the default upper bound for the y-axis. If an upper
-bound is not set, then one will be determined automatically based on the
-data to be shown in the graph.
-
-### Upper Limit (u.n)
-
-Integer representing the upper bound for the particular y-axis specified
-by 'n', where n is an integer in range 0 - 4.  If an upper bound is not
-set, then one will be determined automatically based on the data to be
-shown in the graph.
-
-For example, &u.1=200.0 sets the upper bound of axis 1
-
-### Width (w)
-
-Integer representing the width of the chart area (see
-[rrdgraph](http://oss.oetiker.ch/rrdtool/doc/rrdgraph.en.html#ISize)).
-This is not the size of the final image. The final image size will be
-determined after titles, legends, etc have been added in. If you want a
-consistent image size, then disable legends.
-
-### Y-Axis Label (ylabel)
-
-String used as a default label for the y-axis of the graph. By default a
-graph will not have a y-axis label.
-
-### Y-Axis Label (ylabel.n)
-
-String used as a label for the particular y-axis of the graph specified
-by 'n', where n is an integer in range 0 - 4. By default a graph will
-not have a y-axis label on any y-axis.
-
-For example, &ylabel.1=Some Metric sets the label of axis 1
+Flags with a true or false value are specified using `1` for true and `0` for false.
