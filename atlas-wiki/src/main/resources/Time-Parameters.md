@@ -71,7 +71,7 @@ as UTC, but depending on the source may have some
 
 ## Relative Times
 
-Relative times consist of a [named time](#namedtimes) used for an anchor and
+Relative times consist of a [named time](#named-times) used for an anchor and
 an offset duration.
 
 ```
