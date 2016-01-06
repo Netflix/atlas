@@ -165,7 +165,6 @@ object GraphApi {
         zoom = flags.zoom,
         legendType = legendType,
         onlyGraph = flags.showOnlyGraph,
-        fontSize = flags.fontSize,
         numberFormat = numberFormat,
         plots = plots
       )
@@ -236,7 +235,6 @@ object GraphApi {
 
   case class ImageFlags(
       title: Option[String],
-      fontSize: Option[Int],
       width: Int,
       height: Int,
       zoom: Double,
@@ -275,7 +273,6 @@ object GraphApi {
 
     val flags = ImageFlags(
       title = params.get("title").filter(_ != ""),
-      fontSize = params.get("font_size").map(_.toInt),
       width = params.get("w").fold(ApiSettings.width)(_.toInt),
       height = params.get("h").fold(ApiSettings.height)(_.toInt),
       zoom = params.get("zoom").fold(1.0)(_.toDouble),

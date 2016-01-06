@@ -78,7 +78,6 @@ case class GraphDef(
     title: Option[String] = None,
     legendType: LegendType = LegendType.LABELS_WITH_STATS,
     onlyGraph: Boolean = false,
-    fontSize: Option[Int] = None,
     numberFormat: String = "%f",
     loadTime: Long = -1,
     stats: CollectorStats = CollectorStats.unknown,
