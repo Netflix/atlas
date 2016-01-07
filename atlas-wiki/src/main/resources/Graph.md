@@ -1,5 +1,5 @@
 This page is a reference for the graph API provided by
-Atlas. For a quick overview by example see the [[Examples]] page.
+Atlas. For a quick overview by example see the [examples](Single-Line) page.
 
 ### URI
 
