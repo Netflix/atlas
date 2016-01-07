@@ -77,7 +77,7 @@ For more information on the behavior see the [graph layout](Graph-Layout) page.
 
 | Name        | Description                            | Default   | Type                                  |
 |-------------|----------------------------------------|-----------|---------------------------------------|
-| `format`    | Output format to use                   | `png`     | [output format](Graph-Output-Formats) |
+| `format`    | Output format to use                   | `png`     | [output format](Output-Formats)       |
 | `callback`  | Method name to use for JSONP callback  | none      | String                                |
 
 ### Defaults
