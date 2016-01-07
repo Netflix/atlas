@@ -1,4 +1,3 @@
-###[Home](Home) > [[Examples]]
 
 * [[Basics]]
 * [[Legends]]
