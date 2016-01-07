@@ -33,7 +33,6 @@ import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.core.util.Strings
 import com.typesafe.scalalogging.StrictLogging
-import spray.http.ContentType
 import spray.http.HttpEntity
 import spray.http.HttpMethods
 import spray.http.HttpRequest
