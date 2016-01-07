@@ -61,7 +61,7 @@ For more information on the behavior see the [graph layout](Graph-Layout) page.
 |-----------------|----------------------------------------------|-----------|---------------------------------------|
 | `number_format` | How to format numbers for text output types  | `%f`     | [float format](https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html#dndec) |
 
-### Axis
+### Y-Axis
 
 | Name             | Description                          | Default      | Type                          |
 |------------------|--------------------------------------|--------------|-------------------------------|
