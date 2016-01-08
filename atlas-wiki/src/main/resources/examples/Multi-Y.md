@@ -38,7 +38,7 @@ If there are too many lines and it would be over the max Y-axis limit, then a wa
 By default, all lines on a given axis will get the same color. That color will also get used to
 render the axis. The intention is to make it easy to understand which axis a line is associated
 with and in an image dynamic clues like hover cannot be used. Generally it is recommended to
-only have one line per axis is using multi-Y. Example:
+only have one line per axis when using multi-Y. Example:
 
 /api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,(,nf.cluster,),:by,minuteOfHour,:time,1,:axis&l=0
 
