@@ -81,16 +81,14 @@ class DefaultGraphEngine extends PngGraphEngine {
     val graph = TimeSeriesGraph(config.copy(height = config.height - hoffset))
 
     val belowCanvas = List.newBuilder[Element]
-    if (config.legendTypeForLayout != LegendType.OFF && config.showText) {
+    if (config.showLegend) {
       val entriesPerPlot =
         if (config.numLines <= GraphConstants.MaxLinesInLegend) {
           GraphConstants.MaxLinesInLegend
         } else {
           GraphConstants.MaxLinesInLegend / config.plots.size
         }
-      val showStats =
-        config.legendType == LegendType.LABELS_WITH_STATS &&
-        graph.width >= Constants.minWidthForStats
+      val showStats = config.showLegendStats && graph.width >= Constants.minWidthForStats
       belowCanvas += HorizontalPadding(5)
       if (config.plots.size > 1) {
         config.plots.zipWithIndex.foreach { case (plot, i) =>

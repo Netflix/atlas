@@ -33,7 +33,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       val min = GraphConstants.MinCanvasHeight
       if (graphDef.height < min)  min else graphDef.height
     }
-    if (graphDef.layout.isFixedHeight) h else {
+    if (graphDef.onlyGraph || graphDef.layout.isFixedHeight) h else {
       h + timeAxes.map(_.height).sum
     }
   }
@@ -44,7 +44,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       val min = GraphConstants.MinCanvasWidth
       if (graphDef.width < min)  min else graphDef.width
     }
-    if (graphDef.layout.isFixedWidth) w else {
+    if (graphDef.onlyGraph || graphDef.layout.isFixedWidth) w else {
       val rightPadding = if (yaxes.tail.nonEmpty) 0 else TimeSeriesGraph.minRightSidePadding
       w + yaxes.map(_.width).sum + rightPadding
     }
@@ -85,11 +85,11 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     val axisW = leftAxisW + rightSideW
     val width = x2 - x1 - axisW
 
-    val showAxes = width >= GraphConstants.MinCanvasWidth
+    val showAxes = !graphDef.onlyGraph && width >= GraphConstants.MinCanvasWidth
     val leftOffset = if (showAxes) leftAxisW else TimeSeriesGraph.minRightSidePadding
     val rightOffset = if (showAxes) rightSideW else TimeSeriesGraph.minRightSidePadding
 
-    val timeAxisH = timeAxis.height
+    val timeAxisH = if (graphDef.onlyGraph) 10 else timeAxis.height
     val timeGrid = TimeGrid(timeAxis)
 
     val chartEnd = y2 - timeAxisH * timeAxes.size
@@ -127,9 +127,11 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
 
     timeGrid.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
 
-    timeAxes.zipWithIndex.foreach { case (axis, i) =>
-      val offset = chartEnd + 1 + timeAxisH * i
-      axis.draw(g, x1 + leftOffset, offset, x2 - rightOffset, y2)
+    if (!graphDef.onlyGraph) {
+      timeAxes.zipWithIndex.foreach { case (axis, i) =>
+        val offset = chartEnd + 1 + timeAxisH * i
+        axis.draw(g, x1 + leftOffset, offset, x2 - rightOffset, y2)
+      }
     }
 
     val valueGrid = ValueGrid(yaxes.head)

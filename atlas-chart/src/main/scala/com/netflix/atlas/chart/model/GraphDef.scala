@@ -53,9 +53,6 @@ import com.netflix.atlas.core.model.SummaryStats
  *     How to show the legend when rendering the graph.
  * @param onlyGraph
  *     Show only the chart without other details like axes, legends, labels, etc.
- * @param fontSize
- *     Default font size to use. Deprecated, will get replaced by generic zoom setting in a future
- *     update.
  * @param numberFormat
  *     Pattern used for formatting the number values in text based outputs.
  * @param loadTime
@@ -91,8 +88,19 @@ case class GraphDef(
   /** Return the primary timezone to use for the graph. */
   def timezone: ZoneId = timezones.head
 
+  /** Returns true if text should be shown. */
   def showText: Boolean = {
     width >= Constants.minWidthForText
+  }
+
+  /** Returns true if the legend should be shown. */
+  def showLegend: Boolean = {
+    !onlyGraph && legendTypeForLayout != LegendType.OFF && showText
+  }
+
+  /** Returns true if legend stats should be shown. */
+  def showLegendStats: Boolean = {
+    !onlyGraph && legendTypeForLayout == LegendType.LABELS_WITH_STATS
   }
 
   def legendTypeForLayout: LegendType = {
