@@ -2,7 +2,7 @@
 * [[Overview]]
 * [[Getting Started]]
 * [[Presentations]]
-* [Examples](Single-Line)
+* [[Examples]]
 * [[Concepts]]
 * API
   * [[Graph]]

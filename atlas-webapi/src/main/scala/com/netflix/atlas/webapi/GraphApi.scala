@@ -24,7 +24,6 @@ import akka.actor.Props
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.chart._
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
-import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter

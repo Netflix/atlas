@@ -20,6 +20,12 @@ import java.net.URI
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorRef
+import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Hash
@@ -27,9 +33,12 @@ import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.core.util.Strings
 import com.typesafe.scalalogging.StrictLogging
+import spray.http.HttpEntity
 import spray.http.HttpMethods
 import spray.http.HttpRequest
 import spray.http.HttpResponse
+import spray.http.MediaType
+import spray.http.MediaTypes
 import spray.http.Uri
 
 import scala.concurrent.Await
@@ -49,6 +58,29 @@ class GraphHelper(webApi: ActorRef, dir: File, path: String) extends StrictLoggi
 
   override def toString: String = s"GraphHelper($dir, $path)"
 
+  private def ct(res: HttpResponse): MediaType = {
+    res.entity match {
+      case e: HttpEntity.NonEmpty => e.contentType.mediaType
+      case _  => throw new IllegalArgumentException("empty response entity")
+    }
+  }
+
+  private def prettyPrint(json: String): String = {
+    try {
+      val mapper = new ObjectMapper()
+      mapper.enable(SerializationFeature.INDENT_OUTPUT)
+      mapper.writeValueAsString(mapper.readTree(json))
+    } catch {
+      case e: JsonParseException =>
+        val factory = new JsonFactory()
+        factory.enable(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS)
+        factory.disable(JsonGenerator.Feature.QUOTE_NON_NUMERIC_NUMBERS)
+        val mapper = new ObjectMapper(factory)
+        mapper.enable(SerializationFeature.INDENT_OUTPUT)
+        mapper.writeValueAsString(mapper.readTree(json))
+    }
+  }
+
   def image(uri: String, showQuery: Boolean = true): String = {
     logger.info(s"creating image for: $uri")
     val fname = imageFileName(uri)
@@ -56,16 +88,27 @@ class GraphHelper(webApi: ActorRef, dir: File, path: String) extends StrictLoggi
     val future = askRef.ask(req)
     Await.result(future, 1.minute) match {
       case res: HttpResponse =>
-        dir.mkdirs()
-        val image = PngImage(res.entity.data.toByteArray)
-        scope(fileOut(new File(dir, fname))) { out => image.write(out) }
+        ct(res) match {
+          case MediaTypes.`image/png` =>
+            dir.mkdirs()
+            val image = PngImage(res.entity.data.toByteArray)
+            scope(fileOut(new File(dir, fname))) { out => image.write(out) }
+
+            if (showQuery)
+              s"${formatQuery(uri)}\n![$fname]($baseUri/$fname)\n"
+            else
+              s"![$fname]($baseUri/$fname)\n"
+
+          case MediaTypes.`application/json` =>
+            val data = s"```\n${prettyPrint(res.entity.asString)}\n```\n"
+            if (showQuery) s"${formatQuery(uri)}\n$data" else data
+
+          case _ =>
+            val data = s"```\n${res.entity.asString}\n```\n"
+            if (showQuery) s"${formatQuery(uri)}\n$data" else data
+        }
       case v => throw new IllegalStateException(s"unexpected response: $v")
     }
-
-    if (showQuery)
-      s"${formatQuery(uri)}\n![$fname]($baseUri/$fname)\n"
-    else
-      s"![$fname]($baseUri/$fname)\n"
   }
 
   def imageHtml(uri: String): String = {
