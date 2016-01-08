@@ -10,6 +10,6 @@
 * [[Axis Bounds]]
 * [[Axis Scale]]
 * [[Multi Y]]
-* [Time Zones](Time-Zone)
-* [[Time Shifts]]
+* [[Time Zone]]
+* [[Time Shift]]
 * [[Anonymization]]
