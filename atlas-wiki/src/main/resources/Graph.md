@@ -40,7 +40,7 @@ For more information on the behavior see the [time parameters](Time-Parameters) 
 | `no_legend_stats` | Suppresses summary stats for the legend  | `0`          | [boolean](#boolean-flags)   |
 | `axis_per_line`   | Put each line on a separate Y-axis       | `0`          | [boolean](#boolean-flags)   |
 | `only_graph`      | Only show the graph canvas               | `0`          | [boolean](#boolean-flags)   |
-| `vision`          | Simulate different vision types          | `normal`     | [vision type](Vision#types) |
+| `vision`          | Simulate different vision types          | `normal`     | [vision type](Vision) |
 
 ### Image Size
 

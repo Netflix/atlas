@@ -92,12 +92,15 @@ class GraphHelper(webApi: ActorRef, dir: File, path: String) extends StrictLoggi
           case MediaTypes.`image/png` =>
             dir.mkdirs()
             val image = PngImage(res.entity.data.toByteArray)
-            scope(fileOut(new File(dir, fname))) { out => image.write(out) }
+            val file = new File(dir, fname)
+            scope(fileOut(file)) { out => image.write(out) }
 
+            val (w, h) = imageSize(file)
+            val html = s"""<img src="$baseUri/$fname" alt="$fname" width="${w}px" height="${h}px"/>"""
             if (showQuery)
-              s"${formatQuery(uri)}\n![$fname]($baseUri/$fname)\n"
+              s"${formatQuery(uri)}\n$html\n"
             else
-              s"![$fname]($baseUri/$fname)\n"
+              s"$html\n"
 
           case MediaTypes.`application/json` =>
             val data = s"```\n${prettyPrint(res.entity.asString)}\n```\n"
@@ -127,7 +130,14 @@ class GraphHelper(webApi: ActorRef, dir: File, path: String) extends StrictLoggi
       }
     }
 
-    s"""<img src="$baseUri/$fname"/>"""
+    val (w, h) = imageSize(file)
+    s"""<img src="$baseUri/$fname" alt="$fname" width="${w}px" height="${h}px"/>"""
+  }
+
+  private def imageSize(file: File): (Int, Int) = {
+    val bytes = scope(fileIn(file))(byteArray)
+    val image = PngImage(bytes).data
+    image.getWidth -> image.getHeight
   }
 
   private def imageFileName(uri: String): String = {
