@@ -1,6 +1,7 @@
 This section gives some examples to get started quickly creating simple graphs.
 
 * [Single Line](#single-line)
+* [Adding a Title](#adding-a-title)
 * [Multiple Lines](#multiple-lines)
 * [Group By](#group-by)
 * [Simple Math](#simple-math)
@@ -17,6 +18,13 @@ more details on time ranges.
 Putting it all together:
 
 /api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq
+
+## Adding a Title
+
+The graph title can be set using the `title` parameter. Similarly, a Y-axis label can be set
+using the `ylabel` parameter.
+
+/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq&title=Starts+Per+Second&ylabel=sps
 
 ## Multiple Lines
 
