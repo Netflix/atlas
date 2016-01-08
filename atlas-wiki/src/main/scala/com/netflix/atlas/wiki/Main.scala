@@ -53,6 +53,8 @@ object Main extends StrictLogging {
 
   type ListBuilder = scala.collection.mutable.Builder[String, List[String]]
 
+  val GraphImage = """(.*)<img[^><]+src="([^"]+)"[^><]+>(.*)""".r
+
   val system = ActorSystem("wiki")
   val db = ApiSettings.newDbInstance
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
@@ -67,6 +69,9 @@ object Main extends StrictLogging {
     lines match {
       case v :: vs if v.trim.startsWith("/api/v1/graph") =>
         output += graph.image(v)
+        process(vs, output, graph)
+      case GraphImage(pre, v, post) :: vs if v.trim.startsWith("/api/v1/graph") =>
+        output += (pre + graph.imageHtml(v) + post)
         process(vs, output, graph)
       case v :: vs =>
         output += v
