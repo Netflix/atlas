@@ -1,9 +1,36 @@
 
-The graphs for this example are not pinned to a fixed end time, so the default of now is used. The graph below is using the default timezone of `US/Pacific`:
+Examples for specifying the time zone:
 
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,name,sps,:eq,nf.cluster,nccp-xbox,:eq,:and,:sum,:area
+* [Single Zone](#single-zone)
+* [Multi Zone](#multi-zone)
+* [Daylight Savings Time](#daylight-savings-time)
 
-Same graph, but with the timezone set to `UTC`:
+## Single Zone
 
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,name,sps,:eq,nf.cluster,nccp-xbox,:eq,:and,:sum,:area&tz=UTC
+Most graphs will only show a single time zone. By default the zone is `US/Pacific`. To set to
+another zone such as `UTC` use the `tz` query parameter:
 
+/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq&tz=UTC
+
+## Multi Zone
+
+The `tz` parameter can be specified multiple times in which case one X-axis will be shown per
+zone. Start and end times will be based on the first time zone listed.
+
+/api/v1/graph?e=2012-01-01T00:00&s=e-2d&q=name,sps,:eq&tz=UTC&tz=US/Pacific&tz=US/Eastern
+
+## Daylight Savings Time
+
+If using a time zone that changes for daylight savings time, then you will see duplicate or missing
+hours on the time axis labels during the transition period. For example, a duplicate hour:
+
+/api/v1/graph?e=2015-11-01T08:00&s=e-12h&q=name,sps,:eq&tz=US/Pacific&tz=UTC
+
+A missing hour:
+
+/api/v1/graph?e=2015-03-08T08:00&s=e-12h&q=name,sps,:eq&tz=US/Pacific&tz=UTC
+
+If looking at a longer time frame, then it can also throw off the alignment so ticks will not
+be on significant time boundaries, e.g.:
+
+/api/v1/graph?e=2015-11-05T08:00&s=e-1w&q=name,sps,:eq&tz=US/Pacific&tz=UTC
