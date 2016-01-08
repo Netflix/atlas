@@ -1,7 +1,7 @@
 The diagram below shows the parts of an Atlas graph and will be used when describing
 the behavior for various options.
 
-<img alt="Image Layout" width="300" src="http://netflix.github.io/atlas/images/wiki/image_layout.svg">
+<img alt="Image Layout" width="300" height="348" src="http://netflix.github.io/atlas/images/wiki/image_layout.svg">
 
 The layout for graph images is trying to accomplish two main goals:
 
@@ -11,8 +11,8 @@ Keep the canvas usable regardless of the number of lines, axes, etc that are com
 
 <table>
 <tr>
-<td><img alt="Legend 8 cores" src="https://raw.githubusercontent.com/wiki/Netflix/atlas/images/sample-8-cores.png"/></td>
-<td><img alt="Legend 32 cores" src="https://raw.githubusercontent.com/wiki/Netflix/atlas/images/sample-32-cores.png"/></td>
+<td><img alt="Legend 8 cores" width="329" height="269" src="https://raw.githubusercontent.com/wiki/Netflix/atlas/images/sample-8-cores.png"/></td>
+<td><img alt="Legend 32 cores" width="329" height="269" src="https://raw.githubusercontent.com/wiki/Netflix/atlas/images/sample-32-cores.png"/></td>
 </tr>
 </table>
 
@@ -22,11 +22,11 @@ Make it easy to align the canvas portion of several graphs on an html page. This
 
 In particular if arranged in a grid with the image in the top left of each cell, then the canvas should line up vertically for columns:
 
-![Vertical Alignment](https://raw.githubusercontent.com/wiki/Netflix/atlas/images/layout_canvas_vertical.png)
+<img alt="Vertical Alignment" width="535" height="676" src="https://raw.githubusercontent.com/wiki/Netflix/atlas/images/layout_canvas_vertical.png"/>
 
 And horizontally for rows:
 
-![Horizontal Alignment](https://raw.githubusercontent.com/wiki/Netflix/atlas/images/layout_canvas_horizontal.png)
+<img alt="Horizontal Alignment" width="535" height="676" src="https://raw.githubusercontent.com/wiki/Netflix/atlas/images/layout_canvas_horizontal.png"/>
 
 In the graph layout diagram at the top, this is why variable components such as multi axes, legend entries, and warnings are positioned on either the right side or the bottom of the canvas.
 

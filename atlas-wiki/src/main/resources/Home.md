@@ -1,4 +1,4 @@
-<img src="https://github.com/Netflix/atlas/wiki/images/atlas_logo.jpg" width=30% align=left></img>
+<img src="https://github.com/Netflix/atlas/wiki/images/atlas_logo.jpg" width="230" height="118" align="left"></img>
 
 Atlas was developed by Netflix to manage dimensional time series data for near real-time
 operational insight. Atlas features in-memory data storage, allowing it to gather and report
