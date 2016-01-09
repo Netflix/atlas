@@ -6,7 +6,7 @@ WIKI_PRG        := atlas-wiki/runMain com.netflix.atlas.wiki.Main
 WIKI_INPUT_DIR  := $(shell pwd)/atlas-wiki/src/main/resources
 WIKI_OUTPUT_DIR := $(shell pwd)/target/atlas.wiki
 
-LAUNCHER_JAR_URL := https://repo1.maven.org/maven2/com/netflix/iep/iep-launcher/0.1.14/iep-launcher-0.1.14.jar
+LAUNCHER_JAR_URL := http://jcenter.bintray.com/com/netflix/iep/iep-launcher/0.3.8/iep-launcher-0.3.8.jar
 
 .PHONY: build snapshot release clean coverage license update-wiki publish-wiki
 
