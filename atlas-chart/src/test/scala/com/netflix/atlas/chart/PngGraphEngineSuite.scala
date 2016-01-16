@@ -273,6 +273,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
   lines("single_line_stack_negative", Seq(-400), v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
 
+  lines("single_line_50", (1 to 50).map(_.toDouble), v => v)
+
   private def constantLine(name: String, vs: Seq[Double], f: GraphDef => GraphDef): Unit = {
     val testName = s"constant_line_$name"
     test(testName) {
