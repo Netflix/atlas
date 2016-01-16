@@ -24,9 +24,35 @@ object TimeSeries {
   private val noDataTags = Map("name" -> "NO_DATA")
   private val noDataId = TaggedItem.computeId(noDataTags)
 
-  def noData(step: Long) = {
+  /**
+    * Create a time series with all `NaN` values representing that there were no matches for
+    * the query. The tags will only have a name with a value of "NO_DATA".
+    *
+    * @param step
+    *     Step size to use for the returned time series.
+    * @return
+    *     Time series with `NaN` for all values.
+    */
+  def noData(step: Long): TimeSeries = {
     val data = new FunctionTimeSeq(Rate, step, _ => Double.NaN)
     BasicTimeSeries(noDataId, noDataTags, "NO DATA", data)
+  }
+
+  /**
+    * Create a time series with all `NaN` values representing that there were no matches for
+    * the query. The tags will be extracted from the query.
+    *
+    * @param query
+    *     Query that did not match any time series.
+    * @param step
+    *     Step size to use for the returned time series.
+    * @return
+    *     Time series with `NaN` for all values.
+    */
+  def noData(query: Query, step: Long): TimeSeries = {
+    val tags = Query.tags(query)
+    val data = new FunctionTimeSeq(Rate, step, _ => Double.NaN)
+    LazyTimeSeries(if (tags.isEmpty) noDataTags else tags, "NO DATA", data)
   }
 
   def apply(tags: Map[String, String], label: String, data: TimeSeq): TimeSeries = {

@@ -51,6 +51,20 @@ object Query {
     }
   }
 
+  /**
+    * Extract a set of tags for the query based on the `:eq` clauses.
+    */
+  def tags(query: Query): Map[String, String] = {
+    query match {
+      case Query.And(q1, q2) => tags(q1) ++ tags(q2)
+      case Query.Or(q1, q2)  => Map.empty
+      case Query.Not(q)      => Map.empty
+      case Query.Equal(k, v) => Map(k -> v)
+      case q: KeyQuery       => Map.empty
+      case _                 => Map.empty
+    }
+  }
+
   case object True extends Query {
     def matches(tags: Map[String, String]): Boolean = true
     def matchesAny(tags: Map[String, List[String]]): Boolean = true

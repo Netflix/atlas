@@ -116,7 +116,7 @@ object DataExpr {
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       val filtered = data.filter(t => query.matches(t.tags))
-      val aggr = if (filtered.isEmpty) TimeSeries.noData(context.step) else {
+      val aggr = if (filtered.isEmpty) TimeSeries.noData(query, context.step) else {
         val tags = commonTags(filtered.head.tags)
         val t = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
         TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
@@ -161,7 +161,7 @@ object DataExpr {
       val filtered = data.filter(t => query.matches(t.tags)).map { t =>
         TimeSeries(t.tags, t.label, t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0))
       }
-      val aggr = if (filtered.isEmpty) TimeSeries.noData(context.step) else {
+      val aggr = if (filtered.isEmpty) TimeSeries.noData(query, context.step) else {
         val tags = commonTags(filtered.head.tags)
         val t = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
         TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
@@ -268,7 +268,7 @@ object DataExpr {
       val sorted = groups.sortWith(_._1 < _._1)
       val newData = sorted.flatMap {
         case (null, _) => Nil
-        case (k, Nil)  => List(TimeSeries.noData(context.step))
+        case (k, Nil)  => List(TimeSeries.noData(query, context.step))
         case (k, ts)   =>
           val tags = ts.head.tags.filter(e => ks.contains(e._1))
           af.eval(context, ts).data.map { t =>
