@@ -48,7 +48,7 @@ case class Legend(
     List(HorizontalPadding(2), LegendEntry(line, showStats))
   }
 
-  private val footer = if (plot.lines.size < maxEntries) Nil else {
+  private val footer = if (plot.lines.size <= maxEntries) Nil else {
     val remaining = plot.lines.size - maxEntries
     val txt = Text(s"... $remaining suppressed ...", alignment = TextAlignment.LEFT)
     List(HorizontalPadding(2), txt)
