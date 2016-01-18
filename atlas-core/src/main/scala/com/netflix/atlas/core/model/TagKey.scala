@@ -87,6 +87,9 @@ object TagKey {
   /** ISO country code rollup used by NCCP. */
   final val countryRollup = netflixPrefix + "country.rollup"
 
+  /** Used to store the bucket id for percentile approximation. */
+  final val percentile = "percentile"
+
   /** List of atlas tag keys. */
   val atlas: List[String] = List(
     allTags, uniqueTags,

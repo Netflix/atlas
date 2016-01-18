@@ -39,6 +39,13 @@ object ModelExtractors {
     }
   }
 
+  case object DoubleListType {
+    def unapply(value: Any): Option[List[Double]] = value match {
+      case StringListType(vs) => Try(vs.map(_.toDouble)).toOption
+      case _                  => None
+    }
+  }
+
   case object AggrType {
     def unapply(value: Any): Option[AggregateFunction] = value match {
       case v: Query             => Some(DataExpr.Sum(v))

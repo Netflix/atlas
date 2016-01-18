@@ -49,6 +49,8 @@ object MathVocabulary extends Vocabulary {
 
     Sum, Count, Min, Max,
 
+    Percentiles,
+
     Macro("avg", List(":dup", ":sum", ":swap", ":count", ":div"), List("name,sps,:eq,(,nf.cluster,),:by")),
 
     Macro("pct", List(":dup", ":sum", ":div", "100", ":mul"), List("name,sps,:eq,(,nf.cluster,),:by")),
@@ -98,7 +100,9 @@ object MathVocabulary extends Vocabulary {
         // Swap and use :cq to apply a common query
         ":swap", ":cq"
       ),
-      List("name,playback.startLatency,:eq"))
+      List("name,playback.startLatency,:eq")),
+
+    Macro("median", List("(", "50", ")", ":percentiles"), List("name,requestLatency,:eq"))
   )
 
   case object GroupBy extends SimpleWord {
@@ -640,5 +644,55 @@ object MathVocabulary extends Vocabulary {
       """
         |Compute the max of all the time series that result from the previous expression.
       """.stripMargin.trim
+  }
+
+  /**
+    * Compute estimated percentile values using counts for well known buckets. See spectator
+    * PercentileBuckets for more information. The input will be grouped by the `percentile` key
+    * with each key value being the bucket index. The output will be one line per requested
+    * percentile. The value should be a sum or group by. Other aggregate types, such as max, will
+    * automatically be converted to sum.
+    */
+  case object Percentiles extends SimpleWord {
+
+    override def name: String = "percentiles"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case DoubleListType(_) :: DataExprType(expr) :: _ => expr match {
+        case _: DataExpr.All  => false
+        case _: DataExpr.Head => false
+        case _                => true
+      }
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case DoubleListType(pcts) :: DataExprType(t) :: stack =>
+        // Percentile always needs sum aggregate type, if others are used convert to sum
+        val expr = t match {
+          case af: AggregateFunction => DataExpr.GroupBy(toSum(af), List(TagKey.percentile))
+          case by: DataExpr.GroupBy  => DataExpr.GroupBy(toSum(by.af), TagKey.percentile :: by.keys)
+          case _ =>
+            throw new IllegalArgumentException(":percentiles can only be used with :sum and :by")
+        }
+        MathExpr.Percentiles(expr, pcts) :: stack
+    }
+
+    private def toSum(af: AggregateFunction): DataExpr.Sum = {
+      DataExpr.Sum(af.query, offset = af.offset)
+    }
+
+    override def summary: String =
+      """
+        |Estimate percentiles for a timer or distribution summary. The data must have been
+        |published appropriately to allow the approximation. If using
+        |[spectator](https://github.com/Netflix/spectator/wiki), then see PercentileTimer and
+        |PercentileDistributionSummary helper classes.
+      """.stripMargin.trim
+
+    override def signature: String = "DataExpr percentiles:List -- Expr"
+
+    override def examples: List[String] = List(
+      "name,requestLatency,:eq,(,25,50,90,)"
+    )
   }
 }
