@@ -121,10 +121,9 @@ object QueryIndex {
   }
 
   /**
-   * Create an index based on a list of queries. The value for the entry will be the raw input
-   * query.
+   * Create an index based on a list of entries.
    */
-  def create(entries: List[Entry[Query]]): QueryIndex[Query] = {
+  def create[T](entries: List[Entry[T]]): QueryIndex[T] = {
     val annotated = entries.flatMap { entry =>
       val qs = split(entry.query)
       qs.map(q => annotate(Entry(q, entry.value)))
