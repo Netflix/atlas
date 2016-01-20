@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.index
 
+import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.Query
 import org.scalatest.FunSuite
 
@@ -164,5 +166,17 @@ class QueryIndexSuite extends FunSuite {
 
     // shouldn't match
     assert(index.matchingEntries(Map("name" -> "memoryUsage", "nf.node" -> "i-00099")).isEmpty)
+  }
+
+  test("from list of exprs") {
+    val expr1 = DataExpr.Sum(Query.Equal("name", "cpuUsage"))
+    val expr2 = MathExpr.Divide(expr1, DataExpr.Sum(Query.Equal("name", "numCores")))
+    val entries = List(expr1, expr2).flatMap { expr =>
+      expr.dataExprs.map { d => QueryIndex.Entry(d.query, expr) }
+    }
+    val index = QueryIndex.create(entries)
+
+    assert(Set(expr1, expr2) === index.matchingEntries(Map("name" -> "cpuUsage")).toSet)
+    assert(Set(expr2) === index.matchingEntries(Map("name" -> "numCores")).toSet)
   }
 }
