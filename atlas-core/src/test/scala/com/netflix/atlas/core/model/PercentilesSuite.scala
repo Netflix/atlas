@@ -276,5 +276,16 @@ class PercentilesSuite extends FunSuite {
       eval("name,test,:eq,:all,(,50,),:percentiles", input100)
     }
   }
+
+  test("bad input: response data does not have percentile tag") {
+    val input = input100.map(t => t.withTags(t.tags - TagKey.percentile))
+    val data = eval("name,test,:eq,(,50,),:percentiles", input)
+    assert(data.isEmpty)
+  }
+
+  test("bad input: no matches") {
+    val data = eval("name,test,:eq,(,50,),:percentiles", Nil)
+    assert(data.isEmpty)
+  }
 }
 
