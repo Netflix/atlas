@@ -3,14 +3,14 @@ import sbt._
 object Dependencies {
   object Versions {
     val akka       = "2.4.1"
-    val aws        = "1.10.45"
-    val iep        = "0.3.8"
+    val aws        = "1.10.49"
+    val iep        = "0.3.14"
     val guice      = "4.0"
     val jackson    = "2.6.3"
     val log4j      = "2.5"
     val scala      = "2.11.7"
-    val slf4j      = "1.7.13"
-    val spectator  = "0.34.1"
+    val slf4j      = "1.7.14"
+    val spectator  = "0.35.1"
     val spray      = "1.3.3"
   }
 
@@ -23,7 +23,7 @@ object Dependencies {
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.6"
+  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.7"
   val guava           = "com.google.guava" % "guava" % "18.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
