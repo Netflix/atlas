@@ -7,7 +7,6 @@ object MainBuild extends Build {
     sbtrelease.ReleasePlugin.releaseSettings ++
     GitVersion.settings ++
     Bintray.settings ++
-    net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     scoverage.ScoverageSbtPlugin.projectSettings
 
   lazy val buildSettings = baseSettings ++ Seq(
