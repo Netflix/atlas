@@ -136,15 +136,15 @@ object Json {
     jsonMapper.writeValueAsString(obj)
   }
 
-  def encode[T: Manifest](writer: Writer, obj: T) {
+  def encode[T: Manifest](writer: Writer, obj: T): Unit = {
     jsonMapper.writeValue(writer, obj)
   }
 
-  def encode[T: Manifest](stream: OutputStream, obj: T) {
+  def encode[T: Manifest](stream: OutputStream, obj: T): Unit = {
     jsonMapper.writeValue(stream, obj)
   }
 
-  def encode[T: Manifest](gen: JsonGenerator, obj: T) {
+  def encode[T: Manifest](gen: JsonGenerator, obj: T): Unit = {
     jsonMapper.writeValue(gen, obj)
   }
 
@@ -187,7 +187,7 @@ object Json {
     smileMapper.writeValueAsBytes(obj)
   }
 
-  def smileEncode[T: Manifest](stream: OutputStream, obj: T) {
+  def smileEncode[T: Manifest](stream: OutputStream, obj: T): Unit = {
     smileMapper.writeValue(stream, obj)
   }
 

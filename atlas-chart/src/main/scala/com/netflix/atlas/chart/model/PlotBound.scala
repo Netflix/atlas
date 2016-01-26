@@ -49,6 +49,8 @@ object PlotBound {
     def upper(hasArea: Boolean, max: Double): Double = {
       if (hasArea && max < 0.0) 0.0 else max
     }
+
+    override def toString: String = "auto-style"
   }
 
   /**
@@ -57,6 +59,7 @@ object PlotBound {
   case object AutoData extends PlotBound {
     def lower(hasArea: Boolean, min: Double): Double = min
     def upper(hasArea: Boolean, max: Double): Double = max
+    override def toString: String = "auto-data"
   }
 
   /**
@@ -65,6 +68,7 @@ object PlotBound {
   case class Explicit(v: Double) extends PlotBound {
     def lower(hasArea: Boolean, min: Double): Double = v
     def upper(hasArea: Boolean, max: Double): Double = v
+    override def toString: String = v.toString
   }
 
 }

@@ -41,7 +41,7 @@ object JsonParserHelper {
     throw new IllegalArgumentException(fullMsg)
   }
 
-  def requireNextToken(parser: JsonParser, expected: JsonToken) {
+  def requireNextToken(parser: JsonParser, expected: JsonToken): Unit = {
     val t = parser.nextToken()
     if (t != expected) fail(parser, s"expected $expected but received $t")
   }
@@ -59,6 +59,16 @@ object JsonParserHelper {
     vs.result()
   }
 
+  def nextBoolean(parser: JsonParser): Boolean = {
+    import com.fasterxml.jackson.core.JsonToken._
+    parser.nextToken() match {
+      case VALUE_FALSE   => parser.getValueAsBoolean
+      case VALUE_TRUE    => parser.getValueAsBoolean
+      case VALUE_STRING  => java.lang.Boolean.valueOf(parser.getText)
+      case t             => fail(parser, s"expected VALUE_FALSE or VALUE_TRUE but received $t")
+    }
+  }
+
   def nextInt(parser: JsonParser): Int = {
     requireNextToken(parser, JsonToken.VALUE_NUMBER_INT)
     parser.getValueAsInt
@@ -68,6 +78,8 @@ object JsonParserHelper {
     requireNextToken(parser, JsonToken.VALUE_NUMBER_INT)
     parser.getValueAsLong
   }
+
+  def nextFloat(parser: JsonParser): Double = nextDouble(parser).toFloat
 
   def nextDouble(parser: JsonParser): Double = {
     import com.fasterxml.jackson.core.JsonToken._
@@ -79,18 +91,18 @@ object JsonParserHelper {
     }
   }
 
-  def foreachItem[T](parser: JsonParser)(f: => T) {
+  def foreachItem[T](parser: JsonParser)(f: => T): Unit = {
     requireNextToken(parser, JsonToken.START_ARRAY)
     while (parser.nextToken() != JsonToken.END_ARRAY) { f }
   }
 
-  def foreachField[T](parser: JsonParser)(f: PartialFunction[String, T]) {
+  def foreachField[T](parser: JsonParser)(f: PartialFunction[String, T]): Unit = {
     while (skipTo(parser, JsonToken.FIELD_NAME, JsonToken.END_OBJECT)) {
       f(parser.getText)
     }
   }
 
-  def firstField[T](parser: JsonParser)(f: PartialFunction[String, T]) {
+  def firstField[T](parser: JsonParser)(f: PartialFunction[String, T]): Unit = {
     if (skipTo(parser, JsonToken.FIELD_NAME, JsonToken.END_OBJECT)) {
       f(parser.getText)
     }

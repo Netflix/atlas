@@ -25,7 +25,7 @@ import com.netflix.atlas.core.util.PngImage
 trait PngGraphEngine extends GraphEngine {
   val contentType: String = "image/png"
 
-  def write(config: GraphDef, output: OutputStream) {
+  def write(config: GraphDef, output: OutputStream): Unit = {
     val image = PngImage(createImage(config), Map.empty)
     image.write(output)
   }
