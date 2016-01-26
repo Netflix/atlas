@@ -33,7 +33,7 @@ class StatsJsonGraphEngine extends GraphEngine {
   def name: String = "stats.json"
   def contentType: String = "application/json"
 
-  private def writeRawField(gen: JsonGenerator, name: String, value: String) {
+  private def writeRawField(gen: JsonGenerator, name: String, value: String): Unit = {
     gen.writeFieldName(name)
     gen.writeRawValue(value)
   }

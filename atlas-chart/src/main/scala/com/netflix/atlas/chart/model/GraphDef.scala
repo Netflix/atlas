@@ -23,6 +23,7 @@ import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.chart.graphics.Constants
 import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.SummaryStats
+import com.netflix.atlas.core.model.TimeSeries
 
 /**
  * Definition of a time series graph.
@@ -47,6 +48,8 @@ import com.netflix.atlas.core.model.SummaryStats
  *     final image size will get calculated using this height as a starting point.
  * @param layout
  *     Layout mode to use for rendering the image. Default is CANVAS.
+ * @param zoom
+ *     Zoom factor to apply as a transform to the image.
  * @param title
  *     Title of the graph.
  * @param legendType
@@ -114,7 +117,7 @@ case class GraphDef(
 
     val size = plot.data.size
     if (size > GraphConstants.MaxYAxis) {
-      val msg = s"Too many Y-axes, ${size} > ${GraphConstants.MaxYAxis}, axis per line disabled."
+      val msg = s"Too many Y-axes, $size > ${GraphConstants.MaxYAxis}, axis per line disabled."
       copy(warnings = msg :: warnings)
     } else {
       val newPlots = plot.data.map { d => plot.copy(data = List(d), axisColor = None) }
@@ -153,6 +156,16 @@ case class GraphDef(
     adjustLines { line =>
       val stats = SummaryStats(line.data.data, startTime.toEpochMilli, endTime.toEpochMilli)
       line.copy(legendStats = stats)
+    }
+  }
+
+  /** Return a new graph defintion with the lines bounded. */
+  def bounded: GraphDef = {
+    val s = startTime.toEpochMilli
+    val e = endTime.toEpochMilli
+    adjustLines { line =>
+      val seq = line.data.data.bounded(s, e)
+      line.copy(data = TimeSeries(line.data.tags, line.data.label, seq))
     }
   }
 }

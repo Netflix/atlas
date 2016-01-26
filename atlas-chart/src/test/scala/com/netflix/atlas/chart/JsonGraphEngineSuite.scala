@@ -46,7 +46,7 @@ class JsonGraphEngineSuite extends FunSuite {
     expected.stripMargin.split("\n").mkString("")
   }
 
-  def process(engine: GraphEngine, expected: String) {
+  def process(engine: GraphEngine, expected: String): Unit = {
     val data = PlotDef(label(constantSeriesDef(42), constantSeriesDef(Double.NaN)))
 
     val graphDef = GraphDef(

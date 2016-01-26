@@ -25,7 +25,7 @@ import com.netflix.atlas.chart.model.GraphDef
 
 class CsvGraphEngine(val name: String, val contentType: String, sep: String) extends GraphEngine {
 
-  def write(config: GraphDef, output: OutputStream) {
+  def write(config: GraphDef, output: OutputStream): Unit = {
     val writer = new OutputStreamWriter(output, "UTF-8")
     val seriesList = config.plots.flatMap(_.lines)
     val count = seriesList.size

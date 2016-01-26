@@ -121,7 +121,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
      new Color(c.getRed, c.getGreen, c.getBlue, 75)
   }
 
-  override def afterAll() {
+  override def afterAll(): Unit = {
     graphAssertions.generateReport(getClass)
   }
 
@@ -136,6 +136,15 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
   def load(resource: String): GraphDef = {
     Streams.scope(Streams.resource(resource)) { in => Json.decode[GraphData](in).toGraphDef }
+  }
+
+  def check(name: String, graphDef: GraphDef): Unit = {
+    val json = JsonCodec.encode(graphDef)
+    assert(graphDef.bounded === JsonCodec.decode(json))
+
+    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
+    graphAssertions.assertEquals(image, name, bless)
+
   }
 
   /*
@@ -155,8 +164,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     //atlas generated sample is 780 wide less 64 origin less 16 r side padding == 700
     //expect to see width of spikes vary as x values repeat due to rounding
     //RrdGraph calculates x values based on number of pixels/second
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   test("one_data_point_wide_spike") {
@@ -199,8 +207,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       plots = List(plotDef)
     )
 
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   private def lines(name: String, vs: Seq[Double], f: GraphDef => GraphDef): Unit = {
@@ -214,9 +221,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
         plots = List(plotDef)
       )
 
-      val image = PngImage(graphEngine.createImage(f(graphDef)), Map.empty)
       val fname = s"${prefix}_$name.png"
-      graphAssertions.assertEquals(image, fname, bless)
+      check(fname, f(graphDef))
     }
   }
 
@@ -287,9 +293,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
         plots = List(plotDef)
       )
 
-      val image = PngImage(graphEngine.createImage(f(graphDef)), Map.empty)
       val fname = s"${prefix}_$testName.png"
-      graphAssertions.assertEquals(image, fname, bless)
+      check(fname, f(graphDef))
     }
   }
 
@@ -315,9 +320,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       plots = List(plotDef)
     )
 
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val fname = s"${prefix}_single_line_hspans.png"
-    graphAssertions.assertEquals(image, fname, bless)
+    check(fname, graphDef)
   }
 
   test("single_line_vspans") {
@@ -334,9 +338,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       plots = List(plotDef)
     )
 
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val fname = s"${prefix}_single_line_vspans.png"
-    graphAssertions.assertEquals(image, fname, bless)
+    check(fname, graphDef)
   }
 
   private def doubleLine(name: String, f: GraphDef => GraphDef): Unit = {
@@ -367,9 +370,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       plots = List(plotDef1)
     )
 
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val fname = s"${prefix}_double_yaxis.png"
-    graphAssertions.assertEquals(image, fname, bless)
+    check(fname, graphDef)
   }
 
   test("vspans_from_line") {
@@ -383,9 +385,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       endTime = ZonedDateTime.of(2012, 1, 1, 8, 0, 0, 0, ZoneOffset.UTC).toInstant,
       plots = List(plotDef))
 
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_vspans_from_line.png"
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   test("multiy_no_lines") {
@@ -394,9 +395,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
       plots = List(PlotDef(Nil), PlotDef(Nil))
     )
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_multiy_no_lines.png"
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   test("multiy_two") {
@@ -405,9 +405,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
       plots = List(PlotDef(label(simpleSeriesDef(100))), PlotDef(label(simpleSeriesDef(100000))))
     )
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_multiy_two.png"
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   test("multiy_issue-119") {
@@ -419,9 +418,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
         PlotDef(label(0, p, simpleSeriesDef(123456.0, 123457.0))),
         PlotDef(label(1, p, simpleSeriesDef(1e15, 1e15 - 9e2))))
     )
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_multiy_issue-119.png"
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   test("multiy_two_colors") {
@@ -433,9 +431,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
         PlotDef(label(0, p, simpleSeriesDef(100))),
         PlotDef(label(1, p, simpleSeriesDef(100000))))
     )
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_multiy_two_colors.png"
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   def multiy(name: String, f: PlotDef => PlotDef): Unit = {
@@ -449,9 +446,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
         endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
         plots = plots.toList
       )
-      val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
       val fname = s"${prefix}_multiy_n_$name.png"
-      graphAssertions.assertEquals(image, fname, bless)
+      check(fname, graphDef)
     }
   }
 
@@ -473,9 +469,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
       plots = List(plotDef))
 
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_issue-119_missing_y_labels.png"
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   test("issue-119_small_range_large_base") {
@@ -486,9 +481,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
       plots = List(plotDef))
 
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_issue-119_small_range_large_base.png"
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   test("issue-119_small_range_large_negative") {
@@ -499,9 +493,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
       plots = List(plotDef))
 
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_issue-119_small_range_large_negative.png"
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   test("zero_line_with_end_gap") {
@@ -523,9 +516,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       endTime = start2.plus(1, ChronoUnit.MINUTES),
       plots = List(plotDef))
 
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_zero_line_with_end_gap.png"
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   lines("too_many_lines", (0 until 1024).map(_.toDouble).toSeq, v => v)
@@ -550,9 +542,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
           "Something really bad happened.")
     )
 
-    val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     val name = prefix + "_notices.png"
-    graphAssertions.assertEquals(image, name, bless)
+    check(name, graphDef)
   }
 
   VisionType.values.foreach { vt =>

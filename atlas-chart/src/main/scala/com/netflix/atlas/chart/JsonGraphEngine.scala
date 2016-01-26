@@ -29,7 +29,7 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
   def name: String = "json"
   def contentType: String = "application/json"
 
-  def write(config: GraphDef, output: OutputStream) {
+  def write(config: GraphDef, output: OutputStream): Unit = {
     val writer = new OutputStreamWriter(output, "UTF-8")
     val seriesList = config.plots.flatMap(_.lines)
     val count = seriesList.size

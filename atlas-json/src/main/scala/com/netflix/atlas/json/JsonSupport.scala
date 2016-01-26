@@ -21,7 +21,7 @@ import com.fasterxml.jackson.core.JsonGenerator
 
 
 trait JsonSupport {
-  def encode(gen: JsonGenerator) {
+  def encode(gen: JsonGenerator): Unit = {
     Json.encode(gen, this)
   }
 
