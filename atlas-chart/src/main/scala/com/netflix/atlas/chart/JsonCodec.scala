@@ -239,6 +239,7 @@ private[this] object JsonCodec {
       legendType = LegendType.valueOf(node.get("legendType").asText()),
       onlyGraph  = node.get("onlyGraph").asBoolean(),
       loadTime   = Option(node.get("loadTime")).fold(-1L)(_.asLong()),
+      stats      = Option(node.get("stats")).fold(CollectorStats.unknown)(toCollectorStats),
       warnings   = node.get("warnings").elements.map(_.asText()).toList
     )
   }

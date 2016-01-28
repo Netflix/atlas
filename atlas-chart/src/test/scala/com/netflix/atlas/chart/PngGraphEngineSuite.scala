@@ -27,6 +27,7 @@ import com.netflix.atlas.chart.model.PlotBound.AutoData
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model.ArrayTimeSeq
+import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
@@ -231,6 +232,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   singleLine("single_line",                v => v)
+  singleLine("single_line_with_stats",     v => v.copy(stats = CollectorStats(1, 2, 3, 4), loadTime = 5123L))
   singleLine("single_line_with_load_time", v => v.copy(loadTime = 5123L))
   singleLine("single_line_only_graph",     v => v.copy(onlyGraph = true))
   singleLine("single_line_title",          v => v.copy(title = Some("A sample title")))
