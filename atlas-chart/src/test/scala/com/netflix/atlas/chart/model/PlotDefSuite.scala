@@ -18,6 +18,9 @@ package com.netflix.atlas.chart.model
 import com.netflix.atlas.chart.model.PlotBound.AutoData
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotBound.Explicit
+import com.netflix.atlas.core.model.ArrayTimeSeq
+import com.netflix.atlas.core.model.DsType
+import com.netflix.atlas.core.model.TimeSeries
 import org.scalatest.FunSuite
 
 
@@ -128,5 +131,25 @@ class PlotDefSuite extends FunSuite {
   test("finalBounds area, auto-data upper < 0") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoData)
     assert(plotDef.finalBounds(true, -50.0, -45.0) === -50.0 -> -45.0)
+  }
+
+  test("bounds infinity") {
+    val seq = new ArrayTimeSeq(DsType.Gauge, 0L, 1L, Array(Double.PositiveInfinity))
+    val ts = TimeSeries(Map("name" -> "infinity"), seq)
+    val plotDef = PlotDef(List(LineDef(ts)))
+
+    val (min, max) = plotDef.bounds(0L, 1L)
+    assert(min === 0.0)
+    assert(max === 1.0)
+  }
+
+  test("bounds infinity, stack") {
+    val seq = new ArrayTimeSeq(DsType.Gauge, 0L, 1L, Array(Double.PositiveInfinity))
+    val ts = TimeSeries(Map("name" -> "infinity"), seq)
+    val plotDef = PlotDef(List(LineDef(ts, lineStyle = LineStyle.STACK)))
+
+    val (min, max) = plotDef.bounds(0L, 1L)
+    assert(min === 0.0)
+    assert(max === 1.0)
   }
 }

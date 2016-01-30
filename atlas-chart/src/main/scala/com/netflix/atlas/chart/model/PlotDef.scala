@@ -75,21 +75,25 @@ case class PlotDef(
       while (t < end) {
         regular.foreach { line =>
           val v = line.data.data(t)
-          max = if (v > max) v else max
-          min = if (v < min) v else min
+          if (JDouble.isFinite(v)) {
+            max = if (v > max) v else max
+            min = if (v < min) v else min
+          }
         }
 
         stacked.foreach { line =>
           val v = line.data.data(t)
-          if (!JDouble.isNaN(v)) {
+          if (JDouble.isFinite(v)) {
             if (v >= 0.0) posSum += v else negSum += v
           }
         }
 
         if (stacked.nonEmpty) {
           val v = stacked.head.data.data(t)
-          max = if (v > max) v else max
-          min = if (v < min) v else min
+          if (JDouble.isFinite(v)) {
+            max = if (v > max) v else max
+            min = if (v < min) v else min
+          }
 
           max = if (posSum > 0.0 && posSum > max) posSum else max
           min = if (negSum < 0.0 && negSum < min) negSum else min
