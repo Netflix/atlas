@@ -208,6 +208,20 @@ class TicksSuite extends FunSuite {
     assert(ticks.last.label === "11.5")
   }
 
+  test("values [0.0, Infinity]") {
+    val t = intercept[IllegalArgumentException] {
+      Ticks.value(0.0, Double.PositiveInfinity, 5)
+    }
+    assert(t.getMessage === "requirement failed: upper bound must be finite")
+  }
+
+  test("values [-Infinity, 0.0]") {
+    val t = intercept[IllegalArgumentException] {
+      Ticks.value(Double.NegativeInfinity, 0.0, 5)
+    }
+    assert(t.getMessage === "requirement failed: lower bound must be finite")
+  }
+
   test("sanity check, 0 to y") {
     for (i <- 0 until 100; j <- 2 until 10) {
       val v = Random.nextDouble() * 1e12

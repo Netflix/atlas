@@ -26,6 +26,8 @@ import com.netflix.atlas.core.util.UnitPrefix
  */
 object Ticks {
 
+  import java.lang.{Double => JDouble}
+
   val defaultTimeFmt = DateTimeFormatter.ofPattern("MMMdd")
 
   val timeBoundaries = List(
@@ -113,6 +115,8 @@ object Ticks {
    * Generate value tick marks with approximately `n` major ticks for the range `[v1, v2]`.
    */
   def value(v1: Double, v2: Double, n: Int): List[ValueTick] = {
+    require(JDouble.isFinite(v1), "lower bound must be finite")
+    require(JDouble.isFinite(v2), "upper bound must be finite")
     val range = v2 - v1
     val r = if (range < 1e-12) 1.0 else range
 

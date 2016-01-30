@@ -153,8 +153,10 @@ case class GraphDef(
 
   /** Return a new graph definition with the line stats filled in. */
   def computeStats: GraphDef = {
+    val s = startTime.toEpochMilli
+    val e = endTime.toEpochMilli
     adjustLines { line =>
-      val stats = SummaryStats(line.data.data, startTime.toEpochMilli, endTime.toEpochMilli)
+      val stats = SummaryStats(line.data.data, s, e)
       line.copy(legendStats = stats)
     }
   }
