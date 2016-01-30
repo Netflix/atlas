@@ -308,6 +308,9 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
   constantLine("l1_u2_h300", Seq(1), v => v.copy(height = 300))
 
+  constantLine("positive_infinity", Seq(Double.PositiveInfinity), v => v)
+  constantLine("negative_infinity", Seq(Double.NegativeInfinity), v => v)
+
   test("single_line_hspans") {
     def alpha(c: Color): Color = new Color(c.getRed, c.getGreen, c.getBlue, 50)
     val spans = List(
