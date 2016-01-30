@@ -17,19 +17,17 @@ package com.netflix.atlas.core.model
 
 object SummaryStats {
 
-  import java.lang.{Double => JDouble}
-
   def apply(ts: TimeSeries, start: Long, end: Long): SummaryStats = apply(ts.data, start, end)
 
   def apply(ts: TimeSeq, start: Long, end: Long): SummaryStats = {
     var total = 0.0
     var count = 0
-    var max = JDouble.MIN_VALUE
-    var min = JDouble.MAX_VALUE
-    var last = JDouble.NaN
+    var max = Double.NegativeInfinity
+    var min = Double.PositiveInfinity
+    var last = Double.NaN
 
     ts.foreach(start, end) { (t, v) =>
-      if (!JDouble.isNaN(v)) {
+      if (!v.isNaN) {
         total += v
         count += 1
         max = if (v > max) v else max

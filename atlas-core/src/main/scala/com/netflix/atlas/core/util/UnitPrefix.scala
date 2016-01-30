@@ -17,6 +17,8 @@ package com.netflix.atlas.core.util
 
 object UnitPrefix {
 
+  import java.lang.{Double => JDouble}
+
   val one   = UnitPrefix("", "", 1.0)
 
   val deca  = UnitPrefix("da", "deca",  1.0e1)
@@ -52,10 +54,11 @@ object UnitPrefix {
   /** Returns an appropriate prefix for `value`. */
   def decimal(value: Double): UnitPrefix = {
     math.abs(value) match {
-      case v if isNearlyZero(v)   => one
-      case v if v >= kilo.factor  => decimalBigPrefixes.find(_.factor <= v).getOrElse(yotta)
-      case v if v < 1.0           => decimalSmallPrefixes.find(_.factor <= v).getOrElse(yocto)
-      case _                      => one
+      case v if isNearlyZero(v)      => one
+      case v if !JDouble.isFinite(v) => one
+      case v if v >= kilo.factor     => decimalBigPrefixes.find(_.factor <= v).getOrElse(yotta)
+      case v if v < 1.0              => decimalSmallPrefixes.find(_.factor <= v).getOrElse(yocto)
+      case _                         => one
     }
   }
 
@@ -68,6 +71,7 @@ object UnitPrefix {
     }
     math.abs(value) match {
       case v if isNearlyZero(v)      => one
+      case v if !JDouble.isFinite(v) => one
       case v if withinRange(one, v)  => one
       case v if v >= kilo.factor / f => decimalBigPrefixes.reverse.find(withinRange(_, v)).getOrElse(yotta)
       case v if v < 1.0 / f          => decimalSmallPrefixes.find(withinRange(_, v)).getOrElse(yocto)

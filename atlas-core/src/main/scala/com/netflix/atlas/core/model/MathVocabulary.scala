@@ -537,7 +537,7 @@ object MathVocabulary extends Vocabulary {
       """
         |Floating point division operator. Compute a new time series where each interval has the
         | value `(a / b)` where `a` and `b` are the corresponding intervals in the input time
-        | series. If `b` is 0, then NaN will be returned as the value for the interval.
+        | series.
         |
         || :fdiv   | 2.0 | NaN | Inf | NaN | NaN |
         ||---------|-----|-----|-----|-----|-----|
