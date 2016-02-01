@@ -52,4 +52,12 @@ class UnitPrefixSuite extends FunSuite {
     assert(UnitPrefix.decimal(-1.23e9).text === "giga")
   }
 
+  test("format MaxValue") {
+    assert(UnitPrefix.format(Double.MaxValue) === " 2e+308")
+  }
+
+  test("format MinValue") {
+    assert(UnitPrefix.format(Double.MinValue) === "-2e+308")
+  }
+
 }

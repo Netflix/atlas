@@ -79,6 +79,6 @@ case class LegendEntry(line: LineDef, showStats: Boolean) extends Element with F
     }
   }
 
-  private def format(v: Double): String = UnitPrefix.format(v, "%9.3f%1s")
+  private def format(v: Double): String = UnitPrefix.format(v, "%9.3f%1s", "%8.1e ")
 }
 

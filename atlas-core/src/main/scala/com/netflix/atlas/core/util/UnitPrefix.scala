@@ -18,6 +18,7 @@ package com.netflix.atlas.core.util
 object UnitPrefix {
 
   import java.lang.{Double => JDouble}
+  import java.lang.{Math => JMath}
 
   val one   = UnitPrefix("", "", 1.0)
 
@@ -43,13 +44,30 @@ object UnitPrefix {
   val zepto = UnitPrefix("z",      "zepto", 1.0e-21)
   val yocto = UnitPrefix("y",      "yocto", 1.0e-24)
 
+  private val maxValue = 1e27
+  private val minValue = 1e-27
+
   private val decimalBigPrefixes = List(yotta, zetta, exa, peta, tera, giga, mega, kilo)
   private val decimalSmallPrefixes = List(milli, micro, nano, pico, femto, atto, zepto, yocto)
 
-  def format(v: Double, fmtstr: String = "%.1f%s"): String = {
-    val unit = decimal(v)
-    unit.format(v, fmtstr)
+  def format(v: Double, fmtstr: String = "%.1f%s", scifmt: String = "%.0e"): String = {
+    if (hasExtremeExponent(v)) {
+      val fmt = if (v >= 0.0) " " + scifmt else scifmt
+      fmt.format(v)
+    } else {
+      val unit = decimal(v)
+      unit.format(v, fmtstr)
+    }
   }
+
+  private def hasExtremeExponent(v: Double): Boolean = {
+    val d = math.abs(v)
+    JDouble.isFinite(v) && (isLarge(d) || isSmall(d))
+  }
+
+  private def isLarge(v: Double): Boolean = v >= maxValue
+
+  private def isSmall(v: Double): Boolean = v <= minValue && v >= Double.MinPositiveValue
 
   /** Returns an appropriate prefix for `value`. */
   def decimal(value: Double): UnitPrefix = {
