@@ -120,7 +120,15 @@ object Ticks {
     val range = v2 - v1
     val r = if (range < 1e-12) 1.0 else range
 
-    val (major, minor, minorPerMajor) = valueTickSizes.filter(t => r / t._1 <= n).head
+    valueTickSizes.find(t => r / t._1 <= n).fold(sciTicks(v1, v2, n))(t => normalTicks(v1, v2, t))
+  }
+
+  private def sciTicks(v1: Double, v2: Double, n: Int): List[ValueTick] = {
+    List(ValueTick(v1, 0.0), ValueTick(v2, 0.0))
+  }
+
+  private def normalTicks(v1: Double, v2: Double, t: (Double, Double, Int)): List[ValueTick] = {
+    val (major, minor, minorPerMajor) = t
     val ticks = List.newBuilder[ValueTick]
 
     val prefix = getPrefix(math.abs(v2), major)

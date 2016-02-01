@@ -222,6 +222,10 @@ class TicksSuite extends FunSuite {
     assert(t.getMessage === "requirement failed: lower bound must be finite")
   }
 
+  test("values [0.0, MaxValue]") {
+    val ticks = Ticks.value(0.0, Double.MaxValue, 5)
+  }
+
   test("sanity check, 0 to y") {
     for (i <- 0 until 100; j <- 2 until 10) {
       val v = Random.nextDouble() * 1e12
