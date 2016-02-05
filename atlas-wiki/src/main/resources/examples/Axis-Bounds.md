@@ -8,6 +8,26 @@ The upper and lower bounds for an axis can be set to an explicit floating point 
   account the values of the lines. In the case of [stack](style-stack) it will account for the
   position of the stacked lines, but not the filled area.
 
+When selecting bounds it is important to think about how it can impact the perception of what
+is shown. Automatic bounds can be useful for zooming in on the data, but can also lead to
+[mis-perceptions](https://en.wikipedia.org/wiki/Misleading_graph#Axis_changes) for someone quickly
+scanning a dashboard. Consider these two graphs showing percent CPU usage on an instance:
+
+<table>
+<tr>
+<th>Automatic bounds</th>
+<th>Explicit bounds</th>
+</tr>
+<tr>
+<td><img alt="Automatic bounds" width="350" height="150" src="https://raw.githubusercontent.com/wiki/Netflix/atlas/images/axis-bounds-auto.png"/></td>
+<td><img alt="Explicit bounds" width="350" height="150" src="https://raw.githubusercontent.com/wiki/Netflix/atlas/images/axis-bounds-explicit.png"/></td>
+</tr>
+</table>
+
+The automatic bounds allows us to see much more detail, but could lead a casual observer to think
+there were frequent large spikes in CPU usage rather than just noise on a machine with very little
+load.
+
 ## Default Lower
   
 /api/v1/graph?q=name,sps,:eq,nf.cluster,(,nccp-xbox,nccp-silverlight,),:in,:and,:sum,(,nf.cluster,),:by&s=e-1d&e=2012-01-01T09:00&tz=UTC
