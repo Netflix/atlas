@@ -323,8 +323,11 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
-      val t = TimeSeries.aggregate(rs.data.iterator, context.start, context.end, this)
-      ResultSet(this, List(TimeSeries(t.tags, s"$name(${t.label})", t.data)), rs.state)
+      val ts = if (rs.data.isEmpty) Nil else {
+        val t = TimeSeries.aggregate(rs.data.iterator, context.start, context.end, this)
+        List(TimeSeries(t.tags, s"$name(${t.label})", t.data))
+      }
+      ResultSet(this, ts, rs.state)
     }
   }
 

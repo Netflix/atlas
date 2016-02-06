@@ -121,6 +121,7 @@ class TimeSeriesExprSuite extends FunSuite {
     ":true,(,name,),:by,4,:head"  -> const(byName.sortWith(_.label < _.label).take(4)),
     ":true,(,name,),:by,50,:head" -> const(byName),
     ":false,(,name,),:by"         -> const(Nil),
+    "n,:has,(,n,),:by,4,:div,:sum" -> const(Nil),
     "NaN,NaN,:add"                -> const(ts(Map("name" -> "NaN"), "(NaN + NaN)", Double.NaN)),
     "NaN,1.0,:add"                -> const(ts(Map("name" -> "NaN"), "(NaN + 1.0)", 1.0)),
     "1.0,NaN,:add"                -> const(ts(Map("name" -> "1.0"), "(1.0 + NaN)", 1.0)),
