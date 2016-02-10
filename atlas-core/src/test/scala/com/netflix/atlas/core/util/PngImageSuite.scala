@@ -97,4 +97,18 @@ class PngImageSuite extends FunSuite {
     assert(diff2.metadata("identical") === "true")
     assert(diff2.metadata("diff-pixel-count") === "0")
   }
+
+  test("image metadata") {
+    val metadata = Map(
+      "english"    -> "source url",
+      "japanese"   -> "ソースURL",
+      "compressed" -> (0 until 10000).mkString(",")
+    )
+    val img = PngImage.error("test", 100, 100).copy(metadata = metadata)
+
+    val bytes = img.toByteArray
+    val decoded = PngImage(bytes)
+
+    assert(metadata === decoded.metadata)
+  }
 }
