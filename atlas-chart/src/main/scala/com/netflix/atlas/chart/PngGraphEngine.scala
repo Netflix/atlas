@@ -26,7 +26,11 @@ trait PngGraphEngine extends GraphEngine {
   val contentType: String = "image/png"
 
   def write(config: GraphDef, output: OutputStream): Unit = {
-    val image = PngImage(createImage(config), Map.empty)
+    val metadata = config.source.fold(Map.empty[String, String]) { s =>
+      val desc = s"start=${config.startTime.toString}, end=${config.endTime.toString}"
+      Map("Source" -> s, "Description" -> desc)
+    }
+    val image = PngImage(createImage(config), metadata)
     image.write(output)
   }
 
