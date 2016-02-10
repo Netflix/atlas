@@ -64,6 +64,9 @@ import com.netflix.atlas.core.model.TimeSeries
  *     Stats on how much data was processed to render the chart.
  * @param warnings
  *     Warnings to display to the user.
+ * @param source
+ *     Used to provide metadata for how the graph definition was created. For example the uri
+ *     input by the user.
  */
 case class GraphDef(
     plots: List[PlotDef],
@@ -81,7 +84,8 @@ case class GraphDef(
     numberFormat: String = "%f",
     loadTime: Long = -1,
     stats: CollectorStats = CollectorStats.unknown,
-    warnings: List[String] = Nil) {
+    warnings: List[String] = Nil,
+    source: Option[String] = None) {
 
   /** Total number of lines for all plots. */
   val numLines = plots.foldLeft(0) { (acc, p) => acc + p.data.size }

@@ -74,7 +74,7 @@ object GraphApi {
       id: String,
       isBrowser: Boolean,
       isAllowedFromBrowser: Boolean,
-      includeMeta: Boolean) {
+      uri: String) {
 
     def shouldOutputImage: Boolean = (format == "png")
 
@@ -165,7 +165,8 @@ object GraphApi {
         legendType = legendType,
         onlyGraph = flags.showOnlyGraph,
         numberFormat = numberFormat,
-        plots = plots
+        plots = plots,
+        source = if (ApiSettings.metadataEnabled) Some(uri) else None
       )
 
       gdef = gdef.withVisionType(flags.vision)
@@ -302,6 +303,7 @@ object GraphApi {
       id = id,
       isBrowser = false,
       isAllowedFromBrowser = true,
-      includeMeta = params.get("meta").contains("1"))
+      uri = req.uri.toString
+    )
   }
 }

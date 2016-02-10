@@ -57,6 +57,8 @@ class ApiSettings(root: => Config) {
 
   def palette: String = config.getString("graph.palette")
 
+  def metadataEnabled: Boolean = config.getBoolean("graph.png-metadata-enabled")
+
   def maxDatapoints: Int = config.getInt("graph.max-datapoints")
 
   def engines: List[GraphEngine] = {
