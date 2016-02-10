@@ -42,8 +42,6 @@ object PngImage {
   }
 
   def apply(input: InputStream): PngImage = {
-    import scala.collection.JavaConversions._
-
     try {
       val iterator = ImageIO.getImageReadersBySuffix("png")
       require(iterator.hasNext, "no image readers for png")
@@ -53,15 +51,28 @@ object PngImage {
 
       val index = 0
       val metadata = reader.getImageMetadata(index).asInstanceOf[PNGMetadata]
-      val keys = metadata.tEXt_keyword.toList
-      val values = metadata.tEXt_text.toList
+      val fields = extractTxtFields(metadata) ++ extractUtf8Fields(metadata)
 
       val image = reader.read(index)
 
-      PngImage(image, keys.zip(values).toMap)
+      PngImage(image, fields)
     } finally {
       input.close()
     }
+  }
+
+  private def extractTxtFields(m: PNGMetadata): Map[String, String] = {
+    import scala.collection.JavaConversions._
+    val keys = m.tEXt_keyword.toList
+    val values = m.tEXt_text.toList
+    keys.zip(values).toMap
+  }
+
+  private def extractUtf8Fields(m: PNGMetadata): Map[String, String] = {
+    import scala.collection.JavaConversions._
+    val keys = m.iTXt_keyword.toList
+    val values = m.iTXt_text.toList
+    keys.zip(values).toMap
   }
 
   def error(msg: String, width: Int, height: Int): PngImage = {
@@ -183,8 +194,12 @@ case class PngImage(data: RenderedImage, metadata: Map[String, String]) {
 
       val pngMeta = new PNGMetadata
       metadata.foreach { t =>
-        pngMeta.tEXt_keyword.asInstanceOf[JList].add(t._1)
-        pngMeta.tEXt_text.asInstanceOf[JList].add(t._2)
+        pngMeta.iTXt_keyword.add(t._1)
+        pngMeta.iTXt_text.add(t._2)
+        pngMeta.iTXt_compressionFlag.add(t._2.length > 100)
+        pngMeta.iTXt_compressionMethod.add(0)
+        pngMeta.iTXt_languageTag.add("")
+        pngMeta.iTXt_translatedKeyword.add("")
       }
 
       val iioImage = new IIOImage(data, null, null)
