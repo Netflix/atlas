@@ -113,6 +113,71 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
+  test("publish tag value is null") {
+    val json = s"""{
+        "metrics": [
+          {
+            "tags": {"name": "cpuUser", "bad": null},
+            "timestamp": ${System.currentTimeMillis() /  1000},
+            "value": 42.0
+          }
+        ]
+      }"""
+    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
+  }
+
+  test("publish tag value is empty") {
+    val json = s"""{
+        "metrics": [
+          {
+            "tags": {"name": "cpuUser", "bad": ""},
+            "timestamp": ${System.currentTimeMillis() /  1000},
+            "value": 42.0
+          }
+        ]
+      }"""
+    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
+  }
+
+  test("publish validation failure") {
+    val json = s"""{
+        "metrics": [
+          {
+            "tags": {"no-name": "cpuUser"},
+            "timestamp": ${System.currentTimeMillis() /  1000},
+            "value": 42.0
+          }
+        ]
+      }"""
+    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
+  }
+
+  test("publish partial validation failure") {
+    val json = s"""{
+        "metrics": [
+          {
+            "tags": {"no-name": "cpuUser"},
+            "timestamp": ${System.currentTimeMillis()},
+            "value": 42.0
+          },
+          {
+            "tags": {"name": "cpuUser"},
+            "timestamp": ${System.currentTimeMillis()},
+            "value": 42.0
+          }
+        ]
+      }"""
+    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.Accepted)
+    }
+  }
+
   test("publish-fast alias") {
     val json = s"""{
         "tags": {
