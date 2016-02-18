@@ -19,13 +19,17 @@ import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.model.Expr
 import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.stacklang.Word
 import com.netflix.atlas.json.Json
 import spray.http.HttpEntity
 import spray.http.HttpResponse
 import spray.http.MediaTypes
 import spray.http.StatusCodes
 import spray.routing.RequestContext
+
+import scala.util.Try
 
 /**
  * Generates a list of steps for executing an expression. This endpoint is typically used for
@@ -39,10 +43,21 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     vocabulary.dependencies.map(v => v.name -> v).toMap + (vocabulary.name -> vocabulary)
   }
 
+  private val excludedWords = ApiSettings.excludedWords
+
   def routes: RequestContext => Unit = {
     path("api" / "v1" / "expr") {
-      get { ctx =>
-        try processRequest(ctx) catch handleException(ctx)
+      get { ctx => processDebugRequest(ctx) }
+    } ~
+    pathPrefix("api" / "v1" / "expr") {
+      path("debug") {
+        get { ctx => processDebugRequest(ctx) }
+      } ~
+      path("normalize") {
+        get { ctx => processNormalizeRequest(ctx) }
+      } ~
+      path("complete") {
+        get { ctx => processCompleteRequest(ctx) }
       }
     }
   }
@@ -95,15 +110,18 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     case v       => v.toString
   }
 
-  private def processRequest(ctx: RequestContext): Unit = {
+  private def getInterpreter(ctx: RequestContext): (String, Interpreter) = {
     val query = ctx.request.uri.query.get("q").getOrElse {
       throw new IllegalArgumentException("missing required parameter 'q'")
     }
-
     val vocabName = ctx.request.uri.query.getOrElse("vocab", vocabulary.name)
-
     val interpreter = newInterpreter(vocabName)
+    query -> interpreter
+  }
 
+  private def processDebugRequest(ctx: RequestContext): Unit = {
+    val (query, interpreter) = getInterpreter(ctx)
+    val vocabName = ctx.request.uri.query.getOrElse("vocab", vocabulary.name)
     val execSteps = interpreter.debug(query)
     if (execSteps.nonEmpty) {
       verifyStackContents(vocabName, execSteps.last.context.stack)
@@ -117,6 +135,40 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     }
 
     val data = Json.encode(steps)
+    val entity = HttpEntity(MediaTypes.`application/json`, data)
+    ctx.responder ! HttpResponse(StatusCodes.OK, entity = entity)
+  }
+
+  private def processNormalizeRequest(ctx: RequestContext): Unit = {
+    val (query, interpreter) = getInterpreter(ctx)
+    val result = interpreter.execute(query)
+    val data = Json.encode(result.stack.reverse.map(_.toString))
+    val entity = HttpEntity(MediaTypes.`application/json`, data)
+    ctx.responder ! HttpResponse(StatusCodes.OK, entity = entity)
+  }
+
+  // This check is needed to be sure an operation will work if matches is not exhaustive. In
+  // some cases it only validates types, but not acceptable values such as :time. For others like
+  // macros it alwasy returns true. This ensures the operation will actually be successful before
+  // returning to a user.
+  private def execWorks(interpreter: Interpreter, w: Word, ctxt: Context): Boolean = {
+    Try(interpreter.execute(List(s":${w.name}"), ctxt)).isSuccess
+  }
+
+  private def matches(interpreter: Interpreter, w: Word, ctxt: Context): Boolean = {
+    !excludedWords.contains(w.name) && w.matches(ctxt.stack) && execWorks(interpreter, w, ctxt)
+  }
+
+  private def processCompleteRequest(ctx: RequestContext): Unit = {
+    val (query, interpreter) = getInterpreter(ctx)
+    val result = interpreter.execute(query)
+
+    val candidates = interpreter.vocabulary.filter { w => matches(interpreter, w, result) }
+    val descriptions = candidates.map { w =>
+      Map("name" -> w.name, "signature" -> w.signature, "description" -> w.summary)
+    }
+
+    val data = Json.encode(descriptions)
     val entity = HttpEntity(MediaTypes.`application/json`, data)
     ctx.responder ! HttpResponse(StatusCodes.OK, entity = entity)
   }
