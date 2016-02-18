@@ -1,8 +1,19 @@
+
+The instructions on this page are for quickly getting a sample backend server running on a local
+machine. For other common tasks see:
+
+* [Using Atlas at Netflix](http://go/insightdocs)
+* Querying Data:
+    * [Examples](Examples)
+    * [Tutorial](Stack-Language-Tutorial)
+* [Instrumenting Code](https://github.com/Netflix/spectator/wiki)
+
 ## Run a Demo Instance
 
 **Prerequisites**
 
-* These instructions assume a unix based machine with [curl](http://curl.haxx.se/). Other systems may work, but have not been tried.
+* These instructions assume a unix based machine with [curl](http://curl.haxx.se/). Other systems
+  may work, but have not been tried.
 * Java 8 or higher is required.
 
 To quickly run a version with some synthetic sample data:
@@ -34,7 +45,8 @@ $ curl -s 'http://localhost:7101/api/v1/tags/name?q=nf.app,nccp,:eq'
 
 ## Generate Graphs
 
-These graph API URLs show off a couple of the capabilities of the Atlas backend.  See the [Examples](https://github.com/Netflix/atlas/wiki/Examples) page for more detailed use cases.
+These graph API URLs show off a couple of the capabilities of the Atlas backend.  See the
+[Examples](https://github.com/Netflix/atlas/wiki/Examples) page for more detailed use cases.
 
 ```
 # graph all metrics with a name tag value of ssCpuUser, using an :avg aggregation
