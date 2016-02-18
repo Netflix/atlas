@@ -5,7 +5,7 @@ machine. For other common tasks see:
 * [Using Atlas at Netflix](http://go/insightdocs)
 * Querying Data:
     * [Examples](Examples)
-    * [Tutorial](Stack-Language-Tutorial)
+    * [Tutorial](Stack-Language)
 * [Instrumenting Code](https://github.com/Netflix/spectator/wiki)
 
 ## Run a Demo Instance
