@@ -1,9 +1,9 @@
 ###[Home](Home)
 * [[Overview]]
 * [[Getting Started]]
+* [[Concepts]]
 * [[Presentations]]
 * [[Examples]]
-* [[Concepts]]
 * API
   * [[Graph]]
   * [[Tags]]
