@@ -2,14 +2,14 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.4.1"
-    val aws        = "1.10.50"
+    val akka       = "2.4.2"
+    val aws        = "1.10.54"
     val iep        = "0.3.14"
     val guice      = "4.0"
     val jackson    = "2.6.3"
     val log4j      = "2.5"
     val scala      = "2.11.7"
-    val slf4j      = "1.7.14"
+    val slf4j      = "1.7.16"
     val spectator  = "0.35.1"
     val spray      = "1.3.3"
   }
