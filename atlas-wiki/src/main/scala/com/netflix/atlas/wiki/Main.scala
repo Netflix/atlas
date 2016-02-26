@@ -184,7 +184,6 @@ object Main extends StrictLogging {
     val graph = new GraphHelper(webApi, new File(dir, "gen-images"), "stacklang/gen-images")
 
     val sidebar = new StringBuilder
-    sidebar.append("###[Home](Home) > Stack Language Reference\n\n")
     vocabs.foreach { vocab =>
       sidebar.append(s"\n**${vocab.name}**\n")
       vocab.words.sortWith(_.name < _.name).foreach { w =>

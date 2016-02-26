@@ -25,6 +25,8 @@ class StackLanguageReference extends Page {
 
   override def content(graph: GraphHelper): String =
     s"""
+       |> [[Home]] ▸ Stack Language Reference
+       |
        |Reference for operations available in the stack language. Use the sidebar to navigate.
        |
        |$referenceTOC
