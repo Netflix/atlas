@@ -1,3 +1,5 @@
+> [[Home]] ▸ Examples
+
 The diagram below shows the parts of an Atlas graph and will be used when describing
 the behavior for various options.
 

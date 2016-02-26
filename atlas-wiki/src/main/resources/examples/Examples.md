@@ -1,3 +1,4 @@
+> [[Home]] ▸ Examples
 
 Browse the sidebar to get a good overview of graph options. It is recommended to at least go
 through the [basics](Basics) section. There is also a quick visual index below:

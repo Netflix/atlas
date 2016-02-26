@@ -1,3 +1,5 @@
+> [[Home]] ▸ Examples
+
 In addition to the [line style](Line-Styles) and [legend](Legends) the following attributes
 can be adjusted:
 

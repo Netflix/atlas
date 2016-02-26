@@ -1,3 +1,5 @@
+> [[Home]] ▸ Examples
+
 This section gives some examples to get started quickly creating simple graphs.
 
 * [Single Line](#single-line)

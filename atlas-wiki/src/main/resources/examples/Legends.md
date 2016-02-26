@@ -1,3 +1,5 @@
+> [[Home]] ▸ Examples
+
 Options for adjusting legend:
 
 * [Automatic](#automatic)

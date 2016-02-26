@@ -1,3 +1,4 @@
+> [[Home]] ▸ Examples
 
 The upper and lower bounds for an axis can be set to an explicit floating point value or:
 

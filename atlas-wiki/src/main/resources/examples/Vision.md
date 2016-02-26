@@ -1,3 +1,5 @@
+> [[Home]] ▸ Examples
+
 The vision parameter can be used to simulate different types of
 [color blindness](http://www.colourblindawareness.org/colour-blindness/types-of-colour-blindness/).
 Permitted values are:

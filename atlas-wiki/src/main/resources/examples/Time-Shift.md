@@ -1,3 +1,4 @@
+> [[Home]] ▸ Examples
 
 A common use-case is to compare a given line with a shifted line to compare week-over-week or day-over-day. 
 

@@ -1,3 +1,5 @@
+> [[Home]] ▸ Examples
+
 There are four [line styles](style-ls) available:
 
 * [Line](#line)

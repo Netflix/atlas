@@ -1,3 +1,4 @@
+> [[Home]] ▸ Examples
 
 There are currently two scales that can be used for an axis:
 
