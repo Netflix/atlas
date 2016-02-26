@@ -185,12 +185,7 @@ object Main extends StrictLogging {
 
     val sidebar = new StringBuilder
     vocabs.foreach { vocab =>
-      sidebar.append(s"\n**${vocab.name}**\n")
-      vocab.words.sortWith(_.name < _.name).foreach { w =>
-        val page = overrides.getOrElse(w, BasicStackWordPage(vocab, w))
-        val fname = page.name
-        sidebar.append(s"* [${w.name}]($fname)\n")
-      }
+      sidebar.append(s"* [${vocab.name}](Reference-${vocab.name})\n")
     }
     writeFile(sidebar.toString(), new File(dir, "_Sidebar.md"))
 
