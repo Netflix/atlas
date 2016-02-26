@@ -1,3 +1,4 @@
+> [[Home]] ▸ Examples
 
 Occasionally it is useful to show a graph, but the exact values need to be suppressed. This can
 be useful for communicating with external support or including in a presentation. To avoid showing

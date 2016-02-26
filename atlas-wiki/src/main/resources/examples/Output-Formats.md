@@ -1,3 +1,5 @@
+> [[Home]] ▸ Examples
+
 The following output formats are supported by default for [graphing](Graph):
 
 * [png](#png)

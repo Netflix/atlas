@@ -265,8 +265,8 @@ object StatefulVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Opposite of [:integral](#integral). Computes the rate of change per step of the input
-        |time series.
+        |Opposite of [:integral](stateful-integral). Computes the rate of change per step of the
+        |input time series.
       """.stripMargin.trim
 
     override def signature: String =

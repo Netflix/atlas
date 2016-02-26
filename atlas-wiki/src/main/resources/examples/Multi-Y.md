@@ -1,3 +1,5 @@
+> [[Home]] ▸ Examples
+
 Examples for using multiple Y-axes:
 
 * [Explicit](#explicit)

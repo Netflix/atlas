@@ -16,19 +16,45 @@
 package com.netflix.atlas.wiki.pages
 
 import com.netflix.atlas.core.model.StyleVocabulary
+import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.wiki.GraphHelper
 import com.netflix.atlas.wiki.Page
 
-class StackLanguageReference extends Page {
+class StackLanguageReference(
+    vocabs: List[Vocabulary],
+    vocabDocs: Map[String, String]) extends Page {
+
   override def name: String = "Stack-Language-Reference"
   override def path: Option[String] = Some("stacklang")
 
   override def content(graph: GraphHelper): String =
     s"""
-       |Reference for operations available in the stack language. Use the sidebar to navigate.
+       |> [[Home]] ▸ Stack Language Reference
+       |
+       |Reference for operations available in the stack language. Operations can be browsed by
+       |[category](#categories) or [alphabetically by name](#alphabetical-listing).
+       |
+       |## Categories
+       |
+       |$referenceCategories
+       |
+       |## Alphabetical Listing
+       |
+       |Alphabetical listing of all operations. This can be useful if you know the name, but
+       |are unsure of the category.
        |
        |$referenceTOC
      """.stripMargin
+
+  private def referenceCategories: String = {
+    val builder = new StringBuilder
+    vocabs.foreach { vocab =>
+      builder.append(s"### [${vocab.name}](Reference-${vocab.name})\n\n")
+      builder.append(vocabDocs(vocab.name))
+      builder.append("\n\n")
+    }
+    builder.toString()
+  }
 
   private def referenceTOC: String = {
     import com.netflix.atlas.wiki._

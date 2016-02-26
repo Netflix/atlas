@@ -1,3 +1,5 @@
+> [[Home]] ▸ Examples
+
 The follow color palettes are supported:
 
 * [armytage](#armytage)

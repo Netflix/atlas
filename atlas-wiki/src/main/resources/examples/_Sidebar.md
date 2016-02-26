@@ -1,5 +1,3 @@
-###[Home](Home) > [[Examples]]
-
 * [[Basics]]
 * [[Legends]]
 * [[Graph Layout]]
