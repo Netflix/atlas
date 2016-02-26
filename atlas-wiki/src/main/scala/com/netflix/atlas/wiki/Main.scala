@@ -252,7 +252,7 @@ object Main extends StrictLogging {
       generateStackLangRef(output)
       generateScriptedPages(output, List(
         new DES,
-        new StackLanguageReference,
+        new StackLanguageReference(vocabs, vocabDocs),
         new TimeZones
       ))
     } finally {
