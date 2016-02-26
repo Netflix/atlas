@@ -29,6 +29,7 @@ import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.model.StatefulVocabulary
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.StandardVocabulary
+import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
@@ -59,6 +60,62 @@ object Main extends StrictLogging {
   val db = ApiSettings.newDbInstance
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
   val webApi = system.actorOf(Props[RequestHandlerActor])
+
+  val vocabs = List(
+    StandardVocabulary,
+    QueryVocabulary,
+    DataVocabulary,
+    MathVocabulary,
+    StatefulVocabulary,
+    FilterVocabulary,
+    StyleVocabulary
+  )
+
+  val vocabDocs = Map(
+    "std" ->
+      """
+        |Standard operations for manipulating the stack.
+      """.stripMargin,
+    "query" ->
+      """
+        |Query expression used to select a set of time series. For more information see the
+        |[stack language tutorial](Stack-Language#query).
+      """.stripMargin,
+    "data" ->
+      """
+        |Expression for how to get data from the underlying storage. This is the minimal set that
+        |a storage layer would need to support. For more information see the
+        |[stack language tutorial](Stack-Language#aggregation).
+      """.stripMargin,
+    "math" ->
+      """
+        |Defines mathematical operators to transform or combine time series. The base set can be
+        |supported in a global or online streaming context. For more information see the
+        |[stack language tutorial](Stack-Language#math).
+      """.stripMargin,
+    "stateful" ->
+      """
+        |Mathematical operations that require state, i.e., data from previous time intervals to
+        |compute the result. May not be supported in all contexts.
+      """.stripMargin,
+    "filter" ->
+      """
+        |Mathematical operations that require all data across the time being considered to
+        |compute. These are typically used for filtering after the fact. Only supported in a
+        |global evaluation context.
+      """.stripMargin,
+    "style" ->
+      """
+        |Applies presentation attributes to the data. For more information see the
+        |[stack language tutorial](Stack-Language#presentation).
+      """.stripMargin
+  )
+
+  val overrides = Map(
+    DesEpicSignal.word -> DesEpicSignal,
+    DesEpicViz.word    -> DesEpicViz,
+    DistStddev.word    -> DistStddev
+  )
 
   private def writeFile(data: String, f: File): Unit = {
     scope(fileOut(f)) { _.write(data.getBytes("UTF-8")) }
@@ -126,37 +183,50 @@ object Main extends StrictLogging {
 
     val graph = new GraphHelper(webApi, new File(dir, "gen-images"), "stacklang/gen-images")
 
-    val vocabs = List(
-      StandardVocabulary,
-      QueryVocabulary,
-      DataVocabulary,
-      MathVocabulary,
-      StatefulVocabulary,
-      FilterVocabulary,
-      StyleVocabulary
-    )
-
-    val overrides = Map(
-      DesEpicSignal.word -> DesEpicSignal,
-      DesEpicViz.word    -> DesEpicViz,
-      DistStddev.word    -> DistStddev
-    )
-
     val sidebar = new StringBuilder
-    sidebar.append("###[Home](Home) > Stack Language Reference\n")
-
+    sidebar.append("###[Home](Home) > Stack Language Reference\n\n")
     vocabs.foreach { vocab =>
       sidebar.append(s"\n**${vocab.name}**\n")
       vocab.words.sortWith(_.name < _.name).foreach { w =>
         val page = overrides.getOrElse(w, BasicStackWordPage(vocab, w))
         val fname = page.name
         sidebar.append(s"* [${w.name}]($fname)\n")
-        val f = new File(dir, s"$fname.md")
-        writeFile(page.content(graph), f)
       }
     }
-
     writeFile(sidebar.toString(), new File(dir, "_Sidebar.md"))
+
+    vocabs.foreach { v => generateVocabRef(dir, graph, v) }
+  }
+
+  def generateVocabRef(output: File, graph: GraphHelper, vocab: Vocabulary): Unit = {
+    val dir = new File(output, vocab.name)
+    dir.mkdirs()
+
+    val header = s"> [[Home]] ▸ [[Stack Language Reference]] ▸ __${vocab.name}__\n\n"
+
+    writeFile(header + vocabDocs(vocab.name), new File(dir, s"Reference-${vocab.name}.md"))
+
+    val sidebar = new StringBuilder
+    vocabs.foreach { v =>
+      if (v.name == vocab.name) {
+        sidebar.append(s"* __${v.name}__\n")
+        vocab.words.sortWith(_.name < _.name).foreach { w =>
+          val page = overrides.getOrElse(w, BasicStackWordPage(vocab, w))
+          val fname = page.name
+          sidebar.append(s"    * [${w.name}]($fname)\n")
+        }
+      } else {
+        sidebar.append(s"* [${v.name}](Reference-${v.name})\n")
+      }
+    }
+    writeFile(sidebar.toString(), new File(dir, "_Sidebar.md"))
+
+    vocab.words.sortWith(_.name < _.name).foreach { w =>
+      val page = overrides.getOrElse(w, BasicStackWordPage(vocab, w))
+      val fname = page.name
+      val f = new File(dir, s"$fname.md")
+      writeFile(header + page.content(graph), f)
+    }
   }
 
   def generateScriptedPages(output: File, pages: List[Page]): Unit = {
