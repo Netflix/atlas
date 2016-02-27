@@ -180,7 +180,7 @@ object GraphApi {
           ylabel = axisCfg.ylabel,
           scale = if (axisCfg.logarithmic) Scale.LOGARITHMIC else Scale.LINEAR,
           axisColor = if (multiY) None else Some(Color.BLACK),
-          showTickLabels = axisCfg.showTickLabels)
+          tickLabelMode = axisCfg.tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply))
       }
 
       gdef.copy(plots = styledPlots)
@@ -230,7 +230,7 @@ object GraphApi {
       logarithmic: Boolean = false,
       stack: Boolean = false,
       ylabel: Option[String] = None,
-      showTickLabels: Boolean = true,
+      tickLabels: Option[String] = None,
       palette: Option[String] = None)
 
   case class ImageFlags(
@@ -258,7 +258,7 @@ object GraphApi {
       logarithmic = getAxisParam(params, "o", id).contains("1"),
       stack = getAxisParam(params, "stack", id).contains("1"),
       ylabel = getAxisParam(params, "ylabel", id).filter(_ != ""),
-      showTickLabels = !getAxisParam(params, "no_tick_labels", id).contains("1"),
+      tickLabels = getAxisParam(params, "tick_labels", id),
       palette = params.get(s"palette.$id"))
   }
 

@@ -132,7 +132,7 @@ private[this] object JsonCodec {
     gen.writeStringField("scale", plot.scale.name())
     gen.writeStringField("upper", plot.upper.toString)
     gen.writeStringField("lower", plot.lower.toString)
-    gen.writeBooleanField("showTickLabels", plot.showTickLabels)
+    gen.writeStringField("tickLabelMode", plot.tickLabelMode.name())
     gen.writeEndObject()
   }
 
@@ -260,7 +260,7 @@ private[this] object JsonCodec {
       scale          = Scale.valueOf(node.get("scale").asText()),
       upper          = PlotBound(node.get("upper").asText()),
       lower          = PlotBound(node.get("lower").asText()),
-      showTickLabels = node.get("showTickLabels").asBoolean()
+      tickLabelMode  = TickLabelMode.valueOf(node.get("tickLabelMode").asText())
     )
   }
 

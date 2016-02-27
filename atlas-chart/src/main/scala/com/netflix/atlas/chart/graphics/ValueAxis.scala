@@ -18,6 +18,7 @@ package com.netflix.atlas.chart.graphics
 import java.awt.Graphics2D
 
 import com.netflix.atlas.chart.model.PlotDef
+import com.netflix.atlas.chart.model.TickLabelMode
 import com.netflix.atlas.core.util.UnitPrefix
 
 sealed trait ValueAxis extends Element with FixedWidth {
@@ -41,6 +42,10 @@ sealed trait ValueAxis extends Element with FixedWidth {
   def ticks(y1: Int, y2: Int): List[ValueTick] = {
     val numTicks = (y2 - y1) / minTickLabelHeight
     Ticks.value(min, max, numTicks)
+    plotDef.tickLabelMode match {
+      case TickLabelMode.BINARY  => Ticks.binary(min, max, numTicks)
+      case _                     => Ticks.value(min, max, numTicks)
+    }
   }
 
   protected def angle: Double
@@ -56,6 +61,22 @@ sealed trait ValueAxis extends Element with FixedWidth {
     g.rotate(angle, centerX, centerY)
     truncated.draw(g, centerX - width / 2, centerY - height / 2, centerX + width / 2, centerY + height / 2)
     g.setTransform(transform)
+  }
+
+  protected def tickPrefix(v: Double): UnitPrefix = {
+    plotDef.tickLabelMode match {
+      case TickLabelMode.OFF     => UnitPrefix.one
+      case TickLabelMode.DECIMAL => UnitPrefix.decimal(v)
+      case TickLabelMode.BINARY  => UnitPrefix.binary(v)
+    }
+  }
+
+  protected def tickLabelFmt: String = {
+    plotDef.tickLabelMode match {
+      case TickLabelMode.OFF     => ""
+      case TickLabelMode.DECIMAL => "%.1f%s"
+      case TickLabelMode.BINARY  => "%.0f%s"
+    }
   }
 }
 
@@ -100,8 +121,8 @@ case class LeftValueAxis(
 
   private def drawWithOffset(ticks: List[ValueTick], g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     val offset = ticks.head.v
-    val prefix = UnitPrefix.decimal(ticks.last.v - offset)
-    val offsetStr = prefix.format(offset, "%.1f%s")
+    val prefix = tickPrefix(ticks.last.v - offset)
+    val offsetStr = prefix.format(offset, tickLabelFmt)
     val offsetTxt = Text(offsetStr, font = Constants.smallFont, alignment = TextAlignment.LEFT, style = style)
     val offsetH = Constants.smallFontDims.height * 2
     val offsetW = Constants.smallFontDims.width * (offsetStr.length + 3)
@@ -118,7 +139,7 @@ case class LeftValueAxis(
       g.drawLine(x2, py, x2 - tickMarkLength, py)
 
       if (plotDef.showTickLabels) {
-        val label = s"+${prefix.format(tick.v - offset, "%.1f%s")}"
+        val label = s"+${prefix.format(tick.v - offset, tickLabelFmt)}"
         val txt = Text(label, font = Constants.smallFont, alignment = TextAlignment.RIGHT, style = style)
         val txtH = Constants.smallFontDims.height
         val ty = py - txtH / 2
@@ -170,8 +191,8 @@ case class RightValueAxis(
 
   private def drawWithOffset(ticks: List[ValueTick], g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     val offset = ticks.head.v
-    val prefix = UnitPrefix.decimal(ticks.last.v - offset)
-    val offsetStr = prefix.format(offset, "%.1f%s")
+    val prefix = tickPrefix(ticks.last.v - offset)
+    val offsetStr = prefix.format(offset, tickLabelFmt)
     val offsetTxt = Text(offsetStr, font = Constants.smallFont, alignment = TextAlignment.RIGHT, style = style)
     val offsetH = Constants.smallFontDims.height * 2
     val offsetW = Constants.smallFontDims.width * (offsetStr.length + 3)
@@ -188,7 +209,7 @@ case class RightValueAxis(
       g.drawLine(x1, py, x1 + tickMarkLength, py)
 
       if (plotDef.showTickLabels) {
-        val label = s"+${prefix.format(tick.v - offset, "%.1f%s")}"
+        val label = s"+${prefix.format(tick.v - offset, tickLabelFmt)}"
         val txt = Text(label, font = Constants.smallFont, alignment = TextAlignment.LEFT, style = style)
         val txtH = Constants.smallFontDims.height
         val ty = py - txtH / 2

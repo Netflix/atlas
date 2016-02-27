@@ -18,7 +18,6 @@ package com.netflix.atlas.core.util
 object UnitPrefix {
 
   import java.lang.{Double => JDouble}
-  import java.lang.{Math => JMath}
 
   val one   = UnitPrefix("", "", 1.0)
 
@@ -44,20 +43,27 @@ object UnitPrefix {
   val zepto = UnitPrefix("z",      "zepto", 1.0e-21)
   val yocto = UnitPrefix("y",      "yocto", 1.0e-24)
 
+  val kibi  = UnitPrefix("Ki",  "kibi",  1024.0)
+  val mebi  = UnitPrefix("Mi",  "mebi",  kibi.factor * 1024.0)
+  val gibi  = UnitPrefix("Gi",  "gibi",  mebi.factor * 1024.0)
+  val tebi  = UnitPrefix("Ti",  "tebi",  gibi.factor * 1024.0)
+  val pebi  = UnitPrefix("Pi",  "pebi",  tebi.factor * 1024.0)
+  val exbi  = UnitPrefix("Ei",  "exbi",  pebi.factor * 1024.0)
+  val zebi  = UnitPrefix("Zi",  "zebi",  exbi.factor * 1024.0)
+  val yobi  = UnitPrefix("Yi",  "yobi",  zebi.factor * 1024.0)
+
+  val binaryPrefixes: List[UnitPrefix] = List(kibi, mebi, gibi, tebi, pebi, exbi, zebi, yobi)
+
   private val maxValue = 1e27
   private val minValue = 1e-27
 
   private val decimalBigPrefixes = List(yotta, zetta, exa, peta, tera, giga, mega, kilo)
   private val decimalSmallPrefixes = List(milli, micro, nano, pico, femto, atto, zepto, yocto)
 
+  private val binaryBigPrefixes = binaryPrefixes.reverse
+
   def format(v: Double, fmtstr: String = "%.1f%s", scifmt: String = "%.0e"): String = {
-    if (hasExtremeExponent(v)) {
-      val fmt = if (v >= 0.0) " " + scifmt else scifmt
-      fmt.format(v)
-    } else {
-      val unit = decimal(v)
-      unit.format(v, fmtstr)
-    }
+    decimal(v).format(v, fmtstr, scifmt)
   }
 
   private def hasExtremeExponent(v: Double): Boolean = {
@@ -69,7 +75,7 @@ object UnitPrefix {
 
   private def isSmall(v: Double): Boolean = v <= minValue && v >= Double.MinPositiveValue
 
-  /** Returns an appropriate prefix for `value`. */
+  /** Returns an appropriate decimal prefix for `value`. */
   def decimal(value: Double): UnitPrefix = {
     math.abs(value) match {
       case v if isNearlyZero(v)      => one
@@ -80,7 +86,22 @@ object UnitPrefix {
     }
   }
 
-  /** Returns an appropriate prefix for `value`. */
+  /**
+    * Returns an appropriate binary prefix for `value`. If the value is less than 1, then we
+    * fall back to using the decimal small prefixes. It is expected that binary prefixes would
+    * only get used with data greater than or equal to a byte.
+    */
+  def binary(value: Double): UnitPrefix = {
+    math.abs(value) match {
+      case v if isNearlyZero(v)      => one
+      case v if !JDouble.isFinite(v) => one
+      case v if v >= kibi.factor     => binaryBigPrefixes.find(_.factor <= v).getOrElse(yobi)
+      case v if v < 1.0              => decimalSmallPrefixes.find(_.factor <= v).getOrElse(yocto)
+      case _                         => one
+    }
+  }
+
+  /** Returns an appropriate decimal prefix for `value`. */
   def forRange(value: Double, digits: Double): UnitPrefix = {
     val f = math.pow(10.0, digits)
     def withinRange(prefix: UnitPrefix, v: Double): Boolean = {
@@ -92,6 +113,23 @@ object UnitPrefix {
       case v if !JDouble.isFinite(v) => one
       case v if withinRange(one, v)  => one
       case v if v >= kilo.factor / f => decimalBigPrefixes.reverse.find(withinRange(_, v)).getOrElse(yotta)
+      case v if v < 1.0 / f          => decimalSmallPrefixes.find(withinRange(_, v)).getOrElse(yocto)
+      case _                         => one
+    }
+  }
+
+  /** Returns an appropriate binary prefix for `value`. */
+  def binaryRange(value: Double, digits: Double): UnitPrefix = {
+    val f = math.pow(10.0, digits)
+    def withinRange(prefix: UnitPrefix, v: Double): Boolean = {
+      val a = math.abs(v)
+      a >= prefix.factor / f && a < prefix.factor * f
+    }
+    math.abs(value) match {
+      case v if isNearlyZero(v)      => one
+      case v if !JDouble.isFinite(v) => one
+      case v if withinRange(one, v)  => one
+      case v if v >= kibi.factor / f => binaryPrefixes.find(withinRange(_, v)).getOrElse(yobi)
       case v if v < 1.0 / f          => decimalSmallPrefixes.find(withinRange(_, v)).getOrElse(yocto)
       case _                         => one
     }
@@ -112,6 +150,15 @@ object UnitPrefix {
 case class UnitPrefix(symbol: String, text: String, factor: Double) {
   def format(value: Double, fmtstr: String): String = {
     fmtstr.format(value / factor, symbol)
+  }
+
+  def format(v: Double, fmtstr: String = "%.1f%s", scifmt: String = "%.0e"): String = {
+    if (UnitPrefix.hasExtremeExponent(v)) {
+      val fmt = if (v >= 0.0) " " + scifmt else scifmt
+      fmt.format(v)
+    } else {
+      format(v, fmtstr)
+    }
   }
 
   def next: UnitPrefix = {

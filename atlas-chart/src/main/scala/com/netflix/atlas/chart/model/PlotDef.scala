@@ -35,10 +35,8 @@ import com.netflix.atlas.chart.model.PlotBound.Explicit
  *     Upper limit for the axis.
  * @param lower
  *     Lower limit for the axis.
- * @param showTickLabels
- *     Indicates whether or not major tick mark labels should be displayed. In some case it can
- *     be useful to suppress the labels for including the charts in presentations or support
- *     tickets where it is not desirable to share the exact numbers.
+ * @param tickLabelMode
+ *     Mode to use for displaying tick labels.
  */
 case class PlotDef(
     data: List[DataDef],
@@ -47,7 +45,7 @@ case class PlotDef(
     scale: Scale = Scale.LINEAR,
     upper: PlotBound = AutoStyle,
     lower: PlotBound = AutoStyle,
-    showTickLabels: Boolean = true) {
+    tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL) {
 
   import java.lang.{Double => JDouble}
 
@@ -139,6 +137,8 @@ case class PlotDef(
   def getAxisColor: Color = {
     axisColor.getOrElse(data.headOption.fold(Color.BLACK)(_.color))
   }
+
+  def showTickLabels: Boolean = tickLabelMode != TickLabelMode.OFF
 
   def horizontalSpans: List[HSpanDef] = data.collect { case v: HSpanDef => v }
 
