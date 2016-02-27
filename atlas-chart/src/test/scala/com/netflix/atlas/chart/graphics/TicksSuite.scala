@@ -252,4 +252,151 @@ class TicksSuite extends FunSuite {
       }
     }
   }
+
+  test("binary [0, 1024]") {
+    val ticks = Ticks.binary(0.0, 1024, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 11)
+    assert(ticks.count(_.major) === 4)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "0")
+    assert(ticks.last.label === "1000")
+  }
+
+  test("binary [0, 1258]") {
+    val ticks = Ticks.binary(0.0, 1258, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 13)
+    assert(ticks.count(_.major) === 5)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "0")
+    assert(ticks.last.label === "1200")
+  }
+
+  test("binary [0, 7258]") {
+    val ticks = Ticks.binary(0.0, 7258, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 15)
+    assert(ticks.count(_.major) === 4)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "0")
+    assert(ticks.last.label === "7168")
+  }
+
+  test("binary [0, 10k]") {
+    val ticks = Ticks.binary(0.0, 10e3, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 20)
+    assert(ticks.count(_.major) === 5)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "0Ki")
+    assert(ticks.last.label === "10Ki")
+  }
+
+  test("binary [8k, 10k]") {
+    val ticks = Ticks.binary(8e3, 10e3, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 21)
+    assert(ticks.count(_.major) === 6)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "7.8Ki")
+    assert(ticks.last.label === "9.8Ki")
+  }
+
+  test("binary [8k, 10M]") {
+    val ticks = Ticks.binary(8e3, 10e6, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 19)
+    assert(ticks.count(_.major) === 4)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "512Ki")
+    assert(ticks.last.label === "9728Ki")
+  }
+
+  test("binary [8k, 10T]") {
+    val ticks = Ticks.binary(8e3, 10e12, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 18)
+    assert(ticks.count(_.major) === 4)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "512Gi")
+    assert(ticks.last.label === "9216Gi")
+  }
+
+  test("binary [9993, 10079]") {
+    val ticks = Ticks.binary(9993, 10079, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 17)
+    assert(ticks.count(_.major) === 4)
+    assert(ticks.head.offset === 9980.0)
+    assert(ticks.head.label === "15")
+    assert(ticks.last.label === "95")
+  }
+
+  test("binary [9991234563, 9991234567]") {
+    val ticks = Ticks.binary(9991234563.0, 9991234567.0, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 21)
+    assert(ticks.count(_.major) === 5)
+    assert(ticks.head.offset === 9.991234563E9)
+    assert(ticks.head.label === "0")
+    assert(ticks.last.label === "4")
+  }
+
+  test("binary [99912000000, 9991800000]") {
+    val ticks = Ticks.binary(99912000000.0, 99918000000.0, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 11)
+    assert(ticks.count(_.major) === 3)
+    assert(ticks.head.offset === 9.9910418432E10)
+    assert(ticks.head.label === "2048Ki")
+    assert(ticks.last.label === "7168Ki")
+  }
+
+  test("binary [339.86152734763687, 339.87716933873867]") {
+    val ticks =Ticks.binary(339.86152734763687, 339.87716933873867, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 2)
+    assert(ticks.count(_.major) === 2)
+    assert(ticks.head.offset === 339.86152734763687)
+    assert(ticks.head.label === "0.0")
+    assert(ticks.last.label === "15.6m")
+  }
+
+  test("binary [1e12, 1e12 + 5e6]") {
+    val ticks =Ticks.binary(1e12, 1e12 + 5e6, 5)
+    sanityCheck(ticks)
+    assert(ticks.size === 19)
+    assert(ticks.count(_.major) === 5)
+    assert(ticks.head.offset === 9.99999668224E11)
+    assert(ticks.head.label === "512Ki")
+    assert(ticks.last.label === "5120Ki")
+  }
+
+  test("binary sanity check, 0 to y") {
+    for (i <- 0 until 100; j <- 2 until 10) {
+      val v = Random.nextDouble() * 1e12
+      try {
+        val ticks = Ticks.binary(0.0, v, j)
+        sanityCheck(ticks)
+      } catch {
+        case t: Throwable =>
+          throw new AssertionError(s"Ticks.binary(0.0, $v, $j)", t)
+      }
+    }
+  }
+
+  test("binary sanity check, y1 to y2") {
+    for (i <- 0 until 100; j <- 2 until 10) {
+      val v1 = Random.nextDouble() * 1e4
+      val v2 = v1 + Random.nextDouble() * 1e3
+      try {
+        val ticks = Ticks.binary(v1, v2, j)
+        sanityCheck(ticks)
+      } catch {
+        case t: Throwable =>
+          throw new AssertionError(s"Ticks.binary($v1, $v2, $j)", t)
+      }
+    }
+  }
 }

@@ -77,7 +77,31 @@ object Ticks {
   // Major and minor tick sizes for value axis
   private val valueTickSizes = (-25 to 25).toList.flatMap { i =>
     val f = math.pow(10, i)
-    baseValueTickSizes.map { t => (t._1 * f, t._2 * f, t._1 / t._2) }
+    baseValueTickSizes.map { case (major, minor) =>
+      val minorPerMajor = major / minor // Number of minor ticks to use between major ticks
+      (major * f, minor * f, minorPerMajor)
+    }
+  }
+
+  // Major and minor tick sizes for value axis
+  private val binaryValueTickSizes = {
+    val ltOneKi = (-1 to 1).toList.flatMap { i =>
+      val f = math.pow(10, i)
+      baseValueTickSizes.map { case (major, minor) =>
+        val minorPerMajor = major / minor // Number of minor ticks to use between major ticks
+        (major * f, minor * f, minorPerMajor)
+      }
+    }
+
+    val majorMultiples = List(1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500)
+    val gtOneKi = UnitPrefix.binaryPrefixes.flatMap { prefix =>
+      val n = 4
+      val majorF = prefix.factor
+      val minorF = prefix.factor / 4.0
+      majorMultiples.map { m => (majorF * m, minorF * m, n) }
+    }
+
+    ltOneKi ::: gtOneKi
   }
 
   /** Round to multiple of `s`. */
@@ -112,15 +136,58 @@ object Ticks {
   }
 
   /**
-   * Generate value tick marks with approximately `n` major ticks for the range `[v1, v2]`.
-   */
+    * Determine the prefix associated with the data. Use the value for the delta between major
+    * tick marks if possible. If this will require too many digits to render the largest value, then
+    * use the unit prefix found for the largest value.
+    */
+  private def getBinaryPrefix(v: Double, major: Double): UnitPrefix = {
+    val m = UnitPrefix.binaryRange(major, 4)
+    if (v < 10.0 * m.factor) m else UnitPrefix.binaryRange(v, 4)
+  }
+
+  /**
+    * Determines the string format pattern to use for showing the label. This is primarily focused
+    * on where the decimal point should go such that:
+    *
+    * 1. All tick labels will have the decimal point in the same position to make visual scanning
+    *    easier.
+    * 2. Avoid the use of an offset when the number can be shown without an offset by shifting
+    *    the decimal point.
+    */
+  private def binaryLabelFormat(prefix: UnitPrefix, v: Double): (String, Double) = {
+    val f = v / prefix.factor
+    (f * 1000.0).toInt match {
+      case i if (i %   10) > 0 => "%.2f%s" -> prefix.factor * 10.0   // 1.23
+      case i if (i %  100) > 0 => "%.1f%s" -> prefix.factor * 100.0  // 12.3
+      case _                   => "%.0f%s" -> prefix.factor * 1000.0 //  123
+    }
+  }
+
+  /**
+    * Generate value tick marks with approximately `n` major ticks for the range `[v1, v2]`.
+    * Uses decimal unit prefixes.
+    */
   def value(v1: Double, v2: Double, n: Int): List[ValueTick] = {
     require(JDouble.isFinite(v1), "lower bound must be finite")
     require(JDouble.isFinite(v2), "upper bound must be finite")
+    require(v1 <= v2, s"v1 must be less than v2 ($v1 > $v2)")
     val range = v2 - v1
     val r = if (range < 1e-12) 1.0 else range
 
     valueTickSizes.find(t => r / t._1 <= n).fold(sciTicks(v1, v2, n))(t => normalTicks(v1, v2, t))
+  }
+
+  /**
+    * Same as `value(Double,Double,Int)` except that it uses binary unit prefixes.
+    */
+  def binary(v1: Double, v2: Double, n: Int): List[ValueTick] = {
+    require(JDouble.isFinite(v1), "lower bound must be finite")
+    require(JDouble.isFinite(v2), "upper bound must be finite")
+    require(v1 <= v2, s"v1 must be less than v2 ($v1 > $v2)")
+    val range = v2 - v1
+    val r = if (range < 1e-12) 1.0 else range
+
+    binaryValueTickSizes.find(t => r / t._1 <= n).fold(sciTicks(v1, v2, n))(t => binaryTicks(v1, v2, t))
   }
 
   private def sciTicks(v1: Double, v2: Double, n: Int): List[ValueTick] = {
@@ -149,6 +216,40 @@ object Ticks {
 
     val useOffset = major < math.abs(v1) / 1e3
     if (useOffset) ts.map(t => t.copy(offset = base, labelOpt = None)) else ts
+  }
+
+  private def binaryTicks(v1: Double, v2: Double, t: (Double, Double, Int)): List[ValueTick] = {
+    val (major, minor, minorPerMajor) = t
+    val ticks = List.newBuilder[ValueTick]
+
+    val prefix = getBinaryPrefix(math.abs(v2), major)
+    val (labelFmt, maxValue) = binaryLabelFormat(prefix, major)
+
+    val base = round(v1, major)
+    val end = ((v2 - base) / minor).toInt + 1
+    var pos = 0
+    while (pos <= end) {
+      val v = base + pos * minor
+      if (v >= v1 && v <= v2) {
+        val label = prefix.format(v, labelFmt)
+        ticks += ValueTick(v, 0.0, pos % minorPerMajor == 0, Some(label))
+      }
+      pos += 1
+    }
+    val ts = ticks.result()
+
+    if (ts.isEmpty) {
+      List(ValueTick(v1, v1), ValueTick(v2, v1))
+    } else {
+      val useOffset = major < math.abs(v1) / 1e2
+      if (!useOffset) ts
+      else {
+        val max = ts.map(t => t.v - base).max
+        val offsetPrefix = getBinaryPrefix(max, max)
+        val (fmt, _) = binaryLabelFormat(offsetPrefix, max)
+        ts.map(t => t.copy(offset = base, labelOpt = Some(offsetPrefix.format(t.v - base, fmt))))
+      }
+    }
   }
 
   /**

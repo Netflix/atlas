@@ -45,7 +45,7 @@ case class Legend(
   }
 
   private val entries = plot.lines.take(maxEntries).flatMap { line =>
-    List(HorizontalPadding(2), LegendEntry(line, showStats))
+    List(HorizontalPadding(2), LegendEntry(plot, line, showStats))
   }
 
   private val footer = if (plot.lines.size <= maxEntries) Nil else {

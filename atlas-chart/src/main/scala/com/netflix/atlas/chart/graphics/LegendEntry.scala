@@ -19,17 +19,22 @@ import java.awt.Color
 import java.awt.Graphics2D
 
 import com.netflix.atlas.chart.model.LineDef
+import com.netflix.atlas.chart.model.PlotDef
+import com.netflix.atlas.chart.model.TickLabelMode
 import com.netflix.atlas.core.util.UnitPrefix
 
 /**
- * Draws a legend entry for a line.
- *
- * @param line
- *     Definition for the line.
- * @param showStats
- *     If true then summary stats will be shown below the label for the line.
- */
-case class LegendEntry(line: LineDef, showStats: Boolean) extends Element with FixedHeight {
+  * Draws a legend entry for a line.
+  *
+  * @param plot
+  *     Definition for the plot containing the line.
+  * @param line
+  *     Definition for the line.
+  * @param showStats
+  *     If true then summary stats will be shown below the label for the line.
+  */
+case class LegendEntry(plot: PlotDef, line: LineDef, showStats: Boolean)
+    extends Element with FixedHeight {
   override def height: Int = {
     if (!showStats) Constants.normalFontDims.height else {
       Constants.normalFontDims.height + Constants.smallFontDims.height * 3
@@ -79,6 +84,11 @@ case class LegendEntry(line: LineDef, showStats: Boolean) extends Element with F
     }
   }
 
-  private def format(v: Double): String = UnitPrefix.format(v, "%9.3f%1s", "%8.1e ")
+  private def format(v: Double): String = {
+    plot.tickLabelMode match {
+      case TickLabelMode.BINARY => UnitPrefix.binary(v).format(v, "%9.2f%1s", "%8.1e ")
+      case _                    => UnitPrefix.decimal(v).format(v, "%9.3f%1s", "%8.1e ")
+    }
+  }
 }
 
