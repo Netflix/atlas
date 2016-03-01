@@ -113,6 +113,9 @@ object Main extends StrictLogging {
     DesSlow.word       -> DesSlow,
     DesSlower.word     -> DesSlower,
     DesSimple.word     -> DesSimple,
+    SDesFast.word      -> SDesFast,
+    SDesSlow.word      -> SDesSlow,
+    SDesSlower.word    -> SDesSlower,
     DistStddev.word    -> DistStddev
   )
 
