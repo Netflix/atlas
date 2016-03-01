@@ -112,7 +112,8 @@ object StatefulVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |[Double exponential smoothing](DES).
+        |[Double exponential smoothing](DES). For most use-cases [sliding DES](stateful-sdes)
+        |should be used instead to ensure a deterministic prediction.
       """.stripMargin.trim
 
     override def signature: String =
