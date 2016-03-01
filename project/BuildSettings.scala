@@ -2,7 +2,7 @@ import sbt._
 import sbt.Keys._
 
 object BuildSettings {
-  val organization = "com.netflix.atlas"
+  val organization = "com.netflix.atlas_v1"
 
   val compilerFlags = Seq(
     "-deprecation",
