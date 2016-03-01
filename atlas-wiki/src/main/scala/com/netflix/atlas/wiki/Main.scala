@@ -33,12 +33,7 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
-import com.netflix.atlas.wiki.pages.DES
-import com.netflix.atlas.wiki.pages.DesEpicSignal
-import com.netflix.atlas.wiki.pages.DesEpicViz
-import com.netflix.atlas.wiki.pages.DistStddev
-import com.netflix.atlas.wiki.pages.StackLanguageReference
-import com.netflix.atlas.wiki.pages.TimeZones
+import com.netflix.atlas.wiki.pages._
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.Await
@@ -114,6 +109,10 @@ object Main extends StrictLogging {
   val overrides = Map(
     DesEpicSignal.word -> DesEpicSignal,
     DesEpicViz.word    -> DesEpicViz,
+    DesFast.word       -> DesFast,
+    DesSlow.word       -> DesSlow,
+    DesSlower.word     -> DesSlower,
+    DesSimple.word     -> DesSimple,
     DistStddev.word    -> DistStddev
   )
 
