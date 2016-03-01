@@ -35,6 +35,6 @@ case object DesSlow extends StackWordPage {
     """
       |Helper for computing DES using settings to slowly adjust to the input line. See
       |[recommended values](DES#recommended-values) for more information. For most use-cases
-      |the sliding DES variant [:sdes-fast](stateful-sdes‐slow) should be used instead.
+      |the sliding DES variant [:sdes-slow](stateful-sdes‐slow) should be used instead.
     """.stripMargin.trim
 }
