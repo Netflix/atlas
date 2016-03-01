@@ -73,11 +73,11 @@ class DES extends SimplePage {
       |Experimentally we have converged on 3 sets of values based on how quickly it should adjust
       |to changing levels in the input signal.
       |
-      || Helper                                             | Alpha  | Beta  |
-      ||----------------------------------------------------|--------|-------|
-      || [:des-fast](Stack-Language-Reference#des-fast)     | 0.1    | 0.02  |
-      || [:des-slower](Stack-Language-Reference#des-slower) | 0.05   | 0.03  |
-      || [:des-slow](Stack-Language-Reference#des-slow)     | 0.03   | 0.04  |
+      || Helper                             | Alpha  | Beta  |
+      ||------------------------------------|--------|-------|
+      || [:des-fast](stateful-des‐fast)     | 0.1    | 0.02  |
+      || [:des-slower](stateful-des‐slower) | 0.05   | 0.03  |
+      || [:des-slow](stateful-des‐slow)     | 0.03   | 0.04  |
       |
       |
       |Here is an example of how they behave for a sharp drop and recovery:
