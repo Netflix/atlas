@@ -16,9 +16,11 @@
 package com.netflix.atlas.core.db
 
 import com.netflix.atlas.core.model.ArrayBlock
+import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.ConsolidationFunction
 import com.netflix.atlas.core.model.ConstantBlock
+import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.util.Math
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
@@ -505,10 +507,20 @@ class TimeSeriesBufferSuite extends FunSuite {
   }
 
   test("equals") {
+    // https://groups.google.com/forum/#!topic/equalsverifier/R5MWUGVx-C8
+
+    val t1 = Map("a" -> "1")
+    val t2 = Map("a" -> "2")
+
+    val step = 60000L
+    val s1 = new ArrayTimeSeq(DsType.Gauge,  5 * step, step, Array(1.0))
+    val s2 = new ArrayTimeSeq(DsType.Gauge,  5 * step, step, Array(1.0, 2.0))
     EqualsVerifier
-      .forClass(classOf[TimeSeriesBuffer])
-      .suppress(Warning.NULL_FIELDS)
-      .suppress(Warning.NONFINAL_FIELDS)
-      .verify()
+        .forClass(classOf[TimeSeriesBuffer])
+        .withPrefabValues(classOf[Map[_, _]], t1, t2)
+        .withPrefabValues(classOf[ArrayTimeSeq], s1, s2)
+        .suppress(Warning.NULL_FIELDS)
+        .suppress(Warning.NONFINAL_FIELDS)
+        .verify()
   }
 }
