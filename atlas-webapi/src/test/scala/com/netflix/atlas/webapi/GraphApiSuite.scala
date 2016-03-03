@@ -21,6 +21,7 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.test.GraphAssertions
+import com.netflix.atlas.test.SrcPath
 import org.scalatest.FunSuite
 import spray.http.HttpEntity
 import spray.http.MediaTypes._
@@ -46,7 +47,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   val all = template ::: others
 
   // SBT working directory gets updated with fork to be the dir for the project
-  private val baseDir = "."
+  private val baseDir = SrcPath.forProject("atlas-webapi")
   private val goldenDir = s"$baseDir/src/test/resources/${getClass.getSimpleName}"
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
   private val graphAssertions = new GraphAssertions(goldenDir, targetDir)
