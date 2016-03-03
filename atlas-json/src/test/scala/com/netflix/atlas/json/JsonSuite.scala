@@ -402,6 +402,14 @@ class JsonSuite extends FunSuite {
     val b = Json.smileEncode[List[Int]](v)
     assert(Json.smileDecode[List[Int]](b) === v)
   }
+
+  // See ObjWithLambda comments for details
+  test("object with lambda") {
+    val obj = new ObjWithLambda
+    obj.setFoo("abc")
+    val json = Json.encode(obj)
+    assert(json === """{"foo":"abc"}""")
+  }
 }
 
 case object JsonSuiteObject
