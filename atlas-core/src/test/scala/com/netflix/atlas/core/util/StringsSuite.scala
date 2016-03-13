@@ -20,6 +20,7 @@ import java.time.Duration
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
 import org.scalatest.FunSuite
@@ -317,6 +318,24 @@ class StringsSuite extends FunSuite {
     val expected = ZonedDateTime.of(2012, 1, 31, 20, 5, 6, 0, ZoneOffset.UTC)
     val result = ZonedDateTime.ofInstant(parseDate("2012-02-01T04:05:06+08:00").toInstant, ZoneOffset.UTC)
     assert(result === expected)
+  }
+
+  test("parseDate, iso date with time with millis and zone") {
+    val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
+    val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, nanos, ZoneOffset.UTC)
+    assert(parseDate("2012-02-01T04:05:06.123Z") === expected)
+  }
+
+  test("parseDate, iso date with time with millis and zone offset") {
+    val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
+    val expected = ZonedDateTime.of(2012, 2, 1, 7, 5, 6, nanos, ZoneOffset.UTC).toInstant
+    assert(parseDate("2012-02-01T04:05:06.123-03:00").toInstant === expected)
+  }
+
+  test("parseDate, iso date with time with millis") {
+    val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
+    val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, nanos, ZoneOffset.UTC)
+    assert(parseDate("2012-02-01T04:05:06.123") === expected)
   }
 
   test("parseDate, iso invalid") {
