@@ -53,8 +53,8 @@ object Strings {
    * Date following the ISO8601 conventions.
    */
   private val IsoDate = """^(\d{4}-\d{2}-\d{2}(?:[-+Z].*)?)$""".r
-  private val IsoDateTime = """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z?)$""".r
-  private val IsoOffsetDateTime = """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?[-+].*)$""".r
+  private val IsoDateTime = """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?Z?)$""".r
+  private val IsoOffsetDateTime = """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?[-+].*)$""".r
 
   /**
    * Date relative to a given reference point.
