@@ -42,7 +42,7 @@ object Json {
     def decode(input: InputStream): T = decode(factory.createParser(input))
     def decode(input: Reader): T = decode(factory.createParser(input))
 
-    private def decode(parser: JsonParser): T = {
+    def decode(parser: JsonParser): T = {
       try {
         val value = reader.readValue[T](parser)
         require(parser.nextToken() == null, "invalid json, additional content after value")
