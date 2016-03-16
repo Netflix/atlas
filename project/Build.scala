@@ -105,6 +105,7 @@ object MainBuild extends Build {
   lazy val `atlas-standalone` = project
     .dependsOn(`atlas-webapi`)
     .settings(buildSettings: _*)
+    .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.iepGovernator,
       Dependencies.guiceCore,

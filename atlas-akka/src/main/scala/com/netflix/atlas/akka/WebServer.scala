@@ -25,6 +25,8 @@ import akka.io.Inet
 import akka.util.Timeout
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.iep.service.AbstractService
+import com.netflix.iep.service.ClassFactory
+import com.netflix.iep.service.DefaultClassFactory
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
@@ -35,8 +37,12 @@ import scala.util.Failure
 import scala.util.Success
 
 
-class WebServer(registry: Registry, name: String, port: Int)
+class WebServer(classFactory: ClassFactory, registry: Registry, name: String, port: Int)
     extends AbstractService with StrictLogging {
+
+  @deprecated(message = "Use default constructor instead.", since = "2016-03-16")
+  def this(registry: Registry, name: String, port: Int) =
+    this(new DefaultClassFactory(), registry, name, port)
 
   import scala.concurrent.duration._
 
@@ -58,9 +64,11 @@ class WebServer(registry: Registry, name: String, port: Int)
     system = ActorSystem(name)
     configure()
 
+    val handler = system.actorOf(
+      Props(classFactory.newInstance(classOf[RequestHandlerActor])), "request-handler")
+
     val bindPromise = Promise[Http.Bound]()
     val stats = system.actorOf(Props(new ServerStatsActor(registry, bindPromise)))
-    val handler = system.actorOf(Props[RequestHandlerActor], "request-handler")
     val options = List(Inet.SO.ReuseAddress(true))
     val bind = Http.Bind(handler,
       interface = "0.0.0.0",
