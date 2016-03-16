@@ -17,19 +17,16 @@ package com.netflix.atlas.standalone
 
 import java.io.File
 
-import akka.actor.Props
 import com.google.inject.AbstractModule
 import com.google.inject.Module
 import com.google.inject.multibindings.Multibinder
+import com.google.inject.multibindings.OptionalBinder
 import com.google.inject.util.Modules
-import com.netflix.atlas.akka.WebServer
 import com.netflix.atlas.config.ConfigManager
-import com.netflix.atlas.core.db.MemoryDatabase
-import com.netflix.atlas.webapi.ApiSettings
-import com.netflix.atlas.webapi.LocalDatabaseActor
-import com.netflix.atlas.webapi.LocalPublishActor
 import com.netflix.iep.guice.GuiceHelper
 import com.netflix.iep.service.Service
+import com.netflix.iep.service.ServiceManager
+import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Spectator
 import com.netflix.spectator.log4j.SpectatorAppender
 import com.typesafe.config.Config
@@ -45,6 +42,8 @@ import com.typesafe.scalalogging.StrictLogging
  */
 object Main extends StrictLogging {
 
+  private var guice: GuiceHelper = _
+
   private def loadAdditionalConfigFiles(files: Array[String]): Unit = {
     files.foreach { f =>
       logger.info(s"loading config file: $f")
@@ -54,30 +53,29 @@ object Main extends StrictLogging {
   }
 
   def main(args: Array[String]): Unit = {
-    val registry = Spectator.globalRegistry()
-    SpectatorAppender.addToRootLogger(registry, "spectator", false)
-    loadAdditionalConfigFiles(args)
+    try {
+      val registry = Spectator.globalRegistry()
+      SpectatorAppender.addToRootLogger(registry, "spectator", false)
+      loadAdditionalConfigFiles(args)
+      start()
+      guice.addShutdownHook()
+    } catch {
+      case t: Throwable =>
+        logger.error("server failed to start, shutting down", t)
+        System.exit(1)
+    }
+  }
 
+  def start(): Unit = {
     val serviceModule = new AbstractModule {
       override def configure(): Unit = {
         GuiceHelper.getModulesUsingServiceLoader.forEach(install)
 
-        val server = new WebServer(registry, "atlas", ApiSettings.port) {
-          override protected def configure(): Unit = {
-            super.configure()
-            val db = ApiSettings.newDbInstance
-            actorSystem.actorOf(Props(new LocalDatabaseActor(db)), "db")
-            db match {
-              case mem: MemoryDatabase =>
-                logger.info("enabling local publish to memory database")
-                actorSystem.actorOf(Props(new LocalPublishActor(registry, mem)), "publish")
-              case _ =>
-            }
-          }
-        }
+        OptionalBinder.newOptionalBinder(binder(), classOf[Registry])
+          .setBinding().toInstance(Spectator.globalRegistry())
 
         val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
-        serviceBinder.addBinding().toInstance(server)
+        serviceBinder.addBinding().toProvider(classOf[WebServerProvider])
       }
     }
 
@@ -90,14 +88,12 @@ object Main extends StrictLogging {
     val modules = new java.util.ArrayList[Module]()
     modules.add(overrides)
 
-    try {
-      val guice = new GuiceHelper
-      guice.start(modules)
-      guice.addShutdownHook()
-    } catch {
-      case t: Throwable =>
-        logger.error("server failed to start, shutting down", t)
-        System.exit(1)
-    }
+    guice = new GuiceHelper
+    guice.start(modules)
+
+    // Ensure that service manager instance has been created
+    guice.getInjector.getInstance(classOf[ServiceManager])
   }
+
+  def shutdown(): Unit = guice.shutdown()
 }

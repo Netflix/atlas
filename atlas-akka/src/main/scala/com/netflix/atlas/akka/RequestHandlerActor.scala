@@ -16,9 +16,7 @@
 package com.netflix.atlas.akka
 
 import akka.actor._
-import com.netflix.atlas.config.ConfigManager
-import com.netflix.spectator.api.Registry
-import com.netflix.spectator.api.Spectator
+import com.netflix.iep.service.ClassFactory
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
@@ -26,10 +24,8 @@ import spray.http._
 import spray.routing._
 
 
-class RequestHandlerActor(registry: Registry, config: Config)
+class RequestHandlerActor(config: Config, classFactory: ClassFactory)
     extends Actor with StrictLogging with HttpService {
-
-  def this() = this(Spectator.globalRegistry(), ConfigManager.current)
 
   import com.netflix.atlas.akka.CustomDirectives._
 
@@ -49,11 +45,11 @@ class RequestHandlerActor(registry: Registry, config: Config)
         // Used for CORS pre-flight checks
         complete(StatusCodes.OK)
       }
-      val healthcheck = path("healthcheck") {
+      val ok = path("ok") {
         // Default endpoint for testing that always returns 200
         complete(StatusCodes.OK)
       }
-      val finalRoutes = corsPreflight ~ healthcheck ~ routes
+      val finalRoutes = corsPreflight ~ ok ~ routes
 
       // Allow all endpoints to be access cross-origin
       val cors = corsFilter { finalRoutes }
@@ -107,13 +103,19 @@ class RequestHandlerActor(registry: Registry, config: Config)
    * the first instance of a class will be used. The order in the list is otherwise maintained.
    */
   private def loadRoutesFromConfig(): List[WebApi] = {
-    import scala.collection.JavaConversions._
-    val routeClasses = config.getStringList("atlas.akka.api-endpoints").toList.distinct
-    routeClasses.map { cls =>
-      logger.info(s"loading webapi class: $cls")
-      val c = Class.forName(cls)
-      val ctor = c.getConstructor(classOf[ActorRefFactory])
-      ctor.newInstance(context).asInstanceOf[WebApi]
+    try {
+      import scala.collection.JavaConversions._
+      import scala.compat.java8.FunctionConverters._
+      val routeClasses = config.getStringList("atlas.akka.api-endpoints").toList.distinct
+      val bindings = Map[Class[_], AnyRef](classOf[ActorRefFactory] -> context).withDefaultValue(null)
+      routeClasses.map { cls =>
+        logger.info(s"loading webapi class: $cls")
+        classFactory.newInstance[WebApi](cls, bindings.asJava)
+      }
+    } catch {
+      case e: Exception =>
+        logger.error("failed to instantiate api endpoints", e)
+        throw e
     }
   }
 }
