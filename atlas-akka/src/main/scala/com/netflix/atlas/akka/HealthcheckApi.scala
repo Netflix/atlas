@@ -15,7 +15,10 @@
  */
 package com.netflix.atlas.akka
 
+import javax.inject.Provider
+
 import akka.actor.ActorRefFactory
+import com.netflix.atlas.json.Json
 import com.netflix.iep.service.ServiceManager
 import com.typesafe.scalalogging.StrictLogging
 import spray.http._
@@ -23,23 +26,29 @@ import spray.routing._
 
 
 /**
-  * Healthcheck endpoint based on health status of the ServiceManager. For backwards
-  * compatiblity, the status is marked as healthy if the ServiceManager is null. That
-  * behavior will likely change in the future, but for now just logs a warning.
+  * Healthcheck endpoint based on health status of the ServiceManager.
   */
-class HealthcheckApi(val actorRefFactory: ActorRefFactory, serviceManager: ServiceManager)
-    extends WebApi with StrictLogging {
-
-  if (serviceManager == null) {
-    logger.warn("ServiceManager is null, healthcheck will always return true")
-  }
+class HealthcheckApi(
+    val actorRefFactory: ActorRefFactory,
+    serviceManagerProvider: Provider[ServiceManager]) extends WebApi with StrictLogging {
 
   def routes: RequestContext => Unit = {
+    serviceManagerProvider.get()
     path("healthcheck") {
-      if (serviceManager == null || serviceManager.isHealthy)
-        complete(StatusCodes.OK)
-      else
-        complete(StatusCodes.InternalServerError)
+      respondWithMediaType(MediaTypes.`application/json`) {
+        if (serviceManager.isHealthy)
+          complete(HttpResponse(StatusCodes.OK, entity = summary))
+        else
+          complete(HttpResponse(StatusCodes.InternalServerError, entity = summary))
+      }
     }
+  }
+
+  private def serviceManager: ServiceManager = serviceManagerProvider.get
+
+  private def summary: String = {
+    import scala.collection.JavaConversions._
+    val states = serviceManager.services().map(s => s.name -> s.isHealthy).toMap
+    Json.encode(states)
   }
 }
