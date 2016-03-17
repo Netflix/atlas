@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.akka
 
+import java.lang.reflect.Type
+
 import akka.actor._
 import com.netflix.iep.service.ClassFactory
 import com.typesafe.config.Config
@@ -107,7 +109,7 @@ class RequestHandlerActor(config: Config, classFactory: ClassFactory)
       import scala.collection.JavaConversions._
       import scala.compat.java8.FunctionConverters._
       val routeClasses = config.getStringList("atlas.akka.api-endpoints").toList.distinct
-      val bindings = Map[Class[_], AnyRef](classOf[ActorRefFactory] -> context).withDefaultValue(null)
+      val bindings = Map[Type, AnyRef](classOf[ActorRefFactory] -> context).withDefaultValue(null)
       routeClasses.map { cls =>
         logger.info(s"loading webapi class: $cls")
         classFactory.newInstance[WebApi](cls, bindings.asJava)

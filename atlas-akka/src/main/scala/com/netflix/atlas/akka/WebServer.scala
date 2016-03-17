@@ -17,6 +17,7 @@ package com.netflix.atlas.akka
 
 import java.util.concurrent.TimeUnit
 
+import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.AllDeadLetters
 import akka.actor.Props
@@ -65,7 +66,7 @@ class WebServer(classFactory: ClassFactory, registry: Registry, name: String, po
     configure()
 
     val handler = system.actorOf(
-      Props(classFactory.newInstance(classOf[RequestHandlerActor])), "request-handler")
+      Props(classFactory.newInstance[Actor](classOf[RequestHandlerActor])), "request-handler")
 
     val bindPromise = Promise[Http.Bound]()
     val stats = system.actorOf(Props(new ServerStatsActor(registry, bindPromise)))

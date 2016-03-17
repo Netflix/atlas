@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.akka
 
+import javax.inject.Provider
+
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.Service
@@ -37,7 +39,10 @@ class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
     })
 
   val serviceManager = new ServiceManager(services)
-  val endpoint = new HealthcheckApi(system, serviceManager)
+  val provider = new Provider[ServiceManager] {
+    override def get(): ServiceManager = serviceManager
+  }
+  val endpoint = new HealthcheckApi(system, provider)
 
   test("/healthcheck pre-start") {
     Get("/healthcheck") ~> endpoint.routes ~> check {
