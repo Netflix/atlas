@@ -16,6 +16,7 @@
 package com.netflix.atlas.akka
 
 import akka.actor.ActorRefFactory
+import com.netflix.atlas.json.Json
 import com.netflix.iep.service.ServiceManager
 import com.typesafe.scalalogging.StrictLogging
 import spray.http._
@@ -36,10 +37,18 @@ class HealthcheckApi(val actorRefFactory: ActorRefFactory, serviceManager: Servi
 
   def routes: RequestContext => Unit = {
     path("healthcheck") {
-      if (serviceManager == null || serviceManager.isHealthy)
-        complete(StatusCodes.OK)
-      else
-        complete(StatusCodes.InternalServerError)
+      respondWithMediaType(MediaTypes.`application/json`) {
+        if (serviceManager == null || serviceManager.isHealthy)
+          complete(HttpResponse(StatusCodes.OK, entity = summary))
+        else
+          complete(HttpResponse(StatusCodes.InternalServerError, entity = summary))
+      }
     }
+  }
+
+  private def summary: String = {
+    import scala.collection.JavaConversions._
+    val states = serviceManager.services().map(s => s.name -> s.isHealthy).toMap
+    Json.encode(states)
   }
 }

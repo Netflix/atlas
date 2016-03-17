@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.akka
 
+import com.netflix.atlas.json.Json
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.Service
 import com.netflix.iep.service.ServiceManager
@@ -30,7 +31,7 @@ class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
   val services = new java.util.HashSet[Service]
-  services.add(new AbstractService() {
+  services.add(new AbstractService("test") {
       override def startImpl(): Unit = ()
       override def stopImpl(): Unit = ()
     })
@@ -41,6 +42,8 @@ class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
   test("/healthcheck pre-start") {
     Get("/healthcheck") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.InternalServerError)
+      val data = Json.decode[Map[String, Boolean]](responseAs[String])
+      assert(!data("test"))
     }
   }
 
@@ -49,6 +52,8 @@ class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
     services.foreach(_.asInstanceOf[AbstractService].start())
     Get("/healthcheck") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
+      val data = Json.decode[Map[String, Boolean]](responseAs[String])
+      assert(data("test"))
     }
   }
 }
