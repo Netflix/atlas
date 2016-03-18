@@ -94,6 +94,17 @@ object Json {
     }
   }
 
+  /**
+    * Register additional modules with the default mappers used for JSON and Smile.
+    *
+    * @param module
+    *     Jackson databind module to register.
+    */
+  def registerModule(module: Module): Unit = {
+    jsonMapper.registerModule(module)
+    smileMapper.registerModule(module)
+  }
+
   def newMapper: ObjectMapper = newMapper(jsonFactory)
 
   def newJsonGenerator(writer: Writer): JsonGenerator = {
