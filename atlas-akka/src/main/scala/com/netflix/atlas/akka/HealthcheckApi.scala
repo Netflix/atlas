@@ -36,10 +36,10 @@ class HealthcheckApi(
     serviceManagerProvider.get()
     path("healthcheck") {
       respondWithMediaType(MediaTypes.`application/json`) {
-        if (serviceManager.isHealthy)
-          complete(HttpResponse(StatusCodes.OK, entity = summary))
-        else
-          complete(HttpResponse(StatusCodes.InternalServerError, entity = summary))
+        get { ctx =>
+          val status = if (serviceManager.isHealthy) StatusCodes.OK else StatusCodes.InternalServerError
+          ctx.responder ! HttpResponse(status, entity = summary)
+        }
       }
     }
   }
