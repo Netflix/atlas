@@ -15,12 +15,14 @@
  */
 package com.netflix.atlas.akka
 
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Provider
 
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.Service
 import com.netflix.iep.service.ServiceManager
+import com.netflix.iep.service.State
 import org.scalatest.FunSuite
 import spray.http.StatusCodes
 import spray.testkit.ScalatestRouteTest
@@ -32,11 +34,14 @@ class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
 
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
+  private val serviceHealth = new AtomicBoolean(false)
+
   val services = new java.util.HashSet[Service]
-  services.add(new AbstractService("test") {
-      override def startImpl(): Unit = ()
-      override def stopImpl(): Unit = ()
-    })
+  services.add(new Service {
+    override def state(): State = State.RUNNING
+    override def name(): String = "test"
+    override def isHealthy: Boolean = serviceHealth.get()
+  })
 
   val serviceManager = new ServiceManager(services)
   val provider = new Provider[ServiceManager] {
@@ -45,6 +50,7 @@ class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
   val endpoint = new HealthcheckApi(system, provider)
 
   test("/healthcheck pre-start") {
+    serviceHealth.set(false)
     Get("/healthcheck") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.InternalServerError)
       val data = Json.decode[Map[String, Boolean]](responseAs[String])
@@ -53,8 +59,7 @@ class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("/healthcheck post-start") {
-    import scala.collection.JavaConversions._
-    services.foreach(_.asInstanceOf[AbstractService].start())
+    serviceHealth.set(true)
     Get("/healthcheck") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       val data = Json.decode[Map[String, Boolean]](responseAs[String])
