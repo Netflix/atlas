@@ -54,7 +54,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
 
   val bless = false
 
-  override def afterAll() {
+  override def afterAll(): Unit = {
     graphAssertions.generateReport(getClass)
   }
 

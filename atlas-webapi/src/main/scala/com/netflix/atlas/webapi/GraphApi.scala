@@ -170,20 +170,7 @@ object GraphApi {
       )
 
       gdef = gdef.withVisionType(flags.vision)
-      gdef = if (flags.axisPerLine) gdef.axisPerLine else gdef
-      val multiY = gdef.plots.size > 1
-      val styledPlots = gdef.plots.zipWithIndex.map { case (plot, i) =>
-        val axisCfg = flags.axes(i)
-        plot.copy(
-          lower = axisCfg.lower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
-          upper = axisCfg.upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
-          ylabel = axisCfg.ylabel,
-          scale = if (axisCfg.logarithmic) Scale.LOGARITHMIC else Scale.LINEAR,
-          axisColor = if (multiY) None else Some(Color.BLACK),
-          tickLabelMode = axisCfg.tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply))
-      }
-
-      gdef.copy(plots = styledPlots)
+      if (flags.axisPerLine) gdef.axisPerLine else gdef
     }
   }
 
@@ -287,7 +274,7 @@ object GraphApi {
     )
 
     val q = params.get("q")
-    if (!q.isDefined) {
+    if (q.isEmpty) {
       throw new IllegalArgumentException("missing required parameter 'q'")
     }
 

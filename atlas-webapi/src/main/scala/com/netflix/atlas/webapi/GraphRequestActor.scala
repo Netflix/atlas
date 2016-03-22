@@ -24,6 +24,7 @@ import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.chart._
+import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.PngImage
@@ -84,7 +85,6 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
     val shiftPalette = Palette.create("bw").iterator
 
     val plots = plotExprs.toList.sortWith(_._1 < _._1).map { case (yaxis, exprs) =>
-
       val axisCfg = request.flags.axes(yaxis)
       val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
 
@@ -118,7 +118,14 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
         tmp.sortWith(_.data.label < _.data.label)
       }
 
-      PlotDef(lines)
+      PlotDef(
+        data = lines,
+        lower = axisCfg.lower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
+        upper = axisCfg.upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
+        ylabel = axisCfg.ylabel,
+        scale = if (axisCfg.logarithmic) Scale.LOGARITHMIC else Scale.LINEAR,
+        axisColor = if (multiY) None else Some(Color.BLACK),
+        tickLabelMode = axisCfg.tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply))
     }
 
     val graphDef = request.newGraphDef(plots)

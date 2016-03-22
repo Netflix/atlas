@@ -93,3 +93,6 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,1e18,:add&tick_labels=binary
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by,1e9,:add&tick_labels=binary&axis_per_line=1
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by,1e9,:add&tick_labels.2=binary&axis_per_line=1
+
+# issue-1146
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,:dup,30m,:offset,4,:axis&l.4=0
