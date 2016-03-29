@@ -1,6 +1,6 @@
 > [[Home]] ▸ Examples
 
-The follow color palettes are supported:
+The following color palettes are supported:
 
 * [armytage](#armytage)
 * [epic](#epic)

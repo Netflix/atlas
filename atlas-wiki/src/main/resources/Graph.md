@@ -63,15 +63,15 @@ For more information on the behavior see the [graph layout](Graph-Layout) page.
 
 ### Y-Axis
 
-| Name             | Description                          | Default      | Type                          |
-|------------------|--------------------------------------|--------------|-------------------------------|
-| `stack`          | Set the default line style to stack  | `0`          | [boolean](#boolean-flags)     |
-| `l`              | Lower bound for the axis             | `auto-style` | [axis bound](Axis-Bounds)     |
-| `u`              | Upper bound for the axis             | `auto-style` | [axis bound](Axis-Bounds)     |
-| `ylabel`         | Label for the axis                   | no label     | String                        |
-| `palette`        | Color palette to use                 | `armytage`   | [palette](Color-Palettes)     |
-| `o`              | Use a logarithmic scale              | `0`          | [boolean](#boolean-flags)     |
-| `no_tick_labels` | Suppress tick labels                 | `1.0`        | [boolean](#boolean-flags)     |
+| Name             | Description                          | Default      | Type                           |
+|------------------|--------------------------------------|--------------|--------------------------------|
+| `stack`          | Set the default line style to stack  | `0`          | [boolean](#boolean-flags)      |
+| `l`              | Lower bound for the axis             | `auto-style` | [axis bound](Axis-Bounds)      |
+| `u`              | Upper bound for the axis             | `auto-style` | [axis bound](Axis-Bounds)      |
+| `ylabel`         | Label for the axis                   | no label     | String                         |
+| `palette`        | Color palette to use                 | `armytage`   | [palette](Color-Palettes)      |
+| `o`              | Use a logarithmic scale              | `0`          | [boolean](#boolean-flags)      |
+| `tick_labels`    | Set the mode to use for tick labels  | `decimal`    | [tick label mode](Tick-Labels) |
 
 ### Output Format
 
