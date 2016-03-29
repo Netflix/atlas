@@ -7,6 +7,7 @@
 * [Color Blindness](Vision)
 * [[Axis Bounds]]
 * [[Axis Scale]]
+* [[Tick Labels]]
 * [[Multi Y]]
 * [[Time Zone]]
 * [[Time Shift]]

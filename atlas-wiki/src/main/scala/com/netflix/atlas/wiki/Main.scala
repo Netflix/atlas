@@ -34,6 +34,8 @@ import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.wiki.pages._
+import com.netflix.iep.service.DefaultClassFactory
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.Await
@@ -51,10 +53,11 @@ object Main extends StrictLogging {
 
   val GraphImage = """(.*)<img[^><]+src="([^"]+)"[^><]+>(.*)""".r
 
+  val config = ConfigFactory.load()
   val system = ActorSystem("wiki")
   val db = ApiSettings.newDbInstance
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
-  val webApi = system.actorOf(Props[RequestHandlerActor])
+  val webApi = system.actorOf(Props(new RequestHandlerActor(config, new DefaultClassFactory())))
 
   val vocabs = List(
     StandardVocabulary,
