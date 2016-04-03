@@ -23,7 +23,7 @@ object Dependencies {
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.7.8"
+  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.0.2"
   val guava           = "com.google.guava" % "guava" % "18.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
