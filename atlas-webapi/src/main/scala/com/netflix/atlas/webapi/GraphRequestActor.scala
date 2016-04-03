@@ -94,8 +94,13 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
       val lines = exprs.flatMap { s =>
         val ts = s.expr.eval(request.evalContext, data).data
+        val labelledTS = ts.map { t =>
+          val offset = Strings.toString(Duration.ofMillis(s.offset))
+          val newT = t.withTags(t.tags + (TagKey.offset -> offset))
+          newT.withLabel(s.legend(newT))
+        }
 
-        val tmp = ts.map { t =>
+        labelledTS.sortWith(_.label < _.label).map { t =>
           val color = s.color.getOrElse {
             axisColor.getOrElse {
               val c = if (s.offset > 0L) shiftPalette.next() else axisPalette.next()
@@ -107,15 +112,12 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
           }
           if (multiY && !hasAxisPalette) axisColor = Some(color)
 
-          val offset = Strings.toString(Duration.ofMillis(s.offset))
-          val newT = t.withTags(t.tags + (TagKey.offset -> offset))
           LineDef(
-            data = newT.withLabel(s.legend(newT)),
+            data = t,
             color = color,
             lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
             lineWidth = s.lineWidth)
         }
-        tmp.sortWith(_.data.label < _.data.label)
       }
 
       PlotDef(
