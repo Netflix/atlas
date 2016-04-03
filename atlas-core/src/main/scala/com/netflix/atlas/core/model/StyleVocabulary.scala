@@ -17,6 +17,7 @@ package com.netflix.atlas.core.model
 
 import java.awt.Color
 
+import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
@@ -33,7 +34,7 @@ object StyleVocabulary extends Vocabulary {
   val dependsOn: List[Vocabulary] = List(FilterVocabulary)
 
   val words: List[Word] = List(
-    Alpha, Color, LineStyle, LineWidth, Legend, Axis, Offset,
+    Alpha, Color, LineStyle, LineWidth, Legend, Axis, Offset, Filter,
     Macro("area", List("area", ":ls"), List("42")),
     Macro("line", List("line", ":ls"), List("42")),
     Macro("stack", List("stack", ":ls"), List("42")),
@@ -195,6 +196,38 @@ object StyleVocabulary extends Vocabulary {
       """.stripMargin.trim
 
     override def examples: List[String] = List("name,sps,:eq,:sum,(,0h,1d,1w,)")
+  }
+
+  object Filter extends Word {
+    override def name: String = "filter"
+
+    override def matches(stack: List[Any]): Boolean = stack match {
+      case TimeSeriesType(_) :: (_: StyleExpr) :: _ => true
+      case _ => false
+    }
+
+    override def execute(context: Context): Context = {
+      context.stack match {
+        case TimeSeriesType(ts) :: (se: StyleExpr) :: s =>
+          val rs = FilterVocabulary.Filter.execute(context.copy(stack = ts :: se.expr :: s))
+          val newExpr = se.copy(expr = rs.stack.head.asInstanceOf[TimeSeriesExpr])
+          rs.copy(stack = newExpr :: rs.stack.tail)
+        case _ =>
+          invalidStack
+      }
+    }
+
+    override def summary: String =
+      """
+        |Filter the output based on another expression. This operation is an overload to allow
+        |applying filters after presentation settings have been set. See the
+        |[main filter page](filter-filter) for more details on general usage.
+      """.stripMargin
+
+    override def signature: String = "StyleExpr TimeSeriesExpr -- StyleExpr"
+
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,$nf.cluster,:legend,:stat-max,30e3,:gt")
   }
 
   private def desEpicViz = List(
