@@ -62,14 +62,14 @@ trait TimeSeq {
 }
 
 final class ArrayTimeSeq(
-    final val dsType: DsType,
-    final val start: Long,
-    final val step: Long,
-    final val data: Array[Double]) extends TimeSeq {
+    val dsType: DsType,
+    val start: Long,
+    val step: Long,
+    val data: Array[Double]) extends TimeSeq {
 
   require(start % step == 0, "start time must be on step boundary")
 
-  final val end: Long = start + data.length * step
+  def end: Long = start + data.length * step
 
   def apply(timestamp: Long): Double = {
     val i = (timestamp - start) / step
@@ -119,9 +119,10 @@ final class ArrayTimeSeq(
     // Follows guidelines from: http://www.artima.com/pins1ed/object-equality.html#28.4
     other match {
       case that: ArrayTimeSeq =>
-        that.canEqual(this) &&
-          step == that.step &&
-          start == that.start &&
+        that.canEqual(this)     &&
+          dsType == that.dsType &&
+          step == that.step     &&
+          start == that.start   &&
           java.util.Arrays.equals(data, that.data)
       case _ => false
     }
@@ -131,6 +132,7 @@ final class ArrayTimeSeq(
     import java.lang.{Long => JLong}
     val prime = 31
     var hc = prime
+    hc = hc * prime + dsType.hashCode()
     hc = hc * prime + JLong.valueOf(step).hashCode()
     hc = hc * prime + JLong.valueOf(start).hashCode()
     hc = hc * prime + java.util.Arrays.hashCode(data)
@@ -144,7 +146,7 @@ final class ArrayTimeSeq(
   override def toString: String = {
     val s = Instant.ofEpochMilli(start)
     val values = data.mkString("[", ",", "]")
-    s"ArrayTimeSeq($s,$step,$values)"
+    s"ArrayTimeSeq($dsType,$s,$step,$values)"
   }
 }
 

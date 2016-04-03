@@ -17,7 +17,6 @@ package com.netflix.atlas.core.model
 
 import java.math.BigInteger
 
-import com.netflix.atlas.core.model.DsType.Rate
 import com.netflix.atlas.core.util.Math
 
 object TimeSeries {
@@ -34,7 +33,7 @@ object TimeSeries {
     *     Time series with `NaN` for all values.
     */
   def noData(step: Long): TimeSeries = {
-    val data = new FunctionTimeSeq(Rate, step, _ => Double.NaN)
+    val data = new FunctionTimeSeq(DsType.Gauge, step, _ => Double.NaN)
     BasicTimeSeries(noDataId, noDataTags, "NO DATA", data)
   }
 
@@ -51,7 +50,7 @@ object TimeSeries {
     */
   def noData(query: Query, step: Long): TimeSeries = {
     val tags = Query.tags(query)
-    val data = new FunctionTimeSeq(Rate, step, _ => Double.NaN)
+    val data = new FunctionTimeSeq(DsType.Gauge, step, _ => Double.NaN)
     LazyTimeSeries(if (tags.isEmpty) noDataTags else tags, "NO DATA", data)
   }
 

@@ -519,6 +519,7 @@ class TimeSeriesBufferSuite extends FunSuite {
         .forClass(classOf[TimeSeriesBuffer])
         .withPrefabValues(classOf[Map[_, _]], t1, t2)
         .withPrefabValues(classOf[ArrayTimeSeq], s1, s2)
+        .withIgnoredFields("id", "bitmap$0") // lazy val for id
         .suppress(Warning.NULL_FIELDS)
         .suppress(Warning.NONFINAL_FIELDS)
         .verify()
