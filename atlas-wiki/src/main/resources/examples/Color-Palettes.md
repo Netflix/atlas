@@ -14,7 +14,7 @@ The following color palettes are supported:
 ## Armytage
 
 This is the default color palette, it comes from the paper
-[A Colour Alphabet and the Limits of Colour Coding](http://aic-colour-journal.org/index.php/JAIC/article/viewFile/19/16)
+[A Colour Alphabet and the Limits of Colour Coding](http://www.aic-color.org/journal/previous_archivos/v5/jaic_v5_06.pdf)
 by Paul Green-Armytage. Two colors, Xanthin and Yellow, are excluded because users found them hard
 to distinguish from a white background when used for a single pixel line. So overall there are
 24 distinct colors with this palette.
@@ -60,7 +60,7 @@ Shades of red.
 
 ## Custom
 
-A custom color palette can be provided for a graph by using a prefix of `colors:` followed by
+A custom [color palette](Color-Palettes) can be provided for a graph by using a prefix of `colors:` followed by
 a comma separated list of [hex color](style-color) values. This is mainly used to customize the
 colors for the result of a group by where you cannot set the color for each line using
 [:color](style-color).
