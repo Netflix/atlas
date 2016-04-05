@@ -44,7 +44,7 @@ only have one line per axis when using multi-Y. Example:
 
 /api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,(,nf.cluster,),:by,minuteOfHour,:time,1,:axis&l=0
 
-Though it should be avoided, a color palette can be specified for a specific axis so lines will
+Though it should be avoided, a [color palette](Color-Palettes) can be specified for a specific axis so lines will
 get different colors, e.g., the graph below sets the palette for each axis to use shades of
 red/blue:
 

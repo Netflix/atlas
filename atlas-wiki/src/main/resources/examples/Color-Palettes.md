@@ -14,7 +14,7 @@ The following color palettes are supported:
 ## Armytage
 
 This is the default color palette, it comes from the paper
-[A Colour Alphabet and the Limits of Colour Coding](http://aic-colour-journal.org/index.php/JAIC/article/viewFile/19/16)
+[A Colour Alphabet and the Limits of Colour Coding](http://www.aic-color.org/journal/previous_archivos/v5/jaic_v5_06.pdf)
 by Paul Green-Armytage. Two colors, Xanthin and Yellow, are excluded because users found them hard
 to distinguish from a white background when used for a single pixel line. So overall there are
 24 distinct colors with this palette.
