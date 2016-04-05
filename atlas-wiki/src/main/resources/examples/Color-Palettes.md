@@ -60,7 +60,7 @@ Shades of red.
 
 ## Custom
 
-A custom [color palette](Color-Palettes) can be provided for a graph by using a prefix of `colors:` followed by
+A custom color palette can be provided for a graph by using a prefix of `colors:` followed by
 a comma separated list of [hex color](style-color) values. This is mainly used to customize the
 colors for the result of a group by where you cannot set the color for each line using
 [:color](style-color).
