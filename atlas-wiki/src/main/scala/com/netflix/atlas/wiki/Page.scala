@@ -103,7 +103,7 @@ trait StackWordPage extends Page {
     val params = if (name.startsWith("cf-")) "step=5m" else ""
 
     val buf = new StringBuilder
-    buf.append(s"### `$example,:$name`")
+    buf.append(s"### `$example,:$name`\n\n")
     buf.append("<table><thead><th>Pos</th><th>Input</th><th>Output</th></thead><tbody>")
     zipStacks(in, out).zipWithIndex.foreach { case ((i, o), p) =>
       buf.append(s"<tr>\n<td>$p</td>\n")

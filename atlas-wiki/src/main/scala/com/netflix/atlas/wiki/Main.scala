@@ -18,6 +18,9 @@ package com.netflix.atlas.wiki
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.nio.charset.StandardCharsets
+import java.util.Locale
+import java.util.regex.Pattern
 
 import akka.actor.ActorSystem
 import akka.actor.Props
@@ -31,6 +34,7 @@ import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.util.Streams._
+import com.netflix.atlas.json.Json
 import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.wiki.pages._
@@ -233,6 +237,64 @@ object Main extends StrictLogging {
     pages.foreach { p => writeFile(p.content(graph), p.file(output)) }
   }
 
+  private def listFiles(f: File): List[File] = {
+    if (f.isDirectory) f.listFiles().flatMap(listFiles).toList else List(f)
+  }
+
+  private def sectionDocs(name: String, text: String): List[Document] = {
+    val lines = text.split("\n")
+    val pattern = Pattern.compile("""^#+\s+(.+)$""")
+
+    val sections = List.newBuilder[Document]
+    var title = null.asInstanceOf[String]
+    val buffer = new StringBuilder
+    lines.foreach { line =>
+      val matcher = pattern.matcher(line)
+      if (matcher.matches()) {
+        if (title != null) {
+          sections += Document(toLink(name, Some(title)), buffer.toString(), title)
+        }
+        title = matcher.group(1)
+        buffer.clear()
+      } else {
+        buffer.append(line).append('\n')
+      }
+    }
+
+    sections.result()
+  }
+
+  private def toLink(fname: String, title: Option[String] = None): String = {
+    val href = fname.replace(".md", "")
+    title.fold(href) { t =>
+      val anchor = t.trim.toLowerCase(Locale.US)
+        .replace(' ', '-')
+        .replaceAll("[^-a-z0-9]", "")
+      s"$href#$anchor"
+    }
+  }
+
+  private def toTitle(fname: String): String = {
+    fname.replace(".md", "").replace('-', ' ')
+  }
+
+  def generateSearchIndex(output: File): Unit = {
+    val files = listFiles(output).filter { f =>
+      val n = f.getName
+      n.endsWith(".md") && !n.startsWith("_")
+    }
+    val docs = files.flatMap { file =>
+      val text = new String(scope(fileIn(file))(byteArray), StandardCharsets.UTF_8)
+      val loc = toLink(file.getName)
+      val title = toTitle(file.getName)
+      Document(loc, text, title) :: sectionDocs(file.getName, text)
+    }
+    val json = Json.encode(Index(docs))
+    scope(fileOut(new File(output, "search_index.json"))) { out =>
+      out.write(json.getBytes(StandardCharsets.UTF_8))
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     try {
       if (args.length != 2) {
@@ -255,8 +317,13 @@ object Main extends StrictLogging {
         new StackLanguageReference(vocabs, vocabDocs),
         new TimeZones
       ))
+      generateSearchIndex(output)
     } finally {
       Await.ready(system.terminate(), Duration.Inf)
     }
   }
+
+
+  case class Index(docs: List[Document])
+  case class Document(location: String, text: String, title: String)
 }
