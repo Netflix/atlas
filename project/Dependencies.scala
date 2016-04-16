@@ -2,15 +2,15 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.4.3"
+    val akka       = "2.4.4"
     val aws        = "1.10.66"
     val iep        = "0.3.23"
     val guice      = "4.0"
     val jackson    = "2.7.2"
     val log4j      = "2.5"
     val scala      = "2.11.8"
-    val slf4j      = "1.7.20"
-    val spectator  = "0.36.0"
+    val slf4j      = "1.7.21"
+    val spectator  = "0.37.0"
     val spray      = "1.3.3"
   }
 
@@ -45,9 +45,9 @@ object Dependencies {
   val scalaCompiler   = "org.scala-lang" % "scala-compiler" % scala
   val scalaLibrary    = "org.scala-lang" % "scala-library" % scala
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all" % scala
-  val scalaLogging    = "com.typesafe.scala-logging" % "scala-logging_2.11" % "3.1.0"
+  val scalaLogging    = "com.typesafe.scala-logging" % "scala-logging_2.11" % "3.4.0"
   val scalaReflect    = "org.scala-lang" % "scala-reflect" % scala
-  val scalatest       = "org.scalatest" % "scalatest_2.11" % "2.2.5"
+  val scalatest       = "org.scalatest" % "scalatest_2.11" % "2.2.6"
   val slf4jApi        = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j      = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple     = "org.slf4j" % "slf4j-simple" % slf4j
