@@ -685,8 +685,13 @@ object MathVocabulary extends Vocabulary {
       """
         |Estimate percentiles for a timer or distribution summary. The data must have been
         |published appropriately to allow the approximation. If using
-        |[spectator](https://github.com/Netflix/spectator/wiki), then see PercentileTimer and
-        |PercentileDistributionSummary helper classes.
+        |[spectator](http://netflix.github.io/spectator/en/latest/), then see
+        |[PercentileTimer](http://netflix.github.io/spectator/en/latest/javadoc/spectator-api/com/netflix/spectator/api/histogram/PercentileTimer.html)
+        |and
+        |[PercentileDistributionSummary](http://netflix.github.io/spectator/en/latest/javadoc/spectator-api/com/netflix/spectator/api/histogram/PercentileDistributionSummary.html)
+        |helper classes.
+        |
+        |Since: 1.5.0 (first in 1.5.0-rc.4)
       """.stripMargin.trim
 
     override def signature: String = "DataExpr percentiles:List -- Expr"
