@@ -238,7 +238,7 @@ object StyleVocabulary extends Vocabulary {
         |Sort the results of an expression in the legend by one of the
         |[summary statistics](filter-stat) or by the legend text. The default
         |behavior is to sort by the legend text. This will sort in ascending
-        |order, for descending order use [rsort](style-rsort).
+        |order by default, for descending order use [order](style-order).
         |
         |Since: 1.5
       """.stripMargin.trim
