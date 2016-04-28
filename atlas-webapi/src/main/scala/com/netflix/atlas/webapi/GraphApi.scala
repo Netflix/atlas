@@ -148,7 +148,7 @@ object GraphApi {
       DataRequest(evalContext, deduped)
     }
 
-    def newGraphDef(plots: List[PlotDef]): GraphDef = {
+    def newGraphDef(plots: List[PlotDef], warnings: List[String] = Nil): GraphDef = {
       val legendType = (flags.showLegend, flags.showLegendStats) match {
         case (false, _) => LegendType.OFF
         case (_, false) => LegendType.LABELS_ONLY
@@ -169,7 +169,8 @@ object GraphApi {
         onlyGraph = flags.showOnlyGraph,
         numberFormat = numberFormat,
         plots = plots,
-        source = if (ApiSettings.metadataEnabled) Some(uri) else None
+        source = if (ApiSettings.metadataEnabled) Some(uri) else None,
+        warnings = warnings
       )
 
       gdef = gdef.withVisionType(flags.vision)

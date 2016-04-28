@@ -78,6 +78,9 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
   }
 
   private def sendImage(data: Map[DataExpr, List[TimeSeries]]): Unit = {
+
+    val warnings = List.newBuilder[String]
+
     val plotExprs = request.exprs.groupBy(_.axis.getOrElse(0))
     val multiY = plotExprs.size > 1
 
@@ -127,7 +130,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
         // using the palette. The colors selected should be stable regardless of the
         // sort order that is applied. Otherwise colors would change each time a user
         // changed the sort.
-        sort(s, lineDefs)
+        sort(warnings, s, lineDefs)
       }
 
       PlotDef(
@@ -140,7 +143,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
         tickLabelMode = axisCfg.tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply))
     }
 
-    val graphDef = request.newGraphDef(plots)
+    val graphDef = request.newGraphDef(plots, warnings.result())
 
     val baos = new ByteArrayOutputStream
     request.engine.write(graphDef, baos)
@@ -150,7 +153,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
     context.stop(self)
   }
 
-  private def sort(s: StyleExpr, lines: List[LineDef]): List[LineDef] = {
+  private def sort(warnings: scala.collection.mutable.Builder[String, List[String]], s: StyleExpr, lines: List[LineDef]): List[LineDef] = {
     val cmp: Function2[LineDef, LineDef, Boolean] = s.sortBy match {
       case None            => (a, b) => a.data.label < b.data.label
       case Some("legend")  => (a, b) => a.data.label < b.data.label
@@ -160,7 +163,9 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
       case Some("count")   => (a, b) => a.legendStats.count < b.legendStats.count
       case Some("total")   => (a, b) => a.legendStats.total < b.legendStats.total
       case Some("last")    => (a, b) => a.legendStats.last < b.legendStats.last
-      case Some(order)     => throw new IllegalArgumentException(s"invalid sort order: $order")
+      case Some(order)     =>
+        warnings += s"Invalid sort mode '$order'. Using default of 'legend'."
+        (a, b) => a.data.label < b.data.label
     }
     lines.sortWith(if (s.useDescending) (a, b) => !cmp(a, b) else cmp)
   }
