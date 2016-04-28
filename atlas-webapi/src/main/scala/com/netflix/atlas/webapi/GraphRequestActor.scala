@@ -130,11 +130,15 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
         // using the palette. The colors selected should be stable regardless of the
         // sort order that is applied. Otherwise colors would change each time a user
         // changed the sort.
-        sort(warnings, s, lineDefs)
+        sort(warnings, s.sortBy, s.useDescending, lineDefs)
       }
 
+      // Apply sort based on URL parameters. This will take precedence over
+      // local sort on an expression.
+      val sortedLines = sort(warnings, axisCfg.sort, axisCfg.order.contains("desc"), lines)
+
       PlotDef(
-        data = lines,
+        data = sortedLines,
         lower = axisCfg.lower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
         upper = axisCfg.upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
         ylabel = axisCfg.ylabel,
@@ -153,21 +157,26 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
     context.stop(self)
   }
 
-  private def sort(warnings: scala.collection.mutable.Builder[String, List[String]], s: StyleExpr, lines: List[LineDef]): List[LineDef] = {
-    val cmp: Function2[LineDef, LineDef, Boolean] = s.sortBy match {
-      case None            => (a, b) => a.data.label < b.data.label
-      case Some("legend")  => (a, b) => a.data.label < b.data.label
-      case Some("min")     => (a, b) => a.legendStats.min < b.legendStats.min
-      case Some("max")     => (a, b) => a.legendStats.max < b.legendStats.max
-      case Some("avg")     => (a, b) => a.legendStats.avg < b.legendStats.avg
-      case Some("count")   => (a, b) => a.legendStats.count < b.legendStats.count
-      case Some("total")   => (a, b) => a.legendStats.total < b.legendStats.total
-      case Some("last")    => (a, b) => a.legendStats.last < b.legendStats.last
-      case Some(order)     =>
-        warnings += s"Invalid sort mode '$order'. Using default of 'legend'."
-        (a, b) => a.data.label < b.data.label
+  private def sort(
+      warnings: scala.collection.mutable.Builder[String, List[String]],
+      sortBy: Option[String],
+      useDescending: Boolean,
+      lines: List[LineDef]): List[LineDef] = {
+    sortBy.fold(lines) { mode =>
+      val cmp: Function2[LineDef, LineDef, Boolean] = mode match {
+        case "legend" => (a, b) => a.data.label < b.data.label
+        case "min"    => (a, b) => a.legendStats.min < b.legendStats.min
+        case "max"    => (a, b) => a.legendStats.max < b.legendStats.max
+        case "avg"    => (a, b) => a.legendStats.avg < b.legendStats.avg
+        case "count"  => (a, b) => a.legendStats.count < b.legendStats.count
+        case "total"  => (a, b) => a.legendStats.total < b.legendStats.total
+        case "last"   => (a, b) => a.legendStats.last < b.legendStats.last
+        case order    =>
+          warnings += s"Invalid sort mode '$order'. Using default of 'legend'."
+          (a, b) => a.data.label < b.data.label
+      }
+      lines.sortWith(if (useDescending) (a, b) => !cmp(a, b) else cmp)
     }
-    lines.sortWith(if (s.useDescending) (a, b) => !cmp(a, b) else cmp)
   }
 }
 

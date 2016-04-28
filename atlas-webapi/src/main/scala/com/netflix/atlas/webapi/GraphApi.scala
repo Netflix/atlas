@@ -222,7 +222,9 @@ object GraphApi {
       stack: Boolean = false,
       ylabel: Option[String] = None,
       tickLabels: Option[String] = None,
-      palette: Option[String] = None)
+      palette: Option[String] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None)
 
   case class ImageFlags(
       title: Option[String],
@@ -250,7 +252,9 @@ object GraphApi {
       stack = getAxisParam(params, "stack", id).contains("1"),
       ylabel = getAxisParam(params, "ylabel", id).filter(_ != ""),
       tickLabels = getAxisParam(params, "tick_labels", id),
-      palette = params.get(s"palette.$id"))
+      palette = params.get(s"palette.$id"),
+      sort = getAxisParam(params, "sort", id),
+      order = getAxisParam(params, "order", id))
   }
 
   def toRequest(req: HttpRequest): Request = {
