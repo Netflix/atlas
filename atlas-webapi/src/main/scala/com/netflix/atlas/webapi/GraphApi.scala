@@ -101,6 +101,9 @@ object GraphApi {
     // Final start and end time rounded to step boundaries
     val (fstart, fend) = roundToStep(resStart, resEnd)
 
+    def startMillis: Long = fstart.toEpochMilli + stepSize
+    def endMillis: Long = fend.toEpochMilli + stepSize
+
     private def timeRange(s: String, e: String, tz: ZoneId): (Instant, Instant) = {
       if (Strings.isRelativeDate(s, true) || s == "e") {
         require(!Strings.isRelativeDate(e, true), "start and end are both relative")

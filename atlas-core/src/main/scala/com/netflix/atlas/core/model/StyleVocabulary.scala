@@ -34,7 +34,7 @@ object StyleVocabulary extends Vocabulary {
   val dependsOn: List[Vocabulary] = List(FilterVocabulary)
 
   val words: List[Word] = List(
-    Alpha, Color, LineStyle, LineWidth, Legend, Axis, Offset, Filter,
+    Alpha, Color, LineStyle, LineWidth, Legend, Axis, Offset, Filter, Sort, Order,
     Macro("area", List("area", ":ls"), List("42")),
     Macro("line", List("line", ":ls"), List("42")),
     Macro("stack", List("stack", ":ls"), List("42")),
@@ -228,6 +228,40 @@ object StyleVocabulary extends Vocabulary {
 
     override def examples: List[String] = List(
       "name,sps,:eq,:sum,(,nf.cluster,),:by,$nf.cluster,:legend,:stat-max,30e3,:gt")
+  }
+
+  case object Sort extends StyleWord {
+    override def name: String = "sort"
+
+    override def summary: String =
+      """
+        |Sort the results of an expression in the legend by one of the
+        |[summary statistics](filter-stat) or by the legend text. The default
+        |behavior is to sort by the legend text. This will sort in ascending
+        |order, for descending order use [rsort](style-rsort).
+        |
+        |Since: 1.5
+      """.stripMargin.trim
+
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,max",
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,legend")
+  }
+
+  case object Order extends StyleWord {
+    override def name: String = "order"
+
+    override def summary: String =
+      """
+        |Order to use for [sorting](style-sort) results. Supported values are `asc` and `desc`
+        |for ascending and descending order respectively. Default is `asc`.
+        |
+        |Since: 1.5
+      """.stripMargin.trim
+
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,asc",
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,desc")
   }
 
   private def desEpicViz = List(

@@ -69,7 +69,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
       context.stop(self)
   }
 
-  private def sendErrorImage(t: Throwable, w: Int, h: Int) {
+  private def sendErrorImage(t: Throwable, w: Int, h: Int): Unit = {
     val simpleName = t.getClass.getSimpleName
     registry.counter(errorId.withTag("error", simpleName)).increment()
     val msg = s"$simpleName: ${t.getMessage}"
@@ -83,6 +83,9 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
     val palette = Palette.create(request.flags.palette).iterator
     val shiftPalette = Palette.create("bw").iterator
+
+    val start = request.startMillis
+    val end = request.endMillis
 
     val plots = plotExprs.toList.sortWith(_._1 < _._1).map { case (yaxis, exprs) =>
       val axisCfg = request.flags.axes(yaxis)
@@ -100,7 +103,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
           newT.withLabel(s.legend(newT))
         }
 
-        labelledTS.sortWith(_.label < _.label).map { t =>
+        val lineDefs = labelledTS.sortWith(_.label < _.label).map { t =>
           val color = s.color.getOrElse {
             axisColor.getOrElse {
               val c = if (s.offset > 0L) shiftPalette.next() else axisPalette.next()
@@ -116,8 +119,15 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
             data = t,
             color = color,
             lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
-            lineWidth = s.lineWidth)
+            lineWidth = s.lineWidth,
+            legendStats = SummaryStats(t.data, start, end))
         }
+
+        // Lines must be sorted for presentation after the colors have been applied
+        // using the palette. The colors selected should be stable regardless of the
+        // sort order that is applied. Otherwise colors would change each time a user
+        // changed the sort.
+        sort(s, lineDefs)
       }
 
       PlotDef(
@@ -138,6 +148,21 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
     val entity = HttpEntity(request.contentType, baos.toByteArray)
     responseRef ! HttpResponse(StatusCodes.OK, entity)
     context.stop(self)
+  }
+
+  private def sort(s: StyleExpr, lines: List[LineDef]): List[LineDef] = {
+    val cmp: Function2[LineDef, LineDef, Boolean] = s.sortBy match {
+      case None            => (a, b) => a.data.label < b.data.label
+      case Some("legend")  => (a, b) => a.data.label < b.data.label
+      case Some("min")     => (a, b) => a.legendStats.min < b.legendStats.min
+      case Some("max")     => (a, b) => a.legendStats.max < b.legendStats.max
+      case Some("avg")     => (a, b) => a.legendStats.avg < b.legendStats.avg
+      case Some("count")   => (a, b) => a.legendStats.count < b.legendStats.count
+      case Some("total")   => (a, b) => a.legendStats.total < b.legendStats.total
+      case Some("last")    => (a, b) => a.legendStats.last < b.legendStats.last
+      case Some(order)     => throw new IllegalArgumentException(s"invalid sort order: $order")
+    }
+    lines.sortWith(if (s.useDescending) (a, b) => !cmp(a, b) else cmp)
   }
 }
 

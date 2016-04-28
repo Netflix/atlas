@@ -33,6 +33,10 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     Strings.substitute(fmt, t.tags)
   }
 
+  def sortBy: Option[String] = settings.get("sort")
+
+  def useDescending: Boolean = settings.get("order").contains("desc")
+
   def axis: Option[Int] = settings.get("axis").map(_.toInt)
 
   def color: Option[Color] = settings.get("color").map(Strings.parseColor)
