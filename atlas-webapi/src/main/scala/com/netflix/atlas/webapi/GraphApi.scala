@@ -101,6 +101,9 @@ object GraphApi {
     // Final start and end time rounded to step boundaries
     val (fstart, fend) = roundToStep(resStart, resEnd)
 
+    def startMillis: Long = fstart.toEpochMilli + stepSize
+    def endMillis: Long = fend.toEpochMilli + stepSize
+
     private def timeRange(s: String, e: String, tz: ZoneId): (Instant, Instant) = {
       if (Strings.isRelativeDate(s, true) || s == "e") {
         require(!Strings.isRelativeDate(e, true), "start and end are both relative")
@@ -145,7 +148,7 @@ object GraphApi {
       DataRequest(evalContext, deduped)
     }
 
-    def newGraphDef(plots: List[PlotDef]): GraphDef = {
+    def newGraphDef(plots: List[PlotDef], warnings: List[String] = Nil): GraphDef = {
       val legendType = (flags.showLegend, flags.showLegendStats) match {
         case (false, _) => LegendType.OFF
         case (_, false) => LegendType.LABELS_ONLY
@@ -166,7 +169,8 @@ object GraphApi {
         onlyGraph = flags.showOnlyGraph,
         numberFormat = numberFormat,
         plots = plots,
-        source = if (ApiSettings.metadataEnabled) Some(uri) else None
+        source = if (ApiSettings.metadataEnabled) Some(uri) else None,
+        warnings = warnings
       )
 
       gdef = gdef.withVisionType(flags.vision)
@@ -218,7 +222,9 @@ object GraphApi {
       stack: Boolean = false,
       ylabel: Option[String] = None,
       tickLabels: Option[String] = None,
-      palette: Option[String] = None)
+      palette: Option[String] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None)
 
   case class ImageFlags(
       title: Option[String],
@@ -246,7 +252,9 @@ object GraphApi {
       stack = getAxisParam(params, "stack", id).contains("1"),
       ylabel = getAxisParam(params, "ylabel", id).filter(_ != ""),
       tickLabels = getAxisParam(params, "tick_labels", id),
-      palette = params.get(s"palette.$id"))
+      palette = params.get(s"palette.$id"),
+      sort = getAxisParam(params, "sort", id),
+      order = getAxisParam(params, "order", id))
   }
 
   def toRequest(req: HttpRequest): Request = {

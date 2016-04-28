@@ -96,3 +96,22 @@
 
 # issue-1146
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,:dup,30m,:offset,4,:axis&l.4=0
+
+# issue-349, legend sorting
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,asc,:order
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,desc,:order
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,min,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,avg,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,total,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,last,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,count,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,legend,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,foo,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=foo&order=asc
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=foo&order=desc
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=max&order=desc
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=max
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order&sort=max
