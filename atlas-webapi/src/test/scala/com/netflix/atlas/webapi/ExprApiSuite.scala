@@ -154,6 +154,37 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
     assert(data.nonEmpty)
     assert(data.contains("add"))
   }
+
+  testGet("/api/v1/expr/queries?q=1,2") {
+    assert(response.status === StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assert(data.isEmpty)
+  }
+
+  testGet("/api/v1/expr/queries?q=name,sps,:eq") {
+    assert(response.status === StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assert(data === List("name,sps,:eq"))
+  }
+
+  testGet("/api/v1/expr/queries?q=name,sps,:eq,(,nf.cluster,),:by") {
+    assert(response.status === StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assert(data === List("name,sps,:eq"))
+  }
+
+  testGet("/api/v1/expr/queries?q=name,sps,:eq,(,nf.cluster,),:by,:dup,:dup,4,:add") {
+    assert(response.status === StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assert(data === List("name,sps,:eq"))
+  }
+
+  testGet("/api/v1/expr/queries?q=name,sps,:eq,(,nf.cluster,),:by,:true,:sum,name,:has,:add") {
+    assert(response.status === StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    println(data)
+    assert(data === List(":true", "name,:has", "name,sps,:eq"))
+  }
 }
 
 object ExprApiSuite {
