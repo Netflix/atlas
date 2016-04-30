@@ -58,6 +58,9 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
       } ~
       path("complete") {
         get { ctx => processCompleteRequest(ctx) }
+      } ~
+      path("queries") {
+        get { ctx => processQueriesRequest(ctx) }
       }
     }
   }
@@ -133,18 +136,13 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
       val ctxt = Map("stack" -> stack, "variables" -> vars)
       Map("program" -> step.program, "context" -> ctxt)
     }
-
-    val data = Json.encode(steps)
-    val entity = HttpEntity(MediaTypes.`application/json`, data)
-    ctx.responder ! HttpResponse(StatusCodes.OK, entity = entity)
+    sendJson(ctx, steps)
   }
 
   private def processNormalizeRequest(ctx: RequestContext): Unit = {
     val (query, interpreter) = getInterpreter(ctx)
     val result = interpreter.execute(query)
-    val data = Json.encode(result.stack.reverse.map(_.toString))
-    val entity = HttpEntity(MediaTypes.`application/json`, data)
-    ctx.responder ! HttpResponse(StatusCodes.OK, entity = entity)
+    sendJson(ctx, result.stack.reverse.map(_.toString))
   }
 
   // This check is needed to be sure an operation will work if matches is not exhaustive. In
@@ -167,8 +165,36 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     val descriptions = candidates.map { w =>
       Map("name" -> w.name, "signature" -> w.signature, "description" -> w.summary)
     }
+    sendJson(ctx, descriptions)
+  }
 
-    val data = Json.encode(descriptions)
+  /**
+    * Extract the queries[1] from a stack expression.
+    *
+    * This can be useful for UIs that need to further explore the tag space
+    * associated with a graph expression. Output is a list of all distinct
+    * queries used.
+    *
+    * [1] https://github.com/Netflix/atlas/wiki/Reference-query
+    */
+  private def processQueriesRequest(ctx: RequestContext): Unit = {
+    val (expr, interpreter) = getInterpreter(ctx)
+    val result = interpreter.execute(expr)
+
+    val exprs = result.stack.collect {
+      case ModelExtractors.PresentationType(t) => t
+    }
+    val queries = exprs
+      .flatMap(_.expr.dataExprs.map(_.query))
+      .map(_.toString)
+      .sortWith(_ < _)
+      .distinct
+    sendJson(ctx, queries)
+  }
+
+  /** Encode `obj` as json and send to `ctx.responder`. */
+  private def sendJson(ctx: RequestContext, obj: AnyRef): Unit = {
+    val data = Json.encode(obj)
     val entity = HttpEntity(MediaTypes.`application/json`, data)
     ctx.responder ! HttpResponse(StatusCodes.OK, entity = entity)
   }
