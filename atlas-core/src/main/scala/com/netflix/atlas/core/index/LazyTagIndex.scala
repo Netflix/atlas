@@ -23,12 +23,12 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TaggedItem
+import com.netflix.atlas.core.util.IntHashSet
 import com.netflix.atlas.core.util.Interner
 import gnu.trove.map.hash.TIntIntHashMap
 import gnu.trove.map.hash.TObjectIntHashMap
 import gnu.trove.procedure.TIntIntProcedure
 import gnu.trove.procedure.TObjectIntProcedure
-import gnu.trove.set.hash.TIntHashSet
 import org.slf4j.LoggerFactory
 
 
@@ -50,7 +50,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
   type LazyValueMap = util.IdentityHashMap[String, LazySet]
   type LazyKeyMap = util.IdentityHashMap[String, LazyValueMap]
 
-  type ValueMap = util.IdentityHashMap[String, TIntHashSet]
+  type ValueMap = util.IdentityHashMap[String, IntHashSet]
   type KeyMap = util.IdentityHashMap[String, ValueMap]
 
   // Comparator for ordering tagged items using the id
@@ -98,7 +98,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
         val internedV = interner.intern(v)
         var matchSet = vidx.get(internedV)
         if (matchSet == null) {
-          matchSet = new TIntHashSet
+          matchSet = new IntHashSet(-1, 20)
           vidx.put(internedV, matchSet)
         }
         matchSet.add(pos)
@@ -106,7 +106,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
         // Add to key index
         matchSet = kidx.get(internedK)
         if (matchSet == null) {
-          matchSet = new TIntHashSet
+          matchSet = new IntHashSet(-1, 20)
           kidx.put(internedK, matchSet)
         }
         matchSet.add(pos)

@@ -80,7 +80,8 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= Seq(
       Dependencies.caffeine,
       Dependencies.trove,
-      Dependencies.equalsVerifier % "test"
+      Dependencies.equalsVerifier % "test",
+      Dependencies.jol % "test"
     ))
 
   lazy val `atlas-jmh` = project
