@@ -78,8 +78,7 @@ object MainBuild extends Build {
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
-      Dependencies.guava,
-      Dependencies.jsr305,
+      Dependencies.caffeine,
       Dependencies.trove,
       Dependencies.equalsVerifier % "test"
     ))

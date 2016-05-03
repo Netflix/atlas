@@ -23,8 +23,8 @@ object Dependencies {
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
+  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.3.0"
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.0.2"
-  val guava           = "com.google.guava" % "guava" % "18.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
   val iepGovernator   = "com.netflix.iep" % "iep-guice" % iep
@@ -36,7 +36,6 @@ object Dependencies {
   val jacksonScala2   = "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % jackson
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jodaConvert     = "org.joda" % "joda-convert" % "1.8.1"
-  val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.1"
   val log4jApi        = "org.apache.logging.log4j" % "log4j-api" % log4j
   val log4jCore       = "org.apache.logging.log4j" % "log4j-core" % log4j
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j

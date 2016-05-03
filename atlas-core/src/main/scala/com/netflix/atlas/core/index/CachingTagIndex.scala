@@ -15,17 +15,19 @@
  */
 package com.netflix.atlas.core.index
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TaggedItem
 
 
 /**
- * Caches stdext query results.
- */
+  * Caches results of tag queries on the underlying index. It is assumed that the
+  * underlying index is immutable and expiration from the cache is only done based
+  * on size.
+  */
 class CachingTagIndex[T <: TaggedItem](delegate: TagIndex[T]) extends TagIndex[T] {
 
   private val findTagsCache = newCache[List[Tag]](delegate.findTags)
@@ -37,7 +39,7 @@ class CachingTagIndex[T <: TaggedItem](delegate: TagIndex[T]) extends TagIndex[T
     val loader = new CacheLoader[TagQuery, R] {
       def load(query: TagQuery): R = f(query)
     }
-    CacheBuilder.newBuilder.maximumSize(1000).build[TagQuery, R](loader)
+    Caffeine.newBuilder.maximumSize(1000).build[TagQuery, R](loader)
   }
 
   def findTags(query: TagQuery): List[Tag] = {
