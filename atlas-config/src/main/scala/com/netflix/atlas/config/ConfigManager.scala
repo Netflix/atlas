@@ -17,14 +17,17 @@ package com.netflix.atlas.config
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
 
 /**
  * Keeps reference to global config object that can updated during application initialization.
  */
 object ConfigManager {
 
+  private val logger = LoggerFactory.getLogger(getClass)
+
   // Copy of the unresolved config object so it can be re-resolved if later updates are applied.
-  private var unresolvedRef: Config = ConfigFactory.load()
+  private var unresolvedRef: Config = ConfigFactory.load(pickClassLoader)
 
   @volatile private var configRef: Config = unresolvedRef.resolve()
 
@@ -41,5 +44,14 @@ object ConfigManager {
   def update(c: Config): Unit = synchronized {
     unresolvedRef = c.withFallback(unresolvedRef)
     configRef = unresolvedRef.resolve()
+  }
+
+  private def pickClassLoader: ClassLoader = {
+    val cl = Thread.currentThread().getContextClassLoader
+    if (cl != null) cl else {
+      val cname = getClass.getName
+      logger.warn(s"Thread.currentThread().getContextClassLoader() is null, using loader for $cname")
+      getClass.getClassLoader
+    }
   }
 }
