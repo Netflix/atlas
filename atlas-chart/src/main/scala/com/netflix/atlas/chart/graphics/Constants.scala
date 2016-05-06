@@ -21,12 +21,13 @@ import java.awt.Font
 import java.awt.Stroke
 import java.awt.image.BufferedImage
 
+import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.util.Strings
 import com.typesafe.config.ConfigFactory
 
 object Constants {
 
-  private val config = ConfigFactory.load().getConfig("atlas.chart")
+  private val config = ConfigManager.current.getConfig("atlas.chart")
 
   private def color(name: String): Color = Strings.parseColor(config.getString(s"colors.$name"))
 
