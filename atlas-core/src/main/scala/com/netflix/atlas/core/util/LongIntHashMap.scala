@@ -16,7 +16,7 @@
 package com.netflix.atlas.core.util
 
 /**
-  * Mutable integer map based on open-addressing. Primary use-case is computing
+  * Mutable long to integer map based on open-addressing. Primary use-case is computing
   * a count for the number of times a particular value was encountered.
   *
   * @param noData
@@ -26,15 +26,15 @@ package com.netflix.atlas.core.util
   *     Initial capacity guideline. The actual size of the underlying buffer
   *     will be the next prime >= `capacity`. Default is 10.
   */
-class IntIntHashMap(noData: Int, capacity: Int = 10) {
+class LongIntHashMap(noData: Long, capacity: Int = 10) {
 
   private[this] var keys = newArray(capacity)
   private[this] var values = new Array[Int](keys.length)
   private[this] var used = 0
   private[this] var cutoff = math.max(3, (keys.length * 0.7).toInt)
 
-  private def newArray(n: Int): Array[Int] = {
-    val tmp = new Array[Int](PrimeFinder.nextPrime(n))
+  private def newArray(n: Int): Array[Long] = {
+    val tmp = new Array[Long](PrimeFinder.nextPrime(n))
     var i = 0
     while (i < tmp.length) {
       tmp(i) = noData
@@ -57,8 +57,10 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
     cutoff = math.max(3, (tmpKS.length * 0.7).toInt)
   }
 
-  private def put(ks: Array[Int], vs: Array[Int], k: Int, v: Int): Boolean = {
-    var pos = math.abs(k) % ks.length
+  private def hash(k: Long): Int = java.lang.Long.hashCode(k)
+
+  private def put(ks: Array[Long], vs: Array[Int], k: Long, v: Int): Boolean = {
+    var pos = math.abs(hash(k)) % ks.length
     while (true) {
       val prev = ks(pos)
       if (prev == noData || prev == k) {
@@ -72,11 +74,11 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
   }
 
   /**
-    * Put an integer key/value pair into the map. The key, `k`, should not be
+    * Put a long to integer pair into the map. The key, `k`, should not be
     * equivalent to the `noData` value used for this map. If an entry with the
     * same key already exists, then the value will be overwritten.
     */
-  def put(k: Int, v: Int): Unit = {
+  def put(k: Long, v: Int): Unit = {
     if (used >= cutoff) resize()
     if (put(keys, values, k, v)) used += 1
   }
@@ -85,8 +87,8 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
     * Get the value associated with key, `k`. If no value is present, then the
     * `dflt` value will be returned.
     */
-  def get(k: Int, dflt: Int): Int = {
-    var pos = math.abs(k) % keys.length
+  def get(k: Long, dflt: Int): Int = {
+    var pos = math.abs(hash(k)) % keys.length
     while (true) {
       val prev = keys(pos)
       if (prev == noData)
@@ -103,15 +105,15 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
     * Add one to the count associated with `k`. If the key is not already in the
     * map a new entry will be created with a count of 1.
     */
-  def increment(k: Int): Unit = increment(k, 1)
+  def increment(k: Long): Unit = increment(k, 1)
 
   /**
     * Add `amount` to the count associated with `k`. If the key is not already in the
     * map a new entry will be created with a count of `amount`.
     */
-  def increment(k: Int, amount: Int): Unit = {
+  def increment(k: Long, amount: Int): Unit = {
     if (used >= cutoff) resize()
-    var pos = math.abs(k) % keys.length
+    var pos = math.abs(hash(k)) % keys.length
     while (true) {
       val prev = keys(pos)
       if (prev == noData || prev == k) {
@@ -125,7 +127,7 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
   }
 
   /** Execute `f` for each item in the set. */
-  def foreach(f: (Int, Int) => Unit): Unit = {
+  def foreach(f: (Long, Int) => Unit): Unit = {
     var i = 0
     while (i < keys.length) {
       val k = keys(i)
@@ -137,9 +139,9 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
   /** Return the number of items in the set. This is a constant time operation. */
   def size: Int = used
 
-  /** Converts this set to a Map[Int, Int]. Used mostly for debugging and tests. */
-  def toMap: Map[Int, Int] = {
-    val builder = Map.newBuilder[Int, Int]
+  /** Converts this set to a Map[Long, Int]. Used mostly for debugging and tests. */
+  def toMap: Map[Long, Int] = {
+    val builder = Map.newBuilder[Long, Int]
     foreach { (k, v) => builder += k -> v }
     builder.result()
   }
