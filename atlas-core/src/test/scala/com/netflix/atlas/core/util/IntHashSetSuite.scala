@@ -104,17 +104,4 @@ class IntHashSetSuite extends FunSuite {
     // Sanity check size is < 110kb
     assert(igraph.totalSize() <= 110000)
   }
-
-  private val values10k = (0 until 10000).map(_ => math.abs(Random.nextInt())).toArray
-  test("foo") {
-    val set = new IntHashSet(-1, 10)
-    val jset = new java.util.HashSet[Int](10)
-    var i = 0
-    while (i < values10k.length) {
-      set.add(values10k(i))
-      jset.add(values10k(i))
-      i += 1
-    }
-  }
-
 }

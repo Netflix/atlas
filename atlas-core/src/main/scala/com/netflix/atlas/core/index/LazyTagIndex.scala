@@ -24,8 +24,8 @@ import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.IntHashSet
+import com.netflix.atlas.core.util.IntIntHashMap
 import com.netflix.atlas.core.util.Interner
-import gnu.trove.map.hash.TIntIntHashMap
 import gnu.trove.map.hash.TObjectIntHashMap
 import gnu.trove.procedure.TIntIntProcedure
 import gnu.trove.procedure.TObjectIntProcedure
@@ -224,20 +224,6 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
     def result: List[Tag] = list.result
   }
 
-  private final class FindTagsBuilder(size: Int) extends TIntIntProcedure {
-    val buffer = new Array[Tag](size)
-    var next = 0
-
-    def execute(k: Int, v: Int): Boolean = {
-      val t = tagIndex(k)
-      buffer(next) = Tag(t.key, t.value, v)
-      next += 1
-      true
-    }
-
-    def result: Array[Tag] = buffer
-  }
-
   private[index] def findImpl(query: Query, offset: Int, andSet: Option[LazySet]): LazySet = {
     import com.netflix.atlas.core.model.Query._
     query match {
@@ -413,7 +399,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
       }
 
       // Count how many tags match the query
-      val counts = new TIntIntHashMap
+      val counts = new IntIntHashMap(-1)
       val itemSet = findImpl(finalQ, 0, None)
       val iter = itemSet.iterator
       while (iter.hasNext) {
@@ -422,22 +408,26 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
         while (i < tags.length) {
           val t = tags(i)
           if (t >= offset && (k.isEmpty || tagIndex(t).key == k.get)) {
-            counts.adjustOrPutValue(t, 1, 1)
+            counts.increment(t, 1)
           }
           i += 1
         }
       }
 
       // Create array with final set of matching tags
-      val builder = new FindTagsBuilder(counts.size)
-      counts.forEachEntry(builder)
-      val result = builder.result
+      val result = new Array[Tag](counts.size)
+      var i = 0
+      counts.foreach { (k, v) =>
+        val t = tagIndex(k)
+        result(i) = Tag(t.key, t.value, v)
+        i += 1
+      }
       util.Arrays.sort(result.asInstanceOf[Array[AnyRef]])
 
       // Create list based on limit per page
       val limit = math.min(query.limit, result.length)
       val listBuilder = List.newBuilder[Tag]
-      var i = 0
+      i = 0
       while (i < limit) {
         listBuilder += result(i)
         i += 1
