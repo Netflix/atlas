@@ -51,13 +51,13 @@ class DoubleIntHashMap(noData: Double = Double.NaN, capacity: Int = 10) {
     * Add one to the count associated with `k`. If the key is not already in the
     * map a new entry will be created with a count of 1.
     */
-  def increment(k: Long): Unit = increment(k, 1)
+  def increment(k: Double): Unit = increment(k, 1)
 
   /**
     * Add `amount` to the count associated with `k`. If the key is not already in the
     * map a new entry will be created with a count of `amount`.
     */
-  def increment(k: Long, amount: Int): Unit = data.increment(d2l(k), amount)
+  def increment(k: Double, amount: Int): Unit = data.increment(d2l(k), amount)
 
   /** Execute `f` for each item in the set. */
   def foreach(f: (Double, Int) => Unit): Unit = {

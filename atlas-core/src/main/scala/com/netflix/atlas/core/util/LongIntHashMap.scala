@@ -61,16 +61,14 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
 
   private def put(ks: Array[Long], vs: Array[Int], k: Long, v: Int): Boolean = {
     var pos = math.abs(hash(k)) % ks.length
-    while (true) {
-      val prev = ks(pos)
-      if (prev == noData || prev == k) {
-        ks(pos) = k
-        vs(pos) = v
-        return prev == noData
-      }
+    var posV = ks(pos)
+    while (posV != noData && posV != k) {
       pos = (pos + 1) % ks.length
+      posV = ks(pos)
     }
-    false
+    ks(pos) = k
+    vs(pos) = v
+    posV == noData
   }
 
   /**

@@ -59,16 +59,14 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
 
   private def put(ks: Array[Int], vs: Array[Int], k: Int, v: Int): Boolean = {
     var pos = math.abs(k) % ks.length
-    while (true) {
-      val prev = ks(pos)
-      if (prev == noData || prev == k) {
-        ks(pos) = k
-        vs(pos) = v
-        return prev == noData
-      }
+    var posV = ks(pos)
+    while (posV != noData && posV != k) {
       pos = (pos + 1) % ks.length
+      posV = ks(pos)
     }
-    false
+    ks(pos) = k
+    vs(pos) = v
+    posV == noData
   }
 
   /**

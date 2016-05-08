@@ -24,12 +24,33 @@ import scala.util.Random
 
 class LongIntHashMapSuite extends FunSuite {
 
-  test("add") {
+  test("put") {
     val m = new LongIntHashMap(-1)
     assert(0 === m.size)
     m.put(11, 42)
     assert(1 === m.size)
     assert(Map(11 -> 42) === m.toMap)
+  }
+
+  test("get") {
+    val m = new LongIntHashMap(-1)
+    assert(m.get(42, -1) === -1)
+    m.put(11, 27)
+    assert(m.get(42, -1) === -1)
+    assert(m.get(11, -1) === 27)
+  }
+
+  test("get - collisions") {
+    // Underlying capacity will be 11, next prime after 10, so 0 and multiples of 11
+    // will collide
+    val m = new LongIntHashMap(-1, 10)
+    m.put(0, 0)
+    m.put(11, 1)
+    m.put(22, 2)
+    assert(m.size === 3)
+    assert(m.get(0, -1) === 0)
+    assert(m.get(11, -1) === 1)
+    assert(m.get(22, -1) === 2)
   }
 
   test("dedup") {
@@ -59,9 +80,26 @@ class LongIntHashMapSuite extends FunSuite {
     assert(Map(42 -> 9) === m.toMap)
   }
 
+  test("increment - collisions") {
+    // Underlying capacity will be 11, next prime after 10, so 0 and multiples of 11
+    // will collide
+    val m = new LongIntHashMap(-1, 10)
+    m.increment(0)
+    m.increment(11)
+    m.increment(22)
+    assert(m.size === 3)
+    m.foreach { (_, v) => assert(v === 1) }
+  }
+
   test("resize") {
     val m = new LongIntHashMap(-1, 10)
     (0 until 10000).foreach(i => m.put(i, i))
+    assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
+  }
+
+  test("resize - increment") {
+    val m = new LongIntHashMap(-1, 10)
+    (0 until 10000).foreach(i => m.increment(i, i))
     assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
   }
 

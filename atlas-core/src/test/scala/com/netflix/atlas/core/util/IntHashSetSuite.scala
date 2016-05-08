@@ -28,6 +28,7 @@ class IntHashSetSuite extends FunSuite {
     val s = new IntHashSet(-1, 10)
     s.add(11)
     assert(List(11) === s.toList)
+    assert(1 === s.size)
   }
 
   test("dedup") {
@@ -44,6 +45,7 @@ class IntHashSetSuite extends FunSuite {
     val s = new IntHashSet(-1, 10)
     (0 until 10000).foreach(s.add)
     assert((0 until 10000).toSet === s.toList.toSet)
+    assert(s.size === 10000)
   }
 
   test("random") {
