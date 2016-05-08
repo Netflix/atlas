@@ -54,16 +54,17 @@ class IntHashSet(noData: Int, capacity: Int = 10) {
     cutoff = math.max(3, (tmp.length * 0.7).toInt)
   }
 
-  private def add(buffer: Array[Int], v: Int): Unit = {
+  private def add(buffer: Array[Int], v: Int): Boolean = {
     var pos = math.abs(v) % buffer.length
     while (true) {
       val prev = buffer(pos)
       if (prev == noData || prev == v) {
         buffer(pos) = v
-        return
+        return prev == noData
       }
       pos = (pos + 1) % buffer.length
     }
+    false
   }
 
   /**
@@ -72,8 +73,7 @@ class IntHashSet(noData: Int, capacity: Int = 10) {
     */
   def add(v: Int): Unit = {
     if (used >= cutoff) resize()
-    add(data, v)
-    used += 1
+    if (add(data, v)) used += 1
   }
 
   /** Execute `f` for each item in the set. */

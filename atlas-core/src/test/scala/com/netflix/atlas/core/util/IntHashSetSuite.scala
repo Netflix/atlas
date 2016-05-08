@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.util
 
-import gnu.trove.set.hash.TIntHashSet
 import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.info.GraphLayout
 import org.scalatest.FunSuite
@@ -35,8 +34,10 @@ class IntHashSetSuite extends FunSuite {
     val s = new IntHashSet(-1, 10)
     s.add(42)
     assert(List(42) === s.toList)
+    assert(1 === s.size)
     s.add(42)
     assert(List(42) === s.toList)
+    assert(1 === s.size)
   }
 
   test("resize") {
