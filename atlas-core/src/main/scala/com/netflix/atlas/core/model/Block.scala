@@ -18,9 +18,6 @@ package com.netflix.atlas.core.model
 import java.util
 
 import com.netflix.atlas.core.util.DoubleIntHashMap
-import gnu.trove.map.hash.TDoubleIntHashMap
-
-//import com.netflix.atlas.core.block.DefaultBlockCodec
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Math
 
@@ -143,21 +140,6 @@ object Block {
     }
     compress(result)
   }
-
-  /** Returns a byte array representing the block data. The start time will not be stored. */
-  /*def toByteArray(block: Block): Array[Byte] = {
-    val buffer = ByteBuffer.allocate(block.byteCount)
-    val codec = new DefaultBlockCodec(block.start)
-    codec.encode(buffer, block)
-    buffer.array
-  }*/
-
-  /** Returns a block decoded from the buffer created using `toByteArray`. */
-  /*def fromByteArray(start: Long, bytes: Array[Byte]): Block = {
-    val buffer = ByteBuffer.wrap(bytes)
-    val codec = new DefaultBlockCodec(start)
-    codec.decode(buffer)
-  }*/
 }
 
 /**

@@ -59,6 +59,5 @@ object Dependencies {
   val sprayClient     = "io.spray" % "spray-client_2.11" % spray
   val sprayRouting    = "io.spray" % "spray-routing_2.11" % spray
   val sprayTestkit    = "io.spray" % "spray-testkit_2.11" % spray
-  val trove           = "net.sf.trove4j" % "trove4j" % "3.0.3"
   val typesafeConfig  = "com.typesafe" % "config" % "1.3.0"
 }
