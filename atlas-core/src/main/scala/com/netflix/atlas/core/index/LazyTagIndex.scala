@@ -26,9 +26,7 @@ import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.IntHashSet
 import com.netflix.atlas.core.util.IntIntHashMap
 import com.netflix.atlas.core.util.Interner
-import gnu.trove.map.hash.TObjectIntHashMap
-import gnu.trove.procedure.TIntIntProcedure
-import gnu.trove.procedure.TObjectIntProcedure
+import com.netflix.atlas.core.util.RefIntHashMap
 import org.slf4j.LoggerFactory
 
 
@@ -146,26 +144,26 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
   private def buildTagIndex(): (Array[Tag], Array[Array[Int]]) = {
     // Count how many times each tag occurs
     logger.debug(s"building tag index with ${items.length} items, compute tag counts")
-    val tagCounts = new TObjectIntHashMap[(String, String)]
+    val tagCounts = new RefIntHashMap[(String, String)]
     var pos = 0
     while (pos < items.length) {
       items(pos).foreach { (k, v) =>
         val t = k -> v
-        tagCounts.adjustOrPutValue(t, 1, 1)
+        tagCounts.increment(t, 1)
       }
       pos += 1
     }
 
     // Create sorted array with tags and the overall counts
     logger.debug(s"building tag index with ${items.length} items, sort and overall counts")
-    val tagsArrayBuilder = new TagsArrayBuilder(tagCounts.size)
-    tagCounts.forEachEntry(tagsArrayBuilder)
-    val tagsArray = tagsArrayBuilder.result
+    val tagsArray = tagCounts.mapToArray(new Array[Tag](tagCounts.size)) { (t, v) =>
+      Tag(interner.intern(t._1), interner.intern(t._2), v)
+    }
     util.Arrays.sort(tagsArray.asInstanceOf[Array[AnyRef]])
 
     // Create map of tag to position in tags array
     logger.debug(s"building tag index with ${items.length} items, tag to position map")
-    val posMap = new TObjectIntHashMap[(String, String)]
+    val posMap = new RefIntHashMap[(String, String)]
     pos = 0
     while (pos < tagsArray.length) {
       val t = tagsArray(pos)
@@ -182,7 +180,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
       val tagsArray = new Array[Int](tags.size)
       var i = 0
       items(pos).foreach { (k, v) =>
-        tagsArray(i) = posMap.get(k -> v)
+        tagsArray(i) = posMap.get(k -> v, -1)
         i += 1
       }
       itemTags(pos) = tagsArray
@@ -190,38 +188,6 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
     }
 
     (tagsArray, itemTags)
-  }
-
-  private final class TagsArrayBuilder(sz: Int) extends TObjectIntProcedure[(String, String)] {
-    val result = new Array[Tag](sz)
-    var next = 0
-
-    def execute(k: (String, String), v: Int): Boolean = {
-      result(next) = Tag(interner.intern(k._1), interner.intern(k._2), v)
-      next += 1
-      true
-    }
-  }
-
-  private final class TagIndexBuilder(sz: Int) extends TObjectIntProcedure[(String, String)] {
-    val result = new Array[(String, String)](sz)
-
-    def execute(k: (String, String), v: Int): Boolean = {
-      result(v - 1) = interner.intern(k._1) -> interner.intern(k._2)
-      true
-    }
-  }
-
-  private final class TagListBuilder extends TIntIntProcedure {
-    val list = List.newBuilder[Tag]
-
-    def execute(k: Int, v: Int): Boolean = {
-      val t = tagIndex(k)
-      list += Tag(t.key, t.value, v)
-      true
-    }
-
-    def result: List[Tag] = list.result
   }
 
   private[index] def findImpl(query: Query, offset: Int, andSet: Option[LazySet]): LazySet = {
