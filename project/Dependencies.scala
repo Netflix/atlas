@@ -36,6 +36,7 @@ object Dependencies {
   val jacksonScala2   = "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % jackson
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jodaConvert     = "org.joda" % "joda-convert" % "1.8.1"
+  val jol             = "org.openjdk.jol" % "jol-core" % "0.5"
   val log4jApi        = "org.apache.logging.log4j" % "log4j-api" % log4j
   val log4jCore       = "org.apache.logging.log4j" % "log4j-core" % log4j
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
@@ -58,6 +59,5 @@ object Dependencies {
   val sprayClient     = "io.spray" % "spray-client_2.11" % spray
   val sprayRouting    = "io.spray" % "spray-routing_2.11" % spray
   val sprayTestkit    = "io.spray" % "spray-testkit_2.11" % spray
-  val trove           = "net.sf.trove4j" % "trove4j" % "3.0.3"
   val typesafeConfig  = "com.typesafe" % "config" % "1.3.0"
 }

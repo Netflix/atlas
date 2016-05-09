@@ -17,11 +17,9 @@ package com.netflix.atlas.core.model
 
 import java.util
 
-//import com.netflix.atlas.core.block.DefaultBlockCodec
+import com.netflix.atlas.core.util.DoubleIntHashMap
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Math
-import gnu.trove.map.hash.TDoubleIntHashMap
-import gnu.trove.procedure.TDoubleIntProcedure
 
 
 /**
@@ -50,7 +48,8 @@ object Block {
     } else {
       // Keeps track of values we have already seen and maps them to an index. NaN doesn't equal
       // anything so it cannot be found in the map. We special case it to always have index -1.
-      val idxMap = new TDoubleIntHashMap(10, 0.5f, Double.NaN, SparseBlock.NOT_FOUND)
+      //val idxMap = new TDoubleIntHashMap(10, 0.5f, Double.NaN, SparseBlock.NOT_FOUND)
+      val idxMap = new DoubleIntHashMap
       var nextIdx = 0
 
       // Index into the value array
@@ -63,7 +62,7 @@ object Block {
       while (i < block.size) {
         val v = block.buffer(i)
         val predefIdx = SparseBlock.predefinedIndex(v)
-        var idx = if (predefIdx == SparseBlock.UNDEFINED) idxMap.get(v) else predefIdx
+        var idx = if (predefIdx == SparseBlock.UNDEFINED) idxMap.get(v, SparseBlock.NOT_FOUND) else predefIdx
         if (idx == SparseBlock.NOT_FOUND) {
           if (nextIdx == MAX_SIZE) return block
           idx = nextIdx
@@ -78,7 +77,7 @@ object Block {
 
       // Populate values array
       val values = new Array[Double](idxMap.size)
-      idxMap.forEachEntry(new FillArrayProcedure(values))
+      idxMap.foreach { (k, v) => values(v) = k }
 
       // Choose the appropriate block type
       if (isConstant)
@@ -140,29 +139,6 @@ object Block {
         b1
     }
     compress(result)
-  }
-
-  /** Returns a byte array representing the block data. The start time will not be stored. */
-  /*def toByteArray(block: Block): Array[Byte] = {
-    val buffer = ByteBuffer.allocate(block.byteCount)
-    val codec = new DefaultBlockCodec(block.start)
-    codec.encode(buffer, block)
-    buffer.array
-  }*/
-
-  /** Returns a block decoded from the buffer created using `toByteArray`. */
-  /*def fromByteArray(start: Long, bytes: Array[Byte]): Block = {
-    val buffer = ByteBuffer.wrap(bytes)
-    val codec = new DefaultBlockCodec(start)
-    codec.decode(buffer)
-  }*/
-
-  /** Fills an array based on a map of double to int. */
-  private class FillArrayProcedure(values: Array[Double]) extends TDoubleIntProcedure {
-    def execute(v: Double, idx: Int): Boolean = {
-      if (idx >= 0) values(idx) = v
-      true
-    }
   }
 }
 
