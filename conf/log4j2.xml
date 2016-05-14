@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Alternative log4j config. Sending data to files in the `logs` directory.
+
+ # Usage
+
+ ```
+ $ java -Dlog4j.configurationFile=conf/log4j2.xml -jar target/standalone.jar
+ ```
+
+ # Description
+
+ Outputs data to three log files:
+
+ 1. app.log: this is the primary log file for the application.
+ 2. client.log: this is an access.log for client requests.
+ 3. server.log: this is an access.log for server requests.
+
+ Files will be rotated to an `archive` sub directory based on both
+ time and size. Keeps up to 168 files of at most 200MB.
+-->
+<Configuration monitorInterval="5" status="warn" shutdownHook="disable">
+  <Properties>
+    <Property name="logDir">logs</Property>
+    <Property name="logArchiveDir">logs/archive</Property>
+    <Property name="rolledSuffix">%d{yyyyMMdd'_'HH}00_%i.lg.gz</Property>
+    <Property name="dfltPattern">%d{yyyy-MM-dd'T'HH:mm:ss.SSS} %-5level [%t] %class: %msg%n</Property>
+  </Properties>
+  <Appenders>
+    <Spectator name="Spectator"/>
+    <RollingFile name="Main"
+        fileName="${logDir}/app.log"
+        filePattern="${logArchiveDir}/app_${rolledSuffix}">
+      <PatternLayout pattern="${dfltPattern}"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="200 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="168"/> <!-- 1 week if one file per hour -->
+    </RollingFile>
+    <RollingFile name="Server"
+        fileName="${logDir}/server.log"
+        filePattern="${logArchiveDir}/server_${rolledSuffix}">
+      <PatternLayout pattern="${dfltPattern}"/>
+      <Filters>
+        <MarkerFilter marker="http-server" onMatch="ACCEPT" onMismatch="DENY"/>
+      </Filters>
+      <Policies>
+        <TimeBasedTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="200 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="168"/> <!-- 1 week if one file per hour -->
+    </RollingFile>
+    <RollingFile name="Client"
+        fileName="${logDir}/client.log"
+        filePattern="${logArchiveDir}/client_${rolledSuffix}">
+      <PatternLayout pattern="${dfltPattern}"/>
+      <Filters>
+        <MarkerFilter marker="http-client" onMatch="ACCEPT" onMismatch="DENY"/>
+      </Filters>
+      <Policies>
+        <TimeBasedTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="200 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="168"/> <!-- 1 week if one file per hour -->
+    </RollingFile>
+  </Appenders>
+  <Loggers>
+    <Logger name="com.netflix.spectator.sandbox.HttpLogEntry" level="debug" additivity="false">
+      <AppenderRef ref="Server"/>
+      <AppenderRef ref="Client"/>
+      <AppenderRef ref="Spectator"/>
+    </Logger>
+    <Logger name="com.netflix.iep" level="debug"/>
+    <Logger name="com.netflix.spectator.gc.GcLogger" level="debug"/>
+    <Root level="info">
+      <AppenderRef ref="Main"/>
+      <AppenderRef ref="Spectator"/>
+    </Root>
+  </Loggers>
+</Configuration>
