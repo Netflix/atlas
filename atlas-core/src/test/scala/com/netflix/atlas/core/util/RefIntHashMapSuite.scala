@@ -34,6 +34,18 @@ class RefIntHashMapSuite extends FunSuite {
     assert(Map(11L -> 42) === m.toMap)
   }
 
+  test("putIfAbsent") {
+    val m = new RefIntHashMap[JLong]
+    assert(0 === m.size)
+    assert(m.putIfAbsent(11L, 42))
+    assert(1 === m.size)
+    assert(Map(11L -> 42) === m.toMap)
+
+    assert(!m.putIfAbsent(11L, 43))
+    assert(1 === m.size)
+    assert(Map(11L -> 42) === m.toMap)
+  }
+
   test("get") {
     val m = new RefIntHashMap[JLong]
     assert(m.get(42L, -1) === -1)

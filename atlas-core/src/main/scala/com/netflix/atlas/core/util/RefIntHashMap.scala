@@ -112,6 +112,26 @@ class RefIntHashMap[T](capacity: Int = 10) {
   }
 
   /**
+    * Put ref to integer pair into the map if there is not already a mapping
+    * for `k`. Returns true if the value was inserted into the map.
+    */
+  def putIfAbsent(k: T, v: Int): Boolean = {
+    if (used >= cutoff) resize()
+    var pos = math.abs(k.hashCode()) % keys.length
+    var posV = keys(pos)
+    while (posV != null && posV != k) {
+      pos = (pos + 1) % keys.length
+      posV = keys(pos)
+    }
+    if (posV != null) false else {
+      keys(pos) = k
+      values(pos) = v
+      used += 1
+      true
+    }
+  }
+
+  /**
     * Get the value associated with key, `k`. If no value is present, then the
     * `dflt` value will be returned.
     */
