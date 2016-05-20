@@ -27,7 +27,7 @@ case object DistStddev extends StackWordPage {
   override def signature: String = s"`Query -- TimeSeriesExpr`"
 
   override def summary: String = """
-      |Compute standard deviation for [timers](https://github.com/Netflix/spectator/wiki/Timer-Usage)
-      |and [distribution summaries](https://github.com/Netflix/spectator/wiki/Distribution-Summary-Usage).
+      |Compute standard deviation for [timers](http://netflix.github.io/spectator/en/latest/intro/timer/)
+      |and [distribution summaries](http://netflix.github.io/spectator/en/latest/intro/dist-summary/).
     """.stripMargin.trim
 }
