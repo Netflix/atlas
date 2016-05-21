@@ -41,8 +41,8 @@ Usage of tags will typically fall into two categories:
    category.
 
 When creating metrics it is important to carefully think about how the data should be tagged. See
-the [naming conventions](https://github.com/Netflix/spectator/wiki/Conventions) docs for more
-information.
+the [naming conventions](http://netflix.github.io/spectator/en/latest/intro/conventions/) docs for
+more information.
 
 ## Metric
 
@@ -59,10 +59,10 @@ the same metric.
 A data point is a triple consisting of tags, timestamp, and a value. It is important to understand
 at a high level how data points correlate with the measurement. Consider requests hitting a
 server, this would typically be measured using a
-[counter](https://github.com/Netflix/spectator/wiki/Counter-Usage). Each time a request is received
-the counter is incremented. There is not one data point per increment, a data point represents
-the behavior over a span of time called the [step size](#step-size). The client library will
-sample the counter once for each interval and report a single value.
+[counter](http://netflix.github.io/spectator/en/latest/intro/counter/). Each time a request is
+received the counter is incremented. There is not one data point per increment, a data point
+represents the behavior over a span of time called the [step size](#step-size). The client library
+will sample the counter once for each interval and report a single value.
 
 Suppose that each circle in the diagram below represents a request:
 
@@ -99,7 +99,7 @@ consistent.
 
 How a normalized value is computed depends on the data source type. Atlas supports three types
 indicated by the value of the `atlas.dstype` tag. In general, you should not need to worry about
-that, client libraries like [spectator](https://github.com/Netflix/spectator/wiki) will
+that, client libraries like [spectator](http://netflix.github.io/spectator/en/latest/) will
 automatically handle tagging based on the data source type.
 
 It is recommended to at least skim through the normalization for [gauges](#gauge) and
@@ -235,7 +235,7 @@ avoid gaps in the graph if a subset of time series used in an aggregate have gap
 
 ## Naming Conventions
 
-See [naming conventions](https://github.com/Netflix/spectator/wiki/Conventions).
+See [naming conventions](http://netflix.github.io/spectator/en/latest/intro/conventions/).
 
 
 

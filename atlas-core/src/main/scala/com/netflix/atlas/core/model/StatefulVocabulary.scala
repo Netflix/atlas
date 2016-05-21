@@ -259,8 +259,8 @@ object StatefulVocabulary extends Vocabulary {
         || 1     | 5         |
         || 0     | 5         |
         |
-        |For a [counter](https://github.com/Netflix/spectator/wiki/Counter-Usage), each data point
-        |represents the average rate per second over the step interval. To compute the total
+        |For a [counter](http://netflix.github.io/spectator/en/latest/intro/counter/), each data
+        |point represents the average rate per second over the step interval. To compute the total
         |amount incremented, the value first needs to be converted to a rate per step interval.
         |This conversion can be performed using the [:per-step](math-per‐step) operation.
       """.stripMargin.trim
