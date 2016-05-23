@@ -108,13 +108,13 @@ object StatefulExpr {
       desF.bp = s.bp
 
       val data = ts.data
-      var pos = s.pos
+      var pos = 0
       while (pos < data.length) {
         val yn = data(pos)
         data(pos) = desF.next(yn)
         pos += 1
       }
-      State(pos, desF.currentSample, desF.sp, desF.bp)
+      State(0, desF.currentSample, desF.sp, desF.bp)
     }
 
     private def newState: State = State(0, 0, 0.0, 0.0)
