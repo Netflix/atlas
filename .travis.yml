@@ -4,14 +4,14 @@ jdk:
 scala:
 - 2.11.8
 script:
-- "./scripts/buildViaTravis.sh"
+- ./scripts/buildViaTravis.sh
 sudo: false
 env:
   global:
-  - secure: CJjiTMoOsPhB1ylLLvkeKbGHS2bZUaTAeUYGn7JLcsLZ2a/sajleUTjV2yGXC6TLKVWeB/bREKn0p12Eax4/YwxzpHQWbDv6E2WQasV98zOVODUzqahCmUd01oXBUJ3jsP7Zq6uoLiuDpMK1glPlPFWgQVomt6eZbQqW2xLn3R4=
-  - secure: h5GQEdYglDF68DEUk8LOrr9Qj7cz0Df8Gk9F57RclepvVUiXAyERdQKHKysXv8Iui6/I2VTrz9TDwh8gvSSaY+Qu7+FPoVb1o7Z5y1Zrn9m+VaPn7UmR0J18yNyCynS1uPuhvsTNjgIMmH84ecldUMjgPsjAsIChH4ILZ7DLxOI=
-  - secure: EDNzUX/+WSWOKmbWGEZf6IVDDNQj1VCidB1tz0XtNMDPjV9UdEbIaIwQIPuy27hKyCSkH7mdmNET83poezPKTn8zTwXcIN6MXNsnoEcRWppzb03P/9V0nWVlD3S5ayL7Z0dRk+lcmTNkyC+/knoQH/B9DG28qvDW8dsz3SRX96w=
-  - secure: lnLdTTeD4+KZD9NX3ls/MHSnW/R6e+QNkL5UKX//DjegH6CijbdGnW/GXfXNPFN4KjkD2zdFy7dxb2WS3FSobQiqzmp89u0AAN/vw1zIeKE5xIyG56xm2ExJxzt+39G5oxVvYwVZOHByYqD7heyYUxrszSziWGUDZyxjWUO1kY0=
+  - secure: EakB0ihwg817KJghs6NJ/C75H138DDDDY7jhnuph+2tbA65InChFEtPT6OBW6N/RWd1QOZRZ3UjUMMHoRshgKNMTeU6F6aZORRlJVbtCLDEyaelhfyjiNPkE6xPL1g/h2JqTv8Hv6eWLe8rbDqArSkefFbFXcvztmoKHbmaCkPg=
+  - secure: EWmri8Xn196MLbo+uDqJwHXQU1XlsCz9U1qr3cQ8tYPc3SfNixUQoQZNbBDbXAGpbhY/loM/8P7D2AgGntyuw+eaMFvVBrjbUQLkpIvO/NUeN4+x4TJxv+JrGqPvZX25Qgi/nQKOEWABbReD9WASIoeevRUzu9mPlnHVWkJWax0=
+  - secure: ZP6uD798wV7/TAjwdP5Cp39B/MB8eJ3wOjXH0sRQpmxOZN3022pOl1FetwGCbXpAwR9CYoUKH7+p9wiCO0/7K9QNzKoqTYPwJG+V8PjN7LYilKzj+gW/2qy2IRBTObwsVtI6q/rQGqAtrb9nf+9ONfpk2EX40i/R9O/EFVAhAe0=
+  - secure: JN8m1aj4D7d3yr9c08Xz/iUW/BAdE/o622hNJOlA2RvJofsxAy4C+ZesSTrpE/HpfmwGv8Gzty/ROhG6UiYI2eRaZ5TC3ul9+tmbguTW2VJHUc7BwCpzGsnZo+mhV9fRwAiBHJnYGb9iCiSSOubjRjio+He0B9I9+JS3Oq4fuBk=
 cache:
   directories:
   - $HOME/.sbt
