@@ -39,12 +39,12 @@ import com.netflix.atlas.core.util.Strings
   * format uses an array with entries following the pattern:
   *
   * ```
-  * [graph-metadata, plot-metadata, ... lines ..., plot-metadata, ... lines ..., ...]
+  * [graph-metadata,... plot-metadata ..., ... lines ..., ...]
   * ```
   *
   * Metadata is output first so something could setup initial rendering. Then we output the
-  * `plot-metadata` that corresponds to all lines on a given axis. That is followed by the set
-  * of lines. This pattern is repeated until all plots have been output.
+  * `plot-metadata` that corresponds to all lines on a given axis. The plot has an id that
+  * will be referenced when the line data is emitted.
   */
 private[this] object JsonCodec {
 
@@ -74,10 +74,12 @@ private[this] object JsonCodec {
   private def writeGraphDef(gen: JsonGenerator, config: GraphDef): Unit = {
     gen.writeStartArray()
     writeGraphDefMetadata(gen, config)
-    config.plots.foreach { plot =>
-      writePlotDefMetadata(gen, plot)
+    config.plots.zipWithIndex.foreach { case (plot, i) =>
+      writePlotDefMetadata(gen, plot, i)
+    }
+    config.plots.zipWithIndex.foreach { case (plot, i) =>
       plot.data.foreach { data =>
-        writeDataDef(gen, data, config.startTime.toEpochMilli, config.endTime.toEpochMilli)
+        writeDataDef(gen, i, data, config.startTime.toEpochMilli, config.endTime.toEpochMilli)
       }
     }
     gen.writeEndArray()
@@ -121,9 +123,10 @@ private[this] object JsonCodec {
     gen.writeEndObject()
   }
 
-  private def writePlotDefMetadata(gen: JsonGenerator, plot: PlotDef): Unit = {
+  private def writePlotDefMetadata(gen: JsonGenerator, plot: PlotDef, id: Int): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "plot-metadata")
+    gen.writeNumberField("id", id)
     plot.ylabel.foreach { v => gen.writeStringField("ylabel", v) }
     plot.axisColor.foreach { v =>
       gen.writeFieldName("axisColor")
@@ -136,17 +139,18 @@ private[this] object JsonCodec {
     gen.writeEndObject()
   }
 
-  private def writeDataDef(gen: JsonGenerator, data: DataDef, start: Long, end: Long): Unit = {
+  private def writeDataDef(gen: JsonGenerator, plot: Int, data: DataDef, start: Long, end: Long): Unit = {
     data match {
-      case v: LineDef  => writeLineDef(gen, v, start, end)
-      case v: HSpanDef => writeHSpanDef(gen, v)
-      case v: VSpanDef => writeVSpanDef(gen, v)
+      case v: LineDef  => writeLineDef(gen, plot, v, start, end)
+      case v: HSpanDef => writeHSpanDef(gen, plot, v)
+      case v: VSpanDef => writeVSpanDef(gen, plot, v)
     }
   }
 
-  private def writeLineDef(gen: JsonGenerator, line: LineDef, start: Long, end: Long): Unit = {
+  private def writeLineDef(gen: JsonGenerator, plot: Int, line: LineDef, start: Long, end: Long): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "timeseries")
+    gen.writeNumberField("plot", plot)
     gen.writeStringField("label", line.data.label)
     gen.writeFieldName("color")
     writeColor(gen, line.color)
@@ -164,9 +168,10 @@ private[this] object JsonCodec {
     gen.writeEndObject()
   }
 
-  private def writeHSpanDef(gen: JsonGenerator, span: HSpanDef): Unit = {
+  private def writeHSpanDef(gen: JsonGenerator, plot: Int, span: HSpanDef): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "hspan")
+    gen.writeNumberField("plot", plot)
     span.label.foreach { v => gen.writeStringField("label", v) }
     gen.writeFieldName("color")
     writeColor(gen, span.color)
@@ -175,9 +180,10 @@ private[this] object JsonCodec {
     gen.writeEndObject()
   }
 
-  private def writeVSpanDef(gen: JsonGenerator, span: VSpanDef): Unit = {
+  private def writeVSpanDef(gen: JsonGenerator, plot: Int, span: VSpanDef): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "vspan")
+    gen.writeNumberField("plot", plot)
     span.label.foreach { v => gen.writeStringField("label", v) }
     gen.writeFieldName("color")
     writeColor(gen, span.color)
@@ -193,8 +199,8 @@ private[this] object JsonCodec {
   private def readGraphDef(parser: JsonParser): GraphDef = {
     var gdef: GraphDef = null
     var pdef: PlotDef = null
-    val plots = List.newBuilder[PlotDef]
-    var data = List.newBuilder[DataDef]
+    val plots = Map.newBuilder[Int, PlotDef]
+    var data = List.newBuilder[(Int, DataDef)]
     foreachItem(parser) {
       val node = mapper.readTree[JsonNode](parser)
       node.get("type").asText() match {
@@ -203,25 +209,28 @@ private[this] object JsonCodec {
             throw new IllegalStateException("multiple graph-metadata blocks")
           gdef = toGraphDef(node)
         case "plot-metadata" =>
-          if (pdef != null) plots += pdef.copy(data = data.result())
-          pdef = toPlotDef(node)
-          data = List.newBuilder[DataDef]
+          plots += node.get("id").asInt(0) -> toPlotDef(node)
         case "timeseries" =>
-          if (pdef == null)
-            throw new IllegalStateException("plot-metadata is not defined")
-          data += toLineDef(gdef, node)
+          val plot = node.get("plot").asInt(0)
+          data += plot -> toLineDef(gdef, node)
         case "hspan" =>
-          if (pdef == null)
-            throw new IllegalStateException("plot-metadata is not defined")
-          data += toHSpanDef(node)
+          val plot = node.get("plot").asInt(0)
+          data += plot -> toHSpanDef(node)
         case "vspan" =>
-          if (pdef == null)
-            throw new IllegalStateException("plot-metadata is not defined")
-          data += toVSpanDef(node)
+          val plot = node.get("plot").asInt(0)
+          data += plot -> toVSpanDef(node)
       }
     }
-    if (pdef != null) plots += pdef.copy(data = data.result())
-    gdef.copy(plots = plots.result())
+
+    val groupedData = data.result().groupBy(_._1)
+
+    val sortedPlots = plots.result().toList.sortWith(_._1 < _._1)
+    val plotList = sortedPlots.map { case (id, plot) =>
+      val plotLines = groupedData.get(id).map(_.map(_._2)).getOrElse(Nil)
+      plot.copy(data = plotLines)
+    }
+
+    gdef.copy(plots = plotList)
   }
 
   private def toGraphDef(node: JsonNode): GraphDef = {
