@@ -33,6 +33,11 @@ import com.netflix.atlas.chart.model.GraphDef
   *   payload must be ready before we can output data. As data volumes get bigger it is
   *   necessary to be able to emit data as it becomes available.
   *
+  * - Allow for incremental evaluation of the data over time. The constant metadata for the
+  *   chart should be written out first. Data can arrive over time. For example, in a streaming
+  *   execution we might get data for all lines for a given minute, then the next minute, and
+  *   so on.
+  *
   * - Consistent where possible to the SSE payloads from the fetch API.
   */
 class V2JsonGraphEngine extends GraphEngine {
