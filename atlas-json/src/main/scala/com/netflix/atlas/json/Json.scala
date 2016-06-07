@@ -70,7 +70,7 @@ object Json {
 
   private def newMapper(factory: JsonFactory): ObjectMapper = {
     val mapper = new ObjectMapper(factory)
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     mapper.registerModule(DefaultScalaModule)
     mapper.registerModule(new JodaModule)

@@ -304,6 +304,9 @@ class JsonSuite extends FunSuite {
   }
 
   test("case class nested -- None") {
+    // Note, as of 2.7.4 scala Option seems to be treated similar to
+    // java 8 Optional. It needs the NON_ABSENT include setting rather
+    // than NON_NULL
     val v = JsonSuiteNested(Map("a" -> JsonSuiteSimple(42, "forty-two")), None)
     assert(encode(v) === """{"simple":{"a":{"foo":42,"bar":"forty-two"}}}""")
     assert(decode[JsonSuiteNested](encode(v)) === v)
