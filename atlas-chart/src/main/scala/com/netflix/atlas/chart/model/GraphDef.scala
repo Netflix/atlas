@@ -174,4 +174,7 @@ case class GraphDef(
       line.copy(data = TimeSeries(line.data.tags, line.data.label, seq))
     }
   }
+
+  /** Normalize the definition so it can be reliably compared. Mostly used for test cases. */
+  def normalize: GraphDef = copy(plots = plots.map(_.normalize)).bounded
 }

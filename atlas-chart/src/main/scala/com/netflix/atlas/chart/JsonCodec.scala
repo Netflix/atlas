@@ -128,10 +128,8 @@ private[this] object JsonCodec {
     gen.writeStringField("type", "plot-metadata")
     gen.writeNumberField("id", id)
     plot.ylabel.foreach { v => gen.writeStringField("ylabel", v) }
-    plot.axisColor.foreach { v =>
-      gen.writeFieldName("axisColor")
-      writeColor(gen, v)
-    }
+    gen.writeFieldName("axisColor")
+    writeColor(gen, plot.getAxisColor)
     gen.writeStringField("scale", plot.scale.name())
     gen.writeStringField("upper", plot.upper.toString)
     gen.writeStringField("lower", plot.lower.toString)
