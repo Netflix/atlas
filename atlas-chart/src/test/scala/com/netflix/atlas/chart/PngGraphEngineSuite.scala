@@ -142,7 +142,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
   def check(name: String, graphDef: GraphDef): Unit = {
     val json = JsonCodec.encode(graphDef)
-    assert(graphDef.bounded === JsonCodec.decode(json))
+    assert(graphDef.normalize === JsonCodec.decode(json))
 
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     graphAssertions.assertEquals(image, name, bless)

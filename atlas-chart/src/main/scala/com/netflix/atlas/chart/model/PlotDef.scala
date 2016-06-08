@@ -145,5 +145,7 @@ case class PlotDef(
   def verticalSpans: List[VSpanDef] = data.collect { case v: VSpanDef => v }
 
   def lines: List[LineDef] = data.collect { case v: LineDef => v }
+
+  def normalize: PlotDef = copy(axisColor = Some(getAxisColor))
 }
 
