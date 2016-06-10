@@ -113,6 +113,12 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
+  test("publish invalid object") {
+    Post("/api/v1/publish", "{\"foo\":\"bar\"}") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
+  }
+
   test("publish tag value is null") {
     val json = s"""{
         "metrics": [
