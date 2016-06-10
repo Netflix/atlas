@@ -137,4 +137,10 @@ class PublishApiJsonSuite extends FunSuite {
       """)
     assert(decoded.size === 1)
   }
+
+  test("decode batch bad object") {
+    intercept[IllegalArgumentException] {
+      PublishApi.decodeBatch("""{"foo":"bar"}""")
+    }
+  }
 }

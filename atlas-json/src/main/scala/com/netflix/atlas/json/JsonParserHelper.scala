@@ -98,13 +98,15 @@ object JsonParserHelper {
 
   def foreachField[T](parser: JsonParser)(f: PartialFunction[String, T]): Unit = {
     while (skipTo(parser, JsonToken.FIELD_NAME, JsonToken.END_OBJECT)) {
-      f(parser.getText)
+      val n = parser.getText
+      f.applyOrElse[String, T](n, k => throw new IllegalArgumentException(s"invalid field: '$k'"))
     }
   }
 
   def firstField[T](parser: JsonParser)(f: PartialFunction[String, T]): Unit = {
     if (skipTo(parser, JsonToken.FIELD_NAME, JsonToken.END_OBJECT)) {
-      f(parser.getText)
+      val n = parser.getText
+      f.applyOrElse[String, T](n, k => throw new IllegalArgumentException(s"invalid field: '$k'"))
     }
   }
 
