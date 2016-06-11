@@ -223,6 +223,21 @@ class SmallHashMapSuite extends FunSuite {
     assert(m1 === m2 - "k2")
   }
 
+  test("empty map") {
+    val m = SmallHashMap.empty[String, String]
+    assert(m.keySet === Set.empty)
+    assert(m.get("k1") === None)
+    assert(m.size === 0)
+  }
+
+  test("map with 1 pair") {
+    val m = SmallHashMap("k1" -> "v1")
+    assert(m.keySet === Set("k1"))
+    assert(m.get("k1") === Some("v1"))
+    assert(m.get("k2") === None)
+    assert(m.size === 1)
+  }
+
   test("keySet") {
     val m = SmallHashMap("k1" -> "v1", "k2" -> "v2")
     assert(m.keySet === Set("k1", "k2"))

@@ -153,6 +153,7 @@ class SmallHashMap[K <: AnyRef, V <: AnyRef](val data: Array[AnyRef], dataLength
   }
 
   def get(key: K): Option[V] = {
+    if (dataLength == 0) return None
     val capacity = data.length / 2
     val pos = hash(key)
     var i = pos

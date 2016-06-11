@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.index
 
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.util.SmallHashMap
 
 /**
  * Index for quickly matching a set of tags against many query expressions. The intended use-case
@@ -145,7 +146,7 @@ object QueryIndex {
         val trees = children.flatMap(_.toList).groupBy(_._1).map { case (q, ts) =>
           q -> createImpl(idxMap, ts.map(_._2))
         }
-        val idx = QueryIndex(trees, leaf.map(_.entry))
+        val idx = QueryIndex(SmallHashMap(trees), leaf.map(_.entry))
         idxMap += entries -> idx
         idx
     }
