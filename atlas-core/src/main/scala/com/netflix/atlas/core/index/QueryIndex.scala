@@ -104,6 +104,8 @@ case class QueryIndex[T](
   */
 object QueryIndex {
 
+  type IndexMap[T <: Any] = scala.collection.mutable.AnyRefMap[AnyRef, QueryIndex[T]]
+
   case class Entry[T](query: Query, value: T)
 
   private case class AnnotatedEntry[T](entry: Entry[T], filters: Set[Query.Equal]) {
@@ -128,18 +130,25 @@ object QueryIndex {
       val qs = split(entry.query)
       qs.map(q => annotate(Entry(q, entry.value)))
     }
-    createImpl(annotated)
+    val idxMap = new IndexMap[T]
+    createImpl(idxMap, annotated)
   }
 
   /**
    * Recursively build the index.
    */
-  private def createImpl[T](entries: List[AnnotatedEntry[T]]): QueryIndex[T] = {
-    val (children, leaf) = entries.partition(_.filters.nonEmpty)
-    val trees = children.flatMap(_.toList).groupBy(_._1).map { case (q, ts) =>
-      q -> QueryIndex.createImpl(ts.map(_._2))
+  private def createImpl[T](idxMap: IndexMap[T], entries: List[AnnotatedEntry[T]]): QueryIndex[T] = {
+    idxMap.get(entries) match {
+      case Some(idx) => idx
+      case None =>
+        val (children, leaf) = entries.partition(_.filters.nonEmpty)
+        val trees = children.flatMap(_.toList).groupBy(_._1).map { case (q, ts) =>
+          q -> createImpl(idxMap, ts.map(_._2))
+        }
+        val idx = QueryIndex(trees, leaf.map(_.entry))
+        idxMap += entries -> idx
+        idx
     }
-    QueryIndex(trees, leaf.map(_.entry))
   }
 
   /**
