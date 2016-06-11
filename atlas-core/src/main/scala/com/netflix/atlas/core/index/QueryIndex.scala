@@ -146,9 +146,32 @@ object QueryIndex {
         val trees = children.flatMap(_.toList).groupBy(_._1).map { case (q, ts) =>
           q -> createImpl(idxMap, ts.map(_._2))
         }
-        val idx = QueryIndex(SmallHashMap(trees), leaf.map(_.entry))
+        val idx = QueryIndex(smallMap(trees), leaf.map(_.entry))
         idxMap += entries -> idx
         idx
+    }
+  }
+
+  /**
+    * Convert to a SmallHashMap to get a more compact memory representation.
+    */
+  private def smallMap[T](m: Map[Query.Equal, QueryIndex[T]]): Map[Query.Equal, QueryIndex[T]] = {
+    // Scala special cases immutable maps with size <= 4, so go ahead and keep those
+    if (m.size <= 4) m else {
+      // Otherwise, convert to a SmallHashMap. Note that default apply will create a
+      // map with the exact size of the input to optimize for memory use. This results
+      // in terrible performance for lookups of items that are not in the map because
+      // the entire array has to be scanned.
+      //
+      // In this case we use the builder and give 2x the size of the input so there
+      // will be 50% unused entries. Since we expect many misses this gives us better
+      // performance and memory overhead isn't too bad. It is still much lower than
+      // default immutable map since we don't need entry objects.
+      val size = m.size * 2
+      val builder = new SmallHashMap.Builder[Query.Equal, QueryIndex[T]](size)
+      builder.addAll(m)
+      val sm = builder.result
+      sm
     }
   }
 
