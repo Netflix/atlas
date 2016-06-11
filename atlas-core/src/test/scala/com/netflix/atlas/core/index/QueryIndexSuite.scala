@@ -15,9 +15,16 @@
  */
 package com.netflix.atlas.core.index
 
+import java.net.URI
+
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.MathExpr
+import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.StyleVocabulary
+import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.util.Streams
+import org.openjdk.jol.info.GraphLayout
 import org.scalatest.FunSuite
 
 class QueryIndexSuite extends FunSuite {
@@ -178,5 +185,41 @@ class QueryIndexSuite extends FunSuite {
 
     assert(Set(expr1, expr2) === index.matchingEntries(Map("name" -> "cpuUsage")).toSet)
     assert(Set(expr2) === index.matchingEntries(Map("name" -> "numCores")).toSet)
+  }
+
+  private def parse(s: String): List[Query] = {
+    try {
+      val interpreter = Interpreter(StyleVocabulary.allWords)
+      val queries = interpreter.execute(s).stack.collect {
+        case ModelExtractors.PresentationType(t) => t.expr.dataExprs.map(_.query)
+      }
+      queries.flatten.distinct
+    } catch {
+      case _: Exception => Nil
+    }
+  }
+
+
+  ignore("memory") {
+    val queries = Streams.scope(Streams.resource("queries.txt")) { in =>
+      Streams.lines(in).toList.flatMap { u =>
+        val uri = URI.create(u.replace("|", "%7C").replace("^", "%5E"))
+        val qstring = uri.getRawQuery
+        if (qstring == null) Nil else {
+          qstring.split("&")
+            .filter(_.startsWith("q="))
+            .map(s => parse(s.substring(2)))
+        }
+      }
+    }
+
+    val inputLayout = GraphLayout.parseInstance(queries)
+    println("INPUT:")
+    println(inputLayout.toFootprint)
+
+    val index = QueryIndex(queries.flatten)
+    val idxLayout = GraphLayout.parseInstance(index)
+    println("INDEX:")
+    println(idxLayout.toFootprint)
   }
 }
