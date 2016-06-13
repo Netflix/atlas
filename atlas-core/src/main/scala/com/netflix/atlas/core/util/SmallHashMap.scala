@@ -152,19 +152,23 @@ class SmallHashMap[K <: AnyRef, V <: AnyRef](val data: Array[AnyRef], dataLength
     math.abs(k.hashCode) % capacity
   }
 
-  def get(key: K): Option[V] = {
+  def getOrNull(key: K): V = {
+    if (dataLength == 0) return null.asInstanceOf[V]
     val capacity = data.length / 2
     val pos = hash(key)
     var i = pos
-    if (key != data(i * 2)) {
-      i = (i + 1) % capacity
-      while (key != data(i * 2) && i != pos) {
+    var ki = data(i * 2)
+    if (ki != null && ki != key) {
+      do {
         i = (i + 1) % capacity
-      }
+        ki = data(i * 2)
+      } while (ki != null && ki != key && i != pos)
     }
-    val v = if (key == data(i * 2)) data(i * 2 + 1) else null
-    Option(v.asInstanceOf[V])
+    val v = if (ki != null && ki == key) data(i * 2 + 1) else null
+    v.asInstanceOf[V]
   }
+
+  def get(key: K): Option[V] = Option(getOrNull(key))
 
   override def foreach[U](f: ((K, V)) => U) {
     var i = 0
