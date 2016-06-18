@@ -10,7 +10,7 @@ object Dependencies {
     val log4j      = "2.6.1"
     val scala      = "2.11.8"
     val slf4j      = "1.7.21"
-    val spectator  = "0.38.1"
+    val spectator  = "0.40.0"
     val spray      = "1.3.3"
   }
 
