@@ -20,6 +20,7 @@ import java.time.Duration
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
@@ -174,10 +175,18 @@ class StringsSuite extends FunSuite {
     assert(urlDecode(str) === expected)
   }
 
+  test("hexDecode, escape with _") {
+    val str = "a b %25 _ %_% _21%zb"
+    val expected = "a b %25 _ %_% !%zb"
+    assert(hexDecode(str, '_') === expected)
+  }
+
   test("urlEncode") {
     val str = "a&?= +[]()<>^$%\"':;-_|!@#*.~`\\/{}"
     val expected = "a%26%3F%3D%20%2B%5B%5D()%3C%3E%5E$%25%22':%3B-_%7C!@%23*.~`%5C/%7B%7D"
     assert(urlEncode(str) === expected)
+    assert(urlDecode(expected) === str)
+    assert(urlDecode(expected.toLowerCase(Locale.US)) === str)
   }
 
   test("urlEncode: CLDMTA-1582") {

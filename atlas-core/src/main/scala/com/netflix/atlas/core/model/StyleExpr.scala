@@ -30,7 +30,12 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
 
   def legend(t: TimeSeries): String = {
     val fmt = settings.getOrElse("legend", t.label)
-    Strings.substitute(fmt, t.tags)
+    val label = Strings.substitute(fmt, t.tags)
+    settings.get("decode").fold(label) {
+      case "hex"  => Strings.hexDecode(label, '_')
+      case "none" => label
+      case mode   => throw new IllegalArgumentException(s"unknown encoding '$mode'")
+    }
   }
 
   def sortBy: Option[String] = settings.get("sort")
