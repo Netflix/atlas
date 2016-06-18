@@ -182,34 +182,46 @@ object Strings {
     buf.toString
   }
 
-  private def isHexChar(c: Char): Boolean = {
-    ('0' <= c && c <= '9') ||
-      ('A' <= c && c <= 'H') ||
-      ('a' <= c && c <= 'h')
-  }
-
   /**
    * Lenient url-decoder. The URLDecoder class provided in the jdk throws
    * if there is an invalid hex encoded value. This function will map invalid
    * encodes to a %25 (a literal percent sign) and then decode it normally.
    */
-  def urlDecode(s: String): String = {
+  def urlDecode(s: String): String = hexDecode(s)
+
+  /** Hex decode an input string.
+    *
+    * @param input
+    *     Input string to decode.
+    * @param escapeChar
+    *     Character used to indicate the start of a hex encoded symbol.
+    * @return
+    *     Decoded string.
+    */
+  def hexDecode(input: String, escapeChar: Char = '%'): String = {
     val buf = new StringBuilder
-    val size = s.length
+    val size = input.length
     var pos = 0
     while (pos < size) {
-      val c = s.charAt(pos)
-      if (c == '%') {
+      val c = input.charAt(pos)
+      if (c == escapeChar) {
         if (size - pos <= 2) {
-          buf.append("%25")
+          // Not enough room left for two hex characters, copy the rest of
+          // the string to the buffer and end the loop.
+          buf.append(input.substring(pos))
+          pos = size
         } else {
-          val c1 = s.charAt(pos + 1)
-          val c2 = s.charAt(pos + 2)
-          if (isHexChar(c1) && isHexChar(c2)) {
-            buf.append(c).append(c1).append(c2)
+          val c1 = hexValue(input.charAt(pos + 1))
+          val c2 = hexValue(input.charAt(pos + 2))
+          if (c1 >= 0 && c2 >= 0) {
+            // Both are hex chars, add decoded character to buffer
+            val nc = (c1 << 4 | c2).asInstanceOf[Char]
+            buf.append(nc)
             pos += 2
           } else {
-            buf.append("%25")
+            // Not a valid hex encoding, just echo the escape character
+            // back into the buffer and move on.
+            buf.append(c)
           }
         }
       } else {
@@ -217,7 +229,17 @@ object Strings {
       }
       pos += 1
     }
-    URLDecoder.decode(buf.toString, "UTF-8")
+    buf.toString()
+  }
+
+  /** Converts a hex character into an integer value. Returns -1 if the input is not a
+    * hex character.
+    */
+  private def hexValue(c: Char): Int = c match {
+    case v if v >= '0' && v <= '9' => v - '0'
+    case v if v >= 'A' && v <= 'F' => v - 'A' + 10
+    case v if v >= 'a' && v <= 'f' => v - 'a' + 10
+    case _                         => -1
   }
 
   /**
