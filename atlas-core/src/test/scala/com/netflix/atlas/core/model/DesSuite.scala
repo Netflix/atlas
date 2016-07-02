@@ -75,7 +75,7 @@ class DesSuite extends FunSuite {
     }
   }
 
-  ignore("sdes: incremental exec matches global") {
+  test("sdes: incremental exec matches global") {
     val s = 0L
     val e = 14L * step
     val context = EvalContext(s, e, step, Map.empty)
