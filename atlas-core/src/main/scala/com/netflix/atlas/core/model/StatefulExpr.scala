@@ -162,22 +162,20 @@ object StatefulExpr {
       }
 
       val data = ts.data
-      var totalSamples = s.totalSamples
       var pos = 0
       while (pos < data.length) {
-        if (ts.start < skipUpTo) {
+        if (ts.start + pos * ts.step < skipUpTo) {
           data(pos) = Double.NaN
-          totalSamples += 1
         } else {
           val yn = data(pos)
           data(pos) = desF.next(yn)
         }
         pos += 1
       }
-      State(totalSamples, skipUpTo, desF)
+      State(skipUpTo, desF)
     }
 
-    private def newState: State = State(0, 0, null)
+    private def newState: State = State(0, null)
 
     private def getAlignedStartTime(context: EvalContext): Long = {
       val trainingStep = context.step * trainingSize
@@ -201,7 +199,7 @@ object StatefulExpr {
   }
 
   object SlidingDes {
-    case class State(totalSamples: Int, skipUpTo: Long, desF: OnlineSlidingDes)
+    case class State(skipUpTo: Long, desF: OnlineSlidingDes)
 
     type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
   }
