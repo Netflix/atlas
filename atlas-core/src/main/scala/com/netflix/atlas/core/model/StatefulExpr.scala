@@ -152,15 +152,9 @@ object StatefulExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
-    private def eval(ts: ArrayTimeSeq, s: State, skip: Long): State = {
+    private def eval(ts: ArrayTimeSeq, s: State): State = {
       var desF : OnlineSlidingDes = s.desF
       var skipUpTo = s.skipUpTo
-      if (desF == null) {
-        desF = new OnlineSlidingDes(trainingSize, alpha, beta)
-        desF.reset()
-        skipUpTo = skip
-      }
-
       val data = ts.data
       var pos = 0
       while (pos < data.length) {
@@ -175,8 +169,6 @@ object StatefulExpr {
       State(skipUpTo, desF)
     }
 
-    private def newState: State = State(0, null)
-
     private def getAlignedStartTime(context: EvalContext): Long = {
       val trainingStep = context.step * trainingSize
       if (context.start % trainingStep == 0)
@@ -190,8 +182,13 @@ object StatefulExpr {
       val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
       val newData = rs.data.map { t =>
         val bounded = t.data.bounded(context.start, context.end)
-        val s = state.getOrElse(t.id, newState)
-        state(t.id) = eval(bounded, s, getAlignedStartTime(context))
+        val s = state.getOrElse(t.id, {
+          val alignedStart = getAlignedStartTime(context)
+          val desF = new OnlineSlidingDes(trainingSize, alpha, beta)
+          desF.reset()
+          State(alignedStart, desF)
+        })
+        state(t.id) = eval(bounded, s)
         TimeSeries(t.tags, s"sdes(${t.label})", bounded)
       }
       ResultSet(this, newData, rs.state + (this -> state))
