@@ -143,7 +143,7 @@ object StatefulExpr {
       trainingSize: Int,
       alpha: Double,
       beta: Double) extends StatefulExpr {
-    import com.netflix.atlas.core.model.StatefulExpr.Des._
+    import com.netflix.atlas.core.model.StatefulExpr.SlidingDes._
 
     def dataExprs: List[DataExpr] = expr.dataExprs
     override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:sdes"
@@ -152,15 +152,13 @@ object StatefulExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
-    private def eval(ts: ArrayTimeSeq, s: State, skip: Int): State = {
-      val desF = new OnlineSlidingDes(trainingSize, alpha, beta)
-      desF.reset()
-      desF.currentSample = s.currentSample
-
+    private def eval(ts: ArrayTimeSeq, s: State): State = {
+      var desF : OnlineSlidingDes = s.desF
+      var skipUpTo = s.skipUpTo
       val data = ts.data
-      var pos = s.pos
+      var pos = 0
       while (pos < data.length) {
-        if (pos < skip) {
+        if (ts.start + pos * ts.step < skipUpTo) {
           data(pos) = Double.NaN
         } else {
           val yn = data(pos)
@@ -168,10 +166,8 @@ object StatefulExpr {
         }
         pos += 1
       }
-      State(pos, desF.currentSample, 0.0, 0.0)
+      State(skipUpTo, desF)
     }
-
-    private def newState: State = State(0, 0, 0.0, 0.0)
 
     private def getAlignedStartTime(context: EvalContext): Long = {
       val trainingStep = context.step * trainingSize
@@ -182,13 +178,17 @@ object StatefulExpr {
     }
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val alignedSkip = (getAlignedStartTime(context) - context.start) / context.step
       val rs = expr.eval(context, data)
       val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
       val newData = rs.data.map { t =>
         val bounded = t.data.bounded(context.start, context.end)
-        val s = state.getOrElse(t.id, newState)
-        state(t.id) = eval(bounded, s, alignedSkip.toInt)
+        val s = state.getOrElse(t.id, {
+          val alignedStart = getAlignedStartTime(context)
+          val desF = new OnlineSlidingDes(trainingSize, alpha, beta)
+          desF.reset()
+          State(alignedStart, desF)
+        })
+        state(t.id) = eval(bounded, s)
         TimeSeries(t.tags, s"sdes(${t.label})", bounded)
       }
       ResultSet(this, newData, rs.state + (this -> state))
@@ -196,7 +196,7 @@ object StatefulExpr {
   }
 
   object SlidingDes {
-    case class State(pos: Int, currentSample: Int, sp: Double, bp: Double)
+    case class State(skipUpTo: Long, desF: OnlineSlidingDes)
 
     type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
   }
