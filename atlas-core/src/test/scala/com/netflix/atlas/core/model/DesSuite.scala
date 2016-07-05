@@ -93,7 +93,7 @@ class DesSuite extends FunSuite {
     }
   }
 
-  test("sdes: alligned incremental exec matches global") {
+  test("sdes: aligned incremental exec matches global") {
     val s = 0L
     val e = 14L * step
     val context = EvalContext(s, e, step, Map.empty)
@@ -112,7 +112,7 @@ class DesSuite extends FunSuite {
     }
   }
 
-  test("sdes: unalligned incremental exec matches global") {
+  test("sdes: unaligned incremental exec matches global") {
     val s = 1L * step // offset by one step, half a training window used
     val e = 14L * step
     val context = EvalContext(s, e, step, Map.empty)
