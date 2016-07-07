@@ -63,8 +63,6 @@ class TrendSuite extends FunSuite {
     val context = EvalContext(s, e, step, Map.empty)
     val expected = trend.eval(context, List(alignedInputTS)).data.head.data.bounded(s, e).data
     val result = eval(trend, alignedStream)
-    println(expected.mkString(", "))
-    println(result.map { case v => v(0).data.asInstanceOf[ArrayTimeSeq].data(0) }.mkString(", "))
 
     result.zip(expected).zipWithIndex.foreach { case ((ts, v), i) =>
       assert(ts.size === 1)
