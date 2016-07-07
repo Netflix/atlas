@@ -38,7 +38,7 @@ object StyleVocabulary extends Vocabulary {
     Macro("area", List("area", ":ls"), List("42")),
     Macro("line", List("line", ":ls"), List("42")),
     Macro("stack", List("stack", ":ls"), List("42")),
-    Macro("vspan", List("vspan", ":ls"), List("42")),
+    Macro("vspan", List("vspan", ":ls"), List("name,sps,:eq,:sum,:dup,200e3,:gt")),
 
     Macro("des-epic-viz", desEpicViz, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
   )
