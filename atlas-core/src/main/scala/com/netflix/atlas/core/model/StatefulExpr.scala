@@ -110,10 +110,7 @@ object StatefulExpr {
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
     private def eval(ts: ArrayTimeSeq, s: State): State = {
-      val desF = new OnlineDes(trainingSize, alpha, beta)
-      desF.currentSample = s.currentSample
-      desF.sp = s.sp
-      desF.bp = s.bp
+      val desF = OnlineDes(s.desState)
 
       val data = ts.data
       var pos = 0
@@ -122,17 +119,19 @@ object StatefulExpr {
         data(pos) = desF.next(yn)
         pos += 1
       }
-      State(0, desF.currentSample, desF.sp, desF.bp)
+      State(0, desF.state)
     }
-
-    private def newState: State = State(0, 0, 0.0, 0.0)
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
       val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
       val newData = rs.data.map { t =>
         val bounded = t.data.bounded(context.start, context.end)
-        val s = state.getOrElse(t.id, newState)
+        val s = state.getOrElse(t.id, {
+          val desF = OnlineDes(trainingSize, alpha, beta)
+          desF.reset()
+          State(0, desF.state)
+        })
         state(t.id) = eval(bounded, s)
         TimeSeries(t.tags, s"des(${t.label})", bounded)
       }
@@ -141,7 +140,7 @@ object StatefulExpr {
   }
 
   object Des {
-    case class State(pos: Int, currentSample: Int, sp: Double, bp: Double)
+    case class State(pos: Int, desState: OnlineDes.State)
 
     type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
   }
@@ -165,7 +164,7 @@ object StatefulExpr {
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
     private def eval(ts: ArrayTimeSeq, s: State): State = {
-      var desF : OnlineSlidingDes = s.desF
+      var desF = OnlineSlidingDes(s.desState)
       var skipUpTo = s.skipUpTo
       val data = ts.data
       var pos = 0
@@ -178,7 +177,7 @@ object StatefulExpr {
         }
         pos += 1
       }
-      State(skipUpTo, desF)
+      State(skipUpTo, desF.state)
     }
 
     private def getAlignedStartTime(context: EvalContext): Long = {
@@ -196,9 +195,9 @@ object StatefulExpr {
         val bounded = t.data.bounded(context.start, context.end)
         val s = state.getOrElse(t.id, {
           val alignedStart = getAlignedStartTime(context)
-          val desF = new OnlineSlidingDes(trainingSize, alpha, beta)
+          val desF = OnlineSlidingDes(trainingSize, alpha, beta)
           desF.reset()
-          State(alignedStart, desF)
+          State(alignedStart, desF.state)
         })
         state(t.id) = eval(bounded, s)
         TimeSeries(t.tags, s"sdes(${t.label})", bounded)
@@ -208,7 +207,7 @@ object StatefulExpr {
   }
 
   object SlidingDes {
-    case class State(skipUpTo: Long, desF: OnlineSlidingDes)
+    case class State(skipUpTo: Long, desState: OnlineSlidingDes.State)
 
     type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
   }
