@@ -37,15 +37,16 @@ If there are too many lines and it would be over the max Y-axis limit, then a wa
 
 ## Palettes
 
-By default, all lines on a given axis will get the same color. That color will also get used to
-render the axis. The intention is to make it easy to understand which axis a line is associated
-with and in an image dynamic clues like hover cannot be used. Generally it is recommended to
-only have one line per axis when using multi-Y. Example:
+The color of the first line on an axis will get used as the color of the axis. The intention is
+to make it easy to understand which axis a line is associated with and in an image dynamic clues
+like hover cannot be used. Generally it is recommended to only have one line per axis when using
+multi-Y. Example:
 
 /api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,(,nf.cluster,),:by,minuteOfHour,:time,1,:axis&l=0
 
-Though it should be avoided, a [color palette](Color-Palettes) can be specified for a specific axis so lines will
-get different colors, e.g., the graph below sets the palette for each axis to use shades of
-red/blue:
+Though we recommend not using more than one line per axis with multi-Y, a
+[color palette](Color-Palettes) can be specified for a specific axis. This can be used to
+select shades of a color for an axis so it is still easy to visually associate which axis a line
+belongs to:
 
 /api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,(,nf.cluster,),:by,:stack,minuteOfHour,:time,1,:axis&l=0&palette.0=reds&palette.1=blues
