@@ -27,7 +27,7 @@ package com.netflix.atlas.core.algorithm
  *     Trend smoothing factor.
  */
 class OnlineSlidingDes(training: Int, alpha: Double, beta: Double, des1: OnlineDes, des2: OnlineDes) {
-  import com.netflix.atlas.core.algorithm.OnlineSlidingDes._
+  import OnlineSlidingDes._
 
   var useOne = true
   var currentSample = 0

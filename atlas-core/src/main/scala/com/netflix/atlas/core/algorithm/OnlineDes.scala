@@ -26,7 +26,7 @@ package com.netflix.atlas.core.algorithm
  *     Trend smoothing factor.
  */
 class OnlineDes(training: Int, alpha: Double, beta: Double) {
-  import com.netflix.atlas.core.algorithm.OnlineDes._
+  import OnlineDes._
 
   var currentSample = 0
   var sp = Double.NaN
