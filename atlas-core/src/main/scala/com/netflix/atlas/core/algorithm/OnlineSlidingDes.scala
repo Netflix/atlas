@@ -26,12 +26,21 @@ package com.netflix.atlas.core.algorithm
  * @param beta
  *     Trend smoothing factor.
  */
-class OnlineSlidingDes(training: Int, alpha: Double, beta: Double) {
+class OnlineSlidingDes(training: Int, alpha: Double, beta: Double, des1: OnlineDes, des2: OnlineDes) {
+  import com.netflix.atlas.core.algorithm.OnlineSlidingDes._
 
-  val des1 = new OnlineDes(training, alpha, beta)
-  val des2 = new OnlineDes(training, alpha, beta)
   var useOne = true
   var currentSample = 0
+
+  def this(state : OnlineSlidingDes.State) = {
+    this(state.training, state.alpha, state.beta, OnlineDes(state.des1State), OnlineDes(state.des2State))
+    this.useOne = state.useOne
+    this.currentSample = state.currentSample
+  }
+
+  def this(training: Int, alpha: Double, beta: Double) = {
+    this(training, alpha, beta, OnlineDes(training, alpha, beta), OnlineDes(training, alpha, beta))
+  }
 
   def next(v: Double): Double = {
     currentSample += 1
@@ -51,4 +60,14 @@ class OnlineSlidingDes(training: Int, alpha: Double, beta: Double) {
     des1.reset()
     des2.reset()
   }
+
+  def state: State = State(training, alpha, beta, useOne, currentSample, des1.state, des2.state)
+}
+
+object OnlineSlidingDes {
+  case class State(training: Int, alpha: Double, beta: Double, useOne: Boolean, currentSample: Int,
+                   des1State: OnlineDes.State, des2State: OnlineDes.State)
+
+  def apply (training: Int, alpha: Double, beta: Double) = new OnlineSlidingDes(training, alpha, beta)
+  def apply (state: State) = new OnlineSlidingDes(state)
 }

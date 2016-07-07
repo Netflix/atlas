@@ -26,10 +26,18 @@ package com.netflix.atlas.core.algorithm
  *     Trend smoothing factor.
  */
 class OnlineDes(training: Int, alpha: Double, beta: Double) {
+  import com.netflix.atlas.core.algorithm.OnlineDes._
 
   var currentSample = 0
   var sp = Double.NaN
   var bp = Double.NaN
+
+  def this(state: OnlineDes.State) = {
+    this(state.training, state.alpha, state.beta)
+    currentSample = state.currentSample
+    sp = state.sp
+    bp = state.bp
+  }
 
   def next(v: Double): Double = {
     val retval = if (currentSample >= training) sp else Double.NaN
@@ -52,4 +60,13 @@ class OnlineDes(training: Int, alpha: Double, beta: Double) {
     sp = Double.NaN
     bp = Double.NaN
   }
+
+  def state : State = State(training, alpha, beta, currentSample, sp, bp)
+}
+
+object OnlineDes {
+  case class State(training: Int, alpha: Double, beta: Double, currentSample: Int, sp: Double, bp: Double)
+
+  def apply(state: State) = new OnlineDes(state)
+  def apply(training: Int, alpha: Double, beta: Double) = new OnlineDes(training, alpha, beta)
 }
