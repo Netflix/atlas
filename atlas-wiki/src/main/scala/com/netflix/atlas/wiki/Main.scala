@@ -124,6 +124,10 @@ object Main extends StrictLogging {
     SDesSlow.word      -> SDesSlow,
     SDesSlower.word    -> SDesSlower,
     DistStddev.word    -> DistStddev,
+
+    Line.word          -> Line,
+    Area.word          -> Area,
+    Stack.word         -> Stack,
     VSpan.word         -> VSpan
   )
 
