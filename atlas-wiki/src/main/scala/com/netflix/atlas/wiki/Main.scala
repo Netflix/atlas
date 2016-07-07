@@ -123,7 +123,12 @@ object Main extends StrictLogging {
     SDesFast.word      -> SDesFast,
     SDesSlow.word      -> SDesSlow,
     SDesSlower.word    -> SDesSlower,
-    DistStddev.word    -> DistStddev
+    DistStddev.word    -> DistStddev,
+
+    Line.word          -> Line,
+    Area.word          -> Area,
+    Stack.word         -> Stack,
+    VSpan.word         -> VSpan
   )
 
   private def writeFile(data: String, f: File): Unit = {

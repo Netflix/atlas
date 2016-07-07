@@ -35,10 +35,10 @@ object StyleVocabulary extends Vocabulary {
 
   val words: List[Word] = List(
     Alpha, Color, LineStyle, LineWidth, Legend, Decode, Axis, Offset, Filter, Sort, Order,
-    Macro("area", List("area", ":ls"), List("42")),
-    Macro("line", List("line", ":ls"), List("42")),
-    Macro("stack", List("stack", ":ls"), List("42")),
-    Macro("vspan", List("vspan", ":ls"), List("42")),
+    Macro("area", List("area", ":ls"), List("name,sps,:eq,:sum")),
+    Macro("line", List("line", ":ls"), List("name,sps,:eq,:sum")),
+    Macro("stack", List("stack", ":ls"), List("name,sps,:eq,(,nf.cluster,),:by")),
+    Macro("vspan", List("vspan", ":ls"), List("name,sps,:eq,:sum,:dup,200e3,:gt")),
 
     Macro("des-epic-viz", desEpicViz, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
   )
@@ -132,10 +132,21 @@ object StyleVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Set the line style. The value should be one of `line`, `area`, `stack`, or `vspan`.
+        |Set the line style. The value should be one of:
+        |
+        |* `line`: this is the default, draws a normal line.
+        |* `area`: fill in the space between the line value and 0 on the Y-axis.
+        |* `stack`: stack the filled area on to the previous stacked lines on the same axis.
+        |* `vspan`: non-zero datapoints will be drawn as a vertical span.
+        |
+        |See the [line style examples](Line-Styles) page for more information.
       """.stripMargin.trim
 
-    override def examples: List[String] = List("name,sps,:eq,:sum,(,name,),:by,area")
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,(,name,),:by,line",
+      "name,sps,:eq,:sum,(,name,),:by,area",
+      "name,sps,:eq,:sum,(,name,),:by,stack",
+      "name,sps,:eq,:sum,(,name,),:by,200e3,:gt,vspan")
   }
 
   case object LineWidth extends StyleWord {
