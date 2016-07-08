@@ -119,7 +119,7 @@ object StatefulExpr {
         data(pos) = desF.next(yn)
         pos += 1
       }
-      State(0, desF.state)
+      State(desF.state)
     }
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
@@ -130,7 +130,7 @@ object StatefulExpr {
         val s = state.getOrElse(t.id, {
           val desF = OnlineDes(trainingSize, alpha, beta)
           desF.reset()
-          State(0, desF.state)
+          State(desF.state)
         })
         state(t.id) = eval(bounded, s)
         TimeSeries(t.tags, s"des(${t.label})", bounded)
@@ -140,7 +140,7 @@ object StatefulExpr {
   }
 
   object Des {
-    case class State(pos: Int, desState: OnlineDes.State)
+    case class State(desState: OnlineDes.State)
 
     type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
   }
