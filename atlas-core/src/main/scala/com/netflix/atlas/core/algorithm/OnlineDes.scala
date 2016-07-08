@@ -28,16 +28,9 @@ package com.netflix.atlas.core.algorithm
 class OnlineDes(training: Int, alpha: Double, beta: Double) {
   import OnlineDes._
 
-  var currentSample = 0
-  var sp = Double.NaN
-  var bp = Double.NaN
-
-  def this(state: OnlineDes.State) = {
-    this(state.training, state.alpha, state.beta)
-    currentSample = state.currentSample
-    sp = state.sp
-    bp = state.bp
-  }
+  private var currentSample = 0
+  private var sp = Double.NaN
+  private var bp = Double.NaN
 
   def next(v: Double): Double = {
     val retval = if (currentSample >= training) sp else Double.NaN
@@ -61,12 +54,19 @@ class OnlineDes(training: Int, alpha: Double, beta: Double) {
     bp = Double.NaN
   }
 
-  def state : State = State(training, alpha, beta, currentSample, sp, bp)
+  def state: State = State(training, alpha, beta, currentSample, sp, bp)
 }
 
 object OnlineDes {
   case class State(training: Int, alpha: Double, beta: Double, currentSample: Int, sp: Double, bp: Double)
 
-  def apply(state: State) = new OnlineDes(state)
-  def apply(training: Int, alpha: Double, beta: Double) = new OnlineDes(training, alpha, beta)
+  def apply(state: State) : OnlineDes = {
+    var des = new OnlineDes(state.training, state.alpha, state.beta)
+    des.currentSample = state.currentSample
+    des.sp = state.sp
+    des.bp = state.bp
+    des
+  }
+
+  def apply(training: Int, alpha: Double, beta: Double): OnlineDes = new OnlineDes(training, alpha, beta)
 }

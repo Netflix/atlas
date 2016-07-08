@@ -29,18 +29,8 @@ package com.netflix.atlas.core.algorithm
 class OnlineSlidingDes(training: Int, alpha: Double, beta: Double, des1: OnlineDes, des2: OnlineDes) {
   import OnlineSlidingDes._
 
-  var useOne = true
-  var currentSample = 0
-
-  def this(state : OnlineSlidingDes.State) = {
-    this(state.training, state.alpha, state.beta, OnlineDes(state.des1State), OnlineDes(state.des2State))
-    this.useOne = state.useOne
-    this.currentSample = state.currentSample
-  }
-
-  def this(training: Int, alpha: Double, beta: Double) = {
-    this(training, alpha, beta, OnlineDes(training, alpha, beta), OnlineDes(training, alpha, beta))
-  }
+  private var useOne = true
+  private var currentSample = 0
 
   def next(v: Double): Double = {
     currentSample += 1
@@ -68,6 +58,18 @@ object OnlineSlidingDes {
   case class State(training: Int, alpha: Double, beta: Double, useOne: Boolean, currentSample: Int,
                    des1State: OnlineDes.State, des2State: OnlineDes.State)
 
-  def apply (training: Int, alpha: Double, beta: Double) = new OnlineSlidingDes(training, alpha, beta)
-  def apply (state: State) = new OnlineSlidingDes(state)
+  def apply(state: OnlineSlidingDes.State): OnlineSlidingDes = {
+    val des1 = OnlineDes(state.des1State)
+    val des2 = OnlineDes(state.des2State)
+    var sdes = new OnlineSlidingDes(state.training, state.alpha, state.beta, des1, des2)
+    sdes.useOne = state.useOne
+    sdes.currentSample = state.currentSample
+    sdes
+  }
+
+  def apply (training: Int, alpha: Double, beta: Double): OnlineSlidingDes = {
+    val des1 = OnlineDes(training, alpha, beta)
+    val des2 = OnlineDes(training, alpha, beta)
+    new OnlineSlidingDes(training, alpha, beta, des1, des2)
+  }
 }
