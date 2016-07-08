@@ -28,6 +28,10 @@ trait StatefulExpr extends TimeSeriesExpr {
 
 object StatefulExpr {
 
+  //
+  // RollingCount
+  //
+
   case class RollingCount(expr: TimeSeriesExpr, n: Int) extends StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.RollingCount._
 
@@ -42,7 +46,7 @@ object StatefulExpr {
       val data = ts.data
       var pos = s.pos
       var value = s.value
-      val buf = s.buf
+      val buf = s.buf.clone()
       var i = 0
       while (i < data.length) {
         if (pos < n) {
@@ -87,6 +91,10 @@ object StatefulExpr {
     type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
   }
 
+  //
+  // Des
+  //
+
   case class Des(
       expr: TimeSeriesExpr,
       trainingSize: Int,
@@ -102,10 +110,7 @@ object StatefulExpr {
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
     private def eval(ts: ArrayTimeSeq, s: State): State = {
-      val desF = new OnlineDes(trainingSize, alpha, beta)
-      desF.currentSample = s.currentSample
-      desF.sp = s.sp
-      desF.bp = s.bp
+      val desF = OnlineDes(s.desState)
 
       val data = ts.data
       var pos = 0
@@ -114,17 +119,19 @@ object StatefulExpr {
         data(pos) = desF.next(yn)
         pos += 1
       }
-      State(0, desF.currentSample, desF.sp, desF.bp)
+      State(desF.state)
     }
-
-    private def newState: State = State(0, 0, 0.0, 0.0)
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
       val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
       val newData = rs.data.map { t =>
         val bounded = t.data.bounded(context.start, context.end)
-        val s = state.getOrElse(t.id, newState)
+        val s = state.getOrElse(t.id, {
+          val desF = OnlineDes(trainingSize, alpha, beta)
+          desF.reset()
+          State(desF.state)
+        })
         state(t.id) = eval(bounded, s)
         TimeSeries(t.tags, s"des(${t.label})", bounded)
       }
@@ -133,10 +140,14 @@ object StatefulExpr {
   }
 
   object Des {
-    case class State(pos: Int, currentSample: Int, sp: Double, bp: Double)
+    case class State(desState: OnlineDes.State)
 
     type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
   }
+
+  //
+  // SlidingDes
+  //
 
   case class SlidingDes(
       expr: TimeSeriesExpr,
@@ -153,7 +164,7 @@ object StatefulExpr {
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
     private def eval(ts: ArrayTimeSeq, s: State): State = {
-      var desF : OnlineSlidingDes = s.desF
+      var desF = OnlineSlidingDes(s.desState)
       var skipUpTo = s.skipUpTo
       val data = ts.data
       var pos = 0
@@ -166,7 +177,7 @@ object StatefulExpr {
         }
         pos += 1
       }
-      State(skipUpTo, desF)
+      State(skipUpTo, desF.state)
     }
 
     private def getAlignedStartTime(context: EvalContext): Long = {
@@ -184,9 +195,9 @@ object StatefulExpr {
         val bounded = t.data.bounded(context.start, context.end)
         val s = state.getOrElse(t.id, {
           val alignedStart = getAlignedStartTime(context)
-          val desF = new OnlineSlidingDes(trainingSize, alpha, beta)
+          val desF = OnlineSlidingDes(trainingSize, alpha, beta)
           desF.reset()
-          State(alignedStart, desF)
+          State(alignedStart, desF.state)
         })
         state(t.id) = eval(bounded, s)
         TimeSeries(t.tags, s"sdes(${t.label})", bounded)
@@ -196,10 +207,14 @@ object StatefulExpr {
   }
 
   object SlidingDes {
-    case class State(skipUpTo: Long, desF: OnlineSlidingDes)
+    case class State(skipUpTo: Long, desState: OnlineSlidingDes.State)
 
     type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
   }
+
+  //
+  // Trend
+  //
 
   case class Trend(expr: TimeSeriesExpr, window: Duration) extends StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.Trend._
@@ -216,7 +231,7 @@ object StatefulExpr {
       var nanCount = s.nanCount
       var pos = s.pos
       var value = s.value
-      val buf = s.buf
+      val buf = s.buf.clone()
       var i = 0
       while (i < data.length) {
         if (data(i).isNaN) nanCount += 1
@@ -237,9 +252,7 @@ object StatefulExpr {
       State(nanCount, pos, value, buf)
     }
 
-    private def newState(period: Int): State = {
-      State(0, 0, 0.0, new Array[Double](period))
-    }
+    private def newState(period: Int): State = State(0, 0, 0.0, new Array[Double](period))
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val period = (window.toMillis / context.step).toInt
@@ -263,9 +276,12 @@ object StatefulExpr {
     type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
   }
 
-  case class Integral(expr: TimeSeriesExpr) extends StatefulExpr {
-    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, Double]
+  //
+  // Integral
+  //
 
+  case class Integral(expr: TimeSeriesExpr) extends StatefulExpr {
+    import com.netflix.atlas.core.model.StatefulExpr.Integral._
     def dataExprs: List[DataExpr] = expr.dataExprs
     override def toString: String = s"$expr,:integral"
 
@@ -280,20 +296,32 @@ object StatefulExpr {
         val bounded = t.data.bounded(context.start, context.end)
         val length = bounded.data.length
         var i = 1
-        bounded.data(0) = Math.addNaN(bounded.data(0), state.getOrElse(t.id, Double.NaN))
+        val s = state.getOrElse(t.id, newState())
+        bounded.data(0) = Math.addNaN(bounded.data(0), s.value)
         while (i < length) {
           bounded.data(i) = Math.addNaN(bounded.data(i), bounded.data(i - 1))
           i += 1
         }
-        state(t.id) = bounded.data(i - 1)
+        state(t.id) = State(bounded.data(i - 1))
         TimeSeries(t.tags, s"integral(${t.label})", bounded)
       }
       ResultSet(this, newData, rs.state + (this -> state))
     }
+
+    private def newState(): State = State(Double.NaN)
   }
 
+  object Integral {
+    case class State(value: Double)
+
+    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
+  }
+
+  //
+  // Derivative
+  //
   case class Derivative(expr: TimeSeriesExpr) extends StatefulExpr {
-    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, Double]
+    import com.netflix.atlas.core.model.StatefulExpr.Derivative._
 
     def dataExprs: List[DataExpr] = expr.dataExprs
     override def toString: String = s"$expr,:derivative"
@@ -301,6 +329,8 @@ object StatefulExpr {
     def isGrouped: Boolean = expr.isGrouped
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    private def newState(): State = State(Double.NaN)
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
@@ -310,17 +340,25 @@ object StatefulExpr {
         val length = bounded.data.length
         var i = 1
         var prev = bounded.data(0)
-        bounded.data(0) -= state.getOrElse(t.id, Double.NaN)
+        val s = state.getOrElse(t.id, newState())
+        bounded.data(0) -= s.value
         while (i < length) {
           val tmp = prev
           prev = bounded.data(i)
           bounded.data(i) -= tmp
           i += 1
         }
-        state(t.id) = prev
+        state(t.id) = State(prev)
         TimeSeries(t.tags, s"derivative(${t.label})", bounded)
       }
       ResultSet(this, newData, rs.state + (this -> state))
     }
   }
+
+  object Derivative {
+    case class State(value: Double)
+
+    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
+  }
+
 }
