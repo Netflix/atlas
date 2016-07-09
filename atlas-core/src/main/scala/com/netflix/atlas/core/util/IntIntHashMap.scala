@@ -31,7 +31,11 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
   private[this] var keys = newArray(capacity)
   private[this] var values = new Array[Int](keys.length)
   private[this] var used = 0
-  private[this] var cutoff = math.max(3, (keys.length * 0.7).toInt)
+  private[this] var cutoff = computeCutoff(keys.length)
+
+  // Set at 50% capacity to get reasonable tradeoff between performance and
+  // memory use. See IntIntMap benchmark.
+  private def computeCutoff(n: Int): Int = math.max(3, n / 2)
 
   private def newArray(n: Int): Array[Int] = {
     val tmp = new Array[Int](PrimeFinder.nextPrime(n))
@@ -54,7 +58,7 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
     }
     keys = tmpKS
     values = tmpVS
-    cutoff = math.max(3, (tmpKS.length * 0.7).toInt)
+    cutoff = computeCutoff(tmpKS.length)
   }
 
   private def put(ks: Array[Int], vs: Array[Int], k: Int, v: Int): Boolean = {
@@ -110,16 +114,14 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
   def increment(k: Int, amount: Int): Unit = {
     if (used >= cutoff) resize()
     var pos = math.abs(k) % keys.length
-    while (true) {
-      val prev = keys(pos)
-      if (prev == noData || prev == k) {
-        keys(pos) = k
-        values(pos) += amount
-        if (prev == noData) used += 1
-        return
-      }
+    var prev = keys(pos)
+    while (prev != noData && prev != k) {
       pos = (pos + 1) % keys.length
+      prev = keys(pos)
     }
+    keys(pos) = k
+    values(pos) += amount
+    if (prev == noData) used += 1
   }
 
   /** Execute `f` for each item in the set. */
