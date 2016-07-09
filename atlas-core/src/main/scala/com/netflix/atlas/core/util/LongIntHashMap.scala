@@ -31,7 +31,11 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
   private[this] var keys = newArray(capacity)
   private[this] var values = new Array[Int](keys.length)
   private[this] var used = 0
-  private[this] var cutoff = math.max(3, (keys.length * 0.7).toInt)
+  private[this] var cutoff = computeCutoff(keys.length)
+
+  // Set at 50% capacity to get reasonable tradeoff between performance and
+  // memory use. See IntIntMap benchmark.
+  private def computeCutoff(n: Int): Int = math.max(3, n / 2)
 
   private def newArray(n: Int): Array[Long] = {
     val tmp = new Array[Long](PrimeFinder.nextPrime(n))
@@ -54,7 +58,7 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
     }
     keys = tmpKS
     values = tmpVS
-    cutoff = math.max(3, (tmpKS.length * 0.7).toInt)
+    cutoff = computeCutoff(tmpKS.length)
   }
 
   private def hash(k: Long): Int = java.lang.Long.hashCode(k)
