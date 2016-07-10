@@ -30,7 +30,11 @@ class IntHashSet(noData: Int, capacity: Int = 10) {
 
   private[this] var data = newArray(capacity)
   private[this] var used = 0
-  private[this] var cutoff = math.max(3, (data.length * 0.7).toInt)
+  private[this] var cutoff = computeCutoff(data.length)
+
+  // Set at 50% capacity to get reasonable tradeoff between performance and
+  // memory use. See IntIntMap benchmark.
+  private def computeCutoff(n: Int): Int = math.max(3, n / 2)
 
   private def newArray(n: Int): Array[Int] = {
     val tmp = new Array[Int](PrimeFinder.nextPrime(n))
@@ -51,7 +55,7 @@ class IntHashSet(noData: Int, capacity: Int = 10) {
       i += 1
     }
     data = tmp
-    cutoff = math.max(3, (tmp.length * 0.7).toInt)
+    cutoff = computeCutoff(data.length)
   }
 
   private def add(buffer: Array[Int], v: Int): Boolean = {
