@@ -78,8 +78,8 @@ class WebServer(classFactory: ClassFactory, registry: Registry, name: String, po
       options = options)
     IO(Http).tell(bind, stats)
     Await.ready(bindPromise.future, Duration.Inf).value.get match {
-      case Success(_) =>
-        logger.info(s"server started on port $port")
+      case Success(Http.Bound(addr)) =>
+        logger.info(s"server started on $addr")
       case Failure(t) =>
         logger.error("server failed to start", t)
         throw t;
