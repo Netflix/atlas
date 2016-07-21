@@ -16,6 +16,7 @@
 package com.netflix.atlas.akka
 
 import javax.inject.Inject
+import javax.inject.Singleton
 
 import akka.actor.Actor
 import akka.actor.ActorSystem
@@ -32,6 +33,7 @@ import scala.concurrent.duration.Duration
   * Exposes actor system as service for healthcheck and proper shutdown. Additional
   * actors to start up can be specified using the `atlas.akka.actors` property.
   */
+@Singleton
 class ActorService @Inject() (system: ActorSystem, config: Config, classFactory: ClassFactory)
   extends AbstractService with StrictLogging {
 

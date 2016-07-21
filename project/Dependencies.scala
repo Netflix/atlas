@@ -27,7 +27,7 @@ object Dependencies {
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.1.3"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
-  val iepGovernator   = "com.netflix.iep" % "iep-guice" % iep
+  val iepGuice        = "com.netflix.iep" % "iep-guice" % iep
   val iepService      = "com.netflix.iep" % "iep-service" % iep
   val jacksonAnno2    = "com.fasterxml.jackson.core" % "jackson-annotations" % jackson
   val jacksonCore2    = "com.fasterxml.jackson.core" % "jackson-core" % jackson

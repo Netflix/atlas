@@ -13,23 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.akka
+package com.netflix.atlas.guice
 
-import javax.inject.Inject
-import javax.inject.Provider
-import javax.inject.Singleton
+import com.google.inject.AbstractModule
+import com.netflix.atlas.core.db.Database
+import com.netflix.atlas.webapi.DatabaseProvider
+import com.netflix.iep.guice.LifecycleModule
 
-import akka.actor.ActorSystem
-import com.netflix.spectator.api.Registry
-import com.typesafe.config.Config
-
-/** Provider for getting an instance of the actor system. */
-@Singleton
-class ActorSystemProvider @Inject() (config: Config, registry: Registry)
-  extends Provider[ActorSystem] {
-
-  private val name = config.getString("atlas.akka.name")
-  private val system = ActorSystem(name, config)
-
-  override def get(): ActorSystem = system
+/**
+  * Configures the database needed for the webapi.
+  */
+class WebApiModule extends AbstractModule {
+  override def configure(): Unit = {
+    install(new LifecycleModule)
+    bind(classOf[Database]).toProvider(classOf[DatabaseProvider])
+  }
 }
