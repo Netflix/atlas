@@ -29,6 +29,8 @@ object MainBuild extends Build {
       `atlas-core`,
       `atlas-jmh`,
       `atlas-json`,
+      `atlas-module-akka`,
+      `atlas-module-webapi`,
       `atlas-standalone`,
       `atlas-test`,
       `atlas-webapi`,
@@ -89,12 +91,31 @@ object MainBuild extends Build {
       Dependencies.jodaConvert
     ))
 
-  lazy val `atlas-standalone` = project
+  lazy val `atlas-module-akka` = project
+    .dependsOn(`atlas-akka`)
+    .settings(buildSettings: _*)
+    .settings(libraryDependencies ++= commonDeps)
+    .settings(libraryDependencies ++= Seq(
+      Dependencies.guiceCore,
+      Dependencies.guiceMulti,
+      Dependencies.iepGuice
+    ))
+
+  lazy val `atlas-module-webapi` = project
     .dependsOn(`atlas-webapi`)
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
-      Dependencies.iepGovernator,
+      Dependencies.guiceCore,
+      Dependencies.iepGuice
+    ))
+
+  lazy val `atlas-standalone` = project
+    .dependsOn(`atlas-module-akka`, `atlas-module-webapi`)
+    .settings(buildSettings: _*)
+    .settings(libraryDependencies ++= commonDeps)
+    .settings(libraryDependencies ++= Seq(
+      Dependencies.iepGuice,
       Dependencies.guiceCore,
       Dependencies.guiceMulti,
       Dependencies.log4jApi,

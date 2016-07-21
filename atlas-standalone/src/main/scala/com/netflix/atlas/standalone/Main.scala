@@ -24,7 +24,6 @@ import com.google.inject.multibindings.Multibinder
 import com.google.inject.multibindings.OptionalBinder
 import com.google.inject.util.Modules
 import com.netflix.atlas.akka.ActorService
-import com.netflix.atlas.akka.ActorSystemProvider
 import com.netflix.atlas.akka.WebServer
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.db.Database
@@ -73,30 +72,16 @@ object Main extends StrictLogging {
   }
 
   def start(): Unit = {
-    val serviceModule = new AbstractModule {
+
+    val configModule = new AbstractModule {
       override def configure(): Unit = {
-        GuiceHelper.getModulesUsingServiceLoader.forEach(install)
-
-        OptionalBinder.newOptionalBinder(binder(), classOf[Registry])
-          .setBinding().toInstance(Spectator.globalRegistry())
-
-        bind(classOf[ActorSystem]).toProvider(classOf[ActorSystemProvider])
-        bind(classOf[Database]).toProvider(classOf[DatabaseProvider])
-
-        val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
-        serviceBinder.addBinding().to(classOf[ActorService])
-        serviceBinder.addBinding().to(classOf[WebServer])
+        bind(classOf[Config]).toInstance(ConfigManager.current)
+        bind(classOf[Registry]).toInstance(Spectator.globalRegistry())
       }
     }
 
-    val overrides = Modules.`override`(serviceModule).`with`(new AbstractModule {
-      override def configure(): Unit = {
-        bind(classOf[Config]).toInstance(ConfigManager.current)
-      }
-    })
-
-    val modules = new java.util.ArrayList[Module]()
-    modules.add(overrides)
+    val modules = GuiceHelper.getModulesUsingServiceLoader
+    modules.add(configModule)
 
     guice = new GuiceHelper
     guice.start(modules)

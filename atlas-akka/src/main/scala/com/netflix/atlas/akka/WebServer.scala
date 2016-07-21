@@ -17,6 +17,7 @@ package com.netflix.atlas.akka
 
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Singleton
 
 import akka.actor.Actor
 import akka.actor.ActorSystem
@@ -50,6 +51,7 @@ import scala.util.Success
   * @param system
   *     Instance of the actor system.
   */
+@Singleton
 class WebServer @Inject() (
   config: Config,
   classFactory: ClassFactory,
