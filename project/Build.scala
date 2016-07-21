@@ -24,7 +24,6 @@ object MainBuild extends Build {
   lazy val root = project.in(file("."))
     .aggregate(
       `atlas-akka`,
-      `atlas-aws`,
       `atlas-chart`,
       `atlas-config`,
       `atlas-core`,
@@ -51,17 +50,6 @@ object MainBuild extends Build {
       Dependencies.typesafeConfig,
       Dependencies.akkaTestkit % "test",
       Dependencies.sprayTestkit % "test"
-    ))
-
-  lazy val `atlas-aws` = project
-    .dependsOn(`atlas-config`)
-    .settings(buildSettings: _*)
-    .settings(libraryDependencies ++= commonDeps)
-    .settings(libraryDependencies ++= Seq(
-      Dependencies.awsCore,
-      Dependencies.awsCloudWatch % "test",
-      Dependencies.awsEC2 % "test",
-      Dependencies.awsS3 % "test"
     ))
 
   lazy val `atlas-chart` = project
