@@ -27,13 +27,15 @@ import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.webapi.LocalPublishActor
 import com.netflix.iep.service.ClassFactory
 import com.netflix.spectator.api.Registry
+import com.typesafe.config.Config
 
 @Singleton
-class WebServerProvider @Inject() (classFactory: ClassFactory, registry: Registry)
+class WebServerProvider @Inject() (config: Config, classFactory: ClassFactory, registry: Registry)
     extends Provider[WebServer] {
 
-  override def get(): WebServer = {
-    new WebServer(classFactory, registry, "atlas", ApiSettings.port) {
+  override def get(): WebServer = null
+  /*
+    new WebServer(config, classFactory, registry) {
       override protected def configure(): Unit = {
         super.configure()
         val db = ApiSettings.newDbInstance
@@ -46,5 +48,5 @@ class WebServerProvider @Inject() (classFactory: ClassFactory, registry: Registr
         }
       }
     }
-  }
+  }*/
 }

@@ -31,12 +31,14 @@ class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
   // issues outside of running with code coverage.
   implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
 
-  val db = new MemoryDatabase(ConfigFactory.parseString(
+  val db = MemoryDatabase(ConfigFactory.parseString(
     """
-      |rebuild-frequency = 10s
-      |num-blocks = 2
-      |block-size = 60
-      |test-mode = true
+      |atlas.core.db {
+      |  rebuild-frequency = 10s
+      |  num-blocks = 2
+      |  block-size = 60
+      |  test-mode = true
+      |}
     """.stripMargin))
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
 
