@@ -16,19 +16,18 @@
 package com.netflix.atlas.akka
 
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 import akka.actor.Actor
 import akka.actor.ActorSystem
-import akka.actor.AllDeadLetters
 import akka.actor.Props
 import akka.io.IO
 import akka.io.Inet
 import akka.util.Timeout
-import com.netflix.atlas.config.ConfigManager
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.ClassFactory
-import com.netflix.iep.service.DefaultClassFactory
 import com.netflix.spectator.api.Registry
+import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
 
@@ -37,33 +36,36 @@ import scala.concurrent.Promise
 import scala.util.Failure
 import scala.util.Success
 
-
-class WebServer(classFactory: ClassFactory, registry: Registry, name: String, port: Int)
+/**
+  * Web server instance.
+  *
+  * @param config
+  *     System configuration used for main server settings. In particular `atlas.akka.port`
+  *     is used for setting the server port.
+  * @param classFactory
+  *     Used to create instances of class names from the config file via the injector. The
+  *     endpoints listed in `atlas.akka.endpoints` will be created using this factory.
+  * @param registry
+  *     Metrics registry for reporting server stats.
+  * @param system
+  *     Instance of the actor system.
+  */
+class WebServer @Inject() (
+  config: Config,
+  classFactory: ClassFactory,
+  registry: Registry,
+  implicit val system: ActorSystem)
     extends AbstractService with StrictLogging {
-
-  @deprecated(message = "Use default constructor instead.", since = "2016-03-16")
-  def this(registry: Registry, name: String, port: Int) =
-    this(new DefaultClassFactory(), registry, name, port)
 
   import scala.concurrent.duration._
 
-  private val config = ConfigManager.current
+  private val port = config.getInt("atlas.akka.port")
+
   private val timeout = config.getDuration("atlas.akka.bind-timeout", TimeUnit.MILLISECONDS)
   private implicit val bindTimeout = Timeout(timeout, TimeUnit.MILLISECONDS)
 
-  private implicit var system: ActorSystem = null
-
-  protected def configure(): Unit = {
-    val ref = system.actorOf(
-      Props(new DeadLetterStatsActor(registry, Paths.tagValue)), "deadLetterStats")
-    system.eventStream.subscribe(ref, classOf[AllDeadLetters])
-  }
-
   protected def startImpl(): Unit = {
-    assert(system == null, "actor system has already been started")
     logger.info(s"starting $name on port $port")
-    system = ActorSystem(name)
-    configure()
 
     val handler = system.actorOf(
       Props(classFactory.newInstance[Actor](classOf[RequestHandlerActor])), "request-handler")
@@ -87,8 +89,6 @@ class WebServer(classFactory: ClassFactory, registry: Registry, name: String, po
   }
 
   protected def stopImpl(): Unit = {
-    Await.ready(system.terminate(), Duration.Inf)
-    system = null
   }
 
   def actorSystem: ActorSystem = system

@@ -16,7 +16,6 @@
 package com.netflix.atlas.akka
 
 import akka.actor.Actor
-import akka.actor.ActorPath
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.DeadLetter
@@ -27,11 +26,9 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestActorRef
 import akka.testkit.TestKit
 import com.netflix.spectator.api.DefaultRegistry
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuiteLike
-import spray.can.Http
-
-import scala.concurrent.Promise
 
 
 class DeadLetterStatsActorSuite extends TestKit(ActorSystem())
@@ -39,18 +36,13 @@ class DeadLetterStatsActorSuite extends TestKit(ActorSystem())
     with FunSuiteLike
     with BeforeAndAfterAll {
 
-  private val pathPattern = "^akka://(?:[^/]+)/(?:system|user)/([^/]+)(?:/.*)?$".r
-
-  private def pathMapper(path: ActorPath): String = {
-    path.toString match {
-      case pathPattern(p) => p
-      case _              => "uncategorized"
-    }
-  }
+  private val config = ConfigFactory.parseString(
+    """
+      |atlas.akka.path-pattern = "^akka://(?:[^/]+)/(?:system|user)/([^/]+)(?:/.*)?$"
+    """.stripMargin)
 
   private val registry = new DefaultRegistry()
-  private val bindPromise = Promise[Http.Bound]()
-  private val ref = TestActorRef(new DeadLetterStatsActor(registry, pathMapper))
+  private val ref = TestActorRef(new DeadLetterStatsActor(registry, config))
 
   private val sender = newRef("from")
   private val recipient = newRef("to")

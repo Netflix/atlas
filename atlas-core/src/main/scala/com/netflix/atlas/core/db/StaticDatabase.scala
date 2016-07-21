@@ -15,13 +15,8 @@
  */
 package com.netflix.atlas.core.db
 
-import com.netflix.atlas.core.index.LazyTagIndex
-import com.netflix.atlas.core.index.TagIndex
-import com.netflix.atlas.core.index.TagQuery
-import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.DsType
-import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.typesafe.config.Config
@@ -29,27 +24,12 @@ import com.typesafe.config.Config
 /**
  * Simple database with a predefined set of time series.
  */
-class StaticDatabase(data: List[TimeSeries]) extends Database {
-
-  def this(config: Config) = this(DataSet.get(config.getString("dataset")))
-
-  val index: TagIndex[TimeSeries] = new LazyTagIndex(data.toArray)
-
-  def execute(context: EvalContext, expr: DataExpr): List[TimeSeries] = {
-    val q = TagQuery(Some(expr.query))
-    val offset = expr.offset.toMillis
-    if (offset == 0) expr.eval(context, index.findItems(q)).data else {
-      val offsetContext = context.withOffset(expr.offset.toMillis)
-      expr.eval(offsetContext, index.findItems(q)).data.map { t =>
-        t.offset(offset)
-      }
-    }
-  }
-}
+class StaticDatabase(config: Config)
+  extends SimpleStaticDatabase(DataSet.get(config.getString("dataset")))
 
 object StaticDatabase {
   /** Create a simple database with a range of fixed integer values. Mostly used for testing. */
-  def range(s: Int, e: Int): StaticDatabase = {
+  def range(s: Int, e: Int): Database = {
     val len = e.toString.length
     val ts = (s to e).map { i =>
       val tagsBuilder = Map.newBuilder[String, String]
@@ -60,11 +40,11 @@ object StaticDatabase {
       val seq = new FunctionTimeSeq(DsType.Gauge, DefaultSettings.stepSize, _ => i)
       TimeSeries(tagsBuilder.result(), seq)
     }
-    new StaticDatabase(ts.toList)
+    new SimpleStaticDatabase(ts.toList)
   }
 
   /** Generate a database with some synthetic data used for demos and examples. */
-  def demo: StaticDatabase = new StaticDatabase(DataSet.staticAlertSet)
+  def demo: Database = new SimpleStaticDatabase(DataSet.staticAlertSet)
 
   private def probablyPrime(v: Int): Boolean = BigInt(v).isProbablePrime(100)
 }

@@ -36,8 +36,6 @@ import org.slf4j.LoggerFactory
 
 class MemoryDatabase(registry: Registry, config: Config) extends Database {
 
-  def this(config: Config) = this(Spectator.globalRegistry, config)
-
   /** How many metrics are being processed for transform queries. */
   private val queryMetrics = registry.counter("atlas.db.queryMetrics")
 
@@ -202,10 +200,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
 }
 
 object MemoryDatabase {
-  def apply(k: String): MemoryDatabase = {
-    val cfg = ConfigManager.current
-    new MemoryDatabase(cfg.getConfig(k))
+  def apply(cfg: Config): MemoryDatabase = {
+    new MemoryDatabase(Spectator.globalRegistry(), cfg.getConfig("atlas.core.db"))
   }
-
-  def default: MemoryDatabase = apply("atlas.core.db")
 }

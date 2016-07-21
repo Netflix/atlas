@@ -37,7 +37,7 @@ object MainBuild extends Build {
     .settings(BuildSettings.noPackaging: _*)
 
   lazy val `atlas-akka` = project
-    .dependsOn(`atlas-config`, `atlas-json`)
+    .dependsOn(`atlas-json`)
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(

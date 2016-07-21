@@ -26,12 +26,14 @@ class MemoryDatabaseSuite extends FunSuite {
 
   private val step = DefaultSettings.stepSize
 
-  private val db = new MemoryDatabase(ConfigFactory.parseString(
+  private val db = MemoryDatabase(ConfigFactory.parseString(
     """
-      |block-size = 60
-      |num-blocks = 2
-      |rebuild-frequency = 10s
-      |test-mode = true
+      |atlas.core.db {
+      |  block-size = 60
+      |  num-blocks = 2
+      |  rebuild-frequency = 10s
+      |  test-mode = true
+      |}
     """.stripMargin))
 
   addData("a", 1.0, 2.0, 3.0)

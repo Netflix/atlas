@@ -18,6 +18,7 @@ package com.netflix.atlas.akka
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeUnit
 
+import akka.actor.ActorPath
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.dispatch.Envelope
@@ -70,8 +71,18 @@ class UnboundedMeteredMailbox(settings: ActorSystem.Settings, config: Config) ex
 
   import com.netflix.atlas.akka.UnboundedMeteredMailbox._
 
+  private val Path = config.getString("path-pattern").r
+
+  /** Summarizes a path for use in a metric tag. */
+  def tagValue(path: ActorPath): String = {
+    path.toString match {
+      case Path(v) => v
+      case _       => "uncategorized"
+    }
+  }
+
   final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = {
-    val path = owner.fold("unknown")(r => Paths.tagValue(r.path))
+    val path = owner.fold("unknown")(r => tagValue(r.path))
     new MeteredMessageQueue(path)
   }
 }

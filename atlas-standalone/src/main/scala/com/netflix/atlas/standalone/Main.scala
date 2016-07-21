@@ -17,12 +17,18 @@ package com.netflix.atlas.standalone
 
 import java.io.File
 
+import akka.actor.ActorSystem
 import com.google.inject.AbstractModule
 import com.google.inject.Module
 import com.google.inject.multibindings.Multibinder
 import com.google.inject.multibindings.OptionalBinder
 import com.google.inject.util.Modules
+import com.netflix.atlas.akka.ActorService
+import com.netflix.atlas.akka.ActorSystemProvider
+import com.netflix.atlas.akka.WebServer
 import com.netflix.atlas.config.ConfigManager
+import com.netflix.atlas.core.db.Database
+import com.netflix.atlas.webapi.DatabaseProvider
 import com.netflix.iep.guice.GuiceHelper
 import com.netflix.iep.service.Service
 import com.netflix.iep.service.ServiceManager
@@ -74,8 +80,12 @@ object Main extends StrictLogging {
         OptionalBinder.newOptionalBinder(binder(), classOf[Registry])
           .setBinding().toInstance(Spectator.globalRegistry())
 
+        bind(classOf[ActorSystem]).toProvider(classOf[ActorSystemProvider])
+        bind(classOf[Database]).toProvider(classOf[DatabaseProvider])
+
         val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
-        serviceBinder.addBinding().toProvider(classOf[WebServerProvider])
+        serviceBinder.addBinding().to(classOf[ActorService])
+        serviceBinder.addBinding().to(classOf[WebServer])
       }
     }
 

@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.db.MemoryDatabase
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.DefaultSettings
@@ -33,9 +34,13 @@ import spray.http.HttpResponse
 import spray.http.StatusCodes
 
 
-class LocalPublishActor(registry: Registry, db: MemoryDatabase) extends Actor with ActorLogging {
+class LocalPublishActor(registry: Registry, db: Database) extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.PublishApi._
+
+  // TODO: This actor is only intended to work with MemoryDatabase, but the binding is
+  // setup for the Database interface.
+  private val memDb = db.asInstanceOf[MemoryDatabase]
 
   // Track the ages of data flowing into the system. Data is expected to arrive quickly and
   // should hit the backend within the step interval used.
@@ -47,7 +52,7 @@ class LocalPublishActor(registry: Registry, db: MemoryDatabase) extends Actor wi
   // Number of invalid datapoints received
   private val numInvalid = registry.createId("atlas.db.numInvalid")
 
-  private val cache = new NormalizationCache(DefaultSettings.stepSize, db.update)
+  private val cache = new NormalizationCache(DefaultSettings.stepSize, memDb.update)
 
   def receive = {
     case PublishRequest(Nil, Nil) =>
