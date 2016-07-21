@@ -33,7 +33,6 @@ import com.netflix.iep.service.Service
 import com.netflix.iep.service.ServiceManager
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Spectator
-import com.netflix.spectator.log4j.SpectatorAppender
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
@@ -59,8 +58,6 @@ object Main extends StrictLogging {
 
   def main(args: Array[String]): Unit = {
     try {
-      val registry = Spectator.globalRegistry()
-      SpectatorAppender.addToRootLogger(registry, "spectator", false)
       loadAdditionalConfigFiles(args)
       start()
       guice.addShutdownHook()
