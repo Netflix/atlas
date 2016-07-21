@@ -7,11 +7,13 @@
     <Console name="STDERR" target="SYSTEM_ERR">
       <PatternLayout pattern="${dfltPattern}"/>
     </Console>
+    <Spectator name="SPECTATOR"/>
   </Appenders>
   <Loggers>
     <Logger name="com.netflix.spectator" level="debug"/>
     <Root level="info">
       <AppenderRef ref="STDERR"/>
+      <AppenderRef ref="SPECTATOR"/>
     </Root>
   </Loggers>
 </Configuration>
