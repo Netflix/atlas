@@ -13,7 +13,8 @@ object MainBuild extends Build {
             organization := BuildSettings.organization,
             scalaVersion := Dependencies.Versions.scala,
            scalacOptions ++= BuildSettings.compilerFlags,
-              crossPaths := false,
+              crossPaths := true,
+      crossScalaVersions := Seq(Dependencies.Versions.scala),
            sourcesInBase := false,
               exportJars := true,   // Needed for one-jar, with multi-project
        externalResolvers := BuildSettings.resolvers,
