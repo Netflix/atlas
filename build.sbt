@@ -2,7 +2,6 @@
 lazy val baseSettings =
   sbtrelease.ReleasePlugin.releaseSettings ++
   GitVersion.settings ++
-  Bintray.settings ++
   scoverage.ScoverageSbtPlugin.projectSettings
 
 lazy val buildSettings = baseSettings ++ Seq(
@@ -27,6 +26,7 @@ val commonDeps = Seq(
   Dependencies.scalatest % "test")
 
 lazy val root = project.in(file("."))
+  .configure(BuildSettings.profile)
   .aggregate(
     `atlas-akka`,
     `atlas-chart`,
@@ -44,6 +44,7 @@ lazy val root = project.in(file("."))
   .settings(BuildSettings.noPackaging: _*)
 
 lazy val `atlas-akka` = project
+  .configure(BuildSettings.profile)
   .dependsOn(`atlas-json`)
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= commonDeps)
@@ -60,15 +61,18 @@ lazy val `atlas-akka` = project
   ))
 
 lazy val `atlas-chart` = project
+  .configure(BuildSettings.profile)
   .dependsOn(`atlas-core`, `atlas-json`, `atlas-test` % "test")
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= commonDeps)
 
 lazy val `atlas-config` = project
+  .configure(BuildSettings.profile)
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= commonDeps)
 
 lazy val `atlas-core` = project
+  .configure(BuildSettings.profile)
   .dependsOn(`atlas-config`)
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= commonDeps)
@@ -79,12 +83,14 @@ lazy val `atlas-core` = project
   ))
 
 lazy val `atlas-jmh` = project
+  .configure(BuildSettings.profile)
   .dependsOn(`atlas-core`)
   .enablePlugins(pl.project13.scala.sbt.SbtJmh)
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= commonDeps)
 
 lazy val `atlas-json` = project
+  .configure(BuildSettings.profile)
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= commonDeps)
   .settings(libraryDependencies ++= Seq(
@@ -97,6 +103,7 @@ lazy val `atlas-json` = project
   ))
 
 lazy val `atlas-module-akka` = project
+  .configure(BuildSettings.profile)
   .dependsOn(`atlas-akka`)
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= commonDeps)
@@ -107,6 +114,7 @@ lazy val `atlas-module-akka` = project
   ))
 
 lazy val `atlas-module-webapi` = project
+  .configure(BuildSettings.profile)
   .dependsOn(`atlas-webapi`)
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= commonDeps)
@@ -116,6 +124,7 @@ lazy val `atlas-module-webapi` = project
   ))
 
 lazy val `atlas-standalone` = project
+  .configure(BuildSettings.profile)
   .dependsOn(`atlas-module-akka`, `atlas-module-webapi`)
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= commonDeps)
@@ -130,6 +139,7 @@ lazy val `atlas-standalone` = project
   ))
 
 lazy val `atlas-test` = project
+  .configure(BuildSettings.profile)
   .dependsOn(`atlas-core`)
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= Seq(
@@ -137,6 +147,7 @@ lazy val `atlas-test` = project
   ))
 
 lazy val `atlas-webapi` = project
+  .configure(BuildSettings.profile)
   .dependsOn(`atlas-akka`, `atlas-chart`, `atlas-core`, `atlas-json`, `atlas-test` % "test")
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= commonDeps)
@@ -147,6 +158,7 @@ lazy val `atlas-webapi` = project
   ))
 
 lazy val `atlas-wiki` = project
+  .configure(BuildSettings.profile)
   .dependsOn(`atlas-core`, `atlas-webapi`)
   .settings(buildSettings: _*)
   .settings(libraryDependencies ++= Seq(
