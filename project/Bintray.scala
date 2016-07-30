@@ -1,7 +1,6 @@
 import sbt._
 import sbt.Keys._
 import bintray.BintrayPlugin._
-import bintray.BintrayCredentials.api
 import bintray.BintrayKeys._
 
 object Bintray {
@@ -15,8 +14,6 @@ object Bintray {
 
   lazy val user = get("User")
   lazy val pass = get("Key")
-
-  lazy val storeBintrayCredentials = taskKey[Unit]("store bintray credentials")
 
   lazy val settings: Seq[Def.Setting[_]] = bintraySettings ++ Seq(
     bintrayRepository := "maven",
@@ -33,11 +30,7 @@ object Bintray {
         publishTo in bintray value
     },
 
-    storeBintrayCredentials := {
-      IO.write(bintrayCredentialsFile.value, api.template(user, pass))
-    },
-
-    pomExtra := (
+    pomExtra :=
       <url>https://github.com/netflix/atlas/wiki</url>
       <scm>
         <url>git@github.com:netflix/atlas.git</url>
@@ -50,6 +43,5 @@ object Bintray {
           <email>brharrington@netflix.com</email>
         </developer>
       </developers>
-    )
   )
 }
