@@ -146,6 +146,7 @@ lazy val `atlas-wiki` = project
   ))
 
 val commonDeps = Seq(
+  Dependencies.jsr305,
   Dependencies.scalaLogging,
   Dependencies.slf4jApi,
   Dependencies.spectatorApi,
