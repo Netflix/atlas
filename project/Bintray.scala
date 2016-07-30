@@ -16,8 +16,6 @@ object Bintray {
   lazy val user = get("User")
   lazy val pass = get("Key")
 
-  lazy val storeBintrayCredentials = taskKey[Unit]("store bintray credentials")
-
   lazy val settings: Seq[Def.Setting[_]] = bintraySettings ++ Seq(
     bintrayRepository := "maven",
     bintrayPackage := "atlas_v1",
@@ -31,10 +29,6 @@ object Bintray {
         Some("OJO" at s"https://oss.jfrog.org/oss-snapshot-local;build.timestamp=$now/")
       else
         publishTo in bintray value
-    },
-
-    storeBintrayCredentials := {
-      IO.write(bintrayCredentialsFile.value, api.template(user, pass))
     },
 
     pomExtra := (
