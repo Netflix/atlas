@@ -16,7 +16,6 @@
 package com.netflix.atlas.akka
 
 import java.io.StringWriter
-import java.net.URI
 
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.sandbox.HttpLogEntry
@@ -31,6 +30,9 @@ import spray.routing.directives.LoggingMagnet
 import spray.routing.directives.MiscDirectives._
 import spray.routing.directives.ParameterDirectives._
 import spray.routing.directives.RespondWithDirectives._
+
+import scala.util.Failure
+import scala.util.Success
 
 object CustomDirectives {
 
@@ -140,61 +142,19 @@ object CustomDirectives {
     }
   }
 
-  private def addRequestInfo(entry: HttpLogEntry, req: HttpRequest): Unit = {
-    entry
-      .mark("logging")
-      .withMethod(req.method.name)
-      .withRequestUri(URI.create(req.uri.render(new StringRendering).get))
-      .withRequestContentLength(req.entity.data.length)
-    req.headers.foreach(h => entry.withRequestHeader(h.name, h.value))
-  }
-
-  private def addResponseInfo(entry: HttpLogEntry, res: HttpResponse): Unit = {
-    entry
-      .withStatusCode(res.status.intValue)
-      .withStatusReason(res.status.reason)
-      .withResponseContentLength(res.entity.data.length)
-    res.headers.foreach(h => entry.withResponseHeader(h.name, h.value))
-  }
-
-  private def log(entry: HttpLogEntry, req: HttpRequest, res: HttpResponse, step: String): Unit = {
-    addRequestInfo(entry, req)
-    addResponseInfo(entry, res)
-    entry.mark(step)
-    HttpLogEntry.logServerRequest(entry)
-  }
-
-  private def log(entry: HttpLogEntry, req: HttpRequest, t: Throwable, step: String): Unit = {
-    addRequestInfo(entry, req)
-    entry.withException(t)
-    entry.mark(step)
-    HttpLogEntry.logServerRequest(entry)
-  }
-
   // Helper function to finish constructing the log entry and writing to the logger.
-  private def log(entry: HttpLogEntry)(req: HttpRequest)(obj: Any): Unit = {
+  private def log(logger: AccessLogger)(req: HttpRequest)(obj: Any): Unit = {
     obj match {
-      case Confirmed(v, _) =>
-        log(entry)(req)(v)
-      case ChunkedResponseStart(res: HttpResponse) =>
-        // We go ahead and log on the chunk-start so we can see how long it to start sending the
-        // response in the logs. Also for cases where a TCP error occurs this logger doesn't
-        // get notified so the complete message will be missing.
-        log(entry, req, res, "chunked-start")
-      case MessageChunk(_, _) =>
-      case ChunkedMessageEnd =>
-        // Log again on end with complete time marked.
-        entry.mark("complete")
-        HttpLogEntry.logServerRequest(entry)
-      case res: HttpResponse =>
-        log(entry, req, res, "complete")
-      case t: Throwable =>
-        log(entry, req, t, "complete")
+      case Confirmed(v, _)                         => log(logger)(req)(v)
+      case ChunkedResponseStart(res: HttpResponse) => logger.chunkStart(req, res)
+      case MessageChunk(_, _)                      =>
+      case ChunkedMessageEnd                       => logger.chunkComplete()
+      case res: HttpResponse                       => logger.complete(req, Success(res))
+      case t: Throwable                            => logger.complete(req, Failure(t))
       case _ =>
-        addRequestInfo(entry, req)
         val cls = obj.getClass
         val t = new IllegalStateException(s"unexpected response type: ${cls.getName}")
-        log(entry, req, t, "complete")
+        logger.complete(req, Failure(t))
     }
   }
 
@@ -204,12 +164,13 @@ object CustomDirectives {
   def accessLog: Directive0 = {
     val d1 = clientIP.flatMap { ip =>
       val addr = ip.toOption.fold("unknown")(_.getHostAddress)
-      val entry = (new HttpLogEntry).withRemoteAddr(addr).mark("start")
-      logRequestResponse(LoggingMagnet(log(entry)))
+      val entry = (new HttpLogEntry).withRemoteAddr(addr)
+      val logger = AccessLogger.newServerLogger(entry)
+      logRequestResponse(LoggingMagnet(log(logger)))
     }
     val d2 = requestInstance.flatMap { _ =>
-      val entry = (new HttpLogEntry).mark("start")
-      logRequestResponse(LoggingMagnet(log(entry)))
+      val logger = AccessLogger.newServerLogger
+      logRequestResponse(LoggingMagnet(log(logger)))
     }
     d1 | d2
   }
