@@ -18,6 +18,14 @@ lazy val buildSettings = baseSettings ++ Seq(
   formatLicenseHeaders := License.formatLicenseHeaders(streams.value.log, sourceDirectory.value)
 )
 
+val commonDeps = Seq(
+  Dependencies.jsr305,
+  Dependencies.scalaLogging,
+  Dependencies.slf4jApi,
+  Dependencies.spectatorApi,
+  Dependencies.typesafeConfig,
+  Dependencies.scalatest % "test")
+
 lazy val root = project.in(file("."))
   .aggregate(
     `atlas-akka`,
@@ -144,14 +152,6 @@ lazy val `atlas-wiki` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.scalaCompiler
   ))
-
-val commonDeps = Seq(
-  Dependencies.jsr305,
-  Dependencies.scalaLogging,
-  Dependencies.slf4jApi,
-  Dependencies.spectatorApi,
-  Dependencies.typesafeConfig,
-  Dependencies.scalatest % "test")
 
 lazy val checkLicenseHeaders = taskKey[Unit]("Check the license headers for all source files.")
 lazy val formatLicenseHeaders = taskKey[Unit]("Fix the license headers for all source files.")
