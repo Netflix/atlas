@@ -14,7 +14,7 @@ object MainBuild extends Build {
             scalaVersion := Dependencies.Versions.scala,
            scalacOptions ++= BuildSettings.compilerFlags,
               crossPaths := true,
-      crossScalaVersions := Seq(Dependencies.Versions.scala),
+      crossScalaVersions := Dependencies.Versions.crossScala,
            sourcesInBase := false,
               exportJars := true,   // Needed for one-jar, with multi-project
        externalResolvers := BuildSettings.resolvers,
@@ -151,7 +151,6 @@ object MainBuild extends Build {
 
   val commonDeps = Seq(
     Dependencies.scalaLogging,
-    Dependencies.scalaReflect,
     Dependencies.slf4jApi,
     Dependencies.spectatorApi,
     Dependencies.typesafeConfig,
