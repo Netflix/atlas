@@ -17,7 +17,8 @@ snapshot:
 	# Travis uses a depth when fetching git data so the tags needed for versioning may not
 	# be available unless we explicitly fetch them
 	git fetch --unshallow
-	$(SBT) clean test checkLicenseHeaders storeBintrayCredentials publish
+	$(SBT) storeBintrayCredentials
+	$(SBT) clean test checkLicenseHeaders publish
 
 release:
 	# Travis uses a depth when fetching git data so the tags needed for versioning may not
