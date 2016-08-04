@@ -170,7 +170,8 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
           warnings += s"Invalid sort mode '$order'. Using default of 'legend'."
           (a, b) => a.data.label < b.data.label
       }
-      lines.sortWith(if (useDescending) (a, b) => !cmp(a, b) else cmp)
+      val sorted = lines.sortWith(cmp)
+      if (useDescending) sorted.reverse else sorted
     }
   }
 }
