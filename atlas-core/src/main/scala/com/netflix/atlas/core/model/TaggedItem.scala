@@ -50,15 +50,26 @@ object TaggedItem {
     }
   }
 
-  private def writePair(p: Pair, buf: ByteBuffer, enc: CharsetEncoder, md: MessageDigest): Unit = {
-    enc.encode(CharBuffer.wrap(p._1), buf, true)
+  private def writePair(
+      p: Pair,
+      cbuf: CharBuffer,
+      buf: ByteBuffer,
+      enc: CharsetEncoder,
+      md: MessageDigest): Unit = {
+    cbuf.clear()
+    cbuf.put(p._1)
+    cbuf.flip()
+    enc.encode(cbuf, buf, true)
     buf.flip()
     md.update(buf)
     buf.clear()
 
     md.update('='.asInstanceOf[Byte])
 
-    enc.encode(CharBuffer.wrap(p._2), buf, true)
+    cbuf.clear()
+    cbuf.put(p._2)
+    cbuf.flip()
+    enc.encode(cbuf, buf, true)
     buf.flip()
     md.update(buf)
     buf.clear()
@@ -79,21 +90,22 @@ object TaggedItem {
         val t = it.next()
         pairs(pos) = t
         pos += 1
-        maxLength = if (t._1.length > maxLength) t._1.length else maxLength
-        maxLength = if (t._2.length > maxLength) t._2.length else maxLength
+        maxLength = math.max(t._1.length, maxLength)
+        maxLength = math.max(t._2.length, maxLength)
       }
 
       util.Arrays.sort(pairs, keyComparator)
 
       val md = Hash.get("SHA1")
       val enc = Charset.forName("UTF-8").newEncoder
+      val cbuf = CharBuffer.allocate(maxLength)
       val buf = ByteBuffer.allocate(maxLength * 2)
 
-      writePair(pairs(0), buf, enc, md)
+      writePair(pairs(0), cbuf, buf, enc, md)
       pos = 1
       while (pos < pairs.length) {
         md.update(','.asInstanceOf[Byte])
-        writePair(pairs(pos), buf, enc, md)
+        writePair(pairs(pos), cbuf, buf, enc, md)
         pos += 1
       }
       new BigInteger(1, md.digest)
