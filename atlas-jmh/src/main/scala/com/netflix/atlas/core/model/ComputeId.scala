@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.SmallHashMap
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
@@ -30,9 +31,14 @@ import org.openjdk.jmh.infra.Blackhole
   * > jmh:run -prof jmh.extras.JFR -wi 10 -i 10 -f1 -t1 .*ComputeId.*
   * ...
   * [info] Benchmark                            Mode  Cnt       Score       Error  Units
-  * [info] ComputeId.computeIdSmallTagMap      thrpt   10  252703.940 ± 11424.615  ops/s
-  * [info] ComputeId.computeIdTagMap           thrpt   10  248390.915 ± 10755.616  ops/s
+  * [info] ComputeId.computeIdNaive            thrpt   10  233836.750 ± 6784.397  ops/s
+  * [info] ComputeId.computeIdSmallTagMap      thrpt   10  269421.710 ± 5123.143  ops/s
+  * [info] ComputeId.computeIdTagMap           thrpt   10  264154.483 ± 6833.347  ops/s
   * ```
+  *
+  * Note, the naive method is mostly problematic in terms of allocated data, not
+  * throughput. For this benchmark it allocates over 25GB for the top 5 objects compared
+  * to 5GB to 6GB when using computeId.
   */
 @State(Scope.Thread)
 class ComputeId {
@@ -54,6 +60,14 @@ class ComputeId {
   )
 
   private val smallTagMap = SmallHashMap(tagMap)
+
+  @Threads(1)
+  @Benchmark
+  def computeIdNaive(bh: Blackhole): Unit = {
+    val sorted = tagMap.toList.sortWith(_._1 < _._1).map(t => t._1 + "=" + t._2)
+    val id = Hash.sha1(sorted.mkString(","))
+    bh.consume(id)
+  }
 
   @Threads(1)
   @Benchmark
