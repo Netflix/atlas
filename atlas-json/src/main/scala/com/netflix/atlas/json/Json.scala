@@ -66,6 +66,9 @@ object Json {
     factory.enable(AUTO_CLOSE_SOURCE)
     factory.enable(AUTO_CLOSE_TARGET)
     factory.disable(QUOTE_NON_NUMERIC_NUMBERS)
+
+    // The buffer recycling causes data corruption
+    factory.disable(JsonFactory.Feature.USE_THREAD_LOCAL_FOR_BUFFER_RECYCLING)
   }
 
   private def newMapper(factory: JsonFactory): ObjectMapper = {
