@@ -278,7 +278,7 @@ class SmallHashMap[K <: AnyRef, V <: AnyRef](val data: Array[AnyRef], dataLength
     // Pattern copied from String.java of jdk
     var h = cachedHashCode
     if (h == 0) {
-      h = super.hashCode
+      h = scala.util.hashing.MurmurHash3.arrayHash(data)
       cachedHashCode = h
     }
     h
