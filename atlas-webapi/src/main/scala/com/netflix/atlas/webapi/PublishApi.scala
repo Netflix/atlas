@@ -235,19 +235,19 @@ object PublishApi {
 
   case class PublishRequest(values: List[Datapoint], failures: List[ValidationResult])
 
-  case class FailureMessage(`type`: String, message: List[String]) extends JsonSupport {
+  case class FailureMessage(`type`: String, errorCount: Int, message: List[String]) extends JsonSupport {
     def typeName: String = `type`
   }
 
   object FailureMessage {
     def error(message: List[ValidationResult]): FailureMessage = {
       val failures = message.collect { case ValidationResult.Fail(_, reason) => reason }
-      new FailureMessage(DiagnosticMessage.Error, failures)
+      new FailureMessage(DiagnosticMessage.Error, failures.size, failures.take(5))
     }
 
     def partial(message: List[ValidationResult]): FailureMessage = {
       val failures = message.collect { case ValidationResult.Fail(_, reason) => reason }
-      new FailureMessage("partial", failures)
+      new FailureMessage("partial", failures.size, failures.take(5))
     }
   }
 }
