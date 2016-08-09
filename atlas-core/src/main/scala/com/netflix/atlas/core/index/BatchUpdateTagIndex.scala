@@ -40,7 +40,7 @@ object BatchUpdateTagIndex {
  *
  * @param newIndex  function to create a new index from the set of items
  */
-class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: Array[T] => TagIndex[T])
+class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => TagIndex[T])
     extends MutableTagIndex[T] {
 
   private def registry = Spectator.globalRegistry()

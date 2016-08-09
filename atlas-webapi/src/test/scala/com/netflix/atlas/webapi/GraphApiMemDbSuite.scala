@@ -38,6 +38,7 @@ class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
       |  num-blocks = 2
       |  block-size = 60
       |  test-mode = true
+      |  intern-while-building = true
       |}
     """.stripMargin))
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
