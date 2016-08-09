@@ -26,6 +26,7 @@ import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.IntHashSet
 import com.netflix.atlas.core.util.IntIntHashMap
 import com.netflix.atlas.core.util.Interner
+import com.netflix.atlas.core.util.NoopInterner
 import com.netflix.atlas.core.util.RefIntHashMap
 import org.slf4j.LoggerFactory
 
@@ -38,18 +39,35 @@ object LazyTagIndex {
   }
 }
 
-class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
+/**
+  * Create a new index based on lazy integer sets.
+  *
+  * @param items
+  *     Items to include in the index.
+  * @param internWhileBuilding
+  *     Should strings get interned while building the index? This should be true unless
+  *     it is known that strings have been interned before being added to the index.
+  * @param interner
+  *     Interner used to ensure we do not have duplicate string data. Internally there
+  *     are usages of [[java.util.IdentityHashMap]] so we must have a unique copy of each
+  *     string.
+  */
+class LazyTagIndex[T <: TaggedItem](
+  items: Array[T],
+  internWhileBuilding: Boolean = true,
+  interner: Interner[String] = Interner.forStrings)
     extends TagIndex[T] {
 
   import com.netflix.atlas.core.index.LazyTagIndex._
-
-  def this(items: Array[T]) = this(items, Interner.forStrings)
 
   type LazyValueMap = util.IdentityHashMap[String, LazySet]
   type LazyKeyMap = util.IdentityHashMap[String, LazyValueMap]
 
   type ValueMap = util.IdentityHashMap[String, IntHashSet]
   type KeyMap = util.IdentityHashMap[String, ValueMap]
+
+  // Interner to use for building the index
+  private val buildInterner = if (internWhileBuilding) interner else new NoopInterner[String]
 
   // Comparator for ordering tagged items using the id
   private val idComparator = new Comparator[T] {
@@ -85,7 +103,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
     while (pos < items.length) {
       itemIds(pos) = items(pos).id
       items(pos).foreach { (k, v) =>
-        val internedK = interner.intern(k)
+        val internedK = buildInterner.intern(k)
         var vidx = idx.get(internedK)
         if (vidx == null) {
           vidx = new ValueMap
@@ -93,7 +111,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
         }
 
         // Add to value index
-        val internedV = interner.intern(v)
+        val internedV = buildInterner.intern(v)
         var matchSet = vidx.get(internedV)
         if (matchSet == null) {
           matchSet = new IntHashSet(-1, 20)
@@ -157,7 +175,7 @@ class LazyTagIndex[T <: TaggedItem](items: Array[T], interner: Interner[String])
     // Create sorted array with tags and the overall counts
     logger.debug(s"building tag index with ${items.length} items, sort and overall counts")
     val tagsArray = tagCounts.mapToArray(new Array[Tag](tagCounts.size)) { (t, v) =>
-      Tag(interner.intern(t._1), interner.intern(t._2), v)
+      Tag(buildInterner.intern(t._1), buildInterner.intern(t._2), v)
     }
     util.Arrays.sort(tagsArray.asInstanceOf[Array[AnyRef]])
 

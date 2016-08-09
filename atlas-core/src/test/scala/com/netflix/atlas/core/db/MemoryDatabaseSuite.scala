@@ -33,6 +33,7 @@ class MemoryDatabaseSuite extends FunSuite {
       |  num-blocks = 2
       |  rebuild-frequency = 10s
       |  test-mode = true
+      |  intern-while-building = true
       |}
     """.stripMargin))
 
