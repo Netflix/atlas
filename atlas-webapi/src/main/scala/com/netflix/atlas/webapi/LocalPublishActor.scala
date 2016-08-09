@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.ActorRef
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.db.MemoryDatabase
@@ -30,7 +31,10 @@ import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.BucketCounter
 import com.netflix.spectator.api.histogram.BucketFunctions
+import spray.http.HttpEntity
 import spray.http.HttpResponse
+import spray.http.MediaTypes
+import spray.http.StatusCode
 import spray.http.StatusCodes
 
 
@@ -60,7 +64,7 @@ class LocalPublishActor(registry: Registry, db: Database) extends Actor with Act
     case PublishRequest(Nil, failures) =>
       updateStats(failures)
       val msg = FailureMessage.error(failures)
-      DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, msg.toJson)
+      sendError(sender(), StatusCodes.BadRequest, msg)
     case PublishRequest(values, Nil) =>
       update(values)
       sender() ! HttpResponse(StatusCodes.OK)
@@ -68,7 +72,12 @@ class LocalPublishActor(registry: Registry, db: Database) extends Actor with Act
       update(values)
       updateStats(failures)
       val msg = FailureMessage.partial(failures)
-      sender() ! HttpResponse(StatusCodes.Accepted, msg.toJson)
+      sendError(sender(), StatusCodes.Accepted, msg)
+  }
+
+  private def sendError(ref: ActorRef, status: StatusCode, msg: FailureMessage): Unit = {
+    val entity = HttpEntity(MediaTypes.`application/json`, msg.toJson)
+    ref ! HttpResponse(status = status, entity = entity)
   }
 
   private def updateStats(failures: List[ValidationResult]): Unit = {
