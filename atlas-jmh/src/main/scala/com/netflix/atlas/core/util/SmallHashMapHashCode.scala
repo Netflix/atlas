@@ -30,10 +30,11 @@ import org.openjdk.jmh.infra.Blackhole
   * ```
   * > jmh:run -prof jmh.extras.JFR -wi 10 -i 10 -f1 -t1 .*SmallHashMapHashCode.*
   * ...
-  * [info] Benchmark                                   Mode  Cnt          Score          Error  Units
-  * [info] SmallHashMapHashCode.murmur3arrayHash      thrpt   10   15239273.579 ±   921707.049  ops/s
-  * [info] SmallHashMapHashCode.murmur3mapHash        thrpt   10    4002229.992 ±   282897.745  ops/s
-  * [info] SmallHashMapHashCode.superWithCaching      thrpt   10  342121377.682 ± 13002291.488  ops/s
+  * [info] Benchmark              Mode  Cnt          Score          Error  Units
+  * [info] computeHashCode       thrpt   10   33962020.269 ±   883664.164  ops/s
+  * [info] currentHashCode       thrpt   10  360180789.347 ± 10164654.707  ops/s
+  * [info] murmur3arrayHash      thrpt   10   13861013.249 ±  3160191.522  ops/s
+  * [info] murmur3mapHash        thrpt   10    4067194.458 ±    78185.171  ops/s
   * ```
   */
 @State(Scope.Thread)
@@ -59,8 +60,14 @@ class SmallHashMapHashCode {
 
   @Threads(1)
   @Benchmark
-  def superWithCaching(bh: Blackhole): Unit = {
+  def currentHashCode(bh: Blackhole): Unit = {
     bh.consume(smallTagMap.hashCode)
+  }
+
+  @Threads(1)
+  @Benchmark
+  def computeHashCode(bh: Blackhole): Unit = {
+    bh.consume(smallTagMap.computeHashCode)
   }
 
   @Threads(1)

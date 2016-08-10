@@ -105,7 +105,7 @@ object SmallHashMap {
     def hasNext: Boolean = pos < len
 
     def next(): (K, V) = {
-      val t = map.data(pos).asInstanceOf[K] -> map.data(pos + 1).asInstanceOf[V]
+      val t = key -> value
       nextEntry()
       t
     }
@@ -121,9 +121,9 @@ object SmallHashMap {
       }
     }
 
-    def key: K = map.data(pos).asInstanceOf[K]
+    @inline def key: K = map.data(pos).asInstanceOf[K]
 
-    def value: V = map.data(pos + 1).asInstanceOf[V]
+    @inline def value: V = map.data(pos + 1).asInstanceOf[V]
   }
 }
 
@@ -142,8 +142,10 @@ object SmallHashMap {
  * @param data        array with the items
  * @param dataLength  number of pairs contained within the array starting at index 0.
  */
-class SmallHashMap[K <: AnyRef, V <: AnyRef](val data: Array[AnyRef], dataLength: Int)
+final class SmallHashMap[K <: AnyRef, V <: AnyRef] private (val data: Array[AnyRef], dataLength: Int)
     extends scala.collection.immutable.Map[K, V] {
+
+  require(data.length % 2 == 0)
 
   private[this] var cachedHashCode: Int = 0
 
@@ -272,15 +274,97 @@ class SmallHashMap[K <: AnyRef, V <: AnyRef](val data: Array[AnyRef], dataLength
     b.result
   }
 
+  /** Constant time operation to get the number of pairs in the map. */
   override def size: Int = dataLength
 
+  /**
+    * Overridden to get better performance. See SmallHashMapHashCode benchmark for a
+    * comparison with the default for various inputs.
+    */
   override def hashCode: Int = {
     // Pattern copied from String.java of jdk
-    var h = cachedHashCode
-    if (h == 0) {
-      h = scala.util.hashing.MurmurHash3.arrayHash(data)
-      cachedHashCode = h
+    if (cachedHashCode == 0) {
+      cachedHashCode = computeHashCode
+    }
+    cachedHashCode
+  }
+
+  /**
+    * Compute the hash code for the map. This method uses a fairly naive approach of
+    * summing up the hash codes for the input data values. In practice with the test
+    * data we have examined the collision rate is about the same as using the default
+    * inherited from MapLike.
+    */
+  private[util] def computeHashCode: Int = {
+    var h = 179424743 + 31 * dataLength
+    var i = 0
+    while (i < data.length) {
+      if (data(i) != null) {
+        h += data(i).hashCode
+      }
+      i += 1
     }
     h
   }
+
+  /**
+    * Overridden to get better performance. See SmallHashMapEquals benchmark for a
+    * comparison with the default for various inputs.
+    */
+  override def equals(obj: Any): Boolean = {
+    if (obj == null) return false
+    obj match {
+      case m: SmallHashMap[_, _] =>
+        // The hashCode is cached for this class and will often be a cheaper way to
+        // exclude equality.
+        if (this eq m) return true
+        size == m.size && hashCode == m.hashCode && dataEquals(m.asInstanceOf[SmallHashMap[K, V]])
+      case m: Map[_, _] =>
+        super.equals(obj)
+      case _ =>
+        false
+    }
+  }
+
+  /**
+    * Compares the data arrays of the two maps. It is assumed that cheaper checks such
+    * as the sizes of the arrays have already been resolved before this method is called.
+    * This method will loop through the array and compare corresponding entries. If the
+    * keys do not match, then it will do a lookup in the other map to check for corresponding
+    * values.
+    *
+    * In practice, the maps are often being created from the same input source and therefore
+    * have the same insertion order. In those cases the array equality will work fine and no
+    * lookups will be needed.
+    */
+  private[util] def dataEquals(m: SmallHashMap[K, V]): Boolean = {
+    var i = 0
+    while (i < data.length) {
+      val k1 = data(i).asInstanceOf[K]
+      val k2 = m.data(i).asInstanceOf[K]
+      if (k1 == null && k1 != k2) {
+        val v1 = getOrNull(k2)
+        val v2 = m.data(i + 1)
+        if (v1 != v2) return false
+      }
+
+      if (k2 == null && k1 != k2) {
+        val v1 = data(i + 1)
+        val v2 = m.getOrNull(k1)
+        if (v1 != v2) return false
+      }
+
+      if (k1 == k2) {
+        val v1 = data(i + 1)
+        val v2 = m.data(i + 1)
+        if (v1 != v2) return false
+      }
+
+      i += 2
+    }
+    true
+  }
+
+  /** This is here to allow for testing and benchmarks. Should note be used otherwise. */
+  private[util] def superEquals(obj: Any): Boolean = super.equals(obj)
 }
