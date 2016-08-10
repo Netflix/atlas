@@ -290,21 +290,29 @@ final class SmallHashMap[K <: AnyRef, V <: AnyRef] private (val data: Array[AnyR
   }
 
   /**
-    * Compute the hash code for the map. This method uses a fairly naive approach of
-    * summing up the hash codes for the input data values. In practice with the test
-    * data we have examined the collision rate is about the same as using the default
-    * inherited from MapLike.
+    * Compute the hash code for the map. This method is based on the
+    * [[scala.util.hashing.MurmurHash3.unorderedHash()]] method. It is more efficient
+    * for our purposes because it avoids creating tons of [[scala.runtime.IntRef]]
+    * objects as well as tuples during iteration.
     */
   private[util] def computeHashCode: Int = {
-    var h = 179424743 + 31 * dataLength
+    var a, b = 0
+    var c = 1
     var i = 0
     while (i < data.length) {
       if (data(i) != null) {
-        h += data(i).hashCode
+        val h = data(i).hashCode
+        a += h
+        b ^= h
+        if (h != 0) c *= h
       }
       i += 1
     }
-    h
+    var h = 0x3c074a61
+    h = scala.util.hashing.MurmurHash3.mix(h, a)
+    h = scala.util.hashing.MurmurHash3.mix(h, b)
+    h = scala.util.hashing.MurmurHash3.mixLast(h, c)
+    scala.util.hashing.MurmurHash3.finalizeHash(h, dataLength)
   }
 
   /**

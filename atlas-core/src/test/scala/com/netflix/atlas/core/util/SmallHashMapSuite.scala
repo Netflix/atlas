@@ -321,8 +321,7 @@ class SmallHashMapSuite extends FunSuite {
       naive.add(m.hashCode)
       ref.add(scala.util.hashing.MurmurHash3.mapHash(m))
     }
-    val threshold = 1.5 * (1.0 - naive.size / size)
-    assert(1.0 - naive.size.toDouble / size < threshold)
+    check(size, naive.size, ref.size)
   }
 
   test("equals and hashCode, collisions on realistic data") {
@@ -348,7 +347,36 @@ class SmallHashMapSuite extends FunSuite {
       naive.add(m.hashCode)
       ref.add(scala.util.hashing.MurmurHash3.mapHash(m))
     }
-    val threshold = 1.5 * (1.0 - ref.size / size)
-    assert(1.0 - naive.size.toDouble / size <= threshold)
+    check(size, naive.size, ref.size)
+  }
+
+  // This map seems to do poorly with the naive hash
+  test("equals and hashCode, collisions on perf test data") {
+    var size = 0
+    val naive = new IntHashSet(0)
+    val ref = new IntHashSet(0)
+    for (i <- 0 until 150; j <- 0 until 1000) {
+      size += 1
+      val m = SmallHashMap(
+        "nf.app"       -> "foo",
+        "nf.cluster"   -> "foo-bar",
+        "nf.asg"       -> "foo-bar-v000",
+        "nf.stack"     -> "bar",
+        "nf.region"    -> "us-east-1",
+        "nf.zone"      -> "us-east-1a",
+        "nf.vmtype"    -> "r3.2xlarge",
+        "name"         -> f"test.metric.$j%08x",
+        "nf.node"      -> f"$i%017x",
+        "atlas.dstype" -> "gauge"
+      )
+      naive.add(m.hashCode)
+      ref.add(scala.util.hashing.MurmurHash3.mapHash(m))
+    }
+    check(size, naive.size, ref.size)
+  }
+
+  private def check(size: Int, naive: Int, ref: Int): Unit = {
+    assert(100.0 * ref / size >= 97.0)
+    assert(100.0 * naive / size >= 97.0)
   }
 }
