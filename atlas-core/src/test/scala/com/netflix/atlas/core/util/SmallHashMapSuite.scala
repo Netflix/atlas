@@ -278,4 +278,77 @@ class SmallHashMapSuite extends FunSuite {
     testNumCollisions(m)
     rkeys.foreach { k => assert(m.get(k) === Some(k)) }
   }
+
+  test("equals and hashCode, different orders with gaps") {
+    (0 until 1000).foreach { i =>
+      val n = Random.nextInt(50)
+      val data = (0 until n).map { _ =>
+        val v = Random.nextInt()
+        v.toString -> v.toString
+      }
+      val m1 = SmallHashMap(100, data.iterator)
+      val m2 = SmallHashMap(100, Random.shuffle(data).iterator)
+      assert(m1.hashCode === m2.hashCode)
+      assert(m1 === m2)
+    }
+  }
+
+  test("equals and hashCode, different orders") {
+    (0 until 1000).foreach { i =>
+      val n = Random.nextInt(50)
+      val data = (0 until n).map { _ =>
+        val v = Random.nextInt()
+        v.toString -> v.toString
+      }
+      val m1 = SmallHashMap(data)
+      val m2 = SmallHashMap(Random.shuffle(data))
+      assert(m1.hashCode === m2.hashCode)
+      assert(m1 === m2)
+    }
+  }
+
+  test("equals and hashCode, collisions on random data") {
+    val size = 10000
+    val naive = new IntHashSet(0)
+    val ref = new IntHashSet(0)
+    (0 until size).foreach { i =>
+      val n = Random.nextInt(50)
+      val data = (0 until n).map { _ =>
+        val v = Random.nextInt()
+        v.toString -> v.toString
+      }
+      val m = SmallHashMap(Random.shuffle(data))
+      naive.add(m.hashCode)
+      ref.add(scala.util.hashing.MurmurHash3.mapHash(m))
+    }
+    val threshold = 1.5 * (1.0 - naive.size / size)
+    assert(1.0 - naive.size.toDouble / size < threshold)
+  }
+
+  test("equals and hashCode, collisions on realistic data") {
+    val size = 10000
+    val naive = new IntHashSet(0)
+    val ref = new IntHashSet(0)
+    (0 until size).foreach { i =>
+      val m = SmallHashMap(
+        "nf.app"     -> "atlas_backend",
+        "nf.cluster" -> "atlas_backend-dev",
+        "nf.asg"     -> "atlas_backend-dev-v001",
+        "nf.stack"   -> "dev",
+        "nf.region"  -> "us-east-1",
+        "nf.zone"    -> "us-east-1e",
+        "nf.node"    -> f"i-$i%017x",
+        "nf.ami"     -> "ami-987654321",
+        "nf.vmtype"  -> "r3.2xlarge",
+        "name"       -> "jvm.gc.pause",
+        "cause"      -> "Allocation_Failure",
+        "action"     -> "end_of_major_GC",
+        "statistic"  -> "totalTime"
+      )
+      naive.add(m.hashCode)
+      ref.add(scala.util.hashing.MurmurHash3.mapHash(m))
+    }
+    val threshold = 1.5 * (1.0 - ref.size / size)
+    assert(1.0 - naive.size.toDouble / size <= threshold)
+  }
 }
