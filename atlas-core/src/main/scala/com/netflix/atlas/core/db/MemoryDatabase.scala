@@ -15,15 +15,12 @@
  */
 package com.netflix.atlas.core.db
 
-import java.math.BigInteger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.index.BatchUpdateTagIndex
 import com.netflix.atlas.core.index.CachingTagIndex
 import com.netflix.atlas.core.index.LazyTagIndex
-import com.netflix.atlas.core.index.TagIndex
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.DataExpr
@@ -72,7 +69,8 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   // If the last update time for the index is older than the rebuild age force an update
   private val rebuildAge = config.getDuration("rebuild-frequency", TimeUnit.MILLISECONDS)
 
-  private val data = new ConcurrentHashMap[BigInteger, BlockStore]
+  type ItemId = Map[String, String]
+  private val data = new ConcurrentHashMap[ItemId, BlockStore]
 
   private val rebuildThread = new Thread(new RebuildTask, "MemoryDatabaseRebuildIndex")
   if (!testMode) rebuildThread.start()
@@ -112,12 +110,12 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     }
   }
 
-  private def getOrCreateBlockStore(id: BigInteger): BlockStore = {
+  private def getOrCreateBlockStore(id: ItemId): BlockStore = {
     data.computeIfAbsent(id, _ => new MemoryBlockStore(step, blockSize, numBlocks))
   }
 
   def update(dp: Datapoint): Unit = {
-    val blkStore = getOrCreateBlockStore(dp.id)
+    val blkStore = getOrCreateBlockStore(dp.tags)
     blkStore.update(dp.timestamp, dp.value)
     index.update(BlockStoreItem.create(dp.tags, blkStore))
   }
