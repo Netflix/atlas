@@ -24,6 +24,7 @@ import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.io.IO
 import akka.io.Inet
+import akka.routing.FromConfig
 import akka.util.Timeout
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.ClassFactory
@@ -69,8 +70,7 @@ class WebServer @Inject() (
   protected def startImpl(): Unit = {
     logger.info(s"starting $name on port $port")
 
-    val handler = system.actorOf(
-      Props(classFactory.newInstance[Actor](classOf[RequestHandlerActor])), "request-handler")
+    val handler = system.actorOf(newRequestHandler, "request-handler")
 
     val bindPromise = Promise[Http.Bound]()
     val stats = system.actorOf(Props(new ServerStatsActor(registry, bindPromise)))
@@ -88,6 +88,12 @@ class WebServer @Inject() (
         logger.error("server failed to start", t)
         throw t;
     }
+  }
+
+  private def newRequestHandler: Props = {
+    val props = Props(classFactory.newInstance[Actor](classOf[RequestHandlerActor]))
+    val routeCfgPath = "akka.actor.deployment./request-handler.router"
+    if (config.hasPath(routeCfgPath)) FromConfig.props(props) else props
   }
 
   protected def stopImpl(): Unit = {

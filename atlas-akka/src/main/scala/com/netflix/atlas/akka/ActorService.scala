@@ -21,6 +21,7 @@ import javax.inject.Singleton
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Props
+import akka.routing.FromConfig
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.ClassFactory
 import com.typesafe.config.Config
@@ -42,9 +43,15 @@ class ActorService @Inject() (system: ActorSystem, config: Config, classFactory:
     config.getConfigList("atlas.akka.actors").asScala.foreach { cfg =>
       val name = cfg.getString("name")
       val cls = Class.forName(cfg.getString("class"))
-      system.actorOf(Props(classFactory.newInstance[Actor](cls)), name)
-      logger.info(s"created actor '$name' using class '${cls.getName}'")
+      val ref = system.actorOf(newActor(name, cls))
+      logger.info(s"created actor '${ref.path}' using class '${cls.getName}'")
     }
+  }
+
+  private def newActor(name: String, cls: Class[_]): Props = {
+    val props = Props(classFactory.newInstance[Actor](cls))
+    val routerCfgPath = s"akka.actor.deployment./$name.router"
+    if (config.hasPath(routerCfgPath)) FromConfig.props(props) else props
   }
 
   override def stopImpl(): Unit = {
