@@ -43,7 +43,7 @@ class ActorService @Inject() (system: ActorSystem, config: Config, classFactory:
     config.getConfigList("atlas.akka.actors").asScala.foreach { cfg =>
       val name = cfg.getString("name")
       val cls = Class.forName(cfg.getString("class"))
-      val ref = system.actorOf(newActor(name, cls))
+      val ref = system.actorOf(newActor(name, cls), name)
       logger.info(s"created actor '${ref.path}' using class '${cls.getName}'")
     }
   }
