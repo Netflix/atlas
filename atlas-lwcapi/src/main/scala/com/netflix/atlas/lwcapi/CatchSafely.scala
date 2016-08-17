@@ -21,12 +21,11 @@ trait CatchSafely {
 
   def safely[T](handler: PartialFunction[Throwable, T]): PartialFunction[Throwable, T] = {
     case ex: ControlThrowable => throw ex
-    // case ex: OutOfMemoryError (Assorted other nasty exceptions you don't want to catch)
+    case ex: StackOverflowError => throw ex
+    case ex: OutOfMemoryError => throw ex
 
-    //If it's an exception they handle, pass it on
     case ex: Throwable if handler.isDefinedAt(ex) => handler(ex)
 
-    // If they didn't handle it, rethrow. This line isn't necessary, just for clarity
     case ex: Throwable => throw ex
   }
 }
