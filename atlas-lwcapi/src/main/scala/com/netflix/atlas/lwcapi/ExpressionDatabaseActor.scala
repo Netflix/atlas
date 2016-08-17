@@ -15,31 +15,52 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.{Actor, ActorLogging, ActorRefFactory, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.netflix.atlas.json.Json
-import com.netflix.spectator.api.Registry
 import com.redis._
 
 class ExpressionDatabaseActor extends Actor with ActorLogging {
   import ExpressionDatabaseActor._
 
   private val channel = "expressions"
+  private var subClient: RedisClient = _
+  private var pubClient: RedisClient = _
+  private var subscriber: ActorRef = _
 
-  private val subClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
-  private val pubClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
+  private val uuid = java.util.UUID.randomUUID.toString
 
-  private val subscriber = context.actorOf(Props(new Subscriber(subClient)))
+  restartPubsub()
 
-  val uuid = java.util.UUID.randomUUID.toString
+  def restartPubsub(): Unit = {
+    if (subscriber != null) context.stop(subscriber)
 
-  subscriber ! Register(redisCallback)
-  val channels = Array(channel)
-  subscriber ! Subscribe(channels)
+    var tries = 1
+    var success = false
+    while (!success) {
+      try {
+        log.info(s"Restarting pubsub, tries $tries")
+
+        Thread.sleep(1000)
+        subClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
+        pubClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
+        success = true
+      } finally {
+        tries += 1
+      }
+      log.info("Pubsub restarted!")
+    }
+    subscriber = context.actorOf(Props(new Subscriber(subClient)))
+    subscriber ! Register(redisCallback)
+    subscriber ! Subscribe(Array(channel))
+  }
 
   def redisCallback(pubsub: PubSubMessage) = pubsub match {
-    case S(chan, cnt) => log.info("Subscribed to " + chan + ", count = " + cnt)
-    case U(chan, cnt) => log.info("Unsubscribed to " + chan + ", count = " + cnt)
-    case E(exc) => log.error(exc, "redis pubsub")
+    case S(chan, cnt) => log.info(s"Subscribed from $chan, sub count is now $cnt")
+    case U(chan, cnt) => log.info(s"Unsubscribed from $chan, sub count is now $cnt")
+    case E(exc) => {
+      log.error(exc, "redis pubsub")
+      restartPubsub()
+    }
     case M(chan, msg) =>
       val request = Json.decode[RedisRequest](msg)
       if (request.uuid != uuid) {
@@ -55,10 +76,12 @@ class ExpressionDatabaseActor extends Actor with ActorLogging {
 
   def receive = {
     case Publish(expression) =>
+      log.info(s"PubSub Publish add for $expression")
       AlertMap.globalAlertMap.addExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "add"))
       pubClient.publish(channel, json)
     case Unpublish(expression) =>
+      log.info(s"PubSub Publish delete for $expression")
       AlertMap.globalAlertMap.delExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "delete"))
       pubClient.publish(channel, json)
