@@ -19,21 +19,31 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.netflix.atlas.json.Json
 import com.redis._
 
+import scala.util.control.ControlThrowable
+
 class ExpressionDatabaseActor extends Actor with ActorLogging {
   import ExpressionDatabaseActor._
 
   private val channel = "expressions"
   private var subClient: RedisClient = _
   private var pubClient: RedisClient = _
-  private var subscriber: ActorRef = _
 
   private val uuid = java.util.UUID.randomUUID.toString
 
   restartPubsub()
 
-  def restartPubsub(): Unit = {
-    if (subscriber != null) context.stop(subscriber)
+  def safely[T](handler: PartialFunction[Throwable, T]): PartialFunction[Throwable, T] = {
+    case ex: ControlThrowable => throw ex
+    // case ex: OutOfMemoryError (Assorted other nasty exceptions you don't want to catch)
 
+    //If it's an exception they handle, pass it on
+    case ex: Throwable if handler.isDefinedAt(ex) => handler(ex)
+
+    // If they didn't handle it, rethrow. This line isn't necessary, just for clarity
+    case ex: Throwable => throw ex
+  }
+
+  def restartPubsub(): Unit = {
     var tries = 1
     var success = false
     while (!success) {
@@ -44,14 +54,13 @@ class ExpressionDatabaseActor extends Actor with ActorLogging {
         subClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
         pubClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
         success = true
-      } finally {
-        tries += 1
+      } catch safely {
+        case ex: Throwable =>
+          tries += 1
       }
-      log.info("Pubsub restarted!")
     }
-    subscriber = context.actorOf(Props(new Subscriber(subClient)))
-    subscriber ! Register(redisCallback)
-    subscriber ! Subscribe(Array(channel))
+    log.info("Pubsub restarted!")
+    subClient.subscribe(channel)(redisCallback)
   }
 
   def redisCallback(pubsub: PubSubMessage) = pubsub match {
