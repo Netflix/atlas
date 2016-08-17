@@ -15,13 +15,15 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRefFactory, Props}
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.Registry
 import com.redis._
 
-class ExpressionDatabaseActor(registry: Registry, channel: String) extends Actor with ActorLogging {
+class ExpressionDatabaseActor extends Actor with ActorLogging {
   import ExpressionDatabaseActor._
+
+  private val channel = "expressions"
 
   private val subClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
   private val pubClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
@@ -31,21 +33,22 @@ class ExpressionDatabaseActor(registry: Registry, channel: String) extends Actor
   val uuid = java.util.UUID.randomUUID.toString
 
   subscriber ! Register(redisCallback)
-  val channels = Array("expressions")
+  val channels = Array(channel)
   subscriber ! Subscribe(channels)
 
   def redisCallback(pubsub: PubSubMessage) = pubsub match {
-    // XXXMLG TODO should log
-    case S(chan, cnt) => println("Subscribed to " + chan + " and count = " + cnt)
-    case U(chan, cnt) => println("Unsubscribed to " + chan + " and count = " + cnt)
-    case E(exc) => println("EXCEPTION: " + exc)
+    case S(chan, cnt) => log.info("Subscribed to " + chan + ", count = " + cnt)
+    case U(chan, cnt) => log.info("Unsubscribed to " + chan + ", count = " + cnt)
+    case E(exc) => log.error(exc, "redis pubsub")
     case M(chan, msg) =>
       val request = Json.decode[RedisRequest](msg)
       if (request.uuid != uuid) {
-        //println("RECEIVED:\n" + request)
-        request.action match {
-          case "add" => AlertMap.globalAlertMap.addExpr(request.expression)
-          case "delete" => AlertMap.globalAlertMap.delExpr(request.expression)
+        val action = request.action
+        val expression = request.expression
+        log.info(s"PubSub received $action for $expression")
+        action match {
+          case "add" => AlertMap.globalAlertMap.addExpr(expression)
+          case "delete" => AlertMap.globalAlertMap.delExpr(expression)
         }
       }
   }
@@ -66,6 +69,4 @@ object ExpressionDatabaseActor {
   case class RedisRequest(expression: ExpressionWithFrequency, uuid: String, action: String)
   case class Publish(expression: ExpressionWithFrequency)
   case class Unpublish(expression: ExpressionWithFrequency)
-
-  def props(registry: Registry, channel: String) = Props(new ExpressionDatabaseActor(registry, channel))
 }

@@ -21,11 +21,10 @@ import com.netflix.spectator.api.Registry
 import spray.http.HttpResponse
 import spray.http.StatusCodes
 
-class RegisterActor(registry: Registry) extends Actor with ActorLogging {
-
+class RegisterActor extends Actor with ActorLogging {
   import com.netflix.atlas.lwcapi.RegisterApi._
 
-  private val pubsubActor = context.actorOf(ExpressionDatabaseActor.props(registry, "expressions"))
+  private val pubsubActor = context.actorSelection("/user/lwc.expressiondb")
 
   def receive = {
     case RegisterRequest(Nil) =>

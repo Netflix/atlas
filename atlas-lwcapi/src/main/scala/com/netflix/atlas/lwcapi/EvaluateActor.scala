@@ -15,14 +15,13 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.Actor
-import akka.actor.ActorLogging
+import akka.actor.{Actor, ActorLogging, ActorRefFactory}
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.spectator.api.Registry
 import spray.http.HttpResponse
 import spray.http.StatusCodes
 
-class EvaluateActor(registry: Registry) extends Actor with ActorLogging {
+class EvaluateActor extends Actor with ActorLogging {
 
   import com.netflix.atlas.lwcapi.EvaluateApi._
 
@@ -37,9 +36,9 @@ class EvaluateActor(registry: Registry) extends Actor with ActorLogging {
   }
 
   private def evaluate(expressions: List[ExpressionWithFrequency], data: String): Unit = {
-    println("Data: " + data)
+    log.debug("Data: " + data)
     expressions.foreach { expr =>
-      println("  Expression: " + expr)
+      log.debug("Expression: " + expr)
     }
   }
 }
