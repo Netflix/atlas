@@ -19,9 +19,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.netflix.atlas.json.Json
 import com.redis._
 
-import scala.util.control.ControlThrowable
-
-class ExpressionDatabaseActor extends Actor with ActorLogging {
+class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
   import ExpressionDatabaseActor._
 
   private val channel = "expressions"
@@ -31,17 +29,6 @@ class ExpressionDatabaseActor extends Actor with ActorLogging {
   private val uuid = java.util.UUID.randomUUID.toString
 
   restartPubsub()
-
-  def safely[T](handler: PartialFunction[Throwable, T]): PartialFunction[Throwable, T] = {
-    case ex: ControlThrowable => throw ex
-    // case ex: OutOfMemoryError (Assorted other nasty exceptions you don't want to catch)
-
-    //If it's an exception they handle, pass it on
-    case ex: Throwable if handler.isDefinedAt(ex) => handler(ex)
-
-    // If they didn't handle it, rethrow. This line isn't necessary, just for clarity
-    case ex: Throwable => throw ex
-  }
 
   def restartPubsub(): Unit = {
     var tries = 1
@@ -56,6 +43,7 @@ class ExpressionDatabaseActor extends Actor with ActorLogging {
         success = true
       } catch safely {
         case ex: Throwable =>
+          log.warning("Connection error: " + ex.getMessage)
           tries += 1
       }
     }
