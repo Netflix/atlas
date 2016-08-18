@@ -10,6 +10,7 @@ lazy val root = project.in(file("."))
     `atlas-json`,
     `atlas-module-akka`,
     `atlas-module-webapi`,
+    `atlas-poller`,
     `atlas-standalone`,
     `atlas-test`,
     `atlas-webapi`,
@@ -78,6 +79,15 @@ lazy val `atlas-module-webapi` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.guiceCore,
     Dependencies.iepGuice
+  ))
+
+lazy val `atlas-poller` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-webapi` % "test")
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.sprayClient,
+    Dependencies.akkaTestkit % "test",
+    Dependencies.sprayTestkit % "test"
   ))
 
 lazy val `atlas-standalone` = project
