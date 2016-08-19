@@ -30,15 +30,15 @@ class ExpressionsApi (implicit val actorRefFactory: ActorRefFactory) extends Web
   import ExpressionsApi._
 
   def routes: RequestContext => Unit = {
-    get {
-      path("lwc" / "api" / "v1" / "expressions") { ctx => {
-        handleReq(ctx)
-      }}
+    path("lwc" / "api" / "v1" / "expressions" / Segment) { (cluster) =>
+      get { ctx =>
+        handleReq(ctx, cluster)
+      }
     }
   }
 
-  private def handleReq(ctx: RequestContext): Unit = {
-    val expressions = AlertMap.globalAlertMap.allDataExpressions()
+  private def handleReq(ctx: RequestContext, cluster: String): Unit = {
+    val expressions = AlertMap.globalAlertMap.dataExpressionsForCluster(cluster)
     ctx.responder ! HttpResponse(StatusCodes.OK, entity = toJson(expressions))
   }
 }

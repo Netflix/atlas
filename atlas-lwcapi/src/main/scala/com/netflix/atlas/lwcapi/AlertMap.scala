@@ -56,6 +56,11 @@ case class AlertMap() {
   def allDataExpressions(): Set[Set[ExpressionWithFrequency]] = synchronized {
     dataExprs.keySet.toSet
   }
+
+  def dataExpressionsForCluster(cluster: String) = synchronized {
+    // XXXMLG TODO keep track of expressions by cluster
+    dataExprs.keySet.toSet
+  }
 }
 
 object AlertMap {
