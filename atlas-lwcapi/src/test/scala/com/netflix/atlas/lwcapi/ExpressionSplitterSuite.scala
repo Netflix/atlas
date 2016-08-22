@@ -39,4 +39,12 @@ class ExpressionSplitterSuite extends FunSuite {
     val ret = splitter.split(ExpressionWithFrequency(query1, 999))
     assert(ret === Set(ExpressionWithFrequency(ds1a, 999), ExpressionWithFrequency(ds1b, 999)))
   }
+
+  test("throws on invalid expressions") {
+    val splitter = ExpressionSplitter()
+    val caught = intercept[ExpressionSyntaxException] {
+      splitter.split(ExpressionWithFrequency("this", 999))
+    }
+    assert(caught.isInstanceOf[ExpressionSyntaxException])
+  }
 }

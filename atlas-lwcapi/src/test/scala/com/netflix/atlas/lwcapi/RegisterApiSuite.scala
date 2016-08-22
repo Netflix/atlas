@@ -56,15 +56,25 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
-  test("publish simple batch") {
+  test("publish correctly formatted expression") {
     val json = s"""[
-        { "expression": "this", "frequency": 99 }
+        { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
       ]"""
     Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
     }
   }
+
+  ignore("publish badly formatted expression") {
+    val json = s"""[
+        { "expression": "skan,skan,eq", "frequency": 99 }
+      ]"""
+    Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
+  }
+
 
   test("publish bad json") {
     Post("/lwc/api/v1/register", "fubar") ~> endpoint.routes ~> check {

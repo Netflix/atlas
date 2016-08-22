@@ -20,6 +20,8 @@ import com.netflix.atlas.core.stacklang.Interpreter
 
 import scala.collection.mutable
 
+case class ExpressionSyntaxException(message: String) extends IllegalArgumentException(message)
+
 class ExpressionSplitter {
   private var interpreter = Interpreter(StyleVocabulary.allWords)
 
@@ -29,6 +31,10 @@ class ExpressionSplitter {
     context.stack.foreach {
       case ModelExtractors.PresentationType(s) =>
         s.expr.dataExprs.foreach { ret += _.toString }
+      case default => {
+        val klass = default.getClass
+        throw ExpressionSyntaxException(s"Unprocessed expression: $default ($klass)")
+      }
     }
     ret.toSet
   }
@@ -41,3 +47,4 @@ class ExpressionSplitter {
 object ExpressionSplitter {
   def apply() = new ExpressionSplitter()
 }
+

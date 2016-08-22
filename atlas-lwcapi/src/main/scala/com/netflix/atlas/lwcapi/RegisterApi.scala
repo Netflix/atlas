@@ -63,7 +63,6 @@ object RegisterApi {
         case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
       }
     }
-
   }
 
   case class DeleteRequest(expressions: List[ExpressionWithFrequency]) {
