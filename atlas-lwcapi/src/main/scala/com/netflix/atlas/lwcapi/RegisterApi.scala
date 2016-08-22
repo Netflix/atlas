@@ -29,8 +29,8 @@ class RegisterApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "register") {
-      post { ctx => { handlePost(ctx) } } ~
-      delete { ctx => { handleDelete(ctx) } }
+      post { ctx => handlePost(ctx) } ~
+      delete { ctx => handleDelete(ctx) }
     }
   }
 

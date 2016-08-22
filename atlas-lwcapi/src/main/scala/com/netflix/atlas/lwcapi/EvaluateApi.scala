@@ -28,10 +28,8 @@ class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
   private val registerRef = actorRefFactory.actorSelection("/user/lwc.register")
 
   def routes: RequestContext => Unit = {
-    post {
-      path("lwc" / "api" / "v1" / "evaluate") { ctx => {
-        handleReq(ctx)
-      }}
+    path("lwc" / "api" / "v1" / "evaluate") {
+       post { ctx => handleReq(ctx) }
     }
   }
 

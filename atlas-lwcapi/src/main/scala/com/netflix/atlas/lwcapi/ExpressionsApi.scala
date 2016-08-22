@@ -31,9 +31,7 @@ class ExpressionsApi (implicit val actorRefFactory: ActorRefFactory) extends Web
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "expressions" / Segment) { (cluster) =>
-      get { ctx =>
-        handleReq(ctx, cluster)
-      }
+      get { ctx => handleReq(ctx, cluster) }
     }
   }
 

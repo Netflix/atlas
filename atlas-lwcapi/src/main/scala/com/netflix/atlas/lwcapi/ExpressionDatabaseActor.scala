@@ -55,7 +55,7 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
     case S(chan, cnt) => log.info(s"Subscribed from $chan, sub count is now $cnt")
     case U(chan, cnt) => log.info(s"Unsubscribed from $chan, sub count is now $cnt")
     case E(exc) => {
-      log.error(exc, "redis pubsub")
+      log.error(exc, "redis pubsub: exception caught")
       restartPubsub()
     }
     case M(chan, msg) =>
