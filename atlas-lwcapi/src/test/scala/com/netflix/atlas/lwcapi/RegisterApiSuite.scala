@@ -68,7 +68,7 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
 
   ignore("publish badly formatted expression") {
     val json = s"""[
-        { "expression": "skan,skan,eq", "frequency": 99 }
+        { "expression": "throw-exception", "frequency": 99 }
       ]"""
     Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
