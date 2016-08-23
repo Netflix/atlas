@@ -17,6 +17,7 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
+import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.json.Json
 import spray.routing.RequestContext
 
@@ -42,7 +43,7 @@ class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 }
 
 object EvaluateApi {
-  case class EvaluateRequest(expressions: List[ExpressionWithFrequency], data: String)
+  case class EvaluateRequest(expressions: List[ExpressionWithFrequency], data: List[Datapoint])
 
   def toRequest(request: String): EvaluateRequest = {
     try {

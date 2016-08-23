@@ -17,6 +17,7 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.{Actor, ActorLogging, ActorRefFactory}
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.core.model.Datapoint
 import com.netflix.spectator.api.Registry
 import spray.http.HttpResponse
 import spray.http.StatusCodes
@@ -28,14 +29,14 @@ class EvaluateActor extends Actor with ActorLogging {
   def receive = {
     case EvaluateRequest(Nil, data) =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "empty expression payload")
-    case EvaluateRequest(expressions, data: String) =>
+    case EvaluateRequest(expressions, data: List[Datapoint]) =>
       evaluate(expressions, data)
       sender() ! HttpResponse(StatusCodes.OK)
     case _ =>
       sender() ! HttpResponse(StatusCodes.BadRequest, "unknown payload")
   }
 
-  private def evaluate(expressions: List[ExpressionWithFrequency], data: String): Unit = {
+  private def evaluate(expressions: List[ExpressionWithFrequency], data: List[Datapoint]): Unit = {
     log.debug("Data: " + data)
     expressions.foreach { expr =>
       log.debug("Expression: " + expr)
