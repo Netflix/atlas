@@ -27,10 +27,12 @@ import org.slf4j.LoggerFactory
 import spray.client.pipelining._
 import spray.http.HttpEncodingRange
 import spray.http.HttpEncodings
+import spray.http.HttpEntity
 import spray.http.HttpHeaders
 import spray.http.HttpMethods
 import spray.http.HttpRequest
 import spray.http.HttpResponse
+import spray.http.MediaTypes
 import spray.httpx.encoding.Gzip
 
 import scala.concurrent.Future
@@ -84,7 +86,7 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
     val request = HttpRequest(HttpMethods.POST,
       uri = uri,
       headers = ClientActor.headers,
-      entity = data)
+      entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, data))
     val accessLogger = AccessLogger.newClientLogger("atlas_publish", request)
     pipeline(request).andThen { case t => accessLogger.complete(t) }
   }
@@ -128,6 +130,6 @@ object ClientActor {
   private val gzip = HttpEncodingRange(HttpEncodings.gzip)
   private val headers = List(
     HttpHeaders.`Accept-Encoding`(Seq(gzip)),
-    HttpHeaders.Accept(CustomMediaTypes.`application/x-jackson-smile`)
+    HttpHeaders.Accept(MediaTypes.`application/json`)
   )
 }
