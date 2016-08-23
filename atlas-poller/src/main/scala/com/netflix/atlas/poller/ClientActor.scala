@@ -53,10 +53,10 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
 
   private val pipeline: SendReceive = sendReceive ~> decode(Gzip)
 
-  private val uri = config.getString("atlas.poller.sink.uri")
-  private val batchSize = config.getInt("atlas.poller.sink.batch-size")
+  private val uri = config.getString("uri")
+  private val batchSize = config.getInt("batch-size")
 
-  private val shouldSendAck = config.getBoolean("atlas.poller.sink.send-ack")
+  private val shouldSendAck = config.getBoolean("send-ack")
 
   private val datapointsSent = registry.counter("atlas.client.sent")
   private val datapointsDropped = registry.createId("atlas.client.dropped")

@@ -50,7 +50,7 @@ class ClientActorSuite extends TestKit(ActorSystem())
 
   private val clock = new ManualClock()
   private val registry = new DefaultRegistry(clock)
-  private val config = ConfigFactory.load()
+  private val config = ConfigFactory.load().getConfig("atlas.poller.sink")
   private val ref = TestActorRef(new TestClientActor(registry, config))
 
   override def afterAll(): Unit = {
