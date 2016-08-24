@@ -35,7 +35,7 @@ class CloudWatchModuleSuite extends FunSuite {
         bind(classOf[Registry]).toInstance(new DefaultRegistry())
       }
     }
-    val injector = Guice.createInjector(deps, new CloudWatchModule)
+    val injector = Guice.createInjector(deps, new CloudWatchModule, new CloudWatchModule)
     val actors = injector.getInstance(classOf[ActorService])
     assert(actors.isHealthy)
     actors.stop()

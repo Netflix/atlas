@@ -23,9 +23,15 @@ import com.netflix.iep.guice.LifecycleModule
 /**
   * Configures the database needed for the webapi.
   */
-class WebApiModule extends AbstractModule {
+final class WebApiModule extends AbstractModule {
   override def configure(): Unit = {
     install(new LifecycleModule)
     bind(classOf[Database]).toProvider(classOf[DatabaseProvider])
   }
+
+  override def equals(obj: Any): Boolean = {
+    obj != null && getClass.equals(obj.getClass)
+  }
+
+  override def hashCode(): Int = getClass.hashCode()
 }
