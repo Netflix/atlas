@@ -17,7 +17,9 @@ package com.netflix.atlas.guice
 
 import com.google.inject.AbstractModule
 import com.google.inject.Guice
+import com.netflix.atlas.akka.ActorService
 import com.netflix.iep.guice.PreDestroyList
+import com.netflix.spectator.api.{DefaultRegistry, Registry}
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
@@ -28,9 +30,12 @@ class LwcApiModuleSuite extends FunSuite {
     val deps = new AbstractModule {
       override def configure(): Unit = {
         bind(classOf[Config]).toInstance(ConfigFactory.load())
+        bind(classOf[Registry]).toInstance(new DefaultRegistry())
       }
     }
     val injector = Guice.createInjector(deps, new LwcApiModule)
-    injector.getInstance(classOf[PreDestroyList]).invokeAll()
+    val actors = injector.getInstance(classOf[ActorService])
+    assert(actors.isHealthy)
+    actors.stop()
   }
 }
