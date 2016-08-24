@@ -176,7 +176,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
       val batch = metricBatch.toList
       metricBatch.clear()
       logger.info(s"writing ${batch.size} metrics to client")
-      responder ! Messages.MetricsPayload(Map.empty, metricBatch.toList)
+      responder ! Messages.MetricsPayload(Map.empty, batch)
     }
   }
 }
