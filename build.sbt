@@ -95,6 +95,7 @@ lazy val `atlas-module-cloudwatch` = project
     Dependencies.guiceMulti,
     Dependencies.iepGuice,
     Dependencies.iepModuleAws
+  ))
 
 lazy val `atlas-module-lwcapi` = project
   .configure(BuildSettings.profile)
