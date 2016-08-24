@@ -31,7 +31,7 @@ class WebApiModuleSuite extends FunSuite {
         bind(classOf[Config]).toInstance(ConfigFactory.load())
       }
     }
-    val injector = Guice.createInjector(deps, new WebApiModule)
+    val injector = Guice.createInjector(deps, new WebApiModule, new WebApiModule)
     assert(injector.getInstance(classOf[Database]) != null)
     injector.getInstance(classOf[PreDestroyList]).invokeAll()
   }

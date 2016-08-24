@@ -42,7 +42,8 @@ class AkkaModuleSuite extends FunSuite {
         bind(classOf[Registry]).toInstance(new NoopRegistry)
       }
     }
-    val injector = Guice.createInjector(deps, new AkkaModule)
+    // Module listed twice to verify dedup works
+    val injector = Guice.createInjector(deps, new AkkaModule, new AkkaModule)
     assert(injector.getInstance(classOf[ActorSystem]) != null)
     assert(injector.getInstance(classOf[ServiceManager]).services().size === 2)
     injector.getInstance(classOf[PreDestroyList]).invokeAll()

@@ -27,7 +27,7 @@ import com.netflix.iep.aws.AwsModule
 /**
   * Configures the binding for the cloudwatch client and poller.
   */
-class CloudWatchModule extends AbstractModule {
+final class CloudWatchModule extends AbstractModule {
   override def configure(): Unit = {
     install(new AkkaModule)
     install(new AwsModule)
@@ -38,4 +38,10 @@ class CloudWatchModule extends AbstractModule {
   private def provideCloudWatchClient(factory: AwsClientFactory): AmazonCloudWatch = {
     factory.newInstance(classOf[AmazonCloudWatch])
   }
+
+  override def equals(obj: Any): Boolean = {
+    obj != null && getClass.equals(obj.getClass)
+  }
+
+  override def hashCode(): Int = getClass.hashCode()
 }
