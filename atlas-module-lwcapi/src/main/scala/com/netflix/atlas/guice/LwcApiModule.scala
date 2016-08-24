@@ -16,10 +16,18 @@
 package com.netflix.atlas.guice
 
 import com.google.inject.AbstractModule
+import com.netflix.atlas.akka.AkkaModule
 import com.netflix.iep.guice.LifecycleModule
 
 class LwcApiModule extends AbstractModule {
   override def configure(): Unit = {
     install(new LifecycleModule)
+    install(new AkkaModule)
   }
+
+  override def equals(obj: Any): Boolean = {
+    obj != null && getClass.equals(obj.getClass)
+  }
+
+  override def hashCode(): Int = getClass.hashCode()
 }

@@ -98,7 +98,7 @@ lazy val `atlas-module-cloudwatch` = project
 
 lazy val `atlas-module-lwcapi` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-lwcapi`)
+  .dependsOn(`atlas-module-akka`, `atlas-lwcapi`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.guiceCore,
     Dependencies.iepGuice
