@@ -76,7 +76,7 @@ object BuildSettings {
   // [warn] Credentials file /Users/brharrington/.bintray/.credentials does not exist
   // ```
   def bintrayProfile(p: Project): Project = {
-    if (credentialsFile.exists)
+    if (credentialsFile.exists || !isSnapshot.value)
       p.settings(Bintray.settings)
     else
       p.disablePlugins(bintray.BintrayPlugin)
