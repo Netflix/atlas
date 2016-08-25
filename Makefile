@@ -13,7 +13,12 @@ LAUNCHER_JAR_URL := http://jcenter.bintray.com/com/netflix/iep/iep-launcher/0.4.
 build:
 	$(SBT) clean test checkLicenseHeaders
 
-snapshot: release
+snapshot:
+	# Travis uses a depth when fetching git data so the tags needed for versioning may not
+	# be available unless we explicitly fetch them
+	git fetch --unshallow
+	$(SBT) storeBintrayCredentials
+	$(SBT) clean checkLicenseHeaders publish
 
 release:
 	# Travis uses a depth when fetching git data so the tags needed for versioning may not
