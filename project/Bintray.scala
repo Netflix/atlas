@@ -25,9 +25,10 @@ object Bintray {
     credentials += Credentials("Artifactory Realm", "oss.jfrog.org", user, pass),
 
     publishTo := {
-      //if (isSnapshot.value)
-      //  Some("OJO" at s"https://oss.jfrog.org/oss-snapshot-local;build.timestamp=$now/")
-      //else
+      if (!isSnapshot.value)
+        //Some("OJO" at s"https://oss.jfrog.org/oss-snapshot-local;build.timestamp=$now/")
+        None
+      else
         publishTo in bintray value
     },
 
