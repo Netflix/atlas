@@ -67,6 +67,7 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
     Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
+      assert(lastCluster === "foo")
     }
   }
 
