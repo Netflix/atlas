@@ -49,7 +49,7 @@ object LazyTagIndex {
   *     it is known that strings have been interned before being added to the index.
   * @param interner
   *     Interner used to ensure we do not have duplicate string data. Internally there
-  *     are usages of [[java.util.IdentityHashMap]] so we must have a unique copy of each
+  *     are usages of `java.util.IdentityHashMap` so we must have a unique copy of each
   *     string.
   */
 class LazyTagIndex[T <: TaggedItem](
