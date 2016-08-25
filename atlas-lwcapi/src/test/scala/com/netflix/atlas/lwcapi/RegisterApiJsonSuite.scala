@@ -21,43 +21,69 @@ import org.scalatest.FunSuite
 
 class RegisterApiJsonSuite extends FunSuite {
   test("default is applied") {
-  assert(ExpressionWithFrequency("this") === ExpressionWithFrequency("this", ApiSettings.defaultFrequency))
+    assert(ExpressionWithFrequency("this") === ExpressionWithFrequency("this", ApiSettings.defaultFrequency))
   }
 
-  test("encode and decode batch") {
-    val original: List[ExpressionWithFrequency] = List(
+  test("encode and decode") {
+    val expressions: List[ExpressionWithFrequency] = List(
       ExpressionWithFrequency("this", 1234),
       ExpressionWithFrequency("that", 4321)
     )
-    val decoded = RegisterApi.RegisterRequest(RegisterRequest(original).toJson)
-    assert(original === decoded.expressions)
+    val cluster = "test"
+    val original = RegisterRequest(cluster, expressions)
+    val json = original.toJson
+    val decoded = RegisterRequest(json)
+    assert(original === decoded)
   }
 
-  test("decode empty list") {
-    val decoded = RegisterApi.RegisterRequest("[]")
-    assert(decoded.expressions.size === 0)
-  }
-
-  test("decode bad expression") {
+  test("decode empty expression list throws") {
     intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest("[{}]")
+      RegisterApi.RegisterRequest("""{"cluster": "this", "expressions": []}""")
+    }
+  }
+
+  test("decode missing expression list throws") {
+    intercept[IllegalArgumentException] {
+      RegisterApi.RegisterRequest("""{"cluster": "this"}""")
+    }
+  }
+
+  test("decode missing cluster throws") {
+    intercept[IllegalArgumentException] {
+      RegisterApi.RegisterRequest("""{"expressions": [ { "expression": "this"}]}""")
+    }
+  }
+
+  test("decode bad data 1") {
+    intercept[IllegalArgumentException] {
+      RegisterApi.RegisterRequest("{}")
+    }
+  }
+
+  test("decode bad data 2") {
+    intercept[IllegalArgumentException] {
+      RegisterApi.RegisterRequest("""{"foo":"bar"}""")
+    }
+  }
+
+  test("decode array") {
+    intercept[IllegalArgumentException] {
+      RegisterApi.RegisterRequest("[]")
     }
   }
 
   test("decode list") {
     val decoded = RegisterApi.RegisterRequest("""
-      [
-        { "expression": "this", "frequency": 12345 },
-        { "expression": "that", "frequency": 54321 },
-        { "expression": "those" }
-      ]
+      {
+        "cluster": "this",
+        "expressions": [
+          { "expression": "this", "frequency": 12345 },
+          { "expression": "that", "frequency": 54321 },
+          { "expression": "those" }
+        ]
+      }
       """)
     assert(decoded.expressions.size === 3)
   }
 
-  test("decode batch bad object") {
-    intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest("""{"foo":"bar"}""")
-    }
-  }
 }

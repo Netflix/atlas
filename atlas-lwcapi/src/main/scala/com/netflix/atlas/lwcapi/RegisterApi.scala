@@ -50,30 +50,33 @@ class RegisterApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 }
 
 object RegisterApi {
-  case class RegisterRequest(expressions: List[ExpressionWithFrequency]) {
-    def toJson = { Json.encode(expressions) }
+  case class RegisterRequest(cluster: String, expressions: List[ExpressionWithFrequency]) {
+    def toJson = { Json.encode(this) }
   }
 
   object RegisterRequest {
-    def apply(request: String): RegisterRequest = {
-      try {
-        val decoded = Json.decode[List[ExpressionWithFrequency]](request)
-        RegisterRequest(decoded)
+    def apply(json: String): RegisterRequest = {
+      val decoded = try {
+        Json.decode[RegisterRequest](json)
       } catch {
         case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
       }
+      if (decoded.cluster == null)
+        throw new IllegalArgumentException("Missing cluster")
+      if (decoded.expressions == null || decoded.expressions.isEmpty)
+        throw new IllegalArgumentException("Missing or empty expressions array")
+      decoded
     }
   }
 
-  case class DeleteRequest(expressions: List[ExpressionWithFrequency]) {
-    def toJson = { Json.encode(expressions) }
+  case class DeleteRequest(cluster: String, expressions: List[ExpressionWithFrequency]) {
+    def toJson = { Json.encode(this) }
   }
 
   object DeleteRequest {
-    def apply(request: String): DeleteRequest = {
+    def apply(json: String): DeleteRequest = {
       try {
-        val decoded = Json.decode[List[ExpressionWithFrequency]](request)
-        DeleteRequest(decoded)
+        Json.decode[DeleteRequest](json)
       } catch {
         case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
       }

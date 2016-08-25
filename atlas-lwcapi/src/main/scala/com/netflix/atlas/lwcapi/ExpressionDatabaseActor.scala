@@ -63,30 +63,31 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
       if (request.uuid != uuid) {
         val action = request.action
         val expression = request.expression
-        log.info(s"PubSub received $action for $expression")
+        val cluster = request.cluster
+        log.info(s"PubSub received $action in $cluster for $expression")
         action match {
-          case "add" => AlertMap.globalAlertMap.addExpr(expression)
-          case "delete" => AlertMap.globalAlertMap.delExpr(expression)
+          case "add" => AlertMap.globalAlertMap.addExpr(cluster, expression)
+          case "delete" => AlertMap.globalAlertMap.delExpr(cluster, expression)
         }
       }
   }
 
   def receive = {
-    case Publish(expression) =>
-      log.info(s"PubSub Publish add for $expression")
-      AlertMap.globalAlertMap.addExpr(expression)
-      val json = Json.encode(RedisRequest(expression, uuid, "add"))
+    case Publish(cluster, expression) =>
+      log.info(s"PubSub add in $cluster for $expression")
+      AlertMap.globalAlertMap.addExpr(cluster, expression)
+      val json = Json.encode(RedisRequest(cluster, expression, uuid, "add"))
       pubClient.publish(channel, json)
-    case Unpublish(expression) =>
-      log.info(s"PubSub Publish delete for $expression")
-      AlertMap.globalAlertMap.delExpr(expression)
-      val json = Json.encode(RedisRequest(expression, uuid, "delete"))
+    case Unpublish(cluster, expression) =>
+      log.info(s"PubSub delete in $cluster for $expression")
+      AlertMap.globalAlertMap.delExpr(cluster, expression)
+      val json = Json.encode(RedisRequest(cluster, expression, uuid, "delete"))
       pubClient.publish(channel, json)
   }
 }
 
 object ExpressionDatabaseActor {
-  case class RedisRequest(expression: ExpressionWithFrequency, uuid: String, action: String)
-  case class Publish(expression: ExpressionWithFrequency)
-  case class Unpublish(expression: ExpressionWithFrequency)
+  case class RedisRequest(cluster: String, expression: ExpressionWithFrequency, uuid: String, action: String)
+  case class Publish(cluster: String, expression: ExpressionWithFrequency)
+  case class Unpublish(cluster: String, expression: ExpressionWithFrequency)
 }

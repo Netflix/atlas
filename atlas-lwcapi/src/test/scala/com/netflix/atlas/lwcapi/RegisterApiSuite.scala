@@ -57,24 +57,18 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("publish correctly formatted expression") {
-    val json = s"""[
-        { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
-      ]"""
+    val json = """
+      |{
+      |  "cluster": "foo",
+      |  "expressions": [
+      |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
+      |  ]
+      |}""".stripMargin
     Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
     }
   }
-
-  ignore("publish badly formatted expression") {
-    val json = s"""[
-        { "expression": "throw-exception", "frequency": 99 }
-      ]"""
-    Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-
 
   test("publish bad json") {
     Post("/lwc/api/v1/register", "fubar") ~> endpoint.routes ~> check {
@@ -89,9 +83,12 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("expression value is null") {
-    val json = s"""[
-        { "expression": null }
-      ]"""
+    val json = s"""{
+        "cluster": "this",
+        "expressions": [
+          { "expression": null }
+        ]
+      }"""
     Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
@@ -99,19 +96,21 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
 }
 
 object RegisterApiSuite {
-
   @volatile var lastUpdate: List[ExpressionWithFrequency] = Nil
+  @volatile var lastCluster: String = ""
 
   class TestActor extends Actor {
     def receive = {
-      case RegisterRequest(Nil) =>
+      case RegisterRequest(null, Nil) =>
         lastUpdate = Nil
         sender() ! HttpResponse(StatusCodes.BadRequest)
-      case RegisterRequest(values) =>
+      case RegisterRequest(cluster, values) =>
         lastUpdate = values
+        lastCluster = cluster
         sender() ! HttpResponse(StatusCodes.OK)
-      case DeleteRequest(values) =>
+      case DeleteRequest(cluster, values) =>
         lastUpdate = values
+        lastCluster = cluster
         sender() ! HttpResponse(StatusCodes.OK)
     }
   }
