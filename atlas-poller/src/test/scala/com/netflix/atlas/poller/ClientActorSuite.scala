@@ -170,7 +170,7 @@ object ClientActorSuite {
     override def receive: Receive = testReceive.orElse(super.receive)
 
     private def testReceive: Receive = {
-      case t: Try[HttpResponse] => response = t
+      case t: Try[_] => response = t.asInstanceOf[Try[HttpResponse]]
     }
   }
 }
