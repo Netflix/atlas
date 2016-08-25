@@ -41,9 +41,9 @@ import scala.util.Success
 
 /**
   * Sink for the poller data that publishes the metrics to Atlas. The actor expects
-  * [[MetricsPayload]] messages and does not send a response. Failures will be logged
-  * and reflected in the `atlas.client.dropped` counter as well as standard client
-  * access logging.
+  * [[Messages.MetricsPayload]] messages and does not send a response. Failures will
+  * be logged and reflected in the `atlas.client.dropped` counter as well as standard
+  * client access logging.
   */
 class ClientActor(registry: Registry, config: Config) extends Actor {
 

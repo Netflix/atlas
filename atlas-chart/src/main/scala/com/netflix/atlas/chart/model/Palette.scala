@@ -85,9 +85,9 @@ object Palette {
     * colors:f00,00ff00,000000ff
     * ```
     *
-    * The color values will be parsed using [[com.netflix.atlas.core.util.Strings.parseColor]].
+    * The color values will be parsed using `Strings.parseColor`.
     * Otherwise the description will be used to find a palette file in the classpath named
-    * 'palettes/${desc}_palette.txt' that has one color per line.
+    * `palettes/{desc}_palette.txt` that has one color per line.
     */
   def create(desc: String): Palette = {
     if (desc.startsWith("colors:"))
@@ -101,9 +101,8 @@ object Palette {
   }
 
   /**
-    * Create a palette from a file in the classpath named 'palettes/${name}_palette.txt'. The
-    * file should have one color per line in a format supported by
-    * [[com.netflix.atlas.core.util.Strings.parseColor]].
+    * Create a palette from a file in the classpath named `palettes/{name}_palette.txt`. The
+    * file should have one color per line in a format supported by `Strings.parseColor`.
     */
   def fromResource(name: String): Palette = {
     palettes.computeIfAbsent(name, loadFromResource)
