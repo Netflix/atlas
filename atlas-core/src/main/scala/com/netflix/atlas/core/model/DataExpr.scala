@@ -264,6 +264,7 @@ object DataExpr {
       val groups = data
         .filter(t => query.matches(t.tags))
         .groupBy(t => keyString(t.tags))
+        .filter(_._1 != null)
         .toList
       val sorted = groups.sortWith(_._1 < _._1)
       val newData = sorted.flatMap {
