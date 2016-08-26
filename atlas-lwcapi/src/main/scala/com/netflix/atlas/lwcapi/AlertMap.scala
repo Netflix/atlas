@@ -19,7 +19,7 @@ case class AlertMap() {
   private val splitter = ExpressionSplitter()
   private val dataExprs = scala.collection.mutable.Map[Set[ExpressionWithFrequency], Set[ExpressionWithFrequency]]()
 
-  def addExpr(cluster: String, expression: ExpressionWithFrequency): Unit = {
+  def addExpr(expression: ExpressionWithFrequency): Unit = {
     val dataExpressions = splitter.split(expression)
     synchronized {
       if (dataExprs.keySet.contains(dataExpressions)) {
@@ -31,7 +31,7 @@ case class AlertMap() {
     }
   }
 
-  def delExpr(cluster: String, expression: ExpressionWithFrequency): Unit = {
+  def delExpr(expression: ExpressionWithFrequency): Unit = {
     val dataExpressions = splitter.split(expression)
     synchronized {
       if (dataExprs.keySet.contains(dataExpressions)) {
@@ -46,7 +46,7 @@ case class AlertMap() {
     }
   }
 
-  def exprsForDataExprSet(cluster: String, dataExprSet: Set[ExpressionWithFrequency]) : Set[ExpressionWithFrequency] = synchronized {
+  def exprsForDataExprSet(dataExprSet: Set[ExpressionWithFrequency]) : Set[ExpressionWithFrequency] = synchronized {
     if (dataExprs.keySet.contains(dataExprSet))
       dataExprs(dataExprSet)
     else

@@ -50,7 +50,7 @@ class RegisterApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 }
 
 object RegisterApi {
-  case class RegisterRequest(cluster: String, expressions: List[ExpressionWithFrequency]) {
+  case class RegisterRequest(expressions: List[ExpressionWithFrequency]) {
     def toJson = { Json.encode(this) }
   }
 
@@ -61,15 +61,13 @@ object RegisterApi {
       } catch {
         case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
       }
-      if (decoded.cluster == null)
-        throw new IllegalArgumentException("Missing cluster")
       if (decoded.expressions == null || decoded.expressions.isEmpty)
         throw new IllegalArgumentException("Missing or empty expressions array")
       decoded
     }
   }
 
-  case class DeleteRequest(cluster: String, expressions: List[ExpressionWithFrequency]) {
+  case class DeleteRequest(expressions: List[ExpressionWithFrequency]) {
     def toJson = { Json.encode(this) }
   }
 

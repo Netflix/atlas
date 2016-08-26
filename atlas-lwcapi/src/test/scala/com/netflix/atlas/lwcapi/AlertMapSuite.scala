@@ -23,7 +23,7 @@ class AlertMapSuite extends FunSuite {
 
     val key = ExpressionWithFrequency("testing", 1)
 
-    assert(x.exprsForDataExprSet("a", Set(key)) === Set())
+    assert(x.exprsForDataExprSet(Set(key)) === Set())
   }
 
   test("Two data expressions from the same expr map to the same set") {
@@ -33,8 +33,8 @@ class AlertMapSuite extends FunSuite {
 
     val x = AlertMap()
 
-    x.addExpr("a", query1)
-    val result = x.exprsForDataExprSet("a", Set(ds1a, ds1b))
+    x.addExpr(query1)
+    val result = x.exprsForDataExprSet(Set(ds1a, ds1b))
     assert(result === Set(query1))
   }
 
@@ -45,10 +45,10 @@ class AlertMapSuite extends FunSuite {
 
     val x = AlertMap()
 
-    x.addExpr("a", query1)
-    assert(x.exprsForDataExprSet("a", Set(ds1)) === Set(query1))
-    x.addExpr("a", query2)
-    assert(x.exprsForDataExprSet("a", Set(ds1)) === Set(query1, query2))
+    x.addExpr(query1)
+    assert(x.exprsForDataExprSet(Set(ds1)) === Set(query1))
+    x.addExpr(query2)
+    assert(x.exprsForDataExprSet(Set(ds1)) === Set(query1, query2))
   }
 
   test("deleting") {
@@ -58,12 +58,12 @@ class AlertMapSuite extends FunSuite {
 
     val x = AlertMap()
 
-    x.addExpr("a", query1)
-    x.addExpr("a", query2)
-    assert(x.exprsForDataExprSet("a", Set(ds1)) === Set(query1, query2))
-    x.delExpr("a", query1)
-    assert(x.exprsForDataExprSet("a", Set(ds1)) === Set(query2))
-    x.delExpr("a", query2)
+    x.addExpr(query1)
+    x.addExpr(query2)
+    assert(x.exprsForDataExprSet(Set(ds1)) === Set(query1, query2))
+    x.delExpr(query1)
+    assert(x.exprsForDataExprSet(Set(ds1)) === Set(query2))
+    x.delExpr(query2)
     assert(x.allDataExpressions() === Set())
   }
 
@@ -72,12 +72,12 @@ class AlertMapSuite extends FunSuite {
 
     val x = AlertMap()
 
-    x.delExpr("a", query1)
+    x.delExpr(query1)
     assert(x.allDataExpressions() === Set())
   }
 
   test("globalAlertMap") {
     val key = ExpressionWithFrequency("testing", 1)
-    assert(AlertMap.globalAlertMap.exprsForDataExprSet("a", Set(key)) === Set())
+    assert(AlertMap.globalAlertMap.exprsForDataExprSet(Set(key)) === Set())
   }
 }

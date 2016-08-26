@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.lwcapi
 
+import java.util.Date
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.netflix.atlas.json.Json
 import com.redis._
@@ -63,31 +65,41 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
       if (request.uuid != uuid) {
         val action = request.action
         val expression = request.expression
-        val cluster = request.cluster
-        log.info(s"PubSub received $action in $cluster for $expression")
+        log.info(s"PubSub received $action for $expression")
         action match {
-          case "add" => AlertMap.globalAlertMap.addExpr(cluster, expression)
-          case "delete" => AlertMap.globalAlertMap.delExpr(cluster, expression)
+          case "add" => AlertMap.globalAlertMap.addExpr(expression)
+          case "delete" => AlertMap.globalAlertMap.delExpr(expression)
         }
       }
   }
 
   def receive = {
-    case Publish(cluster, expression) =>
-      log.info(s"PubSub add in $cluster for $expression")
-      AlertMap.globalAlertMap.addExpr(cluster, expression)
-      val json = Json.encode(RedisRequest(cluster, expression, uuid, "add"))
+    case Publish(expression) =>
+      log.info(s"PubSub add for $expression")
+      AlertMap.globalAlertMap.addExpr(expression)
+      val json = Json.encode(RedisRequest(expression, uuid, "add"))
       pubClient.publish(channel, json)
-    case Unpublish(cluster, expression) =>
-      log.info(s"PubSub delete in $cluster for $expression")
-      AlertMap.globalAlertMap.delExpr(cluster, expression)
-      val json = Json.encode(RedisRequest(cluster, expression, uuid, "delete"))
+      val count = pubClient.sadd("expressions", expression)
+      if (count.isDefined && count.get == 1) {
+        pubClient.pexpireat("expressions", computedExpiry())
+      }
+    case Unpublish(expression) =>
+      log.info(s"PubSub delete for $expression")
+      AlertMap.globalAlertMap.delExpr(expression)
+      val json = Json.encode(RedisRequest(expression, uuid, "delete"))
       pubClient.publish(channel, json)
+      pubClient.srem("expressions", expression)
+  }
+
+  def computedExpiry(): Long = {
+    var now = System.currentTimeMillis()
+    now += 1000 * 60 * 10 // 10 minutes
+    1
   }
 }
 
 object ExpressionDatabaseActor {
-  case class RedisRequest(cluster: String, expression: ExpressionWithFrequency, uuid: String, action: String)
-  case class Publish(cluster: String, expression: ExpressionWithFrequency)
-  case class Unpublish(cluster: String, expression: ExpressionWithFrequency)
+  case class RedisRequest(expression: ExpressionWithFrequency, uuid: String, action: String)
+  case class Publish(expression: ExpressionWithFrequency)
+  case class Unpublish(expression: ExpressionWithFrequency)
 }

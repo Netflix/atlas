@@ -59,7 +59,6 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
   test("publish correctly formatted expression") {
     val json = """
       |{
-      |  "cluster": "foo",
       |  "expressions": [
       |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
       |  ]
@@ -67,7 +66,6 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
     Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
-      assert(lastCluster === "foo")
     }
   }
 
@@ -98,20 +96,17 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
 
 object RegisterApiSuite {
   @volatile var lastUpdate: List[ExpressionWithFrequency] = Nil
-  @volatile var lastCluster: String = ""
 
   class TestActor extends Actor {
     def receive = {
-      case RegisterRequest(null, Nil) =>
+      case RegisterRequest(Nil) =>
         lastUpdate = Nil
         sender() ! HttpResponse(StatusCodes.BadRequest)
-      case RegisterRequest(cluster, values) =>
+      case RegisterRequest(values) =>
         lastUpdate = values
-        lastCluster = cluster
         sender() ! HttpResponse(StatusCodes.OK)
-      case DeleteRequest(cluster, values) =>
+      case DeleteRequest(values) =>
         lastUpdate = values
-        lastCluster = cluster
         sender() ! HttpResponse(StatusCodes.OK)
     }
   }

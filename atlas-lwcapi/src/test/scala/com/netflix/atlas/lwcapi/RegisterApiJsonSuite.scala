@@ -29,8 +29,7 @@ class RegisterApiJsonSuite extends FunSuite {
       ExpressionWithFrequency("this", 1234),
       ExpressionWithFrequency("that", 4321)
     )
-    val cluster = "test"
-    val original = RegisterRequest(cluster, expressions)
+    val original = RegisterRequest(expressions)
     val json = original.toJson
     val decoded = RegisterRequest(json)
     assert(original === decoded)
@@ -38,19 +37,13 @@ class RegisterApiJsonSuite extends FunSuite {
 
   test("decode empty expression list throws") {
     intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest("""{"cluster": "this", "expressions": []}""")
+      RegisterApi.RegisterRequest("""{"expressions": []}""")
     }
   }
 
   test("decode missing expression list throws") {
     intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest("""{"cluster": "this"}""")
-    }
-  }
-
-  test("decode missing cluster throws") {
-    intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest("""{"expressions": [ { "expression": "this"}]}""")
+      RegisterApi.RegisterRequest("""{}""")
     }
   }
 
@@ -75,7 +68,6 @@ class RegisterApiJsonSuite extends FunSuite {
   test("decode list") {
     val decoded = RegisterApi.RegisterRequest("""
       {
-        "cluster": "this",
         "expressions": [
           { "expression": "this", "frequency": 12345 },
           { "expression": "that", "frequency": 54321 },

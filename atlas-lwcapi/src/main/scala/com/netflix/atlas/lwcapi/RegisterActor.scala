@@ -27,27 +27,27 @@ class RegisterActor extends Actor with ActorLogging {
   private val pubsubActor = context.actorSelection("/user/lwc.expressiondb")
 
   def receive = {
-    case RegisterRequest(null, Nil) =>
+    case RegisterRequest(Nil) =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "empty payload")
-    case RegisterRequest(cluster, expressions) =>
-      update(cluster, expressions)
+    case RegisterRequest(expressions) =>
+      update(expressions)
       sender() ! HttpResponse(StatusCodes.OK)
-    case DeleteRequest(cluster, expressions) =>
-      delete(cluster, expressions)
+    case DeleteRequest(expressions) =>
+      delete(expressions)
       sender() ! HttpResponse(StatusCodes.OK)
     case _ =>
       sender() ! HttpResponse(StatusCodes.BadRequest, "unknown payload")
   }
 
-  private def update(cluster: String, expressions: List[ExpressionWithFrequency]): Unit = {
+  private def update(expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
-      pubsubActor ! ExpressionDatabaseActor.Publish(cluster, expr)
+      pubsubActor ! ExpressionDatabaseActor.Publish(expr)
     }
   }
 
-  private def delete(cluster: String, expressions: List[ExpressionWithFrequency]): Unit = {
+  private def delete(expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
-     pubsubActor ! ExpressionDatabaseActor.Unpublish(cluster, expr)
+     pubsubActor ! ExpressionDatabaseActor.Unpublish(expr)
     }
   }
 }
