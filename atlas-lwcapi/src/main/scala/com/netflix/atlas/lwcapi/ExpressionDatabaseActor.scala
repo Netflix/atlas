@@ -93,8 +93,7 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
 
   def computedExpiry(): Long = {
     var now = System.currentTimeMillis()
-    now += 1000 * 60 * 10 // 10 minutes
-    1
+    now + 1000 * 60 * 10 // 10 minutes
   }
 }
 
