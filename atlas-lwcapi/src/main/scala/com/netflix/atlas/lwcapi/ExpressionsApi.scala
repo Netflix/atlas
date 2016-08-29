@@ -42,7 +42,7 @@ class ExpressionsApi (implicit val actorRefFactory: ActorRefFactory) extends Web
 }
 
 object ExpressionsApi {
-  private def toJson(expressions: Set[Set[ExpressionWithFrequency]]): String = {
+  private def toJson(expressions: Set[ExpressionWithFrequency]): String = {
     val json = Map[String, Any]("expressions" -> expressions)
     Json.encode(json)
   }

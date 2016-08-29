@@ -19,65 +19,24 @@ import org.scalatest.FunSuite
 
 class AlertMapSuite extends FunSuite {
   test("exprForDataExpr returns an empty set if not found") {
-    val x = AlertMap()
-
-    val key = ExpressionWithFrequency("testing", 1)
-
-    assert(x.exprsForDataExprSet(Set(key)) === Set())
-  }
-
-  test("Two data expressions from the same expr map to the same set") {
     val query1 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:avg,(,nf.node,),:by")
-    val ds1a = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:sum,(,nf.node,),:by")
-    val ds1b = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:count,(,nf.node,),:by")
-
     val x = AlertMap()
 
-    x.addExpr(query1)
-    val result = x.exprsForDataExprSet(Set(ds1a, ds1b))
-    assert(result === Set(query1))
-  }
-
-  test("two expressions sharing same data expression can be found") {
-    val query1 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:sum,:des-fast")
-    val query2 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:sum")
-    val ds1 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:sum")
-
-    val x = AlertMap()
-
-    x.addExpr(query1)
-    assert(x.exprsForDataExprSet(Set(ds1)) === Set(query1))
-    x.addExpr(query2)
-    assert(x.exprsForDataExprSet(Set(ds1)) === Set(query1, query2))
+    assert(x.dataExpressionsForCluster("foo") === Set())
   }
 
   test("deleting") {
-    val query1 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:sum,:des-fast")
-    val query2 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:sum")
-    val ds1 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:sum")
+    val query1 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,:sum,:des-fast")
+    val query2 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,:sum")
 
     val x = AlertMap()
 
     x.addExpr(query1)
     x.addExpr(query2)
-    assert(x.exprsForDataExprSet(Set(ds1)) === Set(query1, query2))
+    assert(x.dataExpressionsForCluster("lando-test") === Set(query1, query2))
     x.delExpr(query1)
-    assert(x.exprsForDataExprSet(Set(ds1)) === Set(query2))
+    assert(x.dataExpressionsForCluster("lando-test") === Set(query2))
     x.delExpr(query2)
-    assert(x.allDataExpressions() === Set())
-  }
-
-  test("deleting a non-existing expression is silent") {
-    val query1 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:sum,:des-fast")
-
-    val x = AlertMap()
-
-    x.delExpr(query1)
-    assert(x.allDataExpressions() === Set())
-  }
-
-  test("globalAlertMap") {
-    val key = ExpressionWithFrequency("testing", 1)
-    assert(AlertMap.globalAlertMap.exprsForDataExprSet(Set(key)) === Set())
+    assert(x.dataExpressionsForCluster("lando-test") === Set())
   }
 }

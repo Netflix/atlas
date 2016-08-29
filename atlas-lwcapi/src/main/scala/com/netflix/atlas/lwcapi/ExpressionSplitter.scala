@@ -39,7 +39,7 @@ class ExpressionSplitter {
     ret.toSet
   }
 
-  def split(expressionWithFrequency: ExpressionWithFrequency) : Set[ExpressionWithFrequency]= {
+  def split(expressionWithFrequency: ExpressionWithFrequency) : Set[ExpressionWithFrequency] = {
     split(expressionWithFrequency.expression).map(e => ExpressionWithFrequency(e, expressionWithFrequency.frequency))
   }
 }
