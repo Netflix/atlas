@@ -1,0 +1,9 @@
+{
+  "cluster": "test",
+  "expressions": [
+    {
+      "expression": "this",
+      "frequency": 60000
+    }
+  ]
+]
