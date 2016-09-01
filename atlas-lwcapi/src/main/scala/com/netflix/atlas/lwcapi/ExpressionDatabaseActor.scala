@@ -79,21 +79,28 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
       AlertMap.globalAlertMap.addExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "add"))
       pubClient.publish(channel, json)
-      val count = pubClient.sadd("expressions", Json.encode(expression))
-      if (count.isDefined && count.get == 1) {
-        pubClient.pexpireat("expressions", computedExpiry())
-      }
+      recordUpdate(json)
     case Unpublish(expression) =>
       log.info(s"PubSub delete for $expression")
       AlertMap.globalAlertMap.delExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "delete"))
       pubClient.publish(channel, json)
-      pubClient.srem("expressions", expression)
   }
 
-  def computedExpiry(): Long = {
-    var now = System.currentTimeMillis()
-    now + 1000 * 60 * 10 // 10 minutes
+  def recordUpdate(json: String) = {
+    val List(expiry, keyindex) = computeTimes(System.currentTimeMillis())
+    val keyname = s"expressions.$keyindex"
+    val count = pubClient.sadd(keyname, json)
+    if (count.isDefined && count.get == 1) {
+      pubClient.pexpireat(keyname, expiry)
+    }
+  }
+
+  def computeTimes(now: Long): List[Long] = {
+    List(
+      now / 60000 * 60000 + 600000, // 10 minutes starting on the minute boundary
+      now / 60000 // used for the key name
+    )
   }
 }
 
