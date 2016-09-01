@@ -15,28 +15,34 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.lwcapi.AlertMap.ReturnableExpression
 import org.scalatest.FunSuite
 
 class AlertMapSuite extends FunSuite {
   test("exprForDataExpr returns an empty set if not found") {
-    val query1 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:avg,(,nf.node,),:by")
     val x = AlertMap()
 
-    assert(x.dataExpressionsForCluster("foo") === Set())
+    assert(x.expressionsForCluster("foo") === List())
   }
 
   test("deleting") {
-    val query1 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,:sum,:des-fast")
-    val query2 = ExpressionWithFrequency("nf.cluster,lando-test,:eq,:sum")
+    val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
+    val ds1a = "nf.cluster,skan-test,:eq,:sum"
+    val ret1 = ReturnableExpression(query1.expression, 30000, List(ds1a))
+
+    val query2 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum", 30000)
+    val ds2a = "nf.cluster,skan-test,:eq,:sum"
+    val ret2 = ReturnableExpression(query2.expression, 30000, List(ds2a))
 
     val x = AlertMap()
 
     x.addExpr(query1)
     x.addExpr(query2)
-    assert(x.dataExpressionsForCluster("lando-test") === Set(query1, query2))
+    assert(x.expressionsForCluster("skan-test") === List(ret1, ret2))
     x.delExpr(query1)
-    assert(x.dataExpressionsForCluster("lando-test") === Set(query2))
+    assert(x.expressionsForCluster("skan-test") === List(ret2))
     x.delExpr(query2)
-    assert(x.dataExpressionsForCluster("lando-test") === Set())
+    assert(x.expressionsForCluster("skan-test") === List())
   }
 }

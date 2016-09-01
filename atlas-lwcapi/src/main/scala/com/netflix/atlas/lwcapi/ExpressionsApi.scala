@@ -17,14 +17,10 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.json.Json
+import com.netflix.atlas.lwcapi.AlertMap.ReturnableExpression
 import spray.http.{HttpResponse, StatusCodes}
 import spray.routing.RequestContext
-
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
-import scala.io.Source
 
 class ExpressionsApi (implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import ExpressionsApi._
@@ -36,14 +32,13 @@ class ExpressionsApi (implicit val actorRefFactory: ActorRefFactory) extends Web
   }
 
   private def handleReq(ctx: RequestContext, cluster: String): Unit = {
-    val expressions = AlertMap.globalAlertMap.dataExpressionsForCluster(cluster)
-    ctx.responder ! HttpResponse(StatusCodes.OK, entity = toJson(expressions))
+    val expressions = AlertMap.globalAlertMap.expressionsForCluster(cluster)
+    ctx.responder ! HttpResponse(StatusCodes.OK, entity = toJson(expressions)) // TODO fix
   }
 }
 
 object ExpressionsApi {
-  private def toJson(expressions: Set[ExpressionWithFrequency]): String = {
-    val json = Map[String, Any]("expressions" -> expressions)
-    Json.encode(json)
+  private def toJson(expressions: List[ReturnableExpression]): String = {
+    Json.encode(expressions)
   }
 }

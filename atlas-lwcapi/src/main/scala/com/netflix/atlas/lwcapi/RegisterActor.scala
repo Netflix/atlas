@@ -17,7 +17,6 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.{Actor, ActorLogging, ActorRefFactory, Props}
 import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.spectator.api.Registry
 import spray.http.HttpResponse
 import spray.http.StatusCodes
 

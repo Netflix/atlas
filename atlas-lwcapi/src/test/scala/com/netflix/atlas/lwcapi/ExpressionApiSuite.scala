@@ -29,14 +29,14 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
 
   test("get of a path returns empty data") {
     Get("/lwc/api/v1/expressions/123") ~> endpoint.routes ~> check {
-      assert(responseAs[String] === """{"expressions":[]}""")
+      assert(responseAs[String] === """[]""")
     }
   }
 
   test("has data") {
     AlertMap.globalAlertMap.addExpr(ExpressionWithFrequency("nf.cluster,skan,:eq,:avg", 60000))
-    Get("/lwc/api/v1/expressions/123") ~> endpoint.routes ~> check {
-      assert(responseAs[String] === """{"expressions":[[{"expression":"nf.cluster,skan,:eq,:count","frequency":60000},{"expression":"nf.cluster,skan,:eq,:sum","frequency":60000}]]}""")
+    Get("/lwc/api/v1/expressions/skan") ~> endpoint.routes ~> check {
+      assert(responseAs[String] === """[{"expression":"nf.cluster,skan,:eq,:avg","frequency":60000,"dataExpressions":["nf.cluster,skan,:eq,:sum","nf.cluster,skan,:eq,:count"]}]""")
     }
   }
 }

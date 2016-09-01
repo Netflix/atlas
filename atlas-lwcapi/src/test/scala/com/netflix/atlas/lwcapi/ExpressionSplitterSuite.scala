@@ -15,36 +15,41 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.netflix.atlas.core.model.Query
 import org.scalatest.FunSuite
 
 class ExpressionSplitterSuite extends FunSuite {
-  private val query1 = "nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:avg,(,nf.node,),:by,4500000000,:gt,30,:rolling-count,15,:ge,$nf.node,:legend"
-  private val ds1a = "nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:sum,(,nf.node,),:by"
-  private val ds1b = "nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:count,(,nf.node,),:by"
+  private val query1 = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:avg,(,nf.node,),:by,4500000000,:gt,30,:rolling-count,15,:ge,$nf.node,:legend"
+  private val ds1a = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:sum,(,nf.node,),:by"
+  private val ds1b = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:count,(,nf.node,),:by"
+  private val matchList1 = List(
+    Query.And(
+      Query.Equal("nf.cluster", "skan-test"),
+      Query.Equal("name", "memUsed")
+    )
+  )
+
+  private val interner = new ExpressionSplitter.QueryInterner()
 
   test("splits single expression into data expressions") {
-    val splitter = ExpressionSplitter()
+    val splitter = ExpressionSplitter(interner)
     val ret = splitter.split(query1)
-    assert(ret === Set(ds1a, ds1b))
+    assert(ret.isDefined)
+    assert(ret.get.dataExprs === List(ds1a, ds1b))
+    assert(ret.get.matchExprs === matchList1)
   }
 
   test("splits compound expression into data expressions") {
-    val splitter = ExpressionSplitter()
+    val splitter = ExpressionSplitter(interner)
     val ret = splitter.split(query1 + "," + query1)
-    assert(ret === Set(ds1a, ds1b))
+    assert(ret.isDefined)
+    assert(ret.get.dataExprs === List(ds1a, ds1b))
+    assert(ret.get.matchExprs === matchList1)
   }
 
-  test("splits single ExpressionWithFrequency into data expressions") {
-    val splitter = ExpressionSplitter()
-    val ret = splitter.split(ExpressionWithFrequency(query1, 999))
-    assert(ret === Set(ExpressionWithFrequency(ds1a, 999), ExpressionWithFrequency(ds1b, 999)))
-  }
-
-  test("throws on invalid expressions") {
-    val splitter = ExpressionSplitter()
-    val caught = intercept[ExpressionSyntaxException] {
-      splitter.split(ExpressionWithFrequency("this", 999))
-    }
-    assert(caught.isInstanceOf[ExpressionSyntaxException])
+  test("returns None for invalid expressions") {
+    val splitter = ExpressionSplitter(interner)
+    val ret = splitter.split("this")
+    assert(ret.isEmpty)
   }
 }
