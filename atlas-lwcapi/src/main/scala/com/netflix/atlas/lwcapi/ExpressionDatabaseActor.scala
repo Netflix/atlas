@@ -79,7 +79,7 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
       AlertMap.globalAlertMap.addExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "add"))
       pubClient.publish(channel, json)
-      val count = pubClient.sadd("expressions", expression)
+      val count = pubClient.sadd("expressions", Json.encode(expression))
       if (count.isDefined && count.get == 1) {
         pubClient.pexpireat("expressions", computedExpiry())
       }
