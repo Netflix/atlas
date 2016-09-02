@@ -78,10 +78,10 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
         log.info(s"PubSub received $action for $expression")
         action match {
           case "add" =>
-            registry.counter(updatesId.withTag("source", "remote").withTag("type", "add")).increment()
+            registry.counter(updatesId.withTag("source", "remote").withTag("action", "add")).increment()
             AlertMap.globalAlertMap.addExpr(expression)
           case "delete" =>
-            registry.counter(updatesId.withTag("source", "remote").withTag("type", "delete")).increment()
+            registry.counter(updatesId.withTag("source", "remote").withTag("action", "delete")).increment()
             AlertMap.globalAlertMap.delExpr(expression)
         }
       }
@@ -94,13 +94,13 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
       val json = Json.encode(RedisRequest(expression, uuid, "add"))
       pubClient.publish(channel, json)
       recordUpdate(json)
-      registry.counter(updatesId.withTag("source", "local").withTag("type", "add")).increment()
+      registry.counter(updatesId.withTag("source", "local").withTag("action", "add")).increment()
     case Unpublish(expression) =>
       log.info(s"PubSub delete for $expression")
       AlertMap.globalAlertMap.delExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "delete"))
       pubClient.publish(channel, json)
-      registry.counter(updatesId.withTag("source", "local").withTag("type", "delete")).increment()
+      registry.counter(updatesId.withTag("source", "local").withTag("action", "delete")).increment()
   }
 
   def recordUpdate(json: String) = {
