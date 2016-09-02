@@ -19,6 +19,7 @@ import java.util.Date
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.netflix.atlas.json.Json
+import com.netflix.spectator.api.Spectator
 import com.redis._
 
 class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
@@ -27,6 +28,11 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
   private val channel = "expressions"
   private var subClient: RedisClient = _
   private var pubClient: RedisClient = _
+
+  private val registry = Spectator.globalRegistry()
+  private val updatesId = registry.createId("atlas.lwcapi.expressionDatabase.updates")
+  private val connectsId = registry.createId("atlas.lwcapi.expressionDatabase.connects")
+  private val connectRetriesId = registry.createId("atlas.lwcapi.expressionDatabase.connectRetries")
 
   private val uuid = java.util.UUID.randomUUID.toString
 
@@ -39,6 +45,10 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
       try {
         log.info(s"Restarting pubsub, tries $tries")
 
+        registry.counter(connectsId).increment()
+        if (tries != 1) {
+          registry.counter(connectRetriesId).increment()
+        }
         Thread.sleep(1000)
         subClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
         pubClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
@@ -67,8 +77,12 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
         val expression = request.expression
         log.info(s"PubSub received $action for $expression")
         action match {
-          case "add" => AlertMap.globalAlertMap.addExpr(expression)
-          case "delete" => AlertMap.globalAlertMap.delExpr(expression)
+          case "add" =>
+            registry.counter(updatesId.withTag("source", "remote").withTag("type", "add")).increment()
+            AlertMap.globalAlertMap.addExpr(expression)
+          case "delete" =>
+            registry.counter(updatesId.withTag("source", "remote").withTag("type", "delete")).increment()
+            AlertMap.globalAlertMap.delExpr(expression)
         }
       }
   }
@@ -80,11 +94,13 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
       val json = Json.encode(RedisRequest(expression, uuid, "add"))
       pubClient.publish(channel, json)
       recordUpdate(json)
+      registry.counter(updatesId.withTag("source", "local").withTag("type", "add")).increment()
     case Unpublish(expression) =>
       log.info(s"PubSub delete for $expression")
       AlertMap.globalAlertMap.delExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "delete"))
       pubClient.publish(channel, json)
+      registry.counter(updatesId.withTag("source", "local").withTag("type", "delete")).increment()
   }
 
   def recordUpdate(json: String) = {

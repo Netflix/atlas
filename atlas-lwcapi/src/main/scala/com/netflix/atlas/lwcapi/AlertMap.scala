@@ -16,6 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.core.index.QueryIndex
+import com.netflix.frigga.Names
 
 case class AlertMap() {
   import AlertMap._
@@ -47,6 +48,8 @@ case class AlertMap() {
   }
 
   def expressionsForCluster(cluster: String): List[ReturnableExpression] = synchronized {
+    val name = Names.parseName(cluster)
+    println(name)
     val ret = scala.collection.mutable.ListBuffer.empty[ReturnableExpression]
     for ((expr, data) <- knownExpressions) {
       data.foreach(item => {

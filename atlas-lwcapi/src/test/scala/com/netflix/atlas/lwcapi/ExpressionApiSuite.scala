@@ -16,8 +16,6 @@
 package com.netflix.atlas.lwcapi
 
 import org.scalatest.FunSuite
-import spray.http.HttpResponse
-import spray.http.StatusCodes
 import spray.testkit.ScalatestRouteTest
 
 class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {

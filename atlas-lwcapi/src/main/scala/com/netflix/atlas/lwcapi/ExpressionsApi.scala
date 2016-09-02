@@ -19,11 +19,16 @@ import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.AlertMap.ReturnableExpression
+import com.netflix.spectator.api.{Registry, Spectator}
 import spray.http.{HttpResponse, StatusCodes}
 import spray.routing.RequestContext
 
 class ExpressionsApi (implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import ExpressionsApi._
+
+  private val registry = Spectator.globalRegistry()
+  private val expressionFetchesId = registry.createId("atlas.lwcapi.expressions.fetches")
+  private val expressionCount = registry.distributionSummary("atlas.lwcapi.expressions.count")
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "expressions" / Segment) { (cluster) =>
@@ -33,7 +38,10 @@ class ExpressionsApi (implicit val actorRefFactory: ActorRefFactory) extends Web
 
   private def handleReq(ctx: RequestContext, cluster: String): Unit = {
     val expressions = AlertMap.globalAlertMap.expressionsForCluster(cluster)
-    ctx.responder ! HttpResponse(StatusCodes.OK, entity = toJson(expressions)) // TODO fix
+    val json = toJson(expressions)
+    ctx.responder ! HttpResponse(StatusCodes.OK, entity = json)
+    registry.counter(expressionFetchesId.withTag("cluster", cluster)).increment()
+    expressionCount.record(expressions.size)
   }
 }
 
