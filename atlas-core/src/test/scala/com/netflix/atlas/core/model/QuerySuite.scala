@@ -328,6 +328,7 @@ class QuerySuite extends FunSuite {
   val a = HasKey("A")
   val b = HasKey("B")
   val c = HasKey("C")
+  val d = HasKey("D")
 
   test("expr rewrite") {
     val input = Or(a, And(b, c))
@@ -356,5 +357,77 @@ class QuerySuite extends FunSuite {
   test("exactKeys or same key") {
     val q = Or(Equal("k", "v"), Equal("k", "q"))
     assert(Query.exactKeys(q) === Set.empty)
+  }
+
+  test("cnfList (a)") {
+    val q = a
+    assert(Query.cnfList(q) === List(q))
+    assert(Query.cnf(q) === q)
+  }
+
+  test("cnfList (a or b)") {
+    val q = Or(a, b)
+    assert(Query.cnfList(q) === List(q))
+    assert(Query.cnf(q) === q)
+  }
+
+  test("cnfList (a and b) or c)") {
+    val q = Or(And(a, b), c)
+    assert(Query.cnfList(q) === List(Or(a, c), Or(b, c)))
+    assert(Query.cnf(q) === And(Or(a, c), Or(b, c)))
+  }
+
+  test("cnfList (a and b) or (c and d))") {
+    val q = Or(And(a, b), And(c, d))
+    assert(Query.cnfList(q) === List(Or(a, c), Or(a, d), Or(b, c), Or(b, d)))
+    assert(Query.cnf(q) === And(And(And(Or(a, c), Or(a, d)), Or(b, c)), Or(b, d)))
+  }
+
+  test("cnfList not(a or b)") {
+    val q = Not(Or(a, b))
+    assert(Query.cnfList(q) === List(Not(a), Not(b)))
+    assert(Query.cnf(q) === And(Not(a), Not(b)))
+  }
+
+  test("cnfList not(a and b)") {
+    val q = Not(And(a, b))
+    assert(Query.cnfList(q) === List(Or(Not(a), Not(b))))
+    assert(Query.cnf(q) === Or(Not(a), Not(b)))
+  }
+
+  test("dnfList (a)") {
+    val q = a
+    assert(Query.dnfList(q) === List(q))
+    assert(Query.dnf(q) === q)
+  }
+
+  test("dnfList (a and b)") {
+    val q = And(a, b)
+    assert(Query.dnfList(q) === List(q))
+    assert(Query.dnf(q) === q)
+  }
+
+  test("dnfList (a or b) and c)") {
+    val q = And(Or(a, b), c)
+    assert(Query.dnfList(q) === List(And(a, c), And(b, c)))
+    assert(Query.dnf(q) === Or(And(a, c), And(b, c)))
+  }
+
+  test("dnfList (a or b) and (c or d))") {
+    val q = And(Or(a, b), Or(c, d))
+    assert(Query.dnfList(q) === List(And(a, c), And(a, d), And(b, c), And(b, d)))
+    assert(Query.dnf(q) === Or(Or(Or(And(a, c), And(a, d)), And(b, c)), And(b, d)))
+  }
+
+  test("dnfList not(a or b)") {
+    val q = Not(Or(a, b))
+    assert(Query.dnfList(q) === List(And(Not(a), Not(b))))
+    assert(Query.dnf(q) === And(Not(a), Not(b)))
+  }
+
+  test("dnfList not(a and b)") {
+    val q = Not(And(a, b))
+    assert(Query.dnfList(q) === List(Not(a), Not(b)))
+    assert(Query.dnf(q) === Or(Not(a), Not(b)))
   }
 }
