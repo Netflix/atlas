@@ -220,7 +220,7 @@ object MathVocabulary extends Vocabulary {
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (q2: Query) :: (expr: Expr) :: stack =>
         val newExpr = expr.rewrite {
-          case q1: Query => Query.And(q1, q2)
+          case q1: Query => q1 and q2
         }
         newExpr :: stack
       case (_: Query) :: stack =>

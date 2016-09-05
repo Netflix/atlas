@@ -32,6 +32,20 @@ sealed trait Query extends Expr {
 
   /** Returns a string that summarizes the query expression in a human readable format. */
   def labelString: String
+
+  def and(query: Query): Query = query match {
+    case Query.True  => this
+    case Query.False => Query.False
+    case q           => Query.And(this, q)
+  }
+
+  def or(query: Query): Query = query match {
+    case Query.True  => Query.True
+    case Query.False => this
+    case q           => Query.Or(this, q)
+  }
+
+  def not: Query = Query.Not(this)
 }
 
 object Query {
@@ -119,6 +133,9 @@ object Query {
     def couldMatch(tags: Map[String, String]): Boolean = true
     def labelString: String = "true"
     override def toString: String = ":true"
+    override def and(query: Query): Query = query
+    override def or(query: Query): Query = Query.True
+    override def not: Query = Query.False
   }
 
   case object False extends Query {
@@ -127,6 +144,9 @@ object Query {
     def couldMatch(tags: Map[String, String]): Boolean = false
     def labelString: String = "false"
     override def toString: String = ":false"
+    override def and(query: Query): Query = Query.False
+    override def or(query: Query): Query = query
+    override def not: Query = Query.True
   }
 
   sealed trait KeyQuery extends Query {

@@ -371,11 +371,7 @@ object QueryVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (_: Query) :: Query.False :: s  => Query.False :: s
-      case Query.False :: (_: Query) :: s  => Query.False :: s
-      case (q: Query) :: Query.True :: s   => q :: s
-      case Query.True :: (q: Query) :: s   => q :: s
-      case (q2: Query) :: (q1: Query) :: s => Query.And(q1, q2) :: s
+      case (q2: Query) :: (q1: Query) :: s => (q1 and q2) :: s
     }
 
     override def summary: String =
@@ -406,11 +402,7 @@ object QueryVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q: Query) :: Query.False :: s  => q :: s
-      case Query.False :: (q: Query) :: s  => q :: s
-      case (_: Query) :: Query.True :: s   => Query.True :: s
-      case Query.True :: (_: Query) :: s   => Query.True :: s
-      case (q2: Query) :: (q1: Query) :: s => Query.Or(q1, q2) :: s
+      case (q2: Query) :: (q1: Query) :: s => (q1 or q2) :: s
     }
 
     override def summary: String =
@@ -445,9 +437,7 @@ object QueryVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case Query.False :: s => Query.True :: s
-      case Query.True :: s  => Query.False :: s
-      case (q: Query) :: s  => Query.Not(q) :: s
+      case (q: Query) :: s  => q.not :: s
     }
 
     override def summary: String =
