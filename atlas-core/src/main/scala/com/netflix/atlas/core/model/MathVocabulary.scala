@@ -36,6 +36,7 @@ object MathVocabulary extends Vocabulary {
     Random,
     Time,
     CommonQuery,
+    NamedRewrite,
     Abs, Negate, Sqrt, PerStep,
 
     Add, Subtract, Multiply, Divide,
@@ -51,25 +52,41 @@ object MathVocabulary extends Vocabulary {
 
     Percentiles,
 
-    Macro("avg", List(":dup", ":sum", ":swap", ":count", ":div"), List("name,sps,:eq,(,nf.cluster,),:by")),
+    Macro("avg", List(
+        ":dup",
+        ":dup", ":sum", ":swap", ":count", ":div",
+        "avg", ":named-rewrite"
+      ),
+      List("name,sps,:eq,(,nf.cluster,),:by")),
 
-    Macro("pct", List(":dup", ":sum", ":div", "100", ":mul"), List("name,sps,:eq,(,nf.cluster,),:by")),
+    Macro("pct", List(
+        ":dup",
+        ":dup", ":sum", ":div", "100", ":mul",
+        "pct", ":named-rewrite"
+      ),
+      List("name,sps,:eq,(,nf.cluster,),:by")),
 
     Macro("dist-avg", List(
+        ":dup",
         "statistic", "(", "totalTime", "totalAmount", ")", ":in", ":sum",
         "statistic", "count", ":eq", ":sum",
         ":div",
-        ":swap", ":cq"
+        ":swap", ":cq",
+        "dist-avg", ":named-rewrite"
       ),
       List("name,playback.startLatency,:eq")),
 
     Macro("dist-max", List(
+        ":dup",
         "statistic", "max", ":eq", ":max",
-        ":swap", ":cq"
+        ":swap", ":cq",
+        "dist-max", ":named-rewrite"
       ),
       List("name,playback.startLatency,:eq")),
 
     Macro("dist-stddev", List(
+        ":dup",
+
         // N
         "statistic", "count", ":eq", ":sum",
 
@@ -98,7 +115,10 @@ object MathVocabulary extends Vocabulary {
         ":sqrt",
 
         // Swap and use :cq to apply a common query
-        ":swap", ":cq"
+        ":swap", ":cq",
+
+        // Avoid expansion when displayed
+        "dist-stddev", ":named-rewrite"
       ),
       List("name,playback.startLatency,:eq")),
 
@@ -130,6 +150,17 @@ object MathVocabulary extends Vocabulary {
       case StringListType(keys) :: TimeSeriesType(t) :: stack =>
         // Default data group by applied across math operations
         val f = t.rewrite {
+          case MathExpr.NamedRewrite(n, q: Query, t) =>
+            // A number of macro rewrites are helpers that are meant to look like
+            // aggregate functions to the user. These have an display type that is
+            // as simple query and an arbitrarily complicated eval expression. In
+            // those cases we rewrite the eval expression and generate a new name
+            // that indicates the group by operation over the simple query.
+            val evalExpr = t.rewrite {
+              case af: AggregateFunction => DataExpr.GroupBy(af, keys)
+            }
+            val name = s"$n,(,${keys.mkString(",")},),:by"
+            MathExpr.NamedRewrite(name, q, evalExpr.asInstanceOf[TimeSeriesExpr])
           case af: AggregateFunction => DataExpr.GroupBy(af, keys)
         }
         f :: stack
@@ -240,6 +271,33 @@ object MathVocabulary extends Vocabulary {
     override def examples: List[String] = List(
       "name,ssCpuUser,:eq,name,DiscoveryStatus_UP,:eq,:mul,nf.app,alerttest,:eq",
       "42,nf.app,alerttest,:eq")
+  }
+
+  case object NamedRewrite extends SimpleWord {
+    override def name: String = "named-rewrite"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case (_: String) :: TimeSeriesType(_) :: (_: Expr) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case (n: String) :: TimeSeriesType(rw) :: (orig: Expr) :: stack =>
+        MathExpr.NamedRewrite(n, orig, rw) :: stack
+    }
+
+    override def summary: String =
+      """
+        |Internal operation used by some macros to provide a more user friendly display
+        |expression. The expanded version will get used for evaluation, but if a new expression
+        |is generated from the parsed expression tree it will use the original version
+        |along with the named of the macro.
+      """.stripMargin.trim
+
+    override def signature: String = {
+      "original:TimeSeriesExpr rewritten:TimeSeriesExpr name:String -- TimeSeriesExpr"
+    }
+
+    override def examples: List[String] = Nil
   }
 
   sealed trait UnaryWord extends SimpleWord {
