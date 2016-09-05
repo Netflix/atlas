@@ -277,11 +277,17 @@ object MathVocabulary extends Vocabulary {
     override def name: String = "named-rewrite"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: TimeSeriesType(_) :: (_: Expr) :: _ => true
+      case (_: String) :: TimeSeriesType(_) :: TimeSeriesType(_) :: _ => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (n: String) :: TimeSeriesType(rw) :: (orig: Expr) :: stack =>
+        // If the original is already an expr type, e.g. a Query, then we should
+        // preserve it without modification. So we first match for Expr.
+        MathExpr.NamedRewrite(n, orig, rw) :: stack
+      case (n: String) :: TimeSeriesType(rw) :: TimeSeriesType(orig) :: stack =>
+        // This is a more general match that will coerce the original into a
+        // TimeSeriesExpr if it is not one already, e.g., a constant.
         MathExpr.NamedRewrite(n, orig, rw) :: stack
     }
 
