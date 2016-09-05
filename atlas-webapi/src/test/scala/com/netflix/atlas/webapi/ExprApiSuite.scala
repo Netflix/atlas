@@ -16,6 +16,12 @@
 package com.netflix.atlas.webapi
 
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.MathExpr
+import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.StyleExpr
+import com.netflix.atlas.core.model.StyleVocabulary
+import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
 import spray.http.StatusCodes
@@ -107,21 +113,22 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
   testGet("/api/v1/expr/normalize?q=name,sps,:eq") {
     assert(response.status === StatusCodes.OK)
     val data = Json.decode[List[String]](responseAs[String])
-    assert(data === List("name,sps,:eq"))
+    assert(data === List("name,sps,:eq,:sum"))
   }
 
   testGet("/api/v1/expr/normalize?q=name,sps,:eq,:dup,2,:mul,:swap") {
     assert(response.status === StatusCodes.OK)
     val data = Json.decode[List[String]](responseAs[String])
-    assert(data === List("name,sps,:eq,:sum,2.0,:const,:mul", "name,sps,:eq"))
+    assert(data === List("name,sps,:eq,:sum,2.0,:mul", "name,sps,:eq,:sum"))
   }
 
   testGet("/api/v1/expr/normalize?q=(,name,:swap,:eq,nf.cluster,foo,:eq,:and,:sum,),foo,:sset,cpu,foo,:fcall,disk,foo,:fcall") {
     assert(response.status === StatusCodes.OK)
     val data = Json.decode[List[String]](responseAs[String])
     val expected = List(
-      "name,cpu,:eq,nf.cluster,foo,:eq,:and,:sum",
-      "name,disk,:eq,nf.cluster,foo,:eq,:and,:sum")
+      "name,cpu,:eq,:sum",
+      "name,disk,:eq,:sum",
+      ":list,(,nf.cluster,foo,:eq,:cq,),:each")
     assert(data === expected)
   }
 
@@ -182,8 +189,84 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
   testGet("/api/v1/expr/queries?q=name,sps,:eq,(,nf.cluster,),:by,:true,:sum,name,:has,:add") {
     assert(response.status === StatusCodes.OK)
     val data = Json.decode[List[String]](responseAs[String])
-    println(data)
     assert(data === List(":true", "name,:has", "name,sps,:eq"))
+  }
+
+  private def styleExpr(q: Query): StyleExpr = {
+    StyleExpr(DataExpr.Sum(q), Map.empty)
+  }
+
+  import Query._
+
+  private def normalize(expr: String): List[String] = {
+    val interpreter = Interpreter(StyleVocabulary.allWords)
+    ExprApi.normalize(expr, interpreter)
+  }
+
+  test("normalize query order") {
+    val q1 = "app,foo,:eq,name,cpu,:eq,:and"
+    val q2 = "name,cpu,:eq,app,foo,:eq,:and"
+    assert(normalize(q1) === normalize(q2))
+  }
+
+  test("normalize single query") {
+    val e1 = DataExpr.Sum(And(Equal("app", "foo"), Equal("name", "cpuUser")))
+    val add = StyleExpr(MathExpr.Add(e1, e1), Map.empty)
+    assert(normalize(add.toString) === List(
+      ":true,:sum,:true,:sum,:add",
+      ":list,(,app,foo,:eq,name,cpuUser,:eq,:and,:cq,),:each"))
+  }
+
+  test("normalize common query") {
+    val e1 = DataExpr.Sum(And(Equal("app", "foo"), Equal("name", "cpuUser")))
+    val e2 = DataExpr.Sum(And(Equal("app", "foo"), Equal("name", "cpuSystem")))
+    val add = StyleExpr(MathExpr.Add(e1, e2), Map.empty)
+    assert(normalize(add.toString) === List(
+      "name,cpuUser,:eq,:sum,name,cpuSystem,:eq,:sum,:add",
+      ":list,(,app,foo,:eq,:cq,),:each"))
+  }
+
+  test("normalize :avg") {
+    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:avg"
+    assert(normalize(avg) === List(avg))
+  }
+
+  test("normalize :dist-avg") {
+    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg"
+    assert(normalize(avg) === List(avg))
+  }
+
+  test("normalize :dist-avg,(,nf.cluster,),:by") {
+    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg,(,nf.cluster,),:by"
+    assert(normalize(avg) === List(avg))
+  }
+
+  test("normalize :dist-stddev") {
+    val stddev = "app,foo,:eq,name,cpuUser,:eq,:and,:dist-stddev"
+    assert(normalize(stddev) === List(stddev))
+  }
+
+  test("normalize :dist-max") {
+    val max = "app,foo,:eq,name,cpuUser,:eq,:and,:dist-max"
+    assert(normalize(max) === List(max))
+  }
+
+  test("normalize :dist-avg + expr2") {
+    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg,app,foo,:eq,name,cpuSystem,:eq,:and,:max"
+    assert(normalize(avg) === List(
+      "name,cpuUser,:eq,:dist-avg",
+      "name,cpuSystem,:eq,:max",
+      ":list,(,app,foo,:eq,:cq,),:each"))
+  }
+
+  test("normalize :avg,(,nf.cluster,),:by,:pct") {
+    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:avg,(,nf.cluster,),:by,:pct"
+    assert(normalize(avg) === List(avg))
+  }
+
+  test("normalize :des-fast") {
+    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,:des-fast"
+    assert(normalize(expr) === List(expr))
   }
 }
 

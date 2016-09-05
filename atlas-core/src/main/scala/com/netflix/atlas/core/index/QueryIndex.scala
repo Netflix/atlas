@@ -128,7 +128,7 @@ object QueryIndex {
    */
   def create[T](entries: List[Entry[T]]): QueryIndex[T] = {
     val annotated = entries.flatMap { entry =>
-      val qs = split(entry.query)
+      val qs = Query.dnfList(entry.query).flatMap(split)
       qs.map(q => annotate(Entry(q, entry.value)))
     }
     val idxMap = new IndexMap[T]

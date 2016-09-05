@@ -32,6 +32,20 @@ sealed trait Query extends Expr {
 
   /** Returns a string that summarizes the query expression in a human readable format. */
   def labelString: String
+
+  def and(query: Query): Query = query match {
+    case Query.True  => this
+    case Query.False => Query.False
+    case q           => Query.And(this, q)
+  }
+
+  def or(query: Query): Query = query match {
+    case Query.True  => Query.True
+    case Query.False => this
+    case q           => Query.Or(this, q)
+  }
+
+  def not: Query = Query.Not(this)
 }
 
 object Query {
@@ -42,12 +56,12 @@ object Query {
    */
   def exactKeys(query: Query): Set[String] = {
     query match {
-      case Query.And(q1, q2) => exactKeys(q1) union exactKeys(q2)
-      case Query.Or(q1, q2)  => Set.empty
-      case Query.Not(q)      => Set.empty
-      case Query.Equal(k, _) => Set(k)
-      case q: KeyQuery       => Set.empty
-      case _                 => Set.empty
+      case And(q1, q2)  => exactKeys(q1) union exactKeys(q2)
+      case Or(q1, q2)   => Set.empty
+      case Not(q)       => Set.empty
+      case Equal(k, _)  => Set(k)
+      case q: KeyQuery  => Set.empty
+      case _            => Set.empty
     }
   }
 
@@ -56,13 +70,61 @@ object Query {
     */
   def tags(query: Query): Map[String, String] = {
     query match {
-      case Query.And(q1, q2) => tags(q1) ++ tags(q2)
-      case Query.Or(q1, q2)  => Map.empty
-      case Query.Not(q)      => Map.empty
-      case Query.Equal(k, v) => Map(k -> v)
-      case q: KeyQuery       => Map.empty
-      case _                 => Map.empty
+      case And(q1, q2)  => tags(q1) ++ tags(q2)
+      case Or(q1, q2)   => Map.empty
+      case Not(q)       => Map.empty
+      case Equal(k, v)  => Map(k -> v)
+      case q: KeyQuery  => Map.empty
+      case _            => Map.empty
     }
+  }
+
+  /** Converts the input query into conjunctive normal form. */
+  def cnf(query: Query): Query = {
+    cnfList(query).reduceLeft { (q1, q2) => Query.And(q1, q2) }
+  }
+
+  /**
+    * Converts the input query into a list of sub-queries that should be ANDd
+    * together.
+    */
+  def cnfList(query: Query): List[Query] = {
+    query match {
+      case And(q1, q2)       => cnfList(q1) ::: cnfList(q2)
+      case Or(q1, q2)        => crossOr(cnfList(q1), cnfList(q2))
+      case Not(And(q1, q2))  => cnfList(Or(Not(q1), Not(q2)))
+      case Not(Or(q1, q2))   => cnfList(Not(q1)) ::: cnfList(Not(q2))
+      case Not(Not(q))       => List(q)
+      case q                 => List(q)
+    }
+  }
+
+  /** Converts the input query into disjunctive normal form. */
+  def dnf(query: Query): Query = {
+    dnfList(query).reduceLeft { (q1, q2) => Query.Or(q1, q2) }
+  }
+
+  /**
+    * Converts the input query into a list of sub-queries that should be ORd
+    * together.
+    */
+  def dnfList(query: Query): List[Query] = {
+    query match {
+      case And(q1, q2)       => crossAnd(dnfList(q1), dnfList(q2))
+      case Or(q1, q2)        => dnfList(q1) ::: dnfList(q2)
+      case Not(And(q1, q2))  => dnfList(Not(q1)) ::: dnfList(Not(q2))
+      case Not(Or(q1, q2))   => dnfList(And(Not(q1), Not(q2)))
+      case Not(Not(q))       => List(q)
+      case q                 => List(q)
+    }
+  }
+
+  private def crossOr(qs1: List[Query], qs2: List[Query]): List[Query] = {
+    for (q1 <- qs1; q2 <- qs2) yield Or(q1, q2)
+  }
+
+  private def crossAnd(qs1: List[Query], qs2: List[Query]): List[Query] = {
+    for (q1 <- qs1; q2 <- qs2) yield And(q1, q2)
   }
 
   case object True extends Query {
@@ -71,6 +133,9 @@ object Query {
     def couldMatch(tags: Map[String, String]): Boolean = true
     def labelString: String = "true"
     override def toString: String = ":true"
+    override def and(query: Query): Query = query
+    override def or(query: Query): Query = Query.True
+    override def not: Query = Query.False
   }
 
   case object False extends Query {
@@ -79,6 +144,9 @@ object Query {
     def couldMatch(tags: Map[String, String]): Boolean = false
     def labelString: String = "false"
     override def toString: String = ":false"
+    override def and(query: Query): Query = Query.False
+    override def or(query: Query): Query = query
+    override def not: Query = Query.True
   }
 
   sealed trait KeyQuery extends Query {

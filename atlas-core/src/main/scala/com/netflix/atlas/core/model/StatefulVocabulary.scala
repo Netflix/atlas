@@ -32,17 +32,23 @@ object StatefulVocabulary extends Vocabulary {
 
   val words: List[Word] = List(
     RollingCount, Des, SlidingDes, Trend, Integral, Derivative,
-    Macro("des-simple", List("10", "0.1",  "0.5",  ":des"), List("42")),
-    Macro("des-fast",   List("10", "0.1",  "0.02", ":des"), List("42")),
-    Macro("des-slower", List("10", "0.05", "0.03", ":des"), List("42")),
-    Macro("des-slow",   List("10", "0.03", "0.04", ":des"), List("42")),
-    Macro("sdes-simple", List("10", "0.1",  "0.5",  ":sdes"), List("42")),
-    Macro("sdes-fast",   List("10", "0.1",  "0.02", ":sdes"), List("42")),
-    Macro("sdes-slower", List("10", "0.05", "0.03", ":sdes"), List("42")),
-    Macro("sdes-slow",   List("10", "0.03", "0.04", ":sdes"), List("42")),
+    desMacro("des-simple",  List("10", "0.1",  "0.5",  ":des")),
+    desMacro("des-fast",    List("10", "0.1",  "0.02", ":des")),
+    desMacro("des-slower",  List("10", "0.05", "0.03", ":des")),
+    desMacro("des-slow",    List("10", "0.03", "0.04", ":des")),
+    desMacro("sdes-simple", List("10", "0.1",  "0.5",  ":sdes")),
+    desMacro("sdes-fast",   List("10", "0.1",  "0.02", ":sdes")),
+    desMacro("sdes-slower", List("10", "0.05", "0.03", ":sdes")),
+    desMacro("sdes-slow",   List("10", "0.03", "0.04", ":sdes")),
 
     Macro("des-epic-signal", desEpicSignal, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
   )
+
+  private def desMacro(name: String, body: List[String]): Macro = {
+    val example = List("42")
+    val fullBody = (":dup" :: body) ::: List(name, ":named-rewrite")
+    Macro(name, fullBody, example)
+  }
 
   case object RollingCount extends SimpleWord {
     override def name: String = "rolling-count"

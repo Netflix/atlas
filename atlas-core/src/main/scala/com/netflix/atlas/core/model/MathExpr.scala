@@ -553,6 +553,20 @@ object MathExpr {
       }
     }
   }
+
+  case class NamedRewrite(name: String, displayExpr: Expr, evalExpr: TimeSeriesExpr)
+      extends TimeSeriesExpr {
+    def dataExprs: List[DataExpr] = evalExpr.dataExprs
+    override def toString: String = s"$displayExpr,:$name"
+
+    def isGrouped: Boolean = evalExpr.isGrouped
+
+    def groupByKey(tags: Map[String, String]): Option[String] = evalExpr.groupByKey(tags)
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      evalExpr.eval(context, data).copy(expr = this)
+    }
+  }
 }
 
 

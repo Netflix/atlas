@@ -25,7 +25,7 @@ import com.netflix.atlas.core.util.Strings
 case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extends Expr {
   override def toString: String = {
     val vs = settings.toList.sortWith(_._1 < _._1).map(t => s"${t._2},:${t._1}")
-    s"$expr,${vs.mkString(",")}"
+    if (vs.isEmpty) expr.toString else s"$expr,${vs.mkString(",")}"
   }
 
   def legend(t: TimeSeries): String = {
