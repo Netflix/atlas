@@ -35,6 +35,11 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
 
   val endpoint = new RegisterApi
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    lastUpdate = Nil
+  }
+
   test("publish no content") {
     Post("/lwc/api/v1/register") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
