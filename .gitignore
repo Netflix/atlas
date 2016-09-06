@@ -25,3 +25,6 @@ target
 .idea
 .idea_modules
 out
+
+# OS-X Files
+.DS_Store
