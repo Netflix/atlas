@@ -17,8 +17,8 @@ package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.core.model.{ModelExtractors, Query, StyleVocabulary}
 import com.netflix.atlas.core.stacklang.Interpreter
-
 import ExpressionSplitter._
+import com.netflix.atlas.core.model.Query.KeyQuery
 
 case class ExpressionSyntaxException(message: String) extends IllegalArgumentException(message)
 
@@ -63,7 +63,7 @@ class ExpressionSplitter (val interner: QueryInterner) {
       val context = interpreter.execute(s)
       val queries = context.stack.collect {
         case ModelExtractors.PresentationType(t) =>
-          t.expr.dataExprs.map(e => intern(e.query))
+          t.expr.dataExprs.map(e => intern(compress(e.query)))
       }
       val dataExpressions = context.stack.collect {
         case ModelExtractors.PresentationType(t) =>
@@ -77,6 +77,32 @@ class ExpressionSplitter (val interner: QueryInterner) {
     } catch {
       case _: Exception => None
     }
+  }
+
+  private val keys = Set("nf.app", "nf.stack", "nf.cluster", "nf.zone", "nf.node")
+  private def simplify(query: Query): Query = {
+    val newQuery = query match {
+      case Query.And(Query.True, q)  => simplify(q)
+      case Query.And(q, Query.True)  => simplify(q)
+      case Query.Or(Query.True, q)   => Query.True
+      case Query.Or(q, Query.True)   => Query.True
+      case Query.And(Query.False, q) => Query.False
+      case Query.And(q, Query.False) => Query.False
+      case Query.Or(Query.False, q)  => simplify(q)
+      case Query.Or(q, Query.False)  => simplify(q)
+      case Query.And(q1, q2)         => Query.And(simplify(q1), simplify(q2))
+      case Query.Or(q1, q2)          => Query.Or(simplify(q1), simplify(q2))
+      case Query.Not(Query.True)     => Query.True // Not(True) needs to remain True
+      case Query.Not(Query.False)    => Query.True
+      case Query.Not(q)              => Query.Not(simplify(q))
+      case q                         => q
+    }
+    if (newQuery != query) simplify(newQuery) else newQuery
+  }
+
+  def compress(expr: Query): Query = {
+    val tmp = expr.rewrite { case kq: KeyQuery if !keys.contains(kq.k) => Query.True }
+    simplify(tmp.asInstanceOf[Query])
   }
 }
 

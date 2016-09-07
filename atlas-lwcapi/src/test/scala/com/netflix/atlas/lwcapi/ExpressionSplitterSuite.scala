@@ -23,10 +23,7 @@ class ExpressionSplitterSuite extends FunSuite {
   private val ds1a = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:sum,(,nf.node,),:by"
   private val ds1b = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:count,(,nf.node,),:by"
   private val matchList1 = List(
-    Query.And(
-      Query.Equal("nf.cluster", "skan-test"),
-      Query.Equal("name", "memUsed")
-    )
+    Query.Equal("nf.cluster", "skan-test")
   )
 
   private val interner = new ExpressionSplitter.QueryInterner()
