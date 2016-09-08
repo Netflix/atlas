@@ -1,5 +1,4 @@
 {
-  "cluster": "test",
   "expressions": [
     {
       "expression": "nf.cluster,lando-test,:eq,name,_HeapMemoryUsage_used,:eq,:and,:avg,(,nf.node,),:by,4500000000,:gt,30,:rolling-count,15,:ge,$nf.node,:legend",
@@ -8,7 +7,9 @@
       "expression": "nf.cluster,skan-test,:eq,name,somethingcool,:eq,:and,:avg,(,nf.node,),:by",
       "frequency": 10000
     }, {
-      "expression": "nf.cluster,skan-test2,:eq,name,somethingcool,:eq,:and,:sum,(,nf.node,),:by"
+      "expression": "nf.cluster,skan-test,:eq,name,somethingcool,:eq,:and,:sum,(,nf.node,),:by"
+    }, {
+      "expression": "name,(,name1,name2,),:in,:max,0,:gt,5,:rolling-count,4,:gt,$(nf.node),:legend,:list,(,nf.app,skan,:eq,:cq,),:each"
     }
   ]
 }
