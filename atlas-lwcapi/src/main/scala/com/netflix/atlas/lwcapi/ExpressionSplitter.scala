@@ -79,7 +79,7 @@ class ExpressionSplitter (val interner: QueryInterner) {
     }
   }
 
-  private val keys = Set("nf.app", "nf.stack", "nf.cluster", "nf.zone", "nf.node")
+  private val keys = Set("nf.app", "nf.stack", "nf.cluster")
   private def simplify(query: Query): Query = {
     val newQuery = query match {
       case Query.And(Query.True, q)  => simplify(q)
