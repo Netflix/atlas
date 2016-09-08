@@ -23,7 +23,7 @@ case class AlertMap() {
 
   private val knownExpressions = scala.collection.mutable.Map.empty[String, Set[DataItem]]
 
-  private var queryIndex = QueryIndex(Nil)
+  private var queryIndex = QueryIndex.create[String](Nil)
   private var interner = new ExpressionSplitter.QueryInterner()
 
   def addExpr(expression: ExpressionWithFrequency): Unit = {
@@ -35,6 +35,7 @@ case class AlertMap() {
           knownExpressions(expression.expression) += DataItem(expression.frequency, dataExpressions.get)
         } else {
           knownExpressions(expression.expression) = Set(DataItem(expression.frequency, dataExpressions.get))
+          regenerateQueryIndex()
         }
       }
     }
@@ -49,10 +50,16 @@ case class AlertMap() {
 
   def expressionsForCluster(cluster: String): List[ReturnableExpression] = synchronized {
     val name = Names.parseName(cluster)
-    println(name)
     val ret = scala.collection.mutable.ListBuffer.empty[ReturnableExpression]
+    var tags = Map("nf.cluster" -> name.getCluster)
+    if (name.getApp != null)
+      tags = tags + ("nf.app" -> name.getApp)
+    if (name.getStack != null)
+      tags = tags + ("nf.stack" -> name.getStack)
+    println(tags)
     for ((expr, data) <- knownExpressions) {
       data.foreach(item => {
+        item.expressionContainer.matchExprs.head.matches()
         ret += ReturnableExpression(expr, item.frequency, item.expressionContainer.dataExprs)
       })
     }
@@ -60,7 +67,11 @@ case class AlertMap() {
   }
 
   private def regenerateQueryIndex() = {
-    // todo: regenerate the actual index
+    for ((expr, data) <- knownExpressions) {
+      data.foreach(item => {
+        // todo: regenerate the actual index
+      })
+    }
   }
 }
 
