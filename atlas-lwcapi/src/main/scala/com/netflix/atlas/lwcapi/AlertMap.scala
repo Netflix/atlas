@@ -60,7 +60,8 @@ case class AlertMap() {
       tags = tags + ("nf.stack" -> name.getStack)
     val matches = queryIndex.matchingEntries(tags)
     val matchingExpressions = matches.map(m => m._1)
-    val matchingDataExpressions = matches.map(m => m._2)
+    val matchingDataExpressions = mutable.Map[String, Boolean]()
+    matches.foreach(m => matchingDataExpressions(m._2) = true)
 
     val ret = matchingExpressions.flatMap(s => {
       val data = knownExpressions(s)
