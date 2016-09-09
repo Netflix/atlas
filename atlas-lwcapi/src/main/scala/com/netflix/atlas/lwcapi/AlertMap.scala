@@ -26,7 +26,7 @@ case class AlertMap() {
 
   private val knownExpressions = scala.collection.mutable.Map.empty[String, Set[DataItem]]
 
-  private var queryIndex = QueryIndex.create[String](Nil)
+  private var queryIndex = QueryIndex.create[(String, String)](Nil)
   private var interner = new ExpressionSplitter.QueryInterner()
 
   def addExpr(expression: ExpressionWithFrequency): Unit = {
@@ -53,29 +53,34 @@ case class AlertMap() {
 
   def expressionsForCluster(cluster: String): List[ReturnableExpression] = synchronized {
     val name = Names.parseName(cluster)
-    val ret = scala.collection.mutable.ListBuffer.empty[ReturnableExpression]
     var tags = Map("nf.cluster" -> name.getCluster)
     if (name.getApp != null)
       tags = tags + ("nf.app" -> name.getApp)
     if (name.getStack != null)
       tags = tags + ("nf.stack" -> name.getStack)
-    val queryMap = mutable.Map[Query, List[String]]()
+    val matches = queryIndex.matchingEntries(tags)
+    val matchingExpressions = matches.map(m => m._1)
+    val matchingDataExpressions = matches.map(m => m._2)
 
-    for ((expr, data) <- knownExpressions) {
-      data.foreach(item => {
-        val dataExprs = item.containers.map(x => x.dataExpr)
-        ret += ReturnableExpression(expr, item.frequency, dataExprs)
+    val ret = matchingExpressions.flatMap(s => {
+      val data = knownExpressions(s)
+      data.map(item => {
+        val dataExprs = item.containers.map(x => x.dataExpr).filter(x => matchingDataExpressions.contains(x))
+        ReturnableExpression(s, item.frequency, dataExprs)
       })
-    }
-    ret.distinct.toList
+    })
+    ret.distinct
   }
 
   private def regenerateQueryIndex() = {
-    for ((expr, data) <- knownExpressions) {
-      data.foreach(item => {
-        // todo: regenerate the actual index
-      })
-    }
+    val map = knownExpressions.flatMap {case (expr, data) =>
+      data.map(item =>
+        item.containers.map(container =>
+          QueryIndex.Entry(container.matchExpr, (expr, container.dataExpr))
+        )
+      )
+    }.flatten.toList
+    queryIndex = QueryIndex.create(map)
   }
 }
 
