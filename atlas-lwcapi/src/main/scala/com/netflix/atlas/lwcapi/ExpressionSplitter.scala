@@ -58,24 +58,16 @@ class ExpressionSplitter (val interner: QueryInterner) {
     }
   }
 
-  def split(s: String): Option[QueryContainer] = synchronized {
+  def split(s: String): List[QueryContainer] = synchronized {
     try {
       val context = interpreter.execute(s)
       val queries = context.stack.collect {
         case ModelExtractors.PresentationType(t) =>
-          t.expr.dataExprs.map(e => intern(compress(e.query)))
-      }
-      val dataExpressions = context.stack.collect {
-        case ModelExtractors.PresentationType(t) =>
-          t.expr.dataExprs.map(e => e.toString)
-      }
-      if (dataExpressions.isEmpty) {
-        None
-      } else {
-        Some(QueryContainer(queries.flatten.distinct, dataExpressions.flatten.distinct))
-      }
+          t.expr.dataExprs.map(e => QueryContainer(intern(compress(e.query)), e.toString))
+      }.flatten.distinct
+      queries
     } catch {
-      case _: Exception => None
+      case _: Exception => List()
     }
   }
 
@@ -109,7 +101,11 @@ class ExpressionSplitter (val interner: QueryInterner) {
 object ExpressionSplitter {
   type QueryInterner = scala.collection.mutable.AnyRefMap[Query, Query]
 
-  case class QueryContainer(matchExprs: List[Query], dataExprs: List[String])
+  case class QueryContainer(matchExpr: Query, dataExpr: String) {
+    override def toString: String = {
+      s"QueryContainer(<$matchExpr> <$dataExpr>)"
+    }
+  }
 
   def apply(interner: QueryInterner) = new ExpressionSplitter(interner)
 }

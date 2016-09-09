@@ -16,7 +16,10 @@
 package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.core.index.QueryIndex
+import com.netflix.atlas.core.model.Query
 import com.netflix.frigga.Names
+
+import scala.collection.mutable
 
 case class AlertMap() {
   import AlertMap._
@@ -29,12 +32,12 @@ case class AlertMap() {
   def addExpr(expression: ExpressionWithFrequency): Unit = {
     val splitter = ExpressionSplitter(interner)
     val dataExpressions = splitter.split(expression.expression)
-    if (dataExpressions.isDefined) {
+    if (dataExpressions.nonEmpty) {
       synchronized {
         if (knownExpressions.contains(expression.expression)) {
-          knownExpressions(expression.expression) += DataItem(expression.frequency, dataExpressions.get)
+          knownExpressions(expression.expression) += DataItem(expression.frequency, dataExpressions)
         } else {
-          knownExpressions(expression.expression) = Set(DataItem(expression.frequency, dataExpressions.get))
+          knownExpressions(expression.expression) = Set(DataItem(expression.frequency, dataExpressions))
           regenerateQueryIndex()
         }
       }
@@ -56,14 +59,15 @@ case class AlertMap() {
       tags = tags + ("nf.app" -> name.getApp)
     if (name.getStack != null)
       tags = tags + ("nf.stack" -> name.getStack)
-    println(tags)
+    val queryMap = mutable.Map[Query, List[String]]()
+
     for ((expr, data) <- knownExpressions) {
       data.foreach(item => {
-        item.expressionContainer.matchExprs.head.matches()
-        ret += ReturnableExpression(expr, item.frequency, item.expressionContainer.dataExprs)
+        val dataExprs = item.containers.map(x => x.dataExpr)
+        ret += ReturnableExpression(expr, item.frequency, dataExprs)
       })
     }
-    ret.toList
+    ret.distinct.toList
   }
 
   private def regenerateQueryIndex() = {
@@ -76,7 +80,7 @@ case class AlertMap() {
 }
 
 object AlertMap {
-  case class DataItem(frequency: Long, expressionContainer: ExpressionSplitter.QueryContainer)
+  case class DataItem(frequency: Long, containers: List[ExpressionSplitter.QueryContainer])
   case class ReturnableExpression(expression: String, frequency: Long, dataExpressions: List[String])
 
   lazy val globalAlertMap = new AlertMap()
