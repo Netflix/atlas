@@ -20,7 +20,6 @@ import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, Tim
 
 import com.netflix.atlas.core.index.QueryIndex
 import com.netflix.frigga.Names
-import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
