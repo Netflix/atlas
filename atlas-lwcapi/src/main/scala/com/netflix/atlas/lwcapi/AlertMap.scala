@@ -15,12 +15,13 @@
  */
 package com.netflix.atlas.lwcapi
 
+import java.util.Base64
 import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, TimeUnit}
 
 import com.netflix.atlas.core.index.QueryIndex
 import com.netflix.frigga.Names
-
 import java.util.concurrent.ConcurrentHashMap
+
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 
@@ -46,12 +47,23 @@ case class AlertMap() {
 
   def setTestMode() = { testMode = true }
 
-  def addExpr(expression: ExpressionWithFrequency): Unit = {
+  private def splitExpression(expr: String) = {
     val splitter = ExpressionSplitter(interner)
-    val dataExpressions = splitter.split(expression.expression)
+    splitter.split(expr)
+  }
+
+  private def makeKey(frequency: Long, dataExpressions: List[ExpressionSplitter.QueryContainer]) = {
+    val key = frequency + "~" + dataExpressions.map(e => e.dataExpr).mkString(",")
+    val md = java.security.MessageDigest.getInstance("SHA-1")
+    Base64.getEncoder.encodeToString(md.digest(key.getBytes("UTF-8")))
+  }
+
+  def addExpr(expression: ExpressionWithFrequency): Unit = {
+    val dataExpressions = splitExpression(expression.expression)
+    val key = makeKey(expression.frequency, dataExpressions)
     if (dataExpressions.nonEmpty) {
       val dataItem = DataItem(expression.expression, expression.frequency, dataExpressions)
-      val replaced = knownExpressions.putIfAbsent(dataItem.toKey, dataItem)
+      val replaced = knownExpressions.putIfAbsent(key, dataItem)
       queryListChanged = replaced.isEmpty
       if (testMode)
         regenerateQueryIndex()
@@ -59,9 +71,8 @@ case class AlertMap() {
   }
 
   def delExpr(expression: ExpressionWithFrequency): Unit = {
-    val expr = expression.expression
-    val freq = expression.frequency
-    val key = s"$freq $expr"
+    val dataExpressions = splitExpression(expression.expression)
+    val key = makeKey(expression.frequency, dataExpressions)
     val removed = knownExpressions.remove(key)
     queryListChanged = removed.isDefined
     if (testMode)

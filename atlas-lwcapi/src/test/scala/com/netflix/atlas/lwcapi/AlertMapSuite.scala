@@ -50,9 +50,9 @@ class AlertMapSuite extends FunSuite {
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
     val ret1 = ReturnableExpression(query1.expression, 30000, List(ds1a))
 
-    val query2 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum", 30000)
+    val query2 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum", 50000)
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
-    val ret2 = ReturnableExpression(query2.expression, 30000, List(ds2a))
+    val ret2 = ReturnableExpression(query2.expression, 50000, List(ds2a))
 
     val x = AlertMap()
     x.setTestMode()
