@@ -15,12 +15,10 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.{Actor, ActorLogging, ActorRefFactory}
+import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.Datapoint
-import com.netflix.spectator.api.Registry
-import spray.http.HttpResponse
-import spray.http.StatusCodes
+import spray.http.{HttpResponse, StatusCodes}
 
 class EvaluateActor extends Actor with ActorLogging {
 

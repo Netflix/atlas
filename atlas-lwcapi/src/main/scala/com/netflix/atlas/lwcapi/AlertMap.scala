@@ -15,43 +15,60 @@
  */
 package com.netflix.atlas.lwcapi
 
+import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, TimeUnit}
+
 import com.netflix.atlas.core.index.QueryIndex
-import com.netflix.atlas.core.model.Query
 import com.netflix.frigga.Names
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
+import scala.collection.JavaConverters._
 
 case class AlertMap() {
   import AlertMap._
 
-  private val knownExpressions = scala.collection.mutable.Map.empty[String, Set[DataItem]]
-
-  private var queryIndex = QueryIndex.create[(String, String)](Nil)
+  private val knownExpressions = new ConcurrentHashMap[String, DataItem]().asScala
+  private var queryIndex = QueryIndex.create[(String, DataItem)](Nil)
   private var interner = new ExpressionSplitter.QueryInterner()
+
+  private var queryListChanged @volatile = false
+  private var testMode = false
+
+  val ex = new ScheduledThreadPoolExecutor(1)
+  val task = new Runnable {
+    def run() = {
+      if (queryListChanged) {
+        regenerateQueryIndex()
+      }
+    }
+  }
+  val f = ex.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
+
+  def setTestMode() = { testMode = true }
 
   def addExpr(expression: ExpressionWithFrequency): Unit = {
     val splitter = ExpressionSplitter(interner)
     val dataExpressions = splitter.split(expression.expression)
     if (dataExpressions.nonEmpty) {
-      synchronized {
-        if (knownExpressions.contains(expression.expression)) {
-          knownExpressions(expression.expression) += DataItem(expression.frequency, dataExpressions)
-        } else {
-          knownExpressions(expression.expression) = Set(DataItem(expression.frequency, dataExpressions))
-          regenerateQueryIndex()
-        }
-      }
+      val dataItem = DataItem(expression.expression, expression.frequency, dataExpressions)
+      val replaced = knownExpressions.putIfAbsent(dataItem.toKey, dataItem)
+      queryListChanged = replaced.isEmpty
+      if (testMode)
+        regenerateQueryIndex()
     }
   }
 
-  def delExpr(expression: ExpressionWithFrequency): Unit = synchronized {
-    val perhapsRemoved = knownExpressions.remove(expression.expression)
-    if (perhapsRemoved.isDefined) {
+  def delExpr(expression: ExpressionWithFrequency): Unit = {
+    val expr = expression.expression
+    val freq = expression.frequency
+    val key = s"$freq $expr"
+    val removed = knownExpressions.remove(key)
+    queryListChanged = removed.isDefined
+    if (testMode)
       regenerateQueryIndex()
-    }
   }
 
-  def expressionsForCluster(cluster: String): List[ReturnableExpression] = synchronized {
+  def expressionsForCluster(cluster: String): List[ReturnableExpression] = {
     val name = Names.parseName(cluster)
     var tags = Map("nf.cluster" -> name.getCluster)
     if (name.getApp != null)
@@ -59,35 +76,41 @@ case class AlertMap() {
     if (name.getStack != null)
       tags = tags + ("nf.stack" -> name.getStack)
     val matches = queryIndex.matchingEntries(tags)
-    val matchingExpressions = matches.map(m => m._1)
     val matchingDataExpressions = mutable.Map[String, Boolean]()
-    matches.foreach(m => matchingDataExpressions(m._2) = true)
-
-    val ret = matchingExpressions.flatMap(s => {
-      val data = knownExpressions(s)
-      data.map(item => {
-        val dataExprs = item.containers.map(x => x.dataExpr).filter(x => matchingDataExpressions.contains(x))
-        ReturnableExpression(s, item.frequency, dataExprs)
-      })
+    val matchingDataItems = mutable.Map[DataItem, Boolean]()
+    matches.foreach(m => {
+      matchingDataExpressions(m._1) = true
+      matchingDataItems(m._2) = true
     })
-    ret.distinct
+
+    val ret = matchingDataItems.map {case (item, flag) =>
+      val dataExprs = item.containers.map(x => x.dataExpr).filter(x =>
+        matchingDataExpressions.contains(x)
+      )
+      ReturnableExpression(item.expression, item.frequency, dataExprs)
+    }
+    ret.toList.distinct
   }
 
-  private def regenerateQueryIndex() = {
-    val map = knownExpressions.flatMap {case (expr, data) =>
-      data.map(item =>
-        item.containers.map(container =>
-          QueryIndex.Entry(container.matchExpr, (expr, container.dataExpr))
-        )
+  def regenerateQueryIndex() = {
+    queryListChanged = false
+    val map = knownExpressions.flatMap { case (exprKey, data) =>
+      data.containers.map(container =>
+        QueryIndex.Entry(container.matchExpr, (container.dataExpr, data))
       )
-    }.flatten.toList
+    }.toList
     queryIndex = QueryIndex.create(map)
   }
 }
 
 object AlertMap {
-  case class DataItem(frequency: Long, containers: List[ExpressionSplitter.QueryContainer])
-  case class ReturnableExpression(expression: String, frequency: Long, dataExpressions: List[String])
+  case class DataItem(expression: String, frequency: Long, containers: List[ExpressionSplitter.QueryContainer]) {
+    def toKey = s"$frequency $expression"
+  }
+
+  case class ReturnableExpression(expression: String, frequency: Long, dataExpressions: List[String]) {
+    override def toString = s"ReturnableExpression<$expression> <$frequency> <$dataExpressions>"
+  }
 
   lazy val globalAlertMap = new AlertMap()
 }

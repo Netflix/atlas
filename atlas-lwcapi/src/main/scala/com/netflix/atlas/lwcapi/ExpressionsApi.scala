@@ -19,7 +19,7 @@ import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.AlertMap.ReturnableExpression
-import com.netflix.spectator.api.{Registry, Spectator}
+import com.netflix.spectator.api.Spectator
 import spray.http.{HttpResponse, StatusCodes}
 import spray.routing.RequestContext
 

@@ -15,10 +15,11 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.netflix.atlas.core.model.Query.KeyQuery
 import com.netflix.atlas.core.model.{ModelExtractors, Query, StyleVocabulary}
 import com.netflix.atlas.core.stacklang.Interpreter
+
 import ExpressionSplitter._
-import com.netflix.atlas.core.model.Query.KeyQuery
 
 case class ExpressionSyntaxException(message: String) extends IllegalArgumentException(message)
 

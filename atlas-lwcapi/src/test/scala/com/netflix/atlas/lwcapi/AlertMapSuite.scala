@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.lwcapi.AlertMap.ReturnableExpression
 import org.scalatest.FunSuite
 
@@ -36,14 +35,23 @@ class AlertMapSuite extends FunSuite {
     val ret2 = ReturnableExpression(query2.expression, 30000, List(ds2a))
 
     val x = AlertMap()
+    x.setTestMode()
 
     x.addExpr(query1)
     x.addExpr(query2)
-    assert(x.expressionsForCluster("skan-test") === List(ret1, ret2))
+    var ret = x.expressionsForCluster("skan-test")
+    assert(ret.size === 2)
+    assert(ret.contains(ret1))
+    assert(ret.contains(ret2))
+
     x.delExpr(query1)
-    assert(x.expressionsForCluster("skan-test") === List(ret2))
+    ret = x.expressionsForCluster("skan-test")
+    assert(ret.size === 1)
+    assert(ret.contains(ret2))
+
     x.delExpr(query2)
-    assert(x.expressionsForCluster("skan-test") === List())
+    ret = x.expressionsForCluster("skan-test")
+    assert(ret === List())
   }
 
   test("ignores matches for other clusters") {
@@ -56,11 +64,28 @@ class AlertMapSuite extends FunSuite {
     val ret2 = ReturnableExpression(query2.expression, 30000, List(ds2a))
 
     val x = AlertMap()
+    x.setTestMode()
 
     x.addExpr(query1)
     x.addExpr(query2)
     assert(x.expressionsForCluster("bar-test") === List())
     assert(x.expressionsForCluster("foo-test") === List(ret2))
+  }
+
+  test("ignores data expression matches for other clusters") {
+    val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,nf.cluster,foo-test,:eq,:sum", 30000)
+    val ds1a = "nf.cluster,skan-test,:eq,:sum"
+    val ret1a = ReturnableExpression(query1.expression, 30000, List(ds1a))
+
+    val ds1b = "nf.cluster,foo-test,:eq,:sum"
+    val ret1b = ReturnableExpression(query1.expression, 30000, List(ds1b))
+
+    val x = AlertMap()
+    x.setTestMode()
+
+    x.addExpr(query1)
+    assert(x.expressionsForCluster("skan-test") === List(ret1a))
+    assert(x.expressionsForCluster("foo-test") === List(ret1b))
   }
 
 }

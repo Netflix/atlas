@@ -15,14 +15,13 @@
  */
 package com.netflix.atlas.lwcapi
 
-import java.util.Date
-
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.Spectator
 import com.redis._
+import com.typesafe.scalalogging.StrictLogging
 
-class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
+class ExpressionDatabaseActor extends Actor with StrictLogging with CatchSafely {
   import ExpressionDatabaseActor._
 
   private val channel = "expressions"
@@ -34,7 +33,7 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
   private val connectsId = registry.createId("atlas.lwcapi.expressionDatabase.connects")
   private val connectRetriesId = registry.createId("atlas.lwcapi.expressionDatabase.connectRetries")
 
-  private val uuid = java.util.UUID.randomUUID.toString
+  private val uuid = GlobalUUID.get
 
   restartPubsub()
 
@@ -43,7 +42,7 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
     var success = false
     while (!success) {
       try {
-        log.info(s"Restarting pubsub, tries $tries")
+        logger.info(s"Restarting pubsub, tries $tries")
 
         registry.counter(connectsId).increment()
         if (tries != 1) {
@@ -55,19 +54,19 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
         success = true
       } catch safely {
         case ex: Throwable =>
-          log.warning("Connection error: " + ex.getMessage)
+          logger.warn("Connection error: " + ex.getMessage)
           tries += 1
       }
     }
-    log.info("Pubsub restarted!")
+    logger.info("Pubsub restarted!")
     subClient.subscribe(channel)(redisCallback)
   }
 
   def redisCallback(pubsub: PubSubMessage) = pubsub match {
-    case S(chan, cnt) => log.info(s"Subscribed from $chan, sub count is now $cnt")
-    case U(chan, cnt) => log.info(s"Unsubscribed from $chan, sub count is now $cnt")
+    case S(chan, cnt) => logger.info(s"Subscribed from $chan, sub count is now $cnt")
+    case U(chan, cnt) => logger.info(s"Unsubscribed from $chan, sub count is now $cnt")
     case E(exc) => {
-      log.error(exc, "redis pubsub: exception caught")
+      logger.error("redis pubsub: exception caught", exc)
       restartPubsub()
     }
     case M(chan, msg) =>
@@ -75,7 +74,7 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
       if (request.uuid != uuid) {
         val action = request.action
         val expression = request.expression
-        log.info(s"PubSub received $action for $expression")
+        logger.info(s"PubSub received $action for $expression")
         action match {
           case "add" =>
             registry.counter(updatesId.withTag("source", "remote").withTag("action", "add")).increment()
@@ -87,16 +86,22 @@ class ExpressionDatabaseActor extends Actor with ActorLogging with CatchSafely {
       }
   }
 
+  var counter @volatile = 0
+
   def receive = {
     case Publish(expression) =>
-      log.info(s"PubSub add for $expression")
+      //logger.info(s"PubSub add for $expression")
       AlertMap.globalAlertMap.addExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "add"))
-      pubClient.publish(channel, json)
+      counter += 1
+      if (counter > 100) {
+        pubClient.publish(channel, json)
+        counter = 0
+      }
       recordUpdate(json)
       registry.counter(updatesId.withTag("source", "local").withTag("action", "add")).increment()
     case Unpublish(expression) =>
-      log.info(s"PubSub delete for $expression")
+      logger.info(s"PubSub delete for $expression")
       AlertMap.globalAlertMap.delExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "delete"))
       pubClient.publish(channel, json)

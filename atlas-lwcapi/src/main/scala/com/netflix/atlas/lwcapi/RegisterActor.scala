@@ -15,10 +15,9 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.{Actor, ActorLogging, ActorRefFactory, Props}
+import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
-import spray.http.HttpResponse
-import spray.http.StatusCodes
+import spray.http.{HttpResponse, StatusCodes}
 
 class RegisterActor extends Actor with ActorLogging {
   import com.netflix.atlas.lwcapi.RegisterApi._

@@ -15,12 +15,10 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.Actor
-import akka.actor.Props
+import akka.actor.{Actor, Props}
 import com.netflix.atlas.lwcapi.RegisterApi.{DeleteRequest, RegisterRequest}
 import org.scalatest.FunSuite
-import spray.http.HttpResponse
-import spray.http.StatusCodes
+import spray.http.{HttpResponse, StatusCodes}
 import spray.testkit.ScalatestRouteTest
 
 class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
