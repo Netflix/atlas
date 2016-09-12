@@ -52,7 +52,7 @@ case class AlertMap() {
     splitter.split(expr)
   }
 
-  private def makeKey(frequency: Long, dataExpressions: List[ExpressionSplitter.QueryContainer]) = {
+  private def makeKey(frequency: Long, dataExpressions: List[ExpressionSplitter.QueryContainer]): String = {
     val key = frequency + "~" + dataExpressions.map(e => e.dataExpr).mkString(",")
     val md = java.security.MessageDigest.getInstance("SHA-1")
     Base64.getEncoder.encodeToString(md.digest(key.getBytes("UTF-8")))
@@ -103,7 +103,7 @@ case class AlertMap() {
     ret.toList.distinct
   }
 
-  def regenerateQueryIndex() = {
+  def regenerateQueryIndex(): Unit = {
     queryListChanged = false
     val map = knownExpressions.flatMap { case (exprKey, data) =>
       data.containers.map(container =>
@@ -115,9 +115,7 @@ case class AlertMap() {
 }
 
 object AlertMap {
-  case class DataItem(expression: String, frequency: Long, containers: List[ExpressionSplitter.QueryContainer]) {
-    def toKey = s"$frequency $expression"
-  }
+  case class DataItem(expression: String, frequency: Long, containers: List[ExpressionSplitter.QueryContainer])
 
   case class ReturnableExpression(expression: String, frequency: Long, dataExpressions: List[String]) {
     override def toString = s"ReturnableExpression<$expression> <$frequency> <$dataExpressions>"
