@@ -86,18 +86,12 @@ class ExpressionDatabaseActor extends Actor with StrictLogging with CatchSafely 
       }
   }
 
-  var counter @volatile = 0
-
   def receive = {
     case Publish(expression) =>
       //logger.info(s"PubSub add for $expression")
       AlertMap.globalAlertMap.addExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "add"))
-      counter += 1
-      if (counter > 100) {
-        pubClient.publish(channel, json)
-        counter = 0
-      }
+      pubClient.publish(channel, json)
       recordUpdate(json)
       registry.counter(updatesId.withTag("source", "local").withTag("action", "add")).increment()
     case Unpublish(expression) =>
