@@ -65,7 +65,7 @@ class ExpressionSplitter (val interner: QueryInterner) {
       val queries = context.stack.collect {
         case ModelExtractors.PresentationType(t) =>
           t.expr.dataExprs.map(e => QueryContainer(intern(compress(e.query)), e.toString))
-      }.flatten.distinct
+      }.flatten.distinct.sorted
       queries
     } catch {
       case _: Exception => List()
@@ -102,9 +102,13 @@ class ExpressionSplitter (val interner: QueryInterner) {
 object ExpressionSplitter {
   type QueryInterner = scala.collection.mutable.AnyRefMap[Query, Query]
 
-  case class QueryContainer(matchExpr: Query, dataExpr: String) {
+  case class QueryContainer(matchExpr: Query, dataExpr: String) extends Ordered[QueryContainer] {
     override def toString: String = {
       s"QueryContainer(<$matchExpr> <$dataExpr>)"
+    }
+
+    def compare(that: QueryContainer) = {
+      dataExpr compare that.dataExpr
     }
   }
 

@@ -35,7 +35,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
     AlertMap.globalAlertMap.setTestMode()
     AlertMap.globalAlertMap.addExpr(ExpressionWithFrequency("nf.cluster,skan,:eq,:avg", 60000))
     Get("/lwc/api/v1/expressions/skan") ~> endpoint.routes ~> check {
-      assert(responseAs[String] === """[{"expression":"nf.cluster,skan,:eq,:avg","frequency":60000,"dataExpressions":["nf.cluster,skan,:eq,:sum","nf.cluster,skan,:eq,:count"]}]""")
+      assert(responseAs[String] === """[{"expression":"nf.cluster,skan,:eq,:avg","frequency":60000,"dataExpressions":["nf.cluster,skan,:eq,:count","nf.cluster,skan,:eq,:sum"]}]""")
     }
   }
 }

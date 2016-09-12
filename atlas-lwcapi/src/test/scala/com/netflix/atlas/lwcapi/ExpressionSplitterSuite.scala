@@ -20,8 +20,8 @@ import org.scalatest.FunSuite
 
 class ExpressionSplitterSuite extends FunSuite {
   private val query1 = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:avg,(,nf.node,),:by,4500000000,:gt,30,:rolling-count,15,:ge,$nf.node,:legend"
-  private val ds1a = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:sum,(,nf.node,),:by"
-  private val ds1b = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:count,(,nf.node,),:by"
+  private val ds1a = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:count,(,nf.node,),:by"
+  private val ds1b = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:sum,(,nf.node,),:by"
   private val matchList1 = Query.Equal("nf.cluster", "skan-test")
   private val expected1 = List(
     ExpressionSplitter.QueryContainer(matchList1, ds1a),
