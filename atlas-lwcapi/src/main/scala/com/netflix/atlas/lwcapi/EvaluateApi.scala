@@ -26,7 +26,7 @@ import scala.util.control.NonFatal
 class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import EvaluateApi._
 
-  private val registerRef = actorRefFactory.actorSelection("/user/lwc.register")
+  private val evaluateRef = actorRefFactory.actorSelection("/user/lwc.evaluate")
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "evaluate") {
@@ -36,24 +36,44 @@ class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 
   private def handleReq(ctx: RequestContext): Unit = {
     try {
-      val request = toRequest(ctx.request.entity.asString)
-      registerRef.tell(request, ctx.responder)
+      val request = EvaluateRequest(ctx.request.entity.asString)
+      evaluateRef.tell(request, ctx.responder)
     } catch handleException(ctx)
   }
 }
 
 object EvaluateApi {
-  case class EvaluateRequest(expressions: List[ExpressionWithFrequency], data: List[Datapoint])
+  type TagMap = Map[String, String]
+  case class DataExpression(tags: TagMap, value: Double)
+  case class Item(timestamp: Long, frequency: Long, expression: String, dataExpressions: List[DataExpression])
 
-  def toRequest(request: String): EvaluateRequest = {
-    try {
-      Json.decode[EvaluateRequest](request)
-    } catch {
-      case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
+  case class EvaluateRequest(items: List[Item]) {
+    def toJson = { Json.encode(this) }
+  }
+
+  object EvaluateRequest {
+    def apply(json: String): EvaluateRequest = {
+      val decoded = try {
+        Json.decode[List[Item]](json)
+      } catch {
+        case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
+      }
+      EvaluateRequest(decoded)
     }
   }
 
-  def toJson(request: EvaluateRequest) = {
-    Json.encode(request.expressions)
+  case class ErrorResponse(failureCount: Long, failed: List[String]) {
+    def toJson = {Json.encode(this) }
+  }
+
+  object ErrorResponse {
+    def apply(json: String): ErrorResponse = {
+      val decoded = try {
+        Json.decode[ErrorResponse](json)
+      } catch {
+        case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
+      }
+      decoded
+    }
   }
 }

@@ -34,7 +34,7 @@ class RegisterActor extends Actor with ActorLogging {
       delete(expressions)
       sender() ! HttpResponse(StatusCodes.OK)
     case _ =>
-      sender() ! HttpResponse(StatusCodes.BadRequest, "unknown payload")
+      DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "unknown payload")
   }
 
   private def update(expressions: List[ExpressionWithFrequency]): Unit = {
