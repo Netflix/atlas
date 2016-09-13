@@ -63,18 +63,17 @@ class ExpressionDatabaseActor extends Actor with StrictLogging with CatchSafely 
   }
 
   def redisCallback(pubsub: PubSubMessage) = pubsub match {
-    case S(chan, cnt) => logger.info(s"Subscribed from $chan, sub count is now $cnt")
-    case U(chan, cnt) => logger.info(s"Unsubscribed from $chan, sub count is now $cnt")
-    case E(exc) => {
+    case S(chan, cnt) => logger.info(s"Subscribe to $chan, sub count is now $cnt")
+    case U(chan, cnt) => logger.info(s"Unsubscribe from $chan, sub count is now $cnt")
+    case E(exc) =>
       logger.error("redis pubsub: exception caught", exc)
       restartPubsub()
-    }
     case M(chan, msg) =>
       val request = Json.decode[RedisRequest](msg)
       if (request.uuid != uuid) {
         val action = request.action
         val expression = request.expression
-        logger.info(s"PubSub received $action for $expression")
+        logger.debug(s"PubSub received $action for $expression")
         action match {
           case "add" =>
             registry.counter(updatesId.withTag("source", "remote").withTag("action", "add")).increment()
@@ -88,14 +87,14 @@ class ExpressionDatabaseActor extends Actor with StrictLogging with CatchSafely 
 
   def receive = {
     case Publish(expression) =>
-      //logger.info(s"PubSub add for $expression")
+      logger.debug(s"PubSub add for $expression")
       AlertMap.globalAlertMap.addExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "add"))
       pubClient.publish(channel, json)
       recordUpdate(json)
       registry.counter(updatesId.withTag("source", "local").withTag("action", "add")).increment()
     case Unpublish(expression) =>
-      logger.info(s"PubSub delete for $expression")
+      logger.debug(s"PubSub delete for $expression")
       AlertMap.globalAlertMap.delExpr(expression)
       val json = Json.encode(RedisRequest(expression, uuid, "delete"))
       pubClient.publish(channel, json)
