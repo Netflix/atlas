@@ -21,7 +21,9 @@ import com.netflix.spectator.api.Spectator
 import com.redis._
 import com.typesafe.scalalogging.StrictLogging
 
-class ExpressionDatabaseActor extends Actor with StrictLogging with CatchSafely {
+import scala.util.control.NonFatal
+
+class ExpressionDatabaseActor extends Actor with StrictLogging {
   import ExpressionDatabaseActor._
 
   private val channel = "expressions"
@@ -29,35 +31,22 @@ class ExpressionDatabaseActor extends Actor with StrictLogging with CatchSafely 
   private var pubClient: RedisClient = _
 
   private val registry = Spectator.globalRegistry()
-  private val updatesId = registry.createId("atlas.lwcapi.expressionDatabase.updates")
-  private val connectsId = registry.createId("atlas.lwcapi.expressionDatabase.connects")
-  private val connectRetriesId = registry.createId("atlas.lwcapi.expressionDatabase.connectRetries")
+  private val updatesId = registry.createId("atlas.lwcapi.db.updates")
+  private val connectsId = registry.createId("atlas.lwcapi.redis.connects")
+  private val connectRetriesId = registry.createId("atlas.lwcapi.redis.connectRetries")
 
   private val uuid = GlobalUUID.get
+
+  private val ttl = ApiSettings.redisTTL
+  private val host = ApiSettings.redisHost
+  private val port = ApiSettings.redisPort
+  private val keyPrefix = ApiSettings.redisKeyPrefix
 
   restartPubsub()
 
   def restartPubsub(): Unit = {
-    var tries = 1
-    var success = false
-    while (!success) {
-      try {
-        logger.info(s"Restarting pubsub, tries $tries")
-
-        registry.counter(connectsId).increment()
-        if (tries != 1) {
-          registry.counter(connectRetriesId).increment()
-        }
-        Thread.sleep(1000)
-        subClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
-        pubClient = new RedisClient(ApiSettings.redisHost, ApiSettings.redisPort)
-        success = true
-      } catch safely {
-        case ex: Throwable =>
-          logger.warn("Connection error: " + ex.getMessage)
-          tries += 1
-      }
-    }
+    subClient = connect("subscribe").get
+    pubClient = connect("publish").get
     logger.info("Pubsub restarted!")
     subClient.subscribe(channel)(redisCallback)
   }
@@ -76,45 +65,61 @@ class ExpressionDatabaseActor extends Actor with StrictLogging with CatchSafely 
         logger.debug(s"PubSub received $action for $expression")
         action match {
           case "add" =>
-            registry.counter(updatesId.withTag("source", "remote").withTag("action", "add")).increment()
+            increment_counter("remote", "add")
             AlertMap.globalAlertMap.addExpr(expression)
           case "delete" =>
-            registry.counter(updatesId.withTag("source", "remote").withTag("action", "delete")).increment()
+            increment_counter("remote", "delete")
             AlertMap.globalAlertMap.delExpr(expression)
         }
       }
   }
 
+  def increment_counter(source: String, action: String) = {
+    registry.counter(updatesId.withTag("source", source).withTag("action", action)).increment()
+  }
+
   def receive = {
     case Publish(expression) =>
       logger.debug(s"PubSub add for $expression")
-      AlertMap.globalAlertMap.addExpr(expression)
-      val json = Json.encode(RedisRequest(expression, uuid, "add"))
-      pubClient.publish(channel, json)
-      recordUpdate(json)
-      registry.counter(updatesId.withTag("source", "local").withTag("action", "add")).increment()
+      val key = AlertMap.globalAlertMap.addExpr(expression)
+      recordUpdate(expression, key, "add")
     case Unpublish(expression) =>
       logger.debug(s"PubSub delete for $expression")
-      AlertMap.globalAlertMap.delExpr(expression)
-      val json = Json.encode(RedisRequest(expression, uuid, "delete"))
-      pubClient.publish(channel, json)
-      registry.counter(updatesId.withTag("source", "local").withTag("action", "delete")).increment()
+      val key = AlertMap.globalAlertMap.delExpr(expression)
+      recordUpdate(expression, key, "delete")
   }
 
-  def recordUpdate(json: String) = {
-    val List(expiry, keyindex) = computeTimes(System.currentTimeMillis())
-    val keyname = s"expressions.$keyindex"
-    val count = pubClient.sadd(keyname, json)
-    if (count.isDefined && count.get == 1) {
-      pubClient.pexpireat(keyname, expiry)
+  def recordUpdate(expression: ExpressionWithFrequency, key: String, action: String) = {
+    val json = Json.encode(RedisRequest(expression, uuid, action))
+    pubClient.publish(channel, json)
+    if (action != "delete") {
+      val keyname = s"$keyPrefix.$key"
+      val count = pubClient.psetex(keyname, ttl, json)
     }
+    increment_counter("local", action)
   }
 
-  def computeTimes(now: Long): List[Long] = {
-    List(
-      now / 60000 * 60000 + 600000, // 10 minutes starting on the minute boundary
-      now / 60000 // used for the key name
-    )
+  private def connect(source: String): Option[RedisClient] = {
+    var tries = 1
+    var success = false
+    while (!success) {
+      try {
+        logger.info(s"Connecting to redis($source), tries $tries")
+
+        registry.counter(connectsId.withTag("source", source)).increment()
+        if (tries != 1) {
+          registry.counter(connectRetriesId.withTag("source", source)).increment()
+        }
+        Thread.sleep(1000)
+        val client = new RedisClient(host, port)
+        return Some(client)
+      } catch {
+        case NonFatal(ex) =>
+          logger.warn("Connection error: " + ex.getMessage)
+          tries += 1
+      }
+    }
+    None
   }
 }
 
