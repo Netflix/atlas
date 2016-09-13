@@ -57,25 +57,27 @@ case class AlertMap() {
     Base64.getEncoder.encodeToString(md.digest(key.getBytes("UTF-8")))
   }
 
-  def addExpr(expression: ExpressionWithFrequency): Unit = {
+  def addExpr(expression: ExpressionWithFrequency): String = {
     val dataExpressions = splitExpression(expression.expression)
     val key = makeKey(expression.frequency, dataExpressions)
     if (dataExpressions.nonEmpty) {
-      val dataItem = DataItem(expression.expression, expression.frequency, dataExpressions)
+      val dataItem = DataItem(key, expression.frequency, dataExpressions)
       val replaced = knownExpressions.putIfAbsent(key, dataItem)
       queryListChanged = replaced.isEmpty
       if (testMode)
         regenerateQueryIndex()
     }
+    key
   }
 
-  def delExpr(expression: ExpressionWithFrequency): Unit = {
+  def delExpr(expression: ExpressionWithFrequency): String = {
     val dataExpressions = splitExpression(expression.expression)
     val key = makeKey(expression.frequency, dataExpressions)
     val removed = knownExpressions.remove(key)
     queryListChanged = removed.isDefined
     if (testMode)
       regenerateQueryIndex()
+    key
   }
 
   def expressionsForCluster(cluster: String): List[ReturnableExpression] = {
@@ -116,8 +118,8 @@ case class AlertMap() {
 object AlertMap {
   case class DataItem(expression: String, frequency: Long, containers: List[ExpressionSplitter.QueryContainer])
 
-  case class ReturnableExpression(expression: String, frequency: Long, dataExpressions: List[String]) {
-    override def toString = s"ReturnableExpression<$expression> <$frequency> <$dataExpressions>"
+  case class ReturnableExpression(id: String, frequency: Long, dataExpressions: List[String]) {
+    override def toString = s"ReturnableExpression<$id> <$frequency> <$dataExpressions>"
   }
 
   lazy val globalAlertMap = new AlertMap()
