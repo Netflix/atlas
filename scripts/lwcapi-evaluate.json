@@ -1,0 +1,9 @@
+[
+  {
+    "timestamp": 12345,
+    "id": "aaa",
+    "dataExpressions": [
+      {"tags": {}, "value": 123}
+    ]
+  }
+]
