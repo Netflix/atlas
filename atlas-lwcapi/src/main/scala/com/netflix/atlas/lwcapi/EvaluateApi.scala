@@ -45,7 +45,7 @@ class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 object EvaluateApi {
   type TagMap = Map[String, String]
   case class DataExpression(tags: TagMap, value: Double)
-  case class Item(timestamp: Long, frequency: Long, id: String, dataExpressions: List[DataExpression])
+  case class Item(timestamp: Long, id: String, dataExpressions: List[DataExpression])
 
   case class EvaluateRequest(items: List[Item]) {
     def toJson = { Json.encode(this) }
@@ -62,7 +62,7 @@ object EvaluateApi {
     }
   }
 
-  case class ErrorResponse(failureCount: Long, failed: List[String]) {
+  case class ErrorResponse(failureCount: Long, failed: Map[String, String]) {
     def toJson = {Json.encode(this) }
   }
 

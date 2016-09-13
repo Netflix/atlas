@@ -35,6 +35,6 @@ class EvaluateActor extends Actor with ActorLogging {
   private def evaluate(items: List[Item]): ErrorResponse = {
     log.info("Received an evaluate request")
     items.foreach { item => log.info("Item: " + item) }
-    ErrorResponse(0, List())
+    ErrorResponse(0, Map())
   }
 }
