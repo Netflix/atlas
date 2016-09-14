@@ -95,10 +95,10 @@ class AlertMapSuite extends FunSuite {
   test("ignores data expression matches for other clusters") {
     val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,nf.cluster,foo-test,:eq,:sum", 30000)
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
-    val ret1a = ReturnableExpression("zxWs1FcJHoMKhu6W06gbiclaStM=", 30000, List(ds1a))
+    val ret1a = ReturnableExpression("zxWs1FcJHoMKhu6W06gbiclaStM=", 30000, List("", ds1a))
 
     val ds1b = "nf.cluster,foo-test,:eq,:sum"
-    val ret1b = ReturnableExpression("zxWs1FcJHoMKhu6W06gbiclaStM=", 30000, List(ds1b))
+    val ret1b = ReturnableExpression("zxWs1FcJHoMKhu6W06gbiclaStM=", 30000, List(ds1b, ""))
 
     val x = AlertMap()
     x.setTestMode()

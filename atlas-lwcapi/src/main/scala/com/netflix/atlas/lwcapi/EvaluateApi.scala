@@ -17,7 +17,7 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.json.{Json, JsonSupport}
+import com.netflix.atlas.json.Json
 import spray.routing.RequestContext
 
 class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
@@ -44,7 +44,9 @@ object EvaluateApi {
   case class DataExpression(tags: TagMap, value: Double)
   case class Item(timestamp: Long, id: String, dataExpressions: List[DataExpression])
 
-  case class EvaluateRequest(items: List[Item]) extends JsonSupport
+  case class EvaluateRequest(items: List[Item]) {
+    def toJson = Json.encode(items)
+  }
 
   object EvaluateRequest {
     def fromJson(json: String): EvaluateRequest = {

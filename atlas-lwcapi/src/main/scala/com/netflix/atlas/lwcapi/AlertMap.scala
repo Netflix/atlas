@@ -96,8 +96,8 @@ case class AlertMap() {
     })
 
     val ret = matchingDataItems.map {case (item, flag) =>
-      val dataExprs = item.containers.map(x => x.dataExpr).filter(x =>
-        matchingDataExpressions.contains(x)
+      val dataExprs = item.containers.map(x => x.dataExpr).map(dataexpr =>
+        if (matchingDataExpressions.contains(dataexpr)) dataexpr else ""
       )
       ReturnableExpression(item.expression, item.frequency, dataExprs)
     }
