@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.{Actor, ActorLogging}
-import com.netflix.atlas.json.Json
+import akka.actor.Actor
+import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.spectator.api.Spectator
 import com.redis._
 import com.typesafe.scalalogging.StrictLogging
@@ -58,7 +58,7 @@ class ExpressionDatabaseActor extends Actor with StrictLogging {
       logger.error("redis pubsub: exception caught", exc)
       restartPubsub()
     case M(chan, msg) =>
-      val request = Json.decode[RedisRequest](msg)
+      val request = RedisRequest.fromJson(msg)
       if (request.uuid != uuid) {
         val action = request.action
         val expression = request.expression
@@ -90,7 +90,7 @@ class ExpressionDatabaseActor extends Actor with StrictLogging {
   }
 
   def recordUpdate(expression: ExpressionWithFrequency, key: String, action: String) = {
-    val json = Json.encode(RedisRequest(expression, uuid, action))
+    val json = RedisRequest(expression, uuid, action).toJson
     pubClient.publish(channel, json)
     if (action != "delete") {
       val keyname = s"$keyPrefix.$key"
@@ -124,7 +124,12 @@ class ExpressionDatabaseActor extends Actor with StrictLogging {
 }
 
 object ExpressionDatabaseActor {
-  case class RedisRequest(expression: ExpressionWithFrequency, uuid: String, action: String)
-  case class Publish(expression: ExpressionWithFrequency)
-  case class Unpublish(expression: ExpressionWithFrequency)
+  case class RedisRequest(expression: ExpressionWithFrequency, uuid: String, action: String) extends JsonSupport
+
+  object RedisRequest {
+    def fromJson(json: String): RedisRequest = Json.decode[RedisRequest](json)
+  }
+
+  case class Publish(expression: ExpressionWithFrequency) extends JsonSupport
+  case class Unpublish(expression: ExpressionWithFrequency) extends JsonSupport
 }
