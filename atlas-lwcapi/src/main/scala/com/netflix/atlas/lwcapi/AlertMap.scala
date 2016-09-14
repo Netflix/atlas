@@ -54,7 +54,7 @@ case class AlertMap() {
   private def makeKey(frequency: Long, dataExpressions: List[ExpressionSplitter.QueryContainer]): String = {
     val key = frequency + "~" + dataExpressions.map(e => e.dataExpr).mkString(",")
     val md = java.security.MessageDigest.getInstance("SHA-1")
-    Base64.getEncoder.encodeToString(md.digest(key.getBytes("UTF-8")))
+    Base64.getUrlEncoder.withoutPadding.encodeToString(md.digest(key.getBytes("UTF-8")))
   }
 
   def addExpr(expression: ExpressionWithFrequency): String = {

@@ -28,11 +28,11 @@ class AlertMapSuite extends FunSuite {
   test("same expression different frequency") {
     val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
-    val ret1 = ReturnableExpression("CxmlI6L5YBQcpWOrayncZKeZekg=", 30000, List(ds1a))
+    val ret1 = ReturnableExpression("CxmlI6L5YBQcpWOrayncZKeZekg", 30000, List(ds1a))
 
     val query2 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 50000)
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
-    val ret2 = ReturnableExpression("xcKZ6tCd4vSMUY+Ug3bToNy3L6k=", 50000, List(ds2a))
+    val ret2 = ReturnableExpression("xcKZ6tCd4vSMUY-Ug3bToNy3L6k", 50000, List(ds2a))
 
     val x = AlertMap()
     x.setTestMode()
@@ -48,11 +48,11 @@ class AlertMapSuite extends FunSuite {
   test("deleting") {
     val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
-    val ret1 = ReturnableExpression("CxmlI6L5YBQcpWOrayncZKeZekg=", 30000, List(ds1a))
+    val ret1 = ReturnableExpression("CxmlI6L5YBQcpWOrayncZKeZekg", 30000, List(ds1a))
 
     val query2 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum", 50000)
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
-    val ret2 = ReturnableExpression("xcKZ6tCd4vSMUY+Ug3bToNy3L6k=", 50000, List(ds2a))
+    val ret2 = ReturnableExpression("xcKZ6tCd4vSMUY-Ug3bToNy3L6k", 50000, List(ds2a))
 
     val x = AlertMap()
     x.setTestMode()
@@ -77,11 +77,11 @@ class AlertMapSuite extends FunSuite {
   test("ignores matches for other clusters") {
     val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
-    val ret1 = ReturnableExpression("CxmlI6L5YBQcpWOrayncZKeZekg=", 30000, List(ds1a))
+    val ret1 = ReturnableExpression("CxmlI6L5YBQcpWOrayncZKeZekg", 30000, List(ds1a))
 
     val query2 = ExpressionWithFrequency("nf.cluster,foo-test,:eq,:sum", 50000)
     val ds2a = "nf.cluster,foo-test,:eq,:sum"
-    val ret2 = ReturnableExpression("AelsHYTDCsTCiqzFkyOD+ShPzE8=", 50000, List(ds2a))
+    val ret2 = ReturnableExpression("AelsHYTDCsTCiqzFkyOD-ShPzE8", 50000, List(ds2a))
 
     val x = AlertMap()
     x.setTestMode()
@@ -95,10 +95,10 @@ class AlertMapSuite extends FunSuite {
   test("ignores data expression matches for other clusters") {
     val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,nf.cluster,foo-test,:eq,:sum", 30000)
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
-    val ret1a = ReturnableExpression("zxWs1FcJHoMKhu6W06gbiclaStM=", 30000, List("", ds1a))
+    val ret1a = ReturnableExpression("zxWs1FcJHoMKhu6W06gbiclaStM", 30000, List("", ds1a))
 
     val ds1b = "nf.cluster,foo-test,:eq,:sum"
-    val ret1b = ReturnableExpression("zxWs1FcJHoMKhu6W06gbiclaStM=", 30000, List(ds1b, ""))
+    val ret1b = ReturnableExpression("zxWs1FcJHoMKhu6W06gbiclaStM", 30000, List(ds1b, ""))
 
     val x = AlertMap()
     x.setTestMode()
