@@ -17,11 +17,8 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.core.model.Datapoint
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.{Json, JsonSupport}
 import spray.routing.RequestContext
-
-import scala.util.control.NonFatal
 
 class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import EvaluateApi._
@@ -36,7 +33,7 @@ class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 
   private def handleReq(ctx: RequestContext): Unit = {
     try {
-      val request = EvaluateRequest(ctx.request.entity.asString)
+      val request = EvaluateRequest.fromJson(ctx.request.entity.asString)
       evaluateRef.tell(request, ctx.responder)
     } catch handleException(ctx)
   }
@@ -47,33 +44,12 @@ object EvaluateApi {
   case class DataExpression(tags: TagMap, value: Double)
   case class Item(timestamp: Long, id: String, dataExpressions: List[DataExpression])
 
-  case class EvaluateRequest(items: List[Item]) {
-    def toJson = { Json.encode(this) }
-  }
+  case class EvaluateRequest(items: List[Item]) extends JsonSupport
 
   object EvaluateRequest {
-    def apply(json: String): EvaluateRequest = {
-      val decoded = try {
-        Json.decode[List[Item]](json)
-      } catch {
-        case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
-      }
+    def fromJson(json: String): EvaluateRequest = {
+      val decoded = Json.decode[List[Item]](json)
       EvaluateRequest(decoded)
-    }
-  }
-
-  case class ErrorResponse(failureCount: Long, failed: Map[String, String]) {
-    def toJson = {Json.encode(this) }
-  }
-
-  object ErrorResponse {
-    def apply(json: String): ErrorResponse = {
-      val decoded = try {
-        Json.decode[ErrorResponse](json)
-      } catch {
-        case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
-      }
-      decoded
     }
   }
 }

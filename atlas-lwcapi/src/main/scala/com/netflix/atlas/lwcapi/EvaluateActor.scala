@@ -26,15 +26,13 @@ class EvaluateActor extends Actor with ActorLogging {
     case EvaluateRequest(Nil) =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "empty expression payload")
     case EvaluateRequest(items) =>
-      val errors = evaluate(items)
-      sender() ! HttpResponse(StatusCodes.OK, errors.toJson)
+      sender() ! HttpResponse(StatusCodes.OK)
     case _ =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "unknown payload")
   }
 
-  private def evaluate(items: List[Item]): ErrorResponse = {
+  private def evaluate(items: List[Item]): Unit = {
     log.info("Received an evaluate request")
     items.foreach { item => log.info("Item: " + item) }
-    ErrorResponse(0, Map())
   }
 }

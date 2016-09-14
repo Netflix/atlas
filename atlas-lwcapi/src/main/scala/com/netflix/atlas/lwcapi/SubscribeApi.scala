@@ -17,11 +17,8 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.core.model.Datapoint
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.{Json, JsonSupport}
 import spray.routing.RequestContext
-
-import scala.util.control.NonFatal
 
 class SubscribeApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import SubscribeApi._
@@ -41,5 +38,5 @@ class SubscribeApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi
 }
 
 object SubscribeApi {
-  case class Spam(count: Int)
+  case class Spam(count: Int) extends JsonSupport
 }

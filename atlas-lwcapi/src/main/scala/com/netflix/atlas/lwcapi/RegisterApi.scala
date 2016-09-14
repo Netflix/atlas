@@ -17,10 +17,8 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.{Json, JsonSupport}
 import spray.routing.RequestContext
-
-import scala.util.control.NonFatal
 
 class RegisterApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import RegisterApi._
@@ -36,48 +34,41 @@ class RegisterApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 
   private def handlePost(ctx: RequestContext): Unit = {
     try {
-      val request = RegisterRequest(ctx.request.entity.asString)
+      val request = RegisterRequest.fromJson(ctx.request.entity.asString)
       registerRef.tell(request, ctx.responder)
     } catch handleException(ctx)
   }
 
   private def handleDelete(ctx: RequestContext): Unit = {
     try {
-      val request = DeleteRequest(ctx.request.entity.asString)
+      val request = DeleteRequest.fromJson(ctx.request.entity.asString)
       registerRef.tell(request, ctx.responder)
     } catch handleException(ctx)
   }
 }
 
 object RegisterApi {
-  case class RegisterRequest(expressions: List[ExpressionWithFrequency]) {
-    def toJson = { Json.encode(this) }
-  }
+  case class RegisterRequest(expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
   object RegisterRequest {
-    def apply(json: String): RegisterRequest = {
-      val decoded = try {
-        Json.decode[RegisterRequest](json)
-      } catch {
-        case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
-      }
+    def fromJson(json: String): RegisterRequest = {
+      val decoded = Json.decode[RegisterRequest](json)
       if (decoded.expressions == null || decoded.expressions.isEmpty)
         throw new IllegalArgumentException("Missing or empty expressions array")
       decoded
     }
   }
 
-  case class DeleteRequest(expressions: List[ExpressionWithFrequency]) {
-    def toJson = { Json.encode(this) }
-  }
+  case class DeleteRequest(expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
   object DeleteRequest {
-    def apply(json: String): DeleteRequest = {
-      try {
-        Json.decode[DeleteRequest](json)
-      } catch {
-        case NonFatal(t) => throw new IllegalArgumentException("improperly formatted request body")
-      }
-    }
+    def fromJson(json: String): DeleteRequest = Json.decode[DeleteRequest](json)
+  }
+
+
+  case class ErrorResponse(failureCount: Long, failed: Map[String, String]) extends JsonSupport
+
+  object ErrorResponse {
+    def fromJson(json: String): ErrorResponse = Json.decode[ErrorResponse](json)
   }
 }

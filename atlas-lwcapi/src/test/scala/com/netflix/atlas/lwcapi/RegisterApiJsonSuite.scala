@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.netflix.atlas.lwcapi.RegisterApi.RegisterRequest
 import org.scalatest.FunSuite
 
@@ -31,42 +32,30 @@ class RegisterApiJsonSuite extends FunSuite {
     )
     val original = RegisterRequest(expressions)
     val json = original.toJson
-    val decoded = RegisterRequest(json)
+    val decoded = RegisterRequest.fromJson(json)
     assert(original === decoded)
   }
 
   test("decode empty expression list throws") {
     intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest("""{"expressions": []}""")
+      RegisterApi.RegisterRequest.fromJson("""{"expressions": []}""")
     }
   }
 
   test("decode missing expression list throws") {
     intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest("""{}""")
-    }
-  }
-
-  test("decode bad data 1") {
-    intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest("{}")
-    }
-  }
-
-  test("decode bad data 2") {
-    intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest("""{"foo":"bar"}""")
+      RegisterApi.RegisterRequest.fromJson("""{}""")
     }
   }
 
   test("decode array") {
-    intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest("[]")
+    intercept[JsonMappingException] {
+      RegisterApi.RegisterRequest.fromJson("[]")
     }
   }
 
   test("decode list") {
-    val decoded = RegisterApi.RegisterRequest("""
+    val decoded = RegisterApi.RegisterRequest.fromJson("""
       {
         "expressions": [
           { "expression": "this", "frequency": 12345 },
