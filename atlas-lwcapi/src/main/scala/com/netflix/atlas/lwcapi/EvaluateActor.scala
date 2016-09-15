@@ -27,9 +27,7 @@ class EvaluateActor extends Actor with ActorLogging {
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "empty expression payload")
     case EvaluateRequest(items) =>
       evaluate(items)
-      sender() ! HttpResponse(StatusCodes.OK).withAck("ack!")
-    case x: String =>
-      println("Got a " + x)
+      sender() ! HttpResponse(StatusCodes.OK)
     case _ =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "unknown payload")
   }
