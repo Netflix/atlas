@@ -66,17 +66,15 @@ class ExpressionSplitter (val interner: QueryInterner) {
     Base64.getUrlEncoder.withoutPadding.encodeToString(md.digest(key.getBytes("UTF-8")))
   }
 
-  def split(e: ExpressionWithFrequency): SplitResult = split(e.expression, e.frequency)
-
-  def split(s: String, frequency: Long): SplitResult = synchronized {
-    val context = interpreter.execute(s)
+  def split(e: ExpressionWithFrequency): SplitResult = synchronized {
+    val context = interpreter.execute(e.expression)
     val queries = context.stack.flatMap {
       case ModelExtractors.PresentationType(t) =>
         t.expr.dataExprs.map(e => QueryContainer(intern(compress(e.query)), e.toString))
       case _ => throw new IllegalArgumentException("Expression is not a valid expression")
     }.distinct.sorted
-    val id = makeId(frequency, queries)
-    SplitResult(s, frequency, id, queries)
+    val id = makeId(e.frequency, queries)
+    SplitResult(e.expression, e.frequency, id, queries)
   }
 
   private def simplify(query: Query): Query = {

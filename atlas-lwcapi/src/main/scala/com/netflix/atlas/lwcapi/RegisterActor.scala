@@ -44,14 +44,14 @@ class RegisterActor extends Actor with ActorLogging {
 
   private def update(sinkId: Option[String], expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
-      val split = splitter.split(expr.expression, expr.frequency)
+      val split = splitter.split(expr)
       pubsubActor ! ExpressionDatabaseActor.Publish(split)
     }
   }
 
   private def delete(sinkId: Option[String], expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
-      val split = splitter.split(expr.expression, expr.frequency)
+      val split = splitter.split(expr)
      pubsubActor ! ExpressionDatabaseActor.Unpublish(split)
     }
   }

@@ -31,24 +31,22 @@ class ExpressionSplitterSuite extends FunSuite {
   )
 
   private val interner = new ExpressionSplitter.QueryInterner()
+  private val splitter = ExpressionSplitter(interner)
 
   test("splits single expression into data expressions") {
-    val splitter = ExpressionSplitter(interner)
-    val ret = splitter.split(query1, frequency1)
+    val ret = splitter.split(ExpressionWithFrequency(query1, frequency1))
     assert(ret === SplitResult(query1, frequency1, "1ylCY_sReTZWQ-U7zXqfl8S7ARs", expected1))
   }
 
   test("splits compound expression into data expressions") {
-    val splitter = ExpressionSplitter(interner)
     val expr = query1 + "," + query1
-    val ret = splitter.split(expr, frequency1)
+    val ret = splitter.split(ExpressionWithFrequency(expr, frequency1))
     assert(ret === SplitResult(expr, frequency1, "1ylCY_sReTZWQ-U7zXqfl8S7ARs", expected1))
   }
 
   test("returns None for invalid expressions") {
     val msg = intercept[IllegalArgumentException] {
-      val splitter = ExpressionSplitter(interner)
-      splitter.split("foo", frequency1)
+      splitter.split(ExpressionWithFrequency("foo", frequency1))
     }
    assert(msg.getMessage === "Expression is not a valid expression")
   }

@@ -67,7 +67,7 @@ class ExpressionDatabaseActor extends Actor with StrictLogging {
         val action = request.action
         val expression = request.expression
         logger.debug(s"PubSub received $action for $expression")
-        val split = splitter.split(expression.expression, expression.frequency)
+        val split = splitter.split(expression)
         action match {
           case "add" =>
             increment_counter("remote", "add")

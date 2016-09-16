@@ -86,7 +86,7 @@ class LwcapiStartupServer @Inject() (
               count += 1
               val json = client.get(key)
               val entry = Json.decode[ExpressionDatabaseActor.RedisRequest](json.get)
-              val split = splitter.split(entry.expression.expression, entry.expression.frequency)
+              val split = splitter.split(entry.expression)
               AlertMap.globalAlertMap.addExpr(split)
               registry.counter(updatesId.withTag("source", "load").withTag("action", "add")).increment()
             } catch {
