@@ -15,28 +15,26 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.ActorRefFactory
+import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.json.{Json, JsonSupport}
+import com.netflix.atlas.json.JsonSupport
 import spray.routing.RequestContext
 
-class SubscribeApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
-  import SubscribeApi._
-
-  private val subscribeRef = actorRefFactory.actorSelection("/user/lwc.subscribe")
+class SSEApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+  import SSEApi._
 
   def routes: RequestContext => Unit = {
-    path("lwc" / "api" / "v1" / "subscribe") {
-      get { ctx => handleReq(ctx) }
+    path("lwc" / "api" / "v1" / "sse" / Segment) { (sseId) =>
+      get { ctx => handleReq(ctx, sseId) }
     }
   }
 
-  private def handleReq(ctx: RequestContext): Unit = {
-    println("GOT A REQUEST")
-    subscribeRef.tell(Spam(100000), ctx.responder)
+  private def handleReq(ctx: RequestContext, sseId: String): Unit = {
+    val newActor = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, sseId)), name = "foo")
   }
 }
 
-object SubscribeApi {
-  case class Spam(count: Int) extends JsonSupport
+object SSEApi {
+  case class SSEMessage(msgType: String, what: String, content: String)
+  case class SSEShutdown(reason: String) extends JsonSupport
 }

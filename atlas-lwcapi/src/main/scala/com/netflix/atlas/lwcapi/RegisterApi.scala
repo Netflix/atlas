@@ -48,7 +48,7 @@ class RegisterApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 }
 
 object RegisterApi {
-  case class RegisterRequest(expressions: List[ExpressionWithFrequency]) extends JsonSupport
+  case class RegisterRequest(sinkId: Option[String], expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
   object RegisterRequest {
     def fromJson(json: String): RegisterRequest = {
@@ -59,7 +59,7 @@ object RegisterApi {
     }
   }
 
-  case class DeleteRequest(expressions: List[ExpressionWithFrequency]) extends JsonSupport
+  case class DeleteRequest(sinkId: Option[String], expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
   object DeleteRequest {
     def fromJson(json: String): DeleteRequest = Json.decode[DeleteRequest](json)

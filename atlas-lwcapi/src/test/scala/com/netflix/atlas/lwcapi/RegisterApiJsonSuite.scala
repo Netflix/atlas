@@ -25,12 +25,12 @@ class RegisterApiJsonSuite extends FunSuite {
     assert(ExpressionWithFrequency("this") === ExpressionWithFrequency("this", ApiSettings.defaultFrequency))
   }
 
-  test("encode and decode") {
+  test("encode and decode loop") {
     val expressions: List[ExpressionWithFrequency] = List(
       ExpressionWithFrequency("this", 1234),
       ExpressionWithFrequency("that", 4321)
     )
-    val original = RegisterRequest(expressions)
+    val original = RegisterRequest(None, expressions)
     val json = original.toJson
     val decoded = RegisterRequest.fromJson(json)
     assert(original === decoded)
@@ -65,6 +65,18 @@ class RegisterApiJsonSuite extends FunSuite {
       }
       """)
     assert(decoded.expressions.size === 3)
+  }
+
+  test("decode with sinkId") {
+    val decoded = RegisterApi.RegisterRequest.fromJson("""
+      {
+        "sinkId": "testsink",
+        "expressions": [
+          { "expression": "this", "frequency": 12345 }
+        ]
+      }
+      """)
+    assert(decoded.sinkId === Some("testsink"))
   }
 
 }

@@ -36,6 +36,7 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
   override def beforeAll(): Unit = {
     super.beforeAll()
     lastUpdate = Nil
+    lastSinkId = None
   }
 
   test("publish no content") {
@@ -69,6 +70,22 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
     Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
+      assert(lastSinkId === None)
+    }
+  }
+
+  test("publish correctly formatted expression with sinkId") {
+    val json = """
+                 |{
+                 |  "sinkId": "abc123",
+                 |  "expressions": [
+                 |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
+                 |  ]
+                 |}""".stripMargin
+    Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(lastUpdate.size === 1)
+      assert(lastSinkId === Some("abc123"))
     }
   }
 
@@ -99,17 +116,20 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
 
 object RegisterApiSuite {
   @volatile var lastUpdate: List[ExpressionWithFrequency] = Nil
+  @volatile var lastSinkId: Option[String] = None
 
   class TestActor extends Actor {
     def receive = {
-      case RegisterRequest(Nil) =>
+      case RegisterRequest(sinkId, Nil) =>
         lastUpdate = Nil
         sender() ! HttpResponse(StatusCodes.BadRequest)
-      case RegisterRequest(values) =>
+      case RegisterRequest(sinkId, values) =>
         lastUpdate = values
+        lastSinkId = sinkId
         sender() ! HttpResponse(StatusCodes.OK)
-      case DeleteRequest(values) =>
+      case DeleteRequest(sinkId, values) =>
         lastUpdate = values
+        lastSinkId = sinkId
         sender() ! HttpResponse(StatusCodes.OK)
     }
   }

@@ -17,13 +17,15 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.{Json, JsonSupport}
+import com.netflix.atlas.lwcapi.SSEApi.SSEMessage
 import spray.routing.RequestContext
 
 class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import EvaluateApi._
 
   private val evaluateRef = actorRefFactory.actorSelection("/user/lwc.evaluate")
+  private val sseRef = actorRefFactory.actorSelection("/user/foo")
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "evaluate") {
@@ -35,6 +37,9 @@ class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
     try {
       val request = EvaluateRequest.fromJson(ctx.request.entity.asString)
       evaluateRef.tell(request, ctx.responder)
+      request.items.foreach(item =>
+        sseRef ! SSEMessage("data", "metric", item.toJson)
+      )
     } catch handleException(ctx)
   }
 }
@@ -42,7 +47,7 @@ class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 object EvaluateApi {
   type TagMap = Map[String, String]
   case class DataExpression(tags: TagMap, value: Double)
-  case class Item(timestamp: Long, id: String, dataExpressions: List[DataExpression])
+  case class Item(timestamp: Long, id: String, dataExpressions: List[DataExpression]) extends JsonSupport
 
   case class EvaluateRequest(items: List[Item]) {
     def toJson = Json.encode(items)
