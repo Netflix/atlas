@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.lwcapi
 
-import java.util.Base64
 import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, TimeUnit}
 
 import com.netflix.atlas.core.index.QueryIndex
+import com.netflix.atlas.lwcapi.ExpressionSplitter.{QueryInterner, SplitResult}
 import com.netflix.frigga.Names
 
 import scala.collection.mutable
@@ -27,9 +27,9 @@ import scala.collection.JavaConverters._
 case class AlertMap() {
   import AlertMap._
 
-  private val knownExpressions = new ConcurrentHashMap[String, DataItem]().asScala
-  private var queryIndex = QueryIndex.create[(String, DataItem)](Nil)
-  private var interner = new ExpressionSplitter.QueryInterner()
+  private val knownExpressions = new ConcurrentHashMap[String, SplitResult]().asScala
+  private var queryIndex = QueryIndex.create[(String, SplitResult)](Nil)
+  private var interner = new QueryInterner()
 
   private var queryListChanged @volatile = false
   private var testMode = false
@@ -46,38 +46,25 @@ case class AlertMap() {
 
   def setTestMode() = { testMode = true }
 
-  private def splitExpression(expr: String) = {
+  private def splitExpression(expr: ExpressionWithFrequency) = {
     val splitter = ExpressionSplitter(interner)
-    splitter.split(expr)
+    splitter.split(expr.expression, expr.frequency)
   }
 
-  private def makeKey(frequency: Long, dataExpressions: List[ExpressionSplitter.QueryContainer]): String = {
-    val key = frequency + "~" + dataExpressions.map(e => e.dataExpr).mkString(",")
-    val md = java.security.MessageDigest.getInstance("SHA-1")
-    Base64.getUrlEncoder.withoutPadding.encodeToString(md.digest(key.getBytes("UTF-8")))
+  def addExpr(expression: ExpressionWithFrequency): Unit = {
+    val split = splitExpression(expression)
+    val replaced = knownExpressions.putIfAbsent(split.id, split)
+    queryListChanged = replaced.isEmpty
+    if (testMode)
+      regenerateQueryIndex()
   }
 
-  def addExpr(expression: ExpressionWithFrequency): String = {
-    val dataExpressions = splitExpression(expression.expression)
-    val key = makeKey(expression.frequency, dataExpressions)
-    if (dataExpressions.nonEmpty) {
-      val dataItem = DataItem(key, expression.frequency, dataExpressions)
-      val replaced = knownExpressions.putIfAbsent(key, dataItem)
-      queryListChanged = replaced.isEmpty
-      if (testMode)
-        regenerateQueryIndex()
-    }
-    key
-  }
-
-  def delExpr(expression: ExpressionWithFrequency): String = {
-    val dataExpressions = splitExpression(expression.expression)
-    val key = makeKey(expression.frequency, dataExpressions)
-    val removed = knownExpressions.remove(key)
+  def delExpr(expression: ExpressionWithFrequency): Unit = {
+    val split = splitExpression(expression)
+    val removed = knownExpressions.remove(split.id)
     queryListChanged = removed.isDefined
     if (testMode)
       regenerateQueryIndex()
-    key
   }
 
   def expressionsForCluster(cluster: String): List[ReturnableExpression] = {
@@ -89,17 +76,17 @@ case class AlertMap() {
       tags = tags + ("nf.stack" -> name.getStack)
     val matches = queryIndex.matchingEntries(tags)
     val matchingDataExpressions = mutable.Map[String, Boolean]()
-    val matchingDataItems = mutable.Map[DataItem, Boolean]()
+    val matchingDataItems = mutable.Map[SplitResult, Boolean]()
     matches.foreach(m => {
       matchingDataExpressions(m._1) = true
       matchingDataItems(m._2) = true
     })
 
     val ret = matchingDataItems.map {case (item, flag) =>
-      val dataExprs = item.containers.map(x => x.dataExpr).map(dataexpr =>
+      val dataExprs = item.split.map(x => x.dataExpr).map(dataexpr =>
         if (matchingDataExpressions.contains(dataexpr)) dataexpr else ""
       )
-      ReturnableExpression(item.expression, item.frequency, dataExprs)
+      ReturnableExpression(item.id, item.frequency, dataExprs)
     }
     ret.toList.distinct
   }
@@ -107,7 +94,7 @@ case class AlertMap() {
   def regenerateQueryIndex(): Unit = {
     queryListChanged = false
     val map = knownExpressions.flatMap { case (exprKey, data) =>
-      data.containers.map(container =>
+      data.split.map(container =>
         QueryIndex.Entry(container.matchExpr, (container.dataExpr, data))
       )
     }.toList

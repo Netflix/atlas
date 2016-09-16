@@ -81,12 +81,12 @@ class ExpressionDatabaseActor extends Actor with StrictLogging {
   def receive = {
     case Publish(expression) =>
       logger.debug(s"PubSub add for $expression")
-      val key = AlertMap.globalAlertMap.addExpr(expression)
-      recordUpdate(expression, key, "add")
+      AlertMap.globalAlertMap.addExpr(expression)
+      //recordUpdate(expression, key, "add")
     case Unpublish(expression) =>
       logger.debug(s"PubSub delete for $expression")
-      val key = AlertMap.globalAlertMap.delExpr(expression)
-      recordUpdate(expression, key, "delete")
+      AlertMap.globalAlertMap.delExpr(expression)
+      //recordUpdate(expression, key, "delete")
   }
 
   def recordUpdate(expression: ExpressionWithFrequency, key: String, action: String) = {

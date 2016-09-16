@@ -15,15 +15,16 @@
  */
 package com.netflix.atlas.lwcapi
 
+import java.util.Base64
+
 import com.netflix.atlas.core.model.Query.KeyQuery
 import com.netflix.atlas.core.model.{ModelExtractors, Query, StyleVocabulary}
 import com.netflix.atlas.core.stacklang.Interpreter
-
 import ExpressionSplitter._
 
-case class ExpressionSyntaxException(message: String) extends IllegalArgumentException(message)
-
 class ExpressionSplitter (val interner: QueryInterner) {
+  private val keepKeys = Set("nf.app", "nf.stack", "nf.cluster")
+
   private var interpreter = Interpreter(StyleVocabulary.allWords)
 
   private def intern(query: Query): Query = {
@@ -59,20 +60,23 @@ class ExpressionSplitter (val interner: QueryInterner) {
     }
   }
 
-  def split(s: String): List[QueryContainer] = synchronized {
-    try {
-      val context = interpreter.execute(s)
-      val queries = context.stack.collect {
-        case ModelExtractors.PresentationType(t) =>
-          t.expr.dataExprs.map(e => QueryContainer(intern(compress(e.query)), e.toString))
-      }.flatten.distinct.sorted
-      queries
-    } catch {
-      case _: Exception => List()
-    }
+  private def makeId(frequency: Long, dataExpressions: List[QueryContainer]): String = {
+    val key = frequency + "~" + dataExpressions.map(e => e.dataExpr).mkString("~")
+    val md = java.security.MessageDigest.getInstance("SHA-1")
+    Base64.getUrlEncoder.withoutPadding.encodeToString(md.digest(key.getBytes("UTF-8")))
   }
 
-  private val keys = Set("nf.app", "nf.stack", "nf.cluster")
+  def split(s: String, frequency: Long): SplitResult = synchronized {
+    val context = interpreter.execute(s)
+    val queries = context.stack.flatMap {
+      case ModelExtractors.PresentationType(t) =>
+        t.expr.dataExprs.map(e => QueryContainer(intern(compress(e.query)), e.toString))
+      case _ => throw new IllegalArgumentException("Expression is not a valid expression")
+    }.distinct.sorted
+    val id = makeId(frequency, queries)
+    SplitResult(s, frequency, id, queries)
+  }
+
   private def simplify(query: Query): Query = {
     val newQuery = query match {
       case Query.And(Query.True, q)  => simplify(q)
@@ -94,13 +98,15 @@ class ExpressionSplitter (val interner: QueryInterner) {
   }
 
   def compress(expr: Query): Query = {
-    val tmp = expr.rewrite { case kq: KeyQuery if !keys.contains(kq.k) => Query.True }
+    val tmp = expr.rewrite { case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True }
     simplify(tmp.asInstanceOf[Query])
   }
 }
 
 object ExpressionSplitter {
   type QueryInterner = scala.collection.mutable.AnyRefMap[Query, Query]
+
+  case class SplitResult(expression: String, frequency: Long, id: String, split: List[QueryContainer])
 
   case class QueryContainer(matchExpr: Query, dataExpr: String) extends Ordered[QueryContainer] {
     override def toString: String = {
