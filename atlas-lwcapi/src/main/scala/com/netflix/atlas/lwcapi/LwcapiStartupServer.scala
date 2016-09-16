@@ -19,14 +19,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 import akka.actor.ActorSystem
-
 import com.netflix.atlas.json.Json
+import com.netflix.atlas.lwcapi.ExpressionSplitter.QueryInterner
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.ClassFactory
 import com.netflix.spectator.api.Registry
-
 import com.redis.RedisClient
-
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
@@ -63,6 +61,9 @@ class LwcapiStartupServer @Inject() (
   private val connectRetriesId = registry.createId("atlas.lwcapi.redis.connectRetries")
 
   protected def startImpl(): Unit = {
+    val interner = new QueryInterner()
+    val splitter = new ExpressionSplitter(interner)
+
     logger.info(s"Loading redis data from $host:$port")
 
     val client = connect("load").get
@@ -85,7 +86,8 @@ class LwcapiStartupServer @Inject() (
               count += 1
               val json = client.get(key)
               val entry = Json.decode[ExpressionDatabaseActor.RedisRequest](json.get)
-              AlertMap.globalAlertMap.addExpr(entry.expression)
+              val split = splitter.split(entry.expression.expression, entry.expression.frequency)
+              AlertMap.globalAlertMap.addExpr(split)
               registry.counter(updatesId.withTag("source", "load").withTag("action", "add")).increment()
             } catch {
               case NonFatal(ex) => logger.error(s"Error loading redis key $key", ex)

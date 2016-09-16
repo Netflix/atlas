@@ -17,12 +17,17 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.lwcapi.ExpressionSplitter.QueryInterner
 import spray.http.{HttpResponse, StatusCodes}
 
 class RegisterActor extends Actor with ActorLogging {
   import com.netflix.atlas.lwcapi.RegisterApi._
 
   private val pubsubActor = context.actorSelection("/user/lwc.expressiondb")
+
+  private val interner = new QueryInterner()
+  private val splitter = new ExpressionSplitter(interner)
+
 
   def receive = {
     case RegisterRequest(sinkId, Nil) =>
@@ -39,13 +44,15 @@ class RegisterActor extends Actor with ActorLogging {
 
   private def update(sinkId: Option[String], expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
-      pubsubActor ! ExpressionDatabaseActor.Publish(expr)
+      val split = splitter.split(expr.expression, expr.frequency)
+      pubsubActor ! ExpressionDatabaseActor.Publish(split)
     }
   }
 
   private def delete(sinkId: Option[String], expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
-     pubsubActor ! ExpressionDatabaseActor.Unpublish(expr)
+      val split = splitter.split(expr.expression, expr.frequency)
+     pubsubActor ! ExpressionDatabaseActor.Unpublish(split)
     }
   }
 }

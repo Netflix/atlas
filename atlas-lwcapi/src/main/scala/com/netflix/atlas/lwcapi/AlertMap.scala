@@ -29,7 +29,6 @@ case class AlertMap() {
 
   private val knownExpressions = new ConcurrentHashMap[String, SplitResult]().asScala
   private var queryIndex = QueryIndex.create[(String, SplitResult)](Nil)
-  private var interner = new QueryInterner()
 
   private var queryListChanged @volatile = false
   private var testMode = false
@@ -46,21 +45,14 @@ case class AlertMap() {
 
   def setTestMode() = { testMode = true }
 
-  private def splitExpression(expr: ExpressionWithFrequency) = {
-    val splitter = ExpressionSplitter(interner)
-    splitter.split(expr.expression, expr.frequency)
-  }
-
-  def addExpr(expression: ExpressionWithFrequency): Unit = {
-    val split = splitExpression(expression)
+  def addExpr(split: SplitResult): Unit = {
     val replaced = knownExpressions.putIfAbsent(split.id, split)
     queryListChanged = replaced.isEmpty
     if (testMode)
       regenerateQueryIndex()
   }
 
-  def delExpr(expression: ExpressionWithFrequency): Unit = {
-    val split = splitExpression(expression)
+  def delExpr(split: SplitResult): Unit = {
     val removed = knownExpressions.remove(split.id)
     queryListChanged = removed.isDefined
     if (testMode)

@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.netflix.atlas.lwcapi.ExpressionSplitter.QueryInterner
 import org.scalatest.FunSuite
 import spray.testkit.ScalatestRouteTest
 
@@ -22,6 +23,9 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   import scala.concurrent.duration._
 
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
+
+  val interner = new QueryInterner()
+  val splitter = new ExpressionSplitter(interner)
 
   val endpoint = new ExpressionsApi
 
@@ -33,7 +37,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
 
   test("has data") {
     AlertMap.globalAlertMap.setTestMode()
-    AlertMap.globalAlertMap.addExpr(ExpressionWithFrequency("nf.cluster,skan,:eq,:avg", 60000))
+    AlertMap.globalAlertMap.addExpr(splitter.split(ExpressionWithFrequency("nf.cluster,skan,:eq,:avg", 60000)))
     Get("/lwc/api/v1/expressions/skan") ~> endpoint.routes ~> check {
       assert(responseAs[String] === """[{"id":"lZSwuIrFJU98PxX5uBUehDutSgA","frequency":60000,"dataExpressions":["nf.cluster,skan,:eq,:count","nf.cluster,skan,:eq,:sum"]}]""")
     }

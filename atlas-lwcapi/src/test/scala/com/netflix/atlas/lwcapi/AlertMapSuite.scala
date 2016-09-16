@@ -16,9 +16,13 @@
 package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.lwcapi.AlertMap.ReturnableExpression
+import com.netflix.atlas.lwcapi.ExpressionSplitter.QueryInterner
 import org.scalatest.FunSuite
 
 class AlertMapSuite extends FunSuite {
+  val interner = new QueryInterner()
+  val splitter = ExpressionSplitter(interner)
+
   test("exprForDataExpr returns an empty set if not found") {
     val x = AlertMap()
 
@@ -37,8 +41,8 @@ class AlertMapSuite extends FunSuite {
     val x = AlertMap()
     x.setTestMode()
 
-    x.addExpr(query1)
-    x.addExpr(query2)
+    x.addExpr(splitter.split(query1))
+    x.addExpr(splitter.split(query2))
     var ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 2)
     assert(ret.contains(ret1))
@@ -57,19 +61,19 @@ class AlertMapSuite extends FunSuite {
     val x = AlertMap()
     x.setTestMode()
 
-    x.addExpr(query1)
-    x.addExpr(query2)
+    x.addExpr(splitter.split(query1))
+    x.addExpr(splitter.split(query2))
     var ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 2)
     assert(ret.contains(ret1))
     assert(ret.contains(ret2))
 
-    x.delExpr(query1)
+    x.delExpr(splitter.split(query1))
     ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 1)
     assert(ret.contains(ret2))
 
-    x.delExpr(query2)
+    x.delExpr(splitter.split(query2))
     ret = x.expressionsForCluster("skan-test")
     assert(ret === List())
   }
@@ -86,8 +90,8 @@ class AlertMapSuite extends FunSuite {
     val x = AlertMap()
     x.setTestMode()
 
-    x.addExpr(query1)
-    x.addExpr(query2)
+    x.addExpr(splitter.split(query1))
+    x.addExpr(splitter.split(query2))
     assert(x.expressionsForCluster("bar-test") === List())
     assert(x.expressionsForCluster("foo-test") === List(ret2))
   }
@@ -103,7 +107,7 @@ class AlertMapSuite extends FunSuite {
     val x = AlertMap()
     x.setTestMode()
 
-    x.addExpr(query1)
+    x.addExpr(splitter.split(query1))
     assert(x.expressionsForCluster("skan-test") === List(ret1a))
     assert(x.expressionsForCluster("foo-test") === List(ret1b))
   }

@@ -17,6 +17,7 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.Actor
 import com.netflix.atlas.json.{Json, JsonSupport}
+import com.netflix.atlas.lwcapi.ExpressionSplitter.{QueryInterner, SplitResult}
 import com.netflix.spectator.api.Spectator
 import com.redis._
 import com.typesafe.scalalogging.StrictLogging
@@ -42,6 +43,9 @@ class ExpressionDatabaseActor extends Actor with StrictLogging {
   private val port = ApiSettings.redisPort
   private val keyPrefix = ApiSettings.redisKeyPrefix
 
+  private val interner = new QueryInterner()
+  private val splitter = new ExpressionSplitter(interner)
+
   restartPubsub()
 
   def restartPubsub(): Unit = {
@@ -63,13 +67,14 @@ class ExpressionDatabaseActor extends Actor with StrictLogging {
         val action = request.action
         val expression = request.expression
         logger.debug(s"PubSub received $action for $expression")
+        val split = splitter.split(expression.expression, expression.frequency)
         action match {
           case "add" =>
             increment_counter("remote", "add")
-            AlertMap.globalAlertMap.addExpr(expression)
+            AlertMap.globalAlertMap.addExpr(split)
           case "delete" =>
             increment_counter("remote", "delete")
-            AlertMap.globalAlertMap.delExpr(expression)
+            AlertMap.globalAlertMap.delExpr(split)
         }
       }
   }
@@ -79,21 +84,21 @@ class ExpressionDatabaseActor extends Actor with StrictLogging {
   }
 
   def receive = {
-    case Publish(expression) =>
-      logger.debug(s"PubSub add for $expression")
-      AlertMap.globalAlertMap.addExpr(expression)
-      //recordUpdate(expression, key, "add")
-    case Unpublish(expression) =>
-      logger.debug(s"PubSub delete for $expression")
-      AlertMap.globalAlertMap.delExpr(expression)
-      //recordUpdate(expression, key, "delete")
+    case Publish(split) =>
+      logger.debug(s"PubSub add for ${split.expression}")
+      AlertMap.globalAlertMap.addExpr(split)
+      recordUpdate(split, "add")
+    case Unpublish(split) =>
+      logger.debug(s"PubSub delete for ${split.expression}")
+      AlertMap.globalAlertMap.delExpr(split)
+      recordUpdate(split, "delete")
   }
 
-  def recordUpdate(expression: ExpressionWithFrequency, key: String, action: String) = {
-    val json = RedisRequest(expression, uuid, action).toJson
+  def recordUpdate(split: SplitResult, action: String) = {
+    val json = RedisRequest(ExpressionWithFrequency(split.expression, split.frequency), uuid, action).toJson
     pubClient.publish(channel, json)
-    if (action != "delete") {
-      val keyname = s"$keyPrefix.$key"
+    if (action == "add") {
+      val keyname = s"$keyPrefix.${split.id}"
       val count = pubClient.psetex(keyname, ttl, json)
     }
     increment_counter("local", action)
@@ -130,6 +135,6 @@ object ExpressionDatabaseActor {
     def fromJson(json: String): RedisRequest = Json.decode[RedisRequest](json)
   }
 
-  case class Publish(expression: ExpressionWithFrequency) extends JsonSupport
-  case class Unpublish(expression: ExpressionWithFrequency) extends JsonSupport
+  case class Publish(expression: SplitResult) extends JsonSupport
+  case class Unpublish(expression: SplitResult) extends JsonSupport
 }

@@ -66,6 +66,8 @@ class ExpressionSplitter (val interner: QueryInterner) {
     Base64.getUrlEncoder.withoutPadding.encodeToString(md.digest(key.getBytes("UTF-8")))
   }
 
+  def split(e: ExpressionWithFrequency): SplitResult = split(e.expression, e.frequency)
+
   def split(s: String, frequency: Long): SplitResult = synchronized {
     val context = interpreter.execute(s)
     val queries = context.stack.flatMap {
@@ -97,7 +99,7 @@ class ExpressionSplitter (val interner: QueryInterner) {
     if (newQuery != query) simplify(newQuery) else newQuery
   }
 
-  def compress(expr: Query): Query = {
+  private def compress(expr: Query): Query = {
     val tmp = expr.rewrite { case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True }
     simplify(tmp.asInstanceOf[Query])
   }
