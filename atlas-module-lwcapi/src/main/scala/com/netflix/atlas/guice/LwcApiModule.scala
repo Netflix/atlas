@@ -15,10 +15,12 @@
  */
 package com.netflix.atlas.guice
 
-import com.google.inject.AbstractModule
+import javax.inject.Singleton
+
+import com.google.inject.{AbstractModule, Provides}
 import com.google.inject.multibindings.Multibinder
 import com.netflix.atlas.akka.AkkaModule
-import com.netflix.atlas.lwcapi.LwcapiStartupServer
+import com.netflix.atlas.lwcapi.{ExpressionSplitter, ExpressionSplitterImpl, LwcapiStartupServer}
 import com.netflix.iep.guice.LifecycleModule
 import com.netflix.iep.service.Service
 
@@ -29,6 +31,11 @@ class LwcApiModule extends AbstractModule {
 
     val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
     serviceBinder.addBinding().to(classOf[LwcapiStartupServer])
+  }
+
+  @Provides @Singleton
+  private def providesExpressionSplitter(): ExpressionSplitter = {
+    ExpressionSplitterImpl()
   }
 
   override def equals(obj: Any): Boolean = {

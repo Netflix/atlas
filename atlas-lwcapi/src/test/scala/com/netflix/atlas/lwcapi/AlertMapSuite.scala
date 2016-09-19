@@ -19,7 +19,7 @@ import com.netflix.atlas.lwcapi.AlertMap.ReturnableExpression
 import org.scalatest.FunSuite
 
 class AlertMapSuite extends FunSuite {
-  val splitter = ExpressionSplitter()
+  val splitter = ExpressionSplitterImpl()
 
   test("exprForDataExpr returns an empty set if not found") {
     val x = AlertMap()

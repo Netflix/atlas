@@ -15,17 +15,16 @@
  */
 package com.netflix.atlas.lwcapi
 
+import javax.inject.Inject
+
 import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
 import spray.http.{HttpResponse, StatusCodes}
 
-class RegisterActor extends Actor with ActorLogging {
+class RegisterActor @Inject() (splitter: ExpressionSplitter) extends Actor with ActorLogging {
   import com.netflix.atlas.lwcapi.RegisterApi._
 
   private val pubsubActor = context.actorSelection("/user/lwc.expressiondb")
-
-  private val splitter = new ExpressionSplitter()
-
 
   def receive = {
     case RegisterRequest(sinkId, Nil) =>

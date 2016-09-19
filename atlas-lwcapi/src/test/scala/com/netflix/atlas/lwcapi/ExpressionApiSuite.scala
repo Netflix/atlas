@@ -23,7 +23,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
 
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  val splitter = new ExpressionSplitter()
+  val splitter = new ExpressionSplitterImpl()
 
   val endpoint = new ExpressionsApi
 

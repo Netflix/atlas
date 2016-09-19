@@ -18,7 +18,7 @@ package com.netflix.atlas.lwcapi
 import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, TimeUnit}
 
 import com.netflix.atlas.core.index.QueryIndex
-import com.netflix.atlas.lwcapi.ExpressionSplitter.{QueryInterner, SplitResult}
+import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.frigga.Names
 
 import scala.collection.mutable

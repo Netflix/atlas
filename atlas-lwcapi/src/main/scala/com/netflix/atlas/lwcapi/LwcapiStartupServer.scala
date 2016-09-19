@@ -44,11 +44,12 @@ import scala.util.control.NonFatal
   *     Instance of the actor system.
   */
 @Singleton
-class LwcapiStartupServer @Inject() (
-                            config: Config,
-                            classFactory: ClassFactory,
-                            registry: Registry,
-                            implicit val system: ActorSystem)
+class LwcapiStartupServer @Inject() (config: Config,
+                                     classFactory: ClassFactory,
+                                     registry: Registry,
+                                     splitter: ExpressionSplitter,
+                                     implicit val system: ActorSystem)
+
   extends AbstractService with StrictLogging {
 
   private val host = ApiSettings.redisHost
@@ -60,8 +61,6 @@ class LwcapiStartupServer @Inject() (
   private val connectRetriesId = registry.createId("atlas.lwcapi.redis.connectRetries")
 
   protected def startImpl(): Unit = {
-    val splitter = new ExpressionSplitter()
-
     logger.info(s"Loading redis data from $host:$port")
 
     val client = connect("load").get

@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.lwcapi
 
+import javax.inject.Inject
+
 import akka.actor.Actor
 import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
@@ -24,7 +26,7 @@ import com.typesafe.scalalogging.StrictLogging
 
 import scala.util.control.NonFatal
 
-class ExpressionDatabaseActor extends Actor with StrictLogging {
+class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter) extends Actor with StrictLogging {
   import ExpressionDatabaseActor._
 
   private val channel = "expressions"
@@ -42,8 +44,6 @@ class ExpressionDatabaseActor extends Actor with StrictLogging {
   private val host = ApiSettings.redisHost
   private val port = ApiSettings.redisPort
   private val keyPrefix = ApiSettings.redisKeyPrefix
-
-  private val splitter = new ExpressionSplitter()
 
   restartPubsub()
 

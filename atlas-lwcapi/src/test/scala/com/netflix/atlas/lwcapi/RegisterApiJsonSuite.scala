@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.netflix.atlas.lwcapi.RegisterApi.RegisterRequest
 import org.scalatest.FunSuite
 
-
 class RegisterApiJsonSuite extends FunSuite {
   test("default is applied") {
     assert(ExpressionWithFrequency("this") === ExpressionWithFrequency("this", ApiSettings.defaultFrequency))
