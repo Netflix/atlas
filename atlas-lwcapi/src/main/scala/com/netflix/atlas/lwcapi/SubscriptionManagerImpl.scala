@@ -18,21 +18,32 @@ package com.netflix.atlas.lwcapi
 import akka.actor.ActorRef
 
 case class SubscriptionManagerImpl() extends SubscriptionManager {
-  private val subs = scala.collection.mutable.Map[String, Set[ActorRef]]().withDefaultValue(Set())
+  // The list of expression IDs mapped to ActorRefs
+  private val expressionIdToActorRef = scala.collection.mutable.Map[String, Set[ActorRef]]().withDefaultValue(Set())
 
-  def subscribe(expressionId: String, ref: ActorRef): Unit = synchronized {
-    subs(expressionId) += ref
+  // The list of sseIds mapped to expression IDs
+  private val sseIdToExpressionId = scala.collection.mutable.Map[String, Set[String]]().withDefaultValue(Set())
+
+  def subscribe(expressionId: String, sseId: String, ref: ActorRef): Unit = synchronized {
+    expressionIdToActorRef(expressionId) += ref
+    sseIdToExpressionId(sseId) += expressionId
   }
 
-  def unsubscribe(expressionId: String, ref: ActorRef): Unit = synchronized {
-    subs(expressionId) -= ref
+  def unsubscribe(expressionId: String, sseId: String, ref: ActorRef): Unit = synchronized {
+    expressionIdToActorRef(expressionId) -= ref
+    sseIdToExpressionId(sseId) -= expressionId
   }
 
-  def get(expressionId: String): Set[ActorRef] = synchronized {
-    subs(expressionId)
+  def getActorsForExpressionId(expressionId: String): Set[ActorRef] = synchronized {
+    expressionIdToActorRef(expressionId)
   }
 
-  def unsubscribeAll(ref: ActorRef): Unit = synchronized {
-    subs.keySet.foreach(expressionId => subs(expressionId) -= ref)
+  def getExpressionsForSSEId(sseId: String): Set[String] = synchronized {
+    sseIdToExpressionId(sseId)
+  }
+
+  def unsubscribeAll(sseId: String, ref: ActorRef): Unit = synchronized {
+    expressionIdToActorRef.keySet.foreach(expressionId => expressionIdToActorRef(expressionId) -= ref)
+    sseIdToExpressionId.remove(sseId)
   }
 }

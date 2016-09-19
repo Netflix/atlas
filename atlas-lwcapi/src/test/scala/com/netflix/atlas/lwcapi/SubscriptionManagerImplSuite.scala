@@ -15,48 +15,72 @@
  */
 package com.netflix.atlas.lwcapi
 
+import scala.concurrent.duration._
 import akka.actor.{Actor, ActorSystem, Props}
+import akka.util.Timeout
 import org.scalatest.FunSuite
 
+import scala.concurrent.Await
+
 class SubscriptionManagerImplSuite() extends FunSuite {
+  @volatile var lockish: Boolean = false
+
   test("subscribe, unsubscribe, and get work") {
     val system = ActorSystem("HelloSystem")
 
     val sm = SubscriptionManagerImpl()
-    val tag1 = "tag1"
-    val tag2 = "tag2"
-    val tag3 = "tag3"
-    val ref1 = system.actorOf(Props(new TestActor(sm)), name = "ref1")
-    val ref2 = system.actorOf(Props(new TestActor(sm)), name = "ref2")
 
-    sm.subscribe(tag1, ref1)
-    assert(sm.get(tag1) === Set(ref1))
+    implicit val timeout = Timeout(5 seconds) // needed for `?` below
 
-    sm.subscribe(tag1, ref2)
-    assert(sm.get(tag1) === Set(ref1, ref2))
+    val exp1 = "exp1"
+    val exp2 = "exp2"
+    val exp3 = "exp3"
 
-    assert(sm.get(tag2) === Set())
+    val sse1 = "sse1"
+    val ref1 = system.actorOf(Props(new TestActor(sse1, sm)), name = "ref1")
 
-    sm.unsubscribe(tag1, ref1)
-    assert(sm.get(tag1) === Set(ref2))
+    val sse2 = "sse2"
+    val ref2 = system.actorOf(Props(new TestActor(sse2, sm)), name = "ref2")
 
-    sm.unsubscribeAll(ref2)
-    assert(sm.get(tag1) === Set())
+    sm.subscribe(exp1, sse1, ref1)
+    assert(sm.getActorsForExpressionId(exp1) === Set(ref1))
+    assert(sm.getExpressionsForSSEId(sse1) === Set(exp1))
 
-    sm.subscribe(tag3, ref1)
+    sm.subscribe(exp1, sse2, ref2)
+    assert(sm.getActorsForExpressionId(exp1) === Set(ref1, ref2))
+    assert(sm.getExpressionsForSSEId(sse2) === Set(exp1))
+
+    assert(sm.getActorsForExpressionId(exp2) === Set())
+
+    sm.unsubscribe(exp1, sse1, ref1)
+    assert(sm.getActorsForExpressionId(exp1) === Set(ref2))
+    assert(sm.getExpressionsForSSEId(sse1) === Set())
+
+    sm.unsubscribeAll(sse2, ref2)
+    assert(sm.getActorsForExpressionId(exp1) === Set())
+    assert(sm.getExpressionsForSSEId(sse2) === Set())
+
+    lockish = false
+    var counter = 0
+    sm.subscribe(exp3, sse1, ref1)
     ref1 ! "terminate"
-    Thread.sleep(500) // Todo:  need a better way to do this...
-    assert(sm.get(tag3) === Set())
+    while (!lockish || counter > 100) {
+      Thread.sleep(100)
+      counter += 1
+    }
+    assert(sm.getActorsForExpressionId(exp3) === Set())
+    assert(sm.getExpressionsForSSEId(sse1) === Set())
   }
 
-  class TestActor(subscriptionManager: SubscriptionManagerImpl) extends Actor {
+  class TestActor(sseId: String, subscriptionManager: SubscriptionManagerImpl) extends Actor {
     def receive = {
       case x: String =>
         context.stop(self)
     }
 
     override def postStop() = {
-      subscriptionManager.unsubscribeAll(self)
+      subscriptionManager.unsubscribeAll(sseId, self)
+      lockish = true
       super.postStop()
     }
   }
