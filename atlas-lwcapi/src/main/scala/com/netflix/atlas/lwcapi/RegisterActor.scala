@@ -17,7 +17,6 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.lwcapi.ExpressionSplitter.QueryInterner
 import spray.http.{HttpResponse, StatusCodes}
 
 class RegisterActor extends Actor with ActorLogging {
@@ -25,8 +24,7 @@ class RegisterActor extends Actor with ActorLogging {
 
   private val pubsubActor = context.actorSelection("/user/lwc.expressiondb")
 
-  private val interner = new QueryInterner()
-  private val splitter = new ExpressionSplitter(interner)
+  private val splitter = new ExpressionSplitter()
 
 
   def receive = {

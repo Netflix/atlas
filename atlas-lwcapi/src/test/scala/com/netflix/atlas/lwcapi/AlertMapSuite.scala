@@ -16,12 +16,10 @@
 package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.lwcapi.AlertMap.ReturnableExpression
-import com.netflix.atlas.lwcapi.ExpressionSplitter.QueryInterner
 import org.scalatest.FunSuite
 
 class AlertMapSuite extends FunSuite {
-  val interner = new QueryInterner()
-  val splitter = ExpressionSplitter(interner)
+  val splitter = ExpressionSplitter()
 
   test("exprForDataExpr returns an empty set if not found") {
     val x = AlertMap()

@@ -22,10 +22,11 @@ import com.netflix.atlas.core.model.{ModelExtractors, Query, StyleVocabulary}
 import com.netflix.atlas.core.stacklang.Interpreter
 import ExpressionSplitter._
 
-class ExpressionSplitter (val interner: QueryInterner) {
+class ExpressionSplitter () {
   private val keepKeys = Set("nf.app", "nf.stack", "nf.cluster")
 
-  private var interpreter = Interpreter(StyleVocabulary.allWords)
+  private val interpreter = Interpreter(StyleVocabulary.allWords)
+  private val interner = scala.collection.mutable.AnyRefMap[Query, Query]()
 
   private def intern(query: Query): Query = {
     query match {
@@ -104,8 +105,6 @@ class ExpressionSplitter (val interner: QueryInterner) {
 }
 
 object ExpressionSplitter {
-  type QueryInterner = scala.collection.mutable.AnyRefMap[Query, Query]
-
   case class SplitResult(expression: String, frequency: Long, id: String, split: List[QueryContainer])
 
   case class QueryContainer(matchExpr: Query, dataExpr: String) extends Ordered[QueryContainer] {
@@ -118,5 +117,5 @@ object ExpressionSplitter {
     }
   }
 
-  def apply(interner: QueryInterner) = new ExpressionSplitter(interner)
+  def apply() = new ExpressionSplitter()
 }

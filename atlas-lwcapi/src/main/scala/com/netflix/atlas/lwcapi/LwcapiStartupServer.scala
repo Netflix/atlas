@@ -20,7 +20,6 @@ import javax.inject.Singleton
 
 import akka.actor.ActorSystem
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.lwcapi.ExpressionSplitter.QueryInterner
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.ClassFactory
 import com.netflix.spectator.api.Registry
@@ -61,8 +60,7 @@ class LwcapiStartupServer @Inject() (
   private val connectRetriesId = registry.createId("atlas.lwcapi.redis.connectRetries")
 
   protected def startImpl(): Unit = {
-    val interner = new QueryInterner()
-    val splitter = new ExpressionSplitter(interner)
+    val splitter = new ExpressionSplitter()
 
     logger.info(s"Loading redis data from $host:$port")
 

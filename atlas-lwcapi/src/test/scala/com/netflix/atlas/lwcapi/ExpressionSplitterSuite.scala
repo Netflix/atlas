@@ -30,8 +30,7 @@ class ExpressionSplitterSuite extends FunSuite {
     QueryContainer(matchList1, ds1b)
   )
 
-  private val interner = new ExpressionSplitter.QueryInterner()
-  private val splitter = ExpressionSplitter(interner)
+  private val splitter = ExpressionSplitter()
 
   test("splits single expression into data expressions") {
     val ret = splitter.split(ExpressionWithFrequency(query1, frequency1))

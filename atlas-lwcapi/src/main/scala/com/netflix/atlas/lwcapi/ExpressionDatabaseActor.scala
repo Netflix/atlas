@@ -17,7 +17,7 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.Actor
 import com.netflix.atlas.json.{Json, JsonSupport}
-import com.netflix.atlas.lwcapi.ExpressionSplitter.{QueryInterner, SplitResult}
+import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.spectator.api.Spectator
 import com.redis._
 import com.typesafe.scalalogging.StrictLogging
@@ -43,8 +43,7 @@ class ExpressionDatabaseActor extends Actor with StrictLogging {
   private val port = ApiSettings.redisPort
   private val keyPrefix = ApiSettings.redisKeyPrefix
 
-  private val interner = new QueryInterner()
-  private val splitter = new ExpressionSplitter(interner)
+  private val splitter = new ExpressionSplitter()
 
   restartPubsub()
 

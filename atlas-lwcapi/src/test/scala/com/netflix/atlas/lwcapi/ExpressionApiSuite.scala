@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.lwcapi.ExpressionSplitter.QueryInterner
 import org.scalatest.FunSuite
 import spray.testkit.ScalatestRouteTest
 
@@ -24,8 +23,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
 
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  val interner = new QueryInterner()
-  val splitter = new ExpressionSplitter(interner)
+  val splitter = new ExpressionSplitter()
 
   val endpoint = new ExpressionsApi
 
