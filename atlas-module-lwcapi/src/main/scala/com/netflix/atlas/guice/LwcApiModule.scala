@@ -20,7 +20,7 @@ import javax.inject.Singleton
 import com.google.inject.{AbstractModule, Provides}
 import com.google.inject.multibindings.Multibinder
 import com.netflix.atlas.akka.AkkaModule
-import com.netflix.atlas.lwcapi.{ExpressionSplitter, ExpressionSplitterImpl, LwcapiStartupServer}
+import com.netflix.atlas.lwcapi._
 import com.netflix.iep.guice.LifecycleModule
 import com.netflix.iep.service.Service
 
@@ -36,6 +36,16 @@ class LwcApiModule extends AbstractModule {
   @Provides @Singleton
   private def providesExpressionSplitter(): ExpressionSplitter = {
     ExpressionSplitterImpl()
+  }
+
+  @Provides @Singleton
+  private def providesSubscriptionManager(): SubscriptionManager = {
+    SubscriptionManagerImpl()
+  }
+
+  @Provides @Singleton
+  private def providesAlertMap(): AlertMap = {
+    AlertMapImpl()
   }
 
   override def equals(obj: Any): Boolean = {

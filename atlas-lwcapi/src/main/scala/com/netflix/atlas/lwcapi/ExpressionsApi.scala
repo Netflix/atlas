@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.lwcapi
 
+import javax.inject.Inject
+
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
@@ -23,7 +25,8 @@ import com.netflix.spectator.api.Spectator
 import spray.http.{HttpResponse, StatusCodes}
 import spray.routing.RequestContext
 
-class ExpressionsApi (implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+case class ExpressionsApi @Inject() (alertmap: AlertMap,
+                                     implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import ExpressionsApi._
 
   private val registry = Spectator.globalRegistry()
@@ -37,7 +40,7 @@ class ExpressionsApi (implicit val actorRefFactory: ActorRefFactory) extends Web
   }
 
   private def handleReq(ctx: RequestContext, cluster: String): Unit = {
-    val expressions = AlertMap.globalAlertMap.expressionsForCluster(cluster)
+    val expressions = alertmap.expressionsForCluster(cluster)
     val json = toJson(expressions)
     ctx.responder ! HttpResponse(StatusCodes.OK, entity = json)
     registry.counter(expressionFetchesId.withTag("cluster", cluster)).increment()

@@ -36,14 +36,12 @@ import scala.util.control.NonFatal
   *     is used for setting the redis host and port.
   * @param registry
   *     Metrics registry for reporting server stats.
-  * @param system
-  *     Instance of the actor system.
   */
 @Singleton
 class LwcapiStartupServer @Inject() (config: Config,
                                      registry: Registry,
                                      splitter: ExpressionSplitter,
-                                     implicit val system: ActorSystem)
+                                     alertmap: AlertMap)
 
   extends AbstractService with StrictLogging {
 
@@ -79,7 +77,7 @@ class LwcapiStartupServer @Inject() (config: Config,
               val json = client.get(key)
               val entry = Json.decode[ExpressionDatabaseActor.RedisRequest](json.get)
               val split = splitter.split(entry.expression)
-              AlertMap.globalAlertMap.addExpr(split)
+              alertmap.addExpr(split)
               registry.counter(updatesId.withTag("source", "load").withTag("action", "add")).increment()
             } catch {
               case NonFatal(ex) => logger.error(s"Error loading redis key $key", ex)

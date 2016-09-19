@@ -17,9 +17,22 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRef
 
-abstract class SubscriptionManager() {
-  def subscribe(expressionId: String, ref: ActorRef): Unit
-  def unsubscribe(expressionId: String, ref: ActorRef): Unit
-  def get(expressionId: String): Set[ActorRef]
-  def unsubscribeAll(ref: ActorRef): Unit
+case class SubscriptionManagerImpl() extends SubscriptionManager {
+  private val subs = scala.collection.mutable.Map[String, Set[ActorRef]]().withDefaultValue(Set())
+
+  def subscribe(expressionId: String, ref: ActorRef): Unit = synchronized {
+    subs(expressionId) += ref
+  }
+
+  def unsubscribe(expressionId: String, ref: ActorRef): Unit = synchronized {
+    subs(expressionId) -= ref
+  }
+
+  def get(expressionId: String): Set[ActorRef] = synchronized {
+    subs(expressionId)
+  }
+
+  def unsubscribeAll(ref: ActorRef): Unit = synchronized {
+    subs.keySet.foreach(expressionId => subs(expressionId) -= ref)
+  }
 }

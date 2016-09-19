@@ -15,17 +15,19 @@
  */
 package com.netflix.atlas.lwcapi
 
+import akka.actor.ActorSystem
 import org.scalatest.FunSuite
 import spray.testkit.ScalatestRouteTest
 
-class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
+class ExpressionApiSuite(implicit actorSystem: ActorSystem) extends FunSuite with ScalatestRouteTest {
   import scala.concurrent.duration._
 
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
   val splitter = new ExpressionSplitterImpl()
 
-  val endpoint = new ExpressionsApi
+  val alertmap = AlertMapImpl()
+  val endpoint = ExpressionsApi(alertmap, actorSystem)
 
   test("get of a path returns empty data") {
     Get("/lwc/api/v1/expressions/123") ~> endpoint.routes ~> check {
@@ -34,8 +36,8 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("has data") {
-    AlertMap.globalAlertMap.setTestMode()
-    AlertMap.globalAlertMap.addExpr(splitter.split(ExpressionWithFrequency("nf.cluster,skan,:eq,:avg", 60000)))
+    alertmap.setTestMode()
+    alertmap.addExpr(splitter.split(ExpressionWithFrequency("nf.cluster,skan,:eq,:avg", 60000)))
     Get("/lwc/api/v1/expressions/skan") ~> endpoint.routes ~> check {
       assert(responseAs[String] === """[{"id":"lZSwuIrFJU98PxX5uBUehDutSgA","frequency":60000,"dataExpressions":["nf.cluster,skan,:eq,:count","nf.cluster,skan,:eq,:sum"]}]""")
     }

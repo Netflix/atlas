@@ -26,7 +26,8 @@ import com.typesafe.scalalogging.StrictLogging
 
 import scala.util.control.NonFatal
 
-class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter) extends Actor with StrictLogging {
+class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
+                                         alertmap: AlertMap) extends Actor with StrictLogging {
   import ExpressionDatabaseActor._
 
   private val channel = "expressions"
@@ -70,10 +71,10 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter) extends A
         action match {
           case "add" =>
             increment_counter("remote", "add")
-            AlertMap.globalAlertMap.addExpr(split)
+            alertmap.addExpr(split)
           case "delete" =>
             increment_counter("remote", "delete")
-            AlertMap.globalAlertMap.delExpr(split)
+            alertmap.delExpr(split)
         }
       }
   }
@@ -85,11 +86,11 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter) extends A
   def receive = {
     case Publish(split) =>
       logger.debug(s"PubSub add for ${split.expression}")
-      AlertMap.globalAlertMap.addExpr(split)
+      alertmap.addExpr(split)
       recordUpdate(split, "add")
     case Unpublish(split) =>
       logger.debug(s"PubSub delete for ${split.expression}")
-      AlertMap.globalAlertMap.delExpr(split)
+      alertmap.delExpr(split)
       recordUpdate(split, "delete")
   }
 

@@ -18,11 +18,11 @@ package com.netflix.atlas.lwcapi
 import akka.actor.{Actor, ActorSystem, Props}
 import org.scalatest.FunSuite
 
-class SubscriptionManagerSuite() extends FunSuite {
+class SubscriptionManagerImplSuite() extends FunSuite {
   test("subscribe, unsubscribe, and get work") {
     val system = ActorSystem("HelloSystem")
 
-    val sm = new SubscriptionManager()
+    val sm = SubscriptionManagerImpl()
     val tag1 = "tag1"
     val tag2 = "tag2"
     val tag3 = "tag3"
@@ -49,7 +49,7 @@ class SubscriptionManagerSuite() extends FunSuite {
     assert(sm.get(tag3) === Set())
   }
 
-  class TestActor(subscriptionManager: SubscriptionManager) extends Actor {
+  class TestActor(subscriptionManager: SubscriptionManagerImpl) extends Actor {
     def receive = {
       case x: String =>
         context.stop(self)
