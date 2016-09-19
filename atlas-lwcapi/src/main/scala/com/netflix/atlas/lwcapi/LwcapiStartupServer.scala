@@ -21,7 +21,6 @@ import javax.inject.Singleton
 import akka.actor.ActorSystem
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.AbstractService
-import com.netflix.iep.service.ClassFactory
 import com.netflix.spectator.api.Registry
 import com.redis.RedisClient
 import com.typesafe.config.Config
@@ -35,9 +34,6 @@ import scala.util.control.NonFatal
   * @param config
   *     System configuration used for main server settings. In particular `atlas.lwcapi.redis.*`
   *     is used for setting the redis host and port.
-  * @param classFactory
-  *     Used to create instances of class names from the config file via the injector. The
-  *     endpoints listed in `atlas.akka.endpoints` will be created using this factory.
   * @param registry
   *     Metrics registry for reporting server stats.
   * @param system
@@ -45,7 +41,6 @@ import scala.util.control.NonFatal
   */
 @Singleton
 class LwcapiStartupServer @Inject() (config: Config,
-                                     classFactory: ClassFactory,
                                      registry: Registry,
                                      splitter: ExpressionSplitter,
                                      implicit val system: ActorSystem)
@@ -96,7 +91,7 @@ class LwcapiStartupServer @Inject() (config: Config,
     }
 
     logger.info(s"Loading complete. $count entries loaded.")
-}
+  }
 
   protected def stopImpl(): Unit = {
   }
