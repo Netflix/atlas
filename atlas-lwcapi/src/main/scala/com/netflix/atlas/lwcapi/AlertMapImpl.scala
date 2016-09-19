@@ -46,6 +46,7 @@ case class AlertMapImpl() extends AlertMap {
   def setTestMode() = { testMode = true }
 
   def addExpr(split: SplitResult): Unit = {
+    // Only replace the object if it is not there, to avoid keeping many identical objects around.
     val replaced = knownExpressions.putIfAbsent(split.id, split)
     queryListChanged = replaced.isEmpty
     if (testMode)
