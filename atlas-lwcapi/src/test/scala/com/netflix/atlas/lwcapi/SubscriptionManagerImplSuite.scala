@@ -53,7 +53,7 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     def receive = {
       case x: String =>
         context.stop(self)
-  }
+    }
 
     override def postStop() = {
       subscriptionManager.unsubscribeAll(self)

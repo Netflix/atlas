@@ -23,7 +23,7 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import spray.can.Http
 import spray.http._
 
-class SSEActor(client: ActorRef, sseId: String) extends Actor with ActorLogging {
+class SSEActor(client: ActorRef, sseId: String, sm: SubscriptionManager) extends Actor with ActorLogging {
   import com.netflix.atlas.lwcapi.SSEApi._
 
   private var outstandingCount = 0
@@ -46,11 +46,12 @@ class SSEActor(client: ActorRef, sseId: String) extends Actor with ActorLogging 
     case Tick() =>
       if (outstandingCount == 0) send(tickMessage)
       ticker = context.system.scheduler.scheduleOnce(tickTime) { self ! Tick() }
-    case shutdown: SSEShutdown =>
-      send(SSEMessage("data", "shutdown", shutdown.reason))
+    case SSEShutdown(reason) =>
+      send(SSEMessage("data", "shutdown", reason))
       client ! Http.Close
       ticker.cancel()
-      log.info(s"Closing SSE stream: ${shutdown.reason}")
+      sm.unsubscribeAll(self)
+      log.info(s"Closing SSE stream: $reason")
     case closed: Http.ConnectionClosed =>
       ticker.cancel()
       log.info(s"SSE Stream closed: $closed")
@@ -70,6 +71,7 @@ class SSEActor(client: ActorRef, sseId: String) extends Actor with ActorLogging 
   }
 
   override def postStop() = {
+    sm.unsubscribeAll(self)
     ticker.cancel()
     super.postStop()
   }

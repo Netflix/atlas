@@ -34,6 +34,11 @@ class LwcApiModule extends AbstractModule {
   }
 
   @Provides @Singleton
+  private def providesAlertMap(): AlertMap = {
+    AlertMapImpl()
+  }
+
+  @Provides @Singleton
   private def providesExpressionSplitter(): ExpressionSplitter = {
     ExpressionSplitterImpl()
   }
@@ -41,11 +46,6 @@ class LwcApiModule extends AbstractModule {
   @Provides @Singleton
   private def providesSubscriptionManager(): SubscriptionManager = {
     SubscriptionManagerImpl()
-  }
-
-  @Provides @Singleton
-  private def providesAlertMap(): AlertMap = {
-    AlertMapImpl()
   }
 
   override def equals(obj: Any): Boolean = {

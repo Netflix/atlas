@@ -15,13 +15,14 @@
  */
 package com.netflix.atlas.lwcapi
 
+import javax.inject.Inject
+
 import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.JsonSupport
 import spray.routing.RequestContext
 
-class SSEApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
-  import SSEApi._
+class SSEApi @Inject() (sm: SubscriptionManager, implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "sse" / Segment) { (sseId) =>
@@ -30,7 +31,7 @@ class SSEApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   }
 
   private def handleReq(ctx: RequestContext, sseId: String): Unit = {
-    val newActor = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, sseId)), name = "foo")
+    val newActor = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, sseId, sm)), name = "foo")
   }
 }
 
