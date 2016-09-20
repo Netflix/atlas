@@ -23,8 +23,6 @@ import org.scalatest.FunSuite
 import scala.concurrent.Await
 
 class SubscriptionManagerImplSuite() extends FunSuite {
-  @volatile var lockish: Boolean = false
-
   test("subscribe, unsubscribe, and get work") {
     val system = ActorSystem("HelloSystem")
 
@@ -75,14 +73,7 @@ class SubscriptionManagerImplSuite() extends FunSuite {
 
   class TestActor(sseId: String, subscriptionManager: SubscriptionManagerImpl) extends Actor {
     def receive = {
-      case x: String =>
-        context.stop(self)
-    }
-
-    override def postStop() = {
-      subscriptionManager.unsubscribeAll(sseId)
-      lockish = true
-      super.postStop()
+      case _ =>
     }
   }
 }
