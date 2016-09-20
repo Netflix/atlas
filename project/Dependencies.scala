@@ -47,7 +47,7 @@ object Dependencies {
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val redisclient     = "net.debasishg" % "redisclient_2.11" % "3.0"
+  val redisclient     = "net.debasishg" %% "redisclient" % "3.0"
   val scalaCompiler   = "org.scala-lang" % "scala-compiler" % scala
   val scalaLibrary    = "org.scala-lang" % "scala-library" % scala
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all" % scala
