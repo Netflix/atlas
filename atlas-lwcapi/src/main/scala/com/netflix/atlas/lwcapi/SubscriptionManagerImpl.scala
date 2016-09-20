@@ -16,13 +16,18 @@
 package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRef
+import com.typesafe.scalalogging.StrictLogging
 
-case class SubscriptionManagerImpl() extends SubscriptionManager {
+case class SubscriptionManagerImpl() extends SubscriptionManager with StrictLogging {
   // The list of expression IDs mapped to ActorRefs
   private val expressionIdToActorRef = scala.collection.mutable.Map[String, Set[ActorRef]]().withDefaultValue(Set())
 
   // The list of sseIds mapped to expression IDs
   private val sseIdToExpressionId = scala.collection.mutable.Map[String, Set[String]]().withDefaultValue(Set())
+
+  def register(sseId: String, ref: ActorRef): Unit = {
+    logger.info(s"New SSE stream registered: $sseId => ${ref.path}")
+  }
 
   def subscribe(expressionId: String, sseId: String, ref: ActorRef): Unit = synchronized {
     expressionIdToActorRef(expressionId) += ref

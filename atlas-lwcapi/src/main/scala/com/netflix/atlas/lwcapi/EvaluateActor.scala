@@ -15,11 +15,14 @@
  */
 package com.netflix.atlas.lwcapi
 
+import javax.inject.Inject
+
 import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.lwcapi.SSEApi._
 import spray.http.{HttpResponse, StatusCodes}
 
-class EvaluateActor extends Actor with ActorLogging {
+class EvaluateActor @Inject() (sm: SubscriptionManager) extends Actor with ActorLogging {
   import com.netflix.atlas.lwcapi.EvaluateApi._
 
   def receive = {
@@ -34,6 +37,11 @@ class EvaluateActor extends Actor with ActorLogging {
 
   private def evaluate(items: List[Item]): Unit = {
     log.info("Received an evaluate request")
-    items.foreach { item => log.info("Item: " + item) }
+    items.foreach { item =>
+      log.info("Item: " + item)
+      val actors = sm.getActorsForExpressionId(item.id)
+      val message = SSEExpression(item)
+      actors.foreach(actor => actor ! message)
+    }
   }
 }

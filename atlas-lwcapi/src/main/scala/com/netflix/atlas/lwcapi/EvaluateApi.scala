@@ -25,7 +25,6 @@ class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
   import EvaluateApi._
 
   private val evaluateRef = actorRefFactory.actorSelection("/user/lwc.evaluate")
-  private val sseRef = actorRefFactory.actorSelection("/user/foo")
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "evaluate") {
@@ -34,13 +33,8 @@ class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
   }
 
   private def handleReq(ctx: RequestContext): Unit = {
-    try {
-      val request = EvaluateRequest.fromJson(ctx.request.entity.asString)
-      evaluateRef.tell(request, ctx.responder)
-      request.items.foreach(item =>
-        sseRef ! SSEMessage("data", "metric", item.toJson)
-      )
-    } catch handleException(ctx)
+    val request = EvaluateRequest.fromJson(ctx.request.entity.asString)
+    evaluateRef.tell(request, ctx.responder)
   }
 }
 

@@ -20,6 +20,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.json.Json
 import spray.can.Http
 import spray.http._
 
@@ -31,27 +32,29 @@ class SSEActor(client: ActorRef, sseId: String, sm: SubscriptionManager) extends
   private var droppedCount = 0
 
   private val tickTime = 10.seconds
-  private val tickMessage = SSEMessage("data", "heartbeat", "{}")
+  private val tickMessage = SSEHeartbeat()
+  private val helloMessage = SSEHello(sseId)
 
   client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack())
   outstandingCount += 1
+  client ! send(helloMessage)
 
   var ticker: Cancellable = context.system.scheduler.scheduleOnce(tickTime) { self ! Tick() }
 
   def receive = {
-    case msg: SSEMessage =>
-      send(msg)
     case Ack() =>
       outstandingCount -= 1
     case Tick() =>
       if (outstandingCount == 0) send(tickMessage)
       ticker = context.system.scheduler.scheduleOnce(tickTime) { self ! Tick() }
-    case SSEShutdown(reason) =>
-      send(SSEMessage("data", "shutdown", reason))
+    case msg: SSEShutdown =>
+      send(msg)
       client ! Http.Close
       ticker.cancel()
       sm.unsubscribeAll(sseId, self)
-      log.info(s"Closing SSE stream: $reason")
+      log.info(s"Closing SSE stream: ${msg.reason}")
+    case msg: SSEMessage =>
+      send(msg)
     case closed: Http.ConnectionClosed =>
       ticker.cancel()
       log.info(s"SSE Stream closed: $closed")
@@ -62,8 +65,8 @@ class SSEActor(client: ActorRef, sseId: String, sm: SubscriptionManager) extends
 
   private def send(msg: SSEMessage, force: Boolean = false): Unit = {
     if (force || outstandingCount < maxOutstanding) {
-      val s = msg.msgType + """: {"what":"""" + msg.what + """","content":""" + msg.content + "}\n\n"
-      client ! MessageChunk(s).withAck(Ack())
+      val json = msg.toJson + "\r\n\r\n"
+      client ! MessageChunk(json).withAck(Ack())
       outstandingCount += 1
     } else {
       droppedCount += 1
