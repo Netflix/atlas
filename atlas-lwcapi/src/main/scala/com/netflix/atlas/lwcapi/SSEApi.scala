@@ -31,7 +31,7 @@ class SSEApi @Inject() (sm: SubscriptionManager,
                         implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
 
   def routes: RequestContext => Unit = {
-    path("lwc" / "api" / "v1" / "sse" / Segment) { (sseId) =>
+    path("lwc" / "api" / "v1" / "stream" / Segment) { (sseId) =>
       parameters('name.?, 'expr.?, 'frequency.?) { (name, expr, frequency) =>
         get { (ctx) =>
           handleReq(ctx, sseId, name, expr, frequency)
