@@ -20,15 +20,15 @@ import javax.inject.Inject
 import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.{Json, JsonSupport}
-import com.netflix.atlas.lwcapi.SSEApi.{SSEMessage, SSESubscribe}
+import com.netflix.atlas.lwcapi.StreamAPI.{SSEMessage, SSESubscribe}
 import com.typesafe.scalalogging.StrictLogging
 import spray.httpx.PlayJsonSupport
 import spray.routing.RequestContext
 
-class SSEApi @Inject() (sm: SubscriptionManager,
-                        splitter: ExpressionSplitter,
-                        alertmap: AlertMap,
-                        implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
+class StreamAPI @Inject()(sm: SubscriptionManager,
+                          splitter: ExpressionSplitter,
+                          alertmap: AlertMap,
+                          implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { (sseId) =>
@@ -54,7 +54,7 @@ class SSEApi @Inject() (sm: SubscriptionManager,
   }
 }
 
-object SSEApi {
+object StreamAPI {
   abstract class SSEMessage(msgType: String, what: String, content: JsonSupport) extends JsonSupport
 
   case class HeartbeatContent() extends JsonSupport

@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.lwcapi.SSEApi._
+import com.netflix.atlas.lwcapi.StreamAPI._
 import spray.http.{HttpResponse, StatusCodes}
 
 class EvaluateActor @Inject() (sm: SubscriptionManager) extends Actor with ActorLogging {

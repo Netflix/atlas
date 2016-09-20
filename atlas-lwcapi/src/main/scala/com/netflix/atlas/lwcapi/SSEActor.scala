@@ -25,7 +25,7 @@ import spray.can.Http
 import spray.http._
 
 class SSEActor(client: ActorRef, sseId: String, sm: SubscriptionManager) extends Actor with ActorLogging {
-  import com.netflix.atlas.lwcapi.SSEApi._
+  import com.netflix.atlas.lwcapi.StreamAPI._
 
   private var outstandingCount = 0
   private val maxOutstanding = 100
