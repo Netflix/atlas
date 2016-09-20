@@ -17,12 +17,11 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.{Actor, Props}
 import com.netflix.atlas.lwcapi.RegisterApi.{DeleteRequest, RegisterRequest}
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfter, FunSuite}
 import spray.http.{HttpResponse, StatusCodes}
 import spray.testkit.ScalatestRouteTest
 
-class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
-
+class RegisterApiSuite extends FunSuite with BeforeAndAfter with  ScalatestRouteTest {
   import RegisterApiSuite._
 
   import scala.concurrent.duration._
@@ -33,26 +32,31 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
 
   val endpoint = new RegisterApi
 
-  override def beforeAll(): Unit = {
+  before {
     super.beforeAll()
     lastUpdate = Nil
     lastSinkId = None
+    lastKind = 'none
   }
 
-  test("publish no content") {
+  //
+  // Publish
+  //
+
+  test("publish: no content") {
     Post("/lwc/api/v1/register") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
-  test("publish empty object") {
+  test("publish: empty object") {
     Post("/lwc/api/v1/register", "{}") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
       assert(lastUpdate === Nil)
     }
   }
 
-  test("publish empty array") {
+  test("publish: empty array") {
     val x = Post("/lwc/api/v1/register", "[]")
     x ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
@@ -60,7 +64,7 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
-  test("publish correctly formatted expression") {
+  test("publish: correctly formatted expression") {
     val json = """
       |{
       |  "expressions": [
@@ -71,10 +75,11 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
       assert(lastSinkId === None)
+      assert(lastKind === 'register)
     }
   }
 
-  test("publish correctly formatted expression with sinkId") {
+  test("publish: correctly formatted expression with sinkId") {
     val json = """
                  |{
                  |  "sinkId": "abc123",
@@ -86,24 +91,24 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
       assert(lastSinkId === Some("abc123"))
+      assert(lastKind === 'register)
     }
   }
 
-  test("publish bad json") {
+  test("publish: bad json") {
     Post("/lwc/api/v1/register", "fubar") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
-  test("publish invalid object") {
+  test("publish: invalid object") {
     Post("/lwc/api/v1/register", "{\"foo\":\"bar\"}") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
-  test("expression value is null") {
+  test("publish: expression value is null") {
     val json = s"""{
-        "cluster": "this",
         "expressions": [
           { "expression": null }
         ]
@@ -112,24 +117,109 @@ class RegisterApiSuite extends FunSuite with ScalatestRouteTest {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
+
+  //
+  // Delete
+  //
+
+
+  test("delete: no content") {
+    Delete("/lwc/api/v1/register") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
+  }
+
+  test("delete: empty object") {
+    Delete("/lwc/api/v1/register", "{}") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+      assert(lastUpdate === Nil)
+    }
+  }
+
+  test("delete: empty array") {
+    val x = Delete("/lwc/api/v1/register", "[]")
+    x ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+      assert(lastUpdate === Nil)
+    }
+  }
+
+  test("delete: correctly formatted expression") {
+    val json = """
+                 |{
+                 |  "expressions": [
+                 |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
+                 |  ]
+                 |}""".stripMargin
+    Delete("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(lastUpdate.size === 1)
+      assert(lastSinkId === None)
+      assert(lastKind === 'delete)
+    }
+  }
+
+  test("delete: correctly formatted expression with sinkId") {
+    val json = """
+                 |{
+                 |  "sinkId": "abc123",
+                 |  "expressions": [
+                 |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
+                 |  ]
+                 |}""".stripMargin
+    Delete("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(lastUpdate.size === 1)
+      assert(lastSinkId === Some("abc123"))
+      assert(lastKind === 'delete)
+    }
+  }
+
+  test("delete: bad json") {
+    Delete("/lwc/api/v1/register", "fubar") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
+  }
+
+  test("delete: invalid object") {
+    Delete("/lwc/api/v1/register", "{\"foo\":\"bar\"}") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
+  }
+
+  test("delete: expression value is null") {
+    val json = s"""{
+        "expressions": [
+          { "expression": null }
+        ]
+      }"""
+    Delete("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+    }
+  }
+
 }
 
 object RegisterApiSuite {
   @volatile var lastUpdate: List[ExpressionWithFrequency] = Nil
   @volatile var lastSinkId: Option[String] = None
+  @volatile var lastKind: Symbol = 'none
 
   class TestActor extends Actor {
     def receive = {
       case RegisterRequest(sinkId, Nil) =>
         lastUpdate = Nil
         sender() ! HttpResponse(StatusCodes.BadRequest)
+        lastKind = 'register
       case RegisterRequest(sinkId, values) =>
         lastUpdate = values
         lastSinkId = sinkId
+        lastKind = 'register
         sender() ! HttpResponse(StatusCodes.OK)
       case DeleteRequest(sinkId, values) =>
         lastUpdate = values
         lastSinkId = sinkId
+        lastKind = 'delete
         sender() ! HttpResponse(StatusCodes.OK)
     }
   }

@@ -15,8 +15,11 @@
  */
 package com.netflix.atlas.lwcapi
 
-object GlobalUUID {
-  private lazy val uuid = java.util.UUID.randomUUID.toString
+import org.scalatest.FunSuite
 
-  def get = uuid
+class GlobalUUIDSuite extends FunSuite {
+
+  test("get repeats same value") {
+    assert(GlobalUUID.get === GlobalUUID.get)
+  }
 }

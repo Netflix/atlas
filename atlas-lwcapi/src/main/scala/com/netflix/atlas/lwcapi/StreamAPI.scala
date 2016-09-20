@@ -20,7 +20,6 @@ import javax.inject.Inject
 import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.{Json, JsonSupport}
-import com.netflix.atlas.lwcapi.StreamAPI.{SSEMessage, SSESubscribe}
 import com.typesafe.scalalogging.StrictLogging
 import spray.httpx.PlayJsonSupport
 import spray.routing.RequestContext
@@ -29,6 +28,7 @@ class StreamAPI @Inject()(sm: SubscriptionManager,
                           splitter: ExpressionSplitter,
                           alertmap: AlertMap,
                           implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
+  import StreamAPI.SSESubscribe
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { (sseId) =>

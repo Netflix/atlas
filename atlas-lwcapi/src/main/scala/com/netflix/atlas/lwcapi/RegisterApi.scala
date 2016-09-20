@@ -62,13 +62,11 @@ object RegisterApi {
   case class DeleteRequest(sinkId: Option[String], expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
   object DeleteRequest {
-    def fromJson(json: String): DeleteRequest = Json.decode[DeleteRequest](json)
-  }
-
-
-  case class ErrorResponse(failureCount: Long, failed: Map[String, String]) extends JsonSupport
-
-  object ErrorResponse {
-    def fromJson(json: String): ErrorResponse = Json.decode[ErrorResponse](json)
+    def fromJson(json: String): DeleteRequest = {
+      val decoded = Json.decode[DeleteRequest](json)
+      if (decoded.expressions == null || decoded.expressions.isEmpty)
+        throw new IllegalArgumentException("Missing or empty expressions array")
+      decoded
+    }
   }
 }

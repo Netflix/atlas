@@ -71,7 +71,33 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     }
   }
 
-  class TestActor(sseId: String, subscriptionManager: SubscriptionManagerImpl) extends Actor {
+  test("entries and getAllExpressions works") {
+    val system = ActorSystem("HelloSystem")
+
+    val sm = SubscriptionManagerImpl()
+
+    implicit val timeout = Timeout(5 seconds) // needed for `?` below
+
+    val exp1 = "exp1"
+    val exp2 = "exp2"
+
+    val sse1 = "sse1"
+    val ref1 = system.actorOf(Props(new TestActor(sse1, sm)), name = "ref1")
+
+    sm.register(sse1, ref1, "foo")
+
+    sm.subscribe(sse1, exp1)
+    sm.subscribe(sse1, exp2)
+
+    assert(sm.entries.size === 1)
+    assert(sm.entries.head.sseId === sse1)
+    assert(sm.entries.head.actorRef === ref1)
+    assert(sm.entries.head.name === "foo")
+
+    assert(sm.getAllExpressions === Map(sse1 -> Set(exp1, exp2)))
+  }
+
+    class TestActor(sseId: String, subscriptionManager: SubscriptionManagerImpl) extends Actor {
     def receive = {
       case _ =>
     }

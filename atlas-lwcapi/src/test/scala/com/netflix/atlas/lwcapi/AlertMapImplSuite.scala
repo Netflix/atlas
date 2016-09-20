@@ -27,6 +27,22 @@ class AlertMapImplSuite extends FunSuite {
     assert(x.expressionsForCluster("foo") === List())
   }
 
+  test("index is rebuilt") {
+    val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
+    val x = AlertMapImpl()
+    x.addExpr(splitter.split(query1))
+    var ret = x.expressionsForCluster("skan-test")
+    assert(ret.isEmpty)
+
+    var counter = 0
+    while (ret.isEmpty && counter < 40) { // about 4 seconds
+      Thread.sleep(100)
+      ret = x.expressionsForCluster("skan-test")
+      counter += 1
+    }
+    assert(ret.nonEmpty)
+  }
+
   test("same expression different frequency") {
     val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
