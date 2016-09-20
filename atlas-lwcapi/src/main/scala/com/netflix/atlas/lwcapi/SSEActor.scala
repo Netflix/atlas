@@ -31,7 +31,7 @@ class SSEActor(client: ActorRef, sseId: String, sm: SubscriptionManager) extends
   private val maxOutstanding = 100
   private var droppedCount = 0
 
-  private val tickTime = 10.seconds
+  private val tickTime = 30.seconds
   private val tickMessage = SSEHeartbeat()
   private val helloMessage = SSEHello(sseId)
 
