@@ -18,4 +18,11 @@ package com.netflix.atlas.lwcapi
 import org.scalatest.FunSuite
 
 class ApiSettingsSuite extends FunSuite {
+  test("loads") {
+    assert(ApiSettings.defaultFrequency > 0)
+    assert(ApiSettings.redisHost.nonEmpty)
+    assert(ApiSettings.redisPort > 0)
+    assert(ApiSettings.redisTTL > 0)
+    assert(ApiSettings.redisKeyPrefix.nonEmpty)
+  }
 }
