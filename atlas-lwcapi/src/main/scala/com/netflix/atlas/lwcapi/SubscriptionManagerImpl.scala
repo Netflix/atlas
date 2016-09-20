@@ -18,25 +18,45 @@ package com.netflix.atlas.lwcapi
 import akka.actor.ActorRef
 import com.typesafe.scalalogging.StrictLogging
 
+import scala.collection.mutable
+
 case class SubscriptionManagerImpl() extends SubscriptionManager with StrictLogging {
+  import SubscriptionManager._
+
   // The list of expression IDs mapped to ActorRefs
-  private val expressionIdToActorRef = scala.collection.mutable.Map[String, Set[ActorRef]]().withDefaultValue(Set())
+  private val expressionIdToActorRef = mutable.Map[String, Set[ActorRef]]().withDefaultValue(Set())
 
   // The list of sseIds mapped to expression IDs
-  private val sseIdToExpressionId = scala.collection.mutable.Map[String, Set[String]]().withDefaultValue(Set())
+  private val sseIdToExpressionId = mutable.Map[String, Set[String]]().withDefaultValue(Set())
 
-  def register(sseId: String, ref: ActorRef): Unit = {
-    logger.info(s"New SSE stream registered: $sseId => ${ref.path}")
+  private val sseEntries = mutable.Map[String, Entry]()
+
+  def register(sseId: String, ref: ActorRef, name: String): Unit = {
+    sseEntries(sseId) = Entry(sseId, ref, name, System.currentTimeMillis())
   }
 
-  def subscribe(expressionId: String, sseId: String, ref: ActorRef): Unit = synchronized {
-    expressionIdToActorRef(expressionId) += ref
+  def subscribe(sseId: String, expressionId: String): Unit = synchronized {
+    val entry = sseEntries.get(sseId)
+    if (entry.isEmpty)
+      throw new IllegalArgumentException("sseId is not registered")
+    expressionIdToActorRef(expressionId) += entry.get.actorRef
     sseIdToExpressionId(sseId) += expressionId
   }
 
-  def unsubscribe(expressionId: String, sseId: String, ref: ActorRef): Unit = synchronized {
-    expressionIdToActorRef(expressionId) -= ref
+  def unsubscribe(sseId: String, expressionId: String): Unit = synchronized {
+    val entry = sseEntries.get(sseId)
+    if (entry.isEmpty)
+      throw new IllegalArgumentException("sseId is not registered")
+    expressionIdToActorRef(expressionId) -= entry.get.actorRef
     sseIdToExpressionId(sseId) -= expressionId
+  }
+
+  def unsubscribeAll(sseId: String): Unit = synchronized {
+    val entry = sseEntries.get(sseId)
+    if (entry.isEmpty)
+      throw new IllegalArgumentException("sseId is not registered")
+    expressionIdToActorRef.keySet.foreach(id => expressionIdToActorRef(id) -= entry.get.actorRef)
+    sseIdToExpressionId.remove(sseId)
   }
 
   def getActorsForExpressionId(expressionId: String): Set[ActorRef] = synchronized {
@@ -47,8 +67,9 @@ case class SubscriptionManagerImpl() extends SubscriptionManager with StrictLogg
     sseIdToExpressionId(sseId)
   }
 
-  def unsubscribeAll(sseId: String, ref: ActorRef): Unit = synchronized {
-    expressionIdToActorRef.keySet.foreach(expressionId => expressionIdToActorRef(expressionId) -= ref)
-    sseIdToExpressionId.remove(sseId)
+  def entries: List[Entry] = synchronized { sseEntries.values.toList }
+
+  override def getAllExpressions: Map[String, Set[String]] = synchronized {
+    sseIdToExpressionId.toMap
   }
 }

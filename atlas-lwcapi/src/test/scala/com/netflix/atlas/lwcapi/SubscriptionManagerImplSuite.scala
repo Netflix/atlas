@@ -34,42 +34,43 @@ class SubscriptionManagerImplSuite() extends FunSuite {
 
     val exp1 = "exp1"
     val exp2 = "exp2"
-    val exp3 = "exp3"
 
     val sse1 = "sse1"
     val ref1 = system.actorOf(Props(new TestActor(sse1, sm)), name = "ref1")
 
-    val sse2 = "sse2"
-    val ref2 = system.actorOf(Props(new TestActor(sse2, sm)), name = "ref2")
+    sm.register(sse1, ref1, "foo")
 
-    sm.subscribe(exp1, sse1, ref1)
+    sm.subscribe(sse1, exp1)
     assert(sm.getActorsForExpressionId(exp1) === Set(ref1))
     assert(sm.getExpressionsForSSEId(sse1) === Set(exp1))
 
-    sm.subscribe(exp1, sse2, ref2)
-    assert(sm.getActorsForExpressionId(exp1) === Set(ref1, ref2))
-    assert(sm.getExpressionsForSSEId(sse2) === Set(exp1))
+    sm.subscribe(sse1, exp2)
+    assert(sm.getActorsForExpressionId(exp2) === Set(ref1))
+    assert(sm.getExpressionsForSSEId(sse1) === Set(exp1, exp2))
 
-    assert(sm.getActorsForExpressionId(exp2) === Set())
-
-    sm.unsubscribe(exp1, sse1, ref1)
-    assert(sm.getActorsForExpressionId(exp1) === Set(ref2))
-    assert(sm.getExpressionsForSSEId(sse1) === Set())
-
-    sm.unsubscribeAll(sse2, ref2)
+    sm.unsubscribe(sse1, exp1)
     assert(sm.getActorsForExpressionId(exp1) === Set())
-    assert(sm.getExpressionsForSSEId(sse2) === Set())
+    assert(sm.getExpressionsForSSEId(sse1) === Set(exp2))
 
-    lockish = false
-    var counter = 0
-    sm.subscribe(exp3, sse1, ref1)
-    ref1 ! "terminate"
-    while (!lockish || counter > 100) {
-      Thread.sleep(100)
-      counter += 1
-    }
-    assert(sm.getActorsForExpressionId(exp3) === Set())
+    sm.unsubscribeAll(sse1)
+    assert(sm.getActorsForExpressionId(exp1) === Set())
     assert(sm.getExpressionsForSSEId(sse1) === Set())
+  }
+
+  test("register is required for sub or unsub or unsubAll") {
+    val sm = SubscriptionManagerImpl()
+
+    intercept[IllegalArgumentException] {
+      sm.subscribe("a", "b")
+    }
+
+    intercept[IllegalArgumentException] {
+      sm.unsubscribe("a", "b")
+    }
+
+    intercept[IllegalArgumentException] {
+      sm.unsubscribeAll("a")
+    }
   }
 
   class TestActor(sseId: String, subscriptionManager: SubscriptionManagerImpl) extends Actor {
@@ -79,7 +80,7 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     }
 
     override def postStop() = {
-      subscriptionManager.unsubscribeAll(sseId, self)
+      subscriptionManager.unsubscribeAll(sseId)
       lockish = true
       super.postStop()
     }

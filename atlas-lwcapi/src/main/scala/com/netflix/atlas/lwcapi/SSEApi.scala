@@ -42,16 +42,13 @@ class SSEApi @Inject() (sm: SubscriptionManager,
 
   private def handleReq(ctx: RequestContext, sseId: String, name: Option[String], expr: Option[String], freqString: Option[String]): Unit = {
     val newActor = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, sseId, sm)))
-    sm.register(sseId, newActor)
-
-    if (name.isDefined)
-      logger.info(s"sseId has name ${name.get}")
+    sm.register(sseId, newActor, name.getOrElse("unknown"))
 
     val freq = freqString.fold(ApiSettings.defaultFrequency)(_.toLong)
     if (expr.isDefined) {
       val split = splitter.split(ExpressionWithFrequency(expr.get, freq))
       alertmap.addExpr(split)
-      sm.subscribe(split.id, sseId, newActor)
+      sm.subscribe(sseId, split.id)
       newActor ! SSESubscribe(split)
     }
   }

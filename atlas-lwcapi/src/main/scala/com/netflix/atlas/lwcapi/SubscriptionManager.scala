@@ -18,10 +18,20 @@ package com.netflix.atlas.lwcapi
 import akka.actor.ActorRef
 
 abstract class SubscriptionManager() {
-  def register(sseId: String, ref: ActorRef): Unit
-  def subscribe(expressionId: String, sseId: String, ref: ActorRef): Unit
-  def unsubscribe(expressionId: String, sseId: String, ref: ActorRef): Unit
+  import SubscriptionManager._
+
+  def register(sseId: String, ref: ActorRef, name: String): Unit
+
+  def subscribe(sseId: String, expressionId: String): Unit
+  def unsubscribe(sseId: String, expressionId: String): Unit
+  def unsubscribeAll(sseId: String): Unit
+
   def getActorsForExpressionId(expressionId: String): Set[ActorRef]
   def getExpressionsForSSEId(sseId: String): Set[String]
-  def unsubscribeAll(sseId: String, ref: ActorRef): Unit
+  def entries: List[Entry]
+  def getAllExpressions: Map[String, Set[String]]
+}
+
+object SubscriptionManager {
+  case class Entry(sseId: String, actorRef: ActorRef, name: String, connectTime: Long)
 }
