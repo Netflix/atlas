@@ -19,8 +19,6 @@ import scala.concurrent.duration._
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.json.Json
 import spray.can.Http
 import spray.http._
 
