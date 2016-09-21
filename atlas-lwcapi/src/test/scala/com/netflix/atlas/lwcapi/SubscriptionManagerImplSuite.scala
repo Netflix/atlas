@@ -15,12 +15,10 @@
  */
 package com.netflix.atlas.lwcapi
 
-import scala.concurrent.duration._
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.util.Timeout
+import scala.concurrent.duration._
 import org.scalatest.FunSuite
-
-import scala.concurrent.Await
 
 class SubscriptionManagerImplSuite() extends FunSuite {
   test("subscribe, unsubscribe, and get work") {
