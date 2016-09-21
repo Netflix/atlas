@@ -70,12 +70,14 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
         logger.debug(s"PubSub received $action for $expression")
         val split = splitter.split(expression)
         action match {
-          case "add" =>
-            increment_counter("remote", "add")
+          case "sub" =>
+            increment_counter("remote", "sub")
             alertmap.addExpr(split)
-          case "delete" =>
-            increment_counter("remote", "delete")
-            alertmap.delExpr(split)
+            sm.subscribe(request.streamId, split.id)
+          case "unsub" =>
+            increment_counter("remote", "unsub")
+            //alertmap.delExpr(split)
+            sm.unsubscribe(request.streamId, split.id)
         }
       }
   }
@@ -85,20 +87,21 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   }
 
   def receive = {
-    case Publish(split) =>
-      logger.debug(s"PubSub add for ${split.expression}")
+    case Subscribe(split, streamId) =>
+      logger.debug(s"PubSub sub for ${split.expression}")
       alertmap.addExpr(split)
-      recordUpdate(split, "add")
-    case Unpublish(split) =>
-      logger.debug(s"PubSub delete for ${split.expression}")
-      alertmap.delExpr(split)
-      recordUpdate(split, "delete")
+      sm.subscribe(streamId, split.id)
+      recordUpdate(split, streamId, "sub")
+    case Unsubscribe(split, streamId) =>
+      logger.debug(s"PubSub unsub for ${split.expression}")
+      recordUpdate(split, streamId, "unsub")
+      sm.unsubscribe(streamId, split.id)
   }
 
-  def recordUpdate(split: SplitResult, action: String) = {
-    val json = RedisRequest(ExpressionWithFrequency(split.expression, split.frequency), uuid, action).toJson
+  def recordUpdate(split: SplitResult, streamId: String, action: String) = {
+    val json = RedisRequest(ExpressionWithFrequency(split.expression, split.frequency), streamId: String, uuid, action).toJson
     pubClient.publish(channel, json)
-    if (action == "add") {
+    if (action == "sub") {
       val keyname = s"$keyPrefix.${split.id}"
       val count = pubClient.psetex(keyname, ttl, json)
     }
@@ -130,12 +133,12 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
 }
 
 object ExpressionDatabaseActor {
-  case class RedisRequest(expression: ExpressionWithFrequency, uuid: String, action: String) extends JsonSupport
+  case class RedisRequest(expression: ExpressionWithFrequency, uuid: String, streamId: String, action: String) extends JsonSupport
 
   object RedisRequest {
     def fromJson(json: String): RedisRequest = Json.decode[RedisRequest](json)
   }
 
-  case class Publish(expression: SplitResult) extends JsonSupport
-  case class Unpublish(expression: SplitResult) extends JsonSupport
+  case class Subscribe(expression: SplitResult, streamId: String) extends JsonSupport
+  case class Unsubscribe(expression: SplitResult, streamId: String) extends JsonSupport
 }

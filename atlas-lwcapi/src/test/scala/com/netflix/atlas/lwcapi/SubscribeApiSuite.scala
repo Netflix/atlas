@@ -35,7 +35,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   before {
     super.beforeAll()
     lastUpdate = Nil
-    lastStreamId = None
+    lastStreamId = ""
     lastKind = 'none
   }
 
@@ -67,6 +67,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   test("subscribe: correctly formatted expression") {
     val json = """
       |{
+      |  "streamId": "abc123",
       |  "expressions": [
       |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
       |  ]
@@ -74,7 +75,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
     Post("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
-      assert(lastStreamId === None)
+      assert(lastStreamId === "abc123")
       assert(lastKind === 'subscribe)
     }
   }
@@ -90,7 +91,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
     Post("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
-      assert(lastStreamId === Some("abc123"))
+      assert(lastStreamId === "abc123")
       assert(lastKind === 'subscribe)
     }
   }
@@ -146,6 +147,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   test("unsubscribe: correctly formatted expression") {
     val json = """
                  |{
+                 |  "streamId": "abc123",
                  |  "expressions": [
                  |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
                  |  ]
@@ -153,7 +155,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
     Delete("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
-      assert(lastStreamId === None)
+      assert(lastStreamId === "abc123")
       assert(lastKind === 'unsubscribe)
     }
   }
@@ -169,7 +171,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
     Delete("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
-      assert(lastStreamId === Some("abc123"))
+      assert(lastStreamId === "abc123")
       assert(lastKind === 'unsubscribe)
     }
   }
@@ -188,6 +190,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
 
   test("unsubscribe: expression value is null") {
     val json = s"""{
+        "streamId": "abc123",
         "expressions": [
           { "expression": null }
         ]
@@ -201,7 +204,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
 
 object SubscribeApiSuite {
   @volatile var lastUpdate: List[ExpressionWithFrequency] = Nil
-  @volatile var lastStreamId: Option[String] = None
+  @volatile var lastStreamId: String = ""
   @volatile var lastKind: Symbol = 'none
 
   class TestActor extends Actor {

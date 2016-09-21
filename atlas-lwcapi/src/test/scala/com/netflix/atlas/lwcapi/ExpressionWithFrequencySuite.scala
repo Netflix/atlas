@@ -20,6 +20,10 @@ import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
 
 class ExpressionWithFrequencySuite extends FunSuite {
+  test("default is applied") {
+    assert(ExpressionWithFrequency("this") === ExpressionWithFrequency("this", ApiSettings.defaultFrequency))
+  }
+
   test("full params") {
     val expr = ExpressionWithFrequency("test", 60000)
     assert(expr.frequency === 60000)

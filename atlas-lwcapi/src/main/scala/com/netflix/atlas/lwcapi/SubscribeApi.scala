@@ -48,7 +48,7 @@ class SubscribeApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi
 }
 
 object SubscribeApi {
-  case class SubscribeRequest(streamId: Option[String], expressions: List[ExpressionWithFrequency]) extends JsonSupport
+  case class SubscribeRequest(streamId: String, expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
   object SubscribeRequest {
     def fromJson(json: String): SubscribeRequest = {
@@ -59,7 +59,7 @@ object SubscribeApi {
     }
   }
 
-  case class UnsubscribeRequest(streamId: Option[String], expressions: List[ExpressionWithFrequency]) extends JsonSupport
+  case class UnsubscribeRequest(streamId: String, expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
   object UnsubscribeRequest {
     def fromJson(json: String): UnsubscribeRequest = {

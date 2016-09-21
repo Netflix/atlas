@@ -30,26 +30,26 @@ class SubscribeActor @Inject()(splitter: ExpressionSplitter) extends Actor with 
     case SubscribeRequest(sinkId, Nil) =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "empty payload")
     case SubscribeRequest(sinkId, expressions) =>
-      update(sinkId, expressions)
+      subscribe(sinkId, expressions)
       sender() ! HttpResponse(StatusCodes.OK)
     case UnsubscribeRequest(sinkId, expressions) =>
-      delete(sinkId, expressions)
+      unsubscribe(sinkId, expressions)
       sender() ! HttpResponse(StatusCodes.OK)
     case _ =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "unknown payload")
   }
 
-  private def update(sinkId: Option[String], expressions: List[ExpressionWithFrequency]): Unit = {
+  private def subscribe(streamId: String, expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
       val split = splitter.split(expr)
-      pubsubActor ! ExpressionDatabaseActor.Publish(split)
+      pubsubActor ! ExpressionDatabaseActor.Subscribe(split, streamId)
     }
   }
 
-  private def delete(sinkId: Option[String], expressions: List[ExpressionWithFrequency]): Unit = {
+  private def unsubscribe(streamId: String, expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
       val split = splitter.split(expr)
-     pubsubActor ! ExpressionDatabaseActor.Unpublish(split)
+     pubsubActor ! ExpressionDatabaseActor.Unsubscribe(split, streamId)
     }
   }
 }
