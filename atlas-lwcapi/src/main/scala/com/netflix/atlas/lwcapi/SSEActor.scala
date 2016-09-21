@@ -26,7 +26,7 @@ import spray.http._
 
 class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionManager)
   extends Actor with ActorLogging {
-
+  import SSEActor._
   import StreamApi._
 
   private var outstandingCount = 0
@@ -43,14 +43,18 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
   sm.register(sseId, self, name)
   client ! send(helloMessage)
 
-  var ticker: Cancellable = context.system.scheduler.scheduleOnce(tickTime) { self ! Tick() }
+  var ticker: Cancellable = context.system.scheduler.scheduleOnce(tickTime) {
+    self ! Tick()
+  }
 
   def receive = {
     case Ack() =>
       outstandingCount -= 1
     case Tick() =>
       if (outstandingCount == 0) send(tickMessage)
-      ticker = context.system.scheduler.scheduleOnce(tickTime) { self ! Tick() }
+      ticker = context.system.scheduler.scheduleOnce(tickTime) {
+        self ! Tick()
+      }
     case msg: SSEShutdown =>
       send(msg)
       client ! Http.Close
@@ -82,8 +86,9 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
     ticker.cancel()
     super.postStop()
   }
+}
 
+object SSEActor {
   case class Ack()
   case class Tick()
-  case class ShutdownMessage()
 }

@@ -16,6 +16,8 @@
 package com.netflix.atlas.lwcapi
 
 import akka.actor.{Actor, Props}
+import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.lwcapi.ExpressionSplitter.{QueryContainer, SplitResult}
 import com.netflix.atlas.lwcapi.RegisterApi.{DeleteRequest, RegisterRequest}
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import spray.can.Http
@@ -45,13 +47,46 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
 
     val testClient = system.actorOf(Props(new TestClient()))
     val sse = system.actorOf(Props(new SSEActor(testClient, "mySSEId", "myName", mockSM)))
+
+    val split = SplitResult("expr", 100, "exprId", List(QueryContainer(Query.True, "dataExpr")))
+
+    sse ! SSESubscribe(split)
+
     sse ! SSEShutdown("test shutdown")
 
     waitForShutdown()
 
-    assert(mockSM.invocations === List("register,mySSEId,myName", "unsubscribeAll,mySSEId"))
+    assert(mockSM.invocations === List(
+      "register,mySSEId,myName",
+      "unsubscribeAll,mySSEId"
+    ))
+
     assert(invocations === List[String](
       SSEHello("mySSEId").toSSE,
+      SSESubscribe(split).toSSE,
+      SSEShutdown("test shutdown").toSSE,
+      "close"
+    ))
+  }
+
+  test("tick") {
+    val mockSM = MockSubscriptionManager()
+
+    val testClient = system.actorOf(Props(new TestClient()))
+    val sse = system.actorOf(Props(new SSEActor(testClient, "mySSEId", "myName", mockSM)))
+
+    val split = SplitResult("expr", 100, "exprId", List(QueryContainer(Query.True, "dataExpr")))
+
+    Thread.sleep(100)
+    sse ! SSEActor.Tick()
+
+    sse ! SSEShutdown("test shutdown")
+
+    waitForShutdown()
+
+    assert(invocations === List[String](
+      SSEHello("mySSEId").toSSE,
+      SSEHeartbeat().toSSE,
       SSEShutdown("test shutdown").toSSE,
       "close"
     ))
