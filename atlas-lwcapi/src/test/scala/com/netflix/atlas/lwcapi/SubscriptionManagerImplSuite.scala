@@ -78,8 +78,6 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     assert(sm.entries.head.sseId === sse1)
     assert(sm.entries.head.actorRef === ref1)
     assert(sm.entries.head.name === "foo")
-
-    assert(sm.getAllExpressions === Map(sse1 -> Set(exp1, exp2)))
   }
 
     class TestActor(sseId: String, subscriptionManager: SubscriptionManagerImpl) extends Actor {

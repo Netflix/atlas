@@ -24,8 +24,8 @@ import com.netflix.frigga.Names
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 
-case class ExpressionDatabaseImpl() extends ExpressionsDatabase {
-  import ExpressionsDatabase._
+case class ExpressionDatabaseImpl() extends ExpressionDatabase {
+  import ExpressionDatabase._
 
   private val knownExpressions = new ConcurrentHashMap[String, SplitResult]().asScala
   private var queryIndex = QueryIndex.create[(String, SplitResult)](Nil)

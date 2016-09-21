@@ -16,6 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRef
+import com.netflix.atlas.core.util.Interner
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.collection.mutable
@@ -23,52 +24,41 @@ import scala.collection.mutable
 case class SubscriptionManagerImpl() extends SubscriptionManager with StrictLogging {
   import SubscriptionManager._
 
-  private val exprToSource = mutable.Map[String, Set[String]]().withDefaultValue(Set())
+  private val exprToStream = mutable.Map[String, Set[String]]().withDefaultValue(Set())
+  private val streamToExpr = mutable.Map[String, Set[String]]().withDefaultValue(Set())
+  private val streamToEntry = mutable.Map[String, Entry]()
+  private val exprToSplit = ExpressionDatabaseImpl()
 
-  // The list of expression IDs mapped to ActorRefs
-  private val expressionIdToActorRef = mutable.Map[String, Set[ActorRef]]().withDefaultValue(Set())
-
-  // The list of streamIds mapped to expression IDs
-  private val streamIdToExpressionId = mutable.Map[String, Set[String]]().withDefaultValue(Set())
-
-  private val sseEntries = mutable.Map[String, Entry]()
+  val interner = Interner.forStrings
+  def intern(s: String): String = interner.intern(s)
 
   def register(streamId: String, ref: ActorRef, name: String): Unit = {
-    sseEntries(streamId) = Entry(streamId, ref, name, System.currentTimeMillis())
+    streamToEntry(intern(streamId)) = Entry(intern(streamId), ref, name, System.currentTimeMillis())
   }
 
-  def subscribe(streamId: String, expressionId: String): Unit = synchronized {
-    val entry = sseEntries.get(streamId)
-    if (entry.nonEmpty)
-      expressionIdToActorRef(expressionId) += entry.get.actorRef
-    streamIdToExpressionId(streamId) += expressionId
+  def subscribe(streamId: String, expressionId: String): Unit = {
+    streamToExpr(intern(streamId)) += expressionId
+    exprToStream(intern(expressionId)) += streamId
   }
 
-  def unsubscribe(streamId: String, expressionId: String): Unit = synchronized {
-    val entry = sseEntries.get(streamId)
-    if (entry.nonEmpty)
-      expressionIdToActorRef(expressionId) -= entry.get.actorRef
-    streamIdToExpressionId(streamId) -= expressionId
+  def unsubscribe(streamId: String, expressionId: String): Unit = {
+    streamToExpr(intern(streamId)) -= expressionId
+    exprToStream(intern(expressionId)) -= streamId
   }
 
-  def unsubscribeAll(streamId: String): Unit = synchronized {
-    val entry = sseEntries.get(streamId)
-    if (entry.nonEmpty)
-      expressionIdToActorRef.keySet.foreach(id => expressionIdToActorRef(id) -= entry.get.actorRef)
-    streamIdToExpressionId.remove(streamId)
+  def unsubscribeAll(streamId: String): Unit = {
+    val ids = streamToExpr.remove(streamId)
+    if (ids.isDefined)
+      ids.get.foreach(k => exprToStream(k) -= streamId)
   }
 
-  def getActorsForExpressionId(expressionId: String): Set[ActorRef] = synchronized {
-    expressionIdToActorRef(expressionId)
+  def getActorsForExpressionId(expressionId: String): Set[ActorRef] = {
+    exprToStream(expressionId).map(streamId => streamToEntry(streamId).actorRef)
   }
 
-  def getExpressionsForStreamId(streamId: String): Set[String] = synchronized {
-    streamIdToExpressionId(streamId)
+  def getExpressionsForStreamId(streamId: String): Set[String] = {
+    streamToExpr(streamId)
   }
 
-  def entries: List[Entry] = synchronized { sseEntries.values.toList }
-
-  override def getAllExpressions: Map[String, Set[String]] = synchronized {
-    streamIdToExpressionId.toMap
-  }
+  def entries: List[Entry] = synchronized { streamToEntry.values.toList }
 }

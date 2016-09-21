@@ -20,12 +20,12 @@ import javax.inject.Inject
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.lwcapi.ExpressionsDatabase.ReturnableExpression
+import com.netflix.atlas.lwcapi.ExpressionDatabase.ReturnableExpression
 import com.netflix.spectator.api.Spectator
 import spray.http.{HttpResponse, StatusCodes}
 import spray.routing.RequestContext
 
-case class ExpressionApi @Inject()(alertmap: ExpressionsDatabase,
+case class ExpressionApi @Inject()(alertmap: ExpressionDatabase,
                                    implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import ExpressionApi._
 

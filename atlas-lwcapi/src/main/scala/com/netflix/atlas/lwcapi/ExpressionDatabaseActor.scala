@@ -27,7 +27,7 @@ import com.typesafe.scalalogging.StrictLogging
 import scala.util.control.NonFatal
 
 class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
-                                         alertmap: ExpressionsDatabase,
+                                         alertmap: ExpressionDatabase,
                                          sm: SubscriptionManager) extends Actor with StrictLogging {
   import ExpressionDatabaseActor._
 
@@ -76,7 +76,6 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
             sm.subscribe(request.streamId, split.id)
           case "unsub" =>
             increment_counter("remote", "unsub")
-            //alertmap.delExpr(split)
             sm.unsubscribe(request.streamId, split.id)
         }
       }

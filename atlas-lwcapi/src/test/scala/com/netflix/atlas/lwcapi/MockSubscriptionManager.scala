@@ -60,11 +60,6 @@ class MockSubscriptionManager extends SubscriptionManager {
     invocationList += s"entries"
     List()
   }
-
-  override def getAllExpressions: Map[String, Set[String]] = {
-    invocationList += "getAllExpressions"
-    Map()
-  }
 }
 
 object MockSubscriptionManager {

@@ -34,7 +34,7 @@ class LwcApiModule extends AbstractModule {
   }
 
   @Provides @Singleton
-  private def providesAlertMap(): ExpressionsDatabase = {
+  private def providesAlertMap(): ExpressionDatabase = {
     ExpressionDatabaseImpl()
   }
 

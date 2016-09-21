@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.lwcapi.ExpressionsDatabase.ReturnableExpression
+import com.netflix.atlas.lwcapi.ExpressionDatabase.ReturnableExpression
 import org.scalatest.FunSuite
 
 class AlertMapImplSuite extends FunSuite {

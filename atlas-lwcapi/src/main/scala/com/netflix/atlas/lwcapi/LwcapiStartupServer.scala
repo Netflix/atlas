@@ -41,7 +41,7 @@ import scala.util.control.NonFatal
 class LwcapiStartupServer @Inject() (config: Config,
                                      registry: Registry,
                                      splitter: ExpressionSplitter,
-                                     alertmap: ExpressionsDatabase)
+                                     alertmap: ExpressionDatabase)
 
   extends AbstractService with StrictLogging {
 
