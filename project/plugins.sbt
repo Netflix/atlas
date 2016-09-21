@@ -6,4 +6,3 @@ addSbtPlugin("me.lessis"                 % "bintray-sbt"          % "0.3.0")
 addSbtPlugin("com.github.gseitz"         % "sbt-release"          % "0.8.5")
 addSbtPlugin("pl.project13.scala"        % "sbt-jmh"              % "0.2.16")
 addSbtPlugin("com.typesafe.sbt"          % "sbt-git"              % "0.8.4")
-

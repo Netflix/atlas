@@ -47,7 +47,7 @@ class LwcapiStartupServer @Inject() (config: Config,
 
   private val host = ApiSettings.redisHost
   private val port = ApiSettings.redisPort
-  private val keyPrefix = ApiSettings.redisKeyPrefix + "."
+  private val expressionKeyPrefix = ApiSettings.redisExpressionKeyPrefix + "."
 
   private val updatesId = registry.createId("atlas.lwcapi.db.updates")
   private val connectsId = registry.createId("atlas.lwcapi.redis.connects")
@@ -71,7 +71,7 @@ class LwcapiStartupServer @Inject() (config: Config,
         val entries = ret.get._2.getOrElse(List())
         entries.foreach(keyOrNone => {
           val key = keyOrNone.getOrElse("")
-          if (key.startsWith(keyPrefix)) {
+          if (key.startsWith(expressionKeyPrefix)) {
             try {
               count += 1
               val json = client.get(key)

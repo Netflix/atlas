@@ -45,7 +45,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val ttl = ApiSettings.redisTTL
   private val host = ApiSettings.redisHost
   private val port = ApiSettings.redisPort
-  private val keyPrefix = ApiSettings.redisKeyPrefix
+  private val expressionKeyPrefix = ApiSettings.redisExpressionKeyPrefix
 
   restartPubsub()
 
@@ -102,7 +102,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     val json = RedisRequest(ExpressionWithFrequency(split.expression, split.frequency), streamId: String, uuid, action).toJson
     pubClient.publish(channel, json)
     if (action == "sub") {
-      val keyname = s"$keyPrefix.${split.id}"
+      val keyname = s"$expressionKeyPrefix.${split.id}"
       val count = pubClient.psetex(keyname, ttl, json)
     }
     increment_counter("local", action)
