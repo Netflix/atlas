@@ -50,6 +50,20 @@ class ExpressionSplitterSuite extends FunSuite {
    assert(msg.getMessage === "Expression is not a valid expression")
   }
 
+  test("SplitterResult is printable") {
+    val r = SplitResult("theExpression", 123, "theId", List(QueryContainer(Query.True, ":bar")))
+    val s = r.toString
+    assert(s.contains("theExpression"))
+    assert(s.contains("123"))
+    assert(s.contains("theId"))
+    assert(s.contains("true"))
+    assert(s.contains(":bar"))
+  }
+
+  //
+  // Tests for compress()
+  //
+
   //
   // Keeping keys
   //
