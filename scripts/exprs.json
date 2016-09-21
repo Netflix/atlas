@@ -1,4 +1,5 @@
 {
+  "streamId": "sse-test",
   "expressions": [
     {
       "expression": "nf.cluster,skan-test,:eq,name,totalCpu,:eq,:and,:avg,(,nf.node,),:by",

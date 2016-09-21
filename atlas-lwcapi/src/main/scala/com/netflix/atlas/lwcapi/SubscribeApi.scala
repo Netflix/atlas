@@ -55,6 +55,8 @@ object SubscribeApi {
       val decoded = Json.decode[SubscribeRequest](json)
       if (decoded.expressions == null || decoded.expressions.isEmpty)
         throw new IllegalArgumentException("Missing or empty expressions array")
+      if (decoded.streamId == null || decoded.streamId.isEmpty)
+        throw new IllegalArgumentException("Missing or empty streamId")
       decoded
     }
   }
@@ -66,6 +68,8 @@ object SubscribeApi {
       val decoded = Json.decode[UnsubscribeRequest](json)
       if (decoded.expressions == null || decoded.expressions.isEmpty)
         throw new IllegalArgumentException("Missing or empty expressions array")
+      if (decoded.streamId == null || decoded.streamId.isEmpty)
+        throw new IllegalArgumentException("Missing or empty streamId")
       decoded
     }
   }

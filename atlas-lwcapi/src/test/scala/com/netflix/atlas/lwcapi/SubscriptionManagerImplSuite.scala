@@ -17,8 +17,11 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.util.Timeout
+
 import scala.concurrent.duration._
 import org.scalatest.FunSuite
+
+import scala.language.postfixOps
 
 class SubscriptionManagerImplSuite() extends FunSuite {
   test("subscribe, unsubscribe, and get work") {
@@ -53,20 +56,12 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     assert(sm.getExpressionsForSSEId(sse1) === Set())
   }
 
-  test("register is required for sub or unsub or unsubAll") {
+  test("unknown expression or sseIDs do not cause any exceptions") {
     val sm = SubscriptionManagerImpl()
 
-    intercept[IllegalArgumentException] {
-      sm.subscribe("a", "b")
-    }
-
-    intercept[IllegalArgumentException] {
-      sm.unsubscribe("a", "b")
-    }
-
-    intercept[IllegalArgumentException] {
-      sm.unsubscribeAll("a")
-    }
+    sm.subscribe("a", "b")
+    sm.unsubscribe("c", "d")
+    sm.unsubscribeAll("e")
   }
 
   test("entries and getAllExpressions works") {

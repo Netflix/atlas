@@ -37,25 +37,22 @@ case class SubscriptionManagerImpl() extends SubscriptionManager with StrictLogg
 
   def subscribe(sseId: String, expressionId: String): Unit = synchronized {
     val entry = sseEntries.get(sseId)
-    if (entry.isEmpty)
-      throw new IllegalArgumentException("sseId is not registered")
-    expressionIdToActorRef(expressionId) += entry.get.actorRef
+    if (entry.nonEmpty)
+      expressionIdToActorRef(expressionId) += entry.get.actorRef
     sseIdToExpressionId(sseId) += expressionId
   }
 
   def unsubscribe(sseId: String, expressionId: String): Unit = synchronized {
     val entry = sseEntries.get(sseId)
-    if (entry.isEmpty)
-      throw new IllegalArgumentException("sseId is not registered")
-    expressionIdToActorRef(expressionId) -= entry.get.actorRef
+    if (entry.nonEmpty)
+      expressionIdToActorRef(expressionId) -= entry.get.actorRef
     sseIdToExpressionId(sseId) -= expressionId
   }
 
   def unsubscribeAll(sseId: String): Unit = synchronized {
     val entry = sseEntries.get(sseId)
-    if (entry.isEmpty)
-      throw new IllegalArgumentException("sseId is not registered")
-    expressionIdToActorRef.keySet.foreach(id => expressionIdToActorRef(id) -= entry.get.actorRef)
+    if (entry.nonEmpty)
+      expressionIdToActorRef.keySet.foreach(id => expressionIdToActorRef(id) -= entry.get.actorRef)
     sseIdToExpressionId.remove(sseId)
   }
 
