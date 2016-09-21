@@ -27,7 +27,7 @@ abstract class SubscriptionManager() {
   def unsubscribeAll(sseId: String): Unit
 
   def getActorsForExpressionId(expressionId: String): Set[ActorRef]
-  def getExpressionsForSSEId(sseId: String): Set[String]
+  def getExpressionsForStreamId(sseId: String): Set[String]
   def entries: List[Entry]
   def getAllExpressions: Map[String, Set[String]]
 }

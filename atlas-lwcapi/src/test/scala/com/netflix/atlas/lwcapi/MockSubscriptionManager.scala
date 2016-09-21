@@ -51,8 +51,8 @@ class MockSubscriptionManager extends SubscriptionManager {
     Set()
   }
 
-  override def getExpressionsForSSEId(sseId: String): Set[String] = {
-    invocationList += s"getExpressionsForSSEId,$sseId"
+  override def getExpressionsForStreamId(sseId: String): Set[String] = {
+    invocationList += s"getExpressionsForStreamId,$sseId"
     Set()
   }
 

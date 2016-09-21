@@ -16,11 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import akka.actor.{Actor, ActorSystem, Props}
-import akka.util.Timeout
-
-import scala.concurrent.duration._
 import org.scalatest.FunSuite
-
 import scala.language.postfixOps
 
 class SubscriptionManagerImplSuite() extends FunSuite {
@@ -28,8 +24,6 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     val system = ActorSystem("HelloSystem")
 
     val sm = SubscriptionManagerImpl()
-
-    implicit val timeout = Timeout(5 seconds) // needed for `?` below
 
     val exp1 = "exp1"
     val exp2 = "exp2"
@@ -41,19 +35,19 @@ class SubscriptionManagerImplSuite() extends FunSuite {
 
     sm.subscribe(sse1, exp1)
     assert(sm.getActorsForExpressionId(exp1) === Set(ref1))
-    assert(sm.getExpressionsForSSEId(sse1) === Set(exp1))
+    assert(sm.getExpressionsForStreamId(sse1) === Set(exp1))
 
     sm.subscribe(sse1, exp2)
     assert(sm.getActorsForExpressionId(exp2) === Set(ref1))
-    assert(sm.getExpressionsForSSEId(sse1) === Set(exp1, exp2))
+    assert(sm.getExpressionsForStreamId(sse1) === Set(exp1, exp2))
 
     sm.unsubscribe(sse1, exp1)
     assert(sm.getActorsForExpressionId(exp1) === Set())
-    assert(sm.getExpressionsForSSEId(sse1) === Set(exp2))
+    assert(sm.getExpressionsForStreamId(sse1) === Set(exp2))
 
     sm.unsubscribeAll(sse1)
     assert(sm.getActorsForExpressionId(exp1) === Set())
-    assert(sm.getExpressionsForSSEId(sse1) === Set())
+    assert(sm.getExpressionsForStreamId(sse1) === Set())
   }
 
   test("unknown expression or sseIDs do not cause any exceptions") {
@@ -68,8 +62,6 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     val system = ActorSystem("HelloSystem")
 
     val sm = SubscriptionManagerImpl()
-
-    implicit val timeout = Timeout(5 seconds) // needed for `?` below
 
     val exp1 = "exp1"
     val exp2 = "exp2"
