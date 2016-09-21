@@ -62,6 +62,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
     ))
 
     assert(invocations === List[String](
+      "STARTHTTP:",
       SSEHello("mySSEId").toSSE,
       SSESubscribe(split).toSSE,
       SSEShutdown("test shutdown").toSSE,
@@ -85,6 +86,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
     waitForShutdown()
 
     assert(invocations === List[String](
+      "STARTHTTP:",
       SSEHello("mySSEId").toSSE,
       SSEHeartbeat().toSSE,
       SSEShutdown("test shutdown").toSSE,
@@ -113,6 +115,9 @@ object SSEActorSuite {
     def convert(v: Any): String = v match {
       case MessageChunk(data, extension) =>
         data.asString
+      case ChunkedResponseStart(msg) =>
+        s"STARTHTTP:${msg.entity.asString}"
+      case x => x.toString
     }
 
     def receive = {
@@ -123,6 +128,7 @@ object SSEActorSuite {
       case Http.Close =>
         record("close")
         clientDone = true
+      case x => record(x.toString)
     }
   }
 }

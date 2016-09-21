@@ -21,6 +21,7 @@ import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.{Json, JsonSupport}
 import com.typesafe.scalalogging.StrictLogging
+import shapeless.HNil
 import spray.httpx.PlayJsonSupport
 import spray.routing.RequestContext
 
@@ -31,25 +32,27 @@ class StreamApi @Inject()(sm: SubscriptionManager,
   import StreamApi.SSESubscribe
 
   def routes: RequestContext => Unit = {
-    path("lwc" / "api" / "v1" / "stream" / Segment) { (sseId) =>
+    path("lwc" / "api" / "v1" / "stream" / Segment) { (streamId) =>
       parameters('name.?, 'expr.?, 'frequency.?) { (name, expr, frequency) =>
         get { (ctx) =>
-          handleReq(ctx, sseId, name, expr, frequency)
+          handleReq(ctx, streamId, name, expr, frequency)
         }
       }
     }
   }
 
-  private def handleReq(ctx: RequestContext, sseId: String, name: Option[String], expr: Option[String], freqString: Option[String]): Unit = {
-    val actorRef = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, sseId, name.getOrElse("unknown"), sm)))
+  private def handleReq(ctx: RequestContext, streamId: String, name: Option[String], expr: Option[String], freqString: Option[String]): Unit = {
+    try {
+      val actorRef = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, streamId, name.getOrElse("unknown"), sm)))
 
-    val freq = freqString.fold(ApiSettings.defaultFrequency)(_.toLong)
-    if (expr.isDefined) {
-      val split = splitter.split(ExpressionWithFrequency(expr.get, freq))
-      alertmap.addExpr(split)
-      sm.subscribe(sseId, split.id)
-      actorRef ! SSESubscribe(split)
-    }
+      val freq = freqString.fold(ApiSettings.defaultFrequency)(_.toLong)
+      if (expr.isDefined) {
+        val split = splitter.split(ExpressionWithFrequency(expr.get, freq))
+        alertmap.addExpr(split)
+        sm.subscribe(streamId, split.id)
+        actorRef ! SSESubscribe(split)
+      }
+    } catch handleException(ctx)
   }
 }
 
@@ -63,22 +66,22 @@ object StreamApi {
   }
 
   // Hello message
-  case class HelloContent(sseId: String) extends JsonSupport
+  case class HelloContent(streamId: String) extends JsonSupport
 
-  case class SSEHello(sseId: String)
-    extends SSEMessage("data", "hello", HelloContent(sseId))
+  case class SSEHello(streamId: String)
+    extends SSEMessage("data", "hello", HelloContent(streamId))
 
   // Heartbeat message
   case class HeartbeatContent() extends JsonSupport
 
   case class SSEHeartbeat()
-    extends SSEMessage("data", "heartbeat", HeartbeatContent()) with SSERenderable
+    extends SSEMessage("data", "heartbeat", HeartbeatContent())
 
   // Shutdown message
   case class ShutdownReason(reason: String) extends JsonSupport
 
   case class SSEShutdown(reason: String)
-    extends SSEMessage("data", "shutdown", ShutdownReason(reason)) with SSERenderable
+    extends SSEMessage("data", "shutdown", ShutdownReason(reason))
 
   // Subscribe message
   case class SubscribeContent(id: String,
@@ -93,9 +96,9 @@ object StreamApi {
   }
 
   case class SSESubscribe(split: ExpressionSplitter.SplitResult)
-    extends SSEMessage("data", "subscribe", SubscribeContent(split)) with SSERenderable
+    extends SSEMessage("data", "subscribe", SubscribeContent(split))
 
   // Evaluate message
   case class SSEEvaluate(item: EvaluateApi.Item)
-    extends SSEMessage("data", "evaluate", item) with SSERenderable
+    extends SSEMessage("data", "evaluate", item)
 }

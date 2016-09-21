@@ -39,7 +39,7 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
   outstandingCount += 1
 
   sm.register(sseId, self, name)
-  client ! send(helloMessage)
+  send(helloMessage)
 
   var ticker: Cancellable = context.system.scheduler.scheduleOnce(tickTime) {
     self ! Tick()
@@ -67,8 +67,8 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
       context.stop(self)
   }
 
-  private def send(msg: SSEMessage, force: Boolean = false): Unit = {
-    if (force || outstandingCount < maxOutstanding) {
+  private def send(msg: SSEMessage): Unit = {
+    if (outstandingCount < maxOutstanding) {
       val json = msg.toSSE + "\r\n\r\n"
       client ! MessageChunk(json).withAck(Ack())
       outstandingCount += 1
