@@ -80,22 +80,6 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
     }
   }
 
-  test("subscribe: correctly formatted expression with sourceId") {
-    val json = """
-                 |{
-                 |  "streamId": "abc123",
-                 |  "expressions": [
-                 |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
-                 |  ]
-                 |}""".stripMargin
-    Post("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(lastUpdate.size === 1)
-      assert(lastStreamId === "abc123")
-      assert(lastKind === 'subscribe)
-    }
-  }
-
   test("subscribe: bad json") {
     Post("/lwc/api/v1/subscribe", "fubar") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
