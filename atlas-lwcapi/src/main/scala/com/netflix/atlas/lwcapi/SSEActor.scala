@@ -24,8 +24,10 @@ import com.netflix.atlas.json.Json
 import spray.can.Http
 import spray.http._
 
-class SSEActor(client: ActorRef, sseId: String, sm: SubscriptionManager) extends Actor with ActorLogging {
-  import com.netflix.atlas.lwcapi.StreamAPI._
+class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionManager)
+  extends Actor with ActorLogging {
+
+  import StreamApi._
 
   private var outstandingCount = 0
   private val maxOutstanding = 100
@@ -37,6 +39,8 @@ class SSEActor(client: ActorRef, sseId: String, sm: SubscriptionManager) extends
 
   client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack())
   outstandingCount += 1
+
+  sm.register(sseId, self, name)
   client ! send(helloMessage)
 
   var ticker: Cancellable = context.system.scheduler.scheduleOnce(tickTime) { self ! Tick() }
@@ -65,7 +69,7 @@ class SSEActor(client: ActorRef, sseId: String, sm: SubscriptionManager) extends
 
   private def send(msg: SSEMessage, force: Boolean = false): Unit = {
     if (force || outstandingCount < maxOutstanding) {
-      val json = msg.toJson + "\r\n\r\n"
+      val json = msg.toSSE + "\r\n\r\n"
       client ! MessageChunk(json).withAck(Ack())
       outstandingCount += 1
     } else {

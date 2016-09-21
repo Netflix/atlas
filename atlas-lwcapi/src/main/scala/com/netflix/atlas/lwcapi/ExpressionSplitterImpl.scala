@@ -28,7 +28,7 @@ class ExpressionSplitterImpl extends ExpressionSplitter {
   private val interpreter = Interpreter(StyleVocabulary.allWords)
   private val interner = scala.collection.mutable.AnyRefMap[Query, Query]()
 
-  private def intern(query: Query): Query = {
+  def intern(query: Query): Query = {
     query match {
       case Query.True =>
         query
@@ -98,7 +98,7 @@ class ExpressionSplitterImpl extends ExpressionSplitter {
     if (newQuery != query) simplify(newQuery) else newQuery
   }
 
-  private def compress(expr: Query): Query = {
+  def compress(expr: Query): Query = {
     val tmp = expr.rewrite { case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True }
     simplify(tmp.asInstanceOf[Query])
   }

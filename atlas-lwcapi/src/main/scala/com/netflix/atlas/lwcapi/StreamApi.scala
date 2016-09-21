@@ -24,11 +24,11 @@ import com.typesafe.scalalogging.StrictLogging
 import spray.httpx.PlayJsonSupport
 import spray.routing.RequestContext
 
-class StreamAPI @Inject()(sm: SubscriptionManager,
+class StreamApi @Inject()(sm: SubscriptionManager,
                           splitter: ExpressionSplitter,
                           alertmap: AlertMap,
                           implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
-  import StreamAPI.SSESubscribe
+  import StreamApi.SSESubscribe
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { (sseId) =>
@@ -41,40 +41,61 @@ class StreamAPI @Inject()(sm: SubscriptionManager,
   }
 
   private def handleReq(ctx: RequestContext, sseId: String, name: Option[String], expr: Option[String], freqString: Option[String]): Unit = {
-    val newActor = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, sseId, sm)))
-    sm.register(sseId, newActor, name.getOrElse("unknown"))
+    val actorRef = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, sseId, name.getOrElse("unknown"), sm)))
 
     val freq = freqString.fold(ApiSettings.defaultFrequency)(_.toLong)
     if (expr.isDefined) {
       val split = splitter.split(ExpressionWithFrequency(expr.get, freq))
       alertmap.addExpr(split)
       sm.subscribe(sseId, split.id)
-      newActor ! SSESubscribe(split)
+      actorRef ! SSESubscribe(split)
     }
   }
 }
 
-object StreamAPI {
-  abstract class SSEMessage(msgType: String, what: String, content: JsonSupport) extends JsonSupport
+trait SSERenderable {
+  def toSSE: String
+}
 
+object StreamApi {
+  abstract class SSEMessage(msgType: String, what: String, content: JsonSupport) extends SSERenderable {
+    def toSSE = s"$msgType: $what ${content.toJson}"
+  }
+
+  // Hello message
+  case class HelloContent(sseId: String) extends JsonSupport
+
+  case class SSEHello(sseId: String)
+    extends SSEMessage("data", "hello", HelloContent(sseId))
+
+  // Heartbeat message
   case class HeartbeatContent() extends JsonSupport
-  case class SSEHeartbeat() extends SSEMessage("data", "heartbeat", HeartbeatContent())
 
-  case class MessageReason(reason: String) extends JsonSupport
-  case class SSEShutdown(reason: String) extends SSEMessage("data", "shutdown", MessageReason(reason))
+  case class SSEHeartbeat()
+    extends SSEMessage("data", "heartbeat", HeartbeatContent()) with SSERenderable
 
-  case class SubscribeContent(id: String, expression: String, frequency: Long, dataExpressions: List[String]) extends JsonSupport
+  // Shutdown message
+  case class ShutdownReason(reason: String) extends JsonSupport
+
+  case class SSEShutdown(reason: String)
+    extends SSEMessage("data", "shutdown", ShutdownReason(reason)) with SSERenderable
+
+  // Subscribe message
+  case class SubscribeContent(id: String,
+                              expression: String,
+                              frequency: Long,
+                              dataExpressions: List[String]) extends JsonSupport
 
   object SubscribeContent {
     def apply(split: ExpressionSplitter.SplitResult) = {
       new SubscribeContent(split.id, split.expression, split.frequency, split.split.map(e => e.dataExpr.toString))
     }
   }
-  case class SSESubscribe(split: ExpressionSplitter.SplitResult) extends SSEMessage("data", "subscribe", SubscribeContent(split))
 
-  case class HelloContent(sseId: String) extends JsonSupport
+  case class SSESubscribe(split: ExpressionSplitter.SplitResult)
+    extends SSEMessage("data", "subscribe", SubscribeContent(split)) with SSERenderable
 
-  case class SSEHello(sseId: String) extends SSEMessage("data", "hello", HelloContent(sseId))
-
-  case class SSEExpression(item: EvaluateApi.Item) extends SSEMessage("data", "evaluate", item)
+  // Evaluate message
+  case class SSEEvaluate(item: EvaluateApi.Item)
+    extends SSEMessage("data", "evaluate", item) with SSERenderable
 }

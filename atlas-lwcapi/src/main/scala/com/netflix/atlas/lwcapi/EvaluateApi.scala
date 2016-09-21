@@ -18,7 +18,7 @@ package com.netflix.atlas.lwcapi
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.{Json, JsonSupport}
-import com.netflix.atlas.lwcapi.StreamAPI.SSEMessage
+import com.netflix.atlas.lwcapi.StreamApi.SSEMessage
 import spray.routing.RequestContext
 
 class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {

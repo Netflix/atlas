@@ -21,7 +21,7 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 import spray.http.{HttpResponse, StatusCodes}
 import spray.testkit.ScalatestRouteTest
 
-class RegisterApiSuite extends FunSuite with BeforeAndAfter with  ScalatestRouteTest {
+class RegisterApiSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
   import RegisterApiSuite._
 
   import scala.concurrent.duration._

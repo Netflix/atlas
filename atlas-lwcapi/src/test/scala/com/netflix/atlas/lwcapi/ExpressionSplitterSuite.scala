@@ -49,4 +49,155 @@ class ExpressionSplitterSuite extends FunSuite {
     }
    assert(msg.getMessage === "Expression is not a valid expression")
   }
+
+  //
+  // Keeping keys
+  //
+
+  test("compress keeps nf.app") {
+    val ret = splitter.compress(Query.Equal("nf.app", "skan"))
+    assert(ret === Query.Equal("nf.app", "skan"))
+  }
+
+  test("compress keeps nf.stack") {
+    val ret = splitter.compress(Query.Equal("nf.stack", "skan"))
+    assert(ret === Query.Equal("nf.stack", "skan"))
+  }
+
+  test("compress keeps nf.cluster") {
+    val ret = splitter.compress(Query.Equal("nf.cluster", "skan"))
+    assert(ret === Query.Equal("nf.cluster", "skan"))
+  }
+
+  test("compress removes arbitrary other equal comparisons") {
+    val ret = splitter.compress(Query.Equal("xxx", "skan"))
+    assert(ret === Query.True)
+  }
+
+  //
+  // And
+  //
+
+  test("compress converts true,true,:and to true") {
+    val ret = splitter.compress(Query.And(Query.True, Query.True))
+    assert(ret === Query.True)
+  }
+
+  test("compress converts false,true,:and to false") {
+    val ret = splitter.compress(Query.And(Query.False, Query.True))
+    assert(ret === Query.False)
+  }
+
+  test("compress converts true,false,:and to false") {
+    val ret = splitter.compress(Query.And(Query.True, Query.False))
+    assert(ret === Query.False)
+  }
+
+  test("compress converts false,false,:and to false") {
+    val ret = splitter.compress(Query.And(Query.False, Query.False))
+    assert(ret === Query.False)
+  }
+
+  test("compress converts nf.app,b,:eq,:true,:and to nf.app,b,:eq") {
+    val ret = splitter.compress(Query.And(Query.Equal("nf.app", "b"), Query.True))
+    assert(ret === Query.Equal("nf.app", "b"))
+  }
+
+  test("compress converts :true,nf.app,b,:eq,:and to nf.app,b,:eq") {
+    val ret = splitter.compress(Query.And(Query.True, Query.Equal("nf.app", "b")))
+    assert(ret === Query.Equal("nf.app", "b"))
+  }
+
+  test("compress converts nf.app,b,:eq,:false,:and to :false") {
+    val ret = splitter.compress(Query.And(Query.Equal("nf.app", "b"), Query.False))
+    assert(ret === Query.False)
+  }
+
+  test("compress converts :false,nf.app,b,:eq,:and to :false") {
+    val ret = splitter.compress(Query.And(Query.False, Query.Equal("nf.app", "b")))
+    assert(ret === Query.False)
+  }
+
+  test("compress converts nf.stack,iep,:eq,nf.app,b,:eq,:and to identity") {
+    val query = Query.And(Query.Equal("nf.stack", "iep"), Query.Equal("nf.app", "b"))
+    val ret = splitter.compress(query)
+    assert(ret === query)
+  }
+
+  //
+  // Or
+  //
+
+  test("compress converts false,true,:or to true") {
+    val ret = splitter.compress(Query.Or(Query.False, Query.True))
+    assert(ret === Query.True)
+  }
+
+  test("compress converts true,false,:or to true") {
+    val ret = splitter.compress(Query.Or(Query.True, Query.False))
+    assert(ret === Query.True)
+  }
+
+  test("compress converts false,false,:or to false") {
+    val ret = splitter.compress(Query.Or(Query.False, Query.False))
+    assert(ret === Query.False)
+  }
+
+  test("compress converts a,b,:eq,c:d::eq:and to :true") {
+    val ret = splitter.compress(Query.And(Query.Equal("a", "b"), Query.Equal("a", "b")))
+    assert(ret === Query.True)
+  }
+
+  test("compress converts nf.stack,iep,:eq,nf.app,b,:eq,:or to identity") {
+    val query = Query.Or(Query.Equal("nf.stack", "iep"), Query.Equal("nf.app", "b"))
+    val ret = splitter.compress(query)
+    assert(ret === query)
+  }
+
+  //
+  // Not
+  //
+
+  test("compress converts :true,:not to :true") {
+    // yes, not converts to true here on purpose.
+    val ret = splitter.compress(Query.Not(Query.True))
+    assert(ret === Query.True)
+  }
+
+  test("compress converts :false,:not to :true") {
+    val ret = splitter.compress(Query.Not(Query.False))
+    assert(ret === Query.True)
+  }
+
+  test("compress converts nf.stack,iep,:eq,:not to identity") {
+    val query = Query.Not(Query.Equal("nf.stack", "iep"))
+    val ret = splitter.compress(query)
+    assert(ret === query)
+  }
+
+  //
+  // Interner exerciser
+  //
+  test("interner exerciser") {
+    val tests = List(
+      Query.True,
+      Query.False,
+      Query.Equal("a", "b"),
+      Query.LessThan("a", "123"),
+      Query.LessThanEqual("a", "123"),
+      Query.GreaterThan("a", "123"),
+      Query.GreaterThanEqual("a", "123"),
+      Query.Regex("a", "b"),
+      Query.RegexIgnoreCase("a", "b"),
+      Query.In("a", List("b", "c")),
+      Query.HasKey("a"),
+      Query.And(Query.True, Query.True),
+      Query.Or(Query.True, Query.True),
+      Query.Not(Query.True)
+    )
+    tests.foreach(query =>
+      assert(splitter.intern(query) == query)
+    )
+  }
+
 }

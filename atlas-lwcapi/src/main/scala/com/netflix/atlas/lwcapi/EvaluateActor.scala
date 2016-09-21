@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.lwcapi.StreamAPI._
+import com.netflix.atlas.lwcapi.StreamApi._
 import spray.http.{HttpResponse, StatusCodes}
 
 class EvaluateActor @Inject() (sm: SubscriptionManager) extends Actor with ActorLogging {
@@ -40,7 +40,7 @@ class EvaluateActor @Inject() (sm: SubscriptionManager) extends Actor with Actor
     items.foreach { item =>
       log.info("Item: " + item)
       val actors = sm.getActorsForExpressionId(item.id)
-      val message = SSEExpression(item)
+      val message = SSEEvaluate(item)
       actors.foreach(actor => actor ! message)
     }
   }
