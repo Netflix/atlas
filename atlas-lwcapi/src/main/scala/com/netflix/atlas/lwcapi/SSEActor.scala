@@ -67,8 +67,6 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
       ticker.cancel()
       log.info(s"SSE Stream closed: $closed")
       context.stop(self)
-    case _ =>
-      DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "unknown payload")
   }
 
   private def send(msg: SSEMessage, force: Boolean = false): Unit = {

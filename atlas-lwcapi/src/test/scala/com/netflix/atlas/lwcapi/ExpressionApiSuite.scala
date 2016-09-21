@@ -26,8 +26,8 @@ class ExpressionApiSuite(implicit actorSystem: ActorSystem) extends FunSuite wit
 
   val splitter = new ExpressionSplitterImpl()
 
-  val alertmap = AlertMapImpl()
-  val endpoint = ExpressionsApi(alertmap, actorSystem)
+  val alertmap = ExpressionDatabaseImpl()
+  val endpoint = ExpressionApi(alertmap, actorSystem)
 
   test("get of a path returns empty data") {
     Get("/lwc/api/v1/expressions/123") ~> endpoint.routes ~> check {

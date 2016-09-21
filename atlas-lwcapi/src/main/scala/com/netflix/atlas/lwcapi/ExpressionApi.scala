@@ -20,14 +20,14 @@ import javax.inject.Inject
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.lwcapi.AlertMap.ReturnableExpression
+import com.netflix.atlas.lwcapi.ExpressionsDatabase.ReturnableExpression
 import com.netflix.spectator.api.Spectator
 import spray.http.{HttpResponse, StatusCodes}
 import spray.routing.RequestContext
 
-case class ExpressionsApi @Inject() (alertmap: AlertMap,
-                                     implicit val actorRefFactory: ActorRefFactory) extends WebApi {
-  import ExpressionsApi._
+case class ExpressionApi @Inject()(alertmap: ExpressionsDatabase,
+                                   implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+  import ExpressionApi._
 
   private val registry = Spectator.globalRegistry()
   private val expressionFetchesId = registry.createId("atlas.lwcapi.expressions.fetches")
@@ -48,7 +48,7 @@ case class ExpressionsApi @Inject() (alertmap: AlertMap,
   }
 }
 
-object ExpressionsApi {
+object ExpressionApi {
   private def toJson(expressions: List[ReturnableExpression]): String = {
     Json.encode(expressions)
   }

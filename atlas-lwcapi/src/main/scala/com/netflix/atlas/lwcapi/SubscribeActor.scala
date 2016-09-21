@@ -21,18 +21,18 @@ import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
 import spray.http.{HttpResponse, StatusCodes}
 
-class RegisterActor @Inject() (splitter: ExpressionSplitter) extends Actor with ActorLogging {
-  import com.netflix.atlas.lwcapi.RegisterApi._
+class SubscribeActor @Inject()(splitter: ExpressionSplitter) extends Actor with ActorLogging {
+  import com.netflix.atlas.lwcapi.SubscribeApi._
 
   private val pubsubActor = context.actorSelection("/user/lwc.expressiondb")
 
   def receive = {
-    case RegisterRequest(sinkId, Nil) =>
+    case SubscribeRequest(sinkId, Nil) =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "empty payload")
-    case RegisterRequest(sinkId, expressions) =>
+    case SubscribeRequest(sinkId, expressions) =>
       update(sinkId, expressions)
       sender() ! HttpResponse(StatusCodes.OK)
-    case DeleteRequest(sinkId, expressions) =>
+    case UnsubscribeRequest(sinkId, expressions) =>
       delete(sinkId, expressions)
       sender() ! HttpResponse(StatusCodes.OK)
     case _ =>

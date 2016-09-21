@@ -17,15 +17,15 @@ package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 
-abstract class AlertMap {
-  import AlertMap._
+abstract class ExpressionsDatabase {
+  import ExpressionsDatabase._
 
   def addExpr(split: SplitResult): Unit
   def delExpr(split: SplitResult): Unit
   def expressionsForCluster(cluster: String): List[ReturnableExpression]
 }
 
-object AlertMap {
+object ExpressionsDatabase {
   case class ReturnableExpression(id: String, frequency: Long, dataExpressions: List[String]) {
     override def toString = s"ReturnableExpression<$id> <$frequency> <$dataExpressions>"
   }

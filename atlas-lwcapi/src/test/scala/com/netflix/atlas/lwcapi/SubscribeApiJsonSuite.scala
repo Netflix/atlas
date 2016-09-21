@@ -16,10 +16,10 @@
 package com.netflix.atlas.lwcapi
 
 import com.fasterxml.jackson.databind.JsonMappingException
-import com.netflix.atlas.lwcapi.RegisterApi.RegisterRequest
+import com.netflix.atlas.lwcapi.SubscribeApi._
 import org.scalatest.FunSuite
 
-class RegisterApiJsonSuite extends FunSuite {
+class SubscribeApiJsonSuite extends FunSuite {
   test("default is applied") {
     assert(ExpressionWithFrequency("this") === ExpressionWithFrequency("this", ApiSettings.defaultFrequency))
   }
@@ -29,32 +29,32 @@ class RegisterApiJsonSuite extends FunSuite {
       ExpressionWithFrequency("this", 1234),
       ExpressionWithFrequency("that", 4321)
     )
-    val original = RegisterRequest(None, expressions)
+    val original = SubscribeRequest(None, expressions)
     val json = original.toJson
-    val decoded = RegisterRequest.fromJson(json)
+    val decoded = SubscribeRequest.fromJson(json)
     assert(original === decoded)
   }
 
   test("decode empty expression list throws") {
     intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest.fromJson("""{"expressions": []}""")
+      SubscribeApi.SubscribeRequest.fromJson("""{"expressions": []}""")
     }
   }
 
   test("decode missing expression list throws") {
     intercept[IllegalArgumentException] {
-      RegisterApi.RegisterRequest.fromJson("""{}""")
+      SubscribeApi.SubscribeRequest.fromJson("""{}""")
     }
   }
 
   test("decode array") {
     intercept[JsonMappingException] {
-      RegisterApi.RegisterRequest.fromJson("[]")
+      SubscribeApi.SubscribeRequest.fromJson("[]")
     }
   }
 
   test("decode list") {
-    val decoded = RegisterApi.RegisterRequest.fromJson("""
+    val decoded = SubscribeApi.SubscribeRequest.fromJson("""
       {
         "expressions": [
           { "expression": "this", "frequency": 12345 },
@@ -67,15 +67,15 @@ class RegisterApiJsonSuite extends FunSuite {
   }
 
   test("decode with sinkId") {
-    val decoded = RegisterApi.RegisterRequest.fromJson("""
+    val decoded = SubscribeApi.SubscribeRequest.fromJson("""
       {
-        "sinkId": "testsink",
+        "streamId": "testsink",
         "expressions": [
           { "expression": "this", "frequency": 12345 }
         ]
       }
       """)
-    assert(decoded.sinkId === Some("testsink"))
+    assert(decoded.streamId === Some("testsink"))
   }
 
 }

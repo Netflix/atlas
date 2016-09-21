@@ -15,21 +15,21 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.lwcapi.AlertMap.ReturnableExpression
+import com.netflix.atlas.lwcapi.ExpressionsDatabase.ReturnableExpression
 import org.scalatest.FunSuite
 
 class AlertMapImplSuite extends FunSuite {
   val splitter = ExpressionSplitterImpl()
 
   test("exprForDataExpr returns an empty set if not found") {
-    val x = AlertMapImpl()
+    val x = ExpressionDatabaseImpl()
 
     assert(x.expressionsForCluster("foo") === List())
   }
 
   test("index is rebuilt") {
     val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
-    val x = AlertMapImpl()
+    val x = ExpressionDatabaseImpl()
 
     x.addExpr(splitter.split(query1))
     var ret = x.expressionsForCluster("skan-test")
@@ -53,7 +53,7 @@ class AlertMapImplSuite extends FunSuite {
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
     val ret2 = ReturnableExpression("xcKZ6tCd4vSMUY-Ug3bToNy3L6k", 50000, List(ds2a))
 
-    val x = AlertMapImpl()
+    val x = ExpressionDatabaseImpl()
     x.setTestMode()
 
     x.addExpr(splitter.split(query1))
@@ -73,7 +73,7 @@ class AlertMapImplSuite extends FunSuite {
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
     val ret2 = ReturnableExpression("xcKZ6tCd4vSMUY-Ug3bToNy3L6k", 50000, List(ds2a))
 
-    val x = AlertMapImpl()
+    val x = ExpressionDatabaseImpl()
     x.setTestMode()
 
     x.addExpr(splitter.split(query1))
@@ -102,7 +102,7 @@ class AlertMapImplSuite extends FunSuite {
     val ds2a = "nf.cluster,foo-test,:eq,:sum"
     val ret2 = ReturnableExpression("AelsHYTDCsTCiqzFkyOD-ShPzE8", 50000, List(ds2a))
 
-    val x = AlertMapImpl()
+    val x = ExpressionDatabaseImpl()
     x.setTestMode()
 
     x.addExpr(splitter.split(query1))
@@ -119,7 +119,7 @@ class AlertMapImplSuite extends FunSuite {
     val ds1b = "nf.cluster,foo-test,:eq,:sum"
     val ret1b = ReturnableExpression("MF-t6bE1FNpNHa4hLS5-lqBhZ9k", 30000, List(ds1b, ""))
 
-    val x = AlertMapImpl()
+    val x = ExpressionDatabaseImpl()
     x.setTestMode()
 
     x.addExpr(splitter.split(query1))

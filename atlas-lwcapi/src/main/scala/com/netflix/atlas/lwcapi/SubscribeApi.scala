@@ -20,13 +20,13 @@ import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.{Json, JsonSupport}
 import spray.routing.RequestContext
 
-class RegisterApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
-  import RegisterApi._
+class SubscribeApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+  import SubscribeApi._
 
-  private val registerRef = actorRefFactory.actorSelection("/user/lwc.register")
+  private val subscribeRef = actorRefFactory.actorSelection("/user/lwc.subscribe")
 
   def routes: RequestContext => Unit = {
-    path("lwc" / "api" / "v1" / "register") {
+    path("lwc" / "api" / "v1" / "subscribe") {
       post { ctx => handlePost(ctx) } ~
       delete { ctx => handleDelete(ctx) }
     }
@@ -34,36 +34,36 @@ class RegisterApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 
   private def handlePost(ctx: RequestContext): Unit = {
     try {
-      val request = RegisterRequest.fromJson(ctx.request.entity.asString)
-      registerRef.tell(request, ctx.responder)
+      val request = SubscribeRequest.fromJson(ctx.request.entity.asString)
+      subscribeRef.tell(request, ctx.responder)
     } catch handleException(ctx)
   }
 
   private def handleDelete(ctx: RequestContext): Unit = {
     try {
-      val request = DeleteRequest.fromJson(ctx.request.entity.asString)
-      registerRef.tell(request, ctx.responder)
+      val request = UnsubscribeRequest.fromJson(ctx.request.entity.asString)
+      subscribeRef.tell(request, ctx.responder)
     } catch handleException(ctx)
   }
 }
 
-object RegisterApi {
-  case class RegisterRequest(sinkId: Option[String], expressions: List[ExpressionWithFrequency]) extends JsonSupport
+object SubscribeApi {
+  case class SubscribeRequest(streamId: Option[String], expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
-  object RegisterRequest {
-    def fromJson(json: String): RegisterRequest = {
-      val decoded = Json.decode[RegisterRequest](json)
+  object SubscribeRequest {
+    def fromJson(json: String): SubscribeRequest = {
+      val decoded = Json.decode[SubscribeRequest](json)
       if (decoded.expressions == null || decoded.expressions.isEmpty)
         throw new IllegalArgumentException("Missing or empty expressions array")
       decoded
     }
   }
 
-  case class DeleteRequest(sinkId: Option[String], expressions: List[ExpressionWithFrequency]) extends JsonSupport
+  case class UnsubscribeRequest(streamId: Option[String], expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
-  object DeleteRequest {
-    def fromJson(json: String): DeleteRequest = {
-      val decoded = Json.decode[DeleteRequest](json)
+  object UnsubscribeRequest {
+    def fromJson(json: String): UnsubscribeRequest = {
+      val decoded = Json.decode[UnsubscribeRequest](json)
       if (decoded.expressions == null || decoded.expressions.isEmpty)
         throw new IllegalArgumentException("Missing or empty expressions array")
       decoded

@@ -16,210 +16,209 @@
 package com.netflix.atlas.lwcapi
 
 import akka.actor.{Actor, Props}
-import com.netflix.atlas.lwcapi.RegisterApi.{DeleteRequest, RegisterRequest}
+import com.netflix.atlas.lwcapi.SubscribeApi._
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import spray.http.{HttpResponse, StatusCodes}
 import spray.testkit.ScalatestRouteTest
 
-class RegisterApiSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
-  import RegisterApiSuite._
+class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
+  import SubscribeApiSuite._
 
   import scala.concurrent.duration._
 
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  system.actorOf(Props(new TestActor), "lwc.register")
+  system.actorOf(Props(new TestActor), "lwc.subscribe")
 
-  val endpoint = new RegisterApi
+  val endpoint = new SubscribeApi
 
   before {
     super.beforeAll()
     lastUpdate = Nil
-    lastSinkId = None
+    lastStreamId = None
     lastKind = 'none
   }
 
   //
-  // Publish
+  // Subscribe
   //
 
-  test("publish: no content") {
-    Post("/lwc/api/v1/register") ~> endpoint.routes ~> check {
+  test("subscribe: no content") {
+    Post("/lwc/api/v1/subscribe") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
-  test("publish: empty object") {
-    Post("/lwc/api/v1/register", "{}") ~> endpoint.routes ~> check {
+  test("subscribe: empty object") {
+    Post("/lwc/api/v1/subscribe", "{}") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
       assert(lastUpdate === Nil)
     }
   }
 
-  test("publish: empty array") {
-    val x = Post("/lwc/api/v1/register", "[]")
+  test("subscribe: empty array") {
+    val x = Post("/lwc/api/v1/subscribe", "[]")
     x ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
       assert(lastUpdate === Nil)
     }
   }
 
-  test("publish: correctly formatted expression") {
+  test("subscribe: correctly formatted expression") {
     val json = """
       |{
       |  "expressions": [
       |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
       |  ]
       |}""".stripMargin
-    Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
-      assert(lastSinkId === None)
-      assert(lastKind === 'register)
+      assert(lastStreamId === None)
+      assert(lastKind === 'subscribe)
     }
   }
 
-  test("publish: correctly formatted expression with sinkId") {
+  test("subscribe: correctly formatted expression with sourceId") {
     val json = """
                  |{
-                 |  "sinkId": "abc123",
+                 |  "streamId": "abc123",
                  |  "expressions": [
                  |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
                  |  ]
                  |}""".stripMargin
-    Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
-      assert(lastSinkId === Some("abc123"))
-      assert(lastKind === 'register)
+      assert(lastStreamId === Some("abc123"))
+      assert(lastKind === 'subscribe)
     }
   }
 
-  test("publish: bad json") {
-    Post("/lwc/api/v1/register", "fubar") ~> endpoint.routes ~> check {
+  test("subscribe: bad json") {
+    Post("/lwc/api/v1/subscribe", "fubar") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
-  test("publish: invalid object") {
-    Post("/lwc/api/v1/register", "{\"foo\":\"bar\"}") ~> endpoint.routes ~> check {
+  test("subscribe: invalid object") {
+    Post("/lwc/api/v1/subscribe", "{\"foo\":\"bar\"}") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
-  test("publish: expression value is null") {
+  test("subscribe: expression value is null") {
     val json = s"""{
         "expressions": [
           { "expression": null }
         ]
       }"""
-    Post("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
   //
-  // Delete
+  // Unsubscribe
   //
 
-
-  test("delete: no content") {
-    Delete("/lwc/api/v1/register") ~> endpoint.routes ~> check {
+  test("unsubscribe: no content") {
+    Delete("/lwc/api/v1/subscribe") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
-  test("delete: empty object") {
-    Delete("/lwc/api/v1/register", "{}") ~> endpoint.routes ~> check {
+  test("unsubscribe: empty object") {
+    Delete("/lwc/api/v1/subscribe", "{}") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
       assert(lastUpdate === Nil)
     }
   }
 
-  test("delete: empty array") {
-    val x = Delete("/lwc/api/v1/register", "[]")
+  test("unsubscribe: empty array") {
+    val x = Delete("/lwc/api/v1/subscribe", "[]")
     x ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
       assert(lastUpdate === Nil)
     }
   }
 
-  test("delete: correctly formatted expression") {
+  test("unsubscribe: correctly formatted expression") {
     val json = """
                  |{
                  |  "expressions": [
                  |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
                  |  ]
                  |}""".stripMargin
-    Delete("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+    Delete("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
-      assert(lastSinkId === None)
-      assert(lastKind === 'delete)
+      assert(lastStreamId === None)
+      assert(lastKind === 'unsubscribe)
     }
   }
 
-  test("delete: correctly formatted expression with sinkId") {
+  test("unsubscribe: correctly formatted expression with sourceId") {
     val json = """
                  |{
-                 |  "sinkId": "abc123",
+                 |  "streamId": "abc123",
                  |  "expressions": [
                  |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
                  |  ]
                  |}""".stripMargin
-    Delete("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+    Delete("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
-      assert(lastSinkId === Some("abc123"))
-      assert(lastKind === 'delete)
+      assert(lastStreamId === Some("abc123"))
+      assert(lastKind === 'unsubscribe)
     }
   }
 
-  test("delete: bad json") {
-    Delete("/lwc/api/v1/register", "fubar") ~> endpoint.routes ~> check {
+  test("unsubscribe: bad json") {
+    Delete("/lwc/api/v1/subscribe", "fubar") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
-  test("delete: invalid object") {
-    Delete("/lwc/api/v1/register", "{\"foo\":\"bar\"}") ~> endpoint.routes ~> check {
+  test("unsubscribe: invalid object") {
+    Delete("/lwc/api/v1/subscribe", "{\"foo\":\"bar\"}") ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
-  test("delete: expression value is null") {
+  test("unsubscribe: expression value is null") {
     val json = s"""{
         "expressions": [
           { "expression": null }
         ]
       }"""
-    Delete("/lwc/api/v1/register", json) ~> endpoint.routes ~> check {
+    Delete("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
 }
 
-object RegisterApiSuite {
+object SubscribeApiSuite {
   @volatile var lastUpdate: List[ExpressionWithFrequency] = Nil
-  @volatile var lastSinkId: Option[String] = None
+  @volatile var lastStreamId: Option[String] = None
   @volatile var lastKind: Symbol = 'none
 
   class TestActor extends Actor {
     def receive = {
-      case RegisterRequest(sinkId, Nil) =>
+      case SubscribeRequest(sourceId, Nil) =>
         lastUpdate = Nil
         sender() ! HttpResponse(StatusCodes.BadRequest)
-        lastKind = 'register
-      case RegisterRequest(sinkId, values) =>
+        lastKind = 'subscribe
+      case SubscribeRequest(sourceId, values) =>
         lastUpdate = values
-        lastSinkId = sinkId
-        lastKind = 'register
+        lastStreamId = sourceId
+        lastKind = 'subscribe
         sender() ! HttpResponse(StatusCodes.OK)
-      case DeleteRequest(sinkId, values) =>
+      case UnsubscribeRequest(sourceId, values) =>
         lastUpdate = values
-        lastSinkId = sinkId
-        lastKind = 'delete
+        lastStreamId = sourceId
+        lastKind = 'unsubscribe
         sender() ! HttpResponse(StatusCodes.OK)
     }
   }

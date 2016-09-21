@@ -18,7 +18,7 @@ package com.netflix.atlas.lwcapi
 import akka.actor.{Actor, Props}
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.lwcapi.ExpressionSplitter.{QueryContainer, SplitResult}
-import com.netflix.atlas.lwcapi.RegisterApi.{DeleteRequest, RegisterRequest}
+import com.netflix.atlas.lwcapi.SubscribeApi.{UnsubscribeRequest$, SubscribeRequest$}
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import spray.can.Http
 import spray.http.{HttpMessage, _}

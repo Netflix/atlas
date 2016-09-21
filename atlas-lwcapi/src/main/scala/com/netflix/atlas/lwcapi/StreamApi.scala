@@ -26,7 +26,7 @@ import spray.routing.RequestContext
 
 class StreamApi @Inject()(sm: SubscriptionManager,
                           splitter: ExpressionSplitter,
-                          alertmap: AlertMap,
+                          alertmap: ExpressionsDatabase,
                           implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
   import StreamApi.SSESubscribe
 

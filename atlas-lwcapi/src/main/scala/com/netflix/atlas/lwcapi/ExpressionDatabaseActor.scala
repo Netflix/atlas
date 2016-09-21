@@ -27,7 +27,8 @@ import com.typesafe.scalalogging.StrictLogging
 import scala.util.control.NonFatal
 
 class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
-                                         alertmap: AlertMap) extends Actor with StrictLogging {
+                                         alertmap: ExpressionsDatabase,
+                                         sm: SubscriptionManager) extends Actor with StrictLogging {
   import ExpressionDatabaseActor._
 
   private val channel = "expressions"
