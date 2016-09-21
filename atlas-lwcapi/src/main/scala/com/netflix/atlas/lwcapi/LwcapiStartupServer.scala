@@ -78,7 +78,7 @@ class LwcapiStartupServer @Inject() (config: Config,
               val entry = Json.decode[ExpressionDatabaseActor.RedisRequest](json.get)
               val split = splitter.split(entry.expression)
               alertmap.addExpr(split)
-              registry.counter(updatesId.withTag("source", "load").withTag("action", "add")).increment()
+              registry.counter(updatesId.withTag("source", "load").withTag("action", "sub")).increment()
             } catch {
               case NonFatal(ex) => logger.error(s"Error loading redis key $key", ex)
             }
