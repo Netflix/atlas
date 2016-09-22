@@ -24,7 +24,6 @@ import com.netflix.spectator.api.{Id, Spectator}
 import com.redis._
 import com.typesafe.scalalogging.StrictLogging
 
-import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.NonFatal
@@ -62,9 +61,10 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val ttlManager = new TTLManager[TTLItem]()
 
   restartPubsub()
+  initialLoad()
 
   case class Tick()
-  private val tickTime = 10.seconds
+  private val tickTime = 1.second
   var ticker: Cancellable = context.system.scheduler.scheduleOnce(tickTime) {
     self ! Tick()
   }
@@ -111,12 +111,14 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     val split = splitter.split(ExpressionWithFrequency(req.expression, req.frequency))
     increment_counter(updatesId, "pubsub", actionExpression)
     alertmap.addExpr(split)
+    ttlManager.touch(TTLItem(actionExpression, req.id), System.currentTimeMillis())
   }
 
   def processRedisSubscribe(json: String) = {
     val req = RedisSubscribeRequest.fromJson(json)
     increment_counter(updatesId, "pubsub", actionSubscribe)
     sm.subscribe(req.streamId, req.expId)
+    ttlManager.touch(TTLItem(actionSubscribe, s"${req.streamId}.${req.expId}"), System.currentTimeMillis())
   }
 
   def processRedisUnsubscribe(json: String) = {
@@ -182,8 +184,10 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   def expireEntries() = {
     var done = false
     val now = System.currentTimeMillis()
+    val targetTime = now - ttl / 2
     while (!done) {
-      val top = ttlManager.needsTouch(now - ttl / 2)
+      val top = ttlManager.needsTouch(targetTime)
+      println(s"Now $now, checking $targetTime, found $top")
       top match {
         case Some(TTLItem(`actionExpression`, id)) => touchExpression(top.get, now)
         case Some(TTLItem(`actionSubscribe`, ids)) => touchSubscribe(top.get, now)
@@ -206,6 +210,52 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     logger.debug(s"Touching $key")
     pubClient.pexpire(key, ttl)
     ttlManager.touch(item, now)
+  }
+
+  def initialLoad(): Unit = {
+    var cursor: Int = 0
+    var done: Boolean = false
+    var expressionCount: Long = 0
+    var subscriptionCount = 0
+
+    while (!done) {
+      val ret = pubClient.scan(cursor)
+      if (ret.isDefined) {
+        cursor = ret.get._1.getOrElse(0)
+        val entries = ret.get._2.getOrElse(List())
+        entries.foreach(keyOrNone => {
+          val key = keyOrNone.getOrElse("")
+          if (key.startsWith(expressionKeyPrefix)) {
+            try {
+              expressionCount += 1
+              val json = pubClient.get(key)
+              val req = RedisExpressionRequest.fromJson(json.get)
+              val split = splitter.split(ExpressionWithFrequency(req.expression, req.frequency))
+              increment_counter(updatesId, "load", actionExpression)
+              alertmap.addExpr(split)
+              ttlManager.touch(TTLItem(actionExpression, req.id), System.currentTimeMillis())
+            } catch {
+              case NonFatal(ex) => logger.error(s"Error loading redis key $key", ex)
+            }
+          }
+          if (key.startsWith(subscribeKeyPrefix)) {
+            try {
+              subscriptionCount += 1
+              val split = key.split("\\.")
+              val streamId = split(1)
+              val expressionId = split(2)
+              sm.subscribe(streamId, expressionId)
+              ttlManager.touch(TTLItem(actionSubscribe, s"$streamId.$expressionId"), System.currentTimeMillis())
+            } catch {
+              case NonFatal(ex) => logger.error(s"Error splitting key $key", ex)
+            }
+          }
+        })
+      }
+      done = cursor == 0
+    }
+
+    logger.info(s"Loading complete. $expressionCount expressions and $subscriptionCount subscriptions loaded.")
   }
 
   private def connect(source: String): Option[RedisClient] = {
