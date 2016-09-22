@@ -195,7 +195,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   // Todo: check to make sure we still care...
   def touchExpression(item: TTLItem, now: Long) = {
     val key = s"$expressionKeyPrefix.${item.id}"
-    logger.debug("Touching $key")
+    logger.debug(s"Touching $key")
     pubClient.pexpire(key, ttl)
     ttlManager.touch(item, now)
   }
@@ -203,7 +203,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   // Todo: check to make sure we still care...
   def touchSubscribe(item: TTLItem, now: Long) = {
     val key = s"$subscribeKeyPrefix.${item.id}"
-    logger.debug("Touching $key")
+    logger.debug(s"Touching $key")
     pubClient.pexpire(key, ttl)
     ttlManager.touch(item, now)
   }
