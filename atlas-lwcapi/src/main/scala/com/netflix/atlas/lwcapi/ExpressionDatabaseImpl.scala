@@ -45,20 +45,26 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase {
 
   def setTestMode() = { testMode = true }
 
-  def addExpr(split: SplitResult): Unit = {
+  def addExpr(split: SplitResult): Boolean = {
     // Only replace the object if it is not there, to avoid keeping many identical objects around.
     val replaced = knownExpressions.putIfAbsent(split.id, split)
-    queryListChanged = replaced.isEmpty
+    val changed = replaced.isEmpty
+    queryListChanged |= changed
     if (testMode)
       regenerateQueryIndex()
+    changed
   }
 
-  def delExpr(split: SplitResult): Unit = {
+  def delExpr(split: SplitResult): Boolean = {
     val removed = knownExpressions.remove(split.id)
-    queryListChanged = removed.isDefined
+    val changed = removed.isDefined
+    queryListChanged |= changed
     if (testMode)
       regenerateQueryIndex()
+    changed
   }
+
+  override def hasExpr(id: String): Boolean = knownExpressions.contains(id)
 
   def expressionsForCluster(cluster: String): List[ReturnableExpression] = {
     val name = Names.parseName(cluster)

@@ -39,7 +39,7 @@ class EvaluateActor @Inject() (sm: SubscriptionManager) extends Actor with Actor
     log.info("Received an evaluate request")
     items.foreach { item =>
       log.info("Item: " + item)
-      val actors = sm.getActorsForExpressionId(item.id)
+      val actors = sm.actorsForExpression(item.id)
       val message = SSEEvaluate(item)
       actors.foreach(actor => actor ! message)
     }

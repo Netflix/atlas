@@ -18,7 +18,7 @@ package com.netflix.atlas.lwcapi
 import com.netflix.atlas.lwcapi.ExpressionDatabase.ReturnableExpression
 import org.scalatest.FunSuite
 
-class AlertMapImplSuite extends FunSuite {
+class ExpressionDatabaseImplSuite extends FunSuite {
   val splitter = ExpressionSplitterImpl()
 
   test("exprForDataExpr returns an empty set if not found") {
@@ -91,6 +91,21 @@ class AlertMapImplSuite extends FunSuite {
     x.delExpr(splitter.split(query2))
     ret = x.expressionsForCluster("skan-test")
     assert(ret === List())
+  }
+
+  test("hasExpr") {
+    val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
+    val id1 = "CxmlI6L5YBQcpWOrayncZKeZekg"
+
+    val x = ExpressionDatabaseImpl()
+
+    assert(x.hasExpr(id1) === false)
+
+    x.addExpr(splitter.split(query1))
+    assert(x.hasExpr(id1))
+
+    x.delExpr(splitter.split(query1))
+    assert(x.hasExpr(id1) === false)
   }
 
   test("ignores matches for other clusters") {

@@ -29,6 +29,8 @@ class StreamApi @Inject()(sm: SubscriptionManager,
                           implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
   import StreamApi.SSESubscribe
 
+  private val dbActor = actorRefFactory.actorSelection("/user/lwc.expressiondb")
+
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { (streamId) =>
       parameters('name.?, 'expr.?, 'frequency.?) { (name, expr, frequency) =>
@@ -46,8 +48,8 @@ class StreamApi @Inject()(sm: SubscriptionManager,
       val freq = freqString.fold(ApiSettings.defaultFrequency)(_.toLong)
       if (expr.isDefined) {
         val split = splitter.split(ExpressionWithFrequency(expr.get, freq))
-        alertmap.addExpr(split)
-        sm.subscribe(streamId, split.id)
+        dbActor ! ExpressionDatabaseActor.Expression(split)
+        dbActor ! ExpressionDatabaseActor.Subscribe(streamId, split.id)
         actorRef ! SSESubscribe(split)
       }
     } catch handleException(ctx)

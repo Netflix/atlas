@@ -34,20 +34,17 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     sm.register(sse1, ref1, "foo")
 
     sm.subscribe(sse1, exp1)
-    assert(sm.getActorsForExpressionId(exp1) === Set(ref1))
-    assert(sm.getExpressionsForStreamId(sse1) === Set(exp1))
+    assert(sm.actorsForExpression(exp1) === Set(ref1))
+    assert(sm.subscribersForExpression(exp1) === Set(sse1))
 
     sm.subscribe(sse1, exp2)
-    assert(sm.getActorsForExpressionId(exp2) === Set(ref1))
-    assert(sm.getExpressionsForStreamId(sse1) === Set(exp1, exp2))
+    assert(sm.actorsForExpression(exp2) === Set(ref1))
 
     sm.unsubscribe(sse1, exp1)
-    assert(sm.getActorsForExpressionId(exp1) === Set())
-    assert(sm.getExpressionsForStreamId(sse1) === Set(exp2))
+    assert(sm.actorsForExpression(exp1) === Set())
 
     assert(sm.unsubscribeAll(sse1) === List(exp2))
-    assert(sm.getActorsForExpressionId(exp1) === Set())
-    assert(sm.getExpressionsForStreamId(sse1) === Set())
+    assert(sm.actorsForExpression(exp1) === Set())
 
     assert(sm.unsubscribeAll(sse1) === List())
   }
@@ -60,29 +57,7 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     sm.unsubscribeAll("e")
   }
 
-  test("entries and getAllExpressions works") {
-    val system = ActorSystem("HelloSystem")
-
-    val sm = SubscriptionManagerImpl()
-
-    val exp1 = "exp1"
-    val exp2 = "exp2"
-
-    val sse1 = "sse1"
-    val ref1 = system.actorOf(Props(new TestActor(sse1, sm)), name = "ref1")
-
-    sm.register(sse1, ref1, "foo")
-
-    sm.subscribe(sse1, exp1)
-    sm.subscribe(sse1, exp2)
-
-    assert(sm.entries.size === 1)
-    assert(sm.entries.head.sseId === sse1)
-    assert(sm.entries.head.actorRef === ref1)
-    assert(sm.entries.head.name === "foo")
-  }
-
-    class TestActor(sseId: String, subscriptionManager: SubscriptionManagerImpl) extends Actor {
+  class TestActor(sseId: String, subscriptionManager: SubscriptionManagerImpl) extends Actor {
     def receive = {
       case _ =>
     }

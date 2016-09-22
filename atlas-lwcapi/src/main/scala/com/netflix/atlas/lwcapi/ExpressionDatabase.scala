@@ -20,8 +20,9 @@ import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 abstract class ExpressionDatabase {
   import ExpressionDatabase._
 
-  def addExpr(split: SplitResult): Unit
-  def delExpr(split: SplitResult): Unit
+  def addExpr(split: SplitResult): Boolean
+  def delExpr(split: SplitResult): Boolean
+  def hasExpr(id: String): Boolean
   def expressionsForCluster(cluster: String): List[ReturnableExpression]
 }
 

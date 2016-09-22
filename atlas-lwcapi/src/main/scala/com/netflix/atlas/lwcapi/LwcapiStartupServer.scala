@@ -41,13 +41,15 @@ import scala.util.control.NonFatal
 class LwcapiStartupServer @Inject() (config: Config,
                                      registry: Registry,
                                      splitter: ExpressionSplitter,
-                                     alertmap: ExpressionDatabase)
+                                     alertmap: ExpressionDatabase,
+                                     sm: SubscriptionManager)
 
   extends AbstractService with StrictLogging {
 
   private val host = ApiSettings.redisHost
   private val port = ApiSettings.redisPort
   private val expressionKeyPrefix = ApiSettings.redisExpressionKeyPrefix + "."
+  private val subscribeKeyPrefix = ApiSettings.redisSubscribeKeyPrefix + "."
 
   private val updatesId = registry.createId("atlas.lwcapi.db.updates")
   private val connectsId = registry.createId("atlas.lwcapi.redis.connects")
@@ -62,10 +64,10 @@ class LwcapiStartupServer @Inject() (config: Config,
 
     var cursor: Int = 0
     var done: Boolean = false
-    var count: Long = 0
+    var expressionCount: Long = 0
+    var subscriptionCount = 0
 
     // Todo: refactor to live inside the ever growing database actor
-    // Todo: Also add loading of subscriptions
 
     while (!done) {
       val ret = client.scan(cursor)
@@ -76,7 +78,7 @@ class LwcapiStartupServer @Inject() (config: Config,
           val key = keyOrNone.getOrElse("")
           if (key.startsWith(expressionKeyPrefix)) {
             try {
-              count += 1
+              expressionCount += 1
               val json = client.get(key)
               val entry = Json.decode[ExpressionDatabaseActor.RedisExpressionRequest](json.get)
               val split = splitter.split(ExpressionWithFrequency(entry.expression, entry.frequency))
@@ -86,12 +88,23 @@ class LwcapiStartupServer @Inject() (config: Config,
               case NonFatal(ex) => logger.error(s"Error loading redis key $key", ex)
             }
           }
+          if (key.startsWith(subscribeKeyPrefix)) {
+            try {
+              subscriptionCount += 1
+              val split = key.split("\\.")
+              val streamId = split(1)
+              val expressionId = split(2)
+              sm.subscribe(streamId, expressionId)
+            } catch {
+              case NonFatal(ex) => logger.error(s"Error splitting key $key", ex)
+            }
+          }
         })
       }
       done = cursor == 0
     }
 
-    logger.info(s"Loading complete. $count entries loaded.")
+    logger.info(s"Loading complete. $expressionCount expressions and $subscriptionCount subscriptions loaded.")
   }
 
   protected def stopImpl(): Unit = {

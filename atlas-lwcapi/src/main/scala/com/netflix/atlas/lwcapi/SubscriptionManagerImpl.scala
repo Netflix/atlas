@@ -37,8 +37,8 @@ case class SubscriptionManagerImpl() extends SubscriptionManager with StrictLogg
   }
 
   def subscribe(streamId: String, expressionId: String): Unit = synchronized {
-    streamToExpr(intern(streamId)) += expressionId
-    exprToStream(intern(expressionId)) += streamId
+    streamToExpr(intern(streamId)) += intern(expressionId)
+    exprToStream(intern(expressionId)) += intern(streamId)
   }
 
   def unsubscribe(streamId: String, expressionId: String): Unit = synchronized {
@@ -56,13 +56,11 @@ case class SubscriptionManagerImpl() extends SubscriptionManager with StrictLogg
     }
   }
 
-  def getActorsForExpressionId(expressionId: String): Set[ActorRef] = synchronized {
-    exprToStream(expressionId).map(streamId => streamToEntry(streamId).actorRef)
+  def actorsForExpression(expressionId: String): Set[ActorRef] = synchronized {
+    exprToStream.getOrElse(expressionId, Set()).map(streamId => streamToEntry(streamId).actorRef)
   }
 
-  def getExpressionsForStreamId(streamId: String): Set[String] = synchronized {
-    streamToExpr(streamId)
+  override def subscribersForExpression(expressionId: String): Set[String] = {
+    exprToStream.getOrElse(expressionId, Set())
   }
-
-  def entries: List[Entry] = synchronized { streamToEntry.values.toList }
 }

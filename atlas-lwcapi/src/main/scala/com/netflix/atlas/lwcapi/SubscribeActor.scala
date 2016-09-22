@@ -24,7 +24,7 @@ import spray.http.{HttpResponse, StatusCodes}
 class SubscribeActor @Inject()(splitter: ExpressionSplitter) extends Actor with ActorLogging {
   import com.netflix.atlas.lwcapi.SubscribeApi._
 
-  private val pubsubActor = context.actorSelection("/user/lwc.expressiondb")
+  private val dbActor = context.actorSelection("/user/lwc.expressiondb")
 
   def receive = {
     case SubscribeRequest(sinkId, Nil) =>
@@ -42,15 +42,15 @@ class SubscribeActor @Inject()(splitter: ExpressionSplitter) extends Actor with 
   private def subscribe(streamId: String, expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
       val split = splitter.split(expr)
-      pubsubActor ! ExpressionDatabaseActor.Expression(split)
-      pubsubActor ! ExpressionDatabaseActor.Subscribe(streamId, split.id)
+      dbActor ! ExpressionDatabaseActor.Expression(split)
+      dbActor ! ExpressionDatabaseActor.Subscribe(streamId, split.id)
     }
   }
 
   private def unsubscribe(streamId: String, expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
       val split = splitter.split(expr)
-      pubsubActor ! ExpressionDatabaseActor.Unsubscribe(streamId, split.id)
+      dbActor ! ExpressionDatabaseActor.Unsubscribe(streamId, split.id)
     }
   }
 }

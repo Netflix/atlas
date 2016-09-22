@@ -47,19 +47,14 @@ class MockSubscriptionManager extends SubscriptionManager {
     List()
   }
 
-  override def getActorsForExpressionId(expressionId: String): Set[ActorRef] = {
-    invocationList += s"getActorsForExpressionId,$expressionId"
+  override def actorsForExpression(expressionId: String): Set[ActorRef] = {
+    invocationList += s"actorsForExpression,$expressionId"
     Set()
   }
 
-  override def getExpressionsForStreamId(sseId: String): Set[String] = {
-    invocationList += s"getExpressionsForStreamId,$sseId"
+  override def subscribersForExpression(expressionId: String): Set[String] = {
+    invocationList += s"subscribersForExpression,$expressionId"
     Set()
-  }
-
-  override def entries: List[Entry] = {
-    invocationList += s"entries"
-    List()
   }
 }
 

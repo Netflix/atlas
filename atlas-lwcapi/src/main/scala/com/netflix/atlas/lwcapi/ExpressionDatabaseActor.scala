@@ -17,13 +17,16 @@ package com.netflix.atlas.lwcapi
 
 import javax.inject.Inject
 
-import akka.actor.Actor
+import akka.actor.{Actor, Cancellable}
 import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.spectator.api.{Id, Spectator}
 import com.redis._
 import com.typesafe.scalalogging.StrictLogging
 
+import scala.collection.mutable
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.NonFatal
 
 class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
@@ -45,7 +48,6 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val messagesWrittenId = registry.createId("atlas.lwcapi.redis.messagesWritten")
 
   private val uuid = GlobalUUID.get
-
   private val ttl = ApiSettings.redisTTL
   private val host = ApiSettings.redisHost
   private val port = ApiSettings.redisPort
@@ -56,7 +58,16 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val redisCmdSubscribe = "sub"
   private val redisCmdUnsubscribe = "unsub"
 
+  // Todo: All these strings are not interned...
+  private val ttlManager = new TTLManager[TTLItem]()
+
   restartPubsub()
+
+  case class Tick()
+  private val tickTime = 10.seconds
+  var ticker: Cancellable = context.system.scheduler.scheduleOnce(tickTime) {
+    self ! Tick()
+  }
 
   def restartPubsub(): Unit = {
     subClient = connect("subscribe").get
@@ -114,7 +125,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     sm.unsubscribe(req.streamId, req.expId)
   }
 
-  // Todo: how do we handle unsub from all?
+  // Todo: how do we handle unsub from all?  Just let them expire?
 
   // Todo: how do we handle TTL expiry of session IDs and expressionIDs and expressions?
 
@@ -135,6 +146,11 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
       increment_counter(updatesId, "local", actionUnsubscribe)
       sm.unsubscribe(streamId, expressionId)
       publish(RedisUnsubscribeRequest(streamId, expressionId))
+    case Tick() =>
+      expireEntries()
+      ticker = context.system.scheduler.scheduleOnce(tickTime) {
+        self ! Tick()
+      }
   }
 
   def publish(req: RedisExpressionRequest) = {
@@ -142,13 +158,15 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     pubClient.publish(channel, s"$redisCmdExpression $uuid $json")
     val key = s"$expressionKeyPrefix.${req.id}"
     pubClient.psetex(key, ttl, json)
+    ttlManager.touch(TTLItem(actionExpression, req.id), System.currentTimeMillis())
   }
 
   def publish(req: RedisSubscribeRequest) = {
     val json = req.toJson
     pubClient.publish(channel, s"$redisCmdSubscribe $uuid $json")
     val key = s"$subscribeKeyPrefix.${req.streamId}.${req.expId}"
-    pubClient.psetex(key, ttl, true)
+    pubClient.psetex(key, ttl, 1)
+    ttlManager.touch(TTLItem(actionSubscribe, s"${req.streamId}.${req.expId}"), System.currentTimeMillis())
   }
 
   def publish(req: RedisUnsubscribeRequest) = {
@@ -156,6 +174,38 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     pubClient.publish(channel, s"$redisCmdUnsubscribe $uuid $json")
     val key = s"$subscribeKeyPrefix.${req.streamId}.${req.expId}"
     pubClient.del(key)
+    ttlManager.remove(TTLItem(actionSubscribe, s"${req.streamId}.${req.expId}"))
+  }
+
+  // For each entry found, if we still know about it, touch it in redis.
+  // We will do this at half the ttl period to be sure we don't let things expire.
+  def expireEntries() = {
+    var done = false
+    val now = System.currentTimeMillis()
+    while (!done) {
+      val top = ttlManager.needsTouch(now - ttl / 2)
+      top match {
+        case Some(TTLItem(`actionExpression`, id)) => touchExpression(top.get, now)
+        case Some(TTLItem(`actionSubscribe`, ids)) => touchSubscribe(top.get, now)
+        case _ => done = true
+      }
+    }
+  }
+
+  // Todo: check to make sure we still care...
+  def touchExpression(item: TTLItem, now: Long) = {
+    val key = s"$expressionKeyPrefix.${item.id}"
+    logger.debug("Touching $key")
+    pubClient.pexpire(key, ttl)
+    ttlManager.touch(item, now)
+  }
+
+  // Todo: check to make sure we still care...
+  def touchSubscribe(item: TTLItem, now: Long) = {
+    val key = s"$subscribeKeyPrefix.${item.id}"
+    logger.debug("Touching $key")
+    pubClient.pexpire(key, ttl)
+    ttlManager.touch(item, now)
   }
 
   private def connect(source: String): Option[RedisClient] = {
@@ -179,6 +229,19 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
       }
     }
     None
+  }
+
+  override def postStop() = {
+    ticker.cancel()
+    super.postStop()
+  }
+
+  case class TTLItem(flavor: String, id: String) extends Ordered[TTLItem] {
+    def compare(other: TTLItem): Int = {
+      var ret = id compare other.id
+      if (ret == 0) ret = flavor compare other.flavor
+      ret
+    }
   }
 }
 
