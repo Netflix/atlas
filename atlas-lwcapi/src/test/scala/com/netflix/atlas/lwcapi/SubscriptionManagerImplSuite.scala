@@ -45,9 +45,11 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     assert(sm.getActorsForExpressionId(exp1) === Set())
     assert(sm.getExpressionsForStreamId(sse1) === Set(exp2))
 
-    sm.unsubscribeAll(sse1)
+    assert(sm.unsubscribeAll(sse1) === List(exp2))
     assert(sm.getActorsForExpressionId(exp1) === Set())
     assert(sm.getExpressionsForStreamId(sse1) === Set())
+
+    assert(sm.unsubscribeAll(sse1) === List())
   }
 
   test("unknown expression or sseIDs do not cause any exceptions") {

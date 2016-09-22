@@ -42,8 +42,9 @@ class MockSubscriptionManager extends SubscriptionManager {
     invocationList += s"unsubscribe,$sseId,$expressionId"
   }
 
-  override def unsubscribeAll(sseId: String): Unit = {
+  override def unsubscribeAll(sseId: String): List[String] = {
     invocationList += s"unsubscribeAll,$sseId"
+    List()
   }
 
   override def getActorsForExpressionId(expressionId: String): Set[ActorRef] = {

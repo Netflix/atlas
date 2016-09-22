@@ -21,7 +21,6 @@ import com.typesafe.config.Config
 object ApiSettings extends ApiSettings(ConfigManager.current)
 
 class ApiSettings(root: => Config) {
-
   private def config = root.getConfig("atlas.lwcapi")
 
   def defaultFrequency: Long = config.getLong("register.default-frequency")
@@ -29,5 +28,6 @@ class ApiSettings(root: => Config) {
   def redisHost: String = config.getString("redis.host")
   def redisPort: Int = config.getInt("redis.port")
   def redisTTL: Int = config.getInt("redis.ttl")
-  def redisExpressionKeyPrefix: String = config.getString("redis.expr-key-prefix")
+  def redisExpressionKeyPrefix: String = config.getString("redis.expression-key-prefix")
+  def redisSubscribeKeyPrefix: String = config.getString("redis.subscribe-key-prefix")
 }

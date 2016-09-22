@@ -24,7 +24,7 @@ abstract class SubscriptionManager() {
 
   def subscribe(sseId: String, expressionId: String): Unit
   def unsubscribe(sseId: String, expressionId: String): Unit
-  def unsubscribeAll(sseId: String): Unit
+  def unsubscribeAll(sseId: String): List[String]
 
   def getActorsForExpressionId(expressionId: String): Set[ActorRef]
   def getExpressionsForStreamId(sseId: String): Set[String]

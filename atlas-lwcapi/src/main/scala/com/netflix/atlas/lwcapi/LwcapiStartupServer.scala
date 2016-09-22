@@ -64,6 +64,8 @@ class LwcapiStartupServer @Inject() (config: Config,
     var done: Boolean = false
     var count: Long = 0
 
+    // Todo: refactor to live inside the ever growing database actor
+
     while (!done) {
       val ret = client.scan(cursor)
       if (ret.isDefined) {
@@ -75,10 +77,10 @@ class LwcapiStartupServer @Inject() (config: Config,
             try {
               count += 1
               val json = client.get(key)
-              val entry = Json.decode[ExpressionDatabaseActor.RedisRequest](json.get)
-              val split = splitter.split(entry.expression)
+              val entry = Json.decode[ExpressionDatabaseActor.RedisExpressionRequest](json.get)
+              val split = splitter.split(ExpressionWithFrequency(entry.expression, entry.frequency))
               alertmap.addExpr(split)
-              registry.counter(updatesId.withTag("source", "load").withTag("action", "sub")).increment()
+              registry.counter(updatesId.withTag("source", "load").withTag("action", "expression")).increment()
             } catch {
               case NonFatal(ex) => logger.error(s"Error loading redis key $key", ex)
             }

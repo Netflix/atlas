@@ -32,31 +32,35 @@ case class SubscriptionManagerImpl() extends SubscriptionManager with StrictLogg
   val interner = Interner.forStrings
   def intern(s: String): String = interner.intern(s)
 
-  def register(streamId: String, ref: ActorRef, name: String): Unit = {
+  def register(streamId: String, ref: ActorRef, name: String): Unit = synchronized {
     streamToEntry(intern(streamId)) = Entry(intern(streamId), ref, name, System.currentTimeMillis())
   }
 
-  def subscribe(streamId: String, expressionId: String): Unit = {
+  def subscribe(streamId: String, expressionId: String): Unit = synchronized {
     streamToExpr(intern(streamId)) += expressionId
     exprToStream(intern(expressionId)) += streamId
   }
 
-  def unsubscribe(streamId: String, expressionId: String): Unit = {
+  def unsubscribe(streamId: String, expressionId: String): Unit = synchronized {
     streamToExpr(intern(streamId)) -= expressionId
     exprToStream(intern(expressionId)) -= streamId
   }
 
-  def unsubscribeAll(streamId: String): Unit = {
+  def unsubscribeAll(streamId: String): List[String] = synchronized {
     val ids = streamToExpr.remove(streamId)
-    if (ids.isDefined)
+    if (ids.isDefined) {
       ids.get.foreach(k => exprToStream(k) -= streamId)
+      ids.get.toList
+    } else {
+      List()
+    }
   }
 
-  def getActorsForExpressionId(expressionId: String): Set[ActorRef] = {
+  def getActorsForExpressionId(expressionId: String): Set[ActorRef] = synchronized {
     exprToStream(expressionId).map(streamId => streamToEntry(streamId).actorRef)
   }
 
-  def getExpressionsForStreamId(streamId: String): Set[String] = {
+  def getExpressionsForStreamId(streamId: String): Set[String] = synchronized {
     streamToExpr(streamId)
   }
 

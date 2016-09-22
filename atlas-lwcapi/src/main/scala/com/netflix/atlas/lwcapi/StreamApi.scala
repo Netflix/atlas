@@ -19,10 +19,8 @@ import javax.inject.Inject
 
 import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.json.{Json, JsonSupport}
+import com.netflix.atlas.json.JsonSupport
 import com.typesafe.scalalogging.StrictLogging
-import shapeless.HNil
-import spray.httpx.PlayJsonSupport
 import spray.routing.RequestContext
 
 class StreamApi @Inject()(sm: SubscriptionManager,

@@ -42,14 +42,15 @@ class SubscribeActor @Inject()(splitter: ExpressionSplitter) extends Actor with 
   private def subscribe(streamId: String, expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
       val split = splitter.split(expr)
-      pubsubActor ! ExpressionDatabaseActor.Subscribe(split, streamId)
+      pubsubActor ! ExpressionDatabaseActor.Expression(split)
+      pubsubActor ! ExpressionDatabaseActor.Subscribe(streamId, split.id)
     }
   }
 
   private def unsubscribe(streamId: String, expressions: List[ExpressionWithFrequency]): Unit = {
     expressions.foreach { expr =>
       val split = splitter.split(expr)
-     pubsubActor ! ExpressionDatabaseActor.Unsubscribe(split, streamId)
+      pubsubActor ! ExpressionDatabaseActor.Unsubscribe(streamId, split.id)
     }
   }
 }
