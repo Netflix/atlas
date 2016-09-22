@@ -65,6 +65,7 @@ class LwcapiStartupServer @Inject() (config: Config,
     var count: Long = 0
 
     // Todo: refactor to live inside the ever growing database actor
+    // Todo: Also add loading of subscriptions
 
     while (!done) {
       val ret = client.scan(cursor)
