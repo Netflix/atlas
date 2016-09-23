@@ -15,13 +15,12 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.ActorRef
-import com.netflix.atlas.core.util.Interner
+import akka.actor.{ActorLogging, ActorRef}
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.collection.mutable
 
-case class SubscriptionManagerImpl() extends SubscriptionManager with StrictLogging {
+case class SubscriptionManagerImpl() extends SubscriptionManager {
   import SubscriptionManager._
 
   private val exprToStream = mutable.Map[String, Set[String]]().withDefaultValue(Set())
@@ -29,21 +28,18 @@ case class SubscriptionManagerImpl() extends SubscriptionManager with StrictLogg
   private val streamToEntry = mutable.Map[String, Entry]()
   private val exprToSplit = ExpressionDatabaseImpl()
 
-  val interner = Interner.forStrings
-  def intern(s: String): String = interner.intern(s)
-
   def register(streamId: String, ref: ActorRef, name: String): Unit = synchronized {
-    streamToEntry(intern(streamId)) = Entry(intern(streamId), ref, name, System.currentTimeMillis())
+    streamToEntry(streamId) = Entry(streamId, ref, name, System.currentTimeMillis())
   }
 
   def subscribe(streamId: String, expressionId: String): Unit = synchronized {
-    streamToExpr(intern(streamId)) += intern(expressionId)
-    exprToStream(intern(expressionId)) += intern(streamId)
+    streamToExpr(streamId) += expressionId
+    exprToStream(expressionId) += streamId
   }
 
   def unsubscribe(streamId: String, expressionId: String): Unit = synchronized {
-    streamToExpr(intern(streamId)) -= expressionId
-    exprToStream(intern(expressionId)) -= streamId
+    streamToExpr(streamId) -= expressionId
+    exprToStream(expressionId) -= streamId
   }
 
   def unsubscribeAll(streamId: String): List[String] = synchronized {
