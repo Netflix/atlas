@@ -17,20 +17,19 @@ package com.netflix.atlas.lwcapi
 
 import javax.inject.Inject
 
-import akka.actor.{Actor, Cancellable}
+import akka.actor.{Actor, ActorLogging, Cancellable}
 import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.spectator.api.{Id, Spectator}
 import com.redis._
-import com.typesafe.scalalogging.StrictLogging
-
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.NonFatal
 
 class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
                                          alertmap: ExpressionDatabase,
-                                         sm: SubscriptionManager) extends Actor with StrictLogging {
+                                         sm: SubscriptionManager,
+                                         lwcapiService: LwcapiDatabaseService) extends Actor with ActorLogging {
   import ExpressionDatabaseActor._
 
   private val channel = "expressions"
@@ -57,11 +56,12 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val redisCmdSubscribe = "sub"
   private val redisCmdUnsubscribe = "unsub"
 
-  // Todo: All these strings are not interned...
   private val ttlManager = new TTLManager[TTLItem]()
 
   restartPubsub()
   initialLoad()
+
+  lwcapiService.setDbState(true)
 
   case class Tick()
   private val tickTime = 1.second
@@ -72,15 +72,15 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   def restartPubsub(): Unit = {
     subClient = connect("subscribe").get
     pubClient = connect("publish").get
-    logger.info("Pubsub restarted!")
+    log.info("Pubsub restarted!")
     subClient.subscribe(channel)(redisCallback)
   }
 
   def redisCallback(pubsub: PubSubMessage) = pubsub match {
-    case S(chan, cnt) => logger.info(s"Subscribe to $chan, sub count is now $cnt")
-    case U(chan, cnt) => logger.info(s"Unsubscribe from $chan, sub count is now $cnt")
+    case S(chan, cnt) => log.info(s"Subscribe to $chan, sub count is now $cnt")
+    case U(chan, cnt) => log.info(s"Unsubscribe from $chan, sub count is now $cnt")
     case E(exc) =>
-      logger.error("redis pubsub: exception caught", exc)
+      log.error("redis pubsub: exception caught", exc)
       restartPubsub()
     case M(chan, msg) =>
       val split = msg.split(" ", 3)
@@ -187,7 +187,6 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     val targetTime = now - ttl / 2
     while (!done) {
       val top = ttlManager.needsTouch(targetTime)
-      println(s"Now $now, checking $targetTime, found $top")
       top match {
         case Some(TTLItem(`actionExpression`, id)) => touchExpression(top.get, now)
         case Some(TTLItem(`actionSubscribe`, ids)) => touchSubscribe(top.get, now)
@@ -199,7 +198,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   // Todo: check to make sure we still care...
   def touchExpression(item: TTLItem, now: Long) = {
     val key = s"$expressionKeyPrefix.${item.id}"
-    logger.debug(s"Touching $key")
+    log.debug(s"Touching $key")
     pubClient.pexpire(key, ttl)
     ttlManager.touch(item, now)
   }
@@ -207,7 +206,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   // Todo: check to make sure we still care...
   def touchSubscribe(item: TTLItem, now: Long) = {
     val key = s"$subscribeKeyPrefix.${item.id}"
-    logger.debug(s"Touching $key")
+    log.debug(s"Touching $key")
     pubClient.pexpire(key, ttl)
     ttlManager.touch(item, now)
   }
@@ -235,7 +234,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
               alertmap.addExpr(split)
               ttlManager.touch(TTLItem(actionExpression, req.id), System.currentTimeMillis())
             } catch {
-              case NonFatal(ex) => logger.error(s"Error loading redis key $key", ex)
+              case NonFatal(ex) => log.error(s"Error loading redis key $key", ex)
             }
           }
           if (key.startsWith(subscribeKeyPrefix)) {
@@ -247,7 +246,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
               sm.subscribe(streamId, expressionId)
               ttlManager.touch(TTLItem(actionSubscribe, s"$streamId.$expressionId"), System.currentTimeMillis())
             } catch {
-              case NonFatal(ex) => logger.error(s"Error splitting key $key", ex)
+              case NonFatal(ex) => log.error(s"Error splitting key $key", ex)
             }
           }
         })
@@ -255,7 +254,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
       done = cursor == 0
     }
 
-    logger.info(s"Loading complete. $expressionCount expressions and $subscriptionCount subscriptions loaded.")
+    log.info(s"Loading complete. $expressionCount expressions and $subscriptionCount subscriptions loaded.")
   }
 
   private def connect(source: String): Option[RedisClient] = {
@@ -263,7 +262,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     var success = false
     while (!success) {
       try {
-        logger.info(s"Connecting to redis($source), tries $tries")
+        log.info(s"Connecting to redis($source), tries $tries")
 
         registry.counter(connectsId.withTag("source", source)).increment()
         if (tries != 1) {
@@ -274,7 +273,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
         return Some(client)
       } catch {
         case NonFatal(ex) =>
-          logger.warn("Connection error: " + ex.getMessage)
+          log.warning("Connection error: " + ex.getMessage)
           tries += 1
       }
     }
