@@ -19,9 +19,13 @@ import javax.inject.Inject
 
 import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.lwcapi.StreamApi.SSESubscribe
 import spray.http.{HttpResponse, StatusCodes}
 
-class SubscribeActor @Inject()(splitter: ExpressionSplitter) extends Actor with ActorLogging {
+class SubscribeActor @Inject()(sm: SubscriptionManager,
+                               splitter: ExpressionSplitter)
+  extends Actor with ActorLogging {
+
   import com.netflix.atlas.lwcapi.SubscribeApi._
 
   private val dbActor = context.actorSelection("/user/lwc.expressiondb")
@@ -43,7 +47,11 @@ class SubscribeActor @Inject()(splitter: ExpressionSplitter) extends Actor with 
     expressions.foreach { expr =>
       val split = splitter.split(expr)
       dbActor ! ExpressionDatabaseActor.Expression(split)
-      dbActor ! ExpressionDatabaseActor.Subscribe(streamId, split.id)
+      val registration = sm.registration(streamId)
+      if (registration.isDefined) {
+        dbActor ! ExpressionDatabaseActor.Subscribe(streamId, split.id)
+        registration.get.actorRef ! SSESubscribe(split)
+      }
     }
   }
 

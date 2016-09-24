@@ -11,6 +11,7 @@
   </Appenders>
   <Loggers>
     <Logger name="com.netflix.spectator" level="debug"/>
+    <Logger name="com.netflix.atlas.lwcapi" level="debug"/>
     <Root level="info">
       <AppenderRef ref="STDERR"/>
       <AppenderRef ref="SPECTATOR"/>
