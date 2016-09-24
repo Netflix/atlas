@@ -20,11 +20,12 @@ import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, Tim
 import com.netflix.atlas.core.index.QueryIndex
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.frigga.Names
+import com.typesafe.scalalogging.StrictLogging
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 
-case class ExpressionDatabaseImpl() extends ExpressionDatabase {
+case class ExpressionDatabaseImpl() extends ExpressionDatabase with StrictLogging {
   import ExpressionDatabase._
 
   private val knownExpressions = new ConcurrentHashMap[String, SplitResult]().asScala
@@ -75,6 +76,7 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase {
       tags = tags + ("nf.app" -> name.getApp)
     if (name.getStack != null)
       tags = tags + ("nf.stack" -> name.getStack)
+    logger.debug(s"QueryIndex search with tags $tags")
     val matches = queryIndex.matchingEntries(tags)
     val matchingDataExpressions = mutable.Map[String, Boolean]()
     val matchingDataItems = mutable.Map[SplitResult, Boolean]()
@@ -99,6 +101,7 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase {
         QueryIndex.Entry(container.matchExpr, (container.dataExpr, data))
       )
     }.toList
+    logger.debug(s"Regenerating QueryIndex with ${map.size} entries")
     queryIndex = QueryIndex.create(map)
   }
 }

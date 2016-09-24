@@ -117,9 +117,13 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   case class RedisLog(cmd: String, originator: String, json: JsonSupport) extends JsonSupport
 
   def logRedisCommand(cmd: String, originator: String, what: String, obj: JsonSupport) = {
-    val actor = sm.registration(":::redis")
-    if (actor.isDefined)
-      actor.get.actorRef ! SSEGenericJson(what, RedisLog(cmd, originator, obj))
+    try {
+      val actor = sm.registration(":::redis")
+      if (actor.isDefined)
+        actor.get.actorRef ! SSEGenericJson(what, RedisLog(cmd, originator, obj))
+    } catch {
+      case NonFatal(ex) => logger.error("Cannot log to redis", ex)
+    }
   }
 
   def processRedisCommand(cmd: String, originator: String, json: String, len: Long) = {
@@ -157,11 +161,11 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
       alertmap.addExpr(split)
       redisPublish(RedisExpressionRequest(split.id, split.expression, split.frequency))
     case Subscribe(streamId, expressionId) =>
-      logger.debug(s"Adding and publishing sub streamId $streamId expressionID $expressionId")
+      logger.debug(s"Adding sub streamId $streamId expressionID $expressionId")
       increment_counter(updatesId, "local", actionSubscribe)
       sm.subscribe(streamId, expressionId)
     case Unsubscribe(streamId, expressionId) =>
-      logger.debug(s"Adding and publishing unsub streamId $streamId expressionID $expressionId")
+      logger.debug(s"Adding unsub streamId $streamId expressionID $expressionId")
       increment_counter(updatesId, "local", actionUnsubscribe)
       sm.unsubscribe(streamId, expressionId)
     case Tick =>

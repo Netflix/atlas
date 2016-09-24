@@ -22,12 +22,14 @@ import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.ExpressionDatabase.ReturnableExpression
 import com.netflix.spectator.api.Registry
+import com.typesafe.scalalogging.StrictLogging
 import spray.http.{HttpResponse, StatusCodes}
 import spray.routing.RequestContext
 
 case class ExpressionApi @Inject()(alertmap: ExpressionDatabase,
                                    registry: Registry,
-                                   implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+                                   implicit val actorRefFactory: ActorRefFactory)
+  extends WebApi with StrictLogging {
   import ExpressionApi._
 
   private val expressionFetchesId = registry.createId("atlas.lwcapi.expressions.fetches")
