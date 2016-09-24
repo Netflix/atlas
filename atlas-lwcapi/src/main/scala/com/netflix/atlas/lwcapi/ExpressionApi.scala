@@ -21,15 +21,15 @@ import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.ExpressionDatabase.ReturnableExpression
-import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.api.Registry
 import spray.http.{HttpResponse, StatusCodes}
 import spray.routing.RequestContext
 
 case class ExpressionApi @Inject()(alertmap: ExpressionDatabase,
+                                   registry: Registry,
                                    implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import ExpressionApi._
 
-  private val registry = Spectator.globalRegistry()
   private val expressionFetchesId = registry.createId("atlas.lwcapi.expressions.fetches")
   private val expressionCount = registry.distributionSummary("atlas.lwcapi.expressions.count")
 

@@ -21,7 +21,7 @@ import akka.actor.{Actor, Cancellable}
 import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.atlas.lwcapi.StreamApi.SSEGenericJson
-import com.netflix.spectator.api.{Id, Spectator}
+import com.netflix.spectator.api.{Id, Registry}
 import com.redis._
 import com.typesafe.scalalogging.StrictLogging
 
@@ -34,6 +34,7 @@ import scala.util.control.NonFatal
 class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
                                          alertmap: ExpressionDatabase,
                                          sm: SubscriptionManager,
+                                         registry: Registry,
                                          lwcapiService: LwcapiDatabaseService) extends Actor with StrictLogging {
   import ExpressionDatabaseActor._
 
@@ -41,7 +42,6 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private var subClient: RedisClient = _
   private var pubClient: RedisClient = _
 
-  private val registry = Spectator.globalRegistry()
   private val updatesId = registry.createId("atlas.lwcapi.db.updates")
   private val connectsId = registry.createId("atlas.lwcapi.redis.connects")
   private val connectRetriesId = registry.createId("atlas.lwcapi.redis.connectRetries")

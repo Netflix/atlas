@@ -16,6 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorSystem
+import com.netflix.spectator.api.Spectator
 import org.scalatest.FunSuite
 import spray.testkit.ScalatestRouteTest
 
@@ -27,7 +28,7 @@ class ExpressionApiSuite(implicit actorSystem: ActorSystem) extends FunSuite wit
   val splitter = new ExpressionSplitterImpl()
 
   val alertmap = ExpressionDatabaseImpl()
-  val endpoint = ExpressionApi(alertmap, actorSystem)
+  val endpoint = ExpressionApi(alertmap, Spectator.globalRegistry(), actorSystem)
 
   test("get of a path returns empty data") {
     Get("/lwc/api/v1/expressions/123") ~> endpoint.routes ~> check {
