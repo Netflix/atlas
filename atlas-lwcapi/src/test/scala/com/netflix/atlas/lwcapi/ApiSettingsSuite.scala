@@ -23,7 +23,5 @@ class ApiSettingsSuite extends FunSuite {
     assert(ApiSettings.redisHost.nonEmpty)
     assert(ApiSettings.redisPort > 0)
     assert(ApiSettings.redisTTL > 0)
-    assert(ApiSettings.redisExpressionKeyPrefix.nonEmpty)
-    assert(ApiSettings.redisSubscribeKeyPrefix.nonEmpty)
   }
 }

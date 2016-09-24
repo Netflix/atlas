@@ -57,7 +57,7 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
       send(msg)
       client ! Http.Close
       ticker.cancel()
-      sm.unsubscribeAll(sseId)
+      sm.unregister(sseId)
       log.info(s"Closing SSE stream: ${msg.reason}")
     case msg: SSEMessage =>
       send(msg)
@@ -78,7 +78,7 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
   }
 
   override def postStop() = {
-    sm.unsubscribeAll(sseId)
+    sm.unregister(sseId)
     ticker.cancel()
     super.postStop()
   }

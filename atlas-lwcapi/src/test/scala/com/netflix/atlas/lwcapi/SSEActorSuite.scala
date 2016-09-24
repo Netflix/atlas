@@ -42,11 +42,9 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
   }
 
   test("Registers and unsubscribes from subscription manager") {
-    val mockSM = MockSubscriptionManager()
-
     val testClient = system.actorOf(Props(new TestClient()))
+    val mockSM = MockSubscriptionManager()
     val sse = system.actorOf(Props(new SSEActor(testClient, "mySSEId", "myName", mockSM)))
-
     val split = SplitResult("expr", 100, "exprId", List(QueryContainer(Query.True, "dataExpr")))
 
     sse ! SSESubscribe(split)
@@ -70,11 +68,9 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
   }
 
   test("tick") {
-    val mockSM = MockSubscriptionManager()
-
     val testClient = system.actorOf(Props(new TestClient()))
+    val mockSM = MockSubscriptionManager()
     val sse = system.actorOf(Props(new SSEActor(testClient, "mySSEId", "myName", mockSM)))
-
     val split = SplitResult("expr", 100, "exprId", List(QueryContainer(Query.True, "dataExpr")))
 
     Thread.sleep(100)

@@ -20,16 +20,18 @@ import akka.actor.ActorRef
 abstract class SubscriptionManager() {
   import SubscriptionManager._
 
-  def register(sseId: String, ref: ActorRef, name: String): Unit
+  def register(streamId: String, ref: ActorRef, name: String): Unit
+  def registration(streamId: String): Option[Entry]
 
-  def subscribe(sseId: String, expressionId: String): Unit
-  def unsubscribe(sseId: String, expressionId: String): Unit
-  def unsubscribeAll(sseId: String): List[String]
+  def subscribe(streamId: String, expressionId: String): Unit
+  def unsubscribe(streamId: String, expressionId: String): Unit
+  def unregister(streamId: String): List[String]
 
   def actorsForExpression(expressionId: String): Set[ActorRef]
   def subscribersForExpression(expressionId: String): Set[String]
+  def expressionsForSubscriber(streamId: String): Set[String]
 }
 
 object SubscriptionManager {
-  case class Entry(sseId: String, actorRef: ActorRef, name: String, connectTime: Long)
+  case class Entry(streamId: String, actorRef: ActorRef, name: String, connectTime: Long)
 }

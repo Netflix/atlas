@@ -83,12 +83,12 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     assert(ret.contains(ret1))
     assert(ret.contains(ret2))
 
-    x.delExpr(splitter.split(query1))
+    x.delExpr(splitter.split(query1).id)
     ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 1)
     assert(ret.contains(ret2))
 
-    x.delExpr(splitter.split(query2))
+    x.delExpr(splitter.split(query2).id)
     ret = x.expressionsForCluster("skan-test")
     assert(ret === List())
   }
@@ -104,7 +104,7 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     x.addExpr(splitter.split(query1))
     assert(x.hasExpr(id1))
 
-    x.delExpr(splitter.split(query1))
+    x.delExpr(splitter.split(query1).id)
     assert(x.hasExpr(id1) === false)
   }
 

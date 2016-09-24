@@ -55,8 +55,8 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase {
     changed
   }
 
-  def delExpr(split: SplitResult): Boolean = {
-    val removed = knownExpressions.remove(split.id)
+  def delExpr(id: String): Boolean = {
+    val removed = knownExpressions.remove(id)
     val changed = removed.isDefined
     queryListChanged |= changed
     if (testMode)
@@ -65,6 +65,8 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase {
   }
 
   override def hasExpr(id: String): Boolean = knownExpressions.contains(id)
+
+  override def expr(id: String): Option[SplitResult] = knownExpressions.get(id)
 
   def expressionsForCluster(cluster: String): List[ReturnableExpression] = {
     val name = Names.parseName(cluster)

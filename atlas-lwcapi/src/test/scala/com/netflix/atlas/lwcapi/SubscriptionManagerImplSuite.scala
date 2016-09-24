@@ -43,10 +43,10 @@ class SubscriptionManagerImplSuite() extends FunSuite {
     sm.unsubscribe(sse1, exp1)
     assert(sm.actorsForExpression(exp1) === Set())
 
-    assert(sm.unsubscribeAll(sse1) === List(exp2))
+    assert(sm.unregister(sse1) === List(exp2))
     assert(sm.actorsForExpression(exp1) === Set())
 
-    assert(sm.unsubscribeAll(sse1) === List())
+    assert(sm.unregister(sse1) === List())
   }
 
   test("unknown expression or sseIDs do not cause any exceptions") {
@@ -54,7 +54,7 @@ class SubscriptionManagerImplSuite() extends FunSuite {
 
     sm.subscribe("a", "b")
     sm.unsubscribe("c", "d")
-    sm.unsubscribeAll("e")
+    sm.unregister("e")
   }
 
   class TestActor(sseId: String, subscriptionManager: SubscriptionManagerImpl) extends Actor {

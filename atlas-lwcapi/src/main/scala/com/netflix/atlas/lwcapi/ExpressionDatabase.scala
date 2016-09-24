@@ -21,8 +21,9 @@ abstract class ExpressionDatabase {
   import ExpressionDatabase._
 
   def addExpr(split: SplitResult): Boolean
-  def delExpr(split: SplitResult): Boolean
+  def delExpr(id: String): Boolean
   def hasExpr(id: String): Boolean
+  def expr(id: String): Option[SplitResult]
   def expressionsForCluster(cluster: String): List[ReturnableExpression]
 }
 

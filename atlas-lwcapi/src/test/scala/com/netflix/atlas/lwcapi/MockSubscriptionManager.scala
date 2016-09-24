@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 import akka.actor.ActorRef
+import akka.testkit.TestActorRef
 import com.netflix.atlas.lwcapi.SubscriptionManager.Entry
 
 import scala.collection.mutable
@@ -25,25 +26,32 @@ import scala.collection.mutable
 // Todo: add a way to indicate return calls for methods
 //
 class MockSubscriptionManager extends SubscriptionManager {
+  import SubscriptionManager._
+
   private val invocationList = mutable.ListBuffer[String]()
 
   def invocations: List[String] = invocationList.toList
   def resetInvocations(): Unit = invocationList.clear()
 
-  override def register(sseId: String, ref: ActorRef, name: String): Unit = {
-    invocationList += s"register,$sseId,$name"
+  override def register(streamId: String, ref: ActorRef, name: String): Unit = {
+    invocationList += s"register,$streamId,$name"
   }
 
-  override def subscribe(sseId: String, expressionId: String): Unit = {
-    invocationList += s"subscribe,$sseId,$expressionId"
+  override def registration(streamId: String): Option[Entry] = {
+    invocationList += s"getRegistration,$streamId"
+    None
   }
 
-  override def unsubscribe(sseId: String, expressionId: String): Unit = {
-    invocationList += s"unsubscribe,$sseId,$expressionId"
+  override def subscribe(streamId: String, expressionId: String): Unit = {
+    invocationList += s"subscribe,$streamId,$expressionId"
   }
 
-  override def unsubscribeAll(sseId: String): List[String] = {
-    invocationList += s"unsubscribeAll,$sseId"
+  override def unsubscribe(streamId: String, expressionId: String): Unit = {
+    invocationList += s"unsubscribe,$streamId,$expressionId"
+  }
+
+  override def unregister(streamId: String): List[String] = {
+    invocationList += s"unsubscribeAll,$streamId"
     List()
   }
 
@@ -56,8 +64,13 @@ class MockSubscriptionManager extends SubscriptionManager {
     invocationList += s"subscribersForExpression,$expressionId"
     Set()
   }
+
+  override def expressionsForSubscriber(streamId: String): Set[String] = {
+    invocationList += s"expressionsForSubscriber,$streamId"
+    Set()
+  }
 }
 
 object MockSubscriptionManager {
-  def apply() = new MockSubscriptionManager()
+  def apply() = new MockSubscriptionManager
 }

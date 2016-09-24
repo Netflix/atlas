@@ -17,11 +17,14 @@ package com.netflix.atlas.lwcapi
 
 import javax.inject.Inject
 
-import akka.actor.{Actor, ActorLogging, Cancellable}
+import akka.actor.{Actor, Cancellable}
 import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.spectator.api.{Id, Spectator}
 import com.redis._
+import com.typesafe.scalalogging.StrictLogging
+
+import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.NonFatal
@@ -29,7 +32,7 @@ import scala.util.control.NonFatal
 class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
                                          alertmap: ExpressionDatabase,
                                          sm: SubscriptionManager,
-                                         lwcapiService: LwcapiDatabaseService) extends Actor with ActorLogging {
+                                         lwcapiService: LwcapiDatabaseService) extends Actor with StrictLogging {
   import ExpressionDatabaseActor._
 
   private val channel = "expressions"
@@ -45,42 +48,58 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val messagesReadId = registry.createId("atlas.lwcapi.redis.messagesRead")
   private val messagesWrittenId = registry.createId("atlas.lwcapi.redis.messagesWritten")
 
+  private val actionExpression = "expression"
+  private val actionSubscribe = "subscribe"
+  private val actionUnsubscribe = "unsubscribe"
+
   private val uuid = GlobalUUID.get
   private val ttl = ApiSettings.redisTTL
   private val host = ApiSettings.redisHost
   private val port = ApiSettings.redisPort
-  private val expressionKeyPrefix = ApiSettings.redisExpressionKeyPrefix
-  private val subscribeKeyPrefix = ApiSettings.redisSubscribeKeyPrefix
 
   private val redisCmdExpression = "expr"
-  private val redisCmdSubscribe = "sub"
-  private val redisCmdUnsubscribe = "unsub"
+
+  object TTLState {
+    sealed trait EnumVal
+    case object Active extends EnumVal
+    case object PendingDelete extends EnumVal
+    case object NotPresent extends EnumVal
+    val allStates = Seq(Active, PendingDelete)
+  }
 
   private val ttlManager = new TTLManager[TTLItem]()
+  private val ttlState = mutable.Map[String, TTLState.EnumVal]().withDefaultValue(TTLState.NotPresent)
+
+  //
+  // refreshTime determines how often each item is retransmitted via pubsub.
+  // It must be smaller than ttl so items will not expire out of caches
+  // before a refresh of those interested in that data occurs.
+  //
+  private val refreshTime = ttl / 2
+
+  private val startTime = System.currentTimeMillis()
+  private var dbComplete = false
 
   restartPubsub()
-  initialLoad()
-
-  lwcapiService.setDbState(true)
 
   case class Tick()
   private val tickTime = 1.second
   var ticker: Cancellable = context.system.scheduler.scheduleOnce(tickTime) {
-    self ! Tick()
+    self ! Tick
   }
 
   def restartPubsub(): Unit = {
     subClient = connect("subscribe").get
     pubClient = connect("publish").get
-    log.info("Pubsub restarted!")
+    logger.info("Pubsub restarted!")
     subClient.subscribe(channel)(redisCallback)
   }
 
   def redisCallback(pubsub: PubSubMessage) = pubsub match {
-    case S(chan, cnt) => log.info(s"Subscribe to $chan, sub count is now $cnt")
-    case U(chan, cnt) => log.info(s"Unsubscribe from $chan, sub count is now $cnt")
+    case S(chan, cnt) => logger.info(s"Subscribe to $chan, sub count is now $cnt")
+    case U(chan, cnt) => logger.info(s"Unsubscribe from $chan, sub count is now $cnt")
     case E(exc) =>
-      log.error("redis pubsub: exception caught", exc)
+      logger.error("redis pubsub: exception caught", exc)
       restartPubsub()
     case M(chan, msg) =>
       val split = msg.split(" ", 3)
@@ -89,47 +108,28 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
 
   def processRedisCommand(cmd: String, originator: String, json: String, len: Long) = {
     if (originator != uuid) {
+      val now = System.currentTimeMillis()
       cmd match {
         case `redisCmdExpression` =>
           increment_counter(bytesReadId, "pubsub", actionExpression, len)
           increment_counter(messagesReadId, "pubsub", actionExpression)
-          processRedisExpression(json)
-        case `redisCmdSubscribe` =>
-          increment_counter(bytesReadId, "pubsub", actionSubscribe, len)
-          increment_counter(messagesReadId, "pubsub", actionSubscribe)
-          processRedisSubscribe(json)
-        case `redisCmdUnsubscribe` =>
-          increment_counter(bytesReadId, "pubsub", actionUnsubscribe, len)
-          increment_counter(messagesReadId, "pubsub", actionUnsubscribe)
-          processRedisUnsubscribe(json)
+          processRedisExpression(json, now)
+        case x => logger.info(s"Unknown redis command: $cmd $json")
       }
     }
   }
 
-  def processRedisExpression(json: String) = {
+  def processRedisExpression(json: String, now: Long) = {
     val req = RedisExpressionRequest.fromJson(json)
-    val split = splitter.split(ExpressionWithFrequency(req.expression, req.frequency))
+    logger.debug(s"pubsub add for expressionId ${req.id}")
+    if (!alertmap.hasExpr(req.id)) {
+      val split = splitter.split(ExpressionWithFrequency(req.expression, req.frequency))
+      alertmap.addExpr(split)
+    }
     increment_counter(updatesId, "pubsub", actionExpression)
-    alertmap.addExpr(split)
-    ttlManager.touch(TTLItem(actionExpression, req.id), System.currentTimeMillis())
+    ttlState(req.id) = TTLState.Active
+    ttlManager.touch(TTLItem(actionExpression, req.id), now)
   }
-
-  def processRedisSubscribe(json: String) = {
-    val req = RedisSubscribeRequest.fromJson(json)
-    increment_counter(updatesId, "pubsub", actionSubscribe)
-    sm.subscribe(req.streamId, req.expId)
-    ttlManager.touch(TTLItem(actionSubscribe, s"${req.streamId}.${req.expId}"), System.currentTimeMillis())
-  }
-
-  def processRedisUnsubscribe(json: String) = {
-    val req = RedisUnsubscribeRequest.fromJson(json)
-    increment_counter(updatesId, "pubsub", actionUnsubscribe)
-    sm.unsubscribe(req.streamId, req.expId)
-  }
-
-  // Todo: how do we handle unsub from all?  Just let them expire?
-
-  // Todo: how do we handle TTL expiry of session IDs and expressionIDs and expressions?
 
   def increment_counter(counter: Id, source: String, action: String, value: Long = 1) = {
     registry.counter(counter.withTag("source", source).withTag("action", action)).increment(value)
@@ -137,124 +137,83 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
 
   def receive = {
     case Expression(split) =>
+      logger.debug(s"Adding and publishing expressionId ${split.id}")
       increment_counter(updatesId, "local", actionExpression)
       alertmap.addExpr(split)
-      publish(RedisExpressionRequest(split.id, split.expression, split.frequency))
+      redisPublish(RedisExpressionRequest(split.id, split.expression, split.frequency))
     case Subscribe(streamId, expressionId) =>
+      logger.debug(s"Adding and publishing sub streamId $streamId expressionID $expressionId")
       increment_counter(updatesId, "local", actionSubscribe)
       sm.subscribe(streamId, expressionId)
-      publish(RedisSubscribeRequest(streamId, expressionId))
     case Unsubscribe(streamId, expressionId) =>
+      logger.debug(s"Adding and publishing unsub streamId $streamId expressionID $expressionId")
       increment_counter(updatesId, "local", actionUnsubscribe)
       sm.unsubscribe(streamId, expressionId)
-      publish(RedisUnsubscribeRequest(streamId, expressionId))
-    case Tick() =>
-      expireEntries()
+    case Tick =>
+      checkDbStatus()
+      checkTTLs()
       ticker = context.system.scheduler.scheduleOnce(tickTime) {
-        self ! Tick()
+        self ! Tick
       }
   }
 
-  def publish(req: RedisExpressionRequest) = {
+  def redisPublish(req: RedisExpressionRequest) = {
     val json = req.toJson
     pubClient.publish(channel, s"$redisCmdExpression $uuid $json")
-    val key = s"$expressionKeyPrefix.${req.id}"
-    pubClient.psetex(key, ttl, json)
     ttlManager.touch(TTLItem(actionExpression, req.id), System.currentTimeMillis())
+    ttlState(req.id) = TTLState.Active
   }
 
-  def publish(req: RedisSubscribeRequest) = {
-    val json = req.toJson
-    pubClient.publish(channel, s"$redisCmdSubscribe $uuid $json")
-    val key = s"$subscribeKeyPrefix.${req.streamId}.${req.expId}"
-    pubClient.psetex(key, ttl, 1)
-    ttlManager.touch(TTLItem(actionSubscribe, s"${req.streamId}.${req.expId}"), System.currentTimeMillis())
-  }
-
-  def publish(req: RedisUnsubscribeRequest) = {
-    val json = req.toJson
-    pubClient.publish(channel, s"$redisCmdUnsubscribe $uuid $json")
-    val key = s"$subscribeKeyPrefix.${req.streamId}.${req.expId}"
-    pubClient.del(key)
-    ttlManager.remove(TTLItem(actionSubscribe, s"${req.streamId}.${req.expId}"))
+  def checkDbStatus() = {
+    if (!dbComplete) {
+      logger.debug("Full redis re-sync pending")
+      val now = System.currentTimeMillis()
+      if (now - refreshTime > startTime) {
+        logger.debug("Full redis re-sync complete")
+        dbComplete = true
+        lwcapiService.setDbState(true)
+      }
+    }
   }
 
   // For each entry found, if we still know about it, touch it in redis.
   // We will do this at half the ttl period to be sure we don't let things expire.
-  def expireEntries() = {
+  def checkTTLs() = {
     var done = false
     val now = System.currentTimeMillis()
-    val targetTime = now - ttl / 2
+    val targetTime = now - refreshTime
     while (!done) {
       val top = ttlManager.needsTouch(targetTime)
+      if (top.isDefined) {
+        logger.debug(s"TTL: Checking ${top.get.flavor} ${top.get.id}")
+      }
       top match {
         case Some(TTLItem(`actionExpression`, id)) => touchExpression(top.get, now)
-        case Some(TTLItem(`actionSubscribe`, ids)) => touchSubscribe(top.get, now)
         case _ => done = true
       }
     }
   }
 
-  // Todo: check to make sure we still care...
   def touchExpression(item: TTLItem, now: Long) = {
-    val key = s"$expressionKeyPrefix.${item.id}"
-    log.debug(s"Touching $key")
-    pubClient.pexpire(key, ttl)
-    ttlManager.touch(item, now)
-  }
-
-  // Todo: check to make sure we still care...
-  def touchSubscribe(item: TTLItem, now: Long) = {
-    val key = s"$subscribeKeyPrefix.${item.id}"
-    log.debug(s"Touching $key")
-    pubClient.pexpire(key, ttl)
-    ttlManager.touch(item, now)
-  }
-
-  def initialLoad(): Unit = {
-    var cursor: Int = 0
-    var done: Boolean = false
-    var expressionCount: Long = 0
-    var subscriptionCount = 0
-
-    while (!done) {
-      val ret = pubClient.scan(cursor)
-      if (ret.isDefined) {
-        cursor = ret.get._1.getOrElse(0)
-        val entries = ret.get._2.getOrElse(List())
-        entries.foreach(keyOrNone => {
-          val key = keyOrNone.getOrElse("")
-          if (key.startsWith(expressionKeyPrefix)) {
-            try {
-              expressionCount += 1
-              val json = pubClient.get(key)
-              val req = RedisExpressionRequest.fromJson(json.get)
-              val split = splitter.split(ExpressionWithFrequency(req.expression, req.frequency))
-              increment_counter(updatesId, "load", actionExpression)
-              alertmap.addExpr(split)
-              ttlManager.touch(TTLItem(actionExpression, req.id), System.currentTimeMillis())
-            } catch {
-              case NonFatal(ex) => log.error(s"Error loading redis key $key", ex)
-            }
-          }
-          if (key.startsWith(subscribeKeyPrefix)) {
-            try {
-              subscriptionCount += 1
-              val split = key.split("\\.")
-              val streamId = split(1)
-              val expressionId = split(2)
-              sm.subscribe(streamId, expressionId)
-              ttlManager.touch(TTLItem(actionSubscribe, s"$streamId.$expressionId"), System.currentTimeMillis())
-            } catch {
-              case NonFatal(ex) => log.error(s"Error splitting key $key", ex)
-            }
-          }
-        })
-      }
-      done = cursor == 0
+    val state = ttlState(item.id)
+    state match {
+      case TTLState.NotPresent => // do nothing
+        logger.warn(s"TTL: Expression state for ${item.id} is strangely NotPresent")
+      case TTLState.Active =>
+        val subscriberPresent = sm.actorsForExpression(item.id).nonEmpty
+        val split = alertmap.expr(item.id)
+        if (!subscriberPresent || split.isEmpty) {
+          ttlState(item.id) = TTLState.PendingDelete
+          logger.debug(s"TTL: Expression state for ${item.id} set to PendingDelete")
+        } else {
+          redisPublish(RedisExpressionRequest(split.get.id, split.get.expression, split.get.frequency))
+        }
+        ttlManager.touch(item, now)
+      case TTLState.PendingDelete =>
+        logger.debug(s"TTL: Deleting ${item.id}")
+        ttlState.remove(item.id)
+        alertmap.delExpr(item.id)
     }
-
-    log.info(s"Loading complete. $expressionCount expressions and $subscriptionCount subscriptions loaded.")
   }
 
   private def connect(source: String): Option[RedisClient] = {
@@ -262,7 +221,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     var success = false
     while (!success) {
       try {
-        log.info(s"Connecting to redis($source), tries $tries")
+        logger.info(s"Connecting to redis($source), tries $tries")
 
         registry.counter(connectsId.withTag("source", source)).increment()
         if (tries != 1) {
@@ -273,7 +232,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
         return Some(client)
       } catch {
         case NonFatal(ex) =>
-          log.warning("Connection error: " + ex.getMessage)
+          logger.warn("Connection error: " + ex.getMessage)
           tries += 1
       }
     }
@@ -301,21 +260,8 @@ object ExpressionDatabaseActor {
   //
 
   case class RedisExpressionRequest(id: String, expression: String, frequency: Long) extends JsonSupport
-
   object RedisExpressionRequest {
     def fromJson(json: String): RedisExpressionRequest = Json.decode[RedisExpressionRequest](json)
-  }
-
-  case class RedisSubscribeRequest(streamId: String, expId: String) extends JsonSupport
-
-  object RedisSubscribeRequest {
-    def fromJson(json: String): RedisSubscribeRequest = Json.decode[RedisSubscribeRequest](json)
-  }
-
-  case class RedisUnsubscribeRequest(streamId: String, expId: String) extends JsonSupport
-
-  object RedisUnsubscribeRequest {
-    def fromJson(json: String): RedisUnsubscribeRequest = Json.decode[RedisUnsubscribeRequest](json)
   }
 
   //
@@ -327,8 +273,4 @@ object ExpressionDatabaseActor {
   case class Subscribe(streamId: String, expressionId: String)
 
   case class Unsubscribe(streamId: String, expressionId: String)
-
-  val actionExpression = "expression"
-  val actionSubscribe = "subscribe"
-  val actionUnsubscribe = "unsubscribe"
 }
