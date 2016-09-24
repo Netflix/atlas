@@ -20,6 +20,7 @@ import javax.inject.Inject
 import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.lwcapi.StreamApi.SSEShutdown
 import com.typesafe.scalalogging.StrictLogging
 import spray.routing.RequestContext
 
@@ -43,6 +44,12 @@ class StreamApi @Inject()(sm: SubscriptionManager,
 
   private def handleReq(ctx: RequestContext, streamId: String, name: Option[String], expr: Option[String], freqString: Option[String]): Unit = {
     try {
+      val existingActor = sm.registration(streamId)
+      if (existingActor.isDefined) {
+        existingActor.get.actorRef ! SSEShutdown(s"Dropped: another connection is using the same stream-id: $streamId")
+        Thread.sleep(200) // Todo: should find a better way, perhaps index by actor rather than sseid here
+      }
+
       val actorRef = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, streamId, name.getOrElse("unknown"), sm)))
 
       val freq = freqString.fold(ApiSettings.defaultFrequency)(_.toLong)
