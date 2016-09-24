@@ -20,6 +20,7 @@ import javax.inject.Inject
 import akka.actor.{Actor, Cancellable}
 import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
+import com.netflix.atlas.lwcapi.StreamApi.SSEGenericJson
 import com.netflix.spectator.api.{Id, Spectator}
 import com.redis._
 import com.typesafe.scalalogging.StrictLogging
@@ -27,6 +28,7 @@ import com.typesafe.scalalogging.StrictLogging
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Random
 import scala.util.control.NonFatal
 
 class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
@@ -76,7 +78,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   // before a refresh of those interested in that data occurs.
   //
   private val refreshTime = ttl / 2
-
+  private val maxJitter = ttl / 10 + 1
   private val startTime = System.currentTimeMillis()
   private var dbComplete = false
 
@@ -86,6 +88,11 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val tickTime = 1.second
   var ticker: Cancellable = context.system.scheduler.scheduleOnce(tickTime) {
     self ! Tick
+  }
+
+  def ttlWithJitter(now: Long = System.currentTimeMillis()): Long = {
+    val ret = now - Random.nextInt(maxJitter)
+    if (ret > 0) ret else refreshTime
   }
 
   def restartPubsub(): Unit = {
@@ -103,32 +110,41 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
       restartPubsub()
     case M(chan, msg) =>
       val split = msg.split(" ", 3)
-      processRedisCommand(split(0), split(1), split(2), msg.length)
+      if (split(1) != uuid) {
+        processRedisCommand(split(0), split(1), split(2), msg.length)
+      }
+  }
+
+  case class RedisLog(cmd: String, originator: String, json: JsonSupport) extends JsonSupport
+
+  def logRedisCommand(cmd: String, originator: String, what: String, obj: JsonSupport) = {
+    val actor = sm.registration(":::redis")
+    if (actor.isDefined)
+      actor.get.actorRef ! SSEGenericJson(what, RedisLog(cmd, originator, obj))
   }
 
   def processRedisCommand(cmd: String, originator: String, json: String, len: Long) = {
-    if (originator != uuid) {
-      val now = System.currentTimeMillis()
-      cmd match {
-        case `redisCmdExpression` =>
-          increment_counter(bytesReadId, "pubsub", actionExpression, len)
-          increment_counter(messagesReadId, "pubsub", actionExpression)
-          processRedisExpression(json, now)
-        case x => logger.info(s"Unknown redis command: $cmd $json")
-      }
+    val now = System.currentTimeMillis()
+    cmd match {
+      case `redisCmdExpression` =>
+        increment_counter(bytesReadId, "pubsub", actionExpression, len)
+        increment_counter(messagesReadId, "pubsub", actionExpression)
+        processRedisExpression(cmd, originator, json, now)
+      case x => logger.info(s"Unknown redis command: $cmd $json")
     }
   }
 
-  def processRedisExpression(json: String, now: Long) = {
+  def processRedisExpression(cmd: String, originator: String, json: String, now: Long) = {
     val req = RedisExpressionRequest.fromJson(json)
     logger.debug(s"pubsub add for expressionId ${req.id}")
+    logRedisCommand(cmd, originator, "redisReceive", req)
     if (!alertmap.hasExpr(req.id)) {
       val split = splitter.split(ExpressionWithFrequency(req.expression, req.frequency))
       alertmap.addExpr(split)
     }
     increment_counter(updatesId, "pubsub", actionExpression)
     ttlState(req.id) = TTLState.Active
-    ttlManager.touch(TTLItem(actionExpression, req.id), now)
+    ttlManager.touch(TTLItem(actionExpression, req.id), ttlWithJitter(now))
   }
 
   def increment_counter(counter: Id, source: String, action: String, value: Long = 1) = {
@@ -160,7 +176,8 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   def redisPublish(req: RedisExpressionRequest) = {
     val json = req.toJson
     pubClient.publish(channel, s"$redisCmdExpression $uuid $json")
-    ttlManager.touch(TTLItem(actionExpression, req.id), System.currentTimeMillis())
+    logRedisCommand(redisCmdExpression, uuid, "redisSend", req)
+    ttlManager.touch(TTLItem(actionExpression, req.id), ttlWithJitter())
     ttlState(req.id) = TTLState.Active
   }
 
@@ -208,7 +225,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
         } else {
           redisPublish(RedisExpressionRequest(split.get.id, split.get.expression, split.get.frequency))
         }
-        ttlManager.touch(item, now)
+        ttlManager.touch(item, ttlWithJitter(now))
       case TTLState.PendingDelete =>
         logger.debug(s"TTL: Deleting ${item.id}")
         ttlState.remove(item.id)

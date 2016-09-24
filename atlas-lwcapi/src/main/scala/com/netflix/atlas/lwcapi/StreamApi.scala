@@ -73,19 +73,19 @@ object StreamApi {
 
   // Hello message
   case class HelloContent(streamId: String) extends JsonSupport
-
   case class SSEHello(streamId: String)
     extends SSEMessage("data", "hello", HelloContent(streamId))
 
+  // Generic message string
+  case class SSEGenericJson(what: String, msg: JsonSupport) extends SSEMessage("data", what, msg)
+
   // Heartbeat message
   case class HeartbeatContent() extends JsonSupport
-
   case class SSEHeartbeat()
     extends SSEMessage("data", "heartbeat", HeartbeatContent())
 
   // Shutdown message
   case class ShutdownReason(reason: String) extends JsonSupport
-
   case class SSEShutdown(reason: String, private val unsub: Boolean = true)
     extends SSEMessage("data", "shutdown", ShutdownReason(reason)) {
     def shouldUnregister: Boolean = unsub
