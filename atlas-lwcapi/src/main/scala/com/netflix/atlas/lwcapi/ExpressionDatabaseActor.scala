@@ -91,8 +91,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   }
 
   def ttlWithJitter(now: Long = System.currentTimeMillis()): Long = {
-    val ret = now - Random.nextInt(maxJitter)
-    if (ret > 0) ret else refreshTime
+    now + Random.nextInt(maxJitter)
   }
 
   def restartPubsub(): Unit = {
