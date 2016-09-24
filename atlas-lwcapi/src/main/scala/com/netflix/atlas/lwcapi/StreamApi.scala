@@ -26,7 +26,6 @@ import spray.routing.RequestContext
 
 class StreamApi @Inject()(sm: SubscriptionManager,
                           splitter: ExpressionSplitter,
-                          alertmap: ExpressionDatabase,
                           implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
   import StreamApi.SSESubscribe
 
@@ -46,8 +45,8 @@ class StreamApi @Inject()(sm: SubscriptionManager,
     try {
       val existingActor = sm.registration(streamId)
       if (existingActor.isDefined) {
-        existingActor.get.actorRef ! SSEShutdown(s"Dropped: another connection is using the same stream-id: $streamId")
-        Thread.sleep(200) // Todo: should find a better way, perhaps index by actor rather than sseid here
+        sm.unregister(streamId)
+        existingActor.get.actorRef ! SSEShutdown(s"Dropped: another connection is using the same stream-id: $streamId", unsub = false)
       }
 
       val actorRef = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, streamId, name.getOrElse("unknown"), sm)))
@@ -87,8 +86,10 @@ object StreamApi {
   // Shutdown message
   case class ShutdownReason(reason: String) extends JsonSupport
 
-  case class SSEShutdown(reason: String)
-    extends SSEMessage("data", "shutdown", ShutdownReason(reason))
+  case class SSEShutdown(reason: String, private val unsub: Boolean = true)
+    extends SSEMessage("data", "shutdown", ShutdownReason(reason)) {
+    def shouldUnregister: Boolean = unsub
+  }
 
   // Subscribe message
   case class SubscribeContent(id: String,

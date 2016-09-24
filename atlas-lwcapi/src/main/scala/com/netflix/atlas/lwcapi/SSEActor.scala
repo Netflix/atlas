@@ -38,6 +38,7 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
   client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack())
   outstandingCount += 1
 
+  var unregister = true
   sm.register(sseId, self, name)
   send(helloMessage)
 
@@ -57,8 +58,10 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
       send(msg)
       client ! Http.Close
       ticker.cancel()
-      sm.unregister(sseId)
-      log.info(s"Closing SSE stream: ${msg.reason}")
+      unregister = msg.shouldUnregister
+      if (unregister)
+        sm.unregister(sseId)
+      log.info(s"Closing SSE stream: ${msg.reason}, shouldUnregister: $unregister")
     case msg: SSEMessage =>
       send(msg)
     case closed: Http.ConnectionClosed =>
@@ -78,7 +81,8 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
   }
 
   override def postStop() = {
-    sm.unregister(sseId)
+    if (unregister)
+      sm.unregister(sseId)
     ticker.cancel()
     super.postStop()
   }
