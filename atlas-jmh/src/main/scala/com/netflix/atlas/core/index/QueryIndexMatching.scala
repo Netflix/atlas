@@ -30,7 +30,7 @@ import org.openjdk.jmh.infra.Blackhole
  * regex being used in real queries and not being used in this synthetic data.
  *
  * ```
- * > run -wi 10 -i 10 -f1 -t1 .*QueryIndexMatching.*
+ * > jmh:run -wi 10 -i 10 -f1 -t1 .*QueryIndexMatching.*
  * ```
  *
  * Initial results:

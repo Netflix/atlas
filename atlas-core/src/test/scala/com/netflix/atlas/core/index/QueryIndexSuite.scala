@@ -187,6 +187,28 @@ class QueryIndexSuite extends FunSuite {
     assert(Set(expr2) === index.matchingEntries(Map("name" -> "numCores")).toSet)
   }
 
+  test("queries for both nf.app and nf.cluster") {
+    val appQuery = Query.Equal("nf.app", "testapp")
+    val clusterQuery = Query.Equal("nf.cluster", "testapp-test")
+    val queries = List(appQuery, clusterQuery)
+    val index = QueryIndex(queries)
+
+    val tags = Map("nf.app" -> "testapp", "nf.cluster" -> "testapp-test")
+    assert(index.matches(tags))
+    assert(index.matchingEntries(tags) === queries)
+  }
+
+  test("queries for both nf.app w/ nf.cluster miss and nf.cluster") {
+    val appQuery = Query.And(Query.Equal("nf.app", "testapp"), Query.Equal("nf.cluster", "testapp-miss"))
+    val clusterQuery = Query.Equal("nf.cluster", "testapp-test")
+    val queries = List(appQuery, clusterQuery)
+    val index = QueryIndex(queries)
+
+    val tags = Map("nf.app" -> "testapp", "nf.cluster" -> "testapp-test")
+    assert(index.matches(tags))
+    assert(index.matchingEntries(tags) === List(clusterQuery))
+  }
+
   type QueryInterner = scala.collection.mutable.AnyRefMap[Query, Query]
 
   private def intern(interner: QueryInterner, query: Query): Query = {
