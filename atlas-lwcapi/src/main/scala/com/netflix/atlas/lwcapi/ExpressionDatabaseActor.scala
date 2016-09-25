@@ -55,6 +55,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val actionUnsubscribe = "unsubscribe"
 
   private val uuid = GlobalUUID.get
+
   private val ttl = ApiSettings.redisTTL
   private val host = ApiSettings.redisHost
   private val port = ApiSettings.redisPort
@@ -182,6 +183,8 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     logRedisCommand(redisCmdExpression, uuid, "redisSend", req)
     ttlManager.touch(TTLItem(actionExpression, req.id), ttlWithJitter())
     ttlState(req.id) = TTLState.Active
+    increment_counter(bytesWrittenId, "local", actionExpression, json.length)
+    increment_counter(messagesWrittenId, "local", actionExpression)
   }
 
   def checkDbStatus() = {

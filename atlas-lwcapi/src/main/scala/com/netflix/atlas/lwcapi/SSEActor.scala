@@ -31,9 +31,11 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
   private val maxOutstanding = 100
   private var droppedCount = 0
 
+  private val instanceId = sys.env.getOrElse("EC2_INSTANCE_ID", "unknown")
+
   private val tickTime = 30.seconds
   private val tickMessage = SSEHeartbeat()
-  private val helloMessage = SSEHello(sseId)
+  private val helloMessage = SSEHello(sseId, instanceId, GlobalUUID.get)
 
   client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack())
   outstandingCount += 1
