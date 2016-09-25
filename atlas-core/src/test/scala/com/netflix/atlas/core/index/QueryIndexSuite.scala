@@ -175,14 +175,6 @@ class QueryIndexSuite extends FunSuite {
     assert(index.matchingEntries(Map("name" -> "memoryUsage", "nf.node" -> "i-00099")).isEmpty)
   }
 
-  test("queries for both nf.app and nf.cluster") {
-    val appQuery = Query.Equal("nf.app", "testapp")
-    val clusterQuery = Query.Equal("nf.cluster", "testapp-test")
-    val index = QueryIndex(List(appQuery, clusterQuery))
-
-    assert(index.matchingEntries(Map("nf.app" -> "testapp", "nf.cluster" -> "testapp-test")) === List(appQuery, clusterQuery))
-  }
-
   test("from list of exprs") {
     val expr1 = DataExpr.Sum(Query.Equal("name", "cpuUsage"))
     val expr2 = MathExpr.Divide(expr1, DataExpr.Sum(Query.Equal("name", "numCores")))
