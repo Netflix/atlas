@@ -64,5 +64,5 @@ object Dependencies {
   val sprayClient     = "io.spray" %% "spray-client" % spray
   val sprayRouting    = "io.spray" %% "spray-routing" % spray
   val sprayTestkit    = "io.spray" %% "spray-testkit" % spray
-  val typesafeConfig  = "com.typesafe" % "config" % "1.3.0"
+  val typesafeConfig  = "com.typesafe" % "config" % "1.3.1"
 }
