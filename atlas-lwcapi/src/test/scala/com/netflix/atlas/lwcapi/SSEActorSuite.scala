@@ -60,7 +60,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
 
     assert(invocations === List[String](
       "STARTHTTP:",
-      SSEHello("mySSEId").toSSE,
+      SSEHello("mySSEId", "unknown", GlobalUUID.get).toSSE,
       SSESubscribe(split).toSSE,
       SSEShutdown("test shutdown").toSSE,
       "close"
@@ -82,7 +82,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
 
     assert(invocations === List[String](
       "STARTHTTP:",
-      SSEHello("mySSEId").toSSE,
+      SSEHello("mySSEId", "unknown", GlobalUUID.get).toSSE,
       SSEHeartbeat().toSSE,
       SSEShutdown("test shutdown").toSSE,
       "close"
