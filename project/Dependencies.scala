@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
   object Versions {
     val akka       = "2.4.8"
-    val aws        = "1.11.18"
-    val iep        = "0.4.6"
+    val aws        = "1.11.37"
+    val iep        = "0.4.8"
     val guice      = "4.1.0"
     val jackson    = "2.8.2"
     val log4j      = "2.6.2"
@@ -25,7 +25,7 @@ object Dependencies {
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.3.1"
+  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.3.3"
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.1.3"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.15.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
@@ -64,5 +64,5 @@ object Dependencies {
   val sprayClient     = "io.spray" %% "spray-client" % spray
   val sprayRouting    = "io.spray" %% "spray-routing" % spray
   val sprayTestkit    = "io.spray" %% "spray-testkit" % spray
-  val typesafeConfig  = "com.typesafe" % "config" % "1.3.0"
+  val typesafeConfig  = "com.typesafe" % "config" % "1.3.1"
 }
