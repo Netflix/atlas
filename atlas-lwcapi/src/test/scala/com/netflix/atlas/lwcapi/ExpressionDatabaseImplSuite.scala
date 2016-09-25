@@ -126,6 +126,48 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     assert(x.expressionsForCluster("foo-test") === List(ret2))
   }
 
+  test("match by cluster returns both nf.cluster and nf.app matches") {
+    val query1 = ExpressionWithFrequency("nf.app,fred,:eq,:sum,:des-fast", 30000)
+    val ds1a = "nf.app,fred,:eq,:sum"
+    val ret1 = ReturnableExpression("K5HEE4L3djA-wV_RAEIq3veEn9E", 30000, List(ds1a))
+
+    val query2 = ExpressionWithFrequency("nf.cluster,fred-test,:eq,:sum,:des-fast", 30000)
+    val ds2a = "nf.cluster,fred-test,:eq,:sum"
+    val ret2 = ReturnableExpression("ttlxi82EJVuysMc9RlKHwtR8gdM", 30000, List(ds2a))
+
+    val x = ExpressionDatabaseImpl()
+    x.setTestMode()
+
+    x.addExpr(splitter.split(query1))
+    x.addExpr(splitter.split(query2))
+    assert(x.expressionsForCluster("fred-test").toSet === Set(ret1, ret2))
+  }
+
+  test("match by cluster returns nf.app matches") {
+    val query1 = ExpressionWithFrequency("nf.app,fred,:eq,:sum,:des-fast", 30000)
+    val ds1a = "nf.app,fred,:eq,:sum"
+    val ret1 = ReturnableExpression("K5HEE4L3djA-wV_RAEIq3veEn9E", 30000, List(ds1a))
+
+    val x = ExpressionDatabaseImpl()
+    x.setTestMode()
+
+    x.addExpr(splitter.split(query1))
+    assert(x.expressionsForCluster("fred-test").toSet === Set(ret1))
+  }
+
+  test("match by cluster returns cluster match") {
+    val query2 = ExpressionWithFrequency("nf.cluster,fred-test,:eq,:sum,:des-fast", 30000)
+    val ds2a = "nf.cluster,fred-test,:eq,:sum"
+    val ret2 = ReturnableExpression("ttlxi82EJVuysMc9RlKHwtR8gdM", 30000, List(ds2a))
+
+    val x = ExpressionDatabaseImpl()
+    x.setTestMode()
+
+    x.addExpr(splitter.split(query2))
+    assert(x.expressionsForCluster("fred-test").toSet === Set(ret2))
+  }
+
+
   test("ignores data expression matches for other clusters") {
     val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,nf.cluster,foo-test,:eq,:sum", 30000)
     val ds1a = "nf.cluster,skan-test,:eq,:sum"

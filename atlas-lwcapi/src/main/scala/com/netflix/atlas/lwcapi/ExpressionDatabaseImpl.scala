@@ -76,7 +76,6 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase with StrictLoggin
       tags = tags + ("nf.app" -> name.getApp)
     if (name.getStack != null)
       tags = tags + ("nf.stack" -> name.getStack)
-    logger.debug(s"QueryIndex search with tags $tags")
     val matches = queryIndex.matchingEntries(tags)
     val matchingDataExpressions = mutable.Map[String, Boolean]()
     val matchingDataItems = mutable.Map[SplitResult, Boolean]()
