@@ -17,15 +17,20 @@ package com.netflix.atlas.lwcapi
 
 import scala.concurrent.duration._
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
+import com.netflix.spectator.api.Registry
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import spray.can.Http
 import spray.http._
 
-class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionManager)
+class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionManager, registry: Registry)
   extends Actor with ActorLogging {
   import SSEActor._
   import StreamApi._
+
+  private val connectsId = registry.createId("atlas.lwcapi.sse.connectCount")
+  private val messagesId = registry.createId("atlas.lwcapi.sse.messageCount")
+  private val droppedId = registry.createId("atlas.lwcapi.sse.droppedCount")
 
   private var outstandingCount = 0
   private val maxOutstanding = 100
@@ -39,6 +44,7 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
 
   client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack())
   outstandingCount += 1
+  registry.counter(connectsId).increment()
 
   var unregister = true
   sm.register(sseId, self, name)
@@ -77,8 +83,10 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
       val json = msg.toSSE + "\r\n\r\n"
       client ! MessageChunk(json).withAck(Ack())
       outstandingCount += 1
+      registry.counter(messagesId.withTag("action", msg.getWhat))
     } else {
       droppedCount += 1
+      registry.counter(droppedId.withTag("action", msg.getWhat))
     }
   }
 

@@ -20,10 +20,16 @@ import javax.inject.Inject
 import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.lwcapi.StreamApi._
+import com.netflix.spectator.api.Registry
 import spray.http.{HttpResponse, StatusCodes}
 
-class EvaluateActor @Inject() (sm: SubscriptionManager) extends Actor with ActorLogging {
+class EvaluateActor @Inject() (registry: Registry, sm: SubscriptionManager) extends Actor with ActorLogging {
   import com.netflix.atlas.lwcapi.EvaluateApi._
+
+  private val evalsId = registry.createId("atlas.lwcapi.evaluate.count")
+  private val itemsId = registry.createId("atlas.lwcapi.evaluate.itemCount")
+  private val actorsId = registry.createId("atlas.lwcapi.evaluate.actorCount")
+  private val uninterestingId = registry.createId("atlas.lwcapi.evaluate.uninterestingCount")
 
   def receive = {
     case EvaluateRequest(Nil) =>
@@ -36,12 +42,17 @@ class EvaluateActor @Inject() (sm: SubscriptionManager) extends Actor with Actor
   }
 
   private def evaluate(items: List[Item]): Unit = {
-    log.info("Received an evaluate request")
+    registry.counter(evalsId).increment()
+    registry.counter(itemsId).increment(items.size)
     items.foreach { item =>
-      log.info("Item: " + item)
       val actors = sm.actorsForExpression(item.id)
-      val message = SSEEvaluate(item)
-      actors.foreach(actor => actor ! message)
+      if (actors.nonEmpty) {
+        registry.counter(actorsId).increment(actors.size)
+        val message = SSEEvaluate(item)
+        actors.foreach(actor => actor ! message)
+      } else {
+        registry.counter(uninterestingId).increment()
+      }
     }
   }
 }

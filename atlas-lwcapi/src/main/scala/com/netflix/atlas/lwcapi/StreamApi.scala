@@ -21,12 +21,14 @@ import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.StreamApi.SSEShutdown
+import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.routing.RequestContext
 
 class StreamApi @Inject()(sm: SubscriptionManager,
                           splitter: ExpressionSplitter,
-                          implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
+                          implicit val actorRefFactory: ActorRefFactory,
+                          registry: Registry) extends WebApi with StrictLogging {
   import StreamApi.SSESubscribe
 
   private val dbActor = actorRefFactory.actorSelection("/user/lwc.expressiondb")
@@ -49,7 +51,8 @@ class StreamApi @Inject()(sm: SubscriptionManager,
         existingActor.get.actorRef ! SSEShutdown(s"Dropped: another connection is using the same stream-id: $streamId", unsub = false)
       }
 
-      val actorRef = actorRefFactory.actorOf(Props(new SSEActor(ctx.responder, streamId, name.getOrElse("unknown"), sm)))
+      val actorRef = actorRefFactory.actorOf(Props(
+        new SSEActor(ctx.responder, streamId, name.getOrElse("unknown"), sm, registry)))
 
       val freq = freqString.fold(ApiSettings.defaultFrequency)(_.toLong)
       if (expr.isDefined) {
@@ -69,6 +72,7 @@ trait SSERenderable {
 object StreamApi {
   abstract class SSEMessage(msgType: String, what: String, content: JsonSupport) extends SSERenderable {
     def toSSE = s"$msgType: $what ${content.toJson}"
+    def getWhat = what
   }
 
   // Hello message
@@ -105,6 +109,10 @@ object StreamApi {
 
   case class SSESubscribe(split: ExpressionSplitter.SplitResult)
     extends SSEMessage("data", "subscribe", SubscribeContent(split))
+
+  // Unsubscribe uses the same format as Subscribe, just a different message type
+  case class SSEUnsubscribe(split: ExpressionSplitter.SplitResult)
+    extends SSEMessage("data", "unsubscribe", SubscribeContent(split))
 
   // Evaluate message
   case class SSEEvaluate(item: EvaluateApi.Item)

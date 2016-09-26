@@ -18,6 +18,7 @@ package com.netflix.atlas.lwcapi
 import akka.actor.{Actor, Props}
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.lwcapi.ExpressionSplitter.{QueryContainer, SplitResult}
+import com.netflix.spectator.api.Spectator
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import spray.can.Http
 import spray.http.{ChunkedResponseStart, Confirmed, MessageChunk}
@@ -28,6 +29,8 @@ import scala.collection.mutable
 class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
   import StreamApi._
   import SSEActorSuite._
+
+  val registry = Spectator.globalRegistry()
 
   before {
     reset()
@@ -44,7 +47,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
   test("Registers and unsubscribes from subscription manager") {
     val testClient = system.actorOf(Props(new TestClient()))
     val mockSM = MockSubscriptionManager()
-    val sse = system.actorOf(Props(new SSEActor(testClient, "mySSEId", "myName", mockSM)))
+    val sse = system.actorOf(Props(new SSEActor(testClient, "mySSEId", "myName", mockSM, registry)))
     val split = SplitResult("expr", 100, "exprId", List(QueryContainer(Query.True, "dataExpr")))
 
     sse ! SSESubscribe(split)
@@ -70,7 +73,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
   test("tick") {
     val testClient = system.actorOf(Props(new TestClient()))
     val mockSM = MockSubscriptionManager()
-    val sse = system.actorOf(Props(new SSEActor(testClient, "mySSEId", "myName", mockSM)))
+    val sse = system.actorOf(Props(new SSEActor(testClient, "mySSEId", "myName", mockSM, registry)))
     val split = SplitResult("expr", 100, "exprId", List(QueryContainer(Query.True, "dataExpr")))
 
     Thread.sleep(100)
