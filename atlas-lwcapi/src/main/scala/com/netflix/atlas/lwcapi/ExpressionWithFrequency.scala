@@ -15,17 +15,14 @@
  */
 package com.netflix.atlas.lwcapi
 
-case class ExpressionWithFrequency (expression: String, private var _frequency: Long = 0) {
-  if (expression == null || expression.isEmpty) {
+case class ExpressionWithFrequency(id: String,
+                                   expression: String,
+                                   frequency: Long = ApiSettings.defaultFrequency) {
+  if (expression.isEmpty) {
     throw new IllegalArgumentException("expression is empty or null")
   }
 
-  _frequency = clampFrequency(_frequency)
-
-  def frequency: Long = _frequency
-  private def frequency_=(freq: Long) { _frequency = clampFrequency(freq) }
-
-  private def clampFrequency(value: Long): Long = {
-    if (value <= 0) ApiSettings.defaultFrequency else value
+  if (frequency < 0) {
+    throw new IllegalArgumentException("frequency must be > 0")
   }
 }
