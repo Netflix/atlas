@@ -76,6 +76,7 @@ object Json {
     mapper.setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     mapper.registerModule(DefaultScalaModule)
+    mapper.registerModule(new AtlasModule)
     mapper.registerModule(new JodaModule)
     mapper
   }
