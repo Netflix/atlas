@@ -57,13 +57,21 @@ class ExpressionWithFrequencyDeserializer extends JsonDeserializer[ExpressionWit
   def deserialize(parser: JsonParser, context: DeserializationContext) = {
     val node: JsonNode = parser.getCodec.readTree(parser)
 
-    val expression = if (node.has("expression")) node.get("expression").asText("") else null
+    val expression = if (node.hasNonNull("expression")) node.get("expression").asText("") else null
     if (expression == null || expression.isEmpty)
       throw new IllegalArgumentException("expression is empty or null")
 
-    val frequency = if (node.has("frequency")) node.get("frequency").asInt(ApiSettings.defaultFrequency) else ApiSettings.defaultFrequency
+    val frequency = if (node.hasNonNull("frequency")) {
+      val value = node.get("frequency")
+      if (!value.canConvertToInt) {
+        throw new IllegalArgumentException("frequency is not an integer")
+      }
+      value.asInt(ApiSettings.defaultFrequency)
+    } else {
+      ApiSettings.defaultFrequency
+    }
 
-    if (node.has("id")) {
+    if (node.hasNonNull("id")) {
       val id = node.get("id").asText
       if (id == null || id.isEmpty)
         throw new IllegalArgumentException("id is empty or null")

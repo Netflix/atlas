@@ -75,13 +75,13 @@ class ExpressionWithFrequencySuite extends FunSuite {
     assert(o.id === target.id)
   }
 
-  ignore("fails to parse from json with frequency non-integer") {
+  test("fails to parse from json with frequency non-integer") {
     val json =
       """
         | {"expression": "this", "frequency": "that"}
       """.stripMargin
 
-    intercept[JsonProcessingException] {
+    intercept[IllegalArgumentException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
