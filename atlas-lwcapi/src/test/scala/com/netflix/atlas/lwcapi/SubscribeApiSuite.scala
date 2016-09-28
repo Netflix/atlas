@@ -102,88 +102,6 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
       assert(response.status === StatusCodes.BadRequest)
     }
   }
-
-  //
-  // Unsubscribe
-  //
-
-  test("unsubscribe: no content") {
-    Delete("/lwc/api/v1/subscribe") ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-
-  test("unsubscribe: empty object") {
-    Delete("/lwc/api/v1/subscribe", "{}") ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-      assert(lastUpdate === Nil)
-    }
-  }
-
-  test("unsubscribe: empty array") {
-    val x = Delete("/lwc/api/v1/subscribe", "[]")
-    x ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-      assert(lastUpdate === Nil)
-    }
-  }
-
-  test("unsubscribe: correctly formatted expression") {
-    val json = """
-                 |{
-                 |  "streamId": "abc123",
-                 |  "expressions": [
-                 |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
-                 |  ]
-                 |}""".stripMargin
-    Delete("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(lastUpdate.size === 1)
-      assert(lastStreamId === "abc123")
-      assert(lastKind === 'unsubscribe)
-    }
-  }
-
-  test("unsubscribe: correctly formatted expression with sourceId") {
-    val json = """
-                 |{
-                 |  "streamId": "abc123",
-                 |  "expressions": [
-                 |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
-                 |  ]
-                 |}""".stripMargin
-    Delete("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(lastUpdate.size === 1)
-      assert(lastStreamId === "abc123")
-      assert(lastKind === 'unsubscribe)
-    }
-  }
-
-  test("unsubscribe: bad json") {
-    Delete("/lwc/api/v1/subscribe", "fubar") ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-
-  test("unsubscribe: invalid object") {
-    Delete("/lwc/api/v1/subscribe", "{\"foo\":\"bar\"}") ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-
-  test("unsubscribe: expression value is null") {
-    val json = s"""{
-        "streamId": "abc123",
-        "expressions": [
-          { "expression": null }
-        ]
-      }"""
-    Delete("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-
 }
 
 object SubscribeApiSuite {
@@ -201,11 +119,6 @@ object SubscribeApiSuite {
         lastUpdate = values
         lastStreamId = sourceId
         lastKind = 'subscribe
-        sender() ! HttpResponse(StatusCodes.OK)
-      case UnsubscribeRequest(sourceId, values) =>
-        lastUpdate = values
-        lastStreamId = sourceId
-        lastKind = 'unsubscribe
         sender() ! HttpResponse(StatusCodes.OK)
     }
   }

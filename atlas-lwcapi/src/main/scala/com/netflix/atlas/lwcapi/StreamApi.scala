@@ -54,12 +54,14 @@ class StreamApi @Inject()(sm: SubscriptionManager,
       val actorRef = actorRefFactory.actorOf(Props(
         new SSEActor(ctx.responder, streamId, name.getOrElse("unknown"), sm, registry)))
 
-      val freq = freqString.fold(ApiSettings.defaultFrequency)(_.toLong)
+      val freq = freqString.fold(ApiSettings.defaultFrequency)(_.toInt)
       if (expr.isDefined) {
-        val split = splitter.split(ExpressionWithFrequency(expr.get, freq))
+        val split = splitter.split(expr.get, freq)
         dbActor ! ExpressionDatabaseActor.Expression(split)
-        dbActor ! ExpressionDatabaseActor.Subscribe(streamId, split.id)
-        actorRef ! SSESubscribe(split)
+        actorRef ! SSESubscribe(expr.get, split.expressions)
+        split.expressions.foreach(expr =>
+          dbActor ! ExpressionDatabaseActor.Subscribe(streamId, expr.id)
+        )
       }
     } catch handleException(ctx)
   }
@@ -96,25 +98,13 @@ object StreamApi {
   }
 
   // Subscribe message
-  case class SubscribeContent(id: String,
-                              expression: String,
-                              frequency: Long,
-                              dataExpressions: List[String]) extends JsonSupport
+  case class SubscribeContent(expression: String,
+                              dataExpressions: List[ExpressionWithFrequency]) extends JsonSupport
 
-  object SubscribeContent {
-    def apply(split: ExpressionSplitter.SplitResult) = {
-      new SubscribeContent(split.id, split.expression, split.frequency, split.split.map(e => e.dataExpr.toString))
-    }
-  }
-
-  case class SSESubscribe(split: ExpressionSplitter.SplitResult)
-    extends SSEMessage("data", "subscribe", SubscribeContent(split))
-
-  // Unsubscribe uses the same format as Subscribe, just a different message type
-  case class SSEUnsubscribe(split: ExpressionSplitter.SplitResult)
-    extends SSEMessage("data", "unsubscribe", SubscribeContent(split))
+  case class SSESubscribe(expr: String, dataExpressions: List[ExpressionWithFrequency])
+    extends SSEMessage("data", "subscribe", SubscribeContent(expr, dataExpressions))
 
   // Evaluate message
-  case class SSEEvaluate(item: EvaluateApi.Item)
+  case class SSEEvaluate(timestamp: Long, item: EvaluateApi.Item)
     extends SSEMessage("data", "evaluate", item)
 }

@@ -16,7 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.core.model.Query
-import com.netflix.atlas.lwcapi.ExpressionSplitter.{QueryContainer, SplitResult}
+import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import org.scalatest.FunSuite
 
 class ExpressionSplitterSuite extends FunSuite {
@@ -25,39 +25,32 @@ class ExpressionSplitterSuite extends FunSuite {
   private val ds1a = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:count,(,nf.node,),:by"
   private val ds1b = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:sum,(,nf.node,),:by"
   private val matchList1 = Query.Equal("nf.cluster", "skan-test")
-  private val expected1 = List(
-    QueryContainer(matchList1, ds1a),
-    QueryContainer(matchList1, ds1b)
-  )
 
   private val splitter = ExpressionSplitterImpl()
 
   test("splits single expression into data expressions") {
-    val ret = splitter.split(ExpressionWithFrequency(query1, frequency1))
-    assert(ret === SplitResult(query1, frequency1, "1ylCY_sReTZWQ-U7zXqfl8S7ARs", expected1))
+    val ret = splitter.split(query1, frequency1)
+    assert(ret.queries === List(matchList1, matchList1))
+    assert(ret.expressions.size === 2)
+    assert(ret.expressions.contains(ExpressionWithFrequency(ds1a, frequency1)))
+    assert(ret.expressions.contains(ExpressionWithFrequency(ds1b, frequency1)))
   }
 
   test("splits compound expression into data expressions") {
     val expr = query1 + "," + query1
-    val ret = splitter.split(ExpressionWithFrequency(expr, frequency1))
-    assert(ret === SplitResult(expr, frequency1, "1ylCY_sReTZWQ-U7zXqfl8S7ARs", expected1))
+    val ret = splitter.split(expr, frequency1)
+    assert(ret.queries.size === 2)
+    assert(ret.queries.distinct === List(matchList1))
+    assert(ret.expressions.size === 2)
+    assert(ret.expressions.contains(ExpressionWithFrequency(ds1a, frequency1)))
+    assert(ret.expressions.contains(ExpressionWithFrequency(ds1b, frequency1)))
   }
 
   test("returns None for invalid expressions") {
     val msg = intercept[IllegalArgumentException] {
-      splitter.split(ExpressionWithFrequency("foo", frequency1))
+      splitter.split("foo", frequency1)
     }
    assert(msg.getMessage === "Expression is not a valid expression")
-  }
-
-  test("SplitterResult is printable") {
-    val r = SplitResult("theExpression", 123, "theId", List(QueryContainer(Query.True, ":bar")))
-    val s = r.toString
-    assert(s.contains("theExpression"))
-    assert(s.contains("123"))
-    assert(s.contains("theId"))
-    assert(s.contains("true"))
-    assert(s.contains(":bar"))
   }
 
   //

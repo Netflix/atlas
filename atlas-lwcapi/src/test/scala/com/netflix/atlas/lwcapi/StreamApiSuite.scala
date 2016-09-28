@@ -17,7 +17,7 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorSystem
 import com.netflix.atlas.core.model.Query
-import com.netflix.atlas.lwcapi.ExpressionSplitter.{QueryContainer, SplitResult}
+import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.atlas.lwcapi.StreamApi._
 import org.scalatest.FunSuite
 import spray.testkit.ScalatestRouteTest
@@ -50,12 +50,13 @@ class StreamApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("SSESubscribe renders") {
-    val split = SplitResult("expr", 100, "exprId", List(QueryContainer(Query.True, "dataExpr")))
-    assert(SSESubscribe(split).toSSE === """data: subscribe {"id":"exprId","expression":"expr","frequency":100,"dataExpressions":["dataExpr"]}""")
-  }
-
-  test("SSEEvaluate renders") {
-    val item = EvaluateApi.Item(123, "theId", List(EvaluateApi.DataExpression(Map("nf.app" -> "skan"), 40.1)))
-
+    val ret1 = List(ExpressionWithFrequency("dataExpr", 10, "exprId"))
+    val s = SSESubscribe("mainExpr", ret1).toSSE
+    assert(s.startsWith("data: subscribe"))
+    assert(s.contains(""""expression":"mainExpr""""))
+    assert(s.contains(""""dataExpressions":[{"""))
+    assert(s.contains(""""expression":"dataExpr""""))
+    assert(s.contains(""""frequency":10"""))
+    assert(s.contains(""""id":"exprId""""))
   }
 }

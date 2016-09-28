@@ -27,21 +27,13 @@ class SubscribeApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "subscribe") {
-      post { ctx => handlePost(ctx) } ~
-      delete { ctx => handleDelete(ctx) }
+      post { ctx => handlePost(ctx) }
     }
   }
 
   private def handlePost(ctx: RequestContext): Unit = {
     try {
       val request = SubscribeRequest.fromJson(ctx.request.entity.asString)
-      subscribeRef.tell(request, ctx.responder)
-    } catch handleException(ctx)
-  }
-
-  private def handleDelete(ctx: RequestContext): Unit = {
-    try {
-      val request = UnsubscribeRequest.fromJson(ctx.request.entity.asString)
       subscribeRef.tell(request, ctx.responder)
     } catch handleException(ctx)
   }
@@ -53,19 +45,6 @@ object SubscribeApi {
   object SubscribeRequest {
     def fromJson(json: String): SubscribeRequest = {
       val decoded = Json.decode[SubscribeRequest](json)
-      if (decoded.expressions == null || decoded.expressions.isEmpty)
-        throw new IllegalArgumentException("Missing or empty expressions array")
-      if (decoded.streamId == null || decoded.streamId.isEmpty)
-        throw new IllegalArgumentException("Missing or empty streamId")
-      decoded
-    }
-  }
-
-  case class UnsubscribeRequest(streamId: String, expressions: List[ExpressionWithFrequency]) extends JsonSupport
-
-  object UnsubscribeRequest {
-    def fromJson(json: String): UnsubscribeRequest = {
-      val decoded = Json.decode[UnsubscribeRequest](json)
       if (decoded.expressions == null || decoded.expressions.isEmpty)
         throw new IllegalArgumentException("Missing or empty expressions array")
       if (decoded.streamId == null || decoded.streamId.isEmpty)

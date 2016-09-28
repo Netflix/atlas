@@ -40,17 +40,13 @@ class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi 
 
 object EvaluateApi {
   type TagMap = Map[String, String]
-  case class DataExpression(tags: TagMap, value: Double)
-  case class Item(timestamp: Long, id: String, dataExpressions: List[DataExpression]) extends JsonSupport
 
-  case class EvaluateRequest(items: List[Item]) {
-    def toJson = Json.encode(items)
-  }
+  case class DataExpression(tags: TagMap, value: Double) extends JsonSupport
 
+  case class Item(id: String, dataExpressions: List[DataExpression]) extends JsonSupport
+
+  case class EvaluateRequest(timestamp: Long, expressions: List[Item]) extends JsonSupport
   object EvaluateRequest {
-    def fromJson(json: String): EvaluateRequest = {
-      val decoded = Json.decode[List[Item]](json)
-      EvaluateRequest(decoded)
-    }
+    def fromJson(json: String) = Json.decode[EvaluateRequest](json)
   }
 }

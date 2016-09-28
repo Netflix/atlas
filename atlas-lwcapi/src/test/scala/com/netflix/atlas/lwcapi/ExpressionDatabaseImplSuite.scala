@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.lwcapi.ExpressionDatabase.ReturnableExpression
+import com.netflix.atlas.core.model.Query
 import org.scalatest.FunSuite
 
 class ExpressionDatabaseImplSuite extends FunSuite {
@@ -28,10 +28,15 @@ class ExpressionDatabaseImplSuite extends FunSuite {
   }
 
   test("index is rebuilt") {
-    val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
+    val query1 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
+    val freq1 = 30000
+
     val x = ExpressionDatabaseImpl()
 
-    x.addExpr(splitter.split(query1))
+    val split1 = splitter.split(query1, freq1)
+    assert(split1.expressions.size === 1)
+    x.addExpr(split1.expressions.head, split1.queries.head)
+
     var ret = x.expressionsForCluster("skan-test")
     assert(ret.isEmpty)
 
@@ -45,19 +50,29 @@ class ExpressionDatabaseImplSuite extends FunSuite {
   }
 
   test("same expression different frequency") {
-    val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
+    val query1 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
+    val freq1 = 30000
+    val id1 = "CxmlI6L5YBQcpWOrayncZKeZekg"
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
-    val ret1 = ReturnableExpression("CxmlI6L5YBQcpWOrayncZKeZekg", 30000, List(ds1a))
+    val ret1 = ExpressionWithFrequency(ds1a, freq1, id1)
 
-    val query2 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 50000)
+    val query2 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
+    val freq2 = 50000
+    val id2 = "xcKZ6tCd4vSMUY-Ug3bToNy3L6k"
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
-    val ret2 = ReturnableExpression("xcKZ6tCd4vSMUY-Ug3bToNy3L6k", 50000, List(ds2a))
+    val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
     val x = ExpressionDatabaseImpl()
     x.setTestMode()
 
-    x.addExpr(splitter.split(query1))
-    x.addExpr(splitter.split(query2))
+    val split1 = splitter.split(query1, freq1)
+    assert(split1.expressions.size === 1)
+    x.addExpr(split1.expressions.head, split1.queries.head)
+
+    val split2 = splitter.split(query2, freq2)
+    assert(split2.expressions.size === 1)
+    x.addExpr(split2.expressions.head, split2.queries.head)
+
     var ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 2)
     assert(ret.contains(ret1))
@@ -65,130 +80,83 @@ class ExpressionDatabaseImplSuite extends FunSuite {
   }
 
   test("deleting") {
-    val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
+    val query1 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
+    val freq1 = 30000
+    val id1 = "CxmlI6L5YBQcpWOrayncZKeZekg"
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
-    val ret1 = ReturnableExpression("CxmlI6L5YBQcpWOrayncZKeZekg", 30000, List(ds1a))
+    val ret1 = ExpressionWithFrequency(ds1a, freq1, id1)
 
-    val query2 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum", 50000)
+    val query2 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
+    val freq2 = 50000
+    val id2 = "xcKZ6tCd4vSMUY-Ug3bToNy3L6k"
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
-    val ret2 = ReturnableExpression("xcKZ6tCd4vSMUY-Ug3bToNy3L6k", 50000, List(ds2a))
+    val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
     val x = ExpressionDatabaseImpl()
     x.setTestMode()
 
-    x.addExpr(splitter.split(query1))
-    x.addExpr(splitter.split(query2))
+    val split1 = splitter.split(query1, freq1)
+    assert(split1.expressions.size === 1)
+    x.addExpr(split1.expressions.head, split1.queries.head)
+
+    val split2 = splitter.split(query2, freq2)
+    assert(split2.expressions.size === 1)
+    x.addExpr(split2.expressions.head, split2.queries.head)
+
     var ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 2)
     assert(ret.contains(ret1))
     assert(ret.contains(ret2))
 
-    x.delExpr(splitter.split(query1).id)
+    x.delExpr(id1)
     ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 1)
     assert(ret.contains(ret2))
 
-    x.delExpr(splitter.split(query2).id)
+    x.delExpr(id2)
     ret = x.expressionsForCluster("skan-test")
     assert(ret === List())
   }
 
   test("hasExpr") {
-    val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
-    val id1 = "CxmlI6L5YBQcpWOrayncZKeZekg"
+    val expr1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum", 30000, "idhere")
 
     val x = ExpressionDatabaseImpl()
 
-    assert(x.hasExpr(id1) === false)
+    assert(x.hasExpr("idhere") === false)
 
-    x.addExpr(splitter.split(query1))
-    assert(x.hasExpr(id1))
+    x.addExpr(expr1, Query.True)
+    assert(x.hasExpr("idhere"))
 
-    x.delExpr(splitter.split(query1).id)
-    assert(x.hasExpr(id1) === false)
+    x.delExpr("idhere")
+    assert(x.hasExpr("idhere") === false)
   }
 
   test("ignores matches for other clusters") {
-    val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,:des-fast", 30000)
+    val query1 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
+    val freq1 = 30000
+    val id1 = "CxmlI6L5YBQcpWOrayncZKeZekg"
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
-    val ret1 = ReturnableExpression("CxmlI6L5YBQcpWOrayncZKeZekg", 30000, List(ds1a))
+    val ret1 = ExpressionWithFrequency(ds1a, freq1, id1)
 
-    val query2 = ExpressionWithFrequency("nf.cluster,foo-test,:eq,:sum", 50000)
+    val query2 = "nf.cluster,foo-test,:eq,:sum,:des-fast"
+    val freq2 = 30000
+    val id2 = "TmufMvW12uix44g903buDb-0kH4"
     val ds2a = "nf.cluster,foo-test,:eq,:sum"
-    val ret2 = ReturnableExpression("AelsHYTDCsTCiqzFkyOD-ShPzE8", 50000, List(ds2a))
+    val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
     val x = ExpressionDatabaseImpl()
     x.setTestMode()
 
-    x.addExpr(splitter.split(query1))
-    x.addExpr(splitter.split(query2))
+    val split1 = splitter.split(query1, freq1)
+    assert(split1.expressions.size === 1)
+    x.addExpr(split1.expressions.head, split1.queries.head)
+
+    val split2 = splitter.split(query2, freq2)
+    assert(split2.expressions.size === 1)
+    x.addExpr(split2.expressions.head, split2.queries.head)
+
     assert(x.expressionsForCluster("bar-test") === List())
     assert(x.expressionsForCluster("foo-test") === List(ret2))
   }
-
-  test("match by cluster returns both nf.cluster and nf.app matches") {
-    val query1 = ExpressionWithFrequency("nf.app,fred,:eq,:sum,:des-fast", 30000)
-    val ds1a = "nf.app,fred,:eq,:sum"
-    val ret1 = ReturnableExpression("K5HEE4L3djA-wV_RAEIq3veEn9E", 30000, List(ds1a))
-
-    val query2 = ExpressionWithFrequency("nf.cluster,fred-test,:eq,:sum,:des-fast", 30000)
-    val ds2a = "nf.cluster,fred-test,:eq,:sum"
-    val ret2 = ReturnableExpression("ttlxi82EJVuysMc9RlKHwtR8gdM", 30000, List(ds2a))
-
-    val x = ExpressionDatabaseImpl()
-    x.setTestMode()
-
-    x.addExpr(splitter.split(query1))
-    x.addExpr(splitter.split(query2))
-    assert(x.expressionsForCluster("fred-test").toSet === Set(ret1, ret2))
-  }
-
-  test("match by cluster returns nf.app matches") {
-    val query1 = ExpressionWithFrequency("nf.app,fred,:eq,:sum,:des-fast", 30000)
-    val ds1a = "nf.app,fred,:eq,:sum"
-    val ret1 = ReturnableExpression("K5HEE4L3djA-wV_RAEIq3veEn9E", 30000, List(ds1a))
-
-    val x = ExpressionDatabaseImpl()
-    x.setTestMode()
-
-    x.addExpr(splitter.split(query1))
-    assert(x.expressionsForCluster("fred-test").toSet === Set(ret1))
-  }
-
-  test("match by cluster returns cluster match") {
-    val query2 = ExpressionWithFrequency("nf.cluster,fred-test,:eq,:sum,:des-fast", 30000)
-    val ds2a = "nf.cluster,fred-test,:eq,:sum"
-    val ret2 = ReturnableExpression("ttlxi82EJVuysMc9RlKHwtR8gdM", 30000, List(ds2a))
-
-    val x = ExpressionDatabaseImpl()
-    x.setTestMode()
-
-    x.addExpr(splitter.split(query2))
-    assert(x.expressionsForCluster("fred-test").toSet === Set(ret2))
-  }
-
-
-  test("ignores data expression matches for other clusters") {
-    val query1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum,nf.cluster,foo-test,:eq,:sum", 30000)
-    val ds1a = "nf.cluster,skan-test,:eq,:sum"
-    val ret1a = ReturnableExpression("MF-t6bE1FNpNHa4hLS5-lqBhZ9k", 30000, List("", ds1a))
-
-    val ds1b = "nf.cluster,foo-test,:eq,:sum"
-    val ret1b = ReturnableExpression("MF-t6bE1FNpNHa4hLS5-lqBhZ9k", 30000, List(ds1b, ""))
-
-    val x = ExpressionDatabaseImpl()
-    x.setTestMode()
-
-    x.addExpr(splitter.split(query1))
-    assert(x.expressionsForCluster("skan-test") === List(ret1a))
-    assert(x.expressionsForCluster("foo-test") === List(ret1b))
-  }
-
-  test("ReturnableExpression custom toString") {
-    val s = ReturnableExpression("myId", 123, List("a", "b")).toString
-    assert(s.contains("myId"))
-    assert(s.contains("123"))
-    assert(s.contains("List(a, b)"))
-  }
-
 }

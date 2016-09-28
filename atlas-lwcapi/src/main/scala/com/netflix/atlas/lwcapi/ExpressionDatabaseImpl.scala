@@ -18,6 +18,7 @@ package com.netflix.atlas.lwcapi
 import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, TimeUnit}
 
 import com.netflix.atlas.core.index.QueryIndex
+import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.frigga.Names
 import com.typesafe.scalalogging.StrictLogging
@@ -26,10 +27,10 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 
 case class ExpressionDatabaseImpl() extends ExpressionDatabase with StrictLogging {
-  import ExpressionDatabase._
+  case class Item(queries: Query, expr: ExpressionWithFrequency)
 
-  private val knownExpressions = new ConcurrentHashMap[String, SplitResult]().asScala
-  private var queryIndex = QueryIndex.create[(String, SplitResult)](Nil)
+  private val knownExpressions = new ConcurrentHashMap[String, Item]().asScala
+  private var queryIndex = QueryIndex.create[ExpressionWithFrequency](Nil)
 
   private var queryListChanged @volatile = false
   private var testMode = false
@@ -46,9 +47,9 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase with StrictLoggin
 
   def setTestMode() = { testMode = true }
 
-  def addExpr(split: SplitResult): Boolean = {
+  def addExpr(expr: ExpressionWithFrequency, queries: Query): Boolean = {
     // Only replace the object if it is not there, to avoid keeping many identical objects around.
-    val replaced = knownExpressions.putIfAbsent(split.id, split)
+    val replaced = knownExpressions.putIfAbsent(expr.id, Item(queries, expr))
     val changed = replaced.isEmpty
     queryListChanged |= changed
     if (testMode)
@@ -67,9 +68,12 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase with StrictLoggin
 
   override def hasExpr(id: String): Boolean = knownExpressions.contains(id)
 
-  override def expr(id: String): Option[SplitResult] = knownExpressions.get(id)
+  override def expr(id: String): Option[ExpressionWithFrequency] = {
+    val ret = knownExpressions.get(id)
+    if (ret.isDefined) Some(ret.get.expr) else None
+  }
 
-  def expressionsForCluster(cluster: String): List[ReturnableExpression] = {
+  def expressionsForCluster(cluster: String): List[ExpressionWithFrequency] = {
     val name = Names.parseName(cluster)
     var tags = Map("nf.cluster" -> name.getCluster)
     if (name.getApp != null)
@@ -77,28 +81,13 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase with StrictLoggin
     if (name.getStack != null)
       tags = tags + ("nf.stack" -> name.getStack)
     val matches = queryIndex.matchingEntries(tags)
-    val matchingDataExpressions = mutable.Map[String, Boolean]()
-    val matchingDataItems = mutable.Map[SplitResult, Boolean]()
-    matches.foreach(m => {
-      matchingDataExpressions(m._1) = true
-      matchingDataItems(m._2) = true
-    })
-
-    val ret = matchingDataItems.map {case (item, flag) =>
-      val dataExprs = item.split.map(x => x.dataExpr).map(dataexpr =>
-        if (matchingDataExpressions.contains(dataexpr)) dataexpr else ""
-      )
-      ReturnableExpression(item.id, item.frequency, dataExprs)
-    }
-    ret.toList.distinct
+    matches.distinct
   }
 
   private def regenerateQueryIndex(): Unit = {
     queryListChanged = false
-    val map = knownExpressions.flatMap { case (exprKey, data) =>
-      data.split.map(container =>
-        QueryIndex.Entry(container.matchExpr, (container.dataExpr, data))
-      )
+    val map = knownExpressions.map { case (query, item) =>
+      QueryIndex.Entry(item.queries, item.expr)
     }.toList
     logger.debug(s"Regenerating QueryIndex with ${map.size} entries")
     queryIndex = QueryIndex.create(map)

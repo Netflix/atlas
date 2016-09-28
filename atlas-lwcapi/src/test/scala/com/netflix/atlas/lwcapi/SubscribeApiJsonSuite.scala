@@ -22,8 +22,8 @@ import org.scalatest.FunSuite
 class SubscribeApiJsonSuite extends FunSuite {
   test("encode and decode loop") {
     val expressions: List[ExpressionWithFrequency] = List(
-      ExpressionWithFrequency("this", 1234),
-      ExpressionWithFrequency("that", 4321)
+      ExpressionWithFrequency("this", 1234, "idGoesHere"),
+      ExpressionWithFrequency("that", 4321, "idGoesHereToo")
     )
     val original = SubscribeRequest("sid", expressions)
     val json = original.toJson

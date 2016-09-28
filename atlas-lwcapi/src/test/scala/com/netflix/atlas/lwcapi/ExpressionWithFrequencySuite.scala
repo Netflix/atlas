@@ -21,17 +21,32 @@ import org.scalatest.FunSuite
 
 class ExpressionWithFrequencySuite extends FunSuite {
   test("default is applied") {
-    assert(ExpressionWithFrequency("this") === ExpressionWithFrequency("this", ApiSettings.defaultFrequency))
+    val ret1 = ExpressionWithFrequency("this")
+    val ret2 = ExpressionWithFrequency("this", ApiSettings.defaultFrequency)
+    assert(ret1 === ret2)
   }
 
   test("full params") {
-    val expr = ExpressionWithFrequency("test", 60000)
+    val expr = ExpressionWithFrequency("test", 60000, "idHere")
+    assert(expr.expression === "test")
     assert(expr.frequency === 60000)
+    assert(expr.id === "idHere")
   }
 
   test("default frequency") {
-    val expr = ExpressionWithFrequency("test", 0)
-    assert(expr.frequency === 60000)
+    val expr = ExpressionWithFrequency("test")
+    assert(expr.frequency === ApiSettings.defaultFrequency)
+  }
+
+  test("computes id") {
+    val expr = ExpressionWithFrequency("test")
+    assert(expr.id === "JoTTxcskW9L9buTqMKUA6XrOgUE")
+  }
+
+  test("id computation considers frequency") {
+    val exp1 = ExpressionWithFrequency("test", 10000)
+    val exp2 = ExpressionWithFrequency("test", 20000)
+    assert(exp1.id != exp2.id)
   }
 
   test("parses from json without frequency provides default") {
@@ -42,7 +57,8 @@ class ExpressionWithFrequencySuite extends FunSuite {
 
     val o = Json.decode[ExpressionWithFrequency](json)
     assert(o.expression === "this")
-    assert(o.frequency === 60000)
+    assert(o.frequency === ApiSettings.defaultFrequency)
+    assert(o.id === "_DoIEIh3HgW9w6qZ_9h3AVff5s4")
   }
 
   test("parses from json with frequency") {
@@ -51,12 +67,15 @@ class ExpressionWithFrequencySuite extends FunSuite {
         | {"expression": "this", "frequency": 9999}
       """.stripMargin
 
+    val target = ExpressionWithFrequency("this", 9999)
     val o = Json.decode[ExpressionWithFrequency](json)
+
     assert(o.expression === "this")
     assert(o.frequency === 9999)
+    assert(o.id === target.id)
   }
 
-  test("fails to parse from json with frequency non-integer") {
+  ignore("fails to parse from json with frequency non-integer") {
     val json =
       """
         | {"expression": "this", "frequency": "that"}
@@ -69,40 +88,40 @@ class ExpressionWithFrequencySuite extends FunSuite {
 
   test("Fails to parse from json with empty expression") {
     val json = "{\"expression\": \"\"}"
-    intercept[JsonProcessingException] {
+    intercept[IllegalArgumentException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
 
   test("Fails to parse from json with null expression") {
     val json = "{\"expression\": null}"
-    intercept[JsonProcessingException] {
+    intercept[IllegalArgumentException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
 
   test("Fails to parse from json with missing expression") {
     val json = "{}"
-    intercept[JsonProcessingException] {
+    intercept[IllegalArgumentException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
 
   test ("renders as json") {
-    val expected = "{\"expression\":\"this\",\"frequency\":99000}"
-    val json = Json.encode[ExpressionWithFrequency](ExpressionWithFrequency("this", 99000))
+    val expected = """{"expression":"this","frequency":99000,"id":"foo"}"""
+    val json = ExpressionWithFrequency("this", 99000, "foo").toJson
     assert(expected === json)
   }
 
   test ("renders as json with default frequency") {
-    val expected = "{\"expression\":\"this\",\"frequency\":60000}"
-    val json = Json.encode[ExpressionWithFrequency](ExpressionWithFrequency("this"))
+    val expected = "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"_DoIEIh3HgW9w6qZ_9h3AVff5s4\"}"
+    val json = ExpressionWithFrequency("this").toJson
     assert(expected === json)
   }
 
   test ("renders as json with frequency of 0") {
-    val expected = "{\"expression\":\"this\",\"frequency\":60000}"
-    val json = Json.encode[ExpressionWithFrequency](ExpressionWithFrequency("this", 0))
+    val expected = "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"_DoIEIh3HgW9w6qZ_9h3AVff5s4\"}"
+    val json = ExpressionWithFrequency("this", 0).toJson
     assert(expected === json)
   }
 

@@ -32,23 +32,23 @@ class EvaluateActor @Inject() (registry: Registry, sm: SubscriptionManager) exte
   private val uninterestingId = registry.createId("atlas.lwcapi.evaluate.uninterestingCount")
 
   def receive = {
-    case EvaluateRequest(Nil) =>
+    case EvaluateRequest(_, Nil) =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "empty expression payload")
-    case EvaluateRequest(items) =>
-      evaluate(items)
+    case EvaluateRequest(timestamp, items) =>
+      evaluate(timestamp, items)
       sender() ! HttpResponse(StatusCodes.OK)
     case _ =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "unknown payload")
   }
 
-  private def evaluate(items: List[Item]): Unit = {
+  private def evaluate(timestamp: Long, items: List[Item]): Unit = {
     registry.counter(evalsId).increment()
     registry.counter(itemsId).increment(items.size)
     items.foreach { item =>
       val actors = sm.actorsForExpression(item.id)
       if (actors.nonEmpty) {
         registry.counter(actorsId).increment(actors.size)
-        val message = SSEEvaluate(item)
+        val message = SSEEvaluate(timestamp, item)
         actors.foreach(actor => actor ! message)
       } else {
         registry.counter(uninterestingId).increment()

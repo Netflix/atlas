@@ -143,8 +143,14 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     logger.debug(s"pubsub add for expressionId ${req.id}")
     logRedisCommand(cmd, originator, "redisReceive", req)
     if (!alertmap.hasExpr(req.id)) {
-      val split = splitter.split(ExpressionWithFrequency(req.expression, req.frequency))
-      alertmap.addExpr(split)
+      val split = splitter.split(req.expression, req.frequency)
+      if (split.queries.size != 1) {
+        logger.error(s"Redis found more than one data expression: ${split.queries.size} ${req.expression}")
+      } else if (split.expressions.head.id != req.id) {
+        logger.error(s"Redis found an expression that mapped into a different id: ${req.id} != ${split.expressions.head.id} for ${req.expression}")
+      } else {
+        alertmap.addExpr(split.expressions.head, split.queries.head)
+      }
     }
     increment_counter(updatesId, "pubsub", actionExpression)
     ttlState(req.id) = TTLState.Active
@@ -157,10 +163,11 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
 
   def receive = {
     case Expression(split) =>
-      logger.debug(s"Adding and publishing expressionId ${split.id}")
       increment_counter(updatesId, "local", actionExpression)
-      alertmap.addExpr(split)
-      redisPublish(RedisExpressionRequest(split.id, split.expression, split.frequency))
+      split.queries.zip(split.expressions).foreach { case (query, expr) =>
+        alertmap.addExpr(expr, query)
+        redisPublish(RedisExpressionRequest(expr.id, expr.expression, expr.frequency))
+      }
     case Subscribe(streamId, expressionId) =>
       logger.debug(s"Adding sub streamId $streamId expressionID $expressionId")
       increment_counter(updatesId, "local", actionSubscribe)
@@ -241,8 +248,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
 
   private def connect(source: String): Option[RedisClient] = {
     var tries = 1
-    var success = false
-    while (!success) {
+    while (true) {
       try {
         logger.info(s"Connecting to redis($source), tries $tries")
 
@@ -282,7 +288,7 @@ object ExpressionDatabaseActor {
   // Commands as sent over the redis pubsub, or stored in the redis key-value store
   //
 
-  case class RedisExpressionRequest(id: String, expression: String, frequency: Long) extends JsonSupport
+  case class RedisExpressionRequest(id: String, expression: String, frequency: Int) extends JsonSupport
   object RedisExpressionRequest {
     def fromJson(json: String): RedisExpressionRequest = Json.decode[RedisExpressionRequest](json)
   }

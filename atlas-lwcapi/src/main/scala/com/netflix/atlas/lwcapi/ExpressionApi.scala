@@ -19,8 +19,7 @@ import javax.inject.Inject
 
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.json.Json
-import com.netflix.atlas.lwcapi.ExpressionDatabase.ReturnableExpression
+import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.http.{HttpResponse, StatusCodes}
@@ -31,6 +30,8 @@ case class ExpressionApi @Inject()(alertmap: ExpressionDatabase,
                                    implicit val actorRefFactory: ActorRefFactory)
   extends WebApi with StrictLogging {
   import ExpressionApi._
+
+  private val defaultURL = "http://..."
 
   private val expressionFetchesId = registry.createId("atlas.lwcapi.expressions.fetches")
   private val expressionCount = registry.distributionSummary("atlas.lwcapi.expressions.count")
@@ -43,7 +44,7 @@ case class ExpressionApi @Inject()(alertmap: ExpressionDatabase,
 
   private def handleReq(ctx: RequestContext, cluster: String): Unit = {
     val expressions = alertmap.expressionsForCluster(cluster)
-    val json = toJson(expressions)
+    val json = Return(defaultURL, ApiSettings.defaultFrequency, expressions).toJson
     ctx.responder ! HttpResponse(StatusCodes.OK, entity = json)
     registry.counter(expressionFetchesId.withTag("cluster", cluster)).increment()
     expressionCount.record(expressions.size)
@@ -51,7 +52,5 @@ case class ExpressionApi @Inject()(alertmap: ExpressionDatabase,
 }
 
 object ExpressionApi {
-  private def toJson(expressions: List[ReturnableExpression]): String = {
-    Json.encode(expressions)
-  }
+  case class Return(url: String, frequency: Long, expressions: List[ExpressionWithFrequency]) extends JsonSupport
 }

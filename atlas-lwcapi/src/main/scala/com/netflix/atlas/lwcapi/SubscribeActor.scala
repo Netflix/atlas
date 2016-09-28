@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 import akka.actor.{Actor, ActorLogging}
 import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.lwcapi.StreamApi.{SSESubscribe, SSEUnsubscribe}
+import com.netflix.atlas.lwcapi.StreamApi.SSESubscribe
 import com.netflix.spectator.api.Registry
 import spray.http.{HttpResponse, StatusCodes}
 
@@ -42,9 +42,6 @@ class SubscribeActor @Inject()(sm: SubscriptionManager,
     case SubscribeRequest(sinkId, expressions) =>
       subscribe(sinkId, expressions)
       sender() ! HttpResponse(StatusCodes.OK)
-    case UnsubscribeRequest(sinkId, expressions) =>
-      unsubscribe(sinkId, expressions)
-      sender() ! HttpResponse(StatusCodes.OK)
     case _ =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "unknown payload")
   }
@@ -53,30 +50,16 @@ class SubscribeActor @Inject()(sm: SubscriptionManager,
     registry.counter(evalsId.withTag("action", "subscribe")).increment()
     registry.counter(itemsId.withTag("action", "subscribe")).increment(expressions.size)
     expressions.foreach { expr =>
-      val split = splitter.split(expr)
+      val split = splitter.split(expr.expression, expr.frequency)
       dbActor ! ExpressionDatabaseActor.Expression(split)
       val registration = sm.registration(streamId)
       if (registration.isDefined) {
-        dbActor ! ExpressionDatabaseActor.Subscribe(streamId, split.id)
-        registration.get.actorRef ! SSESubscribe(split)
+        split.expressions.foreach(e =>
+          dbActor ! ExpressionDatabaseActor.Subscribe(streamId, e.id)
+        )
+        registration.get.actorRef ! SSESubscribe(expr.expression, split.expressions)
       } else {
         registry.counter(uninterestingId.withTag("action", "subscribe")).increment()
-      }
-    }
-  }
-
-  private def unsubscribe(streamId: String, expressions: List[ExpressionWithFrequency]): Unit = {
-    registry.counter(evalsId.withTag("action", "unsubscribe")).increment()
-    registry.counter(itemsId.withTag("action", "unsubscribe")).increment(expressions.size)
-    expressions.foreach { expr =>
-      val split = splitter.split(expr)
-      dbActor ! ExpressionDatabaseActor.Unsubscribe(streamId, split.id)
-      val registration = sm.registration(streamId)
-      if (registration.isDefined) {
-        dbActor ! ExpressionDatabaseActor.Subscribe(streamId, split.id)
-        registration.get.actorRef ! SSEUnsubscribe(split)
-      } else {
-        registry.counter(uninterestingId.withTag("action", "unsubscribe")).increment()
       }
     }
   }

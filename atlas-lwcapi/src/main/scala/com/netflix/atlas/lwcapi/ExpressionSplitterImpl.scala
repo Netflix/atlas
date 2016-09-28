@@ -61,21 +61,20 @@ class ExpressionSplitterImpl extends ExpressionSplitter {
     }
   }
 
-  private def makeId(frequency: Long, dataExpressions: List[QueryContainer]): String = {
-    val key = frequency + "~" + dataExpressions.map(e => e.dataExpr).mkString("~")
-    val md = java.security.MessageDigest.getInstance("SHA-1")
-    Base64.getUrlEncoder.withoutPadding.encodeToString(md.digest(key.getBytes("UTF-8")))
-  }
-
-  def split(e: ExpressionWithFrequency): SplitResult = synchronized {
-    val context = interpreter.execute(e.expression)
-    val queries = context.stack.flatMap {
+  def split(expression: String, frequency: Int): SplitResult = synchronized {
+    val context = interpreter.execute(expression)
+    val distinctStack = context.stack.distinct
+    val queries = distinctStack.flatMap {
       case ModelExtractors.PresentationType(t) =>
-        t.expr.dataExprs.map(e => QueryContainer(intern(compress(e.query)), e.toString))
+        t.expr.dataExprs.map(e => intern(compress(e.query)))
       case _ => throw new IllegalArgumentException("Expression is not a valid expression")
-    }.distinct.sorted
-    val id = makeId(e.frequency, queries)
-    SplitResult(e.expression, e.frequency, id, queries)
+    }
+    val expressions = distinctStack.flatMap {
+      case ModelExtractors.PresentationType(t) =>
+        t.expr.dataExprs.map(e => ExpressionWithFrequency(e.toString, frequency))
+      case _ => throw new IllegalArgumentException("Expression is not a valid expression")
+    }
+    SplitResult(queries, expressions)
   }
 
   private def simplify(query: Query): Query = {

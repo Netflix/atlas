@@ -20,19 +20,9 @@ import com.netflix.atlas.core.model.Query
 abstract class ExpressionSplitter() {
   import ExpressionSplitter._
 
-  def split(e: ExpressionWithFrequency): SplitResult
+  def split(expression: String, frequency: Int): SplitResult
 }
 
 object ExpressionSplitter {
-  case class SplitResult(expression: String, frequency: Long, id: String, split: List[QueryContainer])
-
-  case class QueryContainer(matchExpr: Query, dataExpr: String) extends Ordered[QueryContainer] {
-    override def toString: String = {
-      s"QueryContainer(<$matchExpr> <$dataExpr>)"
-    }
-
-    def compare(that: QueryContainer) = {
-      dataExpr compare that.dataExpr
-    }
-  }
+  case class SplitResult(queries: List[Query], expressions: List[ExpressionWithFrequency])
 }

@@ -23,7 +23,7 @@ object ApiSettings extends ApiSettings(ConfigManager.current)
 class ApiSettings(root: => Config) {
   private def config = root.getConfig("atlas.lwcapi")
 
-  def defaultFrequency: Long = config.getLong("register.default-frequency")
+  def defaultFrequency: Int = config.getInt("register.default-frequency")
 
   def redisHost: String = config.getString("redis.host")
   def redisPort: Int = config.getInt("redis.port")
