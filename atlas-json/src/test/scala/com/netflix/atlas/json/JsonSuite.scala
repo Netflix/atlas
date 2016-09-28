@@ -19,6 +19,7 @@ import java.math.BigInteger
 import java.util
 import java.util.regex.Pattern
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonToken
 import org.joda.time.DateTime
@@ -413,6 +414,18 @@ class JsonSuite extends FunSuite {
     val json = Json.encode(obj)
     assert(json === """{"foo":"abc"}""")
   }
+
+  test("object with defaults") {
+    val obj = Json.decode[JsonSuiteObjectWithDefaults]("{}")
+    val json = Json.encode(obj)
+    assert(json === """{"foo":42,"bar":"abc","values":[]}""")
+  }
+
+  test("object with missing key") {
+    val obj = Json.decode[JsonSuiteSimple]("{}")
+    val json = Json.encode(obj)
+    assert(json === """{"foo":0}""")
+  }
 }
 
 case object JsonSuiteObject
@@ -433,3 +446,5 @@ object JsonSuiteObjectWithClass {
 }
 
 case class JsonSuiteListDouble(vs: List[Double])
+
+case class JsonSuiteObjectWithDefaults(foo: Int = 42, bar: String = "abc", values: List[String] = Nil)
