@@ -79,7 +79,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   // before a refresh of those interested in that data occurs.
   //
   private val refreshTime = Math.max(ttl / 3 * 2, 1)
-  private val maxJitter = Math.max(ttl / 12, 1)
+  private val maxJitter = Math.max(ttl / 8, 1)
   private val startTime = System.currentTimeMillis()
   private var dbComplete = false
 
@@ -92,7 +92,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   }
 
   def nextTTLWithJitter(now: Long = System.currentTimeMillis()): Long = {
-    now + Math.max(refreshTime + maxJitter + Random.nextInt(maxJitter), refreshTime)
+    now + Math.max(refreshTime + maxJitter / 2 + Random.nextInt(maxJitter / 2), refreshTime)
   }
 
   def nextTTL(now: Long = System.currentTimeMillis()): Long = {
