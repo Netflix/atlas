@@ -288,7 +288,12 @@ object ExpressionDatabaseActor {
   // Commands as sent over the redis pubsub, or stored in the redis key-value store
   //
 
-  case class RedisExpressionRequest(id: String, expression: String, frequency: Int) extends JsonSupport
+  case class RedisExpressionRequest(id: String, expression: String, frequency: Int) extends JsonSupport {
+    //require(id != null && id.nonEmpty)
+    //require(expression != null && expression.nonEmpty)
+    //require(frequency > 0)
+  }
+
   object RedisExpressionRequest {
     def fromJson(json: String): RedisExpressionRequest = Json.decode[RedisExpressionRequest](json)
   }

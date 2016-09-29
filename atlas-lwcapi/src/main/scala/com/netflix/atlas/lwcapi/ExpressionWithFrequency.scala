@@ -17,15 +17,12 @@ package com.netflix.atlas.lwcapi
 
 import java.util.Base64
 
-import com.fasterxml.jackson.core.{JsonParser, Version}
-import com.fasterxml.jackson.databind.{DeserializationContext, JsonDeserializer, JsonNode}
-import com.fasterxml.jackson.databind.module.SimpleModule
 import com.netflix.atlas.json.{Json, JsonSupport}
 
 case class ExpressionWithFrequency(expression: String,
                                    frequency: Int = ApiSettings.defaultFrequency,
-                                   id: String = "") extends JsonSupport {
-  require(expression != null && expression.nonEmpty)
+                                   id: String = "badId") extends JsonSupport {
+  //require(expression != null && expression.nonEmpty)
 }
 
 object ExpressionWithFrequency {
