@@ -60,10 +60,9 @@ class ExpressionWithFrequencySuite extends FunSuite {
     val o = Json.decode[ExpressionWithFrequency](json)
     assert(o.expression === "this")
     assert(o.frequency === ApiSettings.defaultFrequency)
-    assert(o.id === "")
   }
 
-  test("parses from json with frequency") {
+  test("parses from json with frequency, without id") {
     val json =
       """
         | {"expression": "this", "frequency": 9999}

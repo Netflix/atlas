@@ -91,8 +91,12 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     self ! Tick
   }
 
-  def ttlWithJitter(now: Long = System.currentTimeMillis()): Long = {
-    now + Random.nextInt(maxJitter)
+  def nextTTLWithJitter(now: Long = System.currentTimeMillis()): Long = {
+    now + refreshTime + Random.nextInt(maxJitter / 2)
+  }
+
+  def nextTTL(now: Long = System.currentTimeMillis()): Long = {
+    now + refreshTime
   }
 
   def restartPubsub(): Unit = {
@@ -154,7 +158,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     }
     increment_counter(updatesId, "pubsub", actionExpression)
     ttlState(req.id) = TTLState.Active
-    ttlManager.touch(TTLItem(actionExpression, req.id), ttlWithJitter(now))
+    ttlManager.touch(TTLItem(actionExpression, req.id), nextTTLWithJitter(now))
   }
 
   def increment_counter(counter: Id, source: String, action: String, value: Long = 1) = {
@@ -188,7 +192,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     val json = req.toJson
     pubClient.publish(channel, s"$redisCmdExpression $uuid $json")
     logRedisCommand(redisCmdExpression, uuid, "redisSend", req)
-    ttlManager.touch(TTLItem(actionExpression, req.id), ttlWithJitter())
+    ttlManager.touch(TTLItem(actionExpression, req.id), nextTTL())
     ttlState(req.id) = TTLState.Active
     increment_counter(bytesWrittenId, "local", actionExpression, json.length)
     increment_counter(messagesWrittenId, "local", actionExpression)
@@ -238,7 +242,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
         } else {
           redisPublish(RedisExpressionRequest(split.get.id, split.get.expression, split.get.frequency))
         }
-        ttlManager.touch(item, ttlWithJitter(now))
+        ttlManager.touch(item, nextTTL(now))
       case TTLState.PendingDelete =>
         logger.debug(s"TTL: Deleting ${item.id}")
         ttlState.remove(item.id)
