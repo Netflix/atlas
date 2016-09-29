@@ -70,7 +70,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     val allStates = Seq(Active, PendingDelete)
   }
 
-  private val ttlManager = new TTLManager[TTLItem]()
+  private val ttlManager = new TTLManager[String]()
   private val ttlState = mutable.Map[String, TTLState.EnumVal]().withDefaultValue(TTLState.NotPresent)
 
   //
@@ -78,8 +78,8 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   // It must be smaller than ttl so items will not expire out of caches
   // before a refresh of those interested in that data occurs.
   //
-  private val refreshTime = ttl / 2
-  private val maxJitter = ttl / 10 + 1
+  private val refreshTime = Math.max(ttl / 3 * 2, 1)
+  private val maxJitter = Math.max(ttl / 12, 1)
   private val startTime = System.currentTimeMillis()
   private var dbComplete = false
 
@@ -92,7 +92,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   }
 
   def nextTTLWithJitter(now: Long = System.currentTimeMillis()): Long = {
-    now + refreshTime + Random.nextInt(maxJitter / 2)
+    now + Math.max(refreshTime + maxJitter + Random.nextInt(maxJitter), refreshTime)
   }
 
   def nextTTL(now: Long = System.currentTimeMillis()): Long = {
@@ -158,7 +158,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     }
     increment_counter(updatesId, "pubsub", actionExpression)
     ttlState(req.id) = TTLState.Active
-    ttlManager.touch(TTLItem(actionExpression, req.id), nextTTLWithJitter(now))
+    ttlManager.touch(req.id, nextTTLWithJitter(now))
   }
 
   def increment_counter(counter: Id, source: String, action: String, value: Long = 1) = {
@@ -192,7 +192,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     val json = req.toJson
     pubClient.publish(channel, s"$redisCmdExpression $uuid $json")
     logRedisCommand(redisCmdExpression, uuid, "redisSend", req)
-    ttlManager.touch(TTLItem(actionExpression, req.id), nextTTL())
+    ttlManager.touch(req.id, nextTTL())
     ttlState(req.id) = TTLState.Active
     increment_counter(bytesWrittenId, "local", actionExpression, json.length)
     increment_counter(messagesWrittenId, "local", actionExpression)
@@ -219,34 +219,33 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     while (!done) {
       val top = ttlManager.needsTouch(targetTime)
       if (top.isDefined) {
-        logger.debug(s"TTL: Checking ${top.get.flavor} ${top.get.id}")
-      }
-      top match {
-        case Some(TTLItem(`actionExpression`, id)) => touchExpression(top.get, now)
-        case _ => done = true
+        logger.debug(s"TTL: Checking ${top.get}")
+        touchExpression(top.get, now)
+      } else {
+        done = true
       }
     }
   }
 
-  def touchExpression(item: TTLItem, now: Long) = {
-    val state = ttlState(item.id)
+  def touchExpression(id: String, now: Long) = {
+    val state = ttlState(id)
     state match {
       case TTLState.NotPresent => // do nothing
-        logger.warn(s"TTL: Expression state for ${item.id} is strangely NotPresent")
+        logger.warn(s"TTL: Expression state for $id is strangely NotPresent")
       case TTLState.Active =>
-        val subscriberPresent = sm.actorsForExpression(item.id).nonEmpty
-        val split = alertmap.expr(item.id)
+        val subscriberPresent = sm.actorsForExpression(id).nonEmpty
+        val split = alertmap.expr(id)
         if (!subscriberPresent || split.isEmpty) {
-          ttlState(item.id) = TTLState.PendingDelete
-          logger.debug(s"TTL: Expression state for ${item.id} set to PendingDelete")
+          ttlState(id) = TTLState.PendingDelete
+          logger.debug(s"TTL: Expression state for $id set to PendingDelete")
         } else {
           redisPublish(RedisExpressionRequest(split.get.id, split.get.expression, split.get.frequency))
         }
-        ttlManager.touch(item, nextTTL(now))
+        ttlManager.touch(id, nextTTL(now))
       case TTLState.PendingDelete =>
-        logger.debug(s"TTL: Deleting ${item.id}")
-        ttlState.remove(item.id)
-        alertmap.delExpr(item.id)
+        logger.debug(s"TTL: Deleting $id")
+        ttlState.remove(id)
+        alertmap.delExpr(id)
     }
   }
 

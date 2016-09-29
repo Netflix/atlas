@@ -1,8 +1,0 @@
-{
-  "streamId": "sse-test",
-  "expressions": [
-    {
-      "expression": "nf.cluster,skan_test-iep,:eq,name,totalCpu,:eq,:and,:avg,(,nf.node,),:by"
-    }
-  ]
-}
