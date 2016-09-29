@@ -39,7 +39,7 @@ class SubscribeApiJsonSuite extends FunSuite {
 
   test("decode missing expression list throws") {
     intercept[IllegalArgumentException] {
-      SubscribeApi.SubscribeRequest.fromJson("""{}""")
+      SubscribeApi.SubscribeRequest.fromJson("{}")
     }
   }
 
