@@ -36,7 +36,13 @@ class CaseClassDeserializer(
   private val desc = Reflection.createDescription(javaType.getRawClass)
 
   override def deserialize(p: JsonParser, ctxt: DeserializationContext): AnyRef = {
-    val obj = desc.newInstance
+    val args = desc.newInstanceArgs
+
+    val t = p.getCurrentToken
+    if (t != JsonToken.START_OBJECT) {
+      ctxt.reportMappingException(s"found ${t.name()}, but START_OBJECT is required")
+    }
+
     p.nextToken()
     while (p.getCurrentToken == JsonToken.FIELD_NAME) {
       val field = p.getText
@@ -46,10 +52,11 @@ class CaseClassDeserializer(
         p.skipChildren()
       } else {
         val jt = config.getTypeFactory.constructType(ftype.get)
-        desc.setField(obj, field, ctxt.readValue(p, jt))
+        desc.setField(args, field, ctxt.readValue(p, jt))
       }
       p.nextToken()
     }
-    obj
+
+    desc.newInstance(args)
   }
 }

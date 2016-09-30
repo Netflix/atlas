@@ -24,27 +24,28 @@ class ReflectionSuite extends FunSuite {
 
   test("create instance") {
     val desc = Reflection.createDescription(classOf[Simple])
-    val obj = desc.newInstance
-    assert(obj === Simple(27, null))
+    val args = desc.newInstanceArgs
+    assert(desc.newInstance(args) === Simple(27, null))
 
-    desc.setField(obj, "foo", 42)
-    assert(obj === Simple(42, null))
+    desc.setField(args, "foo", 42)
+    assert(desc.newInstance(args) === Simple(42, null))
 
-    desc.setField(obj, "bar", "abc")
-    assert(obj === Simple(42, "abc"))
+    desc.setField(args, "bar", "abc")
+    assert(desc.newInstance(args) === Simple(42, "abc"))
   }
 
   test("create instance, additional field") {
     val desc = Reflection.createDescription(classOf[Simple])
-    val obj = desc.newInstance
-    desc.setField(obj, "notPresent", 42)
-    assert(obj === Simple(27, null))
+    val args = desc.newInstanceArgs
+    desc.setField(args, "notPresent", 42)
+    assert(desc.newInstance(args) === Simple(27, null))
   }
 
   test("create instance, invalid type") {
     val desc = Reflection.createDescription(classOf[Simple])
-    val obj = desc.newInstance
-    intercept[IllegalArgumentException] { desc.setField(obj, "bar", 42) }
+    val args = desc.newInstanceArgs
+    desc.setField(args, "bar", 42)
+    intercept[IllegalArgumentException] { desc.newInstance(args) }
   }
 
   test("isCaseClass") {

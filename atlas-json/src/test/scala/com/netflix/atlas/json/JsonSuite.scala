@@ -221,7 +221,7 @@ class JsonSuite extends FunSuite {
   }
 
   // Ugly nested generics, just to see if it would work
-  ignore("scala List[Map[String, List[Option[Int]]]]") {
+  test("scala List[Map[String, List[Option[Int]]]]") {
     val v = List(Map("foo" -> List(Some(42), None, Some(43))))
     assert(encode(v) === """[{"foo":[42,null,43]}]""")
     assert(decode[List[Map[String, List[Option[Int]]]]](encode(v)) === v)

@@ -95,35 +95,36 @@ private[json] object Reflection {
     // Create a map to allow quick lookup of the field and ensure that we have
     // allowed access to all fields.
     private val fields = {
-      val fs = ClassUtil.getDeclaredFields(cls)
-      fs.foreach(f => ClassUtil.checkAndFixAccess(f, true))
-      fs.map(f => f.getName -> f).toMap
+      val ps = params.zipWithIndex.map { case (p, i) =>
+        val field = cls.getDeclaredField(p.name)
+        p.name -> FieldInfo(i, field.getType, field.getGenericType)
+      }
+      ps.toMap
     }
 
-    // Default parameter values used when constructing the object.
-    private val dfltParams = params.map { p =>
-      p.dflt.getOrElse {
-        val fieldCls = fields(p.name).getType
-        if (fieldCls.isPrimitive) ClassUtil.defaultValue(fieldCls)
-        else if (fieldCls.isAssignableFrom(classOf[Option[_]])) None
-        else null
+    // Default parameter values for the object. A copy of this will be returned to
+    // fill in while parsing the JSON structure.
+    private val dfltParams = {
+      val ps = new Array[Any](params.size)
+      params.zipWithIndex.foreach { case (p, i) =>
+        ps(i) = p.dflt.getOrElse { fields(p.name).defaultValue }
       }
+      ps
     }
+
+    /** Create a new instance of the case class using the provided arguments. */
+    def newInstance(args: Array[Any]): AnyRef = ctor.apply(args: _*).asInstanceOf[AnyRef]
 
     /**
-      * Creates a new instance of the case class using default values for all parameters.
+      * Creates a new parameter list for the case class using default values for all parameters.
       * If there is a default specified in the code, then it will be used. Otherwise, the
       * value will be `null` or `None` if the field is an `Option`.
       */
-    def newInstance: AnyRef = {
-      ctor.apply(dfltParams: _*).asInstanceOf[AnyRef]
-    }
+    def newInstanceArgs: Array[Any] = dfltParams.clone()
 
-    /**
-      * Set the value for a particular field on the instance.
-      */
-    def setField(instance: AnyRef, name: String, value: Any): Unit = {
-      fields.get(name).foreach { f => f.set(instance, value) }
+    /** Set the value for a particular field on the instance. */
+    def setField(args: Array[Any], name: String, value: Any): Unit = {
+      fields.get(name).foreach { f => args(f.pos) = value }
     }
 
     /**
@@ -131,7 +132,17 @@ private[json] object Reflection {
       * values.
       */
     def fieldType(name: String): Option[java.lang.reflect.Type] = {
-      fields.get(name).map(_.getGenericType)
+      fields.get(name).map(_.jtype)
+    }
+  }
+
+  type JType = java.lang.reflect.Type
+
+  case class FieldInfo(pos: Int, cls: Class[_], jtype: JType) {
+    def defaultValue: Any = cls match {
+      case c if c.isAssignableFrom(classOf[Option[_]]) => None
+      case c if c.isPrimitive                          => ClassUtil.defaultValue(cls)
+      case _                                           => null
     }
   }
 }
