@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.cloudwatch
 
+import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
@@ -24,6 +25,7 @@ import akka.actor.Props
 import akka.routing.FromConfig
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch
 import com.amazonaws.services.cloudwatch.model.Datapoint
+import com.amazonaws.services.cloudwatch.model.StandardUnit
 import com.netflix.atlas.poller.Messages
 import com.netflix.spectator.api.Functions
 import com.netflix.spectator.api.Registry
@@ -160,13 +162,12 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   /** Add a datapoint to the current batch. */
   private def processMetricData(data: MetricData): Unit = {
     pendingGets.decrementAndGet()
-    data.data.foreach { d =>
-      val meta = data.meta
-      val ts = tagger(meta.dimensions) ++ meta.definition.tags + ("name" -> meta.definition.alias)
-      val now = System.currentTimeMillis()
-      val newValue = meta.convert(d)
-      metricBatch += new AtlasDatapoint(ts, now, newValue)
-    }
+    val d = data.datapoint
+    val meta = data.meta
+    val ts = tagger(meta.dimensions) ++ meta.definition.tags + ("name" -> meta.definition.alias)
+    val now = System.currentTimeMillis()
+    val newValue = meta.convert(d)
+    metricBatch += new AtlasDatapoint(ts, now, newValue)
     flush()
   }
 
@@ -182,6 +183,14 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
 }
 
 object CloudWatchPoller {
+
+  private val Zero = new Datapoint()
+    .withMinimum(0.0)
+    .withMaximum(0.0)
+    .withSum(0.0)
+    .withSampleCount(0.0)
+    .withTimestamp(new Date())
+    .withUnit(StandardUnit.None)
 
   private def getCategories(config: Config): List[MetricCategory] = {
     import scala.collection.JavaConverters._
@@ -200,7 +209,9 @@ object CloudWatchPoller {
 
   case class GetMetricData(metric: MetricMetadata)
 
-  case class MetricData(meta: MetricMetadata, data: Option[Datapoint])
+  case class MetricData(meta: MetricMetadata, data: Option[Datapoint]) {
+    def datapoint: Datapoint = data.getOrElse(Zero)
+  }
 
   case class ListMetrics(categories: List[MetricCategory])
 
