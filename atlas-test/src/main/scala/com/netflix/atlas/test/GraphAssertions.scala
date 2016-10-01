@@ -18,6 +18,7 @@ package com.netflix.atlas.test
 import java.awt.image.RenderedImage
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.InputStream
 
@@ -49,7 +50,7 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
     val report = <html>
       <head><title>{clazz.getSimpleName}</title></head>
       <body><h1>{clazz.getSimpleName}</h1><hr/> {
-        val dir = new File(goldenDir)
+        val dir = new File(targetDir)
         dir.listFiles.flatMap { f =>
           val diffImg = new File(s"$targetDir/diff_${f.getName}")
           if (!f.getName.endsWith(".png") || (diffsOnly && !diffImg.isFile)) None else {
@@ -58,7 +59,7 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
               <table border="1">
                 <tr><th>Golden</th><th>Test</th><th>Diff</th></tr>
                 <tr valign="top">
-                  <td><img src={f.getCanonicalPath}/></td>
+                  <td><img src={goldenDir + '/' + f.getName}/></td>
                   <td><img src={f.getName}/></td>
                   {
                     if (diffImg.isFile)
@@ -106,7 +107,9 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
 
   def assertEquals(i1: PngImage, f: String, bless: Boolean = false) {
     if (bless) blessImage(i1, f)
-    val i2 = getImage(f)
+    val i2 = try getImage(f) catch {
+      case e: FileNotFoundException => PngImage.error(e.getMessage, 400, 300)
+    }
     val diff = PngImage.diff(i1.data, i2.data)
     writeImage(i1, targetDir, f)
     if (diff.metadata("identical") != "true")
