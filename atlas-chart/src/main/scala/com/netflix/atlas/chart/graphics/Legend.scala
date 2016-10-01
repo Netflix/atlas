@@ -18,6 +18,7 @@ package com.netflix.atlas.chart.graphics
 import java.awt.Font
 import java.awt.Graphics2D
 
+import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
 
 /**
@@ -38,18 +39,20 @@ case class Legend(
     showStats: Boolean,
     maxEntries: Int) extends Element with VariableHeight {
 
+  private val numEntries = plot.data.size
+
   private val header = HorizontalPadding(5) :: label.toList.map { str =>
     val bold = Constants.normalFont.deriveFont(Font.BOLD)
     val style = Style(color = plot.getAxisColor)
     Text(str, font = bold, alignment = TextAlignment.LEFT, style = style)
   }
 
-  private val entries = plot.lines.take(maxEntries).flatMap { line =>
-    List(HorizontalPadding(2), LegendEntry(plot, line, showStats))
+  private val entries = plot.data.take(maxEntries).flatMap { data =>
+    List(HorizontalPadding(2), LegendEntry(plot, data, showStats))
   }
 
-  private val footer = if (plot.lines.size <= maxEntries) Nil else {
-    val remaining = plot.lines.size - maxEntries
+  private val footer = if (numEntries <= maxEntries) Nil else {
+    val remaining = numEntries - maxEntries
     val txt = Text(s"... $remaining suppressed ...", alignment = TextAlignment.LEFT)
     List(HorizontalPadding(2), txt)
   }

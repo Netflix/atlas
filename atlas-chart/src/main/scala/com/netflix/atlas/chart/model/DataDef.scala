@@ -25,6 +25,7 @@ import com.netflix.atlas.core.model.TimeSeries
  * Defines data to show in the graph.
  */
 sealed trait DataDef {
+  def label: String
   def color: Color
   def withColor(c: Color): DataDef
 }
@@ -50,6 +51,7 @@ case class LineDef(
     lineWidth: Float = 1.0f,
     legendStats: SummaryStats = SummaryStats.empty) extends DataDef {
 
+  def label: String = data.label
   def withColor(c: Color) = copy(color = c)
 }
 
@@ -62,10 +64,11 @@ case class LineDef(
  *     Ending value for the span.
  * @param color
  *     Color to use when rendering the span.
- * @param label
+ * @param labelOpt
  *     Label associated with the span to use in the legend.
  */
-case class HSpanDef(v1: Double, v2: Double, color: Color, label: Option[String]) extends DataDef {
+case class HSpanDef(v1: Double, v2: Double, color: Color, labelOpt: Option[String]) extends DataDef {
+  def label: String = labelOpt.getOrElse(s"span from $v1 to $v2")
   def withColor(c: Color) = copy(color = c)
 }
 
@@ -78,9 +81,22 @@ case class HSpanDef(v1: Double, v2: Double, color: Color, label: Option[String])
  *     Ending time for the span.
  * @param color
  *     Color to use when rendering the span.
- * @param label
+ * @param labelOpt
  *     Label associated with the span to use in the legend.
  */
-case class VSpanDef(t1: Instant, t2: Instant, color: Color, label: Option[String]) extends DataDef {
+case class VSpanDef(t1: Instant, t2: Instant, color: Color, labelOpt: Option[String]) extends DataDef {
+  def label: String = labelOpt.getOrElse(s"span from $t1 to $t2")
+  def withColor(c: Color) = copy(color = c)
+}
+
+/**
+  * Definition for a message that is included in the legend, but not displayed.
+  *
+  * @param label
+  *     Label associated with the span to use in the legend.
+  * @param color
+  *     Color to use when rendering the text in the legend.
+  */
+case class MessageDef(label: String, color: Color = Color.BLACK) extends DataDef {
   def withColor(c: Color) = copy(color = c)
 }

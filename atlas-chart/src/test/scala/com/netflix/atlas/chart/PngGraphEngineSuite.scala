@@ -355,6 +355,21 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     check(fname, graphDef)
   }
 
+  test("single_line_message") {
+    val spans = List(MessageDef("arbitrary message in the legend", Color.BLUE))
+
+    val plotDef = PlotDef(spans ::: label(simpleSeriesDef(400)), axisColor = Some(Color.BLACK))
+
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(plotDef)
+    )
+
+    val fname = s"${prefix}_single_line_message.png"
+    check(fname, graphDef)
+  }
+
   private def doubleLine(name: String, f: GraphDef => GraphDef): Unit = {
     lines(name, Seq(400, 150), f)
   }

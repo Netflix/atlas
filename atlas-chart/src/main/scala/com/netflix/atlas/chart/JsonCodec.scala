@@ -139,9 +139,10 @@ private[this] object JsonCodec {
 
   private def writeDataDef(gen: JsonGenerator, plot: Int, data: DataDef, start: Long, end: Long): Unit = {
     data match {
-      case v: LineDef  => writeLineDef(gen, plot, v, start, end)
-      case v: HSpanDef => writeHSpanDef(gen, plot, v)
-      case v: VSpanDef => writeVSpanDef(gen, plot, v)
+      case v: LineDef    => writeLineDef(gen, plot, v, start, end)
+      case v: HSpanDef   => writeHSpanDef(gen, plot, v)
+      case v: VSpanDef   => writeVSpanDef(gen, plot, v)
+      case v: MessageDef => writeMessageDef(gen, plot, v)
     }
   }
 
@@ -170,7 +171,7 @@ private[this] object JsonCodec {
     gen.writeStartObject()
     gen.writeStringField("type", "hspan")
     gen.writeNumberField("plot", plot)
-    span.label.foreach { v => gen.writeStringField("label", v) }
+    span.labelOpt.foreach { v => gen.writeStringField("label", v) }
     gen.writeFieldName("color")
     writeColor(gen, span.color)
     gen.writeNumberField("v1", span.v1)
@@ -182,11 +183,21 @@ private[this] object JsonCodec {
     gen.writeStartObject()
     gen.writeStringField("type", "vspan")
     gen.writeNumberField("plot", plot)
-    span.label.foreach { v => gen.writeStringField("label", v) }
+    span.labelOpt.foreach { v => gen.writeStringField("label", v) }
     gen.writeFieldName("color")
     writeColor(gen, span.color)
     gen.writeNumberField("t1", span.t1.toEpochMilli)
     gen.writeNumberField("t2", span.t2.toEpochMilli)
+    gen.writeEndObject()
+  }
+
+  private def writeMessageDef(gen: JsonGenerator, plot: Int, msg: MessageDef): Unit = {
+    gen.writeStartObject()
+    gen.writeStringField("type", "message")
+    gen.writeNumberField("plot", plot)
+    gen.writeStringField("label", msg.label)
+    gen.writeFieldName("color")
+    writeColor(gen, msg.color)
     gen.writeEndObject()
   }
 
@@ -217,6 +228,9 @@ private[this] object JsonCodec {
         case "vspan" =>
           val plot = node.get("plot").asInt(0)
           data += plot -> toVSpanDef(node)
+        case "message" =>
+          val plot = node.get("plot").asInt(0)
+          data += plot -> toMessageDef(node)
       }
     }
 
@@ -296,19 +310,26 @@ private[this] object JsonCodec {
 
   private def toHSpanDef(node: JsonNode): HSpanDef = {
     HSpanDef(
-      v1     = node.get("v1").asDouble(),
-      v2     = node.get("v2").asDouble(),
-      color  = toColor(node.get("color")),
-      label  = Option(node.get("label")).map(_.asText())
+      v1       = node.get("v1").asDouble(),
+      v2       = node.get("v2").asDouble(),
+      color    = toColor(node.get("color")),
+      labelOpt = Option(node.get("label")).map(_.asText())
     )
   }
 
   private def toVSpanDef(node: JsonNode): VSpanDef = {
     VSpanDef(
-      t1     = Instant.ofEpochMilli(node.get("t1").asLong()),
-      t2     = Instant.ofEpochMilli(node.get("t2").asLong()),
-      color  = toColor(node.get("color")),
-      label  = Option(node.get("label")).map(_.asText())
+      t1       = Instant.ofEpochMilli(node.get("t1").asLong()),
+      t2       = Instant.ofEpochMilli(node.get("t2").asLong()),
+      color    = toColor(node.get("color")),
+      labelOpt = Option(node.get("label")).map(_.asText())
+    )
+  }
+
+  private def toMessageDef(node: JsonNode): MessageDef = {
+    MessageDef(
+      color    = toColor(node.get("color")),
+      label    = node.get("label").asText()
     )
   }
 

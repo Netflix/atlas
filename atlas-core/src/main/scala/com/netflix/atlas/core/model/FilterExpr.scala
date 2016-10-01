@@ -121,7 +121,8 @@ object FilterExpr {
             }
           }
       }
-      ResultSet(this, result, rs1.state ++ rs2.state)
+      val msg = s"${result.size} of ${rs1.data.size} lines matched filter"
+      ResultSet(this, result, rs1.state ++ rs2.state, List(msg))
     }
   }
 }
