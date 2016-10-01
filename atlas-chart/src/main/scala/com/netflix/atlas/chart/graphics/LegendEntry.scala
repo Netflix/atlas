@@ -18,6 +18,7 @@ package com.netflix.atlas.chart.graphics
 import java.awt.Color
 import java.awt.Graphics2D
 
+import com.netflix.atlas.chart.model.DataDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.TickLabelMode
@@ -28,15 +29,18 @@ import com.netflix.atlas.core.util.UnitPrefix
   *
   * @param plot
   *     Definition for the plot containing the line.
-  * @param line
-  *     Definition for the line.
+  * @param data
+  *     Definition for the data element.
   * @param showStats
   *     If true then summary stats will be shown below the label for the line.
   */
-case class LegendEntry(plot: PlotDef, line: LineDef, showStats: Boolean)
+case class LegendEntry(plot: PlotDef, data: DataDef, showStats: Boolean)
     extends Element with FixedHeight {
+
+  private def shouldShowStats: Boolean = showStats && data.isInstanceOf[LineDef]
+
   override def height: Int = {
-    if (!showStats) Constants.normalFontDims.height else {
+    if (!shouldShowStats) Constants.normalFontDims.height else {
       Constants.normalFontDims.height + Constants.smallFontDims.height * 3
     }
   }
@@ -49,7 +53,7 @@ case class LegendEntry(plot: PlotDef, line: LineDef, showStats: Boolean)
     // background color of the chart.
     g.setColor(Color.WHITE)
     g.fillRect(x1 + 2, y1 + 2, d, d)
-    g.setColor(line.color)
+    g.setColor(data.color)
     g.fillRect(x1 + 2, y1 + 2, d, d)
 
     // Border for the color box
@@ -57,30 +61,31 @@ case class LegendEntry(plot: PlotDef, line: LineDef, showStats: Boolean)
     g.drawRect(x1 + 2, y1 + 2, d, d)
 
     // Draw the label
-    val txt = Text(line.data.label, alignment = TextAlignment.LEFT)
+    val txt = Text(data.label, alignment = TextAlignment.LEFT)
     val truncated = txt.truncate(x2 - x1 - d - 4)
     truncated.draw(g, x1 + d + 4, y1, x2, y2)
 
-    if (showStats) {
-      val stats = line.legendStats
-      val max = format(stats.max)
-      val min = format(stats.min)
-      val avg = format(stats.avg)
-      val last = format(stats.last)
-      val total = format(stats.total)
-      val count = format(stats.count)
-      val rows = List(
-        "    Max : %s    Min  : %s".format(max, min),
-        "    Avg : %s    Last : %s".format(avg, last),
-        "    Tot : %s    Cnt  : %s".format(total, count)
-      )
-      val offset = y1 + Constants.normalFontDims.height
-      val rowHeight = Constants.smallFontDims.height
-      rows.zipWithIndex.foreach { case (row, i) =>
-        val txt = Text(row, font = Constants.smallFont, alignment = TextAlignment.LEFT)
-        txt.draw(g, x1 + d + 4, offset + i * rowHeight, x2, y2)
-      }
-
+    data match {
+      case line: LineDef if showStats =>
+        val stats = line.legendStats
+        val max = format(stats.max)
+        val min = format(stats.min)
+        val avg = format(stats.avg)
+        val last = format(stats.last)
+        val total = format(stats.total)
+        val count = format(stats.count)
+        val rows = List(
+          "    Max : %s    Min  : %s".format(max, min),
+          "    Avg : %s    Last : %s".format(avg, last),
+          "    Tot : %s    Cnt  : %s".format(total, count)
+        )
+        val offset = y1 + Constants.normalFontDims.height
+        val rowHeight = Constants.smallFontDims.height
+        rows.zipWithIndex.foreach { case (row, i) =>
+          val txt = Text(row, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+          txt.draw(g, x1 + d + 4, offset + i * rowHeight, x2, y2)
+        }
+      case _ =>
     }
   }
 
