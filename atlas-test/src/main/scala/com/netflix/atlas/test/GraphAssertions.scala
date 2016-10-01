@@ -112,8 +112,15 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
     }
     val diff = PngImage.diff(i1.data, i2.data)
     writeImage(i1, targetDir, f)
+
+    // For reporting we use the existence of the diff image to determine whether
+    // to show an entry. Only create if there is a diff and remove old diffs if
+    // it is now the same to avoid a false report based on an old diff image in
+    // the workspace.
     if (diff.metadata("identical") != "true")
       writeImage(diff, targetDir, "diff_" + f)
+    else
+      new File(s"$targetDir/$f").delete()
     assertEquals(i1, i2)
   }
 
