@@ -45,13 +45,14 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
     }
   }
 
-  def generateReport(clazz: Class[_]) {
+  def generateReport(clazz: Class[_], diffsOnly: Boolean = true) {
     val report = <html>
       <head><title>{clazz.getSimpleName}</title></head>
       <body><h1>{clazz.getSimpleName}</h1><hr/> {
         val dir = new File(goldenDir)
         dir.listFiles.flatMap { f =>
-          if (!f.getName.endsWith(".png")) None else {
+          val diffImg = new File(s"$targetDir/diff_${f.getName}")
+          if (!f.getName.endsWith(".png") || (diffsOnly && !diffImg.isFile)) None else {
             val table = <div>
               <h2>{f.getName}</h2>
               <table border="1">
@@ -59,7 +60,12 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
                 <tr valign="top">
                   <td><img src={f.getCanonicalPath}/></td>
                   <td><img src={f.getName}/></td>
-                  <td><img src={s"diff_${f.getName}"}/></td>
+                  {
+                    if (diffImg.isFile)
+                      <td><img src={s"diff_${f.getName}"}/></td>
+                    else
+                      <td></td>
+                  }
                 </tr>
               </table>
             </div>
@@ -103,7 +109,8 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
     val i2 = getImage(f)
     val diff = PngImage.diff(i1.data, i2.data)
     writeImage(i1, targetDir, f)
-    writeImage(diff, targetDir, "diff_" + f)
+    if (diff.metadata("identical") != "true")
+      writeImage(diff, targetDir, "diff_" + f)
     assertEquals(i1, i2)
   }
 
