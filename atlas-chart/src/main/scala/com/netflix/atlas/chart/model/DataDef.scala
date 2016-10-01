@@ -92,11 +92,11 @@ case class VSpanDef(t1: Instant, t2: Instant, color: Color, labelOpt: Option[Str
 /**
   * Definition for a message that is included in the legend, but not displayed.
   *
-  * @param color
-  *     Color to use when rendering the text in the legend.
   * @param label
   *     Label associated with the span to use in the legend.
+  * @param color
+  *     Color to use when rendering the text in the legend.
   */
-case class MessageDef(color: Color, label: String) extends DataDef {
+case class MessageDef(label: String, color: Color = Color.BLACK) extends DataDef {
   def withColor(c: Color) = copy(color = c)
 }

@@ -356,7 +356,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("single_line_message") {
-    val spans = List(MessageDef(Color.BLUE, "arbitrary message in the legend"))
+    val spans = List(MessageDef("arbitrary message in the legend", Color.BLUE))
 
     val plotDef = PlotDef(spans ::: label(simpleSeriesDef(400)), axisColor = Some(Color.BLACK))
 

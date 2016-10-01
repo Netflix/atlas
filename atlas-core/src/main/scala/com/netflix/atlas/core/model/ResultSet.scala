@@ -19,4 +19,5 @@ package com.netflix.atlas.core.model
 case class ResultSet(
     expr: TimeSeriesExpr,
     data: List[TimeSeries] = Nil,
-    state: Map[StatefulExpr, Any] = Map.empty)
+    state: Map[StatefulExpr, Any] = Map.empty,
+    messages: List[String] = Nil)

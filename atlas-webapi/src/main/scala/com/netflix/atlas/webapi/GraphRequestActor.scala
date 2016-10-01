@@ -96,8 +96,21 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
       val axisPalette = axisCfg.palette.fold(palette) { v => Palette.create(v).iterator }
 
+      var messages = List.empty[String]
       val lines = exprs.flatMap { s =>
-        val ts = s.expr.eval(request.evalContext, data).data
+        val result = s.expr.eval(request.evalContext, data)
+
+        // Pick the last non empty message to appear. Right now they are only used
+        // as a test for providing more information about the state of filtering. These
+        // can quickly get complicated when used with other features. For example,
+        // sorting can mix and match lines across multiple expressions. Also binary
+        // math operations that combine the results of multiple filter expressions or
+        // multi-level group by with filtered input. For now this is just an
+        // experiment for the common simple case to see how it impacts usability
+        // when dealing with filter expressions that remove some of the lines.
+        if (result.messages.nonEmpty) messages = result.messages.take(1)
+
+        val ts = result.data
         val labelledTS = ts.map { t =>
           val offset = Strings.toString(Duration.ofMillis(s.offset))
           val newT = t.withTags(t.tags + (TagKey.offset -> offset))
@@ -133,7 +146,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
       val sortedLines = sort(warnings, axisCfg.sort, axisCfg.order.contains("desc"), lines)
 
       PlotDef(
-        data = sortedLines,
+        data = sortedLines ::: messages.map(s => MessageDef(s"... $s ...")),
         lower = axisCfg.lower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
         upper = axisCfg.upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
         ylabel = axisCfg.ylabel,
