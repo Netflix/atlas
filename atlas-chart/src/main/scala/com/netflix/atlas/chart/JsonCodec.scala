@@ -228,6 +228,9 @@ private[this] object JsonCodec {
         case "vspan" =>
           val plot = node.get("plot").asInt(0)
           data += plot -> toVSpanDef(node)
+        case "message" =>
+          val plot = node.get("plot").asInt(0)
+          data += plot -> toMessageDef(node)
       }
     }
 
@@ -320,6 +323,13 @@ private[this] object JsonCodec {
       t2       = Instant.ofEpochMilli(node.get("t2").asLong()),
       color    = toColor(node.get("color")),
       labelOpt = Option(node.get("label")).map(_.asText())
+    )
+  }
+
+  private def toMessageDef(node: JsonNode): MessageDef = {
+    MessageDef(
+      color    = toColor(node.get("color")),
+      label    = node.get("label").asText()
     )
   }
 
