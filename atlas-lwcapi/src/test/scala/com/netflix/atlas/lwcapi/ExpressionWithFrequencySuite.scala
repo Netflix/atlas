@@ -15,7 +15,10 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.fasterxml.jackson.core.JsonProcessingException
+import java.lang.reflect.InvocationTargetException
+
+import com.fasterxml.jackson.databind.JsonMappingException
+import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
 
@@ -75,30 +78,30 @@ class ExpressionWithFrequencySuite extends FunSuite {
     assert(o.id.isEmpty)
   }
 
-  ignore("fails to parse from json with frequency non-integer") {
+  test("fails to parse from json with frequency non-integer") {
     val json ="""{"expression": "this", "frequency": "that"}"""
-    intercept[IllegalArgumentException] {
+    intercept[InvalidFormatException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
 
-  ignore("Fails to parse from json with empty expression") {
+  test("Fails to parse from json with empty expression") {
     val json = "{\"expression\": \"\"}"
-    intercept[IllegalArgumentException] {
+    intercept[InvocationTargetException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
 
-  ignore("Fails to parse from json with null expression") {
+  test("Fails to parse from json with null expression") {
     val json = "{\"expression\": null}"
-    intercept[IllegalArgumentException] {
+    intercept[JsonMappingException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
 
-  ignore("Fails to parse from json with missing expression") {
+  test("Fails to parse from json with missing expression") {
     val json = "{}"
-    intercept[IllegalArgumentException] {
+    intercept[InvocationTargetException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
@@ -121,7 +124,7 @@ class ExpressionWithFrequencySuite extends FunSuite {
     assert(expected === json)
   }
 
-  ignore("expression is required to be non-null") {
+  test("expression is required to be non-null") {
     intercept[IllegalArgumentException] {
       ExpressionWithFrequency(null)
     }

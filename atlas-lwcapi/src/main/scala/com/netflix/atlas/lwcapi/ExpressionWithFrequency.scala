@@ -22,7 +22,7 @@ import com.netflix.atlas.json.{Json, JsonSupport}
 case class ExpressionWithFrequency(expression: String,
                                    frequency: Int = ApiSettings.defaultFrequency,
                                    id: String = "") extends JsonSupport {
-  //require(expression != null && expression.nonEmpty)
+  require(expression != null && expression.nonEmpty)
 }
 
 object ExpressionWithFrequency {

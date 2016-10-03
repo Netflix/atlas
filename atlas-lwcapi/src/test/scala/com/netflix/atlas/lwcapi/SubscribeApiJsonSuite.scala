@@ -43,7 +43,7 @@ class SubscribeApiJsonSuite extends FunSuite {
     }
   }
 
-  ignore("decode array") {
+  test("decode array") {
     intercept[JsonMappingException] {
       SubscribeApi.SubscribeRequest.fromJson("[]")
     }
