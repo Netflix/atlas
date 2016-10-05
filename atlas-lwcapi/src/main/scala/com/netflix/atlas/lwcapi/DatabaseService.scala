@@ -21,18 +21,18 @@ import com.netflix.iep.service.{AbstractService, State}
 import com.typesafe.scalalogging.StrictLogging
 
 @Singleton
-class RedisPubsubService extends AbstractService with StrictLogging {
+class DatabaseService extends AbstractService with StrictLogging {
   @volatile private var started = false
 
-  def setState(state: Boolean): Unit = started = state
+  def setState(value: Boolean): Unit = started = value
 
-  override def isHealthy: Boolean = started
+  override def isHealthy: Boolean = state == State.RUNNING && started
 
   override def startImpl(): Unit = {
-    logger.info("Starting Redis Pubsub service monitor")
+    logger.info("Starting Database service monitor")
   }
 
   override def stopImpl(): Unit = {
-    logger.info("Stopping Redis Pubsub service monitor")
+    logger.info("Stopping Database service monitor")
   }
 }

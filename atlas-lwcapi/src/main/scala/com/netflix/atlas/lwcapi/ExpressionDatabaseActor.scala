@@ -35,7 +35,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
                                          alertmap: ExpressionDatabase,
                                          sm: SubscriptionManager,
                                          registry: Registry,
-                                         pubsubMonitor: RedisPubsubService) extends Actor with StrictLogging {
+                                         dbMonitor: DatabaseService) extends Actor with StrictLogging {
   import ExpressionDatabaseActor._
 
   private val channel = ApiSettings.redisPrefixFor("expressions")
@@ -205,7 +205,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
       if (now - refreshTime > startTime) {
         logger.debug("Full redis re-sync complete")
         dbComplete = true
-        pubsubMonitor.setState(true)
+        dbMonitor.setState(true)
       }
     }
   }
