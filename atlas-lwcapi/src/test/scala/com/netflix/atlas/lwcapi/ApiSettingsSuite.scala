@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 class ApiSettingsSuite extends FunSuite {
