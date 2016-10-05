@@ -30,7 +30,7 @@ class LwcApiModule extends AbstractModule {
     install(new AkkaModule)
 
     val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
-    serviceBinder.addBinding().to(classOf[LwcapiDatabaseService])
+    serviceBinder.addBinding().to(classOf[RedisPubsubService])
   }
 
   @Provides @Singleton

@@ -17,22 +17,22 @@ package com.netflix.atlas.lwcapi
 
 import javax.inject.Singleton
 
-import com.netflix.iep.service.{AbstractService, ClassFactory, State}
+import com.netflix.iep.service.{AbstractService, State}
 import com.typesafe.scalalogging.StrictLogging
 
 @Singleton
-class LwcapiDatabaseService extends AbstractService with StrictLogging {
-  @volatile private var dbStarted = false
+class RedisPubsubService extends AbstractService with StrictLogging {
+  @volatile private var started = false
 
-  def setDbState(state: Boolean): Unit = dbStarted = state
+  def setState(state: Boolean): Unit = started = state
 
-  override def isHealthy: Boolean = state == State.RUNNING && dbStarted
+  override def isHealthy: Boolean = started
 
   override def startImpl(): Unit = {
-    logger.info("Starting LwcapiDatabaseService service monitor")
+    logger.info("Starting Redis Pubsub service monitor")
   }
 
   override def stopImpl(): Unit = {
-    logger.info("Stopping LwcapiDatabaseService service monitor")
+    logger.info("Stopping Redis Pubsub service monitor")
   }
 }

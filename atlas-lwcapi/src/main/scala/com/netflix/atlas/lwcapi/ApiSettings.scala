@@ -28,4 +28,13 @@ class ApiSettings(root: => Config) {
   def redisHost: String = config.getString("redis.host")
   def redisPort: Int = config.getInt("redis.port")
   def redisTTL: Int = config.getInt("redis.ttl")
+  def redisPrefix: String = if (config.hasPath("redis.prefix")) config.getString("redis.prefix") + "." else ""
+
+  def redisPrefixFor(suffix: String): String = {
+    s"$redisPrefix$suffix"
+  }
+
+  def stripRedisPrefix(s: String): String = {
+    if (redisPrefix.isEmpty) s else s.stripPrefix(redisPrefix)
+  }
 }
