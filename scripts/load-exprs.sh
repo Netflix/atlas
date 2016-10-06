@@ -1,1 +1,1 @@
-curl -X POST --data @exprs.json http://localhost:7101/lwc/api/v1/subscribe
+curl -X POST --data @lwcapi-subscribe.json http://localhost:7101/lwc/api/v1/subscribe
