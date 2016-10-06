@@ -44,7 +44,7 @@ case class ExpressionApi @Inject()(alertmap: ExpressionDatabase,
 
   private def handleReq(ctx: RequestContext, cluster: String): Unit = {
     val expressions = alertmap.expressionsForCluster(cluster)
-    val json = Return(defaultURL, ApiSettings.defaultFrequency, expressions).toJson
+    val json = Return(expressions).toJson
     ctx.responder ! HttpResponse(StatusCodes.OK, entity = json)
     registry.counter(expressionFetchesId.withTag("cluster", cluster)).increment()
     expressionCount.record(expressions.size)
@@ -52,5 +52,5 @@ case class ExpressionApi @Inject()(alertmap: ExpressionDatabase,
 }
 
 object ExpressionApi {
-  case class Return(url: String, frequency: Long, expressions: List[ExpressionWithFrequency]) extends JsonSupport
+  case class Return(expressions: List[ExpressionWithFrequency]) extends JsonSupport
 }
