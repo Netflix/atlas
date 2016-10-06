@@ -35,26 +35,26 @@ class StreamApiSuite extends FunSuite with ScalatestRouteTest {
   test("SSEHello renders") {
     val uuid = GlobalUUID.get
     val ret = SSEHello("me!me!", "unknown", uuid).toSSE
-    assert(ret.contains("data: hello {"))
+    assert(ret.contains("info: hello {"))
     assert(ret.contains(""""streamId":"me!me!""""))
     assert(ret.contains(""""instanceUUID":"""))
     assert(ret.contains(""""instanceId":"""))
   }
 
   test("SSEHeartbeat renders") {
-    assert(SSEHeartbeat().toSSE === """data: heartbeat {}""")
+    assert(SSEHeartbeat().toSSE === """info: heartbeat {}""")
   }
 
   test("SSEShutdown renders") {
-    assert(SSEShutdown("foo").toSSE === """data: shutdown {"reason":"foo"}""")
+    assert(SSEShutdown("foo").toSSE === """info: shutdown {"reason":"foo"}""")
   }
 
   test("SSESubscribe renders") {
     val ret1 = List(ExpressionWithFrequency("dataExpr", 10, "exprId"))
     val s = SSESubscribe("mainExpr", ret1).toSSE
-    assert(s.startsWith("data: subscribe"))
+    assert(s.startsWith("info: subscribe"))
     assert(s.contains(""""expression":"mainExpr""""))
-    assert(s.contains(""""dataExpressions":[{"""))
+    assert(s.contains(""""metrics":[{"""))
     assert(s.contains(""""expression":"dataExpr""""))
     assert(s.contains(""""frequency":10"""))
     assert(s.contains(""""id":"exprId""""))

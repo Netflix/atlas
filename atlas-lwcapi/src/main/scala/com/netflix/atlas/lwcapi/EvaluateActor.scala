@@ -48,7 +48,7 @@ class EvaluateActor @Inject() (registry: Registry, sm: SubscriptionManager) exte
       val actors = sm.actorsForExpression(item.id)
       if (actors.nonEmpty) {
         registry.counter(actorsId).increment(actors.size)
-        val message = SSEEvaluate(timestamp, item)
+        val message = SSEMetric(timestamp, item)
         actors.foreach(actor => actor ! message)
       } else {
         registry.counter(uninterestingId).increment()

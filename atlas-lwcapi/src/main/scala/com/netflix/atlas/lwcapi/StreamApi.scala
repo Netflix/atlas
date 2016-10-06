@@ -35,10 +35,9 @@ class StreamApi @Inject()(sm: SubscriptionManager,
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { (streamId) =>
-      parameters('name.?, 'expr.?, 'frequency.?) { (name, expr, frequency) =>
-        get { (ctx) =>
-          handleReq(ctx, streamId, name, expr, frequency)
-        }
+      parameters('name.?, 'expression.?, 'frequency.?) { (name, expr, frequency) =>
+        get { (ctx) => handleReq(ctx, streamId, name, expr, frequency) } ~
+        post { (ctx) => handleReq(ctx, streamId, name, expr, frequency) }
       }
     }
   }
@@ -80,7 +79,7 @@ object StreamApi {
   // Hello message
   case class HelloContent(streamId: String, instanceId: String, instanceUUID: String) extends JsonSupport
   case class SSEHello(streamId: String, instanceId: String, instanceUUID: String)
-    extends SSEMessage("data", "hello", HelloContent(streamId, instanceId, instanceUUID))
+    extends SSEMessage("info", "hello", HelloContent(streamId, instanceId, instanceUUID))
 
   // Generic message string
   case class SSEGenericJson(what: String, msg: JsonSupport) extends SSEMessage("data", what, msg)
@@ -88,23 +87,25 @@ object StreamApi {
   // Heartbeat message
   case class HeartbeatContent() extends JsonSupport
   case class SSEHeartbeat()
-    extends SSEMessage("data", "heartbeat", HeartbeatContent())
+    extends SSEMessage("info", "heartbeat", HeartbeatContent())
 
   // Shutdown message
   case class ShutdownReason(reason: String) extends JsonSupport
   case class SSEShutdown(reason: String, private val unsub: Boolean = true)
-    extends SSEMessage("data", "shutdown", ShutdownReason(reason)) {
+    extends SSEMessage("info", "shutdown", ShutdownReason(reason)) {
     def shouldUnregister: Boolean = unsub
   }
 
   // Subscribe message
   case class SubscribeContent(expression: String,
-                              dataExpressions: List[ExpressionWithFrequency]) extends JsonSupport
+                              metrics: List[ExpressionWithFrequency]) extends JsonSupport
 
-  case class SSESubscribe(expr: String, dataExpressions: List[ExpressionWithFrequency])
-    extends SSEMessage("data", "subscribe", SubscribeContent(expr, dataExpressions))
+  case class SSESubscribe(expr: String, metrics: List[ExpressionWithFrequency])
+    extends SSEMessage("info", "subscribe", SubscribeContent(expr, metrics))
+
+  case class SSEMetricContent(timestamp: Long, id: String, tags: EvaluateApi.TagMap, value: Double) extends JsonSupport
 
   // Evaluate message
-  case class SSEEvaluate(timestamp: Long, item: EvaluateApi.Item)
-    extends SSEMessage("data", "evaluate", item)
+  case class SSEMetric(timestamp: Long, data: EvaluateApi.Item)
+    extends SSEMessage("data", "metric", SSEMetricContent(timestamp, data.id, data.tags, data.value))
 }

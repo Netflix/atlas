@@ -50,6 +50,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val messagesReadId = registry.createId("atlas.lwcapi.redis.messagesRead")
   private val messagesWrittenId = registry.createId("atlas.lwcapi.redis.messagesWritten")
 
+  private val actionHeartbeat = "heartbeat"
   private val actionExpression = "expression"
   private val actionSubscribe = "subscribe"
   private val actionUnsubscribe = "unsubscribe"
@@ -60,7 +61,10 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val host = ApiSettings.redisHost
   private val port = ApiSettings.redisPort
 
+  private val redisCmdHeartbeat = "hb"
   private val redisCmdExpression = "expr"
+
+  private val heartbeatInterval = 10000 // milliseconds
 
   object TTLState {
     sealed trait EnumVal
@@ -80,8 +84,13 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   //
   private val refreshTime = Math.max(ttl / 3 * 2, 1)
   private val maxJitter = Math.max(ttl / 8, 1)
-  private val startTime = System.currentTimeMillis()
+
+  //
+  // Track if we should advertise ourselves as healthy.  We must receive something
+  // from redis (even if it's just our own transmissions echoed back) to ensure
+  // we are connected.
   private var dbComplete = false
+  private var firstRedisReceive: Long = 0
 
   restartPubsub()
 
@@ -113,9 +122,13 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
       logger.error("redis pubsub: exception caught", exc)
       restartPubsub()
     case M(chan, msg) =>
+      // We will treat any traffic as an indication we are alive
+      val now = System.currentTimeMillis()
+      if (firstRedisReceive == 0)
+        firstRedisReceive = now
       val split = msg.split(" ", 3)
       if (split(1) != uuid) {
-        processRedisCommand(split(0), split(1), split(2), msg.length)
+        processRedisCommand(now, split(0), split(1), split(2), msg.length)
       }
   }
 
@@ -131,13 +144,16 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     }
   }
 
-  def processRedisCommand(cmd: String, originator: String, json: String, len: Long) = {
-    val now = System.currentTimeMillis()
+  def processRedisCommand(now: Long, cmd: String, originator: String, json: String, len: Long) = {
     cmd match {
       case `redisCmdExpression` =>
         increment_counter(bytesReadId, "pubsub", actionExpression, len)
         increment_counter(messagesReadId, "pubsub", actionExpression)
         processRedisExpression(cmd, originator, json, now)
+      case `redisCmdHeartbeat` =>
+        increment_counter(bytesReadId, "pubsub", actionHeartbeat, len)
+        increment_counter(messagesReadId, "pubsub", actionHeartbeat, len)
+        processRedisHeartbeat(cmd, originator, json, now)
       case x => logger.info(s"Unknown redis command: $cmd $json")
     }
   }
@@ -159,6 +175,10 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     increment_counter(updatesId, "pubsub", actionExpression)
     ttlState(req.id) = TTLState.Active
     ttlManager.touch(req.id, nextTTLWithJitter(now))
+  }
+
+  def processRedisHeartbeat(cmd: String, originator: String, json: String, now: Long) = {
+    logRedisCommand(cmd, originator, "redisReceive", RedisHeartbeat())
   }
 
   def increment_counter(counter: Id, source: String, action: String, value: Long = 1) = {
@@ -183,6 +203,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     case Tick =>
       checkDbStatus()
       checkTTLs()
+      maybeHeartbeat()
       ticker = context.system.scheduler.scheduleOnce(tickTime) {
         self ! Tick
       }
@@ -198,14 +219,30 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     increment_counter(messagesWrittenId, "local", actionExpression)
   }
 
+  var lastHeartbeated = System.currentTimeMillis()
+  def maybeHeartbeat() = {
+    val now = System.currentTimeMillis()
+    if (lastHeartbeated + heartbeatInterval < now) {
+      lastHeartbeated = now
+      val heartbeat = RedisHeartbeat()
+      val json = Json.encode(heartbeat)
+      pubClient.publish(channel, s"$redisCmdHeartbeat $uuid $json")
+      logRedisCommand(redisCmdHeartbeat, uuid, "redisSend", heartbeat)
+    }
+  }
+
   def checkDbStatus() = {
     if (!dbComplete) {
       logger.debug("Full redis re-sync pending")
-      val now = System.currentTimeMillis()
-      if (now - refreshTime > startTime) {
-        logger.debug("Full redis re-sync complete")
-        dbComplete = true
-        dbMonitor.setState(true)
+      if (firstRedisReceive == 0) {
+        logger.debug("No redis traffic seen yet")
+      } else {
+        val now = System.currentTimeMillis()
+        if (firstRedisReceive + refreshTime < now) {
+          logger.debug("Full redis re-sync complete")
+          dbComplete = true
+          dbMonitor.setState(true)
+        }
       }
     }
   }
@@ -292,14 +329,16 @@ object ExpressionDatabaseActor {
   //
 
   case class RedisExpressionRequest(id: String, expression: String, frequency: Int) extends JsonSupport {
-    //require(id != null && id.nonEmpty)
-    //require(expression != null && expression.nonEmpty)
-    //require(frequency > 0)
+    require(id != null && id.nonEmpty)
+    require(expression != null && expression.nonEmpty)
+    require(frequency > 0)
   }
 
   object RedisExpressionRequest {
     def fromJson(json: String): RedisExpressionRequest = Json.decode[RedisExpressionRequest](json)
   }
+
+  case class RedisHeartbeat() extends JsonSupport
 
   //
   // Commands sent via the actor receive method

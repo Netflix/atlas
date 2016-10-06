@@ -1,9 +1,7 @@
-[
-  {
-    "timestamp": 12345,
-    "id": "tQTQF62tsAZCdyC73Rd0IQgZ5Y0",
-    "dataExpressions": [
-      {"tags": {}, "value": 123}
-    ]
-  }
-]
+{
+  "timestamp": 12345,
+  "metrics": [
+    { "id": "glR71FQifs5Y7l1ePkvpwsZvdHk", "tags": {}, "value": 123.456 }
+  ]
+}
+
