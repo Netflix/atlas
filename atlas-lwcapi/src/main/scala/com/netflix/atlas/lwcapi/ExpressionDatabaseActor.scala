@@ -225,7 +225,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     }
   }
 
-  def publish(cmd: String, action: String, item: JsonSupport) = {
+  def publish(cmd: String, action: String, item: RedisJson) = {
     val json = item.toJson
     pubClient.publish(channel, s"$cmd $uuid $json")
     logRedisCommand(cmd, uuid, "redisSend", item)
@@ -325,13 +325,15 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
 }
 
 object ExpressionDatabaseActor {
+  sealed trait RedisJson extends JsonSupport
+
   private val instanceId = sys.env.getOrElse("EC2_INSTANCE_ID", "unknown")
 
   //
   // Commands as sent over the redis pubsub, or stored in the redis key-value store
   //
 
-  case class RedisExpressionRequest(id: String, expression: String, frequency: Int) extends JsonSupport {
+  case class RedisExpressionRequest(id: String, expression: String, frequency: Int) extends RedisJson {
     require(id != null && id.nonEmpty)
     require(expression != null && expression.nonEmpty)
     require(frequency > 0)
@@ -341,7 +343,7 @@ object ExpressionDatabaseActor {
     def fromJson(json: String): RedisExpressionRequest = Json.decode[RedisExpressionRequest](json)
   }
 
-  case class RedisHeartbeat(instanceId: String = instanceId) extends JsonSupport
+  case class RedisHeartbeat(instanceId: String = instanceId) extends RedisJson
 
   //
   // Commands sent via the actor receive method
