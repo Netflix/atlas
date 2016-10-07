@@ -37,7 +37,9 @@ class SSEActor(client: ActorRef,
   private val connectsId = registry.createId("atlas.lwcapi.sse.connectCount")
   private val messagesId = registry.createId("atlas.lwcapi.sse.messageCount")
   private val droppedId = registry.createId("atlas.lwcapi.sse.droppedCount")
-  private val sseCount = registry.gauge("atlas.lwcapi.sse.streams", new AtomicInteger(1))
+
+  private val sseCountId = registry.createId("atlas.lwcapi.streams").withTag("streamType", "sse")
+  private val sseCount = registry.gauge(sseCountId, new AtomicInteger(1))
 
   private var outstandingCount = 0
   private val maxOutstanding = 100
