@@ -210,13 +210,9 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   }
 
   def redisPublish(req: RedisExpressionRequest) = {
-    val json = req.toJson
-    pubClient.publish(channel, s"$redisCmdExpression $uuid $json")
-    logRedisCommand(redisCmdExpression, uuid, "redisSend", req)
+    publish(redisCmdExpression, actionExpression, req)
     ttlManager.touch(req.id, nextTTL())
     ttlState(req.id) = TTLState.Active
-    increment_counter(bytesWrittenId, "local", actionExpression, json.length)
-    increment_counter(messagesWrittenId, "local", actionExpression)
   }
 
   var lastHeartbeated = System.currentTimeMillis()
@@ -225,10 +221,16 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     if (lastHeartbeated + heartbeatInterval < now) {
       lastHeartbeated = now
       val heartbeat = RedisHeartbeat()
-      val json = Json.encode(heartbeat)
-      pubClient.publish(channel, s"$redisCmdHeartbeat $uuid $json")
-      logRedisCommand(redisCmdHeartbeat, uuid, "redisSend", heartbeat)
+      publish(redisCmdHeartbeat, actionHeartbeat, heartbeat)
     }
+  }
+
+  def publish(cmd: String, action: String, item: JsonSupport) = {
+    val json = item.toJson
+    pubClient.publish(channel, s"$cmd $uuid $json")
+    logRedisCommand(cmd, uuid, "redisSend", item)
+    increment_counter(bytesWrittenId, "local", action, json.length)
+    increment_counter(messagesWrittenId, "local", action)
   }
 
   def checkDbStatus() = {
