@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.lwcapi
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.duration._
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
 import com.netflix.spectator.api.Registry
@@ -23,7 +25,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import spray.can.Http
 import spray.http._
 
-class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionManager, registry: Registry)
+class SSEActor(client: ActorRef,
+               sseId: String,
+               name: String,
+               sm: SubscriptionManager,
+               registry: Registry)
   extends Actor with ActorLogging {
   import SSEActor._
   import StreamApi._
@@ -31,6 +37,7 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
   private val connectsId = registry.createId("atlas.lwcapi.sse.connectCount")
   private val messagesId = registry.createId("atlas.lwcapi.sse.messageCount")
   private val droppedId = registry.createId("atlas.lwcapi.sse.droppedCount")
+  private val sseCount = registry.gauge("atlas.lwcapi.sse.streams", new AtomicInteger(1))
 
   private var outstandingCount = 0
   private val maxOutstanding = 100
@@ -46,7 +53,7 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
   outstandingCount += 1
   registry.counter(connectsId.withTag("streamId", sseId)).increment()
 
-  var unregister = true
+  var needsUnregister = true
   sm.register(sseId, self, name)
   send(helloMessage)
 
@@ -66,10 +73,8 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
       send(msg)
       client ! Http.Close
       ticker.cancel()
-      unregister = msg.shouldUnregister
-      if (unregister)
-        sm.unregister(sseId)
-      log.info(s"Closing SSE stream: ${msg.reason}, shouldUnregister: $unregister")
+      unregister()
+      log.info(s"Closing SSE stream: ${msg.reason}")
     case msg: SSEMessage =>
       send(msg)
     case closed: Http.ConnectionClosed =>
@@ -90,9 +95,16 @@ class SSEActor(client: ActorRef, sseId: String, name: String, sm: SubscriptionMa
     }
   }
 
-  override def postStop() = {
-    if (unregister)
+  private def unregister() = {
+    if (needsUnregister) {
+      needsUnregister = false
       sm.unregister(sseId)
+      sseCount.decrementAndGet()
+    }
+  }
+
+  override def postStop() = {
+    unregister()
     ticker.cancel()
     super.postStop()
   }
