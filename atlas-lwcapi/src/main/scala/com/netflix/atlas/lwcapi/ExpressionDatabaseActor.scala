@@ -323,6 +323,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
 }
 
 object ExpressionDatabaseActor {
+  private val instanceId = sys.env.getOrElse("EC2_INSTANCE_ID", "unknown")
 
   //
   // Commands as sent over the redis pubsub, or stored in the redis key-value store
@@ -338,7 +339,7 @@ object ExpressionDatabaseActor {
     def fromJson(json: String): RedisExpressionRequest = Json.decode[RedisExpressionRequest](json)
   }
 
-  case class RedisHeartbeat() extends JsonSupport
+  case class RedisHeartbeat(instanceId: String = instanceId) extends JsonSupport
 
   //
   // Commands sent via the actor receive method
