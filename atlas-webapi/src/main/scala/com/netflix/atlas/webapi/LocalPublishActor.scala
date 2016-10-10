@@ -84,7 +84,7 @@ class LocalPublishActor(registry: Registry, db: Database) extends Actor with Act
     failures.foreach {
       case ValidationResult.Pass           => // Ignored
       case ValidationResult.Fail(error, _) =>
-        registry.counter(numInvalid.withTag("error", error))
+        registry.counter(numInvalid.withTag("error", error)).increment()
     }
   }
 
