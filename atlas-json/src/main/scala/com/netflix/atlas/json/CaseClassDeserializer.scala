@@ -52,7 +52,9 @@ class CaseClassDeserializer(
         p.skipChildren()
       } else {
         val jt = config.getTypeFactory.constructType(ftype.get)
-        desc.setField(args, field, ctxt.readValue(p, jt))
+        if (p.getCurrentToken != JsonToken.VALUE_NULL) {
+          desc.setField(args, field, ctxt.readValue(p, jt))
+        }
       }
       p.nextToken()
     }

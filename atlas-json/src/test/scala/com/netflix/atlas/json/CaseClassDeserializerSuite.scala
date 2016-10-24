@@ -122,6 +122,12 @@ class CaseClassDeserializerSuite extends FunSuite {
     assert(actual === expected)
   }
 
+  test("read with Option[Int] field, null") {
+    val expected = OptionInt(None)
+    val actual = decode[OptionInt]("""{"v":null}""")
+    assert(actual === expected)
+  }
+
   test("read with Option[Long] field") {
     val expected = OptionLong(Some(42L))
     val actual = decode[OptionLong]("""{"v":42}""")
@@ -131,6 +137,24 @@ class CaseClassDeserializerSuite extends FunSuite {
   test("read with List[Option[Int]] field") {
     val expected = ListOptionInt(List(Some(42), Some(21)))
     val actual = decode[ListOptionInt]("""{"v":[42, 21]}""")
+    assert(actual === expected)
+  }
+
+  test("read with List[String] field") {
+    val expected = ListString(List("a", "b"))
+    val actual = decode[ListString]("""{"vs":["a", "b"]}""")
+    assert(actual === expected)
+  }
+
+  test("read with List[String] field, null") {
+    val expected = ListString(null)
+    val actual = decode[ListString]("""{"vs":null}""")
+    assert(actual === expected)
+  }
+
+  test("read with List[String] field, with default, null") {
+    val expected = ListStringDflt()
+    val actual = decode[ListStringDflt]("""{"vs":null}""")
     assert(actual === expected)
   }
 }
@@ -153,4 +177,6 @@ object CaseClassDeserializerSuite {
   case class OptionInt(v: Option[Int])
   case class OptionLong(v: Option[Long])
   case class ListOptionInt(v: List[Option[Int]])
+  case class ListString(vs: List[String])
+  case class ListStringDflt(vs: List[String] = Nil)
 }
