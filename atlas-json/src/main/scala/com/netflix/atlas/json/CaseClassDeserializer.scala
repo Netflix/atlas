@@ -33,7 +33,7 @@ class CaseClassDeserializer(
     config: DeserializationConfig,
     beanDesc: BeanDescription) extends JsonDeserializer[AnyRef] {
 
-  private val desc = Reflection.createDescription(javaType.getRawClass)
+  private val desc = Reflection.createDescription(javaType)
 
   override def deserialize(p: JsonParser, ctxt: DeserializationContext): AnyRef = {
     val args = desc.newInstanceArgs
@@ -47,14 +47,18 @@ class CaseClassDeserializer(
     while (p.getCurrentToken == JsonToken.FIELD_NAME) {
       val field = p.getText
       p.nextToken()
-      val ftype = desc.fieldType(field)
-      if (ftype.isEmpty) {
-        p.skipChildren()
-      } else {
-        val jt = config.getTypeFactory.constructType(ftype.get)
-        if (p.getCurrentToken != JsonToken.VALUE_NULL) {
-          desc.setField(args, field, ctxt.readValue(p, jt))
-        }
+      desc.field(field) match {
+        case None =>
+          p.skipChildren()
+        case Some(finfo) =>
+          // If possible, then get the type info from the bean description as it has more
+          // context about generic types. In some cases it is null so fallback to using
+          // the type we find for the field in the class.
+          val btype = beanDesc.getType.containedType(finfo.pos)
+          val ftype = if (btype == null) ctxt.getTypeFactory.constructType(finfo.jtype) else btype
+          if (p.getCurrentToken != JsonToken.VALUE_NULL) {
+            desc.setField(args, field, ctxt.readValue(p, ftype))
+          }
       }
       p.nextToken()
     }

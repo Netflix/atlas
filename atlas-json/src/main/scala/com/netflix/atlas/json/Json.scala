@@ -81,23 +81,6 @@ object Json {
     mapper
   }
 
-  // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
-  private def typeReference[T: Manifest] = new TypeReference[T] {
-    override def getType = typeFromManifest(manifest[T])
-  }
-
-  // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
-  private def typeFromManifest(m: Manifest[_]): Type = {
-    if (m.typeArguments.isEmpty) { m.runtimeClass }
-    else new ParameterizedType {
-      def getRawType = m.runtimeClass
-
-      def getActualTypeArguments = m.typeArguments.map(typeFromManifest).toArray
-
-      def getOwnerType = null
-    }
-  }
-
   /**
     * Register additional modules with the default mappers used for JSON and Smile.
     *
@@ -183,7 +166,7 @@ object Json {
       if (manifest.runtimeClass.isArray)
         jsonMapper.readerFor(manifest.runtimeClass.asInstanceOf[Class[T]])
       else
-        jsonMapper.readerFor(typeReference[T])
+        jsonMapper.readerFor(Reflection.typeReference[T])
     val value = reader.readValue[T](parser)
     require(parser.nextToken() == null, "invalid json, additional content after value")
     value
@@ -194,7 +177,7 @@ object Json {
       if (manifest.runtimeClass.isArray)
         jsonMapper.readerFor(manifest.runtimeClass.asInstanceOf[Class[T]])
       else
-        jsonMapper.readerFor(typeReference[T])
+        jsonMapper.readerFor(Reflection.typeReference[T])
     new Decoder[T](reader, jsonFactory)
   }
 
@@ -215,7 +198,7 @@ object Json {
       if (manifest.runtimeClass.isArray)
         jsonMapper.readerFor(manifest.runtimeClass.asInstanceOf[Class[T]])
       else
-        jsonMapper.readerFor(typeReference[T])
+        jsonMapper.readerFor(Reflection.typeReference[T])
     new Decoder[T](reader, smileFactory)
   }
 }
