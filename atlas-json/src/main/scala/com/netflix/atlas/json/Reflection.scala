@@ -15,6 +15,11 @@
  */
 package com.netflix.atlas.json
 
+import java.lang.reflect.ParameterizedType
+
+import com.fasterxml.jackson.core.`type`.TypeReference
+import com.fasterxml.jackson.databind.JavaType
+import com.fasterxml.jackson.databind.`type`.TypeFactory
 import com.fasterxml.jackson.databind.util.ClassUtil
 
 import scala.language.existentials
@@ -27,15 +32,40 @@ import scala.reflect.runtime.universe._
   */
 private[json] object Reflection {
 
+  // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
+  def typeReference[T: Manifest] = new TypeReference[T] {
+    override def getType = typeFromManifest(manifest[T])
+  }
+
+  // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
+  def typeFromManifest(m: Manifest[_]): java.lang.reflect.Type = {
+    if (m.typeArguments.isEmpty) { m.runtimeClass }
+    else new ParameterizedType {
+      def getRawType = m.runtimeClass
+
+      def getActualTypeArguments = m.typeArguments.map(typeFromManifest).toArray
+
+      def getOwnerType = null
+    }
+  }
+
   /**
     * Create a description object for a case class. Use [[isCaseClass()]] to verify
     * before creating the description.
     */
   def createDescription(cls: Class[_]): CaseClassDesc = {
-    createDescription(cls, currentMirror.classSymbol(cls).asClass)
+    createDescription(TypeFactory.defaultInstance().constructType(cls))
   }
 
-  private def createDescription(cls: Class[_], csym: ClassSymbol): CaseClassDesc = {
+  /**
+    * Create a description object for a case class. Use [[isCaseClass()]] to verify
+    * before creating the description.
+    */
+  def createDescription(jt: JavaType): CaseClassDesc = {
+    createDescription(jt, currentMirror.classSymbol(jt.getRawClass).asClass)
+  }
+
+  private def createDescription(jt: JavaType, csym: ClassSymbol): CaseClassDesc = {
     val ctor = csym.primaryConstructor.asMethod
 
     val companion = currentMirror.reflectModule(csym.companion.asModule).instance
@@ -58,7 +88,7 @@ private[json] object Reflection {
       Param(name, dflt)
     }
 
-    CaseClassDesc(cls, currentMirror.reflectClass(csym).reflectConstructor(ctor), params)
+    CaseClassDesc(jt, currentMirror.reflectClass(csym).reflectConstructor(ctor), params)
   }
 
   /**
@@ -83,20 +113,20 @@ private[json] object Reflection {
   /**
     * Description of a case class and its parameters.
     *
-    * @param cls
+    * @param jt
     *     Raw class to be created.
     * @param ctor
     *     Handle to the constructor for creating an instance of the case class.
     * @param params
     *     Parameters for the primary constructor.
     */
-  case class CaseClassDesc(cls: Class[_], ctor: MethodMirror, params: List[Param]) {
+  case class CaseClassDesc(jt: JavaType, ctor: MethodMirror, params: List[Param]) {
 
     // Create a map to allow quick lookup of the field and ensure that we have
     // allowed access to all fields.
     private val fields = {
       val ps = params.zipWithIndex.map { case (p, i) =>
-        val field = cls.getDeclaredField(p.name)
+        val field = jt.getRawClass.getDeclaredField(p.name)
         p.name -> FieldInfo(i, field.getType, field.getGenericType)
       }
       ps.toMap
@@ -128,12 +158,10 @@ private[json] object Reflection {
     }
 
     /**
-      * Determine the type for a given field. This is used to deserialize the field
+      * Get the metadata for a field based on the name. This is used to deserialize the field
       * values.
       */
-    def fieldType(name: String): Option[java.lang.reflect.Type] = {
-      fields.get(name).map(_.jtype)
-    }
+    def field(name: String): Option[FieldInfo] = fields.get(name)
   }
 
   type JType = java.lang.reflect.Type

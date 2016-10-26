@@ -41,7 +41,7 @@ class CaseClassDeserializerSuite extends FunSuite {
     .registerModule(module)
 
   def decode[T: Manifest](json: String): T = {
-    mapper.readValue[T](json, manifest.runtimeClass.asInstanceOf[Class[T]])
+    mapper.readValue[T](json, Reflection.typeReference[T])
   }
 
   test("read simple object") {
@@ -157,6 +157,18 @@ class CaseClassDeserializerSuite extends FunSuite {
     val actual = decode[ListStringDflt]("""{"vs":null}""")
     assert(actual === expected)
   }
+
+  test("generics") {
+    val expected = Outer(List(List(Inner("a"), Inner("b")), List(Inner("c"))))
+    val actual = decode[Outer]("""{"vs":[[{"v":"a"},{"v":"b"}],[{"v":"c"}]]}""")
+    assert(actual === expected)
+  }
+
+  test("generics 2") {
+    val expected = OuterT(List(List(Inner("a"), Inner("b")), List(Inner("c"))))
+    val actual = decode[OuterT[List[List[Inner]]]]("""{"vs":[[{"v":"a"},{"v":"b"}],[{"v":"c"}]]}""")
+    assert(actual === expected)
+  }
 }
 
 object CaseClassDeserializerSuite {
@@ -179,4 +191,8 @@ object CaseClassDeserializerSuite {
   case class ListOptionInt(v: List[Option[Int]])
   case class ListString(vs: List[String])
   case class ListStringDflt(vs: List[String] = Nil)
+
+  case class Inner(v: String)
+  case class Outer(vs: List[List[Inner]])
+  case class OuterT[T](vs: T)
 }
