@@ -2,15 +2,15 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.4.8"
-    val aws        = "1.11.37"
-    val iep        = "0.4.8"
+    val akka       = "2.4.12"
+    val aws        = "1.11.49"
+    val iep        = "0.4.9"
     val guice      = "4.1.0"
-    val jackson    = "2.8.2"
-    val log4j      = "2.6.2"
+    val jackson    = "2.8.3"
+    val log4j      = "2.7"
     val scala      = "2.11.8"
     val slf4j      = "1.7.21"
-    val spectator  = "0.40.0"
+    val spectator  = "0.42.0"
     val spray      = "1.3.3"
 
     val crossScala = Seq(scala)
@@ -26,7 +26,7 @@ object Dependencies {
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.3.3"
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.1.3"
+  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.1.6"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.15.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -40,7 +40,7 @@ object Dependencies {
   val jacksonScala2   = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jodaConvert     = "org.joda" % "joda-convert" % "1.8.1"
-  val jol             = "org.openjdk.jol" % "jol-core" % "0.5"
+  val jol             = "org.openjdk.jol" % "jol-core" % "0.6"
   val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.1"
   val log4jApi        = "org.apache.logging.log4j" % "log4j-api" % log4j
   val log4jCore       = "org.apache.logging.log4j" % "log4j-core" % log4j
@@ -52,7 +52,7 @@ object Dependencies {
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all" % scala
   val scalaLogging    = "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0"
   val scalaReflect    = "org.scala-lang" % "scala-reflect" % scala
-  val scalatest       = "org.scalatest" %% "scalatest" % "2.2.6"
+  val scalatest       = "org.scalatest" %% "scalatest" % "3.0.0"
   val slf4jApi        = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j      = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple     = "org.slf4j" % "slf4j-simple" % slf4j
