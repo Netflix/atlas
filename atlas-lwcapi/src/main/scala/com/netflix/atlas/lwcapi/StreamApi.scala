@@ -21,6 +21,7 @@ import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.StreamApi.SSEShutdown
+import com.netflix.atlas.lwcapi.SubscribeApi.SubscribeRequest
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.routing.RequestContext
@@ -32,6 +33,7 @@ class StreamApi @Inject()(sm: SubscriptionManager,
   import StreamApi.SSESubscribe
 
   private val dbActor = actorRefFactory.actorSelection("/user/lwc.expressiondb")
+  private val subscribeRef = actorRefFactory.actorSelection("/user/lwc.subscribe")
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { (streamId) =>
@@ -61,6 +63,13 @@ class StreamApi @Inject()(sm: SubscriptionManager,
         split.expressions.foreach(expr =>
           dbActor ! ExpressionDatabaseActor.Subscribe(streamId, expr.id)
         )
+      }
+
+      // handle post data
+      val postString = ctx.request.entity.asString
+      if (postString.nonEmpty) {
+        val request = SubscribeRequest.fromJson(ctx.request.entity.asString)
+        subscribeRef.tell(request, ctx.responder)
       }
     } catch handleException(ctx)
   }
