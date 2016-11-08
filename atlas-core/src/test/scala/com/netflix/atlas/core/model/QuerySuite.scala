@@ -78,8 +78,24 @@ class QuerySuite extends FunSuite {
     assert(!q.matches(Map("foo2" -> "bar")))
   }
 
+  test("matches re implicit start anchor") {
+    val q = Regex("foo", "b.*")
+    assert(q.matches(Map("foo" -> "bar")))
+    assert(q.matches(Map("foo" -> "bar2")))
+    assert(!q.matches(Map("foo" -> "fubar2")))
+    assert(!q.matches(Map("foo2" -> "bar")))
+  }
+
   test("matches reic") {
     val q = RegexIgnoreCase("foo", "^B.*")
+    assert(q.matches(Map("foo" -> "bar")))
+    assert(q.matches(Map("foo" -> "Bar2")))
+    assert(!q.matches(Map("foo" -> "fubar2")))
+    assert(!q.matches(Map("foo2" -> "bar")))
+  }
+
+  test("matches reic implicit start anchor") {
+    val q = RegexIgnoreCase("foo", "B.*")
     assert(q.matches(Map("foo" -> "bar")))
     assert(q.matches(Map("foo" -> "Bar2")))
     assert(!q.matches(Map("foo" -> "fubar2")))

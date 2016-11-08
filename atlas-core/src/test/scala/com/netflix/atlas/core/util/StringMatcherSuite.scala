@@ -84,6 +84,14 @@ class StringMatcherSuite extends FunSuite {
     assert(compile("^foo.*", false) === Regex(None, reic("^foo.*")))
   }
 
+  test("compile Equals") {
+    assert(compile("^foo$") === Equals("foo"))
+  }
+
+  test("compile EqualsIgnoreCase") {
+    assert(compile("^foo$", false) === EqualsIgnoreCase("foo"))
+  }
+
   test("compile IndexOf") {
     assert(compile("foo") === IndexOf("foo"))
     assert(compile(".*foo.*") === IndexOf("foo"))
@@ -119,6 +127,14 @@ class StringMatcherSuite extends FunSuite {
     assert(compile("^.*foo[bar]", false) === Regex(None, reic("^.*foo[bar]")))
     assert(compile("^.*foo[bar].*", false) === Regex(None, reic("^.*foo[bar].*")))
     assert(compile("^.*foo[bar].*$", false) === Regex(None, reic("^.*foo[bar].*$")))
+  }
+
+  test("compile Regex end anchor") {
+    assert(compile("^foo[1-3]$") === Regex(Some("foo"), re("^foo[1-3]$")))
+  }
+
+  test("compile RegexIgnoreCase end anchor") {
+    assert(compile("^foo[1-3]$", false) === Regex(None, reic("^foo[1-3]$")))
   }
 
 }
