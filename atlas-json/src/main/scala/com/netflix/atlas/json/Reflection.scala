@@ -17,6 +17,7 @@ package com.netflix.atlas.json
 
 import java.lang.reflect.ParameterizedType
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.`type`.TypeFactory
@@ -77,6 +78,7 @@ private[json] object Reflection {
     val ms = csym.companion.asModule
     val params = ctor.paramLists.head.zipWithIndex.map { case (p, i) =>
       val name = p.name.toString
+      val alias = getAlias(p.annotations)
       val dflt = if (!p.asTerm.isParamWithDefault) None else {
         val ts = instanceMirror.symbol.typeSignature
         val name = s"apply$$default$$${i + 1}"
@@ -85,10 +87,19 @@ private[json] object Reflection {
           Some(instanceMirror.reflectMethod(dfltArg.asMethod).apply())
         }
       }
-      Param(name, dflt)
+      Param(name, alias, dflt)
     }
 
     CaseClassDesc(jt, currentMirror.reflectClass(csym).reflectConstructor(ctor), params)
+  }
+
+  private def getAlias(annotations: List[Annotation]): Option[String] = {
+    annotations.find(_.tree.tpe =:= typeOf[JsonProperty]).flatMap { anno =>
+      val constants = anno.tree.children.tail.collect {
+        case AssignOrNamedArg(_, Literal(Constant(v: String))) => v
+      }
+      constants.headOption
+    }
   }
 
   /**
@@ -105,10 +116,14 @@ private[json] object Reflection {
     *
     * @param name
     *     Name of the parameter.
+    * @param alias
+    *     Alias for the parameter typically set via the `@JsonProperty` annotation.
     * @param dflt
     *     Default value or `None` if no default is specified.
     */
-  case class Param(name: String, dflt: Option[Any])
+  case class Param(name: String, alias: Option[String], dflt: Option[Any]) {
+    def key: String = alias.getOrElse(name)
+  }
 
   /**
     * Description of a case class and its parameters.
@@ -127,7 +142,7 @@ private[json] object Reflection {
     private val fields = {
       val ps = params.zipWithIndex.map { case (p, i) =>
         val field = jt.getRawClass.getDeclaredField(p.name)
-        p.name -> FieldInfo(i, field.getType, field.getGenericType)
+        p.key -> FieldInfo(i, field.getType, field.getGenericType)
       }
       ps.toMap
     }
@@ -137,7 +152,7 @@ private[json] object Reflection {
     private val dfltParams = {
       val ps = new Array[Any](params.size)
       params.zipWithIndex.foreach { case (p, i) =>
-        ps(i) = p.dflt.getOrElse { fields(p.name).defaultValue }
+        ps(i) = p.dflt.getOrElse { fields(p.key).defaultValue }
       }
       ps
     }
