@@ -28,23 +28,28 @@ object StringMatcher {
   /** Matches everything. */
   private val AllPattern = """^\^*(\.\*)*\$*$""".r
 
+  /** A pattern that can be checked with the String.equals method. */
+  private val EqualsPattern = """^\^+([\-_a-zA-Z0-9]+)\$+$""".r
+
   /** A pattern that can be checked with the String.startsWith method. */
   private val StartsWithPattern = """^\^+([\-_a-zA-Z0-9]+)(?:\.\*)*$""".r
 
   /** A pattern that can be checked with the String.indexOf method. */
-  private val IndexOfPattern = """^\^*(?:\.\*)*([\-_a-zA-Z0-9]+)(?:\.\*)*\$*$""".r
+  private val IndexOfPattern = """^(?:\^*(?:\.\*)+)*([\-_a-zA-Z0-9]+)(?:(?:\.\*)+\$*)*$""".r
 
   /** A regex that has a simple prefix along with some arbitrary pattern. */
   private val PrefixPattern = """^\^+([\-_a-zA-Z0-9]+).*$""".r
 
   def compile(pattern: String, caseSensitive: Boolean = true): StringMatcher = {
     pattern match {
-      case StartsWithPattern(p) if caseSensitive  => StartsWith(p)
+      case EqualsPattern(p)     if  caseSensitive => Equals(p)
+      case EqualsPattern(p)     if !caseSensitive => EqualsIgnoreCase(p)
+      case StartsWithPattern(p) if  caseSensitive => StartsWith(p)
       case StartsWithPattern(p) if !caseSensitive => default(pattern, caseSensitive)
-      case IndexOfPattern(s) if caseSensitive     => IndexOf(s)
-      case IndexOfPattern(s) if !caseSensitive    => IndexOfIgnoreCase(s)
+      case IndexOfPattern(s)    if  caseSensitive => IndexOf(s)
+      case IndexOfPattern(s)    if !caseSensitive => IndexOfIgnoreCase(s)
       case AllPattern(_)                          => All
-      case PrefixPattern(p) if caseSensitive      => Regex(Some(p), Pattern.compile(pattern))
+      case PrefixPattern(p)     if  caseSensitive => Regex(Some(p), Pattern.compile(pattern))
       case _                                      => default(pattern, caseSensitive)
     }
   }
@@ -85,6 +90,16 @@ object StringMatcher {
   case class StartsWith(p: String) extends StringMatcher {
     val prefix: Option[String] = Some(p)
     def matches(v: String): Boolean = v.startsWith(p)
+  }
+
+  case class Equals(p: String) extends StringMatcher {
+    val prefix: Option[String] = Some(p)
+    def matches(v: String): Boolean = p == v
+  }
+
+  case class EqualsIgnoreCase(p: String) extends StringMatcher {
+    val prefix: Option[String] = None
+    def matches(v: String): Boolean = p.equalsIgnoreCase(v)
   }
 
   case class IndexOf(substr: String) extends StringMatcher {
