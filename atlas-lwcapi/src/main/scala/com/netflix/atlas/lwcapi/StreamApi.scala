@@ -68,7 +68,7 @@ class StreamApi @Inject()(sm: SubscriptionManager,
       val postString = ctx.request.entity.asString
       if (postString.nonEmpty) {
         val request = SubscribeRequest.fromJson(ctx.request.entity.asString)
-        subscribeRef.tell(request, ctx.responder)
+        subscribeRef.tell(SubscribeApi.SubscribeRequest(streamId, request.expressions), ctx.responder)
       }
     } catch handleException(ctx)
   }

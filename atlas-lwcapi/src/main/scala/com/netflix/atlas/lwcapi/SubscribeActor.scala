@@ -47,8 +47,8 @@ class SubscribeActor @Inject()(sm: SubscriptionManager,
   def receive = {
     case SubscribeRequest(sinkId, Nil) =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "empty payload")
-    case SubscribeRequest(sinkId, expressions) =>
-      val errors = subscribe(sinkId, expressions)
+    case SubscribeRequest(streamId, expressions) =>
+      val errors = subscribe(streamId, expressions)
       val errorResponse = if (errors.isEmpty) {
         Errors("success", "success", List())
       } else {
