@@ -20,7 +20,6 @@ import javax.inject.Inject
 import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.{Json, JsonSupport}
-import com.netflix.atlas.lwcapi.StreamApi.SSEShutdown
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.routing.RequestContext
@@ -67,7 +66,7 @@ class StreamApi @Inject()(sm: SubscriptionManager,
       // handle post data
       val postString = ctx.request.entity.asString
       if (postString.nonEmpty) {
-        val request = SubscribeRequest.fromJson(ctx.request.entity.asString)
+        val request = ExpressionsRequest.fromJson(ctx.request.entity.asString)
         subscribeRef.tell(SubscribeApi.SubscribeRequest(streamId, request.expressions), ctx.responder)
       }
     } catch handleException(ctx)
@@ -79,11 +78,11 @@ trait SSERenderable {
 }
 
 object StreamApi {
-  case class SubscribeRequest(expressions: List[ExpressionWithFrequency]) extends JsonSupport
+  case class ExpressionsRequest(expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
-  object SubscribeRequest {
-    def fromJson(json: String): SubscribeRequest = {
-      val decoded = Json.decode[SubscribeRequest](json)
+  object ExpressionsRequest {
+    def fromJson(json: String): ExpressionsRequest = {
+      val decoded = Json.decode[ExpressionsRequest](json)
       if (decoded.expressions == null || decoded.expressions.isEmpty)
         throw new IllegalArgumentException("Missing or empty expressions array")
       decoded
