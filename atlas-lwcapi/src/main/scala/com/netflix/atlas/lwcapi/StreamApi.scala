@@ -19,9 +19,8 @@ import javax.inject.Inject
 
 import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.atlas.lwcapi.StreamApi.SSEShutdown
-import com.netflix.atlas.lwcapi.SubscribeApi.SubscribeRequest
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.routing.RequestContext
@@ -30,7 +29,7 @@ class StreamApi @Inject()(sm: SubscriptionManager,
                           splitter: ExpressionSplitter,
                           implicit val actorRefFactory: ActorRefFactory,
                           registry: Registry) extends WebApi with StrictLogging {
-  import StreamApi.SSESubscribe
+  import StreamApi._
 
   private val dbActor = actorRefFactory.actorSelection("/user/lwc.expressiondb")
   private val subscribeRef = actorRefFactory.actorSelection("/user/lwc.subscribe")
@@ -80,6 +79,17 @@ trait SSERenderable {
 }
 
 object StreamApi {
+  case class SubscribeRequest(expressions: List[ExpressionWithFrequency]) extends JsonSupport
+
+  object SubscribeRequest {
+    def fromJson(json: String): SubscribeRequest = {
+      val decoded = Json.decode[SubscribeRequest](json)
+      if (decoded.expressions == null || decoded.expressions.isEmpty)
+        throw new IllegalArgumentException("Missing or empty expressions array")
+      decoded
+    }
+  }
+
   abstract class SSEMessage(msgType: String, what: String, content: JsonSupport) extends SSERenderable {
     def toSSE = s"$msgType: $what ${content.toJson}"
     def getWhat = what
