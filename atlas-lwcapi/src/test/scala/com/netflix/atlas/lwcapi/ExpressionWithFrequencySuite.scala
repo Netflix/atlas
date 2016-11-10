@@ -94,7 +94,7 @@ class ExpressionWithFrequencySuite extends FunSuite {
 
   test("Fails to parse from json with null expression") {
     val json = "{\"expression\": null}"
-    intercept[JsonMappingException] {
+    intercept[java.lang.reflect.InvocationTargetException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
