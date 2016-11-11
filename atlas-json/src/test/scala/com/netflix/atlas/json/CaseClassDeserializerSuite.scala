@@ -15,11 +15,13 @@
  */
 package com.netflix.atlas.json
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.Version
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.Module
 import com.fasterxml.jackson.databind.Module.SetupContext
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import org.scalatest.FunSuite
 
@@ -169,6 +171,22 @@ class CaseClassDeserializerSuite extends FunSuite {
     val actual = decode[OuterT[List[List[Inner]]]]("""{"vs":[[{"v":"a"},{"v":"b"}],[{"v":"c"}]]}""")
     assert(actual === expected)
   }
+
+  test("honors @JsonProperty annotation") {
+    val expected = PropAnno("foo")
+    val actual = decode[PropAnno]("""{"v":"foo"}""")
+    assert(actual === expected)
+  }
+
+  test("honors @JsonDeserialize.contentAs annotation") {
+    val expected = DeserAnno(Some(42L))
+    val actual = decode[DeserAnno]("""{"value":42}""")
+    assert(actual === expected)
+    // Line above will pass even if a java.lang.Integer is created. The
+    // check below will fail with:
+    // java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.Long
+    assert(actual.value.get.asInstanceOf[java.lang.Long] === 42)
+  }
 }
 
 object CaseClassDeserializerSuite {
@@ -195,4 +213,8 @@ object CaseClassDeserializerSuite {
   case class Inner(v: String)
   case class Outer(vs: List[List[Inner]])
   case class OuterT[T](vs: T)
+
+  case class PropAnno(@JsonProperty("v") value: String)
+
+  case class DeserAnno(@JsonDeserialize(contentAs = classOf[java.lang.Long]) value: Option[Long])
 }

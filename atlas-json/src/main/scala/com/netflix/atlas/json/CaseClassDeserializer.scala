@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.BeanDescription
 import com.fasterxml.jackson.databind.DeserializationConfig
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JavaType
-import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 
 /**
   * Custom deserializer for case classes. The primary difference is that it honors the
@@ -31,7 +31,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 class CaseClassDeserializer(
     javaType: JavaType,
     config: DeserializationConfig,
-    beanDesc: BeanDescription) extends JsonDeserializer[AnyRef] {
+    beanDesc: BeanDescription)
+  extends StdDeserializer[AnyRef](javaType) {
 
   private val desc = Reflection.createDescription(javaType)
 
@@ -57,7 +58,8 @@ class CaseClassDeserializer(
           val btype = beanDesc.getType.containedType(finfo.pos)
           val ftype = if (btype == null) ctxt.getTypeFactory.constructType(finfo.jtype) else btype
           if (p.getCurrentToken != JsonToken.VALUE_NULL) {
-            desc.setField(args, field, ctxt.readValue(p, ftype))
+            val deser = ctxt.findContextualValueDeserializer(ftype, finfo.property)
+            desc.setField(args, field, deser.deserialize(p, ctxt))
           }
       }
       p.nextToken()

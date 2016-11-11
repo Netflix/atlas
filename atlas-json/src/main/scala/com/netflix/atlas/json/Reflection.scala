@@ -17,9 +17,14 @@ package com.netflix.atlas.json
 
 import java.lang.reflect.ParameterizedType
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.`type`.TypeReference
+import com.fasterxml.jackson.databind.BeanProperty
 import com.fasterxml.jackson.databind.JavaType
+import com.fasterxml.jackson.databind.PropertyName
 import com.fasterxml.jackson.databind.`type`.TypeFactory
+import com.fasterxml.jackson.databind.introspect.AnnotatedParameter
+import com.fasterxml.jackson.databind.introspect.AnnotationMap
 import com.fasterxml.jackson.databind.util.ClassUtil
 
 import scala.language.existentials
@@ -31,6 +36,8 @@ import scala.reflect.runtime.universe._
   * classes.
   */
 private[json] object Reflection {
+
+  type JType = java.lang.reflect.Type
 
   // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
   def typeReference[T: Manifest] = new TypeReference[T] {
@@ -54,7 +61,7 @@ private[json] object Reflection {
     * before creating the description.
     */
   def createDescription(cls: Class[_]): CaseClassDesc = {
-    createDescription(TypeFactory.defaultInstance().constructType(cls))
+    createDescription(constructType(cls))
   }
 
   /**
@@ -77,6 +84,7 @@ private[json] object Reflection {
     val ms = csym.companion.asModule
     val params = ctor.paramLists.head.zipWithIndex.map { case (p, i) =>
       val name = p.name.toString
+      val alias = getAlias(p.annotations)
       val dflt = if (!p.asTerm.isParamWithDefault) None else {
         val ts = instanceMirror.symbol.typeSignature
         val name = s"apply$$default$$${i + 1}"
@@ -85,10 +93,23 @@ private[json] object Reflection {
           Some(instanceMirror.reflectMethod(dfltArg.asMethod).apply())
         }
       }
-      Param(name, dflt)
+      Param(name, alias, dflt)
     }
 
     CaseClassDesc(jt, currentMirror.reflectClass(csym).reflectConstructor(ctor), params)
+  }
+
+  private def getAlias(annotations: List[Annotation]): Option[String] = {
+    annotations.find(_.tree.tpe =:= typeOf[JsonProperty]).flatMap { anno =>
+      val constants = anno.tree.children.tail.collect {
+        case AssignOrNamedArg(_, Literal(Constant(v: String))) => v
+      }
+      constants.headOption
+    }
+  }
+
+  private def constructType(t: JType): JavaType = {
+    TypeFactory.defaultInstance().constructType(t)
   }
 
   /**
@@ -105,10 +126,16 @@ private[json] object Reflection {
     *
     * @param name
     *     Name of the parameter.
+    * @param alias
+    *     Alias for the parameter typically set via the `@JsonProperty` annotation.
     * @param dflt
     *     Default value or `None` if no default is specified.
     */
-  case class Param(name: String, dflt: Option[Any])
+  case class Param(name: String, alias: Option[String], dflt: Option[Any]) {
+
+    /** Returns the name of the field in the encoded JSON data. */
+    def field: String = alias.getOrElse(name)
+  }
 
   /**
     * Description of a case class and its parameters.
@@ -122,12 +149,36 @@ private[json] object Reflection {
     */
   case class CaseClassDesc(jt: JavaType, ctor: MethodMirror, params: List[Param]) {
 
+    // BeanProperty for each constructor parameter. Used to provide context for the
+    // deserialization of params such as access to the annotations.
+    private val props = {
+      val ctor = jt.getRawClass.getConstructors()(0)
+      val types = ctor.getGenericParameterTypes
+      val annos = ctor.getParameterAnnotations
+      val properties = new Array[BeanProperty](params.size)
+      params.zipWithIndex.foreach { case (p, i) =>
+        val am = new AnnotationMap
+        annos(i).foreach(am.add)
+        val fieldType = constructType(types(i))
+        val ap = new AnnotatedParameter(null, fieldType, am, i)
+        val prop = new BeanProperty.Std(
+          new PropertyName(p.name),
+          fieldType,
+          null,                      // wrapperName
+          null,                      // contextAnnotations
+          ap,                        // member
+          null)                      // metadata
+        properties(i) = prop
+      }
+      properties
+    }
+
     // Create a map to allow quick lookup of the field and ensure that we have
     // allowed access to all fields.
     private val fields = {
       val ps = params.zipWithIndex.map { case (p, i) =>
         val field = jt.getRawClass.getDeclaredField(p.name)
-        p.name -> FieldInfo(i, field.getType, field.getGenericType)
+        p.field -> FieldInfo(i, field.getType, field.getGenericType, props(i))
       }
       ps.toMap
     }
@@ -137,7 +188,7 @@ private[json] object Reflection {
     private val dfltParams = {
       val ps = new Array[Any](params.size)
       params.zipWithIndex.foreach { case (p, i) =>
-        ps(i) = p.dflt.getOrElse { fields(p.name).defaultValue }
+        ps(i) = p.dflt.getOrElse { fields(p.field).defaultValue }
       }
       ps
     }
@@ -164,9 +215,7 @@ private[json] object Reflection {
     def field(name: String): Option[FieldInfo] = fields.get(name)
   }
 
-  type JType = java.lang.reflect.Type
-
-  case class FieldInfo(pos: Int, cls: Class[_], jtype: JType) {
+  case class FieldInfo(pos: Int, cls: Class[_], jtype: JType, property: BeanProperty) {
     def defaultValue: Any = cls match {
       case c if c.isAssignableFrom(classOf[Option[_]]) => None
       case c if c.isPrimitive                          => ClassUtil.defaultValue(cls)
