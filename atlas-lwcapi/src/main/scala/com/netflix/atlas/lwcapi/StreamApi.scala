@@ -24,6 +24,8 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.routing.RequestContext
 
+import scala.util.control.NonFatal
+
 class StreamApi @Inject()(sm: SubscriptionManager,
                           splitter: ExpressionSplitter,
                           implicit val actorRefFactory: ActorRefFactory,
@@ -67,7 +69,14 @@ class StreamApi @Inject()(sm: SubscriptionManager,
       val postString = ctx.request.entity.asString
       if (postString.nonEmpty) {
         val request = ExpressionsRequest.fromJson(ctx.request.entity.asString)
-        subscribeRef.tell(SubscribeApi.SubscribeRequest(streamId, request.expressions), ctx.responder)
+        request.expressions.foreach { expr =>
+          val split = splitter.split(expr.expression, expr.frequency)
+          dbActor ! ExpressionDatabaseActor.Expression(split)
+          split.expressions.foreach(e =>
+            dbActor ! ExpressionDatabaseActor.Subscribe(streamId, e.id)
+          )
+          actorRef ! SSESubscribe(expr.expression, split.expressions)
+        }
       }
     } catch handleException(ctx)
   }
