@@ -7,7 +7,7 @@ High level overview of Atlas backend.
 |---------------|---------------|
 | **Presenter** | [@brharrington](https://github.com/brharrington) |
 | **Date**      | 2014-12-16    |
-| **Links**     | [PDF](http://netflix.github.io/atlas/atlas_overview.pdf) |
+| **Links**     | [PDF](http://netflix.github.io/atlas/slides/atlas_overview.pdf) |
 
 ## Atlas Telemetry: A Platform Begets an Ecosystem
 
