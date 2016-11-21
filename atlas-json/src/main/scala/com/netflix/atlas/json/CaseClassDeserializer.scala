@@ -15,13 +15,17 @@
  */
 package com.netflix.atlas.json
 
+import java.util.concurrent.atomic.AtomicReferenceArray
+
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.BeanDescription
 import com.fasterxml.jackson.databind.DeserializationConfig
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JavaType
+import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.netflix.atlas.json.Reflection.FieldInfo
 
 /**
   * Custom deserializer for case classes. The primary difference is that it honors the
@@ -35,6 +39,22 @@ class CaseClassDeserializer(
   extends StdDeserializer[AnyRef](javaType) {
 
   private val desc = Reflection.createDescription(javaType)
+
+  private val fieldDesers = new AtomicReferenceArray[JsonDeserializer[_]](desc.params.size)
+
+  private def getFieldDeser(finfo: FieldInfo, ctxt: DeserializationContext): JsonDeserializer[_] = {
+    val fieldDeser = fieldDesers.get(finfo.pos)
+    if (fieldDeser != null) fieldDeser else {
+      // If possible, then get the type info from the bean description as it has more
+      // context about generic types. In some cases it is null so fallback to using
+      // the type we find for the field in the class.
+      val btype = beanDesc.getType.containedType(finfo.pos)
+      val ftype = if (btype == null) ctxt.getTypeFactory.constructType(finfo.jtype) else btype
+      val deser = ctxt.findContextualValueDeserializer(ftype, finfo.property)
+      fieldDesers.set(finfo.pos, deser)
+      deser
+    }
+  }
 
   override def deserialize(p: JsonParser, ctxt: DeserializationContext): AnyRef = {
     val args = desc.newInstanceArgs
@@ -52,13 +72,8 @@ class CaseClassDeserializer(
         case None =>
           p.skipChildren()
         case Some(finfo) =>
-          // If possible, then get the type info from the bean description as it has more
-          // context about generic types. In some cases it is null so fallback to using
-          // the type we find for the field in the class.
-          val btype = beanDesc.getType.containedType(finfo.pos)
-          val ftype = if (btype == null) ctxt.getTypeFactory.constructType(finfo.jtype) else btype
           if (p.getCurrentToken != JsonToken.VALUE_NULL) {
-            val deser = ctxt.findContextualValueDeserializer(ftype, finfo.property)
+            val deser = getFieldDeser(finfo, ctxt)
             desc.setField(args, field, deser.deserialize(p, ctxt))
           }
       }
