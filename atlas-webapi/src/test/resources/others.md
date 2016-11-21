@@ -76,6 +76,9 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=purples
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=reds
 
+# Hashed Palettes
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=40,20,name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=hash:armytage
+
 # Axis palette
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,name,sps,:eq,:sum,(,nf.node,),:by,1,:axis,1,2,:axis&palette=epic&palette.1=oranges
 
