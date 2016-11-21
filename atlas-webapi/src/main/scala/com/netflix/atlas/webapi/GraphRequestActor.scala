@@ -84,8 +84,8 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
     val plotExprs = request.exprs.groupBy(_.axis.getOrElse(0))
     val multiY = plotExprs.size > 1
 
-    val palette = Palette.create(request.flags.palette).iterator
-    val shiftPalette = Palette.create("bw").iterator
+    val palette = newPalette(request.flags.palette)
+    val shiftPalette = newPalette("bw")
 
     val start = request.startMillis
     val end = request.endMillis
@@ -94,7 +94,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
       val axisCfg = request.flags.axes(yaxis)
       val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
 
-      val axisPalette = axisCfg.palette.fold(palette) { v => Palette.create(v).iterator }
+      val axisPalette = axisCfg.palette.fold(palette) { v => newPalette(v) }
 
       var messages = List.empty[String]
       val lines = exprs.flatMap { s =>
@@ -119,7 +119,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
         val lineDefs = labelledTS.sortWith(_.label < _.label).map { t =>
           val color = s.color.getOrElse {
-            val c = if (s.offset > 0L) shiftPalette.next() else axisPalette.next()
+            val c = if (s.offset > 0L) shiftPalette(t.label) else axisPalette(t.label)
             // Alpha setting if present will set the alpha value for the color automatically
             // assigned by the palette. If using an explicit color it will have no effect as the
             // alpha can be set directly using an ARGB hex format for the color.
@@ -163,6 +163,28 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
     val entity = HttpEntity(request.contentType, baos.toByteArray)
     responseRef ! HttpResponse(StatusCodes.OK, entity)
     context.stop(self)
+  }
+
+  /**
+    * Creates a new palette and optionally changes it to use the label hash for
+    * selecting the color rather than choosing the next available color in the
+    * palette. Hash selection is useful to ensure that the same color is always
+    * used for a given label even on separate graphs. However, it also means
+    * that collisions are more likely and that the same color may be used for
+    * different labels even with a small number of lines.
+    *
+    * Hash mode will be used if the palette name is prefixed with "hash:".
+    */
+  private def newPalette(mode: String): String => Color = {
+    val prefix = "hash:"
+    if (mode.startsWith(prefix)) {
+      val pname = mode.substring(prefix.length)
+      val p = Palette.create(pname)
+      v => p.colors(v.hashCode)
+    } else {
+      val p = Palette.create(mode).iterator
+      _ => p.next()
+    }
   }
 
   private def sort(
