@@ -1,8 +1,0 @@
-{
-  "streamId": "sse-test",
-  "expressions": [
-    { "expression": "nf.app,skan_test,:eq,name,thingA,:eq,:and" },
-    { "expression": "nf.app,skan_test,:eq,name,thingB,:eq,:and" },
-    { "expression": "nf.app,skan_test,:eq,name,thingC,:eq,:and" }
-  ]
-}

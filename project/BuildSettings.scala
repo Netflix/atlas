@@ -76,9 +76,7 @@ object BuildSettings {
   // [warn] Credentials file /Users/brharrington/.bintray/.credentials does not exist
   // ```
   def bintrayProfile(p: Project): Project = {
-    val hasTag = sys.env.getOrElse("TRAVIS_TAG", "false") != "false"
-
-    if (credentialsFile.exists && hasTag)
+    if (credentialsFile.exists)
       p.settings(Bintray.settings)
     else
       p.disablePlugins(bintray.BintrayPlugin)
