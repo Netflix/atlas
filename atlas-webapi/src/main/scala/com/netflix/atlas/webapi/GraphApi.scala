@@ -70,7 +70,6 @@ object GraphApi {
       step: Option[String],
       flags: ImageFlags,
       format: String,
-      numberFormat: String,
       id: String,
       isBrowser: Boolean,
       isAllowedFromBrowser: Boolean,
@@ -167,7 +166,6 @@ object GraphApi {
         zoom = flags.zoom,
         legendType = legendType,
         onlyGraph = flags.showOnlyGraph,
-        numberFormat = numberFormat,
         plots = plots,
         source = if (ApiSettings.metadataEnabled) Some(uri) else None,
         warnings = warnings
@@ -294,7 +292,6 @@ object GraphApi {
       step = params.get("step"),
       flags = flags,
       format = params.get("format").getOrElse("png"),
-      numberFormat = params.get("number_format").getOrElse("%f"),
       id = id,
       isBrowser = false,
       isAllowedFromBrowser = true,

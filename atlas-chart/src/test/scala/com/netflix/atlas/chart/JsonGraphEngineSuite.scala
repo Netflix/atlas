@@ -67,7 +67,7 @@ class JsonGraphEngineSuite extends FunSuite {
         |"step":60000,
         |"legend":["0","1"],
         |"metrics":[{"name":"42.0"},{"name":"NaN"}],
-        |"values":[[42.000000,NaN],[42.000000,NaN],[42.000000,NaN]],
+        |"values":[[42.0,NaN],[42.0,NaN],[42.0,NaN]],
         |"notices":[]
         |}"""
 
@@ -81,7 +81,7 @@ class JsonGraphEngineSuite extends FunSuite {
         |"step":60000,
         |"legend":["0","1"],
         |"metrics":[{"name":"42.0"},{"name":"NaN"}],
-        |"values":[[42.000000,"NaN"],[42.000000,"NaN"],[42.000000,"NaN"]],
+        |"values":[[42.0,"NaN"],[42.0,"NaN"],[42.0,"NaN"]],
         |"notices":[]
         |}"""
 
