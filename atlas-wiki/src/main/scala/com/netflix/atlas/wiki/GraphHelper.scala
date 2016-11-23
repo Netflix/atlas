@@ -141,7 +141,7 @@ class GraphHelper(webApi: ActorRef, dir: File, path: String) extends StrictLoggi
   }
 
   private def imageFileName(uri: String): String = {
-    s"${"%040x".format(Hash.sha1(uri)).substring(0, 8)}.png"
+    s"${Strings.zeroPad(Hash.sha1(uri), 40).substring(0, 8)}.png"
   }
 
   def formatQuery(line: String): String = {
