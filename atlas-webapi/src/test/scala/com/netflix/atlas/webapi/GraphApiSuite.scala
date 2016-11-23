@@ -20,6 +20,7 @@ import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
+import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.test.GraphAssertions
 import com.netflix.atlas.test.SrcPath
 import org.scalatest.FunSuite
@@ -83,7 +84,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   private def imageFileName(uri: String): String = {
-    s"${"%040x".format(Hash.sha1(uri)).substring(0, 8)}.png"
+    s"${Strings.zeroPad(Hash.sha1(uri), 40).substring(0, 8)}.png"
   }
 
 }

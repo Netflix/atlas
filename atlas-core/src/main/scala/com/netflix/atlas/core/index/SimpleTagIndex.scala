@@ -21,6 +21,7 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TaggedItem
+import com.netflix.atlas.core.util.Strings
 
 import scala.reflect.ClassTag
 
@@ -116,7 +117,7 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
 
   def findItems(query: TagQuery): List[T] = {
     val matches = findItemsImpl(query.query)
-    val filtered = matches.filter(i => "%040x".format(i.id) > query.offset)
+    val filtered = matches.filter(i => Strings.zeroPad(i.id, 40) > query.offset)
     val sorted = filtered.sortWith { (a, b) => a.id.compareTo(b.id) < 0 }
     sorted.take(query.limit)
   }

@@ -33,7 +33,6 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
     val writer = new OutputStreamWriter(output, "UTF-8")
     val seriesList = config.plots.flatMap(_.lines)
     val count = seriesList.size
-    val numberFmt = config.numberFormat
     val gen = jsonFactory.createGenerator(writer)
 
     gen.writeStartObject()
@@ -66,10 +65,12 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
       gen.writeStartArray()
       seriesList.foreach { series =>
         val v = series.data.data(timestamp)
-        if (!quoteNonNumeric || java.lang.Double.isFinite(v))
-          gen.writeRawValue(numberFmt.format(v))
-        else
+        if (java.lang.Double.isFinite(v))
+          gen.writeNumber(v)
+        else if (quoteNonNumeric)
           gen.writeString(v.toString)
+        else
+          gen.writeRawValue(v.toString)
       }
       gen.writeEndArray()
       timestamp += step

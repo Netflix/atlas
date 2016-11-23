@@ -55,12 +55,6 @@ There are four parameters to control the image size and layout used for a graph:
 
 For more information on the behavior see the [graph layout](Graph-Layout) page.
 
-### Text Flags
-
-| Name            | Description                                  | Default   | Type                                  |
-|-----------------|----------------------------------------------|-----------|---------------------------------------|
-| `number_format` | How to format numbers for text output types  | `%f`     | [float format](https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html#dndec) |
-
 ### Y-Axis
 
 | Name             | Description                                        | Default      | Type                               |

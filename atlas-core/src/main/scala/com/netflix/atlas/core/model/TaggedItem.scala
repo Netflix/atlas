@@ -27,6 +27,7 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.InternMap
 import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.Strings
 
 
 /**
@@ -160,7 +161,7 @@ trait TaggedItem {
   def id: BigInteger
 
   /** Standard string representation of the id. */
-  def idString: String = "%040x".format(id)
+  def idString: String = Strings.zeroPad(id, 40)
 
   /** The tags associated with this item. */
   def tags: Map[String, String]
