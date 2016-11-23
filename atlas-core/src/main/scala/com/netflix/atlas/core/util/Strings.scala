@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.util
 
 import java.awt.Color
+import java.math.BigInteger
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.time.Duration
@@ -479,4 +480,38 @@ object Strings {
       replaceAll("\n", " ").
       replaceAll("@@@", "\n\n")
   }
+
+  /**
+    * Left pad the input string with zeros to the specified width. This is
+    * typically used as an alternative to performing zero padding using
+    * `String.format`.
+    */
+  def zeroPad(s: String, width: Int): String = {
+    val n = width - s.length
+    if (n <= 0) s else {
+      val builder = new StringBuilder(width)
+      var i = 0
+      while (i < n) {
+        builder.append('0')
+        i += 1
+      }
+      builder.append(s)
+      builder.toString()
+    }
+  }
+
+  /**
+    * Convert integer value to hex string and zero pad. It is intended for positive values
+    * and the integer value will be treated as unsigned.
+    */
+  def zeroPad(v: Int, width: Int): String = zeroPad(Integer.toHexString(v), width)
+
+  /**
+    * Convert long value to hex string and zero pad. It is intended for positive values
+    * and the integer value will be treated as unsigned.
+    */
+  def zeroPad(v: Long, width: Int): String = zeroPad(java.lang.Long.toHexString(v), width)
+
+  /** Convert BigInteger value to hex string and zero pad. */
+  def zeroPad(v: BigInteger, width: Int): String = zeroPad(v.toString(16), width)
 }

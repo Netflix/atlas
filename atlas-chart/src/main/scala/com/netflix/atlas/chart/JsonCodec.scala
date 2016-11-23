@@ -202,7 +202,7 @@ private[this] object JsonCodec {
   }
 
   private def writeColor(gen: JsonGenerator, color: Color): Unit = {
-    gen.writeString(f"${color.getRGB}%08X")
+    gen.writeString(Strings.zeroPad(color.getRGB, 8))
   }
 
   private def readGraphDef(parser: JsonParser): GraphDef = {

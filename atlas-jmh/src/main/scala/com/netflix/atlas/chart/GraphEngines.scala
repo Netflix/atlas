@@ -37,8 +37,9 @@ import org.openjdk.jmh.infra.Blackhole
   * ```
   * > jmh:run -prof jmh.extras.JFR -wi 10 -i 10 -f1 -t1 .*GraphEngines.*
   * ...
-  * [info] Benchmark               Mode  Cnt       Score      Error  Units
-  * [info] GraphEngines.json      thrpt   10  133959.616 ± 7774.240  ops/s
+  * [info] Benchmark                 Mode  Cnt       Score      Error  Units
+  * [info] GraphEngines.json        thrpt   10  133984.991 ± 7703.042  ops/s
+  * [info] GraphEngines.v2json      thrpt   10  142775.471 ± 6897.508  ops/s
   * ```
   */
 @State(Scope.Thread)
@@ -61,11 +62,19 @@ class GraphEngines {
   )
 
   val json = new JsonGraphEngine()
+  val v2json = new V2JsonGraphEngine()
 
   @Threads(1)
   @Benchmark
   def json(bh: Blackhole): Unit = {
     val bytes = Streams.byteArray { out => json.write(graphDef, out) }
+    bh.consume(bytes)
+  }
+
+  @Threads(1)
+  @Benchmark
+  def v2json(bh: Blackhole): Unit = {
+    val bytes = Streams.byteArray { out => v2json.write(graphDef, out) }
     bh.consume(bytes)
   }
 }

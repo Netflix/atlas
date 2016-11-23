@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.util
 
 import java.awt.Color
+import java.math.BigInteger
 import java.time.Duration
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -466,5 +467,31 @@ class StringsSuite extends FunSuite {
     assert(substitute("$(foo) ::: $(bar)", vars) === "bar ::: baz")
     assert(substitute("$(missing) ::: $(bar)", vars) === "missing ::: baz")
     assert(substitute("$missing ::: $bar", vars) === "missing ::: baz")
+  }
+
+  test("zeroPad int") {
+    assert(zeroPad(42, 1) === "2a")
+    assert(zeroPad(42, 2) === "2a")
+    assert(zeroPad(42, 3) === "02a")
+    assert(zeroPad(42, 8) === "0000002a")
+    assert(zeroPad(-42, 8) === "ffffffd6")
+    assert(zeroPad(-42, 12) === "0000ffffffd6")
+  }
+
+  test("zeroPad long") {
+    assert(zeroPad(42L, 1) === "2a")
+    assert(zeroPad(42L, 2) === "2a")
+    assert(zeroPad(42L, 3) === "02a")
+    assert(zeroPad(42L, 8) === "0000002a")
+    assert(zeroPad(-42L, 8) === "ffffffffffffffd6")
+    assert(zeroPad(-42L, 18) === "00ffffffffffffffd6")
+  }
+
+  test("zeroPad BigInteger") {
+    val b = new BigInteger("42")
+    assert(zeroPad(b, 1) === "2a")
+    assert(zeroPad(b, 2) === "2a")
+    assert(zeroPad(b, 3) === "02a")
+    assert(zeroPad(b, 8) === "0000002a")
   }
 }
