@@ -16,7 +16,10 @@
 package com.netflix.atlas.json
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.Version
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.Module
 import com.fasterxml.jackson.databind.Module.SetupContext
@@ -187,6 +190,12 @@ class CaseClassDeserializerSuite extends FunSuite {
     // java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.Long
     assert(actual.value.get.asInstanceOf[java.lang.Long] === 42)
   }
+
+  test("honors @JsonDeserialize.using annotation") {
+    val expected = DeserUsingAnno(43L)
+    val actual = decode[DeserUsingAnno]("""{"value":42}""")
+    assert(actual === expected)
+  }
 }
 
 object CaseClassDeserializerSuite {
@@ -217,4 +226,14 @@ object CaseClassDeserializerSuite {
   case class PropAnno(@JsonProperty("v") value: String)
 
   case class DeserAnno(@JsonDeserialize(contentAs = classOf[java.lang.Long]) value: Option[Long])
+
+  case class DeserUsingAnno(@JsonDeserialize(using = classOf[AddOneDeserializer]) value: Long)
+
+  class AddOneDeserializer extends JsonDeserializer[java.lang.Long] {
+    override def deserialize(p: JsonParser, ctxt: DeserializationContext): java.lang.Long = {
+      val v = p.getLongValue
+      p.nextToken()
+      java.lang.Long.valueOf(v + 1)
+    }
+  }
 }
