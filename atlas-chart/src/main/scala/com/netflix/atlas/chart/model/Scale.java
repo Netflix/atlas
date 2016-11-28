@@ -19,6 +19,22 @@ package com.netflix.atlas.chart.model;
  * Type of scale to use for mapping raw input values into y-coordinates on the chart.
  */
 public enum Scale {
+
   LINEAR,
-  LOGARITHMIC
+  LOGARITHMIC,
+  POWER_2,
+  SQRT;
+
+  /** Returns the scale constant associated with a given name. */
+  public static Scale fromName(String s) {
+    switch (s) {
+      case "linear": return LINEAR;
+      case "log":    return LOGARITHMIC;
+      case "pow2":   return POWER_2;
+      case "sqrt":   return SQRT;
+      default:
+        throw new IllegalArgumentException("unknown scale type '" + s
+            + "', should be linear, log, pow2, or sqrt");
+    }
+  }
 }

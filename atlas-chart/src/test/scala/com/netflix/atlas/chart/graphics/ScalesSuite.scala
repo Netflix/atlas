@@ -36,7 +36,7 @@ class ScalesSuite extends FunSuite {
   }
 
   test("ylinear_l1_u2_h300") {
-    val scale = Scales.ylinear(1.0, 2.0, 0, 300)
+    val scale = Scales.yscale(Scales.linear)(1.0, 2.0, 0, 300)
     assert(scale(1.0) === 300)
     assert(scale(2.0) === 0)
   }

@@ -29,6 +29,16 @@ This adds an `$(atlas.offset)` variable for use in showing the offset in the leg
 ## Basic Math and Logarithmic Axis
 
 /api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:dup,:sum,:swap,:count,:over,:over,:div,average,:legend,:rot,sum,:legend,:rot,count,:legend&o=1
+/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:dup,:sum,:swap,:count,:over,:over,:div,average,:legend,:rot,sum,:legend,:rot,count,:legend&scale=log
+/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:dup,:sum,:swap,:count,:over,:over,:div,average,:legend,:rot,sum,:legend,:rot,count,:legend&scale=pow2
+/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:dup,:sum,:swap,:count,:over,:over,:div,average,:legend,:rot,sum,:legend,:rot,count,:legend&scale=sqrt
+/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:dup,:sum,:swap,:count,:over,:over,:div,average,:legend,:rot,sum,:legend,:rot,count,:legend&scale=linear
+/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:dup,:sum,:swap,:count,:over,:over,:div,average,:legend,:rot,sum,:legend,:rot,count,:legend&scale=linear&o=1
+
+/api/v1/graph?e=2012-01-01T00:00&s=e-2d&q=name,sps,:eq,:sum,:dup,:dup,min,:stat,:sub,:swap,max,:stat,0.5,:mul,:sub&scale=linear
+/api/v1/graph?e=2012-01-01T00:00&s=e-2d&q=name,sps,:eq,:sum,:dup,:dup,min,:stat,:sub,:swap,max,:stat,0.5,:mul,:sub&scale=log
+/api/v1/graph?e=2012-01-01T00:00&s=e-2d&q=name,sps,:eq,:sum,:dup,:dup,min,:stat,:sub,:swap,max,:stat,0.5,:mul,:sub&scale=pow2
+/api/v1/graph?e=2012-01-01T00:00&s=e-2d&q=name,sps,:eq,:sum,:dup,:dup,min,:stat,:sub,:swap,max,:stat,0.5,:mul,:sub&scale=sqrt
 
 ## Average
 
