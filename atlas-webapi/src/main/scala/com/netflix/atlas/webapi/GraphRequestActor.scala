@@ -150,7 +150,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
         lower = axisCfg.lower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
         upper = axisCfg.upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
         ylabel = axisCfg.ylabel,
-        scale = if (axisCfg.logarithmic) Scale.LOGARITHMIC else Scale.LINEAR,
+        scale = Scale.fromName(axisCfg.scale.getOrElse("linear")),
         axisColor = if (multiY) None else Some(Color.BLACK),
         tickLabelMode = axisCfg.tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply))
     }

@@ -247,6 +247,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   singleLine("single_line_stack",          v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
   singleLine("single_line_color",          v => v.adjustLines(_.copy(color = Color.BLUE)))
   singleLine("single_line_logarithmic",    v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC)))
+  singleLine("single_line_power",          v => v.adjustPlots(_.copy(scale = Scale.POWER_2)))
+  singleLine("single_line_sqrt",           v => v.adjustPlots(_.copy(scale = Scale.SQRT)))
   singleLine("single_line_zoom_2.0",       v => v.copy(zoom = 2.0))
   singleLine("single_line_zoom_4.0",       v => v.copy(zoom = 4.0))
   singleLine("single_line_no_tick_labels", v => v.adjustPlots(_.copy(tickLabelMode = TickLabelMode.OFF)))
@@ -279,6 +281,12 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
   lines("single_line_log_negative", Seq(-400), v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC)))
   lines("single_line_log_large", Seq(4.123e9), v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC)))
+
+  lines("single_line_power_negative", Seq(-400), v => v.adjustPlots(_.copy(scale = Scale.POWER_2)))
+  lines("single_line_power_large", Seq(4.123e9), v => v.adjustPlots(_.copy(scale = Scale.POWER_2)))
+
+  lines("single_line_sqrt_negative", Seq(-400), v => v.adjustPlots(_.copy(scale = Scale.SQRT)))
+  lines("single_line_sqrt_large", Seq(4.123e9), v => v.adjustPlots(_.copy(scale = Scale.SQRT)))
 
   lines("single_line_stack_negative", Seq(-400), v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
 
@@ -486,6 +494,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   multiy("ylabel_wrap", v => v.copy(ylabel = Some(longLabel)))
   multiy("color",       v => v.copy(axisColor = Some(Color.LIGHT_GRAY)))
   multiy("logarithmic", v => v.copy(scale = Scale.LOGARITHMIC))
+  multiy("power",       v => v.copy(scale = Scale.POWER_2))
+  multiy("sqrt",        v => v.copy(scale = Scale.SQRT))
   multiy("binary",      v => v.copy(tickLabelMode = TickLabelMode.BINARY))
 
   // https://github.com/Netflix/atlas/issues/119

@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.webapi
 
-import java.awt.Color
 import java.time.Instant
 import java.time.ZoneId
 
@@ -23,7 +22,6 @@ import akka.actor.ActorRefFactory
 import akka.actor.Props
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.chart._
-import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
@@ -216,7 +214,7 @@ object GraphApi {
   case class Axis(
       upper: Option[String] = None,
       lower: Option[String] = None,
-      logarithmic: Boolean = false,
+      scale: Option[String] = None,
       stack: Boolean = false,
       ylabel: Option[String] = None,
       tickLabels: Option[String] = None,
@@ -243,10 +241,15 @@ object GraphApi {
   }
 
   private def newAxis(params: Uri.Query, id: Int): Axis = {
+    // Prefer the scale parameter if present. If not, then fallback to look at
+    // the boolean `o` parameter for backwards compatibility.
+    val scale = getAxisParam(params, "scale", id).orElse {
+      if (getAxisParam(params, "o", id).contains("1")) Some("log") else None
+    }
     Axis(
       upper = getAxisParam(params, "u", id),
       lower = getAxisParam(params, "l", id),
-      logarithmic = getAxisParam(params, "o", id).contains("1"),
+      scale = scale,
       stack = getAxisParam(params, "stack", id).contains("1"),
       ylabel = getAxisParam(params, "ylabel", id).filter(_ != ""),
       tickLabels = getAxisParam(params, "tick_labels", id),
