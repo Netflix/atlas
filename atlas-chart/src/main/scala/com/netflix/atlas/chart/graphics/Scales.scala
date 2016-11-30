@@ -49,26 +49,29 @@ object Scales {
     v => ((v - d1) / pixelSpan).toInt + r1
   }
 
-  private def log10(value: Double): Double = value match {
-    case v if v > 0.0 => Math.log10(v)
-    case v if v < 0.0 => -1.0 * Math.log10(-1.0 * v)
-    case _            => 0.0
+  private def log10(value: Double): Double = {
+    value match {
+      case v if v >=  1.0 => math.log10(v)
+      case v if v <= -1.0 => -math.log10(-v)
+      case _              => 0.0
+    }
   }
 
   private def positiveLog(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
-    val pixelSpan = log10(d2 - d1) / (r2 - r1)
-    v => (log10(v - d1) / pixelSpan).toInt + r1
+    // Add 1.0 so that the value passed into the log10 function will be >= 1.0.
+    val pixelSpan = math.log10(d2 - d1 + 1.0) / (r2 - r1)
+    v => (math.log10(v - d1 + 1.0) / pixelSpan).toInt + r1
   }
 
   private def negativeLog(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
     val range = r2 - r1
     val lg = positiveLog(math.abs(d2), math.abs(d1), 0, range)
-    v => r2 + lg(v)
+    v => -lg(-v) + r2
   }
 
   /**
     * Factory for a logarithmic mapping. This is using logarithm for the purposes of
-    * visualization, so `vizlog(0) == 0` and `vizlog(-v) == -1 * log(-1 * v)`.
+    * visualization, so `vizlog(0) == 0` and for `v < 0`, `vizlog(v) == -log(-v)`.
     */
   def logarithmic(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
     if (d1 >= 0.0) {
@@ -76,9 +79,11 @@ object Scales {
     } else if (d1 < 0.0 && d2 <= 0.0) {
       negativeLog(d1, d2, r1, r2)
     } else {
-      val mid = (r2 - r1) / 2 + r1
-      val pos = positiveLog(0.0, d2, mid, r2)
-      val neg = negativeLog(d1, 0.0, r1, mid)
+      val p2 = log10(d2)
+      val p1 = log10(-d1)
+      val top = ((r2 - r1) * (p2 / (p2 + p1))).toInt
+      val pos = positiveLog(0.0, d2, r2 - top, r2)
+      val neg = negativeLog(d1, 0.0, r1, r2 - top)
       v => if (v >= 0.0) pos(v) else neg(v)
     }
   }

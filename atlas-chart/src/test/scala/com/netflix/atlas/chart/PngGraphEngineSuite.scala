@@ -390,6 +390,9 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   lines("double_line_stack_on_NaN",     Seq(Double.NaN, 150),       v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
   lines("double_line_stack_middle_NaN", Seq(150, Double.NaN, 300),  v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
   lines("double_line_stack_negative",   Seq(-400, 150),             v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
+  lines("double_line_log_pos_neg",      Seq(-400, 15),              v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC)))
+  lines("double_line_sqrt_pos_neg",     Seq(-400, 15),              v => v.adjustPlots(_.copy(scale = Scale.SQRT)))
+  lines("double_line_pow2_pos_neg",     Seq(-400, 15),              v => v.adjustPlots(_.copy(scale = Scale.POWER_2)))
 
   test("double_yaxis") {
     // Keeping output the same, this is a hold-over from before the rendering supported multi-y.
