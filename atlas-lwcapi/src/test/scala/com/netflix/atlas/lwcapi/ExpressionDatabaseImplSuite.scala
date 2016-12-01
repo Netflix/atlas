@@ -63,7 +63,6 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
     val x = ExpressionDatabaseImpl()
-    x.setTestMode()
 
     val split1 = splitter.split(query1, freq1)
     assert(split1.expressions.size === 1)
@@ -73,6 +72,7 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     assert(split2.expressions.size === 1)
     x.addExpr(split2.expressions.head, split2.queries.head)
 
+    x.regenerateQueryIndex()
     var ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 2)
     assert(ret.contains(ret1))
@@ -93,7 +93,6 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
     val x = ExpressionDatabaseImpl()
-    x.setTestMode()
 
     val split1 = splitter.split(query1, freq1)
     assert(split1.expressions.size === 1)
@@ -103,17 +102,20 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     assert(split2.expressions.size === 1)
     x.addExpr(split2.expressions.head, split2.queries.head)
 
+    x.regenerateQueryIndex()
     var ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 2)
     assert(ret.contains(ret1))
     assert(ret.contains(ret2))
 
     x.delExpr(id1)
+    x.regenerateQueryIndex()
     ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 1)
     assert(ret.contains(ret2))
 
     x.delExpr(id2)
+    x.regenerateQueryIndex()
     ret = x.expressionsForCluster("skan-test")
     assert(ret === List())
   }
@@ -126,9 +128,11 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     assert(x.hasExpr("idhere") === false)
 
     x.addExpr(expr1, Query.True)
+    x.regenerateQueryIndex()
     assert(x.hasExpr("idhere"))
 
     x.delExpr("idhere")
+    x.regenerateQueryIndex()
     assert(x.hasExpr("idhere") === false)
   }
 
@@ -146,7 +150,6 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
     val x = ExpressionDatabaseImpl()
-    x.setTestMode()
 
     val split1 = splitter.split(query1, freq1)
     assert(split1.expressions.size === 1)
@@ -156,6 +159,7 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     assert(split2.expressions.size === 1)
     x.addExpr(split2.expressions.head, split2.queries.head)
 
+    x.regenerateQueryIndex()
     assert(x.expressionsForCluster("bar-test") === List())
     assert(x.expressionsForCluster("foo-test") === List(ret2))
   }

@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
-import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, TimeUnit}
+import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, ThreadFactory, TimeUnit}
 
 import com.netflix.atlas.core.index.QueryIndex
 import com.netflix.atlas.core.model.Query
@@ -25,34 +25,35 @@ import com.typesafe.scalalogging.StrictLogging
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 
+class NamedThreadFactory(name: String) extends ThreadFactory {
+  def newThread(r: Runnable): Thread = {
+    val thread = new Thread(r, name)
+    thread.setDaemon(true)
+    thread
+  }
+}
+
 case class ExpressionDatabaseImpl() extends ExpressionDatabase with StrictLogging {
-  case class Item(queries: Query, expr: ExpressionWithFrequency)
+  import ExpressionDatabaseImpl._
 
   private val knownExpressions = new ConcurrentHashMap[String, Item]().asScala
   private var queryIndex = QueryIndex.create[ExpressionWithFrequency](Nil)
 
-  private var queryListChanged @volatile = false
-  private var testMode = false
+  @volatile private var queryListChanged = false
 
-  val ex = new ScheduledThreadPoolExecutor(1)
+  val ex = new ScheduledThreadPoolExecutor(1, new NamedThreadFactory("ExpressionDatabase"))
   val task = new Runnable {
     def run() = {
-      if (queryListChanged) {
-        regenerateQueryIndex()
-      }
+      regenerateQueryIndex()
     }
   }
-  val f = ex.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
-
-  def setTestMode() = { testMode = true }
+  val f = ex.scheduleWithFixedDelay(task, 1, 1, TimeUnit.SECONDS)
 
   def addExpr(expr: ExpressionWithFrequency, queries: Query): Boolean = {
     // Only replace the object if it is not there, to avoid keeping many identical objects around.
     val replaced = knownExpressions.putIfAbsent(expr.id, Item(queries, expr))
     val changed = replaced.isEmpty
-    queryListChanged |= changed
-    if (testMode)
-      regenerateQueryIndex()
+    queryListChanged ||= changed
     changed
   }
 
@@ -60,35 +61,38 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase with StrictLoggin
     val removed = knownExpressions.remove(id)
     val changed = removed.isDefined
     queryListChanged |= changed
-    if (testMode)
-      regenerateQueryIndex()
     changed
   }
 
   override def hasExpr(id: String): Boolean = knownExpressions.contains(id)
 
   override def expr(id: String): Option[ExpressionWithFrequency] = {
-    val ret = knownExpressions.get(id)
-    if (ret.isDefined) Some(ret.get.expr) else None
+    knownExpressions.get(id).map(_.expr)
   }
 
   def expressionsForCluster(cluster: String): List[ExpressionWithFrequency] = {
     val name = Names.parseName(cluster)
-    var tags = Map("nf.cluster" -> name.getCluster)
+    val tags = Map.newBuilder[String, String]
+    tags += ("nf.cluster" -> name.getCluster)
     if (name.getApp != null)
-      tags = tags + ("nf.app" -> name.getApp)
+      tags += ("nf.app" -> name.getApp)
     if (name.getStack != null)
-      tags = tags + ("nf.stack" -> name.getStack)
-    val matches = queryIndex.matchingEntries(tags)
-    matches.distinct
+      tags += ("nf.stack" -> name.getStack)
+    queryIndex.matchingEntries(tags.result)
   }
 
-  private def regenerateQueryIndex(): Unit = {
-    queryListChanged = false
-    val map = knownExpressions.map { case (query, item) =>
-      QueryIndex.Entry(item.queries, item.expr)
-    }.toList
-    logger.debug(s"Regenerating QueryIndex with ${map.size} entries")
-    queryIndex = QueryIndex.create(map)
+  private[lwcapi] def regenerateQueryIndex(): Unit = {
+    if (queryListChanged) {
+      queryListChanged = false
+      val map = knownExpressions.map { case (query, item) =>
+        QueryIndex.Entry(item.queries, item.expr)
+      }.toList
+      logger.debug(s"Regenerating QueryIndex with ${map.size} entries")
+      queryIndex = QueryIndex.create(map)
+    }
   }
+}
+
+object ExpressionDatabaseImpl {
+  case class Item(queries: Query, expr: ExpressionWithFrequency)
 }

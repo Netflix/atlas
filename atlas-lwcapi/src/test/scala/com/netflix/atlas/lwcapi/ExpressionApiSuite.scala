@@ -37,11 +37,11 @@ class ExpressionApiSuite(implicit actorSystem: ActorSystem) extends FunSuite wit
   }
 
   test("has data") {
-    alertmap.setTestMode()
     val split = splitter.split("nf.cluster,skan,:eq,:avg", 60000)
     split.queries.zip(split.expressions).foreach { case (query, expr) =>
         alertmap.addExpr(expr, query)
     }
+    alertmap.regenerateQueryIndex()
     Get("/lwc/api/v1/expressions/skan") ~> endpoint.routes ~> check {
       assert(responseAs[String] === """[{"id":"lZSwuIrFJU98PxX5uBUehDutSgA","frequency":60000,"dataExpressions":["nf.cluster,skan,:eq,:count","nf.cluster,skan,:eq,:sum"]}]""")
     }
