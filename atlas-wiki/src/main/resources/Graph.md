@@ -64,7 +64,8 @@ For more information on the behavior see the [graph layout](Graph-Layout) page.
 | `u`              | Upper bound for the axis                           | `auto-style` | [axis bound](Axis-Bounds)          |
 | `ylabel`         | Label for the axis                                 | no label     | String                             |
 | `palette`        | Color palette to use                               | `armytage`   | [palette](Color-Palettes)          |
-| `o`              | Use a logarithmic scale                            | `0`          | [boolean](#boolean-flags)          |
+| `o`              | Use a logarithmic scale (deprecated in 1.6)        | `0`          | [boolean](#boolean-flags)          |
+| `scale`          | Set the axis scale to use (since 1.6)              | `linear`     | [scale](Axis-Scale)                |
 | `tick_labels`    | Set the mode to use for tick labels                | `decimal`    | [tick label mode](Tick-Labels)     |
 | `sort`           | Set the mode to use for sorting the legend         | expr order   | [sort mode](Legends#sorting-modes) |
 | `order`          | Set the order ascending or descending for the sort | `asc`        | [order](Legends#sorting-order)     |
