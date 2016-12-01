@@ -26,10 +26,10 @@ import spray.http.{HttpResponse, StatusCodes}
 class EvaluateActor @Inject() (registry: Registry, sm: SubscriptionManager) extends Actor with ActorLogging {
   import com.netflix.atlas.lwcapi.EvaluateApi._
 
-  private val evalsId = registry.createId("atlas.lwcapi.evaluate.count")
-  private val itemsId = registry.createId("atlas.lwcapi.evaluate.itemCount")
-  private val actorsId = registry.createId("atlas.lwcapi.evaluate.actorCount")
-  private val uninterestingId = registry.createId("atlas.lwcapi.evaluate.uninterestingCount")
+  private val evalsCounter = registry.counter("atlas.lwcapi.evaluate.count")
+  private val itemsCounter = registry.counter("atlas.lwcapi.evaluate.itemCount")
+  private val actorsCounter = registry.counter("atlas.lwcapi.evaluate.actorCount")
+  private val ignoredCounter = registry.counter("atlas.lwcapi.evaluate.ignoredCount")
 
   def receive = {
     case EvaluateRequest(_, Nil) =>
@@ -42,16 +42,16 @@ class EvaluateActor @Inject() (registry: Registry, sm: SubscriptionManager) exte
   }
 
   private def evaluate(timestamp: Long, items: List[Item]): Unit = {
-    registry.counter(evalsId).increment()
-    registry.counter(itemsId).increment(items.size)
+    evalsCounter.increment()
+    itemsCounter.increment(items.size)
     items.foreach { item =>
       val actors = sm.actorsForExpression(item.id)
       if (actors.nonEmpty) {
-        registry.counter(actorsId).increment(actors.size)
+        actorsCounter.increment(actors.size)
         val message = SSEMetric(timestamp, item)
         actors.foreach(actor => actor ! message)
       } else {
-        registry.counter(uninterestingId).increment()
+        ignoredCounter.increment()
       }
     }
   }

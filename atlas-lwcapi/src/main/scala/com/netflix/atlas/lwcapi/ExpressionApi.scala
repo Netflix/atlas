@@ -25,13 +25,11 @@ import com.typesafe.scalalogging.StrictLogging
 import spray.http.{HttpResponse, StatusCodes}
 import spray.routing.RequestContext
 
-case class ExpressionApi @Inject()(alertmap: ExpressionDatabase,
-                                   registry: Registry,
-                                   implicit val actorRefFactory: ActorRefFactory)
+case class ExpressionApi @Inject()(expressionDatabase: ExpressionDatabase,
+  registry: Registry,
+  implicit val actorRefFactory: ActorRefFactory)
   extends WebApi with StrictLogging {
   import ExpressionApi._
-
-  private val defaultURL = "http://..."
 
   private val expressionFetchesId = registry.createId("atlas.lwcapi.expressions.fetches")
   private val expressionCount = registry.distributionSummary("atlas.lwcapi.expressions.count")
@@ -43,7 +41,7 @@ case class ExpressionApi @Inject()(alertmap: ExpressionDatabase,
   }
 
   private def handleReq(ctx: RequestContext, cluster: String): Unit = {
-    val expressions = alertmap.expressionsForCluster(cluster)
+    val expressions = expressionDatabase.expressionsForCluster(cluster)
     val json = Return(expressions).toJson
     ctx.responder ! HttpResponse(StatusCodes.OK, entity = json)
     registry.counter(expressionFetchesId.withTag("cluster", cluster)).increment()

@@ -40,7 +40,7 @@ class SubscribeActor @Inject()(sm: SubscriptionManager,
 
   private val evalsId = registry.createId("atlas.lwcapi.subscribe.count")
   private val itemsId = registry.createId("atlas.lwcapi.subscribe.itemCount")
-  private val uninterestingId = registry.createId("atlas.lwcapi.subscribe.uninterestingCount")
+  private val ignoredId = registry.createId("atlas.lwcapi.subscribe.ignoredCount")
 
   private val dbActor = context.actorSelection("/user/lwc.expressiondb")
 
@@ -75,7 +75,7 @@ class SubscribeActor @Inject()(sm: SubscriptionManager,
           )
           registration.get.actorRef ! SSESubscribe(expr.expression, split.expressions)
         } else {
-          registry.counter(uninterestingId.withTag("action", "subscribe")).increment()
+          registry.counter(ignoredId.withTag("action", "subscribe")).increment()
         }
       } catch {
         case NonFatal(e) =>

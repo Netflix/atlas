@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import java.util.Base64
-
 import com.netflix.atlas.core.model.Query.KeyQuery
 import com.netflix.atlas.core.model.{ModelExtractors, Query, StyleVocabulary}
 import com.netflix.atlas.core.stacklang.Interpreter
@@ -28,7 +26,7 @@ class ExpressionSplitterImpl extends ExpressionSplitter {
   private val interpreter = Interpreter(StyleVocabulary.allWords)
   private val interner = scala.collection.mutable.AnyRefMap[Query, Query]()
 
-  def intern(query: Query): Query = {
+  private[lwcapi] def intern(query: Query): Query = {
     query match {
       case Query.True =>
         query
@@ -97,7 +95,7 @@ class ExpressionSplitterImpl extends ExpressionSplitter {
     if (newQuery != query) simplify(newQuery) else newQuery
   }
 
-  def compress(expr: Query): Query = {
+  private[lwcapi] def compress(expr: Query): Query = {
     val tmp = expr.rewrite { case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True }
     simplify(tmp.asInstanceOf[Query])
   }

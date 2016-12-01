@@ -22,7 +22,6 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.frigga.Names
 import com.typesafe.scalalogging.StrictLogging
 
-import scala.collection.mutable
 import scala.collection.JavaConverters._
 
 class NamedThreadFactory(name: String) extends ThreadFactory {
@@ -49,9 +48,9 @@ case class ExpressionDatabaseImpl() extends ExpressionDatabase with StrictLoggin
   }
   val f = ex.scheduleWithFixedDelay(task, 1, 1, TimeUnit.SECONDS)
 
-  def addExpr(expr: ExpressionWithFrequency, queries: Query): Boolean = {
+  def addExpr(expr: ExpressionWithFrequency, query: Query): Boolean = {
     // Only replace the object if it is not there, to avoid keeping many identical objects around.
-    val replaced = knownExpressions.putIfAbsent(expr.id, Item(queries, expr))
+    val replaced = knownExpressions.putIfAbsent(expr.id, Item(query, expr))
     val changed = replaced.isEmpty
     queryListChanged ||= changed
     changed

@@ -19,7 +19,7 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 
 abstract class ExpressionDatabase {
-  def addExpr(expr: ExpressionWithFrequency, queries: Query): Boolean
+  def addExpr(expr: ExpressionWithFrequency, query: Query): Boolean
   def delExpr(id: String): Boolean
   def hasExpr(id: String): Boolean
   def expr(id: String): Option[ExpressionWithFrequency]
