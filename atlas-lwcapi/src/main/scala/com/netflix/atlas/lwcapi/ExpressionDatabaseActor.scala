@@ -101,7 +101,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   }
 
   def nextTTLWithJitter(now: Long = System.currentTimeMillis()): Long = {
-    now + Math.max(refreshTime + maxJitter / 2 + Random.nextInt(maxJitter / 2), refreshTime)
+    now + Math.max(refreshTime + maxJitter / 2 + Random.nextInt(maxJitter.toInt / 2), refreshTime)
   }
 
   def nextTTL(now: Long = System.currentTimeMillis()): Long = {
@@ -333,7 +333,7 @@ object ExpressionDatabaseActor {
   // Commands as sent over the redis pubsub, or stored in the redis key-value store
   //
 
-  case class RedisExpressionRequest(id: String, expression: String, frequency: Int) extends RedisJson {
+  case class RedisExpressionRequest(id: String, expression: String, frequency: Long) extends RedisJson {
     require(id != null && id.nonEmpty)
     require(expression != null && expression.nonEmpty)
     require(frequency > 0)

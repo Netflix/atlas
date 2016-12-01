@@ -61,7 +61,7 @@ class ExpressionSplitterImpl extends ExpressionSplitter {
     }
   }
 
-  def split(expression: String, frequency: Int): SplitResult = synchronized {
+  def split(expression: String, frequency: Long): SplitResult = synchronized {
     val context = interpreter.execute(expression)
     val distinctStack = context.stack.distinct
     val queries = distinctStack.flatMap {

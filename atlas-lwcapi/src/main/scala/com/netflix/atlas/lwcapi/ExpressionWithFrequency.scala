@@ -20,7 +20,7 @@ import java.util.Base64
 import com.netflix.atlas.json.{Json, JsonSupport}
 
 case class ExpressionWithFrequency(expression: String,
-                                   frequency: Int = ApiSettings.defaultFrequency,
+                                   frequency: Long = ApiSettings.defaultFrequency,
                                    id: String = "") extends JsonSupport {
   require(expression != null && expression.nonEmpty)
 }
@@ -28,7 +28,7 @@ case class ExpressionWithFrequency(expression: String,
 object ExpressionWithFrequency {
   def fromJson(json: String): ExpressionWithFrequency = Json.decode[ExpressionWithFrequency](json)
 
-  def apply(expression: String, frequency: Int) = {
+  def apply(expression: String, frequency: Long) = {
     val f = if (frequency > 0) frequency else ApiSettings.defaultFrequency
     new ExpressionWithFrequency(expression, f, computeId(expression, f))
   }
@@ -37,7 +37,7 @@ object ExpressionWithFrequency {
     new ExpressionWithFrequency(expression, id = computeId(expression, ApiSettings.defaultFrequency))
   }
 
-  def computeId(e: String, f: Int): String = {
+  def computeId(e: String, f: Long): String = {
     val key = s"$f~$e"
     val md = java.security.MessageDigest.getInstance("SHA-1")
     Base64.getUrlEncoder.withoutPadding.encodeToString(md.digest(key.getBytes("UTF-8")))

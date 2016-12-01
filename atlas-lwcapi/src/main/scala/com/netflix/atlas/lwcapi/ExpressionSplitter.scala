@@ -20,7 +20,7 @@ import com.netflix.atlas.core.model.Query
 abstract class ExpressionSplitter() {
   import ExpressionSplitter._
 
-  def split(expression: String, frequency: Int): SplitResult
+  def split(expression: String, frequency: Long): SplitResult
 }
 
 object ExpressionSplitter {

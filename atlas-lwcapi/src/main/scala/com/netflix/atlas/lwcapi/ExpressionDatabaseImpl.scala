@@ -19,7 +19,6 @@ import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, Tim
 
 import com.netflix.atlas.core.index.QueryIndex
 import com.netflix.atlas.core.model.Query
-import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.frigga.Names
 import com.typesafe.scalalogging.StrictLogging
 
