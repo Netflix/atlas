@@ -38,10 +38,6 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
                                          dbMonitor: DatabaseService) extends Actor with StrictLogging {
   import ExpressionDatabaseActor._
 
-  private val channel = ApiSettings.redisPrefixFor("expressions")
-  private var subClient: RedisClient = _
-  private var pubClient: RedisClient = _
-
   private val updatesId = registry.createId("atlas.lwcapi.db.updates")
   private val connectsId = registry.createId("atlas.lwcapi.redis.connects")
   private val connectRetriesId = registry.createId("atlas.lwcapi.redis.connectRetries")
@@ -50,21 +46,8 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val messagesReadId = registry.createId("atlas.lwcapi.redis.messagesRead")
   private val messagesWrittenId = registry.createId("atlas.lwcapi.redis.messagesWritten")
 
-  private val actionHeartbeat = "heartbeat"
-  private val actionExpression = "expression"
-  private val actionSubscribe = "subscribe"
-  private val actionUnsubscribe = "unsubscribe"
-
-  private val uuid = GlobalUUID.get
-
-  private val ttl = ApiSettings.redisTTL
-  private val host = ApiSettings.redisHost
-  private val port = ApiSettings.redisPort
-
-  private val redisCmdHeartbeat = "hb"
-  private val redisCmdExpression = "expr"
-
-  private val heartbeatInterval = 10000 // milliseconds
+  private var subClient: RedisClient = _
+  private var pubClient: RedisClient = _
 
   object TTLState {
     sealed trait EnumVal
@@ -326,6 +309,24 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
 
 object ExpressionDatabaseActor {
   sealed trait RedisJson extends JsonSupport
+
+  private val channel = ApiSettings.redisPrefixFor("expressions")
+
+  private val actionHeartbeat = "heartbeat"
+  private val actionExpression = "expression"
+  private val actionSubscribe = "subscribe"
+  private val actionUnsubscribe = "unsubscribe"
+
+  private val uuid = GlobalUUID.get
+
+  private val ttl = ApiSettings.redisTTL
+  private val host = ApiSettings.redisHost
+  private val port = ApiSettings.redisPort
+
+  private val redisCmdHeartbeat = "hb"
+  private val redisCmdExpression = "expr"
+
+  private val heartbeatInterval = 10000 // milliseconds
 
   private val instanceId = sys.env.getOrElse("EC2_INSTANCE_ID", "unknown")
 
