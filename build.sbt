@@ -73,7 +73,6 @@ lazy val `atlas-lwcapi` = project
   .dependsOn(`atlas-akka`, `atlas-core`, `atlas-json`, `atlas-test` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.frigga,
-    Dependencies.spectatorSandbox,
     Dependencies.redisclient,
     Dependencies.akkaTestkit % "test",
     Dependencies.sprayTestkit % "test"
