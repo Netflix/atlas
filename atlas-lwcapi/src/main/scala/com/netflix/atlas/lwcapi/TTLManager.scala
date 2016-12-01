@@ -18,6 +18,10 @@ package com.netflix.atlas.lwcapi
 import scala.collection.mutable
 import scala.annotation.tailrec
 
+//
+// We store timestamps as negative values, since our priority queue returns the largest
+// value, and thus will return the ones we need to check (the smaller negative values)
+//
 class TTLManager[K](implicit val ord: Ordering[K]) {
   private val prio = mutable.PriorityQueue[(Long, K)]()
   private val touched = mutable.Map[K, Long]()
@@ -29,7 +33,7 @@ class TTLManager[K](implicit val ord: Ordering[K]) {
   def touch(key: K, now: Long): Unit = {
     val old = touched.put(key, now)
     if (old.isEmpty)
-      prio += ((-now, key))
+      prio += (-now -> key)
   }
 
   def remove(key: K): Unit = {
@@ -48,7 +52,7 @@ class TTLManager[K](implicit val ord: Ordering[K]) {
       } else if (-item != next.get._1) {
         // requeue with the latest timestamp
         prio.dequeue
-        prio += ((-item, key))
+        prio += (-item -> key)
         needsTouch(since)
       } else if (item > since) None else {
         prio.dequeue

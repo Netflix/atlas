@@ -44,7 +44,8 @@ class StreamApi @Inject()(sm: SubscriptionManager,
     }
   }
 
-  private def handleReq(ctx: RequestContext, streamId: String, name: Option[String], expr: Option[String], freqString: Option[String]): Unit = {
+  private def handleReq(ctx: RequestContext, streamId: String, name: Option[String],
+    expr: Option[String], freqString: Option[String]): Unit = {
     try {
       val existingActor = sm.registration(streamId)
       if (existingActor.isDefined) {

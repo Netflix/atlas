@@ -18,6 +18,7 @@ package com.netflix.atlas.lwcapi
 import akka.actor.{Actor, Props}
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
+import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Spectator
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import spray.can.Http
@@ -63,7 +64,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
 
     assert(invocations === List[String](
       "STARTHTTP:",
-      SSEHello("mySSEId", "unknown", GlobalUUID.get).toSSE,
+      SSEHello("mySSEId", NetflixEnvironment.instanceId, GlobalUUID.get).toSSE,
       SSESubscribe("expr", ret1).toSSE,
       SSEShutdown("test shutdown").toSSE,
       "close"
@@ -76,7 +77,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
     val sse = system.actorOf(Props(new SSEActor(testClient, "mySSEId", "myName", mockSM, registry)))
 
     Thread.sleep(100)
-    sse ! SSEActor.Tick()
+    sse ! SSEActor.Tick
 
     sse ! SSEShutdown("test shutdown")
 
@@ -84,7 +85,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
 
     assert(invocations === List[String](
       "STARTHTTP:",
-      SSEHello("mySSEId", "unknown", GlobalUUID.get).toSSE,
+      SSEHello("mySSEId", NetflixEnvironment.instanceId, GlobalUUID.get).toSSE,
       SSEHeartbeat().toSSE,
       SSEShutdown("test shutdown").toSSE,
       "close"

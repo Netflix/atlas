@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
+import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -45,13 +46,13 @@ class SSEActor(client: ActorRef,
   private val maxOutstanding = 100
   private var droppedCount = 0
 
-  private val instanceId = sys.env.getOrElse("EC2_INSTANCE_ID", "unknown")
+  private val instanceId = NetflixEnvironment.instanceId()
 
   private val tickTime = 30.seconds
   private val tickMessage = SSEHeartbeat()
   private val helloMessage = SSEHello(sseId, instanceId, GlobalUUID.get)
 
-  client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack())
+  client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack)
   outstandingCount += 1
   registry.counter(connectsId.withTag("streamId", sseId)).increment()
 
@@ -59,18 +60,15 @@ class SSEActor(client: ActorRef,
   sm.register(sseId, self, name)
   send(helloMessage)
 
-  var ticker: Cancellable = context.system.scheduler.scheduleOnce(tickTime) {
-    self ! Tick()
+  var ticker: Cancellable = context.system.scheduler.schedule(tickTime, tickTime) {
+    self ! Tick
   }
 
   def receive = {
-    case Ack() =>
+    case Ack =>
       outstandingCount -= 1
-    case Tick() =>
+    case Tick =>
       if (outstandingCount == 0) send(tickMessage)
-      ticker = context.system.scheduler.scheduleOnce(tickTime) {
-        self ! Tick()
-      }
     case msg: SSEShutdown =>
       send(msg)
       client ! Http.Close
@@ -88,12 +86,12 @@ class SSEActor(client: ActorRef,
   private def send(msg: SSEMessage): Unit = {
     if (outstandingCount < maxOutstanding) {
       val json = msg.toSSE + "\r\n\r\n"
-      client ! MessageChunk(json).withAck(Ack())
+      client ! MessageChunk(json).withAck(Ack)
       outstandingCount += 1
-      registry.counter(messagesId.withTag("action", msg.getWhat).withTag("streamId", sseId)).increment()
+      registry.counter(messagesId.withTag("action", msg.getWhat)).increment()
     } else {
       droppedCount += 1
-      registry.counter(droppedId.withTag("action", msg.getWhat).withTag("streamId", sseId)).increment()
+      registry.counter(droppedId.withTag("action", msg.getWhat)).increment()
     }
   }
 
@@ -113,6 +111,6 @@ class SSEActor(client: ActorRef,
 }
 
 object SSEActor {
-  case class Ack()
-  case class Tick()
+  case object Ack
+  case object Tick
 }
