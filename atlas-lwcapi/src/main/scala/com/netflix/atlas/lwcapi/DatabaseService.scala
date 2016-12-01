@@ -28,11 +28,7 @@ class DatabaseService extends AbstractService with StrictLogging {
 
   override def isHealthy: Boolean = state == State.RUNNING && started
 
-  override def startImpl(): Unit = {
-    logger.info("Starting Database service monitor")
-  }
+  override def startImpl(): Unit = {}
 
-  override def stopImpl(): Unit = {
-    logger.info("Stopping Database service monitor")
-  }
+  override def stopImpl(): Unit = {}
 }
