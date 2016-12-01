@@ -61,17 +61,13 @@ class ExpressionSplitterImpl extends ExpressionSplitter {
 
   def split(expression: String, frequency: Long): SplitResult = synchronized {
     val context = interpreter.execute(expression)
-    val distinctStack = context.stack.distinct
-    val queries = distinctStack.flatMap {
-      case ModelExtractors.PresentationType(t) =>
-        t.expr.dataExprs.map(e => intern(compress(e.query)))
+    val dataExprs = context.stack.flatMap {
+      case ModelExtractors.PresentationType(t) => t.expr.dataExprs
       case _ => throw new IllegalArgumentException("Expression is not a valid expression")
     }
-    val expressions = distinctStack.flatMap {
-      case ModelExtractors.PresentationType(t) =>
-        t.expr.dataExprs.map(e => ExpressionWithFrequency(e.toString, frequency))
-      case _ => throw new IllegalArgumentException("Expression is not a valid expression")
-    }
+    val distinctDataExprs = dataExprs.distinct
+    val queries = distinctDataExprs.map(e => intern(compress(e.dataExprs.head.query)))
+    val expressions = distinctDataExprs.map(e => ExpressionWithFrequency(e.toString, frequency))
     SplitResult(queries, expressions)
   }
 
