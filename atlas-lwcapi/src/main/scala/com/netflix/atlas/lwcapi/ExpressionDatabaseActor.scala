@@ -21,6 +21,7 @@ import akka.actor.{Actor, Cancellable}
 import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.atlas.lwcapi.StreamApi.SSEGenericJson
+import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.{Id, Registry}
 import com.redis._
 import com.typesafe.scalalogging.StrictLogging
@@ -83,22 +84,22 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     self ! Tick
   }
 
-  def nextTTLWithJitter(now: Long = System.currentTimeMillis()): Long = {
+  private def nextTTLWithJitter(now: Long = System.currentTimeMillis()): Long = {
     now + Math.max(refreshTime + maxJitter / 2 + Random.nextInt(maxJitter.toInt / 2), refreshTime)
   }
 
-  def nextTTL(now: Long = System.currentTimeMillis()): Long = {
+  private def nextTTL(now: Long = System.currentTimeMillis()): Long = {
     now + refreshTime
   }
 
-  def restartPubsub(): Unit = {
+  private def restartPubsub(): Unit = {
     subClient = connect("subscribe").get
     pubClient = connect("publish").get
     logger.info("Pubsub restarted!")
     subClient.subscribe(channel)(redisCallback)
   }
 
-  def redisCallback(pubsub: PubSubMessage) = pubsub match {
+  private def redisCallback(pubsub: PubSubMessage) = pubsub match {
     case S(chan, cnt) => logger.info(s"Subscribe to $chan, sub count is now $cnt")
     case U(chan, cnt) => logger.info(s"Unsubscribe from $chan, sub count is now $cnt")
     case E(exc) =>
@@ -109,15 +110,20 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
       val now = System.currentTimeMillis()
       if (firstRedisReceive == 0)
         firstRedisReceive = now
+
+      //
+      // All messages start with a command, originatorID, and then some number of fields
+      // containing command-specific data.
+      //
       val split = msg.split(" ", 3)
-      if (split(1) != uuid) {
+      if (split(1) != uuid) { // ignore our own messages
         processRedisCommand(now, split(0), split(1), split(2), msg.length)
       }
   }
 
   case class RedisLog(cmd: String, originator: String, json: JsonSupport) extends JsonSupport
 
-  def logRedisCommand(cmd: String, originator: String, what: String, obj: JsonSupport) = {
+  private def logRedisCommand(cmd: String, originator: String, what: String, obj: JsonSupport): Unit = {
     try {
       val actor = sm.registration(":::redis")
       if (actor.isDefined)
@@ -127,21 +133,21 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     }
   }
 
-  def processRedisCommand(now: Long, cmd: String, originator: String, json: String, len: Long) = {
+  private def processRedisCommand(now: Long, cmd: String, originator: String, json: String, len: Long): Unit  = {
     cmd match {
       case `redisCmdExpression` =>
-        increment_counter(bytesReadId, "pubsub", actionExpression, len)
-        increment_counter(messagesReadId, "pubsub", actionExpression)
+        incrementCounter(bytesReadId, "pubsub", actionExpression, len)
+        incrementCounter(messagesReadId, "pubsub", actionExpression)
         processRedisExpression(cmd, originator, json, now)
       case `redisCmdHeartbeat` =>
-        increment_counter(bytesReadId, "pubsub", actionHeartbeat, len)
-        increment_counter(messagesReadId, "pubsub", actionHeartbeat, len)
+        incrementCounter(bytesReadId, "pubsub", actionHeartbeat, len)
+        incrementCounter(messagesReadId, "pubsub", actionHeartbeat, len)
         processRedisHeartbeat(cmd, originator, json, now)
       case x => logger.info(s"Unknown redis command: $cmd $json")
     }
   }
 
-  def processRedisExpression(cmd: String, originator: String, json: String, now: Long) = {
+  private def processRedisExpression(cmd: String, originator: String, json: String, now: Long): Unit = {
     val req = RedisExpressionRequest.fromJson(json)
     logger.debug(s"pubsub add for expressionId ${req.id}")
     logRedisCommand(cmd, originator, "redisReceive", req)
@@ -155,33 +161,33 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
         alertmap.addExpr(split.expressions.head, split.queries.head)
       }
     }
-    increment_counter(updatesId, "pubsub", actionExpression)
+    incrementCounter(updatesId, "pubsub", actionExpression)
     ttlState(req.id) = TTLState.Active
     ttlManager.touch(req.id, nextTTLWithJitter(now))
   }
 
-  def processRedisHeartbeat(cmd: String, originator: String, json: String, now: Long) = {
+  private def processRedisHeartbeat(cmd: String, originator: String, json: String, now: Long): Unit = {
     logRedisCommand(cmd, originator, "redisReceive", RedisHeartbeat())
   }
 
-  def increment_counter(counter: Id, source: String, action: String, value: Long = 1) = {
+  private def incrementCounter(counter: Id, source: String, action: String, value: Long = 1): Unit = {
     registry.counter(counter.withTag("source", source).withTag("action", action)).increment(value)
   }
 
   def receive = {
     case Expression(split) =>
-      increment_counter(updatesId, "local", actionExpression)
+      incrementCounter(updatesId, "local", actionExpression)
       split.queries.zip(split.expressions).foreach { case (query, expr) =>
         alertmap.addExpr(expr, query)
         redisPublish(RedisExpressionRequest(expr.id, expr.expression, expr.frequency))
       }
     case Subscribe(streamId, expressionId) =>
-      logger.debug(s"Adding sub streamId $streamId expressionID $expressionId")
-      increment_counter(updatesId, "local", actionSubscribe)
+      logger.debug(s"Subscribe streamId $streamId to expressionID $expressionId")
+      incrementCounter(updatesId, "local", actionSubscribe)
       sm.subscribe(streamId, expressionId)
     case Unsubscribe(streamId, expressionId) =>
-      logger.debug(s"Adding unsub streamId $streamId expressionID $expressionId")
-      increment_counter(updatesId, "local", actionUnsubscribe)
+      logger.debug(s"Unsubscribe streamId $streamId from expressionID $expressionId")
+      incrementCounter(updatesId, "local", actionUnsubscribe)
       sm.unsubscribe(streamId, expressionId)
     case Tick =>
       checkDbStatus()
@@ -192,14 +198,14 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
       }
   }
 
-  def redisPublish(req: RedisExpressionRequest) = {
+  private def redisPublish(req: RedisExpressionRequest): Unit = {
     publish(redisCmdExpression, actionExpression, req)
     ttlManager.touch(req.id, nextTTL())
     ttlState(req.id) = TTLState.Active
   }
 
   var lastHeartbeated = System.currentTimeMillis()
-  def maybeHeartbeat() = {
+  private def maybeHeartbeat(): Unit = {
     val now = System.currentTimeMillis()
     if (lastHeartbeated + heartbeatInterval < now) {
       lastHeartbeated = now
@@ -208,15 +214,15 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     }
   }
 
-  def publish(cmd: String, action: String, item: RedisJson) = {
+  private def publish(cmd: String, action: String, item: RedisJson): Unit = {
     val json = item.toJson
     pubClient.publish(channel, s"$cmd $uuid $json")
     logRedisCommand(cmd, uuid, "redisSend", item)
-    increment_counter(bytesWrittenId, "local", action, json.length)
-    increment_counter(messagesWrittenId, "local", action)
+    incrementCounter(bytesWrittenId, "local", action, json.length)
+    incrementCounter(messagesWrittenId, "local", action)
   }
 
-  def checkDbStatus() = {
+  private def checkDbStatus(): Unit = {
     if (!dbComplete) {
       logger.debug("Full redis re-sync pending")
       if (firstRedisReceive == 0) {
@@ -234,22 +240,18 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
 
   // For each entry found, if we still know about it, touch it in redis.
   // We will do this at half the ttl period to be sure we don't let things expire.
-  def checkTTLs() = {
-    var done = false
+  @scala.annotation.tailrec
+  private def checkTTLs(): Unit = {
     val now = System.currentTimeMillis()
     val targetTime = now - refreshTime
-    while (!done) {
-      val top = ttlManager.needsTouch(targetTime)
-      if (top.isDefined) {
-        logger.debug(s"TTL: Checking ${top.get}")
-        touchExpression(top.get, now)
-      } else {
-        done = true
-      }
+    val top = ttlManager.needsTouch(targetTime)
+    if (top.nonEmpty) {
+      touchExpression(top.get, now)
+      checkTTLs()
     }
   }
 
-  def touchExpression(id: String, now: Long) = {
+  private def touchExpression(id: String, now: Long): Unit = {
     val state = ttlState(id)
     state match {
       case TTLState.NotPresent => // do nothing
@@ -257,7 +259,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
       case TTLState.Active =>
         val subscriberPresent = sm.actorsForExpression(id).nonEmpty
         val split = alertmap.expr(id)
-        if (!subscriberPresent || split.isEmpty) {
+        if (!subscriberPresent || split.isEmpty) { // if no subscribers, or no expression recorded, delete tracking
           ttlState(id) = TTLState.PendingDelete
           logger.debug(s"TTL: Expression state for $id set to PendingDelete")
         } else {
@@ -272,22 +274,19 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   }
 
   private def connect(source: String): Option[RedisClient] = {
-    var tries = 1
+    var attempts = 1
     while (true) {
       try {
-        logger.info(s"Connecting to redis($source), tries $tries")
-
-        registry.counter(connectsId.withTag("source", source)).increment()
-        if (tries != 1) {
-          registry.counter(connectRetriesId.withTag("source", source)).increment()
-        }
+        logger.info(s"Connecting to redis($source), attempts $attempts")
+        val attempt = if (attempts > 1) "retry" else "initial"
+        registry.counter(connectsId.withTag("source", source).withTag("attempt", attempt)).increment()
         Thread.sleep(1000)
         val client = new RedisClient(host, port)
         return Some(client)
       } catch {
         case NonFatal(ex) =>
           logger.warn("Connection error: " + ex.getMessage)
-          tries += 1
+          attempts += 1
       }
     }
     None
@@ -296,14 +295,6 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   override def postStop() = {
     ticker.cancel()
     super.postStop()
-  }
-
-  case class TTLItem(flavor: String, id: String) extends Ordered[TTLItem] {
-    def compare(other: TTLItem): Int = {
-      var ret = id compare other.id
-      if (ret == 0) ret = flavor compare other.flavor
-      ret
-    }
   }
 }
 
@@ -328,7 +319,7 @@ object ExpressionDatabaseActor {
 
   private val heartbeatInterval = 10000 // milliseconds
 
-  private val instanceId = sys.env.getOrElse("EC2_INSTANCE_ID", "unknown")
+  private val instanceId = NetflixEnvironment.instanceId
 
   //
   // Commands as sent over the redis pubsub, or stored in the redis key-value store

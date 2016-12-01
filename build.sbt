@@ -72,6 +72,7 @@ lazy val `atlas-lwcapi` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-akka`, `atlas-core`, `atlas-json`, `atlas-test` % "test")
   .settings(libraryDependencies ++= Seq(
+    Dependencies.iepNflxEnv,
     Dependencies.frigga,
     Dependencies.redisclient,
     Dependencies.akkaTestkit % "test",

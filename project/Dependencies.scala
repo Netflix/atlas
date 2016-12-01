@@ -32,6 +32,7 @@ object Dependencies {
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
   val iepGuice        = "com.netflix.iep" % "iep-guice" % iep
   val iepModuleAws    = "com.netflix.iep" % "iep-module-aws" % iep
+  val iepNflxEnv      = "com.netflix.iep" % "iep-nflxenv" % iep
   val iepService      = "com.netflix.iep" % "iep-service" % iep
   val jacksonAnno2    = "com.fasterxml.jackson.core" % "jackson-annotations" % jackson
   val jacksonCore2    = "com.fasterxml.jackson.core" % "jackson-core" % jackson
