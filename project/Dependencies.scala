@@ -32,6 +32,7 @@ object Dependencies {
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
   val iepGuice        = "com.netflix.iep" % "iep-guice" % iep
   val iepModuleAws    = "com.netflix.iep" % "iep-module-aws" % iep
+  val iepNflxEnv      = "com.netflix.iep" % "iep-nflxenv" % iep
   val iepService      = "com.netflix.iep" % "iep-service" % iep
   val jacksonAnno2    = "com.fasterxml.jackson.core" % "jackson-annotations" % jackson
   val jacksonCore2    = "com.fasterxml.jackson.core" % "jackson-core" % jackson
@@ -47,6 +48,7 @@ object Dependencies {
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
+  val redisclient     = "net.debasishg" %% "redisclient" % "3.0"
   val scalaCompiler   = "org.scala-lang" % "scala-compiler" % scala
   val scalaLibrary    = "org.scala-lang" % "scala-library" % scala
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all" % scala

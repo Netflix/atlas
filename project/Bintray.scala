@@ -12,6 +12,7 @@ object Bintray {
     if (isPullRequest) s"dummy$k" else sys.env.getOrElse(s"bintray$k", s"missing$k")
   }
 
+
   lazy val user = get("User")
   lazy val pass = get("Key")
 
