@@ -162,30 +162,35 @@ class LazyTagIndex[T <: TaggedItem](
   private def buildTagIndex(): (Array[Tag], Array[Array[Int]]) = {
     // Count how many times each tag occurs
     logger.debug(s"building tag index with ${items.length} items, compute tag counts")
-    val tagCounts = new RefIntHashMap[(String, String)]
+    val tagCounts = new scala.collection.mutable.AnyRefMap[String, RefIntHashMap[String]]
     var pos = 0
     while (pos < items.length) {
       items(pos).foreach { (k, v) =>
-        val t = k -> v
-        tagCounts.increment(t, 1)
+        tagCounts.getOrElseUpdate(k, new RefIntHashMap[String]()).increment(v, 1)
       }
       pos += 1
     }
 
     // Create sorted array with tags and the overall counts
     logger.debug(s"building tag index with ${items.length} items, sort and overall counts")
-    val tagsArray = tagCounts.mapToArray(new Array[Tag](tagCounts.size)) { (t, v) =>
-      Tag(buildInterner.intern(t._1), buildInterner.intern(t._2), v)
+    val tagsSize = tagCounts.map(_._2.size).sum
+    val tagsArray = new Array[Tag](tagsSize)
+    pos = 0
+    tagCounts.foreach { case (k, vc) =>
+      vc.foreach { (v, c) =>
+        tagsArray(pos) = Tag(buildInterner.intern(k), buildInterner.intern(v), c)
+        pos += 1
+      }
     }
     util.Arrays.sort(tagsArray.asInstanceOf[Array[AnyRef]])
 
     // Create map of tag to position in tags array
     logger.debug(s"building tag index with ${items.length} items, tag to position map")
-    val posMap = new RefIntHashMap[(String, String)]
+    val posMap = new scala.collection.mutable.AnyRefMap[String, RefIntHashMap[String]]
     pos = 0
     while (pos < tagsArray.length) {
       val t = tagsArray(pos)
-      posMap.put(t.key -> t.value, pos)
+      posMap.getOrElseUpdate(t.key, new RefIntHashMap[String]()).put(t.value, pos)
       pos += 1
     }
 
@@ -198,7 +203,7 @@ class LazyTagIndex[T <: TaggedItem](
       val tagsArray = new Array[Int](tags.size)
       var i = 0
       items(pos).foreach { (k, v) =>
-        tagsArray(i) = posMap.get(k -> v, -1)
+        tagsArray(i) = posMap(k).get(v, -1)
         i += 1
       }
       itemTags(pos) = tagsArray
