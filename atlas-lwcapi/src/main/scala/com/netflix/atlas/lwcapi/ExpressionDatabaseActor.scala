@@ -39,9 +39,8 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
                                          dbMonitor: DatabaseService) extends Actor with StrictLogging {
   import ExpressionDatabaseActor._
 
-  private val updatesId = registry.createId("atlas.lwcapi.db.updates")
-  private val connectsId = registry.createId("atlas.lwcapi.redis.connects")
-  private val connectRetriesId = registry.createId("atlas.lwcapi.redis.connectRetries")
+  private val updatesId = registry.createId("atlas.lwcapi.db.updateCount")
+  private val connectsId = registry.createId("atlas.lwcapi.redis.connectCount")
   private val bytesReadId = registry.createId("atlas.lwcapi.redis.bytesRead")
   private val bytesWrittenId = registry.createId("atlas.lwcapi.redis.bytesWritten")
   private val messagesReadId = registry.createId("atlas.lwcapi.redis.messagesRead")
