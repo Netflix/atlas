@@ -11,4 +11,5 @@
   * [Tutorial](Stack-Language)
   * [Reference](Stack-Language-Reference)
   * [Double Exponential Smoothing](DES)
+  * [[Alerting-Expressions]]
   * [[Alerting Philosophy]]
