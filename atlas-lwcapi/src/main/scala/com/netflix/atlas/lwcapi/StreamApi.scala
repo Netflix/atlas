@@ -20,11 +20,10 @@ import javax.inject.Inject
 import akka.actor.{ActorRefFactory, Props}
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.{Json, JsonSupport}
+import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.routing.RequestContext
-
-import scala.util.control.NonFatal
 
 class StreamApi @Inject()(sm: SubscriptionManager,
                           splitter: ExpressionSplitter,
@@ -44,6 +43,25 @@ class StreamApi @Inject()(sm: SubscriptionManager,
     }
   }
 
+  private def splitRequest(json: String, urlExpr: Option[String], urlFreq: Option[String])
+    : Map[ExpressionWithFrequency, SplitResult] = {
+    val builder = Map.newBuilder[ExpressionWithFrequency, SplitResult]
+
+    val freq = urlFreq.fold(ApiSettings.defaultFrequency)(_.toInt)
+    if (urlExpr.isDefined) {
+      builder += (ExpressionWithFrequency(urlExpr.get, freq) -> splitter.split(urlExpr.get, freq))
+    }
+
+    if (json.nonEmpty) {
+      val request = ExpressionsRequest.fromJson(json)
+      request.expressions.foreach { expr =>
+        builder += (expr -> splitter.split(expr.expression, expr.frequency))
+      }
+    }
+
+    builder.result
+  }
+
   private def handleReq(ctx: RequestContext, streamId: String, name: Option[String],
     expr: Option[String], freqString: Option[String]): Unit = {
     try {
@@ -53,31 +71,21 @@ class StreamApi @Inject()(sm: SubscriptionManager,
         existingActor.get.actorRef ! SSEShutdown(s"Dropped: another connection is using the same stream-id: $streamId", unsub = false)
       }
 
+      // Validate post data.  This is done before creating an actor, since
+      // creating the actor sends a chunked response, masking any expression
+      // parse errors.
+      val splits = splitRequest(ctx.request.entity.asString, expr, freqString)
+
       val actorRef = actorRefFactory.actorOf(Props(
         new SSEActor(ctx.responder, streamId, name.getOrElse("unknown"), sm, registry)))
 
-      val freq = freqString.fold(ApiSettings.defaultFrequency)(_.toInt)
-      if (expr.isDefined) {
-        val split = splitter.split(expr.get, freq)
+      // handle post and URL subscription data
+      splits.foreach { case (e, split) =>
         dbActor ! ExpressionDatabaseActor.Expression(split)
-        actorRef ! SSESubscribe(expr.get, split.expressions)
-        split.expressions.foreach(expr =>
-          dbActor ! ExpressionDatabaseActor.Subscribe(streamId, expr.id)
+        split.expressions.foreach(e =>
+          dbActor ! ExpressionDatabaseActor.Subscribe(streamId, e.id)
         )
-      }
-
-      // handle post data
-      val postString = ctx.request.entity.asString
-      if (postString.nonEmpty) {
-        val request = ExpressionsRequest.fromJson(ctx.request.entity.asString)
-        request.expressions.foreach { expr =>
-          val split = splitter.split(expr.expression, expr.frequency)
-          dbActor ! ExpressionDatabaseActor.Expression(split)
-          split.expressions.foreach(e =>
-            dbActor ! ExpressionDatabaseActor.Subscribe(streamId, e.id)
-          )
-          actorRef ! SSESubscribe(expr.expression, split.expressions)
-        }
+        actorRef ! SSESubscribe(e.expression, split.expressions)
       }
     } catch handleException(ctx)
   }
