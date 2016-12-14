@@ -2,7 +2,6 @@
 The instructions on this page are for quickly getting a sample backend server running on a local
 machine. For other common tasks see:
 
-* [Using Atlas at Netflix](http://go/insightdocs)
 * Querying Data:
     * [Examples](Examples)
     * [Tutorial](Stack-Language)
