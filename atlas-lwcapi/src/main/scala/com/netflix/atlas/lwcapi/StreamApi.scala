@@ -121,9 +121,9 @@ object StreamApi {
   case class SSEGenericJson(what: String, msg: JsonSupport) extends SSEMessage("data", what, msg)
 
   // Heartbeat message
-  case class HeartbeatContent() extends JsonSupport
-  case class SSEHeartbeat()
-    extends SSEMessage("info", "heartbeat", HeartbeatContent())
+  case class StatisticsContent(outstandingCount: Long, outputFullFailures: Long, maxOutstanding: Long) extends JsonSupport
+  case class SSEStatistics(outstandingCount: Long, outputFullFailures: Long, maxOutstanding: Long)
+    extends SSEMessage("info", "statistics", StatisticsContent(outstandingCount, outputFullFailures, maxOutstanding))
 
   // Shutdown message
   case class ShutdownReason(reason: String) extends JsonSupport

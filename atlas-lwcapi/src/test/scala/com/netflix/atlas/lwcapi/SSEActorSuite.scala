@@ -86,7 +86,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
     assert(invocations === List[String](
       "STARTHTTP:",
       SSEHello("mySSEId", NetflixEnvironment.instanceId, GlobalUUID.get).toSSE,
-      SSEHeartbeat().toSSE,
+      SSEStatistics(0, 0, 100).toSSE,
       SSEShutdown("test shutdown").toSSE,
       "close"
     ))

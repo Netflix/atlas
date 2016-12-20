@@ -49,7 +49,7 @@ class SSEActor(client: ActorRef,
   private val instanceId = NetflixEnvironment.instanceId()
 
   private val tickTime = 30.seconds
-  private val tickMessage = SSEHeartbeat()
+  private var tickCount = 0
   private val helloMessage = SSEHello(sseId, instanceId, GlobalUUID.get)
 
   client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack)
@@ -68,7 +68,12 @@ class SSEActor(client: ActorRef,
     case Ack =>
       outstandingCount -= 1
     case Tick =>
-      if (outstandingCount == 0) send(tickMessage)
+      if (outstandingCount == 0 || tickCount > 10) {
+        send(SSEStatistics(outstandingCount, droppedCount, maxOutstanding), force = true)
+        tickCount = 0
+      } else {
+        tickCount += 1
+      }
     case msg: SSEShutdown =>
       send(msg)
       client ! Http.Close
@@ -83,8 +88,8 @@ class SSEActor(client: ActorRef,
       context.stop(self)
   }
 
-  private def send(msg: SSEMessage): Unit = {
-    if (outstandingCount < maxOutstanding) {
+  private def send(msg: SSEMessage, force: Boolean = false): Unit = {
+    if (outstandingCount < maxOutstanding || force) {
       val json = msg.toSSE + "\r\n\r\n"
       client ! MessageChunk(json).withAck(Ack)
       outstandingCount += 1

@@ -41,8 +41,8 @@ class StreamApiSuite extends FunSuite with ScalatestRouteTest {
     assert(ret.contains(""""instanceId":"""))
   }
 
-  test("SSEHeartbeat renders") {
-    assert(SSEHeartbeat().toSSE === """info: heartbeat {}""")
+  test("SSEStatistics renders") {
+    assert(SSEStatistics(1, 2, 3).toSSE === """info: statistics {"outstandingCount":1,"outputFullFailures":2,"maxOutstanding":3}""")
   }
 
   test("SSEShutdown renders") {
