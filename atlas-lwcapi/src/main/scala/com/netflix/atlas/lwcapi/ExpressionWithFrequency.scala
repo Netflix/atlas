@@ -21,8 +21,13 @@ import com.netflix.atlas.json.{Json, JsonSupport}
 
 case class ExpressionWithFrequency(expression: String,
                                    frequency: Long = ApiSettings.defaultFrequency,
-                                   id: String = "") extends JsonSupport {
+                                   id: String = "") extends JsonSupport with Ordered[ExpressionWithFrequency] {
   require(expression != null && expression.nonEmpty)
+
+  def compare(that: ExpressionWithFrequency) = {
+    val expressionMatch = expression.compare(that.expression)
+    if (expressionMatch == 0) frequency.compare(that.frequency) else expressionMatch
+  }
 }
 
 object ExpressionWithFrequency {
