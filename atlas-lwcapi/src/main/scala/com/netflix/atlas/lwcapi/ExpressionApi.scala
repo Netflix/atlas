@@ -39,17 +39,17 @@ case class ExpressionApi @Inject()(expressionDatabase: ExpressionDatabase,
 
   def routes: RequestContext => Unit = {
     path("lwc" / "api" / "v1" / "expressions" / Segment) { (cluster) =>
-      optionalHeaderValueByName("ETag") { etag =>
-        get { ctx => handleReq(ctx, etag, cluster) }
+      optionalHeaderValueByName("If-None-Match") { etags =>
+        get { ctx => handleReq(ctx, etags, cluster) }
       }
     }
   }
 
-  private def handleReq(ctx: RequestContext, remote_etag: Option[String], cluster: String): Unit = {
+  private def handleReq(ctx: RequestContext, received_etags: Option[String], cluster: String): Unit = {
     val expressions = expressionDatabase.expressionsForCluster(cluster)
     val tag = compute_etag(expressions)
     val headers: List[HttpHeader] = List(RawHeader("ETag", tag))
-    val sent_tags = split_sent_tags(remote_etag)
+    val sent_tags = split_sent_tags(received_etags)
     if (sent_tags.contains(tag)) {
       ctx.responder ! HttpResponse(StatusCodes.NotModified, headers = headers)
       registry.counter(expressionFetchesId.withTag("etagmatch", "true")).increment()

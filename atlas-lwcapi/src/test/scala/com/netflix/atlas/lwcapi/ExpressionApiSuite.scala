@@ -44,7 +44,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
 
   test("get with empty-content etag returns NotModified") {
     val etag = ExpressionApi.compute_etag(List())
-    Get("/lwc/api/v1/expressions/123").withHeaders(List(RawHeader("ETag", etag))) ~> endpoint.routes ~> check {
+    Get("/lwc/api/v1/expressions/123").withHeaders(List(RawHeader("If-None-Match", etag))) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.NotModified)
       assert(responseAs[String].isEmpty)
       assert(header("ETag").isDefined)
@@ -55,7 +55,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   test("get with non-matching etag returns OK and content") {
     val etag = """"never-gonna-match""""
     val empty_etag = ExpressionApi.compute_etag(List())
-    Get("/lwc/api/v1/expressions/123").withHeaders(List(RawHeader("ETag", etag))) ~> endpoint.routes ~> check {
+    Get("/lwc/api/v1/expressions/123").withHeaders(List(RawHeader("If-None-Match", etag))) ~> endpoint.routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(responseAs[String] === """{"expressions":[]}""")
       assert(header("ETag").isDefined)
