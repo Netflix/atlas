@@ -129,4 +129,10 @@ class ExpressionWithFrequencySuite extends FunSuite {
       ExpressionWithFrequency(null)
     }
   }
+
+  test("sorts") {
+    val source = List(ExpressionWithFrequency("a", 2), ExpressionWithFrequency("z", 1), ExpressionWithFrequency("c", 3))
+    val expected = List(ExpressionWithFrequency("a", 2), ExpressionWithFrequency("c", 3), ExpressionWithFrequency("z", 1))
+    assert(expected === source.sorted)
+  }
 }
