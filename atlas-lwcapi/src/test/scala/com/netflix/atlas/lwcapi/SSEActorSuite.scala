@@ -16,8 +16,6 @@
 package com.netflix.atlas.lwcapi
 
 import akka.actor.{Actor, Props}
-import com.netflix.atlas.core.model.Query
-import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Spectator
 import org.scalatest.{BeforeAndAfter, FunSuite}
@@ -65,6 +63,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
     assert(invocations === List[String](
       "STARTHTTP:",
       SSEHello("mySSEId", NetflixEnvironment.instanceId, GlobalUUID.get).toSSE,
+      SSEStatistics(0).toSSE,
       SSESubscribe("expr", ret1).toSSE,
       SSEShutdown("test shutdown").toSSE,
       "close"
@@ -86,7 +85,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
     assert(invocations === List[String](
       "STARTHTTP:",
       SSEHello("mySSEId", NetflixEnvironment.instanceId, GlobalUUID.get).toSSE,
-      SSEStatistics(0, 0, 100).toSSE,
+      SSEStatistics(0).toSSE,
       SSEShutdown("test shutdown").toSSE,
       "close"
     ))
@@ -110,19 +109,25 @@ object SSEActorSuite {
   @volatile var clientDone = false
 
   class TestClient extends Actor {
-    def convert(v: Any): String = v match {
+    def convert(v: Any): List[String] = v match {
       case MessageChunk(data, extension) =>
-        data.asString
+        data.asString.split("\r\n\r\n").toList
       case ChunkedResponseStart(msg) =>
-        s"STARTHTTP:${msg.entity.asString}"
-      case x => x.toString
+        val parts = msg.entity.asString.split("\r\n\r\n")
+        var first = true
+        val strings = parts.map { x =>
+          first = false
+          if (first) x else s"STARTHTTP:$x"
+        }
+        strings.toList
+      case x => List(x.toString)
     }
 
     def receive = {
       // need to reply to all Confirmed messages
       case Confirmed(x, y) =>
         sender() ! y
-        record(convert(x))
+        convert(x).foreach { x => record(x) }
       case Http.Close =>
         record("close")
         clientDone = true
