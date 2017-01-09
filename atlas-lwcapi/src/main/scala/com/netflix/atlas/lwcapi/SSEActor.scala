@@ -56,10 +56,9 @@ class SSEActor(client: ActorRef,
   private var tickCount = 0
   private val statsTime = 300 // in 100ms increments.
   private val helloMessage = SSEHello(sseId, instanceId, GlobalUUID.get)
-  private var toSend = ""
+  private val messageBuffer = new StringBuilder
 
-  client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack(1))
-  outstandingByteCount += 1 // ignore byte lengh here, just send it.
+  client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack(0))
   registry.counter(connectsId.withTag("streamId", sseId)).increment()
 
   var needsUnregister = true
@@ -98,20 +97,23 @@ class SSEActor(client: ActorRef,
   }
 
   private def flushBuffer(): Unit = {
-    if (toSend.nonEmpty) {
-      client ! MessageChunk(toSend).withAck(Ack(toSend.length))
-      toSend = ""
+    if (messageBuffer.nonEmpty) {
+      val bufferLength = messageBuffer.length
+      registry.counter(sendBytesId).increment(bufferLength)
+      registry.counter(sendsId).increment()
+      client ! MessageChunk(messageBuffer.result).withAck(Ack(bufferLength))
+      messageBuffer.clear
     }
   }
 
   private def queueToBuffer(msg: SSEMessage): Unit = {
     val part = msg.toSSE + "\r\n\r\n"
-    toSend += part
+    messageBuffer.append(part)
     // accounting happens prior to actual send
     outstandingByteCount += part.length
     registry.counter(messagesId.withTag("action", msg.getWhat)).increment()
     registry.counter(messageBytesId.withTag("action", msg.getWhat)).increment(part.length)
-    if (toSend.length >= maxBufferLength)
+    if (messageBuffer.length >= maxBufferLength)
       flushBuffer()
   }
 
