@@ -37,47 +37,55 @@ class SSEActor(client: ActorRef,
 
   private val connectsId = registry.createId("atlas.lwcapi.sse.connectCount")
   private val messagesId = registry.createId("atlas.lwcapi.sse.messageCount")
-  private val droppedId = registry.createId("atlas.lwcapi.sse.droppedCount")
+  private val messageBytesId = registry.createId("atlas.lwcapi.sse.messageBytesCount")
+  private val sendsId = registry.createId("atlas.lwcapi.sse.httpSendsCount")
+  private val sendBytesId = registry.createId("atlas.lwcapi.sse.httpSendBytesCount")
+  private val droppedId = registry.createId("atlas.lwcapi.sse.droppedMessageCount")
 
   private val sseCountId = registry.createId("atlas.lwcapi.streams").withTag("streamType", "sse")
   private val sseCount = registry.gauge(sseCountId, new AtomicInteger(1))
 
-  private var outstandingCount = 0
-  private val maxOutstanding = 100
-  private var droppedCount = 0
+  private var outstandingByteCount: Long = 0
+  private val maxOutstandingBytes: Long = 10000000 // 10 megabytes max outstanding request size per SSE stream
+  private var droppedMessageCount: Long = 0 // in messages
+  private val maxBufferLength: Long = 100000 // 100k allowed to buffer before we send it.
 
   private val instanceId = NetflixEnvironment.instanceId()
 
-  private val tickTime = 30.seconds
+  private val tickTime = 100.microseconds
   private var tickCount = 0
+  private val statsTime = 300 // in 100ms increments.
   private val helloMessage = SSEHello(sseId, instanceId, GlobalUUID.get)
+  private val messageBuffer = new StringBuilder
 
-  client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack)
-  outstandingCount += 1
+  client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack(0))
   registry.counter(connectsId.withTag("streamId", sseId)).increment()
 
   var needsUnregister = true
   sm.register(sseId, self, name)
   send(helloMessage)
+  send(SSEStatistics(0))
 
   var ticker: Cancellable = context.system.scheduler.schedule(tickTime, tickTime) {
     self ! Tick
   }
 
   def receive = {
-    case Ack =>
-      outstandingCount -= 1
+    case Ack(length) =>
+      outstandingByteCount -= length
     case Tick =>
-      if (outstandingCount == 0 || tickCount > 10) {
-        send(SSEStatistics(outstandingCount, droppedCount, maxOutstanding), force = true)
+      tickCount += 1
+      if (tickCount >= statsTime) {
+        val msg = SSEStatistics(droppedMessageCount)
+        send(msg, force = true)
         tickCount = 0
-      } else {
-        tickCount += 1
       }
+      flushBuffer()
     case msg: SSEShutdown =>
-      send(msg)
-      client ! Http.Close
       ticker.cancel()
+      send(msg)
+      flushBuffer()
+      client ! Http.Close
       unregister()
       log.info(s"Closing SSE stream: ${msg.reason}")
     case msg: SSEMessage =>
@@ -88,15 +96,38 @@ class SSEActor(client: ActorRef,
       context.stop(self)
   }
 
+  private def flushBuffer(): Unit = {
+    if (messageBuffer.nonEmpty) {
+      val bufferLength = messageBuffer.length
+      registry.counter(sendBytesId).increment(bufferLength)
+      registry.counter(sendsId).increment()
+      client ! MessageChunk(messageBuffer.result).withAck(Ack(bufferLength))
+      messageBuffer.clear
+    }
+  }
+
+  private def queueToBuffer(msg: SSEMessage): Unit = {
+    val part = msg.toSSE + "\r\n\r\n"
+    messageBuffer.append(part)
+    // accounting happens prior to actual send
+    outstandingByteCount += part.length
+    registry.counter(messagesId.withTag("action", msg.getWhat)).increment()
+    registry.counter(messageBytesId.withTag("action", msg.getWhat)).increment(part.length)
+    if (messageBuffer.length >= maxBufferLength)
+      flushBuffer()
+  }
+
   private def send(msg: SSEMessage, force: Boolean = false): Unit = {
-    if (outstandingCount < maxOutstanding || force) {
-      val json = msg.toSSE + "\r\n\r\n"
-      client ! MessageChunk(json).withAck(Ack)
-      outstandingCount += 1
-      registry.counter(messagesId.withTag("action", msg.getWhat)).increment()
+    if (force) {
+      queueToBuffer(msg)
+      flushBuffer()
     } else {
-      droppedCount += 1
-      registry.counter(droppedId.withTag("action", msg.getWhat)).increment()
+      if (outstandingByteCount < maxOutstandingBytes) {
+        queueToBuffer(msg)
+      } else {
+        droppedMessageCount += 1
+        registry.counter(droppedId.withTag("action", msg.getWhat)).increment()
+      }
     }
   }
 
@@ -113,9 +144,10 @@ class SSEActor(client: ActorRef,
     ticker.cancel()
     super.postStop()
   }
+
+  case class Ack(length: Long)
 }
 
 object SSEActor {
-  case object Ack
   case object Tick
 }

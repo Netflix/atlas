@@ -109,7 +109,7 @@ object StreamApi {
 
   abstract class SSEMessage(msgType: String, what: String, content: JsonSupport) extends SSERenderable {
     def toSSE = s"$msgType: $what ${content.toJson}"
-    def getWhat = what
+    def getWhat: String = what
   }
 
   // Hello message
@@ -121,9 +121,9 @@ object StreamApi {
   case class SSEGenericJson(what: String, msg: JsonSupport) extends SSEMessage("data", what, msg)
 
   // Heartbeat message
-  case class StatisticsContent(outstandingCount: Long, outputFullFailures: Long, maxOutstanding: Long) extends JsonSupport
-  case class SSEStatistics(outstandingCount: Long, outputFullFailures: Long, maxOutstanding: Long)
-    extends SSEMessage("info", "statistics", StatisticsContent(outstandingCount, outputFullFailures, maxOutstanding))
+  case class StatisticsContent(outputFullFailures: Long) extends JsonSupport
+  case class SSEStatistics(outputFullFailures: Long)
+    extends SSEMessage("info", "statistics", StatisticsContent(outputFullFailures))
 
   // Shutdown message
   case class ShutdownReason(reason: String) extends JsonSupport
