@@ -46,12 +46,12 @@ class ServerStatsActor(registry: Registry, bound: Promise[Http.Bound])
 
   private val requestCount = registry.counter("spray.requests")
   private val requestTimeouts = registry.counter("spray.requestTimeouts")
-  private val openRequests = registry.gauge("spray.openRequests", new AtomicLong(0L))
-  private val maxOpenRequests = registry.gauge("spray.maxOpenRequests", new AtomicLong(0L))
+  private val openRequests = registry.gauge(registry.createId("spray.openRequests"))
+  private val maxOpenRequests = registry.gauge(registry.createId("spray.maxOpenRequests"))
 
   private val connectionCount = registry.counter("spray.connections")
-  private val openConnections = registry.gauge("spray.openConnections", new AtomicLong(0L))
-  private val maxOpenConnections = registry.gauge("spray.maxOpenConnections", new AtomicLong(0L))
+  private val openConnections = registry.gauge(registry.createId("spray.openConnections"))
+  private val maxOpenConnections = registry.gauge(registry.createId("spray.maxOpenConnections"))
 
   // Previous value used to compute the delta
   private var serverStats: Stats = Stats(

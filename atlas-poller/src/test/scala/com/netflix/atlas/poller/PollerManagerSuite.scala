@@ -128,35 +128,44 @@ class PollerManagerSuite extends TestKit(ActorSystem())
     assert(c2.count() === init2 + 1)
   }
 
+  private def updateGauges(): Unit = {
+    // Forces the update of passive gauges
+    registry.iterator()
+  }
+
   test("age is updated on success") {
     dataRef.reset()
     val payload = Messages.MetricsPayload()
-    val m = registry.get(registry.createId("atlas.poller.dataAge", "id", "poller-test"))
+    val m = registry.gauge(registry.createId("atlas.poller.dataAge", "id", "poller-test"))
 
     val t = clock.wallTime()
-    assert(m.measure().iterator().next().value() === 0.0)
+    updateGauges()
+    assert(m.value() === 0.0)
 
     clock.setWallTime(t + 60000L)
     dataRef.set(Success(payload))
     ref ! Messages.Tick
     waitForCompletion()
-    assert(m.measure().iterator().next().value() === 0.0)
+    updateGauges()
+    assert(m.value() === 0.0)
 
   }
 
   test("age is not updated on failure") {
     dataRef.reset()
     val e1 = new RuntimeException("foo")
-    val m = registry.get(registry.createId("atlas.poller.dataAge", "id", "poller-test"))
+    val m = registry.gauge(registry.createId("atlas.poller.dataAge", "id", "poller-test"))
 
     val t = clock.wallTime()
-    assert(m.measure().iterator().next().value() === 0.0)
+    updateGauges()
+    assert(m.value() === 0.0)
 
     clock.setWallTime(t + 60000L)
     dataRef.set(Failure(e1))
     ref ! Messages.Tick
     waitForCompletion()
-    assert(m.measure().iterator().next().value() === 60.0)
+    updateGauges()
+    assert(m.value() === 60.0)
 
   }
 
