@@ -2,15 +2,15 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.4.12"
-    val aws        = "1.11.49"
-    val iep        = "0.4.11"
+    val akka       = "2.4.16"
+    val aws        = "1.11.78"
+    val iep        = "0.4.15"
     val guice      = "4.1.0"
     val jackson    = "2.8.4"
     val log4j      = "2.7"
     val scala      = "2.11.8"
-    val slf4j      = "1.7.21"
-    val spectator  = "0.44.0"
+    val slf4j      = "1.7.22"
+    val spectator  = "0.47.0"
     val spray      = "1.3.4"
 
     val crossScala = Seq(scala)
@@ -26,8 +26,8 @@ object Dependencies {
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.3.3"
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.1.6"
-  val frigga          = "com.netflix.frigga" % "frigga" % "0.15.0"
+  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.1.8"
+  val frigga          = "com.netflix.frigga" % "frigga" % "0.17.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
   val iepGuice        = "com.netflix.iep" % "iep-guice" % iep
