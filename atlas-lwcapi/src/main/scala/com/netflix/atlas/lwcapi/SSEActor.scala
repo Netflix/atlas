@@ -35,6 +35,8 @@ class SSEActor(client: ActorRef,
   import SSEActor._
   import StreamApi._
 
+  private val sseMediaType = MediaType.custom("text", "event-stream", compressible = true, binary = false)
+
   private val connectsId = registry.createId("atlas.lwcapi.sse.connectCount")
   private val messagesId = registry.createId("atlas.lwcapi.sse.messageCount")
   private val messageBytesId = registry.createId("atlas.lwcapi.sse.messageBytesCount")
@@ -58,7 +60,10 @@ class SSEActor(client: ActorRef,
   private val helloMessage = SSEHello(sseId, instanceId, GlobalUUID.get)
   private val messageBuffer = new StringBuilder
 
-  client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK)).withAck(Ack(0))
+  // The first response sets the content-type.  Note that we must return some data, since
+  // even an empty string results in no content-type being set.
+  val entity = HttpEntity(sseMediaType, "info: Connected {}\r\n\r\n")
+  client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK, entity = entity)).withAck(Ack(0))
   registry.counter(connectsId.withTag("streamId", sseId)).increment()
 
   var needsUnregister = true

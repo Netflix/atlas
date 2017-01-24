@@ -23,7 +23,7 @@ import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.StreamApi.SSESubscribe
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
-import spray.http.{HttpResponse, StatusCodes}
+import spray.http.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
@@ -54,7 +54,7 @@ class SubscribeActor @Inject()(sm: SubscriptionManager,
       } else {
         Errors("error", "Some expressions could not be parsed", errors)
       }
-      sender() ! HttpResponse(StatusCodes.OK, errorResponse.toJson)
+      sender() ! HttpResponse(StatusCodes.OK, entity = HttpEntity(MediaTypes.`application/json`, errorResponse.toJson))
     case _ =>
       DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "unknown payload")
   }
