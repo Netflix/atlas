@@ -25,7 +25,7 @@ import com.netflix.atlas.json.{Json, JsonSupport}
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.http.HttpHeaders.RawHeader
-import spray.http.{HttpHeader, HttpResponse, StatusCodes}
+import spray.http._
 import spray.routing.RequestContext
 
 case class ExpressionApi @Inject()(expressionDatabase: ExpressionDatabase,
@@ -55,7 +55,7 @@ case class ExpressionApi @Inject()(expressionDatabase: ExpressionDatabase,
       registry.counter(expressionFetchesId.withTag("etagmatch", "true")).increment()
     } else {
       val json = Return(expressions).toJson
-      ctx.responder ! HttpResponse(StatusCodes.OK, entity = json, headers = headers)
+      ctx.responder ! HttpResponse(StatusCodes.OK, entity = HttpEntity(MediaTypes.`application/json`, json), headers = headers)
       registry.counter(expressionFetchesId.withTag("etagmatch", "false")).increment()
     }
     expressionCount.record(expressions.size)

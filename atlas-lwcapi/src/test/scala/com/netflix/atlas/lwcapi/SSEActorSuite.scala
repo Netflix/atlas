@@ -20,7 +20,7 @@ import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Spectator
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import spray.can.Http
-import spray.http.{ChunkedResponseStart, Confirmed, MessageChunk}
+import spray.http._
 import spray.testkit.ScalatestRouteTest
 
 import scala.collection.mutable
@@ -61,7 +61,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
     ))
 
     assert(invocations === List[String](
-      "STARTHTTP:",
+      "STARTHTTP:ContentType=text/event-stream:info: Connected {}",
       SSEHello("mySSEId", NetflixEnvironment.instanceId, GlobalUUID.get).toSSE,
       SSEStatistics(0).toSSE,
       SSESubscribe("expr", ret1).toSSE,
@@ -83,7 +83,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
     waitForShutdown()
 
     assert(invocations === List[String](
-      "STARTHTTP:",
+      "STARTHTTP:ContentType=text/event-stream:info: Connected {}",
       SSEHello("mySSEId", NetflixEnvironment.instanceId, GlobalUUID.get).toSSE,
       SSEStatistics(0).toSSE,
       SSEShutdown("test shutdown").toSSE,
@@ -114,10 +114,22 @@ object SSEActorSuite {
         data.asString.split("\r\n\r\n").toList
       case ChunkedResponseStart(msg) =>
         val parts = msg.entity.asString.split("\r\n\r\n")
+        val contentType = msg.entity.toOption match {
+          case Some(entity) =>
+            Some(entity.contentType)
+          case None =>
+            None
+        }
+
         var first = true
         val strings = parts.map { x =>
+          val ctype = if (!first) "" else {
+            val value = contentType.getOrElse(ContentTypes.NoContentType)
+            s"ContentType=$value:"
+          }
+          val ret = if (first) s"STARTHTTP:$ctype$x" else x
           first = false
-          if (first) x else s"STARTHTTP:$x"
+          ret
         }
         strings.toList
       case x => List(x.toString)
