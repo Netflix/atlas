@@ -15,10 +15,12 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.{Actor, Props}
+import akka.actor.Actor
+import akka.actor.Props
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Spectator
-import org.scalatest.{BeforeAndAfter, FunSuite}
+import org.scalatest.BeforeAndAfter
+import org.scalatest.FunSuite
 import spray.can.Http
 import spray.http._
 import spray.testkit.ScalatestRouteTest
@@ -26,8 +28,8 @@ import spray.testkit.ScalatestRouteTest
 import scala.collection.mutable
 
 class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
-  import StreamApi._
   import SSEActorSuite._
+  import StreamApi._
 
   val registry = Spectator.globalRegistry()
 

@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.ActorSystem
 import com.netflix.spectator.api.Spectator
 import org.scalatest.FunSuite
 import spray.http.HttpHeaders.RawHeader

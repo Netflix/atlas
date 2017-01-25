@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.lwcapi
 
-import scala.collection.mutable
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 //
 // We store timestamps as negative values, since our priority queue returns the largest

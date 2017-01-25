@@ -17,14 +17,17 @@ package com.netflix.atlas.lwcapi
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.duration._
-import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.Cancellable
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
-
-import scala.concurrent.ExecutionContext.Implicits.global
 import spray.can.Http
 import spray.http._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 class SSEActor(client: ActorRef,
                sseId: String,

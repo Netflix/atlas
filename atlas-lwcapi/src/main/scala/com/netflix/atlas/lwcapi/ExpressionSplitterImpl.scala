@@ -16,7 +16,9 @@
 package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.core.model.Query.KeyQuery
-import com.netflix.atlas.core.model.{ModelExtractors, Query, StyleVocabulary}
+import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 
 class ExpressionSplitterImpl extends ExpressionSplitter {

@@ -15,8 +15,11 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.Actor
+import akka.actor.ActorSystem
+import akka.actor.Props
 import org.scalatest.FunSuite
+
 import scala.language.postfixOps
 
 class SubscriptionManagerImplSuite() extends FunSuite {

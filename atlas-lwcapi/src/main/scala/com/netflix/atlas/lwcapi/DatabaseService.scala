@@ -17,7 +17,8 @@ package com.netflix.atlas.lwcapi
 
 import javax.inject.Singleton
 
-import com.netflix.iep.service.{AbstractService, State}
+import com.netflix.iep.service.AbstractService
+import com.netflix.iep.service.State
 import com.typesafe.scalalogging.StrictLogging
 
 @Singleton
