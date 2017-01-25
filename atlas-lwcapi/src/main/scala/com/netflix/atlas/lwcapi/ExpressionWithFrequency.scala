@@ -17,7 +17,8 @@ package com.netflix.atlas.lwcapi
 
 import java.util.Base64
 
-import com.netflix.atlas.json.{Json, JsonSupport}
+import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.JsonSupport
 
 case class ExpressionWithFrequency(expression: String,
                                    frequency: Long = ApiSettings.defaultFrequency,

@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 import akka.actor.ActorRef
-import akka.testkit.TestActorRef
-import com.netflix.atlas.lwcapi.SubscriptionManager.Entry
 
 import scala.collection.mutable
 

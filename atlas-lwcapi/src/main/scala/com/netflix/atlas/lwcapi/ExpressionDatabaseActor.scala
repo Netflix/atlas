@@ -17,18 +17,21 @@ package com.netflix.atlas.lwcapi
 
 import javax.inject.Inject
 
-import akka.actor.{Actor, Cancellable}
-import com.netflix.atlas.json.{Json, JsonSupport}
+import akka.actor.Actor
+import akka.actor.Cancellable
+import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.atlas.lwcapi.StreamApi.SSEGenericJson
 import com.netflix.iep.NetflixEnvironment
-import com.netflix.spectator.api.{Id, Registry}
+import com.netflix.spectator.api.Id
+import com.netflix.spectator.api.Registry
 import com.redis._
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.collection.mutable
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NonFatal
 

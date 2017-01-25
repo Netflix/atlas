@@ -16,7 +16,6 @@
 package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.core.model.Query
-import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 
 abstract class ExpressionDatabase {
   def addExpr(expr: ExpressionWithFrequency, query: Query): Boolean

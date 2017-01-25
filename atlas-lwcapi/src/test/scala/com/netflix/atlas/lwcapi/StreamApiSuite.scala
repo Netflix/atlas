@@ -15,9 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.ActorSystem
-import com.netflix.atlas.core.model.Query
-import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.atlas.lwcapi.StreamApi._
 import org.scalatest.FunSuite
 import spray.testkit.ScalatestRouteTest

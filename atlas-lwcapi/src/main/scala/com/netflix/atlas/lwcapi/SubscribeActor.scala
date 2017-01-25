@@ -23,7 +23,10 @@ import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.StreamApi.SSESubscribe
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
-import spray.http.{HttpEntity, HttpResponse, MediaTypes, StatusCodes}
+import spray.http.HttpEntity
+import spray.http.HttpResponse
+import spray.http.MediaTypes
+import spray.http.StatusCodes
 
 import scala.collection.mutable
 import scala.util.control.NonFatal

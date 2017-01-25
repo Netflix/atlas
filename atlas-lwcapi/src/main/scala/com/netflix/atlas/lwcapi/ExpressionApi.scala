@@ -21,7 +21,7 @@ import javax.inject.Inject
 
 import akka.actor.ActorRefFactory
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.json.{Json, JsonSupport}
+import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 import spray.http.HttpHeaders.RawHeader

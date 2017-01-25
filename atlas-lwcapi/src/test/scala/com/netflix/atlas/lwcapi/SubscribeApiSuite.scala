@@ -15,10 +15,13 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.{Actor, Props}
+import akka.actor.Actor
+import akka.actor.Props
 import com.netflix.atlas.lwcapi.SubscribeApi._
-import org.scalatest.{BeforeAndAfter, FunSuite}
-import spray.http.{HttpResponse, StatusCodes}
+import org.scalatest.BeforeAndAfter
+import org.scalatest.FunSuite
+import spray.http.HttpResponse
+import spray.http.StatusCodes
 import spray.testkit.ScalatestRouteTest
 
 class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
