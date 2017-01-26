@@ -350,27 +350,26 @@ final class SmallHashMap[K <: AnyRef, V <: AnyRef] private (val data: Array[AnyR
     while (i < data.length) {
       val k1 = data(i).asInstanceOf[K]
       val k2 = m.data(i).asInstanceOf[K]
-      if (k1 == null && k1 != k2) {
-        val v1 = getOrNull(k2)
-        val v2 = m.data(i + 1)
-        if (v1 != v2) return false
-      }
-
-      if (k2 == null && k1 != k2) {
-        val v1 = data(i + 1)
-        val v2 = m.getOrNull(k1)
-        if (v1 != v2) return false
-      }
 
       if (k1 == k2) {
         val v1 = data(i + 1)
         val v2 = m.data(i + 1)
         if (v1 != v2) return false
+      } else {
+        if (!keyEquals(m, k1) || !keyEquals(m, k2)) return false
       }
 
       i += 2
     }
     true
+  }
+
+  private def keyEquals(m: SmallHashMap[K, V], k: K): Boolean = {
+    if (k == null) true else {
+      val v1 = getOrNull(k)
+      val v2 = m.getOrNull(k)
+      v1 == v2
+    }
   }
 
   /** This is here to allow for testing and benchmarks. Should note be used otherwise. */

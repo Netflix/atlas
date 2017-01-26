@@ -379,4 +379,21 @@ class SmallHashMapSuite extends FunSuite {
     assert(100.0 * ref / size >= 97.0)
     assert(100.0 * naive / size >= 97.0)
   }
+
+  test("dataEquals") {
+    val m1 = SmallHashMap("a" -> "1")
+    val m2 = SmallHashMap("b" -> "2")
+    assert(!m1.dataEquals(m2))
+  }
+
+  test("dataEquals with different sizes") {
+    // dataEquals is internal and expects the sizes to match before being
+    // called. For this test case we are verifying the case where the first
+    // item in the two maps are different, but a lookup for the item from
+    // the first map will work. However, the lookup of the item from the
+    // second map will not.
+    val m1 = SmallHashMap("a" -> "1")
+    val m2 = SmallHashMap("a" -> "1", "c" -> "3")
+    assert(!m1.dataEquals(m2))
+  }
 }
