@@ -15,6 +15,9 @@
  */
 package com.netflix.atlas.lwcapi
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
 import akka.actor.Actor
 import akka.actor.Props
 import com.netflix.iep.NetflixEnvironment
@@ -38,11 +41,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
   }
 
   def waitForShutdown() = {
-    var count = 0
-    while (!clientDone && count < 100) {
-      Thread.sleep(100)
-      count += 1
-    }
+    clientDone.await(5, TimeUnit.MINUTES)
   }
 
   test("Registers and unsubscribes from subscription manager") {
@@ -99,7 +98,7 @@ object SSEActorSuite {
 
   def reset() = {
     invocationList.clear()
-    clientDone = false
+    clientDone = new CountDownLatch(1)
   }
 
   def invocations: List[String] = invocationList.toList
@@ -108,7 +107,7 @@ object SSEActorSuite {
     invocationList += s.stripLineEnd.stripLineEnd
   }
 
-  @volatile var clientDone = false
+  @volatile var clientDone = new CountDownLatch(1)
 
   class TestClient extends Actor {
     def convert(v: Any): List[String] = v match {
@@ -144,7 +143,7 @@ object SSEActorSuite {
         convert(x).foreach { x => record(x) }
       case Http.Close =>
         record("close")
-        clientDone = true
+        clientDone.countDown()
       case x => record(x.toString)
     }
   }
