@@ -86,21 +86,21 @@ class ExpressionWithFrequencySuite extends FunSuite {
 
   test("Fails to parse from json with empty expression") {
     val json = "{\"expression\": \"\"}"
-    intercept[InvocationTargetException] {
+    intercept[IllegalArgumentException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
 
   test("Fails to parse from json with null expression") {
     val json = "{\"expression\": null}"
-    intercept[java.lang.reflect.InvocationTargetException] {
+    intercept[IllegalArgumentException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }
 
   test("Fails to parse from json with missing expression") {
     val json = "{}"
-    intercept[InvocationTargetException] {
+    intercept[IllegalArgumentException] {
       Json.decode[ExpressionWithFrequency](json)
     }
   }

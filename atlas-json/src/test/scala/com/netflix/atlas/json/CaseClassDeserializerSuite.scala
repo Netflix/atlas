@@ -121,6 +121,12 @@ class CaseClassDeserializerSuite extends FunSuite {
     assert(actual === expected)
   }
 
+  test("read simple object with error") {
+    intercept[IllegalArgumentException] {
+      decode[SimpleObjectUnknownError]("""{"foo": "abc"}""")
+    }
+  }
+
   test("read with Option[Int] field") {
     val expected = OptionInt(Some(42))
     val actual = decode[OptionInt]("""{"v":42}""")
