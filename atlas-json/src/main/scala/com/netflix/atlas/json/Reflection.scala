@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.json
 
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.ParameterizedType
 
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -194,7 +195,11 @@ private[json] object Reflection {
     }
 
     /** Create a new instance of the case class using the provided arguments. */
-    def newInstance(args: Array[Any]): AnyRef = ctor.apply(args: _*).asInstanceOf[AnyRef]
+    def newInstance(args: Array[Any]): AnyRef = {
+       try ctor.apply(args: _*).asInstanceOf[AnyRef] catch {
+         case e: InvocationTargetException => throw e.getCause
+       }
+    }
 
     /**
       * Creates a new parameter list for the case class using default values for all parameters.
