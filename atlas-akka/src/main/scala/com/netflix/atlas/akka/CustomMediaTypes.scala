@@ -15,9 +15,11 @@
  */
 package com.netflix.atlas.akka
 
-import spray.http.MediaType
+import akka.http.scaladsl.model.HttpCharsets
+import akka.http.scaladsl.model.MediaType
+import akka.http.scaladsl.model.MediaType.Compressible
 
 object CustomMediaTypes {
-  val `application/x-jackson-smile` = MediaType.custom("application/x-jackson-smile")
-  val `text/event-stream` = MediaType.custom("text/event-stream")
+  val `application/x-jackson-smile` = MediaType.applicationBinary("x-jackson-smile", Compressible)
+  val `text/event-stream` = MediaType.customWithFixedCharset("text", "event-stream", HttpCharsets.`UTF-8`)
 }

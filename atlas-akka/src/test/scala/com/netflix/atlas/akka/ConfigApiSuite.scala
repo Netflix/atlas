@@ -18,11 +18,12 @@ package com.netflix.atlas.akka
 import java.io.StringReader
 import java.util.Properties
 
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
-import spray.http.StatusCodes._
-import spray.testkit.ScalatestRouteTest
 
 
 class ConfigApiSuite extends FunSuite with ScalatestRouteTest {

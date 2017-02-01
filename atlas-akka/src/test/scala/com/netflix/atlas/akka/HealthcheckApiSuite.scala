@@ -18,14 +18,14 @@ package com.netflix.atlas.akka
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Provider
 
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.atlas.json.Json
-import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.Service
 import com.netflix.iep.service.ServiceManager
 import com.netflix.iep.service.State
 import org.scalatest.FunSuite
-import spray.http.StatusCodes
-import spray.testkit.ScalatestRouteTest
 
 
 class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
@@ -47,7 +47,7 @@ class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
   val provider = new Provider[ServiceManager] {
     override def get(): ServiceManager = serviceManager
   }
-  val endpoint = new HealthcheckApi(system, provider)
+  val endpoint = new HealthcheckApi(provider)
 
   test("/healthcheck pre-start") {
     serviceHealth.set(false)

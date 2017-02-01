@@ -24,7 +24,7 @@ import java.util.regex.Pattern
 
 import akka.actor.ActorSystem
 import akka.actor.Props
-import com.netflix.atlas.akka.RequestHandlerActor
+import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.model.DataVocabulary
 import com.netflix.atlas.core.model.FilterVocabulary
 import com.netflix.atlas.core.model.MathVocabulary
@@ -58,10 +58,7 @@ object Main extends StrictLogging {
   val GraphImage = """(.*)<img[^><]+src="([^"]+)"[^><]+>(.*)""".r
 
   val config = ConfigFactory.load()
-  val system = ActorSystem("wiki")
   val db = ApiSettings.newDbInstance
-  system.actorOf(Props(new LocalDatabaseActor(db)), "db")
-  val webApi = system.actorOf(Props(new RequestHandlerActor(config, new DefaultClassFactory())))
 
   val vocabs = List(
     StandardVocabulary,
@@ -155,7 +152,7 @@ object Main extends StrictLogging {
   private def processTemplate(f: File, output: File): Unit = {
     // atlas.wiki is the repo name, for templates in root path do not use that as a prefix
     val path = if (output.getName == "atlas.wiki") "gen-images" else s"${output.getName}/gen-images"
-    val graph = new GraphHelper(webApi, new File(output, "gen-images"), path)
+    val graph = new GraphHelper(db, new File(output, "gen-images"), path)
     val template = scope(fileIn(f)) { in => lines(in).toList }
     val processed = process(template, List.newBuilder[String], graph)
     writeFile(processed.mkString("\n"), new File(output, f.getName))
@@ -196,7 +193,7 @@ object Main extends StrictLogging {
     val dir = new File(output, "stacklang")
     dir.mkdirs()
 
-    val graph = new GraphHelper(webApi, new File(dir, "gen-images"), "stacklang/gen-images")
+    val graph = new GraphHelper(db, new File(dir, "gen-images"), "stacklang/gen-images")
 
     val sidebar = new StringBuilder
     vocabs.foreach { vocab =>
@@ -239,7 +236,7 @@ object Main extends StrictLogging {
   }
 
   def generateScriptedPages(output: File, pages: List[Page]): Unit = {
-    val graph = new GraphHelper(webApi, new File(output, "gen-images"), "gen-images")
+    val graph = new GraphHelper(db, new File(output, "gen-images"), "gen-images")
     pages.foreach { p => writeFile(p.content(graph), p.file(output)) }
   }
 
@@ -302,31 +299,27 @@ object Main extends StrictLogging {
   }
 
   def main(args: Array[String]): Unit = {
-    try {
-      if (args.length != 2) {
-        System.err.println("Usage: Main <input-dir> <output-dir>")
-        System.exit(1)
-      }
-
-      val input = new File(args(0))
-      require(input.isDirectory, s"input-dir is not a directory: $input")
-
-      val output = new File(args(1))
-      output.mkdirs()
-      require(output.isDirectory, s"could not find or create output directry: $output")
-
-      copy(input, output)
-
-      generateStackLangRef(output)
-      generateScriptedPages(output, List(
-        new DES,
-        new StackLanguageReference(vocabs, vocabDocs),
-        new TimeZones
-      ))
-      generateSearchIndex(output)
-    } finally {
-      Await.ready(system.terminate(), Duration.Inf)
+    if (args.length != 2) {
+      System.err.println("Usage: Main <input-dir> <output-dir>")
+      System.exit(1)
     }
+
+    val input = new File(args(0))
+    require(input.isDirectory, s"input-dir is not a directory: $input")
+
+    val output = new File(args(1))
+    output.mkdirs()
+    require(output.isDirectory, s"could not find or create output directry: $output")
+
+    copy(input, output)
+
+    generateStackLangRef(output)
+    generateScriptedPages(output, List(
+      new DES,
+      new StackLanguageReference(vocabs, vocabDocs),
+      new TimeZones
+    ))
+    generateSearchIndex(output)
   }
 
 

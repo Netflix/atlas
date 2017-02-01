@@ -15,7 +15,11 @@
  */
 package com.netflix.atlas.webapi
 
-import com.netflix.atlas.akka.DiagnosticMessage
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.Query
@@ -24,11 +28,6 @@ import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
-import spray.http.StatusCodes
-import spray.routing.RequestContext
-import spray.routing.Route
-import spray.routing.directives.ExecutionDirectives
-import spray.testkit.ScalatestRouteTest
 
 
 class ExprApiSuite extends FunSuite with ScalatestRouteTest {
@@ -45,13 +44,7 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
-  private def routes: RequestContext => Unit = {
-    ExecutionDirectives.handleExceptions(exceptionHandler) { endpoint.routes }
-  }
-
-  private def exceptionHandler: PartialFunction[Throwable, Route] = {
-    case t: Throwable => { ctx => DiagnosticMessage.handleException(ctx.responder)(t) }
-  }
+  private def routes: Route = RequestHandler.standardOptions(endpoint.routes)
 
   testGet("/api/v1/expr") {
     assert(response.status === StatusCodes.BadRequest)

@@ -19,13 +19,20 @@ import javax.inject.Inject
 
 import akka.actor.ActorRefFactory
 import akka.actor.Props
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
+import akka.stream.scaladsl.Source
+import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.CustomMediaTypes
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
-import spray.routing.RequestContext
 
 class StreamApi @Inject()(sm: SubscriptionManager,
                           splitter: ExpressionSplitter,
@@ -36,17 +43,26 @@ class StreamApi @Inject()(sm: SubscriptionManager,
   private val dbActor = actorRefFactory.actorSelection("/user/lwc.expressiondb")
   private val subscribeRef = actorRefFactory.actorSelection("/user/lwc.subscribe")
 
-  def routes: RequestContext => Unit = {
-    path("lwc" / "api" / "v1" / "stream" / Segment) { (streamId) =>
+  def routes: Route = {
+    path("lwc" / "api" / "v1" / "stream" / Segment) { streamId =>
       parameters('name.?, 'expression.?, 'frequency.?) { (name, expr, frequency) =>
-        get { (ctx) => handleReq(ctx, streamId, name, expr, frequency) } ~
-        post { (ctx) => handleReq(ctx, streamId, name, expr, frequency) }
+        get {
+          complete(handleReq(None, streamId, name, expr, frequency))
+        } ~
+        post {
+          parseEntity(json[ExpressionsRequest]) { req =>
+            complete(handleReq(Some(req), streamId, name, expr, frequency))
+          }
+        }
       }
     }
   }
 
-  private def splitRequest(json: String, urlExpr: Option[String], urlFreq: Option[String])
-    : Map[ExpressionWithFrequency, SplitResult] = {
+  private def splitRequest(
+    requestOpt: Option[ExpressionsRequest],
+    urlExpr: Option[String],
+    urlFreq: Option[String]): Map[ExpressionWithFrequency, SplitResult] = {
+
     val builder = Map.newBuilder[ExpressionWithFrequency, SplitResult]
 
     val freq = urlFreq.fold(ApiSettings.defaultFrequency)(_.toInt)
@@ -54,8 +70,7 @@ class StreamApi @Inject()(sm: SubscriptionManager,
       builder += (ExpressionWithFrequency(urlExpr.get, freq) -> splitter.split(urlExpr.get, freq))
     }
 
-    if (json.nonEmpty) {
-      val request = ExpressionsRequest.fromJson(json)
+    requestOpt.foreach { request =>
       request.expressions.foreach { expr =>
         builder += (expr -> splitter.split(expr.expression, expr.frequency))
       }
@@ -64,32 +79,38 @@ class StreamApi @Inject()(sm: SubscriptionManager,
     builder.result
   }
 
-  private def handleReq(ctx: RequestContext, streamId: String, name: Option[String],
-    expr: Option[String], freqString: Option[String]): Unit = {
-    try {
-      val existingActor = sm.registration(streamId)
-      if (existingActor.isDefined) {
-        sm.unregister(streamId)
-        existingActor.get.actorRef ! SSEShutdown(s"Dropped: another connection is using the same stream-id: $streamId", unsub = false)
-      }
+  private def handleReq(
+    req: Option[ExpressionsRequest],
+    streamId: String,
+    name: Option[String],
+    expr: Option[String],
+    freqString: Option[String]): HttpResponse = {
 
-      // Validate post data.  This is done before creating an actor, since
-      // creating the actor sends a chunked response, masking any expression
-      // parse errors.
-      val splits = splitRequest(ctx.request.entity.asString, expr, freqString)
+    val existingActor = sm.registration(streamId)
+    if (existingActor.isDefined) {
+      sm.unregister(streamId)
+      existingActor.get.actorRef ! SSEShutdown(s"Dropped: another connection is using the same stream-id: $streamId", unsub = false)
+    }
 
-      val actorRef = actorRefFactory.actorOf(Props(
-        new SSEActor(ctx.responder, streamId, name.getOrElse("unknown"), sm, registry)))
+    // Validate post data. This is done before creating an actor, since
+    // creating the actor sends a chunked response, masking any expression
+    // parse errors.
+    val splits = splitRequest(req, expr, freqString)
 
-      // handle post and URL subscription data
-      splits.foreach { case (e, split) =>
-        dbActor ! ExpressionDatabaseActor.Expression(split)
-        split.expressions.foreach(e =>
-          dbActor ! ExpressionDatabaseActor.Subscribe(streamId, e.id)
-        )
-        actorRef ! SSESubscribe(e.expression, split.expressions)
-      }
-    } catch handleException(ctx)
+    // handle post and URL subscription data
+    splits.foreach { case (e, split) =>
+      dbActor ! ExpressionDatabaseActor.Expression(split)
+      split.expressions.foreach(e =>
+        dbActor ! ExpressionDatabaseActor.Subscribe(streamId, e.id)
+      )
+      // TODO, how to get actor ref?
+      //actorRef ! SSESubscribe(e.expression, split.expressions)
+    }
+
+    val source = Source.actorPublisher(Props(
+      new SSEActor(streamId, name.getOrElse("unknown"), sm, registry)))
+    val entity = HttpEntity.Chunked(CustomMediaTypes.`text/event-stream`.toContentType, source)
+    HttpResponse(StatusCodes.OK, entity = entity)
   }
 }
 

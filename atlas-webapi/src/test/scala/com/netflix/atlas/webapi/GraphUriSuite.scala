@@ -15,12 +15,12 @@
  */
 package com.netflix.atlas.webapi
 
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.HttpRequest
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StyleExpr
 import org.scalatest.FunSuite
-import spray.http.HttpMethods
-import spray.http.HttpRequest
 
 class GraphUriSuite extends FunSuite {
 

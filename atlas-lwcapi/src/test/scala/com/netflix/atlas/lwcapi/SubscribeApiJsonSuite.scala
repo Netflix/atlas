@@ -16,6 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import com.fasterxml.jackson.databind.JsonMappingException
+import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.SubscribeApi._
 import org.scalatest.FunSuite
 
@@ -27,30 +28,30 @@ class SubscribeApiJsonSuite extends FunSuite {
     )
     val original = SubscribeRequest("sid", expressions)
     val json = original.toJson
-    val decoded = SubscribeRequest.fromJson(json)
+    val decoded = Json.decode[SubscribeRequest](json)
     assert(original === decoded)
   }
 
   test("decode empty expression list throws") {
     intercept[IllegalArgumentException] {
-      SubscribeApi.SubscribeRequest.fromJson("""{"streamId": "sid", "expressions": []}""")
+      Json.decode[SubscribeRequest]("""{"streamId": "sid", "expressions": []}""")
     }
   }
 
   test("decode missing expression list throws") {
     intercept[IllegalArgumentException] {
-      SubscribeApi.SubscribeRequest.fromJson("{}")
+      Json.decode[SubscribeRequest]("{}")
     }
   }
 
   test("decode array") {
     intercept[JsonMappingException] {
-      SubscribeApi.SubscribeRequest.fromJson("[]")
+      Json.decode[SubscribeRequest]("[]")
     }
   }
 
   test("decode with streamId") {
-    val decoded = SubscribeApi.SubscribeRequest.fromJson("""
+    val decoded = Json.decode[SubscribeRequest]("""
       {
         "streamId": "testsink",
         "expressions": [

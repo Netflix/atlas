@@ -16,41 +16,39 @@
 package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRefFactory
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
+import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
-import spray.routing.RequestContext
 
 class SubscribeApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import SubscribeApi._
 
   private val subscribeRef = actorRefFactory.actorSelection("/user/lwc.subscribe")
 
-  def routes: RequestContext => Unit = {
+  def routes: Route = {
     path("lwc" / "api" / "v1" / "subscribe") {
-      post { ctx => handlePost(ctx) }
+      post {
+        extractRequestContext { ctx =>
+          parseEntity(json[SubscribeRequest]) { req =>
+            val rc = ImperativeRequestContext(req, ctx)
+            subscribeRef ! rc
+            _ => rc.promise.future
+          }
+        }
+      }
     }
-  }
-
-  private def handlePost(ctx: RequestContext): Unit = {
-    try {
-      val request = SubscribeRequest.fromJson(ctx.request.entity.asString)
-      subscribeRef.tell(request, ctx.responder)
-    } catch handleException(ctx)
   }
 }
 
 object SubscribeApi {
-  case class SubscribeRequest(streamId: String, expressions: List[ExpressionWithFrequency]) extends JsonSupport
+  case class SubscribeRequest(
+    streamId: String,
+    expressions: List[ExpressionWithFrequency]) extends JsonSupport {
 
-  object SubscribeRequest {
-    def fromJson(json: String): SubscribeRequest = {
-      val decoded = Json.decode[SubscribeRequest](json)
-      if (decoded.expressions == null || decoded.expressions.isEmpty)
-        throw new IllegalArgumentException("Missing or empty expressions array")
-      if (decoded.streamId == null || decoded.streamId.isEmpty)
-        throw new IllegalArgumentException("Missing or empty streamId")
-      decoded
-    }
+    require(streamId != null && !streamId.isEmpty, "streamId attribute is missing or empty")
+    require(expressions != null && expressions.nonEmpty, "expressions attribute is missing or empty")
   }
 }

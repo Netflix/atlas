@@ -29,11 +29,10 @@ lazy val `atlas-akka` = project
     Dependencies.akkaSlf4j,
     Dependencies.iepService,
     Dependencies.spectatorSandbox,
-    Dependencies.sprayCan,
-    Dependencies.sprayRouting,
+    Dependencies.akkaHttp,
     Dependencies.typesafeConfig,
-    Dependencies.akkaTestkit % "test",
-    Dependencies.sprayTestkit % "test"
+    Dependencies.akkaHttpTestkit % "test",
+    Dependencies.akkaTestkit % "test"
   ))
 
 lazy val `atlas-chart` = project
@@ -77,7 +76,7 @@ lazy val `atlas-lwcapi` = project
     Dependencies.frigga,
     Dependencies.redisclient,
     Dependencies.akkaTestkit % "test",
-    Dependencies.sprayTestkit % "test"
+    Dependencies.akkaHttpTestkit % "test"
   ))
 
 lazy val `atlas-module-akka` = project
@@ -119,9 +118,9 @@ lazy val `atlas-poller` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-akka`, `atlas-core`, `atlas-webapi` % "test")
   .settings(libraryDependencies ++= Seq(
-    Dependencies.sprayClient,
+    Dependencies.akkaHttpCore,
     Dependencies.akkaTestkit % "test",
-    Dependencies.sprayTestkit % "test"
+    Dependencies.akkaHttpTestkit % "test"
   ))
 
 lazy val `atlas-poller-cloudwatch` = project
@@ -159,7 +158,7 @@ lazy val `atlas-webapi` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.spectatorSandbox,
     Dependencies.akkaTestkit % "test",
-    Dependencies.sprayTestkit % "test"
+    Dependencies.akkaHttpTestkit % "test"
   ))
 
 lazy val `atlas-wiki` = project

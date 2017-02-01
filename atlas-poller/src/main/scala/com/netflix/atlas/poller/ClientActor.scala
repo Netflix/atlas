@@ -17,23 +17,22 @@ package com.netflix.atlas.poller
 
 import akka.actor.Actor
 import akka.actor.ActorRef
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.headers._
+import akka.stream.ActorMaterializer
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.akka.CustomMediaTypes
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.poller.Messages.MetricsPayload
+import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
-import spray.client.pipelining._
-import spray.http.HttpEncodingRange
-import spray.http.HttpEncodings
-import spray.http.HttpEntity
-import spray.http.HttpHeaders
-import spray.http.HttpMethods
-import spray.http.HttpRequest
-import spray.http.HttpResponse
-import spray.http.MediaTypes
-import spray.httpx.encoding.Gzip
 
 import scala.concurrent.Future
 import scala.util.Failure
@@ -48,10 +47,9 @@ import scala.util.Success
 class ClientActor(registry: Registry, config: Config) extends Actor {
 
   private implicit val xc = scala.concurrent.ExecutionContext.global
+  private implicit val materializer = ActorMaterializer()
 
   private val logger = LoggerFactory.getLogger(getClass)
-
-  private val pipeline: SendReceive = sendReceive ~> decode(Gzip)
 
   private val uri = config.getString("uri")
   private val batchSize = config.getInt("batch-size")
@@ -88,7 +86,7 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
       headers = ClientActor.headers,
       entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, data))
     val accessLogger = AccessLogger.newClientLogger("atlas_publish", request)
-    pipeline(request).andThen { case t => accessLogger.complete(t) }
+    Http()(context.system).singleRequest(request).andThen { case t => accessLogger.complete(t) }
   }
 
   private def handleResponse(responder: ActorRef, response: HttpResponse, size: Int): Unit = {
@@ -96,10 +94,10 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
       case 200 => // All is well
       case 202 => // Partial failure
         val id = datapointsDropped.withTag("id", "PartialFailure")
-        registry.counter(id).increment(determineFailureCount(response, size))
+        incrementFailureCount(id, response, size)
       case 400 => // Bad message, all data dropped
         val id = datapointsDropped.withTag("id", "CompleteFailure")
-        registry.counter(id).increment(determineFailureCount(response, size))
+        incrementFailureCount(id, response, size)
       case v   => // Unexpected, assume all dropped
         val id = datapointsDropped.withTag("id", s"Status_$v")
         registry.counter(id).increment(size)
@@ -107,15 +105,16 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
     if (shouldSendAck) responder ! Messages.Ack
   }
 
-  private def determineFailureCount(response: HttpResponse, size: Int): Int = {
-    try {
-      val msg = Json.decode[Messages.FailureResponse](response.entity.data.toByteArray)
-      msg.message.headOption.foreach { reason =>
-        logger.warn("failed to validate some datapoints, first reason: {}", reason)
-      }
-      msg.errorCount
-    } catch {
-      case _: Exception => size
+  private def incrementFailureCount(id: Id, response: HttpResponse, size: Int): Unit = {
+    response.entity.dataBytes.runReduce(_ ++ _).onComplete {
+      case Success(bs) =>
+        val msg = Json.decode[Messages.FailureResponse](bs.toArray)
+        msg.message.headOption.foreach { reason =>
+          logger.warn("failed to validate some datapoints, first reason: {}", reason)
+        }
+        registry.counter(id).increment(msg.errorCount)
+      case Failure(_) =>
+        registry.counter(id).increment(size)
     }
   }
 
@@ -128,8 +127,5 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
 
 object ClientActor {
   private val gzip = HttpEncodingRange(HttpEncodings.gzip)
-  private val headers = List(
-    HttpHeaders.`Accept-Encoding`(Seq(gzip)),
-    HttpHeaders.Accept(MediaTypes.`application/json`)
-  )
+  private val headers = List(`Accept-Encoding`(gzip), Accept(MediaTypes.`application/json`))
 }

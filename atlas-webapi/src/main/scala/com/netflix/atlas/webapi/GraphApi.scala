@@ -20,6 +20,12 @@ import java.time.ZoneId
 
 import akka.actor.ActorRefFactory
 import akka.actor.Props
+import akka.http.scaladsl.model.ContentType
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
+import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.chart._
 import com.netflix.atlas.chart.model._
@@ -28,23 +34,20 @@ import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Step
 import com.netflix.atlas.core.util.Strings
 import com.netflix.spectator.api.Spectator
-import spray.http.HttpRequest
-import spray.http.MediaType
-import spray.http.Uri
-import spray.routing.RequestContext
 
 
 class GraphApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   private val registry = Spectator.globalRegistry()
 
-  def routes: RequestContext => Unit = {
+  def routes: Route = {
     path("api" / "v1" / "graph") {
       get { ctx =>
-        try {
-          val reqHandler = actorRefFactory.actorOf(Props(new GraphRequestActor(registry)))
-          reqHandler.tell(GraphApi.toRequest(ctx.request), ctx.responder)
-        } catch handleException(ctx)
+        val reqHandler = actorRefFactory.actorOf(Props(new GraphRequestActor(registry)))
+        val req = GraphApi.toRequest(ctx.request)
+        val rc = ImperativeRequestContext(req, ctx)
+        reqHandler ! rc
+        rc.promise.future
       }
     }
   }
@@ -57,7 +60,7 @@ object GraphApi {
   private val engines = ApiSettings.engines.map(e => e.name -> e).toMap
 
   private val contentTypes = engines.map { case (k, e) =>
-    k -> MediaType.custom(e.contentType)
+    k -> ContentType.parse(e.contentType).right.get
   }
 
   case class Request(
@@ -127,7 +130,7 @@ object GraphApi {
 
     def engine: GraphEngine = engines(format)
 
-    def contentType: MediaType = contentTypes(format)
+    def contentType: ContentType = contentTypes(format)
 
     val evalContext: EvalContext = {
       EvalContext(fstart.toEpochMilli, fend.toEpochMilli + stepSize, stepSize)
@@ -258,8 +261,10 @@ object GraphApi {
       order = getAxisParam(params, "order", id))
   }
 
-  def toRequest(req: HttpRequest): Request = {
-    val params = req.uri.query
+  def toRequest(req: HttpRequest): Request = toRequest(req.uri)
+
+  def toRequest(uri: Uri): Request = {
+    val params = uri.query()
     val id = "default"
 
     import com.netflix.atlas.chart.GraphConstants._
@@ -298,7 +303,7 @@ object GraphApi {
       id = id,
       isBrowser = false,
       isAllowedFromBrowser = true,
-      uri = req.uri.toString
+      uri = uri.toString
     )
   }
 }

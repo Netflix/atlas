@@ -17,33 +17,33 @@ package com.netflix.atlas.akka
 
 import akka.actor.ActorRefFactory
 import akka.actor.Props
-import com.netflix.atlas.json.Json
-import spray.http._
-import spray.routing._
+import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
+import akka.stream.scaladsl.Source
 
 
 class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
 
   import CustomDirectives._
-  import spray.http.StatusCodes._
 
-  def routes: RequestContext => Unit = {
+  def routes: Route = {
     path("jsonparse") {
-      post { ctx =>
-        val parser = getJsonParser(ctx.request).get
-        try {
-          val v = Json.decode[String](parser)
-          ctx.responder ! HttpResponse(status = OK, entity = v)
-        } finally {
-          parser.close()
+      post {
+        parseEntity(json[String]) { v =>
+          complete(HttpResponse(status = OK, entity = v))
         }
       }
     } ~
     accessLog {
       path("chunked") {
-        get { ctx =>
-          val ref = actorRefFactory.actorOf(Props(new ChunkResponseActor))
-          ref.tell("start", ctx.responder)
+        get {
+          val source = Source.actorPublisher(Props(new ChunkResponseActor))
+          val entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, source)
+          complete(HttpResponse(status = OK, entity = entity))
         }
       }
     }

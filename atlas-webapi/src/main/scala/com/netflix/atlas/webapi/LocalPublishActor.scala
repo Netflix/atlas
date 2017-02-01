@@ -19,7 +19,11 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.ActorRef
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCode
+import akka.http.scaladsl.model.StatusCodes
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.db.MemoryDatabase
@@ -31,11 +35,6 @@ import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.BucketCounter
 import com.netflix.spectator.api.histogram.BucketFunctions
-import spray.http.HttpEntity
-import spray.http.HttpResponse
-import spray.http.MediaTypes
-import spray.http.StatusCode
-import spray.http.StatusCodes
 
 
 class LocalPublishActor(registry: Registry, db: Database) extends Actor with ActorLogging {
@@ -59,25 +58,25 @@ class LocalPublishActor(registry: Registry, db: Database) extends Actor with Act
   private val cache = new NormalizationCache(DefaultSettings.stepSize, memDb.update)
 
   def receive = {
-    case PublishRequest(Nil, Nil) =>
-      DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "empty payload")
-    case PublishRequest(Nil, failures) =>
+    case req @ PublishRequest(Nil, Nil, _, _) =>
+      req.complete(DiagnosticMessage.error(StatusCodes.BadRequest, "empty payload"))
+    case req @ PublishRequest(Nil, failures, _, _) =>
       updateStats(failures)
       val msg = FailureMessage.error(failures)
-      sendError(sender(), StatusCodes.BadRequest, msg)
-    case PublishRequest(values, Nil) =>
+      sendError(req, StatusCodes.BadRequest, msg)
+    case req @ PublishRequest(values, Nil, _, _) =>
       update(values)
-      sender() ! HttpResponse(StatusCodes.OK)
-    case PublishRequest(values, failures) =>
+      req.complete(HttpResponse(StatusCodes.OK))
+    case req @ PublishRequest(values, failures, _, _) =>
       update(values)
       updateStats(failures)
       val msg = FailureMessage.partial(failures)
-      sendError(sender(), StatusCodes.Accepted, msg)
+      sendError(req, StatusCodes.Accepted, msg)
   }
 
-  private def sendError(ref: ActorRef, status: StatusCode, msg: FailureMessage): Unit = {
+  private def sendError(req: PublishRequest, status: StatusCode, msg: FailureMessage): Unit = {
     val entity = HttpEntity(MediaTypes.`application/json`, msg.toJson)
-    ref ! HttpResponse(status = status, entity = entity)
+    req.complete(HttpResponse(status = status, entity = entity))
   }
 
   private def updateStats(failures: List[ValidationResult]): Unit = {

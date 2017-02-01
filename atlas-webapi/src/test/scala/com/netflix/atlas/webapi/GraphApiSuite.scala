@@ -16,6 +16,11 @@
 package com.netflix.atlas.webapi
 
 import akka.actor.Props
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.PngImage
@@ -24,10 +29,6 @@ import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.test.GraphAssertions
 import com.netflix.atlas.test.SrcPath
 import org.scalatest.FunSuite
-import spray.http.HttpEntity
-import spray.http.MediaTypes._
-import spray.http.StatusCodes
-import spray.testkit.ScalatestRouteTest
 
 
 class GraphApiSuite extends FunSuite with ScalatestRouteTest {
@@ -41,7 +42,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   val db = StaticDatabase.demo
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
 
-  val endpoint = new GraphApi
+  val routes = RequestHandler.standardOptions((new GraphApi).routes)
 
   val template = Streams.scope(Streams.resource("examples.md")) { in => Streams.lines(in).toList }
   val others = Streams.scope(Streams.resource("others.md")) { in => Streams.lines(in).toList }
@@ -60,7 +61,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("simple line") {
-    Get("/api/v1/graph?q=1") ~> endpoint.routes ~> check {
+    Get("/api/v1/graph?q=1") ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
     }
   }
@@ -69,15 +70,12 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   // the report: $ open ./atlas-webapi/target/GraphApiSuite/report.html
   all.filter(_.startsWith("/api/v1/graph")).foreach { uri =>
     test(uri) {
-      Get(uri) ~> endpoint.routes ~> check {
+      Get(uri) ~> routes ~> check {
         // Note: will fail prior to 8u20:
         // https://github.com/Netflix/atlas/issues/9
         assert(response.status === StatusCodes.OK)
-        response.entity match {
-          case e: HttpEntity.NonEmpty => assert(e.contentType.mediaType === `image/png`)
-          case _                      => fail("empty response")
-        }
-        val image = PngImage(response.entity.data.toByteArray)
+        assert(response.entity.contentType.mediaType === MediaTypes.`image/png`)
+        val image = PngImage(responseAs[Array[Byte]])
         graphAssertions.assertEquals(image, imageFileName(uri), bless)
       }
     }

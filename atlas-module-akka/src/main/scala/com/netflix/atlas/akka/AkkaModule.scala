@@ -17,6 +17,7 @@ package com.netflix.atlas.akka
 
 import javax.inject.Singleton
 
+import akka.actor.ActorRefFactory
 import akka.actor.ActorSystem
 import com.google.inject.AbstractModule
 import com.google.inject.Provides
@@ -42,6 +43,9 @@ final class AkkaModule extends AbstractModule {
     val name = config.getString("atlas.akka.name")
     ActorSystem(name, config)
   }
+
+  @Provides @Singleton
+  private def providesActorRefFactory(system: ActorSystem): ActorRefFactory = system
 
   override def equals(obj: Any): Boolean = {
     obj != null && getClass.equals(obj.getClass)

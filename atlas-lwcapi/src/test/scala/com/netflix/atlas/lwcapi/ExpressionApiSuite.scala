@@ -15,11 +15,12 @@
  */
 package com.netflix.atlas.lwcapi
 
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.spectator.api.Spectator
 import org.scalatest.FunSuite
-import spray.http.HttpHeaders.RawHeader
-import spray.http.StatusCodes
-import spray.testkit.ScalatestRouteTest
 
 class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   import scala.concurrent.duration._
