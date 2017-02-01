@@ -15,8 +15,9 @@
  */
 package com.netflix.atlas.akka
 
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.FunSuite
-import spray.testkit.ScalatestRouteTest
 
 
 class TestApiSuite extends FunSuite with ScalatestRouteTest {

@@ -17,31 +17,58 @@ package com.netflix.atlas.akka
 
 import java.io.StringWriter
 
+import akka.http.scaladsl.model.HttpCharsets
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaType
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.Directive0
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.MalformedRequestContentRejection
+import akka.http.scaladsl.server.RouteResult
+import akka.http.scaladsl.server.directives.LoggingMagnet
+import akka.util.ByteString
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.sandbox.HttpLogEntry
-import spray.http.HttpMethods._
-import spray.http.MediaTypes._
-import spray.http._
-import spray.routing._
-import spray.routing.directives.BasicDirectives._
-import spray.routing.directives.DebuggingDirectives._
-import spray.routing.directives.HeaderDirectives._
-import spray.routing.directives.LoggingMagnet
-import spray.routing.directives.MiscDirectives._
-import spray.routing.directives.ParameterDirectives._
-import spray.routing.directives.RespondWithDirectives._
 
 import scala.util.Failure
 import scala.util.Success
 
 object CustomDirectives {
 
+  def json[T: Manifest]: MediaType => ByteString => T = {
+    mediaType => bs => {
+      if (mediaType == CustomMediaTypes.`application/x-jackson-smile`)
+        Json.smileDecode[T](bs.toArray)
+      else
+        Json.decode[T](bs.toArray)
+    }
+  }
+
+  def parseEntity[T](f: MediaType => ByteString => T): Directive1[T] = {
+    extractRequestContext.flatMap[Tuple1[T]] { ctx =>
+      import ctx.executionContext
+      import ctx.materializer
+      val entity = ctx.request.entity
+      val future = entity.dataBytes.runReduce(_ ++ _).map(f(entity.contentType.mediaType))
+      onComplete(future).flatMap {
+        case Success(v) => provide[T](v)
+        case Failure(t) => reject(MalformedRequestContentRejection("invalid request payload", t))
+      }
+    }
+  }
+
   // Make sure that all headers in the response will be readable by the browser
   private def exposeHeaders: Directive0 = {
-    mapHttpResponseHeaders { headers =>
+    mapResponseHeaders { headers =>
       if (headers.isEmpty) headers else {
-        val exposed = headers.map(_.name).mkString(",")
-        HttpHeaders.`Access-Control-Expose-Headers`(exposed) :: headers
+        val exposed = headers.map(_.name)
+        headers ++ scala.collection.immutable.Seq(`Access-Control-Expose-Headers`(exposed))
       }
     }
   }
@@ -55,23 +82,28 @@ object CustomDirectives {
     // Add the cors headers to anything with an origin, browser behavior seems to be mixed as to
     // which request headers we can expect to receive
     optionalHeaderValueByName("Origin").flatMap {
-      case None => noop
+      case None => pass
       case Some(origin) =>
         // '*' doesn't seem to work reliably so use requested origin if provided. If running from
         // a local file we typically see 'null'.
-        val allow = if (origin == "null") AllOrigins else new SomeOrigins(List(HttpOrigin(origin)))
+        val allow = if (origin == "null") HttpOriginRange.`*` else HttpOriginRange(HttpOrigin(origin))
 
         // Just allow all methods
         val headers = List(
-          HttpHeaders.`Access-Control-Allow-Origin`(allow),
-          HttpHeaders.`Access-Control-Allow-Methods`(GET, PATCH, POST, PUT, DELETE))
+          `Access-Control-Allow-Origin`(allow),
+          `Access-Control-Allow-Methods`(
+            HttpMethods.GET,
+            HttpMethods.PATCH,
+            HttpMethods.POST,
+            HttpMethods.PUT,
+            HttpMethods.DELETE))
 
         // If specific headers are requested echo those back
         optionalHeaderValueByName("Access-Control-Request-Headers").flatMap {
           case None =>
             respondWithHeaders(headers) & exposeHeaders
           case Some(h) => pass
-            val finalHeaders = HttpHeaders.`Access-Control-Allow-Headers`(h) :: headers
+            val finalHeaders = `Access-Control-Allow-Headers`(h) :: headers
             respondWithHeaders(finalHeaders) & exposeHeaders
         }
     }
@@ -85,9 +117,9 @@ object CustomDirectives {
   def jsonpFilter: Directive0 = {
     import scala.language.postfixOps
     parameter("callback"?).flatMap {
-      case None => noop
+      case None => pass
       case Some(callback) =>
-        mapHttpResponse { res =>
+        mapResponse { res =>
           val writer = new StringWriter
           writer.write(callback)
           writer.append('(')
@@ -106,19 +138,23 @@ object CustomDirectives {
 
           // Write out the entity
           res.entity match {
-            case entity: HttpEntity.NonEmpty =>
+            case entity: HttpEntity.Strict =>
               // Complete headers object
               val contentType = entity.contentType.mediaType
               gen.writeArrayFieldStart("content-type")
-              gen.writeString(contentType.toString)
+              if (contentType.mainType == "none")
+                gen.writeString("text/plain")
+              else
+                gen.writeString(contentType.toString)
               gen.writeEndArray()
               gen.writeEndObject()
 
               gen.writeFieldName("body")
+
               contentType match {
-                case `application/json`        => gen.writeRawValue(res.entity.asString)
-                case t if t.mainType == "text" => gen.writeString(res.entity.asString)
-                case _                         => gen.writeBinary(res.entity.data.toByteArray)
+                case MediaTypes.`application/json` => gen.writeRawValue(entity.data.decodeString(ByteString.UTF_8))
+                case t if t.mainType == "text"     => gen.writeString(entity.data.decodeString(ByteString.UTF_8))
+                case _                             => gen.writeBinary(entity.data.toArray)
               }
               gen.writeEndObject()
             case _ =>
@@ -131,30 +167,24 @@ object CustomDirectives {
               // Empty, just write out an empty string. Not sure why it is this instead of null
               // but keeping it this way for backwards compatibility.
               gen.writeFieldName("body")
-              gen.writeString("")
+              gen.writeString("entity type not supported via JSONP, switch to CORS")
               gen.writeEndObject()
           }
           gen.flush()
           writer.append(')')
-          val entity = HttpEntity(`application/javascript`, writer.toString)
+
+          val jsType = MediaTypes.`application/javascript`.withCharset(HttpCharsets.`UTF-8`)
+          val entity = HttpEntity(jsType, writer.toString)
           HttpResponse(status = StatusCodes.OK, entity = entity)
         }
     }
   }
 
   // Helper function to finish constructing the log entry and writing to the logger.
-  private def log(logger: AccessLogger)(req: HttpRequest)(obj: Any): Unit = {
-    obj match {
-      case Confirmed(v, _)                         => log(logger)(req)(v)
-      case ChunkedResponseStart(res: HttpResponse) => logger.chunkStart(req, res)
-      case MessageChunk(_, _)                      =>
-      case ChunkedMessageEnd                       => logger.chunkComplete()
-      case res: HttpResponse                       => logger.complete(req, Success(res))
-      case t: Throwable                            => logger.complete(req, Failure(t))
-      case _ =>
-        val cls = obj.getClass
-        val t = new IllegalStateException(s"unexpected response type: ${cls.getName}")
-        logger.complete(req, Failure(t))
+  private def log(logger: AccessLogger)(req: HttpRequest)(result: RouteResult): Unit = {
+    result match {
+      case RouteResult.Complete(res) => logger.complete(req, Success(res))
+      case RouteResult.Rejected(vs) => logger.complete(req, Failure(new Exception(vs.toString)))
     }
   }
 
@@ -162,16 +192,11 @@ object CustomDirectives {
    * Generate an access log using spectator HttpLogEntry utility.
    */
   def accessLog: Directive0 = {
-    val d1 = clientIP.flatMap { ip =>
+    extractClientIP.flatMap { ip =>
       val addr = ip.toOption.fold("unknown")(_.getHostAddress)
       val entry = (new HttpLogEntry).withRemoteAddr(addr)
       val logger = AccessLogger.newServerLogger(entry)
-      logRequestResponse(LoggingMagnet(log(logger)))
+      logRequestResult(LoggingMagnet(_ => log(logger)))
     }
-    val d2 = requestInstance.flatMap { _ =>
-      val logger = AccessLogger.newServerLogger
-      logRequestResponse(LoggingMagnet(log(logger)))
-    }
-    d1 | d2
   }
 }

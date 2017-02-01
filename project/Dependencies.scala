@@ -3,6 +3,7 @@ import sbt._
 object Dependencies {
   object Versions {
     val akka       = "2.4.16"
+    val akkaHttpV  = "10.0.3"
     val aws        = "1.11.78"
     val iep        = "0.4.15"
     val guice      = "4.1.0"
@@ -19,6 +20,9 @@ object Dependencies {
   import Versions._
 
   val akkaActor       = "com.typesafe.akka" %% "akka-actor" % akka
+  val akkaHttp        = "com.typesafe.akka" %% "akka-http" % akkaHttpV
+  val akkaHttpCore    = "com.typesafe.akka" %% "akka-http-core" % akkaHttpV
+  val akkaHttpTestkit = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV
   val akkaSlf4j       = "com.typesafe.akka" %% "akka-slf4j" % akka
   val akkaTestkit     = "com.typesafe.akka" %% "akka-testkit" % akka
   val awsCloudWatch   = "com.amazonaws" % "aws-java-sdk-cloudwatch" % aws

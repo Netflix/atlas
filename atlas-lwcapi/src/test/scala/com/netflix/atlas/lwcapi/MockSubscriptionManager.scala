@@ -14,17 +14,23 @@
  * limitations under the License.
  */
 package com.netflix.atlas.lwcapi
+
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
 import akka.actor.ActorRef
 
 import scala.collection.mutable
 
-//
-// Mock class to track calls.
-//
-// Todo: add a way to indicate return calls for methods
-//
+/**
+  * Mock class to track calls.
+  *
+  * TODO: add a way to indicate return calls for methods
+  */
 class MockSubscriptionManager extends SubscriptionManager {
   import SubscriptionManager._
+
+  private val unregisterLatch = new CountDownLatch(1)
 
   private val invocationList = mutable.ListBuffer[String]()
 
@@ -33,6 +39,8 @@ class MockSubscriptionManager extends SubscriptionManager {
 
   override def register(streamId: String, ref: ActorRef, name: String): Unit = {
     invocationList += s"register,$streamId,$name"
+    ref ! SSEActor.Tick
+    ref ! StreamApi.SSEShutdown("test shutdown")
   }
 
   override def registration(streamId: String): Option[Entry] = {
@@ -50,6 +58,7 @@ class MockSubscriptionManager extends SubscriptionManager {
 
   override def unregister(streamId: String): List[String] = {
     invocationList += s"unsubscribeAll,$streamId"
+    unregisterLatch.countDown()
     List()
   }
 
@@ -66,6 +75,10 @@ class MockSubscriptionManager extends SubscriptionManager {
   override def expressionsForSubscriber(streamId: String): Set[String] = {
     invocationList += s"expressionsForSubscriber,$streamId"
     Set()
+  }
+
+  def waitForUnregister(): Unit = {
+    unregisterLatch.await(5, TimeUnit.MINUTES)
   }
 }
 

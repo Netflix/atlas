@@ -17,38 +17,44 @@ package com.netflix.atlas.webapi
 
 import akka.actor.ActorRefFactory
 import akka.actor.Props
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.RequestContext
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.RouteResult
+import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.stacklang.Interpreter
-import spray.routing.RequestContext
+
+import scala.concurrent.Future
 
 class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   import com.netflix.atlas.webapi.TagsApi._
 
-  def routes: RequestContext => Unit = {
+  def routes: Route = {
     pathPrefix("api" / "v1" / "tags") {
       pathEndOrSingleSlash {
         get { ctx => doGet(ctx, None) }
       } ~
-      path(Rest) { path =>
+      path(Remaining) { path =>
         get { ctx => doGet(ctx, Some(path)) }
       }
     }
   }
 
-  private def doGet(ctx: RequestContext, path: Option[String]): Unit = {
-    try {
-      val reqHandler = actorRefFactory.actorOf(Props(new TagsRequestActor))
-      reqHandler.tell(toRequest(ctx, path), ctx.responder)
-    } catch handleException(ctx)
+  private def doGet(ctx: RequestContext, path: Option[String]): Future[RouteResult] = {
+    val reqHandler = actorRefFactory.actorOf(Props(new TagsRequestActor))
+    val rc = ImperativeRequestContext(toRequest(ctx, path), ctx)
+    reqHandler ! rc
+    rc.promise.future
   }
 
   private def toRequest(ctx: RequestContext, path: Option[String]): Request = {
-    val params = ctx.request.uri.query
+    val params = ctx.request.uri.query()
     Request(
       key = path,
       version = params.get("v"),

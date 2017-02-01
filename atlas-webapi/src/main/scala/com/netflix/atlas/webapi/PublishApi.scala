@@ -16,6 +16,11 @@
 package com.netflix.atlas.webapi
 
 import akka.actor.ActorRefFactory
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.RequestContext
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.RouteResult
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.netflix.atlas.akka.DiagnosticMessage
@@ -30,7 +35,9 @@ import com.netflix.atlas.core.validation.Rule
 import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
-import spray.routing.RequestContext
+
+import scala.concurrent.Future
+import scala.concurrent.Promise
 
 class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
@@ -44,7 +51,7 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   private val rules = ApiSettings.validationRules
 
-  def routes: RequestContext => Unit = {
+  def routes: Route = {
     post {
       path("api" / "v1" / "publish") { ctx =>
         handleReq(ctx)
@@ -56,20 +63,21 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     }
   }
 
-  private def handleReq(ctx: RequestContext): Unit = {
-    try {
-      getJsonParser(ctx.request) match {
-        case Some(parser) =>
-          val data = decodeBatch(parser, internWhileParsing)
-          val req = validate(data)
-          publishRef.tell(req, ctx.responder)
-        case None =>
-          throw new IllegalArgumentException("empty request body")
-      }
-    } catch handleException(ctx)
+  private def handleReq(ctx: RequestContext): Future[RouteResult] = {
+    getJsonParser(ctx.request) match {
+      case Some(parser) =>
+        val data = decodeBatch(parser, internWhileParsing)
+        val (good, bad) = validate(data)
+        val promise = Promise[RouteResult]()
+        val req = PublishRequest(good, bad, promise, ctx)
+        publishRef ! req
+        promise.future
+      case None =>
+        throw new IllegalArgumentException("empty request body")
+    }
   }
 
-  private def validate(vs: List[Datapoint]): PublishRequest = {
+  private def validate(vs: List[Datapoint]): (List[Datapoint], List[ValidationResult]) = {
     val validDatapoints = List.newBuilder[Datapoint]
     val failures = List.newBuilder[ValidationResult]
     val now = System.currentTimeMillis()
@@ -88,7 +96,7 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
       }
       if (result.isSuccess) validDatapoints += v else failures += result
     }
-    PublishRequest(validDatapoints.result(), failures.result())
+    validDatapoints.result() -> failures.result()
   }
 }
 
@@ -233,7 +241,18 @@ object PublishApi {
     }
   }
 
-  case class PublishRequest(values: List[Datapoint], failures: List[ValidationResult])
+  case class PublishRequest(
+    values: List[Datapoint],
+    failures: List[ValidationResult],
+    promise: Promise[RouteResult],
+    ctx: RequestContext) {
+
+    private implicit val ec = ctx.executionContext
+
+    def complete(res: HttpResponse): Unit = {
+      ctx.complete(res).onComplete(promise.complete)
+    }
+  }
 
   case class FailureMessage(`type`: String, errorCount: Int, message: List[String]) extends JsonSupport {
     def typeName: String = `type`

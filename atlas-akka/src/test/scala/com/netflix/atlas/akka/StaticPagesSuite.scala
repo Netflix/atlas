@@ -15,15 +15,15 @@
  */
 package com.netflix.atlas.akka
 
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
-import spray.http.StatusCodes
-import spray.testkit.ScalatestRouteTest
 
 
 class StaticPagesSuite extends FunSuite with ScalatestRouteTest {
 
-  val endpoint = new StaticPages(ConfigFactory.load(), system)
+  val endpoint = new StaticPages(ConfigFactory.load())
 
   test("/static/test") {
     Get("/static/test") ~> endpoint.routes ~> check {

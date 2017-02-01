@@ -15,39 +15,29 @@
  */
 package com.netflix.atlas.akka
 
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.server.Route
 import com.fasterxml.jackson.core.JsonParser
 import com.netflix.atlas.json.Json
-import spray.http._
-import spray.routing._
 
 
 /**
  * Base trait for classes providing an API to expose via the Atlas server.
  */
-trait WebApi extends HttpService {
+trait WebApi {
 
-  def routes: RequestContext => Unit
+  def routes: Route
 
   protected def getJsonParser(request: HttpRequest): Option[JsonParser] = {
     request.entity match {
-      case entity: HttpEntity.NonEmpty =>
+      case entity: HttpEntity.Strict =>
         if (entity.contentType.mediaType.subType == "x-jackson-smile")
-          Some(Json.newSmileParser(entity.data.toByteArray))
+          Some(Json.newSmileParser(entity.data.toArray))
         else
-          Some(Json.newJsonParser(entity.data.asString(HttpCharsets.`UTF-8`)))
-      case _ => None
+          Some(Json.newJsonParser(entity.data.toArray))
+      case _ =>
+        throw new IllegalStateException("invalid entity type")
     }
-  }
-
-  protected def handleException(ctx: RequestContext): PartialFunction[Throwable, Unit] = {
-    DiagnosticMessage.handleException(ctx.responder)
-  }
-
-  protected def sendError(ctx: RequestContext, status: StatusCode, t: Throwable): Unit = {
-    DiagnosticMessage.sendError(ctx.responder, status, t)
-  }
-
-  protected def sendError(ctx: RequestContext, status: StatusCode, msg: String): Unit = {
-    DiagnosticMessage.sendError(ctx.responder, status, msg)
   }
 }

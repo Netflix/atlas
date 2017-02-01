@@ -17,12 +17,15 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.Actor
 import akka.actor.Props
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.ImperativeRequestContext
+import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.lwcapi.SubscribeApi._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
-import spray.http.HttpResponse
-import spray.http.StatusCodes
-import spray.testkit.ScalatestRouteTest
 
 class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
   import SubscribeApiSuite._
@@ -33,7 +36,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
 
   system.actorOf(Props(new TestActor), "lwc.subscribe")
 
-  val endpoint = new SubscribeApi
+  val routes = RequestHandler.standardOptions((new SubscribeApi).routes)
 
   before {
     super.beforeAll()
@@ -47,13 +50,13 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   //
 
   test("subscribe: no content") {
-    Post("/lwc/api/v1/subscribe") ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/subscribe") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
   test("subscribe: empty object") {
-    Post("/lwc/api/v1/subscribe", "{}") ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/subscribe", "{}") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
       assert(lastUpdate === Nil)
     }
@@ -61,7 +64,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
 
   test("subscribe: empty array") {
     val x = Post("/lwc/api/v1/subscribe", "[]")
-    x ~> endpoint.routes ~> check {
+    x ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
       assert(lastUpdate === Nil)
     }
@@ -75,7 +78,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
       |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
       |  ]
       |}""".stripMargin
-    Post("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate.size === 1)
       assert(lastStreamId === "abc123")
@@ -84,13 +87,13 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   }
 
   test("subscribe: bad json") {
-    Post("/lwc/api/v1/subscribe", "fubar") ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/subscribe", "fubar") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
   test("subscribe: invalid object") {
-    Post("/lwc/api/v1/subscribe", "{\"foo\":\"bar\"}") ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/subscribe", "{\"foo\":\"bar\"}") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
@@ -101,7 +104,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
           { "expression": null }
         ]
       }"""
-    Post("/lwc/api/v1/subscribe", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
@@ -114,15 +117,15 @@ object SubscribeApiSuite {
 
   class TestActor extends Actor {
     def receive = {
-      case SubscribeRequest(sourceId, Nil) =>
+      case rc @ ImperativeRequestContext(SubscribeRequest(sourceId, Nil), _) =>
         lastUpdate = Nil
-        sender() ! HttpResponse(StatusCodes.BadRequest)
         lastKind = 'subscribe
-      case SubscribeRequest(sourceId, values) =>
+        rc.complete(HttpResponse(StatusCodes.BadRequest))
+      case rc @ ImperativeRequestContext(SubscribeRequest(sourceId, values), _) =>
         lastUpdate = values
         lastStreamId = sourceId
         lastKind = 'subscribe
-        sender() ! HttpResponse(StatusCodes.OK)
+        rc.complete(HttpResponse(StatusCodes.OK))
     }
   }
 }

@@ -17,10 +17,9 @@ package com.netflix.atlas.akka
 
 import java.net.URI
 
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.HttpResponse
 import com.netflix.spectator.sandbox.HttpLogEntry
-import spray.http.HttpRequest
-import spray.http.HttpResponse
-import spray.http.StringRendering
 
 import scala.util.Failure
 import scala.util.Success
@@ -126,8 +125,8 @@ object AccessLogger {
   private def addRequestInfo(entry: HttpLogEntry, request: HttpRequest): Unit = {
     entry
       .withMethod(request.method.name)
-      .withRequestUri(URI.create(request.uri.render(new StringRendering).get))
-      .withRequestContentLength(request.entity.data.length)
+      .withRequestUri(URI.create(request.uri.toString()))
+      .withRequestContentLength(request.entity.contentLengthOption.getOrElse(-1))
     request.headers.foreach(h => entry.withRequestHeader(h.name, h.value))
   }
 
@@ -135,7 +134,7 @@ object AccessLogger {
     entry
       .withStatusCode(response.status.intValue)
       .withStatusReason(response.status.reason)
-      .withResponseContentLength(response.entity.data.length)
+      .withResponseContentLength(response.entity.contentLengthOption.getOrElse(-1L))
     response.headers.foreach(h => entry.withResponseHeader(h.name, h.value))
   }
 }

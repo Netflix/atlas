@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import java.lang.reflect.InvocationTargetException
-
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite

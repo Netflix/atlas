@@ -16,25 +16,31 @@
 package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorRefFactory
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
+import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
-import spray.routing.RequestContext
 
 class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   import EvaluateApi._
 
   private val evaluateRef = actorRefFactory.actorSelection("/user/lwc.evaluate")
 
-  def routes: RequestContext => Unit = {
+  def routes: Route = {
     path("lwc" / "api" / "v1" / "evaluate") {
-       post { ctx => handleReq(ctx) }
+      post {
+        extractRequestContext { ctx =>
+          parseEntity(json[EvaluateRequest]) { req =>
+            val rc = ImperativeRequestContext(req, ctx)
+            evaluateRef ! rc
+            _ => rc.promise.future
+          }
+        }
+      }
     }
-  }
-
-  private def handleReq(ctx: RequestContext): Unit = {
-    val request = EvaluateRequest.fromJson(ctx.request.entity.asString)
-    evaluateRef.tell(request, ctx.responder)
   }
 }
 
@@ -44,6 +50,7 @@ object EvaluateApi {
   case class Item(id: String, tags: TagMap, value: Double) extends JsonSupport
 
   case class EvaluateRequest(timestamp: Long, metrics: List[Item]) extends JsonSupport
+
   object EvaluateRequest {
     def fromJson(json: String) = Json.decode[EvaluateRequest](json)
   }

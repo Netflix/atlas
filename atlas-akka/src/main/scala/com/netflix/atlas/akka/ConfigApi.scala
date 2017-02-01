@@ -19,12 +19,19 @@ import java.io.StringWriter
 import java.util.Properties
 
 import akka.actor.ActorRefFactory
+import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.RequestContext
+import akka.http.scaladsl.server.Route
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
-import spray.http._
-import spray.routing._
 
 
 /**
@@ -36,39 +43,39 @@ import spray.routing._
  */
 class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
-  import spray.http.StatusCodes._
-
   private val formats: Map[String, Config => HttpResponse] = Map(
     "hocon"      -> formatHocon _,
     "json"       -> formatJson _,
     "properties" -> formatProperties _
   )
 
-  def routes: RequestContext => Unit = {
+  def routes: Route = {
     pathPrefix("api" / "v2" / "config") {
       pathEndOrSingleSlash {
-        get { ctx => doGet(ctx, None) }
+        get { ctx => ctx.complete(doGet(ctx, None)) }
       } ~
-      path(Rest) { path =>
-        get { ctx => doGet(ctx, Some(path)) }
+      path(Remaining) { path =>
+        get { ctx => ctx.complete(doGet(ctx, Some(path))) }
       }
     }
   }
 
-  private def doGet(ctx: RequestContext, path: Option[String]): Unit = {
-    val format = ctx.request.uri.query.get("format").getOrElse("json")
+  private def doGet(ctx: RequestContext, path: Option[String]): HttpResponse = {
+    val query = ctx.request.uri.query(mode = Uri.ParsingMode.Relaxed)
+    val format = query.get("format").getOrElse("json")
     if (formats.contains(format)) {
       path match {
         case Some(p) if !config.hasPath(p) =>
-          sendError(ctx, NotFound, s"no matching path '$p'")
+          DiagnosticMessage.error(StatusCodes.NotFound, s"no matching path '$p'")
         case Some(p) =>
-          doGetConfig(ctx, format, getPathValue(config, p))
+          formats(format)(getPathValue(config, p))
         case None =>
-          doGetConfig(ctx, format, config)
+          formats(format)(config)
       }
     } else {
       val fmtList = formats.keySet.toList.sortWith(_ < _).mkString(", ")
-      sendError(ctx, BadRequest, s"unknown format '$format', valid formats are: $fmtList")
+      val msg = s"unknown format '$format', valid formats are: $fmtList"
+      DiagnosticMessage.error(StatusCodes.BadRequest, msg)
     }
   }
 
@@ -80,13 +87,9 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
     }
   }
 
-  private def doGetConfig(ctx: RequestContext, format: String, config: Config): Unit = {
-    try { ctx.responder ! formats(format)(config) } catch handleException(ctx)
-  }
-
   private def formatHocon(config: Config): HttpResponse = {
     val str = config.root.render
-    val entity = HttpEntity(MediaTypes.`text/plain`, str)
+    val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, str)
     HttpResponse(status = StatusCodes.OK, entity = entity)
   }
 
@@ -107,7 +110,7 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
 
     val writer = new StringWriter
     props.store(writer, null)
-    val entity = HttpEntity(MediaTypes.`text/plain`, writer.toString)
+    val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, writer.toString)
     HttpResponse(status = StatusCodes.OK, entity = entity)
   }
 }

@@ -15,9 +15,10 @@
  */
 package com.netflix.atlas.lwcapi
 
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.atlas.lwcapi.StreamApi._
 import org.scalatest.FunSuite
-import spray.testkit.ScalatestRouteTest
 
 class StreamApiSuite extends FunSuite with ScalatestRouteTest {
   import scala.concurrent.duration._

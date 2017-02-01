@@ -18,15 +18,16 @@ package com.netflix.atlas.lwcapi
 import javax.inject.Inject
 
 import akka.actor.Actor
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCodes
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.StreamApi.SSESubscribe
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
-import spray.http.HttpEntity
-import spray.http.HttpResponse
-import spray.http.MediaTypes
-import spray.http.StatusCodes
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
@@ -48,18 +49,19 @@ class SubscribeActor @Inject()(sm: SubscriptionManager,
   private val dbActor = context.actorSelection("/user/lwc.expressiondb")
 
   def receive = {
-    case SubscribeRequest(sinkId, Nil) =>
-      DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "empty payload")
-    case SubscribeRequest(streamId, expressions) =>
+    case req @ ImperativeRequestContext(SubscribeRequest(sinkId, Nil), _) =>
+      req.complete(DiagnosticMessage.error(StatusCodes.BadRequest, "empty payload"))
+      context.stop(self)
+    case req @ ImperativeRequestContext(SubscribeRequest(streamId, expressions), _) =>
       val errors = subscribe(streamId, expressions)
       val errorResponse = if (errors.isEmpty) {
         Errors("success", "success", List())
       } else {
         Errors("error", "Some expressions could not be parsed", errors)
       }
-      sender() ! HttpResponse(StatusCodes.OK, entity = HttpEntity(MediaTypes.`application/json`, errorResponse.toJson))
-    case _ =>
-      DiagnosticMessage.sendError(sender(), StatusCodes.BadRequest, "unknown payload")
+      val entity = HttpEntity(MediaTypes.`application/json`, errorResponse.toJson)
+      req.complete(HttpResponse(StatusCodes.OK, entity = entity))
+      context.stop(self)
   }
 
   private def subscribe(streamId: String, expressions: List[ExpressionWithFrequency]): List[ErrorMsg] = {

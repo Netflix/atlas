@@ -15,19 +15,19 @@
  */
 package com.netflix.atlas.akka
 
-import akka.actor.ActorRefFactory
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import com.typesafe.config.Config
-import spray.http._
-import spray.routing._
 
 /**
  * Adds a directive to serve static pages from the 'www' resource directory.
  */
-class StaticPages(config: Config, implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+class StaticPages(config: Config) extends WebApi {
 
   private val defaultPage = config.getString("atlas.akka.static.default-page")
 
-  def routes: RequestContext => Unit = {
+  def routes: Route = {
     pathEndOrSingleSlash {
       redirect(defaultPage, StatusCodes.MovedPermanently)
     } ~

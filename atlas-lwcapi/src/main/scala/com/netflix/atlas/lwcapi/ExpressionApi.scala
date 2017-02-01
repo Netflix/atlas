@@ -20,13 +20,18 @@ import java.util.Base64
 import javax.inject.Inject
 
 import akka.actor.ActorRefFactory
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
-import spray.http.HttpHeaders.RawHeader
-import spray.http._
-import spray.routing.RequestContext
 
 case class ExpressionApi @Inject()(expressionDatabase: ExpressionDatabase,
   registry: Registry,
@@ -37,28 +42,28 @@ case class ExpressionApi @Inject()(expressionDatabase: ExpressionDatabase,
   private val expressionFetchesId = registry.createId("atlas.lwcapi.expressions.fetches")
   private val expressionCount = registry.distributionSummary("atlas.lwcapi.expressions.count")
 
-  def routes: RequestContext => Unit = {
+  def routes: Route = {
     path("lwc" / "api" / "v1" / "expressions" / Segment) { (cluster) =>
       optionalHeaderValueByName("If-None-Match") { etags =>
-        get { ctx => handleReq(ctx, etags, cluster) }
+        get { complete(handleReq(etags, cluster)) }
       }
     }
   }
 
-  private def handleReq(ctx: RequestContext, received_etags: Option[String], cluster: String): Unit = {
+  private def handleReq(received_etags: Option[String], cluster: String): HttpResponse = {
     val expressions = expressionDatabase.expressionsForCluster(cluster)
+    expressionCount.record(expressions.size)
     val tag = compute_etag(expressions)
     val headers: List[HttpHeader] = List(RawHeader("ETag", tag))
     val sent_tags = split_sent_tags(received_etags)
     if (sent_tags.contains(tag)) {
-      ctx.responder ! HttpResponse(StatusCodes.NotModified, headers = headers)
       registry.counter(expressionFetchesId.withTag("etagmatch", "true")).increment()
+      HttpResponse(StatusCodes.NotModified, headers = headers)
     } else {
-      val json = Return(expressions).toJson
-      ctx.responder ! HttpResponse(StatusCodes.OK, entity = HttpEntity(MediaTypes.`application/json`, json), headers = headers)
       registry.counter(expressionFetchesId.withTag("etagmatch", "false")).increment()
+      val json = Return(expressions).toJson
+      HttpResponse(StatusCodes.OK, headers, HttpEntity(MediaTypes.`application/json`, json))
     }
-    expressionCount.record(expressions.size)
   }
 }
 

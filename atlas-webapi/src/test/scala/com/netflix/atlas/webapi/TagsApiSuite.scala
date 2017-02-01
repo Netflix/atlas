@@ -16,10 +16,12 @@
 package com.netflix.atlas.webapi
 
 import akka.actor.Props
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.db.StaticDatabase
 import org.scalatest.FunSuite
-import spray.http.StatusCodes
-import spray.testkit.ScalatestRouteTest
 
 
 class TagsApiSuite extends FunSuite with ScalatestRouteTest {
@@ -35,7 +37,7 @@ class TagsApiSuite extends FunSuite with ScalatestRouteTest {
 
   def testGet(uri: String)(f: => Unit): Unit = {
     test(uri) {
-      Get(uri) ~> endpoint.routes ~> check(f)
+      Get(uri) ~> RequestHandler.standardOptions(endpoint.routes) ~> check(f)
     }
   }
 

@@ -15,30 +15,26 @@
  */
 package com.netflix.atlas.lwcapi
 
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.ActorRef
 import akka.actor.Cancellable
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import akka.stream.actor.ActorPublisher
+import akka.stream.actor.ActorPublisherMessage._
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
-import spray.can.Http
-import spray.http._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-class SSEActor(client: ActorRef,
-               sseId: String,
-               name: String,
-               sm: SubscriptionManager,
-               registry: Registry)
-  extends Actor with ActorLogging {
+class SSEActor(sseId: String, name: String, sm: SubscriptionManager, registry: Registry)
+  extends ActorPublisher[ChunkStreamPart] with ActorLogging {
+
   import SSEActor._
   import StreamApi._
-
-  private val sseMediaType = MediaType.custom("text", "event-stream", compressible = true, binary = false)
 
   private val connectsId = registry.createId("atlas.lwcapi.sse.connectCount")
   private val messagesId = registry.createId("atlas.lwcapi.sse.messageCount")
@@ -50,92 +46,72 @@ class SSEActor(client: ActorRef,
   private val sseCountId = registry.createId("atlas.lwcapi.streams").withTag("streamType", "sse")
   private val sseCount = registry.gauge(sseCountId, new AtomicInteger(1))
 
-  private var outstandingByteCount: Long = 0
-  private val maxOutstandingBytes: Long = 10000000 // 10 megabytes max outstanding request size per SSE stream
   private var droppedMessageCount: Long = 0 // in messages
-  private val maxBufferLength: Long = 100000 // 100k allowed to buffer before we send it.
 
   private val instanceId = NetflixEnvironment.instanceId()
 
-  private val tickTime = 100.microseconds
-  private var tickCount = 0
-  private val statsTime = 300 // in 100ms increments.
-  private val helloMessage = SSEHello(sseId, instanceId, GlobalUUID.get)
-  private val messageBuffer = new StringBuilder
+  private val diagnosticMessages = new ArrayBlockingQueue[String](10)
+  private val messages = new ArrayBlockingQueue[String](10000)
 
-  // The first response sets the content-type.  Note that we must return some data, since
-  // even an empty string results in no content-type being set.
-  val entity = HttpEntity(sseMediaType, "info: Connected {}\r\n\r\n")
-  client ! ChunkedResponseStart(HttpResponse(StatusCodes.OK, entity = entity)).withAck(Ack(0))
   registry.counter(connectsId.withTag("streamId", sseId)).increment()
 
-  var needsUnregister = true
+  private var needsUnregister = true
   sm.register(sseId, self, name)
-  send(helloMessage)
-  send(SSEStatistics(0))
+  enqueue(SSEHello(sseId, instanceId, GlobalUUID.get), diagnosticMessages)
+  enqueue(SSEStatistics(0), diagnosticMessages)
 
-  var ticker: Cancellable = context.system.scheduler.schedule(tickTime, tickTime) {
+  private var shutdown = false
+
+  private val tickTime = 30.seconds
+  private val ticker: Cancellable = context.system.scheduler.schedule(tickTime, tickTime) {
     self ! Tick
   }
 
   def receive = {
-    case Ack(length) =>
-      outstandingByteCount -= length
-    case Tick =>
-      tickCount += 1
-      if (tickCount >= statsTime) {
-        val msg = SSEStatistics(droppedMessageCount)
-        send(msg, force = true)
-        tickCount = 0
-      }
-      flushBuffer()
-    case msg: SSEShutdown =>
-      ticker.cancel()
-      send(msg)
-      flushBuffer()
-      client ! Http.Close
-      unregister()
-      log.info(s"Closing SSE stream: ${msg.reason}")
-    case msg: SSEMessage =>
-      send(msg)
-    case closed: Http.ConnectionClosed =>
-      ticker.cancel()
-      log.info(s"SSE Stream closed: $closed")
+    case Request(_) =>
+      writeChunks()
+    case Cancel =>
+      log.info(s"SSE Stream closed")
       context.stop(self)
+    case Tick =>
+      val msg = SSEStatistics(droppedMessageCount)
+      enqueue(msg, diagnosticMessages)
+    case msg: SSEShutdown =>
+      log.info(s"Closing SSE stream: ${msg.reason}")
+      enqueue(msg, diagnosticMessages)
+      shutdown = true
+    case msg: SSEMessage =>
+      enqueue(msg, messages)
   }
 
-  private def flushBuffer(): Unit = {
-    if (messageBuffer.nonEmpty) {
-      val bufferLength = messageBuffer.length
-      registry.counter(sendBytesId).increment(bufferLength)
-      registry.counter(sendsId).increment()
-      client ! MessageChunk(messageBuffer.result).withAck(Ack(bufferLength))
-      messageBuffer.clear
+  private def enqueue(msg: SSEMessage, queue: BlockingQueue[String]): Unit = {
+    val str = msg.toSSE + "\r\n\r\n"
+    if (queue.offer(str)) {
+      registry.counter(messagesId.withTag("action", msg.getWhat)).increment()
+      registry.counter(messageBytesId.withTag("action", msg.getWhat)).increment(str.length)
+    } else {
+      droppedMessageCount += 1
+      registry.counter(droppedId.withTag("action", msg.getWhat)).increment()
     }
   }
 
-  private def queueToBuffer(msg: SSEMessage): Unit = {
-    val part = msg.toSSE + "\r\n\r\n"
-    messageBuffer.append(part)
-    // accounting happens prior to actual send
-    outstandingByteCount += part.length
-    registry.counter(messagesId.withTag("action", msg.getWhat)).increment()
-    registry.counter(messageBytesId.withTag("action", msg.getWhat)).increment(part.length)
-    if (messageBuffer.length >= maxBufferLength)
-      flushBuffer()
+  def writeChunks(): Unit = {
+    writeChunks(diagnosticMessages)
+    writeChunks(messages)
+
+    // If we have received a shutdown message, wait until we have flushed all
+    // diagnostic messages and then exit.
+    if (shutdown && diagnosticMessages.isEmpty) {
+      onCompleteThenStop()
+    }
   }
 
-  private def send(msg: SSEMessage, force: Boolean = false): Unit = {
-    if (force) {
-      queueToBuffer(msg)
-      flushBuffer()
-    } else {
-      if (outstandingByteCount < maxOutstandingBytes) {
-        queueToBuffer(msg)
-      } else {
-        droppedMessageCount += 1
-        registry.counter(droppedId.withTag("action", msg.getWhat)).increment()
-      }
+  def writeChunks(queue: BlockingQueue[String]): Unit = {
+    while (totalDemand > 0L && !queue.isEmpty) {
+      val str = queue.take()
+      registry.counter(sendBytesId).increment(str.length)
+      registry.counter(sendsId).increment()
+      onNext(ChunkStreamPart(str))
     }
   }
 
@@ -152,8 +128,6 @@ class SSEActor(client: ActorRef,
     ticker.cancel()
     super.postStop()
   }
-
-  case class Ack(length: Long)
 }
 
 object SSEActor {

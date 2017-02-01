@@ -16,11 +16,13 @@
 package com.netflix.atlas.webapi
 
 import akka.actor.Props
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.db.MemoryDatabase
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
-import spray.http.StatusCodes
-import spray.testkit.ScalatestRouteTest
 
 
 class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
@@ -43,28 +45,28 @@ class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
     """.stripMargin))
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
 
-  val endpoint = new GraphApi
+  val routes = RequestHandler.standardOptions((new GraphApi).routes)
 
   test("sendError image") {
-    Get("/api/v1/graph?q=:foo") ~> endpoint.routes ~> check {
+    Get("/api/v1/graph?q=:foo") ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
     }
   }
 
   test("sendError txt") {
-    Get("/api/v1/graph?q=:foo&format=txt") ~> endpoint.routes ~> check {
+    Get("/api/v1/graph?q=:foo&format=txt") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
-  test("image: IAE if not match for arguement to binary op") {
-    Get("/api/v1/graph?q=name,foo,:eq,:sum,name,bar,:eq,:sum,:add") ~> endpoint.routes ~> check {
+  test("image: IAE if not match for argument to binary op") {
+    Get("/api/v1/graph?q=name,foo,:eq,:sum,name,bar,:eq,:sum,:add") ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
     }
   }
 
-  test("txt: IAE if not match for arguement to binary op") {
-    Get("/api/v1/graph?q=name,foo,:eq,:sum,name,bar,:eq,:sum,:add&format=txt") ~> endpoint.routes ~> check {
+  test("txt: IAE if not match for argument to binary op") {
+    Get("/api/v1/graph?q=name,bar,:eq,:sum,name,foo,:eq,:sum,:add&format=txt") ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
     }
   }

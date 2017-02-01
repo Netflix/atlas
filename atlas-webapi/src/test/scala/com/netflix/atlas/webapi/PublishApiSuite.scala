@@ -17,13 +17,15 @@ package com.netflix.atlas.webapi
 
 import akka.actor.Actor
 import akka.actor.Props
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.webapi.PublishApi.FailureMessage
 import com.netflix.atlas.webapi.PublishApi.PublishRequest
 import org.scalatest.FunSuite
-import spray.http.HttpResponse
-import spray.http.StatusCodes
-import spray.testkit.ScalatestRouteTest
 
 
 class PublishApiSuite extends FunSuite with ScalatestRouteTest {
@@ -36,16 +38,16 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
 
   system.actorOf(Props(new TestActor), "publish")
 
-  val endpoint = new PublishApi
+  val routes = RequestHandler.standardOptions((new PublishApi).routes)
 
   test("publish no content") {
-    Post("/api/v1/publish") ~> endpoint.routes ~> check {
+    Post("/api/v1/publish") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
   test("publish empty object") {
-    Post("/api/v1/publish", "{}") ~> endpoint.routes ~> check {
+    Post("/api/v1/publish", "{}") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
       assert(lastUpdate === Nil)
     }
@@ -65,7 +67,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
           }
         ]
       }"""
-    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+    Post("/api/v1/publish", json) ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate === PublishApi.decodeBatch(json))
     }
@@ -81,7 +83,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
           }
         ]
       }"""
-    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+    Post("/api/v1/publish", json) ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
@@ -101,20 +103,20 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
           }
         ]
       }"""
-    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+    Post("/api/v1/publish", json) ~> routes ~> check {
       assert(response.status === StatusCodes.Accepted)
       assert(lastUpdate === PublishApi.decodeBatch(json).tail)
     }
   }
 
   test("publish bad json") {
-    Post("/api/v1/publish", "fubar") ~> endpoint.routes ~> check {
+    Post("/api/v1/publish", "fubar") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
 
   test("publish invalid object") {
-    Post("/api/v1/publish", "{\"foo\":\"bar\"}") ~> endpoint.routes ~> check {
+    Post("/api/v1/publish", "{\"foo\":\"bar\"}") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
@@ -129,7 +131,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
           }
         ]
       }"""
-    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+    Post("/api/v1/publish", json) ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
@@ -144,7 +146,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
           }
         ]
       }"""
-    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+    Post("/api/v1/publish", json) ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
@@ -159,7 +161,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
           }
         ]
       }"""
-    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+    Post("/api/v1/publish", json) ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
     }
   }
@@ -179,7 +181,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
           }
         ]
       }"""
-    Post("/api/v1/publish", json) ~> endpoint.routes ~> check {
+    Post("/api/v1/publish", json) ~> routes ~> check {
       assert(response.status === StatusCodes.Accepted)
     }
   }
@@ -198,7 +200,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
           }
         ]
       }"""
-    Post("/api/v1/publish-fast", json) ~> endpoint.routes ~> check {
+    Post("/api/v1/publish-fast", json) ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(lastUpdate === PublishApi.decodeBatch(json))
     }
@@ -211,20 +213,20 @@ object PublishApiSuite {
 
   class TestActor extends Actor {
     def receive = {
-      case PublishRequest(Nil, Nil) =>
+      case req @ PublishRequest(Nil, Nil, _, _) =>
         lastUpdate = Nil
-        sender() ! HttpResponse(StatusCodes.BadRequest)
-      case PublishRequest(Nil, failures) =>
+        req.complete(HttpResponse(StatusCodes.BadRequest))
+      case req @ PublishRequest(Nil, failures, _, _) =>
         lastUpdate = Nil
         val msg = FailureMessage.error(failures)
-        sender() ! HttpResponse(StatusCodes.BadRequest, msg.toJson)
-      case PublishRequest(values, Nil) =>
+        req.complete(HttpResponse(StatusCodes.BadRequest, entity = msg.toJson))
+      case req @ PublishRequest(values, Nil, _, _) =>
         lastUpdate = values
-        sender() ! HttpResponse(StatusCodes.OK)
-      case PublishRequest(values, failures) =>
+        req.complete(HttpResponse(StatusCodes.OK))
+      case req @ PublishRequest(values, failures, _, _) =>
         lastUpdate = values
         val msg = FailureMessage.partial(failures)
-        sender() ! HttpResponse(StatusCodes.Accepted, msg.toJson)
+        req.complete(HttpResponse(StatusCodes.Accepted, entity = msg.toJson))
     }
   }
 }

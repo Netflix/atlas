@@ -16,13 +16,13 @@
 package com.netflix.atlas.akka
 
 import akka.actor.ActorRef
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCode
+import akka.http.scaladsl.model.StatusCodes
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.netflix.atlas.json.JsonSupport
-import spray.http.HttpEntity
-import spray.http.HttpResponse
-import spray.http.MediaTypes
-import spray.http.StatusCode
-import spray.http.StatusCodes
 
 object DiagnosticMessage {
   final val Info: String = "info"
@@ -67,6 +67,16 @@ object DiagnosticMessage {
     val errorMsg = DiagnosticMessage.error(msg)
     val entity = HttpEntity(MediaTypes.`application/json`, errorMsg.toJson)
     ref ! HttpResponse(status = status, entity = entity)
+  }
+
+  def error(status: StatusCode, t: Throwable): HttpResponse = {
+    error(status, s"${t.getClass.getSimpleName}: ${t.getMessage}")
+  }
+
+  def error(status: StatusCode, msg: String): HttpResponse = {
+    val errorMsg = DiagnosticMessage.error(msg)
+    val entity = HttpEntity(MediaTypes.`application/json`, errorMsg.toJson)
+    HttpResponse(status = status, entity = entity)
   }
 }
 

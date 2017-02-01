@@ -15,21 +15,31 @@
  */
 package com.netflix.atlas.akka
 
-import akka.actor.Actor
-import spray.http.ChunkedMessageEnd
-import spray.http.ChunkedResponseStart
-import spray.http.HttpResponse
-import spray.http.MessageChunk
-import spray.http.StatusCodes
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import akka.stream.actor.ActorPublisher
+import akka.stream.actor.ActorPublisherMessage._
 
-class ChunkResponseActor extends Actor {
+class ChunkResponseActor extends ActorPublisher[ChunkStreamPart] {
+
+  var n: Int = 42
+
   def receive = {
     case "start" =>
-      sender() ! ChunkedResponseStart(HttpResponse(StatusCodes.OK, "start\n")).withAck(42)
-    case 0 =>
-      sender() ! ChunkedMessageEnd
+      onNext(ChunkStreamPart("start\n"))
+      writeChunks()
+    case Request(_) =>
+      writeChunks()
+    case Cancel =>
       context.stop(self)
-    case n: Int =>
-      sender() ! MessageChunk(s"$n\n").withAck(n - 1)
+  }
+
+  def writeChunks(): Unit = {
+    while (totalDemand > 0L && n > 0) {
+      onNext(ChunkStreamPart(s"$n\n"))
+      n -= 1
+    }
+    if (n == 0) {
+      onCompleteThenStop()
+    }
   }
 }

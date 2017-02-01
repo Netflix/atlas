@@ -15,7 +15,12 @@
  */
 package com.netflix.atlas.webapi
 
-import akka.actor.ActorRefFactory
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Expr
@@ -28,11 +33,6 @@ import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.Word
 import com.netflix.atlas.json.Json
-import spray.http.HttpEntity
-import spray.http.HttpResponse
-import spray.http.MediaTypes
-import spray.http.StatusCodes
-import spray.routing.RequestContext
 
 import scala.util.Try
 
@@ -40,7 +40,7 @@ import scala.util.Try
  * Generates a list of steps for executing an expression. This endpoint is typically used for
  * validating or debugging an expression.
  */
-class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+class ExprApi extends WebApi {
 
   private val vocabulary = ApiSettings.graphVocabulary
 
@@ -50,22 +50,22 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   private val excludedWords = ApiSettings.excludedWords
 
-  def routes: RequestContext => Unit = {
+  def routes: Route = parameters("q", "vocab" ? vocabulary.name) { (q, vocab) =>
     path("api" / "v1" / "expr") {
-      get { ctx => processDebugRequest(ctx) }
+      get { complete(processDebugRequest(q, vocab)) }
     } ~
     pathPrefix("api" / "v1" / "expr") {
       path("debug") {
-        get { ctx => processDebugRequest(ctx) }
+        get { complete(processDebugRequest(q, vocab)) }
       } ~
       path("normalize") {
-        get { ctx => processNormalizeRequest(ctx) }
+        get { complete(processNormalizeRequest(q, vocab)) }
       } ~
       path("complete") {
-        get { ctx => processCompleteRequest(ctx) }
+        get { complete(processCompleteRequest(q, vocab)) }
       } ~
       path("queries") {
-        get { ctx => processQueriesRequest(ctx) }
+        get { complete(processQueriesRequest(q, vocab)) }
       }
     }
   }
@@ -118,18 +118,8 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     case v       => v.toString
   }
 
-  private def getInterpreter(ctx: RequestContext): (String, Interpreter) = {
-    val query = ctx.request.uri.query.get("q").getOrElse {
-      throw new IllegalArgumentException("missing required parameter 'q'")
-    }
-    val vocabName = ctx.request.uri.query.getOrElse("vocab", vocabulary.name)
+  private def processDebugRequest(query: String, vocabName: String): HttpResponse = {
     val interpreter = newInterpreter(vocabName)
-    query -> interpreter
-  }
-
-  private def processDebugRequest(ctx: RequestContext): Unit = {
-    val (query, interpreter) = getInterpreter(ctx)
-    val vocabName = ctx.request.uri.query.getOrElse("vocab", vocabulary.name)
     val execSteps = interpreter.debug(query)
     if (execSteps.nonEmpty) {
       verifyStackContents(vocabName, execSteps.last.context.stack)
@@ -141,12 +131,12 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
       val ctxt = Map("stack" -> stack, "variables" -> vars)
       Map("program" -> step.program, "context" -> ctxt)
     }
-    sendJson(ctx, steps)
+    jsonResponse(steps)
   }
 
-  private def processNormalizeRequest(ctx: RequestContext): Unit = {
-    val (query, interpreter) = getInterpreter(ctx)
-    sendJson(ctx, ExprApi.normalize(query, interpreter))
+  private def processNormalizeRequest(query: String, vocabName: String): HttpResponse = {
+    val interpreter = newInterpreter(vocabName)
+    jsonResponse(ExprApi.normalize(query, interpreter))
   }
 
   // This check is needed to be sure an operation will work if matches is not exhaustive. In
@@ -161,15 +151,15 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     !excludedWords.contains(w.name) && w.matches(ctxt.stack) && execWorks(interpreter, w, ctxt)
   }
 
-  private def processCompleteRequest(ctx: RequestContext): Unit = {
-    val (query, interpreter) = getInterpreter(ctx)
+  private def processCompleteRequest(query: String, vocabName: String): HttpResponse = {
+    val interpreter = newInterpreter(vocabName)
     val result = interpreter.execute(query)
 
     val candidates = interpreter.vocabulary.filter { w => matches(interpreter, w, result) }
     val descriptions = candidates.map { w =>
       Map("name" -> w.name, "signature" -> w.signature, "description" -> w.summary)
     }
-    sendJson(ctx, descriptions)
+    jsonResponse(descriptions)
   }
 
   /**
@@ -181,8 +171,8 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     *
     * [1] https://github.com/Netflix/atlas/wiki/Reference-query
     */
-  private def processQueriesRequest(ctx: RequestContext): Unit = {
-    val (expr, interpreter) = getInterpreter(ctx)
+  private def processQueriesRequest(expr: String, vocabName: String): HttpResponse = {
+    val interpreter = newInterpreter(vocabName)
     val result = interpreter.execute(expr)
 
     val exprs = result.stack.collect {
@@ -193,14 +183,14 @@ class ExprApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
       .map(_.toString)
       .sortWith(_ < _)
       .distinct
-    sendJson(ctx, queries)
+    jsonResponse(queries)
   }
 
-  /** Encode `obj` as json and send to `ctx.responder`. */
-  private def sendJson(ctx: RequestContext, obj: AnyRef): Unit = {
+  /** Encode `obj` as json and create the HttpResponse. */
+  private def jsonResponse(obj: AnyRef): HttpResponse = {
     val data = Json.encode(obj)
     val entity = HttpEntity(MediaTypes.`application/json`, data)
-    ctx.responder ! HttpResponse(StatusCodes.OK, entity = entity)
+    HttpResponse(StatusCodes.OK, entity = entity)
   }
 }
 

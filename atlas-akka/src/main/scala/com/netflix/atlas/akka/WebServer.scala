@@ -19,24 +19,19 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-import akka.actor.Actor
 import akka.actor.ActorSystem
-import akka.actor.Props
-import akka.io.IO
-import akka.io.Inet
-import akka.routing.FromConfig
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.server.Route
+import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.ClassFactory
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import spray.can.Http
 
-import scala.concurrent.Await
-import scala.concurrent.Promise
-import scala.util.Failure
-import scala.util.Success
+import scala.concurrent.Future
 
 /**
   * Web server instance.
@@ -60,43 +55,24 @@ class WebServer @Inject() (
   implicit val system: ActorSystem)
     extends AbstractService with StrictLogging {
 
-  import scala.concurrent.duration._
+  implicit val materializer = ActorMaterializer()
+  implicit val executionContext = system.dispatcher
 
   private val port = config.getInt("atlas.akka.port")
 
   private val timeout = config.getDuration("atlas.akka.bind-timeout", TimeUnit.MILLISECONDS)
   private implicit val bindTimeout = Timeout(timeout, TimeUnit.MILLISECONDS)
 
+  private var bindingFuture: Future[ServerBinding] = _
+
   protected def startImpl(): Unit = {
-    logger.info(s"starting $name on port $port")
-
-    val handler = system.actorOf(newRequestHandler, "request-handler")
-
-    val bindPromise = Promise[Http.Bound]()
-    val stats = system.actorOf(Props(new ServerStatsActor(registry, bindPromise)))
-    val options = List(Inet.SO.ReuseAddress(true))
-    val bind = Http.Bind(handler,
-      interface = "0.0.0.0",
-      port = port,
-      backlog = 2048,
-      options = options)
-    IO(Http).tell(bind, stats)
-    Await.ready(bindPromise.future, Duration.Inf).value.get match {
-      case Success(Http.Bound(addr)) =>
-        logger.info(s"server started on $addr")
-      case Failure(t) =>
-        logger.error("server failed to start", t)
-        throw t;
-    }
-  }
-
-  private def newRequestHandler: Props = {
-    val props = Props(classFactory.newInstance[Actor](classOf[RequestHandlerActor]))
-    val routeCfgPath = "akka.actor.deployment./request-handler.router"
-    if (config.hasPath(routeCfgPath)) FromConfig.props(props) else props
+    val handler = new RequestHandler(config, classFactory)
+    bindingFuture = Http().bindAndHandle(Route.handlerFlow(handler.routes), "0.0.0.0", port)
+    logger.info(s"started $name on port $port")
   }
 
   protected def stopImpl(): Unit = {
+    bindingFuture.flatMap(_.unbind()).onComplete(_ => system.terminate())
   }
 
   def actorSystem: ActorSystem = system

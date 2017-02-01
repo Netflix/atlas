@@ -16,48 +16,68 @@
 package com.netflix.atlas.akka
 
 import akka.actor.ActorRefFactory
+import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.util.ByteString
+import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
-import spray.http._
-import spray.routing._
-import spray.testkit.ScalatestRouteTest
 
 
 class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
 
-  class TestService(val actorRefFactory: ActorRefFactory) extends HttpService {
+  import CustomDirectivesSuite._
 
-    def routes: RequestContext => Unit = {
+  class TestService(val actorRefFactory: ActorRefFactory) {
+
+    def routes: Route = {
       CustomDirectives.accessLog {
         CustomDirectives.corsFilter {
           CustomDirectives.jsonpFilter {
             path("text") {
-              get { ctx =>
-                val entity = HttpEntity(MediaTypes.`text/plain`, "text response")
-                ctx.responder ! HttpResponse(status = StatusCodes.OK, entity = entity)
+              get {
+                val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "text response")
+                complete(HttpResponse(status = StatusCodes.OK, entity = entity))
               }
             } ~
               path("json") {
-                get { ctx =>
+                get {
                   val entity = HttpEntity(MediaTypes.`application/json`, "[1,2,3]")
-                  ctx.responder ! HttpResponse(status = StatusCodes.OK, entity = entity)
+                  complete(HttpResponse(status = StatusCodes.OK, entity = entity))
+                } ~
+                post {
+                  CustomDirectives.parseEntity(CustomDirectives.json[Message]) { message =>
+                    val entity = HttpEntity(MediaTypes.`application/json`, Json.encode(message))
+                    complete(HttpResponse(status = StatusCodes.OK, entity = entity))
+                  }
                 }
               } ~
               path("binary") {
-                get { ctx =>
-                  val entity = HttpEntity(MediaTypes.`application/octet-stream`, "text response")
-                  ctx.responder ! HttpResponse(status = StatusCodes.OK, entity = entity)
+                get {
+                  val data = ByteString("text response")
+                  val entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, data)
+                  complete(HttpResponse(status = StatusCodes.OK, entity = entity))
                 }
               } ~
               path("error") {
-                get { ctx =>
-                  val entity = HttpEntity(MediaTypes.`text/plain`, "error")
-                  ctx.responder ! HttpResponse(status = StatusCodes.BadRequest, entity = entity)
+                get {
+                  val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "error")
+                  complete(HttpResponse(status = StatusCodes.BadRequest, entity = entity))
                 }
               } ~
               path("empty") {
-                get { ctx =>
-                  val headers = List(HttpHeaders.RawHeader("foo", "bar"))
-                  ctx.responder ! HttpResponse(status = StatusCodes.OK, headers = headers)
+                get {
+                  val headers = List(RawHeader("foo", "bar"))
+                  complete(HttpResponse(status = StatusCodes.OK, headers = headers))
                 }
               }
           }
@@ -79,6 +99,23 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
     Get("/json") ~> endpoint.routes ~> check {
       val expected = """[1,2,3]"""
       assert(expected === responseAs[String])
+    }
+  }
+
+  test("json post") {
+    val msg = Message("foo", "bar baz")
+    Post("/json", Json.encode(msg)) ~> endpoint.routes ~> check {
+      val expected = Json.decode[Message](responseAs[String])
+      assert(expected === msg)
+    }
+  }
+
+  test("smile post") {
+    val msg = Message("foo", "bar baz")
+    val entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, Json.smileEncode(msg))
+    Post("/json", entity) ~> endpoint.routes ~> check {
+      val expected = Json.decode[Message](responseAs[String])
+      assert(expected === msg)
     }
   }
 
@@ -127,15 +164,15 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("cors") {
-    val headers = List(HttpHeaders.Origin(List(HttpOrigin("http://localhost"))))
+    val headers = List(Origin(HttpOrigin("http://localhost")))
     val req = HttpRequest(HttpMethods.GET, Uri("/json"), headers)
     req ~> endpoint.routes ~> check {
       assert(headers.nonEmpty)
       response.headers.foreach {
-        case HttpHeaders.`Access-Control-Allow-Origin`(v) =>
+        case `Access-Control-Allow-Origin`(v) =>
           assert("http://localhost" === v.toString)
-        case HttpHeaders.`Access-Control-Allow-Methods`(v) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === v.mkString(","))
+        case `Access-Control-Allow-Methods`(vs) =>
+          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case h =>
           fail(s"unexpected header: $h")
       }
@@ -145,21 +182,21 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("cors with custom header") {
-    val headers = List(HttpHeaders.Origin(List(HttpOrigin("http://localhost"))))
+    val headers = List(Origin(HttpOrigin("http://localhost")))
     val req = HttpRequest(HttpMethods.GET, Uri("/empty"), headers)
     req ~> endpoint.routes ~> check {
       assert(headers.nonEmpty)
       response.headers.foreach {
-        case HttpHeaders.`Access-Control-Allow-Origin`(v) =>
+        case `Access-Control-Allow-Origin`(v) =>
           assert("http://localhost" === v.toString)
-        case HttpHeaders.`Access-Control-Allow-Methods`(v) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === v.mkString(","))
-        case HttpHeaders.`Access-Control-Expose-Headers`(v) =>
-          assert("foo" === v.mkString(","))
-        case HttpHeaders.RawHeader("foo", v) =>
-          assert("bar" === v)
+        case `Access-Control-Allow-Methods`(vs) =>
+          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case `Access-Control-Expose-Headers`(vs) =>
+          assert("foo" === vs.mkString(","))
+        case h: RawHeader if h.lowercaseName == "foo" =>
+          assert("bar" === h.value)
         case h =>
-          fail(s"unexpected header: $h")
+          fail(s"unexpected header: $h (${h.getClass})")
       }
       val expected = ""
       assert(expected === responseAs[String])
@@ -168,18 +205,18 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
 
   test("cors with custom request headers") {
     val headers = List(
-      HttpHeaders.Origin(List(HttpOrigin("http://localhost"))),
-      HttpHeaders.`Access-Control-Request-Headers`("foo"))
+      Origin(HttpOrigin("http://localhost")),
+      `Access-Control-Request-Headers`("foo"))
     val req = HttpRequest(HttpMethods.GET, Uri("/json"), headers)
     req ~> endpoint.routes ~> check {
       assert(headers.nonEmpty)
       response.headers.foreach {
-        case HttpHeaders.`Access-Control-Allow-Origin`(v) =>
+        case `Access-Control-Allow-Origin`(v) =>
           assert("http://localhost" === v.toString)
-        case HttpHeaders.`Access-Control-Allow-Methods`(v) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === v.mkString(","))
-        case HttpHeaders.`Access-Control-Allow-Headers`(v) =>
-          assert("foo" === v.mkString(","))
+        case `Access-Control-Allow-Methods`(vs) =>
+          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case `Access-Control-Allow-Headers`(vs) =>
+          assert("foo" === vs.mkString(","))
         case h =>
           fail(s"unexpected header: $h")
       }
@@ -190,15 +227,15 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
 
   // Some browsers send this when a request is made from a file off the local filesystem
   test("cors null origin") {
-    val headers = List(HttpHeaders.RawHeader("Origin", "null"))
+    val headers = List(RawHeader("Origin", "null"))
     val req = HttpRequest(HttpMethods.GET, Uri("/json"), headers)
     req ~> endpoint.routes ~> check {
       assert(headers.nonEmpty)
       response.headers.foreach {
-        case HttpHeaders.`Access-Control-Allow-Origin`(v) =>
+        case `Access-Control-Allow-Origin`(v) =>
           assert("*" === v.toString)
-        case HttpHeaders.`Access-Control-Allow-Methods`(v) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === v.mkString(","))
+        case `Access-Control-Allow-Methods`(vs) =>
+          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case h =>
           fail(s"unexpected header: $h")
       }
@@ -206,4 +243,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
       assert(expected === responseAs[String])
     }
   }
+}
+
+object CustomDirectivesSuite {
+  case class Message(subject: String, body: String)
 }

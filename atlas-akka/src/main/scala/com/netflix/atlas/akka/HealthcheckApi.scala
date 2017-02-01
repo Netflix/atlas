@@ -17,29 +17,29 @@ package com.netflix.atlas.akka
 
 import javax.inject.Provider
 
-import akka.actor.ActorRefFactory
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.ServiceManager
 import com.typesafe.scalalogging.StrictLogging
-import spray.http._
-import spray.routing._
 
 
 /**
   * Healthcheck endpoint based on health status of the ServiceManager.
   */
-class HealthcheckApi(
-    val actorRefFactory: ActorRefFactory,
-    serviceManagerProvider: Provider[ServiceManager]) extends WebApi with StrictLogging {
+class HealthcheckApi(serviceManagerProvider: Provider[ServiceManager])
+    extends WebApi with StrictLogging {
 
-  def routes: RequestContext => Unit = {
-    serviceManagerProvider.get()
+  def routes: Route = {
     path("healthcheck") {
-      respondWithMediaType(MediaTypes.`application/json`) {
-        get { ctx =>
-          val status = if (serviceManager.isHealthy) StatusCodes.OK else StatusCodes.InternalServerError
-          ctx.responder ! HttpResponse(status, entity = summary)
-        }
+      get {
+        val status = if (serviceManager.isHealthy) StatusCodes.OK else StatusCodes.InternalServerError
+        val entity = HttpEntity(MediaTypes.`application/json`, summary)
+        complete(HttpResponse(status = status, entity = entity))
       }
     }
   }
