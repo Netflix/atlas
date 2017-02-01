@@ -165,5 +165,5 @@ lazy val `atlas-wiki` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-core`, `atlas-webapi`)
   .settings(libraryDependencies ++= Seq(
-    Dependencies.scalaCompiler
+    Dependencies.scalaCompiler % scalaVersion.value
   ))

@@ -9,12 +9,12 @@ object Dependencies {
     val guice      = "4.1.0"
     val jackson    = "2.8.4"
     val log4j      = "2.7"
-    val scala      = "2.11.8"
+    val scala      = "2.12.1"
     val slf4j      = "1.7.22"
     val spectator  = "0.47.0"
     val spray      = "1.3.4"
 
-    val crossScala = Seq(scala)
+    val crossScala = Seq(scala, "2.11.8")
   }
 
   import Versions._
@@ -52,12 +52,12 @@ object Dependencies {
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val redisclient     = "net.debasishg" %% "redisclient" % "3.0"
+  val redisclient     = "net.debasishg" %% "redisclient" % "3.3"
   val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.6.32"
-  val scalaCompiler   = "org.scala-lang" % "scala-compiler" % scala
-  val scalaLibrary    = "org.scala-lang" % "scala-library" % scala
-  val scalaLibraryAll = "org.scala-lang" % "scala-library-all" % scala
-  val scalaLogging    = "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0"
+  val scalaCompiler   = "org.scala-lang" % "scala-compiler"
+  val scalaLibrary    = "org.scala-lang" % "scala-library"
+  val scalaLibraryAll = "org.scala-lang" % "scala-library-all"
+  val scalaLogging    = "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
   val scalaReflect    = "org.scala-lang" % "scala-reflect" % scala
   val scalatest       = "org.scalatest" %% "scalatest" % "3.0.0"
   val slf4jApi        = "org.slf4j" % "slf4j-api" % slf4j

@@ -1,6 +1,10 @@
 # Map stdin to /dev/null to avoid interactive prompts if there is some failure related to the
 # build script.
-SBT := cat /dev/null | project/sbt
+ifeq (${TRAVIS_SCALA_VERSION},)
+	SBT := cat /dev/null | project/sbt
+else
+	SBT := cat /dev/null | project/sbt ++${TRAVIS_SCALA_VERSION}
+endif
 
 WIKI_PRG        := atlas-wiki/runMain com.netflix.atlas.wiki.Main
 WIKI_INPUT_DIR  := $(shell pwd)/atlas-wiki/src/main/resources
