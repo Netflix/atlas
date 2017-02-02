@@ -70,7 +70,7 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => Tag
   def rebuildIndex(): Unit = {
     val timerId = rebuildTimer.start()
     try {
-      import scala.collection.JavaConversions._
+      import scala.collection.JavaConverters._
 
       // Drain the update queue and create map of items for deduping, we put new items in the
       // map first so that an older item, if present, will be preferred
@@ -78,14 +78,14 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => Tag
       val updates = new java.util.ArrayList[T](size)
       pendingUpdates.drainTo(updates, size)
       val items = new java.util.HashMap[BigInteger, T]
-      updates.foreach { i => items.put(i.id, i) }
+      updates.forEach { i => items.put(i.id, i) }
 
       // Get set of all items in the current index that are not expired
       val matches = currentIndex.get.findItems(TagQuery(None)).filter(!_.isExpired)
       matches.foreach { i => items.put(i.id, i) }
 
       // Create array of items and build the index
-      rebuildIndex(items.values.toList)
+      rebuildIndex(items.values.asScala.toList)
     } finally {
       rebuildTimer.stop(timerId)
     }

@@ -441,13 +441,13 @@ class RoaringTagIndex[T <: TaggedItem](
       val tags = findTags(TagQuery(query.query, k, offset, query.limit))
       tags.map(_.value)
     } else {
-      import scala.collection.JavaConversions._
+      import scala.collection.JavaConverters._
       val tags = findTags(TagQuery(query.query))
       val dedupedKeys = new java.util.HashSet[String]
       tags.foreach { t =>
         if (t.key > query.offset) dedupedKeys.add(t.key)
       }
-      dedupedKeys.toList.sortWith(_ < _).take(query.limit)
+      dedupedKeys.asScala.toList.sortWith(_ < _).take(query.limit)
     }
   }
 

@@ -246,11 +246,11 @@ private[this] object JsonCodec {
   }
 
   private def toGraphDef(node: JsonNode): GraphDef = {
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
     GraphDef(Nil,
       startTime  = Instant.ofEpochMilli(node.get("startTime").asLong()),
       endTime    = Instant.ofEpochMilli(node.get("endTime").asLong()),
-      timezones  = node.get("timezones").elements.map(n => ZoneId.of(n.asText())).toList,
+      timezones  = node.get("timezones").elements.asScala.map(n => ZoneId.of(n.asText())).toList,
       step       = node.get("step").asLong(),
       width      = node.get("width").asInt(),
       height     = node.get("height").asInt(),
@@ -261,7 +261,7 @@ private[this] object JsonCodec {
       onlyGraph  = node.get("onlyGraph").asBoolean(),
       loadTime   = Option(node.get("loadTime")).fold(-1L)(_.asLong()),
       stats      = Option(node.get("stats")).fold(CollectorStats.unknown)(toCollectorStats),
-      warnings   = node.get("warnings").elements.map(_.asText()).toList
+      warnings   = node.get("warnings").elements.asScala.map(_.asText()).toList
     )
   }
 
@@ -334,9 +334,9 @@ private[this] object JsonCodec {
   }
 
   private def toTimeSeries(gdef: GraphDef, node: JsonNode): TimeSeries = {
-    import scala.collection.JavaConversions._
-    val tags = node.get("tags").fields.map(e => e.getKey -> e.getValue.asText()).toMap
-    val values = node.get("data").get("values").elements.map(_.asDouble()).toArray
+    import scala.collection.JavaConverters._
+    val tags = node.get("tags").fields.asScala.map(e => e.getKey -> e.getValue.asText()).toMap
+    val values = node.get("data").get("values").elements.asScala.map(_.asDouble()).toArray
     val seq = new ArrayTimeSeq(DsType.Gauge, gdef.startTime.toEpochMilli, gdef.step, values)
     TimeSeries(tags, node.get("label").asText(), seq)
   }

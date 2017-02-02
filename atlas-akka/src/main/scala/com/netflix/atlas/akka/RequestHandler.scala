@@ -47,6 +47,11 @@ class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictL
     }
   }
 
+  private def endpoints: List[String] = {
+    import scala.collection.JavaConverters._
+    config.getStringList("atlas.akka.api-endpoints").asScala.toList.distinct
+  }
+
   /**
    * In many cases the final list will come from several config files with values getting appended
    * to the list. To avoid unnecessary duplication the class list will be deduped so that only
@@ -54,9 +59,8 @@ class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictL
    */
   private def loadRoutesFromConfig(): List[WebApi] = {
     try {
-      import scala.collection.JavaConversions._
       import scala.compat.java8.FunctionConverters._
-      val routeClasses = config.getStringList("atlas.akka.api-endpoints").toList.distinct
+      val routeClasses = endpoints
       val bindings = Map.empty[Type, AnyRef].withDefaultValue(null)
       routeClasses.map { cls =>
         logger.info(s"loading webapi class: $cls")

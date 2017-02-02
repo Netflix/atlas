@@ -62,16 +62,16 @@ object PngImage {
   }
 
   private def extractTxtFields(m: PNGMetadata): Map[String, String] = {
-    import scala.collection.JavaConversions._
-    val keys = m.tEXt_keyword.toList
-    val values = m.tEXt_text.toList
+    import scala.collection.JavaConverters._
+    val keys = m.tEXt_keyword.asScala.toList
+    val values = m.tEXt_text.asScala.toList
     keys.zip(values).toMap
   }
 
   private def extractUtf8Fields(m: PNGMetadata): Map[String, String] = {
-    import scala.collection.JavaConversions._
-    val keys = m.iTXt_keyword.toList
-    val values = m.iTXt_text.toList
+    import scala.collection.JavaConverters._
+    val keys = m.iTXt_keyword.asScala.toList
+    val values = m.iTXt_text.asScala.toList
     keys.zip(values).toMap
   }
 
