@@ -47,8 +47,8 @@ class HealthcheckApi(serviceManagerProvider: Provider[ServiceManager])
   private def serviceManager: ServiceManager = serviceManagerProvider.get
 
   private def summary: String = {
-    import scala.collection.JavaConversions._
-    val states = serviceManager.services().map(s => s.name -> s.isHealthy).toMap
+    import scala.collection.JavaConverters._
+    val states = serviceManager.services().asScala.map(s => s.name -> s.isHealthy).toMap
     Json.encode(states)
   }
 }

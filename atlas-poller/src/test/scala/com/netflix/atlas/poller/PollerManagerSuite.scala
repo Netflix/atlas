@@ -56,8 +56,8 @@ class PollerManagerSuite extends TestKit(ActorSystem())
   }
 
   private def get(k: String): Long = {
-    import scala.collection.JavaConversions._
-    registry.get(registry.createId(k)).measure().head.value.toLong
+    import scala.collection.JavaConverters._
+    registry.get(registry.createId(k)).measure().asScala.head.value.toLong
   }
 
   private def dataValue: AnyRef = {

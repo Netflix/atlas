@@ -43,9 +43,9 @@ class StaticPages(config: Config) extends WebApi {
       getFromResourceDirectory("www")
     }
 
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
     val singlePagePrefixes = config.getConfigList("atlas.akka.static.single-page-prefixes")
-    singlePagePrefixes.foldLeft(staticFiles) { (acc, cfg) =>
+    singlePagePrefixes.asScala.foldLeft(staticFiles) { (acc, cfg) =>
       val prefix = cfg.getString("prefix")
       val resource = cfg.getString("resource")
       acc ~ pathPrefix(prefix) {

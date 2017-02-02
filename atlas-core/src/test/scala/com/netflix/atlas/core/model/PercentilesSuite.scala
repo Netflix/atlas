@@ -76,33 +76,33 @@ class PercentilesSuite extends FunSuite {
   }
 
   private val inputSpectatorTimer = {
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
     val r = new DefaultRegistry()
     val t = PercentileTimer.get(r, r.createId("test"))
     (0 until 100).foreach { i =>
       t.record(i, TimeUnit.MILLISECONDS)
     }
 
-    val counters = r.counters.collect(Collectors.toList[Counter]).toList
+    val counters = r.counters.collect(Collectors.toList[Counter]).asScala.toList
     counters.map { c =>
       val v = c.count / 60.0
       val seq = new ArrayTimeSeq(DsType.Gauge, start, step, Array(v, v))
-      val tags = c.id.tags.map(t => t.key -> t.value).toMap + ("name" -> c.id.name)
+      val tags = c.id.tags.asScala.map(t => t.key -> t.value).toMap + ("name" -> c.id.name)
       TimeSeries(tags, seq)
     }
   }
 
   private val inputSpectatorDistSummary = {
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
     val r = new DefaultRegistry()
     val t = PercentileDistributionSummary.get(r, r.createId("test"))
     (0 until 100).foreach { i => t.record(i) }
 
-    val counters = r.counters.collect(Collectors.toList[Counter]).toList
+    val counters = r.counters.collect(Collectors.toList[Counter]).asScala.toList
     counters.map { c =>
       val v = c.count / 60.0
       val seq = new ArrayTimeSeq(DsType.Gauge, start, step, Array(v, v))
-      val tags = c.id.tags.map(t => t.key -> t.value).toMap + ("name" -> c.id.name)
+      val tags = c.id.tags.asScala.map(t => t.key -> t.value).toMap + ("name" -> c.id.name)
       TimeSeries(tags, seq)
     }
   }

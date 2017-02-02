@@ -31,10 +31,10 @@ import com.typesafe.config.Config
  */
 class ReservedKeyRule(config: Config) extends TagRule {
 
-  import scala.collection.JavaConversions._
+  import scala.collection.JavaConverters._
 
   private val prefix = config.getString("prefix")
-  private val allowedkeys = config.getStringList("allowed-keys").map(k => s"$prefix$k").toSet
+  private val allowedkeys = config.getStringList("allowed-keys").asScala.map(k => s"$prefix$k").toSet
 
   override def validate(k: String, v: String): ValidationResult = {
     if (k.startsWith(prefix) && !allowedkeys.contains(k))

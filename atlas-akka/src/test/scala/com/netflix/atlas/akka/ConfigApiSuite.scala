@@ -57,11 +57,11 @@ class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("/config/java.version") {
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
     Get("/api/v2/config/java.version") ~> endpoint.routes ~> check {
       val config = ConfigFactory.parseString(responseAs[String])
       val v = sysConfig.getString("java.version")
-      val expected = ConfigFactory.parseMap(Map("value" -> v))
+      val expected = ConfigFactory.parseMap(Map("value" -> v).asJava)
       assert(expected === config)
     }
   }
@@ -82,7 +82,7 @@ class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
 
   test("/config format properties") {
     Get("/api/v2/config?format=properties") ~> endpoint.routes ~> check {
-      import scala.collection.JavaConversions._
+      import scala.collection.JavaConverters._
       val props = new Properties
       props.load(new StringReader(responseAs[String]))
       val config = ConfigFactory.parseProperties(props)
@@ -91,9 +91,9 @@ class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
       // conversions. Not considered important enough to mess with right now so ignoring for the
       // test case...
       def normalize(c: Config): Map[String, String] = {
-        c.entrySet.
-          filter(!_.getKey.contains("\"")).
-          map(t => t.getKey -> s"${t.getValue.unwrapped}").toMap
+        c.entrySet.asScala
+          .filter(!_.getKey.contains("\""))
+          .map(t => t.getKey -> s"${t.getValue.unwrapped}").toMap
       }
 
       val expected = normalize(sysConfig)
