@@ -15,13 +15,10 @@
  */
 package com.netflix.atlas.akka
 
-import akka.actor.ActorRef
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCode
-import akka.http.scaladsl.model.StatusCodes
-import com.fasterxml.jackson.core.JsonProcessingException
 import com.netflix.atlas.json.JsonSupport
 
 object DiagnosticMessage {
@@ -48,25 +45,6 @@ object DiagnosticMessage {
 
   val close: DiagnosticMessage = {
     DiagnosticMessage(Close, "operation complete", None)
-  }
-
-  def handleException(ref: ActorRef): PartialFunction[Throwable, Unit] = {
-    case e @ (_: IllegalArgumentException | _: IllegalStateException | _: JsonProcessingException) =>
-      sendError(ref, StatusCodes.BadRequest, e)
-    case e: NoSuchElementException =>
-      sendError(ref, StatusCodes.NotFound, e)
-    case e: Throwable =>
-      sendError(ref, StatusCodes.InternalServerError, e)
-  }
-
-  def sendError(ref: ActorRef, status: StatusCode, t: Throwable): Unit = {
-    sendError(ref, status, s"${t.getClass.getSimpleName}: ${t.getMessage}")
-  }
-
-  def sendError(ref: ActorRef, status: StatusCode, msg: String): Unit = {
-    val errorMsg = DiagnosticMessage.error(msg)
-    val entity = HttpEntity(MediaTypes.`application/json`, errorMsg.toJson)
-    ref ! HttpResponse(status = status, entity = entity)
   }
 
   def error(status: StatusCode, t: Throwable): HttpResponse = {

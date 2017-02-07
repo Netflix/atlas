@@ -45,7 +45,7 @@ class LwcApiModule extends AbstractModule {
 
   @Provides @Singleton
   private def providesSubscriptionManager(): SubscriptionManager = {
-    SubscriptionManagerImpl()
+    new SubscriptionManagerImpl()
   }
 
   override def equals(obj: Any): Boolean = {
