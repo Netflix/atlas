@@ -38,6 +38,18 @@ class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
         }
       }
     } ~
+    path("jsonparse2") {
+      post {
+        jsonParser { p =>
+          try {
+            val v = p.getText
+            complete(HttpResponse(status = OK, entity = v))
+          } finally {
+            p.close()
+          }
+        }
+      }
+    } ~
     accessLog {
       path("chunked") {
         get {

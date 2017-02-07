@@ -23,8 +23,8 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.Route
+import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.chart.DefaultGraphEngine
 import com.netflix.atlas.json.Json
@@ -36,22 +36,17 @@ class RenderApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   def routes: Route = {
     path("api" / "v1" / "render") {
-      post { ctx => ctx.complete(processRequest(ctx)) }
-    }
-  }
+      post {
+        jsonParser { parser =>
+          val data = Json.decode[GraphApi.Response](parser)
+          val graphDef = data.toGraphDef
 
-  private def processRequest(ctx: RequestContext): HttpResponse = {
-    getJsonParser(ctx.request) match {
-      case Some(parser) =>
-        val data = Json.decode[GraphApi.Response](parser)
-        val graphDef = data.toGraphDef
-
-        val baos = new ByteArrayOutputStream
-        engine.write(graphDef, baos)
-        val entity = HttpEntity(MediaTypes.`image/png`, baos.toByteArray)
-        HttpResponse(StatusCodes.OK, entity = entity)
-      case None =>
-        throw new IllegalArgumentException("empty request body")
+          val baos = new ByteArrayOutputStream
+          engine.write(graphDef, baos)
+          val entity = HttpEntity(MediaTypes.`image/png`, baos.toByteArray)
+          complete(HttpResponse(StatusCodes.OK, entity = entity))
+        }
+      }
     }
   }
 }
