@@ -15,29 +15,12 @@
  */
 package com.netflix.atlas.akka
 
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Route
-import com.fasterxml.jackson.core.JsonParser
-import com.netflix.atlas.json.Json
 
 
 /**
  * Base trait for classes providing an API to expose via the Atlas server.
  */
 trait WebApi {
-
   def routes: Route
-
-  protected def getJsonParser(request: HttpRequest): Option[JsonParser] = {
-    request.entity match {
-      case entity: HttpEntity.Strict =>
-        if (entity.contentType.mediaType.subType == "x-jackson-smile")
-          Some(Json.newSmileParser(entity.data.toArray))
-        else
-          Some(Json.newJsonParser(entity.data.toArray))
-      case _ =>
-        throw new IllegalStateException("invalid entity type")
-    }
-  }
 }

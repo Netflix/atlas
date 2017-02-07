@@ -33,6 +33,7 @@ import akka.http.scaladsl.server.MalformedRequestContentRejection
 import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.directives.LoggingMagnet
 import akka.util.ByteString
+import com.fasterxml.jackson.core.JsonParser
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.sandbox.HttpLogEntry
 
@@ -41,6 +42,17 @@ import scala.util.Success
 
 object CustomDirectives {
 
+  /**
+    * Used with `parseEntity` to decode the request entity to an object of type
+    * `T`. If the content type is `application/x-jackson-smile`, then a smile
+    * parser will be used. Otherwise it will be treated as `application/json`
+    * regardless of the content type.
+    *
+    * Note: This is kept as a separate function passed into the `parseEntity`
+    * directive because adding the manifest to `T` causes problems when used
+    * directly on the directive. It also makes it possible to reuse `parseEntity`
+    * with a custom function.
+    */
   def json[T: Manifest]: MediaType => ByteString => T = {
     mediaType => bs => {
       if (mediaType == CustomMediaTypes.`application/x-jackson-smile`)
@@ -50,6 +62,10 @@ object CustomDirectives {
     }
   }
 
+  /**
+    * Parses the request entity into an object of type `T`. The parsing is done by
+    * passing in the complete request data to the function `f`.
+    */
   def parseEntity[T](f: MediaType => ByteString => T): Directive1[T] = {
     extractRequestContext.flatMap[Tuple1[T]] { ctx =>
       import ctx.executionContext
@@ -58,6 +74,29 @@ object CustomDirectives {
       val future = entity.dataBytes.runReduce(_ ++ _).map(f(entity.contentType.mediaType))
       onComplete(future).flatMap {
         case Success(v) => provide[T](v)
+        case Failure(t) => reject(MalformedRequestContentRejection("invalid request payload", t))
+      }
+    }
+  }
+
+  /**
+    * Create a json parser instance for the request entity. If the content type is
+    * `application/x-jackson-smile`, then a smile parser will be used. Otherwise it will be
+    * treated as `application/json` regardless of the content type.
+    */
+  def jsonParser: Directive1[JsonParser] = {
+    extractRequestContext.flatMap[Tuple1[JsonParser]] { ctx =>
+      import ctx.executionContext
+      import ctx.materializer
+      val entity = ctx.request.entity
+      val future = entity.dataBytes.runReduce(_ ++ _).map { data =>
+        if (entity.contentType.mediaType == CustomMediaTypes.`application/x-jackson-smile`)
+          Json.newSmileParser(data.toArray)
+        else
+          Json.newJsonParser(data.toArray)
+      }
+      onComplete(future).flatMap {
+        case Success(v) => provide[JsonParser](v)
         case Failure(t) => reject(MalformedRequestContentRejection("invalid request payload", t))
       }
     }

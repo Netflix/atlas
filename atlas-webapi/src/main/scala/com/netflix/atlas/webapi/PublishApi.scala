@@ -23,6 +23,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
+import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.config.ConfigManager
@@ -53,27 +54,26 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   def routes: Route = {
     post {
-      path("api" / "v1" / "publish") { ctx =>
-        handleReq(ctx)
+      path("api" / "v1" / "publish") {
+        handleReq
       } ~
-      path("api" / "v1" / "publish-fast") { ctx =>
+      path("api" / "v1" / "publish-fast") {
         // Legacy path from when there was more than one publish mode
-        handleReq(ctx)
+        handleReq
       }
     }
   }
 
-  private def handleReq(ctx: RequestContext): Future[RouteResult] = {
-    getJsonParser(ctx.request) match {
-      case Some(parser) =>
+  private def handleReq: Route = {
+    extractRequestContext { ctx =>
+      jsonParser { parser =>
         val data = decodeBatch(parser, internWhileParsing)
         val (good, bad) = validate(data)
         val promise = Promise[RouteResult]()
         val req = PublishRequest(good, bad, promise, ctx)
         publishRef ! req
-        promise.future
-      case None =>
-        throw new IllegalArgumentException("empty request body")
+        _ => promise.future
+      }
     }
   }
 

@@ -35,51 +35,65 @@ import org.scalatest.FunSuite
 
 class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
 
+  import CustomDirectives._
   import CustomDirectivesSuite._
 
   class TestService(val actorRefFactory: ActorRefFactory) {
 
     def routes: Route = {
-      CustomDirectives.accessLog {
-        CustomDirectives.corsFilter {
-          CustomDirectives.jsonpFilter {
+      accessLog {
+        corsFilter {
+          jsonpFilter {
             path("text") {
               get {
                 val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "text response")
                 complete(HttpResponse(status = StatusCodes.OK, entity = entity))
               }
             } ~
-              path("json") {
-                get {
-                  val entity = HttpEntity(MediaTypes.`application/json`, "[1,2,3]")
+            path("json") {
+              get {
+                val entity = HttpEntity(MediaTypes.`application/json`, "[1,2,3]")
+                complete(HttpResponse(status = StatusCodes.OK, entity = entity))
+              } ~
+              post {
+                parseEntity(CustomDirectives.json[Message]) { message =>
+                  val entity = HttpEntity(MediaTypes.`application/json`, Json.encode(message))
                   complete(HttpResponse(status = StatusCodes.OK, entity = entity))
-                } ~
-                post {
-                  CustomDirectives.parseEntity(CustomDirectives.json[Message]) { message =>
-                    val entity = HttpEntity(MediaTypes.`application/json`, Json.encode(message))
-                    complete(HttpResponse(status = StatusCodes.OK, entity = entity))
-                  }
-                }
-              } ~
-              path("binary") {
-                get {
-                  val data = ByteString("text response")
-                  val entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, data)
-                  complete(HttpResponse(status = StatusCodes.OK, entity = entity))
-                }
-              } ~
-              path("error") {
-                get {
-                  val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "error")
-                  complete(HttpResponse(status = StatusCodes.BadRequest, entity = entity))
-                }
-              } ~
-              path("empty") {
-                get {
-                  val headers = List(RawHeader("foo", "bar"))
-                  complete(HttpResponse(status = StatusCodes.OK, headers = headers))
                 }
               }
+            } ~
+            path("json-parser") {
+              post {
+                jsonParser { p =>
+                  try {
+                    val message = Json.decode[Message](p)
+                    val entity = HttpEntity(MediaTypes.`application/json`, Json.encode(message))
+                    complete(HttpResponse(status = StatusCodes.OK, entity = entity))
+                  } finally {
+                    p.close()
+                  }
+                }
+              }
+            } ~
+            path("binary") {
+              get {
+                val data = ByteString("text response")
+                val entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, data)
+                complete(HttpResponse(status = StatusCodes.OK, entity = entity))
+              }
+            } ~
+            path("error") {
+              get {
+                val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "error")
+                complete(HttpResponse(status = StatusCodes.BadRequest, entity = entity))
+              }
+            } ~
+            path("empty") {
+              get {
+                val headers = List(RawHeader("foo", "bar"))
+                complete(HttpResponse(status = StatusCodes.OK, headers = headers))
+              }
+            }
           }
         }
       }
@@ -114,6 +128,23 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
     val msg = Message("foo", "bar baz")
     val entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, Json.smileEncode(msg))
     Post("/json", entity) ~> endpoint.routes ~> check {
+      val expected = Json.decode[Message](responseAs[String])
+      assert(expected === msg)
+    }
+  }
+
+  test("json-parser post") {
+    val msg = Message("foo", "bar baz")
+    Post("/json-parser", Json.encode(msg)) ~> endpoint.routes ~> check {
+      val expected = Json.decode[Message](responseAs[String])
+      assert(expected === msg)
+    }
+  }
+
+  test("smile-parser post") {
+    val msg = Message("foo", "bar baz")
+    val entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, Json.smileEncode(msg))
+    Post("/json-parser", entity) ~> endpoint.routes ~> check {
       val expected = Json.decode[Message](responseAs[String])
       assert(expected === msg)
     }
