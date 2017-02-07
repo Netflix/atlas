@@ -19,7 +19,7 @@ import akka.actor.ActorRef
 
 import scala.collection.mutable
 
-case class SubscriptionManagerImpl() extends SubscriptionManager {
+class SubscriptionManagerImpl extends SubscriptionManager {
   import SubscriptionManager._
 
   private val exprToStream = mutable.Map[String, Set[String]]().withDefaultValue(Set())

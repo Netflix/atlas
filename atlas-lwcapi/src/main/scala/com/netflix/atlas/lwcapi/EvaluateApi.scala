@@ -15,30 +15,53 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.ActorRefFactory
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.netflix.atlas.akka.CustomDirectives._
-import com.netflix.atlas.akka.ImperativeRequestContext
+import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.lwcapi.StreamApi._
+import com.netflix.spectator.api.Registry
 
-class EvaluateApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+class EvaluateApi(registry: Registry, sm: SubscriptionManager) extends WebApi {
   import EvaluateApi._
 
-  private val evaluateRef = actorRefFactory.actorSelection("/user/lwc.evaluate")
+  private val evalsCounter = registry.counter("atlas.lwcapi.evaluate.count")
+  private val itemsCounter = registry.counter("atlas.lwcapi.evaluate.itemCount")
+  private val actorsCounter = registry.counter("atlas.lwcapi.evaluate.actorCount")
+  private val ignoredCounter = registry.counter("atlas.lwcapi.evaluate.ignoredCount")
 
   def routes: Route = {
     path("lwc" / "api" / "v1" / "evaluate") {
       post {
         extractRequestContext { ctx =>
           parseEntity(json[EvaluateRequest]) { req =>
-            val rc = ImperativeRequestContext(req, ctx)
-            evaluateRef ! rc
-            _ => rc.promise.future
+            if (req.metrics.isEmpty) {
+              complete(DiagnosticMessage.error(StatusCodes.BadRequest, "empty metrics list"))
+            } else {
+              evaluate(req.timestamp, req.metrics)
+              complete(HttpResponse(StatusCodes.OK))
+            }
           }
         }
+      }
+    }
+  }
+
+  private def evaluate(timestamp: Long, items: List[Item]): Unit = {
+    evalsCounter.increment()
+    itemsCounter.increment(items.size)
+    items.foreach { item =>
+      val actors = sm.actorsForExpression(item.id)
+      if (actors.nonEmpty) {
+        actorsCounter.increment(actors.size)
+        val message = SSEMetric(timestamp, item)
+        actors.foreach(actor => actor ! message)
+      } else {
+        ignoredCounter.increment()
       }
     }
   }
@@ -50,8 +73,4 @@ object EvaluateApi {
   case class Item(id: String, tags: TagMap, value: Double) extends JsonSupport
 
   case class EvaluateRequest(timestamp: Long, metrics: List[Item]) extends JsonSupport
-
-  object EvaluateRequest {
-    def fromJson(json: String) = Json.decode[EvaluateRequest](json)
-  }
 }

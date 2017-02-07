@@ -26,7 +26,7 @@ class SubscriptionManagerImplSuite() extends FunSuite {
   test("subscribe, unsubscribe, and get work") {
     val system = ActorSystem("HelloSystem")
 
-    val sm = SubscriptionManagerImpl()
+    val sm = new SubscriptionManagerImpl()
 
     val exp1 = "exp1"
     val exp2 = "exp2"
@@ -53,7 +53,7 @@ class SubscriptionManagerImplSuite() extends FunSuite {
   }
 
   test("unknown expression or sseIDs do not cause any exceptions") {
-    val sm = SubscriptionManagerImpl()
+    val sm = new SubscriptionManagerImpl()
 
     sm.subscribe("a", "b")
     sm.unsubscribe("c", "d")
