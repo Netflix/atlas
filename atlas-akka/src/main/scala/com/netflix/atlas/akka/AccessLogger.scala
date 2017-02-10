@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.akka
 
-import java.net.URI
-
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import com.netflix.spectator.sandbox.HttpLogEntry
@@ -125,7 +123,7 @@ object AccessLogger {
   private def addRequestInfo(entry: HttpLogEntry, request: HttpRequest): Unit = {
     entry
       .withMethod(request.method.name)
-      .withRequestUri(URI.create(request.uri.toString()))
+      .withRequestUri(request.uri.toString(), request.uri.path.toString())
       .withRequestContentLength(request.entity.contentLengthOption.getOrElse(-1))
     request.headers.foreach(h => entry.withRequestHeader(h.name, h.value))
   }
