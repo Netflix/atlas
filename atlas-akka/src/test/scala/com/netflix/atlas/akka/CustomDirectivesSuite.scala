@@ -198,7 +198,7 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
     val headers = List(Origin(HttpOrigin("http://localhost")))
     val req = HttpRequest(HttpMethods.GET, Uri("/json"), headers)
     req ~> endpoint.routes ~> check {
-      assert(headers.nonEmpty)
+      assert(response.headers.nonEmpty)
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
           assert("http://localhost" === v.toString)

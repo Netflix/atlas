@@ -85,10 +85,6 @@ object RequestHandler {
   def standardOptions(route: Route): Route = {
 
     // Default paths to always include
-    val corsPreflight = options {
-      // Used for CORS pre-flight checks
-      complete(HttpResponse(StatusCodes.OK))
-    }
     val ok = path("ok") {
       // Default endpoint for testing that always returns 200
       extractClientIP { ip =>
@@ -113,6 +109,10 @@ object RequestHandler {
     }
 
     // Include all requests in the access log
+    val corsPreflight = options {
+      // Used for CORS pre-flight checks
+      corsFilter { complete(HttpResponse(StatusCodes.OK)) }
+    }
     accessLog { corsPreflight ~ error }
   }
 

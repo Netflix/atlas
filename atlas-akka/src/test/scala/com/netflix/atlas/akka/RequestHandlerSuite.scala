@@ -62,6 +62,22 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
+  test("cors preflight has cors headers") {
+    val header = Origin(HttpOrigin("http://localhost"))
+    Options("/api/v2/ip").addHeader(header) ~> routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(response.headers.nonEmpty)
+      response.headers.foreach {
+        case `Access-Control-Allow-Origin`(v) =>
+          assert("http://localhost" === v.toString)
+        case `Access-Control-Allow-Methods`(vs) =>
+          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case h =>
+          fail(s"unexpected header: $h")
+      }
+    }
+  }
+
   private def gzip(data: Array[Byte]): Array[Byte] = {
     val baos = new ByteArrayOutputStream
     val out = new GZIPOutputStream(baos)
