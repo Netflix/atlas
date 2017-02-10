@@ -168,7 +168,7 @@ object GraphEval {
     lines: List[LineDef]): List[LineDef] = {
 
     import java.lang.{Double => JDouble}
-    sortBy.fold(lines) { mode =>
+    val sorted = sortBy.fold(lines) { mode =>
       val cmp: Function2[LineDef, LineDef, Boolean] = mode match {
         case "legend" => (a, b) => a.data.label < b.data.label
         case "min"    => (a, b) => JDouble.compare(a.legendStats.min, b.legendStats.min) < 0
@@ -181,8 +181,8 @@ object GraphEval {
           warnings += s"Invalid sort mode '$order'. Using default of 'legend'."
           (a, b) => a.data.label < b.data.label
       }
-      val sorted = lines.sortWith(cmp)
-      if (useDescending) sorted.reverse else sorted
+      lines.sortWith(cmp)
     }
+    if (useDescending) sorted.reverse else sorted
   }
 }
