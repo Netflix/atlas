@@ -117,6 +117,7 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=foo&order=desc
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=max&order=desc
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=max
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&order=desc
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order&sort=max
 
 # sorting with NaN values
