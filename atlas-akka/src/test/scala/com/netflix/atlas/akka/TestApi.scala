@@ -38,15 +38,20 @@ class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
         }
       }
     } ~
-    path("jsonparse2") {
-      post {
-        jsonParser { p =>
-          try {
-            val v = p.getText
-            complete(HttpResponse(status = OK, entity = v))
-          } finally {
-            p.close()
-          }
+    path("query-parsing-directive") {
+      get {
+        parameter("regex") { v =>
+          val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, v)
+          complete(HttpResponse(status = OK, entity = entity))
+        }
+      }
+    } ~
+    path("query-parsing-explicit") {
+      get {
+        extractRequest { req =>
+          val v = req.uri.query().get("regex").get
+          val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, v)
+          complete(HttpResponse(status = OK, entity = entity))
         }
       }
     } ~
