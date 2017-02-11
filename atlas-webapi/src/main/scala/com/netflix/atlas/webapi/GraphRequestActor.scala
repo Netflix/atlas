@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 Netflix, Inc.
+ * Copyright 2014-2017 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,22 +170,24 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
       sortBy: Option[String],
       useDescending: Boolean,
       lines: List[LineDef]): List[LineDef] = {
-    sortBy.fold(lines) { mode =>
+
+    import java.lang.{Double => JDouble}
+    val sorted = sortBy.fold(lines) { mode =>
       val cmp: Function2[LineDef, LineDef, Boolean] = mode match {
         case "legend" => (a, b) => a.data.label < b.data.label
-        case "min"    => (a, b) => a.legendStats.min < b.legendStats.min
-        case "max"    => (a, b) => a.legendStats.max < b.legendStats.max
-        case "avg"    => (a, b) => a.legendStats.avg < b.legendStats.avg
+        case "min"    => (a, b) => JDouble.compare(a.legendStats.min, b.legendStats.min) < 0
+        case "max"    => (a, b) => JDouble.compare(a.legendStats.max, b.legendStats.max) < 0
+        case "avg"    => (a, b) => JDouble.compare(a.legendStats.avg, b.legendStats.avg) < 0
         case "count"  => (a, b) => a.legendStats.count < b.legendStats.count
-        case "total"  => (a, b) => a.legendStats.total < b.legendStats.total
-        case "last"   => (a, b) => a.legendStats.last < b.legendStats.last
+        case "total"  => (a, b) => JDouble.compare(a.legendStats.total, b.legendStats.total) < 0
+        case "last"   => (a, b) => JDouble.compare(a.legendStats.last, b.legendStats.last) < 0
         case order    =>
           warnings += s"Invalid sort mode '$order'. Using default of 'legend'."
           (a, b) => a.data.label < b.data.label
       }
-      val sorted = lines.sortWith(cmp)
-      if (useDescending) sorted.reverse else sorted
+      lines.sortWith(cmp)
     }
+    if (useDescending) sorted.reverse else sorted
   }
 }
 

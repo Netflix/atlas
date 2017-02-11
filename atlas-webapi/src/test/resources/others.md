@@ -116,6 +116,11 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=max
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order&sort=max
 
+# sorting with NaN values
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9&sort=max&order=desc
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9&sort=max&order=asc
+
+
 # filtering
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,300e3,:gt,:filter
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,150e3,:gt,:filter
