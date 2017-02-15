@@ -73,7 +73,11 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
     var value = rateCache.get(meta)
     if (value == null) {
       val update = new UpdateValueFunction(meta, step, updateF)
-      val norm = new NormalizeValueFunction(step, heartbeat, update)
+      // If the client is already converting to a rate, then do not use a heartbeat that is
+      // larger than the step size as it can cause over counting for the final result. For
+      // more details see:
+      // https://github.com/Netflix/atlas/issues/497
+      val norm = new NormalizeValueFunction(step, step, update)
       value = new CacheValue(clock.wallTime, norm)
       rateCache.put(meta, value)
     }
