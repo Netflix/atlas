@@ -21,6 +21,7 @@ import java.time.Duration
 
 import akka.http.scaladsl.model.Uri
 import com.netflix.atlas.chart.Colors
+import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.MessageDef
@@ -54,6 +55,13 @@ object GraphEval {
   }
 
   def render(request: GraphApi.Request, data: Map[DataExpr, List[TimeSeries]]): Result = {
+    val graphDef = createGraph(request, data)
+    val baos = new ByteArrayOutputStream
+    request.engine.write(graphDef, baos)
+    Result(request, baos.toByteArray)
+  }
+
+  def createGraph(request: GraphApi.Request, data: Map[DataExpr, List[TimeSeries]]): GraphDef = {
 
     val warnings = List.newBuilder[String]
 
@@ -131,12 +139,7 @@ object GraphEval {
         tickLabelMode = axisCfg.tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply))
     }
 
-    val graphDef = request.newGraphDef(plots, warnings.result())
-
-    val baos = new ByteArrayOutputStream
-    request.engine.write(graphDef, baos)
-
-    Result(request, baos.toByteArray)
+    request.newGraphDef(plots, warnings.result())
   }
 
   /**
