@@ -93,7 +93,16 @@ object JsonParserHelper {
 
   def foreachItem[T](parser: JsonParser)(f: => T): Unit = {
     requireNextToken(parser, JsonToken.START_ARRAY)
-    while (parser.nextToken() != JsonToken.END_ARRAY) { f }
+    var t = parser.nextToken()
+    while (t != null && t != JsonToken.END_ARRAY) {
+      f
+      t = parser.nextToken()
+    }
+
+    if (t == null) {
+      // If we get here, then `f` has a bug and consumed the END_ARRAY token
+      throw new IllegalArgumentException(s"expected END_ARRAY but hit end of stream")
+    }
   }
 
   def foreachField[T](parser: JsonParser)(f: PartialFunction[String, T]): Unit = {

@@ -61,4 +61,25 @@ class JsonParserHelperSuite extends FunSuite {
       }
     }
   }
+
+  test("foreachItem") {
+    val parser = Json.newJsonParser("""[1,2,3]""")
+    val builder = List.newBuilder[Int]
+    foreachItem(parser) {
+      builder += parser.getIntValue
+    }
+    assert(builder.result() === List(1, 2, 3))
+  }
+
+  test("foreachItem, endless loop bug") {
+    val parser = Json.newJsonParser("""[1,2,3]""")
+    val builder = List.newBuilder[Int]
+    intercept[IllegalArgumentException] {
+      foreachItem(parser) {
+        // if the inner function consumes the end array token it was
+        // causing an endless loop
+        builder += parser.nextIntValue(-1)
+      }
+    }
+  }
 }
