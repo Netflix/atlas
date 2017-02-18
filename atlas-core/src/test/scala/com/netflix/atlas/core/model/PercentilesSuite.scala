@@ -35,6 +35,7 @@ class PercentilesSuite extends FunSuite {
 
   private val start = 0L
   private val step = 60000L
+  private val context = EvalContext(start, start + step * 2, step)
 
   def ts(bucket: String, values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, values.toArray)
@@ -47,7 +48,6 @@ class PercentilesSuite extends FunSuite {
       case (v: TimeSeriesExpr) :: _ => v
       case _                        => throw new IllegalArgumentException("invalid expr")
     }
-    val context = EvalContext(start, start + step * 2, step)
     expr.eval(context, input).data
   }
 
@@ -286,6 +286,16 @@ class PercentilesSuite extends FunSuite {
   test("bad input: no matches") {
     val data = eval("name,test,:eq,(,50,),:percentiles", Nil)
     assert(data.isEmpty)
+  }
+
+  test("bad input: DataExpr -> NoDataLine") {
+    val by = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("percentile"))
+    val expr = MathExpr.Percentiles(by, List(50.0))
+    val input = Map[DataExpr, List[TimeSeries]](by -> List(TimeSeries.noData(step)))
+    val ts = expr.eval(context, input).data
+    assert(ts.size === 1)
+    assert(ts.head.tags === Map("name" -> "NO_DATA"))
+    assert(ts.head.label === "NO DATA")
   }
 }
 

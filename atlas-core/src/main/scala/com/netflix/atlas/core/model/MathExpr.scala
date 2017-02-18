@@ -477,79 +477,88 @@ object MathExpr {
 
     private def estimatePercentiles(
         context: EvalContext, baseLabel: String, data: List[TimeSeries]): List[TimeSeries] = {
-      assert(data.nonEmpty)
-      val length = ((context.end - context.start) / context.step).toInt
 
-      // Output time sequences, one for each output percentile we need to estimate
-      val output = Array.fill[ArrayTimeSeq](pcts.length) {
-        val buf = ArrayHelper.fill(length, Double.NaN)
-        new ArrayTimeSeq(DsType.Gauge, context.start, context.step, buf)
-      }
+      // If the mapping on top of the data layer puts in a "no data" time series as a
+      // placeholder, then there will be entries without the percentile tag. Ideally
+      // it would be fixed at the data layer, but this check provides a better user
+      // experience otherwise as it will not fail all together.
+      val filtered = data.filter(_.tags.contains(TagKey.percentile))
+      if (filtered.isEmpty) {
+        List(TimeSeries.noData(context.step))
+      } else {
+        val length = ((context.end - context.start) / context.step).toInt
 
-      // Count for each bucket
-      val counts = new Array[Long](PercentileBuckets.length())
-      val byBucket = data.groupBy { t =>
-        // Value should have a prefix of T or D, followed by 4 digit hex integer indicating the
-        // bucket index
-        val idx = t.tags(TagKey.percentile).substring(1)
-        Integer.parseInt(idx, 16)
-      }
-
-      // Counts that are actually present in the input
-      val usedCounts = byBucket.keys.toArray
-      java.util.Arrays.sort(usedCounts)
-
-      // Input sequences
-      val bounded = new Array[ArrayTimeSeq](usedCounts.length)
-      var i = 0
-      while (i < usedCounts.length) {
-        val vs = byBucket(usedCounts(i))
-        assert(vs.size == 1)
-        bounded(i) = vs.head.data.bounded(context.start, context.end)
-        i += 1
-      }
-
-      // Array percentile results will get written to
-      val results = new Array[Double](pcts.length)
-
-      // Inputs are counters reported as a rate per second. We need to convert to a rate per
-      // step to get the correct counts for the estimation
-      val multiple = context.step / 1000.0
-
-      // If the input was a timer the unit for the buckets is nanoseconds. The type is reflected
-      // by the prefix of T on the bucket key. After estimating the value we multiply by 1e-9 to
-      // keep the result in a base unit of seconds.
-      val isTimer = data.head.tags(TagKey.percentile).startsWith("T")
-      val cnvFactor = if (isTimer) 1e-9 else 1.0
-
-      // Loop across each time interval. This section is the tight loop so we keep it as simple
-      // array accesses and basic loops to minimize performance overhead.
-      i = 0
-      while (i < length) {
-        // Fill in the counts for this interval and compute the estimate
-        var j = 0
-        while (j < usedCounts.length) {
-          // Note, NaN.toLong == 0, so NaN values are the same as 0 for the count estimate
-          val v = (bounded(j).data(i) * multiple).toLong
-          counts(usedCounts(j)) = v
-          j += 1
+        // Output time sequences, one for each output percentile we need to estimate
+        val output = Array.fill[ArrayTimeSeq](pcts.length) {
+          val buf = ArrayHelper.fill(length, Double.NaN)
+          new ArrayTimeSeq(DsType.Gauge, context.start, context.step, buf)
         }
-        PercentileBuckets.percentiles(counts, pcts, results)
 
-        // Fill in the output sequences with the results
-        j = 0
-        while (j < results.length) {
-          output(j).data(i) = results(j) * cnvFactor
-          j += 1
+        // Count for each bucket
+        val counts = new Array[Long](PercentileBuckets.length())
+        val byBucket = filtered.groupBy { t =>
+          // Value should have a prefix of T or D, followed by 4 digit hex integer indicating the
+          // bucket index
+          val idx = t.tags(TagKey.percentile).substring(1)
+          Integer.parseInt(idx, 16)
         }
-        i += 1
-      }
 
-      // Apply the tags and labels to the output
-      output.toList.zipWithIndex.map { case (seq, j) =>
-        val p = f"${pcts(j)}%5.1f"
-        val tags = data.head.tags + (TagKey.percentile -> p)
-        TimeSeries(tags, f"percentile($baseLabel, $p)", seq)
+        // Counts that are actually present in the input
+        val usedCounts = byBucket.keys.toArray
+        java.util.Arrays.sort(usedCounts)
+
+        // Input sequences
+        val bounded = new Array[ArrayTimeSeq](usedCounts.length)
+        var i = 0
+        while (i < usedCounts.length) {
+          val vs = byBucket(usedCounts(i))
+          assert(vs.size == 1)
+          bounded(i) = vs.head.data.bounded(context.start, context.end)
+          i += 1
+        }
+
+        // Array percentile results will get written to
+        val results = new Array[Double](pcts.length)
+
+        // Inputs are counters reported as a rate per second. We need to convert to a rate per
+        // step to get the correct counts for the estimation
+        val multiple = context.step / 1000.0
+
+        // If the input was a timer the unit for the buckets is nanoseconds. The type is reflected
+        // by the prefix of T on the bucket key. After estimating the value we multiply by 1e-9 to
+        // keep the result in a base unit of seconds.
+        val isTimer = filtered.head.tags(TagKey.percentile).startsWith("T")
+        val cnvFactor = if (isTimer) 1e-9 else 1.0
+
+        // Loop across each time interval. This section is the tight loop so we keep it as simple
+        // array accesses and basic loops to minimize performance overhead.
+        i = 0
+        while (i < length) {
+          // Fill in the counts for this interval and compute the estimate
+          var j = 0
+          while (j < usedCounts.length) {
+            // Note, NaN.toLong == 0, so NaN values are the same as 0 for the count estimate
+            val v = (bounded(j).data(i) * multiple).toLong
+            counts(usedCounts(j)) = v
+            j += 1
+          }
+          PercentileBuckets.percentiles(counts, pcts, results)
+
+          // Fill in the output sequences with the results
+          j = 0
+          while (j < results.length) {
+            output(j).data(i) = results(j) * cnvFactor
+            j += 1
+          }
+          i += 1
+        }
+
+        // Apply the tags and labels to the output
+        output.toList.zipWithIndex.map { case (seq, j) =>
+          val p = f"${pcts(j)}%5.1f"
+          val tags = data.head.tags + (TagKey.percentile -> p)
+          TimeSeries(tags, f"percentile($baseLabel, $p)", seq)
+        }
       }
     }
   }
