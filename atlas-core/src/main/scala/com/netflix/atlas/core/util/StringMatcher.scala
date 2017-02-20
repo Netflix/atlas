@@ -25,6 +25,11 @@ sealed trait StringMatcher {
 
 object StringMatcher {
 
+  /** Or queries. */
+  private val AnchoredOrPattern = """^\^+\(([-_a-zA-Z0-9.*+]+\|[-_a-zA-Z0-9.*+|]+)\)\$+$""".r
+  private val StartOrPattern = """^\^+\(([-_a-zA-Z0-9.*+]+\|[-_a-zA-Z0-9.*+|]+)\)\$*$""".r
+  private val FloatingOrPattern = """^\(?([-_a-zA-Z0-9.*+^$]+\|[-_a-zA-Z0-9.*+^$|]+)\)?$""".r
+
   /** Matches everything. */
   private val AllPattern = """^\^*(\.\*)*\$*$""".r
 
@@ -49,9 +54,16 @@ object StringMatcher {
       case IndexOfPattern(s)    if  caseSensitive => IndexOf(s)
       case IndexOfPattern(s)    if !caseSensitive => IndexOfIgnoreCase(s)
       case AllPattern(_)                          => All
+      case AnchoredOrPattern(s) if  caseSensitive => compileOr(s, v => s"^$v$$")
+      case StartOrPattern(s)    if  caseSensitive => compileOr(s, v => s"^$v")
+      case FloatingOrPattern(s) if  caseSensitive => compileOr(s, v => s"$v")
       case PrefixPattern(p)     if  caseSensitive => Regex(Some(p), Pattern.compile(pattern))
       case _                                      => default(pattern, caseSensitive)
     }
+  }
+
+  private def compileOr(s: String, f: String => String): StringMatcher = {
+    Or(s.split("\\|").toList.map(v => compile(f(v), true)))
   }
 
   private def default(re: String, caseSensitive: Boolean): StringMatcher = {
@@ -118,6 +130,11 @@ object StringMatcher {
       }
       false
     }
+  }
+
+  case class Or(matchers: List[StringMatcher]) extends StringMatcher {
+    val prefix: Option[String] = None
+    def matches(v: String): Boolean = matchers.exists(_.matches(v))
   }
 }
 
