@@ -32,6 +32,10 @@ object BatchUpdateTagIndex {
   def newLazyIndex[T <: TaggedItem: ClassTag]: BatchUpdateTagIndex[T] = {
     new BatchUpdateTagIndex[T](items => new CachingTagIndex(new LazyTagIndex(items)))
   }
+
+  def newRoaringIndex[T <: TaggedItem: ClassTag]: BatchUpdateTagIndex[T] = {
+    new BatchUpdateTagIndex[T](items => new CachingTagIndex(new RoaringTagIndex(items)))
+  }
 }
 
 /**
