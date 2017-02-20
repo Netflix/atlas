@@ -259,9 +259,12 @@ class RoaringTagIndex[T <: TaggedItem](
 
   private def and(q1: Query, q2: Query, offset: Int): RoaringBitmap = {
     val s1 = findImpl(q1, offset)
-    val s2 = findImpl(q2, offset)
-    s1.and(s2)
-    s1
+    if (s1.isEmpty) s1 else {
+      // Short circuit, only perform second query if s1 is not empty
+      val s2 = findImpl(q2, offset)
+      s1.and(s2)
+      s1
+    }
   }
 
   private def or(q1: Query, q2: Query, offset: Int): RoaringBitmap = {
