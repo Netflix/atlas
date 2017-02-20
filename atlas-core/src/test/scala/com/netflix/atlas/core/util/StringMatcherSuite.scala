@@ -70,6 +70,17 @@ class StringMatcherSuite extends FunSuite {
     assert(Regex(None, reic("Foo")).matches("foo"))
   }
 
+  test("matches Or") {
+    val matcher = StringMatcher.compile("^f|foo$|bar")
+    assert(matcher.matches("foo"))
+    assert(matcher.matches("fabc"))
+    assert(!matcher.matches("def"))
+    assert(matcher.matches("def foo"))
+    assert(!matcher.matches("def foo ghi"))
+    assert(matcher.matches("def bar"))
+    assert(matcher.matches("def bar ghi"))
+  }
+
   test("compile All") {
     assert(compile(".*") === All)
     assert(compile("^.*$") === All)
@@ -135,6 +146,25 @@ class StringMatcherSuite extends FunSuite {
 
   test("compile RegexIgnoreCase end anchor") {
     assert(compile("^foo[1-3]$", false) === Regex(None, reic("^foo[1-3]$")))
+  }
+
+  test("compile Or anchored at start and end") {
+    assert(compile("^(a|b|c)$", true) === Or(List(Equals("a"), Equals("b"), Equals("c"))))
+  }
+
+  test("compile Or anchored at start only") {
+    assert(compile("^(a|b|c)", true) === Or(List(StartsWith("a"), StartsWith("b"), StartsWith("c"))))
+    assert(compile("^a|b|c", true) === Or(List(StartsWith("a"), IndexOf("b"), IndexOf("c"))))
+    assert(compile("^.*a.*|.*b.*|c*)", true) === Or(List(IndexOf("a"), IndexOf("b"), Regex(None, re("c*")))))
+  }
+
+  test("compile Or not anchored") {
+    assert(compile("(a|b|c)", true) === Or(List(IndexOf("a"), IndexOf("b"), IndexOf("c"))))
+    assert(compile(".*a.*|.*b.*|c*)", true) === Or(List(IndexOf("a"), IndexOf("b"), Regex(None, re("c*")))))
+  }
+
+  test("compile Or, too complex") {
+    assert(compile("(a(d|e)|b|c)", true) === Regex(None, re("(a(d|e)|b|c)")))
   }
 
 }
