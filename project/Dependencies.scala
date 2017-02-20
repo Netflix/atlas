@@ -4,14 +4,14 @@ object Dependencies {
   object Versions {
     val akka       = "2.4.16"
     val akkaHttpV  = "10.0.3"
-    val aws        = "1.11.78"
-    val iep        = "0.4.15"
+    val aws        = "1.11.93"
+    val iep        = "0.4.16"
     val guice      = "4.1.0"
-    val jackson    = "2.8.4"
+    val jackson    = "2.8.6"
     val log4j      = "2.7"
     val scala      = "2.12.1"
-    val slf4j      = "1.7.22"
-    val spectator  = "0.51.0"
+    val slf4j      = "1.7.23"
+    val spectator  = "0.52.0"
     val spray      = "1.3.4"
 
     val crossScala = Seq(scala, "2.11.8")
@@ -30,7 +30,7 @@ object Dependencies {
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.3.3"
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.1.8"
+  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.2.1"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.17.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -45,7 +45,7 @@ object Dependencies {
   val jacksonScala2   = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jodaConvert     = "org.joda" % "joda-convert" % "1.8.1"
-  val jol             = "org.openjdk.jol" % "jol-core" % "0.6"
+  val jol             = "org.openjdk.jol" % "jol-core" % "0.7.1"
   val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.1"
   val log4jApi        = "org.apache.logging.log4j" % "log4j-api" % log4j
   val log4jCore       = "org.apache.logging.log4j" % "log4j-core" % log4j
