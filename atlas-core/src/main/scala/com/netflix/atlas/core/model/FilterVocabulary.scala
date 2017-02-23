@@ -29,7 +29,7 @@ object FilterVocabulary extends Vocabulary {
   val dependsOn: List[Vocabulary] = List(StatefulVocabulary)
 
   val words: List[Word] = List(
-    Stat, StatMax, StatMin, StatAvg, StatTotal, Filter,
+    Stat, StatAvg, StatMax, StatMin, StatLast, StatTotal, Filter,
 
     // Legacy operations equivalent to `max,:stat`
     Macro("stat-min-mf", List("min", ":stat"), List("42")),
@@ -53,13 +53,14 @@ object FilterVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Create a summary line showing the value of the specified statistic for the input line.
-        |Valid statistic values are `min`, `max`, `avg`, and `total`. For example:
+        |Valid statistic values are `avg`, `max`, `min`, `last`, and `total`. For example:
         |
         || Input          |  0 |  5 |  1 |  3 |  1 |
         ||----------------|----|----|----|----|----|
+        || `avg,:stat`    |  2 |  2 |  2 |  2 |  2 |
         || `max,:stat`    |  5 |  5 |  5 |  5 |  5 |
         || `min,:stat`    |  0 |  0 |  0 |  0 |  0 |
-        || `avg,:stat`    |  2 |  2 |  2 |  2 |  2 |
+        || `last,:stat`   |  1 |  1 |  1 |  1 |  1 |
         || `total,:stat`  | 10 | 10 | 10 | 10 | 10 |
         |
         |When used with [filter](filter-filter) the corresponding `stat-$(name)` operation can be
@@ -84,9 +85,10 @@ object FilterVocabulary extends Vocabulary {
       """.stripMargin.trim
 
     override def examples: List[String] = List(
+      "name,sps,:eq,:sum,avg",
       "name,sps,:eq,:sum,max",
       "name,sps,:eq,:sum,min",
-      "name,sps,:eq,:sum,avg",
+      "name,sps,:eq,:sum,last",
       "name,sps,:eq,:sum,total")
   }
 
@@ -103,6 +105,17 @@ object FilterVocabulary extends Vocabulary {
     override def examples: List[String] = List("", "name,sps,:eq,:sum")
 
     def value: FilterExpr
+  }
+
+  case object StatAvg extends StatWord {
+    override def name: String = "stat-avg"
+
+    def value: FilterExpr = FilterExpr.StatAvg
+
+    override def summary: String =
+      """
+        |Represents the `avg,:stat` line when used with the filter operation.
+      """.stripMargin.trim
   }
 
   case object StatMax extends StatWord {
@@ -127,14 +140,14 @@ object FilterVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  case object StatAvg extends StatWord {
-    override def name: String = "stat-avg"
+  case object StatLast extends StatWord {
+    override def name: String = "stat-last"
 
-    def value: FilterExpr = FilterExpr.StatAvg
+    def value: FilterExpr = FilterExpr.StatLast
 
     override def summary: String =
       """
-        |Represents the `avg,:stat` line when used with the filter operation.
+        |Represents the `last,:stat` line when used with the filter operation.
       """.stripMargin.trim
   }
 

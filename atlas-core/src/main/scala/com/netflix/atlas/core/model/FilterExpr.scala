@@ -32,10 +32,11 @@ object FilterExpr {
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
     private def value(s: SummaryStats): Double = stat match {
+      case "avg"   => s.avg
       case "max"   => s.max
       case "min"   => s.min
+      case "last"  => s.last
       case "total" => s.total
-      case "avg"   => s.avg
     }
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
@@ -65,6 +66,10 @@ object FilterExpr {
     }
   }
 
+  case object StatAvg extends StatExpr {
+    def name: String = "avg"
+  }
+
   case object StatMax extends StatExpr {
     def name: String = "max"
   }
@@ -73,8 +78,8 @@ object FilterExpr {
     def name: String = "min"
   }
 
-  case object StatAvg extends StatExpr {
-    def name: String = "avg"
+  case object StatLast extends StatExpr {
+    def name: String = "last"
   }
 
   case object StatTotal extends StatExpr {
