@@ -42,11 +42,15 @@ import scala.util.Success
 
 object CustomDirectives {
 
+  private def isSmile(mediaType: MediaType): Boolean = {
+    mediaType == CustomMediaTypes.`application/x-jackson-smile`
+  }
+
   /**
     * Used with `parseEntity` to decode the request entity to an object of type
-    * `T`. If the content type is `application/x-jackson-smile`, then a smile
-    * parser will be used. Otherwise it will be treated as `application/json`
-    * regardless of the content type.
+    * `T` using the default ObjectMapper from `atlas-json`. If the content type
+    * is `application/x-jackson-smile`, then a smile parser will be used. Otherwise
+    * it will be treated as `application/json` regardless of the content type.
     *
     * Note: This is kept as a separate function passed into the `parseEntity`
     * directive because adding the manifest to `T` causes problems when used
@@ -55,10 +59,27 @@ object CustomDirectives {
     */
   def json[T: Manifest]: MediaType => ByteString => T = {
     mediaType => bs => {
-      if (mediaType == CustomMediaTypes.`application/x-jackson-smile`)
+      if (isSmile(mediaType))
         Json.smileDecode[T](bs.toArray)
       else
         Json.decode[T](bs.toArray)
+    }
+  }
+
+  /**
+    * Used with `parseEntity` to decode the request entity to an object of type
+    * `T` using a custom decoder function. If the content type is
+    * `application/x-jackson-smile`, then a smile parser will be used. Otherwise
+    * it will be treated as `application/json` regardless of the content type.
+    */
+  def customJson[T: Manifest](decoder: JsonParser => T): MediaType => ByteString => T = {
+    mediaType => bs => {
+      val p =
+        if (isSmile(mediaType))
+          Json.newSmileParser(bs.toArray)
+        else
+          Json.newJsonParser(bs.toArray)
+      try decoder(p) finally p.close()
     }
   }
 
@@ -74,29 +95,6 @@ object CustomDirectives {
       val future = entity.dataBytes.runReduce(_ ++ _).map(f(entity.contentType.mediaType))
       onComplete(future).flatMap {
         case Success(v) => provide[T](v)
-        case Failure(t) => reject(MalformedRequestContentRejection("invalid request payload", t))
-      }
-    }
-  }
-
-  /**
-    * Create a json parser instance for the request entity. If the content type is
-    * `application/x-jackson-smile`, then a smile parser will be used. Otherwise it will be
-    * treated as `application/json` regardless of the content type.
-    */
-  def jsonParser: Directive1[JsonParser] = {
-    extractRequestContext.flatMap[Tuple1[JsonParser]] { ctx =>
-      import ctx.executionContext
-      import ctx.materializer
-      val entity = ctx.request.entity
-      val future = entity.dataBytes.runReduce(_ ++ _).map { data =>
-        if (entity.contentType.mediaType == CustomMediaTypes.`application/x-jackson-smile`)
-          Json.newSmileParser(data.toArray)
-        else
-          Json.newJsonParser(data.toArray)
-      }
-      onComplete(future).flatMap {
-        case Success(v) => provide[JsonParser](v)
         case Failure(t) => reject(MalformedRequestContentRejection("invalid request payload", t))
       }
     }
