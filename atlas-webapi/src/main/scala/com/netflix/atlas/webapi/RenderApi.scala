@@ -37,8 +37,7 @@ class RenderApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   def routes: Route = {
     path("api" / "v1" / "render") {
       post {
-        jsonParser { parser =>
-          val data = Json.decode[GraphApi.Response](parser)
+        parseEntity(json[GraphApi.Response]) { data =>
           val graphDef = data.toGraphDef
 
           val baos = new ByteArrayOutputStream

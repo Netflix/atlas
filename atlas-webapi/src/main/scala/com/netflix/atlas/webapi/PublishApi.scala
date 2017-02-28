@@ -66,8 +66,7 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   private def handleReq: Route = {
     extractRequestContext { ctx =>
-      jsonParser { parser =>
-        val data = decodeBatch(parser, internWhileParsing)
+      parseEntity(customJson(p => decodeBatch(p, internWhileParsing))) { data =>
         val (good, bad) = validate(data)
         val promise = Promise[RouteResult]()
         val req = PublishRequest(good, bad, promise, ctx)

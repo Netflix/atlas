@@ -64,14 +64,9 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
             } ~
             path("json-parser") {
               post {
-                jsonParser { p =>
-                  try {
-                    val message = Json.decode[Message](p)
-                    val entity = HttpEntity(MediaTypes.`application/json`, Json.encode(message))
-                    complete(HttpResponse(status = StatusCodes.OK, entity = entity))
-                  } finally {
-                    p.close()
-                  }
+                parseEntity(customJson(p => Json.decode[Message](p))) { message =>
+                  val entity = HttpEntity(MediaTypes.`application/json`, Json.encode(message))
+                  complete(HttpResponse(status = StatusCodes.OK, entity = entity))
                 }
               }
             } ~
