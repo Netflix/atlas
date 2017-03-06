@@ -22,9 +22,6 @@ import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.regex.Pattern
 
-import akka.actor.ActorSystem
-import akka.actor.Props
-import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.model.DataVocabulary
 import com.netflix.atlas.core.model.FilterVocabulary
 import com.netflix.atlas.core.model.MathVocabulary
@@ -36,14 +33,9 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.webapi.ApiSettings
-import com.netflix.atlas.webapi.LocalDatabaseActor
 import com.netflix.atlas.wiki.pages._
-import com.netflix.iep.service.DefaultClassFactory
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
-
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
 
 /**
@@ -121,6 +113,7 @@ object Main extends StrictLogging {
     SDesSlow.word      -> SDesSlow,
     SDesSlower.word    -> SDesSlower,
     DistStddev.word    -> DistStddev,
+    Stddev.word        -> Stddev,
 
     Line.word          -> Line,
     Area.word          -> Area,

@@ -59,6 +59,47 @@ object MathVocabulary extends Vocabulary {
       ),
       List("name,sps,:eq,(,nf.cluster,),:by")),
 
+    Macro("stddev", List(
+        // Copy of base query
+        ":dup",
+
+        // If the aggregate function is not explicit, then we need to force
+        // the conversion. Using `fadd` avoids conversion of `NaN` values to
+        // zero.
+        "0", ":fadd", ":dup",
+
+        // N
+        ":count",
+
+        // sum(x^2)
+        ":over", ":dup", ":mul", ":sum",
+
+        // N * sum(x^2)
+        ":mul",
+
+        // sum(x)
+        ":over", ":sum",
+
+        // sum(x)^2
+        ":dup", ":mul",
+
+        // N * sum(x^2) - sum(x)^2
+        ":sub",
+
+        // N^2
+        ":swap", ":count", ":dup", ":mul",
+
+        // v = (N * sum(x^2) - sum(x)^2) / N^2
+        ":div",
+
+        // stddev = sqrt(v)
+        ":sqrt",
+
+        // Avoid expansion when displayed
+        "stddev", ":named-rewrite"
+      ),
+      List("name,sps,:eq,(,nf.cluster,),:by")),
+
     Macro("pct", List(
         ":dup",
         ":dup", ":sum", ":div", "100", ":mul",

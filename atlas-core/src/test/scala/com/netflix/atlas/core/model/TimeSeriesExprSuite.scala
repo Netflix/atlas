@@ -185,8 +185,17 @@ class TimeSeriesExprSuite extends FunSuite {
     ":true,1w,:offset"            -> const(ts(unknownTag, "name=unknown (offset=1w)", 55)),
     ":true,5,:add,1w,:offset"     -> const(ts(unknownTag, "(name=unknown (offset=1w) + 5.0)", 60)),
     "issue,283,:eq"               -> const(ts(Map("issue" -> "283"), "NO DATA", Double.NaN)),
+    ":true,(,name,),:by,:stddev"  -> const(ts(Map.empty[String, String], stddevLegend("NO TAGS"), 3.1622776601683795)),
+    ":true,:max,:stddev"          -> const(ts(Map("name" -> "unknown"), stddevLegend("name=unknown"), 0.0)),
+    ":true,:sum,:stddev"          -> const(ts(Map("name" -> "unknown"), stddevLegend("name=unknown"), 0.0)),
+    ":true,:stddev"               -> const(ts(Map("name" -> "unknown"), stddevLegend("name=unknown"), 0.0)),
     "42"                          -> const(ts(42))
   )
+
+  // stddev legend
+  private def stddevLegend(label: String): String = {
+    s"sqrt((((count($label) * sum($label)) - (sum($label) * sum($label))) / (count($label) * count($label))))"
+  }
 
   // Tests that cannot be executed with incremental evaluation
   val globalTests = List(
