@@ -15,52 +15,62 @@
  */
 package com.netflix.atlas.core.validation
 
+import com.netflix.spectator.impl.AsciiSet
 import com.typesafe.config.Config
 
 /**
- * Verifies that the keys and values only use alpha-numeric, underscore, dash, and period.
- */
+  * Verifies that the keys and values only use the set of ASCII characters specificied
+  * in the config. By default it will be alpha-numeric, underscore, dash, and period.
+  * Sample config:
+  *
+  * ```
+  * default-pattern = "-._A-Za-z0-9"
+  * overrides = [
+  *   {
+  *     key = "nf.cluster"
+  *     value = "-._A-Za-z0-9^~"
+  *   },
+  *   {
+  *     key = "nf.asg"
+  *     value = "-._A-Za-z0-9^~"
+  *   }
+  * ]
+  * ```
+  */
 class ValidCharactersRule(config: Config) extends TagRule {
 
-  import ValidCharactersRule._
+  private val defaultSet = {
+    if (config.hasPath("default-pattern"))
+      AsciiSet.fromPattern(config.getString("default-pattern"))
+    else
+      AsciiSet.fromPattern("-._A-Za-z0-9")
+  }
+
+  private val overrides = {
+    val m = if (config.hasPath("overrides")) loadOverrides else Map.empty[String, AsciiSet]
+    m.withDefaultValue(defaultSet)
+  }
+
+  private def loadOverrides: Map[String, AsciiSet] = {
+    import scala.collection.JavaConverters._
+    val entries = config.getConfigList("overrides").asScala.map { cfg =>
+      val k = cfg.getString("key")
+      val v = AsciiSet.fromPattern(cfg.getString("value"))
+      k -> v
+    }
+    entries.toMap
+  }
 
   def validate(k: String, v: String): ValidationResult = {
-    var i = 0
-    var length = k.length
-    while (i < length) {
-      if (!isSupported(k.charAt(i))) {
-        return failure(s"invalid characters in key: [$k] ([-_.A-Za-z0-9] are allowed)")
-      }
-      i += 1
+    if (!defaultSet.containsAll(k)) {
+      return failure(s"invalid characters in key: [$k] ([$defaultSet] are allowed)")
     }
 
-    i = 0
-    length = v.length
-    while (i < length) {
-      if (!isSupported(v.charAt(i))) {
-        return failure(s"invalid characters in value: $k = [$v] ([-_.A-Za-z0-9] are allowed)")
-      }
-      i += 1
+    val valueSet = overrides(k)
+    if (!valueSet.containsAll(v)) {
+      return failure(s"invalid characters in value: $k = [$v] ([$valueSet] are allowed)")
     }
 
     ValidationResult.Pass
-  }
-}
-
-object ValidCharactersRule {
-  private final val supported = {
-    val cs = new Array[Boolean](128)
-    (0   until 128).foreach { i => cs(i) = false }
-    ('A' to    'Z').foreach { c => cs(c) = true }
-    ('a' to    'z').foreach { c => cs(c) = true }
-    ('0' to    '9').foreach { c => cs(c) = true }
-    cs('-') = true
-    cs('_') = true
-    cs('.') = true
-    cs
-  }
-
-  private final def isSupported(c: Char): Boolean = {
-    c >=0 && c < 128 && supported(c)
   }
 }
