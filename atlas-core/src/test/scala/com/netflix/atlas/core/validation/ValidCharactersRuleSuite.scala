@@ -23,6 +23,18 @@ class ValidCharactersRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("")
 
+  private val customPattern = ConfigFactory.parseString(
+    """
+      |default-pattern = ".a-z"
+      |
+      |overrides = [
+      |  {
+      |    key = "nf.asg"
+      |    value = "-_.A-Za-z0-9^~"
+      |  }
+      |]
+    """.stripMargin)
+
   private val alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._"
 
   test("valid") {
@@ -40,5 +52,27 @@ class ValidCharactersRuleSuite extends FunSuite {
     val rule = new ValidCharactersRule(config)
     val res = rule.validate(alpha, "spaces not allowed")
     assert(res.isFailure)
+  }
+
+  test("custom pattern valid") {
+    val rule = new ValidCharactersRule(customPattern)
+    assert(rule.validate("abcdef", "fedcba") === ValidationResult.Pass)
+  }
+
+  test("custom pattern invalid key") {
+    val rule = new ValidCharactersRule(customPattern)
+    val res = rule.validate(alpha, "fedcba")
+    assert(res.isFailure)
+  }
+
+  test("custom pattern invalid value") {
+    val rule = new ValidCharactersRule(customPattern)
+    val res = rule.validate("abcdef", alpha)
+    assert(res.isFailure)
+  }
+
+  test("custom pattern value override") {
+    val rule = new ValidCharactersRule(customPattern)
+    assert(rule.validate("nf.asg", alpha + "^~") === ValidationResult.Pass)
   }
 }

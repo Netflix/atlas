@@ -5,13 +5,13 @@ object Dependencies {
     val akka       = "2.4.16"
     val akkaHttpV  = "10.0.3"
     val aws        = "1.11.93"
-    val iep        = "0.4.16"
+    val iep        = "0.4.17"
     val guice      = "4.1.0"
     val jackson    = "2.8.6"
     val log4j      = "2.7"
     val scala      = "2.12.1"
     val slf4j      = "1.7.23"
-    val spectator  = "0.52.0"
+    val spectator  = "0.53.0"
     val spray      = "1.3.4"
 
     val crossScala = Seq(scala, "2.11.8")
