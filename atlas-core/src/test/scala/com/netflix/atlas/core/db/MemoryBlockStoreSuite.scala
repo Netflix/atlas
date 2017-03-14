@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.db
 
 import com.netflix.atlas.core.model.Block
+import com.netflix.atlas.core.model.ConstantBlock
 import org.scalatest.FunSuite
 
 
@@ -124,6 +125,15 @@ class MemoryBlockStoreSuite extends FunSuite {
     assert(bs.fetch(0, 1, Block.Sum).forall(_.isNaN))
     assert(bs.fetch(2, 6, Block.Sum).toList === List(3.0, 4.0, 5.0, 6.0, 7.0))
     assert(bs.fetch(7, 10, Block.Sum).forall(_.isNaN))
+  }
+
+  test("update, with no data") {
+    val bs = new MemoryBlockStore(1, 10, 4)
+    (0 until 10).foreach { i => bs.update(i, 2.0) }
+    assert(bs.currentBlock !== null)
+    bs.update(0)
+    assert(bs.currentBlock === null)
+    assert(bs.blockList === List(ConstantBlock(0, 10, 2.0)))
   }
 
   test("cleanup, nothing to do") {

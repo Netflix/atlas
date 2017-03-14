@@ -94,9 +94,17 @@ trait BlockStore {
   def hasData: Boolean
 
   /** Removes all blocks where the start time is before the specified cutoff. */
-  def cleanup(cutoff: Long)
+  def cleanup(cutoff: Long): Unit
 
-  def update(timestamp: Long, value: Double)
+  /** Updates the store with a datapoint. */
+  def update(timestamp: Long, value: Double): Unit
+
+  /**
+    * Force and update with no data. This can be used to trigger the rotation and compression
+    * of the currently updating block if no data is received after the block boundary. The
+    * timestamp should be the start of the block to process.
+    */
+  def update(timestamp: Long): Unit
 
   def blockList: List[Block]
 
@@ -162,12 +170,14 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
       BlockStats.dec(blocks(currentPos))
     }
     blocks(currentPos) = currentBlock
+    hasData = true
   }
 
-  def hasData: Boolean = (currentBlock != null)
+  var hasData: Boolean = false
 
   def cleanup(cutoff: Long): Unit = {
     var pos = 0
+    var nonEmpty = false
     while (pos < numBlocks) {
       val block = blocks(pos)
       if (block != null && block.start < cutoff) {
@@ -177,9 +187,12 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
         if (block.isInstanceOf[ArrayBlock]) {
           freeArrayBlock(block.asInstanceOf[ArrayBlock])
         }
+      } else {
+        nonEmpty = nonEmpty || (block != null)
       }
       pos += 1
     }
+    hasData = nonEmpty
   }
 
   def update(timestamp: Long, value: Double): Unit = {
@@ -188,6 +201,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
       currentPos = next(currentPos)
       blocks(currentPos) = currentBlock
       BlockStats.inc(currentBlock)
+      hasData = true
     }
     var pos = ((timestamp - currentBlock.start) / step).asInstanceOf[Int]
     require(pos >= 0, "data is too old")
@@ -196,6 +210,20 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
       pos = ((timestamp - currentBlock.start) / step).asInstanceOf[Int]
     }
     currentBlock.buffer(pos) = value
+  }
+
+  def update(timestamp: Long): Unit = {
+    if (currentBlock != null && currentBlock.start == timestamp) {
+      val oldBlock = Block.compress(currentBlock)
+      BlockStats.update(currentBlock, oldBlock)
+      blocks(currentPos) = oldBlock
+      currentBlock = null
+      currentPos = next(currentPos)
+      if (blocks(currentPos) != null) {
+        BlockStats.dec(blocks(currentPos))
+      }
+      blocks(currentPos) = currentBlock
+    }
   }
 
   def update(start: Long, values: List[Double]): Unit = {

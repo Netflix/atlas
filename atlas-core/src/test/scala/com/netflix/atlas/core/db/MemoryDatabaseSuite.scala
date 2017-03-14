@@ -17,6 +17,8 @@ package com.netflix.atlas.core.db
 
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.ManualClock
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
@@ -26,15 +28,16 @@ class MemoryDatabaseSuite extends FunSuite {
 
   private val step = DefaultSettings.stepSize
 
-  private val db = MemoryDatabase(ConfigFactory.parseString(
+  private val clock = new ManualClock()
+  private val registry = new DefaultRegistry(clock)
+
+  private val db = new MemoryDatabase(registry, ConfigFactory.parseString(
     """
-      |atlas.core.db {
-      |  block-size = 60
-      |  num-blocks = 2
-      |  rebuild-frequency = 10s
-      |  test-mode = true
-      |  intern-while-building = true
-      |}
+      |block-size = 60
+      |num-blocks = 2
+      |rebuild-frequency = 10s
+      |test-mode = true
+      |intern-while-building = true
     """.stripMargin))
 
   addData("a", 1.0, 2.0, 3.0)
@@ -45,6 +48,7 @@ class MemoryDatabaseSuite extends FunSuite {
   private def addData(name: String, values: Double*): Unit = {
     val tags = Map("name" -> name)
     val data = values.toList.zipWithIndex.map { case (v, i) =>
+      clock.setWallTime(i * step)
       Datapoint(tags, i * step, v)
     }
     db.update(data)
