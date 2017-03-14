@@ -89,13 +89,15 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     }
   }
 
+  private def now: Long = registry.clock().wallTime()
+
   def rebuild(): Unit = {
-    if (!testMode && System.currentTimeMillis - index.buildTime > rebuildAge) {
+    if (!testMode && now - index.buildTime > rebuildAge) {
       logger.info("rebuilding metadata index")
       index.rebuildIndex()
 
       val windowSize = numBlocks * blockSize * step
-      val cutoff = System.currentTimeMillis - windowSize
+      val cutoff = now - windowSize
       val iter = data.entrySet.iterator
       while (iter.hasNext) {
         val entry = iter.next()
