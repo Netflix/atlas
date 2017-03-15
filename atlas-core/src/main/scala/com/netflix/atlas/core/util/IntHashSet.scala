@@ -59,7 +59,7 @@ class IntHashSet(noData: Int, capacity: Int = 10) {
   }
 
   private def add(buffer: Array[Int], v: Int): Boolean = {
-    var pos = math.abs(v) % buffer.length
+    var pos = Hash.absOrZero(v) % buffer.length
     var posV = buffer(pos)
     while (posV != noData && posV != v) {
       pos = (pos + 1) % buffer.length

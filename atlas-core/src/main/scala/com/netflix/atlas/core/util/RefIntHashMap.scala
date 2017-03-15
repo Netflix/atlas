@@ -94,7 +94,7 @@ class RefIntHashMap[T](capacity: Int = 10) {
   }
 
   private def put(ks: Array[T], vs: Array[Int], k: T, v: Int): Boolean = {
-    var pos = math.abs(k.hashCode()) % ks.length
+    var pos = Hash.absOrZero(k.hashCode()) % ks.length
     var posV = ks(pos)
     while (posV != null && posV != k) {
       pos = (pos + 1) % ks.length
@@ -121,7 +121,7 @@ class RefIntHashMap[T](capacity: Int = 10) {
     */
   def putIfAbsent(k: T, v: Int): Boolean = {
     if (used >= cutoff) resize()
-    var pos = math.abs(k.hashCode()) % keys.length
+    var pos = Hash.absOrZero(k.hashCode()) % keys.length
     var posV = keys(pos)
     while (posV != null && posV != k) {
       pos = (pos + 1) % keys.length
@@ -140,7 +140,7 @@ class RefIntHashMap[T](capacity: Int = 10) {
     * `dflt` value will be returned.
     */
   def get(k: T, dflt: Int): Int = {
-    var pos = math.abs(k.hashCode()) % keys.length
+    var pos = Hash.absOrZero(k.hashCode()) % keys.length
     while (true) {
       val prev = keys(pos)
       if (prev == null)
@@ -165,7 +165,7 @@ class RefIntHashMap[T](capacity: Int = 10) {
     */
   def increment(k: T, amount: Int): Unit = {
     if (used >= cutoff) resize()
-    var pos = math.abs(k.hashCode()) % keys.length
+    var pos = Hash.absOrZero(k.hashCode()) % keys.length
     while (true) {
       val prev = keys(pos)
       if (prev == null || prev == k) {

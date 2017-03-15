@@ -43,7 +43,7 @@ object SmallHashMap {
     def +=(pair: (K, V)): Unit = add(pair._1, pair._2)
 
     def add(k: K, v: V) {
-      val pos = math.abs(k.hashCode) % size
+      val pos = Hash.absOrZero(k.hashCode) % size
       var i = pos
       var ki = buf(i * 2)
       var keq = (ki == k)
@@ -151,7 +151,7 @@ final class SmallHashMap[K <: AnyRef, V <: AnyRef] private (val data: Array[AnyR
 
   private def hash(k: AnyRef): Int = {
     val capacity = data.length / 2
-    math.abs(k.hashCode) % capacity
+    Hash.absOrZero(k.hashCode) % capacity
   }
 
   def getOrNull(key: K): V = {
