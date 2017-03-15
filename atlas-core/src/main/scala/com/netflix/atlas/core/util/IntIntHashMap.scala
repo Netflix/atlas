@@ -62,7 +62,7 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
   }
 
   private def put(ks: Array[Int], vs: Array[Int], k: Int, v: Int): Boolean = {
-    var pos = math.abs(k) % ks.length
+    var pos = Hash.absOrZero(k) % ks.length
     var posV = ks(pos)
     while (posV != noData && posV != k) {
       pos = (pos + 1) % ks.length
@@ -88,7 +88,7 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
     * `dflt` value will be returned.
     */
   def get(k: Int, dflt: Int): Int = {
-    var pos = math.abs(k) % keys.length
+    var pos = Hash.absOrZero(k) % keys.length
     while (true) {
       val prev = keys(pos)
       if (prev == noData)
@@ -113,7 +113,7 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
     */
   def increment(k: Int, amount: Int): Unit = {
     if (used >= cutoff) resize()
-    var pos = math.abs(k) % keys.length
+    var pos = Hash.absOrZero(k) % keys.length
     var prev = keys(pos)
     while (prev != noData && prev != k) {
       pos = (pos + 1) % keys.length
