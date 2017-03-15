@@ -139,4 +139,17 @@ class DoubleIntHashMapSuite extends FunSuite {
     assert(igraph.totalSize() <= 320000)
   }
 
+  test("negative absolute value") {
+    // hashes to Integer.MIN_VALUE causing: java.lang.ArrayIndexOutOfBoundsException: -2
+    //
+    // scala> math.abs(java.lang.Long.hashCode(java.lang.Double.doubleToLongBits(0.778945326637231)))
+    // res9: Int = -2147483648
+    // scala> math.abs(java.lang.Long.hashCode(java.lang.Double.doubleToLongBits(0.17321881641359504)))
+    // res10: Int = -2147483648
+    // scala> math.abs(java.lang.Long.hashCode(java.lang.Double.doubleToLongBits(0.4182373879985505)))
+    // res11: Int = -2147483648
+    val m = new DoubleIntHashMap
+    assert(m.get(0.778945326637231, 0) === 0)
+  }
+
 }

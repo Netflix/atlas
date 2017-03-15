@@ -163,4 +163,10 @@ class LongIntHashMapSuite extends FunSuite {
     assert(igraph.totalSize() <= 320000)
   }
 
+  test("negative absolute value") {
+    // hashes to Integer.MIN_VALUE causing: java.lang.ArrayIndexOutOfBoundsException: -2
+    val m = new LongIntHashMap(-1, 10)
+    assert(m.get(Integer.MIN_VALUE.toLong - 1, 0) === 0)
+  }
+
 }

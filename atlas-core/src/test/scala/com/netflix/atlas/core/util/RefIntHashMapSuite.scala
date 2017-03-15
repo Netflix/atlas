@@ -196,4 +196,14 @@ class RefIntHashMapSuite extends FunSuite {
     assert(igraph.totalSize() <= 500000)
   }
 
+  test("negative absolute value") {
+    val s = new RefIntHashMap[RefIntHashMapSuite.MinHash]()
+    assert(s.get(new RefIntHashMapSuite.MinHash, 0) === 0)
+  }
+}
+
+object RefIntHashMapSuite {
+  class MinHash {
+    override def hashCode: Int = Integer.MIN_VALUE
+  }
 }

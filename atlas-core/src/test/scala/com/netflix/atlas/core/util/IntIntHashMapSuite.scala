@@ -146,4 +146,9 @@ class IntIntHashMapSuite extends FunSuite {
     assert(igraph.totalSize() <= 220000)
   }
 
+  test("negative absolute value") {
+    val s = new IntIntHashMap(-1, 10)
+    assert(s.get(Integer.MIN_VALUE, 0) === 0)
+  }
+
 }

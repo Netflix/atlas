@@ -61,10 +61,12 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
     cutoff = computeCutoff(tmpKS.length)
   }
 
-  private def hash(k: Long): Int = java.lang.Long.hashCode(k)
+  private def hash(ks: Array[Long], k: Long): Int = {
+    Hash.absOrZero(java.lang.Long.hashCode(k)) % ks.length
+  }
 
   private def put(ks: Array[Long], vs: Array[Int], k: Long, v: Int): Boolean = {
-    var pos = math.abs(hash(k)) % ks.length
+    var pos = hash(ks, k)
     var posV = ks(pos)
     while (posV != noData && posV != k) {
       pos = (pos + 1) % ks.length
@@ -90,7 +92,7 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
     * `dflt` value will be returned.
     */
   def get(k: Long, dflt: Int): Int = {
-    var pos = math.abs(hash(k)) % keys.length
+    var pos = hash(keys, k)
     while (true) {
       val prev = keys(pos)
       if (prev == noData)
@@ -115,7 +117,7 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
     */
   def increment(k: Long, amount: Int): Unit = {
     if (used >= cutoff) resize()
-    var pos = math.abs(hash(k)) % keys.length
+    var pos = hash(keys, k)
     while (true) {
       val prev = keys(pos)
       if (prev == noData || prev == k) {
