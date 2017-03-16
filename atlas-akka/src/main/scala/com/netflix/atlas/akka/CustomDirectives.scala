@@ -103,8 +103,8 @@ object CustomDirectives {
   // Make sure that all headers in the response will be readable by the browser
   private def exposeHeaders: Directive0 = {
     mapResponseHeaders { headers =>
-      if (headers.isEmpty) headers else {
-        val exposed = headers.map(_.name)
+      val exposed = headers.map(_.name).filterNot(_.startsWith("Access-Control"))
+      if (exposed.isEmpty) headers else {
         headers ++ scala.collection.immutable.Seq(`Access-Control-Expose-Headers`(exposed))
       }
     }
