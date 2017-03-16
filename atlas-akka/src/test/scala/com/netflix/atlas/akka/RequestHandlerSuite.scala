@@ -72,6 +72,8 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
           assert("http://localhost" === v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case h if h.is("vary") =>
+          assert(h.value === "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
