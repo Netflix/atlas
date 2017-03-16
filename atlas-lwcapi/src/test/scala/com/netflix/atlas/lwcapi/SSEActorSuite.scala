@@ -36,7 +36,8 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
 
   test("tick and unsubscribe") {
     val mockSM = MockSubscriptionManager()
-    val sse = Source.actorPublisher[HttpEntity.Chunk](Props(new SSEActor("mySSEId", "myName", mockSM, registry)))
+    val sse = Source.actorPublisher[HttpEntity.Chunk](Props(
+      new SSEActor("mySSEId", "myName", mockSM, Nil, registry)))
     val invocations = sse.runFold(List.empty[String]){ (acc, msg) =>
       msg.data.decodeString(StandardCharsets.UTF_8).trim :: acc
     }

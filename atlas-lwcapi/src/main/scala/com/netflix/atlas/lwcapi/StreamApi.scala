@@ -98,17 +98,16 @@ class StreamApi @Inject()(sm: SubscriptionManager,
     val splits = splitRequest(req, expr, freqString)
 
     // handle post and URL subscription data
-    splits.foreach { case (e, split) =>
+    val subs = splits.map { case (e, split) =>
       dbActor ! ExpressionDatabaseActor.Expression(split)
       split.expressions.foreach(e =>
         dbActor ! ExpressionDatabaseActor.Subscribe(streamId, e.id)
       )
-      // TODO, how to get actor ref?
-      //actorRef ! SSESubscribe(e.expression, split.expressions)
+      SSESubscribe(e.expression, split.expressions)
     }
 
     val source = Source.actorPublisher(Props(
-      new SSEActor(streamId, name.getOrElse("unknown"), sm, registry)))
+      new SSEActor(streamId, name.getOrElse("unknown"), sm, subs.toList, registry)))
     val entity = HttpEntity.Chunked(CustomMediaTypes.`text/event-stream`.toContentType, source)
     HttpResponse(StatusCodes.OK, entity = entity)
   }

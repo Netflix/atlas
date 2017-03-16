@@ -24,14 +24,19 @@ import akka.actor.Cancellable
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage._
+import com.netflix.atlas.lwcapi.StreamApi.SSESubscribe
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-class SSEActor(sseId: String, name: String, sm: SubscriptionManager, registry: Registry)
-  extends ActorPublisher[ChunkStreamPart] with ActorLogging {
+class SSEActor(
+  sseId: String,
+  name: String,
+  sm: SubscriptionManager,
+  subs: List[SSESubscribe],
+  registry: Registry) extends ActorPublisher[ChunkStreamPart] with ActorLogging {
 
   import SSEActor._
   import StreamApi._
@@ -59,15 +64,16 @@ class SSEActor(sseId: String, name: String, sm: SubscriptionManager, registry: R
   sm.register(sseId, self, name)
   enqueue(SSEHello(sseId, instanceId, GlobalUUID.get), diagnosticMessages)
   enqueue(SSEStatistics(0), diagnosticMessages)
+  subs.foreach { sub => enqueue(sub, diagnosticMessages) }
 
   private var shutdown = false
 
-  private val tickTime = 30.seconds
+  private val tickTime = 10.seconds
   private val ticker: Cancellable = context.system.scheduler.schedule(tickTime, tickTime) {
     self ! Tick
   }
 
-  def receive = {
+  def receive: Receive = {
     case Request(_) =>
       writeChunks()
     case Cancel =>
@@ -93,6 +99,7 @@ class SSEActor(sseId: String, name: String, sm: SubscriptionManager, registry: R
       droppedMessageCount += 1
       registry.counter(droppedId.withTag("action", msg.getWhat)).increment()
     }
+    writeChunks()
   }
 
   def writeChunks(): Unit = {
