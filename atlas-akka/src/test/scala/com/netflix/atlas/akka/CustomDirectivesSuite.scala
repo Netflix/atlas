@@ -88,6 +88,12 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
                 val headers = List(RawHeader("foo", "bar"))
                 complete(HttpResponse(status = StatusCodes.OK, headers = headers))
               }
+            } ~
+            path("vary") {
+              get {
+                val headers = List(RawHeader("Vary", "Host"))
+                complete(HttpResponse(status = StatusCodes.OK, headers = headers))
+              }
             }
           }
         }
@@ -199,6 +205,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("http://localhost" === v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case h if h.is("vary") =>
+          assert(h.value === "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
@@ -219,7 +227,9 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case `Access-Control-Expose-Headers`(vs) =>
           assert("foo" === vs.mkString(","))
-        case h: RawHeader if h.lowercaseName == "foo" =>
+        case h if h.is("vary") =>
+          assert(h.value === "Origin")
+        case h if h.lowercaseName == "foo" =>
           assert("bar" === h.value)
         case h =>
           fail(s"unexpected header: $h (${h.getClass})")
@@ -243,6 +253,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Headers`(vs) =>
           assert("foo" === vs.mkString(","))
+        case h if h.is("vary") =>
+          assert(h.value === "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
@@ -262,10 +274,34 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("*" === v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case h if h.is("vary") =>
+          assert(h.value === "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
       val expected = """[1,2,3]"""
+      assert(expected === responseAs[String])
+    }
+  }
+
+  test("cors with additional vary headers") {
+    val headers = List(Origin(HttpOrigin("http://localhost")))
+    val req = HttpRequest(HttpMethods.GET, Uri("/vary"), headers)
+    req ~> endpoint.routes ~> check {
+      assert(headers.nonEmpty)
+      response.headers.foreach {
+        case `Access-Control-Allow-Origin`(v) =>
+          assert("http://localhost" === v.toString)
+        case `Access-Control-Allow-Methods`(vs) =>
+          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case `Access-Control-Expose-Headers`(vs) =>
+          assert("Vary" === vs.mkString(","))
+        case h if h.is("vary") =>
+          assert(Set("Origin", "Host").contains(h.value))
+        case h =>
+          fail(s"unexpected header: $h (${h.getClass})")
+      }
+      val expected = ""
       assert(expected === responseAs[String])
     }
   }

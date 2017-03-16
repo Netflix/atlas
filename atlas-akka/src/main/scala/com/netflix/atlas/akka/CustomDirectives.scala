@@ -125,6 +125,11 @@ object CustomDirectives {
         // a local file we typically see 'null'.
         val allow = if (origin == "null") HttpOriginRange.`*` else HttpOriginRange(HttpOrigin(origin))
 
+        // List of headers to ignore for caching. For more details see:
+        // https://bugs.chromium.org/p/chromium/issues/detail?id=409090
+        // https://www.fastly.com/blog/caching-cors
+        val vary = RawHeader("Vary", "Origin")
+
         // Just allow all methods
         val headers = List(
           `Access-Control-Allow-Origin`(allow),
@@ -133,7 +138,8 @@ object CustomDirectives {
             HttpMethods.PATCH,
             HttpMethods.POST,
             HttpMethods.PUT,
-            HttpMethods.DELETE))
+            HttpMethods.DELETE),
+          vary)
 
         // If specific headers are requested echo those back
         optionalHeaderValueByName("Access-Control-Request-Headers").flatMap {
