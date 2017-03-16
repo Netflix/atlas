@@ -20,6 +20,7 @@ import java.lang.reflect.Type
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.MalformedRequestContentRejection
@@ -111,7 +112,12 @@ object RequestHandler {
     // Include all requests in the access log
     val corsPreflight = options {
       // Used for CORS pre-flight checks
-      corsFilter { complete(HttpResponse(StatusCodes.OK)) }
+      corsFilter {
+        // Set max age header to minimize the number of round-trips the browser will need
+        // to make. Various browsers limit the max age that can be used. Ten minutes seems
+        // to be a common number (chrome and webkit) so that is what we use here.
+        complete(HttpResponse(StatusCodes.OK).withHeaders(`Access-Control-Max-Age`(600)))
+      }
     }
     accessLog { corsPreflight ~ error }
   }
