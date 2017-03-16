@@ -14,7 +14,7 @@ ignored for all other formats.
 
 ### Format (format)
 
-Specifies the output format to use. The default is `png`.
+Specifies the output format to use. The default is `json`.
 
 <table>
   <tbody>
