@@ -138,7 +138,8 @@ object CustomDirectives {
             HttpMethods.PATCH,
             HttpMethods.POST,
             HttpMethods.PUT,
-            HttpMethods.DELETE),
+            HttpMethods.DELETE,
+            HttpMethods.OPTIONS),
           vary)
 
         // If specific headers are requested echo those back
