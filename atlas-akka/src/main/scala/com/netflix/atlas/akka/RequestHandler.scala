@@ -84,7 +84,6 @@ object RequestHandler {
     * logging, CORS support, compression, etc.
     */
   def standardOptions(route: Route): Route = {
-
     // Default paths to always include
     val ok = path("ok") {
       // Default endpoint for testing that always returns 200
@@ -96,12 +95,9 @@ object RequestHandler {
 
     val finalRoutes = ok ~ route
 
-    // Allow all endpoints to be access cross-origin
-    val cors = corsFilter { finalRoutes }
-
     // Automatically deal with compression
     val gzip = encodeResponse {
-      decodeRequest { cors }
+      decodeRequest { finalRoutes }
     }
 
     // Add a default exception handler
@@ -110,16 +106,10 @@ object RequestHandler {
     }
 
     // Include all requests in the access log
-    val corsPreflight = options {
-      // Used for CORS pre-flight checks
-      corsFilter {
-        // Set max age header to minimize the number of round-trips the browser will need
-        // to make. Various browsers limit the max age that can be used. Ten minutes seems
-        // to be a common number (chrome and webkit) so that is what we use here.
-        complete(HttpResponse(StatusCodes.OK).withHeaders(`Access-Control-Max-Age`(600)))
-      }
-    }
-    accessLog { corsPreflight ~ error }
+    val log = accessLog { error }
+
+    // Add CORS headers to all responses
+    cors { log }
   }
 
   def errorResponse(t: Throwable): HttpResponse = t match {

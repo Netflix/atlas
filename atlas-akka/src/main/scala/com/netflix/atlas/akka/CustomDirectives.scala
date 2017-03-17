@@ -30,6 +30,7 @@ import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.MalformedRequestContentRejection
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.directives.LoggingMagnet
 import akka.util.ByteString
@@ -151,6 +152,26 @@ object CustomDirectives {
         }
     }
   }
+
+  /** Route for CORS handling pre-flight checks. */
+  def corsPreflight: Route = {
+    options {
+      // For some requests the browser wants the CORS headers to be present on the
+      // pre-flight response.
+      corsFilter {
+        // Set max age header to minimize the number of round-trips the browser will need
+        // to make. Various browsers limit the max age that can be used. Ten minutes seems
+        // to be a common number (chrome and webkit) so that is what we use here.
+        complete(HttpResponse(StatusCodes.OK).withHeaders(`Access-Control-Max-Age`(600)))
+      }
+    }
+  }
+
+  /**
+    * Wraps a route with support for CORS. This will handle the preflight checks as well
+    * as adding the appropriate headers to the response of the inner route.
+    */
+  def cors(inner: Route): Route = corsPreflight ~ corsFilter { inner }
 
   /**
    * Returns a JSONP response. This directive will always try to return a 200 response so that the
