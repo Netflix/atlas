@@ -12,7 +12,6 @@ object Dependencies {
     val scala      = "2.12.1"
     val slf4j      = "1.7.25"
     val spectator  = "0.53.0"
-    val spray      = "1.3.4"
 
     val crossScala = Seq(scala, "2.11.8")
   }
@@ -67,9 +66,5 @@ object Dependencies {
   val spectatorLog4j  = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2     = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
   val spectatorSandbox= "com.netflix.spectator" % "spectator-ext-sandbox" % spectator
-  val sprayCan        = "io.spray" %% "spray-can" % spray
-  val sprayClient     = "io.spray" %% "spray-client" % spray
-  val sprayRouting    = "io.spray" %% "spray-routing" % spray
-  val sprayTestkit    = "io.spray" %% "spray-testkit" % spray
   val typesafeConfig  = "com.typesafe" % "config" % "1.3.1"
 }
