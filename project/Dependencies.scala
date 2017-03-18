@@ -53,7 +53,7 @@ object Dependencies {
   val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val redisclient     = "net.debasishg" %% "redisclient" % "3.3"
-  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.6.36"
+  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.6.39"
   val scalaCompiler   = "org.scala-lang" % "scala-compiler"
   val scalaLibrary    = "org.scala-lang" % "scala-library"
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all"
