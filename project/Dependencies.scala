@@ -2,17 +2,16 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.4.16"
-    val akkaHttpV  = "10.0.3"
-    val aws        = "1.11.93"
+    val akka       = "2.4.17"
+    val akkaHttpV  = "10.0.5"
+    val aws        = "1.11.105"
     val iep        = "0.4.17"
     val guice      = "4.1.0"
-    val jackson    = "2.8.6"
-    val log4j      = "2.7"
+    val jackson    = "2.8.7"
+    val log4j      = "2.8.1"
     val scala      = "2.12.1"
-    val slf4j      = "1.7.23"
+    val slf4j      = "1.7.25"
     val spectator  = "0.53.0"
-    val spray      = "1.3.4"
 
     val crossScala = Seq(scala, "2.11.8")
   }
@@ -29,7 +28,7 @@ object Dependencies {
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.3.3"
+  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.4.0"
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.2.1"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.17.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
@@ -53,7 +52,7 @@ object Dependencies {
   val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val redisclient     = "net.debasishg" %% "redisclient" % "3.3"
-  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.6.36"
+  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.6.39"
   val scalaCompiler   = "org.scala-lang" % "scala-compiler"
   val scalaLibrary    = "org.scala-lang" % "scala-library"
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all"
@@ -67,9 +66,5 @@ object Dependencies {
   val spectatorLog4j  = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2     = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
   val spectatorSandbox= "com.netflix.spectator" % "spectator-ext-sandbox" % spectator
-  val sprayCan        = "io.spray" %% "spray-can" % spray
-  val sprayClient     = "io.spray" %% "spray-client" % spray
-  val sprayRouting    = "io.spray" %% "spray-routing" % spray
-  val sprayTestkit    = "io.spray" %% "spray-testkit" % spray
   val typesafeConfig  = "com.typesafe" % "config" % "1.3.1"
 }
