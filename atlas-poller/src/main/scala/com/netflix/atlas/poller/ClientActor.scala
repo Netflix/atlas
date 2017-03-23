@@ -92,6 +92,7 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
   private def handleResponse(responder: ActorRef, response: HttpResponse, size: Int): Unit = {
     response.status.intValue match {
       case 200 => // All is well
+        response.discardEntityBytes()
       case 202 => // Partial failure
         val id = datapointsDropped.withTag("id", "PartialFailure")
         incrementFailureCount(id, response, size)
@@ -99,6 +100,7 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
         val id = datapointsDropped.withTag("id", "CompleteFailure")
         incrementFailureCount(id, response, size)
       case v   => // Unexpected, assume all dropped
+        response.discardEntityBytes()
         val id = datapointsDropped.withTag("id", s"Status_$v")
         registry.counter(id).increment(size)
     }
