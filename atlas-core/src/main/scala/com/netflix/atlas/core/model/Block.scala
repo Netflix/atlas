@@ -217,20 +217,32 @@ sealed trait Block {
   }
 }
 
+/** Block type that can be update incrementally as data is coming in. */
+trait MutableBlock extends Block {
+  /** Update the value for the specified position. */
+  def update(pos: Int, value: Double): Unit
+
+  /** Reset this block so it can be re-used. */
+  def reset(t: Long): Unit
+}
+
 /**
  * Block that stores the raw data in an array.
  *
  * @param start  start time for the block (epoch in milliseconds)
  * @param size   number of data points to store in the block
  */
-case class ArrayBlock(var start: Long, size: Int) extends Block {
+case class ArrayBlock(var start: Long, size: Int) extends MutableBlock {
 
-  val buffer = ArrayHelper.fill(size, Double.NaN)
+  val buffer: Array[Double] = ArrayHelper.fill(size, Double.NaN)
 
   def get(pos: Int): Double = buffer(pos)
   val byteCount: Int = 2 + sizeOf(buffer)
 
   override def toArrayBlock: ArrayBlock = this
+
+  /** Update the value for the specified position. */
+  def update(pos: Int, value: Double): Unit = buffer(pos) = value
 
   /** Reset this block so it can be re-used. */
   def reset(t: Long): Unit = {
@@ -492,10 +504,12 @@ object RollupBlock {
 /**
  * A block representing a set of aggregates computed by rolling up a metric.
  */
-case class RollupBlock(sum: Block, count: Block, min: Block, max: Block) extends Block {
+case class RollupBlock(sum: Block, count: Block, min: Block, max: Block) extends MutableBlock {
 
   require(List(count, min, max).forall(_.size == sum.size), "all blocks must have the same size")
   require(List(count, min, max).forall(_.start == sum.start), "all blocks must have the same start")
+
+  def blocks: List[Block] = List(sum, count, min, max)
 
   def start: Long = sum.start
 
@@ -521,6 +535,44 @@ case class RollupBlock(sum: Block, count: Block, min: Block, max: Block) extends
     count.asInstanceOf[ArrayBlock].add(block, Block.Count)
     min.asInstanceOf[ArrayBlock].min(block, Block.Min)
     max.asInstanceOf[ArrayBlock].max(block, Block.Max)
+  }
+
+  /** Update the value for the specified position. */
+  def update(pos: Int, value: Double): Unit = {
+    if (!value.isNaN) {
+      updateSum(pos, value)
+      updateCount(pos, value)
+      updateMin(pos, value)
+      updateMax(pos, value)
+    }
+  }
+
+  private def updateSum(pos: Int, value: Double): Unit = {
+    val buffer = sum.asInstanceOf[ArrayBlock].buffer
+    buffer(pos) = Math.addNaN(buffer(pos), value)
+  }
+
+  private def updateCount(pos: Int, value: Double): Unit = {
+    val buffer = count.asInstanceOf[ArrayBlock].buffer
+    buffer(pos) = Math.addNaN(buffer(pos), 1.0)
+  }
+
+  private def updateMin(pos: Int, value: Double): Unit = {
+    val buffer = min.asInstanceOf[ArrayBlock].buffer
+    buffer(pos) = Math.minNaN(buffer(pos), value)
+  }
+
+  private def updateMax(pos: Int, value: Double): Unit = {
+    val buffer = max.asInstanceOf[ArrayBlock].buffer
+    buffer(pos) = Math.maxNaN(buffer(pos), value)
+  }
+
+  /** Reset this block so it can be re-used. */
+  def reset(t: Long): Unit = {
+    sum.asInstanceOf[ArrayBlock].reset(t)
+    count.asInstanceOf[ArrayBlock].reset(t)
+    min.asInstanceOf[ArrayBlock].reset(t)
+    max.asInstanceOf[ArrayBlock].reset(t)
   }
 
   def compress: RollupBlock = {

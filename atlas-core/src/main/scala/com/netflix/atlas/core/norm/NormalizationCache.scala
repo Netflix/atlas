@@ -33,21 +33,21 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
 
   type CacheEntry = java.util.Map.Entry[TaggedItem, CacheValue]
 
-  private val counterCache = new LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
+  private val counterCache = new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
     override def removeEldestEntry(eldest: CacheEntry): Boolean = {
       val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
       ageMillis > 4 * step
     }
   }
 
-  private val rateCache = new LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
+  private val rateCache = new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
     override def removeEldestEntry(eldest: CacheEntry): Boolean = {
       val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
       ageMillis > 4 * step
     }
   }
 
-  private val gaugeCache = new LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
+  private val gaugeCache = new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
     override def removeEldestEntry(eldest: CacheEntry): Boolean = {
       val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
       ageMillis > 4 * step

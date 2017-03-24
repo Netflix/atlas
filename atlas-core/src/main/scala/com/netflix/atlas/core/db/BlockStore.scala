@@ -43,7 +43,8 @@ object BlockStats {
       case b: ArrayBlock    => inc(block, arrayCount, arrayBytes)
       case b: ConstantBlock => inc(block, constantCount, constantBytes)
       case b: SparseBlock   => inc(block, sparseCount, sparseBytes)
-      case _ =>
+      case b: RollupBlock   => b.blocks.foreach(inc)
+      case _                =>
     }
   }
 
@@ -57,7 +58,8 @@ object BlockStats {
       case b: ArrayBlock    => dec(block, arrayCount, arrayBytes)
       case b: ConstantBlock => dec(block, constantCount, constantBytes)
       case b: SparseBlock   => dec(block, sparseCount, sparseBytes)
-      case _ =>
+      case b: RollupBlock   => b.blocks.foreach(dec)
+      case _                =>
     }
   }
 
@@ -97,7 +99,7 @@ trait BlockStore {
   def cleanup(cutoff: Long): Unit
 
   /** Updates the store with a datapoint. */
-  def update(timestamp: Long, value: Double): Unit
+  def update(timestamp: Long, value: Double, rollup: Boolean = false): Unit
 
   /**
     * Force and update with no data. This can be used to trigger the rotation and compression
@@ -114,6 +116,10 @@ trait BlockStore {
 }
 
 object MemoryBlockStore {
+  private val registry = Spectator.globalRegistry
+  private val allocs = registry.counter("atlas.block.creationCount", "id", "alloc")
+  private val reused = registry.counter("atlas.block.creationCount", "id", "reused")
+
   private val freeArrayBlocks = new ArrayBlockingQueue[ArrayBlock](100000)
 
   def freeArrayBlock(b: ArrayBlock): Unit = {
@@ -123,11 +129,28 @@ object MemoryBlockStore {
   def newArrayBlock(start: Long, size: Int): ArrayBlock = {
     val b = freeArrayBlocks.poll()
     if (b == null || b.size != size) {
+      allocs.increment()
       ArrayBlock(start, size)
     } else {
+      reused.increment()
       b.reset(start)
       b
     }
+  }
+
+  def freeRollupBlock(b: RollupBlock): Unit = {
+    b.blocks.foreach {
+      case a: ArrayBlock => freeArrayBlock(a)
+      case _             =>
+    }
+  }
+
+  def newRollupBlock(start: Long, size: Int): RollupBlock = {
+    RollupBlock(
+      newArrayBlock(start, size),
+      newArrayBlock(start, size),
+      newArrayBlock(start, size),
+      newArrayBlock(start, size))
   }
 }
 
@@ -141,7 +164,9 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
 
   private[db] var currentPos: Int = 0
 
-  private[db] var currentBlock: ArrayBlock = null
+  private[db] var currentBlock: MutableBlock = _
+
+  private def currentArrayBlock: ArrayBlock = currentBlock.asInstanceOf[ArrayBlock]
 
   private def next(pos: Int): Int = {
     (pos + 1) % numBlocks
@@ -151,13 +176,20 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     start - start % blockStep
   }
 
-  private def newBlock(start: Long): Unit = {
-    require(start % blockStep == 0, "start time " + start + " is not on block boundary")
-    val oldBlock = Block.compress(currentBlock)
+  private def newBlock(start: Long, rollup: Boolean): Unit = {
+    require(start % blockStep == 0, s"start time $start is not on block boundary")
+    val oldBlock = currentBlock match {
+      case b: ArrayBlock  => Block.compress(b)
+      case b: RollupBlock => b.compress
+    }
     val newBlock =
       if (oldBlock eq currentBlock) {
-        newArrayBlock(start, blockSize)
+        if (rollup)
+          newRollupBlock(start, blockSize)
+        else
+          newArrayBlock(start, blockSize)
       } else {
+        reused.increment()
         currentBlock.reset(start)
         currentBlock
       }
@@ -184,8 +216,10 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
         blocks(pos) = null
         BlockStats.dec(block)
         if (block eq currentBlock) currentBlock = null
-        if (block.isInstanceOf[ArrayBlock]) {
-          freeArrayBlock(block.asInstanceOf[ArrayBlock])
+        block match {
+          case b: ArrayBlock  => freeArrayBlock(b)
+          case b: RollupBlock => freeRollupBlock(b)
+          case _              =>
         }
       } else {
         nonEmpty = nonEmpty || (block != null)
@@ -195,9 +229,13 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     hasData = nonEmpty
   }
 
-  def update(timestamp: Long, value: Double): Unit = {
+  def update(timestamp: Long, value: Double, rollup: Boolean): Unit = {
     if (currentBlock == null) {
-      currentBlock = newArrayBlock(alignStart(timestamp), blockSize)
+      currentBlock =
+        if (rollup)
+          newRollupBlock(alignStart(timestamp), blockSize)
+        else
+          newArrayBlock(alignStart(timestamp), blockSize)
       currentPos = next(currentPos)
       blocks(currentPos) = currentBlock
       BlockStats.inc(currentBlock)
@@ -206,15 +244,18 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     var pos = ((timestamp - currentBlock.start) / step).asInstanceOf[Int]
     require(pos >= 0, "data is too old")
     if (pos >= blockSize) {
-      newBlock(alignStart(timestamp))
+      newBlock(alignStart(timestamp), rollup)
       pos = ((timestamp - currentBlock.start) / step).asInstanceOf[Int]
     }
-    currentBlock.buffer(pos) = value
+    currentBlock.update(pos, value)
   }
 
   def update(timestamp: Long): Unit = {
     if (currentBlock != null && currentBlock.start == timestamp) {
-      val oldBlock = Block.compress(currentBlock)
+      val oldBlock = currentBlock match {
+        case b: ArrayBlock  => Block.compress(b)
+        case b: RollupBlock => b.compress
+      }
       BlockStats.update(currentBlock, oldBlock)
       blocks(currentPos) = oldBlock
       currentBlock = null

@@ -43,32 +43,24 @@ class LocalPublishActor(registry: Registry, db: Database) extends Actor with Act
 
   // TODO: This actor is only intended to work with MemoryDatabase, but the binding is
   // setup for the Database interface.
-  private val memDb = db.asInstanceOf[MemoryDatabase]
-
-  // Track the ages of data flowing into the system. Data is expected to arrive quickly and
-  // should hit the backend within the step interval used.
-  private val numReceived = {
-    val f = BucketFunctions.age(DefaultSettings.stepSize, TimeUnit.MILLISECONDS)
-    BucketCounter.get(registry, registry.createId("atlas.db.numMetricsReceived"), f)
-  }
+  private val processor =
+    new LocalPublishActor.DatapointProcessor(registry, db.asInstanceOf[MemoryDatabase])
 
   // Number of invalid datapoints received
   private val numInvalid = registry.createId("atlas.db.numInvalid")
 
-  private val cache = new NormalizationCache(DefaultSettings.stepSize, memDb.update)
-
-  def receive = {
-    case req @ PublishRequest(Nil, Nil, _, _) =>
+  def receive: Receive = {
+    case req @ PublishRequest(_, Nil, Nil, _, _) =>
       req.complete(DiagnosticMessage.error(StatusCodes.BadRequest, "empty payload"))
-    case req @ PublishRequest(Nil, failures, _, _) =>
+    case req @ PublishRequest(_, Nil, failures, _, _) =>
       updateStats(failures)
       val msg = FailureMessage.error(failures)
       sendError(req, StatusCodes.BadRequest, msg)
-    case req @ PublishRequest(values, Nil, _, _) =>
-      update(values)
+    case req @ PublishRequest(id, values, Nil, _, _) =>
+      processor.update(id, values)
       req.complete(HttpResponse(StatusCodes.OK))
-    case req @ PublishRequest(values, failures, _, _) =>
-      update(values)
+    case req @ PublishRequest(id, values, failures, _, _) =>
+      processor.update(id, values)
       updateStats(failures)
       val msg = FailureMessage.partial(failures)
       sendError(req, StatusCodes.Accepted, msg)
@@ -86,18 +78,74 @@ class LocalPublishActor(registry: Registry, db: Database) extends Actor with Act
         registry.counter(numInvalid.withTag("error", error)).increment()
     }
   }
+}
 
-  private def update(vs: List[Datapoint]): Unit = {
-    val now = System.currentTimeMillis()
-    vs.foreach { v =>
-      numReceived.record(now - v.timestamp)
-      v.tags.get(TagKey.dsType) match {
-        case Some("counter") => cache.updateCounter(v)
-        case Some("gauge")   => cache.updateGauge(v)
-        case Some("rate")    => cache.updateRate(v)
-        case _               => cache.updateRate(v)
+object LocalPublishActor {
+
+  /**
+    * Process datapoints from publish requests and feed into the in-memory database.
+    *
+    * @param registry
+    *     Registry for keeping track of metrics.
+    * @param memDb
+    *     Database that will receive the final processed datapoints.
+    * @param maxMessageIds
+    *     Maximum number of message ids to track. If this limit is exceeded, then it
+    *     is possible for duplicate messages to get processed which may lead to over
+    *     counting if rollups are being used.
+    */
+  private[webapi] class DatapointProcessor(
+    registry: Registry,
+    memDb: MemoryDatabase,
+    maxMessageIds: Int = 1000000) {
+
+    // Track the ages of data flowing into the system. Data is expected to arrive quickly and
+    // should hit the backend within the step interval used.
+    private val numReceived = {
+      val f = BucketFunctions.age(DefaultSettings.stepSize, TimeUnit.MILLISECONDS)
+      BucketCounter.get(registry, registry.createId("atlas.db.numMetricsReceived"), f)
+    }
+
+    // Track the messages that have already been processed. This is primarily to avoid over
+    // counting when computing inline rollups.
+    private val messageIds = new java.util.LinkedHashMap[String, String](16, 0.75f, true) {
+      override def removeEldestEntry(eldest: java.util.Map.Entry[String, String]): Boolean = {
+        size() > maxMessageIds
       }
     }
+
+    // Track the size of the message ids buffer
+    registry.mapSize("atlas.db.messageIdSetSize", messageIds)
+
+    // Number of datapoints that are deduped
+    private val numDeduped = registry.counter("atlas.db.numDeduped")
+
+    private val cache = new NormalizationCache(DefaultSettings.stepSize, memDb.update)
+
+    def update(id: String, vs: List[Datapoint]): Unit = {
+      // Duplicate messages should be rare, so we assume that put is the common
+      // case and do that up front rather than doing a separate check to see if
+      // the set contains the key
+      if (id == null || messageIds.put(id, id) == null) {
+        val now = registry.clock().wallTime()
+        vs.foreach { v =>
+          numReceived.record(now - v.timestamp)
+          if (v.tags.contains(TagKey.rollup)) {
+            memDb.rollup(v.copy(tags = v.tags - TagKey.rollup))
+          } else {
+            v.tags.get(TagKey.dsType) match {
+              case Some("counter") => cache.updateCounter(v)
+              case Some("gauge")   => cache.updateGauge(v)
+              case Some("rate")    => cache.updateRate(v)
+              case _               => cache.updateRate(v)
+            }
+          }
+        }
+      } else {
+        numDeduped.increment()
+      }
+    }
+
   }
 }
 
