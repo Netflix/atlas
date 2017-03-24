@@ -126,6 +126,12 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     ds.foreach(update)
   }
 
+  def rollup(dp: Datapoint): Unit = {
+    val blkStore = getOrCreateBlockStore(dp.tags)
+    blkStore.update(dp.timestamp, dp.value, rollup = true)
+    index.update(BlockStoreItem.create(dp.tags, blkStore))
+  }
+
   private def blockAggr(expr: DataExpr): Int = expr match {
     case by: DataExpr.GroupBy          => blockAggr(by.af)
     case _: DataExpr.All               => Block.Sum

@@ -73,6 +73,27 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
+  test("publish dedup with id") {
+    val json = s"""{
+        "id": "12345",
+        "tags": {
+          "cluster": "foo",
+          "node": "i-123"
+        },
+        "metrics": [
+          {
+            "tags": {"name": "cpuUser"},
+            "timestamp": ${System.currentTimeMillis()},
+            "value": 42.0
+          }
+        ]
+      }"""
+    Post("/api/v1/publish", json) ~> routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(lastPayload === PublishApi.decodePayload(json))
+    }
+  }
+
   test("publish too old") {
     val json = s"""{
         "metrics": [
@@ -209,21 +230,28 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
 
 object PublishApiSuite {
 
+  @volatile var lastId: String = _
   @volatile var lastUpdate: List[Datapoint] = Nil
 
+  def lastPayload: PublishApi.PublishPayload = PublishApi.PublishPayload(lastId, lastUpdate)
+
   class TestActor extends Actor {
-    def receive = {
-      case req @ PublishRequest(Nil, Nil, _, _) =>
+    def receive: Receive = {
+      case req @ PublishRequest(id, Nil, Nil, _, _) =>
+        lastId = id
         lastUpdate = Nil
         req.complete(HttpResponse(StatusCodes.BadRequest))
-      case req @ PublishRequest(Nil, failures, _, _) =>
+      case req @ PublishRequest(id, Nil, failures, _, _) =>
+        lastId = id
         lastUpdate = Nil
         val msg = FailureMessage.error(failures)
         req.complete(HttpResponse(StatusCodes.BadRequest, entity = msg.toJson))
-      case req @ PublishRequest(values, Nil, _, _) =>
+      case req @ PublishRequest(id, values, Nil, _, _) =>
+        lastId = id
         lastUpdate = values
         req.complete(HttpResponse(StatusCodes.OK))
-      case req @ PublishRequest(values, failures, _, _) =>
+      case req @ PublishRequest(id, values, failures, _, _) =>
+        lastId = id
         lastUpdate = values
         val msg = FailureMessage.partial(failures)
         req.complete(HttpResponse(StatusCodes.Accepted, entity = msg.toJson))
