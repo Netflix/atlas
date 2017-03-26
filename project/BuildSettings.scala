@@ -39,7 +39,12 @@ object BuildSettings {
       IO.write(
         credentialsFile,
         bintray.BintrayCredentials.api.template(Bintray.user, Bintray.pass))
-    }
+    },
+
+    packageOptions in (Compile, packageBin) += Package.ManifestAttributes(
+      "Build-Date"   -> java.time.Instant.now().toString,
+      "Build-Number" -> sys.env.getOrElse("TRAVIS_BUILD_NUMBER", "unknown"),
+      "Commit"       -> sys.env.getOrElse("TRAVIS_COMMIT",       "unknown"))
   )
 
   val commonDeps = Seq(
