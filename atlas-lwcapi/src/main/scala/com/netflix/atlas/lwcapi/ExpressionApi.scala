@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import java.security.MessageDigest
-import java.util.Base64
 import javax.inject.Inject
 
 import akka.actor.ActorRefFactory
@@ -29,34 +27,51 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.netflix.atlas.akka.WebApi
+import com.netflix.atlas.core.util.Hash
+import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
-case class ExpressionApi @Inject()(expressionDatabase: ExpressionDatabase,
+case class ExpressionApi @Inject()(
+  expressionDatabase: ExpressionDatabase,
   registry: Registry,
-  implicit val actorRefFactory: ActorRefFactory)
-  extends WebApi with StrictLogging {
+  implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
+
   import ExpressionApi._
 
   private val expressionFetchesId = registry.createId("atlas.lwcapi.expressions.fetches")
   private val expressionCount = registry.distributionSummary("atlas.lwcapi.expressions.count")
 
   def routes: Route = {
-    path("lwc" / "api" / "v1" / "expressions" / Segment) { (cluster) =>
+    pathPrefix("lwc" / "api" / "v1" / "expressions") {
       optionalHeaderValueByName("If-None-Match") { etags =>
-        get { complete(handleReq(etags, cluster)) }
+        get {
+          pathEndOrSingleSlash {
+            complete(handleList(etags))
+          } ~
+          path(Segment) { (cluster) =>
+            complete(handleGet(etags, cluster))
+          }
+        }
       }
     }
   }
 
-  private def handleReq(received_etags: Option[String], cluster: String): HttpResponse = {
-    val expressions = expressionDatabase.expressionsForCluster(cluster)
+  private def handleList(receivedETags: Option[String]): HttpResponse = {
+    handle(receivedETags, expressionDatabase.expressions)
+  }
+
+  private def handleGet(receivedETags: Option[String], cluster: String): HttpResponse = {
+    handle(receivedETags, expressionDatabase.expressionsForCluster(cluster))
+  }
+
+  private def handle(receivedETags: Option[String], expressions: List[ExpressionWithFrequency]): HttpResponse = {
     expressionCount.record(expressions.size)
-    val tag = compute_etag(expressions)
+    val tag = computeETag(expressions)
     val headers: List[HttpHeader] = List(RawHeader("ETag", tag))
-    val sent_tags = split_sent_tags(received_etags)
-    if (sent_tags.contains(tag)) {
+    val recvTags = receivedETags.getOrElse("")
+    if (recvTags.contains(tag)) {
       registry.counter(expressionFetchesId.withTag("etagmatch", "true")).increment()
       HttpResponse(StatusCodes.NotModified, headers = headers)
     } else {
@@ -70,17 +85,10 @@ case class ExpressionApi @Inject()(expressionDatabase: ExpressionDatabase,
 object ExpressionApi {
   case class Return(expressions: List[ExpressionWithFrequency]) extends JsonSupport
 
-  private[lwcapi] def compute_etag(expressions: List[ExpressionWithFrequency]): String = {
-    val md = MessageDigest.getInstance("SHA-1")
-    md.reset()
-    expressions.sorted.foreach { e => { md.update(e.toString.getBytes("UTF-8"))}}
-    '"' + Base64.getUrlEncoder.withoutPadding.encodeToString(md.digest()) + '"'
-  }
-
-  private[lwcapi] def split_sent_tags(tags: Option[String]): List[String] = {
-    if (tags.isDefined)
-      tags.get.split(",").map {t => t.trim}.toList
-    else
-      List()
+  private[lwcapi] def computeETag(expressions: List[ExpressionWithFrequency]): String = {
+    // TODO: This should get refactored so we do not need to recompute each time
+    val str = expressions.sorted.mkString(";")
+    val hash = Strings.zeroPad(Hash.sha1(str), 40).substring(20)
+    '"' + hash + '"'
   }
 }
