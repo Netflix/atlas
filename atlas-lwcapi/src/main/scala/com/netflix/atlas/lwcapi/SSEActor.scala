@@ -122,7 +122,7 @@ class SSEActor(
     }
   }
 
-  private def unregister() = {
+  private def unregister(): Unit = {
     if (needsUnregister) {
       needsUnregister = false
       sm.unregister(sseId)
@@ -130,7 +130,7 @@ class SSEActor(
     }
   }
 
-  override def postStop() = {
+  override def postStop(): Unit = {
     unregister()
     ticker.cancel()
     super.postStop()

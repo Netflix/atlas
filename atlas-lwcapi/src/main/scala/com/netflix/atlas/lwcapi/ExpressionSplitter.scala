@@ -15,12 +15,88 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.Query.KeyQuery
+import com.netflix.atlas.core.model.StyleVocabulary
+import com.netflix.atlas.core.stacklang.Interpreter
 
-abstract class ExpressionSplitter() {
+class ExpressionSplitter() {
   import ExpressionSplitter._
+  private val keepKeys = Set("nf.app", "nf.stack", "nf.cluster")
 
-  def split(expression: String, frequency: Long): SplitResult
+  private val interpreter = Interpreter(StyleVocabulary.allWords)
+  private val interner = scala.collection.mutable.AnyRefMap[Query, Query]()
+
+  private[lwcapi] def intern(query: Query): Query = {
+    query match {
+      case Query.True =>
+        query
+      case Query.False =>
+        query
+      case q: Query.Equal =>
+        interner.getOrElseUpdate(q, Query.Equal(q.k.intern(), q.v.intern()))
+      case q: Query.LessThan =>
+        interner.getOrElseUpdate(q, Query.LessThan(q.k.intern(), q.v.intern()))
+      case q: Query.LessThanEqual =>
+        interner.getOrElseUpdate(q, Query.LessThanEqual(q.k.intern(), q.v.intern()))
+      case q: Query.GreaterThan =>
+        interner.getOrElseUpdate(q, Query.GreaterThan(q.k.intern(), q.v.intern()))
+      case q: Query.GreaterThanEqual =>
+        interner.getOrElseUpdate(q, Query.GreaterThanEqual(q.k.intern(), q.v.intern()))
+      case q: Query.Regex =>
+        interner.getOrElseUpdate(q, Query.Regex(q.k.intern(), q.v.intern()))
+      case q: Query.RegexIgnoreCase =>
+        interner.getOrElseUpdate(q, Query.RegexIgnoreCase(q.k.intern(), q.v.intern()))
+      case q: Query.In =>
+        interner.getOrElseUpdate(q, Query.In(q.k.intern(), q.vs.map(_.intern())))
+      case q: Query.HasKey =>
+        interner.getOrElseUpdate(q, Query.HasKey(q.k.intern()))
+      case q: Query.And =>
+        interner.getOrElseUpdate(q, Query.And(intern(q.q1), intern(q.q2)))
+      case q: Query.Or =>
+        interner.getOrElseUpdate(q, Query.Or(intern(q.q1), intern(q.q2)))
+      case q: Query.Not =>
+        interner.getOrElseUpdate(q, Query.Not(intern(q.q)))
+    }
+  }
+
+  def split(expression: String, frequency: Long): SplitResult = synchronized {
+    val context = interpreter.execute(expression)
+    val dataExprs = context.stack.flatMap {
+      case ModelExtractors.PresentationType(t) => t.expr.dataExprs
+      case _ => throw new IllegalArgumentException("Expression is not a valid expression")
+    }
+    val distinctDataExprs = dataExprs.distinct
+    val queries = distinctDataExprs.map(e => intern(compress(e.dataExprs.head.query)))
+    val expressions = distinctDataExprs.map(e => ExpressionWithFrequency(e.toString, frequency))
+    SplitResult(queries, expressions)
+  }
+
+  private def simplify(query: Query): Query = {
+    val newQuery = query match {
+      case Query.And(Query.True, q)  => simplify(q)
+      case Query.And(q, Query.True)  => simplify(q)
+      case Query.Or(Query.True, _)   => Query.True
+      case Query.Or(_, Query.True)   => Query.True
+      case Query.And(Query.False, _) => Query.False
+      case Query.And(_, Query.False) => Query.False
+      case Query.Or(Query.False, q)  => simplify(q)
+      case Query.Or(q, Query.False)  => simplify(q)
+      case Query.And(q1, q2)         => Query.And(simplify(q1), simplify(q2))
+      case Query.Or(q1, q2)          => Query.Or(simplify(q1), simplify(q2))
+      case Query.Not(Query.True)     => Query.True // Not(True) needs to remain True
+      case Query.Not(Query.False)    => Query.True
+      case Query.Not(q)              => Query.Not(simplify(q))
+      case q                         => q
+    }
+    if (newQuery != query) simplify(newQuery) else newQuery
+  }
+
+  private[lwcapi] def compress(expr: Query): Query = {
+    val tmp = expr.rewrite { case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True }
+    simplify(tmp.asInstanceOf[Query])
+  }
 }
 
 object ExpressionSplitter {

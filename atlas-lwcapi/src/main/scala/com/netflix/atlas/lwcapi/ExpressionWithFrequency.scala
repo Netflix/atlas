@@ -17,29 +17,29 @@ package com.netflix.atlas.lwcapi
 
 import java.util.Base64
 
-import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 
-case class ExpressionWithFrequency(expression: String,
-                                   frequency: Long = ApiSettings.defaultFrequency,
-                                   id: String = "") extends JsonSupport with Ordered[ExpressionWithFrequency] {
+case class ExpressionWithFrequency(
+  expression: String,
+  frequency: Long = ApiSettings.defaultFrequency,
+  id: String = "") extends JsonSupport with Ordered[ExpressionWithFrequency] {
+
   require(expression != null && expression.nonEmpty)
 
-  def compare(that: ExpressionWithFrequency) = {
+  def compare(that: ExpressionWithFrequency): Int = {
     val expressionMatch = expression.compare(that.expression)
     if (expressionMatch == 0) frequency.compare(that.frequency) else expressionMatch
   }
 }
 
 object ExpressionWithFrequency {
-  def fromJson(json: String): ExpressionWithFrequency = Json.decode[ExpressionWithFrequency](json)
 
-  def apply(expression: String, frequency: Long) = {
+  def apply(expression: String, frequency: Long): ExpressionWithFrequency = {
     val f = if (frequency > 0) frequency else ApiSettings.defaultFrequency
     new ExpressionWithFrequency(expression, f, computeId(expression, f))
   }
 
-  def apply(expression: String) = {
+  def apply(expression: String): ExpressionWithFrequency = {
     new ExpressionWithFrequency(expression, id = computeId(expression, ApiSettings.defaultFrequency))
   }
 

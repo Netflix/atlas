@@ -34,14 +34,15 @@ import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
-class StreamApi @Inject()(sm: SubscriptionManager,
-                          splitter: ExpressionSplitter,
-                          implicit val actorRefFactory: ActorRefFactory,
-                          registry: Registry) extends WebApi with StrictLogging {
+class StreamApi @Inject()(
+  sm: SubscriptionManager,
+  splitter: ExpressionSplitter,
+  implicit val actorRefFactory: ActorRefFactory,
+  registry: Registry) extends WebApi with StrictLogging {
+
   import StreamApi._
 
   private val dbActor = actorRefFactory.actorSelection("/user/lwc.expressiondb")
-  private val subscribeRef = actorRefFactory.actorSelection("/user/lwc.subscribe")
 
   def routes: Route = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { streamId =>

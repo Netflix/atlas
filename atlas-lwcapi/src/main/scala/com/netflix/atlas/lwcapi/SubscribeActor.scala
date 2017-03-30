@@ -48,8 +48,8 @@ class SubscribeActor @Inject()(sm: SubscriptionManager,
 
   private val dbActor = context.actorSelection("/user/lwc.expressiondb")
 
-  def receive = {
-    case req @ ImperativeRequestContext(SubscribeRequest(sinkId, Nil), _) =>
+  def receive: Receive = {
+    case req @ ImperativeRequestContext(SubscribeRequest(_, Nil), _) =>
       req.complete(DiagnosticMessage.error(StatusCodes.BadRequest, "empty payload"))
       context.stop(self)
     case req @ ImperativeRequestContext(SubscribeRequest(streamId, expressions), _) =>

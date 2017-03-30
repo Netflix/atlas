@@ -25,7 +25,7 @@ class ExpressionSplitterSuite extends FunSuite {
   private val ds1b = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:sum,(,nf.node,),:by"
   private val matchList1 = Query.Equal("nf.cluster", "skan-test")
 
-  private val splitter = ExpressionSplitterImpl()
+  private val splitter = new ExpressionSplitter()
 
   test("splits single expression into data expressions") {
     val ret = splitter.split(query1, frequency1)
