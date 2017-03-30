@@ -62,14 +62,23 @@ class ExpressionDatabase() extends StrictLogging {
   def delExpr(id: String): Boolean = {
     val removed = knownExpressions.remove(id)
     val changed = removed.isDefined
-    queryListChanged |= changed
+    queryListChanged ||= changed
     changed
+  }
+
+  def clear(): Unit = {
+    knownExpressions.clear()
+    queryListChanged = true
   }
 
   def hasExpr(id: String): Boolean = knownExpressions.contains(id)
 
   def expr(id: String): Option[ExpressionWithFrequency] = {
     knownExpressions.get(id).map(_.expr)
+  }
+
+  def expressions: List[ExpressionWithFrequency] = {
+    knownExpressions.values.map(_.expr).toList
   }
 
   def expressionsForCluster(cluster: String): List[ExpressionWithFrequency] = {
