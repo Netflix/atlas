@@ -18,9 +18,13 @@ package com.netflix.atlas.guice
 import javax.inject.Singleton
 
 import com.google.inject.multibindings.Multibinder
-import com.google.inject.{AbstractModule, Provides}
+import com.google.inject.AbstractModule
+import com.google.inject.Provides
 import com.netflix.atlas.akka.AkkaModule
-import com.netflix.atlas.lwcapi._
+import com.netflix.atlas.lwcapi.DatabaseService
+import com.netflix.atlas.lwcapi.ExpressionDatabase
+import com.netflix.atlas.lwcapi.ExpressionSplitter
+import com.netflix.atlas.lwcapi.SubscriptionManager
 import com.netflix.iep.guice.LifecycleModule
 import com.netflix.iep.service.Service
 
@@ -35,17 +39,17 @@ class LwcApiModule extends AbstractModule {
 
   @Provides @Singleton
   private def providesExpressionDatabase(): ExpressionDatabase = {
-    ExpressionDatabaseImpl()
+    new ExpressionDatabase()
   }
 
   @Provides @Singleton
   private def providesExpressionSplitter(): ExpressionSplitter = {
-    ExpressionSplitterImpl()
+    new ExpressionSplitter()
   }
 
   @Provides @Singleton
   private def providesSubscriptionManager(): SubscriptionManager = {
-    new SubscriptionManagerImpl()
+    new SubscriptionManager()
   }
 
   override def equals(obj: Any): Boolean = {

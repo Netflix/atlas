@@ -27,9 +27,9 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
 
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  val splitter = new ExpressionSplitterImpl()
+  val splitter = new ExpressionSplitter()
 
-  val alertmap = ExpressionDatabaseImpl()
+  val alertmap = new ExpressionDatabase()
   val endpoint = ExpressionApi(alertmap, Spectator.globalRegistry(), system)
 
   test("get of a path returns empty data") {

@@ -37,14 +37,12 @@ class EvaluateApi(registry: Registry, sm: SubscriptionManager) extends WebApi {
   def routes: Route = {
     path("lwc" / "api" / "v1" / "evaluate") {
       post {
-        extractRequestContext { ctx =>
-          parseEntity(json[EvaluateRequest]) { req =>
-            if (req.metrics.isEmpty) {
-              complete(DiagnosticMessage.error(StatusCodes.BadRequest, "empty metrics list"))
-            } else {
-              evaluate(req.timestamp, req.metrics)
-              complete(HttpResponse(StatusCodes.OK))
-            }
+        parseEntity(json[EvaluateRequest]) { req =>
+          if (req.metrics.isEmpty) {
+            complete(DiagnosticMessage.error(StatusCodes.BadRequest, "empty metrics list"))
+          } else {
+            evaluate(req.timestamp, req.metrics)
+            complete(HttpResponse(StatusCodes.OK))
           }
         }
       }

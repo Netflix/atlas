@@ -35,11 +35,13 @@ import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NonFatal
 
-class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
-                                         alertmap: ExpressionDatabase,
-                                         sm: SubscriptionManager,
-                                         registry: Registry,
-                                         dbMonitor: DatabaseService) extends Actor with StrictLogging {
+class ExpressionDatabaseActor @Inject() (
+  splitter: ExpressionSplitter,
+  alertmap: ExpressionDatabase,
+  sm: SubscriptionManager,
+  registry: Registry,
+  dbMonitor: DatabaseService) extends Actor with StrictLogging {
+
   import ExpressionDatabaseActor._
 
   private val updatesId = registry.createId("atlas.lwcapi.db.updateCount")
@@ -63,15 +65,12 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
   private val ttlManager = new TTLManager[String]()
   private val ttlState = mutable.Map[String, TTLState.EnumVal]().withDefaultValue(TTLState.NotPresent)
 
-  //
   // refreshTime determines how often each item is retransmitted via pubsub.
   // It must be smaller than ttl so items will not expire out of caches
   // before a refresh of those interested in that data occurs.
-  //
   private val refreshTime = Math.max(ttl / 3 * 2, 1)
   private val maxJitter = Math.max(ttl / 8, 1)
 
-  //
   // Track if we should advertise ourselves as healthy.  We must receive something
   // from redis (even if it's just our own transmissions echoed back) to ensure
   // we are connected.
@@ -107,7 +106,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     case E(exc) =>
       logger.error("redis pubsub: exception caught", exc)
       restartPubsub()
-    case M(chan, msg) =>
+    case M(_, msg) =>
       // We will treat any traffic as an indication we are alive
       val now = System.currentTimeMillis()
       if (firstRedisReceive == 0)
@@ -145,7 +144,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
         incrementCounter(bytesReadId, "pubsub", actionHeartbeat, len)
         incrementCounter(messagesReadId, "pubsub", actionHeartbeat, len)
         processRedisHeartbeat(cmd, originator, json, now)
-      case x => logger.info(s"Unknown redis command: $cmd $json")
+      case _ => logger.info(s"Unknown redis command: $cmd $json")
     }
   }
 
@@ -176,7 +175,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     registry.counter(counter.withTag("source", source).withTag("action", action)).increment(value)
   }
 
-  def receive = {
+  def receive: Receive = {
     case Expression(split) =>
       incrementCounter(updatesId, "local", actionExpression)
       split.queries.zip(split.expressions).foreach { case (query, expr) =>
@@ -206,7 +205,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     ttlState(req.id) = TTLState.Active
   }
 
-  var lastHeartbeated = System.currentTimeMillis()
+  private var lastHeartbeated = System.currentTimeMillis()
   private def maybeHeartbeat(): Unit = {
     val now = System.currentTimeMillis()
     if (lastHeartbeated + heartbeatInterval < now) {
@@ -294,7 +293,7 @@ class ExpressionDatabaseActor @Inject() (splitter: ExpressionSplitter,
     None
   }
 
-  override def postStop() = {
+  override def postStop(): Unit = {
     ticker.cancel()
     super.postStop()
   }

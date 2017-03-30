@@ -15,13 +15,13 @@
  */
 package com.netflix.atlas.lwcapi
 
-//
-// This class provides a stable uuid that is generated once per startup.
-// It's used only for Redis, so we can mark each submission we make and
-// ignore ones we sent.
-//
+/**
+  * This class provides a stable uuid that is generated once per startup.
+  * It's used only for Redis, so we can mark each submission we make and
+  * ignore ones we sent.
+  */
 object GlobalUUID {
   private lazy val uuid = java.util.UUID.randomUUID.toString
 
-  def get = uuid
+  def get: String = uuid
 }

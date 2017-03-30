@@ -18,11 +18,11 @@ package com.netflix.atlas.lwcapi
 import com.netflix.atlas.core.model.Query
 import org.scalatest.FunSuite
 
-class ExpressionDatabaseImplSuite extends FunSuite {
-  val splitter = ExpressionSplitterImpl()
+class ExpressionDatabaseSuite extends FunSuite {
+  val splitter = new ExpressionSplitter()
 
   test("exprForDataExpr returns an empty set if not found") {
-    val x = ExpressionDatabaseImpl()
+    val x = new ExpressionDatabase()
 
     assert(x.expressionsForCluster("foo") === List())
   }
@@ -31,7 +31,7 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     val query1 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
     val freq1 = 30000
 
-    val x = ExpressionDatabaseImpl()
+    val x = new ExpressionDatabase()
 
     val split1 = splitter.split(query1, freq1)
     assert(split1.expressions.size === 1)
@@ -62,7 +62,7 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
     val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
-    val x = ExpressionDatabaseImpl()
+    val x = new ExpressionDatabase()
 
     val split1 = splitter.split(query1, freq1)
     assert(split1.expressions.size === 1)
@@ -92,7 +92,7 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
     val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
-    val x = ExpressionDatabaseImpl()
+    val x = new ExpressionDatabase()
 
     val split1 = splitter.split(query1, freq1)
     assert(split1.expressions.size === 1)
@@ -123,7 +123,7 @@ class ExpressionDatabaseImplSuite extends FunSuite {
   test("hasExpr") {
     val expr1 = ExpressionWithFrequency("nf.cluster,skan-test,:eq,:sum", 30000, "idhere")
 
-    val x = ExpressionDatabaseImpl()
+    val x = new ExpressionDatabase()
 
     assert(x.hasExpr("idhere") === false)
 
@@ -149,7 +149,7 @@ class ExpressionDatabaseImplSuite extends FunSuite {
     val ds2a = "nf.cluster,foo-test,:eq,:sum"
     val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
-    val x = ExpressionDatabaseImpl()
+    val x = new ExpressionDatabase()
 
     val split1 = splitter.split(query1, freq1)
     assert(split1.expressions.size === 1)
