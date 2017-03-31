@@ -35,6 +35,8 @@ import com.netflix.atlas.core.util.Step
 import com.netflix.atlas.core.util.Strings
 import com.netflix.spectator.api.Spectator
 
+import scala.util.Try
+
 
 class GraphApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
@@ -65,6 +67,7 @@ object GraphApi {
 
   case class Request(
       query: String,
+      parsedQuery: Try[List[StyleExpr]],
       start: Option[String],
       end: Option[String],
       timezones: List[String],
@@ -78,7 +81,7 @@ object GraphApi {
 
     def shouldOutputImage: Boolean = (format == "png")
 
-    val timezoneIds = {
+    val timezoneIds: List[ZoneId] = {
       val zoneStrs = if (timezones.isEmpty) List(ApiSettings.timezone) else timezones
       zoneStrs.map { z => ZoneId.of(z) }
     }
@@ -89,7 +92,7 @@ object GraphApi {
     val (resStart, resEnd) = timeRange(
       start.getOrElse(ApiSettings.startTime), end.getOrElse(ApiSettings.endTime), tz)
 
-    val stepSize = {
+    val stepSize: Long = {
       val datapointWidth = math.min(ApiSettings.maxDatapoints, flags.width)
 
       val stepDuration = step.map(Strings.parseDuration)
@@ -136,11 +139,7 @@ object GraphApi {
       EvalContext(fstart.toEpochMilli, fend.toEpochMilli + stepSize, stepSize)
     }
 
-    def exprs: List[StyleExpr] = {
-      interpreter.execute(query).stack.reverse.flatMap {
-        case ModelExtractors.PresentationType(s) => s.perOffset
-      }
-    }
+    def exprs: List[StyleExpr] = parsedQuery.get
 
     def toDbRequest: DataRequest = {
       val dataExprs = exprs.flatMap(_.expr.dataExprs)
@@ -292,8 +291,15 @@ object GraphApi {
       throw new IllegalArgumentException("missing required parameter 'q'")
     }
 
+    val parsedQuery = Try {
+      interpreter.execute(q.get).stack.reverse.flatMap {
+        case ModelExtractors.PresentationType(s) => s.perOffset
+      }
+    }
+
     Request(
       query = q.get,
+      parsedQuery = parsedQuery,
       start = params.get("s"),
       end = params.get("e"),
       timezones = params.getAll("tz").reverse,
