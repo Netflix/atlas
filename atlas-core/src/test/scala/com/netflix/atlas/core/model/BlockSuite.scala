@@ -175,6 +175,38 @@ class BlockSuite extends FunSuite {
     assert(b3.isInstanceOf[SparseBlock])
   }
 
+  test("merge rollup") {
+    val b1 = RollupBlock(
+      min = ConstantBlock(0L, 60, 1.0),
+      max = ConstantBlock(0L, 60, 50.0),
+      sum = ConstantBlock(0L, 60, 51.0),
+      count = ConstantBlock(0L, 60, 2.0))
+    val b2 = RollupBlock(
+      min = ConstantBlock(0L, 60, 2.0),
+      max = ConstantBlock(0L, 60, 3.0),
+      sum = ConstantBlock(0L, 60, 6.0),
+      count = ConstantBlock(0L, 60, 3.0))
+    val b3 = Block.merge(b1, b2)
+
+    val expected = RollupBlock(
+      min = ConstantBlock(0L, 60, 2.0),
+      max = ConstantBlock(0L, 60, 50.0),
+      sum = ConstantBlock(0L, 60, 51.0),
+      count = ConstantBlock(0L, 60, 3.0))
+    assert(b3 === expected)
+  }
+
+  test("merge prefer rollup to scalar") {
+    val b1 = RollupBlock(
+      min = ConstantBlock(0L, 60, 1.0),
+      max = ConstantBlock(0L, 60, 50.0),
+      sum = ConstantBlock(0L, 60, 51.0),
+      count = ConstantBlock(0L, 60, 2.0))
+    val b2 = ConstantBlock(0L, 60, 2.0)
+    assert(b1 === Block.merge(b1, b2))
+    assert(b1 === Block.merge(b2, b1))
+  }
+
   test("rollup") {
     import java.lang.{Double => JDouble}
 
@@ -212,65 +244,4 @@ class BlockSuite extends FunSuite {
       assert(r.get(i, Block.Max) === 3.0)
     }
   }
-
-  /*test("to/from ByteArray, array block") {
-    val block = SparseBlock(0L,
-      (0 until 12).flatMap(i => -3 until 2).toArray.map(_.asInstanceOf[Byte]),
-      List(42.0, 21.0).toArray).toArrayBlock
-    assert(block.byteCount === 2 + 4 + (60 * 8))
-
-    val bytes = Block.toByteArray(block)
-    assert(block.byteCount === bytes.length)
-    assert(block === Block.fromByteArray(0L, bytes))
-  }
-
-  test("to/from ByteArray, float array block") {
-    val block = FloatArrayBlock(SparseBlock(0L,
-      (0 until 12).flatMap(i => -3 until 2).toArray.map(_.asInstanceOf[Byte]),
-      List(42.0, 21.0).toArray).toArrayBlock)
-    assert(block.byteCount === 2 + 4 + (60 * 4))
-
-    val bytes = Block.toByteArray(block)
-    assert(block.byteCount === bytes.length)
-    assert(block === Block.fromByteArray(0L, bytes))
-  }
-
-  test("to/from ByteArray, constant block") {
-    val block = ConstantBlock(0L, 60, 42.0)
-    assert(block.byteCount === 2 + 4 + 8)
-
-    val bytes = Block.toByteArray(block)
-    assert(block.byteCount === bytes.length)
-    assert(block === Block.fromByteArray(0L, bytes))
-  }
-
-  test("to/from ByteArray, rollup block") {
-    val n = 60
-    val r = RollupBlock.empty(0L, n)
-    r.rollup(ConstantBlock(0L, n, 1.0))
-    r.rollup(ConstantBlock(0L, n, 3.0))
-    r.rollup(ConstantBlock(0L, n, 0.5))
-
-    assert(r.byteCount === 2 + 4 * (2 + 4 + (60 * 8)))
-    var bytes = Block.toByteArray(r)
-    assert(r.byteCount === bytes.length)
-    assert(r === Block.fromByteArray(0L, bytes))
-
-    val c = Block.compressIfNeeded(r)
-    assert(c.byteCount === 2 + 4 * (2 + 4 + 8))
-    bytes = Block.toByteArray(c)
-    assert(c.byteCount === bytes.length)
-    assert(c === Block.fromByteArray(0L, bytes))
-  }
-
-  test("to/from ByteArray, sparse block") {
-    val block = SparseBlock(0L,
-      (0 until 12).flatMap(i => -3 until 2).toArray.map(_.asInstanceOf[Byte]),
-      List(42.0, 21.0).toArray)
-    assert(block.byteCount === 2 + 4 + 60 + 4 + 16)
-
-    val bytes = Block.toByteArray(block)
-    assert(block.byteCount === bytes.length)
-    assert(block === Block.fromByteArray(0L, bytes))
-  }*/
 }
