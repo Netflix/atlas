@@ -130,15 +130,29 @@ object Block {
    */
   def merge(block1: Block, block2: Block): Block = {
     require(block1.size == block2.size, "block sizes: %d != %d".format(block1.size, block2.size))
-    val result = (block1, block2) match {
-      case (b1: ArrayBlock, _) => b1.merge(block2); b1
-      case (_, b2: ArrayBlock) => b2.merge(block1); b2
-      case _ =>
-        val b1 = block1.toArrayBlock
-        b1.merge(block2)
-        b1
+    (block1, block2) match {
+      case (b1: RollupBlock, b2: RollupBlock) => rollupMerge(b1, b2)
+      case (b1: RollupBlock, _)               => b1.compress
+      case (_, b2: RollupBlock)               => b2.compress
+      case (b1: ArrayBlock, _)                => b1.merge(block2); compress(b1)
+      case (_, b2: ArrayBlock)                => b2.merge(block1); compress(b2)
+      case _                                  => arrayMerge(block1, block2)
     }
-    compress(result)
+  }
+
+  private def rollupMerge(b1: RollupBlock, b2: RollupBlock): Block = {
+    val merged = RollupBlock(
+      min = merge(b1.min, b2.min),
+      max = merge(b1.max, b2.max),
+      sum = merge(b1.sum, b2.sum),
+      count = merge(b1.count, b2.count))
+    merged.compress
+  }
+
+  private def arrayMerge(block1: Block, block2: Block): Block = {
+    val b1 = block1.toArrayBlock
+    b1.merge(block2)
+    compress(b1)
   }
 }
 
