@@ -765,7 +765,6 @@ object MathVocabulary extends Vocabulary {
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case DoubleListType(_) :: DataExprType(expr) :: _ => expr match {
         case _: DataExpr.All  => false
-        case _: DataExpr.Head => false
         case _                => true
       }
     }

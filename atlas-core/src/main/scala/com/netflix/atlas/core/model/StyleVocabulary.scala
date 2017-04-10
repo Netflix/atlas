@@ -34,12 +34,29 @@ object StyleVocabulary extends Vocabulary {
   val dependsOn: List[Vocabulary] = List(FilterVocabulary)
 
   val words: List[Word] = List(
-    Alpha, Color, LineStyle, LineWidth, Legend, Decode, Axis, Offset, Filter, Sort, Order,
+    // Adjust the text for the legend
+    Legend, Decode,
+
+    // Map to a particular axis
+    Axis,
+
+    // Legacy time shift operator
+    // https://github.com/Netflix/atlas/issues/64
+    Offset,
+
+    // Reducing and ordering the set of data on the chart
+    Filter,
+    Sort, Order, Limit,
+    Macro("head", List(":limit"), List("name,sps,:eq,(,nf.cluster,),:by,2")),
+
+    // Operations for manipulating the line style or presentation
+    Alpha, Color, LineStyle, LineWidth,
     Macro("area", List("area", ":ls"), List("name,sps,:eq,:sum")),
     Macro("line", List("line", ":ls"), List("name,sps,:eq,:sum")),
     Macro("stack", List("stack", ":ls"), List("name,sps,:eq,(,nf.cluster,),:by")),
     Macro("vspan", List("vspan", ":ls"), List("name,sps,:eq,:sum,:dup,200e3,:gt")),
 
+    // Legacy macro for visualizing epic expressions
     Macro("des-epic-viz", desEpicViz, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
   )
 
@@ -303,6 +320,22 @@ object StyleVocabulary extends Vocabulary {
     override def examples: List[String] = List(
       "name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,asc",
       "name,sps,:eq,:sum,(,nf.cluster,),:by,desc")
+  }
+
+  case object Limit extends StyleWord {
+    override def name: String = "limit"
+
+    override def summary: String =
+      """
+        |Restrict the output to the first `N` lines from the input expression. The lines will be
+        |chosen in order based on the [sort](style-sort) and [order](style-order) used.
+        |
+        |Since: 1.6
+      """.stripMargin.trim
+
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,3",
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order,2")
   }
 
   private def desEpicViz = List(

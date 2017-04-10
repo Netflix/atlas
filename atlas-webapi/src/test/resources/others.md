@@ -120,6 +120,15 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&order=desc
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order&sort=max
 
+# Limits
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,2,:limit
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,asc,:order,2,:limit
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,desc,:order,2,:limit
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,3,:head
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,1,:head
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,0,:head
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,-1,:head
+
 # sorting with NaN values
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9&sort=max&order=desc
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9&sort=max&order=asc

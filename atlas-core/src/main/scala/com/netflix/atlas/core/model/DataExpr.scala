@@ -70,7 +70,6 @@ object DataExpr {
     val label = expr match {
       case af: AggregateFunction => af.labelString
       case by: GroupBy           => by.keyString(ts.tags)
-      case Head(df, _)           => defaultLabel(df, ts)
       case _                     => TimeSeries.toLabel(ts.tags)
     }
     val offset = expr.offset
@@ -278,21 +277,6 @@ object DataExpr {
       }
       val rs = consolidate(context.step, newData)
       ResultSet(this, rs, context.state)
-    }
-  }
-
-  case class Head(expr: DataExpr, n: Int) extends DataExpr {
-    require(n > 0, "number of matches must be > 0")
-
-    override def query: Query = expr.query
-    override def cf: ConsolidationFunction = expr.cf
-    override def offset: Duration = expr.offset
-
-    override def exprString: String = s"$expr,$n,:head"
-
-    override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
-      val rs = expr.eval(context, data)
-      ResultSet(this, rs.data.take(n), rs.state)
     }
   }
 }

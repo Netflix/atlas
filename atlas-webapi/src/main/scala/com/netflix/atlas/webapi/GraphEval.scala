@@ -122,7 +122,8 @@ object GraphEval {
         // using the palette. The colors selected should be stable regardless of the
         // sort order that is applied. Otherwise colors would change each time a user
         // changed the sort.
-        sort(warnings, s.sortBy, s.useDescending, lineDefs)
+        val sorted = sort(warnings, s.sortBy, s.useDescending, lineDefs)
+        s.limit.fold(sorted)(n => sorted.take(n))
       }
 
       // Apply sort based on URL parameters. This will take precedence over
