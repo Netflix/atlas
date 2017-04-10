@@ -139,7 +139,6 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     case _: DataExpr.Count             => Block.Count
     case _: DataExpr.Min               => Block.Min
     case _: DataExpr.Max               => Block.Max
-    case DataExpr.Head(e, _)           => blockAggr(e)
     case DataExpr.Consolidation(af, _) => blockAggr(af)
   }
 
@@ -194,7 +193,6 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
 
   private def finalValues(context: EvalContext, expr: DataExpr, vs: List[TimeSeries]): List[TimeSeries] = {
     expr match {
-      case DataExpr.Head(e, n)                         => finalValues(context, e, vs).take(n)
       case _: DataExpr.AggregateFunction if vs.isEmpty => List(TimeSeries.noData(context.step))
       case _                                           => vs
     }

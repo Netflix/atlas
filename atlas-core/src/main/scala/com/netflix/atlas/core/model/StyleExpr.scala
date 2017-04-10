@@ -42,6 +42,9 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
 
   def useDescending: Boolean = settings.get("order").contains("desc")
 
+  /** Returns the maximum number of lines that should be shown for this expression. */
+  def limit: Option[Int] = settings.get("limit").map(_.toInt)
+
   def axis: Option[Int] = settings.get("axis").map(_.toInt)
 
   def color: Option[Color] = settings.get("color").map(Strings.parseColor)

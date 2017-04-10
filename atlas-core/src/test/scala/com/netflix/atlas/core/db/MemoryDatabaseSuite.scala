@@ -146,30 +146,6 @@ class MemoryDatabaseSuite extends FunSuite {
     assert(exec(":true,:all") === expected)
   }
 
-  test(":by,1,:head expr") {
-    val expected = List(
-      ts("a", "(name=a)", 1, 1.0, 2.0, 3.0)
-    )
-    assert(exec(":true,(,name,),:by,1,:head") === expected)
-  }
-
-  test(":by,2,:head expr") {
-    val expected = List(
-      ts("a", "(name=a)", 1, 1.0, 2.0, 3.0),
-      ts("b", "(name=b)", 1, 3.0, 2.0, 1.0)
-    )
-    assert(exec(":true,(,name,),:by,2,:head") === expected)
-  }
-
-  test(":by,4,:head expr") {
-    val expected = List(
-      ts("a", "(name=a)", 1, 1.0, 2.0, 3.0),
-      ts("b", "(name=b)", 1, 3.0, 2.0, 1.0),
-      ts("c", "(name=c)", 1, 15.0, 18.0, 21.0)
-    )
-    assert(exec(":true,(,name,),:by,4,:head") === expected)
-  }
-
   test(":sum expr, c=3") {
     assert(exec(":true,:sum", 3 * step) === List(ts("sum(true)", 3, 22.0)))
   }
