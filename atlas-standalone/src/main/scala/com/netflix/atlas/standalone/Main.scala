@@ -51,14 +51,19 @@ object Main extends StrictLogging {
   private def loadAdditionalConfigFiles(files: Array[String]): Unit = {
     files.foreach { f =>
       logger.info(s"loading config file: $f")
-      val c = ConfigFactory.parseFileAnySyntax(new File(f))
+      val file = new File(f)
+      val c =
+        if (file.exists())
+          ConfigFactory.parseFileAnySyntax(file)
+        else
+          ConfigFactory.parseResourcesAnySyntax(f)
       ConfigManager.update(c)
     }
   }
 
   def main(args: Array[String]): Unit = {
     try {
-      loadAdditionalConfigFiles(args)
+      loadAdditionalConfigFiles(if (args.nonEmpty) args else Array("static.conf"))
       start()
       guice.addShutdownHook()
     } catch {
