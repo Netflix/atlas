@@ -137,6 +137,7 @@ lazy val `atlas-standalone` = project
   .dependsOn(`atlas-module-akka`, `atlas-module-lwcapi`, `atlas-module-webapi`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepGuice,
+    Dependencies.iepModuleAtlas,
     Dependencies.guiceCore,
     Dependencies.guiceMulti,
     Dependencies.log4jApi,

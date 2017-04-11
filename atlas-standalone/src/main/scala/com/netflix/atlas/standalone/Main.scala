@@ -78,7 +78,6 @@ object Main extends StrictLogging {
     val configModule = new AbstractModule {
       override def configure(): Unit = {
         bind(classOf[Config]).toInstance(ConfigManager.current)
-        bind(classOf[Registry]).toInstance(Spectator.globalRegistry())
       }
     }
 
