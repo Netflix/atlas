@@ -52,6 +52,15 @@ lazy val `atlas-core` = project
     Dependencies.jol % "test"
   ))
 
+lazy val `atlas-eval` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-akka`, `atlas-core`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.akkaHttpTestkit % "test",
+    Dependencies.akkaTestkit % "test",
+    Dependencies.equalsVerifier % "test"
+  ))
+
 lazy val `atlas-jmh` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-chart`, `atlas-core`, `atlas-json`)
