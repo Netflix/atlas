@@ -17,6 +17,7 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
+import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
 import com.netflix.atlas.core.stacklang.Vocabulary
@@ -57,7 +58,7 @@ object MathVocabulary extends Vocabulary {
         ":dup", ":sum", ":swap", ":count", ":div",
         "avg", ":named-rewrite"
       ),
-      List("name,sps,:eq,(,nf.cluster,),:by")),
+      List("name,sps,:eq,(,nf.cluster,),:by", "name,sps,:eq,1h,:offset")),
 
     Macro("stddev", List(
         // Copy of base query
@@ -191,17 +192,6 @@ object MathVocabulary extends Vocabulary {
       case StringListType(keys) :: TimeSeriesType(t) :: stack =>
         // Default data group by applied across math operations
         val f = t.rewrite {
-          case MathExpr.NamedRewrite(n, q: Query, t) =>
-            // A number of macro rewrites are helpers that are meant to look like
-            // aggregate functions to the user. These have an display type that is
-            // as simple query and an arbitrarily complicated eval expression. In
-            // those cases we rewrite the eval expression and generate a new name
-            // that indicates the group by operation over the simple query.
-            val evalExpr = t.rewrite {
-              case af: AggregateFunction => DataExpr.GroupBy(af, keys)
-            }
-            val name = s"$n,(,${keys.mkString(",")},),:by"
-            MathExpr.NamedRewrite(name, q, evalExpr.asInstanceOf[TimeSeriesExpr])
           case af: AggregateFunction => DataExpr.GroupBy(af, keys)
         }
         f :: stack
@@ -314,22 +304,37 @@ object MathVocabulary extends Vocabulary {
       "42,nf.app,alerttest,:eq")
   }
 
-  case object NamedRewrite extends SimpleWord {
+  case object NamedRewrite extends Word {
+
+    private type Rewrite = Expr => TimeSeriesExpr
+
     override def name: String = "named-rewrite"
+
+    def matches(stack: List[Any]): Boolean = {
+      if (matcher.isDefinedAt(stack)) matcher(stack) else false
+    }
+
+    def execute(context: Context): Context = {
+      val pf = executor(Context(context.interpreter, Nil, Map.empty))
+      if (pf.isDefinedAt(context.stack))
+        context.copy(stack = pf(context.stack))
+      else
+        invalidStack
+    }
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: String) :: TimeSeriesType(_) :: TimeSeriesType(_) :: _ => true
     }
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
+    protected def executor(context: Context): PartialFunction[List[Any], List[Any]] = {
       case (n: String) :: TimeSeriesType(rw) :: (orig: Expr) :: stack =>
         // If the original is already an expr type, e.g. a Query, then we should
         // preserve it without modification. So we first match for Expr.
-        MathExpr.NamedRewrite(n, orig, rw) :: stack
+        MathExpr.NamedRewrite(n, orig, rw, context) :: stack
       case (n: String) :: TimeSeriesType(rw) :: TimeSeriesType(orig) :: stack =>
         // This is a more general match that will coerce the original into a
         // TimeSeriesExpr if it is not one already, e.g., a constant.
-        MathExpr.NamedRewrite(n, orig, rw) :: stack
+        MathExpr.NamedRewrite(n, orig, rw, context) :: stack
     }
 
     override def summary: String =
