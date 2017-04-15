@@ -15,11 +15,13 @@
  */
 package com.netflix.atlas.core.model
 
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
 
+import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Math
 import com.netflix.spectator.api.histogram.PercentileBuckets
@@ -563,10 +565,58 @@ object MathExpr {
     }
   }
 
-  case class NamedRewrite(name: String, displayExpr: Expr, evalExpr: TimeSeriesExpr)
+  /**
+    * Named rewrites are used to keep track of the user intent for operations and
+    * macros that are defined in terms of other basic operations. For example, `:avg`
+    * is not available as a basic aggregate type, it is a rewrite to
+    * `query,:sum,query,:count,:div`. However, for the user it is better if we can
+    * show `query,:avg` when dumping the expression as a string.
+    *
+    * @param name
+    *     Name of the operation, e.g., `avg`.
+    * @param displayExpr
+    *     Expression that is displayed to the user when creating the expression string.
+    * @param evalExpr
+    *     Expression that is evaluated.
+    * @param context
+    *     Evaluation context for the initial creation time. This context is used to
+    *     re-evaluate the rewrite using the original context if the overall expression
+    *     is rewritten ([[Expr.rewrite()]]) later.
+    */
+  case class NamedRewrite(
+    name: String,
+    displayExpr: Expr,
+    evalExpr: TimeSeriesExpr,
+    context: Context)
       extends TimeSeriesExpr {
+
     def dataExprs: List[DataExpr] = evalExpr.dataExprs
-    override def toString: String = s"$displayExpr,:$name"
+
+    override def toString: String = {
+      displayExpr match {
+        case q: Query =>
+          // If the displayExpr is a query type, then the rewrite is simulating an
+          // aggregate function. Modifications to the aggregate need to be represented
+          // after the operation as part of the expression string. There are two
+          // categories: offsets applied to the data function and group by.
+          val buffer = new StringBuilder
+          buffer.append(s"$q,:$name")
+
+          val offsets = evalExpr.dataExprs.map(_.offset).distinct
+          offsets match {
+            case d :: Nil if !d.isZero => buffer.append(s",$d,:offset")
+            case _                     =>
+          }
+
+          evalExpr.dataExprs
+            .collectFirst { case DataExpr.GroupBy(_, ks) => ks }
+            .foreach { ks => buffer.append(ks.mkString(",(,", ",", ",),:by")) }
+
+          buffer.toString()
+        case _ =>
+          s"$displayExpr,:$name"
+      }
+    }
 
     def isGrouped: Boolean = evalExpr.isGrouped
 
@@ -574,6 +624,28 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       evalExpr.eval(context, data).copy(expr = this)
+    }
+
+    override def rewrite(f: PartialFunction[Expr, Expr]): Expr = {
+      if (f.isDefinedAt(this) && !f.isDefinedAt(displayExpr) && !f.isDefinedAt(evalExpr)) {
+        // The partial function is defined for the rewrite itself, assume the caller
+        // knows what to do
+        super.rewrite(f)
+      } else {
+        displayExpr match {
+          case q: Query =>
+            copy(
+              displayExpr = displayExpr.rewrite(f),
+              evalExpr = evalExpr.rewrite(f).asInstanceOf[TimeSeriesExpr])
+          case _ =>
+            val newDisplayExpr = displayExpr.rewrite(f)
+            val ctxt = context.interpreter.execute(toString)
+            ctxt.stack match {
+              case (r: NamedRewrite) :: Nil => r
+              case _ => throw new IllegalStateException(s"invalid stack for :$name")
+            }
+        }
+      }
     }
   }
 }

@@ -20,4 +20,35 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 
 class MathExamplesSuite extends BaseExamplesSuite {
   override def vocabulary: Vocabulary = MathVocabulary
+
+  private def eval(program: String): TimeSeriesExpr = {
+    interpreter.execute(program).stack match {
+      case ModelExtractors.TimeSeriesType(t) :: Nil => t
+    }
+  }
+
+  test("toString with offsets") {
+    val expr = eval("name,test,:eq,:sum,1h,:offset")
+    assert(expr.toString === "name,test,:eq,:sum,PT1H,:offset")
+  }
+
+  test("rewrite toString with offsets") {
+    val expr = eval("name,test,:eq,:dist-avg,1h,:offset")
+    assert(expr.toString === "name,test,:eq,:dist-avg,PT1H,:offset")
+  }
+
+  test("rewrite toString with offsets and cq") {
+    val expr = eval("name,test,:eq,:avg,1h,:offset,app,foo,:eq,:cq")
+    assert(expr.toString === "name,test,:eq,app,foo,:eq,:and,:avg,PT1H,:offset")
+  }
+
+  test("rewrite group by toString with offsets") {
+    val expr = eval("name,test,:eq,:dist-avg,(,cluster,),:by,1h,:offset")
+    assert(expr.toString === "name,test,:eq,:dist-avg,PT1H,:offset,(,cluster,),:by")
+  }
+
+  test("rewrite group by toString with offsets and cq") {
+    val expr = eval("name,test,:eq,:dist-avg,(,cluster,),:by,1h,:offset,app,foo,:eq,:cq")
+    assert(expr.toString === "name,test,:eq,app,foo,:eq,:and,:dist-avg,PT1H,:offset,(,cluster,),:by")
+  }
 }

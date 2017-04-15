@@ -21,13 +21,13 @@ abstract class BaseExamplesSuite extends FunSuite {
 
   def vocabulary: Vocabulary
 
-  val i = new Interpreter(vocabulary.allWords)
+  protected val interpreter = new Interpreter(vocabulary.allWords)
 
   for (w <- vocabulary.words; ex <- w.examples) {
     if (ex.startsWith("UNK:")) {
       test(s"noException -- $ex,:${w.name}") {
         val prg = ex.substring("UNK:".length)
-        try i.execute(s"$prg,:${w.name}") catch {
+        try interpreter.execute(s"$prg,:${w.name}") catch {
           case e: IllegalArgumentException if e.getMessage.startsWith("unknown word ") =>
           case e: Exception => throw e
         }
@@ -35,21 +35,21 @@ abstract class BaseExamplesSuite extends FunSuite {
     } else if (ex.startsWith("ERROR:")) {
       test(s"exception -- $ex,:${w.name}") {
         val prg = ex.substring("ERROR:".length)
-        intercept[Exception] { i.execute(s"$prg,:${w.name}") }
+        intercept[Exception] { interpreter.execute(s"$prg,:${w.name}") }
       }
     } else {
       test(s"noException -- $ex,:${w.name}") {
-        i.execute(s"$ex,:${w.name}")
+        interpreter.execute(s"$ex,:${w.name}")
       }
 
       test(s"toString(item) -- $ex,:${w.name}") {
-        val stack = i.execute(s"$ex,:${w.name}").stack
+        val stack = interpreter.execute(s"$ex,:${w.name}").stack
         stack.foreach { item =>
           val prg = item match {
             case vs: List[_] => vs
             case v           => List(v)
           }
-          val stack2 = i.execute(Interpreter.toString(prg)).stack
+          val stack2 = interpreter.execute(Interpreter.toString(prg)).stack
           assert(stack2 === prg)
         }
       }
@@ -57,8 +57,8 @@ abstract class BaseExamplesSuite extends FunSuite {
       // Exclude offset because list form is lazily evaluated and breaks the comparison
       if (w.name != "offset") {
         test(s"toString(stack) -- $ex,:${w.name}") {
-          val stack = i.execute(s"$ex,:${w.name}").stack
-          assert(stack === i.execute(Interpreter.toString(stack)).stack)
+          val stack = interpreter.execute(s"$ex,:${w.name}").stack
+          assert(stack === interpreter.execute(Interpreter.toString(stack)).stack)
         }
       }
     }
