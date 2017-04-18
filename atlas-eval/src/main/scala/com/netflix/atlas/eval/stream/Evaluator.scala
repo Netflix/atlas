@@ -32,6 +32,7 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.ServoMessage
 import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.eval.util.ByteStringInputStream
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.Counter
 
@@ -40,11 +41,6 @@ import com.netflix.spectator.api.Counter
   * Helpers for evaluating Atlas expressions over streaming data sources.
   */
 object Evaluator {
-
-  // Jackson cannot read from the [[ByteString]] directly so we need to create or copy
-  // into an array. This keeps track of arrays per thread to avoid the need to allocate
-  // a new byte array each time.
-  private val buffers = ThreadLocal.withInitial[Array[Byte]](() => new Array[Byte](8192))
 
   private val servoPrefix = ByteString("data: ")
 
@@ -128,15 +124,7 @@ object Evaluator {
       .filter(_.startsWith(servoPrefix))
       .map { data =>
         val slice = data.slice(servoPrefix.size, data.size)
-        val buffer = buffers.get()
-        if (slice.size < buffer.length) {
-          slice.copyToArray(buffer)
-          Json.decode[ServoMessage](buffer, 0, slice.size)
-        } else {
-          val buf = slice.toArray
-          buffers.set(buf)
-          Json.decode[ServoMessage](buf)
-        }
+        Json.decode[ServoMessage](new ByteStringInputStream(slice))
       }
       .flatMapConcat(msg => Source(msg.metrics.map(_.toDatapoint(step))))
   }
