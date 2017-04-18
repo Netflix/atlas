@@ -41,6 +41,13 @@ import com.netflix.spectator.api.Counter
   */
 object Evaluator {
 
+  // Jackson cannot read from the [[ByteString]] directly so we need to create or copy
+  // into an array. This keeps track of arrays per thread to avoid the need to allocate
+  // a new byte array each time.
+  private val buffers = ThreadLocal.withInitial[Array[Byte]](() => new Array[Byte](8192))
+
+  private val servoPrefix = ByteString("data: ")
+
   /**
     * Run a stream that collects data from `uri` and feeds it to the provided sink. The
     * stream will not stop on its own. Use the kill switch in the provided stream ref to
@@ -116,10 +123,21 @@ object Evaluator {
     * @return
     *     Stream of datapoints.
     */
-  def servoMessagesToDatapoints(step: Long): Flow[String, Datapoint, NotUsed] = {
-    Flow[String]
-      .filter(_.startsWith("data: "))
-      .map(s => Json.decode[ServoMessage](s.substring("data: ".length)))
+  def servoMessagesToDatapoints(step: Long): Flow[ByteString, Datapoint, NotUsed] = {
+    Flow[ByteString]
+      .filter(_.startsWith(servoPrefix))
+      .map { data =>
+        val slice = data.slice(servoPrefix.size, data.size)
+        val buffer = buffers.get()
+        if (slice.size < buffer.length) {
+          slice.copyToArray(buffer)
+          Json.decode[ServoMessage](buffer, 0, slice.size)
+        } else {
+          val buf = slice.toArray
+          buffers.set(buf)
+          Json.decode[ServoMessage](buf)
+        }
+      }
       .flatMapConcat(msg => Source(msg.metrics.map(_.toDatapoint(step))))
   }
 

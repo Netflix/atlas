@@ -175,13 +175,16 @@ private[json] object Reflection {
     }
 
     // Create a map to allow quick lookup of the field and ensure that we have
-    // allowed access to all fields.
+    // allowed access to all fields. A java map is used so the value for a key
+    // can be accessed without allocating an Option instance. This can significantly
+    // reduce allocations if deserializing many objects.
     private val fields = {
-      val ps = params.zipWithIndex.map { case (p, i) =>
+      val fieldsMap = new java.util.HashMap[String, FieldInfo]()
+      params.zipWithIndex.foreach { case (p, i) =>
         val field = jt.getRawClass.getDeclaredField(p.name)
-        p.field -> FieldInfo(i, field.getType, field.getGenericType, props(i))
+        fieldsMap.put(p.field, FieldInfo(i, field.getType, field.getGenericType, props(i)))
       }
-      ps.toMap
+      fieldsMap
     }
 
     // Default parameter values for the object. A copy of this will be returned to
@@ -189,7 +192,7 @@ private[json] object Reflection {
     private val dfltParams = {
       val ps = new Array[Any](params.size)
       params.zipWithIndex.foreach { case (p, i) =>
-        ps(i) = p.dflt.getOrElse { fields(p.field).defaultValue }
+        ps(i) = p.dflt.getOrElse { fields.get(p.field).defaultValue }
       }
       ps
     }
@@ -210,14 +213,17 @@ private[json] object Reflection {
 
     /** Set the value for a particular field on the instance. */
     def setField(args: Array[Any], name: String, value: Any): Unit = {
-      fields.get(name).foreach { f => args(f.pos) = value }
+      val info = fields.get(name)
+      if (info != null) {
+        args(info.pos) = value
+      }
     }
 
     /**
       * Get the metadata for a field based on the name. This is used to deserialize the field
       * values.
       */
-    def field(name: String): Option[FieldInfo] = fields.get(name)
+    def field(name: String): Option[FieldInfo] = Option(fields.get(name))
   }
 
   case class FieldInfo(pos: Int, cls: Class[_], jtype: JType, property: BeanProperty) {
