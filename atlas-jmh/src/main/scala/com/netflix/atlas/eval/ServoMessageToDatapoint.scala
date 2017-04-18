@@ -39,7 +39,7 @@ import scala.concurrent.duration.Duration
   * > jmh:run -prof jmh.extras.JFR -wi 10 -i 10 -f1 -t1 .*ServoMessageToDatapoint.*
   * ...
   * [info] Benchmark                       Mode  Cnt  Score   Error  Units
-  * [info] servoMessagesToDatapoints      thrpt   10  6.082 ± 0.268  ops/s
+  * [info] servoMessagesToDatapoints      thrpt   10  7.677 ± 0.325  ops/s
   * ```
   */
 @State(Scope.Thread)

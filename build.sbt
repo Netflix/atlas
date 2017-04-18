@@ -27,6 +27,7 @@ lazy val `atlas-akka` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.akkaActor,
     Dependencies.akkaSlf4j,
+    Dependencies.akkaStream,
     Dependencies.iepService,
     Dependencies.spectatorSandbox,
     Dependencies.akkaHttp,
