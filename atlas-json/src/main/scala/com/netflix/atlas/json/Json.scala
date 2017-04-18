@@ -38,6 +38,7 @@ object Json {
   final class Decoder[T: Manifest](reader: ObjectReader, factory: JsonFactory) {
 
     def decode(json: Array[Byte]): T = decode(factory.createParser(json))
+    def decode(json: Array[Byte], offset: Int, length: Int): T = decode(factory.createParser(json, offset, length))
     def decode(json: String): T = decode(factory.createParser(json))
     def decode(input: InputStream): T = decode(factory.createParser(input))
     def decode(input: Reader): T = decode(factory.createParser(input))
@@ -66,9 +67,6 @@ object Json {
     factory.enable(AUTO_CLOSE_SOURCE)
     factory.enable(AUTO_CLOSE_TARGET)
     factory.disable(QUOTE_NON_NUMERIC_NUMBERS)
-
-    // The buffer recycling causes data corruption
-    factory.disable(JsonFactory.Feature.USE_THREAD_LOCAL_FOR_BUFFER_RECYCLING)
   }
 
   private def newMapper(factory: JsonFactory): ObjectMapper = {
@@ -154,6 +152,8 @@ object Json {
   }
 
   def decode[T: Manifest](json: Array[Byte]): T = decoder[T].decode(json)
+
+  def decode[T: Manifest](json: Array[Byte], offset: Int, length: Int): T = decoder[T].decode(json, offset, length)
 
   def decode[T: Manifest](json: String): T = decoder[T].decode(json)
 

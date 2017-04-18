@@ -15,7 +15,9 @@
  */
 package com.netflix.atlas.eval.model
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.eval.util.SmallHashMapDeserializer
 
 /**
   * Message from legacy mantis source integrated with base-server.
@@ -53,4 +55,6 @@ case class ServoDatapoint(config: ServoConfig, timestamp: Long, value: Double) {
   * @param tags
   *     Other dimensions for drilling into the data.
   */
-case class ServoConfig(name: String, tags: Map[String, String])
+case class ServoConfig(
+  name: String,
+  @JsonDeserialize(using = classOf[SmallHashMapDeserializer]) tags: Map[String, String])
