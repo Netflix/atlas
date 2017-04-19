@@ -20,7 +20,6 @@ import java.lang.reflect.Type
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.MalformedRequestContentRejection

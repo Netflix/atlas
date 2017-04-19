@@ -74,7 +74,7 @@ class IntHashSetSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(iset)
-    val jgraph = GraphLayout.parseInstance(jset)
+    //val jgraph = GraphLayout.parseInstance(jset)
 
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)
@@ -95,7 +95,7 @@ class IntHashSetSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(iset)
-    val jgraph = GraphLayout.parseInstance(jset)
+    //val jgraph = GraphLayout.parseInstance(jset)
 
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)

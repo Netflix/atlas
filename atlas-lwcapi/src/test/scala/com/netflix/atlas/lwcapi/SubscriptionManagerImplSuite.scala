@@ -20,8 +20,6 @@ import akka.actor.ActorSystem
 import akka.actor.Props
 import org.scalatest.FunSuite
 
-import scala.language.postfixOps
-
 class SubscriptionManagerImplSuite() extends FunSuite {
   test("subscribe, unsubscribe, and get work") {
     val system = ActorSystem("HelloSystem")

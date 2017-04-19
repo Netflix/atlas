@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedParameter
 import com.fasterxml.jackson.databind.introspect.AnnotationMap
 import com.fasterxml.jackson.databind.util.ClassUtil
 
-import scala.language.existentials
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe._
 
@@ -82,7 +81,6 @@ private[json] object Reflection {
     // See http://www.scala-lang.org/files/archive/spec/2.11/04-basic-declarations-and-definitions.html#default-arguments
     // for details. This is looking for the default value accessor for the apply on the
     // companion object.
-    val ms = csym.companion.asModule
     val params = ctor.paramLists.head.zipWithIndex.map { case (p, i) =>
       val name = p.name.toString
       val alias = getAlias(p.annotations)

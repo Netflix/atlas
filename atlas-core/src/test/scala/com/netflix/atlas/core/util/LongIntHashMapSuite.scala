@@ -130,7 +130,7 @@ class LongIntHashMapSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(imap)
-    val jgraph = GraphLayout.parseInstance(jmap)
+    //val jgraph = GraphLayout.parseInstance(jmap)
 
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)
@@ -151,7 +151,7 @@ class LongIntHashMapSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(imap)
-    val jgraph = GraphLayout.parseInstance(jmap)
+    //val jgraph = GraphLayout.parseInstance(jmap)
 
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)

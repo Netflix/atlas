@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.model
 
-import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime

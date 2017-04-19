@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.norm
 
-import java.util.LinkedHashMap
-
 import com.netflix.atlas.core.model.BasicTaggedItem
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.TaggedItem

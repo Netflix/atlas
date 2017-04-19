@@ -46,7 +46,7 @@ import com.netflix.atlas.core.util.Strings
   * `plot-metadata` that corresponds to all lines on a given axis. The plot has an id that
   * will be referenced when the line data is emitted.
   */
-private[this] object JsonCodec {
+private[chart] object JsonCodec {
 
   import com.netflix.atlas.json.JsonParserHelper._
   private val factory = new JsonFactory()
@@ -207,9 +207,8 @@ private[this] object JsonCodec {
 
   private def readGraphDef(parser: JsonParser): GraphDef = {
     var gdef: GraphDef = null
-    var pdef: PlotDef = null
     val plots = Map.newBuilder[Int, PlotDef]
-    var data = List.newBuilder[(Int, DataDef)]
+    val data = List.newBuilder[(Int, DataDef)]
     foreachItem(parser) {
       val node = mapper.readTree[JsonNode](parser)
       node.get("type").asText() match {

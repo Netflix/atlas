@@ -18,7 +18,6 @@ package com.netflix.atlas.chart.graphics
 import java.awt.Font
 import java.awt.Graphics2D
 
-import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
 
 /**

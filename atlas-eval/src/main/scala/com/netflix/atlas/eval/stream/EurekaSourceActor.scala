@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.eval.stream
 
-import java.util.UUID
-
 import akka.actor.Actor
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods

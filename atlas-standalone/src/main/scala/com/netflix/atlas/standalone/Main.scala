@@ -17,22 +17,10 @@ package com.netflix.atlas.standalone
 
 import java.io.File
 
-import akka.actor.ActorSystem
 import com.google.inject.AbstractModule
-import com.google.inject.Module
-import com.google.inject.multibindings.Multibinder
-import com.google.inject.multibindings.OptionalBinder
-import com.google.inject.util.Modules
-import com.netflix.atlas.akka.ActorService
-import com.netflix.atlas.akka.WebServer
 import com.netflix.atlas.config.ConfigManager
-import com.netflix.atlas.core.db.Database
-import com.netflix.atlas.webapi.DatabaseProvider
 import com.netflix.iep.guice.GuiceHelper
-import com.netflix.iep.service.Service
 import com.netflix.iep.service.ServiceManager
-import com.netflix.spectator.api.Registry
-import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging

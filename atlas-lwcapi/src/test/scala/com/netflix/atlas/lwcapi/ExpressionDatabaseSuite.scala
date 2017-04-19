@@ -73,7 +73,7 @@ class ExpressionDatabaseSuite extends FunSuite {
     x.addExpr(split2.expressions.head, split2.queries.head)
 
     x.regenerateQueryIndex()
-    var ret = x.expressionsForCluster("skan-test")
+    val ret = x.expressionsForCluster("skan-test")
     assert(ret.size === 2)
     assert(ret.contains(ret1))
     assert(ret.contains(ret2))
@@ -141,7 +141,6 @@ class ExpressionDatabaseSuite extends FunSuite {
     val freq1 = 30000
     val id1 = "CxmlI6L5YBQcpWOrayncZKeZekg"
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
-    val ret1 = ExpressionWithFrequency(ds1a, freq1, id1)
 
     val query2 = "nf.cluster,foo-test,:eq,:sum,:des-fast"
     val freq2 = 30000

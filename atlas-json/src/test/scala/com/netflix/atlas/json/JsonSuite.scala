@@ -19,7 +19,6 @@ import java.math.BigInteger
 import java.util
 import java.util.regex.Pattern
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonToken
 import org.joda.time.DateTime

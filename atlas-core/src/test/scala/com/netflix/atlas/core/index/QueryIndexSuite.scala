@@ -29,10 +29,6 @@ import org.scalatest.FunSuite
 
 class QueryIndexSuite extends FunSuite {
 
-  private val id1 = Map("a" -> "1")
-  private val id2 = Map("a" -> "1", "b" -> "2")
-  private val id3 = Map("a" -> "1", "b" -> "2")
-
   test("empty") {
     val index = QueryIndex(Nil)
     assert(!index.matches(Map.empty))

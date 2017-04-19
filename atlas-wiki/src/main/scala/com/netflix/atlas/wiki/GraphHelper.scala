@@ -17,14 +17,7 @@ package com.netflix.atlas.wiki
 
 import java.io.File
 import java.net.URI
-import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorRef
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.Uri
 import com.fasterxml.jackson.core.JsonFactory
@@ -43,11 +36,7 @@ import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.webapi.GraphEval
 import com.typesafe.scalalogging.StrictLogging
 
-import scala.concurrent.Await
-
 class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
-
-  import scala.concurrent.duration._
 
   private val baseUri = s"https://raw.githubusercontent.com/wiki/Netflix/atlas/$path"
 
@@ -56,8 +45,6 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
   private val vocabularies = StyleVocabulary :: StyleVocabulary.dependencies
 
   override def toString: String = s"GraphHelper($dir, $path)"
-
-  private def ct(res: HttpResponse): MediaType = res.entity.contentType.mediaType
 
   private def prettyPrint(json: String): String = {
     try {

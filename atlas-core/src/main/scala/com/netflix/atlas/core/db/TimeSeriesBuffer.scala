@@ -485,7 +485,6 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   override def hashCode: Int = {
-    import java.lang.{Long => JLong}
     val prime = 31
     var hc = prime
     hc = hc * prime + tags.hashCode()

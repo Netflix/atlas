@@ -223,7 +223,7 @@ class TicksSuite extends FunSuite {
   }
 
   test("values [0.0, MaxValue]") {
-    val ticks = Ticks.value(0.0, Double.MaxValue, 5)
+    Ticks.value(0.0, Double.MaxValue, 5)
   }
 
   test("sanity check, 0 to y") {

@@ -23,7 +23,6 @@ import java.awt.image.BufferedImage
 
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.util.Strings
-import com.typesafe.config.ConfigFactory
 
 object Constants {
 

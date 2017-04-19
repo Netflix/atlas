@@ -55,11 +55,6 @@ class PollerManagerSuite extends TestKit(ActorSystem())
     system.terminate()
   }
 
-  private def get(k: String): Long = {
-    import scala.collection.JavaConverters._
-    registry.get(registry.createId(k)).measure().asScala.head.value.toLong
-  }
-
   private def dataValue: AnyRef = {
     val value = Await.result(dataRef.future, 1.minute)
     dataRef.reset()

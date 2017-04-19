@@ -38,7 +38,7 @@ class StreamSuite extends FunSuite {
   )
 
   def eval(expr: TimeSeriesExpr, data: List[List[Datapoint]]): List[List[TimeSeries]] = {
-    var state = Map.empty[StatefulExpr, Any]
+    val state = Map.empty[StatefulExpr, Any]
     data.map { ts =>
       val t = ts.head.timestamp
       val context = EvalContext(t, t + 10, 10, state)

@@ -164,8 +164,8 @@ object StatefulExpr {
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
     private def eval(ts: ArrayTimeSeq, s: State): State = {
-      var desF = OnlineSlidingDes(s.desState)
-      var skipUpTo = s.skipUpTo
+      val desF = OnlineSlidingDes(s.desState)
+      val skipUpTo = s.skipUpTo
       val data = ts.data
       var pos = 0
       while (pos < data.length) {

@@ -57,35 +57,19 @@ class ClientActorSuite extends TestKit(ActorSystem())
     system.terminate()
   }
 
-  private def get(k: String): Long = {
-    import scala.collection.JavaConverters._
-    registry.get(registry.createId(k)).measure().asScala.head.value.toLong
-  }
-
   private def waitForCompletion(): Unit = {
     expectMsgPF(1.minute) { case Messages.Ack => }
-  }
-
-  private def totalDropped: Long = {
-    registry.counters()
-      .filter(_.id().name() == "atlas.client.dropped")
-      .mapToLong(_.count())
-      .sum()
   }
 
   private def testSend(datapoints: List[Datapoint], numSent: Int, numDropped: Int, batches: Int = 1): Unit = {
     val sent = registry.counter("atlas.client.sent")
 
     val initSent = sent.count()
-    val initDropped = totalDropped
 
     ref ! MetricsPayload(metrics = datapoints)
     (0 until batches).foreach { _ => waitForCompletion() }
 
     assert(sent.count() === initSent + numSent)
-    // TODO: verify counters for dropped metrics, right now these are asynchronously updated
-    // so may not be reflected when we reach this part of the code.
-    // assert(totalDropped === initDropped + numDropped)
   }
 
   test("publish datapoints, exception") {

@@ -306,8 +306,6 @@ object MathVocabulary extends Vocabulary {
 
   case object NamedRewrite extends Word {
 
-    private type Rewrite = Expr => TimeSeriesExpr
-
     override def name: String = "named-rewrite"
 
     def matches(stack: List[Any]): Boolean = {
