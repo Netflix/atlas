@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.stacklang
 
+import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.TimeSeriesExpr
 import org.scalatest.FunSuite
 
 abstract class BaseExamplesSuite extends FunSuite {
@@ -22,6 +24,12 @@ abstract class BaseExamplesSuite extends FunSuite {
   def vocabulary: Vocabulary
 
   protected val interpreter = new Interpreter(vocabulary.allWords)
+
+  protected def eval(program: String): TimeSeriesExpr = {
+    interpreter.execute(program).stack match {
+      case ModelExtractors.TimeSeriesType(t) :: Nil => t
+    }
+  }
 
   for (w <- vocabulary.words; ex <- w.examples) {
     if (ex.startsWith("UNK:")) {

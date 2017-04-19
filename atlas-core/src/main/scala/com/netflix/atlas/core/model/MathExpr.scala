@@ -592,8 +592,10 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = evalExpr.dataExprs
 
-    override def toString: String = {
-      displayExpr match {
+    override def toString: String = toString(displayExpr)
+
+    private def toString(expr: Expr): String = {
+      expr match {
         case q: Query =>
           // If the displayExpr is a query type, then the rewrite is simulating an
           // aggregate function. Modifications to the aggregate need to be represented
@@ -614,7 +616,7 @@ object MathExpr {
 
           buffer.toString()
         case _ =>
-          s"$displayExpr,:$name"
+          s"$expr,:$name"
       }
     }
 
@@ -639,7 +641,7 @@ object MathExpr {
               evalExpr = evalExpr.rewrite(f).asInstanceOf[TimeSeriesExpr])
           case _ =>
             val newDisplayExpr = displayExpr.rewrite(f)
-            val ctxt = context.interpreter.execute(toString)
+            val ctxt = context.interpreter.execute(toString(newDisplayExpr))
             ctxt.stack match {
               case (r: NamedRewrite) :: Nil => r
               case _ => throw new IllegalStateException(s"invalid stack for :$name")

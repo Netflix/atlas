@@ -20,4 +20,9 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 
 class StatefulExamplesSuite extends BaseExamplesSuite {
   override def vocabulary: Vocabulary = StatefulVocabulary
+
+  test("rewrite toString and cq") {
+    val expr = eval("name,test,:eq,:sum,:des-fast,app,foo,:eq,:cq")
+    assert(expr.toString === "name,test,:eq,app,foo,:eq,:and,:sum,:des-fast")
+  }
 }
