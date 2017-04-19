@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.akka
 
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,7 +23,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import akka.util.Timeout
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.ClassFactory
 import com.netflix.spectator.api.Registry
@@ -55,13 +53,10 @@ class WebServer @Inject() (
   implicit val system: ActorSystem)
     extends AbstractService with StrictLogging {
 
-  implicit val materializer = ActorMaterializer()
-  implicit val executionContext = system.dispatcher
+  private implicit val materializer = ActorMaterializer()
+  private implicit val executionContext = system.dispatcher
 
   private val port = config.getInt("atlas.akka.port")
-
-  private val timeout = config.getDuration("atlas.akka.bind-timeout", TimeUnit.MILLISECONDS)
-  private implicit val bindTimeout = Timeout(timeout, TimeUnit.MILLISECONDS)
 
   private var bindingFuture: Future[ServerBinding] = _
 

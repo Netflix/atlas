@@ -166,8 +166,6 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
 
   private[db] var currentBlock: MutableBlock = _
 
-  private def currentArrayBlock: ArrayBlock = currentBlock.asInstanceOf[ArrayBlock]
-
   private def next(pos: Int): Int = {
     (pos + 1) % numBlocks
   }

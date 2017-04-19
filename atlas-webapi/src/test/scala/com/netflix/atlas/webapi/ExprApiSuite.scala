@@ -185,10 +185,6 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
     assert(data === List(":true", "name,:has", "name,sps,:eq"))
   }
 
-  private def styleExpr(q: Query): StyleExpr = {
-    StyleExpr(DataExpr.Sum(q), Map.empty)
-  }
-
   import Query._
 
   private def normalize(expr: String): List[String] = {

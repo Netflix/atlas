@@ -17,7 +17,6 @@ package com.netflix.atlas.core.util
 
 import java.awt.Color
 import java.math.BigInteger
-import java.net.URLDecoder
 import java.net.URLEncoder
 import java.time.Duration
 import java.time.Instant
@@ -306,7 +305,7 @@ object Strings {
   }
 
   private def getKey(str: String, i: Int, key: StringBuilder): Int = {
-    var c = str.charAt(i + 1)
+    val c = str.charAt(i + 1)
     if (c == '(') parenVar(str, i + 2, key) else simpleVar(str, i + 1, key)
   }
 

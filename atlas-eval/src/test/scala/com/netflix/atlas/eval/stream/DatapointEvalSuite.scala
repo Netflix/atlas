@@ -26,7 +26,6 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeSeriesMessage
-import com.netflix.spectator.api.ManualClock
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await

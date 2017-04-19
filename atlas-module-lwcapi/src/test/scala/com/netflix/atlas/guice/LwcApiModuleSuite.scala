@@ -18,7 +18,6 @@ package com.netflix.atlas.guice
 import com.google.inject.AbstractModule
 import com.google.inject.Guice
 import com.netflix.atlas.akka.ActorService
-import com.netflix.iep.guice.PreDestroyList
 import com.netflix.spectator.api.{DefaultRegistry, Registry}
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory

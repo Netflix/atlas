@@ -9,11 +9,11 @@ object Dependencies {
     val guice      = "4.1.0"
     val jackson    = "2.8.7"
     val log4j      = "2.8.1"
-    val scala      = "2.12.1"
+    val scala      = "2.12.2"
     val slf4j      = "1.7.25"
     val spectator  = "0.53.0"
 
-    val crossScala = Seq(scala, "2.11.8")
+    val crossScala = Seq(scala, "2.11.11")
   }
 
   import Versions._

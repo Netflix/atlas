@@ -24,8 +24,6 @@ import org.scalatest.FunSuite
 
 class AggregateCollectorSuite extends FunSuite {
 
-  import java.lang.{Double => JDouble}
-
   private def newBuffer(v: Double, start: Long = 0L) = {
     new TimeSeriesBuffer(Map.empty, new ArrayTimeSeq(DsType.Gauge, start, 60000, Array.fill(1)(v)))
   }

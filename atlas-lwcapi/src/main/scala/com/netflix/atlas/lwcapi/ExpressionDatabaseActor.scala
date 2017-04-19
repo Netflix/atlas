@@ -85,7 +85,7 @@ class ExpressionDatabaseActor @Inject() (
     self ! Tick
   }
 
-  private def nextTTLWithJitter(now: Long = System.currentTimeMillis()): Long = {
+  private def nextTTLWithJitter(now: Long): Long = {
     now + Math.max(refreshTime + maxJitter / 2 + Random.nextInt(maxJitter.toInt / 2), refreshTime)
   }
 

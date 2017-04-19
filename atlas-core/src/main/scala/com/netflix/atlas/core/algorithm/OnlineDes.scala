@@ -61,7 +61,7 @@ object OnlineDes {
   case class State(training: Int, alpha: Double, beta: Double, currentSample: Int, sp: Double, bp: Double)
 
   def apply(state: State) : OnlineDes = {
-    var des = new OnlineDes(state.training, state.alpha, state.beta)
+    val des = new OnlineDes(state.training, state.alpha, state.beta)
     des.currentSample = state.currentSample
     des.sp = state.sp
     des.bp = state.bp

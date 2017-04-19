@@ -27,7 +27,6 @@ import akka.http.scaladsl.server.Route
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.chart.DefaultGraphEngine
-import com.netflix.atlas.json.Json
 
 
 class RenderApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {

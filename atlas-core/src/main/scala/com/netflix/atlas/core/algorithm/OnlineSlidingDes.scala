@@ -61,7 +61,7 @@ object OnlineSlidingDes {
   def apply(state: OnlineSlidingDes.State): OnlineSlidingDes = {
     val des1 = OnlineDes(state.des1State)
     val des2 = OnlineDes(state.des2State)
-    var sdes = new OnlineSlidingDes(state.training, state.alpha, state.beta, des1, des2)
+    val sdes = new OnlineSlidingDes(state.training, state.alpha, state.beta, des1, des2)
     sdes.useOne = state.useOne
     sdes.currentSample = state.currentSample
     sdes

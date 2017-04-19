@@ -61,9 +61,6 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
   val timeAxis = timeAxes.head
 
   val yaxes = graphDef.plots.zipWithIndex.map { case (plot, i) =>
-    val scale = Scales.factory(plot.scale)
-    val style = Style(color = plot.getAxisColor)
-    val text = plot.ylabel.map { str => Text(str, style = style) }
     val bounds = plot.bounds(start, end)
     if (i == 0)
       LeftValueAxis(plot, bounds._1, bounds._2)

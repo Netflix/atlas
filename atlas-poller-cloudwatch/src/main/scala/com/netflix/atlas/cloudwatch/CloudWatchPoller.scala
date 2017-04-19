@@ -105,7 +105,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     new AtomicLong(0L))
 
   // List keeping track of current batch of metric data.
-  private var metricBatch: MList = new MList
+  private val metricBatch: MList = new MList
 
   def receive: Receive = {
     case Messages.Tick   => refresh()               // From PollerManager

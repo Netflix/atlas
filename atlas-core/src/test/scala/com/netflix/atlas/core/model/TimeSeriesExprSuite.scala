@@ -18,11 +18,8 @@ package com.netflix.atlas.core.model
 import java.time.temporal.ChronoUnit
 
 import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.util.Math
 import org.scalatest.FunSuite
-
-import scala.language.postfixOps
 
 class TimeSeriesExprSuite extends FunSuite {
 

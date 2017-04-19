@@ -34,7 +34,7 @@ import scala.util.Try
   *     Server logs based on the endpoint. They will also be marked
   *     so that they can be partitioned into separate files if needed.
   */
-class AccessLogger private (entry: HttpLogEntry, client: Boolean = false) {
+class AccessLogger private (entry: HttpLogEntry, client: Boolean) {
 
   /**
     * We go ahead and log on the chunk-start so we can see how long it to start sending the

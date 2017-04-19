@@ -19,14 +19,11 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.Reader
 import java.io.Writer
-import java.lang.reflect.ParameterizedType
-import java.lang.reflect.Type
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.core.JsonGenerator.Feature._
 import com.fasterxml.jackson.core.JsonParser.Feature._
 import com.fasterxml.jackson.core._
-import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import com.fasterxml.jackson.datatype.joda.JodaModule

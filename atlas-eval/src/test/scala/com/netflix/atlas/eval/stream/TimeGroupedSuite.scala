@@ -19,7 +19,6 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.eval.model.TimeGroup
-import com.netflix.spectator.api.ManualClock
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await
