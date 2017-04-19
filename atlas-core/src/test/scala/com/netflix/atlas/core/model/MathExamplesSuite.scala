@@ -21,12 +21,6 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 class MathExamplesSuite extends BaseExamplesSuite {
   override def vocabulary: Vocabulary = MathVocabulary
 
-  private def eval(program: String): TimeSeriesExpr = {
-    interpreter.execute(program).stack match {
-      case ModelExtractors.TimeSeriesType(t) :: Nil => t
-    }
-  }
-
   test("toString with offsets") {
     val expr = eval("name,test,:eq,:sum,1h,:offset")
     assert(expr.toString === "name,test,:eq,:sum,PT1H,:offset")
