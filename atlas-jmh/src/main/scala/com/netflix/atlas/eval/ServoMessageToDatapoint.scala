@@ -21,7 +21,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.netflix.atlas.core.model.Datapoint
-import com.netflix.atlas.eval.stream.Evaluator
+import com.netflix.atlas.eval.stream.EvaluationFlows
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
@@ -61,7 +61,7 @@ class ServoMessageToDatapoint {
   @Benchmark
   def servoMessagesToDatapoints(bh: Blackhole): Unit = {
     val future = Source(servoMsgs)
-      .via(Evaluator.servoMessagesToDatapoints(60000))
+      .via(EvaluationFlows.servoMessagesToDatapoints(60000))
       .runWith(Sink.seq[Datapoint])
     val result = Await.result(future, Duration.Inf)
     bh.consume(result)
