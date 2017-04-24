@@ -36,7 +36,7 @@ class DatapointEvalSuite extends FunSuite {
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
 
-  private val step = 10000
+  private val step = 60000
 
   private def createGroup(expr: DataExpr, t: Long, nodes: Int): TimeGroup[Datapoint] = {
     val datapoints = (0 until nodes).toList.map { i =>

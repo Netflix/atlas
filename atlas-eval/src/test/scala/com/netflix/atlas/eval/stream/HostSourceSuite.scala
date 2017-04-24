@@ -22,11 +22,13 @@ import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
 import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
+import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -34,7 +36,9 @@ import akka.util.ByteString
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await
-import scala.concurrent.Promise
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 class HostSourceSuite extends FunSuite {
 
@@ -43,8 +47,9 @@ class HostSourceSuite extends FunSuite {
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
 
-  def source(client: HostSource.Client): Source[ByteString, NotUsed] = {
-    HostSource("http://localhost/api/test", delay = 0.seconds, client = Some(client))
+  def source(response: => Try[HttpResponse]): Source[ByteString, NotUsed] = {
+    val client = Flow[(HttpRequest, NotUsed)].map(_ => response -> NotUsed)
+    HostSource("http://localhost/api/test", client = client, delay = 1.milliseconds)
   }
 
   def compress(str: String): Array[Byte] = {
@@ -56,8 +61,7 @@ class HostSourceSuite extends FunSuite {
 
   test("ok") {
     val response = HttpResponse(StatusCodes.OK, entity = ByteString("ok"))
-    val client: HostSource.Client = _ => Promise.successful(response).future
-    val future = source(client)
+    val future = source(Success(response))
       .take(5)
       .map(_.decodeString(StandardCharsets.UTF_8))
       .runWith(Sink.seq[String])
@@ -69,8 +73,7 @@ class HostSourceSuite extends FunSuite {
     val headers = List(`Content-Encoding`(HttpEncodings.gzip))
     val data = ByteString(compress("ok"))
     val response = HttpResponse(StatusCodes.OK, headers = headers, entity = data)
-    val client: HostSource.Client = _ => Promise.successful(response).future
-    val future = source(client)
+    val future = source(Success(response))
       .take(5)
       .map(_.decodeString(StandardCharsets.UTF_8))
       .runWith(Sink.seq[String])
@@ -81,11 +84,10 @@ class HostSourceSuite extends FunSuite {
   test("retries on error response from host") {
     val response = HttpResponse(StatusCodes.BadRequest, entity = ByteString("error"))
     val latch = new CountDownLatch(5)
-    val client: HostSource.Client = _ => {
-      latch.countDown()
-      Promise.successful(response).future
-    }
-    val (switch, future) = source(client)
+    val (switch, future) = source {
+        latch.countDown()
+        Success(response)
+      }
       .viaMat(KillSwitches.single)(Keep.right)
       .toMat(Sink.ignore)(Keep.both)
       .run()
@@ -99,11 +101,10 @@ class HostSourceSuite extends FunSuite {
 
   test("retries on exception from host") {
     val latch = new CountDownLatch(5)
-    val client: HostSource.Client = _ => {
-      latch.countDown()
-      Promise.failed(new IOException("cannot connect")).future
-    }
-    val (switch, future) = source(client)
+    val (switch, future) = source {
+        latch.countDown()
+        Failure(new IOException("cannot connect"))
+      }
       .viaMat(KillSwitches.single)(Keep.right)
       .toMat(Sink.ignore)(Keep.both)
       .run()
@@ -113,6 +114,28 @@ class HostSourceSuite extends FunSuite {
 
     switch.shutdown()
     Await.result(future, Duration.Inf)
+  }
+
+  test("ref stops host source") {
+    val response = Success(HttpResponse(StatusCodes.OK, entity = ByteString("ok")))
+    val ref = EvaluationFlows.stoppableSource(source(response))
+    ref.stop()
+    val future = ref.source
+      .map(_.decodeString(StandardCharsets.UTF_8))
+      .runWith(Sink.seq[String])
+    val result = Await.result(future, Duration.Inf).toList
+    assert(result.isEmpty)
+  }
+
+  test("ref host source works until stopped") {
+    val response = Success(HttpResponse(StatusCodes.OK, entity = ByteString("ok")))
+    val ref = EvaluationFlows.stoppableSource(source(response))
+    val future = ref.source
+      .map(_.decodeString(StandardCharsets.UTF_8))
+      .take(5)
+      .runWith(Sink.seq[String])
+    val result = Await.result(future, Duration.Inf).toList
+    assert(result === (0 until 5).map(_ => "ok").toList)
   }
 
 }

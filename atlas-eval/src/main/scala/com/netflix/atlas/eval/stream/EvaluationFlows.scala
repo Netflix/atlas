@@ -15,15 +15,16 @@
  */
 package com.netflix.atlas.eval.stream
 
+import java.nio.charset.StandardCharsets
+
+import akka.Done
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.actor.Props
 import akka.stream.ActorMaterializer
-import akka.stream.KillSwitch
 import akka.stream.KillSwitches
+import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Framing
 import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.MergeHub
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -36,54 +37,63 @@ import com.netflix.atlas.eval.util.ByteStringInputStream
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.Counter
 
+import scala.concurrent.Promise
+import scala.concurrent.duration.FiniteDuration
+
 
 /**
   * Helpers for evaluating Atlas expressions over streaming data sources.
   */
-object Evaluator {
+object EvaluationFlows {
 
   private val servoPrefix = ByteString("data: ")
 
   /**
-    * Run a stream that collects data from `uri` and feeds it to the provided sink. The
-    * stream will not stop on its own. Use the kill switch in the provided stream ref to
-    * shutdown when the data is no longer of interest.
+    * Run a stream connecting the source to the sink.
     */
-  def runForHost[T](uri: String, sink: Sink[ByteString, T])
-    (implicit system: ActorSystem, materializer: ActorMaterializer): StreamRef[T] = {
+  def run[T, M1, M2](source: Source[T, M1], sink: Sink[T, M2])
+    (implicit materializer: ActorMaterializer): StreamRef[M2] = {
 
-    val (killSwitch, value) = HostSource(uri)
+    val (killSwitch, value) = source
       .viaMat(KillSwitches.single)(Keep.right)
       .toMat(sink)(Keep.both)
       .run()
-
     StreamRef(killSwitch, value)
   }
 
   /**
-    * Run a stream that collects data from all instances registered in Eureka for a give
-    * application or vip and feed it to the provided sink. The stream will not stop on its
-    * own. Use the kill switch in the provided stream ref to shutdown when the data is no
-    * longer of interest.
+    * Returns a reference to a source that can be stopped by completing the future. This is
+    * intended for sources that will be materialized once for a dynamic source such as a
+    * particular instance from a eureka vip.
     */
-  def runForEurekaVip[T](eurekaUri: String, instanceUri: String, sink: Sink[ByteString, T])
-    (implicit system: ActorSystem, materializer: ActorMaterializer): StreamRef[T] = {
+  def stoppableSource[T, M](source: Source[T, M]): SourceRef[T, M] = {
+    // Note, we cannot just do `takeWhile(_ => !promise.isCompleted)` because it will
+    // only take effect if something is emitted via the source. The workaround it to
+    // merge with a source on the future there will be an item that will trigger the
+    // takeWhile condition.
+    val promise = Promise[Done]()
+    val stoppable = source
+      .merge(Source.fromFuture(promise.future))
+      .takeWhile(!_.isInstanceOf[Done])
+      .map(_.asInstanceOf[T])
+    SourceRef(stoppable, promise)
+  }
 
-    val runnableGraph = MergeHub
-      .source[ByteString](perProducerBufferSize = 16)
-      .viaMat(KillSwitches.single)(Keep.both)
-      .toMat(sink)(Keep.both)
-    val ((toConsumer, killSwitch), value) = runnableGraph.run()
+  /**
+    * Source that will repeat the item every `delay`. The first item will get pushed
+    * immediately.
+    */
+  def repeat[T](item: T, delay: FiniteDuration): Source[T, NotUsed] = {
+    Source.repeat(item).throttle(1, delay, 1, ThrottleMode.Shaping)
+  }
 
-    val actorRef = system.actorOf(Props(new EurekaSourceActor(eurekaUri, instanceUri, toConsumer)))
-    val switch = new KillSwitch {
-      override def abort(ex: Throwable): Unit = shutdown()
-      override def shutdown(): Unit = {
-        system.stop(actorRef)
-        killSwitch.shutdown()
-      }
-    }
-    StreamRef(switch, value)
+  /**
+    * Frames an SSE stream by new line. This is to ensure that a message is not broken
+    * up in the middle. The LF is used instead of CRLF because some SSE sources are more
+    * lax.
+    */
+  def sseFraming: Flow[ByteString, ByteString, NotUsed] = {
+    Framing.delimiter(ByteString("\n"), 65536, allowTruncation = true)
   }
 
   /**
@@ -166,5 +176,12 @@ object Evaluator {
       .via(new TimeGrouped[AggrDatapoint](2, 50, _.timestamp))
       .via(new DataExprEval(expr, step))
       .flatMapConcat(msgs => Source(msgs))
+  }
+
+  def lwcEval(expr: StyleExpr, step: Long): Flow[ByteString, TimeSeriesMessage, NotUsed] = {
+    Flow[ByteString]
+      .map(_.decodeString(StandardCharsets.UTF_8))
+      .via(EvaluationFlows.lwcToAggrDatapoint)
+      .via(EvaluationFlows.forPartialAggregates(expr, step))
   }
 }

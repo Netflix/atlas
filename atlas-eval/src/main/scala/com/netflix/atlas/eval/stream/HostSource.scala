@@ -16,24 +16,21 @@
 package com.netflix.atlas.eval.stream
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Compression
-import akka.stream.scaladsl.Framing
+import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.netflix.atlas.akka.CustomMediaTypes
 import com.typesafe.scalalogging.StrictLogging
 
-import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
+import scala.util.Try
 
 /**
   * Helper for creating a stream source for a given host.
@@ -43,7 +40,7 @@ object HostSource extends StrictLogging {
   import scala.concurrent.ExecutionContext.Implicits.global
   import scala.concurrent.duration._
 
-  type Client = HttpRequest => Future[HttpResponse]
+  type Client = Flow[(HttpRequest, NotUsed), (Try[HttpResponse], NotUsed), NotUsed]
 
   /**
     * Create a new stream source for the response of `uri`. The URI should be a streaming
@@ -54,39 +51,33 @@ object HostSource extends StrictLogging {
     * @param uri
     *     URI for the remote stream. Typically this should be an endpoint that returns an
     *     SSE stream.
-    * @param delay
-    *     How long to delay between attempts to connect to the host.
     * @param client
     *     Client to use for making the request. This is typically used in tests to provide
     *     responses without actually making network calls.
-    * @param system
-    *     Actor system to use for the streams.
-    * @param materializer
-    *     Materializer to use for the streams.
+    * @param delay
+    *     How long to delay between attempts to connect to the host.
     * @return
     *     Source that emits the response stream from the host.
     */
-  def apply(uri: String, delay: FiniteDuration = 1.second, client: Option[Client] = None)
-    (implicit system: ActorSystem, materializer: ActorMaterializer): Source[ByteString, NotUsed] = {
-
-    Source.repeat(uri).delay(delay).flatMapConcat(singleCall(client))
+  def apply(uri: String, client: Client, delay: FiniteDuration = 1.second): Source[ByteString, NotUsed] = {
+    EvaluationFlows.repeat(uri, delay).flatMapConcat(singleCall(client))
   }
 
-  private def singleCall(client: Option[Client])(uri: String)
-    (implicit system: ActorSystem, materializer: ActorMaterializer): Source[ByteString, Any] = {
-
+  private def singleCall(client: Client)(uri: String): Source[ByteString, Any] = {
     logger.info(s"subscribing to $uri")
     val headers = List(
       Accept(CustomMediaTypes.`text/event-stream`),
       `Accept-Encoding`(HttpEncodings.gzip))
     val request = HttpRequest(HttpMethods.GET, uri, headers)
-    val future = client.fold(Http().singleRequest(request))(c => c(request))
-      .map {
-        case res: HttpResponse if res.status == StatusCodes.OK =>
+
+    Source.single(request -> NotUsed)
+      .via(client)
+      .flatMapConcat {
+        case (Success(res: HttpResponse), _) if res.status == StatusCodes.OK =>
           // Framing needs to take place on the byte stream before merging chunks
           // with other hosts
           unzipIfNeeded(res)
-            .via(Framing.delimiter(ByteString("\n"), 65536, allowTruncation = true))
+            .via(EvaluationFlows.sseFraming)
             .watchTermination() { (_, f) =>
               f.onComplete {
                 case Success(_) =>
@@ -95,15 +86,13 @@ object HostSource extends StrictLogging {
                   logger.warn(s"stream failed $uri", t)
               }
             }
-        case res: HttpResponse =>
+        case (Success(res: HttpResponse), _) =>
           logger.warn(s"subscription attempt failed with status ${res.status}")
           empty
+        case (Failure(t), _) =>
+          logger.warn(s"subscription attempt failed with exception", t)
+          empty
       }
-      .recoverWith { case t: Exception =>
-        logger.warn(s"subscription attempt failed with exception", t)
-        Future.successful(empty)
-      }
-    Source.fromFuture(future).flatMapConcat(v => v)
   }
 
   private def empty: Source[ByteString, NotUsed] = {
