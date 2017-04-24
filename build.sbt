@@ -11,6 +11,7 @@ lazy val root = project.in(file("."))
     `atlas-lwcapi`,
     `atlas-module-akka`,
     `atlas-module-cloudwatch`,
+    `atlas-module-eval`,
     `atlas-module-lwcapi`,
     `atlas-module-webapi`,
     `atlas-poller`,
@@ -106,6 +107,13 @@ lazy val `atlas-module-cloudwatch` = project
     Dependencies.guiceMulti,
     Dependencies.iepGuice,
     Dependencies.iepModuleAws
+  ))
+
+lazy val `atlas-module-eval` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-eval`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.guiceCore
   ))
 
 lazy val `atlas-module-lwcapi` = project
