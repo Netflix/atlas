@@ -6,6 +6,7 @@ lazy val root = project.in(file("."))
     `atlas-chart`,
     `atlas-config`,
     `atlas-core`,
+    `atlas-eval`,
     `atlas-jmh`,
     `atlas-json`,
     `atlas-lwcapi`,
