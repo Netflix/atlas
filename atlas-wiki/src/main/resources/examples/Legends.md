@@ -58,7 +58,7 @@ expressions on the stack. If an expression results in multple lines, i.e. a
 
 ### Overall
 
-To sort all lines on a given axis using a different [mode](#sorting-mode) use the `sort` URL
+To sort all lines on a given axis using a different [mode](#sorting-modes) use the `sort` URL
 parameter.
 
 /api/v1/graph?s=e-12h&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,(,nf.cluster,),:by&sort=max
