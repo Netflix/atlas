@@ -21,8 +21,7 @@ import org.scalatest.FunSuite
 
 class EvalModuleSuite extends FunSuite {
 
-  // TODO -- this is failing on travis because of the class loader
-  ignore("load module") {
+  test("load module") {
     // Module listed twice to verify dedup works
     val injector = Guice.createInjector(new EvalModule, new EvalModule)
     assert(injector.getInstance(classOf[Evaluator]) != null)
