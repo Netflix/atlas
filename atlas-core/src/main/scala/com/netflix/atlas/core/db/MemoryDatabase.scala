@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
 
 import com.netflix.atlas.core.index.BatchUpdateTagIndex
 import com.netflix.atlas.core.index.CachingTagIndex
-import com.netflix.atlas.core.index.LazyTagIndex
+import com.netflix.atlas.core.index.RoaringTagIndex
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.DataExpr
@@ -63,7 +63,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   private val logger = LoggerFactory.getLogger(getClass)
 
   val index = new BatchUpdateTagIndex[BlockStoreItem]({ items =>
-    new CachingTagIndex(new LazyTagIndex(items, internWhileBuilding))
+    new CachingTagIndex(new RoaringTagIndex(items, internWhileBuilding))
   })
 
   // If the last update time for the index is older than the rebuild age force an update
