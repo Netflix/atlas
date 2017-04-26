@@ -1,4 +1,5 @@
-###[Home](Home)
+### [Home](Home)
+
 * [[Overview]]
 * [[Getting Started]]
 * [[Concepts]]
