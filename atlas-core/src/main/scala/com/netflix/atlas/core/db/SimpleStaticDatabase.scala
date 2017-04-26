@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.db
 
-import com.netflix.atlas.core.index.LazyTagIndex
+import com.netflix.atlas.core.index.RoaringTagIndex
 import com.netflix.atlas.core.index.TagIndex
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.DataExpr
@@ -23,7 +23,7 @@ import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.TimeSeries
 
 class SimpleStaticDatabase(data: List[TimeSeries]) extends Database {
-  val index: TagIndex[TimeSeries] = new LazyTagIndex(data.toArray)
+  val index: TagIndex[TimeSeries] = new RoaringTagIndex(data.toArray)
 
   def execute(context: EvalContext, expr: DataExpr): List[TimeSeries] = {
     val q = TagQuery(Some(expr.query))

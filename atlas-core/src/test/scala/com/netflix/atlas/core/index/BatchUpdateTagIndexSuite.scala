@@ -24,7 +24,7 @@ class BatchUpdateTagIndexSuite extends FunSuite {
   case class Item(tags: Map[String, String], version: Int) extends LazyTaggedItem
 
   test("update") {
-    val idx = BatchUpdateTagIndex.newLazyIndex[Item]
+    val idx = BatchUpdateTagIndex.newRoaringIndex[Item]
     assert(idx.size === 0)
 
     val updates = List(Item(Map("a" -> "b"), 0))
@@ -36,7 +36,7 @@ class BatchUpdateTagIndexSuite extends FunSuite {
   }
 
   test("update, new items") {
-    val idx = BatchUpdateTagIndex.newLazyIndex[Item]
+    val idx = BatchUpdateTagIndex.newRoaringIndex[Item]
     assert(idx.size === 0)
 
     val updates1 = List(Item(Map("a" -> "b"), 0))
@@ -53,7 +53,7 @@ class BatchUpdateTagIndexSuite extends FunSuite {
   }
 
   test("update, prefer older item") {
-    val idx = BatchUpdateTagIndex.newLazyIndex[Item]
+    val idx = BatchUpdateTagIndex.newRoaringIndex[Item]
     assert(idx.size === 0)
 
     val updates1 = List(Item(Map("a" -> "b"), 0))
