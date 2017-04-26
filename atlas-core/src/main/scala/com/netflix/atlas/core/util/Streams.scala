@@ -16,6 +16,8 @@
 package com.netflix.atlas.core.util
 
 import java.io._
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.zip._
 
 import scala.util.control.Exception
@@ -30,13 +32,13 @@ object Streams {
     url.openStream()
   }
 
-  def fileIn(name: String): InputStream = fileIn(new File(name))
+  def fileIn(name: String): InputStream = Files.newInputStream(Paths.get(name))
 
-  def fileIn(file: File): InputStream = new FileInputStream(file)
+  def fileIn(file: File): InputStream = Files.newInputStream(file.toPath)
 
-  def fileOut(name: String): OutputStream = fileOut(new File(name))
+  def fileOut(name: String): OutputStream = Files.newOutputStream(Paths.get(name))
 
-  def fileOut(file: File): OutputStream = new FileOutputStream(file)
+  def fileOut(file: File): OutputStream = Files.newOutputStream(file.toPath)
 
   def byteArray(f: OutputStream => Unit): Array[Byte] = {
     val baos = new ByteArrayOutputStream
