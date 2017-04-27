@@ -39,14 +39,14 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   // issues outside of running with code coverage.
   implicit val routeTestTimeout = RouteTestTimeout(600.seconds)
 
-  val db = StaticDatabase.demo
+  private val db = StaticDatabase.demo
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
 
-  val routes = RequestHandler.standardOptions((new GraphApi).routes)
+  private val routes = RequestHandler.standardOptions((new GraphApi).routes)
 
-  val template = Streams.scope(Streams.resource("examples.md")) { in => Streams.lines(in).toList }
-  val others = Streams.scope(Streams.resource("others.md")) { in => Streams.lines(in).toList }
-  val all = template ::: others
+  private val template = Streams.scope(Streams.resource("examples.md")) { in => Streams.lines(in).toList }
+  private val others = Streams.scope(Streams.resource("others.md")) { in => Streams.lines(in).toList }
+  private val all = template ::: others
 
   // SBT working directory gets updated with fork to be the dir for the project
   private val baseDir = SrcPath.forProject("atlas-webapi")
@@ -54,7 +54,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
   private val graphAssertions = new GraphAssertions(goldenDir, targetDir)
 
-  val bless = false
+  private val bless = false
 
   override def afterAll(): Unit = {
     graphAssertions.generateReport(getClass)
