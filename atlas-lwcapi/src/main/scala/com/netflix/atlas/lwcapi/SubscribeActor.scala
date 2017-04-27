@@ -32,10 +32,11 @@ import com.typesafe.scalalogging.StrictLogging
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
-class SubscribeActor @Inject()(sm: SubscriptionManager,
-                               splitter: ExpressionSplitter,
-                               registry: Registry)
-  extends Actor with StrictLogging {
+class SubscribeActor @Inject()(
+  sm: SubscriptionManager,
+  exprDB: ExpressionDatabase,
+  splitter: ExpressionSplitter,
+  registry: Registry) extends Actor with StrictLogging {
 
   import com.netflix.atlas.lwcapi.SubscribeApi._
 
@@ -72,12 +73,12 @@ class SubscribeActor @Inject()(sm: SubscriptionManager,
     expressions.foreach { expr =>
       try {
         val split = splitter.split(expr.expression, expr.frequency)
-        dbActor ! ExpressionDatabaseActor.Expression(split)
+        split.queries.zip(split.expressions).foreach { case (query, expr) =>
+          exprDB.addExpr(expr, query)
+        }
         val registration = sm.registration(streamId)
         if (registration.isDefined) {
-          split.expressions.foreach(e =>
-            dbActor ! ExpressionDatabaseActor.Subscribe(streamId, e.id)
-          )
+          split.expressions.foreach(e => sm.subscribe(streamId, e.id))
           registration.get.actorRef ! SSESubscribe(expr.expression, split.expressions)
         } else {
           registry.counter(ignoredId.withTag("action", "subscribe")).increment()

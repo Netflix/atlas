@@ -21,21 +21,10 @@ import org.scalatest.FunSuite
 class ApiSettingsSuite extends FunSuite {
   test("loads") {
     assert(ApiSettings.defaultFrequency > 0)
-    assert(ApiSettings.redisHost.nonEmpty)
-    assert(ApiSettings.redisPort > 0)
-    assert(ApiSettings.redisTTL > 0)
-    assert(ApiSettings.redisPrefixFor("this") === "this")
-    assert(ApiSettings.stripRedisPrefix("this") === "this")
   }
 
   test("adds prefix") {
     val config = ConfigFactory.load("test-redis-prefixes.conf")
     val c = new ApiSettings(config)
-    assert(c.redisPrefix === "testPrefix.")
-    assert(c.redisPrefixFor("this") === "testPrefix.this")
-    assert(c.stripRedisPrefix("this") === "this")
-    assert(c.stripRedisPrefix("testPrefix") === "testPrefix")
-    assert(c.stripRedisPrefix("testPrefix.") === "")
-    assert(c.stripRedisPrefix("testPrefix.this") === "this")
   }
 }

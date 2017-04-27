@@ -24,24 +24,4 @@ class ApiSettings(root: => Config) {
   private def config = root.getConfig("atlas.lwcapi")
 
   def defaultFrequency: Long = config.getDuration("register.default-frequency").toMillis
-
-  def redisHost: String = config.getString("redis.host")
-  def redisPort: Int = config.getInt("redis.port")
-  def redisTTL: Long = config.getDuration("redis.ttl").toMillis
-  def redisPrefix: String = {
-    if (config.hasPath("redis.prefix")) {
-      if (config.getString("redis.prefix").nonEmpty)
-        config.getString("redis.prefix") + "."
-      else
-        ""
-    } else ""
-  }
-
-  def redisPrefixFor(suffix: String): String = {
-    s"$redisPrefix$suffix"
-  }
-
-  def stripRedisPrefix(s: String): String = {
-    if (redisPrefix.isEmpty) s else s.stripPrefix(redisPrefix)
-  }
 }

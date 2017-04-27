@@ -36,6 +36,7 @@ import com.typesafe.scalalogging.StrictLogging
 
 class StreamApi @Inject()(
   sm: SubscriptionManager,
+  exprDB: ExpressionDatabase,
   splitter: ExpressionSplitter,
   implicit val actorRefFactory: ActorRefFactory,
   registry: Registry) extends WebApi with StrictLogging {
@@ -100,10 +101,10 @@ class StreamApi @Inject()(
 
     // handle post and URL subscription data
     val subs = splits.map { case (e, split) =>
-      dbActor ! ExpressionDatabaseActor.Expression(split)
-      split.expressions.foreach(e =>
-        dbActor ! ExpressionDatabaseActor.Subscribe(streamId, e.id)
-      )
+      split.queries.zip(split.expressions).foreach { case (query, expr) =>
+        exprDB.addExpr(expr, query)
+        sm.subscribe(streamId, expr.id)
+      }
       SSESubscribe(e.expression, split.expressions)
     }
 
