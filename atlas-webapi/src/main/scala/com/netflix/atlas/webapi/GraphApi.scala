@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.webapi
 
+import java.awt.Color
 import java.time.Instant
 import java.time.ZoneId
 
@@ -28,6 +29,7 @@ import akka.http.scaladsl.server.Route
 import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.chart._
+import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.stacklang.Interpreter
@@ -172,7 +174,16 @@ object GraphApi {
       )
 
       gdef = gdef.withVisionType(flags.vision)
-      if (flags.axisPerLine) gdef.axisPerLine else gdef
+      if (flags.axisPerLine) useAxisPerLine(gdef) else gdef
+    }
+
+    private def useAxisPerLine(gdef: GraphDef): GraphDef = {
+      val graphDef = gdef.axisPerLine
+      val multiY = graphDef.plots.size > 1
+      val plots = graphDef.plots.zipWithIndex.map { case (p, i) =>
+        flags.axes(i).newPlotDef(p.data, multiY)
+      }
+      graphDef.copy(plots = plots)
     }
   }
 
@@ -222,7 +233,20 @@ object GraphApi {
       tickLabels: Option[String] = None,
       palette: Option[String] = None,
       sort: Option[String] = None,
-      order: Option[String] = None)
+      order: Option[String] = None) {
+
+    def newPlotDef(data: List[DataDef] = Nil, multiY: Boolean = false): PlotDef = {
+      PlotDef(
+        data = data,
+        lower = lower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
+        upper = upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
+        ylabel = ylabel,
+        scale = Scale.fromName(scale.getOrElse("linear")),
+        axisColor = if (multiY) None else Some(Color.BLACK),
+        tickLabelMode = tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply)
+      )
+    }
+  }
 
   case class ImageFlags(
       title: Option[String],

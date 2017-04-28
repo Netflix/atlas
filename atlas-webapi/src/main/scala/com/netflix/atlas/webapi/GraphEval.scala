@@ -26,11 +26,6 @@ import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.MessageDef
 import com.netflix.atlas.chart.model.Palette
-import com.netflix.atlas.chart.model.PlotBound
-import com.netflix.atlas.chart.model.PlotBound.AutoStyle
-import com.netflix.atlas.chart.model.PlotDef
-import com.netflix.atlas.chart.model.Scale
-import com.netflix.atlas.chart.model.TickLabelMode
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.SummaryStats
@@ -130,14 +125,7 @@ object GraphEval {
       // local sort on an expression.
       val sortedLines = sort(warnings, axisCfg.sort, axisCfg.order.contains("desc"), lines)
 
-      PlotDef(
-        data = sortedLines ::: messages.map(s => MessageDef(s"... $s ...")),
-        lower = axisCfg.lower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
-        upper = axisCfg.upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
-        ylabel = axisCfg.ylabel,
-        scale = Scale.fromName(axisCfg.scale.getOrElse("linear")),
-        axisColor = if (multiY) None else Some(Color.BLACK),
-        tickLabelMode = axisCfg.tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply))
+      axisCfg.newPlotDef(sortedLines ::: messages.map(s => MessageDef(s"... $s ...")), multiY)
     }
 
     request.newGraphDef(plots, warnings.result())
