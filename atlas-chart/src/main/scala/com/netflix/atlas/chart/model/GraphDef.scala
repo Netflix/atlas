@@ -116,16 +116,19 @@ case class GraphDef(
 
   /** Convert the defintion from a single axis to using one per line in the chart. */
   def axisPerLine: GraphDef = {
-    require(plots.size == 1, "axisPerLine cannot be used with explicit multi axis")
-    val plot = plots.head
-
-    val size = plot.data.size
-    if (size > GraphConstants.MaxYAxis) {
-      val msg = s"Too many Y-axes, $size > ${GraphConstants.MaxYAxis}, axis per line disabled."
+    if (plots.size > 1) {
+      val msg = "axisPerLine cannot be used with explicit multi axis"
       copy(warnings = msg :: warnings)
     } else {
-      val newPlots = plot.data.map { d => plot.copy(data = List(d), axisColor = None) }
-      copy(plots = newPlots)
+      val plot = plots.head
+      val size = plot.data.size
+      if (size > GraphConstants.MaxYAxis) {
+        val msg = s"Too many Y-axes, $size > ${GraphConstants.MaxYAxis}, axis per line disabled."
+        copy(warnings = msg :: warnings)
+      } else {
+        val newPlots = plot.data.map { d => plot.copy(data = List(d), axisColor = None) }
+        copy(plots = newPlots)
+      }
     }
   }
 
