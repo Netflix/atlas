@@ -144,3 +144,11 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,150e3,:gt,:filter
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,150e3,:gt,:filter,42
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,150e3,:gt,:filter,:dup
+
+# Stack crossing axis
+/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=-60e3,:stack,100e3,:stack,name,sps,:eq,300e3,:sub,:stack,-50e3,:stack&tz=UTC&layout=image&w=600&h=400&no_legend=1
+
+# Multi-Y and scales
+/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,200e3,:sub,:stack,(,1,2,3,4,),(,name,sps,:eq,:sum,:swap,:axis,),:each&scale.1=log&scale.2=pow2&scale.3=sqrt&scale.4=linear
+/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,200e3,:sub,:stack,(,1,2,3,4,),(,name,sps,:eq,:sum,:swap,:axis,),:each&scale.0=sqrt&scale.2=pow2&scale.3=log&scale.4=linear
+
