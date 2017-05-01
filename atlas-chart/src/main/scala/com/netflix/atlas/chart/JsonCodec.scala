@@ -19,6 +19,7 @@ import java.awt.Color
 import java.io.OutputStream
 import java.time.Instant
 import java.time.ZoneId
+import java.util.Base64
 
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonGenerator
@@ -30,6 +31,7 @@ import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 
@@ -52,6 +54,8 @@ private[chart] object JsonCodec {
   private val factory = new JsonFactory()
   private val mapper = new ObjectMapper(factory)
 
+  private val pngEngine = new DefaultGraphEngine
+
   def encode(config: GraphDef): String = {
     Streams.string { w =>
       val gen = factory.createGenerator(w)
@@ -73,6 +77,7 @@ private[chart] object JsonCodec {
 
   private def writeGraphDef(gen: JsonGenerator, config: GraphDef): Unit = {
     gen.writeStartArray()
+    writeGraphImage(gen, config)
     writeGraphDefMetadata(gen, config)
     config.plots.zipWithIndex.foreach { case (plot, i) =>
       writePlotDefMetadata(gen, plot, i)
@@ -83,6 +88,22 @@ private[chart] object JsonCodec {
       }
     }
     gen.writeEndArray()
+  }
+
+  // Writes out a pre-rendered image for the chart without the legend. This can be used
+  // for partially dynamic views.
+  private def writeGraphImage(gen: JsonGenerator, config: GraphDef): Unit = {
+    gen.writeStartObject()
+    gen.writeStringField("type", "graph-image")
+    gen.writeStringField("data", toDataUri(config))
+    gen.writeEndObject()
+  }
+
+  private def toDataUri(config: GraphDef): String = {
+    val gdef = config.copy(legendType = LegendType.OFF)
+    val image = PngImage(pngEngine.createImage(gdef)).toByteArray
+    val encoded = Base64.getEncoder.encodeToString(image)
+    s"data:image/png;base64,$encoded"
   }
 
   private def writeGraphDefMetadata(gen: JsonGenerator, config: GraphDef): Unit = {
@@ -212,6 +233,8 @@ private[chart] object JsonCodec {
     foreachItem(parser) {
       val node = mapper.readTree[JsonNode](parser)
       node.get("type").asText() match {
+        case "graph-image" =>
+          // ignored for right now
         case "graph-metadata" =>
           if (gdef != null)
             throw new IllegalStateException("multiple graph-metadata blocks")

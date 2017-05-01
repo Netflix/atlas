@@ -174,7 +174,7 @@ object PngImage {
   }
 }
 
-case class PngImage(data: RenderedImage, metadata: Map[String, String]) {
+case class PngImage(data: RenderedImage, metadata: Map[String, String] = Map.empty) {
 
   type JList = java.util.List[String]
 
