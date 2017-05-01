@@ -17,24 +17,18 @@ package com.netflix.atlas.guice
 
 import javax.inject.Singleton
 
-import com.google.inject.multibindings.Multibinder
 import com.google.inject.AbstractModule
 import com.google.inject.Provides
 import com.netflix.atlas.akka.AkkaModule
-import com.netflix.atlas.lwcapi.DatabaseService
 import com.netflix.atlas.lwcapi.ExpressionDatabase
 import com.netflix.atlas.lwcapi.ExpressionSplitter
 import com.netflix.atlas.lwcapi.SubscriptionManager
 import com.netflix.iep.guice.LifecycleModule
-import com.netflix.iep.service.Service
 
 class LwcApiModule extends AbstractModule {
   override def configure(): Unit = {
     install(new LifecycleModule)
     install(new AkkaModule)
-
-    val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
-    serviceBinder.addBinding().to(classOf[DatabaseService])
   }
 
   @Provides @Singleton
