@@ -106,4 +106,9 @@ class IntHashSetSuite extends FunSuite {
     // Sanity check size is < 110kb
     assert(igraph.totalSize() <= 110000)
   }
+
+  test("negative absolute value") {
+    val s = new IntHashSet(-1, 10)
+    s.add(Integer.MIN_VALUE)
+  }
 }
