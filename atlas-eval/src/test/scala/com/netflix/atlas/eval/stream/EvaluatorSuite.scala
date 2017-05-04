@@ -18,9 +18,11 @@ package com.netflix.atlas.eval.stream
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Duration
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -33,6 +35,8 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await
+import scala.concurrent.Promise
+import scala.util.Success
 
 class EvaluatorSuite extends FunSuite with BeforeAndAfter {
 
@@ -59,7 +63,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
       .run()
 
     val messages = Await.result(future, 1.minute)
-    assert(messages.size === 256)
+    assert(messages.size === 255) // Can vary depending on num buffers for evaluation
     assert(messages.map(_.tags("nf.asg")).toSet.size === 3)
   }
 
@@ -82,5 +86,96 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
 
   test("create publisher from resource uri") {
     testPublisher("resource:///gc-pause.dat")
+  }
+
+  def testProcessor(baseUri: String): Unit = {
+    import scala.concurrent.duration._
+
+    val evaluator = new Evaluator(config, registry, system)
+
+    val uri = s"$baseUri?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
+
+    val ds1 = Evaluator.DataSources.of(
+      new Evaluator.DataSource("one", uri)
+    )
+
+    // Add source 2
+    val ds2 = Evaluator.DataSources.of(
+      new Evaluator.DataSource("one", uri),
+      new Evaluator.DataSource("two", uri)
+    )
+    val p2 = Promise[Evaluator.DataSources]()
+
+    // Remove source 1
+    val ds3 = Evaluator.DataSources.of(
+      new Evaluator.DataSource("two", uri)
+    )
+    val p3 = Promise[Evaluator.DataSources]()
+
+    // Source that emits ds1 and then will emit ds2 and ds3 when the futures
+    // are completed by analyzing the results coming into the sink
+    val sourceRef = EvaluationFlows.stoppableSource(Source.single(ds1)
+      .concat(Source.fromFuture(p2.future))
+      .concat(Source.fromFuture(p3.future))
+      .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
+    )
+
+    // States
+    var state = 0
+    val states = Array[(AtomicInteger, AtomicInteger) => Unit](
+      // 0: Start getting events for one only
+      (one, two) => {
+        if (one.getAndSet(0) > 0L) {
+          assert(two.getAndSet(0) === 0)
+          p2.complete(Success(ds2))
+          state = 1
+        }
+      },
+
+      // 1: See first events for two
+      (one, two) => {
+        if (two.getAndSet(0) > 0) {
+          one.getAndSet(0)
+          state = 2
+        }
+      },
+
+      // 2: Still seeing events for one and two
+      (one, two) => {
+        if (one.getAndSet(0) > 0 && two.getAndSet(0) > 0) {
+          p3.complete(Success(ds3))
+          state = 3
+        }
+      },
+
+      // 3: Stop seeing events for one
+      (one, two) => {
+        if (one.getAndSet(0) == 0 && two.get() > 100) {
+          sourceRef.stop()
+        }
+      }
+    )
+
+    // Sink tracking how many events we receive for each id. We should get a
+    // set for just one, then both, then just two
+    val oneCount = new AtomicInteger()
+    val twoCount = new AtomicInteger()
+    val sink = Sink.foreach[Evaluator.MessageEnvelope] { msg =>
+      val c = msg.getId match {
+        case "one" => oneCount.incrementAndGet()
+        case "two" => twoCount.incrementAndGet()
+      }
+      states(state)(oneCount, twoCount)
+    }
+
+    val future = sourceRef.source
+      .toMat(sink)(Keep.right)
+      .run()
+
+    Await.result(future, 1.minute)
+  }
+
+  test("create processor from resource uri") {
+    testProcessor("resource:///gc-pause.dat")
   }
 }

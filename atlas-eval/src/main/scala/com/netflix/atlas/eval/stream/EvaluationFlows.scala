@@ -172,8 +172,10 @@ object EvaluationFlows {
     *     Time series messages containing the results of the evaluation.
     */
   def forPartialAggregates(expr: StyleExpr, step: Long): Flow[AggrDatapoint, TimeSeriesMessage, NotUsed] = {
+    // TODO: number of buffers should be configurable by user, need to discuss how best to
+    // map some that into the api... for now it is set to 1 to reduce the delay during testing
     Flow[AggrDatapoint]
-      .via(new TimeGrouped[AggrDatapoint](2, 50, _.timestamp))
+      .via(new TimeGrouped[AggrDatapoint](1, 50, _.timestamp))
       .via(new DataExprEval(expr, step))
       .flatMapConcat(msgs => Source(msgs))
   }
