@@ -388,7 +388,7 @@ class RoaringTagIndex[T <: TaggedItem](
       // Count how many tags match the query
       val counts = new IntIntHashMap(-1)
       val itemSet = findImpl(finalQ, 0)
-      val iter = itemSet.iterator
+      val iter = itemSet.getIntIterator
       while (iter.hasNext) {
         val tags = itemTags(iter.next())
         var i = 0
@@ -459,7 +459,7 @@ class RoaringTagIndex[T <: TaggedItem](
     val limit = query.limit
     val list = List.newBuilder[T]
     val intSet = query.query.fold(withOffset(all, offset))(q => findImpl(q, offset))
-    val iter = intSet.iterator
+    val iter = intSet.getIntIterator
     var count = 0
     while (iter.hasNext && count < limit) {
       list += items(iter.next())
