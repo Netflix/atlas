@@ -23,7 +23,6 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TaggedItem
-import com.netflix.atlas.core.util.IntHashSet
 import com.netflix.atlas.core.util.IntIntHashMap
 import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.NoopInterner
@@ -66,9 +65,6 @@ class RoaringTagIndex[T <: TaggedItem](
   type RoaringValueMap = util.IdentityHashMap[String, RoaringBitmap]
   type RoaringKeyMap = util.IdentityHashMap[String, RoaringValueMap]
 
-  type ValueMap = util.IdentityHashMap[String, IntHashSet]
-  type KeyMap = util.IdentityHashMap[String, ValueMap]
-
   // Interner to use for building the index
   private val buildInterner = if (internWhileBuilding) interner else new NoopInterner[String]
 
@@ -95,12 +91,6 @@ class RoaringTagIndex[T <: TaggedItem](
   // * itemTags: itemTags(i) has an array of indexes into tags array for items(i)
   private val (tagIndex, itemTags) = buildTagIndex()
 
-  private def newRoaringSet(vs: IntHashSet): RoaringBitmap = {
-    val set = new RoaringBitmap()
-    vs.foreach { v => set.add(v) }
-    set
-  }
-
   private def buildItemIndex(): (Array[BigInteger], RoaringKeyMap, RoaringValueMap) = {
     // Sort items array based on the id, allows for efficient paging of requests using the id
     // as the offset
@@ -110,8 +100,8 @@ class RoaringTagIndex[T <: TaggedItem](
 
     // Build the main index
     logger.debug(s"building index with ${items.length} items, create main key map")
-    val kidx = new ValueMap
-    val idx = new KeyMap
+    val kidx = new RoaringValueMap
+    val idx = new RoaringKeyMap
     var pos = 0
     while (pos < items.length) {
       itemIds(pos) = items(pos).id
@@ -119,7 +109,7 @@ class RoaringTagIndex[T <: TaggedItem](
         val internedK = buildInterner.intern(k)
         var vidx = idx.get(internedK)
         if (vidx == null) {
-          vidx = new ValueMap
+          vidx = new RoaringValueMap
           idx.put(internedK, vidx)
         }
 
@@ -127,7 +117,7 @@ class RoaringTagIndex[T <: TaggedItem](
         val internedV = buildInterner.intern(v)
         var matchSet = vidx.get(internedV)
         if (matchSet == null) {
-          matchSet = new IntHashSet(-1, 20)
+          matchSet = new RoaringBitmap()
           vidx.put(internedV, matchSet)
         }
         matchSet.add(pos)
@@ -135,7 +125,7 @@ class RoaringTagIndex[T <: TaggedItem](
         // Add to key index
         matchSet = kidx.get(internedK)
         if (matchSet == null) {
-          matchSet = new IntHashSet(-1, 20)
+          matchSet = new RoaringBitmap()
           kidx.put(internedK, matchSet)
         }
         matchSet.add(pos)
@@ -143,33 +133,7 @@ class RoaringTagIndex[T <: TaggedItem](
       pos += 1
     }
 
-    // Build final item index
-    logger.debug(s"building index with ${items.length} items, create roaring index")
-    val roaringIdx = new RoaringKeyMap
-    val keys = idx.entrySet.iterator
-    while (keys.hasNext) {
-      val roaringVidx = new RoaringValueMap
-      val keyEntry = keys.next()
-      val values = keyEntry.getValue.entrySet.iterator
-      while (values.hasNext) {
-        val valueEntry = values.next()
-        val roaringSet = newRoaringSet(valueEntry.getValue)
-        roaringVidx.put(valueEntry.getKey, roaringSet)
-      }
-      roaringIdx.put(keyEntry.getKey, roaringVidx)
-    }
-
-    // Build final key index
-    logger.debug(s"building index with ${items.length} items, create key index")
-    val roaringKidx = new RoaringValueMap
-    val keyIter = kidx.entrySet.iterator
-    while (keyIter.hasNext) {
-      val keyEntry = keyIter.next()
-      val roaringSet = newRoaringSet(keyEntry.getValue)
-      roaringKidx.put(keyEntry.getKey, roaringSet)
-    }
-
-    (itemIds, roaringIdx, roaringKidx)
+    (itemIds, idx, kidx)
   }
 
   private def buildTagIndex(): (Array[Tag], Array[Array[Int]]) = {
