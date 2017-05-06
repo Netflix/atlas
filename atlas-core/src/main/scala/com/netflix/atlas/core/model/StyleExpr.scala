@@ -17,6 +17,8 @@ package com.netflix.atlas.core.model
 
 import java.awt.Color
 import java.time.Duration
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.StandardVocabulary
@@ -24,18 +26,61 @@ import com.netflix.atlas.core.util.Strings
 
 case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extends Expr {
   override def toString: String = {
-    val vs = settings.toList.sortWith(_._1 < _._1).map(t => s"${t._2},:${t._1}")
+    val vs = settings.toList.sortWith(_._1 < _._1).map {
+      case ("sed", v) => v
+      case (k, v)     => s"$v,:$k"
+    }
     if (vs.isEmpty) expr.toString else s"$expr,${vs.mkString(",")}"
   }
 
   def legend(t: TimeSeries): String = {
     val fmt = settings.getOrElse("legend", t.label)
-    val label = Strings.substitute(fmt, t.tags)
-    settings.get("decode").fold(label) {
-      case "hex"  => Strings.hexDecode(label, '_')
-      case "none" => label
-      case mode   => throw new IllegalArgumentException(s"unknown encoding '$mode'")
+    sed(Strings.substitute(fmt, t.tags))
+  }
+
+  private def sed(str: String): String = {
+    settings.get("sed").fold(str) { v => sed(str, v.split(",").toList) }
+  }
+
+  @scala.annotation.tailrec
+  private def sed(str: String, cmds: List[String]): String = {
+    if (cmds.isEmpty) str else {
+      cmds match {
+        case mode :: ":decode" :: cs => sed(decode(str, mode), cs)
+        case s :: r :: ":s" :: cs    => sed(searchAndReplace(str, s, r), cs)
+        case _                       => sed(str, cmds.tail)
+      }
     }
+  }
+
+  private def decode(str: String, mode: String): String = {
+    mode match {
+      case "hex"  => Strings.hexDecode(str, '_')
+      case "none" => str
+      case _      => throw new IllegalArgumentException(s"unknown encoding '$mode'")
+    }
+  }
+
+  private def searchAndReplace(str: String, search: String, replace: String): String = {
+    val m = Pattern.compile(search).matcher(str)
+    if (!m.find()) str else {
+      val sb = new StringBuffer()
+      m.appendReplacement(sb, substitute(replace, m))
+      while (m.find()) {
+        m.appendReplacement(sb, substitute(replace, m))
+      }
+      m.appendTail(sb)
+      sb.toString
+    }
+  }
+
+  /**
+    * The `appendReplacement` method on the matcher will do substitutions, but this makes
+    * it consistent with the variable substitutions for legends to avoid confusion about
+    * slightly different syntax for variables in legends verses the replacement field.
+    */
+  private def substitute(str: String, m: Matcher): String = {
+    Strings.substitute(str, k => if (StyleExpr.isNumber(k)) m.group(k.toInt) else m.group(k))
   }
 
   def sortBy: Option[String] = settings.get("sort")
@@ -94,5 +139,9 @@ object StyleExpr {
       case _                         => Nil
     }
   }
+
+  private val numberPattern = Pattern.compile("""^(\d+)$""")
+
+  private def isNumber(s: String): Boolean = numberPattern.matcher(s).matches()
 }
 

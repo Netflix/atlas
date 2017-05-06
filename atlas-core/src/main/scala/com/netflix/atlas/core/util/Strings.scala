@@ -310,9 +310,17 @@ object Strings {
   }
 
   /**
-   * Substitute variables into a string.
-   */
+    * Substitute variables from the map into a string. If a key used in the
+    * input string is not set, then the key will be used as the value.
+    */
   def substitute(str: String, vars: Map[String, String]): String = {
+    substitute(str, k => vars.getOrElse(k, k))
+  }
+
+  /**
+    * Substitute variables into a string.
+    */
+  def substitute(str: String, vars: String => String): String = {
     val key = new StringBuilder(str.length)
     val buf = new StringBuilder(str.length * 2)
     var i = 0
@@ -324,7 +332,7 @@ object Strings {
       } else {
         i = getKey(str, i, key)
         val k = key.toString()
-        if (!k.isEmpty) buf.append(vars.getOrElse(k, k))
+        if (!k.isEmpty) buf.append(vars(k))
         key.clear()
       }
     }
