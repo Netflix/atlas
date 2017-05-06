@@ -45,5 +45,37 @@ class StyleExprSuite extends FunSuite {
     val expected = List(expr)
     assert(expr.perOffset === expected)
   }
+
+  private def newExpr(legend: String, sed: String): StyleExpr = {
+    StyleExpr(DataExpr.Sum(Query.True), Map("legend" -> legend, "sed" -> sed))
+  }
+
+  private def newTimeSeries(label: String, tags: Map[String, String]): TimeSeries = {
+    val data = new FunctionTimeSeq(DsType.Gauge, 1, _ => Double.NaN)
+    LazyTimeSeries(tags, label, data)
+  }
+
+  test("decode after substitute") {
+    val expr = newExpr(s"$$b", "hex,:decode")
+    val ts = newTimeSeries("foo", Map("a" -> "1", "b" -> "one_21_25_26_3F"))
+    assert(expr.legend(ts) === "one!%&?")
+  }
+
+  private def check(sed: String, expected: String): Unit = {
+    test(sed) {
+      val expr = newExpr(s"$$b", sed)
+      val ts = newTimeSeries("foo", Map("a" -> "1", "b" -> "one_21_25_26_3F"))
+      assert(expr.legend(ts) === expected)
+    }
+  }
+
+  check("^([a-z]+).*$,prefix [$1],:s",                 "prefix [one]")
+  check("^(?<prefix>[a-z]+).*$,prefix [$prefix],:s",   "prefix [one]")
+  check("_.*,,:s",                                     "one")
+  check("(_[A-F0-9]{2}), $1,:s,hex,:decode",           "one ! % & ?")
+  check("hex,:decode,(_[A-F0-9]{2}), $1,:s",           "one!%&?")
+  check("hex,:decode,%,_25,:s",                        "one!_25&?")
+  check("hex,:decode,%,_25,:s,hex,:decode",            "one!%&?")
+  check("none,:decode,%,_25,:s,hex,:decode",           "one!%&?")
 }
 

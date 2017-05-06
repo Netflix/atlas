@@ -35,7 +35,7 @@ object StyleVocabulary extends Vocabulary {
 
   val words: List[Word] = List(
     // Adjust the text for the legend
-    Legend, Decode,
+    Legend, Decode, SearchAndReplace,
 
     // Map to a particular axis
     Axis,
@@ -177,47 +177,6 @@ object StyleVocabulary extends Vocabulary {
     override def examples: List[String] = List("name,sps,:eq,:sum,(,name,),:by,2")
   }
 
-  case object Legend extends StyleWord {
-    override def name: String = "legend"
-
-    override def summary: String =
-      """
-        |Set the legend text.
-      """.stripMargin.trim
-
-    override def examples: List[String] = List(s"name,sps,:eq,:sum,(,name,),:by,$$name")
-  }
-
-  case object Decode extends StyleWord {
-    override def name: String = "decode"
-
-    override def summary: String =
-      """
-        |> :warning: It is recommended to avoid using special symbols or trying to
-        |> encode structural information into tag values. This feature should be used
-        |> sparingly and with great care to ensure it will not result in a combinatorial
-        |> explosion.
-        |
-        |Perform decoding of the legend strings. Generally data going into Atlas
-        |is restricted to simple ascii characters that are easy to use as part of
-        |a URI. Most commonly the clients will convert unsupported characters to
-        |an `_`. In some case it is desirable to be able to reverse that for the
-        |purposes of presentation.
-        |
-        |* `none`: this is the default. It will not modify the legend string.
-        |* `hex`: perform a hex decoding of the legend string. This is similar to
-        |  [url encoding](https://en.wikipedia.org/wiki/Percent-encoding) except
-        |  that the `_` character is used instead of `%` to indicate the start of
-        |  an encoded symbol. The decoding is lenient, if the characters following
-        |  the `_` are not valid hexadecimal digits then it will just copy those
-        |  characters without modification.
-        |
-        |Since: 1.5
-      """.stripMargin.trim
-
-    override def examples: List[String] = List(s"1,one_21_25_26_3F,:legend,hex")
-  }
-
   case object Axis extends StyleWord {
     override def name: String = "axis"
 
@@ -288,6 +247,107 @@ object StyleVocabulary extends Vocabulary {
       "name,sps,:eq,:sum,(,nf.cluster,),:by,$nf.cluster,:legend,:stat-max,30e3,:gt")
   }
 
+  //
+  // Legend transforms
+  //
+
+  case object Legend extends StyleWord {
+    override def name: String = "legend"
+
+    override def summary: String =
+      """
+        |Set the legend text.
+      """.stripMargin.trim
+
+    override def examples: List[String] = List(s"name,sps,:eq,:sum,(,name,),:by,$$name")
+  }
+
+  case object Decode extends SimpleWord {
+    override def name: String = "decode"
+
+    override def signature: String = "TimeSeriesExpr String -- StyleExpr"
+
+    override def summary: String =
+      """
+        |> :warning: It is recommended to avoid using special symbols or trying to
+        |> encode structural information into tag values. This feature should be used
+        |> sparingly and with great care to ensure it will not result in a combinatorial
+        |> explosion.
+        |
+        |Perform decoding of the legend strings. Generally data going into Atlas
+        |is restricted to simple ascii characters that are easy to use as part of
+        |a URI. Most commonly the clients will convert unsupported characters to
+        |an `_`. In some case it is desirable to be able to reverse that for the
+        |purposes of presentation.
+        |
+        |* `none`: this is the default. It will not modify the legend string.
+        |* `hex`: perform a hex decoding of the legend string. This is similar to
+        |  [url encoding](https://en.wikipedia.org/wiki/Percent-encoding) except
+        |  that the `_` character is used instead of `%` to indicate the start of
+        |  an encoded symbol. The decoding is lenient, if the characters following
+        |  the `_` are not valid hexadecimal digits then it will just copy those
+        |  characters without modification.
+        |
+        |Since: 1.5
+      """.stripMargin.trim
+
+    override def examples: List[String] = List(s"1,one_21_25_26_3F,:legend,hex")
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case (_: String) :: PresentationType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case (v: String) :: PresentationType(t) :: s =>
+        val transform = s"$v,:$name"
+        val newTransform = t.settings.get("sed").fold(transform)(p => s"$p,$transform")
+        t.copy(settings = t.settings + ("sed" -> newTransform)) :: s
+    }
+  }
+
+  case object SearchAndReplace extends SimpleWord {
+    override def name: String = "s"
+
+    override def signature: String = "TimeSeriesExpr s:String r:String -- StyleExpr"
+
+    override def summary: String =
+      """
+        |Perform a search and replace on the legend strings. This command is similar
+        |to the global search and replace (`s/regexp/replace/g`) operation from tools
+        |like [vim][vim] or [sed][sed].
+        |
+        |[vim]: http://vim.wikia.com/wiki/Search_and_replace
+        |[sed]: https://linux.die.net/man/1/sed
+        |
+        |The replacement string can use variables to refer to the capture groups of the
+        |input expression. The syntax is that same as for [legends](style-legend).
+        |
+        |Since: 1.6
+      """.stripMargin.trim
+
+    override def examples: List[String] = List(
+      s"name,sps,:eq,(,nf.cluster,),:by,$$nf.cluster,:legend,^nccp-(.*)$$,$$1",
+      s"name,sps,:eq,(,nf.cluster,),:by,$$nf.cluster,:legend,^nccp-(?<stack>.*)$$,$$stack",
+      s"name,sps,:eq,(,nf.cluster,),:by,$$nf.cluster,:legend,nccp-,_",
+      s"name,sps,:eq,(,nf.cluster,),:by,$$nf.cluster,:legend,([a-z]),_$$1"
+    )
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case (_: String) :: (_: String) :: PresentationType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case (r: String) :: (s: String) :: PresentationType(t) :: stack =>
+        val transform = s"$s,$r,:$name"
+        val newTransform = t.settings.get("sed").fold(transform)(p => s"$p,$transform")
+        t.copy(settings = t.settings + ("sed" -> newTransform)) :: stack
+    }
+  }
+
+  //
+  // Sorting operators
+  //
+
   case object Sort extends StyleWord {
     override def name: String = "sort"
 
@@ -337,6 +397,10 @@ object StyleVocabulary extends Vocabulary {
       "name,sps,:eq,:sum,(,nf.cluster,),:by,3",
       "name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order,2")
   }
+
+  //
+  // Helper macros
+  //
 
   private def desEpicViz = List(
     // Show signal line as a vertical span
