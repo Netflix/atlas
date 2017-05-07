@@ -43,9 +43,9 @@ class DatapointEvalSuite extends FunSuite {
       val node = f"i-$i%08d"
       val tags = Map("name" -> "cpu")
       if (expr.isGrouped)
-        Datapoint(tags + ("node" -> node), t, i)
+        Datapoint(tags + ("node" -> node), t, i, step)
       else
-        Datapoint(tags, t, i)
+        Datapoint(tags, t, i, step)
     }
     TimeGroup(t, datapoints)
   }

@@ -54,7 +54,7 @@ class DataExprEval(expr: StyleExpr, step: Long)
       override def onPush(): Unit = {
         val group = grab(in)
         val data = group.values.groupBy(_.expr).map { case (k, vs) =>
-          k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries)
+          k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries(step))
         }
         val s = group.timestamp
         val context = EvalContext(s, s + step, step, state)

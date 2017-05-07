@@ -56,7 +56,7 @@ case class AggrDatapoint(
     * Converts this value to a time series type that can be used for the final evaluation
     * phase.
     */
-  def toTimeSeries: TimeSeries = Datapoint(tags, timestamp, value)
+  def toTimeSeries(step: Long): TimeSeries = Datapoint(tags, timestamp, value, step)
 }
 
 object AggrDatapoint {
