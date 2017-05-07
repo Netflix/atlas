@@ -223,8 +223,9 @@ object StandardVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Format a string using a printf [style pattern]
-        |(https://docs.oracle.com/javase/7/docs/api/java/util/Formatter.html).
+        |Format a string using a printf [style pattern][formatter].
+        |
+        |[formatter]: https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html
       """.stripMargin.trim
 
     override def signature: String = "pattern:String args:List -- str:String"
