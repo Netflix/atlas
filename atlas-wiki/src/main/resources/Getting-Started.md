@@ -18,8 +18,8 @@ machine. For other common tasks see:
 To quickly run a version with some synthetic sample data:
 
 ```
-$ curl -LO https://github.com/Netflix/atlas/releases/download/v1.5.0/atlas-1.5.0-standalone.jar
-$ java -jar atlas-1.5.0-standalone.jar
+$ curl -LO https://github.com/Netflix/atlas/releases/download/v1.5.2/atlas-1.5.2-standalone.jar
+$ java -jar atlas-1.5.2-standalone.jar
 ```
 
 ## Explore Available Tags
@@ -61,7 +61,7 @@ Run an instance with a configuration to use the memory storage:
 
 ```
 $ curl -Lo memory.conf https://raw.githubusercontent.com/Netflix/atlas/master/conf/memory.conf
-$ java -jar atlas-1.5.0-standalone.jar memory.conf
+$ java -jar atlas-1.5.2-standalone.jar memory.conf
 ```
 
 Now we can send some data to it. To quickly get started there is a sample script to send in
