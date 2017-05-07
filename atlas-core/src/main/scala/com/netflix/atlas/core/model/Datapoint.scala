@@ -17,9 +17,26 @@ package com.netflix.atlas.core.model
 
 import java.math.BigInteger
 
+/**
+  * Time series with a single value.
+  *
+  * @param tags
+  *     Metadata for the identifying the datapoint.
+  * @param timestamp
+  *     Timestamp for the data point. The time is the end of an interval that
+  *     starts at `timestamp - step`.
+  * @param value
+  *     Value for the interval.
+  * @param step
+  *     Step size for the datapoint. Defaults to the configured step size for the
+  *     service.
+  */
+case class Datapoint(
+  tags: Map[String, String],
+  timestamp: Long,
+  value: Double,
+  step: Long = Datapoint.step) extends TimeSeries with TimeSeq {
 
-case class Datapoint(tags: Map[String, String], timestamp: Long, value: Double)
-    extends TimeSeries with TimeSeq {
   require(tags != null, "tags cannot be null")
   require(timestamp >= 0L, s"invalid timestamp: $timestamp")
 
@@ -29,8 +46,6 @@ case class Datapoint(tags: Map[String, String], timestamp: Long, value: Double)
   def data: TimeSeq = this
 
   def dsType: DsType = DsType(tags)
-
-  def step: Long = Datapoint.step
 
   def apply(t: Long): Double = {
     if (t == timestamp) value else Double.NaN
