@@ -173,7 +173,13 @@ lazy val `atlas-test` = project
 
 lazy val `atlas-webapi` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`, `atlas-chart`, `atlas-core`, `atlas-json`, `atlas-test` % "test")
+  .dependsOn(
+    `atlas-akka`,
+    `atlas-chart`,
+    `atlas-core`,
+    `atlas-eval`,
+    `atlas-json`,
+    `atlas-test` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.spectatorSandbox,
     Dependencies.akkaTestkit % "test",

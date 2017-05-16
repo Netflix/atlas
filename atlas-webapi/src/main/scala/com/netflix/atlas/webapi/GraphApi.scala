@@ -53,6 +53,14 @@ class GraphApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
         reqHandler ! rc
         rc.promise.future
       }
+    } ~
+    path("api" / "v2" / "fetch") {
+      get {
+        extractRequest { request =>
+          val req = GraphApi.toRequest(request)
+          complete(FetchRequestActor.createResponse(actorRefFactory, req))
+        }
+      }
     }
   }
 }
@@ -94,12 +102,17 @@ object GraphApi {
     val (resStart, resEnd) = timeRange(
       start.getOrElse(ApiSettings.startTime), end.getOrElse(ApiSettings.endTime), tz)
 
-    val stepSize: Long = {
-      val datapointWidth = math.min(ApiSettings.maxDatapoints, flags.width)
-
+    /** Input step size rounded if necessary to a supported step. */
+    val roundedStepSize: Long = {
       val stepDuration = step.map(Strings.parseDuration)
       val stepMillis = ApiSettings.stepSize
-      val stepParam = stepDuration.fold(stepMillis)(s => Step.round(stepMillis, s.toMillis))
+      stepDuration.fold(stepMillis)(s => Step.round(stepMillis, s.toMillis))
+    }
+
+    /** Effective step size for the graph after adjusting based on the size and time window. */
+    val stepSize: Long = {
+      val datapointWidth = math.min(ApiSettings.maxDatapoints, flags.width)
+      val stepParam = roundedStepSize
       Step.compute(stepParam, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
     }
 
