@@ -255,10 +255,23 @@ object StyleVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Set the legend text.
+        |Set the legend text. Legends can contain variables based on the
+        |exact keys matched in the query clause and keys used in a
+        |[group by](data-by). Variables start with a `$` sign and can optionally
+        |be enclosed between parentheses. The parentheses are required for cases
+        |where the characters immediately following the name could be a part
+        |of the name. If a variable is not defined, then the name of the variable
+        |will be used as the substitution value.
+        |
+        |The variable `atlas.offset` can be used to indicate the [time shift](data-offset)
+        |used for the underlying data.
       """.stripMargin.trim
 
-    override def examples: List[String] = List(s"name,sps,:eq,:sum,(,name,),:by,$$name")
+    override def examples: List[String] = List(
+      s"name,sps,:eq,(,name,),:by,$$name",
+      s"name,sps,:eq,(,nf.cluster,),:by,cluster+$$nf.cluster",
+      s"name,sps,:eq,(,name,),:by,$$(unknown)",
+      s"name,sps,:eq,:sum,1w,:offset,$$(name)+$$(atlas.offset)")
   }
 
   case object Decode extends SimpleWord {
