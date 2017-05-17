@@ -24,17 +24,17 @@ case class EvalContext(
     end: Long,
     step: Long,
     state: Map[StatefulExpr, Any] = Map.empty) {
-  require(start < end, "start time must be less than end time")
+  require(start < end, s"start time must be less than end time ($start >= $end)")
 
   val noData: TimeSeries = TimeSeries.noData(step)
 
   def partition(oneStep: Long, unit: ChronoUnit): List[EvalContext] = {
     val builder = List.newBuilder[EvalContext]
-    var t = Instant.ofEpochMilli(start).truncatedTo(ChronoUnit.HOURS).toEpochMilli
+    var t = Instant.ofEpochMilli(start).truncatedTo(unit).toEpochMilli
     while (t < end) {
       val e = t + oneStep
-      val stime = if (t >= start) t else start
-      val etime = if (e >= end) end else e
+      val stime = math.max(t, start)
+      val etime = math.min(e, end)
       builder += EvalContext(stime, etime, step)
       t = e
     }
