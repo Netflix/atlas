@@ -33,6 +33,7 @@ import com.netflix.atlas.akka.CustomMediaTypes._
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StatefulExpr
+import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.webapi.GraphApi.DataResponse
@@ -114,7 +115,8 @@ class FetchRequestActor(request: GraphApi.Request)
         val result = s.expr.eval(chunk, data)
         state = result.state
         result.data.foreach { ts =>
-          queue.add(TimeSeriesMessage(s.toString, chunk, ts))
+          if (!isAllNaN(ts.data, chunk.start, chunk.end, chunk.step))
+            queue.add(TimeSeriesMessage(s.toString, chunk, ts))
         }
       }
       chunk = null
@@ -152,6 +154,17 @@ class FetchRequestActor(request: GraphApi.Request)
     } else if (queue.isEmpty) {
       self ! Acquired
     }
+  }
+
+  private def isAllNaN(seq: TimeSeq, s: Long, e: Long, step: Long): Boolean = {
+    require(s <= e, "start must be <= end")
+    val end = e / step * step
+    var t = s / step * step
+    while (t < end) {
+      if (!seq(t).isNaN) return false
+      t += step
+    }
+    true
   }
 }
 
