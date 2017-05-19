@@ -22,6 +22,12 @@ Multiple signals should only be combined if it improves the effectiveness of the
 (Num Errors / Num Total) > 0.01 for at least 5 minutes
 ```
 
+If you are following this guidance, but you are still experiencing false positive alerts in evacuated regions during failover scenarios due to low volume input signals, then consider adding a traffic volume noise filter condition to your alert:
+
+```
+Percentage of Failures > X AND Volume > Y
+```
+
 As a general rule, bias towards simplicity. If you are creating more complex expressions, then stop and think about why that complexity is needed. Are there other signals available that are easier to use? Can the application be changed so that it reports metrics which make it easier to diagnose? 
 
 ## Actionable Alerts
