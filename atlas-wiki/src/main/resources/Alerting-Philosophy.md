@@ -22,6 +22,12 @@ Multiple signals should only be combined if it improves the effectiveness of the
 (Num Errors / Num Total) > 0.01 for at least 5 minutes
 ```
 
+In some cases, a low volume can make the percentages less meaningful and result in false positives. For example, if your daily traffic pattern follows a sine curve, then the troughs may not represent a meaningful error percentage. Another example might be during failover exercises, if traffic has been failed over to another cluster. One way to compensate for this is to check the failure rate and overall volume:
+
+```
+Percentage of Failures > X AND Volume > Y
+```
+
 As a general rule, bias towards simplicity. If you are creating more complex expressions, then stop and think about why that complexity is needed. Are there other signals available that are easier to use? Can the application be changed so that it reports metrics which make it easier to diagnose? 
 
 ## Actionable Alerts
