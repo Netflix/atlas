@@ -35,7 +35,7 @@ final class CloudWatchModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private def provideCloudWatchClient(factory: AwsClientFactory): AmazonCloudWatch = {
+  protected def provideCloudWatchClient(factory: AwsClientFactory): AmazonCloudWatch = {
     factory.newInstance(classOf[AmazonCloudWatch])
   }
 

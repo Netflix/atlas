@@ -39,7 +39,7 @@ final class EvalModule extends AbstractModule {
   }
 
   @Provides @Singleton
-  private def providesEvaluator(opts: OptionalInjections): Evaluator = {
+  protected def providesEvaluator(opts: OptionalInjections): Evaluator = {
     new Evaluator(opts.config, opts.registry, opts.getActorSystem)
   }
 

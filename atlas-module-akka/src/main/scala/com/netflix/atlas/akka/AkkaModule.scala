@@ -39,13 +39,13 @@ final class AkkaModule extends AbstractModule {
   }
 
   @Provides @Singleton
-  private def providesActorSystem(config: Config): ActorSystem = {
+  protected def providesActorSystem(config: Config): ActorSystem = {
     val name = config.getString("atlas.akka.name")
     ActorSystem(name, config)
   }
 
   @Provides @Singleton
-  private def providesActorRefFactory(system: ActorSystem): ActorRefFactory = system
+  protected def providesActorRefFactory(system: ActorSystem): ActorRefFactory = system
 
   override def equals(obj: Any): Boolean = {
     obj != null && getClass.equals(obj.getClass)

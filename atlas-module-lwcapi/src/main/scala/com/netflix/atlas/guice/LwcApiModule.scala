@@ -25,24 +25,24 @@ import com.netflix.atlas.lwcapi.ExpressionSplitter
 import com.netflix.atlas.lwcapi.SubscriptionManager
 import com.netflix.iep.guice.LifecycleModule
 
-class LwcApiModule extends AbstractModule {
+final class LwcApiModule extends AbstractModule {
   override def configure(): Unit = {
     install(new LifecycleModule)
     install(new AkkaModule)
   }
 
   @Provides @Singleton
-  private def providesExpressionDatabase(): ExpressionDatabase = {
+  protected def providesExpressionDatabase(): ExpressionDatabase = {
     new ExpressionDatabase()
   }
 
   @Provides @Singleton
-  private def providesExpressionSplitter(): ExpressionSplitter = {
+  protected def providesExpressionSplitter(): ExpressionSplitter = {
     new ExpressionSplitter()
   }
 
   @Provides @Singleton
-  private def providesSubscriptionManager(): SubscriptionManager = {
+  protected def providesSubscriptionManager(): SubscriptionManager = {
     new SubscriptionManager()
   }
 
