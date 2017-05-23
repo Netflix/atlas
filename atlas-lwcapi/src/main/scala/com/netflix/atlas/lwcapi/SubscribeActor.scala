@@ -47,8 +47,6 @@ class SubscribeActor @Inject()(
   private val itemsId = registry.createId("atlas.lwcapi.subscribe.itemCount")
   private val ignoredId = registry.createId("atlas.lwcapi.subscribe.ignoredCount")
 
-  private val dbActor = context.actorSelection("/user/lwc.expressiondb")
-
   def receive: Receive = {
     case req @ ImperativeRequestContext(SubscribeRequest(_, Nil), _) =>
       req.complete(DiagnosticMessage.error(StatusCodes.BadRequest, "empty payload"))

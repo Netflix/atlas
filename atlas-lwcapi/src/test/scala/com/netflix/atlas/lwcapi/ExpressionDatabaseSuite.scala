@@ -139,8 +139,6 @@ class ExpressionDatabaseSuite extends FunSuite {
   test("ignores matches for other clusters") {
     val query1 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
     val freq1 = 30000
-    val id1 = "CxmlI6L5YBQcpWOrayncZKeZekg"
-    val ds1a = "nf.cluster,skan-test,:eq,:sum"
 
     val query2 = "nf.cluster,foo-test,:eq,:sum,:des-fast"
     val freq2 = 30000

@@ -15,16 +15,10 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 class ApiSettingsSuite extends FunSuite {
   test("loads") {
     assert(ApiSettings.defaultFrequency > 0)
-  }
-
-  test("adds prefix") {
-    val config = ConfigFactory.load("test-redis-prefixes.conf")
-    val c = new ApiSettings(config)
   }
 }
