@@ -17,6 +17,8 @@ package com.netflix.atlas.eval.stream;
 
 import akka.actor.ActorSystem;
 import com.netflix.atlas.eval.model.TimeSeriesMessage;
+import com.netflix.atlas.json.Json;
+import com.netflix.atlas.json.JsonSupport;
 import com.netflix.spectator.api.Registry;
 import com.typesafe.config.Config;
 import org.reactivestreams.Processor;
@@ -70,7 +72,7 @@ public final class Evaluator extends EvaluatorImpl {
    *     Publisher that produces events representing the evaluation results for the
    *     expression in the URI.
    */
-  public Publisher<TimeSeriesMessage> createPublisher(String uri) {
+  public Publisher<JsonSupport> createPublisher(String uri) {
     return createPublisherImpl(uri);
   }
 
@@ -188,10 +190,10 @@ public final class Evaluator extends EvaluatorImpl {
    */
   public final static class MessageEnvelope {
     private final String id;
-    private final TimeSeriesMessage message;
+    private final JsonSupport message;
 
     /** Create a new instance. */
-    public MessageEnvelope(String id, TimeSeriesMessage message) {
+    public MessageEnvelope(String id, JsonSupport message) {
       this.id = id;
       this.message = message;
     }
@@ -202,7 +204,7 @@ public final class Evaluator extends EvaluatorImpl {
     }
 
     /** Returns the message. */
-    public TimeSeriesMessage getMessage() {
+    public JsonSupport getMessage() {
       return message;
     }
 

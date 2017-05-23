@@ -28,6 +28,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.test.SrcPath
 import com.netflix.spectator.api.DefaultRegistry
 import com.typesafe.config.ConfigFactory
@@ -59,10 +60,12 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
 
     val uri = s"$baseUri?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
     val future = Source.fromPublisher(evaluator.createPublisher(uri))
-      .toMat(Sink.seq[TimeSeriesMessage])(Keep.right)
+      .toMat(Sink.seq[JsonSupport])(Keep.right)
       .run()
 
-    val messages = Await.result(future, 1.minute)
+    val messages = Await.result(future, 1.minute).collect {
+      case t: TimeSeriesMessage => t
+    }
     assert(messages.size === 255) // Can vary depending on num buffers for evaluation
     assert(messages.map(_.tags("nf.asg")).toSet.size === 3)
   }
