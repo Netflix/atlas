@@ -43,8 +43,6 @@ class StreamApi @Inject()(
 
   import StreamApi._
 
-  private val dbActor = actorRefFactory.actorSelection("/user/lwc.expressiondb")
-
   def routes: Route = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { streamId =>
       parameters('name.?, 'expression.?, 'frequency.?) { (name, expr, frequency) =>

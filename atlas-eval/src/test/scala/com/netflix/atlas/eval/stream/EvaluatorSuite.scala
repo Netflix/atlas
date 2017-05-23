@@ -164,7 +164,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val oneCount = new AtomicInteger()
     val twoCount = new AtomicInteger()
     val sink = Sink.foreach[Evaluator.MessageEnvelope] { msg =>
-      val c = msg.getId match {
+      msg.getId match {
         case "one" => oneCount.incrementAndGet()
         case "two" => twoCount.incrementAndGet()
       }
