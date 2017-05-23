@@ -35,6 +35,7 @@ import com.netflix.atlas.eval.model.ServoMessage
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.util.ByteStringInputStream
 import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Counter
 
 import scala.concurrent.Promise
@@ -171,7 +172,7 @@ object EvaluationFlows {
     * @return
     *     Time series messages containing the results of the evaluation.
     */
-  def forPartialAggregates(expr: StyleExpr, step: Long): Flow[AggrDatapoint, TimeSeriesMessage, NotUsed] = {
+  def forPartialAggregates(expr: StyleExpr, step: Long): Flow[AggrDatapoint, JsonSupport, NotUsed] = {
     // TODO: number of buffers should be configurable by user, need to discuss how best to
     // map some that into the api... for now it is set to 1 to reduce the delay during testing
     Flow[AggrDatapoint]
@@ -180,7 +181,7 @@ object EvaluationFlows {
       .flatMapConcat(msgs => Source(msgs))
   }
 
-  def lwcEval(expr: StyleExpr, step: Long): Flow[ByteString, TimeSeriesMessage, NotUsed] = {
+  def lwcEval(expr: StyleExpr, step: Long): Flow[ByteString, JsonSupport, NotUsed] = {
     Flow[ByteString]
       .map(_.decodeString(StandardCharsets.UTF_8))
       .via(EvaluationFlows.lwcToAggrDatapoint)

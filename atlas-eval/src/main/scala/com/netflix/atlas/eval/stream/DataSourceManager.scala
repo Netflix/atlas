@@ -27,7 +27,7 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.json.JsonSupport
 import com.typesafe.scalalogging.StrictLogging
 
 /**
@@ -36,7 +36,7 @@ import com.typesafe.scalalogging.StrictLogging
   * @param newEvalSource
   *     Factory method for creating a new evaluation stream based on a data source.
   */
-class DataSourceManager(newEvalSource: Evaluator.DataSource => Source[TimeSeriesMessage, NotUsed])
+class DataSourceManager(newEvalSource: Evaluator.DataSource => Source[JsonSupport, NotUsed])
   extends GraphStage[FlowShape[Evaluator.DataSources, Source[Evaluator.MessageEnvelope, NotUsed]]]
   with StrictLogging {
 

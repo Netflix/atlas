@@ -40,7 +40,7 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Streams
-import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import org.reactivestreams.Processor
@@ -130,11 +130,11 @@ private[stream] abstract class EvaluatorImpl(
     }
   }
 
-  protected def createPublisherImpl(uri: String): Publisher[TimeSeriesMessage] = {
+  protected def createPublisherImpl(uri: String): Publisher[JsonSupport] = {
     createPublisherImpl(Uri(uri))
   }
 
-  protected def createPublisherImpl(uri: Uri): Publisher[TimeSeriesMessage] = {
+  protected def createPublisherImpl(uri: Uri): Publisher[JsonSupport] = {
     val backend = findBackendForUri(uri)
 
     val expr = eval(uri.query().get("q").get).head

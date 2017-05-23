@@ -19,7 +19,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 import org.scalatest.FunSuite
-import org.scalatest.Matchers._
 
 class EvalContextSuite extends FunSuite {
 
