@@ -159,22 +159,56 @@ object GraphEval {
     useDescending: Boolean,
     lines: List[LineDef]): List[LineDef] = {
 
-    import java.lang.{Double => JDouble}
-    val sorted = sortBy.fold(lines) { mode =>
+    // The default is sort by legend in ascending order. If the defaults have been explicitly
+    // changed, then the explicit values should be used. Since the sort by param is used to
+    // short circuit if there is nothing to do, it will get set to legend explicitly here if
+    // the order has been changed to descending.
+    val by = if (useDescending) Some(sortBy.getOrElse("legend")) else sortBy
+
+    by.fold(lines) { mode =>
       val cmp: Function2[LineDef, LineDef, Boolean] = mode match {
-        case "legend" => (a, b) => a.data.label < b.data.label
-        case "min"    => (a, b) => JDouble.compare(a.legendStats.min, b.legendStats.min) < 0
-        case "max"    => (a, b) => JDouble.compare(a.legendStats.max, b.legendStats.max) < 0
-        case "avg"    => (a, b) => JDouble.compare(a.legendStats.avg, b.legendStats.avg) < 0
-        case "count"  => (a, b) => a.legendStats.count < b.legendStats.count
-        case "total"  => (a, b) => JDouble.compare(a.legendStats.total, b.legendStats.total) < 0
-        case "last"   => (a, b) => JDouble.compare(a.legendStats.last, b.legendStats.last) < 0
+        case "legend" => (a, b) => compare(useDescending, a.data.label, b.data.label)
+        case "min"    => (a, b) => compare(useDescending, a.legendStats.min, b.legendStats.min)
+        case "max"    => (a, b) => compare(useDescending, a.legendStats.max, b.legendStats.max)
+        case "avg"    => (a, b) => compare(useDescending, a.legendStats.avg, b.legendStats.avg)
+        case "count"  => (a, b) => compare(useDescending, a.legendStats.count, b.legendStats.count)
+        case "total"  => (a, b) => compare(useDescending, a.legendStats.total, b.legendStats.total)
+        case "last"   => (a, b) => compare(useDescending, a.legendStats.last, b.legendStats.last)
         case order    =>
           warnings += s"Invalid sort mode '$order'. Using default of 'legend'."
-          (a, b) => a.data.label < b.data.label
+          (a, b) => compare(useDescending, a.data.label, b.data.label)
       }
       lines.sortWith(cmp)
     }
-    if (useDescending) sorted.reverse else sorted
+  }
+
+  private def compare(desc: Boolean, a: String, b: String): Boolean = {
+    if (desc) a > b else a < b
+  }
+
+  private def compare(desc: Boolean, a: Int, b: Int): Boolean = {
+    if (desc) a > b else a < b
+  }
+
+  private def compare(desc: Boolean, a: Double, b: Double): Boolean = {
+    // Note: NaN values are special and should always be sorted last. This is the default
+    // behavior of `JDouble.compare` for strictly greater than or less than. However it does
+    // mean that you cannot change the order by sorting one way and then reversing because that
+    // would move the NaN values to the beginning.
+    // https://github.com/Netflix/atlas/issues/586
+    if (desc) compare(_ > _, a, b) else compare(_ < _, a, b)
+  }
+
+  private def compare(op: (Double, Double) => Boolean, a: Double, b: Double): Boolean = {
+    // Do not use op directly because NaN values can cause contract errors with the sort:
+    // https://github.com/Netflix/atlas/issues/405
+    if (a.isNaN && b.isNaN)
+      false
+    else if (a.isNaN)
+      false // b should come first as it has a value
+    else if (b.isNaN)
+      true  // a should come first as it has a value
+    else
+      op(a, b)
   }
 }

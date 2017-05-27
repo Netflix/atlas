@@ -137,6 +137,8 @@
 # sorting with NaN values
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9&sort=max&order=desc
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9&sort=max&order=asc
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=1,NaN,2,NaN,-1&sort=max&order=asc
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=1,NaN,2,NaN,-1&sort=max&order=desc
 
 
 # filtering
