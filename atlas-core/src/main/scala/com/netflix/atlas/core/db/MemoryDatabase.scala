@@ -58,12 +58,11 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   private val blockSize = config.getInt("block-size")
   private val numBlocks = config.getInt("num-blocks")
   private val testMode = config.getBoolean("test-mode")
-  private val internWhileBuilding = config.getBoolean("intern-while-building")
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   val index = new BatchUpdateTagIndex[BlockStoreItem]({ items =>
-    new CachingTagIndex(new RoaringTagIndex(items, internWhileBuilding))
+    new CachingTagIndex(new RoaringTagIndex(items))
   })
 
   // If the last update time for the index is older than the rebuild age force an update

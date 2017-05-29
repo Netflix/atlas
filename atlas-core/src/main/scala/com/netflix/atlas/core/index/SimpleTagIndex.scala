@@ -90,25 +90,37 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
   }
 
   def findTags(query: TagQuery): List[Tag] = {
-    val matches = findItemsImpl(query.query)
-    val uniq = matches.flatMap(_.tags.map(t => Tag(t._1, t._2))).distinct
+    if (query.key.isEmpty) Nil else {
+      val matches = findItemsImpl(query.query)
+      val uniq = matches.flatMap(_.tags.map(t => Tag(t._1, t._2))).distinct
 
-    val forKey = query.key.fold(uniq)(k => uniq.filter(_.key == k))
-    val filtered = forKey.filter(_ > query.offsetTag)
-    val sorted = filtered.sortWith(_ < _)
+      val forKey = query.key.fold(uniq)(k => uniq.filter(_.key == k))
+      val filtered = forKey.filter(_ > query.offsetTag)
+      val sorted = filtered.sortWith(_ < _)
 
-    sorted.take(query.limit)
+      sorted.take(query.limit)
+    }
   }
 
   def findKeys(query: TagQuery): List[TagKey] = {
-    findValues(query).map(v => TagKey(v))
+    val matches = findItemsImpl(query.query)
+    matches
+      .flatMap(_.tags)
+      .map(_._1)
+      .distinct
+      .filter(_ > query.offset)
+      .sortWith(_ < _)
+      .take(query.limit)
+      .map(v => TagKey(v))
   }
 
   def findValues(query: TagQuery): List[String] = {
+    require(query.key.isDefined)
     val matches = findItemsImpl(query.query)
     val uniq = matches.flatMap(_.tags).distinct
 
-    val forKey = query.key.fold(uniq.map(_._2))(k => uniq.filter(_._1 == k).map(_._1))
+    val k = query.key.get
+    val forKey = uniq.filter(_._1 == k).map(_._2)
     val filtered = forKey.filter(_ > query.offset)
     val sorted = filtered.sortWith(_ < _)
 

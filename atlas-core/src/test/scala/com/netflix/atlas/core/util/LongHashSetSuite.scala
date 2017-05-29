@@ -22,17 +22,17 @@ import org.scalatest.FunSuite
 import scala.util.Random
 
 
-class IntHashSetSuite extends FunSuite {
+class LongHashSetSuite extends FunSuite {
 
   test("add") {
-    val s = new IntHashSet(-1, 10)
+    val s = new LongHashSet(-1, 10)
     s.add(11)
     assert(List(11) === s.toList)
     assert(1 === s.size)
   }
 
   test("dedup") {
-    val s = new IntHashSet(-1, 10)
+    val s = new LongHashSet(-1, 10)
     s.add(42)
     assert(List(42) === s.toList)
     assert(1 === s.size)
@@ -42,24 +42,24 @@ class IntHashSetSuite extends FunSuite {
   }
 
   test("resize") {
-    val s = new IntHashSet(-1, 10)
-    (0 until 10000).foreach(s.add)
-    assert((0 until 10000).toSet === s.toList.toSet)
+    val s = new LongHashSet(-1L, 10)
+    (0L until 10000L).foreach(s.add)
+    assert((0L until 10000L).toSet === s.toList.toSet)
     assert(s.size === 10000)
   }
 
   test("random") {
-    val jset = new scala.collection.mutable.HashSet[Int]
-    val iset = new IntHashSet(-1, 10)
+    val jset = new scala.collection.mutable.HashSet[Long]
+    val iset = new LongHashSet(-1, 10)
     (0 until 10000).foreach { i =>
-      val v = Random.nextInt()
+      val v = Random.nextLong()
       iset.add(v)
       jset.add(v)
     }
     assert(jset.toSet === iset.toList.toSet)
   }
 
-  private def arrayCompare(a1: Array[Int], a2: Array[Int]): Unit = {
+  private def arrayCompare(a1: Array[Long], a2: Array[Long]): Unit = {
     // Need to sort as traversal order could be different when generating the arrays
     java.util.Arrays.sort(a1)
     java.util.Arrays.sort(a2)
@@ -67,10 +67,10 @@ class IntHashSetSuite extends FunSuite {
   }
 
   test("toArray") {
-    val jset = new scala.collection.mutable.HashSet[Int]
-    val iset = new IntHashSet(-1, 10)
+    val jset = new scala.collection.mutable.HashSet[Long]
+    val iset = new LongHashSet(-1, 10)
     (0 until 10000).foreach { i =>
-      val v = Random.nextInt()
+      val v = Random.nextLong()
       iset.add(v)
       jset.add(v)
     }
@@ -79,12 +79,12 @@ class IntHashSetSuite extends FunSuite {
 
   test("memory per set") {
     // Sanity check to verify if some change introduces more overhead per set
-    val bytes = ClassLayout.parseClass(classOf[IntHashSet]).instanceSize()
-    assert(bytes === 32)
+    val bytes = ClassLayout.parseClass(classOf[LongHashSet]).instanceSize()
+    assert(bytes === 40)
   }
 
   test("memory - 5 items") {
-    val iset = new IntHashSet(-1, 10)
+    val iset = new LongHashSet(-1, 10)
     val jset = new java.util.HashSet[Int](10)
     (0 until 5).foreach { i =>
       iset.add(i)
@@ -97,15 +97,15 @@ class IntHashSetSuite extends FunSuite {
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)
 
-    // Only objects should be the array and the set itself
-    assert(igraph.totalCount() === 2)
+    // Only objects should be the array, hash buffer, and the set itself
+    assert(igraph.totalCount() === 4)
 
     // Sanity check size is < 100 bytes
-    assert(igraph.totalSize() <= 100)
+    assert(igraph.totalSize() <= 250)
   }
 
   test("memory - 10k items") {
-    val iset = new IntHashSet(-1, 10)
+    val iset = new LongHashSet(-1, 10)
     val jset = new java.util.HashSet[Int](10)
     (0 until 10000).foreach { i =>
       iset.add(i)
@@ -118,15 +118,15 @@ class IntHashSetSuite extends FunSuite {
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)
 
-    // Only objects should be the array and the set itself
-    assert(igraph.totalCount() === 2)
+    // Only objects should be the array, hash buffer, and the set itself
+    assert(igraph.totalCount() === 4)
 
-    // Sanity check size is < 110kb
-    assert(igraph.totalSize() <= 110000)
+    // Sanity check size is < 220kb
+    assert(igraph.totalSize() <= 220000)
   }
 
   test("negative absolute value") {
-    val s = new IntHashSet(-1, 10)
-    s.add(Integer.MIN_VALUE)
+    val s = new LongHashSet(-1, 10)
+    s.add(java.lang.Long.MIN_VALUE)
   }
 }

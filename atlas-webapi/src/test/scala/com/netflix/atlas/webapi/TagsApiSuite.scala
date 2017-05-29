@@ -83,10 +83,7 @@ class TagsApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   testGet("/api/v1/tags?verbose=1") {
-    val expected = Seq(toTagJson("class", "even", 6), toTagJson("class", "odd", 6)) ++
-      (0 to 11).map(toTagJson).sortWith(_ < _) ++
-      Seq(toTagJson("prime", "probably", 5))
-    assert(responseAs[String] === expected.mkString("[", ",", "]"))
+    assert(responseAs[String] === "[]")
   }
 
   testGet("/api/v1/tags/name") {
@@ -108,12 +105,12 @@ class TagsApiSuite extends FunSuite with ScalatestRouteTest {
     assert(responseAs[String] === expected)
   }
 
-  private def toTagJson(v: Int): String = toTagJson("name", "%02d".format(v), 1)
+  private def toTagJson(v: Int): String = toTagJson("name", "%02d".format(v), -1)
 
   private def toTagJson(k: String, v: String, c: Int): String = {
     s"""{"key":"$k","value":"$v","count":$c}"""
   }
 
-  private def toTagText(v: Int): String = f"name\t$v%02d\t1"
+  private def toTagText(v: Int): String = f"name\t$v%02d\t-1"
 
 }

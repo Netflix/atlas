@@ -22,10 +22,10 @@ import org.scalatest.FunSuite
 import scala.util.Random
 
 
-class LongIntHashMapSuite extends FunSuite {
+class IntRefHashMapSuite extends FunSuite {
 
   test("put") {
-    val m = new LongIntHashMap(-1)
+    val m = new IntRefHashMap[Integer](-1)
     assert(0 === m.size)
     m.put(11, 42)
     assert(1 === m.size)
@@ -33,28 +33,28 @@ class LongIntHashMapSuite extends FunSuite {
   }
 
   test("get") {
-    val m = new LongIntHashMap(-1)
-    assert(m.get(42, -1) === -1)
+    val m = new IntRefHashMap[Integer](-1)
+    assert(m.get(42) === null)
     m.put(11, 27)
-    assert(m.get(42, -1) === -1)
-    assert(m.get(11, -1) === 27)
+    assert(m.get(42) === null)
+    assert(m.get(11) === 27)
   }
 
   test("get - collisions") {
     // Underlying capacity will be 11, next prime after 10, so 0 and multiples of 11
     // will collide
-    val m = new LongIntHashMap(-1, 10)
+    val m = new IntRefHashMap[Integer](-1, 10)
     m.put(0, 0)
     m.put(11, 1)
     m.put(22, 2)
     assert(m.size === 3)
-    assert(m.get(0, -1) === 0)
-    assert(m.get(11, -1) === 1)
-    assert(m.get(22, -1) === 2)
+    assert(m.get(0) === 0)
+    assert(m.get(11) === 1)
+    assert(m.get(22) === 2)
   }
 
   test("dedup") {
-    val m = new LongIntHashMap(-1)
+    val m = new IntRefHashMap[Integer](-1)
     m.put(42, 1)
     assert(Map(42 -> 1) === m.toMap)
     assert(1 === m.size)
@@ -63,49 +63,15 @@ class LongIntHashMapSuite extends FunSuite {
     assert(1 === m.size)
   }
 
-  test("increment") {
-    val m = new LongIntHashMap(-1)
-    assert(0 === m.size)
-
-    m.increment(42)
-    assert(1 === m.size)
-    assert(Map(42 -> 1) === m.toMap)
-
-    m.increment(42)
-    assert(1 === m.size)
-    assert(Map(42 -> 2) === m.toMap)
-
-    m.increment(42, 7)
-    assert(1 === m.size)
-    assert(Map(42 -> 9) === m.toMap)
-  }
-
-  test("increment - collisions") {
-    // Underlying capacity will be 11, next prime after 10, so 0 and multiples of 11
-    // will collide
-    val m = new LongIntHashMap(-1, 10)
-    m.increment(0)
-    m.increment(11)
-    m.increment(22)
-    assert(m.size === 3)
-    m.foreach { (_, v) => assert(v === 1) }
-  }
-
   test("resize") {
-    val m = new LongIntHashMap(-1, 10)
+    val m = new IntRefHashMap[Integer](-1, 10)
     (0 until 10000).foreach(i => m.put(i, i))
     assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
   }
 
-  test("resize - increment") {
-    val m = new LongIntHashMap(-1, 10)
-    (0 until 10000).foreach(i => m.increment(i, i))
-    assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
-  }
-
   test("random") {
-    val jmap = new scala.collection.mutable.HashMap[Long, Int]
-    val imap = new LongIntHashMap(-1, 10)
+    val jmap = new scala.collection.mutable.HashMap[Int, Int]
+    val imap = new IntRefHashMap[Integer](-1, 10)
     (0 until 10000).foreach { i =>
       val v = Random.nextInt()
       imap.put(v, i)
@@ -117,13 +83,13 @@ class LongIntHashMapSuite extends FunSuite {
 
   test("memory per map") {
     // Sanity check to verify if some change introduces more overhead per set
-    val bytes = ClassLayout.parseClass(classOf[LongIntHashMap]).instanceSize()
+    val bytes = ClassLayout.parseClass(classOf[IntRefHashMap[Integer]]).instanceSize()
     assert(bytes === 40)
   }
 
   test("memory - 5 items") {
-    val imap = new LongIntHashMap(-1, 10)
-    val jmap = new java.util.HashMap[Long, Int](10)
+    val imap = new IntRefHashMap[Integer](-1, 10)
+    val jmap = new java.util.HashMap[Int, Int](10)
     (0 until 5).foreach { i =>
       imap.put(i, i)
       jmap.put(i, i)
@@ -135,16 +101,16 @@ class LongIntHashMapSuite extends FunSuite {
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)
 
-    // Only objects should be the key/value arrays, hash buffer, and the map itself
-    assert(igraph.totalCount() === 5)
+    // Integer class creates a bunch of objects
+    assert(igraph.totalCount() === 10)
 
-    // Sanity check size is < 300 bytes
-    assert(igraph.totalSize() <= 300)
+    // Sanity check size is < 340, mostly for Integer static fields
+    assert(igraph.totalSize() <= 340)
   }
 
   test("memory - 10k items") {
-    val imap = new LongIntHashMap(-1, 10)
-    val jmap = new java.util.HashMap[Long, Int](10)
+    val imap = new IntRefHashMap[Integer](-1, 10)
+    val jmap = new java.util.HashMap[Int, Int](10)
     (0 until 10000).foreach { i =>
       imap.put(i, i)
       jmap.put(i, i)
@@ -156,17 +122,16 @@ class LongIntHashMapSuite extends FunSuite {
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)
 
-    // Only objects should be the key/value arrays and the map itself
-    assert(igraph.totalCount() === 5)
+    // Around 10 or so for the Integer class + 10k for the values
+    assert(igraph.totalCount() === 10005)
 
-    // Sanity check size is < 320kb
-    assert(igraph.totalSize() <= 320000)
+    // Sanity check size is < 370kb
+    assert(igraph.totalSize() <= 370e3)
   }
 
   test("negative absolute value") {
-    // hashes to Integer.MIN_VALUE causing: java.lang.ArrayIndexOutOfBoundsException: -2
-    val m = new LongIntHashMap(-1, 10)
-    assert(m.get(Integer.MIN_VALUE.toLong - 1, 0) === 0)
+    val s = new IntRefHashMap[Integer](-1, 10)
+    assert(s.get(Integer.MIN_VALUE) === null)
   }
 
 }
