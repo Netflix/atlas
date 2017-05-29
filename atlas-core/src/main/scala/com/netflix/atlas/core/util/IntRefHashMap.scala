@@ -20,32 +20,29 @@ import java.nio.ByteBuffer
 import scala.util.hashing.MurmurHash3
 
 /**
-  * Mutable long to integer map based on open-addressing. Primary use-case is computing
+  * Mutable integer map based on open-addressing. Primary use-case is computing
   * a count for the number of times a particular value was encountered.
   *
-  * @param noData
-  *     Value to use to represent no data in the array. This value should not
-  *     be used in the input.
   * @param capacity
   *     Initial capacity guideline. The actual size of the underlying buffer
   *     will be the next prime >= `capacity`. Default is 10.
   */
-class LongIntHashMap(noData: Long, capacity: Int = 10) {
+class IntRefHashMap[T <: AnyRef : Manifest](noData: Int, capacity: Int = 10) {
 
   private[this] var keys = newArray(capacity)
-  private[this] var values = new Array[Int](keys.length)
+  private[this] var values = ArrayHelper.newInstance[T](keys.length)
   private[this] var used = 0
   private[this] var cutoff = computeCutoff(keys.length)
 
   // Used for computing the hash code.
-  private[this] var buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
+  private[this] var buffer = ByteBuffer.allocate(Integer.BYTES)
 
   // Set at 50% capacity to get reasonable tradeoff between performance and
   // memory use. See IntIntMap benchmark.
   private def computeCutoff(n: Int): Int = math.max(3, n / 2)
 
-  private def newArray(n: Int): Array[Long] = {
-    val tmp = new Array[Long](PrimeFinder.nextPrime(n))
+  private def newArray(n: Int): Array[Int] = {
+    val tmp = new Array[Int](PrimeFinder.nextPrime(n))
     var i = 0
     while (i < tmp.length) {
       tmp(i) = noData
@@ -56,7 +53,7 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
 
   private def resize(): Unit = {
     val tmpKS = newArray(keys.length * 2)
-    val tmpVS = new Array[Int](tmpKS.length)
+    val tmpVS = ArrayHelper.newInstance[T](tmpKS.length)
     var i = 0
     while (i < keys.length) {
       val k = keys(i)
@@ -68,15 +65,15 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
     cutoff = computeCutoff(tmpKS.length)
   }
 
-  private def hash(ks: Array[Long], k: Long): Int = {
+  private def hash(v: Int, length: Int): Int = {
     buffer.clear()
-    buffer.putLong(k)
-    MurmurHash3.bytesHash(buffer.array())
-    Hash.absOrZero(java.lang.Long.hashCode(k)) % ks.length
+    buffer.putInt(v)
+    val h = MurmurHash3.bytesHash(buffer.array())
+    Hash.absOrZero(h) % length
   }
 
-  private def put(ks: Array[Long], vs: Array[Int], k: Long, v: Int): Boolean = {
-    var pos = hash(ks, k)
+  private def put(ks: Array[Int], vs: Array[T], k: Int, v: T): Boolean = {
+    var pos = hash(k, ks.length)
     var posV = ks(pos)
     while (posV != noData && posV != k) {
       pos = (pos + 1) % ks.length
@@ -88,11 +85,11 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
   }
 
   /**
-    * Put a long to integer pair into the map. The key, `k`, should not be
+    * Put an integer key/value pair into the map. The key, `k`, should not be
     * equivalent to the `noData` value used for this map. If an entry with the
     * same key already exists, then the value will be overwritten.
     */
-  def put(k: Long, v: Int): Unit = {
+  def put(k: Int, v: T): Unit = {
     if (used >= cutoff) resize()
     if (put(keys, values, k, v)) used += 1
   }
@@ -101,47 +98,22 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
     * Get the value associated with key, `k`. If no value is present, then the
     * `dflt` value will be returned.
     */
-  def get(k: Long, dflt: Int): Int = {
-    var pos = hash(keys, k)
+  def get(k: Int): T = {
+    var pos = hash(k, keys.length)
     while (true) {
       val prev = keys(pos)
       if (prev == noData)
-        return dflt
+        return null.asInstanceOf[T]
       else if (prev == k)
         return values(pos)
       else
         pos = (pos + 1) % keys.length
     }
-    dflt
-  }
-
-  /**
-    * Add one to the count associated with `k`. If the key is not already in the
-    * map a new entry will be created with a count of 1.
-    */
-  def increment(k: Long): Unit = increment(k, 1)
-
-  /**
-    * Add `amount` to the count associated with `k`. If the key is not already in the
-    * map a new entry will be created with a count of `amount`.
-    */
-  def increment(k: Long, amount: Int): Unit = {
-    if (used >= cutoff) resize()
-    var pos = hash(keys, k)
-    while (true) {
-      val prev = keys(pos)
-      if (prev == noData || prev == k) {
-        keys(pos) = k
-        values(pos) += amount
-        if (prev == noData) used += 1
-        return
-      }
-      pos = (pos + 1) % keys.length
-    }
+    null.asInstanceOf[T]
   }
 
   /** Execute `f` for each item in the set. */
-  def foreach(f: (Long, Int) => Unit): Unit = {
+  def foreach(f: (Int, T) => Unit): Unit = {
     var i = 0
     while (i < keys.length) {
       val k = keys(i)
@@ -153,9 +125,9 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
   /** Return the number of items in the set. This is a constant time operation. */
   def size: Int = used
 
-  /** Converts this set to a Map[Long, Int]. Used mostly for debugging and tests. */
-  def toMap: Map[Long, Int] = {
-    val builder = Map.newBuilder[Long, Int]
+  /** Converts this set to a Map[Int, Int]. Used mostly for debugging and tests. */
+  def toMap: Map[Int, T] = {
+    val builder = Map.newBuilder[Int, T]
     foreach { (k, v) => builder += k -> v }
     builder.result()
   }
