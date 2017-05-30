@@ -21,7 +21,6 @@ import java.util.Comparator
 
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
-import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.IntIntHashMap
 import com.netflix.atlas.core.util.IntRefHashMap
@@ -100,12 +99,9 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
   //   32bits. Key is a position in the keys array, value is a position in the values
   //   array.
   //
-  // * itemKeys: bitmap indicating the set of keys for an item. The positions in the
-  //   bitmap correspond to positions in the keys array.
-  //
   // * itemTags: map of key value pairs for an item. The key and value numbers are positions
   //   to the keys and values arrays respectively.
-  private val (itemIds, itemIndex, keyIndex, tagIndex, itemKeys, itemTags) = buildItemIndex()
+  private val (itemIds, itemIndex, keyIndex, tagIndex, itemTags) = buildItemIndex()
 
   private def createPositionMap(data: Array[String]): RefIntHashMap[String] = {
     val m = new RefIntHashMap[String](2 * data.length)
@@ -117,7 +113,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
     m
   }
 
-  private def buildItemIndex(): (Array[BigInteger], RoaringKeyMap, RoaringValueMap, Array[Long], Array[RoaringBitmap], Array[IntIntHashMap]) = {
+  private def buildItemIndex(): (Array[BigInteger], RoaringKeyMap, RoaringValueMap, Array[Long], Array[IntIntHashMap]) = {
     // Sort items array based on the id, allows for efficient paging of requests using the id
     // as the offset
     logger.debug(s"building index with ${items.length} items, starting sort")
@@ -128,13 +124,11 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
     logger.debug(s"building index with ${items.length} items, create main key map")
     val kidx = new RoaringValueMap(-1)
     val idx = new RoaringKeyMap(-1)
-    val itemKeys = new Array[RoaringBitmap](items.length)
     val itemTags = new Array[IntIntHashMap](items.length)
     val tagsSet = new LongHashSet(-1L, items.length)
     var pos = 0
     while (pos < items.length) {
       itemIds(pos) = items(pos).id
-      itemKeys(pos) = new RoaringBitmap()
       itemTags(pos) = new IntIntHashMap(-1, 2 * items(pos).tags.size)
       items(pos).foreach { (k, v) =>
         val kp = keyMap.get(k, -1)
@@ -161,7 +155,6 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
         }
         matchSet.add(pos)
 
-        itemKeys(pos).add(kp)
         itemTags(pos).put(kp, vp)
 
         val t = (kp.toLong << 32) | vp.toLong
@@ -178,7 +171,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
     }
     util.Arrays.sort(tagsArray)
 
-    (itemIds, idx, kidx, tagsArray, itemKeys, itemTags)
+    (itemIds, idx, kidx, tagsArray, itemTags)
   }
 
   /**
@@ -359,34 +352,32 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
     }
   }
 
-  def findKeys(query: TagQuery): List[TagKey] = {
+  def findKeys(query: TagQuery): List[String] = {
     if (query.query.isEmpty) {
       val offset = findOffset(keys, query.offset)
-      val builder = List.newBuilder[TagKey]
+      val builder = List.newBuilder[String]
       var i = offset
       val end = if (keys.length - i > query.limit) i + query.limit else keys.length
       while (i < end) {
-        builder += TagKey(keys(i))
+        builder += keys(i)
         i += 1
       }
       builder.result()
     } else {
-      val q = query.query.get
+      val q = query.query.getOrElse(Query.True)
       val itemSet = findImpl(q, 0)
+      val offset = findOffset(keys, query.offset)
 
-      val results = new RoaringBitmap()
+      val results = new util.BitSet(keys.length)
       val iter = itemSet.getIntIterator
       while (iter.hasNext) {
-        val keys = itemKeys(iter.next())
-        results.or(keys)
+        val tags = itemTags(iter.next())
+        tags.foreach { (k, _) =>
+          if (k >= offset) results.set(k)
+        }
       }
 
-      if (!results.isEmpty) {
-        var offset = findOffset(keys, query.offset)
-        results.remove(0L, offset)
-      }
-
-      createResultList(keys, results, query.limit).map(k => TagKey(k))
+      createResultList(keys, results, query.limit)
     }
   }
 

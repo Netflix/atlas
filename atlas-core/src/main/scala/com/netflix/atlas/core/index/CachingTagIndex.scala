@@ -19,7 +19,6 @@ import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.LoadingCache
 import com.netflix.atlas.core.model.Tag
-import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TaggedItem
 
 
@@ -31,7 +30,7 @@ import com.netflix.atlas.core.model.TaggedItem
 class CachingTagIndex[T <: TaggedItem](delegate: TagIndex[T]) extends TagIndex[T] {
 
   private val findTagsCache = newCache[List[Tag]](delegate.findTags)
-  private val findKeysCache = newCache[List[TagKey]](delegate.findKeys)
+  private val findKeysCache = newCache[List[String]](delegate.findKeys)
   private val findValuesCache = newCache[List[String]](delegate.findValues)
   private val findItemsCache = newCache[List[T]](delegate.findItems)
 
@@ -46,7 +45,7 @@ class CachingTagIndex[T <: TaggedItem](delegate: TagIndex[T]) extends TagIndex[T
     findTagsCache.get(query)
   }
 
-  def findKeys(query: TagQuery): List[TagKey] = {
+  def findKeys(query: TagQuery): List[String] = {
     findKeysCache.get(query)
   }
 

@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 import com.netflix.atlas.core.model.Tag
-import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.spectator.api.Spectator
 
@@ -106,7 +105,7 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => Tag
 
   def findTags(query: TagQuery): List[Tag] = currentIndex.get.findTags(query)
 
-  def findKeys(query: TagQuery): List[TagKey] = currentIndex.get.findKeys(query)
+  def findKeys(query: TagQuery): List[String] = currentIndex.get.findKeys(query)
 
   def findValues(query: TagQuery): List[String] = currentIndex.get.findValues(query)
 
