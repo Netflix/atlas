@@ -19,7 +19,6 @@ import java.math.BigInteger
 
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
-import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.Strings
 
@@ -102,7 +101,7 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
     }
   }
 
-  def findKeys(query: TagQuery): List[TagKey] = {
+  def findKeys(query: TagQuery): List[String] = {
     val matches = findItemsImpl(query.query)
     matches
       .flatMap(_.tags)
@@ -111,7 +110,6 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
       .filter(_ > query.offset)
       .sortWith(_ < _)
       .take(query.limit)
-      .map(v => TagKey(v))
   }
 
   def findValues(query: TagQuery): List[String] = {

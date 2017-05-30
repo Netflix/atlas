@@ -111,46 +111,46 @@ abstract class TagIndexSuite extends FunSuite {
   }
 
   test("findKeys, with limit") {
-    val result = index.findKeys(TagQuery(None, limit = 3)).map(_.name)
+    val result = index.findKeys(TagQuery(None, limit = 3))
     assert(result === List("atlas.legacy", "name", "nf.app"))
   }
 
   test("findKeys, with offset") {
-    val result = index.findKeys(TagQuery(None, offset = "nf.asg")).map(_.name)
+    val result = index.findKeys(TagQuery(None, offset = "nf.asg"))
     assert(result === List("nf.cluster", "nf.node", "type", "type2"))
   }
 
   test("findKeys, with offset that is not present") {
-    val result = index.findKeys(TagQuery(None, offset = "nf.asg2")).map(_.name)
+    val result = index.findKeys(TagQuery(None, offset = "nf.asg2"))
     assert(result === List("nf.cluster", "nf.node", "type", "type2"))
   }
 
   test("findKeys, with offset and limit") {
-    val result = index.findKeys(TagQuery(None, offset = "nf.asg", limit = 2)).map(_.name)
+    val result = index.findKeys(TagQuery(None, offset = "nf.asg", limit = 2))
     assert(result === List("nf.cluster", "nf.node"))
   }
 
   test("findKeys, with query and limit") {
     val q = Query.Equal("name", "sps_9")
-    val result = index.findKeys(TagQuery(Some(q), limit = 3)).map(_.name)
+    val result = index.findKeys(TagQuery(Some(q), limit = 3))
     assert(result === List("atlas.legacy", "name", "nf.app"))
   }
 
   test("findKeys, with query and offset") {
     val q = Query.Equal("name", "sps_9")
-    val result = index.findKeys(TagQuery(Some(q), offset = "nf.asg")).map(_.name)
+    val result = index.findKeys(TagQuery(Some(q), offset = "nf.asg"))
     assert(result === List("nf.cluster", "nf.node", "type", "type2"))
   }
 
   test("findKeys, with query and offset that is not present") {
     val q = Query.Equal("name", "sps_9")
-    val result = index.findKeys(TagQuery(Some(q), offset = "nf.asg2")).map(_.name)
+    val result = index.findKeys(TagQuery(Some(q), offset = "nf.asg2"))
     assert(result === List("nf.cluster", "nf.node", "type", "type2"))
   }
 
   test("findKeys, with query, offset, and limit") {
     val q = Query.Equal("name", "sps_9")
-    val result = index.findKeys(TagQuery(Some(q), offset = "nf.asg", limit = 2)).map(_.name)
+    val result = index.findKeys(TagQuery(Some(q), offset = "nf.asg", limit = 2))
     assert(result === List("nf.cluster", "nf.node"))
   }
 

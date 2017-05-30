@@ -25,9 +25,9 @@ class LocalDatabaseActor(db: Database) extends Actor with ActorLogging {
   import com.netflix.atlas.webapi.GraphApi._
   import com.netflix.atlas.webapi.TagsApi._
 
-  def receive = {
+  def receive: Receive = {
     case ListTagsRequest(tq)    => sender() ! TagListResponse(db.index.findTags(tq))
-    case ListKeysRequest(tq)    => sender() ! KeyListResponse(db.index.findKeys(tq).map(_.name))
+    case ListKeysRequest(tq)    => sender() ! KeyListResponse(db.index.findKeys(tq))
     case ListValuesRequest(tq)  => sender() ! ValueListResponse(db.index.findValues(tq))
     case req: DataRequest       => sender() ! executeDataRequest(req)
   }

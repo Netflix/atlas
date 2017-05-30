@@ -16,7 +16,6 @@
 package com.netflix.atlas.core.index
 
 import com.netflix.atlas.core.model.Tag
-import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TaggedItem
 
 
@@ -24,7 +23,7 @@ trait TagIndex[T <: TaggedItem] {
 
   def findTags(query: TagQuery): List[Tag]
 
-  def findKeys(query: TagQuery): List[TagKey]
+  def findKeys(query: TagQuery): List[String]
 
   def findValues(query: TagQuery): List[String]
 
