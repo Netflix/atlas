@@ -387,7 +387,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
     val has = Query.HasKey(k)
     val q = query.query.fold[Query](has)(q => q.and(has))
     val itemSet = findImpl(q, 0)
-    var offset = findOffset(values, query.offset)
+    val offset = findOffset(values, query.offset)
 
     val kp = keyMap.get(k, -1)
     val results = new util.BitSet(values.length)
