@@ -35,7 +35,8 @@ class IntRefHashMap[T <: AnyRef : Manifest](noData: Int, capacity: Int = 10) {
   private[this] var cutoff = computeCutoff(keys.length)
 
   // Used for computing the hash code.
-  private[this] var buffer = ByteBuffer.allocate(Integer.BYTES)
+  private[this] var buffer = ThreadLocal
+    .withInitial[ByteBuffer](() => ByteBuffer.allocate(Integer.BYTES))
 
   // Set at 50% capacity to get reasonable tradeoff between performance and
   // memory use. See IntIntMap benchmark.
@@ -66,9 +67,10 @@ class IntRefHashMap[T <: AnyRef : Manifest](noData: Int, capacity: Int = 10) {
   }
 
   private def hash(v: Int, length: Int): Int = {
-    buffer.clear()
-    buffer.putInt(v)
-    val h = MurmurHash3.bytesHash(buffer.array())
+    val buf = buffer.get()
+    buf.clear()
+    buf.putInt(v)
+    val h = MurmurHash3.bytesHash(buf.array())
     Hash.absOrZero(h) % length
   }
 

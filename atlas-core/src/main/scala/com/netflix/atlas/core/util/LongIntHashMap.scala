@@ -38,7 +38,8 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
   private[this] var cutoff = computeCutoff(keys.length)
 
   // Used for computing the hash code.
-  private[this] var buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
+  private[this] val buffer = ThreadLocal
+    .withInitial[ByteBuffer](() => ByteBuffer.allocate(java.lang.Long.BYTES))
 
   // Set at 50% capacity to get reasonable tradeoff between performance and
   // memory use. See IntIntMap benchmark.
@@ -69,9 +70,10 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
   }
 
   private def hash(ks: Array[Long], k: Long): Int = {
-    buffer.clear()
-    buffer.putLong(k)
-    MurmurHash3.bytesHash(buffer.array())
+    val buf = buffer.get()
+    buf.clear()
+    buf.putLong(k)
+    MurmurHash3.bytesHash(buf.array())
     Hash.absOrZero(java.lang.Long.hashCode(k)) % ks.length
   }
 
