@@ -16,6 +16,7 @@
 package com.netflix.atlas.webapi
 
 import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
 
 
@@ -174,5 +175,17 @@ class PublishApiJsonSuite extends FunSuite {
     intercept[IllegalArgumentException] {
       PublishApi.decodeBatch("""{"foo":"bar"}""")
     }
+  }
+
+  test("decode list from encoded datapoint") {
+    val vs = List(Datapoint(Map("a" -> "b"), 0L, 42.0))
+    val decoded = PublishApi.decodeList(Json.encode(vs))
+    assert(decoded.size === 1)
+  }
+
+  test("decode list from PublishApi.encoded datapoint") {
+    val vs = "[" + PublishApi.encodeDatapoint(Datapoint(Map("a" -> "b"), 0L, 42.0)) + "]"
+    val decoded = PublishApi.decodeList(vs)
+    assert(decoded.size === 1)
   }
 }
