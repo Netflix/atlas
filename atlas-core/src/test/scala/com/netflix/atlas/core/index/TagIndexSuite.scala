@@ -84,6 +84,13 @@ abstract class TagIndexSuite extends FunSuite {
     assert(result.size === 6)
   }
 
+  test("findTags query with exact regex") {
+    val q = Query.Regex("name", "sps_9")
+    val result = index.findTags(TagQuery(Some(q), key = Some("nf.cluster"))).map(_.copy(count = -1))
+    assert(result.find(_.value == "nccp-appletv") === Some(Tag("nf.cluster", "nccp-appletv")))
+    assert(result.size === 6)
+  }
+
   test("findValues, with no key") {
     intercept[IllegalArgumentException] {
       index.findValues(TagQuery(None))

@@ -287,7 +287,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
       val set = new RoaringBitmap()
       if (q.pattern.prefix.isDefined) {
         val prefix = q.pattern.prefix.get
-        val vp = findOffset(values, prefix)
+        val vp = findOffset(values, prefix, 0)
         val t = tag(kp, vp)
         var i = tagOffset(t)
         while (i < tagIndex.length
