@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.model
 
-import java.math.BigInteger
-
 import com.netflix.atlas.core.util.Math
 
 object TimeSeries {
@@ -137,7 +135,7 @@ trait TimeSeries extends TaggedItem {
 }
 
 case class BasicTimeSeries(
-    id: BigInteger,
+    id: ItemId,
     tags: Map[String, String],
     label: String,
     data: TimeSeq) extends TimeSeries
@@ -146,6 +144,6 @@ case class LazyTimeSeries(
     tags: Map[String, String],
     label: String,
     data: TimeSeq) extends TimeSeries {
-  lazy val id: BigInteger = TaggedItem.computeId(tags)
+  lazy val id: ItemId = TaggedItem.computeId(tags)
 }
 

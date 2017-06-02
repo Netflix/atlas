@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.model
 
-import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.Charset
@@ -27,7 +26,6 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.InternMap
 import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.SmallHashMap
-import com.netflix.atlas.core.util.Strings
 
 
 /**
@@ -39,10 +37,10 @@ object TaggedItem {
 
   type Pair = (String, String)
 
-  private val emptyId = Hash.sha1("")
+  private val emptyId = ItemId(Hash.sha1bytes(""))
 
   private val initCapacity = 1000000
-  private val idInterner = InternMap.concurrent[BigInteger](initCapacity)
+  private val idInterner = InternMap.concurrent[ItemId](initCapacity)
   private val tagsInterner = InternMap.concurrent[Map[String, String]](initCapacity)
 
   private val keyComparator = new Comparator[Pair] {
@@ -80,7 +78,7 @@ object TaggedItem {
    * Compute an identifier for a set of tags. The id is a sha1 hash of a normalized string
    * representation. Identical tags will always get the same id.
    */
-  def computeId(tags: Map[String, String]): BigInteger = {
+  def computeId(tags: Map[String, String]): ItemId = {
     if (tags.isEmpty) emptyId else {
 
       val pairs = new Array[Pair](tags.size)
@@ -109,7 +107,7 @@ object TaggedItem {
         writePair(pairs(pos), cbuf, buf, enc, md)
         pos += 1
       }
-      new BigInteger(1, md.digest)
+      ItemId(md.digest)
     }
   }
 
@@ -118,12 +116,12 @@ object TaggedItem {
    * keeping metric data in memory for a long time to avoid redundant big integer objects hanging
    * around.
    */
-  def createId(tags: Map[String, String]): BigInteger = {
+  def createId(tags: Map[String, String]): ItemId = {
     val id = computeId(tags)
     idInterner.intern(id)
   }
 
-  def internId(id: BigInteger): BigInteger = {
+  def internId(id: ItemId): ItemId = {
     idInterner.intern(id)
   }
 
@@ -158,10 +156,10 @@ object TaggedItem {
  */
 trait TaggedItem {
   /** Unique id based on the tags. */
-  def id: BigInteger
+  def id: ItemId
 
   /** Standard string representation of the id. */
-  def idString: String = Strings.zeroPad(id, 40)
+  def idString: String = id.toString
 
   /** The tags associated with this item. */
   def tags: Map[String, String]
@@ -182,7 +180,7 @@ trait TaggedItem {
 }
 
 trait LazyTaggedItem extends TaggedItem {
-  lazy val id: BigInteger = TaggedItem.computeId(tags)
+  lazy val id: ItemId = TaggedItem.computeId(tags)
 }
 
 case class BasicTaggedItem(tags: Map[String, String]) extends LazyTaggedItem

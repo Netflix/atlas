@@ -15,12 +15,10 @@
  */
 package com.netflix.atlas.core.index
 
-import java.math.BigInteger
-
+import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
-import com.netflix.atlas.core.util.Strings
 
 import scala.reflect.ClassTag
 
@@ -127,14 +125,14 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
 
   def findItems(query: TagQuery): List[T] = {
     val matches = findItemsImpl(query.query)
-    val filtered = matches.filter(i => Strings.zeroPad(i.id, 40) > query.offset)
+    val filtered = matches.filter(i => i.idString > query.offset)
     val sorted = filtered.sortWith { (a, b) => a.id.compareTo(b.id) < 0 }
     sorted.take(query.limit)
   }
 
   val size: Int = items.length
 
-  def update(additions: List[T], deletions: List[BigInteger]): TagIndex[T] = {
+  def update(additions: List[T], deletions: List[ItemId]): TagIndex[T] = {
     val itemMap = items.map(i => i.id -> i).toMap -- deletions
     val finalMap = itemMap ++ additions.map(i => i.id -> i)
     val newItems = finalMap.values.toList.sortWith((a, b) => a.id.compareTo(b.id) < 0)

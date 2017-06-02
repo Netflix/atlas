@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.core.index
 
-import java.math.BigInteger
 import java.util
 import java.util.Comparator
 
+import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
@@ -113,12 +113,12 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
     m
   }
 
-  private def buildItemIndex(): (Array[BigInteger], RoaringKeyMap, RoaringValueMap, Array[Long], Array[IntIntHashMap]) = {
+  private def buildItemIndex(): (Array[ItemId], RoaringKeyMap, RoaringValueMap, Array[Long], Array[IntIntHashMap]) = {
     // Sort items array based on the id, allows for efficient paging of requests using the id
     // as the offset
     logger.debug(s"building index with ${items.length} items, starting sort")
     util.Arrays.sort(items, idComparator)
-    val itemIds = new Array[BigInteger](items.length)
+    val itemIds = new Array[ItemId](items.length)
 
     // Build the main index
     logger.debug(s"building index with ${items.length} items, create main key map")
@@ -317,7 +317,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
 
   private def itemOffset(v: String): Int = {
     if (v == null || v == "") 0 else {
-      val offsetV = new BigInteger(v, 16)
+      val offsetV = ItemId(v)
       val pos = util.Arrays.binarySearch(itemIds.asInstanceOf[Array[AnyRef]], offsetV)
       if (pos < 0) -pos - 1 else pos
     }
