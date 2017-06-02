@@ -138,6 +138,38 @@ class PublishApiJsonSuite extends FunSuite {
     assert(decoded.size === 1)
   }
 
+  test("decode list with unknown key") {
+    val decoded = PublishApi.decodeList("""
+      [
+        {
+          "tags": {"name": "test"},
+          "timestamp": 123456789,
+          "unknown": {},
+          "values": 1.0
+        },
+        {
+          "tags": {"name": "test"},
+          "timestamp": 123456789,
+          "unknown": {"a":{"b":"c"},"b":[1,2,3]},
+          "values": 1.0
+        },
+        {
+          "tags": {"name": "test"},
+          "timestamp": 123456789,
+          "unknown": [1,2,3],
+          "values": 1.0
+        },
+        {
+          "tags": {"name": "test"},
+          "timestamp": 123456789,
+          "unknown": "foo",
+          "values": 1.0
+        }
+      ]
+      """)
+    assert(decoded.size === 4)
+  }
+
   test("decode batch bad object") {
     intercept[IllegalArgumentException] {
       PublishApi.decodeBatch("""{"foo":"bar"}""")
