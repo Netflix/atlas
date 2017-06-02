@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.model
 
-import java.math.BigInteger
-
 /**
   * Time series with a single value.
   *
@@ -40,7 +38,7 @@ case class Datapoint(
   require(tags != null, "tags cannot be null")
   require(timestamp >= 0L, s"invalid timestamp: $timestamp")
 
-  def id: BigInteger = TaggedItem.computeId(tags)
+  def id: ItemId = TaggedItem.computeId(tags)
 
   def label: String = TimeSeries.toLabel(tags)
   def data: TimeSeq = this

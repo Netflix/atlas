@@ -15,11 +15,11 @@
  */
 package com.netflix.atlas.core.index
 
-import java.math.BigInteger
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
+import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.spectator.api.Spectator
@@ -76,7 +76,7 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => Tag
       val size = pendingUpdates.size
       val updates = new java.util.ArrayList[T](size)
       pendingUpdates.drainTo(updates, size)
-      val items = new java.util.HashMap[BigInteger, T]
+      val items = new java.util.HashMap[ItemId, T]
       updates.forEach { i => items.put(i.id, i) }
 
       // Get set of all items in the current index that are not expired

@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.model
 
-import java.math.BigInteger
 import java.time.Duration
 
 import com.netflix.atlas.core.algorithm.OnlineDes
@@ -88,7 +87,7 @@ object StatefulExpr {
   object RollingCount {
     case class State(pos: Int, value: Double, buf: Array[Double])
 
-    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
+    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
   }
 
   //
@@ -142,7 +141,7 @@ object StatefulExpr {
   object Des {
     case class State(desState: OnlineDes.State)
 
-    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
+    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
   }
 
   //
@@ -209,7 +208,7 @@ object StatefulExpr {
   object SlidingDes {
     case class State(skipUpTo: Long, desState: OnlineSlidingDes.State)
 
-    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
+    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
   }
 
   //
@@ -273,7 +272,7 @@ object StatefulExpr {
   object Trend {
     case class State(nanCount: Int, pos: Int, value: Double, buf: Array[Double])
 
-    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
+    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
   }
 
   //
@@ -314,7 +313,7 @@ object StatefulExpr {
   object Integral {
     case class State(value: Double)
 
-    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
+    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
   }
 
   //
@@ -358,7 +357,7 @@ object StatefulExpr {
   object Derivative {
     case class State(value: Double)
 
-    type StateMap = scala.collection.mutable.AnyRefMap[BigInteger, State]
+    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
   }
 
 }
