@@ -148,6 +148,8 @@ object PublishApi {
       case "start"     => timestamp = nextLong(parser) // Legacy support
       case "values"    => value = getValue(parser)
       case _           => // Ignore unknown fields
+        parser.nextToken()
+        parser.skipChildren()
     }
     Datapoint(tags, timestamp, value)
   }
