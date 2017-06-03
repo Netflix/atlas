@@ -37,7 +37,7 @@ class ItemId private (private val data: Array[Byte], private val hc: Int)
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case other: ItemId => java.util.Arrays.equals(data, other.data)
+      case other: ItemId => hc == other.hc && java.util.Arrays.equals(data, other.data)
       case _             => false
     }
   }
