@@ -45,7 +45,7 @@ class StreamApi @Inject()(
 
   def routes: Route = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { streamId =>
-      parameters('name.?, 'expression.?, 'frequency.?) { (name, expr, frequency) =>
+      parameters(('name.?, 'expression.?, 'frequency.?)) { (name, expr, frequency) =>
         get {
           complete(handleReq(None, streamId, name, expr, frequency))
         } ~
