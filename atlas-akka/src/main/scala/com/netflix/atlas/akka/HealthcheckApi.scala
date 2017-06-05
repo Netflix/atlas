@@ -33,7 +33,6 @@ class HealthcheckApi(
     serviceManagerProvider: Provider[ServiceManager]) extends WebApi with StrictLogging {
 
   def routes: RequestContext => Unit = {
-    serviceManagerProvider.get()
     path("healthcheck") {
       respondWithMediaType(MediaTypes.`application/json`) {
         get { ctx =>
