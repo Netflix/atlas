@@ -111,6 +111,15 @@ object RequestHandler {
     cors { log }
   }
 
+  /**
+    * Wraps a route with error handling to format error messages in a consistent way.
+    */
+  def errorOptions(route: Route): Route = {
+    handleExceptions(exceptionHandler) {
+      handleRejections(rejectionHandler) { route }
+    }
+  }
+
   def errorResponse(t: Throwable): HttpResponse = t match {
     case e @ (_: IllegalArgumentException | _: IllegalStateException | _: JsonProcessingException) =>
       DiagnosticMessage.error(StatusCodes.BadRequest, e)

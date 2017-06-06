@@ -94,6 +94,12 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
                 val headers = List(RawHeader("Vary", "Host"))
                 complete(HttpResponse(status = StatusCodes.OK, headers = headers))
               }
+            } ~
+            path("error" / IntNumber) { code =>
+              get {
+                val status = StatusCodes.custom(code, "Error")
+                complete(HttpResponse(status = status))
+              }
             }
           }
         }
@@ -303,6 +309,44 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
       }
       val expected = ""
       assert(expected === responseAs[String])
+    }
+  }
+
+  test("cors for 404") {
+    val headers = List(Origin(HttpOrigin("http://localhost")))
+    val req = HttpRequest(HttpMethods.GET, Uri("/error/404"), headers)
+    req ~> endpoint.routes ~> check {
+      assert(response.headers.nonEmpty)
+      response.headers.foreach {
+        case `Access-Control-Allow-Origin`(v) =>
+          assert("http://localhost" === v.toString)
+        case `Access-Control-Allow-Methods`(vs) =>
+          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case h if h.is("vary") =>
+          assert(h.value === "Origin")
+        case h =>
+          fail(s"unexpected header: $h")
+      }
+      assert("" === responseAs[String])
+    }
+  }
+
+  test("cors for 400") {
+    val headers = List(Origin(HttpOrigin("http://localhost")))
+    val req = HttpRequest(HttpMethods.GET, Uri("/error/400"), headers)
+    req ~> endpoint.routes ~> check {
+      assert(response.headers.nonEmpty)
+      response.headers.foreach {
+        case `Access-Control-Allow-Origin`(v) =>
+          assert("http://localhost" === v.toString)
+        case `Access-Control-Allow-Methods`(vs) =>
+          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case h if h.is("vary") =>
+          assert(h.value === "Origin")
+        case h =>
+          fail(s"unexpected header: $h")
+      }
+      assert("" === responseAs[String])
     }
   }
 }
