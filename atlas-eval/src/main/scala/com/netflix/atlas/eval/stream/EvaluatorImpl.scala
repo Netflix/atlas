@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.eval.stream
 
+import java.nio.file.OpenOption
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
@@ -101,7 +102,9 @@ private[stream] abstract class EvaluatorImpl(
   protected def writeInputToFileImpl(uri: Uri, file: Path, duration: FiniteDuration): Unit = {
     val backend = findBackendForUri(uri)
 
-    val options = Set(
+    // Explicit type needed in 2.5.2, but not 2.5.0. Likely related to:
+    // https://github.com/akka/akka/issues/22666
+    val options = Set[OpenOption](
       StandardOpenOption.WRITE,
       StandardOpenOption.CREATE,
       StandardOpenOption.TRUNCATE_EXISTING)
