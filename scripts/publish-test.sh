@@ -32,7 +32,7 @@ while true; do
         \"metrics\": [
           {
             \"tags\": {
-              \"name\": \"anwserToEverything\",
+              \"name\": \"answerToEverything\",
               \"atlas.dstype\": \"gauge\"
             },
             \"timestamp\": $timestamp,
