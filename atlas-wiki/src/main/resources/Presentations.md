@@ -41,6 +41,16 @@ tools involved.
 | **Date**      | 2013-11-20    |
 | **Links**     | [Video](https://www.youtube.com/watch?v=7779Wrun5fo) |
 
+## Monitoring Monitoring Systems at Netflix
+
+Monitorama 2017 presentation on how we monitor the health of our monitoring systems.
+
+|               |               |
+|---------------|---------------|
+| **Presenter** | [@royrapoport](https://github.com/royrapoport)  |
+| **Date**      | 2017-05-22    |
+| **Links**     | [Video](https://vimeo.com/221068885) |
+
 ## Netflix: Amazon S3 and Amazon Elastic MapReduce to Monitor at Gigascale
 
 AWS re:Invent presentation on the usage of S3 and EMR for Atlas.
