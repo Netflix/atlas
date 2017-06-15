@@ -25,13 +25,11 @@ class TimeSeriesExprSuite extends FunSuite {
 
   import com.netflix.atlas.core.model.TimeSeriesExprSuite._
 
-  val interpreter = Interpreter(StyleVocabulary.allWords)
-  val data = constants
+  private val interpreter = Interpreter(StyleVocabulary.allWords)
 
-  val noTags = Map.empty[String, String]
-  val unknownTag = "name" -> "unknown"
+  private val unknownTag = "name" -> "unknown"
 
-  val tests = List(
+  private val tests = List(
     ":true,:all"                  -> const(constants),
     ":true"                       -> const(ts(unknownTag, 55)),
     ":true,:sum"                  -> const(ts(unknownTag, 55)),
@@ -192,7 +190,7 @@ class TimeSeriesExprSuite extends FunSuite {
   }
 
   // Tests that cannot be executed with incremental evaluation
-  val globalTests = List(
+  private val globalTests = List(
     "1,:integral,min,:stat"                          -> const(ts(Map("name" -> "1.0"), "stat-min(integral(1.0))", 1.0)),
     "1,:integral,max,:stat"                          -> const(ts(Map("name" -> "1.0"), "stat-max(integral(1.0))", 10.0)),
     "1,:integral,avg,:stat"                          -> const(ts(Map("name" -> "1.0"), "stat-avg(integral(1.0))", 5.5)),

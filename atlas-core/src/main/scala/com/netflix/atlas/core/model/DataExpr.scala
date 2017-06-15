@@ -32,7 +32,7 @@ sealed trait DataExpr extends TimeSeriesExpr {
   def isGrouped: Boolean = false
 
   def groupByKey(tags: Map[String, String]): Option[String] = {
-    Some("%40X".format(TaggedItem.computeId(tags)))
+    Some(TaggedItem.computeId(tags).toString)
   }
 
   def exprString: String
