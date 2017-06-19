@@ -16,6 +16,7 @@
 package com.netflix.atlas.cloudwatch
 
 import java.util.Date
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
@@ -26,6 +27,7 @@ import akka.routing.FromConfig
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch
 import com.amazonaws.services.cloudwatch.model.Datapoint
 import com.amazonaws.services.cloudwatch.model.StandardUnit
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.poller.Messages
 import com.netflix.spectator.api.Functions
 import com.netflix.spectator.api.Registry
@@ -104,6 +106,12 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     "atlas.cloudwatch.pendingGets",
     new AtomicLong(0L))
 
+  // Cache of the last values received for a given metric
+  private val cacheTTL = config.getDuration("atlas.cloudwatch.cache-ttl")
+  private val metricCache = Caffeine.newBuilder()
+    .expireAfterWrite(cacheTTL.toMillis, TimeUnit.MILLISECONDS)
+    .build[MetricMetadata, MetricData]()
+
   // List keeping track of current batch of metric data.
   private val metricBatch: MList = new MList
 
@@ -117,6 +125,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     responder = sender()
     refreshMetricsList()
     fetchMetricsData()
+    sendMetricData()
   }
 
   /** Refresh the metadata list if one is not already in progress. */
@@ -159,16 +168,22 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     }
   }
 
-  /** Add a datapoint to the current batch. */
+  /** Add a datapoint to the cache. */
   private def processMetricData(data: MetricData): Unit = {
     pendingGets.decrementAndGet()
-    val d = data.datapoint
-    val meta = data.meta
-    val ts = tagger(meta.dimensions) ++ meta.definition.tags + ("name" -> meta.definition.alias)
-    val now = System.currentTimeMillis()
-    val newValue = meta.convert(d)
-    metricBatch += new AtlasDatapoint(ts, now, newValue)
-    flush()
+    metricCache.put(data.meta, data)
+  }
+
+  /** Send all metrics that are currently in the cache. */
+  private def sendMetricData(): Unit = {
+    metricCache.asMap().forEach { (meta, data) =>
+      val d = data.datapoint
+      val ts = tagger(meta.dimensions) ++ meta.definition.tags + ("name" -> meta.definition.alias)
+      val now = System.currentTimeMillis()
+      val newValue = meta.convert(d)
+      metricBatch += new AtlasDatapoint(ts, now, newValue)
+      flush()
+    }
   }
 
   /** Flush data if the batch size is big enough or we are done with the current iteration. */
