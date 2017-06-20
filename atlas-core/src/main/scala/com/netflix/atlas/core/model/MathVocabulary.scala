@@ -26,6 +26,7 @@ import com.netflix.atlas.core.stacklang.Word
 object MathVocabulary extends Vocabulary {
 
   import com.netflix.atlas.core.model.ModelExtractors._
+  import com.netflix.atlas.core.stacklang.Extractors._
 
   val name: String = "math"
 
@@ -38,6 +39,7 @@ object MathVocabulary extends Vocabulary {
     Time,
     CommonQuery,
     NamedRewrite,
+    ClampMin, ClampMax,
     Abs, Negate, Sqrt, PerStep,
 
     Add, Subtract, Multiply, Divide,
@@ -348,6 +350,52 @@ object MathVocabulary extends Vocabulary {
     }
 
     override def examples: List[String] = Nil
+  }
+
+  case object ClampMin extends SimpleWord {
+    override def name: String = "clamp-min"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case DoubleType(_) :: TimeSeriesType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case DoubleType(mn) :: TimeSeriesType(t) :: stack => MathExpr.ClampMin(t, mn) :: stack
+    }
+
+    override def summary: String =
+      """
+        |Restricts the minimum value of the output time series to the specified value. Values
+        |from the input time series that are greater than or equal to the minimum will not be
+        |changed. A common use-case is to allow for auto-scaled axis up to a specified bound.
+      """.stripMargin.trim
+
+    override def signature: String = "TimeSeriesExpr Double -- TimeSeriesExpr"
+
+    override def examples: List[String] = List("name,sps,:eq,:sum,200e3")
+  }
+
+  case object ClampMax extends SimpleWord {
+    override def name: String = "clamp-max"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case DoubleType(_) :: TimeSeriesType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case DoubleType(mx) :: TimeSeriesType(t) :: stack => MathExpr.ClampMax(t, mx) :: stack
+    }
+
+    override def summary: String =
+      """
+        |Restricts the maximum value of the output time series to the specified value. Values
+        |from the input time series that are less than or equal to the maximum will not be
+        |changed. A common use-case is to allow for auto-scaled axis up to a specified bound.
+      """.stripMargin.trim
+
+    override def signature: String = "TimeSeriesExpr Double -- TimeSeriesExpr"
+
+    override def examples: List[String] = List("name,sps,:eq,:sum,200e3")
   }
 
   sealed trait UnaryWord extends SimpleWord {

@@ -116,6 +116,40 @@ object MathExpr {
     }
   }
 
+  case class ClampMin(expr: TimeSeriesExpr, min: Double) extends TimeSeriesExpr with UnaryOp {
+    def name: String = "clamp-min"
+    def dataExprs: List[DataExpr] = expr.dataExprs
+    override def toString: String = s"$expr,$min,:$name"
+
+    def isGrouped: Boolean = expr.isGrouped
+
+    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      val rs = expr.eval(context, data)
+      ResultSet(this, rs.data.map { t => t.unaryOp(s"$name(%s, $min)", this) }, rs.state)
+    }
+
+    def apply(v: Double): Double = if (v < min) min else v
+  }
+
+  case class ClampMax(expr: TimeSeriesExpr, max: Double) extends TimeSeriesExpr with UnaryOp {
+    def name: String = "clamp-max"
+    def dataExprs: List[DataExpr] = expr.dataExprs
+    override def toString: String = s"$expr,$max,:$name"
+
+    def isGrouped: Boolean = expr.isGrouped
+
+    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      val rs = expr.eval(context, data)
+      ResultSet(this, rs.data.map { t => t.unaryOp(s"$name(%s, $max)", this) }, rs.state)
+    }
+
+    def apply(v: Double): Double = if (v > max) max else v
+  }
+
   trait UnaryMathExpr extends TimeSeriesExpr with UnaryOp {
     def name: String
     def expr: TimeSeriesExpr
