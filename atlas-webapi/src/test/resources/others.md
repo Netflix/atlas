@@ -154,3 +154,7 @@
 /api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,200e3,:sub,:stack,(,1,2,3,4,),(,name,sps,:eq,:sum,:swap,:axis,),:each&scale.1=log&scale.2=pow2&scale.3=sqrt&scale.4=linear
 /api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,200e3,:sub,:stack,(,1,2,3,4,),(,name,sps,:eq,:sum,:swap,:axis,),:each&scale.0=sqrt&scale.2=pow2&scale.3=log&scale.4=linear
 
+# Long time ranges, NoSuchElementException bug
+/api/v1/graph?q=42&s=e-12month&e=2017-06-27T00:00&tz=UTC&w=430&h=120&layout=iw
+/api/v1/graph?q=42&s=e-3y&e=2017-06-27T00:00&tz=UTC&w=430&h=120&layout=iw
+/api/v1/graph?q=42&s=e-30y&e=2017-06-27T00:00&tz=UTC&w=430&h=120&layout=iw

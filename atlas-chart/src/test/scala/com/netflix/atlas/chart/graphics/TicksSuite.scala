@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.chart.graphics
 
+import java.time.ZoneOffset
+
 import org.scalatest.FunSuite
 
 import scala.util.Random
@@ -398,5 +400,12 @@ class TicksSuite extends FunSuite {
           throw new AssertionError(s"Ticks.binary($v1, $v2, $j)", t)
       }
     }
+  }
+
+  test("time: since 1970") {
+    val s = 0L
+    val e = 1498751868000L
+    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5)
+    assert(ticks.size === 6)
   }
 }
