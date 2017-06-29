@@ -18,6 +18,7 @@ package com.netflix.atlas.chart.graphics
 import java.time._
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
+import java.time.temporal.ChronoUnit
 
 import com.netflix.atlas.core.util.UnitPrefix
 
@@ -28,7 +29,9 @@ object Ticks {
 
   import java.lang.{Double => JDouble}
 
-  val defaultTimeFmt = DateTimeFormatter.ofPattern("MMMdd")
+  val defaultTimeFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMdd")
+  private val monthTimeFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM")
+  private val yearTimeFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy")
 
   val timeBoundaries = List(
     ChronoField.SECOND_OF_MINUTE -> DateTimeFormatter.ofPattern(":ss"),
@@ -261,18 +264,42 @@ object Ticks {
     // based on the start. If there is a change such as DST during the interval, then labels
     // after the change may be on less significant boundaries.
     val shift = zone.getRules.getOffset(Instant.ofEpochMilli(s)).getTotalSeconds * 1000L
-    val dur = e - s
-    val (major, minor) = timeTickSizes.filter(t => dur / t._1 <= n).head
-    val ticks = List.newBuilder[TimeTick]
 
-    val zs = s + shift
-    val ze = e + shift
-    var pos = zs / major * major
-    while (pos <= ze) {
-      if (pos >= zs) ticks += TimeTick(pos - shift, zone, pos % major == 0L)
-      pos += minor
+    val dur = e - s
+    val candidates = timeTickSizes.filter(t => dur / t._1 <= n)
+    if (candidates.nonEmpty) {
+      val (major, minor) = candidates.head
+      val ticks = List.newBuilder[TimeTick]
+
+      val zs = s + shift
+      val ze = e + shift
+      var pos = zs / major * major
+      while (pos <= ze) {
+        if (pos >= zs) ticks += TimeTick(pos - shift, zone, pos % major == 0L)
+        pos += minor
+      }
+      ticks.result()
+    } else {
+      val start = LocalDateTime.ofInstant(Instant.ofEpochMilli(s), zone).toLocalDate
+      val end = LocalDateTime.ofInstant(Instant.ofEpochMilli(e), zone).toLocalDate
+      val days = dur / (24 * 60 * 60 * 1000L)
+      val (amount, unit, fmt) = days match {
+        case d if d       <= n  => (1L            , ChronoUnit.DAYS   , defaultTimeFmt)
+        case d if d / 30  <= n  => (1L            , ChronoUnit.MONTHS , monthTimeFmt)
+        case d if d / 90  <= n  => (3L            , ChronoUnit.MONTHS , monthTimeFmt)
+        case d if d / 365 <= n  => (1L            , ChronoUnit.YEARS  , yearTimeFmt)
+        case d                  => (d / (n * 365) , ChronoUnit.YEARS  , yearTimeFmt)
+      }
+
+      val ticks = List.newBuilder[TimeTick]
+      var t = start
+      while (t.isBefore(end) || t.isEqual(end)) {
+        val timestamp = t.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli - shift
+        ticks += TimeTick(timestamp, zone, formatter = Some(fmt))
+        t = t.plus(amount, unit)
+      }
+      ticks.result()
     }
-    ticks.result()
   }
 
 }
@@ -303,23 +330,32 @@ case class ValueTick(
 }
 
 /**
- * Tick mark for the time axis.
- *
- * @param timestamp
- *     Time in milliseconds since the epoch.
- * @param zone
- *     Time zone to use for the string label associated with the timestamp.
- * @param major
- *     True if the position is a major tick mark.
- */
-case class TimeTick(timestamp: Long, zone: ZoneId, major: Boolean = true) {
+  * Tick mark for the time axis.
+  *
+  * @param timestamp
+  *     Time in milliseconds since the epoch.
+  * @param zone
+  *     Time zone to use for the string label associated with the timestamp.
+  * @param major
+  *     True if the position is a major tick mark.
+  * @param formatter
+  *     Formats the timestamp to a string shown on the axis. If set to None, then a default
+  *     will be chosen to try and land on a significant time boundary.
+  */
+case class TimeTick(
+  timestamp: Long,
+  zone: ZoneId,
+  major: Boolean = true,
+  formatter: Option[DateTimeFormatter] = None) {
 
   private val datetime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
 
   import Ticks._
 
   def label: String = {
-    val fmt = timeBoundaries.find(f => datetime.get(f._1) != 0).fold(defaultTimeFmt)(_._2)
+    val fmt = formatter.getOrElse {
+      timeBoundaries.find(f => datetime.get(f._1) != 0).fold(defaultTimeFmt)(_._2)
+    }
     fmt.format(datetime)
   }
 }
