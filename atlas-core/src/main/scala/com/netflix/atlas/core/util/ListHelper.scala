@@ -20,7 +20,8 @@ package com.netflix.atlas.core.util
   */
 object ListHelper {
   /**
-    * Merge two sorted lists up to the specified limit.
+    * Merge and dedup two sorted lists up to the specified limit. The input lists must already
+    * be sorted and should not contain duplicate values.
     *
     * @param limit
     *     Maximum number of items in the resulting list.
@@ -43,14 +44,20 @@ object ListHelper {
       acc.reverse ++ v2
     else if (v2.isEmpty)
       acc.reverse ++ v1
-    else if (v1.head.compareTo(v2.head) <= 0)
-      merge(limit, size + 1, v1.head :: acc, v1.tail, v2)
     else
-      merge(limit, size + 1, v2.head :: acc, v1, v2.tail)
+      v1.head.compareTo(v2.head) match {
+        case c if c < 0 =>
+          merge(limit, size + 1, v1.head :: acc, v1.tail, v2)
+        case c if c == 0 =>
+          merge(limit, size + 1, v1.head :: acc, v1.tail, v2.tail)
+        case c =>
+          merge(limit, size + 1, v2.head :: acc, v1, v2.tail)
+      }
   }
 
   /**
-    * Merge sorted lists up to the specified limit.
+    * Merge and dedup sorted lists up to the specified limit. The input lists must already
+    * be sorted and should not contain duplicate values.
     *
     * @param limit
     *     Maximum number of items in the resulting list.

@@ -38,4 +38,10 @@ class ListHelperSuite extends FunSuite {
     val v4 = List("z")
     assert(ListHelper.merge(3, List(v1, v2, v3, v4)) === List("a", "aa", "b"))
   }
+
+  test("dedup while merging") {
+    val v1 = List("a", "c", "d")
+    val v2 = List("a", "b", "f")
+    assert(ListHelper.merge(10, v1, v2) === List("a", "b", "c", "d", "f"))
+  }
 }
