@@ -2,16 +2,16 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.5.2"
-    val akkaHttpV  = "10.0.7"
-    val aws        = "1.11.133"
-    val iep        = "1.0.1"
+    val akka       = "2.5.3"
+    val akkaHttpV  = "10.0.9"
+    val aws        = "1.11.158"
+    val iep        = "1.0.2"
     val guice      = "4.1.0"
     val jackson    = "2.8.7"
     val log4j      = "2.8.2"
     val scala      = "2.12.2"
     val slf4j      = "1.7.25"
-    val spectator  = "0.55.0"
+    val spectator  = "0.56.0"
 
     val crossScala = Seq(scala)
   }
@@ -30,7 +30,7 @@ object Dependencies {
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.5.2"
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.3"
+  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.3.1"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.18.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -47,13 +47,13 @@ object Dependencies {
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jodaConvert     = "org.joda" % "joda-convert" % "1.8.1"
   val jol             = "org.openjdk.jol" % "jol-core" % "0.8"
-  val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.1"
+  val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.2"
   val log4jApi        = "org.apache.logging.log4j" % "log4j-api" % log4j
   val log4jCore       = "org.apache.logging.log4j" % "log4j-core" % log4j
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.6.39"
+  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.6.45"
   val scalaCompiler   = "org.scala-lang" % "scala-compiler"
   val scalaLibrary    = "org.scala-lang" % "scala-library"
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all"
