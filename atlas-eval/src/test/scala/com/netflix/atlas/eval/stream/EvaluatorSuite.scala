@@ -26,6 +26,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
+import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.json.JsonSupport
@@ -89,6 +90,20 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
 
   test("create publisher from resource uri") {
     testPublisher("resource:///gc-pause.dat")
+  }
+
+  test("create publish, missing q parameter") {
+    val evaluator = new Evaluator(config, registry, system)
+
+    val uri = "http://test/api/v1/graph"
+    val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
+    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+    assert(result.size === 1)
+    result.foreach {
+      case DiagnosticMessage(t, msg, None) =>
+        assert(t === "error")
+        assert(msg === "IllegalArgumentException: missing required URI parameter `q`: http://test/api/v1/graph")
+    }
   }
 
   def testProcessor(baseUri: String): Unit = {
@@ -180,5 +195,22 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
 
   test("create processor from resource uri") {
     testProcessor("resource:///gc-pause.dat")
+  }
+
+  test("create processor, missing q parameter") {
+    val evaluator = new Evaluator(config, registry, system)
+
+    val uri = "http://test/api/v1/graph"
+    val ds = Evaluator.DataSources.of(new Evaluator.DataSource("one", uri))
+
+    val future = Source.single(ds)
+      .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
+      .runWith(Sink.head)
+    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+    result.getMessage match {
+      case DiagnosticMessage(t, msg, None) =>
+        assert(t === "error")
+        assert(msg === "IllegalArgumentException: missing required URI parameter `q`: http://test/api/v1/graph")
+    }
   }
 }
