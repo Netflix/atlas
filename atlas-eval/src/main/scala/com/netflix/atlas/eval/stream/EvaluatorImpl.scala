@@ -36,6 +36,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
+import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.StyleVocabulary
@@ -84,7 +85,9 @@ private[stream] abstract class EvaluatorImpl(
 
   private def findEurekaBackendForUri(uri: Uri): Backend = {
     val id = UUID.randomUUID().toString
-    val expr = uri.query().get("q").get
+    val expr = uri.query().get("q").getOrElse {
+      throw new IllegalArgumentException(s"missing required URI parameter `q`: $uri")
+    }
     val path = s"/lwc/api/v1/stream/$id?expression=$expr"
 
     val host = uri.authority.host.address()
@@ -138,13 +141,21 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   protected def createPublisherImpl(uri: Uri): Publisher[JsonSupport] = {
-    val backend = findBackendForUri(uri)
+    try {
+      val backend = findBackendForUri(uri)
 
-    val expr = eval(uri.query().get("q").get).head
-    val sink = EvaluationFlows.lwcEval(expr, 60000)
-      .toMat(Sink.asPublisher(true))(Keep.right)
+      val expr = eval(uri.query().get("q").get).head
+      val sink = EvaluationFlows.lwcEval(expr, 60000)
+        .toMat(Sink.asPublisher(true))(Keep.right)
 
-    backend.run(sink).value
+      backend.run(sink).value
+    } catch {
+      case e: Exception =>
+        val msg = DiagnosticMessage.error(e)
+        Source.single[JsonSupport](msg)
+          .toMat(Sink.asPublisher(true))(Keep.right)
+          .run()
+    }
   }
 
   protected def createStreamsProcessorImpl(): Processor[Evaluator.DataSources, Evaluator.MessageEnvelope] = {
