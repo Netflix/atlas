@@ -27,10 +27,12 @@ import akka.http.scaladsl.model.headers._
 import akka.stream.ActorMaterializer
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.akka.CustomMediaTypes
+import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.poller.Messages.MetricsPayload
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.impl.AsciiSet
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
@@ -56,6 +58,17 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
 
   private val shouldSendAck = config.getBoolean("send-ack")
 
+  private val validTagChars = AsciiSet.fromPattern(config.getString("valid-tag-characters"))
+
+  private val validTagValueChars = {
+    import scala.collection.JavaConverters._
+    config.getConfigList("valid-tag-value-characters").asScala
+      .map { cfg =>
+        cfg.getString("key") -> AsciiSet.fromPattern(cfg.getString("value"))
+      }
+      .toMap
+  }
+
   private val datapointsSent = registry.counter("atlas.client.sent")
   private val datapointsDropped = registry.createId("atlas.client.dropped")
 
@@ -64,12 +77,21 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
       val responder = sender()
       datapointsSent.increment(ms.size)
       ms.grouped(batchSize).foreach { batch =>
-        val msg = MetricsPayload(metrics = batch)
+        val msg = MetricsPayload(metrics = batch.map(fixTags))
         post(msg).onComplete {
           case Success(response) => handleResponse(responder, response, batch.size)
           case Failure(t)        => handleFailure(responder, t, batch.size)
         }
       }
+  }
+
+  private def fixTags(d: Datapoint): Datapoint = {
+    val tags = d.tags.map { case (k, v) =>
+      val nk = validTagChars.replaceNonMembers(k, '_')
+      val nv = validTagValueChars.getOrElse(nk, validTagChars).replaceNonMembers(v, '_')
+      nk -> nv
+    }
+    d.copy(tags = tags)
   }
 
   private def post(data: MetricsPayload): Future[HttpResponse] = {
