@@ -799,6 +799,7 @@ object MathVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Compute the max of all the time series that result from the previous expression.
+        |To compute max of the values for each interval, refer [data/:max](data-max) instead.
       """.stripMargin.trim
   }
 

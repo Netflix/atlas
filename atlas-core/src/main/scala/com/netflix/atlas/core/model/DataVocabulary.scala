@@ -130,6 +130,9 @@ object DataVocabulary extends Vocabulary {
         ||---------|-----|-----|-----|
         || Input 1 | 2.0 | 4.0 | NaN |
         || Input 2 | 1.0 | NaN | NaN |
+        |
+        |To compute max of multiple time series that result from a expression,
+        |refer [math/:max](math-max) instead.
       """.stripMargin.trim
   }
 
