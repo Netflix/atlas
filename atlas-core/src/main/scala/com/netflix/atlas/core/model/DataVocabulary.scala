@@ -79,6 +79,9 @@ object DataVocabulary extends Vocabulary {
         ||---------|-----|-----|-----|
         || Input 1 | 2.0 | 4.0 | NaN |
         || Input 2 | 1.0 | NaN | NaN |
+        |
+        |To compute sum of multiple time series that result from a [group by](data-by) expression,
+        |refer to [math/:sum](math-sum) instead.
       """.stripMargin.trim
   }
 
@@ -96,6 +99,9 @@ object DataVocabulary extends Vocabulary {
         ||---------|-----|-----|-----|
         || Input 1 | 2.0 | 4.0 | NaN |
         || Input 2 | 1.0 | NaN | NaN |
+        |
+        |To compute count of multiple time series that result from a [group by](data-by) expression,
+        |refer to [math/:count](math-count) instead.
       """.stripMargin.trim
   }
 
@@ -113,6 +119,9 @@ object DataVocabulary extends Vocabulary {
         ||---------|-----|-----|-----|
         || Input 1 | 2.0 | 4.0 | NaN |
         || Input 2 | 1.0 | NaN | NaN |
+        |
+        |To compute min of multiple time series that result from a [group by](data-by) expression,
+        |refer to [math/:min](math-min) instead.
       """.stripMargin.trim
   }
 
@@ -130,6 +139,9 @@ object DataVocabulary extends Vocabulary {
         ||---------|-----|-----|-----|
         || Input 1 | 2.0 | 4.0 | NaN |
         || Input 2 | 1.0 | NaN | NaN |
+        |
+        |To compute max of multiple time series that result from a [group by](data-by) expression,
+        |refer to [math/:max](math-max) instead.
       """.stripMargin.trim
   }
 
