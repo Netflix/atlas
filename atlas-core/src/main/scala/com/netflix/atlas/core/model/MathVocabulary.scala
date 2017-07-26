@@ -766,6 +766,8 @@ object MathVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Compute the sum of all the time series that result from the previous expression.
+        |To compute sum of all the time series that match a query, refer to
+        |[data/:sum](data-sum) instead.
       """.stripMargin.trim
   }
 
@@ -777,6 +779,8 @@ object MathVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Compute the count of all the time series that result from the previous expression.
+        |To compute count of all the time series that match a query, refer to
+        |[data/:count](data-count) instead.
       """.stripMargin.trim
   }
 
@@ -788,6 +792,8 @@ object MathVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Compute the min of all the time series that result from the previous expression.
+        |To compute min of all the time series that match a query, refer to
+        |[data/:min](data-min) instead.
       """.stripMargin.trim
   }
 
@@ -799,7 +805,8 @@ object MathVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Compute the max of all the time series that result from the previous expression.
-        |To compute max of the values for each interval, refer [data/:max](data-max) instead.
+        |To compute max of all the time series that match a query, refer to
+        |[data/:max](data-max) instead.
       """.stripMargin.trim
   }
 
