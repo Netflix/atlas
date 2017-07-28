@@ -2,7 +2,7 @@ language: scala
 jdk:
 - oraclejdk8
 scala:
-- 2.12.2
+- 2.12.3
 script:
 - ./scripts/buildViaTravis.sh
 sudo: required
