@@ -84,8 +84,8 @@ object Shards {
     * Creates a mapper that can be used on an instance of a group. This is typically used
     * if the local instance needs to figure out what data to load.
     *
-    * @param group
-    *     Group that contains the instance.
+    * @param groupSize
+    *     Size of the group that contains the instance.
     * @param instanceIdx
     *     Index for this instance within the group.
     * @param groupIdx
@@ -95,8 +95,8 @@ object Shards {
     * @return
     *     Mapper
     */
-  def localMapper[T](group: Group[T], instanceIdx: Int, groupIdx: Int, numGroups: Int): LocalMapper[T] = {
-    new LocalMapper[T](group, instanceIdx, groupIdx, numGroups)
+  def localMapper[T](groupSize: Int, instanceIdx: Int, groupIdx: Int, numGroups: Int): LocalMapper[T] = {
+    new LocalMapper[T](groupSize, instanceIdx, groupIdx, numGroups)
   }
 
   /**
@@ -152,7 +152,7 @@ object Shards {
     * Mapper intended to run on a given instance and check to see if data should be loaded
     * there.
     */
-  class LocalMapper[T](group: Group[T], instanceIdx: Int, groupIdx: Int, numGroups: Int) {
+  class LocalMapper[T](groupSize: Int, instanceIdx: Int, groupIdx: Int, numGroups: Int) {
     /** Return true if this instance should include data for `id`. */
     def containsId(id: BigInteger): Boolean = {
       val i = math.abs(id.intValue())
@@ -162,7 +162,7 @@ object Shards {
     /** Return true if this instance should include data for the file with index `i`. */
     def containsIndex(i: Int): Boolean = {
       require(i >= 0, "index cannot be negative")
-      (i % numGroups == groupIdx) && ((i / numGroups) % group.size == instanceIdx)
+      (i % numGroups == groupIdx) && ((i / numGroups) % groupSize == instanceIdx)
     }
   }
 
