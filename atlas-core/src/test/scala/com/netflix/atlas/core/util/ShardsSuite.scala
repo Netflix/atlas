@@ -130,7 +130,7 @@ class ShardsSuite extends FunSuite {
 
     val mapper = Shards.mapper(groups)
     val localInstance = groups.last.instances(0)
-    val localMapper = Shards.localMapper(groups.last, 0, groups.size - 1, groups.size)
+    val localMapper = Shards.localMapper(groups.last.size, 0, groups.size - 1, groups.size)
     (0 until 20000).foreach { i =>
       val idx = mapper.instanceForIndex(i)
       val contains = localMapper.containsIndex(i)
@@ -148,7 +148,7 @@ class ShardsSuite extends FunSuite {
 
     val mapper = Shards.mapper(groups)
     val localInstance = groups.last.instances(0)
-    val localMapper = Shards.localMapper(groups.last, 0, groups.size - 1, groups.size)
+    val localMapper = Shards.localMapper(groups.last.size, 0, groups.size - 1, groups.size)
     (0 until 20000).foreach { _ =>
       val id = Hash.sha1(UUID.randomUUID().toString)
       val idx = mapper.instanceForId(id)
