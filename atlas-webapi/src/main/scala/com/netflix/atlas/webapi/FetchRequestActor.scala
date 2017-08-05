@@ -24,12 +24,12 @@ import akka.actor.Props
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.netflix.atlas.akka.CustomMediaTypes._
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StatefulExpr
@@ -188,7 +188,7 @@ object FetchRequestActor {
     val source = Source.actorPublisher(Props(new FetchRequestActor(request)))
     HttpResponse(
       status = StatusCodes.OK,
-      entity = HttpEntity.Chunked(`text/event-stream`, source)
+      entity = HttpEntity.Chunked(MediaTypes.`text/event-stream`, source)
     )
   }
 
