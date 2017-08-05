@@ -15,11 +15,10 @@
  */
 package com.netflix.atlas.akka
 
-import akka.http.scaladsl.model.HttpCharsets
 import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.MediaType.Compressible
 
 object CustomMediaTypes {
-  val `application/x-jackson-smile` = MediaType.applicationBinary("x-jackson-smile", Compressible)
-  val `text/event-stream` = MediaType.customWithFixedCharset("text", "event-stream", HttpCharsets.`UTF-8`)
+  val `application/x-jackson-smile`: MediaType.Binary =
+    MediaType.applicationBinary("x-jackson-smile", Compressible)
 }

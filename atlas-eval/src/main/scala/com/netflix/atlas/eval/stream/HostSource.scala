@@ -19,13 +19,13 @@ import akka.NotUsed
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
 import akka.stream.scaladsl.Compression
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.netflix.atlas.akka.CustomMediaTypes
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.util.Failure
@@ -66,7 +66,7 @@ object HostSource extends StrictLogging {
   private def singleCall(client: Client)(uri: String): Source[ByteString, Any] = {
     logger.info(s"subscribing to $uri")
     val headers = List(
-      Accept(CustomMediaTypes.`text/event-stream`),
+      Accept(MediaTypes.`text/event-stream`),
       `Accept-Encoding`(HttpEncodings.gzip))
     val request = HttpRequest(HttpMethods.GET, uri, headers)
 
