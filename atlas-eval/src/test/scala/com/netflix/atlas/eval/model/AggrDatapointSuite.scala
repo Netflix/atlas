@@ -25,7 +25,7 @@ class AggrDatapointSuite extends FunSuite {
     (0 until nodes).toList.map { i =>
       val node = f"i-$i%08d"
       val tags = Map("name" -> "cpu")
-      if (expr.isGrouped)
+      if (!expr.isInstanceOf[DataExpr.AggregateFunction])
         AggrDatapoint(t, expr, node, tags + ("node" -> node), i)
       else
         AggrDatapoint(t, expr, node, tags, i)
@@ -71,6 +71,17 @@ class AggrDatapointSuite extends FunSuite {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createDatapoints(expr, 0, 10)
     val result = AggrDatapoint.aggregate(dataset ::: dataset)
+    assert(result.size === 10)
+    result.foreach { d =>
+      val v = d.tags("node").substring(2).toDouble
+      assert(d.value === v)
+    }
+  }
+
+  test("aggregate all") {
+    val expr = DataExpr.All(Query.True)
+    val dataset = createDatapoints(expr, 0, 10)
+    val result = AggrDatapoint.aggregate(dataset)
     assert(result.size === 10)
     result.foreach { d =>
       val v = d.tags("node").substring(2).toDouble

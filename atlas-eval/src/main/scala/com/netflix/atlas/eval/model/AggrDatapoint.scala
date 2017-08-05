@@ -17,6 +17,7 @@ package com.netflix.atlas.eval.model
 
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
+import com.netflix.atlas.core.model.DataExpr.All
 import com.netflix.atlas.core.model.DataExpr.GroupBy
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.TimeSeries
@@ -72,6 +73,7 @@ object AggrDatapoint {
       expr match {
         case af: AggregateFunction => List(applyAF(af, vs))
         case by: GroupBy           => applyGroupBy(by, vs)
+        case _: All                => vs
       }
     }
   }
