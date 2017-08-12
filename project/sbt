@@ -15,4 +15,4 @@ java \
   -Dsbt.boot.directory=${WORKSPACE:-$HOME}/.sbt \
   -Dsbt.ivy.home=${WORKSPACE:-$HOME}/.ivy2 \
   $OPTIONS \
-  -jar `dirname $0`/sbt-launch.jar "$@"
+  -jar `dirname $0`/sbt-launch-1.0.0.jar "$@"
