@@ -25,18 +25,15 @@ object Bintray {
     credentials += Credentials("Artifactory Realm", "oss.jfrog.org", user, pass),
 
     publishTo := {
+      val defaultDestination = (publishTo in bintray value)
       if (isSnapshot.value)
         Some("OJO" at s"https://oss.jfrog.org/oss-snapshot-local;build.timestamp=$now/")
       else
-        publishTo in bintray value
+        defaultDestination
     },
 
     pomExtra :=
       <url>https://github.com/netflix/atlas/wiki</url>
-      <scm>
-        <url>git@github.com:netflix/atlas.git</url>
-        <connection>scm:git:git@github.com:netflix/atlas.git</connection>
-      </scm>
       <developers>
         <developer>
           <id>brharrington</id>
