@@ -267,6 +267,15 @@ class SmallHashMapSuite extends FunSuite {
     assert(m.toSet === Set("k1" -> "v1", "k2" -> "v2"))
   }
 
+  test("using builder") {
+    val expected = SmallHashMap("k1" -> "v1", "k2" -> "v2")
+    val actual = new SmallHashMap.Builder[String, String](4)
+      .add("k1", "v1")
+      .addAll(Map("k2" -> "v2"))
+      .result
+    assert(expected === actual)
+  }
+
   private def testNumCollisions(m: SmallHashMap[String, String]) {
     //printf("%d: %d collisions, %.2f probes%n", m.size, m.numCollisions, m.numProbesPerKey)
     assert(m.numProbesPerKey < m.size / 4)
