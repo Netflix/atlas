@@ -248,12 +248,13 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
    * full data it would be N/2.
    */
   def numProbesPerKey: Double =  {
+    val capacity = data.length / 2
     var total = 0
     keys.foreach { k =>
       var i = hash(k)
       while (data(i * 2) != k) {
         total += 1
-        i = (i + 1) % dataLength
+        i = (i + 1) % capacity
       }
     }
     total.toDouble / dataLength

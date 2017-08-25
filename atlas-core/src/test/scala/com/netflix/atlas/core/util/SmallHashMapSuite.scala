@@ -16,6 +16,8 @@
 package com.netflix.atlas.core.util
 
 
+import java.util.UUID
+
 import org.scalatest.FunSuite
 
 import scala.util.Random
@@ -270,6 +272,25 @@ class SmallHashMapSuite extends FunSuite {
   private def testNumCollisions(m: SmallHashMap[String, String]) {
     //printf("%d: %d collisions, %.2f probes%n", m.size, m.numCollisions, m.numProbesPerKey)
     assert(m.numProbesPerKey < m.size / 4)
+  }
+
+  // Search for strings that have the desired hash value and will result in a
+  // collision.
+  @scala.annotation.tailrec
+  private def findStringWithHash(v: Int, n: Int): String = {
+    val s = UUID.randomUUID().toString
+    val h = Hash.absOrZero(s.hashCode) % n
+    if (h == v) s else findStringWithHash(v, n)
+  }
+
+  test("numProbesPerKey with collision that is positioned > data length") {
+    // empty map, size 0 capacity 42
+    val builder = new SmallHashMap.Builder[String, String](42)
+    builder.add(findStringWithHash(12, 42), "1")
+    builder.add(findStringWithHash(12, 42), "2")
+    val m = builder.result
+    assert(m.numCollisions === 1)
+    assert(m.numProbesPerKey === 0.5)
   }
 
   test("numCollisions 25") {
