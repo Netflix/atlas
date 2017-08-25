@@ -42,7 +42,7 @@ object SmallHashMap {
 
     def +=(pair: (K, V)): Unit = add(pair._1, pair._2)
 
-    def add(k: K, v: V) {
+    def add(k: K, v: V): Builder[K, V] = {
       val pos = Hash.absOrZero(k.hashCode) % size
       var i = pos
       var ki = buf(i * 2)
@@ -63,9 +63,10 @@ object SmallHashMap {
         buf(i * 2 + 1) = v
         actualSize += 1
       }
+      this
     }
 
-    def addAll(m: Map[K, V]) {
+    def addAll(m: Map[K, V]): Builder[K, V] = {
       m match {
         case sm: SmallHashMap[K, V] =>
           var i = 0
@@ -76,6 +77,7 @@ object SmallHashMap {
           }
         case _ => m.foreach { t => add(t._1, t._2) }
       }
+      this
     }
 
     def result: SmallHashMap[K, V] = {
