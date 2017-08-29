@@ -51,7 +51,7 @@ class SSEActorSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest
 
     val vs = Await.result(invocations, 1.minute)
     assert(vs.reverse === List(
-      SSEHello("mySSEId", NetflixEnvironment.instanceId, GlobalUUID.get).toSSE,
+      SSEHello("mySSEId", NetflixEnvironment.instanceId).toSSE,
       SSEStatistics(0).toSSE,
       SSEStatistics(0).toSSE,
       SSEShutdown("test shutdown").toSSE
