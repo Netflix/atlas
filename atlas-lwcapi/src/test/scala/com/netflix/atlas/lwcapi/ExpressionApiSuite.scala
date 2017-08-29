@@ -72,7 +72,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
     }
     exprDB.regenerateQueryIndex()
     Get("/lwc/api/v1/expressions/skan") ~> endpoint.routes ~> check {
-      val expected = s"""{"expressions":[$skanCount,$skanSum]}"""
+      val expected = s"""{"expressions":[$skanSum,$skanCount]}"""
       assert(responseAs[String] === expected)
     }
   }
@@ -84,7 +84,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
     }
     exprDB.regenerateQueryIndex()
     Get("/lwc/api/v1/expressions") ~> endpoint.routes ~> check {
-      val expected = s"""{"expressions":[$skanCount,$skanSum,$brhMax]}"""
+      val expected = s"""{"expressions":[$brhMax,$skanSum,$skanCount]}"""
       assert(responseAs[String] === expected)
     }
   }
@@ -140,7 +140,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
     assert(tag_e1 != tag_e2)
   }
 
-  private val skanCount = """{"expression":"nf.cluster,skan,:eq,:count","frequency":60000,"id":"Ynj6YEfAcxbX4mWhAEiCq54QB68"}"""
-  private val skanSum = """{"expression":"nf.cluster,skan,:eq,:sum","frequency":60000,"id":"NuCixhtI4GK7pTYdBZr9MTyCxnQ"}"""
-  private val brhMax = """{"expression":"nf.app,brh,:eq,:max","frequency":60000,"id":"FvGwkwwO6uAiU3TqiMAeFh5Ymv8"}"""
+  private val skanCount = """{"expression":"nf.cluster,skan,:eq,:count","frequency":60000,"id":"6278fa6047c07316d7e265a1004882ab9e1007af"}"""
+  private val skanSum = """{"expression":"nf.cluster,skan,:eq,:sum","frequency":60000,"id":"36e0a2c61b48e062bba5361d059afd313c82c674"}"""
+  private val brhMax = """{"expression":"nf.app,brh,:eq,:max","frequency":60000,"id":"16f1b0930c0eeae0225374ea88c01e161e589aff"}"""
 }

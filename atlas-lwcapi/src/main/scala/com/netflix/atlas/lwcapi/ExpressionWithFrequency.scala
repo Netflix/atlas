@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.lwcapi
 
-import java.util.Base64
-
+import com.netflix.atlas.core.util.Hash
+import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.JsonSupport
 
 case class ExpressionWithFrequency(
@@ -44,8 +44,6 @@ object ExpressionWithFrequency {
   }
 
   def computeId(e: String, f: Long): String = {
-    val key = s"$f~$e"
-    val md = java.security.MessageDigest.getInstance("SHA-1")
-    Base64.getUrlEncoder.withoutPadding.encodeToString(md.digest(key.getBytes("UTF-8")))
+    Strings.zeroPad(Hash.sha1(s"$f~$e"), 40)
   }
 }
