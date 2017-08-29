@@ -30,13 +30,11 @@ import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.lwcapi.ExpressionSplitter.SplitResult
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
 class StreamApi @Inject()(
-  sm: SubscriptionManager,
-  exprDB: ExpressionDatabase,
+  sm: ActorSubscriptionManager,
   splitter: ExpressionSplitter,
   implicit val actorRefFactory: ActorRefFactory,
   registry: Registry) extends WebApi with StrictLogging {
@@ -61,18 +59,18 @@ class StreamApi @Inject()(
   private def splitRequest(
     requestOpt: Option[ExpressionsRequest],
     urlExpr: Option[String],
-    urlFreq: Option[String]): Map[ExpressionWithFrequency, SplitResult] = {
+    urlFreq: Option[String]): Map[ExpressionMetadata, List[Subscription]] = {
 
-    val builder = Map.newBuilder[ExpressionWithFrequency, SplitResult]
+    val builder = Map.newBuilder[ExpressionMetadata, List[Subscription]]
 
     val freq = urlFreq.fold(ApiSettings.defaultFrequency)(_.toInt)
-    if (urlExpr.isDefined) {
-      builder += (ExpressionWithFrequency(urlExpr.get, freq) -> splitter.split(urlExpr.get, freq))
+    urlExpr.foreach { expr =>
+      builder += ExpressionMetadata(expr, freq) -> splitter.split(expr, freq)
     }
 
     requestOpt.foreach { request =>
       request.expressions.foreach { expr =>
-        builder += (expr -> splitter.split(expr.expression, expr.frequency))
+        builder += expr -> splitter.split(expr.expression, expr.frequency)
       }
     }
 
@@ -86,10 +84,9 @@ class StreamApi @Inject()(
     expr: Option[String],
     freqString: Option[String]): HttpResponse = {
 
-    val existingActor = sm.registration(streamId)
-    if (existingActor.isDefined) {
-      sm.unregister(streamId)
-      existingActor.get.actorRef ! SSEShutdown(s"Dropped: another connection is using the same stream-id: $streamId", unsub = false)
+    // Drop any other connections that may already be using the same id
+    sm.unregister(streamId).foreach { ref =>
+      ref ! SSEShutdown(s"Dropped: another connection is using the same stream-id: $streamId", unsub = false)
     }
 
     // Validate post data. This is done before creating an actor, since
@@ -97,17 +94,8 @@ class StreamApi @Inject()(
     // parse errors.
     val splits = splitRequest(req, expr, freqString)
 
-    // handle post and URL subscription data
-    val subs = splits.map { case (e, split) =>
-      split.queries.zip(split.expressions).foreach { case (query, expr) =>
-        exprDB.addExpr(expr, query)
-        sm.subscribe(streamId, expr.id)
-      }
-      SSESubscribe(e.expression, split.expressions)
-    }
-
     val source = Source.actorPublisher(Props(
-      new SSEActor(streamId, name.getOrElse("unknown"), sm, subs.toList, registry)))
+      new SSEActor(streamId, name.getOrElse("unknown"), sm, splits, registry)))
     val entity = HttpEntity.Chunked(MediaTypes.`text/event-stream`.toContentType, source)
     HttpResponse(StatusCodes.OK, entity = entity)
   }
@@ -118,7 +106,7 @@ trait SSERenderable {
 }
 
 object StreamApi {
-  case class ExpressionsRequest(expressions: List[ExpressionWithFrequency]) extends JsonSupport
+  case class ExpressionsRequest(expressions: List[ExpressionMetadata]) extends JsonSupport
 
   object ExpressionsRequest {
     def fromJson(json: String): ExpressionsRequest = {
@@ -156,9 +144,9 @@ object StreamApi {
 
   // Subscribe message
   case class SubscribeContent(expression: String,
-                              metrics: List[ExpressionWithFrequency]) extends JsonSupport
+                              metrics: List[ExpressionMetadata]) extends JsonSupport
 
-  case class SSESubscribe(expr: String, metrics: List[ExpressionWithFrequency])
+  case class SSESubscribe(expr: String, metrics: List[ExpressionMetadata])
     extends SSEMessage("info", "subscribe", SubscribeContent(expr, metrics))
 
   case class SSEMetricContent(timestamp: Long, id: String, tags: EvaluateApi.TagMap, value: Double) extends JsonSupport

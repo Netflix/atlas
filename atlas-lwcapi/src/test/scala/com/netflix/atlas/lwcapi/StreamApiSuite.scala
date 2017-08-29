@@ -25,11 +25,6 @@ class StreamApiSuite extends FunSuite with ScalatestRouteTest {
 
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  //val mockSM = MockSubscriptionManager()
-  //val splitter = ExpressionSplitterImpl()
-  //val alertmap = AlertMapImpl()
-  //val endpoint = new StreamApi(mockSM, splitter, alertmap, system)
-
   test("SSEHello renders") {
     val ret = SSEHello("me!me!", "unknown").toSSE
     assert(ret.contains("info: hello {"))
@@ -46,7 +41,7 @@ class StreamApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("SSESubscribe renders") {
-    val ret1 = List(ExpressionWithFrequency("dataExpr", 10, "exprId"))
+    val ret1 = List(ExpressionMetadata("dataExpr", 10, "exprId"))
     val s = SSESubscribe("mainExpr", ret1).toSSE
     assert(s.startsWith("info: subscribe"))
     assert(s.contains(""""expression":"mainExpr""""))

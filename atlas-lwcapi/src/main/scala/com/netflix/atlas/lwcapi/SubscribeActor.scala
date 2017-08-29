@@ -33,8 +33,7 @@ import scala.collection.mutable
 import scala.util.control.NonFatal
 
 class SubscribeActor @Inject()(
-  sm: SubscriptionManager,
-  exprDB: ExpressionDatabase,
+  sm: ActorSubscriptionManager,
   splitter: ExpressionSplitter,
   registry: Registry) extends Actor with StrictLogging {
 
@@ -45,7 +44,6 @@ class SubscribeActor @Inject()(
 
   private val evalsId = registry.createId("atlas.lwcapi.subscribe.count")
   private val itemsId = registry.createId("atlas.lwcapi.subscribe.itemCount")
-  private val ignoredId = registry.createId("atlas.lwcapi.subscribe.ignoredCount")
 
   def receive: Receive = {
     case req @ ImperativeRequestContext(SubscribeRequest(_, Nil), _) =>
@@ -63,23 +61,16 @@ class SubscribeActor @Inject()(
       context.stop(self)
   }
 
-  private def subscribe(streamId: String, expressions: List[ExpressionWithFrequency]): List[ErrorMsg] = {
+  private def subscribe(streamId: String, expressions: List[ExpressionMetadata]): List[ErrorMsg] = {
     registry.counter(evalsId.withTag("action", "subscribe")).increment()
     registry.counter(itemsId.withTag("action", "subscribe")).increment(expressions.size)
 
     val errors = mutable.ListBuffer[ErrorMsg]()
     expressions.foreach { expr =>
       try {
-        val split = splitter.split(expr.expression, expr.frequency)
-        split.queries.zip(split.expressions).foreach { case (query, expr) =>
-          exprDB.addExpr(expr, query)
-        }
-        val registration = sm.registration(streamId)
-        if (registration.isDefined) {
-          split.expressions.foreach(e => sm.subscribe(streamId, e.id))
-          registration.get.actorRef ! SSESubscribe(expr.expression, split.expressions)
-        } else {
-          registry.counter(ignoredId.withTag("action", "subscribe")).increment()
+        val splits = splitter.split(expr.expression, expr.frequency)
+        splits.foreach { sub =>
+          sm.subscribe(streamId, sub) ! SSESubscribe(expr.expression, List(sub.metadata))
         }
       } catch {
         case NonFatal(e) =>

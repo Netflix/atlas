@@ -25,31 +25,30 @@ class ExpressionSplitterSuite extends FunSuite {
   private val ds1b = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:sum,(,nf.node,),:by"
   private val matchList1 = Query.Equal("nf.cluster", "skan-test")
 
-  private val splitter = new ExpressionSplitter()
+  private val splitter = new ExpressionSplitter
 
   test("splits single expression into data expressions") {
     val ret = splitter.split(query1, frequency1)
-    assert(ret.queries === List(matchList1, matchList1))
-    assert(ret.expressions.size === 2)
-    assert(ret.expressions.contains(ExpressionWithFrequency(ds1a, frequency1)))
-    assert(ret.expressions.contains(ExpressionWithFrequency(ds1b, frequency1)))
+    assert(ret === List(
+      Subscription(matchList1, ExpressionMetadata(ds1a, frequency1)),
+      Subscription(matchList1, ExpressionMetadata(ds1b, frequency1))
+    ).reverse)
   }
 
   test("splits compound expression into data expressions") {
     val expr = query1 + "," + query1
     val ret = splitter.split(expr, frequency1)
-    assert(ret.queries.size === 2)
-    assert(ret.queries.distinct === List(matchList1))
-    assert(ret.expressions.size === 2)
-    assert(ret.expressions.contains(ExpressionWithFrequency(ds1a, frequency1)))
-    assert(ret.expressions.contains(ExpressionWithFrequency(ds1b, frequency1)))
+    assert(ret === List(
+      Subscription(matchList1, ExpressionMetadata(ds1a, frequency1)),
+      Subscription(matchList1, ExpressionMetadata(ds1b, frequency1))
+    ).reverse)
   }
 
   test("returns None for invalid expressions") {
     val msg = intercept[IllegalArgumentException] {
       splitter.split("foo", frequency1)
     }
-   assert(msg.getMessage === "Expression is not a valid expression")
+   assert(msg.getMessage === "expression is invalid")
   }
 
   //
