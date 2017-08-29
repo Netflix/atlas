@@ -45,7 +45,7 @@ class ExpressionWithFrequencySuite extends FunSuite {
 
   test("computes id") {
     val expr = ExpressionWithFrequency("test")
-    assert(expr.id === "JoTTxcskW9L9buTqMKUA6XrOgUE")
+    assert(expr.id === "2684d3c5cb245bd2fd6ee4ea30a500e97ace8141")
   }
 
   test("id computation considers frequency") {
@@ -110,13 +110,13 @@ class ExpressionWithFrequencySuite extends FunSuite {
   }
 
   test("renders as json with default frequency") {
-    val expected = "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"_DoIEIh3HgW9w6qZ_9h3AVff5s4\"}"
+    val expected = "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
     val json = ExpressionWithFrequency("this").toJson
     assert(expected === json)
   }
 
   test("renders as json with frequency of 0") {
-    val expected = "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"_DoIEIh3HgW9w6qZ_9h3AVff5s4\"}"
+    val expected = "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
     val json = ExpressionWithFrequency("this", 0).toJson
     assert(expected === json)
   }

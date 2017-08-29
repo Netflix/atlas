@@ -52,13 +52,13 @@ class ExpressionDatabaseSuite extends FunSuite {
   test("same expression different frequency") {
     val query1 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
     val freq1 = 30000
-    val id1 = "CxmlI6L5YBQcpWOrayncZKeZekg"
+    val id1 = "0b19a523a2f960141ca563ab6b29dc64a7997a48"
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
     val ret1 = ExpressionWithFrequency(ds1a, freq1, id1)
 
     val query2 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
     val freq2 = 50000
-    val id2 = "xcKZ6tCd4vSMUY-Ug3bToNy3L6k"
+    val id2 = "c5c299ead09de2f48c518f948376d3a0dcb72fa9"
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
     val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
@@ -82,13 +82,13 @@ class ExpressionDatabaseSuite extends FunSuite {
   test("deleting") {
     val query1 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
     val freq1 = 30000
-    val id1 = "CxmlI6L5YBQcpWOrayncZKeZekg"
+    val id1 = "0b19a523a2f960141ca563ab6b29dc64a7997a48"
     val ds1a = "nf.cluster,skan-test,:eq,:sum"
     val ret1 = ExpressionWithFrequency(ds1a, freq1, id1)
 
     val query2 = "nf.cluster,skan-test,:eq,:sum,:des-fast"
     val freq2 = 50000
-    val id2 = "xcKZ6tCd4vSMUY-Ug3bToNy3L6k"
+    val id2 = "c5c299ead09de2f48c518f948376d3a0dcb72fa9"
     val ds2a = "nf.cluster,skan-test,:eq,:sum"
     val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
@@ -142,7 +142,7 @@ class ExpressionDatabaseSuite extends FunSuite {
 
     val query2 = "nf.cluster,foo-test,:eq,:sum,:des-fast"
     val freq2 = 30000
-    val id2 = "TmufMvW12uix44g903buDb-0kH4"
+    val id2 = "4e6b9f32f5b5dae8b1e3883dd376ee0dbfb4907e"
     val ds2a = "nf.cluster,foo-test,:eq,:sum"
     val ret2 = ExpressionWithFrequency(ds2a, freq2, id2)
 
