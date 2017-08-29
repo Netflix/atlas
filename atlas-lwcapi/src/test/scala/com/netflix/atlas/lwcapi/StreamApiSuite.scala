@@ -31,11 +31,9 @@ class StreamApiSuite extends FunSuite with ScalatestRouteTest {
   //val endpoint = new StreamApi(mockSM, splitter, alertmap, system)
 
   test("SSEHello renders") {
-    val uuid = GlobalUUID.get
-    val ret = SSEHello("me!me!", "unknown", uuid).toSSE
+    val ret = SSEHello("me!me!", "unknown").toSSE
     assert(ret.contains("info: hello {"))
     assert(ret.contains(""""streamId":"me!me!""""))
-    assert(ret.contains(""""instanceUUID":"""))
     assert(ret.contains(""""instanceId":"""))
   }
 

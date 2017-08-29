@@ -135,9 +135,9 @@ object StreamApi {
   }
 
   // Hello message
-  case class HelloContent(streamId: String, instanceId: String, instanceUUID: String) extends JsonSupport
-  case class SSEHello(streamId: String, instanceId: String, instanceUUID: String)
-    extends SSEMessage("info", "hello", HelloContent(streamId, instanceId, instanceUUID))
+  case class HelloContent(streamId: String, instanceId: String) extends JsonSupport
+  case class SSEHello(streamId: String, instanceId: String)
+    extends SSEMessage("info", "hello", HelloContent(streamId, instanceId))
 
   // Generic message string
   case class SSEGenericJson(what: String, msg: JsonSupport) extends SSEMessage("data", what, msg)

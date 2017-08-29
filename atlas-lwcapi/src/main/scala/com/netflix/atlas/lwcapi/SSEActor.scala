@@ -62,7 +62,7 @@ class SSEActor(
 
   private var needsUnregister = true
   sm.register(sseId, self, name)
-  enqueue(SSEHello(sseId, instanceId, GlobalUUID.get), diagnosticMessages)
+  enqueue(SSEHello(sseId, instanceId), diagnosticMessages)
   enqueue(SSEStatistics(0), diagnosticMessages)
   subs.foreach { sub => enqueue(sub, diagnosticMessages) }
 
