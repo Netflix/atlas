@@ -57,7 +57,7 @@ object Dependencies {
   val scalaCompiler   = "org.scala-lang" % "scala-compiler"
   val scalaLibrary    = "org.scala-lang" % "scala-library"
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all"
-  val scalaLogging    = "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
+  val scalaLogging    = "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
   val scalaReflect    = "org.scala-lang" % "scala-reflect" % scala
   val scalatest       = "org.scalatest" %% "scalatest" % "3.0.0"
   val slf4jApi        = "org.slf4j" % "slf4j-api" % slf4j
