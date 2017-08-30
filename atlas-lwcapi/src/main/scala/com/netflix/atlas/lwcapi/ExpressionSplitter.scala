@@ -21,8 +21,8 @@ import com.netflix.atlas.core.model.Query.KeyQuery
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 
-class ExpressionSplitter() {
-  import ExpressionSplitter._
+class ExpressionSplitter {
+
   private val keepKeys = Set("nf.app", "nf.stack", "nf.cluster")
 
   private val interpreter = Interpreter(StyleVocabulary.allWords)
@@ -61,16 +61,16 @@ class ExpressionSplitter() {
     }
   }
 
-  def split(expression: String, frequency: Long): SplitResult = synchronized {
+  def split(expression: String, frequency: Long): List[Subscription] = synchronized {
     val context = interpreter.execute(expression)
     val dataExprs = context.stack.flatMap {
       case ModelExtractors.PresentationType(t) => t.expr.dataExprs
-      case _ => throw new IllegalArgumentException("Expression is not a valid expression")
+      case _ => throw new IllegalArgumentException("expression is invalid")
     }
-    val distinctDataExprs = dataExprs.distinct
-    val queries = distinctDataExprs.map(e => intern(compress(e.dataExprs.head.query)))
-    val expressions = distinctDataExprs.map(e => ExpressionWithFrequency(e.toString, frequency))
-    SplitResult(queries, expressions)
+    dataExprs.distinct.map { e =>
+      val q = intern(compress(e.dataExprs.head.query))
+      Subscription(q, ExpressionMetadata(e.toString, frequency))
+    }
   }
 
   private def simplify(query: Query): Query = {
@@ -97,8 +97,4 @@ class ExpressionSplitter() {
     val tmp = expr.rewrite { case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True }
     simplify(tmp.asInstanceOf[Query])
   }
-}
-
-object ExpressionSplitter {
-  case class SplitResult(queries: List[Query], expressions: List[ExpressionWithFrequency])
 }

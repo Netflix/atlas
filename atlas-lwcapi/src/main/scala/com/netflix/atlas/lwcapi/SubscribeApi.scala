@@ -46,7 +46,7 @@ class SubscribeApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi
 object SubscribeApi {
   case class SubscribeRequest(
     streamId: String,
-    expressions: List[ExpressionWithFrequency]) extends JsonSupport {
+    expressions: List[ExpressionMetadata]) extends JsonSupport {
 
     require(streamId != null && !streamId.isEmpty, "streamId attribute is missing or empty")
     require(expressions != null && expressions.nonEmpty, "expressions attribute is missing or empty")

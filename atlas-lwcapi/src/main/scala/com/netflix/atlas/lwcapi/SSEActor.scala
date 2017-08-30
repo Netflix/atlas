@@ -34,8 +34,8 @@ import scala.concurrent.duration._
 class SSEActor(
   sseId: String,
   name: String,
-  sm: SubscriptionManager,
-  subs: List[SSESubscribe],
+  sm: ActorSubscriptionManager,
+  subs: Map[ExpressionMetadata, List[Subscription]],
   registry: Registry) extends ActorPublisher[ChunkStreamPart] with ActorLogging {
 
   import SSEActor._
@@ -61,10 +61,16 @@ class SSEActor(
   registry.counter(connectsId.withTag("streamId", sseId)).increment()
 
   private var needsUnregister = true
-  sm.register(sseId, self, name)
+  sm.register(sseId, self)
   enqueue(SSEHello(sseId, instanceId), diagnosticMessages)
   enqueue(SSEStatistics(0), diagnosticMessages)
-  subs.foreach { sub => enqueue(sub, diagnosticMessages) }
+  subs.foreach {
+    case (expr, subscriptions) =>
+      subscriptions.foreach { s =>
+        sm.subscribe(sseId, s)
+      }
+      enqueue(SSESubscribe(expr.expression, subscriptions.map(_.metadata)), diagnosticMessages)
+  }
 
   private var shutdown = false
 

@@ -25,12 +25,12 @@ import org.scalatest.FunSuite
 class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   import scala.concurrent.duration._
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
   val splitter = new ExpressionSplitter()
 
-  val exprDB = new ExpressionDatabase()
-  val endpoint = ExpressionApi(exprDB, new NoopRegistry, system)
+  val sm = new ActorSubscriptionManager
+  val endpoint = ExpressionApi(sm, new NoopRegistry, system)
 
   test("get of a path returns empty data") {
     val expected_etag = ExpressionApi.computeETag(List())
@@ -66,11 +66,12 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("has data") {
-    val split = splitter.split("nf.cluster,skan,:eq,:avg", 60000)
-    split.queries.zip(split.expressions).foreach { case (query, expr) =>
-        exprDB.addExpr(expr, query)
+    val splits = splitter.split("nf.cluster,skan,:eq,:avg", 60000)
+    sm.register("a", null)
+    splits.foreach { s =>
+      sm.subscribe("a", s)
     }
-    exprDB.regenerateQueryIndex()
+    sm.regenerateQueryIndex()
     Get("/lwc/api/v1/expressions/skan") ~> endpoint.routes ~> check {
       val expected = s"""{"expressions":[$skanSum,$skanCount]}"""
       assert(responseAs[String] === expected)
@@ -78,11 +79,12 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("fetch all with data") {
-    val split = splitter.split("nf.cluster,skan,:eq,:avg,nf.app,brh,:eq,:max", 60000)
-    split.queries.zip(split.expressions).foreach { case (query, expr) =>
-      exprDB.addExpr(expr, query)
+    val splits = splitter.split("nf.cluster,skan,:eq,:avg,nf.app,brh,:eq,:max", 60000)
+    sm.register("a", null)
+    splits.foreach { s =>
+      sm.subscribe("a", s)
     }
-    exprDB.regenerateQueryIndex()
+    sm.regenerateQueryIndex()
     Get("/lwc/api/v1/expressions") ~> endpoint.routes ~> check {
       val expected = s"""{"expressions":[$brhMax,$skanSum,$skanCount]}"""
       assert(responseAs[String] === expected)
@@ -90,8 +92,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("fetch all with empty result set") {
-    exprDB.clear()
-    exprDB.regenerateQueryIndex()
+    sm.clear()
     Get("/lwc/api/v1/expressions") ~> endpoint.routes ~> check {
       val expected = """{"expressions":[]}"""
       assert(responseAs[String] === expected)
@@ -99,8 +100,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("fetch all with trailing slash") {
-    exprDB.clear()
-    exprDB.regenerateQueryIndex()
+    sm.clear()
     Get("/lwc/api/v1/expressions/") ~> endpoint.routes ~> check {
       val expected = """{"expressions":[]}"""
       assert(responseAs[String] === expected)
@@ -109,9 +109,9 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
 
   test("etags match for different orderings") {
     val unordered = List(
-      ExpressionWithFrequency("a", 2),
-      ExpressionWithFrequency("z", 1),
-      ExpressionWithFrequency("c", 3))
+      ExpressionMetadata("a", 2),
+      ExpressionMetadata("z", 1),
+      ExpressionMetadata("c", 3))
     val ordered = unordered.sorted
     val tagUnordered = ExpressionApi.computeETag(unordered)
     val tagOrdered = ExpressionApi.computeETag(ordered)
@@ -125,8 +125,8 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("etags don't match for different content") {
-    val e1 = List(ExpressionWithFrequency("a", 2))
-    val e2 = List(ExpressionWithFrequency("b", 2))
+    val e1 = List(ExpressionMetadata("a", 2))
+    val e2 = List(ExpressionMetadata("b", 2))
     val tag_e1 = ExpressionApi.computeETag(e1)
     val tag_e2 = ExpressionApi.computeETag(e2)
     assert(tag_e1 != tag_e2)
@@ -134,7 +134,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
 
   test("etags don't match for empty and non-empty lists") {
     val e1 = List()
-    val e2 = List(ExpressionWithFrequency("b", 2))
+    val e2 = List(ExpressionMetadata("b", 2))
     val tag_e1 = ExpressionApi.computeETag(e1)
     val tag_e2 = ExpressionApi.computeETag(e2)
     assert(tag_e1 != tag_e2)

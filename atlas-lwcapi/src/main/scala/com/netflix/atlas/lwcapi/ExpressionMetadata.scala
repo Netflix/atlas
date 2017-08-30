@@ -19,28 +19,29 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.JsonSupport
 
-case class ExpressionWithFrequency(
-  expression: String,
-  frequency: Long = ApiSettings.defaultFrequency,
-  id: String = "") extends JsonSupport with Ordered[ExpressionWithFrequency] {
+case class ExpressionMetadata(
+    expression: String,
+    frequency: Long = ApiSettings.defaultFrequency,
+    id: String = "")
+  extends JsonSupport with Ordered[ExpressionMetadata] {
 
-  require(expression != null && expression.nonEmpty)
+  require(expression != null && expression.nonEmpty, "expression cannot be null")
 
-  def compare(that: ExpressionWithFrequency): Int = {
+  def compare(that: ExpressionMetadata): Int = {
     val expressionMatch = expression.compare(that.expression)
     if (expressionMatch == 0) frequency.compare(that.frequency) else expressionMatch
   }
 }
 
-object ExpressionWithFrequency {
+object ExpressionMetadata {
 
-  def apply(expression: String, frequency: Long): ExpressionWithFrequency = {
+  def apply(expression: String, frequency: Long): ExpressionMetadata = {
     val f = if (frequency > 0) frequency else ApiSettings.defaultFrequency
-    new ExpressionWithFrequency(expression, f, computeId(expression, f))
+    new ExpressionMetadata(expression, f, computeId(expression, f))
   }
 
-  def apply(expression: String): ExpressionWithFrequency = {
-    new ExpressionWithFrequency(expression, id = computeId(expression, ApiSettings.defaultFrequency))
+  def apply(expression: String): ExpressionMetadata = {
+    apply(expression, ApiSettings.defaultFrequency)
   }
 
   def computeId(e: String, f: Long): String = {

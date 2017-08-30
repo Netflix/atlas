@@ -19,45 +19,45 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
 
-class ExpressionWithFrequencySuite extends FunSuite {
+class ExpressionMetadataSuite extends FunSuite {
   test("default frequency is applied") {
-    val ret1 = ExpressionWithFrequency("this")
-    val ret2 = ExpressionWithFrequency("this", ApiSettings.defaultFrequency)
+    val ret1 = ExpressionMetadata("this")
+    val ret2 = ExpressionMetadata("this", ApiSettings.defaultFrequency)
     assert(ret1 === ret2)
   }
 
   test("default id is applied") {
-    val ret1 = ExpressionWithFrequency("this", 5)
+    val ret1 = ExpressionMetadata("this", 5)
     assert(ret1.id.nonEmpty)
   }
 
   test("full params") {
-    val expr = ExpressionWithFrequency("test", 60000, "idHere")
+    val expr = ExpressionMetadata("test", 60000, "idHere")
     assert(expr.expression === "test")
     assert(expr.frequency === 60000)
     assert(expr.id === "idHere")
   }
 
   test("default frequency") {
-    val expr = ExpressionWithFrequency("test")
+    val expr = ExpressionMetadata("test")
     assert(expr.frequency === ApiSettings.defaultFrequency)
   }
 
   test("computes id") {
-    val expr = ExpressionWithFrequency("test")
+    val expr = ExpressionMetadata("test")
     assert(expr.id === "2684d3c5cb245bd2fd6ee4ea30a500e97ace8141")
   }
 
   test("id computation considers frequency") {
-    val exp1 = ExpressionWithFrequency("test", 10000)
-    val exp2 = ExpressionWithFrequency("test", 20000)
+    val exp1 = ExpressionMetadata("test", 10000)
+    val exp2 = ExpressionMetadata("test", 20000)
     assert(exp1.id != exp2.id)
   }
 
   test("parses from json without frequency provides default") {
     val json ="""{"expression": "this"}"""
 
-    val o = Json.decode[ExpressionWithFrequency](json)
+    val o = Json.decode[ExpressionMetadata](json)
     assert(o.expression === "this")
     assert(o.frequency === ApiSettings.defaultFrequency)
   }
@@ -68,7 +68,7 @@ class ExpressionWithFrequencySuite extends FunSuite {
         | {"expression": "this", "frequency": 9999}
       """.stripMargin
 
-    val o = Json.decode[ExpressionWithFrequency](json)
+    val o = Json.decode[ExpressionMetadata](json)
 
     assert(o.expression === "this")
     assert(o.frequency === 9999)
@@ -78,58 +78,58 @@ class ExpressionWithFrequencySuite extends FunSuite {
   test("fails to parse from json with frequency non-integer") {
     val json ="""{"expression": "this", "frequency": "that"}"""
     intercept[InvalidFormatException] {
-      Json.decode[ExpressionWithFrequency](json)
+      Json.decode[ExpressionMetadata](json)
     }
   }
 
   test("Fails to parse from json with empty expression") {
     val json = "{\"expression\": \"\"}"
     intercept[IllegalArgumentException] {
-      Json.decode[ExpressionWithFrequency](json)
+      Json.decode[ExpressionMetadata](json)
     }
   }
 
   test("Fails to parse from json with null expression") {
     val json = "{\"expression\": null}"
     intercept[IllegalArgumentException] {
-      Json.decode[ExpressionWithFrequency](json)
+      Json.decode[ExpressionMetadata](json)
     }
   }
 
   test("Fails to parse from json with missing expression") {
     val json = "{}"
     intercept[IllegalArgumentException] {
-      Json.decode[ExpressionWithFrequency](json)
+      Json.decode[ExpressionMetadata](json)
     }
   }
 
   test("renders as json") {
     val expected = """{"expression":"this","frequency":99000,"id":"foo"}"""
-    val json = ExpressionWithFrequency("this", 99000, "foo").toJson
+    val json = ExpressionMetadata("this", 99000, "foo").toJson
     assert(expected === json)
   }
 
   test("renders as json with default frequency") {
     val expected = "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
-    val json = ExpressionWithFrequency("this").toJson
+    val json = ExpressionMetadata("this").toJson
     assert(expected === json)
   }
 
   test("renders as json with frequency of 0") {
     val expected = "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
-    val json = ExpressionWithFrequency("this", 0).toJson
+    val json = ExpressionMetadata("this", 0).toJson
     assert(expected === json)
   }
 
   test("expression is required to be non-null") {
     intercept[IllegalArgumentException] {
-      ExpressionWithFrequency(null)
+      ExpressionMetadata(null)
     }
   }
 
   test("sorts") {
-    val source = List(ExpressionWithFrequency("a", 2), ExpressionWithFrequency("z", 1), ExpressionWithFrequency("c", 3))
-    val expected = List(ExpressionWithFrequency("a", 2), ExpressionWithFrequency("c", 3), ExpressionWithFrequency("z", 1))
+    val source = List(ExpressionMetadata("a", 2), ExpressionMetadata("z", 1), ExpressionMetadata("c", 3))
+    val expected = List(ExpressionMetadata("a", 2), ExpressionMetadata("c", 3), ExpressionMetadata("z", 1))
     assert(expected === source.sorted)
   }
 }

@@ -111,7 +111,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
 }
 
 object SubscribeApiSuite {
-  @volatile var lastUpdate: List[ExpressionWithFrequency] = Nil
+  @volatile var lastUpdate: List[ExpressionMetadata] = Nil
   @volatile var lastStreamId: String = ""
   @volatile var lastKind: Symbol = 'none
 

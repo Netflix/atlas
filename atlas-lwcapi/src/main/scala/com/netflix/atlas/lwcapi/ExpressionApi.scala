@@ -34,7 +34,7 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
 case class ExpressionApi @Inject()(
-  expressionDatabase: ExpressionDatabase,
+  sm: ActorSubscriptionManager,
   registry: Registry,
   implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
 
@@ -59,14 +59,14 @@ case class ExpressionApi @Inject()(
   }
 
   private def handleList(receivedETags: Option[String]): HttpResponse = {
-    handle(receivedETags, expressionDatabase.expressions)
+    handle(receivedETags, sm.subscriptions.map(_.metadata))
   }
 
   private def handleGet(receivedETags: Option[String], cluster: String): HttpResponse = {
-    handle(receivedETags, expressionDatabase.expressionsForCluster(cluster))
+    handle(receivedETags, sm.subscriptionsForCluster(cluster).map(_.metadata))
   }
 
-  private def handle(receivedETags: Option[String], expressions: List[ExpressionWithFrequency]): HttpResponse = {
+  private def handle(receivedETags: Option[String], expressions: List[ExpressionMetadata]): HttpResponse = {
     expressionCount.record(expressions.size)
     val tag = computeETag(expressions)
     val headers: List[HttpHeader] = List(RawHeader("ETag", tag))
@@ -83,9 +83,9 @@ case class ExpressionApi @Inject()(
 }
 
 object ExpressionApi {
-  case class Return(expressions: List[ExpressionWithFrequency]) extends JsonSupport
+  case class Return(expressions: List[ExpressionMetadata]) extends JsonSupport
 
-  private[lwcapi] def computeETag(expressions: List[ExpressionWithFrequency]): String = {
+  private[lwcapi] def computeETag(expressions: List[ExpressionMetadata]): String = {
     // TODO: This should get refactored so we do not need to recompute each time
     val str = expressions.sorted.mkString(";")
     val hash = Strings.zeroPad(Hash.sha1(str), 40).substring(20)
