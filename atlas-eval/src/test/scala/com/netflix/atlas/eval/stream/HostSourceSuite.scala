@@ -22,8 +22,10 @@ import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
 import akka.stream.ActorMaterializer
@@ -36,6 +38,7 @@ import akka.util.ByteString
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -104,6 +107,25 @@ class HostSourceSuite extends FunSuite {
     val (switch, future) = source {
         latch.countDown()
         Failure(new IOException("cannot connect"))
+      }
+      .viaMat(KillSwitches.single)(Keep.right)
+      .toMat(Sink.ignore)(Keep.both)
+      .run()
+
+    // If it doesn't retry successfully this should time out and fail the test
+    latch.await(60, TimeUnit.SECONDS)
+
+    switch.shutdown()
+    Await.result(future, Duration.Inf)
+  }
+
+  test("retries on exception from host entity source") {
+    val latch = new CountDownLatch(5)
+    val (switch, future) = source {
+        latch.countDown()
+        val source = Source.fromFuture(Future.failed[ByteString](new IOException("reset by peer")))
+        val entity = HttpEntity(MediaTypes.`text/event-stream`, source)
+        Success(HttpResponse(StatusCodes.OK, entity = entity))
       }
       .viaMat(KillSwitches.single)(Keep.right)
       .toMat(Sink.ignore)(Keep.both)
