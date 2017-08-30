@@ -141,7 +141,9 @@ object EurekaSource extends StrictLogging {
           val foundInstances = instances.map(i => i.instanceId -> i).toMap
 
           val added = foundInstances -- currentIds
-          logger.info(s"instances added: ${mkString(added)}")
+          if (added.nonEmpty) {
+            logger.info(s"instances added: ${mkString(added)}")
+          }
           val sources = added.values.map { instance =>
             val uri = instanceUri(instance)
             val ref = EvaluationFlows.stoppableSource(HostSource(uri, client))
@@ -151,7 +153,9 @@ object EurekaSource extends StrictLogging {
           push(out, sources.toList)
 
           val removed = instanceMap.toMap -- foundInstances.keySet
-          logger.info(s"instances removed: ${mkString(removed)}")
+          if (removed.nonEmpty) {
+            logger.info(s"instances removed: ${mkString(removed)}")
+          }
           removed.foreach { case (id, ref) =>
             instanceMap -= id
             ref.stop()

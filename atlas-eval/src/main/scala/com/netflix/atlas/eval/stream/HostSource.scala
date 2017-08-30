@@ -78,12 +78,17 @@ object HostSource extends StrictLogging {
           // with other hosts
           unzipIfNeeded(res)
             .via(EvaluationFlows.sseFraming)
+            .recover {
+              case t: Throwable =>
+                logger.warn(s"stream failed $uri", t)
+                ByteString.empty
+            }
             .watchTermination() { (_, f) =>
               f.onComplete {
                 case Success(_) =>
                   logger.info(s"lost connection to $uri")
                 case Failure(t) =>
-                  logger.warn(s"stream failed $uri", t)
+                  logger.info(s"lost connection to $uri", t)
               }
             }
         case (Success(res: HttpResponse), _) =>
