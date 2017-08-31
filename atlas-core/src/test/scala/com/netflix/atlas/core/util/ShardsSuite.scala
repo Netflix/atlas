@@ -31,19 +31,21 @@ class ShardsSuite extends FunSuite {
     groups.toList
   }
 
-  private def minmax(counts: IntIntHashMap): (Int, Int) = {
+  private def minMaxAvg(counts: IntIntHashMap): (Int, Int, Int) = {
     var min = Integer.MAX_VALUE
     var max = 0
+    var sum = 0
     counts.foreach { (k, v) =>
       min = math.min(min, v)
       max = math.max(max, v)
+      sum += v
     }
-    min -> max
+    (min, max, sum / counts.size)
   }
 
   private def printSummary(counts: IntIntHashMap): Unit = {
-    val (min, max) = minmax(counts)
-    println(s"min: $min, max: $max")
+    val (min, max, avg) = minMaxAvg(counts)
+    println(s"min: $min, max: $max, avg: $avg")
     counts.foreach { (k, v) =>
       println(s"$k => $v")
     }
@@ -62,7 +64,7 @@ class ShardsSuite extends FunSuite {
       assert(counts.size === n * sz)
 
       // make sure that the distribution is uniform
-      val (min, max) = minmax(counts)
+      val (min, max, _) = minMaxAvg(counts)
       assert(max - min <= 1)
     }
   }
@@ -83,9 +85,9 @@ class ShardsSuite extends FunSuite {
       assert(counts.size === n * sz)
 
       // make sure that the distribution is uniform
-      val (min, max) = minmax(counts)
+      val (min, max, avg) = minMaxAvg(counts)
       val threshold = max / 10.0
-      if (max - min > threshold) {
+      if (max - avg > threshold || avg - min > threshold) {
         printSummary(counts)
       }
       assert(max - min <= threshold)
@@ -184,7 +186,7 @@ class ShardsSuite extends FunSuite {
     assert(counts.size === 6 + 2)
 
     // make sure that the distribution is uniform
-    val (min, max) = minmax(counts)
+    val (min, max, _) = minMaxAvg(counts)
     assert(max - min <= 1)
   }
 
