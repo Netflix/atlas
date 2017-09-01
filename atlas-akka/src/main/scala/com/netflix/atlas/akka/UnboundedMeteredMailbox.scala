@@ -29,13 +29,11 @@ import akka.dispatch.UnboundedMessageQueueSemantics
 import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config
 
-
 object UnboundedMeteredMailbox {
 
   private case class Entry(v: Envelope, t: Long = System.nanoTime)
 
-  class MeteredMessageQueue(path: String) extends MessageQueue
-      with UnboundedMessageQueueSemantics {
+  class MeteredMessageQueue(path: String) extends MessageQueue with UnboundedMessageQueueSemantics {
 
     private final val queue = new ConcurrentLinkedQueue[Entry]
 
@@ -51,7 +49,8 @@ object UnboundedMeteredMailbox {
 
     def dequeue(): Envelope = {
       val tmp = queue.poll()
-      if (tmp == null) null else {
+      if (tmp == null) null
+      else {
         val dur = System.nanoTime - tmp.t
         waitTimer.record(dur, TimeUnit.NANOSECONDS)
         tmp.v
@@ -59,14 +58,17 @@ object UnboundedMeteredMailbox {
     }
 
     def numberOfMessages: Int = queue.size
+
     def hasMessages: Boolean = !queue.isEmpty
+
     def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
       queue.clear()
     }
   }
 }
 
-class UnboundedMeteredMailbox(settings: ActorSystem.Settings, config: Config) extends MailboxType
+class UnboundedMeteredMailbox(settings: ActorSystem.Settings, config: Config)
+    extends MailboxType
     with ProducesMessageQueue[UnboundedMeteredMailbox.MeteredMessageQueue] {
 
   import com.netflix.atlas.akka.UnboundedMeteredMailbox._

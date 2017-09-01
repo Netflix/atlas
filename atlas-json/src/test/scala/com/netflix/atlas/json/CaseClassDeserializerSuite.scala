@@ -33,7 +33,9 @@ class CaseClassDeserializerSuite extends FunSuite {
   import CaseClassDeserializerSuite._
 
   private val module = new Module {
+
     override def version(): Version = Version.unknownVersion()
+
     override def getModuleName: String = "test"
 
     override def setupModule(context: SetupContext): Unit = {
@@ -177,7 +179,8 @@ class CaseClassDeserializerSuite extends FunSuite {
 
   test("generics 2") {
     val expected = OuterT(List(List(Inner("a"), Inner("b")), List(Inner("c"))))
-    val actual = decode[OuterT[List[List[Inner]]]]("""{"vs":[[{"v":"a"},{"v":"b"}],[{"v":"c"}]]}""")
+    val actual =
+      decode[OuterT[List[List[Inner]]]]("""{"vs":[[{"v":"a"},{"v":"b"}],[{"v":"c"}]]}""")
     assert(actual === expected)
   }
 
@@ -205,6 +208,7 @@ class CaseClassDeserializerSuite extends FunSuite {
 }
 
 object CaseClassDeserializerSuite {
+
   case class SimpleObject(foo: Int, bar: String, baz: Option[String])
 
   case class SimpleObjectWithDefaults(foo: Int = 42, bar: String = "abc")
@@ -220,13 +224,19 @@ object CaseClassDeserializerSuite {
   }
 
   case class OptionInt(v: Option[Int])
+
   case class OptionLong(v: Option[Long])
+
   case class ListOptionInt(v: List[Option[Int]])
+
   case class ListString(vs: List[String])
+
   case class ListStringDflt(vs: List[String] = Nil)
 
   case class Inner(v: String)
+
   case class Outer(vs: List[List[Inner]])
+
   case class OuterT[T](vs: T)
 
   case class PropAnno(@JsonProperty("v") value: String)
@@ -236,6 +246,7 @@ object CaseClassDeserializerSuite {
   case class DeserUsingAnno(@JsonDeserialize(using = classOf[AddOneDeserializer]) value: Long)
 
   class AddOneDeserializer extends JsonDeserializer[java.lang.Long] {
+
     override def deserialize(p: JsonParser, ctxt: DeserializationContext): java.lang.Long = {
       val v = p.getLongValue
       p.nextToken()

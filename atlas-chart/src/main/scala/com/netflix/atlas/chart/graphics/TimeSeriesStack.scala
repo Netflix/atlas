@@ -20,26 +20,27 @@ import java.awt.Graphics2D
 import com.netflix.atlas.core.model.TimeSeq
 
 /**
- * Draws a set of time series stacked on top of each other. The style will be the same as area
- * only it will fill to the previous line rather than zero.
- *
- * @param style
- *     Style to use for drawing the line.
- * @param ts
- *     Data for the line.
- * @param xaxis
- *     Axis used to create the X scale.
- * @param yaxis
- *     Axis used to create the Y scale.
- * @param offsets
- *     Y-offsets to use and update when stacking the line.
- */
+  * Draws a set of time series stacked on top of each other. The style will be the same as area
+  * only it will fill to the previous line rather than zero.
+  *
+  * @param style
+  *     Style to use for drawing the line.
+  * @param ts
+  *     Data for the line.
+  * @param xaxis
+  *     Axis used to create the X scale.
+  * @param yaxis
+  *     Axis used to create the Y scale.
+  * @param offsets
+  *     Y-offsets to use and update when stacking the line.
+  */
 case class TimeSeriesStack(
-    style: Style,
-    ts: TimeSeq,
-    xaxis: TimeAxis,
-    yaxis: ValueAxis,
-    offsets: TimeSeriesStack.Offsets) extends Element {
+  style: Style,
+  ts: TimeSeq,
+  xaxis: TimeAxis,
+  yaxis: ValueAxis,
+  offsets: TimeSeriesStack.Offsets
+) extends Element {
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     val step = xaxis.step
@@ -85,6 +86,7 @@ object TimeSeriesStack {
   case class Offsets(posY: Array[Double], negY: Array[Double])
 
   object Offsets {
+
     def apply(axis: TimeAxis): Offsets = {
       val size = ((axis.end - axis.start) / axis.step).toInt
       val posY = new Array[Double](size)

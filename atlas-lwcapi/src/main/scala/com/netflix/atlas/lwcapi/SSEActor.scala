@@ -36,7 +36,9 @@ class SSEActor(
   name: String,
   sm: ActorSubscriptionManager,
   subs: Map[ExpressionMetadata, List[Subscription]],
-  registry: Registry) extends ActorPublisher[ChunkStreamPart] with ActorLogging {
+  registry: Registry
+) extends ActorPublisher[ChunkStreamPart]
+    with ActorLogging {
 
   import SSEActor._
   import StreamApi._
@@ -144,5 +146,6 @@ class SSEActor(
 }
 
 object SSEActor {
+
   case object Tick
 }

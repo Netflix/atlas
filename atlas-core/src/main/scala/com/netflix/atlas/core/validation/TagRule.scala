@@ -18,8 +18,8 @@ package com.netflix.atlas.core.validation
 import com.netflix.atlas.core.util.SmallHashMap
 
 /**
- * Helper for rules that can be checked using a single key and value pair.
- */
+  * Helper for rules that can be checked using a single key and value pair.
+  */
 trait TagRule extends Rule {
 
   def validate(tags: SmallHashMap[String, String]): ValidationResult = {

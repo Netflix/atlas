@@ -20,8 +20,8 @@ import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
 /**
- * Keeps reference to global config object that can updated during application initialization.
- */
+  * Keeps reference to global config object that can updated during application initialization.
+  */
 object ConfigManager {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -48,9 +48,12 @@ object ConfigManager {
 
   private def pickClassLoader: ClassLoader = {
     val cl = Thread.currentThread().getContextClassLoader
-    if (cl != null) cl else {
+    if (cl != null) cl
+    else {
       val cname = getClass.getName
-      logger.warn(s"Thread.currentThread().getContextClassLoader() is null, using loader for $cname")
+      logger.warn(
+        s"Thread.currentThread().getContextClassLoader() is null, using loader for $cname"
+      )
       getClass.getClassLoader
     }
   }

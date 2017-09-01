@@ -19,25 +19,26 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.util.SmallHashMap
 
 /**
- * Index for quickly matching a set of tags against many query expressions. The intended use-case
- * is for stream processing. If a stream of tagged data points are flowing through the system
- * and we have thousands of queries, then we need efficient ways to:
- *
- * 1. Check if a datapoint is a match to any of the queries. This can be used to quickly filter
- *    out data that isn't going to be needed.
- * 2. Figure out which queries or expressions match a given datapoint.
- *
- * @param indexes
- *     Map of :eq query to a sub-index. This is used to recursively search the set after finding
- *     the first match.
- * @param entries
- *     Entries that remain after checking all the simple :eq queries. This list will be searched
- *     using a linear scan to get final matching with regex or other more complicated query
- *     clauses.
- */
+  * Index for quickly matching a set of tags against many query expressions. The intended use-case
+  * is for stream processing. If a stream of tagged data points are flowing through the system
+  * and we have thousands of queries, then we need efficient ways to:
+  *
+  * 1. Check if a datapoint is a match to any of the queries. This can be used to quickly filter
+  *    out data that isn't going to be needed.
+  * 2. Figure out which queries or expressions match a given datapoint.
+  *
+  * @param indexes
+  *     Map of :eq query to a sub-index. This is used to recursively search the set after finding
+  *     the first match.
+  * @param entries
+  *     Entries that remain after checking all the simple :eq queries. This list will be searched
+  *     using a linear scan to get final matching with regex or other more complicated query
+  *     clauses.
+  */
 case class QueryIndex[T](
-    indexes: Map[Query.Equal, QueryIndex[T]],
-    entries: List[QueryIndex.Entry[T]]) {
+  indexes: Map[Query.Equal, QueryIndex[T]],
+  entries: List[QueryIndex.Entry[T]]
+) {
 
   /** Returns true if the tags match any of the queries in the index. */
   def matches(tags: Map[String, String]): Boolean = {
@@ -71,16 +72,19 @@ case class QueryIndex[T](
           case Some(qt) => qt.matchingEntries(tags, qs)
           case None     => Nil
         }
-        children ::: entries.filter(_.query.matches(tags)).map(_.value) ::: matchingEntries(tags, qs)
+        children ::: entries.filter(_.query.matches(tags)).map(_.value) ::: matchingEntries(
+          tags,
+          qs
+        )
       case Nil =>
         entries.filter(_.query.matches(tags)).map(_.value)
     }
   }
 
   /**
-   * Creates a string representation of the index tree. Warning: this can be large if many queries
-   * are indexed.
-   */
+    * Creates a string representation of the index tree. Warning: this can be large if many queries
+    * are indexed.
+    */
   override def toString: String = {
     val buf = new StringBuilder
     append(buf, 0)
@@ -91,12 +95,15 @@ case class QueryIndex[T](
     val pad1 = "    " * indent
     val pad2 = "    " * (indent + 1)
     buf.append(pad1).append("children\n")
-    indexes.foreach { case (k, child) =>
-      buf.append(pad2).append(k).append('\n')
-      child.append(buf, indent + 2)
+    indexes.foreach {
+      case (k, child) =>
+        buf.append(pad2).append(k).append('\n')
+        child.append(buf, indent + 2)
     }
     buf.append(pad1).append("queries\n")
-    entries.foreach { e => buf.append(pad2).append(e.query).append('\n') }
+    entries.foreach { e =>
+      buf.append(pad2).append(e.query).append('\n')
+    }
   }
 }
 
@@ -110,22 +117,23 @@ object QueryIndex {
   case class Entry[T](query: Query, value: T)
 
   private case class AnnotatedEntry[T](entry: Entry[T], filters: Set[Query.Equal]) {
+
     def toList: List[(Query.Equal, AnnotatedEntry[T])] = {
       filters.toList.map(q => q -> AnnotatedEntry(entry, filters - q))
     }
   }
 
   /**
-   * Create an index based on a list of queries. The value for the entry will be the raw input
-   * query.
-   */
+    * Create an index based on a list of queries. The value for the entry will be the raw input
+    * query.
+    */
   def apply(queries: List[Query]): QueryIndex[Query] = {
     create(queries.map(q => Entry(q, q)))
   }
 
   /**
-   * Create an index based on a list of entries.
-   */
+    * Create an index based on a list of entries.
+    */
   def create[T](entries: List[Entry[T]]): QueryIndex[T] = {
     val annotated = entries.flatMap { entry =>
       val qs = Query.dnfList(entry.query).flatMap(split)
@@ -136,15 +144,19 @@ object QueryIndex {
   }
 
   /**
-   * Recursively build the index.
-   */
-  private def createImpl[T](idxMap: IndexMap[T], entries: List[AnnotatedEntry[T]]): QueryIndex[T] = {
+    * Recursively build the index.
+    */
+  private def createImpl[T](
+    idxMap: IndexMap[T],
+    entries: List[AnnotatedEntry[T]]
+  ): QueryIndex[T] = {
     idxMap.get(entries) match {
       case Some(idx) => idx
       case None =>
         val (children, leaf) = entries.partition(_.filters.nonEmpty)
-        val trees = children.flatMap(_.toList).groupBy(_._1).map { case (q, ts) =>
-          q -> createImpl(idxMap, ts.map(_._2))
+        val trees = children.flatMap(_.toList).groupBy(_._1).map {
+          case (q, ts) =>
+            q -> createImpl(idxMap, ts.map(_._2))
         }
         val idx = QueryIndex(smallMap(trees), leaf.map(_.entry))
         idxMap += entries -> idx
@@ -156,8 +168,10 @@ object QueryIndex {
     * Convert to a SmallHashMap to get a more compact memory representation.
     */
   private def smallMap[T](m: Map[Query.Equal, QueryIndex[T]]): Map[Query.Equal, QueryIndex[T]] = {
+
     // Scala special cases immutable maps with size <= 4, so go ahead and keep those
-    if (m.size <= 4) m else {
+    if (m.size <= 4) m
+    else {
       // Otherwise, convert to a SmallHashMap. Note that default apply will create a
       // map with the exact size of the input to optimize for memory use. This results
       // in terrible performance for lookups of items that are not in the map because
@@ -176,36 +190,44 @@ object QueryIndex {
   }
 
   /**
-   * Split :in queries into a list of queries using :eq.
-   */
+    * Split :in queries into a list of queries using :eq.
+    */
   private def split(query: Query): List[Query] = {
     query match {
       case Query.And(q1, q2) => for (a <- split(q1); b <- split(q2)) yield { Query.And(a, b) }
-      case Query.In(k, vs)   => vs.map { v => Query.Equal(k, v) }
-      case _                 => List(query)
+      case Query.In(k, vs) =>
+        vs.map { v =>
+          Query.Equal(k, v)
+        }
+      case _ => List(query)
     }
   }
 
   /**
-   * Convert a query into a list of query clauses that are ANDd together.
-   */
+    * Convert a query into a list of query clauses that are ANDd together.
+    */
   private def conjunctionList(query: Query): List[Query] = {
     query match {
-      case Query.And(q1, q2)     => conjunctionList(q1) ::: conjunctionList(q2)
-      case q                     => List(q)
+      case Query.And(q1, q2) => conjunctionList(q1) ::: conjunctionList(q2)
+      case q                 => List(q)
     }
   }
 
   /**
-   * Annotate an entry with a set of :eq queries that should filter in the input before checking
-   * against the final remaining query. Ideally if the query is only using :eq and :and the final
-   * remainder will be :true.
-   */
+    * Annotate an entry with a set of :eq queries that should filter in the input before checking
+    * against the final remaining query. Ideally if the query is only using :eq and :and the final
+    * remainder will be :true.
+    */
   private def annotate[T](entry: Entry[T]): AnnotatedEntry[T] = {
     val distinct = conjunctionList(entry.query).distinct
-    val filters   = distinct.collect { case q: Query.Equal => q }
+    val filters = distinct.collect { case q: Query.Equal                      => q }
     val remainder = distinct.collect { case q if !q.isInstanceOf[Query.Equal] => q }
-    val remainderQ = if (remainder.isEmpty) Query.True else remainder.reduce { (a, b) => Query.And(a, b) }
+    val remainderQ =
+      if (remainder.isEmpty) Query.True
+      else
+        remainder.reduce { (a, b) =>
+          Query.And(a, b)
+        }
     AnnotatedEntry(Entry(remainderQ, entry.value), filters.toSet)
   }
 }

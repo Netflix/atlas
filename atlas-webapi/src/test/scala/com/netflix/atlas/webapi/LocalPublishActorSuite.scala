@@ -26,21 +26,22 @@ import com.netflix.spectator.api.ManualClock
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class LocalPublishActorSuite extends FunSuite {
 
   private val clock = new ManualClock()
   private val registry = new DefaultRegistry(clock)
 
-  private def newDB = new MemoryDatabase(registry, ConfigFactory.parseString(
-    """
+  private def newDB =
+    new MemoryDatabase(
+      registry,
+      ConfigFactory.parseString("""
       |block-size = 60
       |num-blocks = 2
       |rebuild-frequency = 10s
       |test-mode = true
       |intern-while-building = true
-    """.stripMargin))
-
+    """.stripMargin)
+    )
 
   private def newDatapoint(v: Double): Datapoint = {
     Datapoint(Map("name" -> "test", TagKey.rollup -> "true"), clock.wallTime(), v)

@@ -56,9 +56,10 @@ import scala.concurrent.duration.FiniteDuration
   * be using that class directly.
   */
 private[stream] abstract class EvaluatorImpl(
-    config: Config,
-    registry: Registry,
-    implicit val system: ActorSystem) {
+  config: Config,
+  registry: Registry,
+  implicit val system: ActorSystem
+) {
 
   import EvaluatorImpl._
 
@@ -70,7 +71,8 @@ private[stream] abstract class EvaluatorImpl(
       EurekaBackend(
         cfg.getString("host"),
         cfg.getString("eureka-uri"),
-        cfg.getString("instance-uri"))
+        cfg.getString("instance-uri")
+      )
     }
   }
 
@@ -110,7 +112,8 @@ private[stream] abstract class EvaluatorImpl(
     val options = Set[OpenOption](
       StandardOpenOption.WRITE,
       StandardOpenOption.CREATE,
-      StandardOpenOption.TRUNCATE_EXISTING)
+      StandardOpenOption.TRUNCATE_EXISTING
+    )
 
     // Carriage returns can cause a lot of confusion when looking at the file. Clean it up
     // to be more unix friendly before writing to the file.
@@ -145,20 +148,23 @@ private[stream] abstract class EvaluatorImpl(
       val backend = findBackendForUri(uri)
 
       val expr = eval(uri.query().get("q").get).head
-      val sink = EvaluationFlows.lwcEval(expr, 60000)
+      val sink = EvaluationFlows
+        .lwcEval(expr, 60000)
         .toMat(Sink.asPublisher(true))(Keep.right)
 
       backend.run(sink).value
     } catch {
       case e: Exception =>
         val msg = DiagnosticMessage.error(e)
-        Source.single[JsonSupport](msg)
+        Source
+          .single[JsonSupport](msg)
           .toMat(Sink.asPublisher(true))(Keep.right)
           .run()
     }
   }
 
-  protected def createStreamsProcessorImpl(): Processor[Evaluator.DataSources, Evaluator.MessageEnvelope] = {
+  protected def createStreamsProcessorImpl()
+    : Processor[Evaluator.DataSources, Evaluator.MessageEnvelope] = {
     Flow[Evaluator.DataSources]
       .via(new DataSourceManager(ds => Source.fromPublisher(createPublisherImpl(ds.getUri))))
       .flatMapMerge(Int.MaxValue, v => v)
@@ -178,18 +184,27 @@ private[stream] object EvaluatorImpl {
   }
 
   sealed trait Backend {
-    def run[T](sink: Sink[ByteString, T])(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T]
+
+    def run[T](
+      sink: Sink[ByteString, T]
+    )(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T]
   }
 
   case class FileBackend(file: Path) extends Backend {
-    def run[T](sink: Sink[ByteString, T])(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T] = {
+
+    def run[T](
+      sink: Sink[ByteString, T]
+    )(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T] = {
       val source = FileIO.fromPath(file).via(EvaluationFlows.sseFraming)
       EvaluationFlows.run(source, sink)
     }
   }
 
   case class ResourceBackend(resource: String) extends Backend {
-    def run[T](sink: Sink[ByteString, T])(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T] = {
+
+    def run[T](
+      sink: Sink[ByteString, T]
+    )(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T] = {
       val source = StreamConverters
         .fromInputStream(() => Streams.resource(resource))
         .via(EvaluationFlows.sseFraming)
@@ -198,7 +213,10 @@ private[stream] object EvaluatorImpl {
   }
 
   case class EurekaBackend(host: String, eurekaUri: String, instanceUri: String) extends Backend {
-    def run[T](sink: Sink[ByteString, T])(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T] = {
+
+    def run[T](
+      sink: Sink[ByteString, T]
+    )(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T] = {
       val client = Http().superPool[NotUsed]()
       val src = EurekaSource(eurekaUri, instanceUri, client)
       EvaluationFlows.run(src, sink)

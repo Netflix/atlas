@@ -23,8 +23,8 @@ import java.time.temporal.ChronoUnit
 import com.netflix.atlas.core.util.UnitPrefix
 
 /**
- * Utility for computing the major tick marks to use for a range of values.
- */
+  * Utility for computing the major tick marks to use for a range of values.
+  */
 object Ticks {
 
   import java.lang.{Double => JDouble}
@@ -40,49 +40,53 @@ object Ticks {
   )
 
   private def seconds(v: Int): Long = Duration.ofSeconds(v).toMillis
+
   private def minutes(v: Int): Long = Duration.ofMinutes(v).toMillis
+
   private def hours(v: Int): Long = Duration.ofHours(v).toMillis
+
   private def days(v: Int): Long = Duration.ofDays(v).toMillis
 
   // Major and minor tick sizes for time axis.
   private val timeTickSizes = List(
-    minutes(1)   -> seconds(10),
-    minutes(2)   -> seconds(30),
-    minutes(3)   -> minutes(1),
-    minutes(5)   -> minutes(1),
-    minutes(10)  -> minutes(2),
-    minutes(15)  -> minutes(5),
-    minutes(20)  -> minutes(5),
-    minutes(30)  -> minutes(10),
-    hours(1)     -> minutes(10),
-    hours(2)     -> minutes(30),
-    hours(3)     -> hours(1),
-    hours(4)     -> hours(1),
-    hours(6)     -> hours(2),
-    hours(8)     -> hours(2),
-    hours(12)    -> hours(3),
-    days(1)      -> hours(4),
-    days(2)      -> hours(8),
-    days(7)      -> days(1),
-    days(2 * 7)  -> days(2),
-    days(4 * 7)  -> days(1 * 7)
+    minutes(1)  -> seconds(10),
+    minutes(2)  -> seconds(30),
+    minutes(3)  -> minutes(1),
+    minutes(5)  -> minutes(1),
+    minutes(10) -> minutes(2),
+    minutes(15) -> minutes(5),
+    minutes(20) -> minutes(5),
+    minutes(30) -> minutes(10),
+    hours(1)    -> minutes(10),
+    hours(2)    -> minutes(30),
+    hours(3)    -> hours(1),
+    hours(4)    -> hours(1),
+    hours(6)    -> hours(2),
+    hours(8)    -> hours(2),
+    hours(12)   -> hours(3),
+    days(1)     -> hours(4),
+    days(2)     -> hours(8),
+    days(7)     -> days(1),
+    days(2 * 7) -> days(2),
+    days(4 * 7) -> days(1 * 7)
   )
 
   // Major and minor tick sizes for value axis
   private val baseValueTickSizes = List(
-    10   -> 2,
-    20   -> 5,
-    30   -> 10,
-    40   -> 10,
-    50   -> 10
+    10 -> 2,
+    20 -> 5,
+    30 -> 10,
+    40 -> 10,
+    50 -> 10
   )
 
   // Major and minor tick sizes for value axis
   private val valueTickSizes = (-25 to 25).toList.flatMap { i =>
     val f = math.pow(10, i)
-    baseValueTickSizes.map { case (major, minor) =>
-      val minorPerMajor = major / minor // Number of minor ticks to use between major ticks
-      (major * f, minor * f, minorPerMajor)
+    baseValueTickSizes.map {
+      case (major, minor) =>
+        val minorPerMajor = major / minor // Number of minor ticks to use between major ticks
+        (major * f, minor * f, minorPerMajor)
     }
   }
 
@@ -90,9 +94,10 @@ object Ticks {
   private val binaryValueTickSizes = {
     val ltOneKi = (-1 to 1).toList.flatMap { i =>
       val f = math.pow(10, i)
-      baseValueTickSizes.map { case (major, minor) =>
-        val minorPerMajor = major / minor // Number of minor ticks to use between major ticks
-        (major * f, minor * f, minorPerMajor)
+      baseValueTickSizes.map {
+        case (major, minor) =>
+          val minorPerMajor = major / minor // Number of minor ticks to use between major ticks
+          (major * f, minor * f, minorPerMajor)
       }
     }
 
@@ -101,7 +106,9 @@ object Ticks {
       val n = 4
       val majorF = prefix.factor
       val minorF = prefix.factor / 4.0
-      majorMultiples.map { m => (majorF * m, minorF * m, n) }
+      majorMultiples.map { m =>
+        (majorF * m, minorF * m, n)
+      }
     }
 
     ltOneKi ::: gtOneKi
@@ -111,29 +118,29 @@ object Ticks {
   private def round(v: Double, s: Double): Double = s * math.floor(v / s)
 
   /**
-   * Determine the prefix associated with the data. Use the value for the delta between major
-   * tick marks if possible. If this will require too many digits to render the largest value, then
-   * use the unit prefix found for the largest value.
-   */
+    * Determine the prefix associated with the data. Use the value for the delta between major
+    * tick marks if possible. If this will require too many digits to render the largest value, then
+    * use the unit prefix found for the largest value.
+    */
   private def getPrefix(v: Double, major: Double): UnitPrefix = {
     val m = UnitPrefix.forRange(major, 3)
     if (v < 10.0 * m.factor) m else UnitPrefix.forRange(v, 3)
   }
 
   /**
-   * Determines the string format pattern to use for showing the label. This is primarily focused
-   * on where the decimal point should go such that:
-   *
-   * 1. All tick labels will have the decimal point in the same position to make visual scanning
-   *    easier.
-   * 2. Avoid the use of an offset when the number can be shown without an offset by shifting
-   *    the decimal point.
-   */
+    * Determines the string format pattern to use for showing the label. This is primarily focused
+    * on where the decimal point should go such that:
+    *
+    * 1. All tick labels will have the decimal point in the same position to make visual scanning
+    *    easier.
+    * 2. Avoid the use of an offset when the number can be shown without an offset by shifting
+    *    the decimal point.
+    */
   private def labelFormat(prefix: UnitPrefix, v: Double): (String, Double) = {
     val f = v / prefix.factor
     (f * 1000.0).toInt match {
-      case i if (i %  10) > 0 => "%.3f%s" -> prefix.factor * 10.0   // 1.234
-      case i if (i % 100) > 0 => "%.2f%s" -> prefix.factor * 100.0  // 12.34
+      case i if (i % 10) > 0  => "%.3f%s" -> prefix.factor * 10.0 // 1.234
+      case i if (i % 100) > 0 => "%.2f%s" -> prefix.factor * 100.0 // 12.34
       case _                  => "%.1f%s" -> prefix.factor * 1000.0 // 123.4
     }
   }
@@ -160,9 +167,9 @@ object Ticks {
   private def binaryLabelFormat(prefix: UnitPrefix, v: Double): (String, Double) = {
     val f = v / prefix.factor
     (f * 1000.0).toInt match {
-      case i if (i %   10) > 0 => "%.2f%s" -> prefix.factor * 10.0   // 1.23
-      case i if (i %  100) > 0 => "%.1f%s" -> prefix.factor * 100.0  // 12.3
-      case _                   => "%.0f%s" -> prefix.factor * 1000.0 //  123
+      case i if (i % 10) > 0  => "%.2f%s" -> prefix.factor * 10.0 // 1.23
+      case i if (i % 100) > 0 => "%.1f%s" -> prefix.factor * 100.0 // 12.3
+      case _                  => "%.0f%s" -> prefix.factor * 1000.0 //  123
     }
   }
 
@@ -190,7 +197,9 @@ object Ticks {
     val range = v2 - v1
     val r = if (range < 1e-12) 1.0 else range
 
-    binaryValueTickSizes.find(t => r / t._1 <= n).fold(sciTicks(v1, v2, n))(t => binaryTicks(v1, v2, t))
+    binaryValueTickSizes
+      .find(t => r / t._1 <= n)
+      .fold(sciTicks(v1, v2, n))(t => binaryTicks(v1, v2, t))
   }
 
   private def sciTicks(v1: Double, v2: Double, n: Int): List[ValueTick] = {
@@ -256,10 +265,11 @@ object Ticks {
   }
 
   /**
-   * Generate value tick marks with approximately `n` major ticks for the range `[s, e]`. Tick
-   * marks will be on significant time boundaries for the specified time zone.
-   */
+    * Generate value tick marks with approximately `n` major ticks for the range `[s, e]`. Tick
+    * marks will be on significant time boundaries for the specified time zone.
+    */
   def time(s: Long, e: Long, zone: ZoneId, n: Int): List[TimeTick] = {
+
     // To keep even placement of major grid lines the shift amount for the timezone is computed
     // based on the start. If there is a change such as DST during the interval, then labels
     // after the change may be on less significant boundaries.
@@ -284,11 +294,11 @@ object Ticks {
       val end = LocalDateTime.ofInstant(Instant.ofEpochMilli(e), zone).toLocalDate
       val days = dur / (24 * 60 * 60 * 1000L)
       val (amount, unit, fmt) = days match {
-        case d if d       <= n  => (1L            , ChronoUnit.DAYS   , defaultTimeFmt)
-        case d if d / 30  <= n  => (1L            , ChronoUnit.MONTHS , monthTimeFmt)
-        case d if d / 90  <= n  => (3L            , ChronoUnit.MONTHS , monthTimeFmt)
-        case d if d / 365 <= n  => (1L            , ChronoUnit.YEARS  , yearTimeFmt)
-        case d                  => (d / (n * 365) , ChronoUnit.YEARS  , yearTimeFmt)
+        case d if d <= n       => (1L, ChronoUnit.DAYS, defaultTimeFmt)
+        case d if d / 30 <= n  => (1L, ChronoUnit.MONTHS, monthTimeFmt)
+        case d if d / 90 <= n  => (3L, ChronoUnit.MONTHS, monthTimeFmt)
+        case d if d / 365 <= n => (1L, ChronoUnit.YEARS, yearTimeFmt)
+        case d                 => (d / (n * 365), ChronoUnit.YEARS, yearTimeFmt)
       }
 
       val ticks = List.newBuilder[TimeTick]
@@ -305,26 +315,27 @@ object Ticks {
 }
 
 /**
- * Tick mark for the value axis.
- *
- * @param v
- *     Value to place the tick mark.
- * @param offset
- *     Offset that will be displayed separately. In some cases if there is a large base value with
- *     a small range of values there will be too many significant digits to show in the tick label
- *     of the axis. If the offset is non-zero, then it should be shown separately and the tick
- *     label should be the difference between the value and the offset.
- * @param major
- *     True if the position is a major tick mark.
- * @param labelOpt
- *     Label to use for the tick mark. If set to None then a default will be generated using
- *     `UnitPrefix`.
- */
+  * Tick mark for the value axis.
+  *
+  * @param v
+  *     Value to place the tick mark.
+  * @param offset
+  *     Offset that will be displayed separately. In some cases if there is a large base value with
+  *     a small range of values there will be too many significant digits to show in the tick label
+  *     of the axis. If the offset is non-zero, then it should be shown separately and the tick
+  *     label should be the difference between the value and the offset.
+  * @param major
+  *     True if the position is a major tick mark.
+  * @param labelOpt
+  *     Label to use for the tick mark. If set to None then a default will be generated using
+  *     `UnitPrefix`.
+  */
 case class ValueTick(
-    v: Double,
-    offset: Double,
-    major: Boolean = true,
-    labelOpt: Option[String] = None) {
+  v: Double,
+  offset: Double,
+  major: Boolean = true,
+  labelOpt: Option[String] = None
+) {
 
   def label: String = labelOpt.fold(UnitPrefix.format(v - offset))(v => v)
 }
@@ -346,7 +357,8 @@ case class TimeTick(
   timestamp: Long,
   zone: ZoneId,
   major: Boolean = true,
-  formatter: Option[DateTimeFormatter] = None) {
+  formatter: Option[DateTimeFormatter] = None
+) {
 
   private val datetime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
 

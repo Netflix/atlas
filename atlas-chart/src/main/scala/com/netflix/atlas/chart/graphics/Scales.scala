@@ -46,27 +46,31 @@ object Scales {
   /** Factory for a linear mapping. */
   def linear(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
     val pixelSpan = (d2 - d1) / (r2 - r1)
-    v => ((v - d1) / pixelSpan).toInt + r1
+    v =>
+      ((v - d1) / pixelSpan).toInt + r1
   }
 
   private def log10(value: Double): Double = {
     value match {
-      case v if v >=  1.0 => math.log10(v)
+      case v if v >= 1.0  => math.log10(v)
       case v if v <= -1.0 => -math.log10(-v)
       case _              => 0.0
     }
   }
 
   private def positiveLog(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
+
     // Add 1.0 so that the value passed into the log10 function will be >= 1.0.
     val pixelSpan = math.log10(d2 - d1 + 1.0) / (r2 - r1)
-    v => (math.log10(v - d1 + 1.0) / pixelSpan).toInt + r1
+    v =>
+      (math.log10(v - d1 + 1.0) / pixelSpan).toInt + r1
   }
 
   private def negativeLog(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
     val range = r2 - r1
     val lg = positiveLog(math.abs(d2), math.abs(d1), 0, range)
-    v => -lg(-v) + r2
+    v =>
+      -lg(-v) + r2
   }
 
   /**
@@ -84,19 +88,22 @@ object Scales {
       val top = ((r2 - r1) * (p2 / (p2 + p1))).toInt
       val pos = positiveLog(0.0, d2, r2 - top, r2)
       val neg = negativeLog(d1, 0.0, r1, r2 - top)
-      v => if (v >= 0.0) pos(v) else neg(v)
+      v =>
+        if (v >= 0.0) pos(v) else neg(v)
     }
   }
 
   private def positivePow(exp: Double)(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
     val pixelSpan = math.pow(d2 - d1, exp) / (r2 - r1)
-    v => (math.pow(v - d1, exp) / pixelSpan).toInt + r1
+    v =>
+      (math.pow(v - d1, exp) / pixelSpan).toInt + r1
   }
 
   private def negativePow(exp: Double)(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
     val range = r2 - r1
     val p = positivePow(exp)(-d2, -d1, 0, range)
-    v => -p(-v) + r2
+    v =>
+      -p(-v) + r2
   }
 
   /** Factory for a power mapping. */
@@ -111,7 +118,8 @@ object Scales {
       val top = ((r2 - r1) * (p2 / (p2 + p1))).toInt
       val pos = positivePow(exp)(0.0, d2, r2 - top, r2)
       val neg = negativePow(exp)(d1, 0.0, r1, r2 - top)
-      v => if (v >= 0.0) pos(v) else neg(v)
+      v =>
+        if (v >= 0.0) pos(v) else neg(v)
     }
   }
 
@@ -122,13 +130,15 @@ object Scales {
     */
   def yscale(s: DoubleFactory)(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
     val std = s(d1, d2, r1, r2)
-    v => r2 - std(v) + r1
+    v =>
+      r2 - std(v) + r1
   }
 
   /** Factory for creating a mapping for time values. */
   def time(d1: Double, d2: Double, step: Long, r1: Int, r2: Int): LongScale = {
     val dr = (d2 - d1) / step
     val pixelsPerStep = (r2 - r1) / dr
-    v => ((v - d1) / step * pixelsPerStep).toInt + r1
+    v =>
+      ((v - d1) / step * pixelsPerStep).toInt + r1
   }
 }

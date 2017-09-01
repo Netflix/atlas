@@ -33,7 +33,9 @@ case class Datapoint(
   tags: Map[String, String],
   timestamp: Long,
   value: Double,
-  step: Long = Datapoint.step) extends TimeSeries with TimeSeq {
+  step: Long = Datapoint.step
+) extends TimeSeries
+    with TimeSeq {
 
   require(tags != null, "tags cannot be null")
   require(timestamp >= 0L, s"invalid timestamp: $timestamp")
@@ -41,6 +43,7 @@ case class Datapoint(
   def id: ItemId = TaggedItem.computeId(tags)
 
   def label: String = TimeSeries.toLabel(tags)
+
   def data: TimeSeq = this
 
   def dsType: DsType = DsType(tags)

@@ -20,18 +20,19 @@ import java.util.regex.Pattern
 import com.typesafe.config.Config
 
 /**
- * Verifies that the keys match a specified pattern. Sample config:
- *
- * ```
- * pattern = "^[-_.a-zA-Z0-9]{4,60}$"
- * ```
- */
+  * Verifies that the keys match a specified pattern. Sample config:
+  *
+  * ```
+  * pattern = "^[-_.a-zA-Z0-9]{4,60}$"
+  * ```
+  */
 class KeyPatternRule(config: Config) extends TagRule {
 
   private val pattern = Pattern.compile(config.getString("pattern"))
 
   def validate(k: String, v: String): ValidationResult = {
-    if (pattern.matcher(k).matches()) ValidationResult.Pass else {
+    if (pattern.matcher(k).matches()) ValidationResult.Pass
+    else {
       failure(s"key doesn't match pattern '$pattern': [$k]")
     }
   }

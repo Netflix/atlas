@@ -19,6 +19,8 @@ object UnitPrefix {
 
   import java.lang.{Double => JDouble}
 
+  // format: off
+
   val one   = UnitPrefix("", "", 1.0)
 
   val deca  = UnitPrefix("da", "deca",  1.0e1)
@@ -51,6 +53,8 @@ object UnitPrefix {
   val exbi  = UnitPrefix("Ei",  "exbi",  pebi.factor * 1024.0)
   val zebi  = UnitPrefix("Zi",  "zebi",  exbi.factor * 1024.0)
   val yobi  = UnitPrefix("Yi",  "yobi",  zebi.factor * 1024.0)
+
+  // format: on
 
   val binaryPrefixes: List[UnitPrefix] = List(kibi, mebi, gibi, tebi, pebi, exbi, zebi, yobi)
 
@@ -104,6 +108,7 @@ object UnitPrefix {
   /** Returns an appropriate decimal prefix for `value`. */
   def forRange(value: Double, digits: Double): UnitPrefix = {
     val f = math.pow(10.0, digits)
+
     def withinRange(prefix: UnitPrefix, v: Double): Boolean = {
       val a = math.abs(v)
       a >= prefix.factor / f && a < prefix.factor * f
@@ -112,15 +117,17 @@ object UnitPrefix {
       case v if isNearlyZero(v)      => one
       case v if !JDouble.isFinite(v) => one
       case v if withinRange(one, v)  => one
-      case v if v >= kilo.factor / f => decimalBigPrefixes.reverse.find(withinRange(_, v)).getOrElse(yotta)
-      case v if v < 1.0 / f          => decimalSmallPrefixes.find(withinRange(_, v)).getOrElse(yocto)
-      case _                         => one
+      case v if v >= kilo.factor / f =>
+        decimalBigPrefixes.reverse.find(withinRange(_, v)).getOrElse(yotta)
+      case v if v < 1.0 / f => decimalSmallPrefixes.find(withinRange(_, v)).getOrElse(yocto)
+      case _                => one
     }
   }
 
   /** Returns an appropriate binary prefix for `value`. */
   def binaryRange(value: Double, digits: Double): UnitPrefix = {
     val f = math.pow(10.0, digits)
+
     def withinRange(prefix: UnitPrefix, v: Double): Boolean = {
       val a = math.abs(v)
       a >= prefix.factor / f && a < prefix.factor * f
@@ -141,13 +148,14 @@ object UnitPrefix {
 }
 
 /**
- * Common prefixes used for units or human readable strings.
- *
- * @param symbol  the symbol shown for the prefix
- * @param text    text for the prefix
- * @param factor  the multiplication factor for the prefix
- */
+  * Common prefixes used for units or human readable strings.
+  *
+  * @param symbol  the symbol shown for the prefix
+  * @param text    text for the prefix
+  * @param factor  the multiplication factor for the prefix
+  */
 case class UnitPrefix(symbol: String, text: String, factor: Double) {
+
   def format(value: Double, fmtstr: String): String = {
     fmtstr.format(value / factor, symbol)
   }

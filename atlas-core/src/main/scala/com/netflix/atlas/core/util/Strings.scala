@@ -28,86 +28,82 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
-
 /**
- * Helper functions for working with strings.
- */
+  * Helper functions for working with strings.
+  */
 object Strings {
 
   /**
-   * URL query parameter.
-   */
+    * URL query parameter.
+    */
   private val QueryParam = """^([^=]+)=(.*)$""".r
 
   /**
-   * Period following conventions of unix `at` command.
-   */
+    * Period following conventions of unix `at` command.
+    */
   private val AtPeriod = """^(\d+)([a-z]+)$""".r
 
   /**
-   * Period following the ISO8601 conventions.
-   */
+    * Period following the ISO8601 conventions.
+    */
   private val IsoPeriod = """^(P.*)$""".r
 
   /**
-   * Date following the ISO8601 conventions.
-   */
+    * Date following the ISO8601 conventions.
+    */
   private val IsoDate = """^(\d{4}-\d{2}-\d{2}(?:[-+Z].*)?)$""".r
   private val IsoDateTime = """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?Z?)$""".r
-  private val IsoOffsetDateTime = """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?[-+].*)$""".r
+  private val IsoOffsetDateTime =
+    """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?[-+].*)$""".r
 
   /**
-   * Date relative to a given reference point.
-   */
+    * Date relative to a given reference point.
+    */
   private val RelativeDate = """^([a-z]+)([\-+])(.+)$""".r
 
   /**
-   * Named date such as `epoch` or `now`.
-   */
+    * Named date such as `epoch` or `now`.
+    */
   private val NamedDate = """^([a-z]+)$""".r
 
   /**
-   * Unix data in seconds since the epoch.
-   */
+    * Unix data in seconds since the epoch.
+    */
   private val UnixDate = """^([0-9]+)$""".r
 
   /**
-   * Conversion functions that map a string value to an instance of a given
-   * class.
-   */
+    * Conversion functions that map a string value to an instance of a given
+    * class.
+    */
   private[util] val conversions = {
     Map[Class[_], (String) => Any](
-      classOf[String] -> (v => v),
-
-      classOf[Boolean] -> (v => java.lang.Boolean.valueOf(v)),
-      classOf[Byte] -> (v => java.lang.Byte.valueOf(v)),
-      classOf[Short] -> (v => java.lang.Short.valueOf(v)),
-      classOf[Int] -> (v => java.lang.Integer.valueOf(v)),
-      classOf[Long] -> (v => java.lang.Long.valueOf(v)),
-      classOf[Float] -> (v => java.lang.Float.valueOf(v)),
-      classOf[Double] -> (v => java.lang.Double.valueOf(v)),
-      classOf[Number] -> (v => java.lang.Double.valueOf(v)),
-
+      classOf[String]            -> (v => v),
+      classOf[Boolean]           -> (v => java.lang.Boolean.valueOf(v)),
+      classOf[Byte]              -> (v => java.lang.Byte.valueOf(v)),
+      classOf[Short]             -> (v => java.lang.Short.valueOf(v)),
+      classOf[Int]               -> (v => java.lang.Integer.valueOf(v)),
+      classOf[Long]              -> (v => java.lang.Long.valueOf(v)),
+      classOf[Float]             -> (v => java.lang.Float.valueOf(v)),
+      classOf[Double]            -> (v => java.lang.Double.valueOf(v)),
+      classOf[Number]            -> (v => java.lang.Double.valueOf(v)),
       classOf[java.lang.Boolean] -> (v => java.lang.Boolean.valueOf(v)),
-      classOf[java.lang.Byte] -> (v => java.lang.Byte.valueOf(v)),
-      classOf[java.lang.Short] -> (v => java.lang.Short.valueOf(v)),
+      classOf[java.lang.Byte]    -> (v => java.lang.Byte.valueOf(v)),
+      classOf[java.lang.Short]   -> (v => java.lang.Short.valueOf(v)),
       classOf[java.lang.Integer] -> (v => java.lang.Integer.valueOf(v)),
-      classOf[java.lang.Long] -> (v => java.lang.Long.valueOf(v)),
-      classOf[java.lang.Float] -> (v => java.lang.Float.valueOf(v)),
-      classOf[java.lang.Double] -> (v => java.lang.Double.valueOf(v)),
-
-      classOf[ZonedDateTime] -> (v => parseDate(v)),
-      classOf[ZoneId] -> (v => ZoneId.of(v)),
-      classOf[Duration] -> (v => parseDuration(v)),
-
-      classOf[Pattern] -> (v => Pattern.compile(v)),
-
-      classOf[Color] -> (v => parseColor(v)))
+      classOf[java.lang.Long]    -> (v => java.lang.Long.valueOf(v)),
+      classOf[java.lang.Float]   -> (v => java.lang.Float.valueOf(v)),
+      classOf[java.lang.Double]  -> (v => java.lang.Double.valueOf(v)),
+      classOf[ZonedDateTime]     -> (v => parseDate(v)),
+      classOf[ZoneId]            -> (v => ZoneId.of(v)),
+      classOf[Duration]          -> (v => parseDuration(v)),
+      classOf[Pattern]           -> (v => Pattern.compile(v)),
+      classOf[Color]             -> (v => parseColor(v))
+    )
   }
 
   /**
-   * Returns true if a conversion exists for the specified class.
-   */
+    * Returns true if a conversion exists for the specified class.
+    */
   def conversionExists(c: Class[_]): Boolean = {
     conversions.contains(c)
   }
@@ -117,21 +113,25 @@ object Strings {
   }
 
   /**
-   * Cast a string value to an internal type.
-   */
+    * Cast a string value to an internal type.
+    */
   def cast[T](c: Class[_], v: String): T = {
-    if (c.isEnum) enumValueOf(c, v) else {
+    if (c.isEnum) enumValueOf(c, v)
+    else {
       conversions.get(c) match {
         case Some(f) => f(v).asInstanceOf[T]
         case None =>
-          throw new IllegalArgumentException("unsupported property type " +
+          throw new IllegalArgumentException(
+            "unsupported property type " +
             c.getName + ", must be one of " +
-            conversions.keys.mkString(", "))
+            conversions.keys.mkString(", ")
+          )
       }
     }
   }
 
   private val uriEscapes: Array[String] = {
+
     def hex(c: Char) = "%%%02X".format(c.toInt)
     val array = new Array[String](128)
     var pos = 0
@@ -163,10 +163,10 @@ object Strings {
   }
 
   /**
-   * Lenient url-encoder. The URLEncoder class provided in the jdk is eager to
-   * percent encode making atlas expressions hard to read. This version assumes
-   * the only escaping necessary for '%', '&amp;', '+', '?', '=', and ' '.
-   */
+    * Lenient url-encoder. The URLEncoder class provided in the jdk is eager to
+    * percent encode making atlas expressions hard to read. This version assumes
+    * the only escaping necessary for '%', '&amp;', '+', '?', '=', and ' '.
+    */
   def urlEncode(s: String): String = {
     val buf = new StringBuilder
     val size = s.length
@@ -183,10 +183,10 @@ object Strings {
   }
 
   /**
-   * Lenient url-decoder. The URLDecoder class provided in the jdk throws
-   * if there is an invalid hex encoded value. This function will map invalid
-   * encodes to a %25 (a literal percent sign) and then decode it normally.
-   */
+    * Lenient url-decoder. The URLDecoder class provided in the jdk throws
+    * if there is an invalid hex encoded value. This function will map invalid
+    * encodes to a %25 (a literal percent sign) and then decode it normally.
+    */
   def urlDecode(s: String): String = hexDecode(s)
 
   /** Hex decode an input string.
@@ -243,8 +243,8 @@ object Strings {
   }
 
   /**
-   * Helper function for parseQueryString.
-   */
+    * Helper function for parseQueryString.
+    */
   private def add(acc: Map[String, List[String]], k: String, v: String) = {
     val dk = urlDecode(k)
     val dv = urlDecode(v)
@@ -252,10 +252,11 @@ object Strings {
   }
 
   /**
-   * Returns a map corresponding to the URL query parameters in the string.
-   */
+    * Returns a map corresponding to the URL query parameters in the string.
+    */
   def parseQueryString(query: String): Map[String, List[String]] = {
-    if (query == null) Map.empty else {
+    if (query == null) Map.empty
+    else {
       val params = Map.empty[String, List[String]]
       query.split("[&;]+").foldLeft(params) { (acc, p) =>
         p match {
@@ -340,44 +341,44 @@ object Strings {
   }
 
   /**
-   * Returns true if a date string is relative.
-   */
+    * Returns true if a date string is relative.
+    */
   def isRelativeDate(str: String): Boolean = isRelativeDate(str, false)
 
   /**
-   * Returns true if a date string is relative. If custom ref is true it will
-   * check if it is a relative date against a custom reference point other than
-   * now or the epoch.
-   */
+    * Returns true if a date string is relative. If custom ref is true it will
+    * check if it is a relative date against a custom reference point other than
+    * now or the epoch.
+    */
   def isRelativeDate(str: String, customRef: Boolean): Boolean = str match {
     case RelativeDate(r, _, _) => !customRef || (r != "now" && r != "epoch")
     case _                     => false
   }
 
   /**
-   * Return the time associated with a given string. The time will be relative
-   * to `now`.
-   */
+    * Return the time associated with a given string. The time will be relative
+    * to `now`.
+    */
   def parseDate(str: String, tz: ZoneId = ZoneOffset.UTC): ZonedDateTime = {
     parseDate(ZonedDateTime.now(tz), str, tz)
   }
 
   /**
-   * Return the time associated with a given string.
-   *
-   * - now, n:
-   * - start, s:
-   * - end, e:
-   * - epoch:
-   *
-   * - seconds, s:
-   * - minutes, m:
-   * - hours, h:
-   * - days, d:
-   * - weeks, w:
-   * - months
-   * - years, y:
-   */
+    * Return the time associated with a given string.
+    *
+    * - now, n:
+    * - start, s:
+    * - end, e:
+    * - epoch:
+    *
+    * - seconds, s:
+    * - minutes, m:
+    * - hours, h:
+    * - days, d:
+    * - weeks, w:
+    * - months
+    * - years, y:
+    */
   def parseDate(ref: ZonedDateTime, str: String, tz: ZoneId): ZonedDateTime = str match {
     case IsoDate(_) =>
       val date = LocalDate.parse(str, DateTimeFormatter.ISO_DATE.withZone(tz))
@@ -387,11 +388,12 @@ object Strings {
       ZonedDateTime.parse(str, DateTimeFormatter.ISO_DATE_TIME.withZone(z))
     case IsoOffsetDateTime(_) =>
       ZonedDateTime.parse(str, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-    case RelativeDate(r, op, p) => op match {
-      case "-" => parseRefVar(ref, r).minus(parseDuration(p))
-      case "+" => parseRefVar(ref, r).plus(parseDuration(p))
-      case _   => throw new IllegalArgumentException("invalid operation " + op)
-    }
+    case RelativeDate(r, op, p) =>
+      op match {
+        case "-" => parseRefVar(ref, r).minus(parseDuration(p))
+        case "+" => parseRefVar(ref, r).plus(parseDuration(p))
+        case _   => throw new IllegalArgumentException("invalid operation " + op)
+      }
     case NamedDate(r) =>
       parseRefVar(ref, r)
     case UnixDate(d) =>
@@ -407,8 +409,8 @@ object Strings {
   }
 
   /**
-   * Returns the datetime object associated with a given reference point.
-   */
+    * Returns the datetime object associated with a given reference point.
+    */
   private def parseRefVar(ref: ZonedDateTime, v: String): ZonedDateTime = {
     v match {
       case "now"   => ZonedDateTime.now(ZoneOffset.UTC)
@@ -418,9 +420,9 @@ object Strings {
   }
 
   /**
-   * Parse a string that follows the ISO8601 spec or `at` time range spec
-   * into a period object.
-   */
+    * Parse a string that follows the ISO8601 spec or `at` time range spec
+    * into a period object.
+    */
   def parseDuration(str: String): Duration = str match {
     case AtPeriod(a, u) => parseAtDuration(a, u)
     case IsoPeriod(p)   => Duration.parse(str) //isoPeriodFmt.parsePeriod(p)
@@ -428,10 +430,12 @@ object Strings {
   }
 
   /**
-   * Convert an `at` command time range into a joda period object.
-   */
+    * Convert an `at` command time range into a joda period object.
+    */
   private def parseAtDuration(amount: String, unit: String): Duration = {
     val v = amount.toInt
+
+    // format: off
     unit match {
       case "seconds" | "second" | "s"         => Duration.ofSeconds(v)
       case "minutes" | "minute" | "min" | "m" => Duration.ofMinutes(v)
@@ -440,13 +444,14 @@ object Strings {
       case "weeks"   | "week"   | "wk"  | "w" => Duration.ofDays(v * 7)
       case "months"  | "month"                => Duration.ofDays(v * 30)
       case "years"   | "year"   | "y"         => Duration.ofDays(v * 365)
-      case _ => throw new IllegalArgumentException("unknown unit " + unit)
+      case _                                  => throw new IllegalArgumentException("unknown unit " + unit)
     }
+    // format: on
   }
 
   /**
-   * Parse a color expressed as a hexadecimal RRGGBB string.
-   */
+    * Parse a color expressed as a hexadecimal RRGGBB string.
+    */
   def parseColor(str: String): Color = {
     val len = str.length
     require(len == 3 || len == 6 || len == 8, "color must be hex string [AA]RRGGBB")
@@ -465,13 +470,13 @@ object Strings {
   private final val oneWeek = oneDay * 7L
 
   /**
-   * Returns a string representation of a period.
-   */
+    * Returns a string representation of a period.
+    */
   def toString(d: Duration): String = {
     d.toMillis match {
-      case t if t % oneWeek   == 0 => s"${t / oneWeek}w"
-      case t if t % oneDay    == 0 => s"${t / oneDay}d"
-      case t if t % oneHour   == 0 => s"${t / oneHour}h"
+      case t if t % oneWeek == 0   => s"${t / oneWeek}w"
+      case t if t % oneDay == 0    => s"${t / oneDay}d"
+      case t if t % oneHour == 0   => s"${t / oneHour}h"
       case t if t % oneMinute == 0 => s"${t / oneMinute}m"
       case t if t % oneSecond == 0 => s"${t / oneSecond}s"
       case _                       => d.toString
@@ -479,13 +484,11 @@ object Strings {
   }
 
   /**
-   * Strip the margin from multi-line strings.
-   */
+    * Strip the margin from multi-line strings.
+    */
   def stripMargin(str: String): String = {
     val s = str.stripMargin.trim
-    s.replaceAll("\n\n+", "@@@").
-      replaceAll("\n", " ").
-      replaceAll("@@@", "\n\n")
+    s.replaceAll("\n\n+", "@@@").replaceAll("\n", " ").replaceAll("@@@", "\n\n")
   }
 
   /**
@@ -495,7 +498,8 @@ object Strings {
     */
   def zeroPad(s: String, width: Int): String = {
     val n = width - s.length
-    if (n <= 0) s else {
+    if (n <= 0) s
+    else {
       val builder = new StringBuilder(width)
       var i = 0
       while (i < n) {

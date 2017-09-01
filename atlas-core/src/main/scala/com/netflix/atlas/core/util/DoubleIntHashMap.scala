@@ -32,6 +32,7 @@ class DoubleIntHashMap(noData: Double = Double.NaN, capacity: Int = 10) {
   private[this] val data = new LongIntHashMap(d2l(noData), capacity)
 
   private def d2l(k: Double): Long = java.lang.Double.doubleToLongBits(k)
+
   private def l2d(k: Long): Double = java.lang.Double.longBitsToDouble(k)
 
   /**
@@ -61,7 +62,9 @@ class DoubleIntHashMap(noData: Double = Double.NaN, capacity: Int = 10) {
 
   /** Execute `f` for each item in the set. */
   def foreach(f: (Double, Int) => Unit): Unit = {
-    data.foreach { (k, v) => f(l2d(k), v) }
+    data.foreach { (k, v) =>
+      f(l2d(k), v)
+    }
   }
 
   /** Return the number of items in the set. This is a constant time operation. */
@@ -70,7 +73,9 @@ class DoubleIntHashMap(noData: Double = Double.NaN, capacity: Int = 10) {
   /** Converts this set to a Map[Double, Int]. Used mostly for debugging and tests. */
   def toMap: Map[Double, Int] = {
     val builder = Map.newBuilder[Double, Int]
-    foreach { (k, v) => builder += k -> v }
+    foreach { (k, v) =>
+      builder += k -> v
+    }
     builder.result()
   }
 }

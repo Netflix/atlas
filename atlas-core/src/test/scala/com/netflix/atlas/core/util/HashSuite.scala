@@ -17,7 +17,6 @@ package com.netflix.atlas.core.util
 
 import org.scalatest.FunSuite
 
-
 class HashSuite extends FunSuite {
 
   test("md5") {

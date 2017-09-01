@@ -63,4 +63,3 @@ class GraphUriSuite extends FunSuite {
     assert(req.flags.axes(1).ylabel === None)
   }
 }
-

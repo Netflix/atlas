@@ -35,8 +35,7 @@ class DefaultTaggerSuite extends FunSuite {
   }
 
   test("add common tags") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |mappings = []
         |common-tags = [
         |  {
@@ -47,9 +46,9 @@ class DefaultTaggerSuite extends FunSuite {
       """.stripMargin)
 
     val expected = Map(
-      "foo"           -> "bar",
-      "CloudWatch"    -> "abc",
-      "NoMapping"     -> "def"
+      "foo"        -> "bar",
+      "CloudWatch" -> "abc",
+      "NoMapping"  -> "def"
     )
 
     val tagger = new DefaultTagger(cfg)
@@ -57,8 +56,7 @@ class DefaultTaggerSuite extends FunSuite {
   }
 
   test("apply key mappings") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |mappings = [
         |  {
         |    name = "CloudWatch"
@@ -78,8 +76,7 @@ class DefaultTaggerSuite extends FunSuite {
   }
 
   test("dimensions override common tags") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |mappings = [
         |  {
         |    name = "CloudWatch"
@@ -95,8 +92,8 @@ class DefaultTaggerSuite extends FunSuite {
       """.stripMargin)
 
     val expected = Map(
-      "foo"           -> "abc",
-      "NoMapping"     -> "def"
+      "foo"       -> "abc",
+      "NoMapping" -> "def"
     )
 
     val tagger = new DefaultTagger(cfg)

@@ -30,6 +30,7 @@ class CloudWatchModuleSuite extends FunSuite {
 
   test("load module") {
     val deps = new AbstractModule {
+
       override def configure(): Unit = {
         bind(classOf[Config]).toInstance(ConfigFactory.load())
         bind(classOf[Registry]).toInstance(new DefaultRegistry())
@@ -43,6 +44,7 @@ class CloudWatchModuleSuite extends FunSuite {
 
   ignore("run locally") {
     val deps = new AbstractModule {
+
       override def configure(): Unit = {
         bind(classOf[Config]).toInstance(ConfigFactory.load("local"))
         bind(classOf[Registry]).toInstance(new DefaultRegistry())

@@ -41,6 +41,7 @@ case class ServoMessage(metrics: List[ServoDatapoint])
   *     Value for the datapoint.
   */
 case class ServoDatapoint(config: ServoConfig, timestamp: Long, value: Double) {
+
   def toDatapoint(step: Long): Datapoint = {
     val boundary = if (timestamp % step == 0) timestamp else timestamp / step * step
     Datapoint(config.tags + ("name" -> config.name), boundary, value)
@@ -57,4 +58,5 @@ case class ServoDatapoint(config: ServoConfig, timestamp: Long, value: Double) {
   */
 case class ServoConfig(
   name: String,
-  @JsonDeserialize(using = classOf[SmallHashMapDeserializer]) tags: Map[String, String])
+  @JsonDeserialize(using = classOf[SmallHashMapDeserializer]) tags: Map[String, String]
+)

@@ -16,9 +16,10 @@
 package com.netflix.atlas.core.stacklang
 
 /**
- * A small procedure that manipulates the stack.
- */
+  * A small procedure that manipulates the stack.
+  */
 trait Word {
+
   /** Name used to refer to this command. */
   def name: String
 
@@ -29,14 +30,14 @@ trait Word {
   def summary: String
 
   /**
-   * Set of examples showing the usage of the word.
-   */
+    * Set of examples showing the usage of the word.
+    */
   def examples: List[String]
 
   /**
-   * Check if the this word can be executed against the current stack. Can be used as a basis for
-   * finding auto-completion candidates.
-   */
+    * Check if the this word can be executed against the current stack. Can be used as a basis for
+    * finding auto-completion candidates.
+    */
   def matches(stack: List[Any]): Boolean
 
   /** Execute this command against the provided context. */

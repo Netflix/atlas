@@ -28,7 +28,8 @@ class SimpleStaticDatabase(data: List[TimeSeries]) extends Database {
   def execute(context: EvalContext, expr: DataExpr): List[TimeSeries] = {
     val q = TagQuery(Some(expr.query))
     val offset = expr.offset.toMillis
-    if (offset == 0) expr.eval(context, index.findItems(q)).data else {
+    if (offset == 0) expr.eval(context, index.findItems(q)).data
+    else {
       val offsetContext = context.withOffset(expr.offset.toMillis)
       expr.eval(offsetContext, index.findItems(q)).data.map { t =>
         t.offset(offset)

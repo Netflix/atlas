@@ -95,7 +95,12 @@ object Shards {
     * @return
     *     Mapper
     */
-  def localMapper[T](groupSize: Int, instanceIdx: Int, groupIdx: Int, numGroups: Int): LocalMapper[T] = {
+  def localMapper[T](
+    groupSize: Int,
+    instanceIdx: Int,
+    groupIdx: Int,
+    numGroups: Int
+  ): LocalMapper[T] = {
     new LocalMapper[T](groupSize, instanceIdx, groupIdx, numGroups)
   }
 
@@ -109,7 +114,8 @@ object Shards {
     *     Mapper for routing data to instances.
     */
   def replicaMapper[T](groups: List[Group[T]]): ReplicaMapper[T] = {
-    val replicaSets = groups.groupBy(_.name)
+    val replicaSets = groups
+      .groupBy(_.name)
       .toList
       .sortWith(_._1 < _._1)
       .map(_._2)
@@ -129,11 +135,13 @@ object Shards {
     *     data to the instance.
     */
   case class Group[T](name: String, instances: Array[T]) {
+
     def size: Int = instances.length
   }
 
   /** Mapper for finding the instance that should receive data for an id or index of a file. */
   class Mapper[T](groups: Array[Group[T]]) {
+
     /** Return the instance that should receive the data associated with `id`. */
     def instanceForId(id: BigInteger): T = {
       val i = math.abs(id.intValue())
@@ -153,6 +161,7 @@ object Shards {
     * there.
     */
   class LocalMapper[T](groupSize: Int, instanceIdx: Int, groupIdx: Int, numGroups: Int) {
+
     /** Return true if this instance should include data for `id`. */
     def containsId(id: BigInteger): Boolean = {
       val i = math.abs(id.intValue())
@@ -172,6 +181,7 @@ object Shards {
     * of the groups for that name.
     */
   class ReplicaMapper[T](groups: Array[List[Group[T]]]) {
+
     /** Return the instances that should receive the data associated with `id`. */
     def instancesForId(id: BigInteger): List[T] = {
       val i = math.abs(id.intValue())

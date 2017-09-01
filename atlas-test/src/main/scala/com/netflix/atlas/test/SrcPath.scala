@@ -24,6 +24,7 @@ import java.io.File
   * source resources directory.
   */
 object SrcPath {
+
   def forProject(name: String): String = {
     val cwd = new File(".").getCanonicalFile
     val subProject = new File(cwd, name)

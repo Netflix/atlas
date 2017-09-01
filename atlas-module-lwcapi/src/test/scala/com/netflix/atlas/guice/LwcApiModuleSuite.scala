@@ -18,7 +18,8 @@ package com.netflix.atlas.guice
 import com.google.inject.AbstractModule
 import com.google.inject.Guice
 import com.netflix.atlas.akka.ActorService
-import com.netflix.spectator.api.{DefaultRegistry, Registry}
+import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
@@ -27,6 +28,7 @@ class LwcApiModuleSuite extends FunSuite {
 
   test("load module") {
     val deps = new AbstractModule {
+
       override def configure(): Unit = {
         bind(classOf[Config]).toInstance(ConfigFactory.load())
         bind(classOf[Registry]).toInstance(new DefaultRegistry())

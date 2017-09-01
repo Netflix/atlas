@@ -21,10 +21,9 @@ import com.netflix.atlas.core.util.DoubleIntHashMap
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Math
 
-
 /**
- * Helper functions for working with blocks.
- */
+  * Helper functions for working with blocks.
+  */
 object Block {
 
   // Aggregate types
@@ -39,9 +38,9 @@ object Block {
   val MAX_SIZE = 120
 
   /**
-   * Attempts to compress an array block into a more compact type. If compression fails to provide
-   * savings the orignal block will be returned.
-   */
+    * Attempts to compress an array block into a more compact type. If compression fails to provide
+    * savings the orignal block will be returned.
+    */
   def compress(block: ArrayBlock): Block = {
     if (block.size < 10) {
       block
@@ -62,7 +61,9 @@ object Block {
       while (i < block.size) {
         val v = block.buffer(i)
         val predefIdx = SparseBlock.predefinedIndex(v)
-        var idx = if (predefIdx == SparseBlock.UNDEFINED) idxMap.get(v, SparseBlock.NOT_FOUND) else predefIdx
+        var idx =
+          if (predefIdx == SparseBlock.UNDEFINED) idxMap.get(v, SparseBlock.NOT_FOUND)
+          else predefIdx
         if (idx == SparseBlock.NOT_FOUND) {
           if (nextIdx == MAX_SIZE) return block
           idx = nextIdx
@@ -77,7 +78,9 @@ object Block {
 
       // Populate values array
       val values = new Array[Double](idxMap.size)
-      idxMap.foreach { (k, v) => values(v) = k }
+      idxMap.foreach { (k, v) =>
+        values(v) = k
+      }
 
       // Choose the appropriate block type
       if (isConstant)
@@ -90,9 +93,9 @@ object Block {
   }
 
   /**
-   * Attempts to compress an array block into a more compact type including options that may lead
-   * to some loss of precision.
-   */
+    * Attempts to compress an array block into a more compact type including options that may lead
+    * to some loss of precision.
+    */
   def lossyCompress(block: ArrayBlock): Block = {
     compress(block) match {
       case b: ArrayBlock => FloatArrayBlock(b)
@@ -101,8 +104,8 @@ object Block {
   }
 
   /**
-   * Compresses a block if it is not already a compressed type.
-   */
+    * Compresses a block if it is not already a compressed type.
+    */
   def compressIfNeeded(block: Block): Block = {
     block match {
       case b: ArrayBlock  => lossyCompress(b)
@@ -125,9 +128,9 @@ object Block {
   }
 
   /**
-   * Merge the data from two blocks. The general policy is that a value is preferred over NaN. If
-   * there are different values for a given time the larger value will be selected.
-   */
+    * Merge the data from two blocks. The general policy is that a value is preferred over NaN. If
+    * there are different values for a given time the larger value will be selected.
+    */
   def merge(block1: Block, block2: Block): Block = {
     require(block1.size == block2.size, "block sizes: %d != %d".format(block1.size, block2.size))
     (block1, block2) match {
@@ -145,7 +148,8 @@ object Block {
       min = merge(b1.min, b2.min),
       max = merge(b1.max, b2.max),
       sum = merge(b1.sum, b2.sum),
-      count = merge(b1.count, b2.count))
+      count = merge(b1.count, b2.count)
+    )
     merged.compress
   }
 
@@ -157,10 +161,11 @@ object Block {
 }
 
 /**
- * Represents a fixed size window of metric data. All block implementations provide fast
- * random access to data.
- */
+  * Represents a fixed size window of metric data. All block implementations provide fast
+  * random access to data.
+  */
 sealed trait Block {
+
   /** Start time for the block (epoch in milliseconds). */
   def start: Long
 
@@ -168,12 +173,12 @@ sealed trait Block {
   def size: Int
 
   /**
-   * Return the value for a given position in the block. All implementations should make this
-   * a constant time operation. The default implementation assumes a single value.
-   *
-   * @param pos   position to read, value should be in the interval [0,size).
-   * @param aggr  the aggregate value to read from the block
-   */
+    * Return the value for a given position in the block. All implementations should make this
+    * a constant time operation. The default implementation assumes a single value.
+    *
+    * @param pos   position to read, value should be in the interval [0,size).
+    * @param aggr  the aggregate value to read from the block
+    */
   def get(pos: Int, aggr: Int = Block.Sum): Double = {
     import java.lang.{Double => JDouble}
     val v = get(pos)
@@ -186,11 +191,11 @@ sealed trait Block {
   }
 
   /**
-   * Return the value for a given position in the block. All implementations should make this
-   * a constant time operation.
-   *
-   * @param pos   position to read, value should be in the interval [0,size).
-   */
+    * Return the value for a given position in the block. All implementations should make this
+    * a constant time operation.
+    *
+    * @param pos   position to read, value should be in the interval [0,size).
+    */
   def get(pos: Int): Double
 
   /** Number of bytes required to store this block in a simple binary representation. */
@@ -208,17 +213,17 @@ sealed trait Block {
   }
 
   /**
-   * Used to get a quick estimate of the size of numeric primatives and arrays of numeric
-   * primitives.
-   */
+    * Used to get a quick estimate of the size of numeric primatives and arrays of numeric
+    * primitives.
+    */
   def sizeOf(value: Any): Int = value match {
-    case v: Boolean         => 1
-    case v: Byte            => 1
-    case v: Short           => 2
-    case v: Int             => 4
-    case v: Long            => 8
-    case v: Float           => 4
-    case v: Double          => 8
+    case v: Boolean => 1
+    case v: Byte    => 1
+    case v: Short   => 2
+    case v: Int     => 4
+    case v: Long    => 8
+    case v: Float   => 4
+    case v: Double  => 8
 
     // Assume integer length + size for each value
     case vs: Array[Boolean] => 4 + vs.length
@@ -233,6 +238,7 @@ sealed trait Block {
 
 /** Block type that can be update incrementally as data is coming in. */
 trait MutableBlock extends Block {
+
   /** Update the value for the specified position. */
   def update(pos: Int, value: Double): Unit
 
@@ -241,11 +247,11 @@ trait MutableBlock extends Block {
 }
 
 /**
- * Block that stores the raw data in an array.
- *
- * @param start  start time for the block (epoch in milliseconds)
- * @param size   number of data points to store in the block
- */
+  * Block that stores the raw data in an array.
+  *
+  * @param start  start time for the block (epoch in milliseconds)
+  * @param size   number of data points to store in the block
+  */
 case class ArrayBlock(var start: Long, size: Int) extends MutableBlock {
 
   val buffer: Array[Double] = ArrayHelper.fill(size, Double.NaN)
@@ -292,17 +298,17 @@ case class ArrayBlock(var start: Long, size: Int) extends MutableBlock {
   }
 
   /**
-   * Merge the data in block `b` with the data in this block. The merge will happen in-place and
-   * the data for this block will be changed. The policy is:
-   *
-   * - A value is preferred over NaN
-   *
-   * - If both blocks have values the larger value is selected. This is somewhat arbitrary, but
-   *   generally works for us as most data is positive and missing data due to failures somewhere
-   *   lead to a smaller number.
-   *
-   * @return  number of values that were changed as a result of the merge operation
-   */
+    * Merge the data in block `b` with the data in this block. The merge will happen in-place and
+    * the data for this block will be changed. The policy is:
+    *
+    * - A value is preferred over NaN
+    *
+    * - If both blocks have values the larger value is selected. This is somewhat arbitrary, but
+    *   generally works for us as most data is positive and missing data due to failures somewhere
+    *   lead to a smaller number.
+    *
+    * @return  number of values that were changed as a result of the merge operation
+    */
   def merge(b: Block): Int = {
     import java.lang.{Double => JDouble}
     var changed = 0
@@ -323,6 +329,7 @@ case class ArrayBlock(var start: Long, size: Int) extends MutableBlock {
   }
 
   override def equals(other: Any): Boolean = {
+
     // Follows guidelines from: http://www.artima.com/pins1ed/object-equality.html#28.4
     other match {
       case that: ArrayBlock =>
@@ -353,6 +360,7 @@ case class ArrayBlock(var start: Long, size: Int) extends MutableBlock {
 }
 
 object FloatArrayBlock {
+
   def apply(b: ArrayBlock): FloatArrayBlock = {
     val fb = FloatArrayBlock(b.start, b.size)
     var i = 0
@@ -365,12 +373,12 @@ object FloatArrayBlock {
 }
 
 /**
- * Block that stores the raw data in an array using single-precision floats rather than doubles
- * to store the values.
- *
- * @param start  start time for the block (epoch in milliseconds)
- * @param size   number of data points to store in the block
- */
+  * Block that stores the raw data in an array using single-precision floats rather than doubles
+  * to store the values.
+  *
+  * @param start  start time for the block (epoch in milliseconds)
+  * @param size   number of data points to store in the block
+  */
 case class FloatArrayBlock(start: Long, size: Int) extends Block {
 
   val buffer = ArrayHelper.fill(size, Float.NaN)
@@ -379,6 +387,7 @@ case class FloatArrayBlock(start: Long, size: Int) extends Block {
   val byteCount: Int = 2 + sizeOf(buffer)
 
   override def equals(other: Any): Boolean = {
+
     // Follows guidelines from: http://www.artima.com/pins1ed/object-equality.html#28.4
     other match {
       case that: FloatArrayBlock =>
@@ -409,21 +418,23 @@ case class FloatArrayBlock(start: Long, size: Int) extends Block {
 }
 
 /**
- * Simple block type where all data points have the same value.
- *
- * @param start  start time for the block (epoch in milliseconds)
- * @param size   number of data points to store in the block
- * @param value  value for the data points
- */
+  * Simple block type where all data points have the same value.
+  *
+  * @param start  start time for the block (epoch in milliseconds)
+  * @param size   number of data points to store in the block
+  * @param value  value for the data points
+  */
 case class ConstantBlock(start: Long, size: Int, value: Double) extends Block {
+
   def get(pos: Int): Double = value
+
   def byteCount: Int = 2 + sizeOf(size) + sizeOf(value)
 }
 
 /**
- * Constants used for sparse blocks. Common values that are often repeated are special cased to
- * further reduce storage. In particular the values for NaN, 0, and 1 are not stored.
- */
+  * Constants used for sparse blocks. Common values that are often repeated are special cased to
+  * further reduce storage. In particular the values for NaN, 0, and 1 are not stored.
+  */
 object SparseBlock {
   final val NOT_FOUND = -4
   final val NaN = -3
@@ -453,12 +464,12 @@ object SparseBlock {
 }
 
 /**
- * A block optimized for storing a small set of discrete values.
- *
- * @param start    start time for the block (epoch in milliseconds)
- * @param indexes  stores the index into the values array for each slot in the block
- * @param values   set of distinct values
- */
+  * A block optimized for storing a small set of discrete values.
+  *
+  * @param start    start time for the block (epoch in milliseconds)
+  * @param indexes  stores the index into the values array for each slot in the block
+  * @param values   set of distinct values
+  */
 case class SparseBlock(start: Long, indexes: Array[Byte], values: Array[Double]) extends Block {
   require(indexes.length > 0, "indexes cannot be empty")
 
@@ -472,12 +483,13 @@ case class SparseBlock(start: Long, indexes: Array[Byte], values: Array[Double])
   val byteCount: Int = 2 + sizeOf(indexes) + sizeOf(values)
 
   override def equals(other: Any): Boolean = {
+
     // Follows guidelines from: http://www.artima.com/pins1ed/object-equality.html#28.4
     other match {
       case that: SparseBlock =>
         that.canEqual(this) &&
-          util.Arrays.equals(values, that.values) &&
-          util.Arrays.equals(indexes, that.indexes)
+        util.Arrays.equals(values, that.values) &&
+        util.Arrays.equals(indexes, that.indexes)
       case _ => false
     }
   }
@@ -506,6 +518,7 @@ case class SparseBlock(start: Long, indexes: Array[Byte], values: Array[Double])
 }
 
 object RollupBlock {
+
   def empty(start: Long, size: Int): RollupBlock = {
     val sum = ArrayBlock(start, size)
     val count = ArrayBlock(start, size)
@@ -516,12 +529,15 @@ object RollupBlock {
 }
 
 /**
- * A block representing a set of aggregates computed by rolling up a metric.
- */
+  * A block representing a set of aggregates computed by rolling up a metric.
+  */
 case class RollupBlock(sum: Block, count: Block, min: Block, max: Block) extends MutableBlock {
 
   require(List(count, min, max).forall(_.size == sum.size), "all blocks must have the same size")
-  require(List(count, min, max).forall(_.start == sum.start), "all blocks must have the same start")
+  require(
+    List(count, min, max).forall(_.start == sum.start),
+    "all blocks must have the same start"
+  )
 
   def blocks: List[Block] = List(sum, count, min, max)
 

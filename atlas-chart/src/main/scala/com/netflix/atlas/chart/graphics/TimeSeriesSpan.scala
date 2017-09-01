@@ -36,4 +36,3 @@ case class TimeSeriesSpan(style: Style, ts: TimeSeq, xaxis: TimeAxis) extends El
     }
   }
 }
-

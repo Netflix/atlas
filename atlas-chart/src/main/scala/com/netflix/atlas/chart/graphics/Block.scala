@@ -19,17 +19,17 @@ import java.awt.Color
 import java.awt.Graphics2D
 
 /**
- * Draws a set of elements vertically.
- *
- * @param elements
- *     Set of elements to draw within the block.
- * @param background
- *     Fill color to use for the background of the block. If not specified then the elements will
- *     be drawn directly over the existing content.
- */
-case class Block(
-    elements: List[Element],
-    background: Option[Color] = None) extends Element with VariableHeight {
+  * Draws a set of elements vertically.
+  *
+  * @param elements
+  *     Set of elements to draw within the block.
+  * @param background
+  *     Fill color to use for the background of the block. If not specified then the elements will
+  *     be drawn directly over the existing content.
+  */
+case class Block(elements: List[Element], background: Option[Color] = None)
+    extends Element
+    with VariableHeight {
 
   override def minHeight: Int = 0
 

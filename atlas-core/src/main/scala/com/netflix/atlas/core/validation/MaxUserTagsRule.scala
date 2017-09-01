@@ -20,12 +20,12 @@ import com.netflix.atlas.core.util.SmallHashMap
 import com.typesafe.config.Config
 
 /**
- * Verifies that the number of custom user tags are within a specified limit. Sample config:
- *
- * ```
- * limit = 10
- * ```
- */
+  * Verifies that the number of custom user tags are within a specified limit. Sample config:
+  *
+  * ```
+  * limit = 10
+  * ```
+  */
 class MaxUserTagsRule(config: Config) extends Rule {
 
   private val limit = config.getInt("limit")
@@ -37,7 +37,8 @@ class MaxUserTagsRule(config: Config) extends Rule {
       if (!TagKey.isRestricted(iter.key)) count += 1
       iter.nextEntry()
     }
-    if (count <= limit) ValidationResult.Pass else {
+    if (count <= limit) ValidationResult.Pass
+    else {
       failure(s"too many user tags: $count > $limit")
     }
   }

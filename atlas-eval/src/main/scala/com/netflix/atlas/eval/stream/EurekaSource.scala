@@ -69,18 +69,25 @@ object EurekaSource extends StrictLogging {
     *     HTTP client flow used for getting data from Eureka and for consuming from
     *     the instances.
     */
-  def apply(eurekaUri: String, instanceUriPattern: String, client: Client): Source[ByteString, NotUsed] = {
-    EvaluationFlows.repeat(NotUsed, 30.seconds)
+  def apply(
+    eurekaUri: String,
+    instanceUriPattern: String,
+    client: Client
+  ): Source[ByteString, NotUsed] = {
+    EvaluationFlows
+      .repeat(NotUsed, 30.seconds)
       .via(fetchEurekaData(eurekaUri, client))
       .via(new InstanceHandler(instanceUriPattern, client))
       .flatMapMerge(Int.MaxValue, sources => Source(sources).flatMapMerge(Int.MaxValue, s => s))
   }
 
-  private def fetchEurekaData(eurekaUri: String, client: Client): Flow[NotUsed, EurekaResponse, NotUsed] = {
+  private def fetchEurekaData(
+    eurekaUri: String,
+    client: Client
+  ): Flow[NotUsed, EurekaResponse, NotUsed] = {
     val useVipFormat = eurekaUri.contains("/vips/")
-    val headers = List(
-      Accept(MediaTypes.`application/json`),
-      `Accept-Encoding`(HttpEncodings.gzip))
+    val headers =
+      List(Accept(MediaTypes.`application/json`), `Accept-Encoding`(HttpEncodings.gzip))
     val request = HttpRequest(HttpMethods.GET, eurekaUri, headers)
 
     Flow[NotUsed]
@@ -103,7 +110,10 @@ object EurekaSource extends StrictLogging {
     if (isCompressed) res.entity.dataBytes.via(Compression.gunzip()) else res.entity.dataBytes
   }
 
-  private def parseResponse(res: HttpResponse, useVipFormat: Boolean): Source[EurekaResponse, Any] = {
+  private def parseResponse(
+    res: HttpResponse,
+    useVipFormat: Boolean
+  ): Source[EurekaResponse, Any] = {
     unzipIfNeeded(res)
       .reduce(_ ++ _)
       .map { bs =>
@@ -115,7 +125,7 @@ object EurekaSource extends StrictLogging {
   }
 
   class InstanceHandler(instanceUriPattern: String, client: Client)
-    extends GraphStage[FlowShape[EurekaResponse, InstanceSources]] {
+      extends GraphStage[FlowShape[EurekaResponse, InstanceSources]] {
 
     private val in = Inlet[EurekaResponse]("InstanceHandler.in")
     private val out = Outlet[InstanceSources]("InstanceHandler.out")
@@ -128,8 +138,9 @@ object EurekaSource extends StrictLogging {
 
         private def instanceUri(instance: Instance): String = {
           var uri = instanceUriPattern
-          instance.dataCenterInfo.metadata.foreach { case (k, v) =>
-            uri = uri.replace(s"{$k}", v)
+          instance.dataCenterInfo.metadata.foreach {
+            case (k, v) =>
+              uri = uri.replace(s"{$k}", v)
           }
           uri = uri.replace("{port}", instance.port.toString)
           uri
@@ -156,9 +167,10 @@ object EurekaSource extends StrictLogging {
           if (removed.nonEmpty) {
             logger.info(s"instances removed: ${mkString(removed)}")
           }
-          removed.foreach { case (id, ref) =>
-            instanceMap -= id
-            ref.stop()
+          removed.foreach {
+            case (id, ref) =>
+              instanceMap -= id
+              ref.stop()
           }
         }
 
@@ -180,14 +192,17 @@ object EurekaSource extends StrictLogging {
   }
 
   sealed trait EurekaResponse {
+
     def instances: List[Instance]
   }
 
   case class VipResponse(applications: Apps) extends EurekaResponse {
+
     def instances: List[Instance] = applications.application.flatMap(_.instance)
   }
 
   case class AppResponse(application: App) extends EurekaResponse {
+
     def instances: List[Instance] = application.instance
   }
 
@@ -205,7 +220,9 @@ object EurekaSource extends StrictLogging {
   case class DataCenterInfo(name: String, metadata: Map[String, String])
 
   case class PortInfo(`$`: Int) {
+
     def port: Int = `$`
+
     override def toString: String = `$`.toString
   }
 }

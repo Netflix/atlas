@@ -22,7 +22,7 @@ class RollSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.Roll
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a,0" -> List("a"),
+    "a,0"   -> List("a"),
     "a,b,0" -> List("b", "a"),
     "a,b,1" -> List("a", "b")
   )

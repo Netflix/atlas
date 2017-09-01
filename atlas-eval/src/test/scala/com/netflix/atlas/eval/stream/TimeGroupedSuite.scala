@@ -33,52 +33,56 @@ class TimeGroupedSuite extends FunSuite {
   implicit val materializer = ActorMaterializer()
 
   private def result(future: Future[List[TimeGroup[Event]]]): List[TimeGroup[Event]] = {
-    Await.result(future, Duration.Inf)
+    Await
+      .result(future, Duration.Inf)
       .reverse
       .map(g => g.copy(values = g.values.sortWith(_.i < _.i)))
   }
 
   test("in order list") {
-    val data = List(
-      Event(10, 1), Event(10, 2), Event(10, 3),
-      Event(20, 1),
-      Event(30, 1), Event(30, 2))
+    val data =
+      List(Event(10, 1), Event(10, 2), Event(10, 3), Event(20, 1), Event(30, 1), Event(30, 2))
 
     val future = Source(data)
       .via(new TimeGrouped[Event](2, 10, _.timestamp))
       .runFold(List.empty[TimeGroup[Event]])((acc, g) => g :: acc)
 
     val groups = result(future)
-    assert(groups === List(
-      TimeGroup(10, List(Event(10, 1), Event(10, 2), Event(10, 3))),
-      TimeGroup(20, List(Event(20, 1))),
-      TimeGroup(30, List(Event(30, 1), Event(30, 2)))
-    ))
+    assert(
+      groups === List(
+        TimeGroup(10, List(Event(10, 1), Event(10, 2), Event(10, 3))),
+        TimeGroup(20, List(Event(20, 1))),
+        TimeGroup(30, List(Event(30, 1), Event(30, 2)))
+      )
+    )
   }
 
   test("out of order list") {
-    val data = List(
-      Event(20, 1), Event(10, 2), Event(10, 3),
-      Event(10, 1),
-      Event(30, 1), Event(30, 2))
+    val data =
+      List(Event(20, 1), Event(10, 2), Event(10, 3), Event(10, 1), Event(30, 1), Event(30, 2))
 
     val future = Source(data)
       .via(new TimeGrouped[Event](2, 10, _.timestamp))
       .runFold(List.empty[TimeGroup[Event]])((acc, g) => g :: acc)
 
     val groups = result(future)
-    assert(groups === List(
-      TimeGroup(10, List(Event(10, 1), Event(10, 2), Event(10, 3))),
-      TimeGroup(20, List(Event(20, 1))),
-      TimeGroup(30, List(Event(30, 1), Event(30, 2)))
-    ))
+    assert(
+      groups === List(
+        TimeGroup(10, List(Event(10, 1), Event(10, 2), Event(10, 3))),
+        TimeGroup(20, List(Event(20, 1))),
+        TimeGroup(30, List(Event(30, 1), Event(30, 2)))
+      )
+    )
   }
 
   test("late events dropped") {
     val data = List(
-      Event(20, 1), Event(10, 2), Event(10, 3),
+      Event(20, 1),
+      Event(10, 2),
+      Event(10, 3),
       Event(10, 1),
-      Event(30, 1), Event(30, 2),
+      Event(30, 1),
+      Event(30, 2),
       Event(10, 4) // Dropped, came in late and out of window
     )
 
@@ -87,14 +91,17 @@ class TimeGroupedSuite extends FunSuite {
       .runFold(List.empty[TimeGroup[Event]])((acc, g) => g :: acc)
 
     val groups = result(future)
-    assert(groups === List(
-      TimeGroup(10, List(Event(10, 1), Event(10, 2), Event(10, 3))),
-      TimeGroup(20, List(Event(20, 1))),
-      TimeGroup(30, List(Event(30, 1), Event(30, 2)))
-    ))
+    assert(
+      groups === List(
+        TimeGroup(10, List(Event(10, 1), Event(10, 2), Event(10, 3))),
+        TimeGroup(20, List(Event(20, 1))),
+        TimeGroup(30, List(Event(30, 1), Event(30, 2)))
+      )
+    )
   }
 }
 
 object TimeGroupedSuite {
+
   case class Event(timestamp: Long, i: Int)
 }

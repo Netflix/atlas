@@ -29,7 +29,6 @@ import com.netflix.atlas.core.util.RefIntHashMap
 import org.roaringbitmap.RoaringBitmap
 import org.slf4j.LoggerFactory
 
-
 object RoaringTagIndex {
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -55,7 +54,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
 
   // Comparator for ordering tagged items using the id
   private val idComparator = new Comparator[T] {
-    def compare(t1: T, t2: T): Int = t1.id compareTo t2.id
+
+    def compare(t1: T, t2: T): Int = t1.id.compareTo(t2.id)
   }
 
   // Precomputed set of all items
@@ -113,7 +113,9 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
     m
   }
 
-  private def buildItemIndex(): (Array[ItemId], RoaringKeyMap, RoaringValueMap, Array[Long], Array[IntIntHashMap]) = {
+  private def buildItemIndex()
+    : (Array[ItemId], RoaringKeyMap, RoaringValueMap, Array[Long], Array[IntIntHashMap]) = {
+
     // Sort items array based on the id, allows for efficient paging of requests using the id
     // as the offset
     logger.debug(s"building index with ${items.length} items, starting sort")
@@ -219,7 +221,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
 
   private def and(q1: Query, q2: Query, offset: Int): RoaringBitmap = {
     val s1 = findImpl(q1, offset)
-    if (s1.isEmpty) s1 else {
+    if (s1.isEmpty) s1
+    else {
       // Short circuit, only perform second query if s1 is not empty
       val s2 = findImpl(q2, offset)
       s1.and(s2)
@@ -237,7 +240,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
   private def equal(k: String, v: String, offset: Int): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     val vidx = itemIndex.get(kp)
-    if (vidx == null) new RoaringBitmap() else {
+    if (vidx == null) new RoaringBitmap()
+    else {
       val vp = valueMap.get(v, -1)
       val matchSet = vidx.get(vp)
       if (matchSet == null) new RoaringBitmap() else withOffset(matchSet, offset)
@@ -247,7 +251,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
   private def greaterThan(k: String, v: String, orEqual: Boolean): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     val vidx = itemIndex.get(kp)
-    if (vidx == null) new RoaringBitmap() else {
+    if (vidx == null) new RoaringBitmap()
+    else {
       val set = new RoaringBitmap()
       val vp = findOffset(values, v, if (orEqual) 0 else 1)
       val t = tag(kp, vp)
@@ -265,7 +270,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
   private def lessThan(k: String, v: String, orEqual: Boolean): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     val vidx = itemIndex.get(kp)
-    if (vidx == null) new RoaringBitmap() else {
+    if (vidx == null) new RoaringBitmap()
+    else {
       val set = new RoaringBitmap()
       val vp = findOffset(values, v, if (orEqual) 0 else -1)
       val t = tag(kp, vp)
@@ -283,7 +289,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
   private def strPattern(q: Query.PatternQuery, offset: Int): RoaringBitmap = {
     val kp = keyMap.get(q.k, -1)
     val vidx = itemIndex.get(kp)
-    if (vidx == null) new RoaringBitmap() else {
+    if (vidx == null) new RoaringBitmap()
+    else {
       val set = new RoaringBitmap()
       if (q.pattern.prefix.isDefined) {
         val prefix = q.pattern.prefix.get
@@ -291,8 +298,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
         val t = tag(kp, vp)
         var i = tagOffset(t)
         while (i < tagIndex.length
-          && tagKey(tagIndex(i)) == kp
-          && values(tagValue(tagIndex(i))).startsWith(prefix)) {
+               && tagKey(tagIndex(i)) == kp
+               && values(tagValue(tagIndex(i))).startsWith(prefix)) {
           val v = tagValue(tagIndex(i))
           if (q.check(values(v))) {
             set.or(vidx.get(v))
@@ -316,7 +323,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
   }
 
   private def itemOffset(v: String): Int = {
-    if (v == null || v == "") 0 else {
+    if (v == null || v == "") 0
+    else {
       val offsetV = ItemId(v)
       val pos = util.Arrays.binarySearch(itemIds.asInstanceOf[Array[AnyRef]], offsetV)
       if (pos < 0) -pos - 1 else pos
@@ -324,7 +332,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
   }
 
   private def tagOffset(v: Long): Int = {
-    if (v <= 0) 0 else {
+    if (v <= 0) 0
+    else {
       val pos = util.Arrays.binarySearch(tagIndex, v)
       if (pos == -1) 0 else if (pos < -1) -pos - 1 else pos
     }
@@ -337,7 +346,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
     * default a greater than, `n = 1`, comparison will be done.
     */
   private def findOffset(vs: Array[String], v: String, n: Int = 1): Int = {
-    if (v == null || v == "") 0 else {
+    if (v == null || v == "") 0
+    else {
       val pos = util.Arrays.binarySearch(vs.asInstanceOf[Array[AnyRef]], v)
       if (pos >= 0) pos + n else -pos - 1
     }
@@ -409,7 +419,11 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
     createResultList(items, intSet, limit)
   }
 
-  private def createResultList(vs: Array[String], matches: util.BitSet, limit: Int): List[String] = {
+  private def createResultList(
+    vs: Array[String],
+    matches: util.BitSet,
+    limit: Int
+  ): List[String] = {
     val result = List.newBuilder[String]
     var i = matches.nextSetBit(0)
     var count = 0

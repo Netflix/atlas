@@ -22,12 +22,13 @@ import com.netflix.atlas.core.model.TimeSeries
 import com.typesafe.config.Config
 
 /**
- * Simple database with a predefined set of time series.
- */
+  * Simple database with a predefined set of time series.
+  */
 class StaticDatabase(config: Config)
-  extends SimpleStaticDatabase(DataSet.get(config.getString("dataset")))
+    extends SimpleStaticDatabase(DataSet.get(config.getString("dataset")))
 
 object StaticDatabase {
+
   /** Create a simple database with a range of fixed integer values. Mostly used for testing. */
   def range(s: Int, e: Int): Database = {
     val len = e.toString.length

@@ -20,7 +20,6 @@ import akka.actor.Actor
 import scala.util.Failure
 import scala.util.Try
 
-
 class TestActor(ref: DataRef) extends Actor {
 
   // If there is a failure causing a restart, then we need to mark the

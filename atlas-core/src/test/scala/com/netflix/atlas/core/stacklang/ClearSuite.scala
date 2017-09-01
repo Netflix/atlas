@@ -22,8 +22,8 @@ class ClearSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.Clear
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "" -> List.empty[Any],
-    "a" -> List.empty[Any],
+    ""    -> List.empty[Any],
+    "a"   -> List.empty[Any],
     "a,b" -> List.empty[Any]
   )
 

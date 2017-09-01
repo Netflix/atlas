@@ -46,12 +46,13 @@ import scala.concurrent.Future
   *     Instance of the actor system.
   */
 @Singleton
-class WebServer @Inject() (
+class WebServer @Inject()(
   config: Config,
   classFactory: ClassFactory,
   registry: Registry,
-  implicit val system: ActorSystem)
-    extends AbstractService with StrictLogging {
+  implicit val system: ActorSystem
+) extends AbstractService
+    with StrictLogging {
 
   private implicit val materializer = ActorMaterializer()
   private implicit val executionContext = system.dispatcher

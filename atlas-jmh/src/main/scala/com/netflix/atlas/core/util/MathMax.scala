@@ -24,18 +24,18 @@ import org.openjdk.jmh.infra.Blackhole
 import scala.util.Random
 
 /**
- * There was an old suggestion that max via bit manip would be faster and avoid branch instructions. That
- * doesn't appear to be the case:
- *
- * ```
- * > run -wi 10 -i 10 -f1 -t1 .*MathMax.*
- * ...
- * [info] Benchmark                                  Mode  Samples           Score   Score error  Units
- * [info] c.n.a.c.u.MathMax.testMaxWithBitManip     thrpt       10   849801537.629  13395055.478  ops/s
- * [info] c.n.a.c.u.MathMax.testMaxWithIf           thrpt       10  1015950530.655  14758001.309  ops/s
- * [info] c.n.a.c.u.MathMax.testMaxWithScalaMath    thrpt       10  1021526747.880   8691594.381  ops/s
- * ```
- */
+  * There was an old suggestion that max via bit manip would be faster and avoid branch instructions. That
+  * doesn't appear to be the case:
+  *
+  * ```
+  * > run -wi 10 -i 10 -f1 -t1 .*MathMax.*
+  * ...
+  * [info] Benchmark                                  Mode  Samples           Score   Score error  Units
+  * [info] c.n.a.c.u.MathMax.testMaxWithBitManip     thrpt       10   849801537.629  13395055.478  ops/s
+  * [info] c.n.a.c.u.MathMax.testMaxWithIf           thrpt       10  1015950530.655  14758001.309  ops/s
+  * [info] c.n.a.c.u.MathMax.testMaxWithScalaMath    thrpt       10  1021526747.880   8691594.381  ops/s
+  * ```
+  */
 @State(Scope.Thread)
 class MathMax {
 

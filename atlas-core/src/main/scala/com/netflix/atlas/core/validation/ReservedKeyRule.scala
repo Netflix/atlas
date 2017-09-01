@@ -18,23 +18,24 @@ package com.netflix.atlas.core.validation
 import com.typesafe.config.Config
 
 /**
- * Verifies that only allowed keys are used for reserved prefixes. Reserved prefixes are used
- * to prevent user defined tags from overlapping with common infrastructure tagging that should
- * be consistent for all data. Sample config:
- *
- * ```
- * prefix = "nf."
- * allowed-keys = ["app", "cluster"]
- * ```
- *
- * This config would only allow "nf.app" and "nf.cluster" with a prefix of "nf.".
- */
+  * Verifies that only allowed keys are used for reserved prefixes. Reserved prefixes are used
+  * to prevent user defined tags from overlapping with common infrastructure tagging that should
+  * be consistent for all data. Sample config:
+  *
+  * ```
+  * prefix = "nf."
+  * allowed-keys = ["app", "cluster"]
+  * ```
+  *
+  * This config would only allow "nf.app" and "nf.cluster" with a prefix of "nf.".
+  */
 class ReservedKeyRule(config: Config) extends TagRule {
 
   import scala.collection.JavaConverters._
 
   private val prefix = config.getString("prefix")
-  private val allowedkeys = config.getStringList("allowed-keys").asScala.map(k => s"$prefix$k").toSet
+  private val allowedkeys =
+    config.getStringList("allowed-keys").asScala.map(k => s"$prefix$k").toSet
 
   override def validate(k: String, v: String): ValidationResult = {
     if (k.startsWith(prefix) && !allowedkeys.contains(k))

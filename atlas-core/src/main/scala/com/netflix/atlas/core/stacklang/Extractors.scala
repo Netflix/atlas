@@ -18,19 +18,22 @@ package com.netflix.atlas.core.stacklang
 import scala.util.Try
 
 object Extractors {
+
   case object IntType {
+
     def unapply(value: Any): Option[Int] = value match {
-      case v: String         => Try(v.toInt).toOption
-      case v: Int            => Some(v)
-      case _                 => None
+      case v: String => Try(v.toInt).toOption
+      case v: Int    => Some(v)
+      case _         => None
     }
   }
 
   case object DoubleType {
+
     def unapply(value: Any): Option[Double] = value match {
-      case v: String         => Try(v.toDouble).toOption
-      case v: Double         => Some(v)
-      case _                 => None
+      case v: String => Try(v.toDouble).toOption
+      case v: Double => Some(v)
+      case _         => None
     }
   }
 }

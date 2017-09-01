@@ -77,7 +77,8 @@ class ConversionsSuite extends FunSuite {
     val meta = MetricMetadata(
       MetricCategory("NFLX/Test", 300, Nil, Nil, Query.True),
       MetricDefinition("test", "test-alias", cnv, Map.empty),
-      Nil)
+      Nil
+    )
     val v = cnv(meta, dp)
     assert(v === 6.0 / 300.0)
   }
@@ -87,7 +88,8 @@ class ConversionsSuite extends FunSuite {
     val meta = MetricMetadata(
       MetricCategory("NFLX/Test", 300, Nil, Nil, Query.True),
       MetricDefinition("test", "test-alias", cnv, Map.empty),
-      Nil)
+      Nil
+    )
     val v = cnv(meta, newDatapoint(6.0, StandardUnit.BytesSecond))
     assert(v === 6.0)
   }

@@ -88,10 +88,9 @@ class HostSourceSuite extends FunSuite {
     val response = HttpResponse(StatusCodes.BadRequest, entity = ByteString("error"))
     val latch = new CountDownLatch(5)
     val (switch, future) = source {
-        latch.countDown()
-        Success(response)
-      }
-      .viaMat(KillSwitches.single)(Keep.right)
+      latch.countDown()
+      Success(response)
+    }.viaMat(KillSwitches.single)(Keep.right)
       .toMat(Sink.ignore)(Keep.both)
       .run()
 
@@ -105,10 +104,9 @@ class HostSourceSuite extends FunSuite {
   test("retries on exception from host") {
     val latch = new CountDownLatch(5)
     val (switch, future) = source {
-        latch.countDown()
-        Failure(new IOException("cannot connect"))
-      }
-      .viaMat(KillSwitches.single)(Keep.right)
+      latch.countDown()
+      Failure(new IOException("cannot connect"))
+    }.viaMat(KillSwitches.single)(Keep.right)
       .toMat(Sink.ignore)(Keep.both)
       .run()
 
@@ -122,12 +120,11 @@ class HostSourceSuite extends FunSuite {
   test("retries on exception from host entity source") {
     val latch = new CountDownLatch(5)
     val (switch, future) = source {
-        latch.countDown()
-        val source = Source.fromFuture(Future.failed[ByteString](new IOException("reset by peer")))
-        val entity = HttpEntity(MediaTypes.`text/event-stream`, source)
-        Success(HttpResponse(StatusCodes.OK, entity = entity))
-      }
-      .viaMat(KillSwitches.single)(Keep.right)
+      latch.countDown()
+      val source = Source.fromFuture(Future.failed[ByteString](new IOException("reset by peer")))
+      val entity = HttpEntity(MediaTypes.`text/event-stream`, source)
+      Success(HttpResponse(StatusCodes.OK, entity = entity))
+    }.viaMat(KillSwitches.single)(Keep.right)
       .toMat(Sink.ignore)(Keep.both)
       .run()
 

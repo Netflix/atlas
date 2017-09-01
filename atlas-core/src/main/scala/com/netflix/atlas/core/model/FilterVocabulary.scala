@@ -29,8 +29,13 @@ object FilterVocabulary extends Vocabulary {
   val dependsOn: List[Vocabulary] = List(StatefulVocabulary)
 
   val words: List[Word] = List(
-    Stat, StatAvg, StatMax, StatMin, StatLast, StatTotal, Filter,
-
+    Stat,
+    StatAvg,
+    StatMax,
+    StatMin,
+    StatLast,
+    StatTotal,
+    Filter,
     // Legacy operations equivalent to `max,:stat`
     Macro("stat-min-mf", List("min", ":stat"), List("42")),
     Macro("stat-max-mf", List("max", ":stat"), List("42")),
@@ -38,6 +43,7 @@ object FilterVocabulary extends Vocabulary {
   )
 
   case object Stat extends SimpleWord {
+
     override def name: String = "stat"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -84,12 +90,14 @@ object FilterVocabulary extends Vocabulary {
         |call to `stat` on the first expression passed to `filter`.
       """.stripMargin.trim
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,:sum,avg",
-      "name,sps,:eq,:sum,max",
-      "name,sps,:eq,:sum,min",
-      "name,sps,:eq,:sum,last",
-      "name,sps,:eq,:sum,total")
+    override def examples: List[String] =
+      List(
+        "name,sps,:eq,:sum,avg",
+        "name,sps,:eq,:sum,max",
+        "name,sps,:eq,:sum,min",
+        "name,sps,:eq,:sum,last",
+        "name,sps,:eq,:sum,total"
+      )
   }
 
   trait StatWord extends SimpleWord {
@@ -108,6 +116,7 @@ object FilterVocabulary extends Vocabulary {
   }
 
   case object StatAvg extends StatWord {
+
     override def name: String = "stat-avg"
 
     def value: FilterExpr = FilterExpr.StatAvg
@@ -119,6 +128,7 @@ object FilterVocabulary extends Vocabulary {
   }
 
   case object StatMax extends StatWord {
+
     override def name: String = "stat-max"
 
     def value: FilterExpr = FilterExpr.StatMax
@@ -130,6 +140,7 @@ object FilterVocabulary extends Vocabulary {
   }
 
   case object StatMin extends StatWord {
+
     override def name: String = "stat-min"
 
     def value: FilterExpr = FilterExpr.StatMin
@@ -141,6 +152,7 @@ object FilterVocabulary extends Vocabulary {
   }
 
   case object StatLast extends StatWord {
+
     override def name: String = "stat-last"
 
     def value: FilterExpr = FilterExpr.StatLast
@@ -152,6 +164,7 @@ object FilterVocabulary extends Vocabulary {
   }
 
   case object StatTotal extends StatWord {
+
     override def name: String = "stat-total"
 
     def value: FilterExpr = FilterExpr.StatTotal
@@ -163,6 +176,7 @@ object FilterVocabulary extends Vocabulary {
   }
 
   case object Filter extends SimpleWord {
+
     override def name: String = "filter"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -189,7 +203,7 @@ object FilterVocabulary extends Vocabulary {
         |a value greater than 50.
       """.stripMargin.trim
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,30e3,:gt")
+    override def examples: List[String] =
+      List("name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,30e3,:gt")
   }
 }

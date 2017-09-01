@@ -27,11 +27,10 @@ import org.joda.time.Duration
 import org.joda.time.Period
 import org.scalatest.FunSuite
 
-
 /**
- * Test case for the capabilities we need from a json parser. Mostly to document what we are using
- * and ease transition to alternative libraries if we want to switch.
- */
+  * Test case for the capabilities we need from a json parser. Mostly to document what we are using
+  * and ease transition to alternative libraries if we want to switch.
+  */
 class JsonSuite extends FunSuite {
 
   import java.lang.{Double => JDouble}
@@ -40,7 +39,7 @@ class JsonSuite extends FunSuite {
 
   test("garbage") {
     intercept[JsonParseException] { decode[Boolean]("true dklfjal;k;hfnklanf'") }
-    intercept[IllegalArgumentException] { decode[Map[String,AnyRef]]("""{"f":"b"} {"b":"d"}""") }
+    intercept[IllegalArgumentException] { decode[Map[String, AnyRef]]("""{"f":"b"} {"b":"d"}""") }
   }
 
   test("true") {
@@ -104,7 +103,8 @@ class JsonSuite extends FunSuite {
       JDouble.NaN,
       JDouble.NEGATIVE_INFINITY,
       JDouble.POSITIVE_INFINITY,
-      JDouble.POSITIVE_INFINITY)
+      JDouble.POSITIVE_INFINITY
+    )
     val vs = """[1.0,"NaN","-Infinity","+Infinity","Infinity"]"""
     assert(java.util.Arrays.equals(decode[Array[Double]](vs), expected))
   }
@@ -115,7 +115,8 @@ class JsonSuite extends FunSuite {
       JDouble.NaN,
       JDouble.NEGATIVE_INFINITY,
       JDouble.POSITIVE_INFINITY,
-      JDouble.POSITIVE_INFINITY)
+      JDouble.POSITIVE_INFINITY
+    )
     val vs = """{"values":[1.0,"NaN","-Infinity","+Infinity","Infinity"]}"""
     assert(java.util.Arrays.equals(decode[JsonSuiteArrayDouble](vs).values, expected))
   }
@@ -126,7 +127,8 @@ class JsonSuite extends FunSuite {
       JDouble.NaN,
       JDouble.NEGATIVE_INFINITY,
       JDouble.POSITIVE_INFINITY,
-      JDouble.POSITIVE_INFINITY)
+      JDouble.POSITIVE_INFINITY
+    )
     val vs = """[1.0,"NaN","-Infinity","+Infinity","Infinity"]"""
     assert(java.util.Arrays.equals(decode[List[Double]](vs).toArray, expected))
   }
@@ -137,7 +139,8 @@ class JsonSuite extends FunSuite {
       JDouble.NaN,
       JDouble.NEGATIVE_INFINITY,
       JDouble.POSITIVE_INFINITY,
-      JDouble.POSITIVE_INFINITY)
+      JDouble.POSITIVE_INFINITY
+    )
     val vs = """{"vs":[1.0,NaN,-Infinity,+Infinity,Infinity]}"""
     assert(java.util.Arrays.equals(decode[JsonSuiteListDouble](vs).vs.toArray, expected))
   }
@@ -148,7 +151,8 @@ class JsonSuite extends FunSuite {
       JDouble.NaN,
       JDouble.NEGATIVE_INFINITY,
       JDouble.POSITIVE_INFINITY,
-      JDouble.POSITIVE_INFINITY)
+      JDouble.POSITIVE_INFINITY
+    )
     val vs = """{"vs":[1.0,"NaN","-Infinity","+Infinity","Infinity"]}"""
     assert(java.util.Arrays.equals(decode[JsonSuiteListDouble](vs).vs.toArray, expected))
   }
@@ -178,7 +182,7 @@ class JsonSuite extends FunSuite {
   }
 
   test("joda DateTime") {
-    val v = new DateTime(2012, 1, 13, 4, 37,52, 0, DateTimeZone.UTC)
+    val v = new DateTime(2012, 1, 13, 4, 37, 52, 0, DateTimeZone.UTC)
     assert(encode(v) === v.getMillis.toString)
     assert(decode[DateTime](encode(v)) === v)
   }
@@ -430,20 +434,29 @@ class JsonSuite extends FunSuite {
 case object JsonSuiteObject
 
 case class JsonSuiteSimple(foo: Int, bar: String)
+
 case class JsonSuiteNested(simple: Map[String, JsonSuiteSimple], bar: Option[String])
+
 case class JsonSuiteArrayDouble(name: String, values: Array[Double])
 
 // https://github.com/FasterXML/jackson-module-scala/issues/62
 case class JsonSuiteOptionLong(foo: Option[Long])
 
 trait JsonSuiteTrait
+
 case class JsonSuiteImpl1(foo: Int) extends JsonSuiteTrait
+
 case class JsonSuiteImpl2(bar: String) extends JsonSuiteTrait
 
 object JsonSuiteObjectWithClass {
+
   case class ClassInObject(s: String, v: Int)
 }
 
 case class JsonSuiteListDouble(vs: List[Double])
 
-case class JsonSuiteObjectWithDefaults(foo: Int = 42, bar: String = "abc", values: List[String] = Nil)
+case class JsonSuiteObjectWithDefaults(
+  foo: Int = 42,
+  bar: String = "abc",
+  values: List[String] = Nil
+)

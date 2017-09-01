@@ -26,7 +26,8 @@ case object Stddev extends StackWordPage {
 
   override def signature: String = s"`GroupBy -- TimeSeriesExpr`"
 
-  override def summary: String = """
+  override def summary: String =
+    """
       |Compute the standard deviation for the results of a [group by](data-by). If the
       |underlying data is for a timer or distribution summary, then [dist-stddev](math-dist‐stddev)
       |is likely a better choice.

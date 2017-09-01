@@ -22,7 +22,6 @@ import com.netflix.atlas.core.model.TaggedItem
 
 import scala.reflect.ClassTag
 
-
 class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagIndex[T] {
 
   type ValueMap = Map[String, Set[Int]]
@@ -38,10 +37,11 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
       val i = t._2
       item.tags.foldLeft(iAcc) { (kAcc, tag) =>
         val vAcc = kAcc.get(tag._1) match {
-          case Some(vm) => vm.get(tag._2) match {
-            case Some(vs) => vm + (tag._2 -> (vs + i))
-            case None     => vm + (tag._2 -> Set(i))
-          }
+          case Some(vm) =>
+            vm.get(tag._2) match {
+              case Some(vs) => vm + (tag._2 -> (vs + i))
+              case None     => vm + (tag._2 -> Set(i))
+            }
           case None => Map(tag._2 -> Set(i))
         }
         kAcc + (tag._1 -> vAcc)
@@ -74,7 +74,9 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
       case HasKey(k) =>
         index.get(k) match {
           case Some(vidx) =>
-            vidx.foldLeft(Set.empty[Int]) { (acc, v) => acc.union(v._2) }
+            vidx.foldLeft(Set.empty[Int]) { (acc, v) =>
+              acc.union(v._2)
+            }
           case None => Set.empty[Int]
         }
       case True  => all
@@ -87,7 +89,8 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
   }
 
   def findTags(query: TagQuery): List[Tag] = {
-    if (query.key.isEmpty) Nil else {
+    if (query.key.isEmpty) Nil
+    else {
       val matches = findItemsImpl(query.query)
       val uniq = matches.flatMap(_.tags.map(t => Tag(t._1, t._2))).distinct
 
@@ -126,7 +129,9 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
   def findItems(query: TagQuery): List[T] = {
     val matches = findItemsImpl(query.query)
     val filtered = matches.filter(i => i.idString > query.offset)
-    val sorted = filtered.sortWith { (a, b) => a.id.compareTo(b.id) < 0 }
+    val sorted = filtered.sortWith { (a, b) =>
+      a.id.compareTo(b.id) < 0
+    }
     sorted.take(query.limit)
   }
 

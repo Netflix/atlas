@@ -51,6 +51,7 @@ object FilterExpr {
   }
 
   trait StatExpr extends FilterExpr {
+
     def name: String
 
     override def toString: String = s":stat-$name"
@@ -67,22 +68,27 @@ object FilterExpr {
   }
 
   case object StatAvg extends StatExpr {
+
     def name: String = "avg"
   }
 
   case object StatMax extends StatExpr {
+
     def name: String = "max"
   }
 
   case object StatMin extends StatExpr {
+
     def name: String = "min"
   }
 
   case object StatLast extends StatExpr {
+
     def name: String = "last"
   }
 
   case object StatTotal extends StatExpr {
+
     def name: String = "total"
   }
 

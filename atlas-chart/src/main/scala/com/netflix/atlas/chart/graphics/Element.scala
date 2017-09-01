@@ -18,17 +18,18 @@ package com.netflix.atlas.chart.graphics
 import java.awt.Graphics2D
 
 /**
- * Base type for elements to draw as part of the chart.
- */
+  * Base type for elements to draw as part of the chart.
+  */
 trait Element {
+
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int)
 
   /** Compute the width for the element if restricted to the specified height. */
   def getWidth(g: Graphics2D, height: Int): Int = {
     this match {
-      case h: FixedWidth     => h.width
-      case h: VariableWidth  => h.computeWidth(g, height)
-      case _                 => 0
+      case h: FixedWidth    => h.width
+      case h: VariableWidth => h.computeWidth(g, height)
+      case _                => 0
     }
   }
 
@@ -44,29 +45,34 @@ trait Element {
 
 /** Indicates the element has a fixed width. */
 trait FixedWidth {
+
   def width: Int
 }
 
 /** Indicates the element has a fixed height. */
 trait FixedHeight {
+
   def height: Int
 }
 
 /**
- * Indicates that the height of the element is variable depending on the width. The most common
- * example is text that can wrap to fit the width available.
- */
+  * Indicates that the height of the element is variable depending on the width. The most common
+  * example is text that can wrap to fit the width available.
+  */
 trait VariableWidth {
+
   def minWidth: Int
+
   def computeWidth(g: Graphics2D, width: Int): Int
 }
 
 /**
- * Indicates that the height of the element is variable depending on the width. The most common
- * example is text that can wrap to fit the width available.
- */
+  * Indicates that the height of the element is variable depending on the width. The most common
+  * example is text that can wrap to fit the width available.
+  */
 trait VariableHeight {
+
   def minHeight: Int
+
   def computeHeight(g: Graphics2D, width: Int): Int
 }
-

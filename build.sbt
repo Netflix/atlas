@@ -1,4 +1,6 @@
 
+scalafmtVersion in ThisBuild := "1.2.0"
+
 lazy val root = project.in(file("."))
   .configure(BuildSettings.profile)
   .aggregate(

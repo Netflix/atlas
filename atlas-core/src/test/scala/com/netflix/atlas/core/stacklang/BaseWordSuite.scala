@@ -27,15 +27,16 @@ abstract class BaseWordSuite extends FunSuite {
 
   def shouldNotMatch: List[String]
 
-  shouldMatch.foreach { case (prg, after) =>
-    test(s"should match: $prg") {
-      assert(word.matches(interpreter.execute(prg).stack))
-    }
+  shouldMatch.foreach {
+    case (prg, after) =>
+      test(s"should match: $prg") {
+        assert(word.matches(interpreter.execute(prg).stack))
+      }
 
-    test(s"execute: $prg") {
-      val c = interpreter.execute(prg)
-      assert(word.execute(c).stack === after)
-    }
+      test(s"execute: $prg") {
+        val c = interpreter.execute(prg)
+        assert(word.execute(c).stack === after)
+      }
   }
 
   shouldNotMatch.foreach { prg =>

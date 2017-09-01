@@ -21,31 +21,32 @@ import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 
 /**
- * Definition for a plot, i.e., a y-axis and associated data elements.
- *
- * @param data
- *     List of data items to include in the plot.
- * @param ylabel
- *     Label to show for the axis.
- * @param axisColor
- *     Color to use when rendering the axis.
- * @param scale
- *     Type of scale to use on the axis, linear or logarithmic.
- * @param upper
- *     Upper limit for the axis.
- * @param lower
- *     Lower limit for the axis.
- * @param tickLabelMode
- *     Mode to use for displaying tick labels.
- */
+  * Definition for a plot, i.e., a y-axis and associated data elements.
+  *
+  * @param data
+  *     List of data items to include in the plot.
+  * @param ylabel
+  *     Label to show for the axis.
+  * @param axisColor
+  *     Color to use when rendering the axis.
+  * @param scale
+  *     Type of scale to use on the axis, linear or logarithmic.
+  * @param upper
+  *     Upper limit for the axis.
+  * @param lower
+  *     Lower limit for the axis.
+  * @param tickLabelMode
+  *     Mode to use for displaying tick labels.
+  */
 case class PlotDef(
-    data: List[DataDef],
-    ylabel: Option[String] = None,
-    axisColor: Option[Color] = None,
-    scale: Scale = Scale.LINEAR,
-    upper: PlotBound = AutoStyle,
-    lower: PlotBound = AutoStyle,
-    tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL) {
+  data: List[DataDef],
+  ylabel: Option[String] = None,
+  axisColor: Option[Color] = None,
+  scale: Scale = Scale.LINEAR,
+  upper: PlotBound = AutoStyle,
+  lower: PlotBound = AutoStyle,
+  tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL
+) {
 
   import java.lang.{Double => JDouble}
 
@@ -58,7 +59,8 @@ case class PlotDef(
   def bounds(start: Long, end: Long): (Double, Double) = {
 
     val dataLines = lines
-    if (dataLines.isEmpty) (0.0 -> 1.0) else {
+    if (dataLines.isEmpty) (0.0 -> 1.0)
+    else {
       val step = dataLines.head.data.data.step
       val (regular, stacked) = dataLines
         .filter(_.lineStyle != LineStyle.VSPAN)
@@ -114,6 +116,7 @@ case class PlotDef(
   }
 
   private[model] def finalBounds(hasArea: Boolean, min: Double, max: Double): (Double, Double) = {
+
     // Try to figure out bounds following the guidelines:
     // * An explicit bound should always get used.
     // * If an area is present, then automatic bounds should go to the 0 line.
@@ -124,12 +127,13 @@ case class PlotDef(
     // If upper and lower bounds are equal or automatic/explicit combination causes lower to be
     // greater than the upper, then pad automatic bounds by 1. Explicit bounds should
     // be honored.
-    if (l < u) l -> u else {
+    if (l < u) l -> u
+    else {
       (lower, upper) match {
-        case (Explicit(_), Explicit(_))  =>       l -> u
-        case (_,           Explicit(_))  => (u - 1) -> u
-        case (Explicit(_), _          )  =>       l -> (l + 1)
-        case (_,           _          )  =>       l -> (u + 1)
+        case (Explicit(_), Explicit(_)) => l       -> u
+        case (_, Explicit(_))           => (u - 1) -> u
+        case (Explicit(_), _)           => l       -> (l + 1)
+        case (_, _)                     => l       -> (u + 1)
       }
     }
   }
@@ -148,4 +152,3 @@ case class PlotDef(
 
   def normalize: PlotDef = copy(axisColor = Some(getAxisColor))
 }
-

@@ -17,27 +17,31 @@ package com.netflix.atlas.core.model
 
 /** Helper functions for tags. */
 object Tag {
+
   def apply(key: String, value: String): Tag = {
     Tag(key, value, -1)
   }
 }
 
 /**
- * Represents a key/value pair and it's associated count. The count is the number of items that
- * are marked with the tag.
- *
- * @param key    key for the tag
- * @param value  value associated with the key
- * @param count  number of items with this tag or -1 if unknown
- */
+  * Represents a key/value pair and it's associated count. The count is the number of items that
+  * are marked with the tag.
+  *
+  * @param key    key for the tag
+  * @param value  value associated with the key
+  * @param count  number of items with this tag or -1 if unknown
+  */
 case class Tag(key: String, value: String, count: Int) extends Comparable[Tag] {
+
   def <(t: Tag): Boolean = compareTo(t) < 0
+
   def >(t: Tag): Boolean = compareTo(t) > 0
 
   /** Tags are ordered by key, value, and then count. */
   def compareTo(t: Tag): Int = {
     val k = key.compareTo(t.key)
-    if (k != 0) k else {
+    if (k != 0) k
+    else {
       val v = value.compareTo(t.value)
       if (v != 0) v else count - t.count
     }

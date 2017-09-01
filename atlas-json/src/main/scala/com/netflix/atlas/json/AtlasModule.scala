@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.Module.SetupContext
   * Adds custom serializers and deserializers for our use cases.
   */
 private[json] class AtlasModule extends Module {
+
   override def getModuleName: String = "atlas"
 
   override def setupModule(context: SetupContext): Unit = {

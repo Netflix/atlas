@@ -15,5 +15,4 @@
  */
 package com.netflix.atlas.core.stacklang
 
-
 case class Context(interpreter: Interpreter, stack: List[Any], variables: Map[String, Any])

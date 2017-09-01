@@ -47,7 +47,7 @@ class StreamSuite extends FunSuite {
   }
 
   test("sum: same tags for all intervals") {
-    val aggr = DataExpr.Sum(Query.Equal("name" , "cpu"))
+    val aggr = DataExpr.Sum(Query.Equal("name", "cpu"))
     val result = eval(aggr, stream)
     result.foreach { ts =>
       assert(ts.size === 1)
@@ -58,7 +58,7 @@ class StreamSuite extends FunSuite {
   }
 
   test("count: same tags for all intervals") {
-    val aggr = DataExpr.Count(Query.Equal("name" , "cpu"))
+    val aggr = DataExpr.Count(Query.Equal("name", "cpu"))
     val result = eval(aggr, stream)
     result.foreach { ts =>
       assert(ts.size === 1)
@@ -69,7 +69,7 @@ class StreamSuite extends FunSuite {
   }
 
   test("by: name,cpu,:eq,(,name,),:by") {
-    val aggr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name" , "cpu")), List("name"))
+    val aggr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "cpu")), List("name"))
     val result = eval(aggr, stream)
     result.foreach { ts =>
       assert(ts.size === 1)
@@ -80,16 +80,17 @@ class StreamSuite extends FunSuite {
   }
 
   test("by: name,cpu,:eq,(,node,),:by") {
-    val aggr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name" , "cpu")), List("node"))
+    val aggr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "cpu")), List("node"))
     val result = eval(aggr, stream)
-    result.zipWithIndex.foreach { case (ts, i) =>
-      val expected = i match {
-        case 0 => Set(Map("name" -> "cpu", "node" -> "i-1"))
-        case 1 => (1 to 3).map(i => Map("name" -> "cpu", "node" -> s"i-$i")).toSet
-        case 2 => (1 to 2).map(i => Map("name" -> "cpu", "node" -> s"i-$i")).toSet
-        case 3 => Set(Map("name" -> "cpu", "node" -> "i-2"))
-      }
-      assert(expected === ts.map(_.tags).toSet)
+    result.zipWithIndex.foreach {
+      case (ts, i) =>
+        val expected = i match {
+          case 0 => Set(Map("name" -> "cpu", "node" -> "i-1"))
+          case 1 => (1 to 3).map(i => Map("name" -> "cpu", "node" -> s"i-$i")).toSet
+          case 2 => (1 to 2).map(i => Map("name" -> "cpu", "node" -> s"i-$i")).toSet
+          case 3 => Set(Map("name" -> "cpu", "node" -> "i-2"))
+        }
+        assert(expected === ts.map(_.tags).toSet)
     }
   }
 
@@ -107,14 +108,15 @@ class StreamSuite extends FunSuite {
   test("by: :true,(,name,node,),:by") {
     val aggr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("name", "node"))
     val result = eval(aggr, stream)
-    result.zipWithIndex.foreach { case (ts, i) =>
-      val expected = i match {
-        case 0 => Set(Map("name" -> "cpu", "node" -> "i-1"))
-        case 1 => (1 to 3).map(i => Map("name" -> "cpu", "node" -> s"i-$i")).toSet
-        case 2 => (1 to 2).map(i => Map("name" -> "cpu", "node" -> s"i-$i")).toSet
-        case 3 => Set(Map("name" -> "cpu", "node" -> "i-2"))
-      }
-      assert(expected === ts.map(_.tags).toSet)
+    result.zipWithIndex.foreach {
+      case (ts, i) =>
+        val expected = i match {
+          case 0 => Set(Map("name" -> "cpu", "node" -> "i-1"))
+          case 1 => (1 to 3).map(i => Map("name" -> "cpu", "node" -> s"i-$i")).toSet
+          case 2 => (1 to 2).map(i => Map("name" -> "cpu", "node" -> s"i-$i")).toSet
+          case 3 => Set(Map("name" -> "cpu", "node" -> "i-2"))
+        }
+        assert(expected === ts.map(_.tags).toSet)
     }
   }
 

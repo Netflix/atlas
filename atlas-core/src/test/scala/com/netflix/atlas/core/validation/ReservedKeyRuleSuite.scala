@@ -18,11 +18,9 @@ package com.netflix.atlas.core.validation
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class ReservedKeyRuleSuite extends FunSuite {
 
-  private val config = ConfigFactory.parseString(
-    """
+  private val config = ConfigFactory.parseString("""
       |prefix = "nf."
       |allowed-keys = ["region", "job", "task"]
     """.stripMargin)

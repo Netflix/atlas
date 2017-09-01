@@ -19,5 +19,6 @@ import com.netflix.atlas.core.stacklang.BaseExamplesSuite
 import com.netflix.atlas.core.stacklang.Vocabulary
 
 class FilterExamplesSuite extends BaseExamplesSuite {
+
   override def vocabulary: Vocabulary = FilterVocabulary
 }

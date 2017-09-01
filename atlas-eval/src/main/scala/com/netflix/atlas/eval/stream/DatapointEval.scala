@@ -40,7 +40,7 @@ import com.netflix.atlas.eval.model.TimeSeriesMessage
   *     Step size for the input data.
   */
 class DatapointEval[T <: TimeSeries](expr: StyleExpr, step: Long)
-  extends GraphStage[FlowShape[TimeGroup[T], List[TimeSeriesMessage]]] {
+    extends GraphStage[FlowShape[TimeGroup[T], List[TimeSeriesMessage]]] {
 
   private val in = Inlet[TimeGroup[T]]("DatapointEval.in")
   private val out = Outlet[List[TimeSeriesMessage]]("DatapointEval.out")
@@ -54,7 +54,8 @@ class DatapointEval[T <: TimeSeries](expr: StyleExpr, step: Long)
       override def onPush(): Unit = {
         val group = grab(in)
         val vs = group.values
-        if (vs.isEmpty) push(out, List.empty) else {
+        if (vs.isEmpty) push(out, List.empty)
+        else {
           val s = group.timestamp
           val context = EvalContext(s, s + step, step, state)
           val result = expr.expr.eval(context, vs)

@@ -39,6 +39,7 @@ import com.netflix.atlas.core.util.Strings
 object GraphEval {
 
   case class Result(request: GraphApi.Request, data: Array[Byte]) {
+
     def dataString: String = new String(data, "UTF-8")
   }
 
@@ -69,63 +70,67 @@ object GraphEval {
     val start = request.startMillis
     val end = request.endMillis
 
-    val plots = plotExprs.toList.sortWith(_._1 < _._1).map { case (yaxis, exprs) =>
-      val axisCfg = request.flags.axes(yaxis)
-      val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
+    val plots = plotExprs.toList.sortWith(_._1 < _._1).map {
+      case (yaxis, exprs) =>
+        val axisCfg = request.flags.axes(yaxis)
+        val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
 
-      val axisPalette = axisCfg.palette.fold(palette) { v => newPalette(v) }
-
-      var messages = List.empty[String]
-      val lines = exprs.flatMap { s =>
-        val result = s.expr.eval(request.evalContext, data)
-
-        // Pick the last non empty message to appear. Right now they are only used
-        // as a test for providing more information about the state of filtering. These
-        // can quickly get complicated when used with other features. For example,
-        // sorting can mix and match lines across multiple expressions. Also binary
-        // math operations that combine the results of multiple filter expressions or
-        // multi-level group by with filtered input. For now this is just an
-        // experiment for the common simple case to see how it impacts usability
-        // when dealing with filter expressions that remove some of the lines.
-        if (result.messages.nonEmpty) messages = result.messages.take(1)
-
-        val ts = result.data
-        val labelledTS = ts.map { t =>
-          val offset = Strings.toString(Duration.ofMillis(s.offset))
-          val newT = t.withTags(t.tags + (TagKey.offset -> offset))
-          newT.withLabel(s.legend(newT))
+        val axisPalette = axisCfg.palette.fold(palette) { v =>
+          newPalette(v)
         }
 
-        val lineDefs = labelledTS.sortWith(_.label < _.label).map { t =>
-          val color = s.color.getOrElse {
-            val c = if (s.offset > 0L) shiftPalette(t.label) else axisPalette(t.label)
-            // Alpha setting if present will set the alpha value for the color automatically
-            // assigned by the palette. If using an explicit color it will have no effect as the
-            // alpha can be set directly using an ARGB hex format for the color.
-            s.alpha.fold(c)(a => Colors.withAlpha(c, a))
+        var messages = List.empty[String]
+        val lines = exprs.flatMap { s =>
+          val result = s.expr.eval(request.evalContext, data)
+
+          // Pick the last non empty message to appear. Right now they are only used
+          // as a test for providing more information about the state of filtering. These
+          // can quickly get complicated when used with other features. For example,
+          // sorting can mix and match lines across multiple expressions. Also binary
+          // math operations that combine the results of multiple filter expressions or
+          // multi-level group by with filtered input. For now this is just an
+          // experiment for the common simple case to see how it impacts usability
+          // when dealing with filter expressions that remove some of the lines.
+          if (result.messages.nonEmpty) messages = result.messages.take(1)
+
+          val ts = result.data
+          val labelledTS = ts.map { t =>
+            val offset = Strings.toString(Duration.ofMillis(s.offset))
+            val newT = t.withTags(t.tags + (TagKey.offset -> offset))
+            newT.withLabel(s.legend(newT))
           }
 
-          LineDef(
-            data = t,
-            color = color,
-            lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
-            lineWidth = s.lineWidth,
-            legendStats = SummaryStats(t.data, start, end))
+          val lineDefs = labelledTS.sortWith(_.label < _.label).map { t =>
+            val color = s.color.getOrElse {
+              val c = if (s.offset > 0L) shiftPalette(t.label) else axisPalette(t.label)
+              // Alpha setting if present will set the alpha value for the color automatically
+              // assigned by the palette. If using an explicit color it will have no effect as the
+              // alpha can be set directly using an ARGB hex format for the color.
+              s.alpha.fold(c)(a => Colors.withAlpha(c, a))
+            }
+
+            LineDef(
+              data = t,
+              color = color,
+              lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
+              lineWidth = s.lineWidth,
+              legendStats = SummaryStats(t.data, start, end)
+            )
+          }
+
+          // Lines must be sorted for presentation after the colors have been applied
+          // using the palette. The colors selected should be stable regardless of the
+          // sort order that is applied. Otherwise colors would change each time a user
+          // changed the sort.
+          val sorted = sort(warnings, s.sortBy, s.useDescending, lineDefs)
+          s.limit.fold(sorted)(n => sorted.take(n))
         }
 
-        // Lines must be sorted for presentation after the colors have been applied
-        // using the palette. The colors selected should be stable regardless of the
-        // sort order that is applied. Otherwise colors would change each time a user
-        // changed the sort.
-        val sorted = sort(warnings, s.sortBy, s.useDescending, lineDefs)
-        s.limit.fold(sorted)(n => sorted.take(n))
-      }
+        // Apply sort based on URL parameters. This will take precedence over
+        // local sort on an expression.
+        val sortedLines = sort(warnings, axisCfg.sort, axisCfg.order.contains("desc"), lines)
 
-      // Apply sort based on URL parameters. This will take precedence over
-      // local sort on an expression.
-      val sortedLines = sort(warnings, axisCfg.sort, axisCfg.order.contains("desc"), lines)
-
-      axisCfg.newPlotDef(sortedLines ::: messages.map(s => MessageDef(s"... $s ...")), multiY)
+        axisCfg.newPlotDef(sortedLines ::: messages.map(s => MessageDef(s"... $s ...")), multiY)
     }
 
     request.newGraphDef(plots, warnings.result())
@@ -146,10 +151,12 @@ object GraphEval {
     if (mode.startsWith(prefix)) {
       val pname = mode.substring(prefix.length)
       val p = Palette.create(pname)
-      v => p.colors(v.hashCode)
+      v =>
+        p.colors(v.hashCode)
     } else {
       val p = Palette.create(mode).iterator
-      _ => p.next()
+      _ =>
+        p.next()
     }
   }
 
@@ -157,7 +164,8 @@ object GraphEval {
     warnings: scala.collection.mutable.Builder[String, List[String]],
     sortBy: Option[String],
     useDescending: Boolean,
-    lines: List[LineDef]): List[LineDef] = {
+    lines: List[LineDef]
+  ): List[LineDef] = {
 
     // The default is sort by legend in ascending order. If the defaults have been explicitly
     // changed, then the explicit values should be used. Since the sort by param is used to
@@ -167,16 +175,31 @@ object GraphEval {
 
     by.fold(lines) { mode =>
       val cmp: Function2[LineDef, LineDef, Boolean] = mode match {
-        case "legend" => (a, b) => compare(useDescending, a.data.label, b.data.label)
-        case "min"    => (a, b) => compare(useDescending, a.legendStats.min, b.legendStats.min)
-        case "max"    => (a, b) => compare(useDescending, a.legendStats.max, b.legendStats.max)
-        case "avg"    => (a, b) => compare(useDescending, a.legendStats.avg, b.legendStats.avg)
-        case "count"  => (a, b) => compare(useDescending, a.legendStats.count, b.legendStats.count)
-        case "total"  => (a, b) => compare(useDescending, a.legendStats.total, b.legendStats.total)
-        case "last"   => (a, b) => compare(useDescending, a.legendStats.last, b.legendStats.last)
-        case order    =>
+        case "legend" =>
+          (a, b) =>
+            compare(useDescending, a.data.label, b.data.label)
+        case "min" =>
+          (a, b) =>
+            compare(useDescending, a.legendStats.min, b.legendStats.min)
+        case "max" =>
+          (a, b) =>
+            compare(useDescending, a.legendStats.max, b.legendStats.max)
+        case "avg" =>
+          (a, b) =>
+            compare(useDescending, a.legendStats.avg, b.legendStats.avg)
+        case "count" =>
+          (a, b) =>
+            compare(useDescending, a.legendStats.count, b.legendStats.count)
+        case "total" =>
+          (a, b) =>
+            compare(useDescending, a.legendStats.total, b.legendStats.total)
+        case "last" =>
+          (a, b) =>
+            compare(useDescending, a.legendStats.last, b.legendStats.last)
+        case order =>
           warnings += s"Invalid sort mode '$order'. Using default of 'legend'."
-          (a, b) => compare(useDescending, a.data.label, b.data.label)
+          (a, b) =>
+            compare(useDescending, a.data.label, b.data.label)
       }
       lines.sortWith(cmp)
     }
@@ -191,6 +214,7 @@ object GraphEval {
   }
 
   private def compare(desc: Boolean, a: Double, b: Double): Boolean = {
+
     // Note: NaN values are special and should always be sorted last. This is the default
     // behavior of `JDouble.compare` for strictly greater than or less than. However it does
     // mean that you cannot change the order by sorting one way and then reversing because that
@@ -200,6 +224,7 @@ object GraphEval {
   }
 
   private def compare(op: (Double, Double) => Boolean, a: Double, b: Double): Boolean = {
+
     // Do not use op directly because NaN values can cause contract errors with the sort:
     // https://github.com/Netflix/atlas/issues/405
     if (a.isNaN && b.isNaN)
@@ -207,7 +232,7 @@ object GraphEval {
     else if (a.isNaN)
       false // b should come first as it has a value
     else if (b.isNaN)
-      true  // a should come first as it has a value
+      true // a should come first as it has a value
     else
       op(a, b)
   }

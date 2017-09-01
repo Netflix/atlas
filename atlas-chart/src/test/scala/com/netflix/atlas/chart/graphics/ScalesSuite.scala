@@ -17,7 +17,6 @@ package com.netflix.atlas.chart.graphics
 
 import org.scalatest.FunSuite
 
-
 class ScalesSuite extends FunSuite {
 
   test("linear") {

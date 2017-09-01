@@ -89,9 +89,13 @@ class VocabularySuite extends FunSuite {
 }
 
 object VocabularySuite {
+
   object TestVocabulary extends Vocabulary {
+
     def name: String = "test"
+
     def dependsOn: List[Vocabulary] = Nil
+
     def words: List[Word] = List(
       StandardVocabulary.Call,
       StandardVocabulary.Dup

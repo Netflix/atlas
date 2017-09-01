@@ -35,32 +35,35 @@ object StyleVocabulary extends Vocabulary {
 
   val words: List[Word] = List(
     // Adjust the text for the legend
-    Legend, Decode, SearchAndReplace,
-
+    Legend,
+    Decode,
+    SearchAndReplace,
     // Map to a particular axis
     Axis,
-
     // Legacy time shift operator
     // https://github.com/Netflix/atlas/issues/64
     Offset,
-
     // Reducing and ordering the set of data on the chart
     Filter,
-    Sort, Order, Limit,
+    Sort,
+    Order,
+    Limit,
     Macro("head", List(":limit"), List("name,sps,:eq,(,nf.cluster,),:by,2")),
-
     // Operations for manipulating the line style or presentation
-    Alpha, Color, LineStyle, LineWidth,
+    Alpha,
+    Color,
+    LineStyle,
+    LineWidth,
     Macro("area", List("area", ":ls"), List("name,sps,:eq,:sum")),
     Macro("line", List("line", ":ls"), List("name,sps,:eq,:sum")),
     Macro("stack", List("stack", ":ls"), List("name,sps,:eq,(,nf.cluster,),:by")),
     Macro("vspan", List("vspan", ":ls"), List("name,sps,:eq,:sum,:dup,200e3,:gt")),
-
     // Legacy macro for visualizing epic expressions
     Macro("des-epic-viz", desEpicViz, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
   )
 
   sealed trait StyleWord extends SimpleWord {
+
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: String) :: PresentationType(_) :: _ => true
     }
@@ -74,6 +77,7 @@ object StyleVocabulary extends Vocabulary {
   }
 
   case object Alpha extends SimpleWord {
+
     override def name: String = "alpha"
 
     override def summary: String =
@@ -112,6 +116,7 @@ object StyleVocabulary extends Vocabulary {
   }
 
   case object Color extends SimpleWord {
+
     override def name: String = "color"
 
     override def summary: String =
@@ -144,6 +149,7 @@ object StyleVocabulary extends Vocabulary {
   }
 
   case object LineStyle extends StyleWord {
+
     override def name: String = "ls"
 
     override def summary: String =
@@ -158,14 +164,17 @@ object StyleVocabulary extends Vocabulary {
         |See the [line style examples](Line-Styles) page for more information.
       """.stripMargin.trim
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,:sum,(,name,),:by,line",
-      "name,sps,:eq,:sum,(,name,),:by,area",
-      "name,sps,:eq,:sum,(,name,),:by,stack",
-      "name,sps,:eq,:sum,(,name,),:by,200e3,:gt,vspan")
+    override def examples: List[String] =
+      List(
+        "name,sps,:eq,:sum,(,name,),:by,line",
+        "name,sps,:eq,:sum,(,name,),:by,area",
+        "name,sps,:eq,:sum,(,name,),:by,stack",
+        "name,sps,:eq,:sum,(,name,),:by,200e3,:gt,vspan"
+      )
   }
 
   case object LineWidth extends StyleWord {
+
     override def name: String = "lw"
 
     override def summary: String =
@@ -177,6 +186,7 @@ object StyleVocabulary extends Vocabulary {
   }
 
   case object Axis extends StyleWord {
+
     override def name: String = "axis"
 
     override def summary: String =
@@ -188,6 +198,7 @@ object StyleVocabulary extends Vocabulary {
   }
 
   case object Offset extends SimpleWord {
+
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case StringListType(_) :: PresentationType(_) :: _ => true
     }
@@ -215,11 +226,12 @@ object StyleVocabulary extends Vocabulary {
   }
 
   object Filter extends Word {
+
     override def name: String = "filter"
 
     override def matches(stack: List[Any]): Boolean = stack match {
       case TimeSeriesType(_) :: (_: StyleExpr) :: _ => true
-      case _ => false
+      case _                                        => false
     }
 
     override def execute(context: Context): Context = {
@@ -242,8 +254,8 @@ object StyleVocabulary extends Vocabulary {
 
     override def signature: String = "StyleExpr TimeSeriesExpr -- StyleExpr"
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,:sum,(,nf.cluster,),:by,$nf.cluster,:legend,:stat-max,30e3,:gt")
+    override def examples: List[String] =
+      List("name,sps,:eq,:sum,(,nf.cluster,),:by,$nf.cluster,:legend,:stat-max,30e3,:gt")
   }
 
   //
@@ -251,6 +263,7 @@ object StyleVocabulary extends Vocabulary {
   //
 
   case object Legend extends StyleWord {
+
     override def name: String = "legend"
 
     override def summary: String =
@@ -267,14 +280,17 @@ object StyleVocabulary extends Vocabulary {
         |used for the underlying data.
       """.stripMargin.trim
 
-    override def examples: List[String] = List(
-      s"name,sps,:eq,(,name,),:by,$$name",
-      s"name,sps,:eq,(,nf.cluster,),:by,cluster+$$nf.cluster",
-      s"name,sps,:eq,(,name,),:by,$$(unknown)",
-      s"name,sps,:eq,:sum,1w,:offset,$$(name)+$$(atlas.offset)")
+    override def examples: List[String] =
+      List(
+        s"name,sps,:eq,(,name,),:by,$$name",
+        s"name,sps,:eq,(,nf.cluster,),:by,cluster+$$nf.cluster",
+        s"name,sps,:eq,(,name,),:by,$$(unknown)",
+        s"name,sps,:eq,:sum,1w,:offset,$$(name)+$$(atlas.offset)"
+      )
   }
 
   case object Decode extends SimpleWord {
+
     override def name: String = "decode"
 
     override def signature: String = "TimeSeriesExpr String -- StyleExpr"
@@ -318,6 +334,7 @@ object StyleVocabulary extends Vocabulary {
   }
 
   case object SearchAndReplace extends SimpleWord {
+
     override def name: String = "s"
 
     override def signature: String = "TimeSeriesExpr s:String r:String -- StyleExpr"
@@ -361,6 +378,7 @@ object StyleVocabulary extends Vocabulary {
   //
 
   case object Sort extends StyleWord {
+
     override def name: String = "sort"
 
     override def summary: String =
@@ -373,12 +391,15 @@ object StyleVocabulary extends Vocabulary {
         |Since: 1.5
       """.stripMargin.trim
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,:sum,(,nf.cluster,),:by,max",
-      "name,sps,:eq,:sum,(,nf.cluster,),:by,legend")
+    override def examples: List[String] =
+      List(
+        "name,sps,:eq,:sum,(,nf.cluster,),:by,max",
+        "name,sps,:eq,:sum,(,nf.cluster,),:by,legend"
+      )
   }
 
   case object Order extends StyleWord {
+
     override def name: String = "order"
 
     override def summary: String =
@@ -389,12 +410,15 @@ object StyleVocabulary extends Vocabulary {
         |Since: 1.5
       """.stripMargin.trim
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,asc",
-      "name,sps,:eq,:sum,(,nf.cluster,),:by,desc")
+    override def examples: List[String] =
+      List(
+        "name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,asc",
+        "name,sps,:eq,:sum,(,nf.cluster,),:by,desc"
+      )
   }
 
   case object Limit extends StyleWord {
+
     override def name: String = "limit"
 
     override def summary: String =
@@ -405,9 +429,11 @@ object StyleVocabulary extends Vocabulary {
         |Since: 1.6
       """.stripMargin.trim
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,:sum,(,nf.cluster,),:by,3",
-      "name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order,2")
+    override def examples: List[String] =
+      List(
+        "name,sps,:eq,:sum,(,nf.cluster,),:by,3",
+        "name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order,2"
+      )
   }
 
   //
@@ -417,18 +443,34 @@ object StyleVocabulary extends Vocabulary {
   private def desEpicViz = List(
     // Show signal line as a vertical span
     ":des-epic-signal",
-    ":vspan", "40", ":alpha", "triggered", ":legend",
-
+    ":vspan",
+    "40",
+    ":alpha",
+    "triggered",
+    ":legend",
     // Raw input line
-    "line", ":get", "line", ":legend",
-
+    "line",
+    ":get",
+    "line",
+    ":legend",
     // Lower bounds
-    "minPredNoiseBound", ":get", "minPredNoiseBound", ":legend",
-    "minPredPercentBound", ":get", "minPredPercentBound", ":legend",
-
+    "minPredNoiseBound",
+    ":get",
+    "minPredNoiseBound",
+    ":legend",
+    "minPredPercentBound",
+    ":get",
+    "minPredPercentBound",
+    ":legend",
     // Upper bounds
-    "maxPredNoiseBound", ":get", "maxPredNoiseBound", ":legend",
-    "maxPredPercentBound", ":get", "maxPredPercentBound",":legend"
+    "maxPredNoiseBound",
+    ":get",
+    "maxPredNoiseBound",
+    ":legend",
+    "maxPredPercentBound",
+    ":get",
+    "maxPredPercentBound",
+    ":legend"
   )
 
 }

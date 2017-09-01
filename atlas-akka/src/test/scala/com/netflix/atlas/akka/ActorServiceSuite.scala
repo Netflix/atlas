@@ -30,8 +30,7 @@ class ActorServiceSuite extends FunSuite {
   implicit val timeout = Timeout(5.seconds)
 
   test("simple actor") {
-    val config = ConfigFactory.parseString(
-      s"""
+    val config = ConfigFactory.parseString(s"""
         |atlas.akka.actors = [
         |  {
         |    name = test
@@ -54,8 +53,7 @@ class ActorServiceSuite extends FunSuite {
   }
 
   test("actor with router config") {
-    val config = ConfigFactory.parseString(
-      s"""
+    val config = ConfigFactory.parseString(s"""
          |atlas.akka.actors = [
          |  {
          |    name = test
@@ -86,7 +84,9 @@ class ActorServiceSuite extends FunSuite {
 }
 
 object ActorServiceSuite {
+
   class EchoActor extends Actor {
+
     override def receive: Receive = {
       case v => sender() ! v
     }

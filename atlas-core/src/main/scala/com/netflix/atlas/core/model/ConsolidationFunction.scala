@@ -16,8 +16,11 @@
 package com.netflix.atlas.core.model
 
 sealed trait ConsolidationFunction {
+
   def name: String
+
   def compute(b: Block, pos: Int, aggr: Int, multiple: Int): Double
+
   override def toString: String = s":cf-$name"
 }
 
@@ -27,6 +30,7 @@ object ConsolidationFunction {
   sealed trait SumOrAvgCf extends ConsolidationFunction
 
   case object Avg extends SumOrAvgCf {
+
     def name: String = "avg"
 
     def compute(b: Block, pos: Int, aggr: Int, multiple: Int): Double = {
@@ -50,6 +54,7 @@ object ConsolidationFunction {
   }
 
   case object Sum extends SumOrAvgCf {
+
     def name: String = "sum"
 
     def compute(b: Block, pos: Int, aggr: Int, multiple: Int): Double = {
@@ -70,6 +75,7 @@ object ConsolidationFunction {
   }
 
   case object Min extends ConsolidationFunction {
+
     def name: String = "min"
 
     def compute(b: Block, pos: Int, aggr: Int, multiple: Int): Double = {
@@ -90,6 +96,7 @@ object ConsolidationFunction {
   }
 
   case object Max extends ConsolidationFunction {
+
     def name: String = "max"
 
     def compute(b: Block, pos: Int, aggr: Int, multiple: Int): Double = {

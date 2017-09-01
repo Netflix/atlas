@@ -38,6 +38,7 @@ object ArrayHelper {
   }
 
   def newInstance[T](n: Int): Array[T] = {
+
     // Note, we do a cast here and avoid using RefIntHashMap[T: ClassTag] because
     // the ClassTag seems to add a lot of memory overhead. From jol when using
     // ClassTag:

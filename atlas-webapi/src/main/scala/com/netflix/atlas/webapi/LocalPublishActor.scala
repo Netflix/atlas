@@ -36,7 +36,6 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.BucketCounter
 import com.netflix.spectator.api.histogram.BucketFunctions
 
-
 class LocalPublishActor(registry: Registry, db: Database) extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.PublishApi._
@@ -73,7 +72,7 @@ class LocalPublishActor(registry: Registry, db: Database) extends Actor with Act
 
   private def updateStats(failures: List[ValidationResult]): Unit = {
     failures.foreach {
-      case ValidationResult.Pass           => // Ignored
+      case ValidationResult.Pass => // Ignored
       case ValidationResult.Fail(error, _) =>
         registry.counter(numInvalid.withTag("error", error)).increment()
     }
@@ -97,7 +96,8 @@ object LocalPublishActor {
   private[webapi] class DatapointProcessor(
     registry: Registry,
     memDb: MemoryDatabase,
-    maxMessageIds: Int = 1000000) {
+    maxMessageIds: Int = 1000000
+  ) {
 
     // Track the ages of data flowing into the system. Data is expected to arrive quickly and
     // should hit the backend within the step interval used.
@@ -109,6 +109,7 @@ object LocalPublishActor {
     // Track the messages that have already been processed. This is primarily to avoid over
     // counting when computing inline rollups.
     private val messageIds = new java.util.LinkedHashMap[String, String](16, 0.75f, true) {
+
       override def removeEldestEntry(eldest: java.util.Map.Entry[String, String]): Boolean = {
         size() > maxMessageIds
       }
@@ -123,6 +124,7 @@ object LocalPublishActor {
     private val cache = new NormalizationCache(DefaultSettings.stepSize, memDb.update)
 
     def update(id: String, vs: List[Datapoint]): Unit = {
+
       // Duplicate messages should be rare, so we assume that put is the common
       // case and do that up front rather than doing a separate check to see if
       // the set contains the key
@@ -148,4 +150,3 @@ object LocalPublishActor {
 
   }
 }
-

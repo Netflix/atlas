@@ -35,9 +35,10 @@ abstract class BaseExamplesSuite extends FunSuite {
     if (ex.startsWith("UNK:")) {
       test(s"noException -- $ex,:${w.name}") {
         val prg = ex.substring("UNK:".length)
-        try interpreter.execute(s"$prg,:${w.name}") catch {
+        try interpreter.execute(s"$prg,:${w.name}")
+        catch {
           case e: IllegalArgumentException if e.getMessage.startsWith("unknown word ") =>
-          case e: Exception => throw e
+          case e: Exception                                                            => throw e
         }
       }
     } else if (ex.startsWith("ERROR:")) {
@@ -72,4 +73,3 @@ abstract class BaseExamplesSuite extends FunSuite {
     }
   }
 }
-

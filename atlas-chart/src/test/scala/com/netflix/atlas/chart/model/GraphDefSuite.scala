@@ -20,7 +20,6 @@ import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import org.scalatest.FunSuite
 
-
 class GraphDefSuite extends FunSuite {
 
   val step = 60000
@@ -32,8 +31,9 @@ class GraphDefSuite extends FunSuite {
   def constantSeriesDef(value: Double): LineDef = LineDef(constant(value))
 
   def label(vs: LineDef*): List[LineDef] = {
-    vs.toList.zipWithIndex.map { case (v, i) =>
-      v.copy(data = v.data.withLabel(i.toString), color = Palette.default.colors(i))
+    vs.toList.zipWithIndex.map {
+      case (v, i) =>
+        v.copy(data = v.data.withLabel(i.toString), color = Palette.default.colors(i))
     }
   }
 
@@ -41,6 +41,5 @@ class GraphDefSuite extends FunSuite {
     expected.stripMargin.split("\n").mkString("")
   }
 
-  test("to_from_json") {
-  }
+  test("to_from_json") {}
 }

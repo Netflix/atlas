@@ -26,10 +26,9 @@ import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
 import org.scalatest.Assertions
 
-
 /**
- * Helper assertions for working with graphs.
- */
+  * Helper assertions for working with graphs.
+  */
 class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
 
   private def getInputStream(file: String): InputStream = {
@@ -107,7 +106,8 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
 
   def assertEquals(i1: PngImage, f: String, bless: Boolean = false) {
     if (bless) blessImage(i1, f)
-    val i2 = try getImage(f) catch {
+    val i2 = try getImage(f)
+    catch {
       case e: FileNotFoundException => PngImage.error(e.getMessage, 400, 300)
     }
     val diff = PngImage.diff(i1.data, i2.data)
@@ -149,6 +149,7 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
     val file = new File(new File(dir), f)
     file.getParentFile.mkdirs()
     val stream = new FileOutputStream(file)
-    try stream.write(s.getBytes("UTF-8")) finally stream.close()
+    try stream.write(s.getBytes("UTF-8"))
+    finally stream.close()
   }
 }

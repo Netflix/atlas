@@ -22,24 +22,24 @@ object TimeWave {
   private val cache = new ConcurrentHashMap[(Long, Long), TimeWave]
 
   /**
-   * Get a cached instance of the time wave function for a given wavelength and step. This should
-   * be used where possible to avoid using lots of memory for the precomputed sine values.
-   */
+    * Get a cached instance of the time wave function for a given wavelength and step. This should
+    * be used where possible to avoid using lots of memory for the precomputed sine values.
+    */
   def get(wavelength: Duration, step: Long): TimeWave = {
     cache.computeIfAbsent(wavelength.toMillis -> step, _ => TimeWave(wavelength, step))
   }
 }
 
 /**
- * Sine function based on timestamps. The sine values will be pre-computed for a single wavelength
- * and then looked up for all others. This can be significantly faster than using the sine function
- * directly for longer spans.
- *
- * @param wavelength
- *     Span of time for the repeating pattern of the wave.
- * @param step
- *     How often to compute the sine value within the wavelength.
- */
+  * Sine function based on timestamps. The sine values will be pre-computed for a single wavelength
+  * and then looked up for all others. This can be significantly faster than using the sine function
+  * directly for longer spans.
+  *
+  * @param wavelength
+  *     Span of time for the repeating pattern of the wave.
+  * @param step
+  *     How often to compute the sine value within the wavelength.
+  */
 case class TimeWave(wavelength: Duration, step: Long) extends Function1[Long, Double] {
 
   private val length = (wavelength.toMillis / step).toInt

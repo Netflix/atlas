@@ -25,14 +25,16 @@ import scala.util.Try
 object ModelExtractors {
 
   case object DurationType {
+
     def unapply(value: Any): Option[Duration] = value match {
-      case v: String         => Try(Strings.parseDuration(v)).toOption
-      case v: Duration       => Some(v)
-      case _                 => None
+      case v: String   => Try(Strings.parseDuration(v)).toOption
+      case v: Duration => Some(v)
+      case _           => None
     }
   }
 
   case object StringListType {
+
     def unapply(value: Any): Option[List[String]] = value match {
       case vs: List[_] if vs.forall(_.isInstanceOf[String]) => Some(vs.asInstanceOf[List[String]])
       case _                                                => None
@@ -40,6 +42,7 @@ object ModelExtractors {
   }
 
   case object DoubleListType {
+
     def unapply(value: Any): Option[List[Double]] = value match {
       case StringListType(vs) => Try(vs.map(_.toDouble)).toOption
       case _                  => None
@@ -47,6 +50,7 @@ object ModelExtractors {
   }
 
   case object AggrType {
+
     def unapply(value: Any): Option[AggregateFunction] = value match {
       case v: Query             => Some(DataExpr.Sum(v))
       case v: AggregateFunction => Some(v)
@@ -55,14 +59,16 @@ object ModelExtractors {
   }
 
   case object DataExprType {
+
     def unapply(value: Any): Option[DataExpr] = value match {
-      case v: Query      => Some(DataExpr.Sum(v))
-      case v: DataExpr   => Some(v)
-      case _             => None
+      case v: Query    => Some(DataExpr.Sum(v))
+      case v: DataExpr => Some(v)
+      case _           => None
     }
   }
 
   case object TimeSeriesType {
+
     def unapply(value: Any): Option[TimeSeriesExpr] = value match {
       case v: String if Try(v.toDouble).isSuccess => Some(MathExpr.Constant(v.toDouble))
       case v: Query                               => Some(DataExpr.Sum(v))
@@ -72,6 +78,7 @@ object ModelExtractors {
   }
 
   case object PresentationType {
+
     def unapply(value: Any): Option[StyleExpr] = value match {
       case TimeSeriesType(t) => Some(StyleExpr(t, Map.empty))
       case s: StyleExpr      => Some(s)

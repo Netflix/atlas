@@ -29,15 +29,19 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import com.fasterxml.jackson.datatype.joda.JodaModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
-
 object Json {
 
   final class Decoder[T: Manifest](reader: ObjectReader, factory: JsonFactory) {
 
     def decode(json: Array[Byte]): T = decode(factory.createParser(json))
-    def decode(json: Array[Byte], offset: Int, length: Int): T = decode(factory.createParser(json, offset, length))
+
+    def decode(json: Array[Byte], offset: Int, length: Int): T =
+      decode(factory.createParser(json, offset, length))
+
     def decode(json: String): T = decode(factory.createParser(json))
+
     def decode(input: InputStream): T = decode(factory.createParser(input))
+
     def decode(input: Reader): T = decode(factory.createParser(input))
 
     def decode(parser: JsonParser): T = {
@@ -145,12 +149,14 @@ object Json {
     val url = getClass.getClassLoader.getResource(name)
     require(url != null, s"could not find resource: $name")
     val input = url.openStream()
-    try decode[T](input) finally input.close()
+    try decode[T](input)
+    finally input.close()
   }
 
   def decode[T: Manifest](json: Array[Byte]): T = decoder[T].decode(json)
 
-  def decode[T: Manifest](json: Array[Byte], offset: Int, length: Int): T = decoder[T].decode(json, offset, length)
+  def decode[T: Manifest](json: Array[Byte], offset: Int, length: Int): T =
+    decoder[T].decode(json, offset, length)
 
   def decode[T: Manifest](json: String): T = decoder[T].decode(json)
 

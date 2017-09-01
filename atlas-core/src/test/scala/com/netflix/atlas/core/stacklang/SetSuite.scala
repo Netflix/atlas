@@ -22,7 +22,7 @@ class SetSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.Set
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a,b" -> List.empty[Any],
+    "a,b"   -> List.empty[Any],
     "a,b,c" -> List("a")
   )
 

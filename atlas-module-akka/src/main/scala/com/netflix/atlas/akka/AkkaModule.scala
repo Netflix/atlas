@@ -31,6 +31,7 @@ import com.typesafe.config.Config
   * are available for [[com.typesafe.config.Config]] and [[com.netflix.spectator.api.Registry]].
   */
 final class AkkaModule extends AbstractModule {
+
   override def configure(): Unit = {
     install(new LifecycleModule)
     val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
@@ -38,13 +39,15 @@ final class AkkaModule extends AbstractModule {
     serviceBinder.addBinding().to(classOf[WebServer])
   }
 
-  @Provides @Singleton
+  @Provides
+  @Singleton
   protected def providesActorSystem(config: Config): ActorSystem = {
     val name = config.getString("atlas.akka.name")
     ActorSystem(name, config)
   }
 
-  @Provides @Singleton
+  @Provides
+  @Singleton
   protected def providesActorRefFactory(system: ActorSystem): ActorRefFactory = system
 
   override def equals(obj: Any): Boolean = {
@@ -53,4 +56,3 @@ final class AkkaModule extends AbstractModule {
 
   override def hashCode(): Int = getClass.hashCode()
 }
-

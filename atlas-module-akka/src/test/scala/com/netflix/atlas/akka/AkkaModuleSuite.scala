@@ -28,8 +28,7 @@ import org.scalatest.FunSuite
 
 class AkkaModuleSuite extends FunSuite {
 
-  private val testCfg = ConfigFactory.parseString(
-    """
+  private val testCfg = ConfigFactory.parseString("""
       |atlas.akka.name = test
       |atlas.akka.port = 0
       |atlas.akka.actors = []
@@ -37,6 +36,7 @@ class AkkaModuleSuite extends FunSuite {
 
   test("load module") {
     val deps = new AbstractModule {
+
       override def configure(): Unit = {
         bind(classOf[Config]).toInstance(testCfg.withFallback(ConfigFactory.load()))
         bind(classOf[Registry]).toInstance(new NoopRegistry)

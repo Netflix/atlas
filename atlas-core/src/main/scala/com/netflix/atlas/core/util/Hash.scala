@@ -20,7 +20,6 @@ import java.security.MessageDigest
 
 import scala.util.Try
 
-
 object Hash {
 
   // Seeing contention on MessageDigest.getInstance, following pattern used by jruby:

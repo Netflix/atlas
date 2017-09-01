@@ -16,7 +16,7 @@
 package com.netflix.atlas.chart
 
 /**
- * Simple text output using tab as separators. The content-type is also set to `text/plain` to
- * make it more likely to render locally in a browser rather than treated as a download.
- */
+  * Simple text output using tab as separators. The content-type is also set to `text/plain` to
+  * make it more likely to render locally in a browser rather than treated as a download.
+  */
 class TabSepGraphEngine extends CsvGraphEngine("txt", "text/plain", "\t")

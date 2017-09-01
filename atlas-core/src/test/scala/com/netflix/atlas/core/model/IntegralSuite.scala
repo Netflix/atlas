@@ -48,4 +48,3 @@ class IntegralSuite extends FunSuite {
     assert(eval(input, 6).data === ts(Double.NaN, 35.0, 35.0, 35.0, -6.0, -3.0).data)
   }
 }
-

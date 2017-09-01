@@ -25,7 +25,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
 
-
 class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
 
   import CustomDirectives._
@@ -58,9 +57,9 @@ class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
     accessLog {
       path("chunked") {
         get {
-            val source = Source
-              .single(ChunkStreamPart("start"))
-              .concat(Source((1 until 42).map(i => ChunkStreamPart(i.toString)).toList))
+          val source = Source
+            .single(ChunkStreamPart("start"))
+            .concat(Source((1 until 42).map(i => ChunkStreamPart(i.toString)).toList))
           val entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, source)
           complete(HttpResponse(status = OK, entity = entity))
         }

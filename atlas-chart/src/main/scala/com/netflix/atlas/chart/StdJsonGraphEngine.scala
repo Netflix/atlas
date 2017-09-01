@@ -16,12 +16,13 @@
 package com.netflix.atlas.chart
 
 /**
- * Json output format that quotes non-numeric values like NaN and Infinity. Historically we
- * have always emitted them unquoted, but that is not standard JSON and so it creates issues with
- * some parsers. To avoid breaking backwards compatibility the existing "json" type will not
- * change, but this class adds a "std.json" type. The non-compatible json will not be used on
- * any v2 endpoints.
- */
+  * Json output format that quotes non-numeric values like NaN and Infinity. Historically we
+  * have always emitted them unquoted, but that is not standard JSON and so it creates issues with
+  * some parsers. To avoid breaking backwards compatibility the existing "json" type will not
+  * change, but this class adds a "std.json" type. The non-compatible json will not be used on
+  * any v2 endpoints.
+  */
 class StdJsonGraphEngine extends JsonGraphEngine(true) {
+
   override def name: String = "std.json"
 }

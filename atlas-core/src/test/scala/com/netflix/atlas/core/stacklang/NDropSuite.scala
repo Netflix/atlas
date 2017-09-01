@@ -22,7 +22,7 @@ class NDropSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.NDrop
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a,0" -> List("a"),
+    "a,0"   -> List("a"),
     "a,b,1" -> List("a"),
     "a,b,2" -> Nil
   )

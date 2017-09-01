@@ -28,7 +28,8 @@ class ByteStringInputStream(buf: ByteString) extends InputStream {
   private[this] var pos: Int = 0
 
   override def read(): Int = {
-    if (pos >= n) -1 else {
+    if (pos >= n) -1
+    else {
       val i = pos
       pos += 1
       buf(i)

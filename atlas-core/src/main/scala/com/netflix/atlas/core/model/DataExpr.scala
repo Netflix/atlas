@@ -23,8 +23,11 @@ import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.Strings
 
 sealed trait DataExpr extends TimeSeriesExpr {
+
   def query: Query
+
   def cf: ConsolidationFunction
+
   def offset: Duration
 
   def dataExprs: List[DataExpr] = List(this)
@@ -41,7 +44,8 @@ sealed trait DataExpr extends TimeSeriesExpr {
     ts.map { t =>
       val offsetStr = Strings.toString(offset)
       val label = if (offset.isZero) t.label else s"${t.label} (offset=$offsetStr)"
-      if (step == t.data.step) t.withLabel(label) else {
+      if (step == t.data.step) t.withLabel(label)
+      else {
         TimeSeries(t.tags, label, new MapStepTimeSeq(t.data, step, cf))
       }
     }
@@ -85,6 +89,7 @@ object DataExpr {
     * is missing from the tags, then it will return null.
     */
   def keyString(keys: List[String], tags: Map[String, String]): String = {
+
     // 32 is typically big enough to prevent a resize with a single key
     val builder = new StringBuilder(32 * keys.size)
     builder.append('(')
@@ -98,8 +103,11 @@ object DataExpr {
   }
 
   case class All(query: Query, offset: Duration = Duration.ZERO) extends DataExpr {
+
     def cf: ConsolidationFunction = ConsolidationFunction.Sum
+
     override def withOffset(d: Duration): All = copy(offset = d)
+
     override def exprString: String = s"$query,:all"
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
@@ -109,17 +117,20 @@ object DataExpr {
   }
 
   sealed trait AggregateFunction extends DataExpr with BinaryOp {
+
     def labelString: String
 
     def withConsolidation(f: ConsolidationFunction): AggregateFunction
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       val filtered = data.filter(t => query.matches(t.tags))
-      val aggr = if (filtered.isEmpty) TimeSeries.noData(query, context.step) else {
-        val tags = commonTags(filtered.head.tags)
-        val t = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
-        TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
-      }
+      val aggr =
+        if (filtered.isEmpty) TimeSeries.noData(query, context.step)
+        else {
+          val tags = commonTags(filtered.head.tags)
+          val t = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+          TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
+        }
       val rs = consolidate(context.step, List(aggr))
       ResultSet(this, rs, context.state)
     }
@@ -131,13 +142,14 @@ object DataExpr {
   }
 
   case class Sum(
-      query: Query,
-      cf: SumOrAvgCf = ConsolidationFunction.Avg,
-      offset: Duration = Duration.ZERO) extends AggregateFunction {
+    query: Query,
+    cf: SumOrAvgCf = ConsolidationFunction.Avg,
+    offset: Duration = Duration.ZERO
+  ) extends AggregateFunction {
 
     override def withConsolidation(f: ConsolidationFunction): AggregateFunction = f match {
       case v: SumOrAvgCf => copy(cf = v)
-      case v             => Consolidation(copy(query = query, offset= offset), v)
+      case v             => Consolidation(copy(query = query, offset = offset), v)
     }
 
     override def withOffset(d: Duration): Sum = copy(offset = d)
@@ -152,26 +164,29 @@ object DataExpr {
   }
 
   case class Count(
-      query: Query,
-      cf: SumOrAvgCf = ConsolidationFunction.Avg,
-      offset: Duration = Duration.ZERO) extends AggregateFunction {
+    query: Query,
+    cf: SumOrAvgCf = ConsolidationFunction.Avg,
+    offset: Duration = Duration.ZERO
+  ) extends AggregateFunction {
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       val filtered = data.filter(t => query.matches(t.tags)).map { t =>
         TimeSeries(t.tags, t.label, t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0))
       }
-      val aggr = if (filtered.isEmpty) TimeSeries.noData(query, context.step) else {
-        val tags = commonTags(filtered.head.tags)
-        val t = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
-        TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
-      }
+      val aggr =
+        if (filtered.isEmpty) TimeSeries.noData(query, context.step)
+        else {
+          val tags = commonTags(filtered.head.tags)
+          val t = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+          TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
+        }
       val rs = consolidate(context.step, List(aggr))
       ResultSet(this, rs, context.state)
     }
 
     override def withConsolidation(f: ConsolidationFunction): AggregateFunction = f match {
       case v: SumOrAvgCf => copy(cf = v)
-      case v             => Consolidation(copy(query = query, offset= offset), v)
+      case v             => Consolidation(copy(query = query, offset = offset), v)
     }
 
     override def withOffset(d: Duration): Count = copy(offset = d)
@@ -186,6 +201,7 @@ object DataExpr {
   }
 
   case class Min(query: Query, offset: Duration = Duration.ZERO) extends AggregateFunction {
+
     def cf: ConsolidationFunction = ConsolidationFunction.Min
 
     override def withConsolidation(f: ConsolidationFunction): AggregateFunction = {
@@ -202,6 +218,7 @@ object DataExpr {
   }
 
   case class Max(query: Query, offset: Duration = Duration.ZERO) extends AggregateFunction {
+
     def cf: ConsolidationFunction = ConsolidationFunction.Max
 
     override def withConsolidation(f: ConsolidationFunction): AggregateFunction = {
@@ -225,6 +242,7 @@ object DataExpr {
     }
 
     def query: Query = af.query
+
     def offset: Duration = af.offset
 
     override def withConsolidation(f: ConsolidationFunction): AggregateFunction = {
@@ -238,12 +256,16 @@ object DataExpr {
     def labelString: String = af.labelString
 
     override def exprString: String = s"$af,$cf"
+
     def apply(v1: Double, v2: Double): Double = af(v1, v2)
   }
 
   case class GroupBy(af: AggregateFunction, keys: List[String]) extends DataExpr {
+
     def query: Query = af.query
+
     def cf: ConsolidationFunction = af.cf
+
     def offset: Duration = af.offset
 
     override def withOffset(d: Duration): GroupBy = {
@@ -269,7 +291,7 @@ object DataExpr {
       val newData = sorted.flatMap {
         case (null, _) => Nil
         case (k, Nil)  => List(TimeSeries.noData(query, context.step))
-        case (k, ts)   =>
+        case (k, ts) =>
           val tags = ts.head.tags.filter(e => ks.contains(e._1))
           af.eval(context, ts).data.map { t =>
             TimeSeries(tags, k, t.data)

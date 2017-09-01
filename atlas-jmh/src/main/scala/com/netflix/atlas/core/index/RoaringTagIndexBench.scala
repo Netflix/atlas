@@ -77,7 +77,7 @@ class RoaringTagIndexBench {
 
   private val items = (0 until 10000).map { i =>
     val id = UUID.randomUUID().toString
-    BasicTaggedItem(SmallHashMap(baseId ++ Map("nf.node" -> id)))//, i.toString -> id))
+    BasicTaggedItem(SmallHashMap(baseId ++ Map("nf.node" -> id))) //, i.toString -> id))
   }
 
   private val index = new RoaringTagIndex[BasicTaggedItem](items.toArray)

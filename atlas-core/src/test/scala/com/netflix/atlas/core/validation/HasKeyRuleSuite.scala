@@ -18,7 +18,6 @@ package com.netflix.atlas.core.validation
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class HasKeyRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("key = name")

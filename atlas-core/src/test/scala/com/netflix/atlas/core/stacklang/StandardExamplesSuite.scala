@@ -16,5 +16,6 @@
 package com.netflix.atlas.core.stacklang
 
 class StandardExamplesSuite extends BaseExamplesSuite {
+
   override def vocabulary: Vocabulary = StandardVocabulary
 }

@@ -40,8 +40,7 @@ class MetricDefinitionSuite extends FunSuite {
   }
 
   test("config with no tags") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |name = "RequestCount"
         |alias = "aws.elb.requests"
         |conversion = "sum,rate"
@@ -54,8 +53,7 @@ class MetricDefinitionSuite extends FunSuite {
   }
 
   test("config for timer") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |name = "Latency"
         |alias = "aws.elb.latency"
         |conversion = "timer"
@@ -90,8 +88,7 @@ class MetricDefinitionSuite extends FunSuite {
   }
 
   test("config for timer-millis no unit") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |name = "Latency"
         |alias = "aws.elb.latency"
         |conversion = "timer-millis"
@@ -126,8 +123,7 @@ class MetricDefinitionSuite extends FunSuite {
   }
 
   test("config for timer-millis correct unit") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |name = "Latency"
         |alias = "aws.elb.latency"
         |conversion = "timer-millis"
@@ -162,8 +158,7 @@ class MetricDefinitionSuite extends FunSuite {
   }
 
   test("config for dist-summary") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |name = "Latency"
         |alias = "aws.elb.latency"
         |conversion = "dist-summary"

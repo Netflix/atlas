@@ -20,18 +20,18 @@ import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.spectator.api.Clock
 
-
 class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = Clock.SYSTEM) {
 
   /**
-   * For small step sizes use a fixed two minute heartbeat as reporting can be irregular, for
-   * larger step size allow one sample to be missed.
-   */
+    * For small step sizes use a fixed two minute heartbeat as reporting can be irregular, for
+    * larger step size allow one sample to be missed.
+    */
   private val heartbeat = if (step < 60000) 120000 else 2 * step
 
   type CacheEntry = java.util.Map.Entry[TaggedItem, CacheValue]
 
   private val counterCache = new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
+
     override def removeEldestEntry(eldest: CacheEntry): Boolean = {
       val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
       ageMillis > 4 * step
@@ -39,6 +39,7 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
   }
 
   private val rateCache = new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
+
     override def removeEldestEntry(eldest: CacheEntry): Boolean = {
       val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
       ageMillis > 4 * step
@@ -46,6 +47,7 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
   }
 
   private val gaugeCache = new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
+
     override def removeEldestEntry(eldest: CacheEntry): Boolean = {
       val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
       ageMillis > 4 * step

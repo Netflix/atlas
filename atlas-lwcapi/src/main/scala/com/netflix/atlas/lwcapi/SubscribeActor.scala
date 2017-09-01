@@ -35,11 +35,14 @@ import scala.util.control.NonFatal
 class SubscribeActor @Inject()(
   sm: ActorSubscriptionManager,
   splitter: ExpressionSplitter,
-  registry: Registry) extends Actor with StrictLogging {
+  registry: Registry
+) extends Actor
+    with StrictLogging {
 
   import com.netflix.atlas.lwcapi.SubscribeApi._
 
   case class ErrorMsg(expression: String, message: String)
+
   case class Errors(`type`: String, message: String, errors: List[ErrorMsg]) extends JsonSupport
 
   private val evalsId = registry.createId("atlas.lwcapi.subscribe.count")

@@ -22,6 +22,7 @@ import com.netflix.atlas.json.JsonSupport
   * Chunk of data for LWC and fetch responses.
   */
 sealed trait ChunkData extends JsonSupport {
+
   def typeName: String
 }
 
@@ -34,6 +35,7 @@ sealed trait ChunkData extends JsonSupport {
   *     Time series values assocated with a [[TimeSeriesMessage]].
   */
 final case class ArrayData(values: Array[Double]) extends ChunkData {
+
   def typeName: String = "array"
 
   override def encode(gen: JsonGenerator) {
@@ -53,6 +55,7 @@ final case class ArrayData(values: Array[Double]) extends ChunkData {
   override def toString: String = values.mkString("ArrayData(", ",", ")")
 
   override def equals(other: Any): Boolean = {
+
     // Follows guidelines from: http://www.artima.com/pins1ed/object-equality.html#28.4
     other match {
       case that: ArrayData =>

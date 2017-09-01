@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.stacklang
 
-
 object StandardVocabulary extends Vocabulary {
 
   val name: String = "std"
@@ -42,11 +41,9 @@ object StandardVocabulary extends Vocabulary {
     Set,
     Swap,
     ToList,
-
     Macro("2over", List(":over", ":over"), List("a,b")),
     Macro("nip", List(":swap", ":drop"), List("a,b")),
     Macro("tuck", List(":swap", ":over"), List("a,b")),
-
     Macro("fcall", List(":get", ":call"), List("duplicate,(,:dup,),:set,a,duplicate")),
     Macro("sset", List(":swap", ":set"), List("a,b"))
   )
@@ -72,6 +69,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Pop a list off the stack and execute it as a program. */
   case object Call extends Word {
+
     override def name: String = "call"
 
     override def matches(stack: List[Any]): Boolean = stack match {
@@ -99,6 +97,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Remove all items from the stack. */
   case object Clear extends SimpleWord {
+
     override def name: String = "clear"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
@@ -117,11 +116,13 @@ object StandardVocabulary extends Vocabulary {
 
   /** Compute the depth of the stack. */
   case object Depth extends SimpleWord {
+
     override def name: String = "depth"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
+
       // The depth is pushed as a string because we don't currently have a way to indicate the
       // type. The IntType extractor will match the string for operations that need to extract
       // and int.
@@ -142,6 +143,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Remove the item on the top of the stack. */
   case object Drop extends SimpleWord {
+
     override def name: String = "drop"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case vs => vs.nonEmpty }
@@ -162,6 +164,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Duplicate the item on the top of the stack. */
   case object Dup extends SimpleWord {
+
     override def name: String = "dup"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case vs => vs.nonEmpty }
@@ -182,6 +185,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** For each item in a list push it on the stack and apply a function. */
   case object Each extends Word {
+
     override def name: String = "each"
 
     override def matches(stack: List[Any]): Boolean = stack match {
@@ -211,6 +215,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Format a string. */
   case object Format extends SimpleWord {
+
     override def name: String = "format"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -235,6 +240,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Get the value of a variable and push it on the stack. */
   case object Get extends Word {
+
     override def name: String = "get"
 
     override def matches(stack: List[Any]): Boolean = stack match {
@@ -261,6 +267,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Pick an item in the stack and put a copy on the top. */
   case object Pick extends SimpleWord {
+
     override def name: String = "pick"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -285,6 +292,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Create a new list by applying a function to all elements of a list. */
   case object Map extends Word {
+
     override def name: String = "map"
 
     override def matches(stack: List[Any]): Boolean = stack match {
@@ -296,9 +304,10 @@ object StandardVocabulary extends Vocabulary {
       context.stack match {
         case (f: List[_]) :: (vs: List[_]) :: stack =>
           val init = context.copy(stack = stack)
-          val res = vs.foldLeft(List.empty[Any] -> init) { case ((rs, c), v) =>
-            val rc = c.interpreter.execute(f, c.copy(stack = v :: c.stack))
-            (rc.stack.head :: rs) -> rc.copy(stack = rc.stack.tail)
+          val res = vs.foldLeft(List.empty[Any] -> init) {
+            case ((rs, c), v) =>
+              val rc = c.interpreter.execute(f, c.copy(stack = v :: c.stack))
+              (rc.stack.head :: rs) -> rc.copy(stack = rc.stack.tail)
           }
           res._2.copy(stack = res._1.reverse :: res._2.stack)
         case _ => invalidStack
@@ -317,6 +326,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Drop the top N items from the stack. */
   case object NDrop extends SimpleWord {
+
     override def name: String = "ndrop"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -341,6 +351,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Create a list with the top N items from the stack. */
   case object NList extends SimpleWord {
+
     override def name: String = "nlist"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -365,6 +376,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Copy the item in the second position on the stack to the top. */
   case object Over extends SimpleWord {
+
     override def name: String = "over"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -387,6 +399,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Rotate an item in the stack and put it on the top. */
   case object Roll extends SimpleWord {
+
     override def name: String = "roll"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -412,6 +425,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Rotate the stack so that the item at the bottom is now at the top. */
   case object Rot extends SimpleWord {
+
     override def name: String = "rot"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case vs => vs.nonEmpty }
@@ -432,6 +446,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Rotate the stack so that the item at the top is now at the bottom. */
   case object ReverseRot extends SimpleWord {
+
     override def name: String = "-rot"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case vs => vs.nonEmpty }
@@ -452,6 +467,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Set the value of a variable. */
   case object Set extends Word {
+
     override def name: String = "set"
 
     override def matches(stack: List[Any]): Boolean = stack match {
@@ -479,6 +495,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Swap the top two items on the stack. */
   case object Swap extends SimpleWord {
+
     override def name: String = "swap"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -501,6 +518,7 @@ object StandardVocabulary extends Vocabulary {
 
   /** Pop all items off the stack and push them as a list. */
   case object ToList extends Word {
+
     override def name: String = "list"
 
     override def matches(stack: List[Any]): Boolean = true

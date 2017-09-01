@@ -28,6 +28,7 @@ import com.netflix.iep.aws.AwsModule
   * Configures the binding for the cloudwatch client and poller.
   */
 final class CloudWatchModule extends AbstractModule {
+
   override def configure(): Unit = {
     install(new AkkaModule)
     install(new AwsModule)

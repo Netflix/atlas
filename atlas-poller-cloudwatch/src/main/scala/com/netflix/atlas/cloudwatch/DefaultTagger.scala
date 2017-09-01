@@ -27,12 +27,14 @@ import com.typesafe.config.Config
 class DefaultTagger(config: Config) extends Tagger {
   import scala.collection.JavaConverters._
 
-  private val mappings: Map[String, String] = config.getConfigList("mappings")
+  private val mappings: Map[String, String] = config
+    .getConfigList("mappings")
     .asScala
     .map(c => c.getString("name") -> c.getString("alias"))
     .toMap
 
-  private val commonTags: Map[String, String] = config.getConfigList("common-tags")
+  private val commonTags: Map[String, String] = config
+    .getConfigList("common-tags")
     .asScala
     .map(c => c.getString("key") -> c.getString("value"))
     .toMap
@@ -45,4 +47,3 @@ class DefaultTagger(config: Config) extends Tagger {
     commonTags ++ dimensions.map(toTag).toMap
   }
 }
-

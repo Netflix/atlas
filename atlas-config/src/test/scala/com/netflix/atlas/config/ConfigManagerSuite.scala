@@ -19,7 +19,6 @@ import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class ConfigManagerSuite extends FunSuite {
   private val home = System.getProperty("user.home")
 
@@ -63,4 +62,3 @@ class ConfigManagerSuite extends FunSuite {
     assert(ConfigManager.current.getInt("test.bar") === 2)
   }
 }
-

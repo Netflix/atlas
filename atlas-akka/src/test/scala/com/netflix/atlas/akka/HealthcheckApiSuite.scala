@@ -27,7 +27,6 @@ import com.netflix.iep.service.ServiceManager
 import com.netflix.iep.service.State
 import org.scalatest.FunSuite
 
-
 class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
@@ -38,13 +37,18 @@ class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
 
   val services = new java.util.HashSet[Service]
   services.add(new Service {
+
     override def state(): State = State.RUNNING
+
     override def name(): String = "test"
+
     override def isHealthy: Boolean = serviceHealth.get()
   })
 
   val serviceManager = new ServiceManager(services)
+
   val provider = new Provider[ServiceManager] {
+
     override def get(): ServiceManager = serviceManager
   }
   val endpoint = new HealthcheckApi(provider)
@@ -67,4 +71,3 @@ class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 }
-

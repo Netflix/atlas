@@ -20,4 +20,3 @@ package object model {
   type BinaryOp = (Double, Double) => Double
   type TimeSeriesInput = Iterator[(String, TimeSeries)]
 }
-

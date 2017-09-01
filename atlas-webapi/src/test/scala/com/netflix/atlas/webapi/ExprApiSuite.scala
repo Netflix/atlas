@@ -29,7 +29,6 @@ import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
 
-
 class ExprApiSuite extends FunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
@@ -115,13 +114,13 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
     assert(data === List("name,sps,:eq,:sum,2.0,:mul", "name,sps,:eq,:sum"))
   }
 
-  testGet("/api/v1/expr/normalize?q=(,name,:swap,:eq,nf.cluster,foo,:eq,:and,:sum,),foo,:sset,cpu,foo,:fcall,disk,foo,:fcall") {
+  testGet(
+    "/api/v1/expr/normalize?q=(,name,:swap,:eq,nf.cluster,foo,:eq,:and,:sum,),foo,:sset,cpu,foo,:fcall,disk,foo,:fcall"
+  ) {
     assert(response.status === StatusCodes.OK)
     val data = Json.decode[List[String]](responseAs[String])
-    val expected = List(
-      "name,cpu,:eq,:sum",
-      "name,disk,:eq,:sum",
-      ":list,(,nf.cluster,foo,:eq,:cq,),:each")
+    val expected =
+      List("name,cpu,:eq,:sum", "name,disk,:eq,:sum", ":list,(,nf.cluster,foo,:eq,:cq,),:each")
     assert(data === expected)
   }
 
@@ -201,18 +200,24 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
   test("normalize single query") {
     val e1 = DataExpr.Sum(And(Equal("app", "foo"), Equal("name", "cpuUser")))
     val add = StyleExpr(MathExpr.Add(e1, e1), Map.empty)
-    assert(normalize(add.toString) === List(
-      ":true,:sum,:true,:sum,:add",
-      ":list,(,app,foo,:eq,name,cpuUser,:eq,:and,:cq,),:each"))
+    assert(
+      normalize(add.toString) === List(
+        ":true,:sum,:true,:sum,:add",
+        ":list,(,app,foo,:eq,name,cpuUser,:eq,:and,:cq,),:each"
+      )
+    )
   }
 
   test("normalize common query") {
     val e1 = DataExpr.Sum(And(Equal("app", "foo"), Equal("name", "cpuUser")))
     val e2 = DataExpr.Sum(And(Equal("app", "foo"), Equal("name", "cpuSystem")))
     val add = StyleExpr(MathExpr.Add(e1, e2), Map.empty)
-    assert(normalize(add.toString) === List(
-      "name,cpuUser,:eq,:sum,name,cpuSystem,:eq,:sum,:add",
-      ":list,(,app,foo,:eq,:cq,),:each"))
+    assert(
+      normalize(add.toString) === List(
+        "name,cpuUser,:eq,:sum,name,cpuSystem,:eq,:sum,:add",
+        ":list,(,app,foo,:eq,:cq,),:each"
+      )
+    )
   }
 
   test("normalize :avg") {
@@ -241,11 +246,15 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("normalize :dist-avg + expr2") {
-    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg,app,foo,:eq,name,cpuSystem,:eq,:and,:max"
-    assert(normalize(avg) === List(
-      "name,cpuUser,:eq,:dist-avg",
-      "name,cpuSystem,:eq,:max",
-      ":list,(,app,foo,:eq,:cq,),:each"))
+    val avg =
+      "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg,app,foo,:eq,name,cpuSystem,:eq,:and,:max"
+    assert(
+      normalize(avg) === List(
+        "name,cpuUser,:eq,:dist-avg",
+        "name,cpuSystem,:eq,:max",
+        ":list,(,app,foo,:eq,:cq,),:each"
+      )
+    )
   }
 
   test("normalize :avg,(,nf.cluster,),:by,:pct") {
@@ -260,7 +269,10 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
 }
 
 object ExprApiSuite {
+
   case class Output(program: List[String], context: Context)
+
   case class Context(stack: List[String], variables: Map[String, String])
+
   case class Candidate(name: String, signature: String, description: String)
 }

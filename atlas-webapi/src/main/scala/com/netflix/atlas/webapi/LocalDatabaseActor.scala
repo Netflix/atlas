@@ -19,17 +19,16 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import com.netflix.atlas.core.db.Database
 
-
 class LocalDatabaseActor(db: Database) extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.GraphApi._
   import com.netflix.atlas.webapi.TagsApi._
 
   def receive: Receive = {
-    case ListTagsRequest(tq)    => sender() ! TagListResponse(db.index.findTags(tq))
-    case ListKeysRequest(tq)    => sender() ! KeyListResponse(db.index.findKeys(tq))
-    case ListValuesRequest(tq)  => sender() ! ValueListResponse(db.index.findValues(tq))
-    case req: DataRequest       => sender() ! executeDataRequest(req)
+    case ListTagsRequest(tq)   => sender() ! TagListResponse(db.index.findTags(tq))
+    case ListKeysRequest(tq)   => sender() ! KeyListResponse(db.index.findKeys(tq))
+    case ListValuesRequest(tq) => sender() ! ValueListResponse(db.index.findValues(tq))
+    case req: DataRequest      => sender() ! executeDataRequest(req)
   }
 
   private def executeDataRequest(req: DataRequest): DataResponse = {
@@ -37,4 +36,3 @@ class LocalDatabaseActor(db: Database) extends Actor with ActorLogging {
     DataResponse(data)
   }
 }
-

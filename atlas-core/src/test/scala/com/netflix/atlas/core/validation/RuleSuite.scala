@@ -18,11 +18,10 @@ package com.netflix.atlas.core.validation
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class RuleSuite extends FunSuite {
 
-  private val config = ConfigFactory.parseString(
-    """
+  private val config =
+    ConfigFactory.parseString("""
       |rules = [
       |  {
       |    class = "com.netflix.atlas.core.validation.HasKeyRule"

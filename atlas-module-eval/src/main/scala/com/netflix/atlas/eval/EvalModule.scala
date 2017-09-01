@@ -35,10 +35,10 @@ final class EvalModule extends AbstractModule {
 
   import EvalModule._
 
-  override def configure(): Unit = {
-  }
+  override def configure(): Unit = {}
 
-  @Provides @Singleton
+  @Provides
+  @Singleton
   protected def providesEvaluator(opts: OptionalInjections): Evaluator = {
     new Evaluator(opts.config, opts.registry, opts.getActorSystem)
   }
@@ -54,14 +54,18 @@ private object EvalModule extends StrictLogging {
 
   private def pickClassLoader: ClassLoader = {
     val cl = Thread.currentThread().getContextClassLoader
-    if (cl != null) cl else {
+    if (cl != null) cl
+    else {
       val cname = getClass.getName
-      logger.warn(s"Thread.currentThread().getContextClassLoader() is null, using loader for $cname")
+      logger.warn(
+        s"Thread.currentThread().getContextClassLoader() is null, using loader for $cname"
+      )
       getClass.getClassLoader
     }
   }
 
   private class OptionalInjections {
+
     @Inject(optional = true)
     var config: Config = ConfigFactory.load(pickClassLoader)
 

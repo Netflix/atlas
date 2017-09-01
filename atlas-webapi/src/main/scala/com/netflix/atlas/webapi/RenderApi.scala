@@ -28,7 +28,6 @@ import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.chart.DefaultGraphEngine
 
-
 class RenderApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   private val engine = new DefaultGraphEngine

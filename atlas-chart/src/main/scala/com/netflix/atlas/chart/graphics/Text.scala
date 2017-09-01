@@ -22,30 +22,34 @@ import java.awt.font.TextAttribute
 import java.text.AttributedString
 
 /**
- * Draw text with a single font and simple alignment.
- *
- * @param str
- *     The text to display.
- * @param font
- *     Font to use when rendering.
- * @param alignment
- *     Basic alignment setting to use when laying out the text in the provided space. Defaults to
- *     center.
- * @param style
- *     Style to use for rendering the text.
- */
+  * Draw text with a single font and simple alignment.
+  *
+  * @param str
+  *     The text to display.
+  * @param font
+  *     Font to use when rendering.
+  * @param alignment
+  *     Basic alignment setting to use when laying out the text in the provided space. Defaults to
+  *     center.
+  * @param style
+  *     Style to use for rendering the text.
+  */
 case class Text(
-    str: String,
-    font: Font = Constants.normalFont,
-    alignment: TextAlignment = TextAlignment.CENTER,
-    style: Style = Style.default) extends Element with VariableHeight {
+  str: String,
+  font: Font = Constants.normalFont,
+  alignment: TextAlignment = TextAlignment.CENTER,
+  style: Style = Style.default
+) extends Element
+    with VariableHeight {
 
   lazy val dims = Constants.dimensions(font)
 
   def truncate(width: Int): Text = {
     val maxChars = (width - Text.rightPadding) / dims.width
-    if (str.length < maxChars) this else {
-      if (maxChars < 5) copy(str = "") else {
+    if (str.length < maxChars) this
+    else {
+      if (maxChars < 5) copy(str = "")
+      else {
         copy(str = str.substring(0, maxChars - 5) + "...")
       }
     }
@@ -102,4 +106,3 @@ case class Text(
 object Text {
   private val rightPadding = 8
 }
-

@@ -15,14 +15,12 @@
  */
 package com.netflix.atlas.core.db
 
-
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicLong
 
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.spectator.api.Spectator
-
 
 object BlockStats {
   private val registry = Spectator.globalRegistry
@@ -73,25 +71,21 @@ object BlockStats {
   }
 
   private def mkStatMap(array: Long, constant: Long, sparse: Long): Any = {
-    val raw = Map(
-      "array" -> array,
-      "constant" -> constant,
-      "sparse" -> sparse)
+    val raw = Map("array" -> array, "constant" -> constant, "sparse" -> sparse)
     val total = raw.values.sum
-    Map(
-      "total" -> total,
-      "raw" -> raw,
-      "percents" -> raw.map(t => t._1 -> percent(t._2, total)))
+    Map("total" -> total, "raw" -> raw, "percents" -> raw.map(t => t._1 -> percent(t._2, total)))
   }
 
   def statsMap: Map[String, Any] = {
     Map(
       "counts" -> mkStatMap(arrayCount.get, constantCount.get, sparseCount.get),
-      "bytes" -> mkStatMap(arrayBytes.get, constantBytes.get, sparseBytes.get))
+      "bytes"  -> mkStatMap(arrayBytes.get, constantBytes.get, sparseBytes.get)
+    )
   }
 }
 
 trait BlockStore {
+
   /** Returns true if this block store has data. */
   def hasData: Boolean
 
@@ -150,7 +144,8 @@ object MemoryBlockStore {
       newArrayBlock(start, size),
       newArrayBlock(start, size),
       newArrayBlock(start, size),
-      newArrayBlock(start, size))
+      newArrayBlock(start, size)
+    )
   }
 }
 

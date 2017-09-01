@@ -42,7 +42,7 @@ import com.netflix.atlas.eval.model.TimeGroup
   *     Item from the input stream.
   */
 class TimeGrouped[T](numBuffers: Int, max: Int, ts: T => Long)
-  extends GraphStage[FlowShape[T, TimeGroup[T]]] {
+    extends GraphStage[FlowShape[T, TimeGroup[T]]] {
 
   private val in = Inlet[T]("TimeGrouped.in")
   private val out = Outlet[TimeGroup[T]]("TimeGrouped.out")
@@ -52,7 +52,9 @@ class TimeGrouped[T](numBuffers: Int, max: Int, ts: T => Long)
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
       private val buf = new Array[List[T]](numBuffers)
-      buf.indices.foreach { i => buf(i) = Nil }
+      buf.indices.foreach { i =>
+        buf(i) = Nil
+      }
 
       private val timestamps = new Array[Long](numBuffers)
 
@@ -74,7 +76,8 @@ class TimeGrouped[T](numBuffers: Int, max: Int, ts: T => Long)
       override def onPush(): Unit = {
         val v = grab(in)
         val t = ts(v)
-        if (t <= cutoffTime) pull(in) else {
+        if (t <= cutoffTime) pull(in)
+        else {
           val i = findBuffer(t)
           if (i >= 0) {
             buf(i) = v :: buf(i)
@@ -117,4 +120,3 @@ class TimeGrouped[T](numBuffers: Int, max: Int, ts: T => Long)
     }
   }
 }
-

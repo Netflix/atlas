@@ -27,17 +27,18 @@ import com.netflix.atlas.json.Json
 import com.netflix.iep.service.ServiceManager
 import com.typesafe.scalalogging.StrictLogging
 
-
 /**
   * Healthcheck endpoint based on health status of the ServiceManager.
   */
 class HealthcheckApi(serviceManagerProvider: Provider[ServiceManager])
-    extends WebApi with StrictLogging {
+    extends WebApi
+    with StrictLogging {
 
   def routes: Route = {
     path("healthcheck") {
       get {
-        val status = if (serviceManager.isHealthy) StatusCodes.OK else StatusCodes.InternalServerError
+        val status =
+          if (serviceManager.isHealthy) StatusCodes.OK else StatusCodes.InternalServerError
         val entity = HttpEntity(MediaTypes.`application/json`, summary)
         complete(HttpResponse(status = status, entity = entity))
       }

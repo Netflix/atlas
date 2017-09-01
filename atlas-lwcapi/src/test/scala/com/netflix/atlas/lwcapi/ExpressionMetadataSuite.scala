@@ -55,7 +55,7 @@ class ExpressionMetadataSuite extends FunSuite {
   }
 
   test("parses from json without frequency provides default") {
-    val json ="""{"expression": "this"}"""
+    val json = """{"expression": "this"}"""
 
     val o = Json.decode[ExpressionMetadata](json)
     assert(o.expression === "this")
@@ -76,7 +76,7 @@ class ExpressionMetadataSuite extends FunSuite {
   }
 
   test("fails to parse from json with frequency non-integer") {
-    val json ="""{"expression": "this", "frequency": "that"}"""
+    val json = """{"expression": "this", "frequency": "that"}"""
     intercept[InvalidFormatException] {
       Json.decode[ExpressionMetadata](json)
     }
@@ -110,13 +110,15 @@ class ExpressionMetadataSuite extends FunSuite {
   }
 
   test("renders as json with default frequency") {
-    val expected = "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
+    val expected =
+      "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
     val json = ExpressionMetadata("this").toJson
     assert(expected === json)
   }
 
   test("renders as json with frequency of 0") {
-    val expected = "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
+    val expected =
+      "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
     val json = ExpressionMetadata("this", 0).toJson
     assert(expected === json)
   }
@@ -128,8 +130,10 @@ class ExpressionMetadataSuite extends FunSuite {
   }
 
   test("sorts") {
-    val source = List(ExpressionMetadata("a", 2), ExpressionMetadata("z", 1), ExpressionMetadata("c", 3))
-    val expected = List(ExpressionMetadata("a", 2), ExpressionMetadata("c", 3), ExpressionMetadata("z", 1))
+    val source =
+      List(ExpressionMetadata("a", 2), ExpressionMetadata("z", 1), ExpressionMetadata("c", 3))
+    val expected =
+      List(ExpressionMetadata("a", 2), ExpressionMetadata("c", 3), ExpressionMetadata("z", 1))
     assert(expected === source.sorted)
   }
 }

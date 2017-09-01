@@ -23,6 +23,7 @@ import com.netflix.atlas.wiki.GraphHelper
 import com.netflix.atlas.wiki.SimplePage
 
 class TimeZones extends SimplePage {
+
   override def name: String = "Time-Zones"
 
   override def content(graph: GraphHelper): String =
@@ -65,8 +66,9 @@ class TimeZones extends SimplePage {
     import scala.collection.JavaConverters._
     val zones = ZoneId.getAvailableZoneIds.asScala.toList
     val byName = zones.groupBy(id => ZoneId.of(id).getDisplayName(TextStyle.SHORT, Locale.US))
-    val sorted = byName.toList.sortWith(_._1 < _._1).map { case (name, ids) =>
-      s"| $name | ${ids.mkString(", ")} |"
+    val sorted = byName.toList.sortWith(_._1 < _._1).map {
+      case (name, ids) =>
+        s"| $name | ${ids.mkString(", ")} |"
     }
     """
       || Short Display Name | Zone Ids |

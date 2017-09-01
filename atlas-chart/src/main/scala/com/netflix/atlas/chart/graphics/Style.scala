@@ -23,16 +23,14 @@ import java.awt.Stroke
 import com.netflix.atlas.chart.Colors
 
 /**
- * Style attributes associated with elements.
- *
- * @param color
- *     Color to set on the graphics object.
- * @param stroke
- *     Stroke to set on the graphics object.
- */
-case class Style(
-  color: Color = Color.BLACK,
-  stroke: Stroke = new BasicStroke(1.0f)) {
+  * Style attributes associated with elements.
+  *
+  * @param color
+  *     Color to set on the graphics object.
+  * @param stroke
+  *     Stroke to set on the graphics object.
+  */
+case class Style(color: Color = Color.BLACK, stroke: Stroke = new BasicStroke(1.0f)) {
 
   def configure(g: Graphics2D): Unit = {
     g.setColor(color)

@@ -26,7 +26,6 @@ import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
 import org.scalatest.FunSuite
 
-
 class TimeSeriesBufferSuite extends FunSuite {
 
   import java.lang.{Double => JDouble}
@@ -47,7 +46,8 @@ class TimeSeriesBufferSuite extends FunSuite {
     val blocks = List(
       ConstantBlock(0 * step, 6, 1.0),
       ConstantBlock(6 * step, 6, 2.0),
-      ConstantBlock(18 * step, 6, 4.0))
+      ConstantBlock(18 * step, 6, 4.0)
+    )
 
     val buffer = TimeSeriesBuffer(tags, step, 1 * step, 19 * step, blocks, Block.Sum)
     val m = buffer
@@ -65,10 +65,13 @@ class TimeSeriesBufferSuite extends FunSuite {
     val blocks = List(
       ConstantBlock(0 * step, 6, 1.0),
       ConstantBlock(6 * step, 6, 2.0),
-      ConstantBlock(18 * step, 6, 4.0))
+      ConstantBlock(18 * step, 6, 4.0)
+    )
 
     val buffer = TimeSeriesBuffer(tags, step, 1 * step, 19 * step)
-    blocks.foreach { b => buffer.add(tags, b) }
+    blocks.foreach { b =>
+      buffer.add(tags, b)
+    }
     val m = buffer
     assert(m.step === step)
     assert(m.start === step)
@@ -84,10 +87,13 @@ class TimeSeriesBufferSuite extends FunSuite {
     val blocks = List(
       ConstantBlock(0 * step, 6, 1.0),
       ConstantBlock(6 * step, 6, 2.0),
-      ConstantBlock(18 * step, 6, 4.0))
+      ConstantBlock(18 * step, 6, 4.0)
+    )
 
     val buffer = TimeSeriesBuffer(tags, 6 * step, step, 18 * step)
-    blocks.foreach { b => buffer.aggrBlock(tags, b, Block.Sum, ConsolidationFunction.Max, 6, Math.addNaN) }
+    blocks.foreach { b =>
+      buffer.aggrBlock(tags, b, Block.Sum, ConsolidationFunction.Max, 6, Math.addNaN)
+    }
     val m = buffer
     assert(m.step === 6 * step)
     assert(m.start === 0L)
@@ -101,12 +107,15 @@ class TimeSeriesBufferSuite extends FunSuite {
     val tags = emptyTags
     val step = 10000L
     val blockSize = 6 * 60
-    val blocks = (0 until 1000).map(i => ConstantBlock(i * blockSize * step, blockSize, 4.0)).toList
+    val blocks =
+      (0 until 1000).map(i => ConstantBlock(i * blockSize * step, blockSize, 4.0)).toList
 
     val multiple = 6 * 6
     val consol = multiple * step
     val buffer = TimeSeriesBuffer(tags, consol, consol, 20 * consol)
-    blocks.foreach { b => buffer.aggrBlock(tags, b, Block.Sum, ConsolidationFunction.Max, multiple, Math.addNaN) }
+    blocks.foreach { b =>
+      buffer.aggrBlock(tags, b, Block.Sum, ConsolidationFunction.Max, multiple, Math.addNaN)
+    }
     val m = buffer
     assert(m.step === consol)
     assert(m.start === consol)
@@ -117,7 +126,9 @@ class TimeSeriesBufferSuite extends FunSuite {
     val tags = emptyTags
     val step = 60000L
     val block = ArrayBlock(0L, 60)
-    (8 until 60).foreach { i => block.buffer(i) = 1.0 }
+    (8 until 60).foreach { i =>
+      block.buffer(i) = 1.0
+    }
 
     val buffer = TimeSeriesBuffer(tags, 6 * step, step, 60 * step)
     buffer.aggrBlock(tags, block, Block.Sum, ConsolidationFunction.Avg, 6, Math.addNaN)
@@ -128,7 +139,8 @@ class TimeSeriesBufferSuite extends FunSuite {
   val pairs = List(
     (ConsolidationFunction.Avg -> Math.addNaN _),
     (ConsolidationFunction.Max -> Math.maxNaN _),
-    (ConsolidationFunction.Min -> Math.minNaN _))
+    (ConsolidationFunction.Min -> Math.minNaN _)
+  )
 
   /*pairs.foreach {
     case (name, af) =>
@@ -486,7 +498,8 @@ class TimeSeriesBufferSuite extends FunSuite {
     assert(b1.normalize(120000, start, 3) === b1e)
 
     val b2 = TimeSeriesBuffer(emptyTags, 120000, start, Array(3.0, 7.0))
-    val b2e = TimeSeriesBuffer(emptyTags, 60000, start, Array(3.0, 7.0, 7.0, Double.NaN, Double.NaN))
+    val b2e =
+      TimeSeriesBuffer(emptyTags, 60000, start, Array(3.0, 7.0, 7.0, Double.NaN, Double.NaN))
     assert(b2.normalize(60000, start, 5) === b2e)
   }
 
@@ -503,7 +516,9 @@ class TimeSeriesBufferSuite extends FunSuite {
     val buffer = TimeSeriesBuffer(emptyTags, step, bufStart, end)
 
     buffer.aggrBlock(emptyTags, block, Block.Sum, ConsolidationFunction.Avg, 5, Math.addNaN)
-    buffer.values.foreach { v => assert(v.isNaN || v <= 0.0) }
+    buffer.values.foreach { v =>
+      assert(v.isNaN || v <= 0.0)
+    }
   }
 
   test("equals") {
@@ -513,15 +528,15 @@ class TimeSeriesBufferSuite extends FunSuite {
     val t2 = Map("a" -> "2")
 
     val step = 60000L
-    val s1 = new ArrayTimeSeq(DsType.Gauge,  5 * step, step, Array(1.0))
-    val s2 = new ArrayTimeSeq(DsType.Gauge,  5 * step, step, Array(1.0, 2.0))
+    val s1 = new ArrayTimeSeq(DsType.Gauge, 5 * step, step, Array(1.0))
+    val s2 = new ArrayTimeSeq(DsType.Gauge, 5 * step, step, Array(1.0, 2.0))
     EqualsVerifier
-        .forClass(classOf[TimeSeriesBuffer])
-        .withPrefabValues(classOf[Map[_, _]], t1, t2)
-        .withPrefabValues(classOf[ArrayTimeSeq], s1, s2)
-        .withIgnoredFields("id", "bitmap$0") // lazy val for id
-        .suppress(Warning.NULL_FIELDS)
-        .suppress(Warning.NONFINAL_FIELDS)
-        .verify()
+      .forClass(classOf[TimeSeriesBuffer])
+      .withPrefabValues(classOf[Map[_, _]], t1, t2)
+      .withPrefabValues(classOf[ArrayTimeSeq], s1, s2)
+      .withIgnoredFields("id", "bitmap$0") // lazy val for id
+      .suppress(Warning.NULL_FIELDS)
+      .suppress(Warning.NONFINAL_FIELDS)
+      .verify()
   }
 }

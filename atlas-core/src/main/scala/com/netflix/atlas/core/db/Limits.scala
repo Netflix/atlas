@@ -17,7 +17,6 @@ package com.netflix.atlas.core.db
 
 import com.netflix.atlas.config.ConfigManager
 
-
 object Limits {
 
   private val config = ConfigManager.current.getConfig("atlas.core.db")
@@ -26,4 +25,3 @@ object Limits {
 
   def maxDatapoints: Int = config.getInt("max-datapoints")
 }
-

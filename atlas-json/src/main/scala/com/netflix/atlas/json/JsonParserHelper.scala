@@ -18,7 +18,6 @@ package com.netflix.atlas.json
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
 
-
 object JsonParserHelper {
 
   @scala.annotation.tailrec
@@ -62,10 +61,10 @@ object JsonParserHelper {
   def nextBoolean(parser: JsonParser): Boolean = {
     import com.fasterxml.jackson.core.JsonToken._
     parser.nextToken() match {
-      case VALUE_FALSE   => parser.getValueAsBoolean
-      case VALUE_TRUE    => parser.getValueAsBoolean
-      case VALUE_STRING  => java.lang.Boolean.valueOf(parser.getText)
-      case t             => fail(parser, s"expected VALUE_FALSE or VALUE_TRUE but received $t")
+      case VALUE_FALSE  => parser.getValueAsBoolean
+      case VALUE_TRUE   => parser.getValueAsBoolean
+      case VALUE_STRING => java.lang.Boolean.valueOf(parser.getText)
+      case t            => fail(parser, s"expected VALUE_FALSE or VALUE_TRUE but received $t")
     }
   }
 

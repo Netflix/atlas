@@ -17,20 +17,21 @@ package com.netflix.atlas.core.stacklang
 
 import org.scalatest.FunSuite
 
-
 class InterpreterSuite extends FunSuite {
   import com.netflix.atlas.core.stacklang.InterpreterSuite._
 
-  val interpreter = new Interpreter(List(
-    PushFoo,
-    Overloaded("overloaded", "one", true),
-    Overloaded("overloaded", "two", true),
-    Overloaded("overloaded", "three", true),
-    Overloaded("overloaded2", "one", false),
-    Overloaded("overloaded2", "two", true),
-    Overloaded("overloaded2", "three", true),
-    Overloaded("no-match", "one", false)
-  ))
+  val interpreter = new Interpreter(
+    List(
+      PushFoo,
+      Overloaded("overloaded", "one", true),
+      Overloaded("overloaded", "two", true),
+      Overloaded("overloaded", "three", true),
+      Overloaded("overloaded2", "one", false),
+      Overloaded("overloaded2", "two", true),
+      Overloaded("overloaded2", "three", true),
+      Overloaded("no-match", "one", false)
+    )
+  )
 
   def context(vs: List[Any]): Context = {
     Context(interpreter, vs, Map.empty)
@@ -145,21 +146,32 @@ class InterpreterSuite extends FunSuite {
 }
 
 object InterpreterSuite {
+
   case object PushFoo extends Word {
+
     override def name: String = "push-foo"
+
     override def matches(stack: List[Any]): Boolean = true
+
     override def execute(context: Context): Context = context.copy(stack = "foo" :: context.stack)
+
     override def summary: String = ""
+
     override def signature: String = "* -- * foo"
+
     override def examples: List[String] = Nil
   }
 
   case class Overloaded(name: String, value: String, matches: Boolean) extends Word {
+
     override def matches(stack: List[Any]): Boolean = matches
+
     override def execute(context: Context): Context = context.copy(stack = value :: context.stack)
+
     override def summary: String = ""
+
     override def signature: String = if (matches) "* -- * v" else "exception"
+
     override def examples: List[String] = Nil
   }
 }
-

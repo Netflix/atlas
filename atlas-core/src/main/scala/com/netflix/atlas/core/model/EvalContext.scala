@@ -20,10 +20,11 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 case class EvalContext(
-    start: Long,
-    end: Long,
-    step: Long,
-    state: Map[StatefulExpr, Any] = Map.empty) {
+  start: Long,
+  end: Long,
+  step: Long,
+  state: Map[StatefulExpr, Any] = Map.empty
+) {
   require(start < end, s"start time must be less than end time ($start >= $end)")
 
   val noData: TimeSeries = TimeSeries.noData(step)
@@ -41,7 +42,9 @@ case class EvalContext(
     builder.result
   }
 
-  def partitionByHour: List[EvalContext] = partition(Duration.ofHours(1).toMillis, ChronoUnit.HOURS)
+  def partitionByHour: List[EvalContext] =
+    partition(Duration.ofHours(1).toMillis, ChronoUnit.HOURS)
+
   def partitionByDay: List[EvalContext] = partition(Duration.ofDays(1).toMillis, ChronoUnit.DAYS)
 
   def withOffset(offset: Long): EvalContext = {

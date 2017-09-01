@@ -16,6 +16,6 @@
 package com.netflix.atlas.chart
 
 /**
- * Simple text output using comma as separators.
- */
+  * Simple text output using comma as separators.
+  */
 class CommaSepGraphEngine extends CsvGraphEngine("csv", "text/csv", ",")

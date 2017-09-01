@@ -18,4 +18,3 @@ package com.netflix.atlas.lwcapi
 import com.netflix.atlas.core.model.Query
 
 case class Subscription(query: Query, metadata: ExpressionMetadata)
-

@@ -16,17 +16,23 @@
 package com.netflix.atlas.core.algorithm
 
 /**
- * Alternate between two DES functions after each training period. This provides a deterministic
- * estimate within a bounded amount of time.
- *
- * @param training
- *     Number of samples to record before emitting predicted values.
- * @param alpha
- *     Data smoothing factor.
- * @param beta
- *     Trend smoothing factor.
- */
-class OnlineSlidingDes(training: Int, alpha: Double, beta: Double, des1: OnlineDes, des2: OnlineDes) {
+  * Alternate between two DES functions after each training period. This provides a deterministic
+  * estimate within a bounded amount of time.
+  *
+  * @param training
+  *     Number of samples to record before emitting predicted values.
+  * @param alpha
+  *     Data smoothing factor.
+  * @param beta
+  *     Trend smoothing factor.
+  */
+class OnlineSlidingDes(
+  training: Int,
+  alpha: Double,
+  beta: Double,
+  des1: OnlineDes,
+  des2: OnlineDes
+) {
   import OnlineSlidingDes._
 
   private var useOne = true
@@ -55,8 +61,16 @@ class OnlineSlidingDes(training: Int, alpha: Double, beta: Double, des1: OnlineD
 }
 
 object OnlineSlidingDes {
-  case class State(training: Int, alpha: Double, beta: Double, useOne: Boolean, currentSample: Int,
-                   des1State: OnlineDes.State, des2State: OnlineDes.State)
+
+  case class State(
+    training: Int,
+    alpha: Double,
+    beta: Double,
+    useOne: Boolean,
+    currentSample: Int,
+    des1State: OnlineDes.State,
+    des2State: OnlineDes.State
+  )
 
   def apply(state: OnlineSlidingDes.State): OnlineSlidingDes = {
     val des1 = OnlineDes(state.des1State)
@@ -67,7 +81,7 @@ object OnlineSlidingDes {
     sdes
   }
 
-  def apply (training: Int, alpha: Double, beta: Double): OnlineSlidingDes = {
+  def apply(training: Int, alpha: Double, beta: Double): OnlineSlidingDes = {
     val des1 = OnlineDes(training, alpha, beta)
     val des2 = OnlineDes(training, alpha, beta)
     new OnlineSlidingDes(training, alpha, beta, des1, des2)

@@ -29,8 +29,7 @@ class MetricCategorySuite extends FunSuite {
   }
 
   test("load from config") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |namespace = "AWS/ELB"
         |period = 1 m
         |dimensions = ["LoadBalancerName"]
@@ -62,8 +61,7 @@ class MetricCategorySuite extends FunSuite {
   }
 
   test("config with filter") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |namespace = "AWS/ELB"
         |period = 1 m
         |dimensions = ["LoadBalancerName"]
@@ -82,8 +80,7 @@ class MetricCategorySuite extends FunSuite {
   }
 
   test("config with invalid filter") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |namespace = "AWS/ELB"
         |period = 1 m
         |dimensions = ["LoadBalancerName"]

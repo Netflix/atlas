@@ -23,7 +23,6 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-
 class DataRef {
 
   private val sendMsg = new AtomicReference[Try[Any]](Failure(new RuntimeException("not set")))

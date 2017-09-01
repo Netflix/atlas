@@ -21,7 +21,6 @@ import org.scalatest.FunSuite
 
 import scala.util.Random
 
-
 class TicksSuite extends FunSuite {
 
   private def checkForDuplicates(ticks: List[ValueTick]): Unit = {
@@ -356,7 +355,7 @@ class TicksSuite extends FunSuite {
   }
 
   test("binary [339.86152734763687, 339.87716933873867]") {
-    val ticks =Ticks.binary(339.86152734763687, 339.87716933873867, 5)
+    val ticks = Ticks.binary(339.86152734763687, 339.87716933873867, 5)
     sanityCheck(ticks)
     assert(ticks.size === 2)
     assert(ticks.count(_.major) === 2)
@@ -366,7 +365,7 @@ class TicksSuite extends FunSuite {
   }
 
   test("binary [1e12, 1e12 + 5e6]") {
-    val ticks =Ticks.binary(1e12, 1e12 + 5e6, 5)
+    val ticks = Ticks.binary(1e12, 1e12 + 5e6, 5)
     sanityCheck(ticks)
     assert(ticks.size === 19)
     assert(ticks.count(_.major) === 5)

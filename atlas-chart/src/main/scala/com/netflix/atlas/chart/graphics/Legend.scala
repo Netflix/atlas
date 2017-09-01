@@ -21,22 +21,20 @@ import java.awt.Graphics2D
 import com.netflix.atlas.chart.model.PlotDef
 
 /**
- * Draws a legend for a given plot.
- *
- * @param plot
- *     Plot definition corresponding to the legend.
- * @param label
- *     Overall label to show for this legend.
- * @param showStats
- *     Whether or not to show basic line statistics for the legend entries.
- * @param maxEntries
- *     Maximum number of entries to show in the legend.
- */
-case class Legend(
-    plot: PlotDef,
-    label: Option[String],
-    showStats: Boolean,
-    maxEntries: Int) extends Element with VariableHeight {
+  * Draws a legend for a given plot.
+  *
+  * @param plot
+  *     Plot definition corresponding to the legend.
+  * @param label
+  *     Overall label to show for this legend.
+  * @param showStats
+  *     Whether or not to show basic line statistics for the legend entries.
+  * @param maxEntries
+  *     Maximum number of entries to show in the legend.
+  */
+case class Legend(plot: PlotDef, label: Option[String], showStats: Boolean, maxEntries: Int)
+    extends Element
+    with VariableHeight {
 
   private val numEntries = plot.data.size
 
@@ -50,11 +48,13 @@ case class Legend(
     List(HorizontalPadding(2), LegendEntry(plot, data, showStats))
   }
 
-  private val footer = if (numEntries <= maxEntries) Nil else {
-    val remaining = numEntries - maxEntries
-    val txt = Text(s"... $remaining suppressed ...", alignment = TextAlignment.LEFT)
-    List(HorizontalPadding(2), txt)
-  }
+  private val footer =
+    if (numEntries <= maxEntries) Nil
+    else {
+      val remaining = numEntries - maxEntries
+      val txt = Text(s"... $remaining suppressed ...", alignment = TextAlignment.LEFT)
+      List(HorizontalPadding(2), txt)
+    }
 
   private val block = Block(header ::: entries ::: footer)
 

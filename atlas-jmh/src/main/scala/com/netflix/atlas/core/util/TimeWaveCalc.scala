@@ -24,20 +24,20 @@ import org.openjdk.jmh.annotations.Threads
 import org.openjdk.jmh.infra.Blackhole
 
 /**
- * ```
- * > run -bm all -wi 10 -i 10 -f1 -t1 .*TimeWaveCalc.*
- * ...
- * [info] Benchmark                         Mode     Cnt         Score        Error  Units
- * [info] TimeWaveCalc.testMathSin         thrpt      10  11484308.329 ± 729466.777  ops/s
- * [info] TimeWaveCalc.testPrecomputeSin   thrpt      10  39806386.423 ± 868184.835  ops/s
- * [info] TimeWaveCalc.testMathSin          avgt      10        ≈ 10⁻⁷                s/op
- * [info] TimeWaveCalc.testPrecomputeSin    avgt      10        ≈ 10⁻⁸                s/op
- * [info] TimeWaveCalc.testMathSin        sample  110059        ≈ 10⁻⁷                s/op
- * [info] TimeWaveCalc.testPrecomputeSin  sample  163664        ≈ 10⁻⁷                s/op
- * [info] TimeWaveCalc.testMathSin            ss      10        ≈ 10⁻⁶                s/op
- * [info] TimeWaveCalc.testPrecomputeSin      ss      10        ≈ 10⁻⁶                s/op
- * ```
- */
+  * ```
+  * > run -bm all -wi 10 -i 10 -f1 -t1 .*TimeWaveCalc.*
+  * ...
+  * [info] Benchmark                         Mode     Cnt         Score        Error  Units
+  * [info] TimeWaveCalc.testMathSin         thrpt      10  11484308.329 ± 729466.777  ops/s
+  * [info] TimeWaveCalc.testPrecomputeSin   thrpt      10  39806386.423 ± 868184.835  ops/s
+  * [info] TimeWaveCalc.testMathSin          avgt      10        ≈ 10⁻⁷                s/op
+  * [info] TimeWaveCalc.testPrecomputeSin    avgt      10        ≈ 10⁻⁸                s/op
+  * [info] TimeWaveCalc.testMathSin        sample  110059        ≈ 10⁻⁷                s/op
+  * [info] TimeWaveCalc.testPrecomputeSin  sample  163664        ≈ 10⁻⁷                s/op
+  * [info] TimeWaveCalc.testMathSin            ss      10        ≈ 10⁻⁶                s/op
+  * [info] TimeWaveCalc.testPrecomputeSin      ss      10        ≈ 10⁻⁶                s/op
+  * ```
+  */
 @State(Scope.Thread)
 class TimeWaveCalc {
 

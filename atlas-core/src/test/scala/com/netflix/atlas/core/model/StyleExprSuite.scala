@@ -69,13 +69,12 @@ class StyleExprSuite extends FunSuite {
     }
   }
 
-  check("^([a-z]+).*$,prefix [$1],:s",                 "prefix [one]")
-  check("^(?<prefix>[a-z]+).*$,prefix [$prefix],:s",   "prefix [one]")
-  check("_.*,,:s",                                     "one")
-  check("(_[A-F0-9]{2}), $1,:s,hex,:decode",           "one ! % & ?")
-  check("hex,:decode,(_[A-F0-9]{2}), $1,:s",           "one!%&?")
-  check("hex,:decode,%,_25,:s",                        "one!_25&?")
-  check("hex,:decode,%,_25,:s,hex,:decode",            "one!%&?")
-  check("none,:decode,%,_25,:s,hex,:decode",           "one!%&?")
+  check("^([a-z]+).*$,prefix [$1],:s", "prefix [one]")
+  check("^(?<prefix>[a-z]+).*$,prefix [$prefix],:s", "prefix [one]")
+  check("_.*,,:s", "one")
+  check("(_[A-F0-9]{2}), $1,:s,hex,:decode", "one ! % & ?")
+  check("hex,:decode,(_[A-F0-9]{2}), $1,:s", "one!%&?")
+  check("hex,:decode,%,_25,:s", "one!_25&?")
+  check("hex,:decode,%,_25,:s,hex,:decode", "one!%&?")
+  check("none,:decode,%,_25,:s,hex,:decode", "one!%&?")
 }
-

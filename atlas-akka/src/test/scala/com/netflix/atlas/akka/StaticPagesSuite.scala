@@ -20,7 +20,6 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class StaticPagesSuite extends FunSuite with ScalatestRouteTest {
 
   val endpoint = new StaticPages(ConfigFactory.load())
@@ -67,4 +66,3 @@ class StaticPagesSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 }
-

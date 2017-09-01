@@ -18,13 +18,11 @@ package com.netflix.atlas.core.validation
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class ValidCharactersRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("")
 
-  private val customPattern = ConfigFactory.parseString(
-    """
+  private val customPattern = ConfigFactory.parseString("""
       |default-pattern = ".a-z"
       |
       |overrides = [

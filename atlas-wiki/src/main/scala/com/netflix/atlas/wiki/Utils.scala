@@ -16,6 +16,7 @@
 package com.netflix.atlas.wiki
 
 object Utils {
+
   // Using unicode hyphen is a hack to get around:
   // https://github.com/github/markup/issues/345
   def fileName(name: String) = name.replace('-', '\u2010')

@@ -43,5 +43,6 @@ object SummaryStats {
 }
 
 case class SummaryStats(count: Int, min: Double, max: Double, last: Double, total: Double) {
+
   def avg: Double = if (count > 0) total / count else Double.NaN
 }

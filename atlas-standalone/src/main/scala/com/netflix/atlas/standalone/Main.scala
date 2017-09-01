@@ -26,12 +26,12 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
 /**
- * Provides a simple way to start up a standalone server. Usage:
- *
- * ```
- * $ java -jar atlas.jar config1.conf config2.conf
- * ```
- */
+  * Provides a simple way to start up a standalone server. Usage:
+  *
+  * ```
+  * $ java -jar atlas.jar config1.conf config2.conf
+  * ```
+  */
 object Main extends StrictLogging {
 
   private var guice: GuiceHelper = _
@@ -64,6 +64,7 @@ object Main extends StrictLogging {
   def start(): Unit = {
 
     val configModule = new AbstractModule {
+
       override def configure(): Unit = {
         bind(classOf[Config]).toInstance(ConfigManager.current)
       }

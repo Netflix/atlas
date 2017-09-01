@@ -22,7 +22,7 @@ class SwapSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.Swap
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a,b" -> List("a", "b"),
+    "a,b"       -> List("a", "b"),
     "a,b,c,d,e" -> List("d", "e", "c", "b", "a")
   )
 

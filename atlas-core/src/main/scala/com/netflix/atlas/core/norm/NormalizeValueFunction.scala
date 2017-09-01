@@ -20,16 +20,17 @@ import com.netflix.spectator.api.Spectator
 object NormalizeValueFunction {
   private final val NO_PREVIOUS_UPDATE = -1L
 
-  private val heartbeatExpireCount = Spectator.globalRegistry().counter("atlas.norm.heartbeatExpireCount")
+  private val heartbeatExpireCount =
+    Spectator.globalRegistry().counter("atlas.norm.heartbeatExpireCount")
 }
 
 /**
- * Normalizes metrics in a manner similar to RRDtool.
- *
- * @param step        normalized distance between samples produced by this class.
- * @param heartbeat   maximum time allowed between updates before NaN values will be used.
- * @param next        normalized values will be passed to the this function.
- */
+  * Normalizes metrics in a manner similar to RRDtool.
+  *
+  * @param step        normalized distance between samples produced by this class.
+  * @param heartbeat   maximum time allowed between updates before NaN values will be used.
+  * @param next        normalized values will be passed to the this function.
+  */
 class NormalizeValueFunction(step: Long, heartbeat: Long, next: ValueFunction)
     extends ValueFunction {
 
@@ -37,20 +38,20 @@ class NormalizeValueFunction(step: Long, heartbeat: Long, next: ValueFunction)
   require(heartbeat >= 1, "heartbeat must be >= 1")
 
   /**
-   * The last time an update was received.
-   */
+    * The last time an update was received.
+    */
   private var lastUpdateTime: Long = NormalizeValueFunction.NO_PREVIOUS_UPDATE
 
   /**
-   * Represents the value from the beginning of the current interval to the
-   * last update time.
-   */
+    * Represents the value from the beginning of the current interval to the
+    * last update time.
+    */
   private var lastValue: Double = 0.0
 
   /**
-   * Update with a new sample and return the value for a complete interval if
-   * one is available.
-   */
+    * Update with a new sample and return the value for a complete interval if
+    * one is available.
+    */
   def apply(timestamp: Long, value: Double): Unit = {
     if (timestamp > lastUpdateTime) {
       if (lastUpdateTime > 0 && timestamp - lastUpdateTime > heartbeat) {
@@ -101,7 +102,12 @@ class NormalizeValueFunction(step: Long, heartbeat: Long, next: ValueFunction)
 
   override def toString: String = {
     val name = getClass.getSimpleName
-    "%s(step=%d, heartbeat=%d, lastUpdateTime=%d, lastValue=%f)".
-      format(name, step, heartbeat, lastUpdateTime, lastValue)
+    "%s(step=%d, heartbeat=%d, lastUpdateTime=%d, lastValue=%f)".format(
+      name,
+      step,
+      heartbeat,
+      lastUpdateTime,
+      lastValue
+    )
   }
 }

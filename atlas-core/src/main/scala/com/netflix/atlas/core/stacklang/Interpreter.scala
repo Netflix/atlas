@@ -16,12 +16,12 @@
 package com.netflix.atlas.core.stacklang
 
 /**
- * Interpreter for stack expressions.
- *
- * @param vocabulary
- *     Set of supported words. If multiple words have the same name, then the first one that matches
- *     with the current stack will get used.
- */
+  * Interpreter for stack expressions.
+  *
+  * @param vocabulary
+  *     Set of supported words. If multiple words have the same name, then the first one that matches
+  *     with the current stack will get used.
+  */
 case class Interpreter(vocabulary: List[Word]) {
   import com.netflix.atlas.core.stacklang.Interpreter._
 
@@ -46,7 +46,8 @@ case class Interpreter(vocabulary: List[Word]) {
       val stackSummary = Interpreter.typeSummary(context.stack)
       val candidates = ws.map(_.signature).mkString("[", "], [", "]")
       throw new IllegalStateException(
-        s"no matches for word ':$name' with stack $stackSummary, candidates: $candidates")
+        s"no matches for word ':$name' with stack $stackSummary, candidates: $candidates"
+      )
     }
   }
 
@@ -58,10 +59,10 @@ case class Interpreter(vocabulary: List[Word]) {
   }
 
   /**
-   * Called with the remaining items from the program after an opening parenthesis is found. It
-   * will push a list containing all items until the matching closing parenthesis. Commands inside
-   * the list will not get executed.
-   */
+    * Called with the remaining items from the program after an opening parenthesis is found. It
+    * will push a list containing all items until the matching closing parenthesis. Commands inside
+    * the list will not get executed.
+    */
   @scala.annotation.tailrec
   private def popAndPushList(depth: Int, acc: List[Any], step: Step): Step = {
     step.program match {
@@ -82,12 +83,13 @@ case class Interpreter(vocabulary: List[Word]) {
   private def nextStep(s: Step): Step = {
     val context = s.context
     s.program match {
-      case token :: tokens => token match {
-        case "("       => popAndPushList(0, Nil, Step(tokens, context))
-        case ")"       => throw new IllegalStateException("unmatched closing parenthesis")
-        case IsWord(t) => Step(tokens, executeWord(t, context))
-        case t         => Step(tokens, context.copy(stack = t :: context.stack))
-      }
+      case token :: tokens =>
+        token match {
+          case "("       => popAndPushList(0, Nil, Step(tokens, context))
+          case ")"       => throw new IllegalStateException("unmatched closing parenthesis")
+          case IsWord(t) => Step(tokens, executeWord(t, context))
+          case t         => Step(tokens, context.copy(stack = t :: context.stack))
+        }
       case Nil => s
     }
   }
@@ -128,17 +130,17 @@ case class Interpreter(vocabulary: List[Word]) {
   }
 
   /**
-   * Return a list of all words in the vocabulary for this interpreter that match the provided
-   * stack.
-   */
+    * Return a list of all words in the vocabulary for this interpreter that match the provided
+    * stack.
+    */
   final def candidates(stack: List[Any]): List[Word] = {
     vocabulary.filter(_.matches(stack))
   }
 
   /**
-   * Return a list of overloaded variants that match. The first word in the list is what would
-   * get used when executing.
-   */
+    * Return a list of overloaded variants that match. The first word in the list is what would
+    * get used when executing.
+    */
   final def candidates(name: String, stack: List[Any]): List[Word] = {
     words(name).filter(_.matches(stack))
   }
@@ -147,16 +149,18 @@ case class Interpreter(vocabulary: List[Word]) {
 }
 
 object Interpreter {
+
   case class Step(program: List[Any], context: Context)
 
   case object IsWord {
+
     def unapply(v: String): Option[String] = if (v.startsWith(":")) Some(v.substring(1)) else None
   }
 
   /**
-   * List classes show simple names like "Nil$" and "colon$colon$" that are confusing to most
-   * looking at the output. This tries to detect the list and use the simple name "List".
-   */
+    * List classes show simple names like "Nil$" and "colon$colon$" that are confusing to most
+    * looking at the output. This tries to detect the list and use the simple name "List".
+    */
   private def getTypeName(v: Any): String = v match {
     case _: List[_] => "List"
     case _          => v.getClass.getSimpleName

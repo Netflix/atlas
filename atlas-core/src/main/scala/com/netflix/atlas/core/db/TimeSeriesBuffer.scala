@@ -26,10 +26,14 @@ import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Math
 
-
 object TimeSeriesBuffer {
 
-  def apply(tags: Map[String, String], step: Long, start: Long, vs: Array[Double]): TimeSeriesBuffer = {
+  def apply(
+    tags: Map[String, String],
+    step: Long,
+    start: Long,
+    vs: Array[Double]
+  ): TimeSeriesBuffer = {
     new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType.Gauge, start / step * step, step, vs))
   }
 
@@ -48,7 +52,8 @@ object TimeSeriesBuffer {
     start: Long,
     end: Long,
     blocks: List[Block],
-    aggr: Int): TimeSeriesBuffer = {
+    aggr: Int
+  ): TimeSeriesBuffer = {
 
     val s = start / step
     val e = end / step
@@ -62,7 +67,14 @@ object TimeSeriesBuffer {
     new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType.Gauge, start, step, buffer))
   }
 
-  private def fill(blk: Block, buf: Array[Double], step: Long, s: Long, e: Long, aggr: Int): Unit = {
+  private def fill(
+    blk: Block,
+    buf: Array[Double],
+    step: Long,
+    s: Long,
+    e: Long,
+    aggr: Int
+  ): Unit = {
     val bs = blk.start / step
     val be = bs + blk.size - 1
     if (e >= bs && s <= be) {
@@ -115,16 +127,23 @@ object TimeSeriesBuffer {
 }
 
 /**
- * Mutable buffer for efficiently manipulating metric data.
- */
+  * Mutable buffer for efficiently manipulating metric data.
+  */
 final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeSeq)
-    extends TimeSeries with TimeSeq with LazyTaggedItem {
+    extends TimeSeries
+    with TimeSeq
+    with LazyTaggedItem {
 
   def label: String = TimeSeries.toLabel(tags)
+
   def dsType: DsType = data.dsType
+
   def step: Long = data.step
+
   def start: Long = data.start
+
   def values: Array[Double] = data.data
+
   def apply(t: Long): Double = data(t)
 
   import java.lang.{Double => JDouble}
@@ -142,28 +161,29 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Create a deep copy of this buffer.
-   */
+    * Create a deep copy of this buffer.
+    */
   def copy: TimeSeriesBuffer = {
     new TimeSeriesBuffer(tags, new ArrayTimeSeq(data.dsType, start, step, values.clone))
   }
 
   /**
-   * Compute the new tags for the aggregate buffer. The tags are the
-   * intersection of tag values.
-   */
+    * Compute the new tags for the aggregate buffer. The tags are the
+    * intersection of tag values.
+    */
   private def aggrTags(t: Map[String, String]): Map[String, String] = {
     tags.toSet.intersect(t.toSet).toMap
   }
 
   /** Aggregate the data from the block into this buffer. */
   private[db] def aggrBlock(
-      blkTags: Map[String, String],
-      block: Block,
-      aggr: Int,
-      cf: ConsolidationFunction,
-      multiple: Int,
-      op: (Double, Double) => Double): Int = {
+    blkTags: Map[String, String],
+    block: Block,
+    aggr: Int,
+    cf: ConsolidationFunction,
+    multiple: Int,
+    op: (Double, Double) => Double
+  ): Int = {
     tags = aggrTags(blkTags)
     val s = start / step
     val e = values.length + s - 1
@@ -173,7 +193,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     if (e >= bs && s <= be) {
       val spos = if (s > bs) s else bs
       val epos = if (e < be) e else be
-      var i = spos                      // Index to this buffer
+      var i = spos // Index to this buffer
       var j = (i - bs).toInt * multiple // Index into the block
       while (i <= epos) {
         val pos = (i - s).toInt
@@ -224,9 +244,9 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Add the corresponding positions of the two buffers. The buffers must have
-   * the same settings. The tags for the new buffer will be the intersection.
-   */
+    * Add the corresponding positions of the two buffers. The buffers must have
+    * the same settings. The tags for the new buffer will be the intersection.
+    */
   def add(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
@@ -243,8 +263,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Add a constant value to all positions of this buffer.
-   */
+    * Add a constant value to all positions of this buffer.
+    */
   def add(v: Double): Unit = {
     var pos = 0
     while (pos < values.length) {
@@ -254,10 +274,10 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Subtract the corresponding positions of the two buffers. The buffers must
-   * have the same settings. The tags for the new buffer will be the
-   * intersection.
-   */
+    * Subtract the corresponding positions of the two buffers. The buffers must
+    * have the same settings. The tags for the new buffer will be the
+    * intersection.
+    */
   def subtract(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
@@ -270,8 +290,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Subtract a constant value to all positions of this buffer.
-   */
+    * Subtract a constant value to all positions of this buffer.
+    */
   def subtract(v: Double): Unit = {
     var pos = 0
     while (pos < values.length) {
@@ -281,10 +301,10 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Multiply the corresponding positions of the two buffers. The buffers must
-   * have the same settings. The tags for the new buffer will be the
-   * intersection.
-   */
+    * Multiply the corresponding positions of the two buffers. The buffers must
+    * have the same settings. The tags for the new buffer will be the
+    * intersection.
+    */
   def multiply(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
@@ -297,8 +317,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Multiply a constant value to all positions of this buffer.
-   */
+    * Multiply a constant value to all positions of this buffer.
+    */
   def multiply(v: Double): Unit = {
     var pos = 0
     while (pos < values.length) {
@@ -308,10 +328,10 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Divide the corresponding positions of the two buffers. The buffers must
-   * have the same settings. The tags for the new buffer will be the
-   * intersection.
-   */
+    * Divide the corresponding positions of the two buffers. The buffers must
+    * have the same settings. The tags for the new buffer will be the
+    * intersection.
+    */
   def divide(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
@@ -324,8 +344,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Divide a constant value to all positions of this buffer.
-   */
+    * Divide a constant value to all positions of this buffer.
+    */
   def divide(v: Double): Unit = {
     var pos = 0
     while (pos < values.length) {
@@ -335,10 +355,10 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Updates each position we the max value between the two buffers. The
-   * buffers must have the same settings. The tags for the new buffer will be
-   * the intersection.
-   */
+    * Updates each position we the max value between the two buffers. The
+    * buffers must have the same settings. The tags for the new buffer will be
+    * the intersection.
+    */
   def max(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
@@ -357,10 +377,10 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Updates each position we the min value between the two buffers. The
-   * buffers must have the same settings. The tags for the new buffer will be
-   * the intersection.
-   */
+    * Updates each position we the min value between the two buffers. The
+    * buffers must have the same settings. The tags for the new buffer will be
+    * the intersection.
+    */
   def min(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
@@ -379,8 +399,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Setup this buffer array as a count.
-   */
+    * Setup this buffer array as a count.
+    */
   def initCount(): Unit = {
     var pos = 0
     while (pos < values.length) {
@@ -390,10 +410,10 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Updates each position by 1 if the corresponding position in the other
-   * buffer is a valid number, i.e., is not equal NaN. The buffers must have
-   * the same settings. The tags for the new buffer will be the intersection.
-   */
+    * Updates each position by 1 if the corresponding position in the other
+    * buffer is a valid number, i.e., is not equal NaN. The buffers must have
+    * the same settings. The tags for the new buffer will be the intersection.
+    */
   def count(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
     tags = aggrTags(nts.tags)
@@ -412,8 +432,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Merge with another metric buffer.
-   */
+    * Merge with another metric buffer.
+    */
   def merge(ts: TimeSeriesBuffer): Unit = {
     require(step == ts.step, "step sizes must be the same")
     require(start == ts.start, "start times must be the same")
@@ -429,8 +449,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Returns a new buffer with values consolidated to a larger step size.
-   */
+    * Returns a new buffer with values consolidated to a larger step size.
+    */
   def consolidate(multiple: Int, cf: ConsolidationFunction): TimeSeriesBuffer = {
     val e = start + step * values.length
     val newStep = step * multiple
@@ -439,8 +459,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Returns a new buffer with values un-consolidated to a smaller step size.
-   */
+    * Returns a new buffer with values un-consolidated to a smaller step size.
+    */
   def unConsolidate(s: Long, e: Long, step: Long): TimeSeriesBuffer = {
     val diff = e - s
     val size = (diff / step + (if (diff % step != 0) 1 else 0)).asInstanceOf[Int]
@@ -454,11 +474,14 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-   * Returns a new buffer normalized to the specified settings.
-   */
+    * Returns a new buffer normalized to the specified settings.
+    */
   def normalize(step: Long, start: Long, size: Int): TimeSeriesBuffer = {
-    val buf = if (step > this.step) consolidate((step / this.step).toInt, ConsolidationFunction.Avg) else this
-    if (buf.start == start && buf.step == step) buf else {
+    val buf =
+      if (step > this.step) consolidate((step / this.step).toInt, ConsolidationFunction.Avg)
+      else this
+    if (buf.start == start && buf.step == step) buf
+    else {
       val buffer = new Array[Double](size)
       var i = 0
       while (i < buffer.length) {
@@ -476,6 +499,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   override def equals(other: Any): Boolean = {
+
     // Follows guidelines from: http://www.artima.com/pins1ed/object-equality.html#28.4
     other match {
       case that: TimeSeriesBuffer =>

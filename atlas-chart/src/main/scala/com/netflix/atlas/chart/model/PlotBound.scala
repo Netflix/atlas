@@ -19,7 +19,9 @@ package com.netflix.atlas.chart.model
   * Upper or lower bound to use for an axis.
   */
 sealed trait PlotBound {
+
   def lower(hasArea: Boolean, min: Double): Double
+
   def upper(hasArea: Boolean, max: Double): Double
 }
 
@@ -42,6 +44,7 @@ object PlotBound {
     * style is set to area or stack, then the bounds will be adjusted so it goes to the axis.
     */
   case object AutoStyle extends PlotBound {
+
     def lower(hasArea: Boolean, min: Double): Double = {
       if (hasArea && min > 0.0) 0.0 else min
     }
@@ -57,8 +60,11 @@ object PlotBound {
     * Automatically set the bounds using the min and max values for the lines.
     */
   case object AutoData extends PlotBound {
+
     def lower(hasArea: Boolean, min: Double): Double = min
+
     def upper(hasArea: Boolean, max: Double): Double = max
+
     override def toString: String = "auto-data"
   }
 
@@ -66,8 +72,11 @@ object PlotBound {
     * Sets the bound to the specified value regardless of the data in the chart.
     */
   case class Explicit(v: Double) extends PlotBound {
+
     def lower(hasArea: Boolean, min: Double): Double = v
+
     def upper(hasArea: Boolean, max: Double): Double = v
+
     override def toString: String = v.toString
   }
 

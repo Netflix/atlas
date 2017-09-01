@@ -29,13 +29,20 @@ object DataVocabulary extends Vocabulary {
 
   val words: List[Word] = List(
     All,
-    Sum, Count, Min, Max,
+    Sum,
+    Count,
+    Min,
+    Max,
     GroupBy,
     Offset,
-    CfAvg, CfSum, CfMin, CfMax
+    CfAvg,
+    CfSum,
+    CfMin,
+    CfMax
   )
 
   sealed trait DataWord extends SimpleWord {
+
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: Query) :: _ => true
     }
@@ -52,6 +59,7 @@ object DataVocabulary extends Vocabulary {
   }
 
   case object All extends DataWord {
+
     override def name: String = "all"
 
     def newInstance(q: Query): DataExpr = DataExpr.All(q)
@@ -66,6 +74,7 @@ object DataVocabulary extends Vocabulary {
   }
 
   case object Sum extends DataWord {
+
     override def name: String = "sum"
 
     def newInstance(q: Query): DataExpr = DataExpr.Sum(q)
@@ -86,6 +95,7 @@ object DataVocabulary extends Vocabulary {
   }
 
   case object Count extends DataWord {
+
     override def name: String = "count"
 
     def newInstance(q: Query): DataExpr = DataExpr.Count(q)
@@ -106,6 +116,7 @@ object DataVocabulary extends Vocabulary {
   }
 
   case object Min extends DataWord {
+
     override def name: String = "min"
 
     def newInstance(q: Query): DataExpr = DataExpr.Min(q)
@@ -126,6 +137,7 @@ object DataVocabulary extends Vocabulary {
   }
 
   case object Max extends DataWord {
+
     override def name: String = "max"
 
     def newInstance(q: Query): DataExpr = DataExpr.Max(q)
@@ -146,6 +158,7 @@ object DataVocabulary extends Vocabulary {
   }
 
   case object GroupBy extends SimpleWord {
+
     override def name: String = "by"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -168,13 +181,16 @@ object DataVocabulary extends Vocabulary {
 
     override def signature: String = "af:AggregateFunction keys:List -- DataExpr"
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,(,name,)",
-      "name,sps,:eq,:max,(,nf.cluster,)",
-      "name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,(,nf.asg,nf.zone,)")
+    override def examples: List[String] =
+      List(
+        "name,sps,:eq,(,name,)",
+        "name,sps,:eq,:max,(,nf.cluster,)",
+        "name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,(,nf.asg,nf.zone,)"
+      )
   }
 
   case object Offset extends SimpleWord {
+
     override def name: String = "offset"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -193,13 +209,14 @@ object DataVocabulary extends Vocabulary {
 
     override def signature: String = "TimeSeriesExpr Duration -- TimeSeriesExpr"
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,(,name,),:by,1w",
-      "name,sps,:eq,:max,PT1H")
+    override def examples: List[String] =
+      List("name,sps,:eq,(,name,),:by,1w", "name,sps,:eq,:max,PT1H")
   }
 
   sealed trait CfWord extends SimpleWord {
+
     def cf: ConsolidationFunction
+
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case AggrType(_) :: _ => true
     }
@@ -210,16 +227,20 @@ object DataVocabulary extends Vocabulary {
 
     override def signature: String = "AggregateFunction -- DataExpr"
 
-    override def examples: List[String] = List(
-      "name,sps,:eq",
-      "name,sps,:eq,:min",
-      "name,sps,:eq,:max",
-      "name,sps,:eq,:sum",
-      "name,sps,:eq,:count")
+    override def examples: List[String] =
+      List(
+        "name,sps,:eq",
+        "name,sps,:eq,:min",
+        "name,sps,:eq,:max",
+        "name,sps,:eq,:sum",
+        "name,sps,:eq,:count"
+      )
   }
 
   case object CfSum extends CfWord {
+
     override def cf: ConsolidationFunction = ConsolidationFunction.Sum
+
     override def name: String = "cf-sum"
 
     override def summary: String =
@@ -229,7 +250,9 @@ object DataVocabulary extends Vocabulary {
   }
 
   case object CfAvg extends CfWord {
+
     override def cf: ConsolidationFunction = ConsolidationFunction.Avg
+
     override def name: String = "cf-avg"
 
     override def summary: String =
@@ -239,7 +262,9 @@ object DataVocabulary extends Vocabulary {
   }
 
   case object CfMin extends CfWord {
+
     override def cf: ConsolidationFunction = ConsolidationFunction.Min
+
     override def name: String = "cf-min"
 
     override def summary: String =
@@ -249,7 +274,9 @@ object DataVocabulary extends Vocabulary {
   }
 
   case object CfMax extends CfWord {
+
     override def cf: ConsolidationFunction = ConsolidationFunction.Max
+
     override def name: String = "cf-max"
 
     override def summary: String =

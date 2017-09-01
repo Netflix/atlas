@@ -57,7 +57,8 @@ import com.typesafe.scalalogging.StrictLogging
   *     AWS CloudWatch client.
   */
 class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWatch)
-  extends Actor with StrictLogging {
+    extends Actor
+    with StrictLogging {
 
   import CloudWatchPoller._
 
@@ -71,13 +72,13 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
 
   // Child actor for getting the data for a metric. This will do the call using the
   // AWS SDK which is blocking and should be run in an isolated dispatcher.
-  private val metricsGetRef = context.actorOf(
-    FromConfig.props(Props(new GetMetricActor(client))), "metrics-get")
+  private val metricsGetRef =
+    context.actorOf(FromConfig.props(Props(new GetMetricActor(client))), "metrics-get")
 
   // Child actor for listing metrics. This will do the call using the
   // AWS SDK which is blocking and should be run in an isolated dispatcher.
-  private val metricsListRef = context.actorOf(
-    FromConfig.props(Props(new ListMetricsActor(client, tagger))), "metrics-list")
+  private val metricsListRef =
+    context.actorOf(FromConfig.props(Props(new ListMetricsActor(client, tagger))), "metrics-list")
 
   // Batch size to use for flushing data back to the poller manager.
   private val batchSize = config.getInt("atlas.cloudwatch.batch-size")
@@ -93,22 +94,22 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   private val listUpdateTime: AtomicLong = registry.gauge(
     "atlas.cloudwatch.listAge",
     new AtomicLong(registry.clock().wallTime()),
-    Functions.age(registry.clock()))
+    Functions.age(registry.clock())
+  )
 
   // Size of the metadata list. Compare with pending gets to get an idea of
   // how well we are keeping up with polling all of the data.
-  private val listSize: AtomicLong = registry.gauge(
-    "atlas.cloudwatch.listSize",
-    new AtomicLong(0L))
+  private val listSize: AtomicLong =
+    registry.gauge("atlas.cloudwatch.listSize", new AtomicLong(0L))
 
   // Number of get requests that are in-flight.
-  private val pendingGets: AtomicLong = registry.gauge(
-    "atlas.cloudwatch.pendingGets",
-    new AtomicLong(0L))
+  private val pendingGets: AtomicLong =
+    registry.gauge("atlas.cloudwatch.pendingGets", new AtomicLong(0L))
 
   // Cache of the last values received for a given metric
   private val cacheTTL = config.getDuration("atlas.cloudwatch.cache-ttl")
-  private val metricCache = Caffeine.newBuilder()
+  private val metricCache = Caffeine
+    .newBuilder()
     .expireAfterWrite(cacheTTL.toMillis, TimeUnit.MILLISECONDS)
     .build[MetricMetadata, MetricData]()
 
@@ -116,9 +117,9 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   private val metricBatch: MList = new MList
 
   def receive: Receive = {
-    case Messages.Tick   => refresh()               // From PollerManager
-    case m: MetricData   => processMetricData(m)    // Response from GetMetricActor
-    case MetricList(ms)  => processMetricList(ms)   // Response from ListMetricsActor
+    case Messages.Tick  => refresh() // From PollerManager
+    case m: MetricData  => processMetricData(m) // Response from GetMetricActor
+    case MetricList(ms) => processMetricList(ms) // Response from ListMetricsActor
   }
 
   private def refresh(): Unit = {
@@ -147,7 +148,9 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     val ms = metricsMetadata.get()
     pendingGets.addAndGet(ms.size)
     logger.info(s"requesting data for ${ms.size} metrics")
-    ms.foreach { m => metricsGetRef ! m }
+    ms.foreach { m =>
+      metricsGetRef ! m
+    }
   }
 
   /**
@@ -225,6 +228,7 @@ object CloudWatchPoller {
   case class GetMetricData(metric: MetricMetadata)
 
   case class MetricData(meta: MetricMetadata, data: Option[Datapoint]) {
+
     def datapoint: Datapoint = data.getOrElse(Zero)
   }
 

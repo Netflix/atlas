@@ -21,8 +21,8 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.config.Config
 
 /**
- * Adds a directive to serve static pages from the 'www' resource directory.
- */
+  * Adds a directive to serve static pages from the 'www' resource directory.
+  */
 class StaticPages(config: Config) extends WebApi {
 
   private val defaultPage = config.getString("atlas.akka.static.default-page")

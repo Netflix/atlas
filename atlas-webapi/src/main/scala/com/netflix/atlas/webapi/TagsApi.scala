@@ -60,14 +60,17 @@ class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
       extractRequestContext { ctx =>
         val req = toRequest(ctx, path)
         val limit = req.limit
-        _ => ask(dbRef, req.toDbRequest)(60.seconds).map {
-          case TagListResponse(vs)   if req.useText => asText(tagString(vs), offsetTag(limit, vs))
-          case KeyListResponse(vs)   if req.useText => asText(vs.mkString("\n"), offsetString(limit, vs))
-          case ValueListResponse(vs) if req.useText => asText(vs.mkString("\n"), offsetString(limit, vs))
-          case TagListResponse(vs)   if req.useJson => asJson(vs, offsetTag(limit, vs))
-          case KeyListResponse(vs)   if req.useJson => asJson(vs, offsetString(limit, vs))
-          case ValueListResponse(vs) if req.useJson => asJson(vs, offsetString(limit, vs))
-        }
+        _ =>
+          ask(dbRef, req.toDbRequest)(60.seconds).map {
+            case TagListResponse(vs) if req.useText => asText(tagString(vs), offsetTag(limit, vs))
+            case KeyListResponse(vs) if req.useText =>
+              asText(vs.mkString("\n"), offsetString(limit, vs))
+            case ValueListResponse(vs) if req.useText =>
+              asText(vs.mkString("\n"), offsetString(limit, vs))
+            case TagListResponse(vs) if req.useJson   => asJson(vs, offsetTag(limit, vs))
+            case KeyListResponse(vs) if req.useJson   => asJson(vs, offsetString(limit, vs))
+            case ValueListResponse(vs) if req.useJson => asJson(vs, offsetString(limit, vs))
+          }
       }
     }
   }
@@ -81,7 +84,8 @@ class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
       format = params.get("format"),
       offset = params.get("offset"),
       verbose = params.get("verbose").contains("1"),
-      limit = params.get("limit").fold(ApiSettings.maxTagLimit)(_.toInt))
+      limit = params.get("limit").fold(ApiSettings.maxTagLimit)(_.toInt)
+    )
   }
 
   private def tagString(t: Tag): String = s"${t.key}\t${t.value}\t${t.count}"
@@ -93,7 +97,8 @@ class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   }
 
   private def offsetTag(limit: Int, vs: List[Tag]): Option[String] = {
-    if (vs.size < limit) None else {
+    if (vs.size < limit) None
+    else {
       val t = vs.last
       Some(s"${t.key},${t.value}")
     }
@@ -119,13 +124,14 @@ object TagsApi {
   private val queryInterpreter = new Interpreter(QueryVocabulary.allWords)
 
   case class Request(
-      key: Option[String] = None,
-      version: Option[String] = None,
-      query: Option[String] = None,
-      format: Option[String] = None,
-      offset: Option[String] = None,
-      verbose: Boolean = false,
-      limit: Int = 1000) {
+    key: Option[String] = None,
+    version: Option[String] = None,
+    query: Option[String] = None,
+    format: Option[String] = None,
+    offset: Option[String] = None,
+    verbose: Boolean = false,
+    limit: Int = 1000
+  ) {
 
     def actualLimit: Int = if (limit > ApiSettings.maxTagLimit) ApiSettings.maxTagLimit else limit
 
@@ -135,10 +141,10 @@ object TagsApi {
 
     def toDbRequest: AnyRef = {
       (key -> verbose) match {
-        case (Some(k),  true) => ListTagsRequest(toTagQuery(Query.HasKey(k)))
+        case (Some(k), true)  => ListTagsRequest(toTagQuery(Query.HasKey(k)))
         case (Some(k), false) => ListValuesRequest(toTagQuery(Query.HasKey(k)))
-        case (None,     true) => ListTagsRequest(toTagQuery(Query.True))
-        case (None,    false) => ListKeysRequest(toTagQuery(Query.True))
+        case (None, true)     => ListTagsRequest(toTagQuery(Query.True))
+        case (None, false)    => ListKeysRequest(toTagQuery(Query.True))
       }
     }
 
@@ -158,7 +164,9 @@ object TagsApi {
   }
 
   case class ListTagsRequest(q: TagQuery)
+
   case class ListKeysRequest(q: TagQuery)
+
   case class ListValuesRequest(q: TagQuery)
 
   case class KeyListResponse(vs: List[String])

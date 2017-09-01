@@ -22,38 +22,38 @@ import org.openjdk.jmh.annotations.Threads
 import org.openjdk.jmh.infra.Blackhole
 
 /**
- * Quick sanity check on substitute changes. Main goal is to reduce some of the allocations seen
- * in batch use-cases.
- *
- * ```
- * > run -wi 10 -i 10 -f1 -t1 .*StringSub.*
- * ```
- *
- * Initial results:
- *
- * ```
- * [info] Benchmark                     Mode  Cnt        Score       Error  Units
- * [info] StringSub.testParsingByHand  thrpt   10  2223516.436 ± 43697.844  ops/s
- * [info] StringSub.testUsingRegex     thrpt   10   267252.094 ±  6066.379  ops/s
- * ```
- */
+  * Quick sanity check on substitute changes. Main goal is to reduce some of the allocations seen
+  * in batch use-cases.
+  *
+  * ```
+  * > run -wi 10 -i 10 -f1 -t1 .*StringSub.*
+  * ```
+  *
+  * Initial results:
+  *
+  * ```
+  * [info] Benchmark                     Mode  Cnt        Score       Error  Units
+  * [info] StringSub.testParsingByHand  thrpt   10  2223516.436 ± 43697.844  ops/s
+  * [info] StringSub.testUsingRegex     thrpt   10   267252.094 ±  6066.379  ops/s
+  * ```
+  */
 @State(Scope.Thread)
 class StringSub {
 
   /**
-   * Simple variable syntax with $varname.
-   */
+    * Simple variable syntax with $varname.
+    */
   private val SimpleVar = """\$([-_.a-zA-Z0-9]+)""".r
 
   /**
-   * Simple variable syntax where variable name is enclosed in parenthesis,
-   * e.g., $(varname).
-   */
+    * Simple variable syntax where variable name is enclosed in parenthesis,
+    * e.g., $(varname).
+    */
   private val ParenVar = """\$\(([^\(\)]+)\)""".r
-
 
   def substitute(str: String, vars: Map[String, String]): String = {
     import scala.util.matching.Regex
+
     def f(m: Regex.Match): String = vars.getOrElse(m.group(1), m.group(1))
     val tmp = SimpleVar.replaceAllIn(str, f _)
     ParenVar.replaceAllIn(tmp, f _)

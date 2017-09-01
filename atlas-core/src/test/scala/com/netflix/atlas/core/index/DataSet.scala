@@ -22,27 +22,26 @@ import java.util.UUID
 
 import com.netflix.atlas.core.model._
 
-
 object DataSet {
 
   private val ec2Bandwidth = Map(
-    "m1.xlarge" -> 1000,
-    "m2.xlarge" -> 300,
+    "m1.xlarge"  -> 1000,
+    "m2.xlarge"  -> 300,
     "m2.2xlarge" -> 700,
     "m2.4xlarge" -> 1000,
-    "m3.xlarge" -> 1000,
+    "m3.xlarge"  -> 1000,
     "m3.2xlarge" -> 1000,
-    "c3.medium" -> 300,
-    "c3.large" -> 300,
-    "c3.xlarge" -> 700,
+    "c3.medium"  -> 300,
+    "c3.large"   -> 300,
+    "c3.xlarge"  -> 700,
     "c3.2xlarge" -> 1000,
     "c3.4xlarge" -> 2000,
     "c3.8xlarge" -> 2000,
-    "r3.large" -> 300,
-    "r3.xlarge" -> 700,
+    "r3.large"   -> 300,
+    "r3.xlarge"  -> 700,
     "r3.2xlarge" -> 1000,
-    "i2.large" -> 300,
-    "i2.xlarge" -> 700,
+    "i2.large"   -> 300,
+    "i2.xlarge"  -> 700,
     "i2.2xlarge" -> 1000,
     "i2.4xlarge" -> 2000,
     "i2.8xlarge" -> 2000
@@ -52,7 +51,8 @@ object DataSet {
     app: String,
     node: String,
     stack: Option[String],
-    version: Option[Int]): Map[String, String] = {
+    version: Option[Int]
+  ): Map[String, String] = {
     val cluster = stack match {
       case Some(s) => "%s-%s".format(app, s)
       case None    => app
@@ -62,25 +62,28 @@ object DataSet {
       case None    => cluster
     }
     Map(
-      TagKey.application -> app,
-      TagKey.cluster -> cluster,
+      TagKey.application      -> app,
+      TagKey.cluster          -> cluster,
       TagKey.autoScalingGroup -> asg,
-      TagKey.node -> node,
-      TagKey.legacy -> "epic")
+      TagKey.node             -> node,
+      TagKey.legacy           -> "epic"
+    )
   }
 
   /**
-   * Some SPS-like wave metrics that have a daily trend.
-   */
+    * Some SPS-like wave metrics that have a daily trend.
+    */
   def staticSps: List[TimeSeries] = {
+
     // size, min, max, noise
     val settings = Map(
       "silverlight" -> ((300, 50.0, 300.0, 5.0)),
-      "xbox" -> ((120, 40.0, 220.0, 5.0)),
-      "wii" -> ((111, 20.0, 240.0, 8.0)),
-      "ps3" -> ((220, 40.0, 260.0, 15.0)),
-      "appletv" -> ((10, 3.0, 40.0, 5.0)),
-      "psvita" -> ((3, 0.2, 1.2, 0.6)))
+      "xbox"        -> ((120, 40.0, 220.0, 5.0)),
+      "wii"         -> ((111, 20.0, 240.0, 8.0)),
+      "ps3"         -> ((220, 40.0, 260.0, 15.0)),
+      "appletv"     -> ((10, 3.0, 40.0, 5.0)),
+      "psvita"      -> ((3, 0.2, 1.2, 0.6))
+    )
 
     val metrics = settings.flatMap { t =>
       val stack = Some(t._1)
@@ -184,6 +187,7 @@ object DataSet {
   }
 
   def noise(size: Int, noise: Double, series: TimeSeries): TimeSeries = {
+
     // A fixed set of random offsets that will get applied to values from the
     // wrapped time series.
     val offsets = {
@@ -193,6 +197,7 @@ object DataSet {
         if (r.nextBoolean()) v else -1.0 * v
       }
     }
+
     def f(t: Long): Double = {
       val i = (t % size).toInt
       val offset = offsets(i)
@@ -204,6 +209,7 @@ object DataSet {
 
   def wave(min: Double, max: Double, wavelength: Duration): TimeSeries = {
     val lambda = 2 * scala.math.Pi / wavelength.toMillis
+
     def f(t: Long): Double = {
       val amp = (max - min) / 2.0
       val yoffset = min + amp
@@ -213,6 +219,7 @@ object DataSet {
   }
 
   def interval(ts1: TimeSeries, ts2: TimeSeries, s: Long, e: Long): TimeSeries = {
+
     def f(t: Long): Double = {
       val ts = if (t >= s && t < e) ts2 else ts1
       ts.data(t)
@@ -233,29 +240,31 @@ object DataSet {
   }
 
   /**
-   * Some metrics with problems that are used to test alerting.
-   */
+    * Some metrics with problems that are used to test alerting.
+    */
   def staticAlertSet: List[TimeSeries] = {
     smallStaticSet ::: List(waveWithOutages, cpuSpikes, discoveryStatusUp, discoveryStatusDown)
   }
 
   /**
-   * Returns a static list of metrics that can be used as a test set.
-   */
+    * Returns a static list of metrics that can be used as a test set.
+    */
   def smallStaticSet: List[TimeSeries] = staticSps
 
   /**
-   * Returns static list with 100k metrics per cluster.
-   */
+    * Returns static list with 100k metrics per cluster.
+    */
   def largeStaticSet(n: Int): List[TimeSeries] = {
+
     // size, min, max, noise
     val settings = Map(
       "silverlight" -> ((300, 50.0, 300.0, 5.0)),
-      "xbox" -> ((120, 40.0, 220.0, 5.0)),
-      "wii" -> ((111, 20.0, 240.0, 8.0)),
-      "ps3" -> ((220, 40.0, 260.0, 15.0)),
-      "appletv" -> ((10, 3.0, 40.0, 5.0)),
-      "psvita" -> ((3, 0.2, 1.2, 0.6)))
+      "xbox"        -> ((120, 40.0, 220.0, 5.0)),
+      "wii"         -> ((111, 20.0, 240.0, 8.0)),
+      "ps3"         -> ((220, 40.0, 260.0, 15.0)),
+      "appletv"     -> ((10, 3.0, 40.0, 5.0)),
+      "psvita"      -> ((3, 0.2, 1.2, 0.6))
+    )
 
     val metrics = settings.flatMap { t =>
       val stack = Some(t._1)
@@ -275,8 +284,8 @@ object DataSet {
   }
 
   /**
-   * Returns static list with legacy metrics, only have a cluster and large names.
-   */
+    * Returns static list with legacy metrics, only have a cluster and large names.
+    */
   def largeLegacySet(n: Int): List[TimeSeries] = {
     val metrics = (0 until n).map { i =>
       val name = UUID.randomUUID.toString
@@ -288,16 +297,17 @@ object DataSet {
   }
 
   def constants: List[TimeSeries] = {
-    val metrics = ec2Bandwidth.map { case (vmtype, bandwidth) =>
-      val tags = Map("name" -> "ec2.networkBandwidth", "nf.vmtype" -> vmtype)
-      constant(bandwidth).withTags(tags)
+    val metrics = ec2Bandwidth.map {
+      case (vmtype, bandwidth) =>
+        val tags = Map("name" -> "ec2.networkBandwidth", "nf.vmtype" -> vmtype)
+        constant(bandwidth).withTags(tags)
     }
     metrics.toList
   }
 
   /**
-   * Returns a data set with a given name.
-   */
+    * Returns a data set with a given name.
+    */
   def get(name: String): List[TimeSeries] = name match {
     case "alert"     => staticAlertSet
     case "small"     => smallStaticSet

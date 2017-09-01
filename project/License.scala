@@ -6,13 +6,13 @@ import scala.io.Source
 import sbt._
 
 /**
- * Loosely based on: https://github.com/Banno/sbt-license-plugin
- *
- * Main changes in functionality:
- * - remove spurious whitespace on empty lines for license
- * - supports both test and main source files
- * - add target to check which can fail the build
- */
+  * Loosely based on: https://github.com/Banno/sbt-license-plugin
+  *
+  * Main changes in functionality:
+  * - remove spurious whitespace on empty lines for license
+  * - supports both test and main source files
+  * - add target to check which can fail the build
+  */
 object License {
   private val lineSeparator = System.getProperty("line.separator")
 
@@ -43,7 +43,9 @@ object License {
   def checkLicenseHeaders(log: Logger, srcDir: File): Unit = {
     val badFiles = findFiles(srcDir).filterNot(checkLicenseHeader)
     if (badFiles.nonEmpty) {
-      badFiles.foreach { f => log.error(s"bad license header: $f") }
+      badFiles.foreach { f =>
+        log.error(s"bad license header: $f")
+      }
       sys.error(s"${badFiles.size} files with incorrect header, run formatLicenseHeaders to fix")
     } else {
       log.info("all files have correct license header")
@@ -61,7 +63,9 @@ object License {
   }
 
   def formatLicenseHeaders(log: Logger, srcDir: File): Unit = {
-    findFiles(srcDir).foreach { f => formatLicenseHeader(log, f) }
+    findFiles(srcDir).foreach { f =>
+      formatLicenseHeader(log, f)
+    }
   }
 
   def formatLicenseHeader(log: Logger, file: File): Unit = {
@@ -79,6 +83,7 @@ object License {
 
   def writeLines(file: File, lines: List[String]): Unit = {
     val out = new PrintStream(file)
-    try lines.foreach(out.println) finally out.close()
+    try lines.foreach(out.println)
+    finally out.close()
   }
 }

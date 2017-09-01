@@ -23,30 +23,30 @@ import org.openjdk.jmh.annotations.Threads
 import org.openjdk.jmh.infra.Blackhole
 
 /**
- * Check to see how query index performs with simple queries based on index size. With similar test
- * with real data using 17k alert expressions that decomposed into over 33k query expressions, the
- * index was around 1000x faster for processing a metrics payload of 5000 datapoints. The loop took
- * around 6 seconds and the index took around 6ms. The real dataset is slower mostly due to more
- * regex being used in real queries and not being used in this synthetic data.
- *
- * ```
- * > jmh:run -wi 10 -i 10 -f1 -t1 .*QueryIndexMatching.*
- * ```
- *
- * Initial results:
- *
- * ```
- * Benchmark                         Mode  Cnt        Score        Error  Units
- * QueryIndexMatching.index_100     thrpt   10  1427970.545 ±  42632.895  ops/s
- * QueryIndexMatching.index_1000    thrpt   10  1337580.661 ± 113418.137  ops/s
- * QueryIndexMatching.index_10000   thrpt   10  1341069.994 ± 104992.441  ops/s
- * QueryIndexMatching.index_100000  thrpt   10  1290159.738 ±  76488.013  ops/s
- * QueryIndexMatching.loop_100      thrpt   10   714393.977 ±  26067.308  ops/s
- * QueryIndexMatching.loop_1000     thrpt   10    68317.877 ±   6006.013  ops/s
- * QueryIndexMatching.loop_10000    thrpt   10     3831.356 ±    454.029  ops/s
- * QueryIndexMatching.loop_100000   thrpt   10      375.074 ±     30.352  ops/s
- * ```
- */
+  * Check to see how query index performs with simple queries based on index size. With similar test
+  * with real data using 17k alert expressions that decomposed into over 33k query expressions, the
+  * index was around 1000x faster for processing a metrics payload of 5000 datapoints. The loop took
+  * around 6 seconds and the index took around 6ms. The real dataset is slower mostly due to more
+  * regex being used in real queries and not being used in this synthetic data.
+  *
+  * ```
+  * > jmh:run -wi 10 -i 10 -f1 -t1 .*QueryIndexMatching.*
+  * ```
+  *
+  * Initial results:
+  *
+  * ```
+  * Benchmark                         Mode  Cnt        Score        Error  Units
+  * QueryIndexMatching.index_100     thrpt   10  1427970.545 ±  42632.895  ops/s
+  * QueryIndexMatching.index_1000    thrpt   10  1337580.661 ± 113418.137  ops/s
+  * QueryIndexMatching.index_10000   thrpt   10  1341069.994 ± 104992.441  ops/s
+  * QueryIndexMatching.index_100000  thrpt   10  1290159.738 ±  76488.013  ops/s
+  * QueryIndexMatching.loop_100      thrpt   10   714393.977 ±  26067.308  ops/s
+  * QueryIndexMatching.loop_1000     thrpt   10    68317.877 ±   6006.013  ops/s
+  * QueryIndexMatching.loop_10000    thrpt   10     3831.356 ±    454.029  ops/s
+  * QueryIndexMatching.loop_100000   thrpt   10      375.074 ±     30.352  ops/s
+  * ```
+  */
 @State(Scope.Thread)
 class QueryIndexMatching {
 

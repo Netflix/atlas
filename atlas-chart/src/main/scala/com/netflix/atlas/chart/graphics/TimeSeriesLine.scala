@@ -20,22 +20,19 @@ import java.awt.Graphics2D
 import com.netflix.atlas.core.model.TimeSeq
 
 /**
- * Draws a time series as a stepped line.
- *
- * @param style
- *     Style to use for drawing the line.
- * @param ts
- *     Data for the line.
- * @param xaxis
- *     Axis used to create the X scale.
- * @param yaxis
- *     Axis used to create the Y scale.
- */
-case class TimeSeriesLine(
-    style: Style,
-    ts: TimeSeq,
-    xaxis: TimeAxis,
-    yaxis: ValueAxis) extends Element {
+  * Draws a time series as a stepped line.
+  *
+  * @param style
+  *     Style to use for drawing the line.
+  * @param ts
+  *     Data for the line.
+  * @param xaxis
+  *     Axis used to create the X scale.
+  * @param yaxis
+  *     Axis used to create the Y scale.
+  */
+case class TimeSeriesLine(style: Style, ts: TimeSeq, xaxis: TimeAxis, yaxis: ValueAxis)
+    extends Element {
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     style.configure(g)

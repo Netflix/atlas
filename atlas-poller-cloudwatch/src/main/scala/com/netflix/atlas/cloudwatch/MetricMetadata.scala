@@ -29,7 +29,8 @@ import com.amazonaws.services.cloudwatch.model.Statistic
 case class MetricMetadata(
   category: MetricCategory,
   definition: MetricDefinition,
-  dimensions: List[Dimension]) {
+  dimensions: List[Dimension]
+) {
 
   def convert(d: Datapoint): Double = definition.conversion(this, d)
 

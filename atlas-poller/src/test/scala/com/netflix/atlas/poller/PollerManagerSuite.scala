@@ -33,11 +33,11 @@ import scala.concurrent.Await
 import scala.util.Failure
 import scala.util.Success
 
-
-class PollerManagerSuite extends TestKit(ActorSystem())
-  with ImplicitSender
-  with FunSuiteLike
-  with BeforeAndAfterAll {
+class PollerManagerSuite
+    extends TestKit(ActorSystem())
+    with ImplicitSender
+    with FunSuiteLike
+    with BeforeAndAfterAll {
 
   import scala.concurrent.duration._
 
@@ -72,7 +72,8 @@ class PollerManagerSuite extends TestKit(ActorSystem())
     ref ! Messages.Tick
     assert(dataValue === Messages.MetricsPayload())
 
-    val payload = Messages.MetricsPayload(Map.empty, List(Datapoint(Map("name" -> "foo"), 0L, 42.0)))
+    val payload =
+      Messages.MetricsPayload(Map.empty, List(Datapoint(Map("name" -> "foo"), 0L, 42.0)))
 
     dataRef.set(Success(payload))
     ref ! Messages.Tick
@@ -100,8 +101,15 @@ class PollerManagerSuite extends TestKit(ActorSystem())
     val e1 = new RuntimeException("foo")
     val e2 = new IllegalArgumentException("bar")
 
-    val c1 = registry.counter("atlas.poller.restarts", "id", "poller-test", "error", "RuntimeException")
-    val c2 = registry.counter("atlas.poller.restarts", "id", "poller-test", "error", "IllegalArgumentException")
+    val c1 =
+      registry.counter("atlas.poller.restarts", "id", "poller-test", "error", "RuntimeException")
+    val c2 = registry.counter(
+      "atlas.poller.restarts",
+      "id",
+      "poller-test",
+      "error",
+      "IllegalArgumentException"
+    )
 
     val init1 = c1.count()
     val init2 = c2.count()
@@ -124,6 +132,7 @@ class PollerManagerSuite extends TestKit(ActorSystem())
   }
 
   private def updateGauges(): Unit = {
+
     // Forces the update of passive gauges
     registry.iterator()
   }

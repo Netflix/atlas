@@ -21,9 +21,7 @@ import com.netflix.atlas.core.algorithm.OnlineDes
 import com.netflix.atlas.core.algorithm.OnlineSlidingDes
 import com.netflix.atlas.core.util.Math
 
-trait StatefulExpr extends TimeSeriesExpr {
-
-}
+trait StatefulExpr extends TimeSeriesExpr {}
 
 object StatefulExpr {
 
@@ -35,6 +33,7 @@ object StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.RollingCount._
 
     def dataExprs: List[DataExpr] = expr.dataExprs
+
     override def toString: String = s"$expr,$n,:rolling-count"
 
     def isGrouped: Boolean = expr.isGrouped
@@ -71,7 +70,8 @@ object StatefulExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
-      if (n <= 1) rs else {
+      if (n <= 1) rs
+      else {
         val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
         val newData = rs.data.map { t =>
           val bounded = t.data.bounded(context.start, context.end)
@@ -85,6 +85,7 @@ object StatefulExpr {
   }
 
   object RollingCount {
+
     case class State(pos: Int, value: Double, buf: Array[Double])
 
     type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
@@ -94,14 +95,12 @@ object StatefulExpr {
   // Des
   //
 
-  case class Des(
-      expr: TimeSeriesExpr,
-      trainingSize: Int,
-      alpha: Double,
-      beta: Double) extends StatefulExpr {
+  case class Des(expr: TimeSeriesExpr, trainingSize: Int, alpha: Double, beta: Double)
+      extends StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.Des._
 
     def dataExprs: List[DataExpr] = expr.dataExprs
+
     override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:des"
 
     def isGrouped: Boolean = expr.isGrouped
@@ -139,6 +138,7 @@ object StatefulExpr {
   }
 
   object Des {
+
     case class State(desState: OnlineDes.State)
 
     type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
@@ -148,14 +148,12 @@ object StatefulExpr {
   // SlidingDes
   //
 
-  case class SlidingDes(
-      expr: TimeSeriesExpr,
-      trainingSize: Int,
-      alpha: Double,
-      beta: Double) extends StatefulExpr {
+  case class SlidingDes(expr: TimeSeriesExpr, trainingSize: Int, alpha: Double, beta: Double)
+      extends StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.SlidingDes._
 
     def dataExprs: List[DataExpr] = expr.dataExprs
+
     override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:sdes"
 
     def isGrouped: Boolean = expr.isGrouped
@@ -206,6 +204,7 @@ object StatefulExpr {
   }
 
   object SlidingDes {
+
     case class State(skipUpTo: Long, desState: OnlineSlidingDes.State)
 
     type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
@@ -219,6 +218,7 @@ object StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.Trend._
 
     def dataExprs: List[DataExpr] = expr.dataExprs
+
     override def toString: String = s"$expr,$window,:trend"
 
     def isGrouped: Boolean = expr.isGrouped
@@ -256,7 +256,8 @@ object StatefulExpr {
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val period = (window.toMillis / context.step).toInt
       val rs = expr.eval(context, data)
-      if (period <= 1) rs else {
+      if (period <= 1) rs
+      else {
         val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
         val newData = rs.data.map { t =>
           val bounded = t.data.bounded(context.start, context.end)
@@ -270,6 +271,7 @@ object StatefulExpr {
   }
 
   object Trend {
+
     case class State(nanCount: Int, pos: Int, value: Double, buf: Array[Double])
 
     type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
@@ -281,7 +283,9 @@ object StatefulExpr {
 
   case class Integral(expr: TimeSeriesExpr) extends StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.Integral._
+
     def dataExprs: List[DataExpr] = expr.dataExprs
+
     override def toString: String = s"$expr,:integral"
 
     def isGrouped: Boolean = expr.isGrouped
@@ -311,6 +315,7 @@ object StatefulExpr {
   }
 
   object Integral {
+
     case class State(value: Double)
 
     type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
@@ -323,6 +328,7 @@ object StatefulExpr {
     import com.netflix.atlas.core.model.StatefulExpr.Derivative._
 
     def dataExprs: List[DataExpr] = expr.dataExprs
+
     override def toString: String = s"$expr,:derivative"
 
     def isGrouped: Boolean = expr.isGrouped
@@ -355,6 +361,7 @@ object StatefulExpr {
   }
 
   object Derivative {
+
     case class State(value: Double)
 
     type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]

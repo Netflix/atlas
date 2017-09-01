@@ -90,7 +90,8 @@ class ShardsSuite extends FunSuite {
       if (max - avg > threshold || avg - min > threshold) {
         printSummary(counts)
       }
-      assert(max - min <= threshold)
+      assert(max - avg <= threshold)
+      assert(avg - min <= threshold)
     }
   }
 
@@ -112,11 +113,16 @@ class ShardsSuite extends FunSuite {
 
     // make sure that the distribution is uniform
     val maxAC = 20000 / 6 + 1
-    val maxB  = 20000 / 12 + 1
+    val maxB = 20000 / 12 + 1
     val expected = Array(
-      maxAC, maxAC,
-      maxB, maxB, maxB, maxB,
-      maxAC, maxAC
+      maxAC,
+      maxAC,
+      maxB,
+      maxB,
+      maxB,
+      maxB,
+      maxAC,
+      maxAC
     )
     expected.indices.foreach { i =>
       assert(expected(i) - counts.get(i, -1) <= 1)
@@ -136,8 +142,10 @@ class ShardsSuite extends FunSuite {
     (0 until 20000).foreach { i =>
       val idx = mapper.instanceForIndex(i)
       val contains = localMapper.containsIndex(i)
-      assert(contains === (idx == localInstance),
-        s"$i => instance = $localInstance; mapper.instance = $idx; local.contains = $contains")
+      assert(
+        contains === (idx == localInstance),
+        s"$i => instance = $localInstance; mapper.instance = $idx; local.contains = $contains"
+      )
     }
   }
 
@@ -155,8 +163,10 @@ class ShardsSuite extends FunSuite {
       val id = Hash.sha1(UUID.randomUUID().toString)
       val idx = mapper.instanceForId(id)
       val contains = localMapper.containsId(id)
-      assert(contains === (idx == localInstance),
-        s"$id => instance = $localInstance; mapper.instance = $idx; local.contains = $contains")
+      assert(
+        contains === (idx == localInstance),
+        s"$id => instance = $localInstance; mapper.instance = $idx; local.contains = $contains"
+      )
     }
   }
 
@@ -169,7 +179,12 @@ class ShardsSuite extends FunSuite {
     )
 
     val expectedMatches = Set(
-      Set(0, 6), Set(1, 7), Set(2), Set(3), Set(4), Set(5)
+      Set(0, 6),
+      Set(1, 7),
+      Set(2),
+      Set(3),
+      Set(4),
+      Set(5)
     )
 
     val mapper = Shards.replicaMapper(groups)

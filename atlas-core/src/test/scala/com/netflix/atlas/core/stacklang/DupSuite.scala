@@ -22,7 +22,7 @@ class DupSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.Dup
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a" -> List("a", "a"),
+    "a"   -> List("a", "a"),
     "a,b" -> List("b", "b", "a")
   )
 

@@ -28,14 +28,12 @@ import com.netflix.iep.service.DefaultClassFactory
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  private val config = ConfigFactory.parseString(
-    """
+  private val config = ConfigFactory.parseString("""
       |atlas.akka.api-endpoints = [
       |  "com.netflix.atlas.akka.TestApi"
       |]
@@ -104,7 +102,8 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
   test("/jsonparse with smile content") {
     val content = HttpEntity(
       CustomMediaTypes.`application/x-jackson-smile`.toContentType,
-      Json.smileEncode("foo"))
+      Json.smileEncode("foo")
+    )
     Post("/jsonparse", content) ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(responseAs[String] === "foo")
@@ -129,7 +128,8 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
   test("/jsonparse with smile content and gzipped") {
     val content = HttpEntity(
       CustomMediaTypes.`application/x-jackson-smile`.toContentType,
-      gzip(Json.smileEncode("foo")))
+      gzip(Json.smileEncode("foo"))
+    )
     Post("/jsonparse", content).addHeader(gzipHeader) ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(responseAs[String] === "foo")

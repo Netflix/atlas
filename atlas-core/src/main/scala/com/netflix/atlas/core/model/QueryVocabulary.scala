@@ -20,7 +20,6 @@ import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
 
-
 object QueryVocabulary extends Vocabulary {
 
   import com.netflix.atlas.core.model.ModelExtractors._
@@ -47,6 +46,7 @@ object QueryVocabulary extends Vocabulary {
   )
 
   case object True extends SimpleWord {
+
     override def name: String = "true"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
@@ -66,6 +66,7 @@ object QueryVocabulary extends Vocabulary {
   }
 
   case object False extends SimpleWord {
+
     override def name: String = "false"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
@@ -85,6 +86,7 @@ object QueryVocabulary extends Vocabulary {
   }
 
   case object HasKey extends SimpleWord {
+
     override def name: String = "has"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -120,6 +122,7 @@ object QueryVocabulary extends Vocabulary {
   }
 
   trait KeyValueWord extends SimpleWord {
+
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: String) :: (_: String) :: _ => true
     }
@@ -132,13 +135,11 @@ object QueryVocabulary extends Vocabulary {
 
     override def signature: String = "k:String v:String -- Query"
 
-    override def examples: List[String] = List(
-      "a,b",
-      "nf.node,silverlight-003e",
-      "ERROR:name")
+    override def examples: List[String] = List("a,b", "nf.node,silverlight-003e", "ERROR:name")
   }
 
   case object Equal extends KeyValueWord {
+
     override def name: String = "eq"
 
     def newInstance(k: String, v: String): Query = Query.Equal(k, v)
@@ -161,6 +162,7 @@ object QueryVocabulary extends Vocabulary {
   }
 
   case object LessThan extends KeyValueWord {
+
     override def name: String = "lt"
 
     def newInstance(k: String, v: String): Query = Query.LessThan(k, v)
@@ -185,6 +187,7 @@ object QueryVocabulary extends Vocabulary {
   }
 
   case object LessThanEqual extends KeyValueWord {
+
     override def name: String = "le"
 
     def newInstance(k: String, v: String): Query = Query.LessThanEqual(k, v)
@@ -211,6 +214,7 @@ object QueryVocabulary extends Vocabulary {
   }
 
   case object GreaterThan extends KeyValueWord {
+
     override def name: String = "gt"
 
     def newInstance(k: String, v: String): Query = Query.GreaterThan(k, v)
@@ -235,6 +239,7 @@ object QueryVocabulary extends Vocabulary {
   }
 
   case object GreaterThanEqual extends KeyValueWord {
+
     override def name: String = "ge"
 
     def newInstance(k: String, v: String): Query = Query.GreaterThanEqual(k, v)
@@ -259,6 +264,7 @@ object QueryVocabulary extends Vocabulary {
   }
 
   case object Regex extends KeyValueWord {
+
     override def name: String = "re"
 
     def newInstance(k: String, v: String): Query = Query.Regex(k, v)
@@ -287,13 +293,12 @@ object QueryVocabulary extends Vocabulary {
         |* `name=http.requests, status=400, nf.app=server`
       """.stripMargin.trim
 
-    override def examples: List[String] = List(
-      "name,DiscoveryStatus_(UP|DOWN)",
-      "name,discoverystatus_(Up|Down)",
-      "ERROR:name")
+    override def examples: List[String] =
+      List("name,DiscoveryStatus_(UP|DOWN)", "name,discoverystatus_(Up|Down)", "ERROR:name")
   }
 
   case object RegexIgnoreCase extends KeyValueWord {
+
     override def name: String = "reic"
 
     def newInstance(k: String, v: String): Query = Query.RegexIgnoreCase(k, v)
@@ -320,13 +325,12 @@ object QueryVocabulary extends Vocabulary {
         |* `name=http.numrequests, status=400, nf.app=server`
       """.stripMargin.trim
 
-    override def examples: List[String] = List(
-      "name,DiscoveryStatus_(UP|DOWN)",
-      "name,discoverystatus_(Up|Down)",
-      "ERROR:name")
+    override def examples: List[String] =
+      List("name,DiscoveryStatus_(UP|DOWN)", "name,discoverystatus_(Up|Down)", "ERROR:name")
   }
 
   case object In extends SimpleWord {
+
     override def name: String = "in"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -356,14 +360,12 @@ object QueryVocabulary extends Vocabulary {
 
     override def signature: String = "k:String vs:List -- Query"
 
-    override def examples: List[String] = List(
-      "name,(,sps,)",
-      "name,(,requestsPerSecond,sps,)",
-      "name,(,)",
-      "ERROR:name,sps")
+    override def examples: List[String] =
+      List("name,(,sps,)", "name,(,requestsPerSecond,sps,)", "name,(,)", "ERROR:name,sps")
   }
 
   case object And extends SimpleWord {
+
     override def name: String = "and"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -371,7 +373,7 @@ object QueryVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q2: Query) :: (q1: Query) :: s => (q1 and q2) :: s
+      case (q2: Query) :: (q1: Query) :: s => (q1.and(q2)) :: s
     }
 
     override def summary: String =
@@ -395,6 +397,7 @@ object QueryVocabulary extends Vocabulary {
   }
 
   case object Or extends SimpleWord {
+
     override def name: String = "or"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -402,7 +405,7 @@ object QueryVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q2: Query) :: (q1: Query) :: s => (q1 or q2) :: s
+      case (q2: Query) :: (q1: Query) :: s => (q1.or(q2)) :: s
     }
 
     override def summary: String =
@@ -430,6 +433,7 @@ object QueryVocabulary extends Vocabulary {
   }
 
   case object Not extends SimpleWord {
+
     override def name: String = "not"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -437,7 +441,7 @@ object QueryVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q: Query) :: s  => q.not :: s
+      case (q: Query) :: s => q.not :: s
     }
 
     override def summary: String =

@@ -18,8 +18,8 @@ package com.netflix.atlas.chart.graphics
 import java.awt.Graphics2D
 
 /**
- * Draws a list item, i.e., a bullet with wrapped text.
- */
+  * Draws a list item, i.e., a bullet with wrapped text.
+  */
 case class ListItem(txt: Text) extends Element with VariableHeight {
 
   private val dims = Constants.dimensions(txt.font)

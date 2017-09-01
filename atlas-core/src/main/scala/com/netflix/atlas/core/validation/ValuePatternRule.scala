@@ -20,18 +20,19 @@ import java.util.regex.Pattern
 import com.typesafe.config.Config
 
 /**
- * Verifies that the values match a specified pattern. Sample config:
- *
- * ```
- * pattern = "^[-_.a-zA-Z0-9]{4,60}$"
- * ```
- */
+  * Verifies that the values match a specified pattern. Sample config:
+  *
+  * ```
+  * pattern = "^[-_.a-zA-Z0-9]{4,60}$"
+  * ```
+  */
 class ValuePatternRule(config: Config) extends TagRule {
 
   private val pattern = Pattern.compile(config.getString("pattern"))
 
   def validate(k: String, v: String): ValidationResult = {
-    if (pattern.matcher(v).matches()) ValidationResult.Pass else {
+    if (pattern.matcher(v).matches()) ValidationResult.Pass
+    else {
       failure(s"value doesn't match pattern '$pattern': [$v]")
     }
   }

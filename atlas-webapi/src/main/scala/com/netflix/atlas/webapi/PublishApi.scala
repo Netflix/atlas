@@ -70,7 +70,8 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
         val promise = Promise[RouteResult]()
         val req = PublishRequest(payload.id, good, bad, promise, ctx)
         publishRef ! req
-        _ => promise.future
+        _ =>
+          promise.future
       }
     }
   }
@@ -110,19 +111,20 @@ object PublishApi {
     val strInterner = Interner.forStrings
     val b = new SmallHashMap.Builder[String, String](2 * maxPermittedTags)
     if (commonTags != null) b.addAll(commonTags)
-    foreachField(parser) { case key =>
-      val value = parser.nextTextValue()
-      if (value == null || value.isEmpty) {
-        val loc = parser.getCurrentLocation
-        val line = loc.getLineNr
-        val col = loc.getColumnNr
-        val msg = s"tag value cannot be null or empty (key=$key, line=$line, col=$col)"
-        throw new IllegalArgumentException(msg)
-      }
-      if (intern)
-        b.add(strInterner.intern(key), strInterner.intern(value))
-      else
-        b.add(key, value)
+    foreachField(parser) {
+      case key =>
+        val value = parser.nextTextValue()
+        if (value == null || value.isEmpty) {
+          val loc = parser.getCurrentLocation
+          val line = loc.getLineNr
+          val col = loc.getColumnNr
+          val msg = s"tag value cannot be null or empty (key=$key, line=$line, col=$col)"
+          throw new IllegalArgumentException(msg)
+        }
+        if (intern)
+          b.add(strInterner.intern(key), strInterner.intern(value))
+        else
+          b.add(key, value)
     }
     if (intern) TaggedItem.internTagsShallow(b.compact) else b.result
   }
@@ -147,7 +149,7 @@ object PublishApi {
       case "value"     => value = nextDouble(parser)
       case "start"     => timestamp = nextLong(parser) // Legacy support
       case "values"    => value = getValue(parser)
-      case _           => // Ignore unknown fields
+      case _ => // Ignore unknown fields
         parser.nextToken()
         parser.skipChildren()
     }
@@ -160,7 +162,8 @@ object PublishApi {
 
   def decodeDatapoint(json: String): Datapoint = {
     val parser = Json.newJsonParser(json)
-    try decodeDatapoint(parser) finally parser.close()
+    try decodeDatapoint(parser)
+    finally parser.close()
   }
 
   def decodeBatch(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
@@ -169,7 +172,8 @@ object PublishApi {
 
   def decodeBatch(json: String): List[Datapoint] = {
     val parser = Json.newJsonParser(json)
-    try decodeBatch(parser) finally parser.close()
+    try decodeBatch(parser)
+    finally parser.close()
   }
 
   def decodePayload(parser: JsonParser, intern: Boolean = false): PublishPayload = {
@@ -178,8 +182,8 @@ object PublishApi {
     var metrics: List[Datapoint] = null
     var tagsLoadedFirst = false
     foreachField(parser) {
-      case "id"      => id = parser.nextTextValue()
-      case "tags"    => tags = decodeTags(parser, null, intern)
+      case "id"   => id = parser.nextTextValue()
+      case "tags" => tags = decodeTags(parser, null, intern)
       case "metrics" =>
         tagsLoadedFirst = (tags != null)
         val builder = List.newBuilder[Datapoint]
@@ -200,7 +204,8 @@ object PublishApi {
 
   def decodePayload(json: String): PublishPayload = {
     val parser = Json.newJsonParser(json)
-    try decodePayload(parser) finally parser.close()
+    try decodePayload(parser)
+    finally parser.close()
   }
 
   def decodeList(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
@@ -213,14 +218,21 @@ object PublishApi {
 
   def decodeList(json: String): List[Datapoint] = {
     val parser = Json.newJsonParser(json)
-    try decodeList(parser) finally parser.close()
+    try decodeList(parser)
+    finally parser.close()
   }
 
   private def encodeTags(gen: JsonGenerator, tags: Map[String, String]) {
     gen.writeObjectFieldStart("tags")
     tags match {
-      case m: SmallHashMap[String, String] => m.foreachItem { (k, v) => gen.writeStringField(k, v) }
-      case m: Map[String, String]          => m.foreach { t => gen.writeStringField(t._1, t._2) }
+      case m: SmallHashMap[String, String] =>
+        m.foreachItem { (k, v) =>
+          gen.writeStringField(k, v)
+        }
+      case m: Map[String, String] =>
+        m.foreach { t =>
+          gen.writeStringField(t._1, t._2)
+        }
     }
     gen.writeEndObject()
   }
@@ -235,7 +247,9 @@ object PublishApi {
 
   def encodeDatapoint(d: Datapoint): String = {
     Streams.string { w =>
-      Streams.scope(Json.newJsonGenerator(w)) { gen => encodeDatapoint(gen, d) }
+      Streams.scope(Json.newJsonGenerator(w)) { gen =>
+        encodeDatapoint(gen, d)
+      }
     }
   }
 
@@ -250,7 +264,9 @@ object PublishApi {
 
   def encodeBatch(tags: Map[String, String], values: List[Datapoint]): String = {
     Streams.string { w =>
-      Streams.scope(Json.newJsonGenerator(w)) { gen => encodeBatch(gen, tags, values) }
+      Streams.scope(Json.newJsonGenerator(w)) { gen =>
+        encodeBatch(gen, tags, values)
+      }
     }
   }
 
@@ -261,7 +277,8 @@ object PublishApi {
     values: List[Datapoint],
     failures: List[ValidationResult],
     promise: Promise[RouteResult],
-    ctx: RequestContext) {
+    ctx: RequestContext
+  ) {
 
     private implicit val ec = ctx.executionContext
 
@@ -270,11 +287,14 @@ object PublishApi {
     }
   }
 
-  case class FailureMessage(`type`: String, errorCount: Int, message: List[String]) extends JsonSupport {
+  case class FailureMessage(`type`: String, errorCount: Int, message: List[String])
+      extends JsonSupport {
+
     def typeName: String = `type`
   }
 
   object FailureMessage {
+
     def error(message: List[ValidationResult]): FailureMessage = {
       val failures = message.collect { case ValidationResult.Fail(_, reason) => reason }
       new FailureMessage(DiagnosticMessage.Error, failures.size, failures.take(5))

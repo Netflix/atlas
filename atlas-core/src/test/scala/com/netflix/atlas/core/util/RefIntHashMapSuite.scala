@@ -21,7 +21,6 @@ import org.scalatest.FunSuite
 
 import scala.util.Random
 
-
 class RefIntHashMapSuite extends FunSuite {
 
   import java.lang.{Long => JLong}
@@ -102,7 +101,9 @@ class RefIntHashMapSuite extends FunSuite {
     m.increment(11L)
     m.increment(22L)
     assert(m.size === 3)
-    m.foreach { (_, v) => assert(v === 1) }
+    m.foreach { (_, v) =>
+      assert(v === 1)
+    }
   }
 
   test("mapToArray") {
@@ -110,7 +111,9 @@ class RefIntHashMapSuite extends FunSuite {
     m.increment(0L)
     m.increment(11L)
     m.increment(22L)
-    val data = m.mapToArray(new Array[Long](m.size)) { (k, v) => k + v }
+    val data = m.mapToArray(new Array[Long](m.size)) { (k, v) =>
+      k + v
+    }
     assert(data.toList === List(1, 12, 23))
   }
 
@@ -120,7 +123,9 @@ class RefIntHashMapSuite extends FunSuite {
     m.increment(11L)
     m.increment(22L)
     intercept[IllegalArgumentException] {
-      m.mapToArray(new Array[Long](0)) { (k, v) => k + v }
+      m.mapToArray(new Array[Long](0)) { (k, v) =>
+        k + v
+      }
     }
   }
 
@@ -203,7 +208,9 @@ class RefIntHashMapSuite extends FunSuite {
 }
 
 object RefIntHashMapSuite {
+
   class MinHash {
+
     override def hashCode: Int = Integer.MIN_VALUE
   }
 }

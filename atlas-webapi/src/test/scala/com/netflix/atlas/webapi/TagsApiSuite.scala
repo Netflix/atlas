@@ -23,7 +23,6 @@ import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.db.StaticDatabase
 import org.scalatest.FunSuite
 
-
 class TagsApiSuite extends FunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
@@ -50,7 +49,7 @@ class TagsApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   testGet("/api/v1/tags?format=txt") {
-      assert(responseAs[String] === "class\nname\nprime")
+    assert(responseAs[String] === "class\nname\nprime")
   }
 
   testGet("/api/v1/tags?limit=1") {

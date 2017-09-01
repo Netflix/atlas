@@ -18,7 +18,6 @@ package com.netflix.atlas.core.util
 import com.netflix.spectator.api.ManualClock
 import org.scalatest.FunSuite
 
-
 class InternMapSuite extends FunSuite {
 
   test("open hash") {

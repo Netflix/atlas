@@ -18,9 +18,9 @@ package com.netflix.atlas.chart.graphics
 import java.awt.Graphics2D
 
 /**
- * Reserves a fixed amount of vertical space.
- */
+  * Reserves a fixed amount of vertical space.
+  */
 case class HorizontalPadding(override val height: Int) extends Element with FixedHeight {
-  override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-  }
+
+  override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {}
 }

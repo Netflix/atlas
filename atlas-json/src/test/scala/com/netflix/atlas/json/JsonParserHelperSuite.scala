@@ -17,7 +17,6 @@ package com.netflix.atlas.json
 
 import org.scalatest.FunSuite
 
-
 class JsonParserHelperSuite extends FunSuite {
 
   import JsonParserHelper._

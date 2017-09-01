@@ -48,4 +48,3 @@ class DerivativeSuite extends FunSuite {
     assert(eval(input, 6).data === ts(Double.NaN, 35.0, Double.NaN, Double.NaN, -41.0, 3.0).data)
   }
 }
-

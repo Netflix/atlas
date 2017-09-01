@@ -22,8 +22,8 @@ class RotSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.Rot
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a" -> List("a"),
-    "a,b" -> List("a", "b"),
+    "a"         -> List("a"),
+    "a,b"       -> List("a", "b"),
     "a,b,c,d,e" -> List("a", "e", "d", "c", "b")
   )
 

@@ -41,19 +41,21 @@ private[json] object Reflection {
 
   // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
   def typeReference[T: Manifest] = new TypeReference[T] {
+
     override def getType = typeFromManifest(manifest[T])
   }
 
   // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
   def typeFromManifest(m: Manifest[_]): java.lang.reflect.Type = {
-    if (m.typeArguments.isEmpty) { m.runtimeClass }
-    else new ParameterizedType {
-      def getRawType = m.runtimeClass
+    if (m.typeArguments.isEmpty) { m.runtimeClass } else
+      new ParameterizedType {
 
-      def getActualTypeArguments = m.typeArguments.map(typeFromManifest).toArray
+        def getRawType = m.runtimeClass
 
-      def getOwnerType = null
-    }
+        def getActualTypeArguments = m.typeArguments.map(typeFromManifest).toArray
+
+        def getOwnerType = null
+      }
   }
 
   /**
@@ -81,18 +83,22 @@ private[json] object Reflection {
     // See http://www.scala-lang.org/files/archive/spec/2.11/04-basic-declarations-and-definitions.html#default-arguments
     // for details. This is looking for the default value accessor for the apply on the
     // companion object.
-    val params = ctor.paramLists.head.zipWithIndex.map { case (p, i) =>
-      val name = p.name.toString
-      val alias = getAlias(p.annotations)
-      val dflt = if (!p.asTerm.isParamWithDefault) None else {
-        val ts = instanceMirror.symbol.typeSignature
-        val name = s"apply$$default$$${i + 1}"
-        val dfltArg = ts.member(TermName(name))
-        if (dfltArg == NoSymbol) None else {
-          Some(instanceMirror.reflectMethod(dfltArg.asMethod).apply())
-        }
-      }
-      Param(name, alias, dflt)
+    val params = ctor.paramLists.head.zipWithIndex.map {
+      case (p, i) =>
+        val name = p.name.toString
+        val alias = getAlias(p.annotations)
+        val dflt =
+          if (!p.asTerm.isParamWithDefault) None
+          else {
+            val ts = instanceMirror.symbol.typeSignature
+            val name = s"apply$$default$$${i + 1}"
+            val dfltArg = ts.member(TermName(name))
+            if (dfltArg == NoSymbol) None
+            else {
+              Some(instanceMirror.reflectMethod(dfltArg.asMethod).apply())
+            }
+          }
+        Param(name, alias, dflt)
     }
 
     CaseClassDesc(jt, currentMirror.reflectClass(csym).reflectConstructor(ctor), params)
@@ -155,19 +161,21 @@ private[json] object Reflection {
       val types = ctor.getGenericParameterTypes
       val annos = ctor.getParameterAnnotations
       val properties = new Array[BeanProperty](params.size)
-      params.zipWithIndex.foreach { case (p, i) =>
-        val am = new AnnotationMap
-        annos(i).foreach(am.add)
-        val fieldType = constructType(types(i))
-        val ap = new AnnotatedParameter(null, fieldType, am, i)
-        val prop = new BeanProperty.Std(
-          new PropertyName(p.name),
-          fieldType,
-          null,                      // wrapperName
-          null,                      // contextAnnotations
-          ap,                        // member
-          null)                      // metadata
-        properties(i) = prop
+      params.zipWithIndex.foreach {
+        case (p, i) =>
+          val am = new AnnotationMap
+          annos(i).foreach(am.add)
+          val fieldType = constructType(types(i))
+          val ap = new AnnotatedParameter(null, fieldType, am, i)
+          val prop = new BeanProperty.Std(
+            new PropertyName(p.name),
+            fieldType,
+            null, // wrapperName
+            null, // contextAnnotations
+            ap, // member
+            null
+          ) // metadata
+          properties(i) = prop
       }
       properties
     }
@@ -178,9 +186,10 @@ private[json] object Reflection {
     // reduce allocations if deserializing many objects.
     private val fields = {
       val fieldsMap = new java.util.HashMap[String, FieldInfo]()
-      params.zipWithIndex.foreach { case (p, i) =>
-        val field = jt.getRawClass.getDeclaredField(p.name)
-        fieldsMap.put(p.field, FieldInfo(i, field.getType, field.getGenericType, props(i)))
+      params.zipWithIndex.foreach {
+        case (p, i) =>
+          val field = jt.getRawClass.getDeclaredField(p.name)
+          fieldsMap.put(p.field, FieldInfo(i, field.getType, field.getGenericType, props(i)))
       }
       fieldsMap
     }
@@ -189,17 +198,19 @@ private[json] object Reflection {
     // fill in while parsing the JSON structure.
     private val dfltParams = {
       val ps = new Array[Any](params.size)
-      params.zipWithIndex.foreach { case (p, i) =>
-        ps(i) = p.dflt.getOrElse { fields.get(p.field).defaultValue }
+      params.zipWithIndex.foreach {
+        case (p, i) =>
+          ps(i) = p.dflt.getOrElse { fields.get(p.field).defaultValue }
       }
       ps
     }
 
     /** Create a new instance of the case class using the provided arguments. */
     def newInstance(args: Array[Any]): AnyRef = {
-       try ctor.apply(args: _*).asInstanceOf[AnyRef] catch {
-         case e: InvocationTargetException => throw e.getCause
-       }
+      try ctor.apply(args: _*).asInstanceOf[AnyRef]
+      catch {
+        case e: InvocationTargetException => throw e.getCause
+      }
     }
 
     /**
@@ -225,6 +236,7 @@ private[json] object Reflection {
   }
 
   case class FieldInfo(pos: Int, cls: Class[_], jtype: JType, property: BeanProperty) {
+
     def defaultValue: Any = cls match {
       case c if c.isAssignableFrom(classOf[Option[_]]) => None
       case c if c.isPrimitive                          => ClassUtil.defaultValue(cls)

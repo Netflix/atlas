@@ -41,7 +41,9 @@ class DataGroupBySuite extends FunSuite {
 
   test("(,name,),:by") {
     val input = List(
-      ts(1), ts(2), ts(3)
+      ts(1),
+      ts(2),
+      ts(3)
     )
     val rs = groupBy(input, List("name"))
     assert(rs.size === 1)
@@ -52,7 +54,9 @@ class DataGroupBySuite extends FunSuite {
 
   test("(,not_present,),:by") {
     val input = List(
-      ts(1), ts(2), ts(3)
+      ts(1),
+      ts(2),
+      ts(3)
     )
     val rs = groupBy(input, List("not_present"))
     assert(rs.size === 0)
@@ -60,7 +64,9 @@ class DataGroupBySuite extends FunSuite {
 
   test("(,name,not_present,),:by") {
     val input = List(
-      ts(1), ts(2), ts(3)
+      ts(1),
+      ts(2),
+      ts(3)
     )
     val rs = groupBy(input, List("name", "not_present"))
     assert(rs.size === 0)
@@ -69,11 +75,12 @@ class DataGroupBySuite extends FunSuite {
   test("(,name,mode,),:by") {
     // #1417, NPE if keyString is null for subset of datapoints
     val input = List(
-      ts(1), ts(2), ts(3)
+      ts(1),
+      ts(2),
+      ts(3)
     )
     val rs = groupBy(input, List("name", "mode"))
     assert(rs.size === 1)
   }
 
 }
-

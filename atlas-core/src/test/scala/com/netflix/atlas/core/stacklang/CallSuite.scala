@@ -22,8 +22,8 @@ class CallSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.Call
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "(,)" -> List.empty[Any],
-    "(,a,:dup,)" -> List("a", "a"),
+    "(,)"           -> List.empty[Any],
+    "(,a,:dup,)"    -> List("a", "a"),
     "b,(,a,:swap,)" -> List("b", "a")
   )
 

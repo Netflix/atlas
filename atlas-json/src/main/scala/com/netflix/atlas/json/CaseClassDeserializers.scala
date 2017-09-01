@@ -29,7 +29,8 @@ class CaseClassDeserializers extends Deserializers.Base {
   override def findBeanDeserializer(
     javaType: JavaType,
     config: DeserializationConfig,
-    beanDesc: BeanDescription) = {
+    beanDesc: BeanDescription
+  ) = {
 
     if (Reflection.isCaseClass(javaType.getRawClass))
       new CaseClassDeserializer(javaType, config, beanDesc)

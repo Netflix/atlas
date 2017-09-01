@@ -22,36 +22,38 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * Draws a time based X-axis.
- *
- * @param style
- *     Style to use for the axis and corresponding labels.
- * @param start
- *     Start time in milliseconds since the epoch.
- * @param end
- *     End time in milliseconds since the epoch.
- * @param step
- *     Step size in milliseconds.
- * @param zone
- *     Time zone to use for the labels. This is a presentation detail only and can sometimes
- *     result in duplicates. For example, during a daylight savings transition the same hour
- *     can be used for multiple tick marks. Defaults to UTC.
- * @param alpha
- *     Alpha setting to use for the horizontal line of the axis. If the time axis is right next to
- *     the chart, then increasing the transparency can help make it easier to see lines that are
- *     right next to axis. Defaults to 40.
- * @param showZone
- *     If set to true, then the abbreviation for the time zone will be shown to the left of the
- *     axis labels.
- */
+  * Draws a time based X-axis.
+  *
+  * @param style
+  *     Style to use for the axis and corresponding labels.
+  * @param start
+  *     Start time in milliseconds since the epoch.
+  * @param end
+  *     End time in milliseconds since the epoch.
+  * @param step
+  *     Step size in milliseconds.
+  * @param zone
+  *     Time zone to use for the labels. This is a presentation detail only and can sometimes
+  *     result in duplicates. For example, during a daylight savings transition the same hour
+  *     can be used for multiple tick marks. Defaults to UTC.
+  * @param alpha
+  *     Alpha setting to use for the horizontal line of the axis. If the time axis is right next to
+  *     the chart, then increasing the transparency can help make it easier to see lines that are
+  *     right next to axis. Defaults to 40.
+  * @param showZone
+  *     If set to true, then the abbreviation for the time zone will be shown to the left of the
+  *     axis labels.
+  */
 case class TimeAxis(
-    style: Style,
-    start: Long,
-    end: Long,
-    step: Long,
-    zone: ZoneId = ZoneOffset.UTC,
-    alpha: Int = 40,
-    showZone: Boolean = false) extends Element with FixedHeight {
+  style: Style,
+  start: Long,
+  end: Long,
+  step: Long,
+  zone: ZoneId = ZoneOffset.UTC,
+  alpha: Int = 40,
+  showZone: Boolean = false
+) extends Element
+    with FixedHeight {
 
   override def height: Int = 10 + Constants.smallFontDims.height
 
@@ -60,6 +62,7 @@ case class TimeAxis(
   }
 
   def ticks(x1: Int, x2: Int): List[TimeTick] = {
+
     // The first interval will displayed will end at the start time. For calculating ticks the
     // start time is adjusted so we can see minor ticks within the first interval
     val numTicks = (x2 - x1) / TimeAxis.minTickLabelWidth
@@ -74,7 +77,6 @@ case class TimeAxis(
     // made faint so it is easier to see lines in the chart that are directly against the axis.
     style.withAlpha(alpha).configure(g)
     g.drawLine(x1, y1, x2, y1)
-
 
     style.configure(g)
     val xscale = scale(x1, x2)
@@ -94,10 +96,8 @@ case class TimeAxis(
     // Show short form of time zone as a label for the axis
     if (showZone) {
       val name = zone.getDisplayName(TextStyle.NARROW_STANDALONE, Locale.US)
-      val zoneLabel = Text(name,
-        font = Constants.smallFont,
-        style = style,
-        alignment = TextAlignment.RIGHT)
+      val zoneLabel =
+        Text(name, font = Constants.smallFont, style = style, alignment = TextAlignment.RIGHT)
       val labelW = (name.length + 2) * Constants.smallFontDims.width
       val padding = labelPadding + 2
       zoneLabel.draw(g, x1 - labelW - padding, y1 + txtH / 2, x1 - padding, y1 + txtH)

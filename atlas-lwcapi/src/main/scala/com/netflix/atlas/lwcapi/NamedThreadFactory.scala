@@ -18,6 +18,7 @@ package com.netflix.atlas.lwcapi
 import java.util.concurrent.ThreadFactory
 
 class NamedThreadFactory(name: String) extends ThreadFactory {
+
   def newThread(r: Runnable): Thread = {
     val thread = new Thread(r, name)
     thread.setDaemon(true)

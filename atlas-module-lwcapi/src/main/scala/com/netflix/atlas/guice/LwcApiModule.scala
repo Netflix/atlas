@@ -25,17 +25,20 @@ import com.netflix.atlas.lwcapi.ExpressionSplitter
 import com.netflix.iep.guice.LifecycleModule
 
 final class LwcApiModule extends AbstractModule {
+
   override def configure(): Unit = {
     install(new LifecycleModule)
     install(new AkkaModule)
   }
 
-  @Provides @Singleton
+  @Provides
+  @Singleton
   protected def providesExpressionSplitter(): ExpressionSplitter = {
     new ExpressionSplitter()
   }
 
-  @Provides @Singleton
+  @Provides
+  @Singleton
   protected def providesSubscriptionManager(): ActorSubscriptionManager = {
     new ActorSubscriptionManager()
   }

@@ -16,13 +16,14 @@
 package com.netflix.atlas.core.norm
 
 trait ValueFunction {
+
   def apply(timestamp: Long, value: Double)
 }
 
 /**
- * Simple value function used for testing and debugging. Collects output in
- * a list so it is easy to examine.
- */
+  * Simple value function used for testing and debugging. Collects output in
+  * a list so it is easy to examine.
+  */
 class ListValueFunction extends ValueFunction {
   private var builder = List.newBuilder[(Long, Double)]
 

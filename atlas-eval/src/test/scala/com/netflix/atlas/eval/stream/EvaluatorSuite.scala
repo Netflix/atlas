@@ -43,7 +43,8 @@ import scala.util.Success
 class EvaluatorSuite extends FunSuite with BeforeAndAfter {
 
   private val targetDir = Paths.get(SrcPath.forProject("atlas-eval"), "target", "EvaluatorSuite")
-  private val resourcesDir = Paths.get(SrcPath.forProject("atlas-eval"), "src", "test", "resources")
+  private val resourcesDir =
+    Paths.get(SrcPath.forProject("atlas-eval"), "src", "test", "resources")
 
   private val config = ConfigFactory.load()
   private val registry = new DefaultRegistry()
@@ -60,7 +61,8 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val evaluator = new Evaluator(config, registry, system)
 
     val uri = s"$baseUri?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
-    val future = Source.fromPublisher(evaluator.createPublisher(uri))
+    val future = Source
+      .fromPublisher(evaluator.createPublisher(uri))
       .toMat(Sink.seq[JsonSupport])(Keep.right)
       .run()
 
@@ -102,7 +104,9 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     result.foreach {
       case DiagnosticMessage(t, msg, None) =>
         assert(t === "error")
-        assert(msg === "IllegalArgumentException: missing required URI parameter `q`: http://test/api/v1/graph")
+        assert(
+          msg === "IllegalArgumentException: missing required URI parameter `q`: http://test/api/v1/graph"
+        )
     }
   }
 
@@ -132,10 +136,12 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
 
     // Source that emits ds1 and then will emit ds2 and ds3 when the futures
     // are completed by analyzing the results coming into the sink
-    val sourceRef = EvaluationFlows.stoppableSource(Source.single(ds1)
-      .concat(Source.fromFuture(p2.future))
-      .concat(Source.fromFuture(p3.future))
-      .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
+    val sourceRef = EvaluationFlows.stoppableSource(
+      Source
+        .single(ds1)
+        .concat(Source.fromFuture(p2.future))
+        .concat(Source.fromFuture(p3.future))
+        .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
     )
 
     // States
@@ -149,7 +155,6 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
           state = 1
         }
       },
-
       // 1: See first events for two
       (one, two) => {
         if (two.getAndSet(0) > 0) {
@@ -157,7 +162,6 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
           state = 2
         }
       },
-
       // 2: Still seeing events for one and two
       (one, two) => {
         if (one.getAndSet(0) > 0 && two.getAndSet(0) > 0) {
@@ -165,7 +169,6 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
           state = 3
         }
       },
-
       // 3: Stop seeing events for one
       (one, two) => {
         if (one.getAndSet(0) == 0 && two.get() > 100) {
@@ -203,14 +206,17 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val uri = "http://test/api/v1/graph"
     val ds = Evaluator.DataSources.of(new Evaluator.DataSource("one", uri))
 
-    val future = Source.single(ds)
+    val future = Source
+      .single(ds)
       .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
       .runWith(Sink.head)
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
     result.getMessage match {
       case DiagnosticMessage(t, msg, None) =>
         assert(t === "error")
-        assert(msg === "IllegalArgumentException: missing required URI parameter `q`: http://test/api/v1/graph")
+        assert(
+          msg === "IllegalArgumentException: missing required URI parameter `q`: http://test/api/v1/graph"
+        )
     }
   }
 }
