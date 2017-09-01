@@ -72,6 +72,17 @@ class HostSourceSuite extends FunSuite {
     assert(result === (0 until 5).map(_ => "ok").toList)
   }
 
+  test("no size limit on data stream") {
+    val entity = HttpEntity(ByteString("ok")).withSizeLimit(1)
+    val response = HttpResponse(StatusCodes.OK, entity = entity)
+    val future = source(Success(response))
+      .take(5)
+      .map(_.decodeString(StandardCharsets.UTF_8))
+      .runWith(Sink.seq[String])
+    val result = Await.result(future, Duration.Inf).toList
+    assert(result === (0 until 5).map(_ => "ok").toList)
+  }
+
   test("handles decompression") {
     val headers = List(`Content-Encoding`(HttpEncodings.gzip))
     val data = ByteString(compress("ok"))
