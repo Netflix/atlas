@@ -15,21 +15,13 @@
  */
 package com.netflix.atlas.core.util
 
-import java.awt.Color
-import java.awt.Font
-import java.awt.Rectangle
-import java.awt.font.LineBreakMeasurer
-import java.awt.font.TextAttribute
+import java.awt.{Color, Font, Rectangle}
+import java.awt.font.{LineBreakMeasurer, TextAttribute}
 import java.awt.geom.AffineTransform
-import java.awt.image.BufferedImage
-import java.awt.image.RenderedImage
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
-import java.io.OutputStream
+import java.awt.image.{BufferedImage, RenderedImage}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
 import java.text.AttributedString
-import javax.imageio.IIOImage
-import javax.imageio.ImageIO
+import javax.imageio.{IIOImage, ImageIO}
 
 import com.sun.imageio.plugins.png.PNGMetadata
 
@@ -75,8 +67,23 @@ object PngImage {
     keys.zip(values).toMap
   }
 
-  def error(msg: String, width: Int, height: Int): PngImage = {
-    val fullMsg = "ERROR: " + msg
+  def userError(imgText: String, width: Int, height: Int): PngImage = {
+    val userErrorYellow = new Color(0xFF, 0xCF, 0x00)
+    error(imgText, width, height, "USER ERROR:", Color.BLACK, userErrorYellow)
+  }
+
+  def systemError(imgText: String, width: Int, height: Int): PngImage = {
+    val systemErrorRed = new Color(0xF8, 0x20, 0x00)
+    error(imgText, width, height, "SYSTEM ERROR:", Color.WHITE, systemErrorRed)
+  }
+
+  def error(imgText: String,
+            width: Int,
+            height: Int,
+            imgTextPrefix: String = "ERROR:",
+            imgTextColor: Color = Color.WHITE,
+            imgBackgroundColor: Color = Color.BLACK): PngImage = {
+    val fullMsg = s"$imgTextPrefix $imgText"
 
     val image = newBufferedImage(width, height)
     val g = image.createGraphics
@@ -90,10 +97,10 @@ object PngImage {
     val font = new Font("Lucida Sans Regular", Font.PLAIN, 12)
     g.setFont(font)
 
-    g.setPaint(Color.BLACK)
+    g.setPaint(imgBackgroundColor)
     g.fill(new Rectangle(0, 0, width, height))
 
-    g.setPaint(Color.WHITE)
+    g.setPaint(imgTextColor)
     val attrStr = new AttributedString(fullMsg)
     attrStr.addAttribute(TextAttribute.FONT, font)
     val iterator = attrStr.getIterator
