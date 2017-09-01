@@ -15,13 +15,21 @@
  */
 package com.netflix.atlas.core.util
 
-import java.awt.{Color, Font, Rectangle}
-import java.awt.font.{LineBreakMeasurer, TextAttribute}
+import java.awt.Color
+import java.awt.Font
+import java.aws.Rectangle
+import java.awt.font.LineBreakMeasurer
+import java.awt.font.TextAttribute
 import java.awt.geom.AffineTransform
-import java.awt.image.{BufferedImage, RenderedImage}
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
+import java.awt.image.BufferedImage
+import java.awt.image.RenderedImage
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import java.text.AttributedString
-import javax.imageio.{IIOImage, ImageIO}
+import javax.imageio.IIOImage
+import javax.imageio.ImageIO
 
 import com.sun.imageio.plugins.png.PNGMetadata
 
@@ -77,12 +85,13 @@ object PngImage {
     error(imgText, width, height, "SYSTEM ERROR:", Color.WHITE, systemErrorRed)
   }
 
-  def error(imgText: String,
-            width: Int,
-            height: Int,
-            imgTextPrefix: String = "ERROR:",
-            imgTextColor: Color = Color.WHITE,
-            imgBackgroundColor: Color = Color.BLACK): PngImage = {
+  def error(
+      imgText: String,
+      width: Int,
+      height: Int,
+      imgTextPrefix: String = "ERROR:",
+      imgTextColor: Color = Color.WHITE,
+      imgBackgroundColor: Color = Color.BLACK): PngImage = {
     val fullMsg = s"$imgTextPrefix $imgText"
 
     val image = newBufferedImage(width, height)
