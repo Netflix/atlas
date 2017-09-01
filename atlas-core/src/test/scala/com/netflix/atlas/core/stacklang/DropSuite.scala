@@ -22,7 +22,7 @@ class DropSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.Drop
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a" -> List.empty[Any],
+    "a"   -> List.empty[Any],
     "a,b" -> List("a")
   )
 

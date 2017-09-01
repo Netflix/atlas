@@ -15,13 +15,11 @@
  */
 package com.netflix.atlas.core.util
 
-
 import java.util.UUID
 
 import org.scalatest.FunSuite
 
 import scala.util.Random
-
 
 class SmallHashMapSuite extends FunSuite {
 
@@ -220,7 +218,9 @@ class SmallHashMapSuite extends FunSuite {
     assert(m2.get("k2") === Some("v2"))
 
     val s = m2.toSet
-    m2.foreach { t => assert(s.contains(t)) }
+    m2.foreach { t =>
+      assert(s.contains(t))
+    }
 
     assert(m1 === m2 - "k2")
   }
@@ -265,7 +265,7 @@ class SmallHashMapSuite extends FunSuite {
   }
 
   test("toSet") {
-    val m = SmallHashMap("k1" -> "v1", "k2" -> "v2")
+    val m = SmallHashMap("k1"   -> "v1", "k2" -> "v2")
     assert(m.toSet === Set("k1" -> "v1", "k2" -> "v2"))
   }
 
@@ -279,6 +279,7 @@ class SmallHashMapSuite extends FunSuite {
   }
 
   private def testNumCollisions(m: SmallHashMap[String, String]) {
+
     //printf("%d: %d collisions, %.2f probes%n", m.size, m.numCollisions, m.numProbesPerKey)
     assert(m.numProbesPerKey < m.size / 4)
   }
@@ -306,21 +307,27 @@ class SmallHashMapSuite extends FunSuite {
     val rkeys = Random.shuffle(keys)
     val m = SmallHashMap(rkeys.take(25).map(v => v -> v): _*)
     testNumCollisions(m)
-    rkeys.take(25).foreach { k => assert(m.get(k) === Some(k)) }
+    rkeys.take(25).foreach { k =>
+      assert(m.get(k) === Some(k))
+    }
   }
 
   test("numCollisions 50") {
     val rkeys = Random.shuffle(keys)
     val m = SmallHashMap(rkeys.take(50).map(v => v -> v): _*)
     testNumCollisions(m)
-    rkeys.take(50).foreach { k => assert(m.get(k) === Some(k)) }
+    rkeys.take(50).foreach { k =>
+      assert(m.get(k) === Some(k))
+    }
   }
 
   test("numCollisions all") {
     val rkeys = Random.shuffle(keys)
     val m = SmallHashMap(rkeys.map(v => v -> v): _*)
     testNumCollisions(m)
-    rkeys.foreach { k => assert(m.get(k) === Some(k)) }
+    rkeys.foreach { k =>
+      assert(m.get(k) === Some(k))
+    }
   }
 
   test("equals and hashCode, different orders with gaps") {

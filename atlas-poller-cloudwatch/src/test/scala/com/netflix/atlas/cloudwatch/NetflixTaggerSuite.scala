@@ -35,8 +35,7 @@ class NetflixTaggerSuite extends FunSuite {
   }
 
   test("extract tags using naming conventions") {
-    val cfg = ConfigFactory.parseString(
-      """
+    val cfg = ConfigFactory.parseString("""
         |mappings = [
         |  {
         |    name = "AutoScalingGroupName"

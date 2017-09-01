@@ -27,16 +27,17 @@ class MathGroupBySuite extends FunSuite {
 
   def ts(v: Int): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, Array(v.toDouble))
-    val mode = "mode" -> (if (v % 2 == 0) "even" else "odd")
+    val mode = "mode"   -> (if (v % 2 == 0) "even" else "odd")
     val value = "value" -> v.toString
     TimeSeries(Map("name" -> "test", mode, value), seq)
   }
 
   def groupBy(
-      input: List[TimeSeries],
-      k1: List[String],
-      k2: List[String],
-      aggr: TimeSeriesExpr => AggrMathExpr): List[TimeSeries] = {
+    input: List[TimeSeries],
+    k1: List[String],
+    k2: List[String],
+    aggr: TimeSeriesExpr => AggrMathExpr
+  ): List[TimeSeries] = {
     val context = EvalContext(start, start + step * n, step)
     val dataBy = DataExpr.GroupBy(DataExpr.Sum(Query.True), k1)
     val expr = MathExpr.GroupBy(aggr(dataBy), k2)
@@ -45,7 +46,9 @@ class MathGroupBySuite extends FunSuite {
 
   test("(,name,),:by,(,name,),:by") {
     val input = List(
-      ts(1), ts(2), ts(3)
+      ts(1),
+      ts(2),
+      ts(3)
     )
     val rs = groupBy(input, List("name"), List("name"), MathExpr.Sum)
     assert(rs.size === 1)
@@ -56,7 +59,9 @@ class MathGroupBySuite extends FunSuite {
 
   test("(,name,),:by,(,foo,),:by") {
     val input = List(
-      ts(1), ts(2), ts(3)
+      ts(1),
+      ts(2),
+      ts(3)
     )
 
     val e = intercept[IllegalArgumentException] {
@@ -67,7 +72,9 @@ class MathGroupBySuite extends FunSuite {
 
   test("(,name,mode,),:by,(,mode,),:by") {
     val input = List(
-      ts(1), ts(2), ts(3)
+      ts(1),
+      ts(2),
+      ts(3)
     )
     val rs = groupBy(input, List("name", "mode"), List("mode"), MathExpr.Sum)
     assert(rs.size === 2)
@@ -81,10 +88,13 @@ class MathGroupBySuite extends FunSuite {
 
   test("(,name,mode,value,),:by,(,name,mode,),:by,(,name,),:by") {
     val input = List(
-      ts(1), ts(2), ts(3)
+      ts(1),
+      ts(2),
+      ts(3)
     )
     val context = EvalContext(start, start + step * n, step)
-    val dataBy = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), List("name", "mode", "value"))
+    val dataBy =
+      DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), List("name", "mode", "value"))
     val mathBy1 = MathExpr.GroupBy(MathExpr.Sum(dataBy), List("name", "mode"))
     val expr = MathExpr.GroupBy(MathExpr.Sum(mathBy1), List("name"))
     val rs = expr.eval(context, input).data
@@ -98,7 +108,9 @@ class MathGroupBySuite extends FunSuite {
 
   test("name,test,:eq,(,mode,),:by,(,mode,),:by") {
     val input = List(
-      ts(1), ts(2), ts(3)
+      ts(1),
+      ts(2),
+      ts(3)
     )
     val context = EvalContext(start, start + step * n, step)
     val dataBy = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), List("mode"))
@@ -115,7 +127,9 @@ class MathGroupBySuite extends FunSuite {
 
   test("(,value,mode,),:by,:count,(,mode,),:by") {
     val input = List(
-      ts(1), ts(2), ts(3)
+      ts(1),
+      ts(2),
+      ts(3)
     )
     val rs = groupBy(input, List("value", "mode"), List("mode"), MathExpr.Count)
     assert(rs.size === 2)
@@ -127,4 +141,3 @@ class MathGroupBySuite extends FunSuite {
     assert(rs === expected)
   }
 }
-

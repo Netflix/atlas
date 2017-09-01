@@ -20,10 +20,11 @@ import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.JsonSupport
 
 case class ExpressionMetadata(
-    expression: String,
-    frequency: Long = ApiSettings.defaultFrequency,
-    id: String = "")
-  extends JsonSupport with Ordered[ExpressionMetadata] {
+  expression: String,
+  frequency: Long = ApiSettings.defaultFrequency,
+  id: String = ""
+) extends JsonSupport
+    with Ordered[ExpressionMetadata] {
 
   require(expression != null && expression.nonEmpty, "expression cannot be null")
 

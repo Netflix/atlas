@@ -44,22 +44,26 @@ object Conversions {
 
   private def from(name: String, conversions: List[String]): Conversion = {
     conversions match {
-      case "min"    :: Nil => min
-      case "max"    :: Nil => max
-      case "sum"    :: Nil => sum
-      case "count"  :: Nil => count
-      case "avg"    :: Nil => avg
-      case "rate"   :: cs  => rate(from(name, cs))
-      case v        :: cs  => throw new IllegalArgumentException(s"unknown conversion '$v' ($name)")
-      case Nil             => throw new IllegalArgumentException(s"empty conversion list ($name)")
+      case "min" :: Nil   => min
+      case "max" :: Nil   => max
+      case "sum" :: Nil   => sum
+      case "count" :: Nil => count
+      case "avg" :: Nil   => avg
+      case "rate" :: cs   => rate(from(name, cs))
+      case v :: cs        => throw new IllegalArgumentException(s"unknown conversion '$v' ($name)")
+      case Nil            => throw new IllegalArgumentException(s"empty conversion list ($name)")
     }
   }
 
-  private def min:   Conversion = (_, d) => d.getMinimum
-  private def max:   Conversion = (_, d) => d.getMaximum
-  private def sum:   Conversion = (_, d) => d.getSum
+  private def min: Conversion = (_, d) => d.getMinimum
+
+  private def max: Conversion = (_, d) => d.getMaximum
+
+  private def sum: Conversion = (_, d) => d.getSum
+
   private def count: Conversion = (_, d) => d.getSampleCount
-  private def avg:   Conversion = (_, d) => d.getSum / d.getSampleCount
+
+  private def avg: Conversion = (_, d) => d.getSum / d.getSampleCount
 
   private def unit(f: Conversion): Conversion = (m, d) => {
     val factor = unitFactor(d.getUnit)
@@ -101,31 +105,31 @@ object Conversions {
 
   private def unitFactor(unit: String): Double = {
     StandardUnit.fromValue(unit) match {
-      case StandardUnit.Count           => 1.0
+      case StandardUnit.Count => 1.0
 
       //  Use a base unit of bytes
-      case StandardUnit.Bits            => 1.0  / 8.0
-      case StandardUnit.Kilobits        => 1e3  / 8.0
-      case StandardUnit.Megabits        => 1e6  / 8.0
-      case StandardUnit.Gigabits        => 1e9  / 8.0
-      case StandardUnit.Terabits        => 1e12 / 8.0
+      case StandardUnit.Bits     => 1.0 / 8.0
+      case StandardUnit.Kilobits => 1e3 / 8.0
+      case StandardUnit.Megabits => 1e6 / 8.0
+      case StandardUnit.Gigabits => 1e9 / 8.0
+      case StandardUnit.Terabits => 1e12 / 8.0
 
       // Use a base unit of bytes. Assumes that the raw input is using
       // a decimal multiple, i.e., multiples of 1000 not 1024.
-      case StandardUnit.Bytes           => 1.0
-      case StandardUnit.Kilobytes       => 1e3
-      case StandardUnit.Megabytes       => 1e6
-      case StandardUnit.Gigabytes       => 1e9
-      case StandardUnit.Terabytes       => 1e12
+      case StandardUnit.Bytes     => 1.0
+      case StandardUnit.Kilobytes => 1e3
+      case StandardUnit.Megabytes => 1e6
+      case StandardUnit.Gigabytes => 1e9
+      case StandardUnit.Terabytes => 1e12
 
-      case StandardUnit.CountSecond     => 1.0
+      case StandardUnit.CountSecond => 1.0
 
       // Use base unit of bytes/second
-      case StandardUnit.BitsSecond      => 1.0  / 8.0
-      case StandardUnit.KilobitsSecond  => 1e3  / 8.0
-      case StandardUnit.MegabitsSecond  => 1e6  / 8.0
-      case StandardUnit.GigabitsSecond  => 1e9  / 8.0
-      case StandardUnit.TerabitsSecond  => 1e12 / 8.0
+      case StandardUnit.BitsSecond     => 1.0 / 8.0
+      case StandardUnit.KilobitsSecond => 1e3 / 8.0
+      case StandardUnit.MegabitsSecond => 1e6 / 8.0
+      case StandardUnit.GigabitsSecond => 1e9 / 8.0
+      case StandardUnit.TerabitsSecond => 1e12 / 8.0
 
       // Use base unit of bytes/second
       case StandardUnit.BytesSecond     => 1.0
@@ -135,12 +139,12 @@ object Conversions {
       case StandardUnit.TerabytesSecond => 1e12
 
       // Use base unit of seconds
-      case StandardUnit.Microseconds    => 1e-6
-      case StandardUnit.Milliseconds    => 1e-3
-      case StandardUnit.Seconds         => 1.0
+      case StandardUnit.Microseconds => 1e-6
+      case StandardUnit.Milliseconds => 1e-3
+      case StandardUnit.Seconds      => 1.0
 
-      case StandardUnit.Percent         => 1.0
-      case StandardUnit.None            => 1.0
+      case StandardUnit.Percent => 1.0
+      case StandardUnit.None    => 1.0
     }
   }
 

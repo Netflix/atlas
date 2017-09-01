@@ -39,7 +39,6 @@ import com.netflix.spectator.api.Spectator
 
 import scala.util.Try
 
-
 class GraphApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   private val registry = Spectator.globalRegistry()
@@ -71,36 +70,40 @@ object GraphApi {
 
   private val engines = ApiSettings.engines.map(e => e.name -> e).toMap
 
-  private val contentTypes = engines.map { case (k, e) =>
-    k -> ContentType.parse(e.contentType).right.get
+  private val contentTypes = engines.map {
+    case (k, e) =>
+      k -> ContentType.parse(e.contentType).right.get
   }
 
   case class Request(
-      query: String,
-      parsedQuery: Try[List[StyleExpr]],
-      start: Option[String],
-      end: Option[String],
-      timezones: List[String],
-      step: Option[String],
-      flags: ImageFlags,
-      format: String,
-      id: String,
-      isBrowser: Boolean,
-      isAllowedFromBrowser: Boolean,
-      uri: String) {
+    query: String,
+    parsedQuery: Try[List[StyleExpr]],
+    start: Option[String],
+    end: Option[String],
+    timezones: List[String],
+    step: Option[String],
+    flags: ImageFlags,
+    format: String,
+    id: String,
+    isBrowser: Boolean,
+    isAllowedFromBrowser: Boolean,
+    uri: String
+  ) {
 
     def shouldOutputImage: Boolean = (format == "png")
 
     val timezoneIds: List[ZoneId] = {
       val zoneStrs = if (timezones.isEmpty) List(ApiSettings.timezone) else timezones
-      zoneStrs.map { z => ZoneId.of(z) }
+      zoneStrs.map { z =>
+        ZoneId.of(z)
+      }
     }
 
     val tz: ZoneId = timezoneIds.head
 
     // Resolved start and end time
-    val (resStart, resEnd) = timeRange(
-      start.getOrElse(ApiSettings.startTime), end.getOrElse(ApiSettings.endTime), tz)
+    val (resStart, resEnd) =
+      timeRange(start.getOrElse(ApiSettings.startTime), end.getOrElse(ApiSettings.endTime), tz)
 
     /** Input step size rounded if necessary to a supported step. */
     val roundedStepSize: Long = {
@@ -120,6 +123,7 @@ object GraphApi {
     val (fstart, fend) = roundToStep(resStart, resEnd)
 
     def startMillis: Long = fstart.toEpochMilli + stepSize
+
     def endMillis: Long = fend.toEpochMilli + stepSize
 
     private def timeRange(s: String, e: String, tz: ZoneId): (Instant, Instant) = {
@@ -193,19 +197,21 @@ object GraphApi {
     private def useAxisPerLine(gdef: GraphDef): GraphDef = {
       val graphDef = gdef.axisPerLine
       val multiY = graphDef.plots.size > 1
-      val plots = graphDef.plots.zipWithIndex.map { case (p, i) =>
-        flags.axes(i).newPlotDef(p.data, multiY)
+      val plots = graphDef.plots.zipWithIndex.map {
+        case (p, i) =>
+          flags.axes(i).newPlotDef(p.data, multiY)
       }
       graphDef.copy(plots = plots)
     }
   }
 
   case class Response(
-      start: Long,
-      step: Long,
-      legend: List[String],
-      metrics: List[Map[String, String]],
-      values: Array[Array[Double]]) {
+    start: Long,
+    step: Long,
+    legend: List[String],
+    metrics: List[Map[String, String]],
+    values: Array[Array[Double]]
+  ) {
 
     private def toTimeSeries(label: String, pos: Int): TimeSeries = {
       val data = new Array[Double](values.length)
@@ -238,15 +244,16 @@ object GraphApi {
   case class DataResponse(ts: Map[DataExpr, List[TimeSeries]])
 
   case class Axis(
-      upper: Option[String] = None,
-      lower: Option[String] = None,
-      scale: Option[String] = None,
-      stack: Boolean = false,
-      ylabel: Option[String] = None,
-      tickLabels: Option[String] = None,
-      palette: Option[String] = None,
-      sort: Option[String] = None,
-      order: Option[String] = None) {
+    upper: Option[String] = None,
+    lower: Option[String] = None,
+    scale: Option[String] = None,
+    stack: Boolean = false,
+    ylabel: Option[String] = None,
+    tickLabels: Option[String] = None,
+    palette: Option[String] = None,
+    sort: Option[String] = None,
+    order: Option[String] = None
+  ) {
 
     def newPlotDef(data: List[DataDef] = Nil, multiY: Boolean = false): PlotDef = {
       PlotDef(
@@ -262,24 +269,26 @@ object GraphApi {
   }
 
   case class ImageFlags(
-      title: Option[String],
-      width: Int,
-      height: Int,
-      zoom: Double,
-      axes: Map[Int, Axis],
-      axisPerLine: Boolean,
-      showLegend: Boolean,
-      showLegendStats: Boolean,
-      showOnlyGraph: Boolean,
-      vision: VisionType,
-      palette: String,
-      layout: Layout)
+    title: Option[String],
+    width: Int,
+    height: Int,
+    zoom: Double,
+    axes: Map[Int, Axis],
+    axisPerLine: Boolean,
+    showLegend: Boolean,
+    showLegendStats: Boolean,
+    showOnlyGraph: Boolean,
+    vision: VisionType,
+    palette: String,
+    layout: Layout
+  )
 
   private def getAxisParam(params: Uri.Query, k: String, id: Int): Option[String] = {
     params.get(s"$k.$id").orElse(params.get(k))
   }
 
   private def newAxis(params: Uri.Query, id: Int): Axis = {
+
     // Prefer the scale parameter if present. If not, then fallback to look at
     // the boolean `o` parameter for backwards compatibility.
     val scale = getAxisParam(params, "scale", id).orElse {
@@ -294,7 +303,8 @@ object GraphApi {
       tickLabels = getAxisParam(params, "tick_labels", id),
       palette = params.get(s"palette.$id"),
       sort = getAxisParam(params, "sort", id),
-      order = getAxisParam(params, "order", id))
+      order = getAxisParam(params, "order", id)
+    )
   }
 
   def toRequest(req: HttpRequest): Request = toRequest(req.uri)

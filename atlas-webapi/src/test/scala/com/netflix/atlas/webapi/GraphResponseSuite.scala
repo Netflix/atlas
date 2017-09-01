@@ -20,8 +20,7 @@ import org.scalatest.FunSuite
 
 class GraphResponseSuite extends FunSuite {
   test("parse") {
-    val res = Json.decode[GraphApi.Response](
-      """
+    val res = Json.decode[GraphApi.Response]("""
         |{
         |  "start": 1428791640000,
         |  "step": 60000,

@@ -27,10 +27,9 @@ import com.netflix.atlas.core.util.InternMap
 import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.SmallHashMap
 
-
 /**
- * Helper functions for manipulating tagged items.
- */
+  * Helper functions for manipulating tagged items.
+  */
 object TaggedItem {
 
   import java.util.Comparator
@@ -44,17 +43,19 @@ object TaggedItem {
   private val tagsInterner = InternMap.concurrent[Map[String, String]](initCapacity)
 
   private val keyComparator = new Comparator[Pair] {
+
     def compare(t1: Pair, t2: Pair): Int = {
       t1._1.compareTo(t2._1)
     }
   }
 
   private def writePair(
-      p: Pair,
-      cbuf: CharBuffer,
-      buf: ByteBuffer,
-      enc: CharsetEncoder,
-      md: MessageDigest): Unit = {
+    p: Pair,
+    cbuf: CharBuffer,
+    buf: ByteBuffer,
+    enc: CharsetEncoder,
+    md: MessageDigest
+  ): Unit = {
     cbuf.clear()
     cbuf.put(p._1)
     cbuf.flip()
@@ -75,11 +76,12 @@ object TaggedItem {
   }
 
   /**
-   * Compute an identifier for a set of tags. The id is a sha1 hash of a normalized string
-   * representation. Identical tags will always get the same id.
-   */
+    * Compute an identifier for a set of tags. The id is a sha1 hash of a normalized string
+    * representation. Identical tags will always get the same id.
+    */
   def computeId(tags: Map[String, String]): ItemId = {
-    if (tags.isEmpty) emptyId else {
+    if (tags.isEmpty) emptyId
+    else {
 
       val pairs = new Array[Pair](tags.size)
       val it = tags.iterator
@@ -112,10 +114,10 @@ object TaggedItem {
   }
 
   /**
-   * Compute the id and return an interned copy of the value. This function should be used if
-   * keeping metric data in memory for a long time to avoid redundant big integer objects hanging
-   * around.
-   */
+    * Compute the id and return an interned copy of the value. This function should be used if
+    * keeping metric data in memory for a long time to avoid redundant big integer objects hanging
+    * around.
+    */
   def createId(tags: Map[String, String]): ItemId = {
     val id = computeId(tags)
     idInterner.intern(id)
@@ -144,17 +146,18 @@ object TaggedItem {
   }
 
   /**
-   * Compute the new tags for the aggregate buffer. The tags are the intersection of tag values.
-   */
+    * Compute the new tags for the aggregate buffer. The tags are the intersection of tag values.
+    */
   def aggrTags(t1: Map[String, String], t2: Map[String, String]): Map[String, String] = {
     t1.toSet.intersect(t2.toSet).toMap
   }
 }
 
 /**
- * Represents an item that can be searched for using a set of tags.
- */
+  * Represents an item that can be searched for using a set of tags.
+  */
 trait TaggedItem {
+
   /** Unique id based on the tags. */
   def id: ItemId
 
@@ -168,13 +171,16 @@ trait TaggedItem {
   def isExpired: Boolean = false
 
   /**
-   * Code that just needs to iterate over all tags should use this method. Allows for
-   * implementations to optimize how the tag data is stored and traversed.
-   */
+    * Code that just needs to iterate over all tags should use this method. Allows for
+    * implementations to optimize how the tag data is stored and traversed.
+    */
   def foreach(f: (String, String) => Unit): Unit = {
     tags match {
       case m: SmallHashMap[String, String] => m.foreachItem(f)
-      case m: Map[String, String]          => m.foreach { t => f(t._1, t._2) }
+      case m: Map[String, String] =>
+        m.foreach { t =>
+          f(t._1, t._2)
+        }
     }
   }
 }
@@ -184,4 +190,3 @@ trait LazyTaggedItem extends TaggedItem {
 }
 
 case class BasicTaggedItem(tags: Map[String, String]) extends LazyTaggedItem
-

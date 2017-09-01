@@ -21,7 +21,6 @@ import org.scalatest.FunSuite
 
 import scala.util.Random
 
-
 class LongIntHashMapSuite extends FunSuite {
 
   test("put") {
@@ -88,7 +87,9 @@ class LongIntHashMapSuite extends FunSuite {
     m.increment(11)
     m.increment(22)
     assert(m.size === 3)
-    m.foreach { (_, v) => assert(v === 1) }
+    m.foreach { (_, v) =>
+      assert(v === 1)
+    }
   }
 
   test("resize") {

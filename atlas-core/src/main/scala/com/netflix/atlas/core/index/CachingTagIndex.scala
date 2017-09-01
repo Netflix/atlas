@@ -21,7 +21,6 @@ import com.github.benmanes.caffeine.cache.LoadingCache
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
 
-
 /**
   * Caches results of tag queries on the underlying index. It is assumed that the
   * underlying index is immutable and expiration from the cache is only done based
@@ -36,6 +35,7 @@ class CachingTagIndex[T <: TaggedItem](delegate: TagIndex[T]) extends TagIndex[T
 
   private def newCache[R <: AnyRef](f: TagQuery => R): LoadingCache[TagQuery, R] = {
     val loader = new CacheLoader[TagQuery, R] {
+
       def load(query: TagQuery): R = f(query)
     }
     Caffeine.newBuilder.maximumSize(1000).build[TagQuery, R](loader)

@@ -55,7 +55,8 @@ case class TimeSeriesMessage(
   step: Long,
   label: String,
   tags: Map[String, String],
-  data: ChunkData) extends JsonSupport {
+  data: ChunkData
+) extends JsonSupport {
 
   override def encode(gen: JsonGenerator) {
     gen.writeStartObject()
@@ -75,14 +76,21 @@ case class TimeSeriesMessage(
   private def encodeTags(gen: JsonGenerator, tags: Map[String, String]) {
     gen.writeObjectFieldStart("tags")
     tags match {
-      case m: SmallHashMap[String, String] => m.foreachItem { (k, v) => gen.writeStringField(k, v) }
-      case m: Map[String, String]          => m.foreach { t => gen.writeStringField(t._1, t._2) }
+      case m: SmallHashMap[String, String] =>
+        m.foreachItem { (k, v) =>
+          gen.writeStringField(k, v)
+        }
+      case m: Map[String, String] =>
+        m.foreach { t =>
+          gen.writeStringField(t._1, t._2)
+        }
     }
     gen.writeEndObject()
   }
 }
 
 object TimeSeriesMessage {
+
   /**
     * Create a new time series message.
     *
@@ -107,6 +115,7 @@ object TimeSeriesMessage {
       context.step,
       ts.label,
       ts.tags,
-      ArrayData(data.data))
+      ArrayData(data.data)
+    )
   }
 }

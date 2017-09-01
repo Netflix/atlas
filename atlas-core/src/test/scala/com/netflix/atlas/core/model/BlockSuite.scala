@@ -23,7 +23,9 @@ class BlockSuite extends FunSuite {
     val block = ArrayBlock(start, size)
     var i = 0
     data.foreach { t =>
-      (i to t._1).foreach { j => block.buffer(j) = t._2 }
+      (i to t._1).foreach { j =>
+        block.buffer(j) = t._2
+      }
       i = t._1 + 1
     }
     Block.compress(block)
@@ -60,9 +62,9 @@ class BlockSuite extends FunSuite {
 
   test("SparseBlock.get") {
     val data =
-      (0 until 5).map(i => 0) ++
-        (5 until 37).map(i => SparseBlock.NaN) ++
-        (37 until 60).map(i => 1)
+    (0 until 5).map(i => 0) ++
+    (5 until 37).map(i => SparseBlock.NaN) ++
+    (37 until 60).map(i => 1)
     val indexes = data.map(_.asInstanceOf[Byte]).toArray
     val values = Array(42.0, 21.0)
     val b = SparseBlock(0L, indexes, values)
@@ -72,9 +74,9 @@ class BlockSuite extends FunSuite {
 
   test("SparseBlock.get, size > 120") {
     val data =
-      (0 until 5).map(i => 0) ++
-        (5 until 37).map(i => SparseBlock.NaN) ++
-        (37 until 360).map(i => 1)
+    (0 until 5).map(i => 0) ++
+    (5 until 37).map(i => SparseBlock.NaN) ++
+    (37 until 360).map(i => 1)
     val indexes = data.map(_.asInstanceOf[Byte]).toArray
     val values = Array(42.0, 21.0)
     val b = SparseBlock(0L, indexes, values)
@@ -162,9 +164,9 @@ class BlockSuite extends FunSuite {
   }
 
   test("merge") {
-    val data1 = List(5 -> 42.0, 37 -> Double.NaN, 59 -> 21.0)
-    val data2 = List(9 -> 41.0, 45 -> Double.NaN, 59 -> 22.0)
-    val expected = List(5 -> 42.0, 9 -> 41.0, 37 -> Double.NaN, 45 -> 21.0, 59 -> 22.0)
+    val data1 = List(5    -> 42.0, 37 -> Double.NaN, 59 -> 21.0)
+    val data2 = List(9    -> 41.0, 45 -> Double.NaN, 59 -> 22.0)
+    val expected = List(5 -> 42.0, 9  -> 41.0, 37       -> Double.NaN, 45 -> 21.0, 59 -> 22.0)
     val b1 = rleBlock(0L, data1)
     val b2 = rleBlock(0L, data2)
     val b3 = Block.merge(b1, b2)
@@ -180,19 +182,22 @@ class BlockSuite extends FunSuite {
       min = ConstantBlock(0L, 60, 1.0),
       max = ConstantBlock(0L, 60, 50.0),
       sum = ConstantBlock(0L, 60, 51.0),
-      count = ConstantBlock(0L, 60, 2.0))
+      count = ConstantBlock(0L, 60, 2.0)
+    )
     val b2 = RollupBlock(
       min = ConstantBlock(0L, 60, 2.0),
       max = ConstantBlock(0L, 60, 3.0),
       sum = ConstantBlock(0L, 60, 6.0),
-      count = ConstantBlock(0L, 60, 3.0))
+      count = ConstantBlock(0L, 60, 3.0)
+    )
     val b3 = Block.merge(b1, b2)
 
     val expected = RollupBlock(
       min = ConstantBlock(0L, 60, 2.0),
       max = ConstantBlock(0L, 60, 50.0),
       sum = ConstantBlock(0L, 60, 51.0),
-      count = ConstantBlock(0L, 60, 3.0))
+      count = ConstantBlock(0L, 60, 3.0)
+    )
     assert(b3 === expected)
   }
 
@@ -201,7 +206,8 @@ class BlockSuite extends FunSuite {
       min = ConstantBlock(0L, 60, 1.0),
       max = ConstantBlock(0L, 60, 50.0),
       sum = ConstantBlock(0L, 60, 51.0),
-      count = ConstantBlock(0L, 60, 2.0))
+      count = ConstantBlock(0L, 60, 2.0)
+    )
     val b2 = ConstantBlock(0L, 60, 2.0)
     assert(b1 === Block.merge(b1, b2))
     assert(b1 === Block.merge(b2, b1))

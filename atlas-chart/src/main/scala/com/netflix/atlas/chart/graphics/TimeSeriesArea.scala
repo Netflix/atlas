@@ -20,23 +20,20 @@ import java.awt.Graphics2D
 import com.netflix.atlas.core.model.TimeSeq
 
 /**
- * Draws a time series as an area filled to zero. If values are positive the fill will be down to
- * zero. If values are negative the fill will be up to zero.
- *
- * @param style
- *     Style to use for drawing the area.
- * @param ts
- *     Data for the line.
- * @param xaxis
- *     Axis used to create the X scale.
- * @param yaxis
- *     Axis used to create the Y scale.
- */
-case class TimeSeriesArea(
-    style: Style,
-    ts: TimeSeq,
-    xaxis: TimeAxis,
-    yaxis: ValueAxis) extends Element {
+  * Draws a time series as an area filled to zero. If values are positive the fill will be down to
+  * zero. If values are negative the fill will be up to zero.
+  *
+  * @param style
+  *     Style to use for drawing the area.
+  * @param ts
+  *     Data for the line.
+  * @param xaxis
+  *     Axis used to create the X scale.
+  * @param yaxis
+  *     Axis used to create the Y scale.
+  */
+case class TimeSeriesArea(style: Style, ts: TimeSeq, xaxis: TimeAxis, yaxis: ValueAxis)
+    extends Element {
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     style.configure(g)
@@ -59,4 +56,3 @@ case class TimeSeriesArea(
     }
   }
 }
-

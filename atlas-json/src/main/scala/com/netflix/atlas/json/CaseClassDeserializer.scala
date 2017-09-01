@@ -33,10 +33,10 @@ import com.netflix.atlas.json.Reflection.FieldInfo
   * set.
   */
 class CaseClassDeserializer(
-    javaType: JavaType,
-    config: DeserializationConfig,
-    beanDesc: BeanDescription)
-  extends StdDeserializer[AnyRef](javaType) {
+  javaType: JavaType,
+  config: DeserializationConfig,
+  beanDesc: BeanDescription
+) extends StdDeserializer[AnyRef](javaType) {
 
   private val desc = Reflection.createDescription(javaType)
 
@@ -44,14 +44,16 @@ class CaseClassDeserializer(
 
   private def getFieldDeser(finfo: FieldInfo, ctxt: DeserializationContext): JsonDeserializer[_] = {
     val fieldDeser = fieldDesers.get(finfo.pos)
-    if (fieldDeser != null) fieldDeser else {
+    if (fieldDeser != null) fieldDeser
+    else {
       // Probably a better way, but findContextualValueDeserializer does not look
       // at the using param of the JsonDeserialize annotation. So we look for it
       // here and use that if present.
       val annoDeser = ctxt.getAnnotationIntrospector
         .findDeserializer(finfo.property.getMember)
         .asInstanceOf[Class[_]]
-      if (annoDeser != null) annoDeser.newInstance().asInstanceOf[JsonDeserializer[_]] else {
+      if (annoDeser != null) annoDeser.newInstance().asInstanceOf[JsonDeserializer[_]]
+      else {
         // If possible, then get the type info from the bean description as it has more
         // context about generic types. In some cases it is null so fallback to using
         // the type we find for the field in the class.

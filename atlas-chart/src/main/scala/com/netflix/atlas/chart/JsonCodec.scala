@@ -79,13 +79,15 @@ private[chart] object JsonCodec {
     gen.writeStartArray()
     writeGraphImage(gen, config)
     writeGraphDefMetadata(gen, config)
-    config.plots.zipWithIndex.foreach { case (plot, i) =>
-      writePlotDefMetadata(gen, plot, i)
+    config.plots.zipWithIndex.foreach {
+      case (plot, i) =>
+        writePlotDefMetadata(gen, plot, i)
     }
-    config.plots.zipWithIndex.foreach { case (plot, i) =>
-      plot.data.foreach { data =>
-        writeDataDef(gen, i, data, config.startTime.toEpochMilli, config.endTime.toEpochMilli)
-      }
+    config.plots.zipWithIndex.foreach {
+      case (plot, i) =>
+        plot.data.foreach { data =>
+          writeDataDef(gen, i, data, config.startTime.toEpochMilli, config.endTime.toEpochMilli)
+        }
     }
     gen.writeEndArray()
   }
@@ -112,7 +114,9 @@ private[chart] object JsonCodec {
     gen.writeNumberField("startTime", config.startTime.toEpochMilli)
     gen.writeNumberField("endTime", config.endTime.toEpochMilli)
     gen.writeArrayFieldStart("timezones")
-    config.timezones.foreach { tz => gen.writeString(tz.getId) }
+    config.timezones.foreach { tz =>
+      gen.writeString(tz.getId)
+    }
     gen.writeEndArray()
     gen.writeNumberField("step", config.step)
 
@@ -121,7 +125,9 @@ private[chart] object JsonCodec {
     gen.writeStringField("layout", config.layout.name())
     gen.writeNumberField("zoom", config.zoom)
 
-    config.title.foreach { t => gen.writeStringField("title", t) }
+    config.title.foreach { t =>
+      gen.writeStringField("title", t)
+    }
     gen.writeStringField("legendType", config.legendType.name())
     gen.writeBooleanField("onlyGraph", config.onlyGraph)
 
@@ -139,7 +145,9 @@ private[chart] object JsonCodec {
     }
 
     gen.writeArrayFieldStart("warnings")
-    config.warnings.foreach { w => gen.writeString(w) }
+    config.warnings.foreach { w =>
+      gen.writeString(w)
+    }
     gen.writeEndArray()
     gen.writeEndObject()
   }
@@ -148,7 +156,9 @@ private[chart] object JsonCodec {
     gen.writeStartObject()
     gen.writeStringField("type", "plot-metadata")
     gen.writeNumberField("id", id)
-    plot.ylabel.foreach { v => gen.writeStringField("ylabel", v) }
+    plot.ylabel.foreach { v =>
+      gen.writeStringField("ylabel", v)
+    }
     gen.writeFieldName("axisColor")
     writeColor(gen, plot.getAxisColor)
     gen.writeStringField("scale", plot.scale.name())
@@ -158,7 +168,13 @@ private[chart] object JsonCodec {
     gen.writeEndObject()
   }
 
-  private def writeDataDef(gen: JsonGenerator, plot: Int, data: DataDef, start: Long, end: Long): Unit = {
+  private def writeDataDef(
+    gen: JsonGenerator,
+    plot: Int,
+    data: DataDef,
+    start: Long,
+    end: Long
+  ): Unit = {
     data match {
       case v: LineDef    => writeLineDef(gen, plot, v, start, end)
       case v: HSpanDef   => writeHSpanDef(gen, plot, v)
@@ -167,7 +183,13 @@ private[chart] object JsonCodec {
     }
   }
 
-  private def writeLineDef(gen: JsonGenerator, plot: Int, line: LineDef, start: Long, end: Long): Unit = {
+  private def writeLineDef(
+    gen: JsonGenerator,
+    plot: Int,
+    line: LineDef,
+    start: Long,
+    end: Long
+  ): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "timeseries")
     gen.writeNumberField("plot", plot)
@@ -182,7 +204,9 @@ private[chart] object JsonCodec {
     gen.writeObjectFieldStart("data")
     gen.writeStringField("type", "array")
     gen.writeArrayFieldStart("values")
-    line.data.data.foreach(start, end) { (_, v) => gen.writeNumber(v) }
+    line.data.data.foreach(start, end) { (_, v) =>
+      gen.writeNumber(v)
+    }
     gen.writeEndArray()
     gen.writeEndObject()
     gen.writeEndObject()
@@ -192,7 +216,9 @@ private[chart] object JsonCodec {
     gen.writeStartObject()
     gen.writeStringField("type", "hspan")
     gen.writeNumberField("plot", plot)
-    span.labelOpt.foreach { v => gen.writeStringField("label", v) }
+    span.labelOpt.foreach { v =>
+      gen.writeStringField("label", v)
+    }
     gen.writeFieldName("color")
     writeColor(gen, span.color)
     gen.writeNumberField("v1", span.v1)
@@ -204,7 +230,9 @@ private[chart] object JsonCodec {
     gen.writeStartObject()
     gen.writeStringField("type", "vspan")
     gen.writeNumberField("plot", plot)
-    span.labelOpt.foreach { v => gen.writeStringField("label", v) }
+    span.labelOpt.foreach { v =>
+      gen.writeStringField("label", v)
+    }
     gen.writeFieldName("color")
     writeColor(gen, span.color)
     gen.writeNumberField("t1", span.t1.toEpochMilli)
@@ -234,7 +262,7 @@ private[chart] object JsonCodec {
       val node = mapper.readTree[JsonNode](parser)
       node.get("type").asText() match {
         case "graph-image" =>
-          // ignored for right now
+        // ignored for right now
         case "graph-metadata" =>
           if (gdef != null)
             throw new IllegalStateException("multiple graph-metadata blocks")
@@ -259,17 +287,21 @@ private[chart] object JsonCodec {
     val groupedData = data.result().groupBy(_._1)
 
     val sortedPlots = plots.result().toList.sortWith(_._1 < _._1)
-    val plotList = sortedPlots.map { case (id, plot) =>
-      val plotLines = groupedData.get(id).map(_.map(_._2)).getOrElse(Nil)
-      plot.copy(data = plotLines)
+    val plotList = sortedPlots.map {
+      case (id, plot) =>
+        val plotLines = groupedData.get(id).map(_.map(_._2)).getOrElse(Nil)
+        plot.copy(data = plotLines)
     }
 
     gdef.copy(plots = plotList)
   }
 
   private def toGraphDef(node: JsonNode): GraphDef = {
+
+    // format: off
     import scala.collection.JavaConverters._
-    GraphDef(Nil,
+    GraphDef(
+      Nil,
       startTime  = Instant.ofEpochMilli(node.get("startTime").asLong()),
       endTime    = Instant.ofEpochMilli(node.get("endTime").asLong()),
       timezones  = node.get("timezones").elements.asScala.map(n => ZoneId.of(n.asText())).toList,
@@ -285,26 +317,34 @@ private[chart] object JsonCodec {
       stats      = Option(node.get("stats")).fold(CollectorStats.unknown)(toCollectorStats),
       warnings   = node.get("warnings").elements.asScala.map(_.asText()).toList
     )
+    // format: on
   }
 
   private def toCollectorStats(node: JsonNode): CollectorStats = {
+
+    // format: off
     CollectorStats(
       inputLines       = node.get("inputLines").asLong(),
       inputDatapoints  = node.get("inputDatapoints").asLong(),
       outputLines      = node.get("outputLines").asLong(),
       outputDatapoints = node.get("outputDatapoints").asLong()
     )
+    // format: on
   }
 
- private def toPlotDef(node: JsonNode): PlotDef = {
-    PlotDef(Nil,
-      ylabel         = Option(node.get("ylabel")).map(_.asText()),
-      axisColor      = Option(node.get("axisColor")).map(toColor),
-      scale          = Scale.valueOf(node.get("scale").asText()),
-      upper          = PlotBound(node.get("upper").asText()),
-      lower          = PlotBound(node.get("lower").asText()),
-      tickLabelMode  = TickLabelMode.valueOf(node.get("tickLabelMode").asText())
+  private def toPlotDef(node: JsonNode): PlotDef = {
+
+    // format: off
+    PlotDef(
+      Nil,
+      ylabel        = Option(node.get("ylabel")).map(_.asText()),
+      axisColor     = Option(node.get("axisColor")).map(toColor),
+      scale         = Scale.valueOf(node.get("scale").asText()),
+      upper         = PlotBound(node.get("upper").asText()),
+      lower         = PlotBound(node.get("lower").asText()),
+      tickLabelMode = TickLabelMode.valueOf(node.get("tickLabelMode").asText())
     )
+    // format: on
   }
 
   /**
@@ -323,8 +363,8 @@ private[chart] object JsonCodec {
 
   private def toLineDef(gdef: GraphDef, node: JsonNode): LineDef = {
     LineDef(
-      data      = toTimeSeries(gdef, node),
-      color     = toColor(node.get("color")),
+      data = toTimeSeries(gdef, node),
+      color = toColor(node.get("color")),
       lineStyle = LineStyle.valueOf(node.get("lineStyle").asText()),
       lineWidth = node.get("lineWidth").asDouble().toFloat
     )
@@ -332,26 +372,26 @@ private[chart] object JsonCodec {
 
   private def toHSpanDef(node: JsonNode): HSpanDef = {
     HSpanDef(
-      v1       = node.get("v1").asDouble(),
-      v2       = node.get("v2").asDouble(),
-      color    = toColor(node.get("color")),
+      v1 = node.get("v1").asDouble(),
+      v2 = node.get("v2").asDouble(),
+      color = toColor(node.get("color")),
       labelOpt = Option(node.get("label")).map(_.asText())
     )
   }
 
   private def toVSpanDef(node: JsonNode): VSpanDef = {
     VSpanDef(
-      t1       = Instant.ofEpochMilli(node.get("t1").asLong()),
-      t2       = Instant.ofEpochMilli(node.get("t2").asLong()),
-      color    = toColor(node.get("color")),
+      t1 = Instant.ofEpochMilli(node.get("t1").asLong()),
+      t2 = Instant.ofEpochMilli(node.get("t2").asLong()),
+      color = toColor(node.get("color")),
       labelOpt = Option(node.get("label")).map(_.asText())
     )
   }
 
   private def toMessageDef(node: JsonNode): MessageDef = {
     MessageDef(
-      color    = toColor(node.get("color")),
-      label    = node.get("label").asText()
+      color = toColor(node.get("color")),
+      label = node.get("label").asText()
     )
   }
 

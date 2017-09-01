@@ -30,7 +30,6 @@ import com.netflix.atlas.test.GraphAssertions
 import com.netflix.atlas.test.SrcPath
 import org.scalatest.FunSuite
 
-
 class GraphApiSuite extends FunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
@@ -44,8 +43,12 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
 
   private val routes = RequestHandler.standardOptions((new GraphApi).routes)
 
-  private val template = Streams.scope(Streams.resource("examples.md")) { in => Streams.lines(in).toList }
-  private val others = Streams.scope(Streams.resource("others.md")) { in => Streams.lines(in).toList }
+  private val template = Streams.scope(Streams.resource("examples.md")) { in =>
+    Streams.lines(in).toList
+  }
+  private val others = Streams.scope(Streams.resource("others.md")) { in =>
+    Streams.lines(in).toList
+  }
   private val all = template ::: others
 
   // SBT working directory gets updated with fork to be the dir for the project

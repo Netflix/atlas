@@ -18,11 +18,9 @@ package com.netflix.atlas.core.validation
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class ValueLengthRuleSuite extends FunSuite {
 
-  private val config = ConfigFactory.parseString(
-    """
+  private val config = ConfigFactory.parseString("""
       |min-length = 2
       |max-length = 4
     """.stripMargin)

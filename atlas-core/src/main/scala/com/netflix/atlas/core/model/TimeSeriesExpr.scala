@@ -18,6 +18,7 @@ package com.netflix.atlas.core.model
 import java.time.Duration
 
 trait TimeSeriesExpr extends Expr {
+
   def dataExprs: List[DataExpr]
 
   def withOffset(d: Duration): TimeSeriesExpr = {

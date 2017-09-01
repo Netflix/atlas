@@ -27,7 +27,6 @@ import java.util.regex.Pattern
 
 import org.scalatest.FunSuite
 
-
 class StringsSuite extends FunSuite {
 
   import com.netflix.atlas.core.util.Strings._
@@ -204,10 +203,8 @@ class StringsSuite extends FunSuite {
 
   test("parseQueryString") {
     val query = "foo=bar&foo=baz;bar&foo=%21&;foo&abc=42"
-    val expected = Map(
-      "abc" -> List("42"),
-      "bar" -> List("1"),
-      "foo" -> List("bar", "baz", "!", "1").reverse)
+    val expected =
+      Map("abc" -> List("42"), "bar" -> List("1"), "foo" -> List("bar", "baz", "!", "1").reverse)
     assert(parseQueryString(query) === expected)
   }
 
@@ -313,7 +310,8 @@ class StringsSuite extends FunSuite {
     assert(parseDate("2012-02-01T04:05") === expected)
     assert(parseDate("2012-02-01T04:05Z") === expected)
 
-    val result = ZonedDateTime.ofInstant(parseDate("2012-02-01T12:05+08:00").toInstant, ZoneOffset.UTC)
+    val result =
+      ZonedDateTime.ofInstant(parseDate("2012-02-01T12:05+08:00").toInstant, ZoneOffset.UTC)
     assert(result === expected)
   }
 
@@ -326,7 +324,8 @@ class StringsSuite extends FunSuite {
 
   test("parseDate, iso date with time and zone") {
     val expected = ZonedDateTime.of(2012, 1, 31, 20, 5, 6, 0, ZoneOffset.UTC)
-    val result = ZonedDateTime.ofInstant(parseDate("2012-02-01T04:05:06+08:00").toInstant, ZoneOffset.UTC)
+    val result =
+      ZonedDateTime.ofInstant(parseDate("2012-02-01T04:05:06+08:00").toInstant, ZoneOffset.UTC)
     assert(result === expected)
   }
 

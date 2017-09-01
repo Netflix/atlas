@@ -108,10 +108,8 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("etags match for different orderings") {
-    val unordered = List(
-      ExpressionMetadata("a", 2),
-      ExpressionMetadata("z", 1),
-      ExpressionMetadata("c", 3))
+    val unordered =
+      List(ExpressionMetadata("a", 2), ExpressionMetadata("z", 1), ExpressionMetadata("c", 3))
     val ordered = unordered.sorted
     val tagUnordered = ExpressionApi.computeETag(unordered)
     val tagOrdered = ExpressionApi.computeETag(ordered)
@@ -140,7 +138,10 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
     assert(tag_e1 != tag_e2)
   }
 
-  private val skanCount = """{"expression":"nf.cluster,skan,:eq,:count","frequency":60000,"id":"6278fa6047c07316d7e265a1004882ab9e1007af"}"""
-  private val skanSum = """{"expression":"nf.cluster,skan,:eq,:sum","frequency":60000,"id":"36e0a2c61b48e062bba5361d059afd313c82c674"}"""
-  private val brhMax = """{"expression":"nf.app,brh,:eq,:max","frequency":60000,"id":"16f1b0930c0eeae0225374ea88c01e161e589aff"}"""
+  private val skanCount =
+    """{"expression":"nf.cluster,skan,:eq,:count","frequency":60000,"id":"6278fa6047c07316d7e265a1004882ab9e1007af"}"""
+  private val skanSum =
+    """{"expression":"nf.cluster,skan,:eq,:sum","frequency":60000,"id":"36e0a2c61b48e062bba5361d059afd313c82c674"}"""
+  private val brhMax =
+    """{"expression":"nf.app,brh,:eq,:max","frequency":60000,"id":"16f1b0930c0eeae0225374ea88c01e161e589aff"}"""
 }

@@ -105,7 +105,9 @@ class IntHashSet(noData: Int, capacity: Int = 10) {
   /** Converts this set to a List[Int]. Used mostly for debugging and tests. */
   def toList: List[Int] = {
     val builder = List.newBuilder[Int]
-    foreach { v => builder += v }
+    foreach { v =>
+      builder += v
+    }
     builder.result()
   }
 }

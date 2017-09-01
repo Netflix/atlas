@@ -21,7 +21,6 @@ import org.scalatest.FunSuite
 
 import scala.util.Random
 
-
 class IntHashSetSuite extends FunSuite {
 
   test("add") {
@@ -60,6 +59,7 @@ class IntHashSetSuite extends FunSuite {
   }
 
   private def arrayCompare(a1: Array[Int], a2: Array[Int]): Unit = {
+
     // Need to sort as traversal order could be different when generating the arrays
     java.util.Arrays.sort(a1)
     java.util.Arrays.sort(a2)

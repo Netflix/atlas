@@ -66,11 +66,7 @@ class AggregateCollectorSuite extends FunSuite {
   }
 
   test("all collector") {
-    val expected = List(
-      newBuffer(3.0),
-      newBuffer(1.0),
-      newBuffer(2.0),
-      newBuffer(5.0))
+    val expected = List(newBuffer(3.0), newBuffer(1.0), newBuffer(2.0), newBuffer(5.0))
     val c = new AllAggregateCollector
     assert(c.result === Nil)
     expected.foreach(c.add)
@@ -83,7 +79,8 @@ class AggregateCollectorSuite extends FunSuite {
       newTaggedBuffer(Map("a" -> "1", "b" -> "2"), 3.0),
       newTaggedBuffer(Map("a" -> "2", "b" -> "2"), 1.0),
       newTaggedBuffer(Map("a" -> "3", "b" -> "3"), 2.0),
-      newTaggedBuffer(Map("a" -> "4", "b" -> "2", "c" -> "7"), 5.0))
+      newTaggedBuffer(Map("a" -> "4", "b" -> "2", "c" -> "7"), 5.0)
+    )
     val by = DataExpr.GroupBy(DataExpr.Sum(Query.False), List("a"))
     val c = new GroupByAggregateCollector(by)
     assert(c.result === Nil)
@@ -97,10 +94,12 @@ class AggregateCollectorSuite extends FunSuite {
       newTaggedBuffer(Map("a" -> "1", "b" -> "2"), 3.0),
       newTaggedBuffer(Map("a" -> "2", "b" -> "2"), 1.0),
       newTaggedBuffer(Map("a" -> "3", "b" -> "3"), 2.0),
-      newTaggedBuffer(Map("a" -> "4", "b" -> "2", "c" -> "7"), 5.0))
+      newTaggedBuffer(Map("a" -> "4", "b" -> "2", "c" -> "7"), 5.0)
+    )
     val expected = List(
       newTaggedBuffer(Map("b" -> "2"), 9.0),
-      newTaggedBuffer(Map("a" -> "3", "b" -> "3"), 2.0))
+      newTaggedBuffer(Map("a" -> "3", "b" -> "3"), 2.0)
+    )
     val by = DataExpr.GroupBy(DataExpr.Sum(Query.False), List("b"))
     val c = new GroupByAggregateCollector(by)
     assert(c.result === Nil)
@@ -114,9 +113,9 @@ class AggregateCollectorSuite extends FunSuite {
       newTaggedBuffer(Map("a" -> "1", "b" -> "2"), 3.0),
       newTaggedBuffer(Map("a" -> "2", "b" -> "2"), 1.0),
       newTaggedBuffer(Map("a" -> "3", "b" -> "3"), 2.0),
-      newTaggedBuffer(Map("a" -> "4", "b" -> "2", "c" -> "7"), 5.0))
-    val expected = List(
-      newTaggedBuffer(Map("a" -> "4", "b" -> "2", "c" -> "7"), 5.0))
+      newTaggedBuffer(Map("a" -> "4", "b" -> "2", "c" -> "7"), 5.0)
+    )
+    val expected = List(newTaggedBuffer(Map("a" -> "4", "b" -> "2", "c" -> "7"), 5.0))
     val by = DataExpr.GroupBy(DataExpr.Sum(Query.False), List("b", "c"))
     val c = new GroupByAggregateCollector(by)
     assert(c.result === Nil)

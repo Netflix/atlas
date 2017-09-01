@@ -18,13 +18,13 @@ package com.netflix.atlas.core.validation
 import com.typesafe.config.Config
 
 /**
- * Verifies that the keys are within the specified length bounds. Sample config:
- *
- * ```
- * min-length = 2
- * max-length = 60
- * ```
- */
+  * Verifies that the keys are within the specified length bounds. Sample config:
+  *
+  * ```
+  * min-length = 2
+  * max-length = 60
+  * ```
+  */
 class KeyLengthRule(config: Config) extends TagRule {
   private val minLength = config.getInt("min-length")
   private val maxLength = config.getInt("max-length")

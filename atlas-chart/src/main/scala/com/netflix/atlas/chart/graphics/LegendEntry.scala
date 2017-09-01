@@ -36,12 +36,14 @@ import com.netflix.atlas.core.util.UnitPrefix
   *     If true then summary stats will be shown below the label for the line.
   */
 case class LegendEntry(plot: PlotDef, data: DataDef, showStats: Boolean)
-    extends Element with FixedHeight {
+    extends Element
+    with FixedHeight {
 
   private def shouldShowStats: Boolean = showStats && data.isInstanceOf[LineDef]
 
   override def height: Int = {
-    if (!shouldShowStats) Constants.normalFontDims.height else {
+    if (!shouldShowStats) Constants.normalFontDims.height
+    else {
       Constants.normalFontDims.height + Constants.smallFontDims.height * 3
     }
   }
@@ -88,9 +90,10 @@ case class LegendEntry(plot: PlotDef, data: DataDef, showStats: Boolean)
           )
           val offset = y1 + Constants.normalFontDims.height
           val rowHeight = Constants.smallFontDims.height
-          rows.zipWithIndex.foreach { case (row, i) =>
-            val txt = Text(row, font = Constants.smallFont, alignment = TextAlignment.LEFT)
-            txt.draw(g, x1 + d + 4, offset + i * rowHeight, x2, y2)
+          rows.zipWithIndex.foreach {
+            case (row, i) =>
+              val txt = Text(row, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+              txt.draw(g, x1 + d + 4, offset + i * rowHeight, x2, y2)
           }
         case _ =>
       }
@@ -104,4 +107,3 @@ case class LegendEntry(plot: PlotDef, data: DataDef, showStats: Boolean)
     }
   }
 }
-

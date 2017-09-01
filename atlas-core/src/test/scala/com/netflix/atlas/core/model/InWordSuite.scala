@@ -22,14 +22,14 @@ import com.netflix.atlas.core.stacklang.Word
 
 class InWordSuite extends BaseWordSuite {
 
-  def interpreter: Interpreter = Interpreter(
-    QueryVocabulary.allWords ::: StandardVocabulary.allWords)
+  def interpreter: Interpreter =
+    Interpreter(QueryVocabulary.allWords ::: StandardVocabulary.allWords)
 
   def word: Word = QueryVocabulary.In
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a,(,)" -> List(Query.False),
-    "a,(,b,)" -> List(Query.Equal("a", "b")),
+    "a,(,)"       -> List(Query.False),
+    "a,(,b,)"     -> List(Query.Equal("a", "b")),
     "a,(,b,c,d,)" -> List(Query.In("a", List("b", "c", "d")))
   )
 

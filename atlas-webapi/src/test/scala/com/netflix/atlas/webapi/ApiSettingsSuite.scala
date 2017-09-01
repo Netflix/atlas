@@ -41,8 +41,10 @@ class ApiSettingsSuite extends FunSuite {
 }
 
 class TestVocabulary extends Vocabulary {
+
   override def name: String = "test"
+
   override def words: List[Word] = Nil
+
   override def dependsOn: List[Vocabulary] = Nil
 }
-

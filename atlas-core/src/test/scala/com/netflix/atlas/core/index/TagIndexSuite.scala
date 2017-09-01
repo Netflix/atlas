@@ -61,11 +61,14 @@ abstract class TagIndexSuite extends FunSuite {
     val expected = index.findTags(TagQuery(None, Some("nf.node"))).map(_.copy(count = -1))
     val pageSize = 10
     val builder = List.newBuilder[Tag]
-    var tmp = index.findTags(TagQuery(None, Some("nf.node"), limit = pageSize)).map(_.copy(count = -1))
+    var tmp =
+      index.findTags(TagQuery(None, Some("nf.node"), limit = pageSize)).map(_.copy(count = -1))
     while (tmp.size == pageSize) {
       builder ++= tmp
       val last = "%s,%s".format(tmp.last.key, tmp.last.value)
-      tmp = index.findTags(TagQuery(None, Some("nf.node"), offset = last, limit = pageSize)).map(_.copy(count = -1))
+      tmp = index
+        .findTags(TagQuery(None, Some("nf.node"), offset = last, limit = pageSize))
+        .map(_.copy(count = -1))
     }
     builder ++= tmp
     assert(expected.size === builder.result.size)
@@ -79,14 +82,16 @@ abstract class TagIndexSuite extends FunSuite {
 
   test("findTags query with key restriction") {
     val q = Query.Equal("name", "sps_9")
-    val result = index.findTags(TagQuery(Some(q), key = Some("nf.cluster"))).map(_.copy(count = -1))
+    val result =
+      index.findTags(TagQuery(Some(q), key = Some("nf.cluster"))).map(_.copy(count = -1))
     assert(result.find(_.value == "nccp-appletv") === Some(Tag("nf.cluster", "nccp-appletv")))
     assert(result.size === 6)
   }
 
   test("findTags query with exact regex") {
     val q = Query.Regex("name", "sps_9")
-    val result = index.findTags(TagQuery(Some(q), key = Some("nf.cluster"))).map(_.copy(count = -1))
+    val result =
+      index.findTags(TagQuery(Some(q), key = Some("nf.cluster"))).map(_.copy(count = -1))
     assert(result.find(_.value == "nccp-appletv") === Some(Tag("nf.cluster", "nccp-appletv")))
     assert(result.size === 6)
   }

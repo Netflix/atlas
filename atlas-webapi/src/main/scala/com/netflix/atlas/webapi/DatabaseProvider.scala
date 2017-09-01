@@ -28,8 +28,8 @@ import com.typesafe.config.Config
   * Created by brharrington on 7/20/16.
   */
 @Singleton
-class DatabaseProvider @Inject() (config: Config, classFactory: ClassFactory)
-  extends Provider[Database] {
+class DatabaseProvider @Inject()(config: Config, classFactory: ClassFactory)
+    extends Provider[Database] {
 
   private val db = {
     import scala.compat.java8.FunctionConverters._

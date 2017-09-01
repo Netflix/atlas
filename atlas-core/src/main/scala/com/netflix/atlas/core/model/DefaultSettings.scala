@@ -19,11 +19,9 @@ import java.util.concurrent.TimeUnit
 
 import com.netflix.atlas.config.ConfigManager
 
-
 object DefaultSettings {
 
   private val config = ConfigManager.current.getConfig("atlas.core")
 
   def stepSize: Long = config.getDuration("model.step", TimeUnit.MILLISECONDS)
 }
-

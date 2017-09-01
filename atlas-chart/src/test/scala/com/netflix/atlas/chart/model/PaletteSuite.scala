@@ -19,7 +19,6 @@ import java.awt.Color
 
 import org.scalatest.FunSuite
 
-
 class PaletteSuite extends FunSuite {
 
   test("colors:") {

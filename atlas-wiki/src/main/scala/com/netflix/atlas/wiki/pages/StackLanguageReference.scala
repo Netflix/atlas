@@ -20,11 +20,11 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.wiki.GraphHelper
 import com.netflix.atlas.wiki.Page
 
-class StackLanguageReference(
-    vocabs: List[Vocabulary],
-    vocabDocs: Map[String, String]) extends Page {
+class StackLanguageReference(vocabs: List[Vocabulary], vocabDocs: Map[String, String])
+    extends Page {
 
   override def name: String = "Stack-Language-Reference"
+
   override def path: Option[String] = Some("stacklang")
 
   override def content(graph: GraphHelper): String =
@@ -61,12 +61,13 @@ class StackLanguageReference(
     val vocab = StyleVocabulary
     val w2v = (vocab :: vocab.dependencies).flatMap(v => v.words.map(_ -> v.name)).toMap
     val words = vocab.allWords.groupBy(_.name)
-    val sections = words.toList.sortWith(_._1 < _._1).map { case (name, ws) =>
-      val items = ws.map { w =>
-        val vocabName = w2v(w)
-        s"* [${w.signature}]($vocabName-${Utils.fileName(name)})"
-      }
-      s"#### $name\n\n${items.mkString("\n")}\n"
+    val sections = words.toList.sortWith(_._1 < _._1).map {
+      case (name, ws) =>
+        val items = ws.map { w =>
+          val vocabName = w2v(w)
+          s"* [${w.signature}]($vocabName-${Utils.fileName(name)})"
+        }
+        s"#### $name\n\n${items.mkString("\n")}\n"
     }
     sections.mkString("\n")
   }

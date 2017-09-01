@@ -23,16 +23,16 @@ object GitVersion {
   private val releaseVersion = """v?([0-9\.]+(?:-rc\.\d+)?)""".r
 
   /**
-   * Needs to check for "false", don't assume it will ever be set to "true".
-   * http://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables
-   */
+    * Needs to check for "false", don't assume it will ever be set to "true".
+    * http://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables
+    */
   private def isPullRequest: Boolean = sys.env.getOrElse("TRAVIS_PULL_REQUEST", "false") != "false"
 
   /**
-   * Bump the last git described version to use for the current snapshot. If it is a version branch
-   * and the prefix doesn't match, then it is the first snapshot for the branch so use the branch
-   * version to start with. 
-   */
+    * Bump the last git described version to use for the current snapshot. If it is a version branch
+    * and the prefix doesn't match, then it is the first snapshot for the branch so use the branch
+    * version to start with.
+    */
   private def toSnapshotVersion(branch: String, v: String): String = {
     val v2 = Version(v).map(_.bump.string).getOrElse(v)
     val suffix = "-SNAPSHOT"
@@ -48,12 +48,12 @@ object GitVersion {
     version in ThisBuild := {
       val branch = sys.env.getOrElse("TRAVIS_BRANCH", git.gitCurrentBranch.value)
       val branchVersion = if (branch == "master") baseVersion else branch
-      git.gitDescribedVersion.value getOrElse "0.1-SNAPSHOT" match {
-        case _ if isPullRequest       => s"0.0.0-PULLREQUEST"
-        case snapshotVersion(v)       => toSnapshotVersion(branchVersion, v)
-        case candidateVersion(v)      => s"$v-SNAPSHOT"
-        case releaseVersion(v)        => v
-        case v                        => v
+      git.gitDescribedVersion.value.getOrElse("0.1-SNAPSHOT") match {
+        case _ if isPullRequest  => s"0.0.0-PULLREQUEST"
+        case snapshotVersion(v)  => toSnapshotVersion(branchVersion, v)
+        case candidateVersion(v) => s"$v-SNAPSHOT"
+        case releaseVersion(v)   => v
+        case v                   => v
       }
     }
   )

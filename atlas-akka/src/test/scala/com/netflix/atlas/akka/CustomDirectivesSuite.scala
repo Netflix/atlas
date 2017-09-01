@@ -32,7 +32,6 @@ import akka.util.ByteString
 import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
 
-
 class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
 
   import CustomDirectives._
@@ -166,28 +165,32 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
 
   test("jsonp with text") {
     Get("/text?callback=foo") ~> endpoint.routes ~> check {
-      val expected = """foo({"status":200,"headers":{"content-type":["text/plain"]},"body":"text response"})"""
+      val expected =
+        """foo({"status":200,"headers":{"content-type":["text/plain"]},"body":"text response"})"""
       assert(expected === responseAs[String])
     }
   }
 
   test("jsonp with json") {
     Get("/json?callback=foo") ~> endpoint.routes ~> check {
-      val expected = """foo({"status":200,"headers":{"content-type":["application/json"]},"body":[1,2,3]})"""
+      val expected =
+        """foo({"status":200,"headers":{"content-type":["application/json"]},"body":[1,2,3]})"""
       assert(expected === responseAs[String])
     }
   }
 
   test("jsonp with binary") {
     Get("/binary?callback=foo") ~> endpoint.routes ~> check {
-      val expected = """foo({"status":200,"headers":{"content-type":["application/octet-stream"]},"body":"dGV4dCByZXNwb25zZQ=="})"""
+      val expected =
+        """foo({"status":200,"headers":{"content-type":["application/octet-stream"]},"body":"dGV4dCByZXNwb25zZQ=="})"""
       assert(expected === responseAs[String])
     }
   }
 
   test("jsonp with 400") {
     Get("/error?callback=foo") ~> endpoint.routes ~> check {
-      val expected = """foo({"status":400,"headers":{"content-type":["text/plain"]},"body":"error"})"""
+      val expected =
+        """foo({"status":400,"headers":{"content-type":["text/plain"]},"body":"error"})"""
       assert(StatusCodes.OK === response.status)
       assert(expected === responseAs[String])
     }
@@ -195,7 +198,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
 
   test("jsonp with empty response body and custom header") {
     Get("/empty?callback=foo") ~> endpoint.routes ~> check {
-      val expected = """foo({"status":200,"headers":{"foo":["bar"],"content-type":["text/plain"]},"body":""})"""
+      val expected =
+        """foo({"status":200,"headers":{"foo":["bar"],"content-type":["text/plain"]},"body":""})"""
       assert(StatusCodes.OK === response.status)
       assert(expected === responseAs[String])
     }
@@ -246,9 +250,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("cors with custom request headers") {
-    val headers = List(
-      Origin(HttpOrigin("http://localhost")),
-      `Access-Control-Request-Headers`("foo"))
+    val headers =
+      List(Origin(HttpOrigin("http://localhost")), `Access-Control-Request-Headers`("foo"))
     val req = HttpRequest(HttpMethods.GET, Uri("/json"), headers)
     req ~> endpoint.routes ~> check {
       assert(headers.nonEmpty)
@@ -352,5 +355,6 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
 }
 
 object CustomDirectivesSuite {
+
   case class Message(subject: String, body: String)
 }

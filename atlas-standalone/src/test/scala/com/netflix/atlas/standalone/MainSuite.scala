@@ -17,7 +17,6 @@ package com.netflix.atlas.standalone
 
 import org.scalatest.FunSuite
 
-
 class MainSuite extends FunSuite {
 
   test("start/shutdown") {

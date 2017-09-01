@@ -35,8 +35,9 @@ import scala.concurrent.duration.Duration
   * actors to start up can be specified using the `atlas.akka.actors` property.
   */
 @Singleton
-class ActorService @Inject() (system: ActorSystem, config: Config, classFactory: ClassFactory)
-  extends AbstractService with StrictLogging {
+class ActorService @Inject()(system: ActorSystem, config: Config, classFactory: ClassFactory)
+    extends AbstractService
+    with StrictLogging {
 
   override def startImpl(): Unit = {
     import scala.collection.JavaConverters._

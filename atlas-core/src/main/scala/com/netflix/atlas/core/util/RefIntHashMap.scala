@@ -86,7 +86,8 @@ class RefIntHashMap[T <: AnyRef](capacity: Int = 10) {
       pos = (pos + 1) % keys.length
       posV = keys(pos)
     }
-    if (posV != null) false else {
+    if (posV != null) false
+    else {
       keys(pos) = k
       values(pos) = v
       used += 1
@@ -169,7 +170,9 @@ class RefIntHashMap[T <: AnyRef](capacity: Int = 10) {
   /** Converts this set to a Map[T, Int]. Used mostly for debugging and tests. */
   def toMap: Map[T, Int] = {
     val builder = Map.newBuilder[T, Int]
-    foreach { (k, v) => builder += k -> v }
+    foreach { (k, v) =>
+      builder += k -> v
+    }
     builder.result()
   }
 }

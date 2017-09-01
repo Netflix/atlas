@@ -28,7 +28,6 @@ import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.spectator.api.Registry
 
-
 class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.GraphApi._
@@ -42,7 +41,8 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
   def receive = {
     case v =>
-      try innerReceive(v) catch {
+      try innerReceive(v)
+      catch {
         case t: Exception if request != null && request.shouldOutputImage =>
           // When viewing a page in a browser an error response is not rendered. To make it more
           // clear to the user we return a 200 with the error information encoded into an image.
@@ -85,4 +85,3 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
     context.stop(self)
   }
 }
-

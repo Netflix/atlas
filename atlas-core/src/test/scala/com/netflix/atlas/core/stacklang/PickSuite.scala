@@ -22,7 +22,7 @@ class PickSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.Pick
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a,0" -> List("a", "a"),
+    "a,0"   -> List("a", "a"),
     "a,b,0" -> List("b", "b", "a"),
     "a,b,1" -> List("a", "b", "a")
   )

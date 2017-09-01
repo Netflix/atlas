@@ -66,7 +66,8 @@ class SubscriptionManager[T] {
     * each update so the [[handlersForSubscription()]] call will be as cheap as possible.
     */
   private def updateSubHandlers(): Unit = synchronized {
-    val handlers = registrations.values()
+    val handlers = registrations
+      .values()
       .asScala
       .flatMap { info =>
         info.subscriptions.map(_.metadata.id -> info.handler)
@@ -141,7 +142,8 @@ class SubscriptionManager[T] {
     * Return the set of all current subscriptions across all streams.
     */
   def subscriptions: List[Subscription] = {
-    registrations.values()
+    registrations
+      .values()
       .asScala
       .flatMap(_.subscriptions)
       .toList
@@ -192,7 +194,8 @@ object SubscriptionManager {
 
   class StreamInfo[T](
     val handler: T,
-    val subs: ConcurrentHashMap[String, Subscription] = new ConcurrentHashMap[String, Subscription]()
+    val subs: ConcurrentHashMap[String, Subscription] =
+      new ConcurrentHashMap[String, Subscription]()
   ) {
 
     def subscriptions: List[Subscription] = {

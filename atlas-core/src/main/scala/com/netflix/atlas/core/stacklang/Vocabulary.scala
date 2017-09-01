@@ -19,8 +19,8 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-
 trait Vocabulary {
+
   def name: String
 
   def dependsOn: List[Vocabulary]
@@ -31,13 +31,14 @@ trait Vocabulary {
   def dependencies: List[Vocabulary] = dependsOn.flatMap(d => d :: d.dependencies)
 
   /**
-   * Return a flattened list of all words from this vocabulary plus words from all dependencies.
-   */
+    * Return a flattened list of all words from this vocabulary plus words from all dependencies.
+    */
   def allWords: List[Word] = dependsOn.flatMap(_.allWords) ::: words
 
   private def renderStack(vs: List[Any]): String = {
-    val rows = vs.zipWithIndex.map { case (v, i) =>
-      f"${i + 1}%5d. ${v.toString}%s"
+    val rows = vs.zipWithIndex.map {
+      case (v, i) =>
+        f"${i + 1}%5d. ${v.toString}%s"
     }
     rows.reverse.mkString("\n|")
   }

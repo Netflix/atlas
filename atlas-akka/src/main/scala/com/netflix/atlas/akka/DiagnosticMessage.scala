@@ -60,5 +60,6 @@ object DiagnosticMessage {
 
 case class DiagnosticMessage(`type`: String, message: String, percent: Option[Double])
     extends JsonSupport {
+
   def typeName: String = `type`
 }

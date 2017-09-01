@@ -19,7 +19,6 @@ import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.ConstantBlock
 import org.scalatest.FunSuite
 
-
 class MemoryBlockStoreSuite extends FunSuite {
 
   test("update, new") {
@@ -50,12 +49,23 @@ class MemoryBlockStoreSuite extends FunSuite {
     assert(bs.fetch(0, 2, Block.Sum).toList === List(1.0, 2.0, 3.0))
     assert(bs.fetch(10, 12, Block.Sum).toList === List(4.0, 5.0, 6.0))
     val exp = List(
-      1.0, 2.0, 3.0,
-      Double.NaN, Double.NaN, Double.NaN,
-      Double.NaN, Double.NaN, Double.NaN, Double.NaN,
-      4.0, 5.0, 6.0)
-    exp.zip(bs.fetch(0, 12, Block.Sum)).foreach(t =>
-      assert(java.lang.Double.compare(t._1, t._2) === 0))
+      1.0,
+      2.0,
+      3.0,
+      Double.NaN,
+      Double.NaN,
+      Double.NaN,
+      Double.NaN,
+      Double.NaN,
+      Double.NaN,
+      Double.NaN,
+      4.0,
+      5.0,
+      6.0
+    )
+    exp
+      .zip(bs.fetch(0, 12, Block.Sum))
+      .foreach(t => assert(java.lang.Double.compare(t._1, t._2) === 0))
   }
 
   test("update, gap in updates misalign") {
@@ -65,12 +75,23 @@ class MemoryBlockStoreSuite extends FunSuite {
     assert(bs.fetch(0, 2, Block.Sum).toList === List(1.0, 2.0, 3.0))
     assert(bs.fetch(10, 12, Block.Sum).toList === List(4.0, 5.0, 6.0))
     val exp = List(
-      1.0, 2.0, 3.0,
-      Double.NaN, Double.NaN, Double.NaN,
-      Double.NaN, Double.NaN, Double.NaN, Double.NaN,
-      4.0, 5.0, 6.0)
-    exp.zip(bs.fetch(0, 12, Block.Sum)).foreach(t =>
-      assert(java.lang.Double.compare(t._1, t._2) === 0))
+      1.0,
+      2.0,
+      3.0,
+      Double.NaN,
+      Double.NaN,
+      Double.NaN,
+      Double.NaN,
+      Double.NaN,
+      Double.NaN,
+      Double.NaN,
+      4.0,
+      5.0,
+      6.0
+    )
+    exp
+      .zip(bs.fetch(0, 12, Block.Sum))
+      .foreach(t => assert(java.lang.Double.compare(t._1, t._2) === 0))
   }
 
   test("update, old data") {
@@ -129,7 +150,9 @@ class MemoryBlockStoreSuite extends FunSuite {
 
   test("update, with no data") {
     val bs = new MemoryBlockStore(1, 10, 4)
-    (0 until 10).foreach { i => bs.update(i, 2.0) }
+    (0 until 10).foreach { i =>
+      bs.update(i, 2.0)
+    }
     assert(bs.currentBlock !== null)
     bs.update(0)
     assert(bs.currentBlock === null)

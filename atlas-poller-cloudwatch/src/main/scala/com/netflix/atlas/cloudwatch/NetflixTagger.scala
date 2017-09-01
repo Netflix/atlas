@@ -38,13 +38,12 @@ class NetflixTagger(config: Config) extends DefaultTagger(config) {
       baseTags.get(k).map { v =>
         val name = Names.parseName(v)
         List(
-          opt("nf.app",     name.getApp),
+          opt("nf.app", name.getApp),
           opt("nf.cluster", name.getCluster),
-          opt("nf.stack",   name.getStack)
+          opt("nf.stack", name.getStack)
         ).flatten
       }
     }
     extractedTags.flatten.toMap ++ baseTags
   }
 }
-

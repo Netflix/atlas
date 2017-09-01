@@ -58,7 +58,8 @@ case class MetricCategory(
   period: Int,
   dimensions: List[String],
   metrics: List[MetricDefinition],
-  filter: Query) {
+  filter: Query
+) {
 
   /**
     * Returns a set of list requests to fetch the metadata for the metrics matching
@@ -84,7 +85,7 @@ object MetricCategory extends StrictLogging {
   private def parseQuery(query: String): Query = {
     interpreter.execute(query).stack match {
       case (q: Query) :: Nil => q
-      case _  =>
+      case _ =>
         logger.warn(s"invalid query '$query', using default of ':true'")
         Query.True
     }
@@ -93,9 +94,11 @@ object MetricCategory extends StrictLogging {
   def fromConfig(config: Config): MetricCategory = {
     import scala.collection.JavaConverters._
     val metrics = config.getConfigList("metrics").asScala.toList
-    val filter = if (!config.hasPath("filter")) Query.True else {
-      parseQuery(config.getString("filter"))
-    }
+    val filter =
+      if (!config.hasPath("filter")) Query.True
+      else {
+        parseQuery(config.getString("filter"))
+      }
     apply(
       namespace = config.getString("namespace"),
       period = config.getDuration("period", TimeUnit.SECONDS).toInt,

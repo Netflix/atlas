@@ -37,9 +37,9 @@ import com.netflix.atlas.json.Json
 import scala.util.Try
 
 /**
- * Generates a list of steps for executing an expression. This endpoint is typically used for
- * validating or debugging an expression.
- */
+  * Generates a list of steps for executing an expression. This endpoint is typically used for
+  * validating or debugging an expression.
+  */
 class ExprApi extends WebApi {
 
   private val vocabulary = ApiSettings.graphVocabulary
@@ -77,8 +77,8 @@ class ExprApi extends WebApi {
 
   private def verifyStackContents(vocab: String, stack: List[Any]): Unit = {
     vocab match {
-      case "std"   =>
-        // Don't need to do anything, any stack should be considered valid
+      case "std" =>
+      // Don't need to do anything, any stack should be considered valid
       case "query" =>
         // Expectation is that there would be a single query on the stack
         stack match {
@@ -93,7 +93,7 @@ class ExprApi extends WebApi {
         // Expecting a style expression that can be used in a graph
         val invalidItem = stack.find {
           case ModelExtractors.PresentationType(_) => false
-          case _ => true
+          case _                                   => true
         }
 
         invalidItem.foreach { item =>
@@ -108,11 +108,11 @@ class ExprApi extends WebApi {
   }
 
   /**
-   * Currently the values just get converted to a string as the automatic json mapping doesn't
-   * provide enough context. Also, the formatter when laying out the expressions for the debug
-   * view works well enough for displaying the expr strings to the user. The output can be
-   * enhanced in a later version.
-   */
+    * Currently the values just get converted to a string as the automatic json mapping doesn't
+    * provide enough context. Also, the formatter when laying out the expressions for the debug
+    * view works well enough for displaying the expr strings to the user. The output can be
+    * enhanced in a later version.
+    */
   private def valueString(value: Any): String = value match {
     case v: Expr => v.exprString
     case v       => v.toString
@@ -155,7 +155,9 @@ class ExprApi extends WebApi {
     val interpreter = newInterpreter(vocabName)
     val result = interpreter.execute(query)
 
-    val candidates = interpreter.vocabulary.filter { w => matches(interpreter, w, result) }
+    val candidates = interpreter.vocabulary.filter { w =>
+      matches(interpreter, w, result)
+    }
     val descriptions = candidates.map { w =>
       Map("name" -> w.name, "signature" -> w.signature, "description" -> w.summary)
     }
@@ -201,13 +203,14 @@ object ExprApi {
   }
 
   def normalize(exprs: List[StyleExpr], interpreter: Interpreter): List[String] = {
+
     // If named rewrites are used, then map the eval expression to match the display
     // expression. This avoids the complexity of the eval expression showing up in the
     // extracted data expressions.
     import MathExpr.NamedRewrite
     val cleaned = exprs.map { e =>
       val clean = e.rewrite {
-        case r @ NamedRewrite(_, orig: Query,          _, _) => r.copy(evalExpr = DataExpr.Sum(orig))
+        case r @ NamedRewrite(_, orig: Query, _, _)          => r.copy(evalExpr = DataExpr.Sum(orig))
         case r @ NamedRewrite(_, orig: TimeSeriesExpr, _, _) => r.copy(evalExpr = orig)
       }
       clean.asInstanceOf[StyleExpr]
@@ -223,7 +226,10 @@ object ExprApi {
     // Find the set of common query clauses
     val commonQueries =
       if (cnfQueries.isEmpty) Set.empty[Query]
-      else cnfQueries.values.reduceLeft { (s1, s2) => s1.intersect(s2) }
+      else
+        cnfQueries.values.reduceLeft { (s1, s2) =>
+          s1.intersect(s2)
+        }
 
     // Normalize without extracting common queries
     val normalized = exprStrings(exprs, cnfQueries, Set.empty)
@@ -247,7 +253,12 @@ object ExprApi {
     }
   }
 
-  private def exprStrings(exprs: List[StyleExpr], cnf: Map[Query, Set[Query]], cq: Set[Query]): List[String] = {
+  private def exprStrings(
+    exprs: List[StyleExpr],
+    cnf: Map[Query, Set[Query]],
+    cq: Set[Query]
+  ): List[String] = {
+
     // Map from original query to sorted query without the common clauses excluded
     val sortedQueries = cnf.map { case (q, qs) => q -> sort(qs, cq) }
 
@@ -274,6 +285,8 @@ object ExprApi {
     if (matches.isEmpty)
       Query.True
     else
-      matches.sortWith(_.toString < _.toString).reduce { (q1, q2) => Query.And(q1, q2) }
+      matches.sortWith(_.toString < _.toString).reduce { (q1, q2) =>
+        Query.And(q1, q2)
+      }
   }
 }

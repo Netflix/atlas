@@ -25,6 +25,7 @@ import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.util.Strings
 
 case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extends Expr {
+
   override def toString: String = {
     val vs = settings.toList.sortWith(_._1 < _._1).map {
       case ("sed", v) => v
@@ -39,12 +40,15 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
   }
 
   private def sed(str: String): String = {
-    settings.get("sed").fold(str) { v => sed(str, v.split(",").toList) }
+    settings.get("sed").fold(str) { v =>
+      sed(str, v.split(",").toList)
+    }
   }
 
   @scala.annotation.tailrec
   private def sed(str: String, cmds: List[String]): String = {
-    if (cmds.isEmpty) str else {
+    if (cmds.isEmpty) str
+    else {
       cmds match {
         case mode :: ":decode" :: cs => sed(decode(str, mode), cs)
         case s :: r :: ":s" :: cs    => sed(searchAndReplace(str, s, r), cs)
@@ -63,7 +67,8 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
 
   private def searchAndReplace(str: String, search: String, replace: String): String = {
     val m = Pattern.compile(search).matcher(str)
-    if (!m.find()) str else {
+    if (!m.find()) str
+    else {
       val sb = new StringBuffer()
       m.appendReplacement(sb, substitute(replace, m))
       while (m.find()) {
@@ -112,14 +117,14 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
   }
 
   /**
-   * Returns a list of style expressions with one entry per offset specified. This is to support
-   * a legacy form or :offset that takes a list and is applied on the style expression. Since
-   * further style operations need to get applied to all results we cannot expand until the
-   * full expression is evaluated. Should get removed after we have a better story around
-   * deprecation.
-   *
-   * If no high level offset is used then a list with this expression will be returned.
-   */
+    * Returns a list of style expressions with one entry per offset specified. This is to support
+    * a legacy form or :offset that takes a list and is applied on the style expression. Since
+    * further style operations need to get applied to all results we cannot expand until the
+    * full expression is evaluated. Should get removed after we have a better story around
+    * deprecation.
+    *
+    * If no high level offset is used then a list with this expression will be returned.
+    */
   def perOffset: List[StyleExpr] = {
     offsets match {
       case Nil => List(this)
@@ -135,8 +140,11 @@ object StyleExpr {
     import ModelExtractors._
     val ctxt = interpreter.execute(s)
     ctxt.stack match {
-      case StringListType(vs) :: Nil => vs.map { v => Strings.parseDuration(v) }
-      case _                         => Nil
+      case StringListType(vs) :: Nil =>
+        vs.map { v =>
+          Strings.parseDuration(v)
+        }
+      case _ => Nil
     }
   }
 
@@ -144,4 +152,3 @@ object StyleExpr {
 
   private def isNumber(s: String): Boolean = numberPattern.matcher(s).matches()
 }
-

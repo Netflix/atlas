@@ -17,7 +17,6 @@ package com.netflix.atlas.core.index
 
 import com.netflix.atlas.core.model.TimeSeries
 
-
 class RoaringTagIndexSuite extends TagIndexSuite {
 
   val index: TagIndex[TimeSeries] = {

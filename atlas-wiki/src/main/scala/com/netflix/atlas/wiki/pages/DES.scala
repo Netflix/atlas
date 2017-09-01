@@ -19,6 +19,7 @@ import com.netflix.atlas.wiki.GraphHelper
 import com.netflix.atlas.wiki.SimplePage
 
 class DES extends SimplePage {
+
   override def content(graph: GraphHelper): String =
     s"""
       |[Double exponential smoothing](http://www.itl.nist.gov/div898/handbook/pmc/section4/pmc433.htm)
@@ -46,27 +47,39 @@ class DES extends SimplePage {
       |below the gaps from the start of the chart to the smoothed lines reflects the training window
       |used:
       |
-      |${graph.image("/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-2d&q=:true,800,:fadd,input,:legend,:true,400,:fadd,30,0.1,1,:des,training+%3D+30,:legend,:true,90,0.1,1,:des,training+%3D+90,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0", false)}
+      |${graph.image(
+         "/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-2d&q=:true,800,:fadd,input,:legend,:true,400,:fadd,30,0.1,1,:des,training+%3D+30,:legend,:true,90,0.1,1,:des,training+%3D+90,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0",
+         false
+       )}
       |
       |Typically a training window of 10 has been sufficient as DES will adjust to the input fairly
       |quick. However, in some cases if there is a massive change in the input it can cause DES to
       |oscillate, for example:
       |
-      |${graph.image(s"/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-6h&w=750&h=150&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum,:dup,10,0.1,0.5,:des,0.9,:mul,:2over,:lt,:rot,$$name,:legend,:rot,prediction,:legend,:rot,:vspan,60,:alpha,alert+triggered,:legend", false)}
+      |${graph.image(
+         s"/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-6h&w=750&h=150&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum,:dup,10,0.1,0.5,:des,0.9,:mul,:2over,:lt,:rot,$$name,:legend,:rot,prediction,:legend,:rot,:vspan,60,:alpha,alert+triggered,:legend",
+         false
+       )}
       |
       |### Alpha
       |
       |Alpha is the data smoothing factor. A value of 1 means no smoothing. The closer the value
       |gets to 0 the smoother the line should get. Example:
       |
-      |${graph.image("/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-2d&q=:true,1200,:fadd,input,:legend,:true,10,1,1,:des,800,:fadd,alpha+%3D+1,:legend,:true,10,0.1,1,:des,400,:fadd,alpha+%3D+0.1,:legend,:true,10,0.01,1,:des,alpha+%3D+0.01,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0", false)}
+      |${graph.image(
+         "/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-2d&q=:true,1200,:fadd,input,:legend,:true,10,1,1,:des,800,:fadd,alpha+%3D+1,:legend,:true,10,0.1,1,:des,400,:fadd,alpha+%3D+0.1,:legend,:true,10,0.01,1,:des,alpha+%3D+0.01,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0",
+         false
+       )}
       |
       |### Beta
       |
       |Beta is a trend smoothing factor. Visually it is most apparent when alpha is small. Example
       |with `alpha = 0.01`:
       |
-      |${graph.image("/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-2d&q=:true,1200,:fadd,input,:legend,:true,10,0.01,1,:des,800,:fadd,beta+%3D+1,:legend,:true,10,0.01,0.1,:des,400,:fadd,beta+%3D+0.1,:legend,:true,10,0.01,0.01,:des,beta+%3D+0.01,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0", false)}
+      |${graph.image(
+         "/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-2d&q=:true,1200,:fadd,input,:legend,:true,10,0.01,1,:des,800,:fadd,beta+%3D+1,:legend,:true,10,0.01,0.1,:des,400,:fadd,beta+%3D+0.1,:legend,:true,10,0.01,0.01,:des,beta+%3D+0.01,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0",
+         false
+       )}
       |
       |## Recommended Values
       |
@@ -82,11 +95,17 @@ class DES extends SimplePage {
       |
       |Here is an example of how they behave for a sharp drop and recovery:
       |
-      |${graph.image("/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-6h&w=750&h=150&q=:true,input,:legend,:true,:des-fast,des-fast,:legend,:true,:des-slower,des-slower,:legend,:true,:des-slow,des-slow,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each", false)}
+      |${graph.image(
+         "/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-6h&w=750&h=150&q=:true,input,:legend,:true,:des-fast,des-fast,:legend,:true,:des-slower,des-slower,:legend,:true,:des-slow,des-slow,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each",
+         false
+       )}
       |
       |For a more gradual drop:
       |
-      |${graph.image("/api/v1/graph?tz=UTC&e=2012-01-02T09:00&s=e-6h&w=750&h=150&q=:true,input,:legend,:true,:des-fast,des-fast,:legend,:true,:des-slower,des-slower,:legend,:true,:des-slow,des-slow,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0", false)}
+      |${graph.image(
+         "/api/v1/graph?tz=UTC&e=2012-01-02T09:00&s=e-6h&w=750&h=150&q=:true,input,:legend,:true,:des-fast,des-fast,:legend,:true,:des-slower,des-slower,:legend,:true,:des-slow,des-slow,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0",
+         false
+       )}
       |
       |If the drop is smooth enough then DES can adjust without ever triggering.
       |
@@ -127,9 +146,15 @@ class DES extends SimplePage {
       |The vertical spans show when the expression would have triggered with due to the input
       |dropping below the DES line at 85%:
       |
-      |${graph.image("/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-6h&w=750&h=150&q=:true,:true,0.85,:mul,:des-fast,:2over,:lt,:vspan,40,:alpha,:rot,input,:legend,:rot,des-fast,:legend,:rot,triggered,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0", false)}
+      |${graph.image(
+         "/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-6h&w=750&h=150&q=:true,:true,0.85,:mul,:des-fast,:2over,:lt,:vspan,40,:alpha,:rot,input,:legend,:rot,des-fast,:legend,:rot,triggered,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0",
+         false
+       )}
       |
-      |${graph.image("/api/v1/graph?tz=UTC&e=2012-01-02T09:00&s=e-6h&w=750&h=150&q=:true,:true,0.85,:mul,:des-fast,:2over,:lt,:vspan,40,:alpha,:rot,input,:legend,:rot,des-fast,:legend,:rot,triggered,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0", false)}
+      |${graph.image(
+         "/api/v1/graph?tz=UTC&e=2012-01-02T09:00&s=e-6h&w=750&h=150&q=:true,:true,0.85,:mul,:des-fast,:2over,:lt,:vspan,40,:alpha,:rot,input,:legend,:rot,des-fast,:legend,:rot,triggered,:legend,:list,(,nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:cq,),:each&l=0",
+         false
+       )}
       |
       |## Epic Macros
       |
@@ -148,10 +173,16 @@ class DES extends SimplePage {
       |
       |Examples:
       |
-      |${graph.image("/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-6h&w=750&h=150&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum,10,0.1,0.02,0.15,0.15,10,:des-epic-viz&l=0", true)}
+      |${graph.image(
+         "/api/v1/graph?tz=UTC&e=2012-01-01T09:00&s=e-6h&w=750&h=150&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum,10,0.1,0.02,0.15,0.15,10,:des-epic-viz&l=0",
+         true
+       )}
       |
       |Example with no lower bound:
       |
-      |${graph.image("/api/v1/graph?tz=UTC&e=2012-01-02T09:00&s=e-6h&w=750&h=150&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum,10,0.1,0.02,0.15,NaN,10,:des-epic-viz&l=0", true)}
+      |${graph.image(
+         "/api/v1/graph?tz=UTC&e=2012-01-02T09:00&s=e-6h&w=750&h=150&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum,10,0.1,0.02,0.15,NaN,10,:des-epic-viz&l=0",
+         true
+       )}
     """.stripMargin
 }

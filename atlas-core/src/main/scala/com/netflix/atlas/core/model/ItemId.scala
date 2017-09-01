@@ -31,7 +31,7 @@ import scala.util.hashing.MurmurHash3
   *     Precomputed hash code for the bytes.
   */
 class ItemId private (private val data: Array[Byte], private val hc: Int)
-  extends Comparable[ItemId] {
+    extends Comparable[ItemId] {
 
   override def hashCode(): Int = hc
 
@@ -70,7 +70,9 @@ class ItemId private (private val data: Array[Byte], private val hc: Int)
 }
 
 object ItemId {
-  private val hexValueForByte = (0 until 256).toArray.map { i => Strings.zeroPad(i, 2) }
+  private val hexValueForByte = (0 until 256).toArray.map { i =>
+    Strings.zeroPad(i, 2)
+  }
 
   /**
     * Create a new id from an array of bytes. The pre-computed hash code will be generated
@@ -103,7 +105,7 @@ object ItemId {
       case _ if c >= '0' && c <= '9' => c - '0'
       case _ if c >= 'a' && c <= 'f' => c - 'a' + 10
       case _ if c >= 'A' && c <= 'F' => c - 'A' + 10
-      case _ => throw new IllegalArgumentException(s"invalid hex digit: $c")
+      case _                         => throw new IllegalArgumentException(s"invalid hex digit: $c")
     }
   }
 }

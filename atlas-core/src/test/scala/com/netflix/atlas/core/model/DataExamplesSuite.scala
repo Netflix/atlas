@@ -19,5 +19,6 @@ import com.netflix.atlas.core.stacklang.BaseExamplesSuite
 import com.netflix.atlas.core.stacklang.Vocabulary
 
 class DataExamplesSuite extends BaseExamplesSuite {
+
   override def vocabulary: Vocabulary = DataVocabulary
 }

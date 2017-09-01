@@ -61,7 +61,8 @@ object TimeSeries {
   }
 
   def toLabel(tags: Map[String, String]): String = {
-    if (tags.isEmpty) "NO TAGS" else {
+    if (tags.isEmpty) "NO TAGS"
+    else {
       toLabel(tags.keys.toList.sortWith(_ < _), tags)
     }
   }
@@ -134,16 +135,10 @@ trait TimeSeries extends TaggedItem {
   }
 }
 
-case class BasicTimeSeries(
-    id: ItemId,
-    tags: Map[String, String],
-    label: String,
-    data: TimeSeq) extends TimeSeries
+case class BasicTimeSeries(id: ItemId, tags: Map[String, String], label: String, data: TimeSeq)
+    extends TimeSeries
 
-case class LazyTimeSeries(
-    tags: Map[String, String],
-    label: String,
-    data: TimeSeq) extends TimeSeries {
+case class LazyTimeSeries(tags: Map[String, String], label: String, data: TimeSeq)
+    extends TimeSeries {
   lazy val id: ItemId = TaggedItem.computeId(tags)
 }
-

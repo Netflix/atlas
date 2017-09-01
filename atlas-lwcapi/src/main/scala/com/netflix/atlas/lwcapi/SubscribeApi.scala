@@ -35,7 +35,8 @@ class SubscribeApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi
           parseEntity(json[SubscribeRequest]) { req =>
             val rc = ImperativeRequestContext(req, ctx)
             subscribeRef ! rc
-            _ => rc.promise.future
+            _ =>
+              rc.promise.future
           }
         }
       }
@@ -44,11 +45,14 @@ class SubscribeApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi
 }
 
 object SubscribeApi {
-  case class SubscribeRequest(
-    streamId: String,
-    expressions: List[ExpressionMetadata]) extends JsonSupport {
+
+  case class SubscribeRequest(streamId: String, expressions: List[ExpressionMetadata])
+      extends JsonSupport {
 
     require(streamId != null && !streamId.isEmpty, "streamId attribute is missing or empty")
-    require(expressions != null && expressions.nonEmpty, "expressions attribute is missing or empty")
+    require(
+      expressions != null && expressions.nonEmpty,
+      "expressions attribute is missing or empty"
+    )
   }
 }

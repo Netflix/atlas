@@ -36,8 +36,8 @@ object Paths {
     * pattern. The pattern should have a single capturing group that contains
     * the string to use for the tag value.
     */
-  def createMapper(pattern: Pattern): Mapper = {
-    path => {
+  def createMapper(pattern: Pattern): Mapper = { path =>
+    {
       val matcher = pattern.matcher(path.toString)
       if (matcher.matches() && matcher.groupCount() == 1) matcher.group(1) else "uncategorized"
     }

@@ -38,7 +38,6 @@ import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.webapi.GraphApi.DataResponse
 
-
 /**
   * Provides the SSE data stream payload for a fetch response. Fetch is an alternative
   * to the graph API that is meant for accessing the data rather than rendering as an
@@ -47,7 +46,8 @@ import com.netflix.atlas.webapi.GraphApi.DataResponse
   * intermediate overhead. The graph API enforces strict limits on the sizes.
   */
 class FetchRequestActor(request: GraphApi.Request)
-  extends ActorPublisher[ChunkStreamPart] with ActorLogging {
+    extends ActorPublisher[ChunkStreamPart]
+    with ActorLogging {
 
   import FetchRequestActor._
 

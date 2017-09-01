@@ -23,7 +23,9 @@ import com.netflix.atlas.chart.Colors
 import com.netflix.atlas.core.util.Strings
 
 case class Palette(name: String, colors: Int => Color) {
+
   def withAlpha(alpha: Int): Palette = {
+
     def f(i: Int): Color = {
       val c = colors(i)
       new Color(c.getRed, c.getGreen, c.getBlue, alpha)
@@ -32,6 +34,7 @@ case class Palette(name: String, colors: Int => Color) {
   }
 
   def withVisionType(vision: VisionType): Palette = {
+
     def f(i: Int): Color = {
       val c = colors(i)
       vision.convert(c)
@@ -40,10 +43,11 @@ case class Palette(name: String, colors: Int => Color) {
   }
 
   /**
-   * Convert colors from another palette into grayscale. For information about the conversion
-   * see: http://www.johndcook.com/blog/2009/08/24/algorithms-convert-color-grayscale/.
-   */
+    * Convert colors from another palette into grayscale. For information about the conversion
+    * see: http://www.johndcook.com/blog/2009/08/24/algorithms-convert-color-grayscale/.
+    */
   def asGrayscale: Palette = {
+
     def f(i: Int): Color = {
       val c = colors(i)
       val v = (0.21 * c.getRed + 0.72 * c.getGreen + 0.07 * c.getBlue).toInt
@@ -54,7 +58,9 @@ case class Palette(name: String, colors: Int => Color) {
 
   def iterator: Iterator[Color] = new Iterator[Color] {
     private var pos = -1
+
     override def hasNext: Boolean = true
+
     override def next(): Color = {
       pos += 1
       colors(pos)
@@ -64,15 +70,19 @@ case class Palette(name: String, colors: Int => Color) {
 
 object Palette {
 
-  val default = fromArray("default", Array[Color](
-    Color.RED,
-    Color.GREEN,
-    Color.BLUE,
-    Color.MAGENTA,
-    Color.YELLOW,
-    Color.CYAN,
-    Color.PINK,
-    Color.ORANGE))
+  val default = fromArray(
+    "default",
+    Array[Color](
+      Color.RED,
+      Color.GREEN,
+      Color.BLUE,
+      Color.MAGENTA,
+      Color.YELLOW,
+      Color.CYAN,
+      Color.PINK,
+      Color.ORANGE
+    )
+  )
 
   private val palettes = new ConcurrentHashMap[String, Palette]
 
@@ -125,19 +135,25 @@ object Palette {
   def brighter(c: Color, n: Int): Palette = {
     val colors = new Array[Color](n)
     colors(0) = c
-    (1 until n).foreach { i => colors(i) = colors(i - 1).brighter() }
+    (1 until n).foreach { i =>
+      colors(i) = colors(i - 1).brighter()
+    }
     Palette.fromArray("brighter_%08X".format(c.getRGB), colors)
   }
 
   def darker(c: Color, n: Int): Palette = {
     val colors = new Array[Color](n)
     colors(0) = c
-    (1 until n).foreach { i => colors(i) = colors(i - 1).darker() }
+    (1 until n).foreach { i =>
+      colors(i) = colors(i - 1).darker()
+    }
     Palette.fromArray("darker_%08X".format(c.getRGB), colors)
   }
 
   def main(args: Array[String]): Unit = {
     val p = fromResource("armytage").asGrayscale
-    (0 until 26).foreach { i => println("%08X".format(p.colors(i).getRGB)) }
+    (0 until 26).foreach { i =>
+      println("%08X".format(p.colors(i).getRGB))
+    }
   }
 }

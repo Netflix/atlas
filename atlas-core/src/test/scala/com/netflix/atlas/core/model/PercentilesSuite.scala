@@ -96,7 +96,9 @@ class PercentilesSuite extends FunSuite {
     import scala.collection.JavaConverters._
     val r = new DefaultRegistry()
     val t = PercentileDistributionSummary.get(r, r.createId("test"))
-    (0 until 100).foreach { i => t.record(i) }
+    (0 until 100).foreach { i =>
+      t.record(i)
+    }
 
     val counters = r.counters.collect(Collectors.toList[Counter]).asScala.toList
     counters.map { c =>
@@ -111,11 +113,12 @@ class PercentilesSuite extends FunSuite {
     val data = eval("name,test,:eq,(,9,25,50,90,100,),:percentiles", input100)
 
     assert(data.size === 5)
-    List(9.0, 25.0, 50.0, 90.0).zip(data).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
-      assert(t.label === f"percentile(name=test, $p%5.1f)")
-      assert(p === (estimate +- 2.0))
+    List(9.0, 25.0, 50.0, 90.0).zip(data).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
+        assert(t.label === f"percentile(name=test, $p%5.1f)")
+        assert(p === (estimate +- 2.0))
     }
     assert(data.last.label === f"percentile(name=test, 100.0)")
   }
@@ -124,11 +127,12 @@ class PercentilesSuite extends FunSuite {
     val data = eval("name,test,:eq,(,25,50,90,),:percentiles", inputTimer100)
 
     assert(data.size === 3)
-    List(25.0, 50.0, 90.0).zip(data).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
-      assert(t.label === f"percentile(name=test, $p%5.1f)")
-      assert(p / 1e9 === (estimate +- 2.0e-9))
+    List(25.0, 50.0, 90.0).zip(data).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
+        assert(t.label === f"percentile(name=test, $p%5.1f)")
+        assert(p / 1e9 === (estimate +- 2.0e-9))
     }
   }
 
@@ -136,11 +140,12 @@ class PercentilesSuite extends FunSuite {
     val data = eval("name,test,:eq,(,9,25,50,90,100,),:percentiles", inputSpectatorDistSummary)
 
     assert(data.size === 5)
-    List(9.0, 25.0, 50.0, 90.0).zip(data).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
-      assert(t.label === f"percentile(name=test, $p%5.1f)")
-      assert(p === (estimate +- 2.0))
+    List(9.0, 25.0, 50.0, 90.0).zip(data).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
+        assert(t.label === f"percentile(name=test, $p%5.1f)")
+        assert(p === (estimate +- 2.0))
     }
     assert(data.last.label === f"percentile(name=test, 100.0)")
   }
@@ -149,13 +154,14 @@ class PercentilesSuite extends FunSuite {
     val data = eval("name,test,:eq,(,25,50,90,),:percentiles", inputSpectatorTimer)
 
     assert(data.size === 3)
-    List(25.0, 50.0, 90.0).zip(data).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
-      assert(t.label === f"percentile(name=test, $p%5.1f)")
+    List(25.0, 50.0, 90.0).zip(data).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
+        assert(t.label === f"percentile(name=test, $p%5.1f)")
 
-      // Values were 0 ot 100 recorded in milliseconds, should be reported in seconds
-      assert(p / 1e3 === (estimate +- 2.0e-3))
+        // Values were 0 ot 100 recorded in milliseconds, should be reported in seconds
+        assert(p / 1e3 === (estimate +- 2.0e-3))
     }
   }
 
@@ -163,11 +169,12 @@ class PercentilesSuite extends FunSuite {
     val data = eval("name,test,:eq,:max,(,25,50,90,),:percentiles", input100)
 
     assert(data.size === 3)
-    List(25.0, 50.0, 90.0).zip(data).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
-      assert(t.label === f"percentile(name=test, $p%5.1f)")
-      assert(p === (estimate +- 2.0))
+    List(25.0, 50.0, 90.0).zip(data).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
+        assert(t.label === f"percentile(name=test, $p%5.1f)")
+        assert(p === (estimate +- 2.0))
     }
   }
 
@@ -175,11 +182,12 @@ class PercentilesSuite extends FunSuite {
     val data = eval("name,test,:eq,:median", input100)
 
     assert(data.size === 1)
-    List(50.0).zip(data).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
-      assert(t.label === f"percentile(name=test, $p%5.1f)")
-      assert(p === (estimate +- 2.0))
+    List(50.0).zip(data).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
+        assert(t.label === f"percentile(name=test, $p%5.1f)")
+        assert(p === (estimate +- 2.0))
     }
   }
 
@@ -192,11 +200,12 @@ class PercentilesSuite extends FunSuite {
     val data = eval("name,test,:eq,(,name,),:by,(,25,50,90,),:percentiles", input100)
 
     assert(data.size === 3)
-    List(25.0, 50.0, 90.0).zip(data).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
-      assert(t.label === f"percentile((name=test), $p%5.1f)")
-      assert(p === (estimate +- 2.0))
+    List(25.0, 50.0, 90.0).zip(data).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
+        assert(t.label === f"percentile((name=test), $p%5.1f)")
+        assert(p === (estimate +- 2.0))
     }
   }
 
@@ -204,29 +213,35 @@ class PercentilesSuite extends FunSuite {
     val data = eval("name,test,:eq,(,mode,),:by,(,25,50,90,),:percentiles", input100)
 
     assert(data.size === 6)
-    List(25.0, 50.0, 90.0).zip(data.filter(_.tags("mode") == "even")).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("name" -> "test", "mode" -> "even", "percentile" -> f"$p%5.1f"))
-      assert(t.label === f"percentile((mode=even), $p%5.1f)")
-      assert(p === (estimate +- 10.0))
+    List(25.0, 50.0, 90.0).zip(data.filter(_.tags("mode") == "even")).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("name" -> "test", "mode" -> "even", "percentile" -> f"$p%5.1f"))
+        assert(t.label === f"percentile((mode=even), $p%5.1f)")
+        assert(p === (estimate +- 10.0))
     }
-    List(25.0, 50.0, 90.0).zip(data.filter(_.tags("mode") == "odd")).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("name" -> "test", "mode" -> "odd", "percentile" -> f"$p%5.1f"))
-      assert(t.label === f"percentile((mode=odd), $p%5.1f)")
-      assert(p === (estimate +- 10.0))
+    List(25.0, 50.0, 90.0).zip(data.filter(_.tags("mode") == "odd")).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("name" -> "test", "mode" -> "odd", "percentile" -> f"$p%5.1f"))
+        assert(t.label === f"percentile((mode=odd), $p%5.1f)")
+        assert(p === (estimate +- 10.0))
     }
   }
 
   test("group by multi-level") {
-    val data = eval("name,test,:eq,(,mode,),:by,(,25,50,90,),:percentiles,:max,(,percentile,),:by", input100)
+    val data = eval(
+      "name,test,:eq,(,mode,),:by,(,25,50,90,),:percentiles,:max,(,percentile,),:by",
+      input100
+    )
 
     assert(data.size === 3)
-    List(25.0, 50.0, 90.0).zip(data).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
-      assert(t.label === f"(percentile=$p%5.1f)")
-      assert(p === (estimate +- 10.0))
+    List(25.0, 50.0, 90.0).zip(data).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("name" -> "test", "percentile" -> f"$p%5.1f"))
+        assert(t.label === f"(percentile=$p%5.1f)")
+        assert(p === (estimate +- 10.0))
     }
   }
 
@@ -239,11 +254,12 @@ class PercentilesSuite extends FunSuite {
     val data = eval(":true,(,25,50,90,),:percentiles", inputNaN)
 
     assert(data.size === 3)
-    List(25.0, 50.0, 90.0).zip(data).foreach { case (p, t) =>
-      val estimate = t.data(0L)
-      assert(t.tags === Map("percentile" -> f"$p%5.1f"))
-      assert(t.label === f"percentile(true, $p%5.1f)")
-      assert(estimate.isNaN)
+    List(25.0, 50.0, 90.0).zip(data).foreach {
+      case (p, t) =>
+        val estimate = t.data(0L)
+        assert(t.tags === Map("percentile" -> f"$p%5.1f"))
+        assert(t.label === f"percentile(true, $p%5.1f)")
+        assert(estimate.isNaN)
     }
   }
 
@@ -298,4 +314,3 @@ class PercentilesSuite extends FunSuite {
     assert(ts.head.label === "NO DATA")
   }
 }
-

@@ -47,16 +47,19 @@ class ListMetricsActor(client: AmazonCloudWatch, tagger: Tagger) extends Actor w
 
   private def listMetrics(category: MetricCategory): List[MetricMetadata] = {
     import scala.collection.JavaConverters._
-    category.toListRequests.flatMap { case (definition, request) =>
-      val mname = s"${category.namespace}/${definition.name}"
-      logger.debug(s"refreshing list for $mname")
-      val candidates = listMetrics(request, Nil).map { m =>
-        MetricMetadata(category, definition, m.getDimensions.asScala.toList)
-      }
-      logger.debug(s"before filtering, found ${candidates.size} metrics for $mname")
-      val after = candidates.filter { m => category.filter.matches(tagger(m.dimensions)) }
-      logger.debug(s"after filtering, found ${after.size} metrics for $mname")
-      after
+    category.toListRequests.flatMap {
+      case (definition, request) =>
+        val mname = s"${category.namespace}/${definition.name}"
+        logger.debug(s"refreshing list for $mname")
+        val candidates = listMetrics(request, Nil).map { m =>
+          MetricMetadata(category, definition, m.getDimensions.asScala.toList)
+        }
+        logger.debug(s"before filtering, found ${candidates.size} metrics for $mname")
+        val after = candidates.filter { m =>
+          category.filter.matches(tagger(m.dimensions))
+        }
+        logger.debug(s"after filtering, found ${after.size} metrics for $mname")
+        after
     }
   }
 
@@ -65,7 +68,8 @@ class ListMetricsActor(client: AmazonCloudWatch, tagger: Tagger) extends Actor w
     import scala.collection.JavaConverters._
     val result = client.listMetrics(request)
     val ms = metrics ++ result.getMetrics.asScala
-    if (result.getNextToken == null) ms else {
+    if (result.getNextToken == null) ms
+    else {
       listMetrics(request.withNextToken(result.getNextToken), ms)
     }
   }

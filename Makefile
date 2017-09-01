@@ -15,7 +15,7 @@ LAUNCHER_JAR_URL := http://jcenter.bintray.com/com/netflix/iep/iep-launcher/0.4.
 .PHONY: build snapshot release clean coverage license update-wiki publish-wiki
 
 build:
-	$(SBT) clean test checkLicenseHeaders
+	$(SBT) clean test checkLicenseHeaders scalafmt::test test:scalafmt::test
 
 snapshot:
 	# Travis uses a depth when fetching git data so the tags needed for versioning may not

@@ -16,17 +16,21 @@
 package com.netflix.atlas.core.validation
 
 sealed trait ValidationResult {
+
   def isSuccess: Boolean
+
   def isFailure: Boolean = !isSuccess
 }
 
 object ValidationResult {
+
   case object Pass extends ValidationResult {
+
     def isSuccess: Boolean = true
   }
 
   case class Fail(rule: String, reason: String) extends ValidationResult {
+
     def isSuccess: Boolean = false
   }
 }
-

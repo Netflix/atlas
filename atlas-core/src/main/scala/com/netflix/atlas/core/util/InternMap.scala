@@ -19,24 +19,28 @@ import java.util.concurrent.locks.ReentrantLock
 
 import com.netflix.spectator.api.Clock
 
-
 object InternMap {
-  def concurrent[K <: AnyRef : Manifest](
-      initialCapacity: Int,
-      clock: Clock = Clock.SYSTEM,
-      concurrencyLevel: Int = 16): InternMap[K] = {
+
+  def concurrent[K <: AnyRef: Manifest](
+    initialCapacity: Int,
+    clock: Clock = Clock.SYSTEM,
+    concurrencyLevel: Int = 16
+  ): InternMap[K] = {
     val segmentCapacity = initialCapacity / concurrencyLevel + concurrencyLevel
     new ConcurrentInternMap[K](new OpenHashInternMap[K](segmentCapacity, clock), concurrencyLevel)
   }
 }
 
 trait InternMap[K <: AnyRef] extends Interner[K] {
+
   def intern(k: K): K
+
   def retain(f: Long => Boolean)
+
   def size: Int
 }
 
-class OpenHashInternMap[K <: AnyRef : Manifest](initialCapacity: Int, clock: Clock = Clock.SYSTEM)
+class OpenHashInternMap[K <: AnyRef: Manifest](initialCapacity: Int, clock: Clock = Clock.SYSTEM)
     extends InternMap[K] {
   private val primeCapacity = nextCapacity(initialCapacity)
   private var data = new Array[K](primeCapacity)
@@ -99,7 +103,6 @@ class OpenHashInternMap[K <: AnyRef : Manifest](initialCapacity: Int, clock: Clo
   def size: Int = currentSize
 }
 
-
 class ConcurrentInternMap[K <: AnyRef](newMap: => InternMap[K], concurrencyLevel: Int)
     extends InternMap[K] {
 
@@ -121,19 +124,23 @@ class ConcurrentInternMap[K <: AnyRef](newMap: => InternMap[K], concurrencyLevel
   private def lock[R](key: K)(f: InternMap[K] => R): R = {
     val i = index(key)
     locks(i).lock()
-    try f(segments(i)) finally {
+    try f(segments(i))
+    finally {
       locks(i).unlock()
     }
   }
 
   def intern(k: K): K = {
-    lock(k) { m => m.intern(k) }
+    lock(k) { m =>
+      m.intern(k)
+    }
   }
 
   def retain(f: Long => Boolean): Unit = {
     (0 until concurrencyLevel).foreach { i =>
       locks(i).lock()
-      try segments(i).retain(f) finally {
+      try segments(i).retain(f)
+      finally {
         locks(i).unlock()
       }
     }
@@ -143,7 +150,8 @@ class ConcurrentInternMap[K <: AnyRef](newMap: => InternMap[K], concurrencyLevel
     var totalSize = 0
     (0 until concurrencyLevel).foreach { i =>
       locks(i).lock()
-      try totalSize += segments(i).size finally {
+      try totalSize += segments(i).size
+      finally {
         locks(i).unlock()
       }
     }

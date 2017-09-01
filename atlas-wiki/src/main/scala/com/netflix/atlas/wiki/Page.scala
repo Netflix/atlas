@@ -29,8 +29,11 @@ import scala.util.Success
 import scala.util.Try
 
 trait Page {
+
   def name: String
+
   def path: Option[String]
+
   def content(graph: GraphHelper): String
 
   def file(baseDir: File): File = {
@@ -40,18 +43,24 @@ trait Page {
 }
 
 trait SimplePage extends Page {
+
   def name: String = getClass.getSimpleName
+
   def path: Option[String] = None
 }
 
 trait StackWordPage extends Page {
+
   def vocab: Vocabulary
+
   def word: Word
 
   def name: String = s"${vocab.name}-${Utils.fileName(word.name)}"
+
   def path: Option[String] = Some("stacklang")
 
   def signature: String = s"`${word.signature}`"
+
   def summary: String = word.summary
 
   def examples(graph: GraphHelper): String = {
@@ -82,13 +91,14 @@ trait StackWordPage extends Page {
     s"/api/v1/graph?q=${expr.toString}&w=200&h=100&e=2014-02-20T15:00&$params"
   }
 
-  private def renderCell(opt: Option[Any], graph: GraphHelper, params: String): String = opt match {
-    case Some(v: String)           => s"<td>$v</td>"
-    case Some(v: Number)           => s"<td>$v</td>"
-    case Some(PresentationType(v)) => s"<td>${graph.imageHtml(imageUri(v, params))}</td>"
-    case Some(v)                   => s"<td>$v</td>"
-    case None                      => "<td></td>"
-  }
+  private def renderCell(opt: Option[Any], graph: GraphHelper, params: String): String =
+    opt match {
+      case Some(v: String)           => s"<td>$v</td>"
+      case Some(v: Number)           => s"<td>$v</td>"
+      case Some(PresentationType(v)) => s"<td>${graph.imageHtml(imageUri(v, params))}</td>"
+      case Some(v)                   => s"<td>$v</td>"
+      case None                      => "<td></td>"
+    }
 
   private def renderExample(example: String, name: String, graph: GraphHelper): String = {
     val expr = if (example.startsWith("ERROR:")) example.substring("ERROR:".length) else example
@@ -105,10 +115,12 @@ trait StackWordPage extends Page {
     val buf = new StringBuilder
     buf.append(s"### `$example,:$name`\n\n")
     buf.append("<table><thead><th>Pos</th><th>Input</th><th>Output</th></thead><tbody>")
-    zipStacks(in, out).zipWithIndex.foreach { case ((i, o), p) =>
-      buf.append(s"<tr>\n<td>$p</td>\n")
-        .append(s"${renderCell(i, graph, params)}\n")
-        .append(s"${renderCell(o, graph, params)}\n<s/tr>")
+    zipStacks(in, out).zipWithIndex.foreach {
+      case ((i, o), p) =>
+        buf
+          .append(s"<tr>\n<td>$p</td>\n")
+          .append(s"${renderCell(i, graph, params)}\n")
+          .append(s"${renderCell(o, graph, params)}\n<s/tr>")
     }
     buf.append("</tbody></table>\n")
     buf.toString()

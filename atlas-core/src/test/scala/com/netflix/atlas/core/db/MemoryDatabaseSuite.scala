@@ -31,14 +31,16 @@ class MemoryDatabaseSuite extends FunSuite {
   private val clock = new ManualClock()
   private val registry = new DefaultRegistry(clock)
 
-  private val db = new MemoryDatabase(registry, ConfigFactory.parseString(
-    """
+  private val db = new MemoryDatabase(
+    registry,
+    ConfigFactory.parseString("""
       |block-size = 60
       |num-blocks = 2
       |rebuild-frequency = 10s
       |test-mode = true
       |intern-while-building = true
-    """.stripMargin))
+    """.stripMargin)
+  )
 
   addData("a", 1.0, 2.0, 3.0)
   addData("b", 3.0, 2.0, 1.0)
@@ -51,9 +53,10 @@ class MemoryDatabaseSuite extends FunSuite {
 
   private def addData(name: String, values: Double*): Unit = {
     val tags = Map("name" -> name)
-    val data = values.toList.zipWithIndex.map { case (v, i) =>
-      clock.setWallTime(i * step)
-      Datapoint(tags, i * step, v)
+    val data = values.toList.zipWithIndex.map {
+      case (v, i) =>
+        clock.setWallTime(i * step)
+        Datapoint(tags, i * step, v)
     }
     db.update(data)
     db.index.rebuildIndex()
@@ -61,9 +64,10 @@ class MemoryDatabaseSuite extends FunSuite {
 
   private def addRollupData(name: String, values: Double*): Unit = {
     val tags = Map("name" -> name)
-    val data = values.toList.zipWithIndex.map { case (v, i) =>
-      clock.setWallTime(i * step)
-      Datapoint(tags, i * step, v)
+    val data = values.toList.zipWithIndex.map {
+      case (v, i) =>
+        clock.setWallTime(i * step)
+        Datapoint(tags, i * step, v)
     }
     data.foreach(db.rollup)
     db.index.rebuildIndex()
@@ -72,7 +76,7 @@ class MemoryDatabaseSuite extends FunSuite {
   private def expr(str: String): DataExpr = {
     interpreter.execute(str).stack match {
       case ModelExtractors.DataExprType(v) :: Nil => v
-      case _ => throw new IllegalArgumentException(s"invalid data expr: $str")
+      case _                                      => throw new IllegalArgumentException(s"invalid data expr: $str")
     }
   }
 
@@ -109,7 +113,11 @@ class MemoryDatabaseSuite extends FunSuite {
   }
 
   test(":offset expr") {
-    assert(exec(":true,:sum,1m,:offset") === List(ts("sum(true) (offset=1m)", 1, Double.NaN, 19.0, 22.0)))
+    assert(
+      exec(":true,:sum,1m,:offset") === List(
+        ts("sum(true) (offset=1m)", 1, Double.NaN, 19.0, 22.0)
+      )
+    )
   }
 
   test(":sum expr") {

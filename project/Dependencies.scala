@@ -1,5 +1,7 @@
 import sbt._
 
+// format: off
+
 object Dependencies {
   object Versions {
     val akka       = "2.5.4"
@@ -69,3 +71,5 @@ object Dependencies {
   val spectatorSandbox= "com.netflix.spectator" % "spectator-ext-sandbox" % spectator
   val typesafeConfig  = "com.typesafe" % "config" % "1.3.1"
 }
+
+// format: on

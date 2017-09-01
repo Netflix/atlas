@@ -19,12 +19,12 @@ import java.util.regex.Pattern
 
 import org.scalatest.FunSuite
 
-
 class StringMatcherSuite extends FunSuite {
 
   import com.netflix.atlas.core.util.StringMatcher._
 
   private def re(s: String): Pattern = Pattern.compile(s)
+
   private def reic(s: String): Pattern = Pattern.compile(s, Pattern.CASE_INSENSITIVE)
 
   test("matches All") {
@@ -153,14 +153,24 @@ class StringMatcherSuite extends FunSuite {
   }
 
   test("compile Or anchored at start only") {
-    assert(compile("^(a|b|c)", true) === Or(List(StartsWith("a"), StartsWith("b"), StartsWith("c"))))
+    assert(
+      compile("^(a|b|c)", true) === Or(List(StartsWith("a"), StartsWith("b"), StartsWith("c")))
+    )
     assert(compile("^a|b|c", true) === Or(List(StartsWith("a"), IndexOf("b"), IndexOf("c"))))
-    assert(compile("^.*a.*|.*b.*|c*)", true) === Or(List(IndexOf("a"), IndexOf("b"), Regex(None, re("c*")))))
+    assert(
+      compile("^.*a.*|.*b.*|c*)", true) === Or(
+        List(IndexOf("a"), IndexOf("b"), Regex(None, re("c*")))
+      )
+    )
   }
 
   test("compile Or not anchored") {
     assert(compile("(a|b|c)", true) === Or(List(IndexOf("a"), IndexOf("b"), IndexOf("c"))))
-    assert(compile(".*a.*|.*b.*|c*)", true) === Or(List(IndexOf("a"), IndexOf("b"), Regex(None, re("c*")))))
+    assert(
+      compile(".*a.*|.*b.*|c*)", true) === Or(
+        List(IndexOf("a"), IndexOf("b"), Regex(None, re("c*")))
+      )
+    )
   }
 
   test("compile Or, too complex") {

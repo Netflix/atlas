@@ -18,7 +18,6 @@ package com.netflix.atlas.core.index
 import com.netflix.atlas.core.model.LazyTaggedItem
 import org.scalatest.FunSuite
 
-
 class BatchUpdateTagIndexSuite extends FunSuite {
 
   case class Item(tags: Map[String, String], version: Int) extends LazyTaggedItem
@@ -48,7 +47,9 @@ class BatchUpdateTagIndexSuite extends FunSuite {
     idx.update(updates2)
     idx.rebuildIndex()
 
-    val expected = (updates1 ::: updates2).sortWith { (a, b) => a.id.compareTo(b.id) < 0 }
+    val expected = (updates1 ::: updates2).sortWith { (a, b) =>
+      a.id.compareTo(b.id) < 0
+    }
     assert(idx.findItems(TagQuery(None)) === expected)
   }
 

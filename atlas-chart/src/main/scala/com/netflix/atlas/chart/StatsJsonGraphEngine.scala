@@ -22,15 +22,15 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model.SummaryStats
 
-
 /**
- * Returns a handful of summary stats instead of all the raw data for a given graph.
- */
+  * Returns a handful of summary stats instead of all the raw data for a given graph.
+  */
 class StatsJsonGraphEngine extends GraphEngine {
 
   import com.netflix.atlas.chart.GraphEngine._
 
   def name: String = "stats.json"
+
   def contentType: String = "application/json"
 
   private def writeRawField(gen: JsonGenerator, name: String, value: String): Unit = {
@@ -74,7 +74,8 @@ class StatsJsonGraphEngine extends GraphEngine {
 
     gen.writeArrayFieldStart("stats")
     seriesList.foreach { series =>
-      val stats = SummaryStats(series.data, config.startTime.toEpochMilli, config.endTime.toEpochMilli)
+      val stats =
+        SummaryStats(series.data, config.startTime.toEpochMilli, config.endTime.toEpochMilli)
 
       gen.writeStartObject()
       gen.writeNumberField("count", stats.count)

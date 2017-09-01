@@ -33,14 +33,13 @@ import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 
-
 /**
- * API to browse the configuration for atlas. The endpoint listens on `/api/v2/config` and
- * returns a dump of all of the properties. A subtree can be selected by providing a dot
- * separated config path, e.g., `/api/v2/config/a.b.c`. A single query param, `format`, is
- * supported and can be used to dump the data as json, hocon, or properties. The default format
- * is json.
- */
+  * API to browse the configuration for atlas. The endpoint listens on `/api/v2/config` and
+  * returns a dump of all of the properties. A subtree can be selected by providing a dot
+  * separated config path, e.g., `/api/v2/config/a.b.c`. A single query param, `format`, is
+  * supported and can be used to dump the data as json, hocon, or properties. The default format
+  * is json.
+  */
 class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   private val formats: Map[String, Config => HttpResponse] = Map(
@@ -52,10 +51,14 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
   def routes: Route = {
     pathPrefix("api" / "v2" / "config") {
       pathEndOrSingleSlash {
-        get { ctx => ctx.complete(doGet(ctx, None)) }
+        get { ctx =>
+          ctx.complete(doGet(ctx, None))
+        }
       } ~
       path(Remaining) { path =>
-        get { ctx => ctx.complete(doGet(ctx, Some(path))) }
+        get { ctx =>
+          ctx.complete(doGet(ctx, Some(path)))
+        }
       }
     }
   }
@@ -81,7 +84,8 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
 
   private def getPathValue(config: Config, p: String): Config = {
     import scala.collection.JavaConverters._
-    try config.getConfig(p) catch {
+    try config.getConfig(p)
+    catch {
       case e: ConfigException.WrongType =>
         ConfigFactory.parseMap(Map("value" -> config.getString(p)).asJava)
     }
@@ -94,10 +98,8 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
   }
 
   private def formatJson(config: Config): HttpResponse = {
-    val opts = ConfigRenderOptions.defaults.
-      setJson(true).
-      setComments(false).
-      setOriginComments(false)
+    val opts =
+      ConfigRenderOptions.defaults.setJson(true).setComments(false).setOriginComments(false)
     val str = config.root.render(opts)
     val entity = HttpEntity(MediaTypes.`application/json`, str)
     HttpResponse(status = StatusCodes.OK, entity = entity)

@@ -22,10 +22,17 @@ class ClampSuite extends FunSuite {
   val step = 60000L
   val dataTags = Map("name" -> "cpu", "node" -> "i-1")
 
-  val inputTS = TimeSeries(dataTags, new ArrayTimeSeq(DsType.Gauge, 0L, step,
-    Array[Double](1.0, 1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.0, 0.0, 0.0)))
+  val inputTS = TimeSeries(
+    dataTags,
+    new ArrayTimeSeq(
+      DsType.Gauge,
+      0L,
+      step,
+      Array[Double](1.0, 1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.0, 0.0, 0.0)
+    )
+  )
 
-  val des = StatefulExpr.Des(DataExpr.Sum(Query.Equal("name" , "cpu")), 2, 0.1, 0.02)
+  val des = StatefulExpr.Des(DataExpr.Sum(Query.Equal("name", "cpu")), 2, 0.1, 0.02)
 
   def eval(expr: TimeSeriesExpr, data: List[List[Datapoint]]): List[List[TimeSeries]] = {
     var state = Map.empty[StatefulExpr, Any]
@@ -42,7 +49,7 @@ class ClampSuite extends FunSuite {
     val s = 0L
     val e = 10L * step
     val context = EvalContext(s, e, step, Map.empty)
-    val clamp = MathExpr.ClampMin(DataExpr.Sum(Query.Equal("name" , "cpu")), 1.1)
+    val clamp = MathExpr.ClampMin(DataExpr.Sum(Query.Equal("name", "cpu")), 1.1)
     val actual = clamp.eval(context, List(inputTS)).data.head.data.bounded(s, e).data
     val expected = Array[Double](1.1, 1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.1, 1.1, 1.1)
     assert(actual === expected)
@@ -52,7 +59,7 @@ class ClampSuite extends FunSuite {
     val s = 0L
     val e = 10L * step
     val context = EvalContext(s, e, step, Map.empty)
-    val clamp = MathExpr.ClampMax(DataExpr.Sum(Query.Equal("name" , "cpu")), 1.1)
+    val clamp = MathExpr.ClampMax(DataExpr.Sum(Query.Equal("name", "cpu")), 1.1)
     val actual = clamp.eval(context, List(inputTS)).data.head.data.bounded(s, e).data
     val expected = Array[Double](1.0, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.0, 0.0, 0.0)
     assert(actual === expected)

@@ -58,8 +58,8 @@ object CustomDirectives {
     * directly on the directive. It also makes it possible to reuse `parseEntity`
     * with a custom function.
     */
-  def json[T: Manifest]: MediaType => ByteString => T = {
-    mediaType => bs => {
+  def json[T: Manifest]: MediaType => ByteString => T = { mediaType => bs =>
+    {
       if (isSmile(mediaType))
         Json.smileDecode[T](bs.toArray)
       else
@@ -74,14 +74,16 @@ object CustomDirectives {
     * it will be treated as `application/json` regardless of the content type.
     */
   def customJson[T: Manifest](decoder: JsonParser => T): MediaType => ByteString => T = {
-    mediaType => bs => {
-      val p =
-        if (isSmile(mediaType))
-          Json.newSmileParser(bs.toArray)
-        else
-          Json.newJsonParser(bs.toArray)
-      try decoder(p) finally p.close()
-    }
+    mediaType => bs =>
+      {
+        val p =
+          if (isSmile(mediaType))
+            Json.newSmileParser(bs.toArray)
+          else
+            Json.newJsonParser(bs.toArray)
+        try decoder(p)
+        finally p.close()
+      }
   }
 
   /**
@@ -105,26 +107,29 @@ object CustomDirectives {
   private def exposeHeaders: Directive0 = {
     mapResponseHeaders { headers =>
       val exposed = headers.map(_.name).filterNot(_.startsWith("Access-Control"))
-      if (exposed.isEmpty) headers else {
+      if (exposed.isEmpty) headers
+      else {
         headers ++ scala.collection.immutable.Seq(`Access-Control-Expose-Headers`(exposed))
       }
     }
   }
 
   /**
-   * Filter to provide basic CORS support. By default it assumes that actual security is provided
-   * elsewhere. The goal for this filter is to allow javascript UIs or other tools to access
-   * the APIs and work with minimal fuss.
-   */
+    * Filter to provide basic CORS support. By default it assumes that actual security is provided
+    * elsewhere. The goal for this filter is to allow javascript UIs or other tools to access
+    * the APIs and work with minimal fuss.
+    */
   def corsFilter: Directive0 = {
+
     // Add the cors headers to anything with an origin, browser behavior seems to be mixed as to
     // which request headers we can expect to receive
     optionalHeaderValueByName("Origin").flatMap {
-      case None => pass
+      case None         => pass
       case Some(origin) =>
         // '*' doesn't seem to work reliably so use requested origin if provided. If running from
         // a local file we typically see 'null'.
-        val allow = if (origin == "null") HttpOriginRange.`*` else HttpOriginRange(HttpOrigin(origin))
+        val allow =
+          if (origin == "null") HttpOriginRange.`*` else HttpOriginRange(HttpOrigin(origin))
 
         // List of headers to ignore for caching. For more details see:
         // https://bugs.chromium.org/p/chromium/issues/detail?id=409090
@@ -139,14 +144,17 @@ object CustomDirectives {
             HttpMethods.PATCH,
             HttpMethods.POST,
             HttpMethods.PUT,
-            HttpMethods.DELETE),
-          vary)
+            HttpMethods.DELETE
+          ),
+          vary
+        )
 
         // If specific headers are requested echo those back
         optionalHeaderValueByName("Access-Control-Request-Headers").flatMap {
           case None =>
             respondWithHeaders(headers) & exposeHeaders
-          case Some(h) => pass
+          case Some(h) =>
+            pass
             val finalHeaders = `Access-Control-Allow-Headers`(h) :: headers
             respondWithHeaders(finalHeaders) & exposeHeaders
         }
@@ -174,13 +182,13 @@ object CustomDirectives {
   def cors(inner: Route): Route = corsPreflight ~ corsFilter { inner }
 
   /**
-   * Returns a JSONP response. This directive will always try to return a 200 response so that the
-   * javascript code in the browser can better deal with errors. The actual response status code
-   * and headers will be included as part of the JSON object returned.
-   */
+    * Returns a JSONP response. This directive will always try to return a 200 response so that the
+    * javascript code in the browser can better deal with errors. The actual response status code
+    * and headers will be included as part of the JSON object returned.
+    */
   def jsonpFilter: Directive0 = {
     import scala.language.postfixOps
-    parameter("callback"?).flatMap {
+    parameter("callback" ?).flatMap {
       case None => pass
       case Some(callback) =>
         mapResponse { res =>
@@ -194,10 +202,13 @@ object CustomDirectives {
           // Write out list of headers, the content-type is part of the entity so the object is
           // closed as the first part of the entity encoding
           gen.writeObjectFieldStart("headers")
-          res.headers.groupBy(_.lowercaseName).foreach { case (n, hs) =>
-            gen.writeArrayFieldStart(n)
-            hs.foreach { h => gen.writeString(h.value) }
-            gen.writeEndArray()
+          res.headers.groupBy(_.lowercaseName).foreach {
+            case (n, hs) =>
+              gen.writeArrayFieldStart(n)
+              hs.foreach { h =>
+                gen.writeString(h.value)
+              }
+              gen.writeEndArray()
           }
 
           // Write out the entity
@@ -216,9 +227,11 @@ object CustomDirectives {
               gen.writeFieldName("body")
 
               contentType match {
-                case MediaTypes.`application/json` => gen.writeRawValue(entity.data.decodeString(ByteString.UTF_8))
-                case t if t.mainType == "text"     => gen.writeString(entity.data.decodeString(ByteString.UTF_8))
-                case _                             => gen.writeBinary(entity.data.toArray)
+                case MediaTypes.`application/json` =>
+                  gen.writeRawValue(entity.data.decodeString(ByteString.UTF_8))
+                case t if t.mainType == "text" =>
+                  gen.writeString(entity.data.decodeString(ByteString.UTF_8))
+                case _ => gen.writeBinary(entity.data.toArray)
               }
               gen.writeEndObject()
             case _ =>
@@ -248,13 +261,13 @@ object CustomDirectives {
   private def log(logger: AccessLogger)(req: HttpRequest)(result: RouteResult): Unit = {
     result match {
       case RouteResult.Complete(res) => logger.complete(req, Success(res))
-      case RouteResult.Rejected(vs) => logger.complete(req, Failure(new Exception(vs.toString)))
+      case RouteResult.Rejected(vs)  => logger.complete(req, Failure(new Exception(vs.toString)))
     }
   }
 
   /**
-   * Generate an access log using spectator HttpLogEntry utility.
-   */
+    * Generate an access log using spectator HttpLogEntry utility.
+    */
   def accessLog: Directive0 = {
     extractClientIP.flatMap { ip =>
       val addr = ip.toOption.fold("unknown")(_.getHostAddress)

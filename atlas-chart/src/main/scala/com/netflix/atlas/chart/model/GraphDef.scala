@@ -26,69 +26,72 @@ import com.netflix.atlas.core.model.SummaryStats
 import com.netflix.atlas.core.model.TimeSeries
 
 /**
- * Definition of a time series graph.
- *
- * @param plots
- *     Plot definitions. Each plot has its own y-axis and set of lines.
- * @param startTime
- *     Start time (inclusive) for the first datapoint.
- * @param endTime
- *     End time (exclusive) for the last datapoint.
- * @param timezones
- *     Time zones to show as time axes on the chart. The first time zone in the list will be the
- *     primary used when dislaying time stamps or for formats that don't support multiple time
- *     zone rendering.
- * @param step
- *     Step size for each datapoint.
- * @param width
- *     Width in pixels for the chart area. This excludes axes and other padding. The final image
- *     size will get calculated using this width as a starting point.
- * @param height
- *     Height in pixels for the chart area. This excludes the title, time axis, legend, etc. The
- *     final image size will get calculated using this height as a starting point.
- * @param layout
- *     Layout mode to use for rendering the image. Default is CANVAS.
- * @param zoom
- *     Zoom factor to apply as a transform to the image.
- * @param title
- *     Title of the graph.
- * @param legendType
- *     How to show the legend when rendering the graph.
- * @param onlyGraph
- *     Show only the chart without other details like axes, legends, labels, etc.
- * @param numberFormat
- *     Pattern used for formatting the number values in text based outputs.
- * @param loadTime
- *     How long it took to load the data for the chart in milliseconds.
- * @param stats
- *     Stats on how much data was processed to render the chart.
- * @param warnings
- *     Warnings to display to the user.
- * @param source
- *     Used to provide metadata for how the graph definition was created. For example the uri
- *     input by the user.
- */
+  * Definition of a time series graph.
+  *
+  * @param plots
+  *     Plot definitions. Each plot has its own y-axis and set of lines.
+  * @param startTime
+  *     Start time (inclusive) for the first datapoint.
+  * @param endTime
+  *     End time (exclusive) for the last datapoint.
+  * @param timezones
+  *     Time zones to show as time axes on the chart. The first time zone in the list will be the
+  *     primary used when dislaying time stamps or for formats that don't support multiple time
+  *     zone rendering.
+  * @param step
+  *     Step size for each datapoint.
+  * @param width
+  *     Width in pixels for the chart area. This excludes axes and other padding. The final image
+  *     size will get calculated using this width as a starting point.
+  * @param height
+  *     Height in pixels for the chart area. This excludes the title, time axis, legend, etc. The
+  *     final image size will get calculated using this height as a starting point.
+  * @param layout
+  *     Layout mode to use for rendering the image. Default is CANVAS.
+  * @param zoom
+  *     Zoom factor to apply as a transform to the image.
+  * @param title
+  *     Title of the graph.
+  * @param legendType
+  *     How to show the legend when rendering the graph.
+  * @param onlyGraph
+  *     Show only the chart without other details like axes, legends, labels, etc.
+  * @param numberFormat
+  *     Pattern used for formatting the number values in text based outputs.
+  * @param loadTime
+  *     How long it took to load the data for the chart in milliseconds.
+  * @param stats
+  *     Stats on how much data was processed to render the chart.
+  * @param warnings
+  *     Warnings to display to the user.
+  * @param source
+  *     Used to provide metadata for how the graph definition was created. For example the uri
+  *     input by the user.
+  */
 case class GraphDef(
-    plots: List[PlotDef],
-    startTime: Instant,
-    endTime: Instant,
-    timezones: List[ZoneId] = List(ZoneOffset.UTC),
-    step: Long = 60000,
-    width: Int = 400,
-    height: Int = 200,
-    layout: Layout = Layout.CANVAS,
-    zoom: Double = 1.0,
-    title: Option[String] = None,
-    legendType: LegendType = LegendType.LABELS_WITH_STATS,
-    onlyGraph: Boolean = false,
-    numberFormat: String = "%f",
-    loadTime: Long = -1,
-    stats: CollectorStats = CollectorStats.unknown,
-    warnings: List[String] = Nil,
-    source: Option[String] = None) {
+  plots: List[PlotDef],
+  startTime: Instant,
+  endTime: Instant,
+  timezones: List[ZoneId] = List(ZoneOffset.UTC),
+  step: Long = 60000,
+  width: Int = 400,
+  height: Int = 200,
+  layout: Layout = Layout.CANVAS,
+  zoom: Double = 1.0,
+  title: Option[String] = None,
+  legendType: LegendType = LegendType.LABELS_WITH_STATS,
+  onlyGraph: Boolean = false,
+  numberFormat: String = "%f",
+  loadTime: Long = -1,
+  stats: CollectorStats = CollectorStats.unknown,
+  warnings: List[String] = Nil,
+  source: Option[String] = None
+) {
 
   /** Total number of lines for all plots. */
-  val numLines = plots.foldLeft(0) { (acc, p) => acc + p.data.size }
+  val numLines = plots.foldLeft(0) { (acc, p) =>
+    acc + p.data.size
+  }
 
   require(timezones.nonEmpty, "at least one timezone must be specified for the chart")
 
@@ -126,7 +129,9 @@ case class GraphDef(
         val msg = s"Too many Y-axes, $size > ${GraphConstants.MaxYAxis}, axis per line disabled."
         copy(warnings = msg :: warnings)
       } else {
-        val newPlots = plot.data.map { d => plot.copy(data = List(d), axisColor = None) }
+        val newPlots = plot.data.map { d =>
+          plot.copy(data = List(d), axisColor = None)
+        }
         copy(plots = newPlots)
       }
     }
@@ -152,7 +157,9 @@ case class GraphDef(
   /** Set the vision type for the graph to simulate types of color blindness. */
   def withVisionType(vt: VisionType): GraphDef = {
     val newPlots = plots.map { plot =>
-      val newData = plot.data.map { d => d.withColor(vt.convert(d.color)) }
+      val newData = plot.data.map { d =>
+        d.withColor(vt.convert(d.color))
+      }
       plot.copy(data = newData, axisColor = plot.axisColor.map(vt.convert))
     }
     copy(plots = newPlots)

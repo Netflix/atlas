@@ -22,7 +22,9 @@ import org.scalatest.FunSuite
 class TaggedItemSuite extends FunSuite {
 
   def expectedId(tags: Map[String, String]): ItemId = {
-    ItemId(Hash.sha1bytes(tags.toList.sortWith(_._1 < _._1).map(t => t._1 + "=" + t._2).mkString(",")))
+    ItemId(
+      Hash.sha1bytes(tags.toList.sortWith(_._1 < _._1).map(t => t._1 + "=" + t._2).mkString(","))
+    )
   }
 
   test("computeId, name only") {

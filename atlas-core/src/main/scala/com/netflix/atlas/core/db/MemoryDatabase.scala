@@ -33,7 +33,6 @@ import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
-
 class MemoryDatabase(registry: Registry, config: Config) extends Database {
 
   /** How many metrics are being processed for transform queries. */
@@ -75,6 +74,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   if (!testMode) rebuildThread.start()
 
   private final class RebuildTask extends Runnable {
+
     def run(): Unit = {
       while (true) {
         try {
@@ -185,12 +185,18 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     queryOutputDatapoints.increment(stats.outputDatapoints)
 
     val vs = collector.result
-      .map { t => DataExpr.withDefaultLabel(expr, t) }
+      .map { t =>
+        DataExpr.withDefaultLabel(expr, t)
+      }
       .sortWith { _.label < _.label }
     finalValues(context, expr, vs)
   }
 
-  private def finalValues(context: EvalContext, expr: DataExpr, vs: List[TimeSeries]): List[TimeSeries] = {
+  private def finalValues(
+    context: EvalContext,
+    expr: DataExpr,
+    vs: List[TimeSeries]
+  ): List[TimeSeries] = {
     expr match {
       case _: DataExpr.AggregateFunction if vs.isEmpty => List(TimeSeries.noData(context.step))
       case _                                           => vs
@@ -199,7 +205,8 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
 
   def execute(context: EvalContext, expr: DataExpr): List[TimeSeries] = {
     val offset = expr.offset.toMillis
-    if (offset == 0) executeImpl(context, expr) else {
+    if (offset == 0) executeImpl(context, expr)
+    else {
       val offsetContext = context.withOffset(expr.offset.toMillis)
       executeImpl(offsetContext, expr).map { t =>
         t.offset(offset)
@@ -209,6 +216,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
 }
 
 object MemoryDatabase {
+
   def apply(cfg: Config): MemoryDatabase = {
     new MemoryDatabase(Spectator.globalRegistry(), cfg.getConfig("atlas.core.db"))
   }

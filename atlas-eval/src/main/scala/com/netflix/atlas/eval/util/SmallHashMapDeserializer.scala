@@ -25,7 +25,11 @@ import com.netflix.atlas.core.util.SmallHashMap
   * that each tag map should have a relatively small number of entries.
   */
 class SmallHashMapDeserializer extends JsonDeserializer[SmallHashMap[String, String]] {
-  override def deserialize(p: JsonParser, ctxt: DeserializationContext): SmallHashMap[String, String] = {
+
+  override def deserialize(
+    p: JsonParser,
+    ctxt: DeserializationContext
+  ): SmallHashMap[String, String] = {
     val builder = new SmallHashMap.Builder[String, String](5)
     var k = p.nextFieldName()
     while (k != null) {

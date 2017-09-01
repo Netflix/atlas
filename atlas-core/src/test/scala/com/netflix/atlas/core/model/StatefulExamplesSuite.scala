@@ -19,6 +19,7 @@ import com.netflix.atlas.core.stacklang.BaseExamplesSuite
 import com.netflix.atlas.core.stacklang.Vocabulary
 
 class StatefulExamplesSuite extends BaseExamplesSuite {
+
   override def vocabulary: Vocabulary = StatefulVocabulary
 
   test("rewrite toString and cq") {

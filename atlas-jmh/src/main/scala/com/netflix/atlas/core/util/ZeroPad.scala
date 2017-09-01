@@ -49,6 +49,7 @@ class ZeroPad {
   @Threads(1)
   @Benchmark
   def oneFormat(bh: Blackhole): Unit = {
+
     // Needs a lot of padding
     bh.consume("%040x".format(BigInteger.ONE))
   }
@@ -56,6 +57,7 @@ class ZeroPad {
   @Threads(1)
   @Benchmark
   def onePad(bh: Blackhole): Unit = {
+
     // Needs a lot of padding
     bh.consume(Strings.zeroPad(BigInteger.ONE, 40))
   }
@@ -63,6 +65,7 @@ class ZeroPad {
   @Threads(1)
   @Benchmark
   def hashFormat(bh: Blackhole): Unit = {
+
     // Common case, hash value that will likely not need much if any padding
     bh.consume("%040x".format(hash))
   }
@@ -70,6 +73,7 @@ class ZeroPad {
   @Threads(1)
   @Benchmark
   def hashPad(bh: Blackhole): Unit = {
+
     // Common case, hash value that will likely not need much if any padding
     bh.consume(Strings.zeroPad(hash, 40))
   }

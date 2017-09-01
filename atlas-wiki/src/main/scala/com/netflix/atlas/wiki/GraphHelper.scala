@@ -71,7 +71,9 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
         dir.mkdirs()
         val image = PngImage(res.data)
         val file = new File(dir, fname)
-        scope(fileOut(file)) { out => image.write(out) }
+        scope(fileOut(file)) { out =>
+          image.write(out)
+        }
 
         val (w, h) = imageSize(file)
         val html = s"""<img src="$baseUri/$fname" alt="$fname" width="${w}px" height="${h}px"/>"""
@@ -98,7 +100,9 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
       val res = GraphEval.render(db, Uri(uri))
       dir.mkdirs()
       val image = PngImage(res.data)
-      scope(fileOut(file)) { out => image.write(out) }
+      scope(fileOut(file)) { out =>
+        image.write(out)
+      }
     }
 
     val (w, h) = imageSize(file)
@@ -118,8 +122,11 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
   def formatQuery(line: String): String = {
     val uri = URI.create(line)
     val params = Strings.parseQueryString(uri.getQuery)
-    val pstr = params.toList.sortWith(_._1 < _._1).flatMap { case (k, vs) =>
-      vs.map { v => if (k == "q") formatQueryExpr(v) else s"$k=$v" }
+    val pstr = params.toList.sortWith(_._1 < _._1).flatMap {
+      case (k, vs) =>
+        vs.map { v =>
+          if (k == "q") formatQueryExpr(v) else s"$k=$v"
+        }
     }
     s"<pre>\n${uri.getPath}?\n  ${pstr.mkString("\n  &")}\n</pre>\n"
   }
@@ -143,11 +150,12 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
     val parts = q.split(",").toList
     val buf = new StringBuilder
     buf.append("q=\n    ")
-    parts.zipWithIndex.foreach { case (p, i) =>
-      if (p.startsWith(":"))
-        buf.append(mkLink(parts.take(i), p.substring(1))).append(',').append("\n    ")
-      else
-        buf.append(p).append(',')
+    parts.zipWithIndex.foreach {
+      case (p, i) =>
+        if (p.startsWith(":"))
+          buf.append(mkLink(parts.take(i), p.substring(1))).append(',').append("\n    ")
+        else
+          buf.append(p).append(',')
     }
     val s = buf.toString
     s.substring(0, s.lastIndexOf(","))

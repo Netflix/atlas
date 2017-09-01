@@ -33,7 +33,6 @@ import javax.imageio.ImageIO
 
 import com.sun.imageio.plugins.png.PNGMetadata
 
-
 object PngImage {
 
   def apply(bytes: Array[Byte]): PngImage = {
@@ -86,12 +85,13 @@ object PngImage {
   }
 
   def error(
-      imgText: String,
-      width: Int,
-      height: Int,
-      imgTextPrefix: String = "ERROR:",
-      imgTextColor: Color = Color.WHITE,
-      imgBackgroundColor: Color = Color.BLACK): PngImage = {
+    imgText: String,
+    width: Int,
+    height: Int,
+    imgTextPrefix: String = "ERROR:",
+    imgTextColor: Color = Color.WHITE,
+    imgBackgroundColor: Color = Color.BLACK
+  ): PngImage = {
     val fullMsg = s"$imgTextPrefix $imgText"
 
     val image = newBufferedImage(width, height)

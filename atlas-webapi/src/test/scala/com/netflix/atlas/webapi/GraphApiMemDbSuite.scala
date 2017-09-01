@@ -24,7 +24,6 @@ import com.netflix.atlas.core.db.MemoryDatabase
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
@@ -33,8 +32,7 @@ class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
   // issues outside of running with code coverage.
   private implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
 
-  private val db = MemoryDatabase(ConfigFactory.parseString(
-    """
+  private val db = MemoryDatabase(ConfigFactory.parseString("""
       |atlas.core.db {
       |  rebuild-frequency = 10s
       |  num-blocks = 2

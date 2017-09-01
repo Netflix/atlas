@@ -41,7 +41,6 @@ import com.netflix.spectator.api.Counter
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 
-
 /**
   * Helpers for evaluating Atlas expressions over streaming data sources.
   */
@@ -52,8 +51,9 @@ object EvaluationFlows {
   /**
     * Run a stream connecting the source to the sink.
     */
-  def run[T, M1, M2](source: Source[T, M1], sink: Sink[T, M2])
-    (implicit materializer: ActorMaterializer): StreamRef[M2] = {
+  def run[T, M1, M2](source: Source[T, M1], sink: Sink[T, M2])(
+    implicit materializer: ActorMaterializer
+  ): StreamRef[M2] = {
 
     val (killSwitch, value) = source
       .viaMat(KillSwitches.single)(Keep.right)
@@ -68,6 +68,7 @@ object EvaluationFlows {
     * particular instance from a eureka vip.
     */
   def stoppableSource[T, M](source: Source[T, M]): SourceRef[T, M] = {
+
     // Note, we cannot just do `takeWhile(_ => !promise.isCompleted)` because it will
     // only take effect if something is emitted via the source. The workaround it to
     // merge with a source on the future there will be an item that will trigger the
@@ -109,7 +110,9 @@ object EvaluationFlows {
     *     Flow for counting the number of events flowing through.
     */
   def countEvents[T](c: Counter): Flow[T, T, NotUsed] = {
-    Flow[T].map { v => c.increment(); v }
+    Flow[T].map { v =>
+      c.increment(); v
+    }
   }
 
   /**
@@ -172,7 +175,11 @@ object EvaluationFlows {
     * @return
     *     Time series messages containing the results of the evaluation.
     */
-  def forPartialAggregates(expr: StyleExpr, step: Long): Flow[AggrDatapoint, JsonSupport, NotUsed] = {
+  def forPartialAggregates(
+    expr: StyleExpr,
+    step: Long
+  ): Flow[AggrDatapoint, JsonSupport, NotUsed] = {
+
     // TODO: number of buffers should be configurable by user, need to discuss how best to
     // map some that into the api... for now it is set to 1 to reduce the delay during testing
     Flow[AggrDatapoint]

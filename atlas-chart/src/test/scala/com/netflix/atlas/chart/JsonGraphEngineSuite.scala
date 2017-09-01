@@ -27,7 +27,6 @@ import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Streams
 import org.scalatest.FunSuite
 
-
 class JsonGraphEngineSuite extends FunSuite {
 
   val step = 60000
@@ -55,7 +54,9 @@ class JsonGraphEngineSuite extends FunSuite {
       endTime = ZonedDateTime.of(2012, 1, 1, 0, 3, 0, 0, ZoneOffset.UTC).toInstant
     )
 
-    val bytes = Streams.byteArray { out => engine.write(graphDef, out) }
+    val bytes = Streams.byteArray { out =>
+      engine.write(graphDef, out)
+    }
     val json = new String(bytes, "UTF-8")
     assert(json === strip(expected))
   }

@@ -27,6 +27,7 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
   def this() = this(false)
 
   def name: String = "json"
+
   def contentType: String = "application/json"
 
   def write(config: GraphDef, output: OutputStream): Unit = {

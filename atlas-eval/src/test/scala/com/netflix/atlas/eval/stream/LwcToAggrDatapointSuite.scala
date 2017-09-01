@@ -35,7 +35,8 @@ class LwcToAggrDatapointSuite extends FunSuite {
   private val step = 10000
 
   private val sumMetric = s"""{"id":"sum","expression":"name,cpu,:eq,:sum","frequency":$step}"""
-  private val countMetric = s"""{"id":"count","expression":"name,cpu,:eq,:count","frequency":$step}"""
+  private val countMetric =
+    s"""{"id":"count","expression":"name,cpu,:eq,:count","frequency":$step}"""
 
   private val input = List(
     s"""info: subscribe {"expression":"name,cpu,:eq,:avg","metrics":[$sumMetric,$countMetric]}""",

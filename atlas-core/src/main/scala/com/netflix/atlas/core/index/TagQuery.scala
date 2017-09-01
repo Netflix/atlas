@@ -19,10 +19,11 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 
 case class TagQuery(
-    query: Option[Query],
-    key: Option[String] = None,
-    offset: String = "",
-    limit: Int = Integer.MAX_VALUE) {
+  query: Option[Query],
+  key: Option[String] = None,
+  offset: String = "",
+  limit: Int = Integer.MAX_VALUE
+) {
 
   /** Parse the offset string to a tag object. */
   lazy val offsetTag: Tag = {

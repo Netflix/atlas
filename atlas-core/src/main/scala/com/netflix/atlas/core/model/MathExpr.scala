@@ -28,8 +28,11 @@ import com.netflix.spectator.api.histogram.PercentileBuckets
 trait MathExpr extends TimeSeriesExpr
 
 object MathExpr {
+
   case class Constant(v: Double) extends TimeSeriesExpr {
+
     def dataExprs: List[DataExpr] = Nil
+
     override def toString: String = s"$v,:const"
 
     def isGrouped: Boolean = false
@@ -44,7 +47,9 @@ object MathExpr {
   }
 
   case object Random extends TimeSeriesExpr {
+
     def dataExprs: List[DataExpr] = Nil
+
     override def toString: String = s":random"
 
     def isGrouped: Boolean = false
@@ -85,7 +90,8 @@ object MathExpr {
     }
 
     private val valueFunc = {
-      if (chronoField != ChronoField.INSTANT_SECONDS) usingCalendar _ else {
+      if (chronoField != ChronoField.INSTANT_SECONDS) usingCalendar _
+      else {
         mode match {
           case "seconds" => sinceEpoch(1000L) _
           case "minutes" => sinceEpoch(1000L * 60L) _
@@ -103,6 +109,7 @@ object MathExpr {
     private def sinceEpoch(divisor: Long)(t: Long): Double = t / divisor
 
     def dataExprs: List[DataExpr] = Nil
+
     override def toString: String = s"$mode,:time"
 
     def isGrouped: Boolean = false
@@ -117,8 +124,11 @@ object MathExpr {
   }
 
   case class ClampMin(expr: TimeSeriesExpr, min: Double) extends TimeSeriesExpr with UnaryOp {
+
     def name: String = "clamp-min"
+
     def dataExprs: List[DataExpr] = expr.dataExprs
+
     override def toString: String = s"$expr,$min,:$name"
 
     def isGrouped: Boolean = expr.isGrouped
@@ -127,15 +137,20 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
-      ResultSet(this, rs.data.map { t => t.unaryOp(s"$name(%s, $min)", this) }, rs.state)
+      ResultSet(this, rs.data.map { t =>
+        t.unaryOp(s"$name(%s, $min)", this)
+      }, rs.state)
     }
 
     def apply(v: Double): Double = if (v < min) min else v
   }
 
   case class ClampMax(expr: TimeSeriesExpr, max: Double) extends TimeSeriesExpr with UnaryOp {
+
     def name: String = "clamp-max"
+
     def dataExprs: List[DataExpr] = expr.dataExprs
+
     override def toString: String = s"$expr,$max,:$name"
 
     def isGrouped: Boolean = expr.isGrouped
@@ -144,16 +159,22 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
-      ResultSet(this, rs.data.map { t => t.unaryOp(s"$name(%s, $max)", this) }, rs.state)
+      ResultSet(this, rs.data.map { t =>
+        t.unaryOp(s"$name(%s, $max)", this)
+      }, rs.state)
     }
 
     def apply(v: Double): Double = if (v > max) max else v
   }
 
   trait UnaryMathExpr extends TimeSeriesExpr with UnaryOp {
+
     def name: String
+
     def expr: TimeSeriesExpr
+
     def dataExprs: List[DataExpr] = expr.dataExprs
+
     override def toString: String = s"$expr,:$name"
 
     def isGrouped: Boolean = expr.isGrouped
@@ -162,26 +183,35 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
-      ResultSet(this, rs.data.map { t => t.unaryOp(s"$name(%s)", this) }, rs.state)
+      ResultSet(this, rs.data.map { t =>
+        t.unaryOp(s"$name(%s)", this)
+      }, rs.state)
     }
   }
 
   case class Abs(expr: TimeSeriesExpr) extends UnaryMathExpr {
+
     def name: String = "abs"
+
     def apply(v: Double): Double = math.abs(v)
   }
 
   case class Negate(expr: TimeSeriesExpr) extends UnaryMathExpr {
+
     def name: String = "neg"
+
     def apply(v: Double): Double = -v
   }
 
   case class Sqrt(expr: TimeSeriesExpr) extends UnaryMathExpr {
+
     def name: String = "sqrt"
+
     def apply(v: Double): Double = math.sqrt(v)
   }
 
   case class PerStep(expr: TimeSeriesExpr) extends UnaryMathExpr {
+
     def name: String = "per-step"
 
     // Not used, required by base-class
@@ -199,11 +229,17 @@ object MathExpr {
   }
 
   trait BinaryMathExpr extends TimeSeriesExpr with BinaryOp {
+
     def name: String
+
     def labelFmt: String
+
     def expr1: TimeSeriesExpr
+
     def expr2: TimeSeriesExpr
+
     def dataExprs: List[DataExpr] = expr1.dataExprs ::: expr2.dataExprs
+
     override def toString: String = s"$expr1,$expr2,:$name"
 
     def isGrouped: Boolean = expr1.isGrouped || expr2.isGrouped
@@ -241,26 +277,38 @@ object MathExpr {
   }
 
   case class Add(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "add"
+
     def labelFmt: String = "(%s + %s)"
+
     def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
   }
 
   case class Subtract(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "sub"
+
     def labelFmt: String = "(%s - %s)"
+
     def apply(v1: Double, v2: Double): Double = Math.subtractNaN(v1, v2)
   }
 
   case class Multiply(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "mul"
+
     def labelFmt: String = "(%s * %s)"
+
     def apply(v1: Double, v2: Double): Double = v1 * v2
   }
 
   case class Divide(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "div"
+
     def labelFmt: String = "(%s / %s)"
+
     def apply(v1: Double, v2: Double): Double = {
       if (v2 == 0.0) {
         // Infinite is not very useful as a value in a visualization and tends to make other
@@ -283,73 +331,107 @@ object MathExpr {
   }
 
   case class GreaterThan(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "gt"
+
     def labelFmt: String = "(%s > %s)"
+
     def apply(v1: Double, v2: Double): Double = if (v1 > v2) 1.0 else 0.0
   }
 
   case class GreaterThanEqual(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "ge"
+
     def labelFmt: String = "(%s >= %s)"
+
     def apply(v1: Double, v2: Double): Double = if (v1 >= v2) 1.0 else 0.0
   }
 
   case class LessThan(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "lt"
+
     def labelFmt: String = "(%s < %s)"
+
     def apply(v1: Double, v2: Double): Double = if (v1 < v2) 1.0 else 0.0
   }
 
   case class LessThanEqual(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "le"
+
     def labelFmt: String = "(%s <= %s)"
+
     def apply(v1: Double, v2: Double): Double = if (v1 <= v2) 1.0 else 0.0
   }
 
   case class FAdd(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "fadd"
+
     def labelFmt: String = "(%s + %s)"
+
     def apply(v1: Double, v2: Double): Double = v1 + v2
   }
 
   case class FSubtract(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "fsub"
+
     def labelFmt: String = "(%s - %s)"
+
     def apply(v1: Double, v2: Double): Double = v1 - v2
   }
 
   case class FMultiply(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "fmul"
+
     def labelFmt: String = "(%s * %s)"
+
     def apply(v1: Double, v2: Double): Double = v1 * v2
   }
 
   case class FDivide(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "fdiv"
+
     def labelFmt: String = "(%s / %s)"
+
     def apply(v1: Double, v2: Double): Double = v1 / v2
   }
 
   case class And(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "and"
+
     def labelFmt: String = "(%s AND %s)"
+
     def apply(v1: Double, v2: Double): Double = {
       if (Math.toBoolean(v1) && Math.toBoolean(v2)) 1.0 else 0.0
     }
   }
 
   case class Or(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
     def name: String = "or"
+
     def labelFmt: String = "(%s OR %s)"
+
     def apply(v1: Double, v2: Double): Double = {
       if (Math.toBoolean(v1) || Math.toBoolean(v2)) 1.0 else 0.0
     }
   }
 
   trait AggrMathExpr extends TimeSeriesExpr with BinaryOp {
+
     def name: String
+
     def expr: TimeSeriesExpr
+
     def dataExprs: List[DataExpr] = expr.dataExprs
+
     override def toString: String = s"$expr,:$name"
 
     def isGrouped: Boolean = false
@@ -358,21 +440,27 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
-      val ts = if (rs.data.isEmpty) Nil else {
-        val t = TimeSeries.aggregate(rs.data.iterator, context.start, context.end, this)
-        List(TimeSeries(t.tags, s"$name(${t.label})", t.data))
-      }
+      val ts =
+        if (rs.data.isEmpty) Nil
+        else {
+          val t = TimeSeries.aggregate(rs.data.iterator, context.start, context.end, this)
+          List(TimeSeries(t.tags, s"$name(${t.label})", t.data))
+        }
       ResultSet(this, ts, rs.state)
     }
   }
 
   case class Sum(expr: TimeSeriesExpr) extends AggrMathExpr {
+
     def name: String = "sum"
+
     def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
   }
 
   case class Count(expr: TimeSeriesExpr) extends AggrMathExpr {
+
     def name: String = "count"
+
     def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
 
     override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
@@ -386,16 +474,21 @@ object MathExpr {
   }
 
   case class Min(expr: TimeSeriesExpr) extends AggrMathExpr {
+
     def name: String = "min"
+
     def apply(v1: Double, v2: Double): Double = Math.minNaN(v1, v2)
   }
 
   case class Max(expr: TimeSeriesExpr) extends AggrMathExpr {
+
     def name: String = "max"
+
     def apply(v1: Double, v2: Double): Double = Math.maxNaN(v1, v2)
   }
 
   case class GroupBy(expr: AggrMathExpr, keys: List[String]) extends TimeSeriesExpr {
+
     // This variant should only be used if the data is already grouped and we are adding another
     // level. See DataExpr.GroupBy for the first level based on the raw data.
     require(expr.expr.isGrouped, "input expression must already be grouped with DataExpr.GroupBy")
@@ -403,17 +496,20 @@ object MathExpr {
     // We can only group using a subset of the previous group by results.
     private val dataGroups = expr.dataExprs.collect { case e: DataExpr.GroupBy => e }
     dataGroups.foreach { grp =>
-      require(grp.keys.containsSlice(keys),
-        s"(,${keys.mkString(",")},) is not a subset of (,${grp.keys.mkString(",")},)")
+      require(
+        grp.keys.containsSlice(keys),
+        s"(,${keys.mkString(",")},) is not a subset of (,${grp.keys.mkString(",")},)"
+      )
     }
 
     // Extract the common keys from queries so we can retain those tags in in the final output
     // to the user.
     private val queryKeys = {
       val queries = expr.dataExprs.map(_.query)
-      if (queries.isEmpty) Set.empty[String] else {
+      if (queries.isEmpty) Set.empty[String]
+      else {
         queries.tail.foldLeft(Query.exactKeys(queries.head)) { (acc, q) =>
-          acc intersect Query.exactKeys(q)
+          acc.intersect(Query.exactKeys(q))
         }
       }
     }
@@ -423,7 +519,9 @@ object MathExpr {
     def dataExprs: List[DataExpr] = expr.dataExprs
 
     def isGrouped: Boolean = true
-    def groupByKey(tags: Map[String, String]): Option[String] = Option(DataExpr.keyString(keys, tags))
+
+    def groupByKey(tags: Map[String, String]): Option[String] =
+      Option(DataExpr.keyString(keys, tags))
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val inner = expr.expr.eval(context, data)
@@ -436,12 +534,17 @@ object MathExpr {
       val newData = sorted.flatMap {
         case (null, _) => Nil
         case (k, Nil)  => List(TimeSeries.noData(context.step))
-        case (k, ts)   =>
+        case (k, ts) =>
           val tags = ts.head.tags.filter(e => ks.contains(e._1))
           val init = expr match {
-            case c: Count => ts.map { t =>
-              TimeSeries(t.tags, t.label, t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0))
-            }
+            case c: Count =>
+              ts.map { t =>
+                TimeSeries(
+                  t.tags,
+                  t.label,
+                  t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0)
+                )
+              }
             case _ => ts
           }
           val t = TimeSeries.aggregate(init.iterator, context.start, context.end, expr)
@@ -467,8 +570,10 @@ object MathExpr {
     *     List of percentiles to compute. Each value should be in the range [0.0, 100.0].
     */
   case class Percentiles(expr: DataExpr.GroupBy, percentiles: List[Double]) extends TimeSeriesExpr {
-    require(expr.keys.contains(TagKey.percentile),
-      s"key list for group by must contain '${TagKey.percentile}'")
+    require(
+      expr.keys.contains(TagKey.percentile),
+      s"key list for group by must contain '${TagKey.percentile}'"
+    )
 
     percentiles.foreach { p =>
       require(p >= 0.0 && p <= 100.0, s"invalid percentile $p, value must be 0.0 <= p <= 100.0")
@@ -478,9 +583,11 @@ object MathExpr {
     private val pcts = percentiles.distinct.sortWith(_ < _).toArray
 
     override def toString: String = {
-      val baseExpr = if (evalGroupKeys.isEmpty) expr.af.query.toString else {
-        s"${expr.af.query},(,${evalGroupKeys.mkString(",")},),:by"
-      }
+      val baseExpr =
+        if (evalGroupKeys.isEmpty) expr.af.query.toString
+        else {
+          s"${expr.af.query},(,${evalGroupKeys.mkString(",")},),:by"
+        }
       s"$baseExpr,(,${pcts.mkString(",")},),:percentiles"
     }
 
@@ -500,7 +607,8 @@ object MathExpr {
       } else {
         val groups = inner.data.groupBy(_.tags - TagKey.percentile)
         val rs = groups.values.toList.flatMap { ts =>
-          if (ts.isEmpty) ts else {
+          if (ts.isEmpty) ts
+          else {
             val tags = ts.head.tags - TagKey.percentile
             val label = DataExpr.keyString(evalGroupKeys, tags)
             estimatePercentiles(context, label, ts)
@@ -511,7 +619,10 @@ object MathExpr {
     }
 
     private def estimatePercentiles(
-        context: EvalContext, baseLabel: String, data: List[TimeSeries]): List[TimeSeries] = {
+      context: EvalContext,
+      baseLabel: String,
+      data: List[TimeSeries]
+    ): List[TimeSeries] = {
 
       // If the mapping on top of the data layer puts in a "no data" time series as a
       // placeholder, then there will be entries without the percentile tag. Ideally
@@ -589,10 +700,11 @@ object MathExpr {
         }
 
         // Apply the tags and labels to the output
-        output.toList.zipWithIndex.map { case (seq, j) =>
-          val p = f"${pcts(j)}%5.1f"
-          val tags = data.head.tags + (TagKey.percentile -> p)
-          TimeSeries(tags, f"percentile($baseLabel, $p)", seq)
+        output.toList.zipWithIndex.map {
+          case (seq, j) =>
+            val p = f"${pcts(j)}%5.1f"
+            val tags = data.head.tags + (TagKey.percentile -> p)
+            TimeSeries(tags, f"percentile($baseLabel, $p)", seq)
         }
       }
     }
@@ -620,8 +732,8 @@ object MathExpr {
     name: String,
     displayExpr: Expr,
     evalExpr: TimeSeriesExpr,
-    context: Context)
-      extends TimeSeriesExpr {
+    context: Context
+  ) extends TimeSeriesExpr {
 
     def dataExprs: List[DataExpr] = evalExpr.dataExprs
 
@@ -645,7 +757,9 @@ object MathExpr {
 
           evalExpr.dataExprs
             .collectFirst { case DataExpr.GroupBy(_, ks) => ks }
-            .foreach { ks => buffer.append(ks.mkString(",(,", ",", ",),:by")) }
+            .foreach { ks =>
+              buffer.append(ks.mkString(",(,", ",", ",),:by"))
+            }
 
           buffer.toString()
         case _ =>
@@ -671,18 +785,17 @@ object MathExpr {
           case q: Query =>
             copy(
               displayExpr = displayExpr.rewrite(f),
-              evalExpr = evalExpr.rewrite(f).asInstanceOf[TimeSeriesExpr])
+              evalExpr = evalExpr.rewrite(f).asInstanceOf[TimeSeriesExpr]
+            )
           case _ =>
             val newDisplayExpr = displayExpr.rewrite(f)
             val ctxt = context.interpreter.execute(toString(newDisplayExpr))
             ctxt.stack match {
               case (r: NamedRewrite) :: Nil => r
-              case _ => throw new IllegalStateException(s"invalid stack for :$name")
+              case _                        => throw new IllegalStateException(s"invalid stack for :$name")
             }
         }
       }
     }
   }
 }
-
-

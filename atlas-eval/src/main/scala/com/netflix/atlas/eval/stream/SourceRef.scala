@@ -26,5 +26,6 @@ import scala.util.Success
   * source.
   */
 case class SourceRef[T, M](source: Source[T, M], promise: Promise[Done]) {
+
   def stop(): Unit = promise.complete(Success(Done))
 }

@@ -24,44 +24,60 @@ class DesSuite extends FunSuite {
   val dataTags = Map("name" -> "cpu", "node" -> "i-1")
 
   val alignedStream = List(
-    List(Datapoint(dataTags,  0L * step, 1.0)),
-    List(Datapoint(dataTags,  1L * step, 1.5)),
-    List(Datapoint(dataTags,  2L * step, 1.6)),
-    List(Datapoint(dataTags,  3L * step, 1.7)),
-    List(Datapoint(dataTags,  4L * step, 1.4)),
-    List(Datapoint(dataTags,  5L * step, 1.3)),
-    List(Datapoint(dataTags,  6L * step, 1.2)),
-    List(Datapoint(dataTags,  7L * step, 1.0)),
-    List(Datapoint(dataTags,  8L * step, 0.0)),
-    List(Datapoint(dataTags,  9L * step, 0.0)),
+    List(Datapoint(dataTags, 0L * step, 1.0)),
+    List(Datapoint(dataTags, 1L * step, 1.5)),
+    List(Datapoint(dataTags, 2L * step, 1.6)),
+    List(Datapoint(dataTags, 3L * step, 1.7)),
+    List(Datapoint(dataTags, 4L * step, 1.4)),
+    List(Datapoint(dataTags, 5L * step, 1.3)),
+    List(Datapoint(dataTags, 6L * step, 1.2)),
+    List(Datapoint(dataTags, 7L * step, 1.0)),
+    List(Datapoint(dataTags, 8L * step, 0.0)),
+    List(Datapoint(dataTags, 9L * step, 0.0)),
     List(Datapoint(dataTags, 10L * step, 1.0)),
     List(Datapoint(dataTags, 11L * step, 1.1)),
     List(Datapoint(dataTags, 12L * step, 1.2)),
     List(Datapoint(dataTags, 13L * step, 1.2))
   )
-  val alignedInputTS = TimeSeries(dataTags, new ArrayTimeSeq(DsType.Gauge, 0L, step,
-    Array[Double](1.0, 1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.0, 0.0, 0.0, 1.0, 1.1, 1.2, 1.2)))
+
+  val alignedInputTS = TimeSeries(
+    dataTags,
+    new ArrayTimeSeq(
+      DsType.Gauge,
+      0L,
+      step,
+      Array[Double](1.0, 1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.0, 0.0, 0.0, 1.0, 1.1, 1.2, 1.2)
+    )
+  )
 
   val unalignedStream = List(
-    List(Datapoint(dataTags,  1L * step, 1.5)),
-    List(Datapoint(dataTags,  2L * step, 1.6)),
-    List(Datapoint(dataTags,  3L * step, 1.7)),
-    List(Datapoint(dataTags,  4L * step, 1.4)),
-    List(Datapoint(dataTags,  5L * step, 1.3)),
-    List(Datapoint(dataTags,  6L * step, 1.2)),
-    List(Datapoint(dataTags,  7L * step, 1.0)),
-    List(Datapoint(dataTags,  8L * step, 0.0)),
-    List(Datapoint(dataTags,  9L * step, 0.0)),
+    List(Datapoint(dataTags, 1L * step, 1.5)),
+    List(Datapoint(dataTags, 2L * step, 1.6)),
+    List(Datapoint(dataTags, 3L * step, 1.7)),
+    List(Datapoint(dataTags, 4L * step, 1.4)),
+    List(Datapoint(dataTags, 5L * step, 1.3)),
+    List(Datapoint(dataTags, 6L * step, 1.2)),
+    List(Datapoint(dataTags, 7L * step, 1.0)),
+    List(Datapoint(dataTags, 8L * step, 0.0)),
+    List(Datapoint(dataTags, 9L * step, 0.0)),
     List(Datapoint(dataTags, 10L * step, 1.0)),
     List(Datapoint(dataTags, 11L * step, 1.1)),
     List(Datapoint(dataTags, 12L * step, 1.2)),
     List(Datapoint(dataTags, 13L * step, 1.2))
   )
-  val unalignedInputTS = TimeSeries(dataTags, new ArrayTimeSeq(DsType.Gauge, 1L * step, step,
-    Array[Double](1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.0, 0.0, 0.0, 1.0, 1.1, 1.2, 1.2)))
 
-  val des = StatefulExpr.Des(DataExpr.Sum(Query.Equal("name" , "cpu")), 2, 0.1, 0.02)
-  val sdes = StatefulExpr.SlidingDes(DataExpr.Sum(Query.Equal("name" , "cpu")), 2, 0.1, 0.02)
+  val unalignedInputTS = TimeSeries(
+    dataTags,
+    new ArrayTimeSeq(
+      DsType.Gauge,
+      1L * step,
+      step,
+      Array[Double](1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.0, 0.0, 0.0, 1.0, 1.1, 1.2, 1.2)
+    )
+  )
+
+  val des = StatefulExpr.Des(DataExpr.Sum(Query.Equal("name", "cpu")), 2, 0.1, 0.02)
+  val sdes = StatefulExpr.SlidingDes(DataExpr.Sum(Query.Equal("name", "cpu")), 2, 0.1, 0.02)
 
   def eval(expr: TimeSeriesExpr, data: List[List[Datapoint]]): List[List[TimeSeries]] = {
     var state = Map.empty[StatefulExpr, Any]
@@ -81,15 +97,16 @@ class DesSuite extends FunSuite {
     val expected = des.eval(context, List(alignedInputTS)).data.head.data.bounded(s, e).data
 
     val result = eval(des, alignedStream)
-    result.zip(expected).zipWithIndex.foreach { case ((ts, v), i) =>
-      assert(ts.size === 1)
-      ts.foreach { t =>
-        val r = t.data(i * step)
-        if (i <= 1)
-          assert(r.isNaN)
-        else
-          assert(v === r +- 0.00001)
-      }
+    result.zip(expected).zipWithIndex.foreach {
+      case ((ts, v), i) =>
+        assert(ts.size === 1)
+        ts.foreach { t =>
+          val r = t.data(i * step)
+          if (i <= 1)
+            assert(r.isNaN)
+          else
+            assert(v === r +- 0.00001)
+        }
     }
   }
 
@@ -100,15 +117,16 @@ class DesSuite extends FunSuite {
     val expected = sdes.eval(context, List(alignedInputTS)).data.head.data.bounded(s, e).data
 
     val result = eval(sdes, alignedStream)
-    result.zip(expected).zipWithIndex.foreach { case ((ts, v), i) =>
-      assert(ts.size === 1)
-      ts.foreach { t =>
-        val r = t.data(i * step)
-        if (i <= 1)
-          assert(r.isNaN)
-        else
-          assert(v === r +- 0.00001)
-      }
+    result.zip(expected).zipWithIndex.foreach {
+      case ((ts, v), i) =>
+        assert(ts.size === 1)
+        ts.foreach { t =>
+          val r = t.data(i * step)
+          if (i <= 1)
+            assert(r.isNaN)
+          else
+            assert(v === r +- 0.00001)
+        }
     }
   }
 
@@ -121,15 +139,16 @@ class DesSuite extends FunSuite {
     val result = eval(sdes, unalignedStream)
     //println(expected.mkString(", "))
     //println(result.map { case v => v(0).data.asInstanceOf[ArrayTimeSeq].data(0) }.mkString(", "))
-    result.zip(expected).zipWithIndex.foreach { case ((ts, v), i) =>
-      assert(ts.size === 1)
-      ts.foreach { t =>
-        val r = t.data((i + 1) * step) // offset step by our skipped data
-        if (i <= 2)
-          assert(r.isNaN)
-        else
-          assert(v === r +- 0.00001)
-      }
+    result.zip(expected).zipWithIndex.foreach {
+      case ((ts, v), i) =>
+        assert(ts.size === 1)
+        ts.foreach { t =>
+          val r = t.data((i + 1) * step) // offset step by our skipped data
+          if (i <= 2)
+            assert(r.isNaN)
+          else
+            assert(v === r +- 0.00001)
+        }
     }
   }
 }

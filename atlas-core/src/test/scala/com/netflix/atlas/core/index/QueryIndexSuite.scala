@@ -135,12 +135,12 @@ class QueryIndexSuite extends FunSuite {
     assert(!index.matches(Map("a" -> "1")))
 
     // matches
-    assert(index.matches(Map("name" -> "cpuUsage", "nf.node" -> "unknown")))
-    assert(index.matches(Map("name" -> "cpuUsage", "nf.node" -> "i-00099")))
+    assert(index.matches(Map("name" -> "cpuUsage", "nf.node"  -> "unknown")))
+    assert(index.matches(Map("name" -> "cpuUsage", "nf.node"  -> "i-00099")))
     assert(index.matches(Map("name" -> "diskUsage", "nf.node" -> "i-00099")))
 
     // shouldn't match
-    assert(!index.matches(Map("name" -> "diskUsage", "nf.node" -> "unknown")))
+    assert(!index.matches(Map("name" -> "diskUsage", "nf.node"   -> "unknown")))
     assert(!index.matches(Map("name" -> "memoryUsage", "nf.node" -> "i-00099")))
   }
 
@@ -162,10 +162,21 @@ class QueryIndexSuite extends FunSuite {
     assert(index.matchingEntries(Map("a" -> "1")).isEmpty)
 
     // matchingEntries
-    assert(index.matchingEntries(Map("name" -> "cpuUsage", "nf.node" -> "unknown")) === List(cpuUsage))
-    assert(index.matchingEntries(Map("name" -> "cpuUsage", "nf.node" -> "i-00099")) === List(cpuUsage))
-    assert(index.matchingEntries(Map("name" -> "diskUsage", "nf.node" -> "i-00099")) === List(diskUsagePerNode.last, diskUsage))
-    assert(index.matchingEntries(Map("name" -> "diskUsage", "nf.node" -> "unknown")) === List(diskUsage))
+    assert(
+      index.matchingEntries(Map("name" -> "cpuUsage", "nf.node" -> "unknown")) === List(cpuUsage)
+    )
+    assert(
+      index.matchingEntries(Map("name" -> "cpuUsage", "nf.node" -> "i-00099")) === List(cpuUsage)
+    )
+    assert(
+      index.matchingEntries(Map("name" -> "diskUsage", "nf.node" -> "i-00099")) === List(
+        diskUsagePerNode.last,
+        diskUsage
+      )
+    )
+    assert(
+      index.matchingEntries(Map("name" -> "diskUsage", "nf.node" -> "unknown")) === List(diskUsage)
+    )
 
     // shouldn't match
     assert(index.matchingEntries(Map("name" -> "memoryUsage", "nf.node" -> "i-00099")).isEmpty)
@@ -175,12 +186,14 @@ class QueryIndexSuite extends FunSuite {
     val expr1 = DataExpr.Sum(Query.Equal("name", "cpuUsage"))
     val expr2 = MathExpr.Divide(expr1, DataExpr.Sum(Query.Equal("name", "numCores")))
     val entries = List(expr1, expr2).flatMap { expr =>
-      expr.dataExprs.map { d => QueryIndex.Entry(d.query, expr) }
+      expr.dataExprs.map { d =>
+        QueryIndex.Entry(d.query, expr)
+      }
     }
     val index = QueryIndex.create(entries)
 
     assert(Set(expr1, expr2) === index.matchingEntries(Map("name" -> "cpuUsage")).toSet)
-    assert(Set(expr2) === index.matchingEntries(Map("name" -> "numCores")).toSet)
+    assert(Set(expr2) === index.matchingEntries(Map("name"        -> "numCores")).toSet)
   }
 
   test("queries for both nf.app and nf.cluster") {
@@ -195,7 +208,8 @@ class QueryIndexSuite extends FunSuite {
   }
 
   test("queries for both nf.app w/ nf.cluster miss and nf.cluster") {
-    val appQuery = Query.And(Query.Equal("nf.app", "testapp"), Query.Equal("nf.cluster", "testapp-miss"))
+    val appQuery =
+      Query.And(Query.Equal("nf.app", "testapp"), Query.Equal("nf.cluster", "testapp-miss"))
     val clusterQuery = Query.Equal("nf.cluster", "testapp-test")
     val queries = List(appQuery, clusterQuery)
     val index = QueryIndex(queries)
@@ -259,8 +273,10 @@ class QueryIndexSuite extends FunSuite {
       Streams.lines(in).toList.flatMap { u =>
         val uri = URI.create(u.replace("|", "%7C").replace("^", "%5E"))
         val qstring = uri.getRawQuery
-        if (qstring == null) Nil else {
-          qstring.split("&")
+        if (qstring == null) Nil
+        else {
+          qstring
+            .split("&")
             .filter(_.startsWith("q="))
             .map(s => parse(interner, s.substring(2)))
         }

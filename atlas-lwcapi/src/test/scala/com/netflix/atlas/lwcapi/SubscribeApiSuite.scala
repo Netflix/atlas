@@ -116,6 +116,7 @@ object SubscribeApiSuite {
   @volatile var lastKind: Symbol = 'none
 
   class TestActor extends Actor {
+
     def receive = {
       case rc @ ImperativeRequestContext(SubscribeRequest(sourceId, Nil), _) =>
         lastUpdate = Nil

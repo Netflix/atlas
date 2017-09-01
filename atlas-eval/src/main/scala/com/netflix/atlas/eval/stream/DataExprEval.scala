@@ -40,12 +40,13 @@ import com.netflix.atlas.eval.model.TimeSeriesMessage
   *     Step size for the input data.
   */
 class DataExprEval(expr: StyleExpr, step: Long)
-  extends GraphStage[FlowShape[TimeGroup[AggrDatapoint], List[TimeSeriesMessage]]] {
+    extends GraphStage[FlowShape[TimeGroup[AggrDatapoint], List[TimeSeriesMessage]]] {
 
   private val in = Inlet[TimeGroup[AggrDatapoint]]("DataExprEval.in")
   private val out = Outlet[List[TimeSeriesMessage]]("DataExprEval.out")
 
-  override val shape: FlowShape[TimeGroup[AggrDatapoint], List[TimeSeriesMessage]] = FlowShape(in, out)
+  override val shape: FlowShape[TimeGroup[AggrDatapoint], List[TimeSeriesMessage]] =
+    FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -53,8 +54,9 @@ class DataExprEval(expr: StyleExpr, step: Long)
 
       override def onPush(): Unit = {
         val group = grab(in)
-        val data = group.values.groupBy(_.expr).map { case (k, vs) =>
-          k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries(step))
+        val data = group.values.groupBy(_.expr).map {
+          case (k, vs) =>
+            k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries(step))
         }
         val s = group.timestamp
         val context = EvalContext(s, s + step, step, state)

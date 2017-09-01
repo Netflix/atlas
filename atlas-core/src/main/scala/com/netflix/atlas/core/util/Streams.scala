@@ -22,7 +22,6 @@ import java.util.zip._
 
 import scala.util.control.Exception
 
-
 object Streams {
 
   def resource(name: String): InputStream = {
@@ -100,7 +99,8 @@ object Streams {
 
   def scope[R <: Closeable, T](res: R)(f: R => T): T = {
     var thrown = false
-    try f(res) catch {
+    try f(res)
+    catch {
       case t: Throwable =>
         thrown = true
         throw t
@@ -109,4 +109,3 @@ object Streams {
     }
   }
 }
-

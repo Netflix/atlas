@@ -38,7 +38,8 @@ import com.typesafe.scalalogging.StrictLogging
   * collected.
   */
 class PollerManager(registry: Registry, classFactory: ClassFactory, config: Config)
-  extends Actor with StrictLogging {
+    extends Actor
+    with StrictLogging {
 
   import scala.concurrent.duration._
   private implicit val xc = scala.concurrent.ExecutionContext.global
@@ -58,12 +59,15 @@ class PollerManager(registry: Registry, classFactory: ClassFactory, config: Conf
 
   val frequency = FiniteDuration(
     config.getDuration("atlas.poller.frequency", TimeUnit.NANOSECONDS),
-    TimeUnit.NANOSECONDS)
+    TimeUnit.NANOSECONDS
+  )
   context.system.scheduler.schedule(frequency, frequency, self, Messages.Tick)
 
   def receive: Receive = {
     case Messages.Tick =>
-      pollers.foreach { p => context.actorSelection(p.name) ! Messages.Tick }
+      pollers.foreach { p =>
+        context.actorSelection(p.name) ! Messages.Tick
+      }
     case p @ Messages.MetricsPayload(_, ds) =>
       val name = sender().path.name
       registry.counter("atlas.poller.datapoints", "id", name).increment(ds.size)
@@ -88,7 +92,8 @@ class PollerManager(registry: Registry, classFactory: ClassFactory, config: Conf
     val overrides = Map[Type, AnyRef](classOf[Config] -> cfg).withDefaultValue(null)
     context.actorOf(
       Props(classFactory.newInstance[Actor](cls, overrides.asJava)),
-      PollerManager.SinkName)
+      PollerManager.SinkName
+    )
   }
 
   private def logRestart(path: ActorPath, e: Exception): Unit = {

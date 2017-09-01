@@ -19,7 +19,6 @@ import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
 
-
 class PublishApiJsonSuite extends FunSuite {
 
   test("encode and decode datapoint") {
@@ -42,8 +41,8 @@ class PublishApiJsonSuite extends FunSuite {
 
   test("decode with legacy array value") {
     val expected = Datapoint(Map("name" -> "foo"), 42L, 1024.0)
-    val decoded = PublishApi.decodeDatapoint(
-      """{"tags":{"name":"foo"},"timestamp":42,"values":[1024.0]}""")
+    val decoded =
+      PublishApi.decodeDatapoint("""{"tags":{"name":"foo"},"timestamp":42,"values":[1024.0]}""")
     assert(expected === decoded)
   }
 

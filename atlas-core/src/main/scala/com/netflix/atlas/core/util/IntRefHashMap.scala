@@ -27,7 +27,7 @@ import scala.util.hashing.MurmurHash3
   *     Initial capacity guideline. The actual size of the underlying buffer
   *     will be the next prime >= `capacity`. Default is 10.
   */
-class IntRefHashMap[T <: AnyRef : Manifest](noData: Int, capacity: Int = 10) {
+class IntRefHashMap[T <: AnyRef: Manifest](noData: Int, capacity: Int = 10) {
 
   private[this] var keys = newArray(capacity)
   private[this] var values = ArrayHelper.newInstance[T](keys.length)
@@ -130,7 +130,9 @@ class IntRefHashMap[T <: AnyRef : Manifest](noData: Int, capacity: Int = 10) {
   /** Converts this set to a Map[Int, Int]. Used mostly for debugging and tests. */
   def toMap: Map[Int, T] = {
     val builder = Map.newBuilder[Int, T]
-    foreach { (k, v) => builder += k -> v }
+    foreach { (k, v) =>
+      builder += k -> v
+    }
     builder.result()
   }
 }

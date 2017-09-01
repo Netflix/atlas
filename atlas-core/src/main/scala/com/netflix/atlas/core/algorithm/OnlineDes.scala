@@ -16,15 +16,15 @@
 package com.netflix.atlas.core.algorithm
 
 /**
- * Helper to compute DES value iteratively for a set of numbers.
- *
- * @param training
- *     Number of samples to record before emitting predicted values.
- * @param alpha
- *     Data smoothing factor.
- * @param beta
- *     Trend smoothing factor.
- */
+  * Helper to compute DES value iteratively for a set of numbers.
+  *
+  * @param training
+  *     Number of samples to record before emitting predicted values.
+  * @param alpha
+  *     Data smoothing factor.
+  * @param beta
+  *     Trend smoothing factor.
+  */
 class OnlineDes(training: Int, alpha: Double, beta: Double) {
   import OnlineDes._
 
@@ -58,9 +58,17 @@ class OnlineDes(training: Int, alpha: Double, beta: Double) {
 }
 
 object OnlineDes {
-  case class State(training: Int, alpha: Double, beta: Double, currentSample: Int, sp: Double, bp: Double)
 
-  def apply(state: State) : OnlineDes = {
+  case class State(
+    training: Int,
+    alpha: Double,
+    beta: Double,
+    currentSample: Int,
+    sp: Double,
+    bp: Double
+  )
+
+  def apply(state: State): OnlineDes = {
     val des = new OnlineDes(state.training, state.alpha, state.beta)
     des.currentSample = state.currentSample
     des.sp = state.sp
@@ -68,5 +76,6 @@ object OnlineDes {
     des
   }
 
-  def apply(training: Int, alpha: Double, beta: Double): OnlineDes = new OnlineDes(training, alpha, beta)
+  def apply(training: Int, alpha: Double, beta: Double): OnlineDes =
+    new OnlineDes(training, alpha, beta)
 }

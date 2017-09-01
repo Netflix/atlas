@@ -27,6 +27,7 @@ class WebApiModuleSuite extends FunSuite {
 
   test("load module") {
     val deps = new AbstractModule {
+
       override def configure(): Unit = {
         bind(classOf[Config]).toInstance(ConfigFactory.load())
       }

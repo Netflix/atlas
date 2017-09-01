@@ -19,7 +19,9 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 sealed trait StringMatcher {
+
   def prefix: Option[String]
+
   def matches(v: String): Boolean
 }
 
@@ -47,17 +49,17 @@ object StringMatcher {
 
   def compile(pattern: String, caseSensitive: Boolean = true): StringMatcher = {
     pattern match {
-      case EqualsPattern(p)     if  caseSensitive => Equals(p)
-      case EqualsPattern(p)     if !caseSensitive => EqualsIgnoreCase(p)
-      case StartsWithPattern(p) if  caseSensitive => StartsWith(p)
+      case EqualsPattern(p) if caseSensitive      => Equals(p)
+      case EqualsPattern(p) if !caseSensitive     => EqualsIgnoreCase(p)
+      case StartsWithPattern(p) if caseSensitive  => StartsWith(p)
       case StartsWithPattern(p) if !caseSensitive => default(pattern, caseSensitive)
-      case IndexOfPattern(s)    if  caseSensitive => IndexOf(s)
-      case IndexOfPattern(s)    if !caseSensitive => IndexOfIgnoreCase(s)
+      case IndexOfPattern(s) if caseSensitive     => IndexOf(s)
+      case IndexOfPattern(s) if !caseSensitive    => IndexOfIgnoreCase(s)
       case AllPattern(_)                          => All
-      case AnchoredOrPattern(s) if  caseSensitive => compileOr(s, v => s"^$v$$")
-      case StartOrPattern(s)    if  caseSensitive => compileOr(s, v => s"^$v")
-      case FloatingOrPattern(s) if  caseSensitive => compileOr(s, v => s"$v")
-      case PrefixPattern(p)     if  caseSensitive => Regex(Some(p), Pattern.compile(pattern))
+      case AnchoredOrPattern(s) if caseSensitive  => compileOr(s, v => s"^$v$$")
+      case StartOrPattern(s) if caseSensitive     => compileOr(s, v => s"^$v")
+      case FloatingOrPattern(s) if caseSensitive  => compileOr(s, v => s"$v")
+      case PrefixPattern(p) if caseSensitive      => Regex(Some(p), Pattern.compile(pattern))
       case _                                      => default(pattern, caseSensitive)
     }
   }
@@ -74,13 +76,16 @@ object StringMatcher {
   /** Match all strings. */
   case object All extends StringMatcher {
     val prefix: Option[String] = None
+
     def matches(v: String): Boolean = true
   }
 
   case class Regex(prefix: Option[String], pattern: Pattern) extends StringMatcher {
+
     // Reuse matcher to reduce allocations, keep in thread local in-case this Regex instance is
     // shared across multiple threads.
     private val matcher = new ThreadLocal[Matcher] {
+
       override protected def initialValue: Matcher = pattern.matcher("")
     }
 
@@ -101,26 +106,31 @@ object StringMatcher {
 
   case class StartsWith(p: String) extends StringMatcher {
     val prefix: Option[String] = Some(p)
+
     def matches(v: String): Boolean = v.startsWith(p)
   }
 
   case class Equals(p: String) extends StringMatcher {
     val prefix: Option[String] = Some(p)
+
     def matches(v: String): Boolean = p == v
   }
 
   case class EqualsIgnoreCase(p: String) extends StringMatcher {
     val prefix: Option[String] = None
+
     def matches(v: String): Boolean = p.equalsIgnoreCase(v)
   }
 
   case class IndexOf(substr: String) extends StringMatcher {
     val prefix: Option[String] = None
+
     def matches(v: String): Boolean = v.indexOf(substr) != -1
   }
 
   case class IndexOfIgnoreCase(substr: String) extends StringMatcher {
     val prefix: Option[String] = None
+
     def matches(v: String): Boolean = {
       val end = (v.length - substr.length) + 1
       var i = 0
@@ -134,8 +144,7 @@ object StringMatcher {
 
   case class Or(matchers: List[StringMatcher]) extends StringMatcher {
     val prefix: Option[String] = None
+
     def matches(v: String): Boolean = matchers.exists(_.matches(v))
   }
 }
-
-

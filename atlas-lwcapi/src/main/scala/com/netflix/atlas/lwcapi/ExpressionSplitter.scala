@@ -65,7 +65,7 @@ class ExpressionSplitter {
     val context = interpreter.execute(expression)
     val dataExprs = context.stack.flatMap {
       case ModelExtractors.PresentationType(t) => t.expr.dataExprs
-      case _ => throw new IllegalArgumentException("expression is invalid")
+      case _                                   => throw new IllegalArgumentException("expression is invalid")
     }
     dataExprs.distinct.map { e =>
       val q = intern(compress(e.dataExprs.head.query))

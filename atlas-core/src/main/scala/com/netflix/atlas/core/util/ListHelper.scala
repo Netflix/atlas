@@ -19,6 +19,7 @@ package com.netflix.atlas.core.util
   * Helper functions for working with lists.
   */
 object ListHelper {
+
   /**
     * Merge and dedup two sorted lists up to the specified limit. The input lists must already
     * be sorted and should not contain duplicate values.
@@ -37,7 +38,13 @@ object ListHelper {
   }
 
   @scala.annotation.tailrec
-  private def merge[T <: Comparable[T]](limit: Int, size: Int, acc: List[T], v1: List[T], v2: List[T]): List[T] = {
+  private def merge[T <: Comparable[T]](
+    limit: Int,
+    size: Int,
+    acc: List[T],
+    v1: List[T],
+    v2: List[T]
+  ): List[T] = {
     if (size == limit)
       acc.reverse
     else if (v1.isEmpty)
@@ -67,6 +74,8 @@ object ListHelper {
     *     Sorted list with a max size of `limit`.
     */
   def merge[T <: Comparable[T]](limit: Int, vs: List[List[T]]): List[T] = {
-    vs.foldLeft(List.empty[T]) { (v1, v2) => merge(limit, v1, v2) }
+    vs.foldLeft(List.empty[T]) { (v1, v2) =>
+      merge(limit, v1, v2)
+    }
   }
 }

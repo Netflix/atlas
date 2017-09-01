@@ -18,7 +18,6 @@ package com.netflix.atlas.core.index
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
 
-
 trait TagIndex[T <: TaggedItem] {
 
   def findTags(query: TagQuery): List[Tag]
@@ -33,7 +32,7 @@ trait TagIndex[T <: TaggedItem] {
 }
 
 trait MutableTagIndex[T <: TaggedItem] extends TagIndex[T] {
+
   /** Update the index with the given items. */
   def update(items: List[T])
 }
-

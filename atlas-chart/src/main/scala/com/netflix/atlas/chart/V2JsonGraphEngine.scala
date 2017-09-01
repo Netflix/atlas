@@ -41,7 +41,9 @@ import com.netflix.atlas.chart.model.GraphDef
   * - Consistent where possible to the SSE payloads from the fetch API.
   */
 class V2JsonGraphEngine extends GraphEngine {
+
   override def name: String = "v2.json"
+
   override def contentType: String = "application/json"
 
   override def write(config: GraphDef, output: OutputStream): Unit = {

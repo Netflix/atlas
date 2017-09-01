@@ -26,19 +26,19 @@ import com.netflix.spectator.api.Spectator
 
 import scala.reflect.ClassTag
 
-
 object BatchUpdateTagIndex {
+
   def newRoaringIndex[T <: TaggedItem: ClassTag]: BatchUpdateTagIndex[T] = {
     new BatchUpdateTagIndex[T](items => new CachingTagIndex(new RoaringTagIndex(items)))
   }
 }
 
 /**
- * Mutable tag index that batches updates and atomically swaps in a new index in the background at
- * a configured interval.
- *
- * @param newIndex  function to create a new index from the set of items
- */
+  * Mutable tag index that batches updates and atomically swaps in a new index in the background at
+  * a configured interval.
+  *
+  * @param newIndex  function to create a new index from the set of items
+  */
 class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => TagIndex[T])
     extends MutableTagIndex[T] {
 
@@ -63,9 +63,9 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => Tag
   def numPending: Int = pendingUpdates.size
 
   /**
-   * Rebuild the index to include all of the pending updates that have accumulated. Any expired
-   * items will also be removed.
-   */
+    * Rebuild the index to include all of the pending updates that have accumulated. Any expired
+    * items will also be removed.
+    */
   def rebuildIndex(): Unit = {
     val timerId = rebuildTimer.start()
     try {
@@ -77,11 +77,15 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => Tag
       val updates = new java.util.ArrayList[T](size)
       pendingUpdates.drainTo(updates, size)
       val items = new java.util.HashMap[ItemId, T]
-      updates.forEach { i => items.put(i.id, i) }
+      updates.forEach { i =>
+        items.put(i.id, i)
+      }
 
       // Get set of all items in the current index that are not expired
       val matches = currentIndex.get.findItems(TagQuery(None)).filter(!_.isExpired)
-      matches.foreach { i => items.put(i.id, i) }
+      matches.foreach { i =>
+        items.put(i.id, i)
+      }
 
       // Create array of items and build the index
       rebuildIndex(items.values.asScala.toList)
@@ -113,4 +117,3 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => Tag
 
   def size: Int = currentIndex.get.size
 }
-

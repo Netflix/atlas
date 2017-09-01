@@ -18,20 +18,21 @@ package com.netflix.atlas.chart.graphics
 import java.awt.Graphics2D
 
 /**
- * Draws horizontal grid lines based on a value axis.
- *
- * @param yaxis
- *     Axis to use for creating the scale and determining the the tick marks that correspond with
- *     the major grid lines.
- * @param major
- *     Style to use for drawing the major tick lines.
- * @param minor
- *     Style to use for drawing the minor tick lines.
- */
+  * Draws horizontal grid lines based on a value axis.
+  *
+  * @param yaxis
+  *     Axis to use for creating the scale and determining the the tick marks that correspond with
+  *     the major grid lines.
+  * @param major
+  *     Style to use for drawing the major tick lines.
+  * @param minor
+  *     Style to use for drawing the minor tick lines.
+  */
 case class ValueGrid(
-    yaxis: ValueAxis,
-    major: Style = Constants.majorGridStyle,
-    minor: Style = Constants.minorGridStyle) extends Element {
+  yaxis: ValueAxis,
+  major: Style = Constants.majorGridStyle,
+  minor: Style = Constants.minorGridStyle
+) extends Element {
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     val yscale = yaxis.scale(y1, y2)
@@ -46,5 +47,3 @@ case class ValueGrid(
     }
   }
 }
-
-

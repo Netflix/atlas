@@ -26,18 +26,19 @@ object CollectorStats {
 }
 
 /**
- * Summary stats for how much data was processed by a collector.
- *
- * @param inputLines        number of lines in the input to the collector
- * @param inputDatapoints   number of datapoints in the input to the collector
- * @param outputLines       number of lines in the result output
- * @param outputDatapoints  number of datapoints in the result output
- */
+  * Summary stats for how much data was processed by a collector.
+  *
+  * @param inputLines        number of lines in the input to the collector
+  * @param inputDatapoints   number of datapoints in the input to the collector
+  * @param outputLines       number of lines in the result output
+  * @param outputDatapoints  number of datapoints in the result output
+  */
 case class CollectorStats(
   inputLines: Long,
   inputDatapoints: Long,
   outputLines: Long,
-  outputDatapoints: Long)
+  outputDatapoints: Long
+)
 
 /** Helper for accumulating stats for a collector. */
 class CollectorStatsBuilder {

@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.db
 
-
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.CollectorStatsBuilder
@@ -24,6 +23,7 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.util.Math
 
 object AggregateCollector {
+
   def apply(expr: DataExpr): AggregateCollector = expr match {
     case by: DataExpr.GroupBy          => new GroupByAggregateCollector(by)
     case _: DataExpr.All               => new AllAggregateCollector
@@ -36,23 +36,25 @@ object AggregateCollector {
 }
 
 /**
- * Collector for computing an aggregate or set of aggregates from a set of metric buffers.
- */
+  * Collector for computing an aggregate or set of aggregates from a set of metric buffers.
+  */
 trait AggregateCollector {
+
   /** Add `b` to the aggregate. */
   def add(b: TimeSeriesBuffer)
 
   /**
-   * Add a block to the aggregate directly. The underlying buffer must be using the same step size
-   * as the block storage.
-   */
+    * Add a block to the aggregate directly. The underlying buffer must be using the same step size
+    * as the block storage.
+    */
   def add(
     tags: Map[String, String],
     blocks: List[Block],
     aggr: Int,
     cf: ConsolidationFunction,
     multiple: Int,
-    newBuffer: Map[String, String] => TimeSeriesBuffer): Int
+    newBuffer: Map[String, String] => TimeSeriesBuffer
+  ): Int
 
   /** Returns the final set of aggregate buffers. */
   def result: List[TimeSeriesBuffer]
@@ -92,12 +94,13 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
   }
 
   def add(
-      tags: Map[String, String],
-      blocks: List[Block],
-      aggr: Int,
-      cf: ConsolidationFunction,
-      multiple: Int,
-      newBuffer: Map[String, String] => TimeSeriesBuffer): Int = {
+    tags: Map[String, String],
+    blocks: List[Block],
+    aggr: Int,
+    cf: ConsolidationFunction,
+    multiple: Int,
+    newBuffer: Map[String, String] => TimeSeriesBuffer
+  ): Int = {
     if (buffer == null) {
       buffer = newBuffer(tags)
       statBuffer.updateOutput(buffer.values.length)
@@ -141,20 +144,24 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
 
 /** Collector that returns a single buffer representing the sum of all individual buffers. */
 class SumAggregateCollector extends SimpleAggregateCollector {
+
   protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer) = b1.add(b2)
 }
 
 /** Collector that returns a single buffer representing the min of all individual buffers. */
 class MinAggregateCollector extends SimpleAggregateCollector {
+
   protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer) = b1.min(b2)
 }
 
 /** Collector that returns a single buffer representing the max of all individual buffers. */
 class MaxAggregateCollector extends SimpleAggregateCollector {
+
   protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer) = b1.max(b2)
 }
 
 abstract class LimitedAggregateCollector extends AggregateCollector {
+
   protected def checkLimits(numLines: Int, numDatapoints: Int): Unit = {
     check("lines", numLines, Limits.maxLines)
     check("datapoints", numDatapoints, Limits.maxDatapoints)
@@ -172,6 +179,7 @@ class GroupByAggregateCollector(ft: DataExpr.GroupBy) extends LimitedAggregateCo
   private var bufferSize = -1
 
   def add(b: TimeSeriesBuffer): Unit = {
+
     // Create key and exit early on failure
     val k = ft.keyString(b.tags)
     if (k == null) return
@@ -187,12 +195,14 @@ class GroupByAggregateCollector(ft: DataExpr.GroupBy) extends LimitedAggregateCo
   }
 
   def add(
-      tags: Map[String, String],
-      blocks: List[Block],
-      aggr: Int,
-      cf: ConsolidationFunction,
-      multiple: Int,
-      newBuffer: Map[String, String] => TimeSeriesBuffer): Int = {
+    tags: Map[String, String],
+    blocks: List[Block],
+    aggr: Int,
+    cf: ConsolidationFunction,
+    multiple: Int,
+    newBuffer: Map[String, String] => TimeSeriesBuffer
+  ): Int = {
+
     // Create key and exit early on failure
     val k = ft.keyString(tags)
     if (k == null) return 0
@@ -233,12 +243,13 @@ class AllAggregateCollector extends LimitedAggregateCollector {
   }
 
   def add(
-      tags: Map[String, String],
-      blocks: List[Block],
-      aggr: Int,
-      cf: ConsolidationFunction,
-      multiple: Int,
-      newBuffer: Map[String, String] => TimeSeriesBuffer): Int = {
+    tags: Map[String, String],
+    blocks: List[Block],
+    aggr: Int,
+    cf: ConsolidationFunction,
+    multiple: Int,
+    newBuffer: Map[String, String] => TimeSeriesBuffer
+  ): Int = {
     var valueCount = 0
     val buffer = newBuffer(tags)
 

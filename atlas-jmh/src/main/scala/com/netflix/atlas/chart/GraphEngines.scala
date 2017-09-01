@@ -67,15 +67,18 @@ class GraphEngines {
   @Threads(1)
   @Benchmark
   def json(bh: Blackhole): Unit = {
-    val bytes = Streams.byteArray { out => json.write(graphDef, out) }
+    val bytes = Streams.byteArray { out =>
+      json.write(graphDef, out)
+    }
     bh.consume(bytes)
   }
 
   @Threads(1)
   @Benchmark
   def v2json(bh: Blackhole): Unit = {
-    val bytes = Streams.byteArray { out => v2json.write(graphDef, out) }
+    val bytes = Streams.byteArray { out =>
+      v2json.write(graphDef, out)
+    }
     bh.consume(bytes)
   }
 }
-

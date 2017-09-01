@@ -59,4 +59,3 @@ class StyleVocabularySuite extends FunSuite {
     assert(expr === expected)
   }
 }
-

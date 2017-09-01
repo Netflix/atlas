@@ -21,7 +21,6 @@ import org.scalatest.FunSuite
 
 import scala.util.Random
 
-
 class IntRefHashMapSuite extends FunSuite {
 
   test("put") {

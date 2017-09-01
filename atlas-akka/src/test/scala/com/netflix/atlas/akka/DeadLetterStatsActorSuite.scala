@@ -30,8 +30,8 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuiteLike
 
-
-class DeadLetterStatsActorSuite extends TestKit(ActorSystem())
+class DeadLetterStatsActorSuite
+    extends TestKit(ActorSystem())
     with ImplicitSender
     with FunSuiteLike
     with BeforeAndAfterAll {
@@ -39,7 +39,8 @@ class DeadLetterStatsActorSuite extends TestKit(ActorSystem())
   private val config = ConfigFactory.parseString(
     """
       |atlas.akka.path-pattern = "^akka://(?:[^/]+)/(?:system|user)/([^/]+)(?:/.*)?$"
-    """.stripMargin)
+    """.stripMargin
+  )
 
   private val registry = new DefaultRegistry()
   private val ref = TestActorRef(new DeadLetterStatsActor(registry, config))
@@ -49,6 +50,7 @@ class DeadLetterStatsActorSuite extends TestKit(ActorSystem())
 
   private def newRef(name: String): ActorRef = {
     val r = system.actorOf(Props(new Actor {
+
       override def receive: Receive = {
         case _ =>
       }
@@ -62,7 +64,8 @@ class DeadLetterStatsActorSuite extends TestKit(ActorSystem())
   }
 
   test("DeadLetter") {
-    val id = registry.createId("akka.deadLetters")
+    val id = registry
+      .createId("akka.deadLetters")
       .withTag("class", "DeadLetter")
       .withTag("sender", "from")
       .withTag("recipient", "to")
@@ -73,7 +76,8 @@ class DeadLetterStatsActorSuite extends TestKit(ActorSystem())
   }
 
   test("SuppressedDeadLetter") {
-    val id = registry.createId("akka.deadLetters")
+    val id = registry
+      .createId("akka.deadLetters")
       .withTag("class", "SuppressedDeadLetter")
       .withTag("sender", "from")
       .withTag("recipient", "to")

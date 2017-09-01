@@ -19,12 +19,12 @@ import com.netflix.atlas.core.util.SmallHashMap
 import com.typesafe.config.Config
 
 /**
- * Verifies that the tags contain a specified key. Sample config:
- *
- * ```
- * key = name
- * ```
- */
+  * Verifies that the tags contain a specified key. Sample config:
+  *
+  * ```
+  * key = name
+  * ```
+  */
 class HasKeyRule(config: Config) extends Rule {
   private val key = config.getString("key")
 
@@ -32,4 +32,3 @@ class HasKeyRule(config: Config) extends Rule {
     if (tags.contains(key)) ValidationResult.Pass else failure(s"missing '$key': ${tags.keys}")
   }
 }
-

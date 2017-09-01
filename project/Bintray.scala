@@ -12,7 +12,6 @@ object Bintray {
     if (isPullRequest) s"dummy$k" else sys.env.getOrElse(s"bintray$k", s"missing$k")
   }
 
-
   lazy val user = get("User")
   lazy val pass = get("Key")
 
@@ -23,15 +22,13 @@ object Bintray {
     bintrayReleaseOnPublish := false,
     licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     credentials += Credentials("Artifactory Realm", "oss.jfrog.org", user, pass),
-
     publishTo := {
       val defaultDestination = (publishTo in bintray value)
       if (isSnapshot.value)
-        Some("OJO" at s"https://oss.jfrog.org/oss-snapshot-local;build.timestamp=$now/")
+        Some("OJO".at(s"https://oss.jfrog.org/oss-snapshot-local;build.timestamp=$now/"))
       else
         defaultDestination
     },
-
     pomExtra :=
       <url>https://github.com/netflix/atlas/wiki</url>
       <developers>

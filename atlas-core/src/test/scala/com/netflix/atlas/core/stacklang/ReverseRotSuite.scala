@@ -22,8 +22,8 @@ class ReverseRotSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.ReverseRot
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a" -> List("a"),
-    "a,b" -> List("a", "b"),
+    "a"         -> List("a"),
+    "a,b"       -> List("a", "b"),
     "a,b,c,d,e" -> List("d", "c", "b", "a", "e")
   )
 

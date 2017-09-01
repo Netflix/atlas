@@ -140,7 +140,9 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
   /** Converts this set to a Map[Int, Int]. Used mostly for debugging and tests. */
   def toMap: Map[Int, Int] = {
     val builder = Map.newBuilder[Int, Int]
-    foreach { (k, v) => builder += k -> v }
+    foreach { (k, v) =>
+      builder += k -> v
+    }
     builder.result()
   }
 }

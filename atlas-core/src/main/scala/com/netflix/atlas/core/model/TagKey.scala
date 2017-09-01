@@ -22,21 +22,21 @@ object TagKey {
   private final val netflixPrefix = "nf."
 
   /**
-   * Synthetic tag that is created for lines in a graph to indicate all key/value pairs for
-   * a particular line on the graph.
-   */
+    * Synthetic tag that is created for lines in a graph to indicate all key/value pairs for
+    * a particular line on the graph.
+    */
   final val allTags = atlasPrefix + "allTags"
 
   /**
-   * Synthetic tag that is created for lines in a graph to indicate the unique key/value pairs for
-   * an aggregate line.
-   */
+    * Synthetic tag that is created for lines in a graph to indicate the unique key/value pairs for
+    * an aggregate line.
+    */
   final val uniqueTags = atlasPrefix + "uniqueTags"
 
   /**
-   * Synthetic tag that is created for lines in a graph to indicate the time offset the line is
-   * shifted by.
-   */
+    * Synthetic tag that is created for lines in a graph to indicate the time offset the line is
+    * shifted by.
+    */
   final val offset = atlasPrefix + "offset"
 
   /** Data source type for the metric. */
@@ -94,25 +94,31 @@ object TagKey {
   final val percentile = "percentile"
 
   /** List of atlas tag keys. */
-  val atlas: List[String] = List(
-    allTags, uniqueTags,
-    dsType, legacy, policy, source)
+  val atlas: List[String] = List(allTags, uniqueTags, dsType, legacy, policy, source)
 
   /** List of standard netflix tag keys. */
   val netflix: List[String] = List(
-    application, cluster, autoScalingGroup, node,
-    region, availabilityZone,
-    vmType, image,
-    job, task,
-    country, countryRollup)
+    application,
+    cluster,
+    autoScalingGroup,
+    node,
+    region,
+    availabilityZone,
+    vmType,
+    image,
+    job,
+    task,
+    country,
+    countryRollup
+  )
 
   /** A list of standard tags. */
   val standard: List[String] = atlas ::: netflix
 
   /**
-   * TagKey names with these prefixes are restricted and managed by the system. They should not be
-   * set or used directly by users.
-   */
+    * TagKey names with these prefixes are restricted and managed by the system. They should not be
+    * set or used directly by users.
+    */
   val restrictedPrefixes: List[String] = List(atlasPrefix, netflixPrefix)
 
   private val standardTagKeys = standard.toSet
@@ -124,9 +130,9 @@ object TagKey {
   def isStandard(name: String): Boolean = standardTagKeys.contains(name)
 
   /**
-   * Returns true if the name is valid. A name is invalid if it is a non-standard name using a
-   * restricted prefix.
-   */
+    * Returns true if the name is valid. A name is invalid if it is a non-standard name using a
+    * restricted prefix.
+    */
   def isValid(name: String): Boolean = !isRestricted(name) || isStandard(name)
 
   /** Creates a new tag key object with unknown count. */
@@ -134,13 +140,15 @@ object TagKey {
 }
 
 /**
- * Key name and an associated count.
- *
- * @param name   key for the tag
- * @param count  number of items with this tag key or -1 if unknown
- */
+  * Key name and an associated count.
+  *
+  * @param name   key for the tag
+  * @param count  number of items with this tag key or -1 if unknown
+  */
 case class TagKey(name: String, count: Int) {
+
   def <(t: TagKey): Boolean = compareTo(t) < 0
+
   def >(t: TagKey): Boolean = compareTo(t) > 0
 
   /** Tags are ordered by key, value, and then count. */
@@ -149,4 +157,3 @@ case class TagKey(name: String, count: Int) {
     if (k != 0) k else count - t.count
   }
 }
-

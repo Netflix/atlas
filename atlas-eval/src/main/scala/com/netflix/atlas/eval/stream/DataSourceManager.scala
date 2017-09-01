@@ -37,8 +37,10 @@ import com.typesafe.scalalogging.StrictLogging
   *     Factory method for creating a new evaluation stream based on a data source.
   */
 class DataSourceManager(newEvalSource: Evaluator.DataSource => Source[JsonSupport, NotUsed])
-  extends GraphStage[FlowShape[Evaluator.DataSources, Source[Evaluator.MessageEnvelope, NotUsed]]]
-  with StrictLogging {
+    extends GraphStage[
+      FlowShape[Evaluator.DataSources, Source[Evaluator.MessageEnvelope, NotUsed]]
+    ]
+    with StrictLogging {
 
   import Evaluator._
 
@@ -49,7 +51,8 @@ class DataSourceManager(newEvalSource: Evaluator.DataSource => Source[JsonSuppor
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
-      private val sources = new scala.collection.mutable.AnyRefMap[DataSource, SourceRef[MessageEnvelope, NotUsed]]()
+      private val sources =
+        new scala.collection.mutable.AnyRefMap[DataSource, SourceRef[MessageEnvelope, NotUsed]]()
       private var current = new Evaluator.DataSources(Collections.emptySet())
 
       override def onPush(): Unit = {

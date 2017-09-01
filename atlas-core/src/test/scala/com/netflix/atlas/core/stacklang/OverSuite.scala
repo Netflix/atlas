@@ -22,7 +22,7 @@ class OverSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.Over
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a,b" -> List("a", "b", "a"),
+    "a,b"   -> List("a", "b", "a"),
     "a,b,c" -> List("b", "c", "b", "a")
   )
 

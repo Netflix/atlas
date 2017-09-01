@@ -158,7 +158,9 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
   /** Converts this set to a Map[Long, Int]. Used mostly for debugging and tests. */
   def toMap: Map[Long, Int] = {
     val builder = Map.newBuilder[Long, Int]
-    foreach { (k, v) => builder += k -> v }
+    foreach { (k, v) =>
+      builder += k -> v
+    }
     builder.result()
   }
 }

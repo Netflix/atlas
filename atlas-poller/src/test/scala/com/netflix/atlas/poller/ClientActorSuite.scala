@@ -40,11 +40,11 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-
-class ClientActorSuite extends TestKit(ActorSystem())
-  with ImplicitSender
-  with FunSuiteLike
-  with BeforeAndAfterAll {
+class ClientActorSuite
+    extends TestKit(ActorSystem())
+    with ImplicitSender
+    with FunSuiteLike
+    with BeforeAndAfterAll {
 
   import scala.concurrent.duration._
 
@@ -61,13 +61,20 @@ class ClientActorSuite extends TestKit(ActorSystem())
     expectMsgPF(1.minute) { case Messages.Ack => }
   }
 
-  private def testSend(datapoints: List[Datapoint], numSent: Int, numDropped: Int, batches: Int = 1): Unit = {
+  private def testSend(
+    datapoints: List[Datapoint],
+    numSent: Int,
+    numDropped: Int,
+    batches: Int = 1
+  ): Unit = {
     val sent = registry.counter("atlas.client.sent")
 
     val initSent = sent.count()
 
     ref ! MetricsPayload(metrics = datapoints)
-    (0 until batches).foreach { _ => waitForCompletion() }
+    (0 until batches).foreach { _ =>
+      waitForCompletion()
+    }
 
     assert(sent.count() === initSent + numSent)
   }

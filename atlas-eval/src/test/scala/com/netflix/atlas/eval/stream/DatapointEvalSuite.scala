@@ -56,7 +56,10 @@ class DatapointEvalSuite extends FunSuite {
     }
   }
 
-  private def eval(expr: DataExpr, dataSet: List[TimeGroup[Datapoint]]): List[List[TimeSeriesMessage]] = {
+  private def eval(
+    expr: DataExpr,
+    dataSet: List[TimeGroup[Datapoint]]
+  ): List[List[TimeSeriesMessage]] = {
     val styleExpr = StyleExpr(expr, Map.empty)
     val future = Source(dataSet)
       .via(new DatapointEval(styleExpr, step))
@@ -71,8 +74,9 @@ class DatapointEvalSuite extends FunSuite {
     assert(results.size === 5)
     results.foreach { vs =>
       assert(vs.size === 1)
-      vs.foreach { case TimeSeriesMessage(_, _, _, _, _, _, _, ArrayData(values)) =>
-        assert(values === Array(45.0))
+      vs.foreach {
+        case TimeSeriesMessage(_, _, _, _, _, _, _, ArrayData(values)) =>
+          assert(values === Array(45.0))
       }
     }
   }
@@ -84,8 +88,9 @@ class DatapointEvalSuite extends FunSuite {
     assert(results.size === 5)
     results.foreach { vs =>
       assert(vs.size === 1)
-      vs.foreach { case TimeSeriesMessage(_, _, _, _, _, _, _, ArrayData(values)) =>
-        assert(values === Array(9.0))
+      vs.foreach {
+        case TimeSeriesMessage(_, _, _, _, _, _, _, ArrayData(values)) =>
+          assert(values === Array(9.0))
       }
     }
   }
@@ -97,12 +102,12 @@ class DatapointEvalSuite extends FunSuite {
     assert(results.size === 5)
     results.foreach { vs =>
       assert(vs.size === 10)
-      vs.foreach { case TimeSeriesMessage(_, _, _, _, _, _, tags, ArrayData(values)) =>
-        val v = tags("node").substring(2).toDouble
-        assert(values === Array(v))
+      vs.foreach {
+        case TimeSeriesMessage(_, _, _, _, _, _, tags, ArrayData(values)) =>
+          val v = tags("node").substring(2).toDouble
+          assert(values === Array(v))
       }
     }
   }
 
 }
-

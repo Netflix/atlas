@@ -120,7 +120,9 @@ class LongHashSet(noData: Long, capacity: Int = 10) {
   /** Converts this set to a List[Int]. Used mostly for debugging and tests. */
   def toList: List[Long] = {
     val builder = List.newBuilder[Long]
-    foreach { v => builder += v }
+    foreach { v =>
+      builder += v
+    }
     builder.result()
   }
 }

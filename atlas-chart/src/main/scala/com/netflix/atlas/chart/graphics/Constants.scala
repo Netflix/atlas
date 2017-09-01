@@ -33,10 +33,10 @@ object Constants {
   val backgroundColor = color("background")
 
   /**
-   * For some of the font operations a graphics context is needed. This is a simple dummy instance
-   * that can be used for cases where we need to determine the size before the actual image object
-   * is created.
-   */
+    * For some of the font operations a graphics context is needed. This is a simple dummy instance
+    * that can be used for cases where we need to determine the size before the actual image object
+    * is created.
+    */
   val refImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB)
   val refGraphics = refImage.createGraphics()
 
@@ -48,7 +48,8 @@ object Constants {
       BasicStroke.JOIN_MITER,
       1.0f,
       Array(1.0f, 1.0f),
-      0.0f)
+      0.0f
+    )
   }
 
   val minorGridColor = color("grid-minor")
@@ -66,8 +67,8 @@ object Constants {
   val regularFont = new Font(config.getString("fonts.regular"), Font.PLAIN, 12)
 
   /**
-   * Base monospaced font used for graphics. Monospace is used to make the layout easier.
-   */
+    * Base monospaced font used for graphics. Monospace is used to make the layout easier.
+    */
   val monospaceFont = new Font(config.getString("fonts.monospace"), Font.PLAIN, 12)
 
   /** Small sized monospaced font. */
@@ -89,22 +90,22 @@ object Constants {
   val largeFontDims = dimensions(largeFont)
 
   /**
-   * Minimum width required for text elements. Value was chosen to allow typical messages to
-   * display with a reasonable level of wrapping.
-   */
+    * Minimum width required for text elements. Value was chosen to allow typical messages to
+    * display with a reasonable level of wrapping.
+    */
   val minWidthForText = smallFontDims.width * "Warnings: abcdef".length
 
   /**
-   * Minimum width required for text elements. Value was chosen to allow the typical legend with
-   * stats to show cleanly. It also keeps the cutoff below the level of sizes that are frequently
-   * used in practice.
-   */
+    * Minimum width required for text elements. Value was chosen to allow the typical legend with
+    * stats to show cleanly. It also keeps the cutoff below the level of sizes that are frequently
+    * used in practice.
+    */
   val minWidthForStats = smallFontDims.width * 45
 
   /**
-   * Determine the dimensions for a single character using `font`. It is assumed that the font
-   * is monospaced.
-   */
+    * Determine the dimensions for a single character using `font`. It is assumed that the font
+    * is monospaced.
+    */
   def dimensions(font: Font): Dimensions = {
     refGraphics.setFont(font)
     val m = refGraphics.getFontMetrics

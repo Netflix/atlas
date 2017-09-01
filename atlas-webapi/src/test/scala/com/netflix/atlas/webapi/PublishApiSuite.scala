@@ -27,7 +27,6 @@ import com.netflix.atlas.webapi.PublishApi.FailureMessage
 import com.netflix.atlas.webapi.PublishApi.PublishRequest
 import org.scalatest.FunSuite
 
-
 class PublishApiSuite extends FunSuite with ScalatestRouteTest {
 
   import PublishApiSuite._
@@ -114,7 +113,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
         "metrics": [
           {
             "tags": {"name": "cpuUser"},
-            "timestamp": ${System.currentTimeMillis() /  1000},
+            "timestamp": ${System.currentTimeMillis() / 1000},
             "value": 42.0
           },
           {
@@ -147,7 +146,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
         "metrics": [
           {
             "tags": {"name": "cpuUser", "bad": null},
-            "timestamp": ${System.currentTimeMillis() /  1000},
+            "timestamp": ${System.currentTimeMillis() / 1000},
             "value": 42.0
           }
         ]
@@ -162,7 +161,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
         "metrics": [
           {
             "tags": {"name": "cpuUser", "bad": ""},
-            "timestamp": ${System.currentTimeMillis() /  1000},
+            "timestamp": ${System.currentTimeMillis() / 1000},
             "value": 42.0
           }
         ]
@@ -177,7 +176,7 @@ class PublishApiSuite extends FunSuite with ScalatestRouteTest {
         "metrics": [
           {
             "tags": {"no-name": "cpuUser"},
-            "timestamp": ${System.currentTimeMillis() /  1000},
+            "timestamp": ${System.currentTimeMillis() / 1000},
             "value": 42.0
           }
         ]
@@ -236,6 +235,7 @@ object PublishApiSuite {
   def lastPayload: PublishApi.PublishPayload = PublishApi.PublishPayload(lastId, lastUpdate)
 
   class TestActor extends Actor {
+
     def receive: Receive = {
       case req @ PublishRequest(id, Nil, Nil, _, _) =>
         lastId = id

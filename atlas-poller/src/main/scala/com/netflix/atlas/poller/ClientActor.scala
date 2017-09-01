@@ -62,7 +62,9 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
 
   private val validTagValueChars = {
     import scala.collection.JavaConverters._
-    config.getConfigList("valid-tag-value-characters").asScala
+    config
+      .getConfigList("valid-tag-value-characters")
+      .asScala
       .map { cfg =>
         cfg.getString("key") -> AsciiSet.fromPattern(cfg.getString("value"))
       }
@@ -86,10 +88,11 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
   }
 
   private def fixTags(d: Datapoint): Datapoint = {
-    val tags = d.tags.map { case (k, v) =>
-      val nk = validTagChars.replaceNonMembers(k, '_')
-      val nv = validTagValueChars.getOrElse(nk, validTagChars).replaceNonMembers(v, '_')
-      nk -> nv
+    val tags = d.tags.map {
+      case (k, v) =>
+        val nk = validTagChars.replaceNonMembers(k, '_')
+        val nv = validTagValueChars.getOrElse(nk, validTagChars).replaceNonMembers(v, '_')
+        nk -> nv
     }
     d.copy(tags = tags)
   }
@@ -103,10 +106,12 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
     * easier testing.
     */
   protected def post(data: Array[Byte]): Future[HttpResponse] = {
-    val request = HttpRequest(HttpMethods.POST,
+    val request = HttpRequest(
+      HttpMethods.POST,
       uri = uri,
       headers = ClientActor.headers,
-      entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, data))
+      entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, data)
+    )
     val accessLogger = AccessLogger.newClientLogger("atlas_publish", request)
     Http()(context.system).singleRequest(request).andThen { case t => accessLogger.complete(t) }
   }
@@ -121,7 +126,7 @@ class ClientActor(registry: Registry, config: Config) extends Actor {
       case 400 => // Bad message, all data dropped
         val id = datapointsDropped.withTag("id", "CompleteFailure")
         incrementFailureCount(id, response, size)
-      case v   => // Unexpected, assume all dropped
+      case v => // Unexpected, assume all dropped
         response.discardEntityBytes()
         val id = datapointsDropped.withTag("id", s"Status_$v")
         registry.counter(id).increment(size)

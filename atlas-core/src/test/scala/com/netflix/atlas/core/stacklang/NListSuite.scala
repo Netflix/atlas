@@ -22,7 +22,7 @@ class NListSuite extends BaseWordSuite {
   def word: Word = StandardVocabulary.NList
 
   def shouldMatch: List[(String, List[Any])] = List(
-    "a,0" -> List(Nil, "a"),
+    "a,0"   -> List(Nil, "a"),
     "a,b,1" -> List(List("b"), "a"),
     "a,b,2" -> List(List("a", "b"))
   )

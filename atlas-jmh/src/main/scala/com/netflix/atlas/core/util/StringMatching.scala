@@ -24,13 +24,13 @@ import org.openjdk.jmh.annotations.Threads
 import org.openjdk.jmh.infra.Blackhole
 
 /**
- * There was an old suggestion that max via bit manip would be faster and avoid branch instructions. That
- * doesn't appear to be the case:
- *
- * ```
- * > run -wi 10 -i 10 -f1 -t1 .*StringMatching.*
- * ```
- */
+  * There was an old suggestion that max via bit manip would be faster and avoid branch instructions. That
+  * doesn't appear to be the case:
+  *
+  * ```
+  * > run -wi 10 -i 10 -f1 -t1 .*StringMatching.*
+  * ```
+  */
 @State(Scope.Thread)
 class StringMatching {
 

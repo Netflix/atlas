@@ -39,137 +39,194 @@ object MathVocabulary extends Vocabulary {
     Time,
     CommonQuery,
     NamedRewrite,
-    ClampMin, ClampMax,
-    Abs, Negate, Sqrt, PerStep,
-
-    Add, Subtract, Multiply, Divide,
+    ClampMin,
+    ClampMax,
+    Abs,
+    Negate,
+    Sqrt,
+    PerStep,
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
     GreaterThan,
     GreaterThanEqual,
     LessThan,
     LessThanEqual,
-    FAdd, FSubtract, FMultiply, FDivide,
-
-    And, Or,
-
-    Sum, Count, Min, Max,
-
+    FAdd,
+    FSubtract,
+    FMultiply,
+    FDivide,
+    And,
+    Or,
+    Sum,
+    Count,
+    Min,
+    Max,
     Percentiles,
-
-    Macro("avg", List(
+    Macro(
+      "avg",
+      List(
         ":dup",
-        ":dup", ":sum", ":swap", ":count", ":div",
-        "avg", ":named-rewrite"
+        ":dup",
+        ":sum",
+        ":swap",
+        ":count",
+        ":div",
+        "avg",
+        ":named-rewrite"
       ),
-      List("name,sps,:eq,(,nf.cluster,),:by", "name,sps,:eq,1h,:offset")),
-
-    Macro("stddev", List(
+      List("name,sps,:eq,(,nf.cluster,),:by", "name,sps,:eq,1h,:offset")
+    ),
+    Macro(
+      "stddev",
+      List(
         // Copy of base query
         ":dup",
-
         // If the aggregate function is not explicit, then we need to force
         // the conversion. Using `fadd` avoids conversion of `NaN` values to
         // zero.
-        "0", ":fadd", ":dup",
-
+        "0",
+        ":fadd",
+        ":dup",
         // N
         ":count",
-
         // sum(x^2)
-        ":over", ":dup", ":mul", ":sum",
-
+        ":over",
+        ":dup",
+        ":mul",
+        ":sum",
         // N * sum(x^2)
         ":mul",
-
         // sum(x)
-        ":over", ":sum",
-
+        ":over",
+        ":sum",
         // sum(x)^2
-        ":dup", ":mul",
-
+        ":dup",
+        ":mul",
         // N * sum(x^2) - sum(x)^2
         ":sub",
-
         // N^2
-        ":swap", ":count", ":dup", ":mul",
-
+        ":swap",
+        ":count",
+        ":dup",
+        ":mul",
         // v = (N * sum(x^2) - sum(x)^2) / N^2
         ":div",
-
         // stddev = sqrt(v)
         ":sqrt",
-
         // Avoid expansion when displayed
-        "stddev", ":named-rewrite"
+        "stddev",
+        ":named-rewrite"
       ),
-      List("name,sps,:eq,(,nf.cluster,),:by")),
-
-    Macro("pct", List(
+      List("name,sps,:eq,(,nf.cluster,),:by")
+    ),
+    Macro(
+      "pct",
+      List(
         ":dup",
-        ":dup", ":sum", ":div", "100", ":mul",
-        "pct", ":named-rewrite"
-      ),
-      List("name,sps,:eq,(,nf.cluster,),:by")),
-
-    Macro("dist-avg", List(
         ":dup",
-        "statistic", "(", "totalTime", "totalAmount", ")", ":in", ":sum",
-        "statistic", "count", ":eq", ":sum",
+        ":sum",
         ":div",
-        ":swap", ":cq",
-        "dist-avg", ":named-rewrite"
+        "100",
+        ":mul",
+        "pct",
+        ":named-rewrite"
       ),
-      List("name,playback.startLatency,:eq")),
-
-    Macro("dist-max", List(
+      List("name,sps,:eq,(,nf.cluster,),:by")
+    ),
+    Macro(
+      "dist-avg",
+      List(
         ":dup",
-        "statistic", "max", ":eq", ":max",
-        ":swap", ":cq",
-        "dist-max", ":named-rewrite"
+        "statistic",
+        "(",
+        "totalTime",
+        "totalAmount",
+        ")",
+        ":in",
+        ":sum",
+        "statistic",
+        "count",
+        ":eq",
+        ":sum",
+        ":div",
+        ":swap",
+        ":cq",
+        "dist-avg",
+        ":named-rewrite"
       ),
-      List("name,playback.startLatency,:eq")),
-
-    Macro("dist-stddev", List(
+      List("name,playback.startLatency,:eq")
+    ),
+    Macro(
+      "dist-max",
+      List(
         ":dup",
-
+        "statistic",
+        "max",
+        ":eq",
+        ":max",
+        ":swap",
+        ":cq",
+        "dist-max",
+        ":named-rewrite"
+      ),
+      List("name,playback.startLatency,:eq")
+    ),
+    Macro(
+      "dist-stddev",
+      List(
+        ":dup",
         // N
-        "statistic", "count", ":eq", ":sum",
-
+        "statistic",
+        "count",
+        ":eq",
+        ":sum",
         // sum(x^2)
-        "statistic", "totalOfSquares", ":eq", ":sum",
-
+        "statistic",
+        "totalOfSquares",
+        ":eq",
+        ":sum",
         // N * sum(x^2)
         ":mul",
-
         // sum(x)
-        "statistic", "(", "totalAmount", "totalTime", ")", ":in", ":sum",
-
+        "statistic",
+        "(",
+        "totalAmount",
+        "totalTime",
+        ")",
+        ":in",
+        ":sum",
         // sum(x)^2
-        ":dup", ":mul",
-
+        ":dup",
+        ":mul",
         // N * sum(x^2) - sum(x)^2
         ":sub",
-
         // N^2
-        "statistic", "count", ":eq", ":sum", ":dup", ":mul",
-
+        "statistic",
+        "count",
+        ":eq",
+        ":sum",
+        ":dup",
+        ":mul",
         // v = (N * sum(x^2) - sum(x)^2) / N^2
         ":div",
-
         // stddev = sqrt(v)
         ":sqrt",
-
         // Swap and use :cq to apply a common query
-        ":swap", ":cq",
-
+        ":swap",
+        ":cq",
         // Avoid expansion when displayed
-        "dist-stddev", ":named-rewrite"
+        "dist-stddev",
+        ":named-rewrite"
       ),
-      List("name,playback.startLatency,:eq")),
-
+      List("name,playback.startLatency,:eq")
+    ),
     Macro("median", List("(", "50", ")", ":percentiles"), List("name,requestLatency,:eq"))
   )
 
   case object GroupBy extends SimpleWord {
+
     override def name: String = "by"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -210,6 +267,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Const extends SimpleWord {
+
     override def name: String = "const"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -231,6 +289,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Random extends SimpleWord {
+
     override def name: String = "random"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
@@ -250,6 +309,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Time extends SimpleWord {
+
     override def name: String = "time"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -275,6 +335,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object CommonQuery extends SimpleWord {
+
     override def name: String = "cq"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -284,7 +345,7 @@ object MathVocabulary extends Vocabulary {
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (q2: Query) :: (expr: Expr) :: stack =>
         val newExpr = expr.rewrite {
-          case q1: Query => q1 and q2
+          case q1: Query => q1.and(q2)
         }
         newExpr :: stack
       case (_: Query) :: stack =>
@@ -301,9 +362,11 @@ object MathVocabulary extends Vocabulary {
 
     override def signature: String = "Expr Query -- Expr"
 
-    override def examples: List[String] = List(
-      "name,ssCpuUser,:eq,name,DiscoveryStatus_UP,:eq,:mul,nf.app,alerttest,:eq",
-      "42,nf.app,alerttest,:eq")
+    override def examples: List[String] =
+      List(
+        "name,ssCpuUser,:eq,name,DiscoveryStatus_UP,:eq,:mul,nf.app,alerttest,:eq",
+        "42,nf.app,alerttest,:eq"
+      )
   }
 
   case object NamedRewrite extends Word {
@@ -353,6 +416,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object ClampMin extends SimpleWord {
+
     override def name: String = "clamp-min"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -376,6 +440,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object ClampMax extends SimpleWord {
+
     override def name: String = "clamp-max"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -399,6 +464,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   sealed trait UnaryWord extends SimpleWord {
+
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case TimeSeriesType(_) :: _ => true
     }
@@ -415,6 +481,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Abs extends UnaryWord {
+
     override def name: String = "abs"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Abs(t)
@@ -427,6 +494,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Negate extends UnaryWord {
+
     override def name: String = "neg"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Negate(t)
@@ -439,6 +507,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Sqrt extends UnaryWord {
+
     override def name: String = "sqrt"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Sqrt(t)
@@ -451,6 +520,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object PerStep extends UnaryWord {
+
     override def name: String = "per-step"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.PerStep(t)
@@ -464,6 +534,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   sealed trait BinaryWord extends SimpleWord {
+
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case TimeSeriesType(_) :: TimeSeriesType(_) :: _ => true
     }
@@ -476,12 +547,12 @@ object MathVocabulary extends Vocabulary {
 
     override def signature: String = "TimeSeriesExpr TimeSeriesExpr -- TimeSeriesExpr"
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,42",
-      "name,sps,:eq,:sum,name,requestsPerSecond,:eq,:max,(,name,),:by")
+    override def examples: List[String] =
+      List("name,sps,:eq,42", "name,sps,:eq,:sum,name,requestsPerSecond,:eq,:max,(,name,),:by")
   }
 
   case object Add extends BinaryWord {
+
     override def name: String = "add"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -503,6 +574,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Subtract extends BinaryWord {
+
     override def name: String = "sub"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -524,6 +596,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Multiply extends BinaryWord {
+
     override def name: String = "mul"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -538,6 +611,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Divide extends BinaryWord {
+
     override def name: String = "div"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -561,6 +635,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object GreaterThan extends BinaryWord {
+
     override def name: String = "gt"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -575,6 +650,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object GreaterThanEqual extends BinaryWord {
+
     override def name: String = "ge"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -589,6 +665,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object LessThan extends BinaryWord {
+
     override def name: String = "lt"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -603,6 +680,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object LessThanEqual extends BinaryWord {
+
     override def name: String = "le"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -617,6 +695,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object FAdd extends BinaryWord {
+
     override def name: String = "fadd"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -643,6 +722,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object FSubtract extends BinaryWord {
+
     override def name: String = "fsub"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -669,6 +749,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object FMultiply extends BinaryWord {
+
     override def name: String = "fmul"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -683,6 +764,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object FDivide extends BinaryWord {
+
     override def name: String = "fdiv"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -709,6 +791,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object And extends BinaryWord {
+
     override def name: String = "and"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -723,6 +806,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Or extends BinaryWord {
+
     override def name: String = "or"
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -737,6 +821,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   sealed trait AggrWord extends SimpleWord {
+
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: TimeSeriesExpr) :: _ => true
     }
@@ -753,12 +838,12 @@ object MathVocabulary extends Vocabulary {
 
     override def signature: String = "TimeSeriesExpr -- TimeSeriesExpr"
 
-    override def examples: List[String] = List(
-      "name,sps,:eq,:sum",
-      "name,sps,:eq,:max,(,nf.cluster,),:by")
+    override def examples: List[String] =
+      List("name,sps,:eq,:sum", "name,sps,:eq,:max,(,nf.cluster,),:by")
   }
 
   case object Sum extends AggrWord {
+
     override def name: String = "sum"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Sum(t)
@@ -772,6 +857,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Count extends AggrWord {
+
     override def name: String = "count"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Count(t)
@@ -785,6 +871,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Min extends AggrWord {
+
     override def name: String = "min"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Min(t)
@@ -798,6 +885,7 @@ object MathVocabulary extends Vocabulary {
   }
 
   case object Max extends AggrWord {
+
     override def name: String = "max"
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Max(t)
@@ -822,10 +910,11 @@ object MathVocabulary extends Vocabulary {
     override def name: String = "percentiles"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case DoubleListType(_) :: DataExprType(expr) :: _ => expr match {
-        case _: DataExpr.All  => false
-        case _                => true
-      }
+      case DoubleListType(_) :: DataExprType(expr) :: _ =>
+        expr match {
+          case _: DataExpr.All => false
+          case _               => true
+        }
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {

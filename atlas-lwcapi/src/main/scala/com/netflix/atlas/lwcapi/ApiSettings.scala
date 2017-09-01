@@ -21,6 +21,7 @@ import com.typesafe.config.Config
 object ApiSettings extends ApiSettings(ConfigManager.current)
 
 class ApiSettings(root: => Config) {
+
   private def config = root.getConfig("atlas.lwcapi")
 
   def defaultFrequency: Long = config.getDuration("register.default-frequency").toMillis

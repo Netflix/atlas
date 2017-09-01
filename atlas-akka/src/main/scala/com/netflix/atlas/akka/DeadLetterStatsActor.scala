@@ -21,7 +21,6 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
-
 /**
   * Update counter for dead letters in the actor system. The counter name is `akka.deadLetters`
   * and has dimensions for:
@@ -42,8 +41,7 @@ import com.typesafe.scalalogging.StrictLogging
   *     chosen to avoid parts of the path such as incrementing counters in the path of
   *     short lived actors.
   */
-class DeadLetterStatsActor(registry: Registry, config: Config)
-    extends Actor with StrictLogging {
+class DeadLetterStatsActor(registry: Registry, config: Config) extends Actor with StrictLogging {
 
   context.system.eventStream.subscribe(self, classOf[AllDeadLetters])
 
@@ -52,10 +50,13 @@ class DeadLetterStatsActor(registry: Registry, config: Config)
 
   def receive: Receive = {
     case letter: AllDeadLetters =>
+      // format: off
       val id = deadLetterId.withTags(
         "class",     letter.getClass.getSimpleName,
         "sender",    pathMapper(letter.sender.path),
-        "recipient", pathMapper(letter.recipient.path))
+        "recipient", pathMapper(letter.recipient.path)
+      )
       registry.counter(id).increment()
+      // format: on
   }
 }

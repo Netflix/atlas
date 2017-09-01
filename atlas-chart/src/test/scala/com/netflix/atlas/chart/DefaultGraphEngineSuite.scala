@@ -16,6 +16,8 @@
 package com.netflix.atlas.chart
 
 class DefaultGraphEngineSuite extends PngGraphEngineSuite {
+
   override def prefix: String = "default"
+
   override def graphEngine: PngGraphEngine = new DefaultGraphEngine
 }

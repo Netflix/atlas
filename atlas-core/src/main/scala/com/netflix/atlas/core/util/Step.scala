@@ -15,10 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
-
 /**
- * Utilities for computing and rounding times based on the step size for a dataset.
- */
+  * Utilities for computing and rounding times based on the step size for a dataset.
+  */
 object Step {
 
   private final val oneSecond = 1000L
@@ -58,22 +57,22 @@ object Step {
   }
 
   /**
-   * Round an arbitrary step to the next largest allowed step size.
-   */
+    * Round an arbitrary step to the next largest allowed step size.
+    */
   def round(primary: Long, step: Long): Long = {
     val max = math.max(primary, step)
     allowedStepSizes.find(_ >= max).getOrElse(largestStep)
   }
 
   /**
-   * Compute an appropriate step size so that each datapoint shown for the graph has at least one
-   * pixel. The computed step must be a multiple of the primary step that is passed in.
-   *
-   * @param primary  step size that the input data is stored with
-   * @param width    width in pixels available for rendering the line
-   * @param start    start time for the graph
-   * @param end      end time for the graph
-   */
+    * Compute an appropriate step size so that each datapoint shown for the graph has at least one
+    * pixel. The computed step must be a multiple of the primary step that is passed in.
+    *
+    * @param primary  step size that the input data is stored with
+    * @param width    width in pixels available for rendering the line
+    * @param start    start time for the graph
+    * @param end      end time for the graph
+    */
   def compute(primary: Long, width: Int, start: Long, end: Long): Long = {
     validate(primary)
     val datapoints = (end - start) / primary

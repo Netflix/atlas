@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.util
 
 object SmallHashMap {
+
   def empty[K <: Any, V <: Any]: SmallHashMap[K, V] = new SmallHashMap[K, V](Array.empty, 0)
 
   def apply[K <: Any, V <: Any](ts: (K, V)*): SmallHashMap[K, V] = {
@@ -75,7 +76,10 @@ object SmallHashMap {
             if (k != null) add(k, sm.data(i + 1).asInstanceOf[V])
             i += 2
           }
-        case _ => m.foreach { t => add(t._1, t._2) }
+        case _ =>
+          m.foreach { t =>
+            add(t._1, t._2)
+          }
       }
       this
     }
@@ -130,20 +134,20 @@ object SmallHashMap {
 }
 
 /**
- * Simple immutable hash map implementation intended for use-cases where the number of entries is
- * known to be small. This implementation is backed by a single array and uses open addressing with
- * linear probing to resolve conflicts. The underlying array is created to exactly fit the data
- * size so hash collisions tend to be around 50%, but have a fairly low number of probes to find
- * the actual entry. With a cheap equals function for the keys lookups should be fast and there
- * is low memory overhead.
- *
- * You probably don't want to use this implementation if you expect more than around 50 keys in the
- * map. If you have millions of small immutable maps, such as tag data associated with metrics,
- * it may be a good fit.
- *
- * @param data        array with the items
- * @param dataLength  number of pairs contained within the array starting at index 0.
- */
+  * Simple immutable hash map implementation intended for use-cases where the number of entries is
+  * known to be small. This implementation is backed by a single array and uses open addressing with
+  * linear probing to resolve conflicts. The underlying array is created to exactly fit the data
+  * size so hash collisions tend to be around 50%, but have a fairly low number of probes to find
+  * the actual entry. With a cheap equals function for the keys lookups should be fast and there
+  * is low memory overhead.
+  *
+  * You probably don't want to use this implementation if you expect more than around 50 keys in the
+  * map. If you have millions of small immutable maps, such as tag data associated with metrics,
+  * it may be a good fit.
+  *
+  * @param data        array with the items
+  * @param dataLength  number of pairs contained within the array starting at index 0.
+  */
 final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], dataLength: Int)
     extends scala.collection.immutable.Map[K, V] {
 
@@ -183,9 +187,9 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
   }
 
   /**
-   * Call the function `f` for each tuple in the map without requiring a temporary object to be
-   * created.
-   */
+    * Call the function `f` for each tuple in the map without requiring a temporary object to be
+    * created.
+    */
   def foreachItem(f: (K, V) => Unit) {
     var i = 0
     while (i < data.length) {
@@ -213,7 +217,9 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
 
   override def keysIterator: Iterator[K] = new Iterator[K] {
     val iter = entriesIterator
+
     def hasNext: Boolean = iter.hasNext
+
     def next(): K = {
       val k = iter.key
       iter.nextEntry()
@@ -223,7 +229,9 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
 
   override def valuesIterator: Iterator[V] = new Iterator[V] {
     val iter = entriesIterator
+
     def hasNext: Boolean = iter.hasNext
+
     def next(): V = {
       val v = iter.value
       iter.nextEntry()
@@ -232,8 +240,8 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
   }
 
   /**
-   * Returns the number of keys that are not in the correct position based on their hash code.
-   */
+    * Returns the number of keys that are not in the correct position based on their hash code.
+    */
   def numCollisions: Int = {
     var count = 0
     var i = 0
@@ -245,11 +253,11 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
   }
 
   /**
-   * Returns the average number of probes that are required for looking up keys in this map. In
-   * general we want this number to be less than N/4. If we naively did a linear scan of the
-   * full data it would be N/2.
-   */
-  def numProbesPerKey: Double =  {
+    * Returns the average number of probes that are required for looking up keys in this map. In
+    * general we want this number to be less than N/4. If we naively did a linear scan of the
+    * full data it would be N/2.
+    */
+  def numProbesPerKey: Double = {
     val capacity = data.length / 2
     var total = 0
     keys.foreach { k =>
@@ -292,6 +300,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     * comparison with the default for various inputs.
     */
   override def hashCode: Int = {
+
     // Pattern copied from String.java of jdk
     if (cachedHashCode == 0) {
       cachedHashCode = computeHashCode
@@ -375,7 +384,8 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
   }
 
   private def keyEquals(m: SmallHashMap[K, V], k: K): Boolean = {
-    if (k == null) true else {
+    if (k == null) true
+    else {
       val v1 = getOrNull(k)
       val v2 = m.getOrNull(k)
       v1 == v2

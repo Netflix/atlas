@@ -36,7 +36,8 @@ case class MetricDefinition(
   name: String,
   alias: String,
   conversion: (MetricMetadata, Datapoint) => Double,
-  tags: Map[String, String])
+  tags: Map[String, String]
+)
 
 object MetricDefinition {
 
@@ -56,17 +57,21 @@ object MetricDefinition {
     */
   def fromConfig(config: Config): List[MetricDefinition] = {
     import scala.collection.JavaConverters._
-    val tags = if (!config.hasPath("tags")) Map.empty[String, String] else {
-      config.getConfigList("tags").asScala
-        .map(c => c.getString("key") -> c.getString("value"))
-        .toMap
-    }
+    val tags =
+      if (!config.hasPath("tags")) Map.empty[String, String]
+      else {
+        config
+          .getConfigList("tags")
+          .asScala
+          .map(c => c.getString("key") -> c.getString("value"))
+          .toMap
+      }
 
     config.getString("conversion") match {
-      case "timer"          => newDist(config, "totalTime", tags)
-      case "timer-millis"   => milliTimer(config, tags)
-      case "dist-summary"   => newDist(config, "totalAmount", tags)
-      case cnv              => List(newMetricDef(config, cnv, tags))
+      case "timer"        => newDist(config, "totalTime", tags)
+      case "timer-millis" => milliTimer(config, tags)
+      case "dist-summary" => newDist(config, "totalAmount", tags)
+      case cnv            => List(newMetricDef(config, cnv, tags))
     }
   }
 
@@ -77,8 +82,8 @@ object MetricDefinition {
   private def newDist(config: Config, total: String, tags: Tags): List[MetricDefinition] = {
     List(
       newMetricDef(config, "count,rate", tags + ("statistic" -> "count")),
-      newMetricDef(config, "sum,rate",   tags + ("statistic" -> total)),
-      newMetricDef(config, "max",        tags + ("statistic" -> "max"))
+      newMetricDef(config, "sum,rate", tags + ("statistic"   -> total)),
+      newMetricDef(config, "max", tags + ("statistic"        -> "max"))
     )
   }
 

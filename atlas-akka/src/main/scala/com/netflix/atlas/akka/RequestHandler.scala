@@ -32,12 +32,12 @@ import com.netflix.iep.service.ClassFactory
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
-
 class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictLogging {
 
   def routes: Route = {
     val endpoints = loadRoutesFromConfig()
-    if (endpoints.isEmpty) RequestHandler.notFound else {
+    if (endpoints.isEmpty) RequestHandler.notFound
+    else {
       // Routes defined by the included WebApi classes from the `atlas.akka.api-endpoints`
       // config setting
       val routes = endpoints.tail.foldLeft(endpoints.head.routes) {
@@ -53,10 +53,10 @@ class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictL
   }
 
   /**
-   * In many cases the final list will come from several config files with values getting appended
-   * to the list. To avoid unnecessary duplication the class list will be deduped so that only
-   * the first instance of a class will be used. The order in the list is otherwise maintained.
-   */
+    * In many cases the final list will come from several config files with values getting appended
+    * to the list. To avoid unnecessary duplication the class list will be deduped so that only
+    * the first instance of a class will be used. The order in the list is otherwise maintained.
+    */
   private def loadRoutesFromConfig(): List[WebApi] = {
     try {
       import scala.compat.java8.FunctionConverters._
@@ -83,6 +83,7 @@ object RequestHandler {
     * logging, CORS support, compression, etc.
     */
   def standardOptions(route: Route): Route = {
+
     // Default paths to always include
     val ok = path("ok") {
       // Default endpoint for testing that always returns 200
@@ -121,7 +122,8 @@ object RequestHandler {
   }
 
   def errorResponse(t: Throwable): HttpResponse = t match {
-    case e @ (_: IllegalArgumentException | _: IllegalStateException | _: JsonProcessingException) =>
+    case e @ (_: IllegalArgumentException | _: IllegalStateException |
+        _: JsonProcessingException) =>
       DiagnosticMessage.error(StatusCodes.BadRequest, e)
     case e: NoSuchElementException =>
       DiagnosticMessage.error(StatusCodes.NotFound, e)
@@ -134,7 +136,8 @@ object RequestHandler {
   }
 
   private def rejectionHandler: RejectionHandler = {
-    val builder = RejectionHandler.newBuilder()
+    val builder = RejectionHandler
+      .newBuilder()
       .handle {
         case MalformedRequestContentRejection(_, t) =>
           complete(errorResponse(t))

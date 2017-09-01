@@ -18,16 +18,17 @@ package com.netflix.atlas.core.model
 trait Expr extends Product {
 
   /**
-   * Returns a string that can be executed with the stack interpreter to create this expression.
-   */
+    * Returns a string that can be executed with the stack interpreter to create this expression.
+    */
   def exprString: String = toString
 
   /**
-   * Rewrite the expression using the specified function. The default implementation will try to
-   * recursively apply the rewrite to case classes.
-   */
+    * Rewrite the expression using the specified function. The default implementation will try to
+    * recursively apply the rewrite to case classes.
+    */
   def rewrite(f: PartialFunction[Expr, Expr]): Expr = {
-    if (f.isDefinedAt(this)) f(this) else {
+    if (f.isDefinedAt(this)) f(this)
+    else {
       this match {
         // If the productArity is 0 we cannot change instance so return the existing class. A
         // common case where the arity is 0 are case objects. If they go through the product

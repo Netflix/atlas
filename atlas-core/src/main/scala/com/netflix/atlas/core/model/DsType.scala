@@ -18,6 +18,7 @@ package com.netflix.atlas.core.model
 sealed trait DsType
 
 object DsType {
+
   def apply(key: String): DsType = {
     key match {
       case "counter" => Rate
@@ -32,6 +33,6 @@ object DsType {
   }
 
   case object Rate extends DsType
+
   case object Gauge extends DsType
 }
-

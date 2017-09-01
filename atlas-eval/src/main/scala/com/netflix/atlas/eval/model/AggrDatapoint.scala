@@ -48,7 +48,8 @@ case class AggrDatapoint(
   expr: DataExpr,
   source: String,
   tags: Map[String, String],
-  value: Double) {
+  value: Double
+) {
 
   /** Identifier used for deduping intermediate aggregates. */
   def id: String = s"$source:$expr"
@@ -67,7 +68,8 @@ object AggrDatapoint {
     * a given expression. All values are expected to be for the same data expression.
     */
   def aggregate(values: List[AggrDatapoint]): List[AggrDatapoint] = {
-    if (values.isEmpty) Nil else {
+    if (values.isEmpty) Nil
+    else {
       val vs = dedup(values)
       val expr = vs.head.expr
       expr match {

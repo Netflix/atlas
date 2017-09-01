@@ -19,36 +19,37 @@ import com.netflix.atlas.core.util.SmallHashMap
 import com.typesafe.config.Config
 
 /**
- * Base type for validation rules.
- */
+  * Base type for validation rules.
+  */
 trait Rule {
 
   private val ruleName = getClass.getSimpleName
 
   /**
-   * Validates that the tag map matches the rule.
-   */
+    * Validates that the tag map matches the rule.
+    */
   def validate(tags: Map[String, String]): ValidationResult = {
     tags match {
       case m: SmallHashMap[String, String] => validate(m)
-      case _ => validate(SmallHashMap(tags))
+      case _                               => validate(SmallHashMap(tags))
     }
   }
 
   /**
-   * Validates that the tag map matches the rule.
-   */
+    * Validates that the tag map matches the rule.
+    */
   def validate(tags: SmallHashMap[String, String]): ValidationResult
 
   /**
-   * Helper for generating the failure response.
-   */
+    * Helper for generating the failure response.
+    */
   protected def failure(reason: String): ValidationResult = {
     ValidationResult.Fail(ruleName, reason)
   }
 }
 
 object Rule {
+
   def load(ruleConfigs: java.util.List[_ <: Config]): List[Rule] = {
     import scala.collection.JavaConverters._
     load(ruleConfigs.asScala.toList)
@@ -63,10 +64,10 @@ object Rule {
 
   @scala.annotation.tailrec
   def validate(tags: Map[String, String], rules: List[Rule]): ValidationResult = {
-    if (rules.isEmpty) ValidationResult.Pass else {
+    if (rules.isEmpty) ValidationResult.Pass
+    else {
       val res = rules.head.validate(tags)
       if (res.isFailure) res else validate(tags, rules.tail)
     }
   }
 }
-

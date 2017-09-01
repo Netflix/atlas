@@ -31,16 +31,20 @@ object StatefulVocabulary extends Vocabulary {
   val dependsOn: List[Vocabulary] = List(MathVocabulary)
 
   val words: List[Word] = List(
-    RollingCount, Des, SlidingDes, Trend, Integral, Derivative,
-    desMacro("des-simple",  List("10", "0.1",  "0.5",  ":des")),
-    desMacro("des-fast",    List("10", "0.1",  "0.02", ":des")),
-    desMacro("des-slower",  List("10", "0.05", "0.03", ":des")),
-    desMacro("des-slow",    List("10", "0.03", "0.04", ":des")),
-    desMacro("sdes-simple", List("10", "0.1",  "0.5",  ":sdes")),
-    desMacro("sdes-fast",   List("10", "0.1",  "0.02", ":sdes")),
+    RollingCount,
+    Des,
+    SlidingDes,
+    Trend,
+    Integral,
+    Derivative,
+    desMacro("des-simple", List("10", "0.1", "0.5", ":des")),
+    desMacro("des-fast", List("10", "0.1", "0.02", ":des")),
+    desMacro("des-slower", List("10", "0.05", "0.03", ":des")),
+    desMacro("des-slow", List("10", "0.03", "0.04", ":des")),
+    desMacro("sdes-simple", List("10", "0.1", "0.5", ":sdes")),
+    desMacro("sdes-fast", List("10", "0.1", "0.02", ":sdes")),
     desMacro("sdes-slower", List("10", "0.05", "0.03", ":sdes")),
-    desMacro("sdes-slow",   List("10", "0.03", "0.04", ":sdes")),
-
+    desMacro("sdes-slow", List("10", "0.03", "0.04", ":sdes")),
     Macro("des-epic-signal", desEpicSignal, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
   )
 
@@ -51,6 +55,7 @@ object StatefulVocabulary extends Vocabulary {
   }
 
   case object RollingCount extends SimpleWord {
+
     override def name: String = "rolling-count"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -105,6 +110,7 @@ object StatefulVocabulary extends Vocabulary {
   }
 
   case object Des extends SimpleWord {
+
     override def name: String = "des"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -129,6 +135,7 @@ object StatefulVocabulary extends Vocabulary {
   }
 
   case object SlidingDes extends SimpleWord {
+
     override def name: String = "sdes"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -191,6 +198,7 @@ object StatefulVocabulary extends Vocabulary {
   }
 
   case object Trend extends SimpleWord {
+
     override def name: String = "trend"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -234,6 +242,7 @@ object StatefulVocabulary extends Vocabulary {
   }
 
   case object Integral extends SimpleWord {
+
     override def name: String = "integral"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -274,12 +283,11 @@ object StatefulVocabulary extends Vocabulary {
     override def signature: String =
       "TimeSeriesExpr -- TimeSeriesExpr"
 
-    override def examples: List[String] = List(
-      "1",
-      "name,requestsPerSecond,:eq,:sum,:per-step")
+    override def examples: List[String] = List("1", "name,requestsPerSecond,:eq,:sum,:per-step")
   }
 
   case object Derivative extends SimpleWord {
+
     override def name: String = "derivative"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
@@ -304,77 +312,99 @@ object StatefulVocabulary extends Vocabulary {
 
   private def desEpicSignal = List(
     // Parameters
-    "noise",        ":sset",
-    "minPercent",   ":sset",
-    "maxPercent",   ":sset",
-    "beta",         ":sset",
-    "alpha",        ":sset",
-    "trainingSize", ":sset",
-    "line",         ":sset",
-
+    "noise",
+    ":sset",
+    "minPercent",
+    ":sset",
+    "maxPercent",
+    ":sset",
+    "beta",
+    ":sset",
+    "alpha",
+    ":sset",
+    "trainingSize",
+    ":sset",
+    "line",
+    ":sset",
     // Compute a DES prediction
     "pred",
-      "line",         ":get",
-      "trainingSize", ":get",
-      "alpha",        ":get",
-      "beta",         ":get",
-      ":des",
+    "line",
+    ":get",
+    "trainingSize",
+    ":get",
+    "alpha",
+    ":get",
+    "beta",
+    ":get",
+    ":des",
     ":set",
-
     // Line for minimum bound using noise param
     "minPredNoiseBound",
-      "pred",  ":get",
-      "noise", ":get",
-      ":sub",
+    "pred",
+    ":get",
+    "noise",
+    ":get",
+    ":sub",
     ":set",
-
     // Line for minimum bound using minPercent param
     "minPredPercentBound",
-      "pred",       ":get",
-      "1.0",        ":const",
-      "minPercent", ":get", ":const",
-      ":fsub",
-      ":fmul",
+    "pred",
+    ":get",
+    "1.0",
+    ":const",
+    "minPercent",
+    ":get",
+    ":const",
+    ":fsub",
+    ":fmul",
     ":set",
-
     // Line for maximum bound using noise param
     "maxPredNoiseBound",
-      "pred",  ":get",
-      "noise", ":get",
-      ":add",
+    "pred",
+    ":get",
+    "noise",
+    ":get",
+    ":add",
     ":set",
-
     // Line for maximum bound using maxPercent param
     "maxPredPercentBound",
-      "pred",       ":get",
-      "2.0",        ":const",
-      "1.0",        ":const",
-      "maxPercent", ":get", ":const",
-      ":fsub",
-      ":fsub",
-      ":fmul",
+    "pred",
+    ":get",
+    "2.0",
+    ":const",
+    "1.0",
+    ":const",
+    "maxPercent",
+    ":get",
+    ":const",
+    ":fsub",
+    ":fsub",
+    ":fmul",
     ":set",
-
     // Signal indicating if it is below both lower bounds
-      "line",              ":get",
-      "minPredNoiseBound", ":get",
-      ":lt",
-
-      "line",                ":get",
-      "minPredPercentBound", ":get",
-      ":lt",
+    "line",
+    ":get",
+    "minPredNoiseBound",
+    ":get",
+    ":lt",
+    "line",
+    ":get",
+    "minPredPercentBound",
+    ":get",
+    ":lt",
     ":and",
-
     // Signal indicating if it is above both upper bounds
-      "line",              ":get",
-      "maxPredNoiseBound", ":get",
-      ":gt",
-
-      "line",                ":get",
-      "maxPredPercentBound", ":get",
-      ":gt",
+    "line",
+    ":get",
+    "maxPredNoiseBound",
+    ":get",
+    ":gt",
+    "line",
+    ":get",
+    "maxPredPercentBound",
+    ":get",
+    ":gt",
     ":and",
-
     // True if it deviates from the upper or lower bound
     ":or"
   )

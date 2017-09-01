@@ -19,6 +19,7 @@ import com.netflix.atlas.core.stacklang.BaseExamplesSuite
 import com.netflix.atlas.core.stacklang.Vocabulary
 
 class MathExamplesSuite extends BaseExamplesSuite {
+
   override def vocabulary: Vocabulary = MathVocabulary
 
   test("toString with offsets") {
@@ -43,6 +44,8 @@ class MathExamplesSuite extends BaseExamplesSuite {
 
   test("rewrite group by toString with offsets and cq") {
     val expr = eval("name,test,:eq,:dist-avg,(,cluster,),:by,1h,:offset,app,foo,:eq,:cq")
-    assert(expr.toString === "name,test,:eq,app,foo,:eq,:and,:dist-avg,PT1H,:offset,(,cluster,),:by")
+    assert(
+      expr.toString === "name,test,:eq,app,foo,:eq,:and,:dist-avg,PT1H,:offset,(,cluster,),:by"
+    )
   }
 }

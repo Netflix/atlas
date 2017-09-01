@@ -55,6 +55,8 @@ class CaseClasses {
 }
 
 object CaseClasses {
+
   case class Data(name: String, items: List[Item])
+
   case class Item(name: String, value: Int)
 }

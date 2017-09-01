@@ -59,18 +59,22 @@ object HostSource extends StrictLogging {
     * @return
     *     Source that emits the response stream from the host.
     */
-  def apply(uri: String, client: Client, delay: FiniteDuration = 1.second): Source[ByteString, NotUsed] = {
+  def apply(
+    uri: String,
+    client: Client,
+    delay: FiniteDuration = 1.second
+  ): Source[ByteString, NotUsed] = {
     EvaluationFlows.repeat(uri, delay).flatMapConcat(singleCall(client))
   }
 
   private def singleCall(client: Client)(uri: String): Source[ByteString, Any] = {
     logger.info(s"subscribing to $uri")
-    val headers = List(
-      Accept(MediaTypes.`text/event-stream`),
-      `Accept-Encoding`(HttpEncodings.gzip))
+    val headers =
+      List(Accept(MediaTypes.`text/event-stream`), `Accept-Encoding`(HttpEncodings.gzip))
     val request = HttpRequest(HttpMethods.GET, uri, headers)
 
-    Source.single(request -> NotUsed)
+    Source
+      .single(request -> NotUsed)
       .via(client)
       .flatMapConcat {
         case (Success(res: HttpResponse), _) if res.status == StatusCodes.OK =>
@@ -109,4 +113,3 @@ object HostSource extends StrictLogging {
     if (isCompressed) res.entity.dataBytes.via(Compression.gunzip()) else res.entity.dataBytes
   }
 }
-

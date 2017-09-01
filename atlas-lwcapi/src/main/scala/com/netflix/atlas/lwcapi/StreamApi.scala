@@ -37,7 +37,9 @@ class StreamApi @Inject()(
   sm: ActorSubscriptionManager,
   splitter: ExpressionSplitter,
   implicit val actorRefFactory: ActorRefFactory,
-  registry: Registry) extends WebApi with StrictLogging {
+  registry: Registry
+) extends WebApi
+    with StrictLogging {
 
   import StreamApi._
 
@@ -59,7 +61,8 @@ class StreamApi @Inject()(
   private def splitRequest(
     requestOpt: Option[ExpressionsRequest],
     urlExpr: Option[String],
-    urlFreq: Option[String]): Map[ExpressionMetadata, List[Subscription]] = {
+    urlFreq: Option[String]
+  ): Map[ExpressionMetadata, List[Subscription]] = {
 
     val builder = Map.newBuilder[ExpressionMetadata, List[Subscription]]
 
@@ -82,11 +85,15 @@ class StreamApi @Inject()(
     streamId: String,
     name: Option[String],
     expr: Option[String],
-    freqString: Option[String]): HttpResponse = {
+    freqString: Option[String]
+  ): HttpResponse = {
 
     // Drop any other connections that may already be using the same id
     sm.unregister(streamId).foreach { ref =>
-      ref ! SSEShutdown(s"Dropped: another connection is using the same stream-id: $streamId", unsub = false)
+      ref ! SSEShutdown(
+        s"Dropped: another connection is using the same stream-id: $streamId",
+        unsub = false
+      )
     }
 
     // Validate post data. This is done before creating an actor, since
@@ -94,21 +101,25 @@ class StreamApi @Inject()(
     // parse errors.
     val splits = splitRequest(req, expr, freqString)
 
-    val source = Source.actorPublisher(Props(
-      new SSEActor(streamId, name.getOrElse("unknown"), sm, splits, registry)))
+    val source = Source.actorPublisher(
+      Props(new SSEActor(streamId, name.getOrElse("unknown"), sm, splits, registry))
+    )
     val entity = HttpEntity.Chunked(MediaTypes.`text/event-stream`.toContentType, source)
     HttpResponse(StatusCodes.OK, entity = entity)
   }
 }
 
 trait SSERenderable {
+
   def toSSE: String
 }
 
 object StreamApi {
+
   case class ExpressionsRequest(expressions: List[ExpressionMetadata]) extends JsonSupport
 
   object ExpressionsRequest {
+
     def fromJson(json: String): ExpressionsRequest = {
       val decoded = Json.decode[ExpressionsRequest](json)
       if (decoded.expressions == null || decoded.expressions.isEmpty)
@@ -117,41 +128,53 @@ object StreamApi {
     }
   }
 
-  abstract class SSEMessage(msgType: String, what: String, content: JsonSupport) extends SSERenderable {
+  abstract class SSEMessage(msgType: String, what: String, content: JsonSupport)
+      extends SSERenderable {
+
     def toSSE = s"$msgType: $what ${content.toJson}"
+
     def getWhat: String = what
   }
 
   // Hello message
   case class HelloContent(streamId: String, instanceId: String) extends JsonSupport
+
   case class SSEHello(streamId: String, instanceId: String)
-    extends SSEMessage("info", "hello", HelloContent(streamId, instanceId))
+      extends SSEMessage("info", "hello", HelloContent(streamId, instanceId))
 
   // Generic message string
   case class SSEGenericJson(what: String, msg: JsonSupport) extends SSEMessage("data", what, msg)
 
   // Heartbeat message
   case class StatisticsContent(outputFullFailures: Long) extends JsonSupport
+
   case class SSEStatistics(outputFullFailures: Long)
-    extends SSEMessage("info", "statistics", StatisticsContent(outputFullFailures))
+      extends SSEMessage("info", "statistics", StatisticsContent(outputFullFailures))
 
   // Shutdown message
   case class ShutdownReason(reason: String) extends JsonSupport
+
   case class SSEShutdown(reason: String, private val unsub: Boolean = true)
-    extends SSEMessage("info", "shutdown", ShutdownReason(reason)) {
+      extends SSEMessage("info", "shutdown", ShutdownReason(reason)) {
+
     def shouldUnregister: Boolean = unsub
   }
 
   // Subscribe message
-  case class SubscribeContent(expression: String,
-                              metrics: List[ExpressionMetadata]) extends JsonSupport
+  case class SubscribeContent(expression: String, metrics: List[ExpressionMetadata])
+      extends JsonSupport
 
   case class SSESubscribe(expr: String, metrics: List[ExpressionMetadata])
-    extends SSEMessage("info", "subscribe", SubscribeContent(expr, metrics))
+      extends SSEMessage("info", "subscribe", SubscribeContent(expr, metrics))
 
-  case class SSEMetricContent(timestamp: Long, id: String, tags: EvaluateApi.TagMap, value: Double) extends JsonSupport
+  case class SSEMetricContent(timestamp: Long, id: String, tags: EvaluateApi.TagMap, value: Double)
+      extends JsonSupport
 
   // Evaluate message
   case class SSEMetric(timestamp: Long, data: EvaluateApi.Item)
-    extends SSEMessage("data", "metric", SSEMetricContent(timestamp, data.id, data.tags, data.value))
+      extends SSEMessage(
+        "data",
+        "metric",
+        SSEMetricContent(timestamp, data.id, data.tags, data.value)
+      )
 }

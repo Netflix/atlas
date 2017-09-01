@@ -19,7 +19,6 @@ import java.io.InputStream
 
 import org.scalatest.FunSuite
 
-
 class PngImageSuite extends FunSuite {
 
   // From: http://en.wikipedia.org/wiki/Atlas_(mythology)

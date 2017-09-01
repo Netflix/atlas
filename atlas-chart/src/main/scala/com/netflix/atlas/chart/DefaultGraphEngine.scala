@@ -76,7 +76,8 @@ class DefaultGraphEngine extends PngGraphEngine {
     }
     aboveCanvas += HorizontalPadding(5)
 
-    val hoffset = if (config.layout.isFixedHeight) height(aboveCanvas.result(), config.width) else 0
+    val hoffset =
+      if (config.layout.isFixedHeight) height(aboveCanvas.result(), config.width) else 0
     val graph = TimeSeriesGraph(config.copy(height = config.height - hoffset))
 
     val belowCanvas = List.newBuilder[Element]
@@ -90,9 +91,10 @@ class DefaultGraphEngine extends PngGraphEngine {
       val showStats = config.showLegendStats && graph.width >= Constants.minWidthForStats
       belowCanvas += HorizontalPadding(5)
       if (config.plots.size > 1) {
-        config.plots.zipWithIndex.foreach { case (plot, i) =>
-          val label = plot.ylabel.map(s => s"Axis $i: $s").getOrElse(s"Axis $i")
-          belowCanvas += Legend(plot, Some(label), showStats, entriesPerPlot)
+        config.plots.zipWithIndex.foreach {
+          case (plot, i) =>
+            val label = plot.ylabel.map(s => s"Axis $i: $s").getOrElse(s"Axis $i")
+            belowCanvas += Legend(plot, Some(label), showStats, entriesPerPlot)
         }
       } else {
         config.plots.foreach { plot =>
@@ -131,9 +133,11 @@ class DefaultGraphEngine extends PngGraphEngine {
     val noticeList = notices.result()
     if (noticeList.nonEmpty && config.showText) {
       val warnings = List.newBuilder[Element]
-      warnings += Text("Warnings",
+      warnings += Text(
+        "Warnings",
         font = Constants.normalFont.deriveFont(Font.BOLD),
-        alignment = TextAlignment.LEFT)
+        alignment = TextAlignment.LEFT
+      )
       noticeList.foreach { notice =>
         warnings += HorizontalPadding(2)
         warnings += ListItem(Text(notice, alignment = TextAlignment.LEFT))
@@ -182,7 +186,8 @@ class DefaultGraphEngine extends PngGraphEngine {
   }
 
   private def height(elements: List[Element], w: Int): Int = {
-    elements.foldLeft(0) { (acc, e) => acc + e.getHeight(Constants.refGraphics, w) }
+    elements.foldLeft(0) { (acc, e) =>
+      acc + e.getHeight(Constants.refGraphics, w)
+    }
   }
 }
-

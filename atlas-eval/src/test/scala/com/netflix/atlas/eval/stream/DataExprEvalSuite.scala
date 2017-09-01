@@ -50,13 +50,20 @@ class DataExprEvalSuite extends FunSuite {
     TimeGroup(t, datapoints)
   }
 
-  private def createDataSet(expr: DataExpr, window: Int, nodes: Int): List[TimeGroup[AggrDatapoint]] = {
+  private def createDataSet(
+    expr: DataExpr,
+    window: Int,
+    nodes: Int
+  ): List[TimeGroup[AggrDatapoint]] = {
     (0 until window).toList.map { i =>
       createGroup(expr, i * step, nodes)
     }
   }
 
-  private def eval(expr: DataExpr, dataSet: List[TimeGroup[AggrDatapoint]]): List[List[TimeSeriesMessage]] = {
+  private def eval(
+    expr: DataExpr,
+    dataSet: List[TimeGroup[AggrDatapoint]]
+  ): List[List[TimeSeriesMessage]] = {
     val styleExpr = StyleExpr(expr, Map.empty)
     val future = Source(dataSet)
       .via(new DataExprEval(styleExpr, step))
@@ -71,8 +78,9 @@ class DataExprEvalSuite extends FunSuite {
     assert(results.size === 5)
     results.foreach { vs =>
       assert(vs.size === 1)
-      vs.foreach { case TimeSeriesMessage(_, _, _, _, _, _, _, ArrayData(values)) =>
-        assert(values === Array(45.0))
+      vs.foreach {
+        case TimeSeriesMessage(_, _, _, _, _, _, _, ArrayData(values)) =>
+          assert(values === Array(45.0))
       }
     }
   }
@@ -84,8 +92,9 @@ class DataExprEvalSuite extends FunSuite {
     assert(results.size === 5)
     results.foreach { vs =>
       assert(vs.size === 1)
-      vs.foreach { case TimeSeriesMessage(_, _, _, _, _, _, _, ArrayData(values)) =>
-        assert(values === Array(9.0))
+      vs.foreach {
+        case TimeSeriesMessage(_, _, _, _, _, _, _, ArrayData(values)) =>
+          assert(values === Array(9.0))
       }
     }
   }
@@ -97,12 +106,12 @@ class DataExprEvalSuite extends FunSuite {
     assert(results.size === 5)
     results.foreach { vs =>
       assert(vs.size === 10)
-      vs.foreach { case TimeSeriesMessage(_, _, _, _, _, _, tags, ArrayData(values)) =>
-        val v = tags("node").substring(2).toDouble
-        assert(values === Array(v))
+      vs.foreach {
+        case TimeSeriesMessage(_, _, _, _, _, _, tags, ArrayData(values)) =>
+          val v = tags("node").substring(2).toDouble
+          assert(values === Array(v))
       }
     }
   }
 
 }
-

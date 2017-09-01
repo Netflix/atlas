@@ -36,7 +36,9 @@ import com.typesafe.scalalogging.StrictLogging
 case class ExpressionApi @Inject()(
   sm: ActorSubscriptionManager,
   registry: Registry,
-  implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
+  implicit val actorRefFactory: ActorRefFactory
+) extends WebApi
+    with StrictLogging {
 
   import ExpressionApi._
 
@@ -66,7 +68,10 @@ case class ExpressionApi @Inject()(
     handle(receivedETags, sm.subscriptionsForCluster(cluster).map(_.metadata))
   }
 
-  private def handle(receivedETags: Option[String], expressions: List[ExpressionMetadata]): HttpResponse = {
+  private def handle(
+    receivedETags: Option[String],
+    expressions: List[ExpressionMetadata]
+  ): HttpResponse = {
     expressionCount.record(expressions.size)
     val tag = computeETag(expressions)
     val headers: List[HttpHeader] = List(RawHeader("ETag", tag))
@@ -83,9 +88,11 @@ case class ExpressionApi @Inject()(
 }
 
 object ExpressionApi {
+
   case class Return(expressions: List[ExpressionMetadata]) extends JsonSupport
 
   private[lwcapi] def computeETag(expressions: List[ExpressionMetadata]): String = {
+
     // TODO: This should get refactored so we do not need to recompute each time
     val str = expressions.sorted.mkString(";")
     val hash = Strings.zeroPad(Hash.sha1(str), 40).substring(20)

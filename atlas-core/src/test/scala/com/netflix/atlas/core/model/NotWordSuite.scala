@@ -22,14 +22,14 @@ import com.netflix.atlas.core.stacklang.Word
 
 class NotWordSuite extends BaseWordSuite {
 
-  def interpreter: Interpreter = Interpreter(
-    QueryVocabulary.allWords ::: StandardVocabulary.allWords)
+  def interpreter: Interpreter =
+    Interpreter(QueryVocabulary.allWords ::: StandardVocabulary.allWords)
 
   def word: Word = QueryVocabulary.Not
 
   def shouldMatch: List[(String, List[Any])] = List(
-    ":true" -> List(Query.False),
-    ":false" -> List(Query.True),
+    ":true"   -> List(Query.False),
+    ":false"  -> List(Query.True),
     "a,b,:eq" -> List(Query.Not(Query.Equal("a", "b")))
   )
 

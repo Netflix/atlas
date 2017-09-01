@@ -18,7 +18,6 @@ package com.netflix.atlas.core.validation
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class MaxUserTagsRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("limit = 2")
@@ -27,7 +26,10 @@ class MaxUserTagsRuleSuite extends FunSuite {
   test("ok") {
     assert(rule.validate(Map("name" -> "foo")) === ValidationResult.Pass)
     assert(rule.validate(Map("name" -> "foo", "foo" -> "bar")) === ValidationResult.Pass)
-    assert(rule.validate(Map("name" -> "foo", "foo" -> "bar", "nf.region" -> "west")) === ValidationResult.Pass)
+    assert(
+      rule
+        .validate(Map("name" -> "foo", "foo" -> "bar", "nf.region" -> "west")) === ValidationResult.Pass
+    )
   }
 
   test("too many") {

@@ -25,7 +25,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-
 class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
@@ -93,7 +92,8 @@ class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
       def normalize(c: Config): Map[String, String] = {
         c.entrySet.asScala
           .filter(!_.getKey.contains("\""))
-          .map(t => t.getKey -> s"${t.getValue.unwrapped}").toMap
+          .map(t => t.getKey -> s"${t.getValue.unwrapped}")
+          .toMap
       }
 
       val expected = normalize(sysConfig)
@@ -115,4 +115,3 @@ class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
 }
-
