@@ -17,7 +17,7 @@ package com.netflix.atlas.core.util
 
 import java.awt.Color
 import java.awt.Font
-import java.aws.Rectangle
+import java.awt.Rectangle
 import java.awt.font.LineBreakMeasurer
 import java.awt.font.TextAttribute
 import java.awt.geom.AffineTransform
