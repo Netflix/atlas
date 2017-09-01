@@ -110,6 +110,7 @@ object HostSource extends StrictLogging {
 
   private def unzipIfNeeded(res: HttpResponse): Source[ByteString, Any] = {
     val isCompressed = res.headers.contains(`Content-Encoding`(HttpEncodings.gzip))
-    if (isCompressed) res.entity.dataBytes.via(Compression.gunzip()) else res.entity.dataBytes
+    val dataBytes = res.entity.withoutSizeLimit().dataBytes
+    if (isCompressed) dataBytes.via(Compression.gunzip()) else dataBytes
   }
 }
