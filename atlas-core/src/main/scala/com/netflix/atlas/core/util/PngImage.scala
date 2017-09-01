@@ -75,8 +75,24 @@ object PngImage {
     keys.zip(values).toMap
   }
 
-  def error(msg: String, width: Int, height: Int): PngImage = {
-    val fullMsg = "ERROR: " + msg
+  def userError(imgText: String, width: Int, height: Int): PngImage = {
+    val userErrorYellow = new Color(0xFF, 0xCF, 0x00)
+    error(imgText, width, height, "USER ERROR:", Color.BLACK, userErrorYellow)
+  }
+
+  def systemError(imgText: String, width: Int, height: Int): PngImage = {
+    val systemErrorRed = new Color(0xF8, 0x20, 0x00)
+    error(imgText, width, height, "SYSTEM ERROR:", Color.WHITE, systemErrorRed)
+  }
+
+  def error(
+      imgText: String,
+      width: Int,
+      height: Int,
+      imgTextPrefix: String = "ERROR:",
+      imgTextColor: Color = Color.WHITE,
+      imgBackgroundColor: Color = Color.BLACK): PngImage = {
+    val fullMsg = s"$imgTextPrefix $imgText"
 
     val image = newBufferedImage(width, height)
     val g = image.createGraphics
@@ -90,10 +106,10 @@ object PngImage {
     val font = new Font("Lucida Sans Regular", Font.PLAIN, 12)
     g.setFont(font)
 
-    g.setPaint(Color.BLACK)
+    g.setPaint(imgBackgroundColor)
     g.fill(new Rectangle(0, 0, width, height))
 
-    g.setPaint(Color.WHITE)
+    g.setPaint(imgTextColor)
     val attrStr = new AttributedString(fullMsg)
     attrStr.addAttribute(TextAttribute.FONT, font)
     val iterator = attrStr.getIterator

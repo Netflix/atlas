@@ -98,6 +98,33 @@ class PngImageSuite extends FunSuite {
     assert(diff2.metadata("diff-pixel-count") === "0")
   }
 
+  test("user error image matches expected") {
+    val expectedImage = getImage("test_user_error.png")
+    val userErrorImage = PngImage.userError("User Error Text", 800, 100)
+    val diff = PngImage.diff(expectedImage.data, userErrorImage.data)
+
+    assert(diff.metadata("identical") === "true")
+    assert(diff.metadata("diff-pixel-count") === "0")
+  }
+
+  test("system error image matches expected") {
+    val expectedImage = getImage("test_system_error.png")
+    val systemErrorImage = PngImage.systemError("System Error Text", 800, 100)
+    val diff = PngImage.diff(expectedImage.data, systemErrorImage.data)
+
+    assert(diff.metadata("identical") === "true")
+    assert(diff.metadata("diff-pixel-count") === "0")
+  }
+
+  test("user error image is different than system error image") {
+    val userErrorImage = PngImage.userError("", 800, 100)
+    val systemErrorImage = PngImage.systemError("", 800, 100)
+    val diff = PngImage.diff(userErrorImage.data, systemErrorImage.data)
+
+    assert(diff.metadata("identical") === "false")
+    assert(diff.metadata("diff-pixel-count") === "80000")
+  }
+
   test("image metadata") {
     val metadata = Map(
       "english"    -> "source url",

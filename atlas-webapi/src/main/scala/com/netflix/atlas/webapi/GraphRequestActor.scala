@@ -22,6 +22,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.util.ByteString
+import com.fasterxml.jackson.core.JsonProcessingException
 import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.PngImage
@@ -65,8 +66,15 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
   private def sendErrorImage(t: Throwable, w: Int, h: Int): Unit = {
     val simpleName = t.getClass.getSimpleName
     registry.counter(errorId.withTag("error", simpleName)).increment()
+
     val msg = s"$simpleName: ${t.getMessage}"
-    val image = HttpEntity(MediaTypes.`image/png`, PngImage.error(msg, w, h).toByteArray)
+    val errorImg = t match {
+      case _: IllegalArgumentException | _: IllegalStateException | _: JsonProcessingException =>
+        PngImage.userError(msg, w, h)
+      case _ =>
+        PngImage.systemError(msg, w, h)
+    }
+    val image = HttpEntity(MediaTypes.`image/png`, errorImg.toByteArray)
     graphCtx.complete(HttpResponse(status = StatusCodes.OK, entity = image))
   }
 
