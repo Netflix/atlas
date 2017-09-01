@@ -69,7 +69,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
     val msg = s"$simpleName: ${t.getMessage}"
     val errorImg = t match {
-      case userException @ (_: IllegalArgumentException | _: IllegalStateException | _: JsonProcessingException) =>
+      case _: IllegalArgumentException | _: IllegalStateException | _: JsonProcessingException =>
         PngImage.userError(msg, w, h)
       case _ =>
         PngImage.systemError(msg, w, h)
