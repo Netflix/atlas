@@ -16,15 +16,24 @@
 package com.netflix.atlas.eval.stream;
 
 import akka.actor.ActorSystem;
-import com.netflix.atlas.eval.model.TimeSeriesMessage;
-import com.netflix.atlas.json.Json;
+import akka.stream.ActorMaterializer;
+import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Framing;
+import akka.stream.javadsl.StreamConverters;
+import akka.util.ByteString;
 import com.netflix.atlas.json.JsonSupport;
+import com.netflix.spectator.api.NoopRegistry;
 import com.netflix.spectator.api.Registry;
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
@@ -224,5 +233,49 @@ public final class Evaluator extends EvaluatorImpl {
     @Override public String toString() {
       return "MessageEnvelope(" + id + "," + message + ")";
     }
+  }
+
+  /**
+   * Helper used for simple tests. A set of URIs will be read from {@code stdin}, one per line,
+   * and sent through a processor created via {@link #createStreamsProcessor()}. The output will
+   * be sent to {@code stdout}.
+   *
+   * @param args
+   *     Paths to additional configuration files that should be loaded. The configs will be
+   *     loaded in order with later entries overriding earlier ones if there are conflicts.
+   */
+  public static void main(String[] args) throws Exception {
+    final Logger logger = LoggerFactory.getLogger(Evaluator.class);
+
+    // Load any additional configurations if present
+    Config config = ConfigFactory.load();
+    for (String file : args) {
+      logger.info("loading configuration file {}", file);
+      config = ConfigFactory.parseFile(new File(file))
+          .withFallback(config)
+          .resolve();
+    }
+
+    // Setup evaluator
+    ActorSystem system = ActorSystem.create();
+    ActorMaterializer mat = ActorMaterializer.create(system);
+    Evaluator evaluator = new Evaluator(config, new NoopRegistry(), system);
+
+    // Process URIs
+    StreamConverters
+        .fromInputStream(() -> System.in)
+        .via(Framing.delimiter(ByteString.fromString("\n"), 16384))
+        .map(b -> b.decodeString(StandardCharsets.UTF_8))
+        .zipWithIndex()
+        .map(p -> new DataSource(p.second().toString(), p.first()))
+        .fold(new HashSet<DataSource>(), (vs, v) -> { vs.add(v); return vs; })
+        .map(DataSources::new)
+        .via(Flow.fromProcessor(evaluator::createStreamsProcessor))
+        .runForeach(
+            msg -> System.out.printf("%10s: %s%n", msg.getId(), msg.getMessage().toJson()),
+            mat
+        )
+        .toCompletableFuture()
+        .get();
   }
 }
