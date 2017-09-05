@@ -60,7 +60,7 @@ class DataSourceManager(newEvalSource: Evaluator.DataSource => Source[JsonSuppor
         val next = grab(in)
 
         val added = next.addedSources(current).asScala.toList
-        logger.info(s"added: ${added.mkString(", ")}")
+        logSources("added", added)
         val addedSources = added.map { ds =>
           val source = newEvalSource(ds).map(t => new MessageEnvelope(ds.getId, t))
           val ref = EvaluationFlows.stoppableSource(source)
@@ -70,7 +70,7 @@ class DataSourceManager(newEvalSource: Evaluator.DataSource => Source[JsonSuppor
         push(out, Source(addedSources.map(_._2.source)).flatMapMerge(Int.MaxValue, v => v))
 
         val removed = next.removedSources(current).asScala.toList
-        logger.info(s"removed: ${removed.mkString(", ")}")
+        logSources("removed", removed)
         removed.foreach { ds =>
           sources.get(ds).foreach(_.stop())
         }
@@ -87,6 +87,14 @@ class DataSourceManager(newEvalSource: Evaluator.DataSource => Source[JsonSuppor
       }
 
       setHandlers(in, out, this)
+    }
+  }
+
+  private def logSources(change: String, sources: List[DataSource]): Unit = {
+    val n = sources.size
+    logger.info(s"$change $n sources")
+    sources.zipWithIndex.foreach {
+      case (source, i) => logger.debug(s"$i of $n, $change: $source")
     }
   }
 }
