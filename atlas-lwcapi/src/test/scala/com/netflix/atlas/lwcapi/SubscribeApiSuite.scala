@@ -89,6 +89,34 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
     }
   }
 
+  test("subscribe: sync expressions") {
+    val ref = system.actorOf(Props(new TestActor))
+    sm.register("abc123", ref)
+    system.stop(ref)
+
+    val exprs = List(
+      "name,foo,:eq,:sum",
+      "name,foo,:eq,:max",
+      "name,bar,:eq,:sum"
+    )
+    exprs.foreach { expr =>
+      val json = s"""
+        |{
+        |  "streamId": "abc123",
+        |  "expressions": [
+        |    { "expression": "$expr", "frequency": 99 }
+        |  ]
+        |}""".stripMargin
+      Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
+        assert(response.status === StatusCodes.OK)
+        val subs = sm.subscriptionsForStream("abc123")
+        assert(subs.length === 1)
+        assert(subs.head.metadata.expression === expr)
+        assert(subs.head.metadata.frequency === 99L)
+      }
+    }
+  }
+
   test("subscribe: bad json") {
     Post("/lwc/api/v1/subscribe", "fubar") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)

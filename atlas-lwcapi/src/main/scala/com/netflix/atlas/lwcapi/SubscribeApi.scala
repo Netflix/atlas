@@ -77,9 +77,17 @@ class SubscribeApi @Inject()(
     expressions.foreach { expr =>
       try {
         val splits = splitter.split(expr.expression, expr.frequency)
+
+        // Add any new expressions
         splits.foreach { sub =>
           sm.subscribe(streamId, sub) ! SSESubscribe(expr.expression, List(sub.metadata))
         }
+
+        // Remove any expressions that are no longer required
+        val subIds = splits.map(_.metadata.id).toSet
+        sm.subscriptionsForStream(streamId)
+          .filter(s => !subIds.contains(s.metadata.id))
+          .foreach(s => sm.unsubscribe(streamId, s.metadata.id))
       } catch {
         case NonFatal(e) =>
           logger.error(s"Unable to subscribe to expression ${expr.expression}", e)
