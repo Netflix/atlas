@@ -15,10 +15,6 @@
  */
 package com.netflix.atlas.eval.stream
 
-import akka.stream.KillSwitch
+import org.scalatest.FunSuite
 
-/**
-  * Reference to a running stream. Has handle to terminate the stream as
-  * well as a result value.
-  */
-private[stream] case class StreamRef[T](killSwitch: KillSwitch, value: T)
+class BackendManagerSuite extends FunSuite {}

@@ -33,7 +33,7 @@ import com.netflix.atlas.json.Json
   * Process the SSE output from an LWC service and convert it into a stream of
   * [[AggrDatapoint]]s that can be used for evaluation.
   */
-class LwcToAggrDatapoint extends GraphStage[FlowShape[String, AggrDatapoint]] {
+private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[String, AggrDatapoint]] {
 
   private val in = Inlet[String]("LwcToAggrDatapoint.in")
   private val out = Outlet[AggrDatapoint]("LwcToAggrDatapoint.out")
