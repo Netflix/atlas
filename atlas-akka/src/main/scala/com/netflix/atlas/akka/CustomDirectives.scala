@@ -154,7 +154,6 @@ object CustomDirectives {
           case None =>
             respondWithHeaders(headers) & exposeHeaders
           case Some(h) =>
-            pass
             val finalHeaders = `Access-Control-Allow-Headers`(h) :: headers
             respondWithHeaders(finalHeaders) & exposeHeaders
         }
