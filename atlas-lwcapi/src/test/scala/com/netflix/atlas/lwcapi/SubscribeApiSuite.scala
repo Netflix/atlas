@@ -17,13 +17,11 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.Actor
 import akka.actor.Props
-import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.akka.RequestHandler
-import com.netflix.atlas.lwcapi.SubscribeApi._
+import com.netflix.spectator.api.NoopRegistry
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 
@@ -32,17 +30,19 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
 
   import scala.concurrent.duration._
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
   system.actorOf(Props(new TestActor), "lwc.subscribe")
 
-  val routes = RequestHandler.standardOptions((new SubscribeApi).routes)
+  private val sm = new ActorSubscriptionManager
+  private val splitter = new ExpressionSplitter
+
+  private val api = new SubscribeApi(new NoopRegistry, sm, splitter, system)
+
+  private val routes = RequestHandler.standardOptions(api.routes)
 
   before {
-    super.beforeAll()
-    lastUpdate = Nil
-    lastStreamId = ""
-    lastKind = 'none
+    sm.clear()
   }
 
   //
@@ -58,7 +58,6 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   test("subscribe: empty object") {
     Post("/lwc/api/v1/subscribe", "{}") ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
-      assert(lastUpdate === Nil)
     }
   }
 
@@ -66,11 +65,14 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
     val x = Post("/lwc/api/v1/subscribe", "[]")
     x ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
-      assert(lastUpdate === Nil)
     }
   }
 
   test("subscribe: correctly formatted expression") {
+    val ref = system.actorOf(Props(new TestActor))
+    sm.register("abc123", ref)
+    system.stop(ref)
+
     val json = """
       |{
       |  "streamId": "abc123",
@@ -80,9 +82,10 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
       |}""".stripMargin
     Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
-      assert(lastUpdate.size === 1)
-      assert(lastStreamId === "abc123")
-      assert(lastKind === 'subscribe)
+      val subs = sm.subscriptionsForStream("abc123")
+      assert(subs.length === 1)
+      assert(subs.head.metadata.expression === "nf.name,foo,:eq,:sum")
+      assert(subs.head.metadata.frequency === 99L)
     }
   }
 
@@ -111,22 +114,11 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
 }
 
 object SubscribeApiSuite {
-  @volatile var lastUpdate: List[ExpressionMetadata] = Nil
-  @volatile var lastStreamId: String = ""
-  @volatile var lastKind: Symbol = 'none
 
   class TestActor extends Actor {
 
-    def receive = {
-      case rc @ ImperativeRequestContext(SubscribeRequest(sourceId, Nil), _) =>
-        lastUpdate = Nil
-        lastKind = 'subscribe
-        rc.complete(HttpResponse(StatusCodes.BadRequest))
-      case rc @ ImperativeRequestContext(SubscribeRequest(sourceId, values), _) =>
-        lastUpdate = values
-        lastStreamId = sourceId
-        lastKind = 'subscribe
-        rc.complete(HttpResponse(StatusCodes.OK))
+    def receive: Receive = {
+      case _ =>
     }
   }
 }
