@@ -74,6 +74,8 @@ class SubscribeApi @Inject()(
     registry.counter(itemsId.withTag("action", "subscribe")).increment(expressions.size)
 
     val errors = scala.collection.mutable.ListBuffer[ErrorMsg]()
+    val subIdsBuilder = Set.newBuilder[String]
+
     expressions.foreach { expr =>
       try {
         val splits = splitter.split(expr.expression, expr.frequency)
@@ -83,17 +85,21 @@ class SubscribeApi @Inject()(
           sm.subscribe(streamId, sub) ! SSESubscribe(expr.expression, List(sub.metadata))
         }
 
-        // Remove any expressions that are no longer required
-        val subIds = splits.map(_.metadata.id).toSet
-        sm.subscriptionsForStream(streamId)
-          .filter(s => !subIds.contains(s.metadata.id))
-          .foreach(s => sm.unsubscribe(streamId, s.metadata.id))
+        // Add expression ids in use by this split
+        subIdsBuilder ++= splits.map(_.metadata.id)
       } catch {
         case NonFatal(e) =>
           logger.error(s"Unable to subscribe to expression ${expr.expression}", e)
           errors += ErrorMsg(expr.expression, e.getMessage)
       }
     }
+
+    // Remove any expressions that are no longer required
+    val subIds = subIdsBuilder.result()
+    sm.subscriptionsForStream(streamId)
+      .filter(s => !subIds.contains(s.metadata.id))
+      .foreach(s => sm.unsubscribe(streamId, s.metadata.id))
+
     errors.toList
   }
 }
