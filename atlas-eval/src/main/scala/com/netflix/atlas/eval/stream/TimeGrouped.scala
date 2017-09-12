@@ -41,7 +41,7 @@ import com.netflix.atlas.eval.model.TimeGroup
   * @tparam T
   *     Item from the input stream.
   */
-class TimeGrouped[T](numBuffers: Int, max: Int, ts: T => Long)
+private[stream] class TimeGrouped[T](numBuffers: Int, max: Int, ts: T => Long)
     extends GraphStage[FlowShape[T, TimeGroup[T]]] {
 
   private val in = Inlet[T]("TimeGrouped.in")

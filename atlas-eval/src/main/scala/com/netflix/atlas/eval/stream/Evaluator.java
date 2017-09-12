@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -105,6 +106,11 @@ public final class Evaluator extends EvaluatorImpl {
   public final static class DataSources {
     private final Set<DataSource> sources;
 
+    /** Create a new instance that is empty. */
+    public static DataSources empty() {
+      return new DataSources(Collections.emptySet());
+    }
+
     /** Create a new instance. */
     public static DataSources of(DataSource... sources) {
       Set<DataSource> set = new HashSet<>(Arrays.asList(sources));
@@ -112,7 +118,7 @@ public final class Evaluator extends EvaluatorImpl {
     }
 
     /** Create a new instance. */
-    public DataSources(Set<DataSource> sources) {
+    public DataSources(Collection<DataSource> sources) {
       this.sources = Collections.unmodifiableSet(new HashSet<>(sources));
     }
 
@@ -131,6 +137,22 @@ public final class Evaluator extends EvaluatorImpl {
     /** Compares with another set and returns the data sources that have been removed. */
     public Set<DataSource> removedSources(DataSources other) {
       return other.addedSources(this);
+    }
+
+    DataSources remoteOnly() {
+      Set<DataSource> remote = new HashSet<>(sources);
+      remote.removeAll(localSources());
+      return new DataSources(remote);
+    }
+
+    DataSources localOnly() {
+      return new DataSources(localSources());
+    }
+
+    private Set<DataSource> localSources() {
+      return sources.stream()
+          .filter(DataSource::isLocal)
+          .collect(Collectors.toSet());
     }
 
     @Override public boolean equals(Object o) {
@@ -173,6 +195,13 @@ public final class Evaluator extends EvaluatorImpl {
     /** Returns the URI for this data source. */
     public String getUri() {
       return uri;
+    }
+
+    /** Returns true if the URI is for a local file or classpath resource. */
+    public boolean isLocal() {
+      return uri.startsWith("/")
+          || uri.startsWith("file:")
+          || uri.startsWith("resource:");
     }
 
     @Override public boolean equals(Object o) {

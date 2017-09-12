@@ -22,33 +22,19 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
-import akka.stream.Attributes
-import akka.stream.FlowShape
-import akka.stream.Inlet
-import akka.stream.Outlet
 import akka.stream.scaladsl.Compression
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
-import akka.stream.stage.GraphStage
-import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.InHandler
-import akka.stream.stage.OutHandler
 import akka.util.ByteString
 import com.netflix.atlas.json.Json
 import com.typesafe.scalalogging.StrictLogging
 
-import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
-import scala.util.Try
 
-object EurekaSource extends StrictLogging {
+private[stream] object EurekaSource extends StrictLogging {
 
-  type Client = Flow[(HttpRequest, NotUsed), (Try[HttpResponse], NotUsed), NotUsed]
-
-  type InstanceSource = Source[ByteString, NotUsed]
-  type InstanceSources = List[InstanceSource]
-  type InstanceSourceRef = SourceRef[ByteString, NotUsed]
+  type ResponseFlow = Flow[NotUsed, GroupResponse, NotUsed]
 
   /**
     * Subscribes to all instances that are available for an app or a vip in eureka.
@@ -57,34 +43,15 @@ object EurekaSource extends StrictLogging {
     *     Should be either the `/v2/apps/{app}` or `/v2/vips/{vip}` endpoint for a
     *     Eureka service. Depending on the Eureka service configuration there may be
     *     some variation in the path.
-    * @param instanceUriPattern
-    *     Pattern for constructing the URI for each instance in Eureka. The allowed
-    *     substitutions are `{port}` and any key in the data center info metadata
-    *     block for an instance. Example:
-    *
-    *     ```
-    *     http://{local-ipv4}:{port}/metrics?q=name,cpu,:eq,:sum
-    *     ```
     * @param client
     *     HTTP client flow used for getting data from Eureka and for consuming from
     *     the instances.
     */
-  def apply(
-    eurekaUri: String,
-    instanceUriPattern: String,
-    client: Client
-  ): Source[ByteString, NotUsed] = {
-    EvaluationFlows
-      .repeat(NotUsed, 30.seconds)
-      .via(fetchEurekaData(eurekaUri, client))
-      .via(new InstanceHandler(instanceUriPattern, client))
-      .flatMapMerge(Int.MaxValue, sources => Source(sources).flatMapMerge(Int.MaxValue, s => s))
+  def apply(eurekaUri: String, client: Client): Source[GroupResponse, NotUsed] = {
+    Source.single(NotUsed).via(fetchEurekaData(eurekaUri, client))
   }
 
-  private def fetchEurekaData(
-    eurekaUri: String,
-    client: Client
-  ): Flow[NotUsed, EurekaResponse, NotUsed] = {
+  private def fetchEurekaData(eurekaUri: String, client: Client): ResponseFlow = {
     val useVipFormat = eurekaUri.contains("/vips/")
     val headers =
       List(Accept(MediaTypes.`application/json`), `Accept-Encoding`(HttpEncodings.gzip))
@@ -95,13 +62,13 @@ object EurekaSource extends StrictLogging {
       .via(client)
       .flatMapConcat {
         case (Success(res: HttpResponse), _) if res.status == StatusCodes.OK =>
-          parseResponse(res, useVipFormat)
+          parseResponse(eurekaUri, res, useVipFormat)
         case (Success(res: HttpResponse), _) =>
-          logger.warn(s"eureka refresh failed with status ${res.status}")
-          Source.empty[EurekaResponse]
+          logger.warn(s"eureka refresh failed with status ${res.status}: $eurekaUri")
+          Source.empty[GroupResponse]
         case (Failure(t), _) =>
-          logger.warn(s"eureka refresh failed with exception", t)
-          Source.empty[EurekaResponse]
+          logger.warn(s"eureka refresh failed with exception: $eurekaUri", t)
+          Source.empty[GroupResponse]
       }
   }
 
@@ -111,115 +78,82 @@ object EurekaSource extends StrictLogging {
   }
 
   private def parseResponse(
+    uri: String,
     res: HttpResponse,
-    useVipFormat: Boolean
-  ): Source[EurekaResponse, Any] = {
+    vipFormat: Boolean
+  ): Source[GroupResponse, Any] = {
     unzipIfNeeded(res)
       .reduce(_ ++ _)
+      .recover {
+        case t: Throwable =>
+          logger.warn(s"exception while processing eureka response: $uri", t)
+          ByteString.empty
+      }
+      .filter(_.nonEmpty)
       .map { bs =>
-        if (useVipFormat)
-          Json.decode[VipResponse](bs.toArray)
+        if (vipFormat)
+          Json.decode[VipResponse](bs.toArray).copy(uri = uri)
         else
-          Json.decode[AppResponse](bs.toArray)
+          Json.decode[AppResponse](bs.toArray).copy(uri = uri)
       }
   }
 
-  class InstanceHandler(instanceUriPattern: String, client: Client)
-      extends GraphStage[FlowShape[EurekaResponse, InstanceSources]] {
+  //
+  // Model objects for Eureka response payloads
+  //
 
-    private val in = Inlet[EurekaResponse]("InstanceHandler.in")
-    private val out = Outlet[InstanceSources]("InstanceHandler.out")
+  case class Groups(groups: List[GroupResponse])
 
-    override val shape: FlowShape[EurekaResponse, InstanceSources] = FlowShape(in, out)
-
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
-      new GraphStageLogic(shape) with InHandler with OutHandler {
-        private val instanceMap = new collection.mutable.AnyRefMap[String, InstanceSourceRef]
-
-        private def instanceUri(instance: Instance): String = {
-          var uri = instanceUriPattern
-          instance.dataCenterInfo.metadata.foreach {
-            case (k, v) =>
-              uri = uri.replace(s"{$k}", v)
-          }
-          uri = uri.replace("{port}", instance.port.toString)
-          uri
-        }
-
-        override def onPush(): Unit = {
-          val instances = grab(in).instances
-          val currentIds = instanceMap.keySet
-          val foundInstances = instances.map(i => i.instanceId -> i).toMap
-
-          val added = foundInstances -- currentIds
-          if (added.nonEmpty) {
-            logger.info(s"instances added: ${mkString(added)}")
-          }
-          val sources = added.values.map { instance =>
-            val uri = instanceUri(instance)
-            val ref = EvaluationFlows.stoppableSource(HostSource(uri, client))
-            instanceMap += instance.instanceId -> ref
-            ref.source
-          }
-          push(out, sources.toList)
-
-          val removed = instanceMap.toMap -- foundInstances.keySet
-          if (removed.nonEmpty) {
-            logger.info(s"instances removed: ${mkString(removed)}")
-          }
-          removed.foreach {
-            case (id, ref) =>
-              instanceMap -= id
-              ref.stop()
-          }
-        }
-
-        private def mkString(m: Map[String, _]): String = {
-          m.keySet.toList.sorted.mkString(",")
-        }
-
-        override def onPull(): Unit = {
-          pull(in)
-        }
-
-        override def onUpstreamFinish(): Unit = {
-          completeStage()
-        }
-
-        setHandlers(in, out, this)
-      }
-    }
-  }
-
-  sealed trait EurekaResponse {
-
+  sealed trait GroupResponse {
+    def uri: String
     def instances: List[Instance]
   }
 
-  case class VipResponse(applications: Apps) extends EurekaResponse {
-
+  case class VipResponse(uri: String, applications: Apps) extends GroupResponse {
+    require(applications != null, "applications cannot be null")
     def instances: List[Instance] = applications.application.flatMap(_.instance)
   }
 
-  case class AppResponse(application: App) extends EurekaResponse {
-
+  case class AppResponse(uri: String, application: App) extends GroupResponse {
+    require(application != null, "application cannot be null")
     def instances: List[Instance] = application.instance
   }
 
-  case class Apps(application: List[App])
+  case class Apps(application: List[App]) {
+    require(application != null, "application cannot be null")
+  }
 
-  case class App(name: String, instance: List[Instance])
+  case class App(name: String, instance: List[Instance]) {
+    require(instance != null, "instance cannot be null")
+  }
 
   case class Instance(
     instanceId: String,
     status: String,
     dataCenterInfo: DataCenterInfo,
     port: PortInfo
-  )
+  ) {
+    require(instanceId != null, "instanceId cannot be null")
+    require(status != null, "status cannot be null")
+    require(dataCenterInfo != null, "dataCenterInfo cannot be null")
+    require(port != null, "port cannot be null")
 
-  case class DataCenterInfo(name: String, metadata: Map[String, String])
+    def substitute(pattern: String): String = {
+      var tmp = pattern
+      dataCenterInfo.metadata.foreach {
+        case (k, v) =>
+          tmp = tmp.replace(s"{$k}", v)
+      }
+      tmp = tmp.replace("{port}", port.toString)
+      tmp
+    }
+  }
 
-  case class PortInfo(`$`: Int) {
+  case class DataCenterInfo(name: String, metadata: Map[String, String]) {
+    require(metadata != null, "metadata cannot be null")
+  }
+
+  case class PortInfo(`$`: Int = 7101) {
 
     def port: Int = `$`
 

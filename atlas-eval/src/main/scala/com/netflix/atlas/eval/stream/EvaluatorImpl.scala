@@ -15,12 +15,11 @@
  */
 package com.netflix.atlas.eval.stream
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.OpenOption
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.time.Duration
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
@@ -29,19 +28,21 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
 import akka.stream.ActorMaterializer
+import akka.stream.FlowShape
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.Broadcast
 import akka.stream.scaladsl.FileIO
 import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.GraphDSL
 import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Merge
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
-import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.core.model.ModelExtractors
-import com.netflix.atlas.core.model.StyleExpr
-import com.netflix.atlas.core.model.StyleVocabulary
-import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.atlas.core.util.Streams
+import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.stream.Evaluator.DataSource
+import com.netflix.atlas.eval.stream.Evaluator.DataSources
+import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
@@ -49,7 +50,7 @@ import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 
 import scala.concurrent.Await
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 /**
   * Internal implementation details for [[Evaluator]]. Anything needing a stable API should
@@ -61,42 +62,10 @@ private[stream] abstract class EvaluatorImpl(
   implicit val system: ActorSystem
 ) {
 
-  import EvaluatorImpl._
-
   private implicit val materializer = ActorMaterializer()
 
-  private val backends = {
-    import scala.collection.JavaConverters._
-    config.getConfigList("atlas.eval.stream.backends").asScala.toList.map { cfg =>
-      EurekaBackend(
-        cfg.getString("host"),
-        cfg.getString("eureka-uri"),
-        cfg.getString("instance-uri")
-      )
-    }
-  }
-
-  private def findBackendForUri(uri: Uri): Backend = {
-    if (uri.isRelative || uri.scheme == "file")
-      FileBackend(Paths.get(uri.path.toString()))
-    else if (uri.scheme == "resource")
-      ResourceBackend(uri.path.toString().substring(1))
-    else
-      findEurekaBackendForUri(uri)
-  }
-
-  private def findEurekaBackendForUri(uri: Uri): Backend = {
-    val id = UUID.randomUUID().toString
-    val expr = uri.query().get("q").getOrElse {
-      throw new IllegalArgumentException(s"missing required URI parameter `q`: $uri")
-    }
-    val path = s"/lwc/api/v1/stream/$id?expression=$expr"
-
-    val host = uri.authority.host.address()
-    backends.find(_.host == host) match {
-      case Some(backend) => backend.copy(instanceUri = backend.instanceUri + path)
-      case None          => throw new NoSuchElementException(host)
-    }
+  private def newStreamContext(dsLogger: DataSourceLogger = (_, _) => ()): StreamContext = {
+    new StreamContext(config.getConfig("atlas.eval.stream"), Http().superPool(), dsLogger)
   }
 
   protected def writeInputToFileImpl(uri: String, file: Path, duration: Duration): Unit = {
@@ -105,8 +74,6 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   protected def writeInputToFileImpl(uri: Uri, file: Path, duration: FiniteDuration): Unit = {
-    val backend = findBackendForUri(uri)
-
     // Explicit type needed in 2.5.2, but not 2.5.0. Likely related to:
     // https://github.com/akka/akka/issues/22666
     val options = Set[OpenOption](
@@ -123,7 +90,11 @@ private[stream] abstract class EvaluatorImpl(
       .map(_ ++ ByteString("\n\n"))
       .toMat(FileIO.toPath(file, options))(Keep.right)
 
-    val ref = backend.run(sink)
+    val ds = DataSources.of(new DataSource("_", uri.toString()))
+    val src = Source(List(ds))
+      .via(createInputFlow(newStreamContext()))
+
+    val ref = EvaluationFlows.run(src, sink)
     try {
       // If it is coming from a finite source like a file it will likely complete
       // before the timeout
@@ -144,82 +115,117 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   protected def createPublisherImpl(uri: Uri): Publisher[JsonSupport] = {
-    try {
-      val backend = findBackendForUri(uri)
+    val ds = DataSources.of(new DataSource("_", uri.toString()))
+    val client = Http().superPool[Any]()
 
-      val expr = eval(uri.query().get("q").get).head
-      val sink = EvaluationFlows
-        .lwcEval(expr, 60000)
-        .toMat(Sink.asPublisher(true))(Keep.right)
-
-      backend.run(sink).value
-    } catch {
-      case e: Exception =>
-        val msg = DiagnosticMessage.error(e)
-        Source
-          .single[JsonSupport](msg)
-          .toMat(Sink.asPublisher(true))(Keep.right)
-          .run()
-    }
-  }
-
-  protected def createStreamsProcessorImpl()
-    : Processor[Evaluator.DataSources, Evaluator.MessageEnvelope] = {
-    Flow[Evaluator.DataSources]
-      .via(new DataSourceManager(ds => Source.fromPublisher(createPublisherImpl(ds.getUri))))
-      .flatMapMerge(Int.MaxValue, v => v)
-      .toProcessor
+    Source(List(ds))
+      .via(createProcessorFlow(client))
+      .map(_.getMessage)
+      .toMat(Sink.asPublisher(true))(Keep.right)
       .run()
   }
-}
 
-private[stream] object EvaluatorImpl {
-
-  private val interpreter = Interpreter(StyleVocabulary.allWords)
-
-  def eval(expr: String): List[StyleExpr] = {
-    interpreter.execute(expr).stack.map {
-      case ModelExtractors.PresentationType(t) => t
-    }
+  protected def createStreamsProcessorImpl(): Processor[DataSources, MessageEnvelope] = {
+    val client = Http().superPool[Any]()
+    createProcessorFlow(client).toProcessor.run()
   }
 
-  sealed trait Backend {
+  private[stream] def createProcessorFlow(
+    client: Client
+  ): Flow[DataSources, MessageEnvelope, NotUsed] = {
 
-    def run[T](
-      sink: Sink[ByteString, T]
-    )(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T]
+    // Flow used for logging diagnostic messages
+    val (queue, logSrc) = Source
+      .queue[MessageEnvelope](10, OverflowStrategy.dropNew)
+      .toMat(Sink.asPublisher(true))(Keep.both)
+      .run()
+    val dsLogger: DataSourceLogger = { (ds, msg) =>
+      val env = new MessageEnvelope(ds.getId, msg)
+      queue.offer(env)
+    }
+
+    // One manager per processor to ensure distinct stream ids on LWC
+    val context = newStreamContext(dsLogger)
+
+    val g = GraphDSL.create() { implicit builder =>
+      import GraphDSL.Implicits._
+
+      // Split to 2 destinations: Input flow, Final Eval Step
+      val datasources = builder.add(Broadcast[DataSources](2))
+
+      // Combine the intermediate output and data sources for the final evaluation
+      // step
+      val taggerInput = builder.add(Merge[AnyRef](2))
+
+      val intermediateEval = createInputFlow(context)
+        .map(_.decodeString(StandardCharsets.UTF_8))
+        .via(new LwcToAggrDatapoint)
+        .via(new TimeGrouped[AggrDatapoint](1, 50, _.timestamp))
+
+      datasources.out(0) ~> intermediateEval ~> taggerInput.in(0)
+      datasources.out(1) ~> taggerInput.in(1)
+
+      // Overall to the outside it looks like a flow of DataSources to MessageEnvelope
+      FlowShape(datasources.in, taggerInput.out)
+    }
+
+    // Final evaluation of the overall expression
+    Flow[DataSources]
+      .map(s => context.validate(s))
+      .via(g)
+      .via(new FinalExprEval)
+      .flatMapConcat(s => s)
+      .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
+      .merge(Source.fromPublisher(logSrc), eagerComplete = false)
   }
 
-  case class FileBackend(file: Path) extends Backend {
+  private[stream] def createInputFlow(
+    context: StreamContext
+  ): Flow[DataSources, ByteString, NotUsed] = {
+    import scala.collection.JavaConverters._
 
-    def run[T](
-      sink: Sink[ByteString, T]
-    )(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T] = {
-      val source = FileIO.fromPath(file).via(EvaluationFlows.sseFraming)
-      EvaluationFlows.run(source, sink)
+    val g = GraphDSL.create() { implicit builder =>
+      import GraphDSL.Implicits._
+
+      // Split to 2 destinations: Eureka, File/Resources
+      val datasources = builder.add(Broadcast[DataSources](2))
+
+      // Groups need to be sent to subscription step for posting the set of uris
+      // we are interested in and to the stream step for maintaining the connections
+      // and getting all of the data
+      val eurekaGroups = builder.add(Broadcast[SourcesAndGroups](2))
+
+      // Combine the data coming from Eureka and File/Resources before performing
+      // the time grouping and aggregation
+      val intermediateInput = builder.add(Merge[ByteString](2))
+
+      // Send DataSources and Eureka groups to subscription manager that does a
+      // `POST /lwc/api/v1/subscribe` to update the set of subscriptions being sent
+      // to each connection
+      val eurekaLookup = Flow[DataSources]
+        .via(new EurekaGroupsLookup(context, 30.seconds))
+        .flatMapMerge(Int.MaxValue, s => s)
+      datasources.out(0).map(_.remoteOnly()) ~> eurekaLookup ~> eurekaGroups.in
+      eurekaGroups.out(0) ~> new SubscriptionManager(context)
+
+      // Streams, `GET /lwc/api/v1/stream/$id`, from each instance of the Eureka groups
+      val eurekaStream = Flow[SourcesAndGroups]
+        .map(_._2)
+        .via(new ConnectionManager(context))
+        .flatMapMerge(Int.MaxValue, s => Source(s))
+        .flatMapMerge(Int.MaxValue, s => s)
+      eurekaGroups.out(1) ~> eurekaStream ~> intermediateInput.in(0)
+
+      // Streams for local URIs like files or resources
+      val tmp = Flow[DataSources]
+        .flatMapMerge(Int.MaxValue, s => Source(s.getSources.asScala.toList))
+        .flatMapMerge(Int.MaxValue, s => context.localSource(Uri(s.getUri)))
+      datasources.out(1).map(_.localOnly()) ~> tmp ~> intermediateInput.in(1)
+
+      // Overall to the outside it looks like a flow of DataSources to ByteString data
+      FlowShape(datasources.in, intermediateInput.out)
     }
-  }
 
-  case class ResourceBackend(resource: String) extends Backend {
-
-    def run[T](
-      sink: Sink[ByteString, T]
-    )(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T] = {
-      val source = StreamConverters
-        .fromInputStream(() => Streams.resource(resource))
-        .via(EvaluationFlows.sseFraming)
-      EvaluationFlows.run(source, sink)
-    }
-  }
-
-  case class EurekaBackend(host: String, eurekaUri: String, instanceUri: String) extends Backend {
-
-    def run[T](
-      sink: Sink[ByteString, T]
-    )(implicit sys: ActorSystem, mat: ActorMaterializer): StreamRef[T] = {
-      val client = Http().superPool[NotUsed]()
-      val src = EurekaSource(eurekaUri, instanceUri, client)
-      EvaluationFlows.run(src, sink)
-    }
+    Flow[DataSources].via(g)
   }
 }

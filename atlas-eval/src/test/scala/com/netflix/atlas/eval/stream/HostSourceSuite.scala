@@ -51,7 +51,7 @@ class HostSourceSuite extends FunSuite {
   implicit val materializer = ActorMaterializer()
 
   def source(response: => Try[HttpResponse]): Source[ByteString, NotUsed] = {
-    val client = Flow[(HttpRequest, NotUsed)].map(_ => response -> NotUsed)
+    val client = Flow[(HttpRequest, Any)].map(_ => response -> NotUsed)
     HostSource("http://localhost/api/test", client = client, delay = 1.milliseconds)
   }
 

@@ -18,6 +18,7 @@ package com.netflix.atlas.eval.stream
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Duration
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
@@ -193,7 +194,10 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
       .toMat(sink)(Keep.right)
       .run()
 
-    Await.result(future, 1.minute)
+    try Await.result(future, 1.minute)
+    catch {
+      case _: TimeoutException => fail(s"stuck in state $state")
+    }
   }
 
   test("create processor from resource uri") {
