@@ -68,11 +68,9 @@ private[stream] class StreamContext(
   }
 
   def findEurekaBackendForUri(uri: Uri): EurekaBackend = {
-    val path = s"/lwc/api/v1/stream/$id"
-
     val host = uri.authority.host.address()
     backends.find(_.host == host) match {
-      case Some(backend) => backend.copy(instanceUri = backend.instanceUri + path)
+      case Some(backend) => backend
       case None          => throw new NoSuchElementException(host)
     }
   }
