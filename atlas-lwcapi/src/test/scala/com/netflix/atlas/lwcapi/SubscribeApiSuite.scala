@@ -32,12 +32,10 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
 
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  system.actorOf(Props(new TestActor), "lwc.subscribe")
-
   private val sm = new ActorSubscriptionManager
   private val splitter = new ExpressionSplitter
 
-  private val api = new SubscribeApi(new NoopRegistry, sm, splitter, system)
+  private val api = new SubscribeApi(new NoopRegistry, sm, splitter)
 
   private val routes = RequestHandler.standardOptions(api.routes)
 

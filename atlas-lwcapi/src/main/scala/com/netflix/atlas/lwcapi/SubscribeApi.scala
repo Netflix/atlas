@@ -17,7 +17,6 @@ package com.netflix.atlas.lwcapi
 
 import javax.inject.Inject
 
-import akka.actor.ActorRefFactory
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
@@ -36,8 +35,7 @@ import scala.util.control.NonFatal
 class SubscribeApi @Inject()(
   registry: Registry,
   sm: ActorSubscriptionManager,
-  splitter: ExpressionSplitter,
-  implicit val actorRefFactory: ActorRefFactory
+  splitter: ExpressionSplitter
 ) extends WebApi
     with StrictLogging {
 
@@ -46,8 +44,6 @@ class SubscribeApi @Inject()(
 
   private val evalsId = registry.createId("atlas.lwcapi.subscribe.count")
   private val itemsId = registry.createId("atlas.lwcapi.subscribe.itemCount")
-
-  private val subscribeRef = actorRefFactory.actorSelection("/user/lwc.subscribe")
 
   def routes: Route = {
     path("lwc" / "api" / "v1" / "subscribe") {
