@@ -37,7 +37,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -118,7 +117,7 @@ public final class Evaluator extends EvaluatorImpl {
     }
 
     /** Create a new instance. */
-    public DataSources(Collection<DataSource> sources) {
+    public DataSources(Set<DataSource> sources) {
       this.sources = Collections.unmodifiableSet(new HashSet<>(sources));
     }
 
