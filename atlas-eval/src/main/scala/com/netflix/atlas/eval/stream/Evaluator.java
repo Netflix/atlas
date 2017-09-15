@@ -17,8 +17,10 @@ package com.netflix.atlas.eval.stream;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.ThrottleMode;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Framing;
+import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import com.netflix.atlas.json.JsonSupport;
@@ -30,6 +32,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.concurrent.duration.FiniteDuration;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -40,6 +43,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -290,14 +294,19 @@ public final class Evaluator extends EvaluatorImpl {
     Evaluator evaluator = new Evaluator(config, new NoopRegistry(), system);
 
     // Process URIs
-    StreamConverters
+    StreamConverters                                       // Read in URIs from stdin
         .fromInputStream(() -> System.in)
         .via(Framing.delimiter(ByteString.fromString("\n"), 16384))
         .map(b -> b.decodeString(StandardCharsets.UTF_8))
-        .zipWithIndex()
+        .zipWithIndex()                                    // Use line number as id for output
         .map(p -> new DataSource(p.second().toString(), p.first()))
         .fold(new HashSet<DataSource>(), (vs, v) -> { vs.add(v); return vs; })
         .map(DataSources::new)
+        .flatMapConcat(Source::repeat)                     // Repeat so stream doesn't shutdown
+        .throttle(                                         // Throttle to avoid wasting CPU
+            1, FiniteDuration.apply(1, TimeUnit.MINUTES),
+            1, ThrottleMode.shaping()
+        )
         .via(Flow.fromProcessor(evaluator::createStreamsProcessor))
         .runForeach(
             msg -> System.out.printf("%10s: %s%n", msg.getId(), msg.getMessage().toJson()),
