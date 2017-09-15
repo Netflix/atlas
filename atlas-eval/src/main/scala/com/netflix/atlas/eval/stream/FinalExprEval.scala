@@ -26,9 +26,12 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
+import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
+import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeSeriesMessage
@@ -63,6 +66,15 @@ private[stream] class FinalExprEval(step: Long = 60000L)
       // the data for it
       private var recipients = List.empty[(StyleExpr, List[String])]
 
+      // Empty data map used as base to account for expressions that do not have any
+      // matches for a given time interval
+      private var noData = Map.empty[DataExpr, List[TimeSeries]]
+
+      private def error(expr: String, hint: String, t: Throwable): DiagnosticMessage = {
+        val str = s"$hint [[$expr]]: ${t.getClass.getSimpleName}: ${t.getMessage}"
+        DiagnosticMessage.error(str)
+      }
+
       // Updates the recipients list
       private def handleDataSources(ds: DataSources): Unit = {
         import scala.collection.JavaConverters._
@@ -71,11 +83,20 @@ private[stream] class FinalExprEval(step: Long = 60000L)
         // Get set of expressions before we update the list
         val previous = recipients.map(_._1).toSet
 
+        // Error messages for invalid expressions
+        val errors = List.newBuilder[MessageEnvelope]
+
         // Compute the new set of expressions
         recipients = sources
           .flatMap { s =>
-            val exprs = ExprInterpreter.eval(Uri(s.getUri))
-            exprs.map(e => e -> s.getId)
+            try {
+              val exprs = ExprInterpreter.eval(Uri(s.getUri))
+              exprs.map(e => e -> s.getId)
+            } catch {
+              case e: Exception =>
+                errors += new MessageEnvelope(s.getId, error(s.getUri, "invalid expression", e))
+                Nil
+            }
           }
           .groupBy(_._1)
           .map(t => t._1 -> t._2.map(_._2).toList)
@@ -87,14 +108,21 @@ private[stream] class FinalExprEval(step: Long = 60000L)
           states -= expr
         }
 
-        push(out, Source(Nil))
+        // Setup no data map
+        noData = recipients
+          .flatMap(_._1.expr.dataExprs)
+          .distinct
+          .map(e => e -> List(TimeSeries.noData(e.query, step)))
+          .toMap
+
+        push(out, Source(errors.result()))
       }
 
       // Perform the final evaluation and create a source with the TimeSeriesMessages
       // addressed to each recipient
       private def handleData(group: TimeGroup[AggrDatapoint]): Unit = {
         // Finalize the DataExprs, needed as input for further evaluation
-        val data = group.values.groupBy(_.expr).map {
+        val data = noData ++ group.values.groupBy(_.expr).map {
           case (k, vs) =>
             k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries(step))
         }
@@ -105,15 +133,23 @@ private[stream] class FinalExprEval(step: Long = 60000L)
           case (expr, ids) =>
             val state = states.getOrElse(expr, Map.empty[StatefulExpr, Any])
             val context = EvalContext(s, s + step, step, state)
-            val result = expr.expr.eval(context, data)
-            states(expr) = result.state
-            val msgs = result.data.map { t =>
-              TimeSeriesMessage(expr.toString, context, t)
-            }
-            ids.flatMap { id =>
-              msgs.map { msg =>
-                new MessageEnvelope(id, msg)
+            try {
+              val result = expr.expr.eval(context, data)
+              states(expr) = result.state
+              val msgs = result.data.map { t =>
+                TimeSeriesMessage(expr.toString, context, t)
               }
+              ids.flatMap { id =>
+                msgs.map { msg =>
+                  new MessageEnvelope(id, msg)
+                }
+              }
+            } catch {
+              case e: Exception =>
+                val msg = error(expr.toString, "final eval failed", e)
+                ids.map { id =>
+                  new MessageEnvelope(id, msg)
+                }
             }
         }
 
