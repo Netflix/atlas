@@ -32,7 +32,6 @@ import akka.stream.scaladsl.Source
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
-import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.json.Json
 import com.typesafe.scalalogging.StrictLogging
 
@@ -75,16 +74,9 @@ private[stream] class SubscriptionManager(context: StreamContext)
       // stage is fully initialized
       private lazy val http = Source
         .queue[HttpRequest](2048, OverflowStrategy.dropHead)
-        .map(req => req -> AccessLogger.newClientLogger("subscribe", req))
-        .via(context.client)
-        .to(Sink.foreach {
-          case (response, logger: AccessLogger) =>
-            logger.complete(response)
-            response.foreach(_.discardEntityBytes()(materializer))
-          case (response, _) =>
-            // Shouldn't ever get here, needed to avoid non-exhaustive warning since the
-            // client uses `Any` for the associated helper state
-            response.foreach(_.discardEntityBytes()(materializer))
+        .via(context.httpClient("subscribe"))
+        .to(Sink.foreach { response =>
+          response.foreach(_.discardEntityBytes()(materializer))
         })
         .run()(materializer)
 

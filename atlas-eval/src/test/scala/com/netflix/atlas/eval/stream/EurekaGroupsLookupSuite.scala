@@ -23,6 +23,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
+import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.json.Json
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
@@ -80,7 +81,7 @@ class EurekaGroupsLookupSuite extends FunSuite {
   }
 
   private def run(input: List[DataSources], n: Int = 1): List[SourcesAndGroups] = {
-    val client = Flow[(HttpRequest, Any)]
+    val client = Flow[(HttpRequest, AccessLogger)]
       .map {
         case (req, v) =>
           val json = Json.encode(eurekaGroup)

@@ -21,6 +21,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.JsonSupport
@@ -29,7 +30,8 @@ import scala.util.Try
 
 package object stream {
 
-  type Client = Flow[(HttpRequest, Any), (Try[HttpResponse], Any), NotUsed]
+  type Client = Flow[(HttpRequest, AccessLogger), (Try[HttpResponse], AccessLogger), NotUsed]
+  type SimpleClient = Flow[HttpRequest, Try[HttpResponse], NotUsed]
 
   type SourcesAndGroups = (DataSources, EurekaSource.Groups)
 

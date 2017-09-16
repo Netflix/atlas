@@ -60,7 +60,7 @@ private[stream] class ConnectionManager(context: StreamContext)
         val path = "/lwc/api/v1/stream/" + context.id
         val sources = added.values.map { instance =>
           val uri = instance.substitute("http://{local-ipv4}:{port}") + path
-          val ref = EvaluationFlows.stoppableSource(HostSource(uri, context.client))
+          val ref = EvaluationFlows.stoppableSource(HostSource(uri, context.httpClient("stream")))
           instanceMap += instance.instanceId -> ref
           ref.source
         }
