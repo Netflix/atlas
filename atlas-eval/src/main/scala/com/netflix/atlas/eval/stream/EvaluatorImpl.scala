@@ -116,23 +116,19 @@ private[stream] abstract class EvaluatorImpl(
 
   protected def createPublisherImpl(uri: Uri): Publisher[JsonSupport] = {
     val ds = DataSources.of(new DataSource("_", uri.toString()))
-    val client = Http().superPool[Any]()
 
     Source(List(ds))
-      .via(createProcessorFlow(client))
+      .via(createProcessorFlow)
       .map(_.getMessage)
       .toMat(Sink.asPublisher(true))(Keep.right)
       .run()
   }
 
   protected def createStreamsProcessorImpl(): Processor[DataSources, MessageEnvelope] = {
-    val client = Http().superPool[Any]()
-    createProcessorFlow(client).toProcessor.run()
+    createProcessorFlow.toProcessor.run()
   }
 
-  private[stream] def createProcessorFlow(
-    client: Client
-  ): Flow[DataSources, MessageEnvelope, NotUsed] = {
+  private[stream] def createProcessorFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
 
     // Flow used for logging diagnostic messages
     val (queue, logSrc) = Source
