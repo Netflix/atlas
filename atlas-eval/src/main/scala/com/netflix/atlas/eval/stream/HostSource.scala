@@ -57,23 +57,23 @@ private[stream] object HostSource extends StrictLogging {
     */
   def apply(
     uri: String,
-    client: Client,
+    client: SimpleClient,
     delay: FiniteDuration = 1.second
   ): Source[ByteString, NotUsed] = {
     EvaluationFlows.repeat(uri, delay).flatMapConcat(singleCall(client))
   }
 
-  private def singleCall(client: Client)(uri: String): Source[ByteString, Any] = {
+  private def singleCall(client: SimpleClient)(uri: String): Source[ByteString, Any] = {
     logger.info(s"subscribing to $uri")
     val headers =
       List(Accept(MediaTypes.`text/event-stream`), `Accept-Encoding`(HttpEncodings.gzip))
     val request = HttpRequest(HttpMethods.GET, uri, headers)
 
     Source
-      .single(request -> NotUsed)
+      .single(request)
       .via(client)
       .flatMapConcat {
-        case (Success(res: HttpResponse), _) if res.status == StatusCodes.OK =>
+        case Success(res: HttpResponse) if res.status == StatusCodes.OK =>
           // Framing needs to take place on the byte stream before merging chunks
           // with other hosts
           unzipIfNeeded(res)
@@ -91,10 +91,10 @@ private[stream] object HostSource extends StrictLogging {
                   logger.info(s"lost connection to $uri", t)
               }
             }
-        case (Success(res: HttpResponse), _) =>
+        case Success(res: HttpResponse) =>
           logger.warn(s"subscription attempt failed with status ${res.status}")
           empty
-        case (Failure(t), _) =>
+        case Failure(t) =>
           logger.warn(s"subscription attempt failed with exception", t)
           empty
       }

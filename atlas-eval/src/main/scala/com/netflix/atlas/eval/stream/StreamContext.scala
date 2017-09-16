@@ -19,12 +19,15 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.UUID
 
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri
 import akka.stream.IOResult
 import akka.stream.scaladsl.FileIO
+import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
+import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
@@ -98,6 +101,20 @@ private[stream] class StreamContext(
         dsLogger(ds, DiagnosticMessage.error(e))
         None
     }
+  }
+
+  /**
+    * Returns a simple http client flow that will log the request using the provide name.
+    */
+  def httpClient(name: String): SimpleClient = {
+    Flow[HttpRequest]
+      .map(r => r -> AccessLogger.newClientLogger(name, r))
+      .via(client)
+      .map {
+        case (response, log) =>
+          log.complete(response)
+          response
+      }
   }
 }
 

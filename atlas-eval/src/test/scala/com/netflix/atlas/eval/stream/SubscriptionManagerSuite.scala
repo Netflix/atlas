@@ -26,6 +26,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
+import com.netflix.atlas.akka.AccessLogger
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
@@ -96,7 +97,7 @@ class SubscriptionManagerSuite extends FunSuite with BeforeAndAfter {
   private val requests = new ConcurrentLinkedQueue[HttpRequest]()
 
   private def run(input: List[SourcesAndGroups]): Unit = {
-    val client = Flow[(HttpRequest, Any)]
+    val client = Flow[(HttpRequest, AccessLogger)]
       .map {
         case (req, v) =>
           requests.add(req)

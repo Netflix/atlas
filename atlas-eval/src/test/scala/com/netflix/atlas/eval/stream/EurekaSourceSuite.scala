@@ -18,7 +18,6 @@ package com.netflix.atlas.eval.stream
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpRequest
@@ -96,7 +95,7 @@ class EurekaSourceSuite extends FunSuite {
   private implicit val mat = ActorMaterializer()
 
   private def run(uri: String, response: Try[HttpResponse]): GroupResponse = {
-    val client = Flow[(HttpRequest, Any)].map(_ => response -> NotUsed)
+    val client = Flow[HttpRequest].map(_ => response)
     val future = EurekaSource(uri, client).runWith(Sink.head)
     Await.result(future, Duration.Inf)
   }

@@ -47,26 +47,22 @@ private[stream] object EurekaSource extends StrictLogging {
     *     HTTP client flow used for getting data from Eureka and for consuming from
     *     the instances.
     */
-  def apply(eurekaUri: String, client: Client): Source[GroupResponse, NotUsed] = {
-    Source.single(NotUsed).via(fetchEurekaData(eurekaUri, client))
-  }
-
-  private def fetchEurekaData(eurekaUri: String, client: Client): ResponseFlow = {
+  def apply(eurekaUri: String, client: SimpleClient): Source[GroupResponse, NotUsed] = {
     val useVipFormat = eurekaUri.contains("/vips/")
     val headers =
       List(Accept(MediaTypes.`application/json`), `Accept-Encoding`(HttpEncodings.gzip))
     val request = HttpRequest(HttpMethods.GET, eurekaUri, headers)
 
-    Flow[NotUsed]
-      .map(_ => request -> NotUsed)
+    Source
+      .single(request)
       .via(client)
       .flatMapConcat {
-        case (Success(res: HttpResponse), _) if res.status == StatusCodes.OK =>
+        case Success(res: HttpResponse) if res.status == StatusCodes.OK =>
           parseResponse(eurekaUri, res, useVipFormat)
-        case (Success(res: HttpResponse), _) =>
+        case Success(res: HttpResponse) =>
           logger.warn(s"eureka refresh failed with status ${res.status}: $eurekaUri")
           Source.empty[GroupResponse]
-        case (Failure(t), _) =>
+        case Failure(t) =>
           logger.warn(s"eureka refresh failed with exception: $eurekaUri", t)
           Source.empty[GroupResponse]
       }
