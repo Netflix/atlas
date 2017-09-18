@@ -54,7 +54,7 @@ private[stream] class ConnectionManager(context: StreamContext)
 
         val added = foundInstances -- currentIds
         if (added.nonEmpty) {
-          logger.info(s"instances added: ${mkString(added)}")
+          logger.debug(s"instances added: ${mkString(added)}")
         }
 
         val path = "/lwc/api/v1/stream/" + context.id
@@ -68,7 +68,7 @@ private[stream] class ConnectionManager(context: StreamContext)
 
         val removed = instanceMap.toMap -- foundInstances.keySet
         if (removed.nonEmpty) {
-          logger.info(s"instances removed: ${mkString(removed)}")
+          logger.debug(s"instances removed: ${mkString(removed)}")
         }
         removed.foreach {
           case (id, ref) =>
