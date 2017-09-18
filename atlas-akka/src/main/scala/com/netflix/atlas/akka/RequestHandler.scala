@@ -43,13 +43,18 @@ class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictL
       val routes = endpoints.tail.foldLeft(endpoints.head.routes) {
         case (acc, r) => acc ~ r.routes
       }
-      RequestHandler.standardOptions(routes)
+      RequestHandler.standardOptions(routes, corsHostPatterns)
     }
   }
 
   private def endpoints: List[String] = {
     import scala.collection.JavaConverters._
     config.getStringList("atlas.akka.api-endpoints").asScala.toList.distinct
+  }
+
+  private def corsHostPatterns: List[String] = {
+    import scala.collection.JavaConverters._
+    config.getStringList("atlas.akka.cors-host-patterns").asScala.toList.distinct
   }
 
   /**
@@ -82,7 +87,7 @@ object RequestHandler {
     * Wraps a route with the standard options that we typically use for error handling,
     * logging, CORS support, compression, etc.
     */
-  def standardOptions(route: Route): Route = {
+  def standardOptions(route: Route, corsHostPatterns: List[String] = Nil): Route = {
 
     // Default paths to always include
     val ok = path("ok") {
@@ -109,7 +114,7 @@ object RequestHandler {
     val log = accessLog { error }
 
     // Add CORS headers to all responses
-    cors { log }
+    cors(corsHostPatterns) { log }
   }
 
   /**
