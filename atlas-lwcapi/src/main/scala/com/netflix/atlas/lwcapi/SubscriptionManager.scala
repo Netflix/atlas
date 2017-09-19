@@ -124,8 +124,17 @@ class SubscriptionManager[T] {
     * Start sending data for the subscription to the given stream id.
     */
   def subscribe(streamId: String, sub: Subscription): T = synchronized {
+    subscribe(streamId, List(sub))
+  }
+
+  /**
+    * Start sending data for the subscription to the given stream id.
+    */
+  def subscribe(streamId: String, subs: List[Subscription]): T = synchronized {
     val info = getInfo(streamId)
-    info.subs.put(sub.metadata.id, sub)
+    subs.foreach { sub =>
+      info.subs.put(sub.metadata.id, sub)
+    }
     updateSubHandlers()
     info.handler
   }

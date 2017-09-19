@@ -77,8 +77,9 @@ class SubscribeApi @Inject()(
         val splits = splitter.split(expr.expression, expr.frequency)
 
         // Add any new expressions
+        val ref = sm.subscribe(streamId, splits)
         splits.foreach { sub =>
-          sm.subscribe(streamId, sub) ! SSESubscribe(expr.expression, List(sub.metadata))
+          ref ! SSESubscribe(expr.expression, List(sub.metadata))
         }
 
         // Add expression ids in use by this split
