@@ -40,7 +40,7 @@ class SubscriptionManager[T] {
 
   private val registrations = new ConcurrentHashMap[String, StreamInfo[T]]()
 
-  private val subHandlers = new ConcurrentHashMap[String, List[T]]()
+  private val subHandlers = new ConcurrentHashMap[String, ConcurrentSet[T]]()
 
   @volatile private var queryIndex = QueryIndex.create[Subscription](Nil)
   @volatile private var queryListChanged = false
@@ -62,33 +62,30 @@ class SubscriptionManager[T] {
   }
 
   /**
-    * Refresh the map from a subscription to a set of handlers. This is precomputed on
-    * each update so the [[handlersForSubscription()]] call will be as cheap as possible.
+    * Add handler that should receive data for a given subscription. The update is synchronized
+    * to coordinate with the deletion of the handlers set when it is empty. Reads will just
+    * access the concurrent map without synchronization.
     */
-  private def updateSubHandlers(): Unit = synchronized {
-    val handlers = registrations
-      .values()
-      .asScala
-      .flatMap { info =>
-        info.subscriptions.map(_.metadata.id -> info.handler)
+  private def addHandler(subId: String, handler: T): Unit = {
+    subHandlers.synchronized {
+      val handlers = subHandlers.computeIfAbsent(subId, _ => new ConcurrentSet[T])
+      handlers.add(handler)
+    }
+  }
+
+  /**
+    * Remove a handler from the set that should receive data for a given subscription. The
+    * is empty check and removal are synchronized to coordinate with the updates adding
+    * new handlers to the set.
+    */
+  private def removeHandler(subId: String, handler: T): Unit = {
+    val handlers = subHandlers.get(subId)
+    if (handlers != null) {
+      handlers.remove(handler)
+      subHandlers.synchronized {
+        if (handlers.isEmpty) subHandlers.remove(subId)
       }
-      .toList
-      .groupBy(_._1)
-      .map(t => t._1 -> t._2.map(_._2))
-
-    // Copy current values into concurrent map
-    handlers.foreach { h =>
-      subHandlers.put(h._1, h._2)
     }
-
-    // Remove any ids that are no longer present
-    val keys = subHandlers.keySet().asScala.toSet
-    val removed = keys -- handlers.keySet
-    removed.foreach { k =>
-      subHandlers.remove(k)
-    }
-
-    queryListChanged = true
   }
 
   /**
@@ -96,9 +93,9 @@ class SubscriptionManager[T] {
     * interact with the stream. The caller can use [[handlersForSubscription()]] to get a
     * list of handlers that should be called for a given subscription.
     */
-  def register(streamId: String, handler: T): Unit = synchronized {
+  def register(streamId: String, handler: T): Unit = {
     registrations.put(streamId, new StreamInfo[T](handler))
-    updateSubHandlers()
+    queryListChanged = true
   }
 
   /**
@@ -108,7 +105,7 @@ class SubscriptionManager[T] {
     */
   def unregister(streamId: String): Option[T] = {
     val result = Option(registrations.remove(streamId)).map(_.handler)
-    updateSubHandlers()
+    queryListChanged = true
     result
   }
 
@@ -123,28 +120,31 @@ class SubscriptionManager[T] {
   /**
     * Start sending data for the subscription to the given stream id.
     */
-  def subscribe(streamId: String, sub: Subscription): T = synchronized {
+  def subscribe(streamId: String, sub: Subscription): T = {
     subscribe(streamId, List(sub))
   }
 
   /**
     * Start sending data for the subscription to the given stream id.
     */
-  def subscribe(streamId: String, subs: List[Subscription]): T = synchronized {
+  def subscribe(streamId: String, subs: List[Subscription]): T = {
     val info = getInfo(streamId)
     subs.foreach { sub =>
       info.subs.put(sub.metadata.id, sub)
+      addHandler(sub.metadata.id, info.handler)
     }
-    updateSubHandlers()
+    queryListChanged = true
     info.handler
   }
 
   /**
     * Stop sending data for the subscription to the given stream id.
     */
-  def unsubscribe(streamId: String, subId: String): Unit = synchronized {
-    getInfo(streamId).subs.remove(subId)
-    updateSubHandlers()
+  def unsubscribe(streamId: String, subId: String): Unit = {
+    val info = getInfo(streamId)
+    info.subs.remove(subId)
+    removeHandler(subId, info.handler)
+    queryListChanged = true
   }
 
   /**
@@ -189,12 +189,12 @@ class SubscriptionManager[T] {
     */
   def handlersForSubscription(subId: String): List[T] = {
     val vs = subHandlers.get(subId)
-    if (vs == null) Nil else vs
+    if (vs == null) Nil else vs.values
   }
 
   def clear(): Unit = {
     registrations.clear()
-    updateSubHandlers()
+    queryListChanged = true
     regenerateQueryIndex()
   }
 }
@@ -209,6 +209,27 @@ object SubscriptionManager {
 
     def subscriptions: List[Subscription] = {
       subs.values().asScala.toList
+    }
+  }
+
+  class ConcurrentSet[T] {
+    private val data = new ConcurrentHashMap[T, T]()
+
+    def add(value: T): Unit = {
+      data.put(value, value)
+    }
+
+    def remove(value: T): Unit = {
+      data.remove(value)
+    }
+
+    def isEmpty: Boolean = {
+      data.isEmpty
+    }
+
+    def values: List[T] = {
+      import scala.collection.JavaConverters._
+      data.values().asScala.toList
     }
   }
 }

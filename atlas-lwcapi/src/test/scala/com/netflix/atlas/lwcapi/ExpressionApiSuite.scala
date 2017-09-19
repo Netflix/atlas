@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.lwcapi
 
+import akka.actor.Actor
+import akka.actor.Props
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.testkit.RouteTestTimeout
@@ -26,6 +28,13 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   import scala.concurrent.duration._
 
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)
+
+  // Dummy actor ref used for handler
+  private val ref = system.actorOf(Props(new Actor {
+    override def receive: Receive = {
+      case _ =>
+    }
+  }))
 
   val splitter = new ExpressionSplitter()
 
@@ -67,7 +76,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
 
   test("has data") {
     val splits = splitter.split("nf.cluster,skan,:eq,:avg", 60000)
-    sm.register("a", null)
+    sm.register("a", ref)
     splits.foreach { s =>
       sm.subscribe("a", s)
     }
@@ -80,7 +89,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
 
   test("fetch all with data") {
     val splits = splitter.split("nf.cluster,skan,:eq,:avg,nf.app,brh,:eq,:max", 60000)
-    sm.register("a", null)
+    sm.register("a", ref)
     splits.foreach { s =>
       sm.subscribe("a", s)
     }
