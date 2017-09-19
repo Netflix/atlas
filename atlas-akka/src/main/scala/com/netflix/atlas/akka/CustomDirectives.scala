@@ -25,6 +25,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.Directive1
@@ -119,13 +120,25 @@ object CustomDirectives {
     * elsewhere. The goal for this filter is to allow javascript UIs or other tools to access
     * the APIs and work with minimal fuss.
     */
-  def corsFilter: Directive0 = {
+  @deprecated(message = "Use respondWithCorsHeaders instead.", since = "1.6.0-rc.7")
+  def corsFilter: Directive0 = respondWithCorsHeaders(List("*"))
+
+  /**
+    * Filter to provide basic CORS support. By default it assumes that actual security is provided
+    * elsewhere. The goal for this filter is to allow javascript UIs or other tools to access
+    * the APIs and work with minimal fuss.
+    *
+    * The hosts param specifies a whitelist for allowing cross-origin requests. Default is no
+    * requests will get CORS headers.
+    */
+  def respondWithCorsHeaders(hosts: List[String] = Nil): Directive0 = {
 
     // Add the cors headers to anything with an origin, browser behavior seems to be mixed as to
     // which request headers we can expect to receive
     optionalHeaderValueByName("Origin").flatMap {
-      case None         => pass
-      case Some(origin) =>
+      case None                                            => pass
+      case Some(origin) if !isOriginAllowed(hosts, origin) => pass
+      case Some(origin)                                    =>
         // '*' doesn't seem to work reliably so use requested origin if provided. If running from
         // a local file we typically see 'null'.
         val allow =
@@ -146,6 +159,7 @@ object CustomDirectives {
             HttpMethods.PUT,
             HttpMethods.DELETE
           ),
+          `Access-Control-Allow-Credentials`(true),
           vary
         )
 
@@ -160,12 +174,39 @@ object CustomDirectives {
     }
   }
 
+  private def isOriginAllowed(hosts: List[String], origin: String): Boolean = {
+    try {
+      val originHostname =
+        if (origin.startsWith("http:") || origin.startsWith("https:"))
+          Uri(origin).authority.host.address()
+        else
+          origin
+      checkOrigin(hosts, originHostname)
+    } catch {
+      case e: Exception =>
+        // If there is a failure processing the origin uri, then do not add CORS headers.
+        false
+    }
+  }
+
+  @scala.annotation.tailrec
+  private def checkOrigin(hosts: List[String], origin: String): Boolean = {
+    hosts match {
+      case h :: hs => checkOrigin(h, origin) || checkOrigin(hs, origin)
+      case Nil     => false
+    }
+  }
+
+  private def checkOrigin(host: String, origin: String): Boolean = {
+    (host == "*") || (host.startsWith(".") && origin.endsWith(host)) || (host == origin)
+  }
+
   /** Route for CORS handling pre-flight checks. */
-  def corsPreflight: Route = {
+  def corsPreflight(hosts: List[String] = Nil): Route = {
     options {
       // For some requests the browser wants the CORS headers to be present on the
       // pre-flight response.
-      corsFilter {
+      respondWithCorsHeaders(hosts) {
         // Set max age header to minimize the number of round-trips the browser will need
         // to make. Various browsers limit the max age that can be used. Ten minutes seems
         // to be a common number (chrome and webkit) so that is what we use here.
@@ -178,7 +219,18 @@ object CustomDirectives {
     * Wraps a route with support for CORS. This will handle the preflight checks as well
     * as adding the appropriate headers to the response of the inner route.
     */
-  def cors(inner: Route): Route = corsPreflight ~ corsFilter { inner }
+  @deprecated(message = "Use cors(hostPatterns)(Route) instead.", since = "1.6.0-rc.7")
+  def cors(inner: Route): Route = {
+    corsPreflight(List("*")) ~ respondWithCorsHeaders(List("*")) { inner }
+  }
+
+  /**
+    * Wraps a route with support for CORS. This will handle the preflight checks as well
+    * as adding the appropriate headers to the response of the inner route.
+    */
+  def cors(hosts: List[String])(inner: Route): Route = {
+    corsPreflight(hosts) ~ respondWithCorsHeaders(hosts) { inner }
+  }
 
   /**
     * Returns a JSONP response. This directive will always try to return a 200 response so that the

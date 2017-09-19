@@ -33,11 +33,14 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
   import scala.concurrent.duration._
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  private val config = ConfigFactory.parseString("""
+  private val config = ConfigFactory.parseString(
+    """
       |atlas.akka.api-endpoints = [
       |  "com.netflix.atlas.akka.TestApi"
       |]
-    """.stripMargin)
+      |atlas.akka.cors-host-patterns = [".suffix.com", "www.exact-match.com", "localhost"]
+    """.stripMargin
+  )
 
   private val handler = new RequestHandler(config, new DefaultClassFactory())
   private val routes = handler.routes
@@ -60,24 +63,69 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
-  test("cors preflight has cors headers") {
-    val header = Origin(HttpOrigin("http://localhost"))
+  private def checkCorsHeaders(origin: String): Unit = {
+    val header = Origin(HttpOrigin(origin))
     Options("/api/v2/ip").addHeader(header) ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
-      assert(response.headers.nonEmpty)
+      assert(response.headers.size >= 5)
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
-          assert("http://localhost" === v.toString)
+          assert(origin === v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case `Access-Control-Max-Age`(age) =>
           assert(age === 600)
+        case `Access-Control-Allow-Credentials`(v) =>
+          assert(v)
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
     }
+  }
+
+  test("cors preflight has cors headers") {
+    checkCorsHeaders("http://localhost")
+  }
+
+  test("cors headers with suffix match") {
+    checkCorsHeaders("http://www.suffix.com")
+    checkCorsHeaders("http://abc.def.foo.bar.suffix.com")
+  }
+
+  test("cors headers with exact match") {
+    checkCorsHeaders("http://www.exact-match.com")
+  }
+
+  test("cors headers with exact match and https") {
+    checkCorsHeaders("https://www.exact-match.com")
+  }
+
+  test("cors headers with exact match and explicit port") {
+    checkCorsHeaders("http://www.exact-match.com:12345")
+  }
+
+  private def checkNoCorsHeaders(origin: String): Unit = {
+    // Origin header validates the URI is valid, for this test case we use the RawHeader
+    // to bypass those checks
+    val header = RawHeader("Origin", origin)
+    Get("/ok").addHeader(header) ~> routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      assert(response.headers.isEmpty)
+    }
+  }
+
+  test("cors headers should not be applied if host does not match") {
+    checkNoCorsHeaders("https://www.unknown.com")
+  }
+
+  test("cors headers should not be applied if origin uri is invalid") {
+    checkNoCorsHeaders("https://www.bad-uri.||.suffix.com")
+  }
+
+  test("cors check works for local file") {
+    checkNoCorsHeaders("null")
   }
 
   private def gzip(data: Array[Byte]): Array[Byte] = {

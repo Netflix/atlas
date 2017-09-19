@@ -27,21 +27,27 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import com.netflix.atlas.json.Json
 import org.scalatest.FunSuite
+
+import scala.concurrent.duration._
 
 class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
 
   import CustomDirectives._
   import CustomDirectivesSuite._
 
+  // Some of the tests were a bit flakey with default of 1 second on slower machines
+  implicit val timeout = RouteTestTimeout(5.seconds)
+
   class TestService(val actorRefFactory: ActorRefFactory) {
 
     def routes: Route = {
       accessLog {
-        corsFilter {
+        respondWithCorsHeaders(List("*")) {
           jsonpFilter {
             path("text") {
               get {
@@ -215,6 +221,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("http://localhost" === v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case `Access-Control-Allow-Credentials`(v) =>
+          assert(v)
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
@@ -237,6 +245,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case `Access-Control-Expose-Headers`(vs) =>
           assert("foo" === vs.mkString(","))
+        case `Access-Control-Allow-Credentials`(v) =>
+          assert(v)
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h if h.lowercaseName == "foo" =>
@@ -262,6 +272,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Headers`(vs) =>
           assert("foo" === vs.mkString(","))
+        case `Access-Control-Allow-Credentials`(v) =>
+          assert(v)
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
@@ -283,6 +295,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("*" === v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case `Access-Control-Allow-Credentials`(v) =>
+          assert(v)
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
@@ -305,6 +319,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case `Access-Control-Expose-Headers`(vs) =>
           assert("Vary" === vs.mkString(","))
+        case `Access-Control-Allow-Credentials`(v) =>
+          assert(v)
         case h if h.is("vary") =>
           assert(Set("Origin", "Host").contains(h.value))
         case h =>
@@ -325,6 +341,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("http://localhost" === v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case `Access-Control-Allow-Credentials`(v) =>
+          assert(v)
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
@@ -344,6 +362,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           assert("http://localhost" === v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+        case `Access-Control-Allow-Credentials`(v) =>
+          assert(v)
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
