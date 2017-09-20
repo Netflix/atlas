@@ -65,7 +65,7 @@ private[stream] abstract class EvaluatorImpl(
   private implicit val materializer = ActorMaterializer()
 
   private def newStreamContext(dsLogger: DataSourceLogger = (_, _) => ()): StreamContext = {
-    new StreamContext(config.getConfig("atlas.eval.stream"), Http().superPool(), dsLogger)
+    new StreamContext(config.getConfig("atlas.eval.stream"), Http().superPool(), registry, dsLogger)
   }
 
   protected def writeInputToFileImpl(uri: String, file: Path, duration: Duration): Unit = {
@@ -151,18 +151,21 @@ private[stream] abstract class EvaluatorImpl(
 
       // Combine the intermediate output and data sources for the final evaluation
       // step
-      val taggerInput = builder.add(Merge[AnyRef](2))
+      val finalEvalInput = builder.add(Merge[AnyRef](2))
 
       val intermediateEval = createInputFlow(context)
         .map(_.decodeString(StandardCharsets.UTF_8))
+        .via(context.countEvents("10_InputLines"))
         .via(new LwcToAggrDatapoint)
+        .via(context.countEvents("11_LwcDatapoints"))
         .via(new TimeGrouped[AggrDatapoint](1, 50, _.timestamp))
+        .via(context.countEvents("12_GroupedDatapoints"))
 
-      datasources.out(0) ~> intermediateEval ~> taggerInput.in(0)
-      datasources.out(1) ~> taggerInput.in(1)
+      datasources.out(0) ~> intermediateEval ~> finalEvalInput.in(0)
+      datasources.out(1) ~> finalEvalInput.in(1)
 
       // Overall to the outside it looks like a flow of DataSources to MessageEnvelope
-      FlowShape(datasources.in, taggerInput.out)
+      FlowShape(datasources.in, finalEvalInput.out)
     }
 
     // Final evaluation of the overall expression
@@ -171,6 +174,7 @@ private[stream] abstract class EvaluatorImpl(
       .via(g)
       .via(new FinalExprEval)
       .flatMapConcat(s => s)
+      .via(context.countEvents("13_OutputMessages"))
       .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
       .merge(Source.fromPublisher(logSrc), eagerComplete = false)
   }
@@ -199,7 +203,9 @@ private[stream] abstract class EvaluatorImpl(
       // `POST /lwc/api/v1/subscribe` to update the set of subscriptions being sent
       // to each connection
       val eurekaLookup = Flow[DataSources]
+        .via(context.countEvents("00_DataSourceUpdates"))
         .via(new EurekaGroupsLookup(context, 30.seconds))
+        .via(context.countEvents("01_EurekaGroups"))
         .flatMapMerge(Int.MaxValue, s => s)
       datasources.out(0).map(_.remoteOnly()) ~> eurekaLookup ~> eurekaGroups.in
       eurekaGroups.out(0) ~> new SubscriptionManager(context)
@@ -208,6 +214,7 @@ private[stream] abstract class EvaluatorImpl(
       val eurekaStream = Flow[SourcesAndGroups]
         .map(_._2)
         .via(new ConnectionManager(context))
+        .via(context.countEvents("02_ConnectionSources"))
         .flatMapMerge(Int.MaxValue, s => Source(s))
         .flatMapMerge(Int.MaxValue, s => s)
       eurekaGroups.out(1) ~> eurekaStream ~> intermediateInput.in(0)

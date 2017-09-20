@@ -60,7 +60,7 @@ private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[String, Ag
       private def updateState(msg: String): Unit = {
         val json = msg.substring(subscribePrefix.length)
         val sub = Json.decode[LwcSubscription](json)
-        state = sub.metrics.map(m => m.id -> m.expr).toMap
+        state ++= sub.metrics.map(m => m.id -> m.expr).toMap
         pull(in)
       }
 
