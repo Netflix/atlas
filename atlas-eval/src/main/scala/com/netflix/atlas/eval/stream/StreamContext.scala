@@ -33,7 +33,6 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
-import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
