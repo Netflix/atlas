@@ -19,6 +19,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.UUID
 
+import akka.NotUsed
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri
 import akka.stream.IOResult
@@ -32,6 +33,9 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
+import com.netflix.spectator.api.Counter
+import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 
 import scala.concurrent.Future
@@ -39,6 +43,7 @@ import scala.concurrent.Future
 private[stream] class StreamContext(
   config: Config,
   val client: Client,
+  val registry: Registry = new NoopRegistry,
   val dsLogger: DataSourceLogger = (_, _) => ()
 ) {
 
@@ -115,6 +120,14 @@ private[stream] class StreamContext(
           log.complete(response)
           response
       }
+  }
+
+  def countEvents[T](phase: String): Flow[T, T, NotUsed] = {
+    val counter = registry.counter("atlas.eval.numEvents", "id", phase)
+    Flow[T].map { value =>
+      counter.increment()
+      value
+    }
   }
 }
 
