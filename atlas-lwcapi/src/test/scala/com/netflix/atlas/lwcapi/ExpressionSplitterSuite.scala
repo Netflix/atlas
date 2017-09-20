@@ -49,11 +49,19 @@ class ExpressionSplitterSuite extends FunSuite {
     )
   }
 
-  test("returns None for invalid expressions") {
+  test("throws IAE for invalid expressions") {
     val msg = intercept[IllegalArgumentException] {
       splitter.split("foo", frequency1)
     }
     assert(msg.getMessage === "expression is invalid")
+  }
+
+  test("throws IAE for expressions with offset") {
+    val expr = "name,foo,:eq,:sum,PT168H,:offset"
+    val msg = intercept[IllegalArgumentException] {
+      splitter.split(expr, frequency1)
+    }
+    assert(msg.getMessage === s":offset not supported for streaming evaluation [[$expr]]")
   }
 
   //

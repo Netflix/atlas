@@ -223,4 +223,25 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
         )
     }
   }
+
+  test("create processor, expression uses :offset") {
+    val evaluator = new Evaluator(config, registry, system)
+
+    val expr = "name,foo,:eq,:sum,PT168H,:offset"
+    val uri = s"http://test/api/v1/graph?q=$expr"
+    val ds = Evaluator.DataSources.of(new Evaluator.DataSource("one", uri))
+
+    val future = Source
+      .single(ds)
+      .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
+      .runWith(Sink.head)
+    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+    result.getMessage match {
+      case DiagnosticMessage(t, msg, None) =>
+        assert(t === "error")
+        assert(
+          msg === s"IllegalArgumentException: :offset not supported for streaming evaluation [[$expr]]"
+        )
+    }
+  }
 }

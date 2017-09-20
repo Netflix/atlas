@@ -67,6 +67,16 @@ class ExpressionSplitter {
       case ModelExtractors.PresentationType(t) => t.expr.dataExprs
       case _                                   => throw new IllegalArgumentException("expression is invalid")
     }
+
+    // Offsets are not supported
+    dataExprs.foreach { dataExpr =>
+      if (!dataExpr.offset.isZero) {
+        throw new IllegalArgumentException(
+          s":offset not supported for streaming evaluation [[$dataExpr]]"
+        )
+      }
+    }
+
     dataExprs.distinct.map { e =>
       val q = intern(compress(e.dataExprs.head.query))
       Subscription(q, ExpressionMetadata(e.toString, frequency))
