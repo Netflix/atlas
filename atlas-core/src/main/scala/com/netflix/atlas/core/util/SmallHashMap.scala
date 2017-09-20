@@ -394,4 +394,29 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
 
   /** This is here to allow for testing and benchmarks. Should note be used otherwise. */
   private[util] def superEquals(obj: Any): Boolean = super.equals(obj)
+
+  /**
+    * Returns a wrapper that adheres to the java Map interface. This wrapper helps to avoid
+    * unnecesary allocation of Option
+    */
+  def asJavaMap: java.util.Map[K, V] = {
+    val self = this
+    new java.util.AbstractMap[K, V] {
+
+      /** Overridden to use the `getOrNull` call and avoid allocating an Option. */
+      override def get(k: AnyRef): V = self.getOrNull(k.asInstanceOf[K])
+
+      /** Overridden to use the `getOrNull` call and avoid allocating an Option. */
+      override def containsKey(k: AnyRef): Boolean = self.getOrNull(k.asInstanceOf[K]) != null
+
+      /**
+        * Required by AbstractMap. For this use-case we use the default scala wrapper if
+        * the entry set is needed.
+        */
+      override def entrySet(): java.util.Set[java.util.Map.Entry[K, V]] = {
+        import scala.collection.JavaConverters._
+        self.asJava.entrySet()
+      }
+    }
+  }
 }
