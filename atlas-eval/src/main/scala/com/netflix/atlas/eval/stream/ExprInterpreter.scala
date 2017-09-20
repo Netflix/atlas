@@ -35,6 +35,20 @@ private[stream] object ExprInterpreter {
     val expr = uri.query().get("q").getOrElse {
       throw new IllegalArgumentException(s"missing required URI parameter `q`: $uri")
     }
-    eval(expr)
+
+    // Check that data expressions are supported. The streaming path doesn't support
+    // time shifts.
+    val results = eval(expr)
+    results.foreach { result =>
+      result.expr.dataExprs.foreach { dataExpr =>
+        if (!dataExpr.offset.isZero) {
+          throw new IllegalArgumentException(
+            s":offset not supported for streaming evaluation [[$dataExpr]]"
+          )
+        }
+      }
+    }
+
+    results
   }
 }
