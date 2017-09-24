@@ -21,19 +21,38 @@ import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.TimeSeries
+import com.typesafe.config.Config
 
-class SimpleStaticDatabase(data: List[TimeSeries]) extends Database {
+class SimpleStaticDatabase(data: List[TimeSeries], config: Config) extends Database {
+
+  private val maxLines = config.getInt("max-lines")
+  private val maxDatapoints = config.getInt("max-datapoints")
+
   val index: TagIndex[TimeSeries] = new RoaringTagIndex(data.toArray)
 
   def execute(context: EvalContext, expr: DataExpr): List[TimeSeries] = {
     val q = TagQuery(Some(expr.query))
     val offset = expr.offset.toMillis
-    if (offset == 0) expr.eval(context, index.findItems(q)).data
-    else {
-      val offsetContext = context.withOffset(expr.offset.toMillis)
-      expr.eval(offsetContext, index.findItems(q)).data.map { t =>
-        t.offset(offset)
+    val result =
+      if (offset == 0) expr.eval(context, index.findItems(q)).data
+      else {
+        val offsetContext = context.withOffset(expr.offset.toMillis)
+        expr.eval(offsetContext, index.findItems(q)).data.map { t =>
+          t.offset(offset)
+        }
       }
+
+    if (result.nonEmpty) {
+      val lines = result.size
+      val datapoints = lines * context.bufferSize
+      checkLimit("lines", lines, maxLines)
+      checkLimit("datapoints", datapoints, maxDatapoints)
     }
+
+    result
+  }
+
+  private def checkLimit(category: String, n: Int, max: Int): Unit = {
+    require(n <= max, s"too many $category: $n > $max")
   }
 }
