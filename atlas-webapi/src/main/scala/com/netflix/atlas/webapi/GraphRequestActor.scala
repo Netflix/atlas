@@ -28,6 +28,8 @@ import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.spectator.api.Registry
 
+import scala.util.Failure
+
 class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.GraphApi._
@@ -39,7 +41,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
   private var request: Request = _
   private var graphCtx: ImperativeRequestContext = _
 
-  def receive = {
+  def receive: Receive = {
     case v =>
       try innerReceive(v)
       catch {
@@ -59,8 +61,9 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
       request = req
       graphCtx = ctx
       dbRef.tell(request.toDbRequest, self)
-    case DataResponse(data) =>
-      sendImage(data)
+
+    case DataResponse(data) => sendImage(data)
+    case Failure(t)         => throw t
   }
 
   private def sendErrorImage(t: Throwable, w: Int, h: Int): Unit = {

@@ -56,7 +56,7 @@
 
 # Axis per line
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by&axis_per_line=1
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.node,),:by&axis_per_line=1
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,(,nf.node,),:by&axis_per_line=1
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,42&axis_per_line=1
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,42,1,:axis&axis_per_line=1
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,42&axis_per_line=1&ylabel.0=zero&ylabel.1=one
@@ -85,7 +85,7 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=40,20,name,sps,:eq,:sum,(,nf.cluster,),:by,:pct,$nf.cluster,:legend,:stack&palette=hash:armytage
 
 # Axis palette
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,name,sps,:eq,:sum,(,nf.node,),:by,1,:axis,1,2,:axis&palette=epic&palette.1=oranges
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,(,nf.node,),:by,1,:axis,1,2,:axis&palette=epic&palette.1=oranges
 
 # Auto bounds
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=200,:stack,100,:stack&l=auto-data
@@ -158,3 +158,6 @@
 /api/v1/graph?q=42&s=e-12month&e=2017-06-27T00:00&tz=UTC&w=430&h=120&layout=iw
 /api/v1/graph?q=42&s=e-3y&e=2017-06-27T00:00&tz=UTC&w=430&h=120&layout=iw
 /api/v1/graph?q=42&s=e-30y&e=2017-06-27T00:00&tz=UTC&w=430&h=120&layout=iw
+
+# Issue 684, errors from db actor
+/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,(,nf.node,),:by

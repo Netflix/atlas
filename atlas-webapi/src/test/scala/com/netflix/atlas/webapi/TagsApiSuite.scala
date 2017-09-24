@@ -20,19 +20,46 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.atlas.akka.RequestHandler
+import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.db.StaticDatabase
+import com.netflix.atlas.core.index.TagIndex
+import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.EvalContext
+import com.netflix.atlas.core.model.TaggedItem
+import com.netflix.atlas.core.model.TimeSeries
+import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 
-class TagsApiSuite extends FunSuite with ScalatestRouteTest {
+class TagsApiSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
 
   import scala.concurrent.duration._
 
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  val db = StaticDatabase.range(0, 11)
+  private val staticDb = StaticDatabase.range(0, 11)
+
+  private var exception: Exception = _
+
+  private val db = new Database {
+
+    override def index: TagIndex[_ <: TaggedItem] = {
+      if (exception != null) throw exception
+      staticDb.index
+    }
+
+    override def execute(eval: EvalContext, expr: DataExpr): List[TimeSeries] = {
+      if (exception != null) throw exception
+      staticDb.execute(eval, expr)
+    }
+  }
+
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
 
   val endpoint = new TagsApi
+
+  before {
+    exception = null
+  }
 
   def testGet(uri: String)(f: => Unit): Unit = {
     test(uri) {
@@ -102,6 +129,14 @@ class TagsApiSuite extends FunSuite with ScalatestRouteTest {
   testGet("/api/v1/tags/name?verbose=1&format=txt") {
     val expected = (0 to 11).map(toTagText).mkString("\n")
     assert(responseAs[String] === expected)
+  }
+
+  test("failure in db actor gets sent back") {
+    exception = new RuntimeException("broken")
+    Get("/api/v1/tags") ~> RequestHandler.standardOptions(endpoint.routes) ~> check {
+      assert(response.status === StatusCodes.InternalServerError)
+      assert(responseAs[String] === """{"type":"error","message":"RuntimeException: broken"}""")
+    }
   }
 
   private def toTagJson(v: Int): String = toTagJson("name", "%02d".format(v), -1)

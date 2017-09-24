@@ -20,12 +20,13 @@ import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 /**
   * Simple database with a predefined set of time series.
   */
 class StaticDatabase(config: Config)
-    extends SimpleStaticDatabase(DataSet.get(config.getString("dataset")))
+    extends SimpleStaticDatabase(DataSet.get(config.getString("dataset")), config)
 
 object StaticDatabase {
 
@@ -41,11 +42,15 @@ object StaticDatabase {
       val seq = new FunctionTimeSeq(DsType.Gauge, DefaultSettings.stepSize, _ => i)
       TimeSeries(tagsBuilder.result(), seq)
     }
-    new SimpleStaticDatabase(ts.toList)
+    new SimpleStaticDatabase(ts.toList, config)
   }
 
   /** Generate a database with some synthetic data used for demos and examples. */
-  def demo: Database = new SimpleStaticDatabase(DataSet.staticAlertSet)
+  def demo: Database = {
+    new SimpleStaticDatabase(DataSet.staticAlertSet, config)
+  }
+
+  private def config: Config = ConfigFactory.load().getConfig("atlas.core.db")
 
   private def probablyPrime(v: Int): Boolean = BigInt(v).isProbablePrime(100)
 }

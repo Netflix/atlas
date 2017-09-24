@@ -29,6 +29,12 @@ case class EvalContext(
 
   val noData: TimeSeries = TimeSeries.noData(step)
 
+  /**
+    * Buffer size that would be need to represent the result set based on the start time,
+    * end time, and step size.
+    */
+  def bufferSize: Int = ((end - start) / step).toInt + 1
+
   def partition(oneStep: Long, unit: ChronoUnit): List[EvalContext] = {
     val builder = List.newBuilder[EvalContext]
     var t = Instant.ofEpochMilli(start).truncatedTo(unit).toEpochMilli
