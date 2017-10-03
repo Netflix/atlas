@@ -98,7 +98,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
   test("create publish, missing q parameter") {
     val evaluator = new Evaluator(config, registry, system)
 
-    val uri = "http://test/api/v1/graph"
+    val uri = "resource:///gc-pause.dat/api/v1/graph"
     val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
     assert(result.size === 1)
@@ -106,7 +106,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
       case DiagnosticMessage(t, msg, None) =>
         assert(t === "error")
         assert(
-          msg === "IllegalArgumentException: missing required URI parameter `q`: http://test/api/v1/graph"
+          msg === "IllegalArgumentException: missing required URI parameter `q`: resource:///gc-pause.dat/api/v1/graph"
         )
     }
   }
