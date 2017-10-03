@@ -30,6 +30,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.ActorMaterializer
 import akka.stream.FlowShape
 import akka.stream.OverflowStrategy
+import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Broadcast
 import akka.stream.scaladsl.FileIO
 import akka.stream.scaladsl.Flow
@@ -117,7 +118,18 @@ private[stream] abstract class EvaluatorImpl(
   protected def createPublisherImpl(uri: Uri): Publisher[JsonSupport] = {
     val ds = DataSources.of(new DataSource("_", uri.toString()))
 
-    Source(List(ds))
+    val source = uri.scheme match {
+      case s if s.startsWith("http") =>
+        // The repeat/throttle is needed to prevent the stream from shutting down when
+        // the source is complete.
+        Source.repeat(ds).throttle(1, 1.minute, 1, ThrottleMode.Shaping)
+      case _ =>
+        // For finite sources like a file it should shut down as soon as the data has
+        // been processed
+        Source.single(ds)
+    }
+
+    source
       .via(createProcessorFlow)
       .map(_.getMessage)
       .toMat(Sink.asPublisher(true))(Keep.right)
