@@ -94,6 +94,7 @@ class SSEActor(
       log.info(s"Closing SSE stream: ${msg.reason}")
       enqueue(msg, diagnosticMessages)
       shutdown = true
+      needsUnregister = msg.shouldUnregister
     case msg: SSEMessage =>
       enqueue(msg, messages)
   }
