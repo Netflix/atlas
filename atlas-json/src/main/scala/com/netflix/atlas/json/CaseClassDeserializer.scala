@@ -71,7 +71,7 @@ class CaseClassDeserializer(
 
     val t = p.getCurrentToken
     if (t != JsonToken.START_OBJECT) {
-      ctxt.reportMappingException(s"found ${t.name()}, but START_OBJECT is required")
+      ctxt.handleUnexpectedToken(javaType.getRawClass, p)
     }
 
     p.nextToken()
