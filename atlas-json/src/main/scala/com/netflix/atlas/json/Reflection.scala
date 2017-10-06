@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind.BeanProperty
 import com.fasterxml.jackson.databind.JavaType
+import com.fasterxml.jackson.databind.PropertyMetadata
 import com.fasterxml.jackson.databind.PropertyName
 import com.fasterxml.jackson.databind.`type`.TypeFactory
 import com.fasterxml.jackson.databind.introspect.AnnotatedParameter
@@ -166,15 +167,14 @@ private[json] object Reflection {
           val am = new AnnotationMap
           annos(i).foreach(am.add)
           val fieldType = constructType(types(i))
-          val ap = new AnnotatedParameter(null, fieldType, am, i)
+          val ap = new AnnotatedParameter(null, fieldType, null, am, i)
           val prop = new BeanProperty.Std(
             new PropertyName(p.name),
             fieldType,
             null, // wrapperName
-            null, // contextAnnotations
             ap, // member
-            null
-          ) // metadata
+            PropertyMetadata.STD_REQUIRED_OR_OPTIONAL
+          )
           properties(i) = prop
       }
       properties
