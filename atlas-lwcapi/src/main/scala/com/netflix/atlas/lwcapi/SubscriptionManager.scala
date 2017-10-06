@@ -104,7 +104,12 @@ class SubscriptionManager[T] {
     * removed.
     */
   def unregister(streamId: String): Option[T] = {
-    val result = Option(registrations.remove(streamId)).map(_.handler)
+    val result = Option(registrations.remove(streamId)).map { info =>
+      info.subscriptions.foreach { sub =>
+        removeHandler(sub.metadata.id, info.handler)
+      }
+      info.handler
+    }
     queryListChanged = true
     result
   }
