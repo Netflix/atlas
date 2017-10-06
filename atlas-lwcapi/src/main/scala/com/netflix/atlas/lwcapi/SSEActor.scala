@@ -24,7 +24,6 @@ import akka.actor.Cancellable
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage._
-import com.netflix.atlas.lwcapi.StreamApi.SSESubscribe
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
 

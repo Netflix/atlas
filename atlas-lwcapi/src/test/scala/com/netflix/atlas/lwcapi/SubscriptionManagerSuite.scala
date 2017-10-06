@@ -118,7 +118,7 @@ class SubscriptionManagerSuite extends FunSuite {
     }
   }
 
-  test("unsubscript for unknown expression does not cause any exceptions") {
+  test("unsubscribe for unknown expression does not cause any exceptions") {
     val sm = new SubscriptionManager[Integer]()
     sm.register("a", 42)
     sm.unsubscribe("a", "d")
@@ -127,5 +127,17 @@ class SubscriptionManagerSuite extends FunSuite {
   test("unregister for unknown stream does not cause any exceptions") {
     val sm = new SubscriptionManager[Integer]()
     assert(sm.unregister("a") === None)
+  }
+
+  test("unregister should remove handlers") {
+    val sm = new SubscriptionManager[Integer]()
+    sm.register("a", 1)
+
+    val s = sub("name,exp1,:eq")
+    sm.subscribe("a", s)
+    assert(sm.handlersForSubscription(s.metadata.id) === List(1))
+
+    sm.unregister("a")
+    assert(sm.handlersForSubscription(s.metadata.id) === Nil)
   }
 }
