@@ -135,9 +135,9 @@ class SubscriptionManagerSuite extends FunSuite {
 
     val s = sub("name,exp1,:eq")
     sm.subscribe("a", s)
-    assert(sm.handlersForSubscription(s.metadata.id).sorted === List(1))
+    assert(sm.handlersForSubscription(s.metadata.id) === List(1))
 
     sm.unregister("a")
-    assert(sm.handlersForSubscription(s.metadata.id).sorted === Nil)
+    assert(sm.handlersForSubscription(s.metadata.id) === Nil)
   }
 }
