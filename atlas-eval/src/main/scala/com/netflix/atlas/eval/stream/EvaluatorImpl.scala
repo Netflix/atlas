@@ -66,7 +66,13 @@ private[stream] abstract class EvaluatorImpl(
   private implicit val materializer = ActorMaterializer()
 
   private def newStreamContext(dsLogger: DataSourceLogger = (_, _) => ()): StreamContext = {
-    new StreamContext(config.getConfig("atlas.eval.stream"), Http().superPool(), registry, dsLogger)
+    new StreamContext(
+      config.getConfig("atlas.eval.stream"),
+      Http().superPool(),
+      materializer,
+      registry,
+      dsLogger
+    )
   }
 
   protected def writeInputToFileImpl(uri: String, file: Path, duration: Duration): Unit = {

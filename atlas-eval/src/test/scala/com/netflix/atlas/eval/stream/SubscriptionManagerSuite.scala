@@ -103,8 +103,8 @@ class SubscriptionManagerSuite extends FunSuite with BeforeAndAfter {
           requests.add(req)
           Success(HttpResponse(StatusCodes.OK)) -> v
       }
-    val backends = new StreamContext(config, client)
-    val sink = new SubscriptionManager(backends)
+    val context = new StreamContext(config, client, mat)
+    val sink = new SubscriptionManager(context)
     val future = Source(input).runWith(sink)
     Await.result(future, Duration.Inf)
   }

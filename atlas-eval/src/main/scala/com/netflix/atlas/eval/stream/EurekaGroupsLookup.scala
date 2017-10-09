@@ -76,7 +76,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
           .toList
           .distinct
           .map { uri =>
-            EurekaSource(uri, context.httpClient("eureka"))
+            EurekaSource(uri, context)
           }
 
         // Perform lookup for each vip and create groups composite
