@@ -17,6 +17,8 @@ package com.netflix.atlas.eval.stream
 
 import java.io.IOException
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpEntity
@@ -32,8 +34,10 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.EurekaSource.GroupResponse
+import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await
@@ -94,9 +98,14 @@ class EurekaSourceSuite extends FunSuite {
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val mat = ActorMaterializer()
 
+  private val config = ConfigFactory.parseString("backends = []")
+
   private def run(uri: String, response: Try[HttpResponse]): GroupResponse = {
-    val client = Flow[HttpRequest].map(_ => response)
-    val future = EurekaSource(uri, client).runWith(Sink.head)
+    val client = Flow[(HttpRequest, AccessLogger)].map {
+      case (_, logger) => response -> logger
+    }
+    val context = new StreamContext(config, client, mat)
+    val future = EurekaSource(uri, context).runWith(Sink.head)
     Await.result(future, Duration.Inf)
   }
 
@@ -136,6 +145,23 @@ class EurekaSourceSuite extends FunSuite {
     intercept[NoSuchElementException] {
       run(uri, Success(mkResponse("unknown vip", StatusCodes.NotFound)))
     }
+  }
+
+  test("entity for bad status code is consumed") {
+    val consumedLatch = new CountDownLatch(1)
+    val source = Source
+      .single(ByteString.empty)
+      .map { data =>
+        consumedLatch.countDown()
+        data
+      }
+    val entity = HttpEntity(MediaTypes.`application/json`, source)
+    val response = HttpResponse(StatusCodes.BadRequest, entity = entity)
+    val uri = "http://eureka/v1/vips/www-dev:7001"
+    intercept[NoSuchElementException] {
+      run(uri, Success(response))
+    }
+    assert(consumedLatch.await(30, TimeUnit.SECONDS))
   }
 
   test("failure to connect") {

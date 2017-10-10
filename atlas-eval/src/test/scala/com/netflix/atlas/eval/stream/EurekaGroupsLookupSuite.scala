@@ -87,10 +87,10 @@ class EurekaGroupsLookupSuite extends FunSuite {
           val json = Json.encode(eurekaGroup)
           Success(HttpResponse(StatusCodes.OK, entity = json)) -> v
       }
-    val backends = new StreamContext(config, client)
+    val context = new StreamContext(config, client, mat)
     val future = Source(input)
       .concat(Source.repeat(input.last)) // Need to avoid source stopping until sink is full
-      .via(new EurekaGroupsLookup(backends, 5.microseconds))
+      .via(new EurekaGroupsLookup(context, 5.microseconds))
       .flatMapConcat(s => s)
       .take(n)
       .fold(List.empty[SourcesAndGroups]) { (acc, v) =>

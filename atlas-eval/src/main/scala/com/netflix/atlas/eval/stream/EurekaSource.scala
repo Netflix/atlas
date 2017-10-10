@@ -43,11 +43,11 @@ private[stream] object EurekaSource extends StrictLogging {
     *     Should be either the `/v2/apps/{app}` or `/v2/vips/{vip}` endpoint for a
     *     Eureka service. Depending on the Eureka service configuration there may be
     *     some variation in the path.
-    * @param client
-    *     HTTP client flow used for getting data from Eureka and for consuming from
-    *     the instances.
+    * @param context
+    *     Shared context for the evaluation stream.
     */
-  def apply(eurekaUri: String, client: SimpleClient): Source[GroupResponse, NotUsed] = {
+  def apply(eurekaUri: String, context: StreamContext): Source[GroupResponse, NotUsed] = {
+
     val useVipFormat = eurekaUri.contains("/vips/")
     val headers =
       List(Accept(MediaTypes.`application/json`), `Accept-Encoding`(HttpEncodings.gzip))
@@ -55,12 +55,13 @@ private[stream] object EurekaSource extends StrictLogging {
 
     Source
       .single(request)
-      .via(client)
+      .via(context.httpClient("eureka"))
       .flatMapConcat {
         case Success(res: HttpResponse) if res.status == StatusCodes.OK =>
           parseResponse(eurekaUri, res, useVipFormat)
         case Success(res: HttpResponse) =>
           logger.warn(s"eureka refresh failed with status ${res.status}: $eurekaUri")
+          res.discardEntityBytes(context.materializer)
           Source.empty[GroupResponse]
         case Failure(t) =>
           logger.warn(s"eureka refresh failed with exception: $eurekaUri", t)
