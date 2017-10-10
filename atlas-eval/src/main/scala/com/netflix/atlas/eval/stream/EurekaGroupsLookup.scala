@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.eval.stream
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
 import akka.stream.Attributes
@@ -50,13 +52,15 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      private var sourceRef: SourceRef[SourcesAndGroups, NotUsed] = _
+      private var continue = new AtomicBoolean(true)
 
       override def onPush(): Unit = {
         import scala.collection.JavaConverters._
 
-        // If there is an existing source polling Eureka, then clean it up
-        if (sourceRef != null) sourceRef.stop()
+        // If there is an existing source polling Eureka, then tell it to stop. Create a
+        // new instance of the flag for the next source
+        continue.set(false)
+        continue = new AtomicBoolean(true)
 
         val next = grab(in)
 
@@ -85,13 +89,9 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
           .fold(List.empty[GroupResponse])((acc, g) => g :: acc)
           .map(gs => next -> Groups(gs))
 
-        // Regularly refresh the metadata until the source is stopped
-        val src = EvaluationFlows
-          .repeat(NotUsed, frequency)
-          .flatMapConcat(_ => lookup)
-        sourceRef = EvaluationFlows.stoppableSource(src)
-
-        push(out, sourceRef.source)
+        // Regularly refresh the metadata until the returned continue flag is set to false
+        val src = EvaluationFlows.repeatWhile(NotUsed, frequency, continue.get())
+        push(out, src.flatMapConcat(_ => lookup))
       }
 
       override def onPull(): Unit = {
@@ -100,7 +100,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
 
       override def onUpstreamFinish(): Unit = {
         completeStage()
-        if (sourceRef != null) sourceRef.stop()
+        continue.set(false)
       }
 
       setHandlers(in, out, this)

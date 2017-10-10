@@ -78,6 +78,18 @@ private[stream] object EvaluationFlows {
   }
 
   /**
+    * Source that will repeat the item with the specified delay in between while the
+    * condition is still true.
+    */
+  def repeatWhile[T](item: T, delay: FiniteDuration, condition: => Boolean): Source[T, NotUsed] = {
+    val iterator = new Iterator[T] {
+      override def hasNext: Boolean = condition
+      override def next(): T = item
+    }
+    Source.fromIterator(() => iterator).throttle(1, delay, 1, ThrottleMode.Shaping)
+  }
+
+  /**
     * Frames an SSE stream by new line. This is to ensure that a message is not broken
     * up in the middle. The LF is used instead of CRLF because some SSE sources are more
     * lax.
