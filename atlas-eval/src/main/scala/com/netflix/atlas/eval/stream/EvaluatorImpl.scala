@@ -221,6 +221,8 @@ private[stream] abstract class EvaluatorImpl(
       // `POST /lwc/api/v1/subscribe` to update the set of subscriptions being sent
       // to each connection
       val eurekaLookup = Flow[DataSources]
+        .conflate((_, ds) => ds)
+        .throttle(1, 1.second, 1, ThrottleMode.Shaping)
         .via(context.countEvents("00_DataSourceUpdates"))
         .via(new EurekaGroupsLookup(context, 30.seconds))
         .via(context.countEvents("01_EurekaGroups"))
