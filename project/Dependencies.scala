@@ -10,7 +10,7 @@ object Dependencies {
     val iep        = "1.0.4"
     val guice      = "4.1.0"
     val jackson    = "2.9.1"
-    val log4j      = "2.9.0"
+    val log4j      = "2.9.1"
     val scala      = "2.12.3"
     val slf4j      = "1.7.25"
     val spectator  = "0.57.1"
@@ -31,7 +31,7 @@ object Dependencies {
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.5.5"
+  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.5.6"
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.3.3"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.18.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
@@ -48,7 +48,7 @@ object Dependencies {
   val jacksonScala2   = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jodaConvert     = "org.joda" % "joda-convert" % "1.8.3"
-  val jol             = "org.openjdk.jol" % "jol-core" % "0.8"
+  val jol             = "org.openjdk.jol" % "jol-core" % "0.9"
   val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.2"
   val log4jApi        = "org.apache.logging.log4j" % "log4j-api" % log4j
   val log4jCore       = "org.apache.logging.log4j" % "log4j-core" % log4j
@@ -69,7 +69,7 @@ object Dependencies {
   val spectatorLog4j  = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2     = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
   val spectatorSandbox= "com.netflix.spectator" % "spectator-ext-sandbox" % spectator
-  val typesafeConfig  = "com.typesafe" % "config" % "1.3.1"
+  val typesafeConfig  = "com.typesafe" % "config" % "1.3.2"
 }
 
 // format: on
