@@ -21,15 +21,23 @@ import java.util.concurrent.atomic.AtomicLong
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.api.patterns.PolledMeter
 
 object BlockStats {
   private val registry = Spectator.globalRegistry
-  private val arrayCount = registry.gauge("atlas.block.arrayCount", new AtomicLong(0L))
-  private val constantCount = registry.gauge("atlas.block.constantCount", new AtomicLong(0L))
-  private val sparseCount = registry.gauge("atlas.block.sparseCount", new AtomicLong(0L))
-  private val arrayBytes = registry.gauge("atlas.block.arrayBytes", new AtomicLong(0L))
-  private val constantBytes = registry.gauge("atlas.block.constantBytes", new AtomicLong(0L))
-  private val sparseBytes = registry.gauge("atlas.block.sparseBytes", new AtomicLong(0L))
+  private val arrayCount = createGauge("atlas.block.arrayCount")
+  private val constantCount = createGauge("atlas.block.constantCount")
+  private val sparseCount = createGauge("atlas.block.sparseCount")
+  private val arrayBytes = createGauge("atlas.block.arrayBytes")
+  private val constantBytes = createGauge("atlas.block.constantBytes")
+  private val sparseBytes = createGauge("atlas.block.sparseBytes")
+
+  private def createGauge(name: String): AtomicLong = {
+    PolledMeter
+      .using(registry)
+      .withName(name)
+      .monitorValue(new AtomicLong(0L))
+  }
 
   private def inc(block: Block, count: AtomicLong, bytes: AtomicLong): Unit = {
     count.incrementAndGet

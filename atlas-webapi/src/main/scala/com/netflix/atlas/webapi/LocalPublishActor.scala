@@ -35,6 +35,7 @@ import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.BucketCounter
 import com.netflix.spectator.api.histogram.BucketFunctions
+import com.netflix.spectator.api.patterns.PolledMeter
 
 class LocalPublishActor(registry: Registry, db: Database) extends Actor with ActorLogging {
 
@@ -116,7 +117,10 @@ object LocalPublishActor {
     }
 
     // Track the size of the message ids buffer
-    registry.mapSize("atlas.db.messageIdSetSize", messageIds)
+    PolledMeter
+      .using(registry)
+      .withName("atlas.db.messageIdSetSize")
+      .monitorSize(messageIds)
 
     // Number of datapoints that are deduped
     private val numDeduped = registry.counter("atlas.db.numDeduped")

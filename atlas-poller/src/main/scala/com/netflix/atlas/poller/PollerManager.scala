@@ -29,6 +29,7 @@ import akka.actor.SupervisorStrategy
 import com.netflix.iep.service.ClassFactory
 import com.netflix.spectator.api.Functions
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.patterns.PolledMeter
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
@@ -79,8 +80,12 @@ class PollerManager(registry: Registry, classFactory: ClassFactory, config: Conf
     val updateTimes = pollers.map { p =>
       context.actorOf(Props(classFactory.newInstance[Actor](p.cls)), p.name)
       val updateTime = new AtomicLong(registry.clock().wallTime())
-      val id = registry.createId("atlas.poller.dataAge", "id", p.name)
-      p.name -> registry.gauge(id, updateTime, Functions.age(registry.clock()))
+      PolledMeter
+        .using(registry)
+        .withName("atlas.poller.dataAge")
+        .withTag("id", p.name)
+        .monitorValue(updateTime, Functions.age(registry.clock()))
+      p.name -> updateTime
     }
     updateTimes.toMap
   }
