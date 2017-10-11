@@ -26,6 +26,7 @@ import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage._
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.patterns.PolledMeter
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -50,7 +51,10 @@ class SSEActor(
   private val droppedId = registry.createId("atlas.lwcapi.sse.droppedMessageCount")
 
   private val sseCountId = registry.createId("atlas.lwcapi.streams").withTag("streamType", "sse")
-  private val sseCount = registry.gauge(sseCountId, new AtomicInteger(1))
+  private val sseCount = PolledMeter
+    .using(registry)
+    .withId(sseCountId)
+    .monitorValue(new AtomicInteger(1))
 
   private var droppedMessageCount: Long = 0 // in messages
 

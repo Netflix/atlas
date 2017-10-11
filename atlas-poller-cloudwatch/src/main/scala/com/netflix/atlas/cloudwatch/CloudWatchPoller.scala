@@ -31,6 +31,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.poller.Messages
 import com.netflix.spectator.api.Functions
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.patterns.PolledMeter
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
@@ -91,20 +92,23 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   private var pendingList: Boolean = false
 
   // Last time the metadata list was successfully updated.
-  private val listUpdateTime: AtomicLong = registry.gauge(
-    "atlas.cloudwatch.listAge",
-    new AtomicLong(registry.clock().wallTime()),
-    Functions.age(registry.clock())
-  )
+  private val listUpdateTime: AtomicLong = PolledMeter
+    .using(registry)
+    .withName("atlas.cloudwatch.listAge")
+    .monitorValue(new AtomicLong(registry.clock().wallTime()), Functions.age(registry.clock()))
 
   // Size of the metadata list. Compare with pending gets to get an idea of
   // how well we are keeping up with polling all of the data.
-  private val listSize: AtomicLong =
-    registry.gauge("atlas.cloudwatch.listSize", new AtomicLong(0L))
+  private val listSize: AtomicLong = PolledMeter
+    .using(registry)
+    .withName("atlas.cloudwatch.listSize")
+    .monitorValue(new AtomicLong(0L))
 
   // Number of get requests that are in-flight.
-  private val pendingGets: AtomicLong =
-    registry.gauge("atlas.cloudwatch.pendingGets", new AtomicLong(0L))
+  private val pendingGets: AtomicLong = PolledMeter
+    .using(registry)
+    .withName("atlas.cloudwatch.pendingGets")
+    .monitorValue(new AtomicLong(0L))
 
   // Cache of the last values received for a given metric
   private val cacheTTL = config.getDuration("atlas.cloudwatch.cache-ttl")

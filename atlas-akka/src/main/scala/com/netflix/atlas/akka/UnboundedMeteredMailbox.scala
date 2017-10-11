@@ -27,6 +27,7 @@ import akka.dispatch.MessageQueue
 import akka.dispatch.ProducesMessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
 import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.api.patterns.PolledMeter
 import com.typesafe.config.Config
 
 object UnboundedMeteredMailbox {
@@ -40,7 +41,11 @@ object UnboundedMeteredMailbox {
     private val registry = Spectator.globalRegistry()
     private val insertCounter = registry.counter("akka.queue.insert", "path", path)
     private val waitTimer = registry.timer("akka.queue.wait", "path", path)
-    registry.collectionSize(registry.createId("akka.queue.size", "path", path), queue)
+    PolledMeter
+      .using(registry)
+      .withName("akka.queue.size")
+      .withTag("path", path)
+      .monitorSize(queue)
 
     def enqueue(receiver: ActorRef, handle: Envelope): Unit = {
       insertCounter.increment()

@@ -23,6 +23,8 @@ import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.api.patterns.LongTaskTimer
+import com.netflix.spectator.api.patterns.PolledMeter
 
 import scala.reflect.ClassTag
 
@@ -51,10 +53,13 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => Tag
   private val lastRebuildTime = new AtomicLong(0L)
 
   // Updates that have not yet been added to the current index
-  private val pendingUpdates =
-    registry.collectionSize("atlas.index.pendingUpdates", new LinkedBlockingQueue[T])
+  private val pendingUpdates = PolledMeter
+    .using(registry)
+    .withName("atlas.index.pendingUpdates")
+    .monitorSize(new LinkedBlockingQueue[T])
 
-  private val rebuildTimer = registry.longTaskTimer("atlas.index.rebuildTime")
+  private val rebuildTimer =
+    LongTaskTimer.get(registry, registry.createId("atlas.index.rebuildTime"))
 
   /** Returns the timestamp for when the current index was built. */
   def buildTime: Long = lastRebuildTime.get
