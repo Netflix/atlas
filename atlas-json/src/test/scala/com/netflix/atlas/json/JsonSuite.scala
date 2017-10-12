@@ -451,7 +451,7 @@ case class JsonSuiteNested(simple: Map[String, JsonSuiteSimple], bar: Option[Str
 
 case class JsonSuiteArrayDouble(name: String, values: Array[Double])
 
-case class JsonSuiteArrayString(name: String, values: Array[String])
+case class JsonSuiteArrayString(name: String, values: Option[Array[String]])
 
 // https://github.com/FasterXML/jackson-module-scala/issues/62
 case class JsonSuiteOptionLong(foo: Option[Long])
