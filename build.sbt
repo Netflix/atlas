@@ -33,6 +33,7 @@ lazy val `atlas-akka` = project
     Dependencies.akkaSlf4j,
     Dependencies.akkaStream,
     Dependencies.iepService,
+    Dependencies.jsr250,
     Dependencies.spectatorSandbox,
     Dependencies.akkaHttp,
     Dependencies.typesafeConfig,
