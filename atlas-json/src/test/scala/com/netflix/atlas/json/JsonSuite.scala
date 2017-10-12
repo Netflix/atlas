@@ -429,6 +429,18 @@ class JsonSuite extends FunSuite {
     val json = Json.encode(obj)
     assert(json === """{"foo":0}""")
   }
+
+  test("object with empty array renders empty array") {
+    val obj = Json.decode[JsonSuiteArrayString]("""{"name":"name", "values":[]}""")
+    val json = Json.encode(obj)
+    assert(json === """{"name":"name","values":[]}""")
+  }
+
+  test("object with null renders null") {
+    val obj = Json.decode[JsonSuiteArrayString]("""{"name":null, "values":["foo"]}""")
+    val json = Json.encode(obj)
+    assert(json === """{"name":null,"values":["foo"]}""")
+  }
 }
 
 case object JsonSuiteObject
@@ -438,6 +450,8 @@ case class JsonSuiteSimple(foo: Int, bar: String)
 case class JsonSuiteNested(simple: Map[String, JsonSuiteSimple], bar: Option[String])
 
 case class JsonSuiteArrayDouble(name: String, values: Array[Double])
+
+case class JsonSuiteArrayString(name: String, values: Option[Array[String]])
 
 // https://github.com/FasterXML/jackson-module-scala/issues/62
 case class JsonSuiteOptionLong(foo: Option[Long])
