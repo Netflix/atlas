@@ -49,6 +49,7 @@ object Dependencies {
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jodaConvert     = "org.joda" % "joda-convert" % "1.8.3"
   val jol             = "org.openjdk.jol" % "jol-core" % "0.9"
+  val jsr250          = "javax.annotation" % "jsr250-api" % "1.0"
   val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.2"
   val log4jApi        = "org.apache.logging.log4j" % "log4j-api" % log4j
   val log4jCore       = "org.apache.logging.log4j" % "log4j-core" % log4j
