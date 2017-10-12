@@ -23,7 +23,7 @@ class PngImageSuite extends FunSuite {
 
   // From: http://en.wikipedia.org/wiki/Atlas_(mythology)
   val sampleText = """
-    |In Greek mythology, Atlas (English pronunciation: /ˈætləs/, Greek. Ἄτλας)
+    |In Greek mythology, Atlas (English pronunciation: /ˈætləs/)
     | was the primordial Titan who supported the heavens. Although associated
     | with various places, he became commonly identified with the Atlas
     | Mountains in northwest Africa (Modern-day Morocco and Algeria).
@@ -90,7 +90,7 @@ class PngImageSuite extends FunSuite {
     val i2 = PngImage.error(sampleText.toLowerCase, 800, 120)
     val diff = PngImage.diff(i1.data, i2.data)
     assert(diff.metadata("identical") === "false")
-    assert(diff.metadata("diff-pixel-count") === "32529")
+    assert(diff.metadata("diff-pixel-count") === "30631")
 
     val diff2 = PngImage.diff(expected.data, diff.data)
     assert(diff2.metadata("identical") === "true")
