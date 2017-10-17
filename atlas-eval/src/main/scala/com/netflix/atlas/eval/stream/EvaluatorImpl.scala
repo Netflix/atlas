@@ -176,7 +176,7 @@ private[stream] abstract class EvaluatorImpl(
         .via(context.countEvents("10_InputLines"))
         .via(new LwcToAggrDatapoint)
         .via(context.countEvents("11_LwcDatapoints"))
-        .via(new TimeGrouped[AggrDatapoint](1, 50, _.timestamp))
+        .via(new TimeGrouped[AggrDatapoint](context, 1, 50, _.timestamp))
         .via(context.countEvents("12_GroupedDatapoints"))
 
       datasources.out(0) ~> intermediateEval ~> finalEvalInput.in(0)

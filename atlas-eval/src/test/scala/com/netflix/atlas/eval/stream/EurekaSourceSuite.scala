@@ -37,7 +37,6 @@ import akka.util.ByteString
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.EurekaSource.GroupResponse
-import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await
@@ -98,13 +97,11 @@ class EurekaSourceSuite extends FunSuite {
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val mat = ActorMaterializer()
 
-  private val config = ConfigFactory.parseString("backends = []")
-
   private def run(uri: String, response: Try[HttpResponse]): GroupResponse = {
     val client = Flow[(HttpRequest, AccessLogger)].map {
       case (_, logger) => response -> logger
     }
-    val context = new StreamContext(config, client, mat)
+    val context = TestContext.createContext(mat, client)
     val future = EurekaSource(uri, context).runWith(Sink.head)
     Await.result(future, Duration.Inf)
   }
