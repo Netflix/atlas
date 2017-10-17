@@ -48,9 +48,9 @@ object ListHelper {
     if (size == limit)
       acc.reverse
     else if (v1.isEmpty)
-      acc.reverse ++ v2
+      acc.reverse ++ v2.take(limit - size)
     else if (v2.isEmpty)
-      acc.reverse ++ v1
+      acc.reverse ++ v1.take(limit - size)
     else
       v1.head.compareTo(v2.head) match {
         case c if c < 0 =>
