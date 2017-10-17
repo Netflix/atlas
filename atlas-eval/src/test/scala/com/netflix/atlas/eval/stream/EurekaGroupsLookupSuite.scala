@@ -25,7 +25,6 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.json.Json
-import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await
@@ -39,17 +38,6 @@ class EurekaGroupsLookupSuite extends FunSuite {
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val mat = ActorMaterializer()
-
-  private val config =
-    ConfigFactory.parseString("""
-      |backends = [
-      |  {
-      |    host = "atlas"
-      |    eureka-uri = "http://eureka/v2/vips/atlas-lwcapi:7001"
-      |    instance-uri = "http://{host}:{port}"
-      |  }
-      |]
-    """.stripMargin)
 
   private val eurekaGroup = EurekaSource.VipResponse(
     uri = "http://eureka/v2/vips/atlas-lwcapi:7001",
@@ -83,11 +71,11 @@ class EurekaGroupsLookupSuite extends FunSuite {
   private def run(input: List[DataSources], n: Int = 1): List[SourcesAndGroups] = {
     val client = Flow[(HttpRequest, AccessLogger)]
       .map {
-        case (req, v) =>
+        case (_, v) =>
           val json = Json.encode(eurekaGroup)
           Success(HttpResponse(StatusCodes.OK, entity = json)) -> v
       }
-    val context = new StreamContext(config, client, mat)
+    val context = TestContext.createContext(mat, client)
     val future = Source(input)
       .concat(Source.repeat(input.last)) // Need to avoid source stopping until sink is full
       .via(new EurekaGroupsLookup(context, 5.microseconds))

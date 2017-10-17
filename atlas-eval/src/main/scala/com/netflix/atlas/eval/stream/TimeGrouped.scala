@@ -30,6 +30,8 @@ import com.netflix.atlas.eval.model.TimeGroup
   * is roughly time ordered and that data from later times is a good indicator that
   * older times are complete.
   *
+  * @param context
+  *     Shared context for the evaluation stream.
   * @param numBuffers
   *     Number of time buffers to maintain. The buffers are stored in a rolling array
   *     and the data for a given buffer will be emitted when the first data comes in
@@ -41,13 +43,20 @@ import com.netflix.atlas.eval.model.TimeGroup
   * @tparam T
   *     Item from the input stream.
   */
-private[stream] class TimeGrouped[T](numBuffers: Int, max: Int, ts: T => Long)
-    extends GraphStage[FlowShape[T, TimeGroup[T]]] {
+private[stream] class TimeGrouped[T](
+  context: StreamContext,
+  numBuffers: Int,
+  max: Int,
+  ts: T => Long
+) extends GraphStage[FlowShape[T, TimeGroup[T]]] {
 
   private val in = Inlet[T]("TimeGrouped.in")
   private val out = Outlet[TimeGroup[T]]("TimeGrouped.out")
 
   override val shape: FlowShape[T, TimeGroup[T]] = FlowShape(in, out)
+
+  private val dropped = context.registry.counter("atlas.eval.datapoints", "id", "dropped")
+  private val buffered = context.registry.counter("atlas.eval.datapoints", "id", "buffered")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -76,8 +85,11 @@ private[stream] class TimeGrouped[T](numBuffers: Int, max: Int, ts: T => Long)
       override def onPush(): Unit = {
         val v = grab(in)
         val t = ts(v)
-        if (t <= cutoffTime) pull(in)
-        else {
+        if (t <= cutoffTime) {
+          dropped.increment()
+          pull(in)
+        } else {
+          buffered.increment()
           val i = findBuffer(t)
           if (i >= 0) {
             buf(i) = v :: buf(i)

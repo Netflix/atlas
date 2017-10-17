@@ -19,6 +19,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.eval.model.TimeGroup
+import com.netflix.spectator.api.DefaultRegistry
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await
@@ -29,8 +30,12 @@ class TimeGroupedSuite extends FunSuite {
 
   import TimeGroupedSuite._
 
-  implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
+  private implicit val system = ActorSystem(getClass.getSimpleName)
+  private implicit val materializer = ActorMaterializer()
+
+  private val registry = new DefaultRegistry()
+
+  private val context = TestContext.createContext(materializer, registry = registry)
 
   private def result(future: Future[List[TimeGroup[Event]]]): List[TimeGroup[Event]] = {
     Await
@@ -39,15 +44,18 @@ class TimeGroupedSuite extends FunSuite {
       .map(g => g.copy(values = g.values.sortWith(_.i < _.i)))
   }
 
+  private def run(data: List[Event]): List[TimeGroup[Event]] = {
+    val future = Source(data)
+      .via(new TimeGrouped[Event](context, 2, 10, _.timestamp))
+      .runFold(List.empty[TimeGroup[Event]])((acc, g) => g :: acc)
+    result(future)
+  }
+
   test("in order list") {
     val data =
       List(Event(10, 1), Event(10, 2), Event(10, 3), Event(20, 1), Event(30, 1), Event(30, 2))
 
-    val future = Source(data)
-      .via(new TimeGrouped[Event](2, 10, _.timestamp))
-      .runFold(List.empty[TimeGroup[Event]])((acc, g) => g :: acc)
-
-    val groups = result(future)
+    val groups = run(data)
     assert(
       groups === List(
         TimeGroup(10, List(Event(10, 1), Event(10, 2), Event(10, 3))),
@@ -61,11 +69,7 @@ class TimeGroupedSuite extends FunSuite {
     val data =
       List(Event(20, 1), Event(10, 2), Event(10, 3), Event(10, 1), Event(30, 1), Event(30, 2))
 
-    val future = Source(data)
-      .via(new TimeGrouped[Event](2, 10, _.timestamp))
-      .runFold(List.empty[TimeGroup[Event]])((acc, g) => g :: acc)
-
-    val groups = result(future)
+    val groups = run(data)
     assert(
       groups === List(
         TimeGroup(10, List(Event(10, 1), Event(10, 2), Event(10, 3))),
@@ -73,6 +77,14 @@ class TimeGroupedSuite extends FunSuite {
         TimeGroup(30, List(Event(30, 1), Event(30, 2)))
       )
     )
+  }
+
+  private def count(id: String): Long = {
+    registry.counter("atlas.eval.datapoints", "id", id).count()
+  }
+
+  private def counts: (Long, Long) = {
+    count("buffered") -> count("dropped")
   }
 
   test("late events dropped") {
@@ -86,11 +98,10 @@ class TimeGroupedSuite extends FunSuite {
       Event(10, 4) // Dropped, came in late and out of window
     )
 
-    val future = Source(data)
-      .via(new TimeGrouped[Event](2, 10, _.timestamp))
-      .runFold(List.empty[TimeGroup[Event]])((acc, g) => g :: acc)
+    val before = counts
+    val groups = run(data)
+    val after = counts
 
-    val groups = result(future)
     assert(
       groups === List(
         TimeGroup(10, List(Event(10, 1), Event(10, 2), Event(10, 3))),
@@ -98,6 +109,9 @@ class TimeGroupedSuite extends FunSuite {
         TimeGroup(30, List(Event(30, 1), Event(30, 2)))
       )
     )
+
+    assert(before._1 + 6 === after._1) // 6 buffered messages
+    assert(before._2 + 1 === after._2) // 1 dropped message
   }
 }
 

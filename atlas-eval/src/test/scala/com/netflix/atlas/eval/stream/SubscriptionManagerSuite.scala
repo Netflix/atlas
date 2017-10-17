@@ -27,7 +27,6 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.AccessLogger
-import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 
@@ -43,22 +42,6 @@ class SubscriptionManagerSuite extends FunSuite with BeforeAndAfter {
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val mat = ActorMaterializer()
-
-  private val config =
-    ConfigFactory.parseString("""
-      |backends = [
-      |  {
-      |    host = "localhost"
-      |    eureka-uri = "http://localhost:7102/v2/vips/local-dev:7001"
-      |    instance-uri = "http://{host}:{port}"
-      |  },
-      |  {
-      |    host = "atlas"
-      |    eureka-uri = "http://eureka/v2/vips/atlas-lwcapi:7001"
-      |    instance-uri = "http://{host}:{port}"
-      |  }
-      |]
-    """.stripMargin)
 
   private val group1 = EurekaSource.VipResponse(
     uri = "http://eureka/v2/vips/atlas-lwcapi:7001",
@@ -103,7 +86,7 @@ class SubscriptionManagerSuite extends FunSuite with BeforeAndAfter {
           requests.add(req)
           Success(HttpResponse(StatusCodes.OK)) -> v
       }
-    val context = new StreamContext(config, client, mat)
+    val context = TestContext.createContext(mat, client)
     val sink = new SubscriptionManager(context)
     val future = Source(input).runWith(sink)
     Await.result(future, Duration.Inf)
