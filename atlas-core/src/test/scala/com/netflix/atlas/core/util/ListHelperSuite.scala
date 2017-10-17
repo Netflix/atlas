@@ -31,6 +31,30 @@ class ListHelperSuite extends FunSuite {
     assert(ListHelper.merge(2, v1, v2) === List("a", "b"))
   }
 
+  test("merge empty and sorted list") {
+    val v1 = List.empty[String]
+    val v2 = List("a", "b", "c")
+    assert(ListHelper.merge(2, v1, v2) === List("a", "b"))
+  }
+
+  test("merge empty and sorted list with size equal to limit") {
+    val v1 = List.empty[String]
+    val v2 = List("a", "b")
+    assert(ListHelper.merge(2, v1, v2) === List("a", "b"))
+  }
+
+  test("merge empty and sorted list with size less than limit") {
+    val v1 = List.empty[String]
+    val v2 = List("a")
+    assert(ListHelper.merge(2, v1, v2) === List("a"))
+  }
+
+  test("merge sorted and empty list") {
+    val v1 = List("a", "b", "c")
+    val v2 = List.empty[String]
+    assert(ListHelper.merge(2, v1, v2) === List("a", "b"))
+  }
+
   test("merge many sorted lists with limit") {
     val v1 = List("a", "c", "d")
     val v2 = List("b", "e")
