@@ -26,8 +26,8 @@ import org.openjdk.jmh.infra.Blackhole
   * ```
   * > jmh:run -prof jmh.extras.JFR -wi 10 -i 10 -f1 -t1 .*ListMergeCommonPrefix.*
   * ...
-  * Benchmark                         Mode  Cnt  Score   Error  Units
-  * ListMergeCommonPrefix.merge      thrpt   10  6.606 ± 0.534  ops/s
+  * Benchmark                         Mode  Cnt   Score   Error  Units
+  * ListMergeCommonPrefix.merge      thrpt   10   8.700 ± 0.160  ops/s
   * ```
   */
 @State(Scope.Thread)

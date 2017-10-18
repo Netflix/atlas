@@ -82,4 +82,157 @@ object ArrayHelper {
     //   264               21912   (total)
     new Array[AnyRef](n).asInstanceOf[Array[T]]
   }
+
+  /**
+    * Creates a merger object that can be used to efficiently merge together sorted arrays
+    * of comparable objects.
+    *
+    * @param limit
+    *     The maximum number of items allowed in the result list. The merge operations will
+    *     be stopped as soon as the limit is reached.
+    * @return
+    *     Object that can be used to merge the arrays.
+    */
+  def merger[T <: Comparable[T]: Manifest](limit: Int): Merger[T] = new Merger[T](limit)
+
+  /** Helper for merging sorted arrays and lists. */
+  class Merger[T <: Comparable[T]: Manifest] private[util] (limit: Int) {
+    // Arrays used for storing the merged result. The `src` array will contain the
+    // current merged dataset. During a merge operation, the data will be written
+    // into the destination array. It is pre-allocated so it can be reused across
+    // many merger operations.
+    private var src = new Array[T](limit)
+    private var dst = new Array[T](limit)
+
+    /** Number of elements in the merged result. */
+    var size = 0
+
+    /** Merge a sorted array with the current data set. */
+    def merge(vs: Array[T]): Merger[T] = merge(vs, vs.length)
+
+    /** Merge a sorted array with the current data set. */
+    def merge(vs: Array[T], vsize: Int): Merger[T] = {
+      // Source, merge array, and destination indices
+      var sidx = 0
+      var vidx = 0
+      var didx = 0
+
+      // While both have data, merge and dedup
+      while (sidx < size && vidx < vsize && didx < limit) {
+        val v1 = src(sidx)
+        val v2 = vs(vidx)
+        v1.compareTo(v2) match {
+          case c if c < 0 =>
+            dst(didx) = v1
+            didx += 1
+            sidx += 1
+          case c if c == 0 =>
+            dst(didx) = v1
+            didx += 1
+            sidx += 1
+            vidx += 1
+          case c if c > 0 =>
+            dst(didx) = v2
+            didx += 1
+            vidx += 1
+        }
+      }
+
+      // Only source has data left, fill in the remainder
+      if (sidx < size && didx < limit) {
+        val length = math.min(limit - didx, size - sidx)
+        System.arraycopy(src, sidx, dst, didx, length)
+        didx += length
+      }
+
+      // Only the merge array has data left, fill in the remainder
+      if (vidx < vsize && didx < limit) {
+        val length = math.min(limit - didx, vsize - vidx)
+        System.arraycopy(vs, vidx, dst, didx, length)
+        didx += length
+      }
+
+      size = didx
+
+      // Swap the buffers
+      val tmp = src
+      src = dst
+      dst = tmp
+
+      this
+    }
+
+    def merge(vs: List[T]): Merger[T] = {
+      // Source and destination indices
+      var sidx = 0
+      var didx = 0
+
+      // Pointer to head of merge list
+      var data = vs
+
+      // While both have data, merge and dedup
+      while (sidx < size && data.nonEmpty && didx < limit) {
+        val v1 = src(sidx)
+        val v2 = data.head
+        v1.compareTo(v2) match {
+          case c if c < 0 =>
+            dst(didx) = v1
+            didx += 1
+            sidx += 1
+          case c if c == 0 =>
+            dst(didx) = v1
+            didx += 1
+            sidx += 1
+            data = data.tail
+          case c if c > 0 =>
+            dst(didx) = v2
+            didx += 1
+            data = data.tail
+        }
+      }
+
+      // Only source has data left, fill in the remainder
+      if (sidx < size && didx < limit) {
+        val length = math.min(limit - didx, size - sidx)
+        System.arraycopy(src, sidx, dst, didx, length)
+        didx += length
+      }
+
+      // Only the merge list has data left, fill in the remainder
+      while (data.nonEmpty && didx < limit) {
+        val iter = data.iterator
+        while (iter.hasNext && didx < limit) {
+          dst(didx) = iter.next()
+          didx += 1
+        }
+      }
+
+      size = didx
+
+      // Swap the buffers
+      val tmp = src
+      src = dst
+      dst = tmp
+
+      this
+    }
+
+    /** Return merged array of at most `limit` elements. */
+    def toArray: Array[T] = {
+      val data = new Array[T](size)
+      System.arraycopy(src, 0, data, 0, size)
+      data
+    }
+
+    /** Return merged list of at most `limit` elements. */
+    def toList: List[T] = {
+      val builder = List.newBuilder[T]
+      var i = 0
+      while (i < size) {
+        builder += src(i)
+        i += 1
+      }
+      builder.result()
+    }
+  }
 }
