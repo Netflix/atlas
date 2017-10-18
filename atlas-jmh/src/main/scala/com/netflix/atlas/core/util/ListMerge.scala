@@ -30,11 +30,11 @@ import scala.collection.SortedSet
   * ```
   * > jmh:run -wi 10 -i 10 -f1 -t1 .*ListMerge.*
   * ...
-  * [info] Benchmark             Mode  Cnt   Score   Error  Units
-  * [info] ListMerge.hashSet    thrpt   10   0.361 ± 0.038  ops/s
-  * [info] ListMerge.merge      thrpt   10  23.064 ± 5.711  ops/s
-  * [info] ListMerge.sortedSet  thrpt   10   0.239 ± 0.019  ops/s
-  * [info] ListMerge.treeSet    thrpt   10   0.267 ± 0.047  ops/s
+  * Benchmark                         Mode  Cnt   Score   Error  Units
+  * ListMerge.hashSet                thrpt   10   0.386 ± 0.021  ops/s
+  * ListMerge.merge                  thrpt   10  42.918 ± 2.044  ops/s
+  * ListMerge.sortedSet              thrpt   10   0.238 ± 0.007  ops/s
+  * ListMerge.treeSet                thrpt   10   0.316 ± 0.016  ops/s
   * ```
   */
 @State(Scope.Thread)

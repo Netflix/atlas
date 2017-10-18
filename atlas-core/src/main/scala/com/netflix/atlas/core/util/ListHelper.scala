@@ -73,9 +73,10 @@ object ListHelper {
     * @return
     *     Sorted list with a max size of `limit`.
     */
-  def merge[T <: Comparable[T]](limit: Int, vs: List[List[T]]): List[T] = {
-    vs.foldLeft(List.empty[T]) { (v1, v2) =>
-      merge(limit, v1, v2)
+  def merge[T <: Comparable[T]: Manifest](limit: Int, vs: List[List[T]]): List[T] = {
+    val merged = vs.foldLeft(ArrayHelper.merger[T](limit)) { (m, vs) =>
+      m.merge(vs)
     }
+    merged.toList
   }
 }
