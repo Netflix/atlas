@@ -35,8 +35,8 @@ in development may be more likely to see the question on the mailing list.
 ### Reporting Issues or Feature Requests
 
 Issues and feature requests are managed via [GitHub issues][issue]. When filing an issue for
-a bug, we would appreciate if you check open issues to see if there are any similar requests.
-If there is a match, then 
+a bug, we would appreciate if you first check open issues to see if there are any similar
+requests.
 
 When **reporting a bug**, then please include the following:
 
