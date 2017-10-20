@@ -222,18 +222,18 @@ stable patch releases.
 #### What version does Netflix use?
 
 There are typically several versions of Atlas in use at Netflix. Atlas is a hosted service
-that is operated by a single team. We are using a mix of versions from the latest in progress
-release, 1.6.0 when this was written. Snapshots are created for every commit into master and
-some of our services pull in the snapshot to test and verify new functionality in our
-environment. Occasionally when there is a need, we'll cut a release candidate for the in progress
-version so there is a more stable point depend on for use-cases where we need more stability
-than being on the latest snapshot.
+that is operated by a single team. We are using a mix of versions including the latest
+stable release and latest in progress release, 1.6.0 when this was written. Snapshots are
+created for every commit into master and some of our services pull in the snapshot to test and
+verify new functionality in our environment. Occasionally when there is a need, we'll cut a
+release candidate for the in progress version so there is an immutable artifact to depend on
+for use-cases where we need more stability than being on the latest snapshot.
 
 Once a final release is made, 1.5.x is the latest stable release right now, it should be stable
-with no breaking changes for at least the next release cycle. These can be considered long-term
-stable releases. They will receive bug fixes, but no new features. These are used for projects
-that do not want to keep up with the churn and potential breakage of using the latest in progress
-version.
+with no breaking changes. It will be maintained for at least the next release cycle, but only
+bug fixes. No new features will be added. These can be considered long-term stable releases
+and are used for projects that do not want to keep up with the churn and potential breakage
+of using the latest in progress version.
 
 ### Updating Documentation
 
