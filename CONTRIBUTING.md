@@ -21,7 +21,7 @@ feel free to propose changes to this document in a pull request.
 * [Versions and Compatibility](#versions-and-compatibility)
 * [Updating Documentation](#updating-documentation)
 
-## How can I contribute?
+## How Can I Contribute?
 
 ### Asking Questions
 
@@ -68,7 +68,7 @@ To submit code:
 #### Testing
 
 Where possible, test cases should be added to cover the new functionality or bug being
-fixed. Test cases should be small, focused, and quick to executed.
+fixed. Test cases should be small, focused, and quick to execute.
 
 #### Pull Requests
 
@@ -146,15 +146,15 @@ included launcher script. To do a basic build and run tests:
 $ project/sbt test
 ```
 
-There is also a makeful included that runs SBT with some convenient targets.
-To reproduce the validation done for PR builds locally including verification of
+There is also a makefile included that runs SBT with some convenient targets.
+To reproduce the validation done for PR builds locally, including verification of
 [license headers](#license-headers) and [formatting](#scalafmt), just run:
 
 ```
 $ make
 ```
 
-For making changes you are welcome to use whatever editor you are comfortable with. Most
+For making changes, you are welcome to use whatever editor you are comfortable with. Most
 current developers on the project use Intellij IDEA.
 
 ### License Headers
@@ -210,11 +210,11 @@ These are currently used to indicate the following:
   exposed. We try hard to avoid making incompatible changes at this layer as it is highly
   disruptive to many teams at Netflix.
 * **minor**, indicates compatibility of the libraries that make up Atlas. For the in-progress
-  release we do not make any compatibility guarantees to give us more flexibility with updating
+  release, we do not make any compatibility guarantees to give us more flexibility with updating
   the software and making performance improvements.
 * **patch**, bug fixes and minor changes for stable releases. There should be backwards
-  compatibility from one patch release to the next. In most cases there will also be forwards
-  compatibility, but we do not test or verify.
+  compatibility from one patch release to the next. In most cases these will also be forwards
+  compatible, but we do not test or verify.
   
 If you need stability and are using the Atlas libraries directly, then use one of the
 stable patch releases.
@@ -222,18 +222,19 @@ stable patch releases.
 #### What version does Netflix use?
 
 There are typically several versions of Atlas in use at Netflix. Atlas is a hosted service
-that is operated by a single team. We are using a mix of versions including the latest
-stable release and latest in progress release, 1.6.0 when this was written. Snapshots are
-created for every commit into master and some of our services pull in the snapshot to test and
-verify new functionality in our environment. Occasionally when there is a need, we'll cut a
-release candidate for the in progress version so there is an immutable artifact to depend on
-for use-cases where we need more stability than being on the latest snapshot.
+that is operated by a single team. We are using a mix of versions, including the latest
+stable release and latest in-progress release, tagged with `Pre-release` on the [releases page].
+Snapshots are created for every commit into master and some of our services pull in the snapshot
+to test and verify new functionality in our environment. Occasionally when there is a need, we
+will cut a release candidate for the in-progress version so there is an immutable artifact to
+depend on for use-cases where we need more stability than being on the latest snapshot.
 
-Once a final release is made, 1.5.x is the latest stable release right now, it should be stable
-with no breaking changes. It will be maintained for at least the next release cycle, but only
-bug fixes. No new features will be added. These can be considered long-term stable releases
-and are used for projects that do not want to keep up with the churn and potential breakage
-of using the latest in progress version.
+[releases page]: https://github.com/Netflix/atlas/releases
+
+Once a final release is made, it should be stable with no breaking changes. It will be maintained
+for at least the next release cycle, but will only receive bug fixes. No new features will be
+added. These can be considered long-term stable releases and are used for projects that do not
+want to keep up with the churn and potential breakage of using the latest in progress version.
 
 ### Updating Documentation
 
