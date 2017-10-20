@@ -11,7 +11,7 @@ object Dependencies {
     val guice      = "4.1.0"
     val jackson    = "2.9.1"
     val log4j      = "2.9.1"
-    val scala      = "2.12.3"
+    val scala      = "2.12.4"
     val slf4j      = "1.7.25"
     val spectator  = "0.58.1"
 

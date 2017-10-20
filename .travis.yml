@@ -6,7 +6,7 @@ matrix:
   - jdk: oraclejdk9
     env: BINTRAY_PUBLISH=false
 scala:
-- 2.12.3
+- 2.12.4
 script:
 - ./scripts/buildViaTravis.sh
 sudo: required
