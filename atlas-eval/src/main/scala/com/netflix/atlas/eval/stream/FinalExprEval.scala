@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.eval.stream
 
+import java.time.Instant
+
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
 import akka.stream.Attributes
@@ -122,29 +124,24 @@ private[stream] class FinalExprEval(step: Long = 60000L)
       // addressed to each recipient
       private def handleData(group: TimeGroup[AggrDatapoint]): Unit = {
         // Finalize the DataExprs, needed as input for further evaluation
-        val (exprDataBldr, exprDiagBldr) = group.values.groupBy(_.expr).
-          foldLeft(Map.newBuilder[DataExpr, List[TimeSeries]], Map.newBuilder[DataExpr, DiagnosticMessage]) {
-            case ((dataBldr, diagBldr), (dataExpr, datapoints)) =>
-              val timeseries = AggrDatapoint.aggregate(datapoints).map(_.toTimeSeries(step))
-              val diagnosticMessage = DiagnosticMessage.info(s"Stats for expression: [$dataExpr]. " +
-                s"Input of ${datapoints.length} datapoints further aggregated to ${timeseries.length} datapoints.")
+        val timestamp = group.timestamp
+        val groupedDatapoints = group.values.groupBy(_.expr)
 
-              dataBldr += dataExpr -> timeseries
-              diagBldr += dataExpr -> diagnosticMessage
-
-              (dataBldr, diagBldr)
-          }
-
-        val expressionDatapoints = noData ++ exprDataBldr.result()
-        val expressionDiagnostics = exprDiagBldr.result()
-
-        val s = group.timestamp
+        val expressionDatapoints = noData ++ groupedDatapoints.map {
+          case (k, vs) =>
+            k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries(step))
+        }
+        val expressionDiagnostics = groupedDatapoints.map {
+          case (k, vs) =>
+            val t = Instant.ofEpochMilli(timestamp)
+            k -> DiagnosticMessage.info(s"$t: ${vs.length} input datapoints for [$k]")
+        }
 
         // Generate the time series and diagnostic output
         val output = recipients.flatMap {
           case (expr, ids) =>
             val state = states.getOrElse(expr, Map.empty[StatefulExpr, Any])
-            val context = EvalContext(s, s + step, step, state)
+            val context = EvalContext(timestamp, timestamp + step, step, state)
             try {
               val result = expr.expr.eval(context, expressionDatapoints)
               states(expr) = result.state
@@ -155,11 +152,8 @@ private[stream] class FinalExprEval(step: Long = 60000L)
               val diagnostics = expr.expr.dataExprs.flatMap(expressionDiagnostics.get)
 
               ids.flatMap { id =>
-                msgs.map { msg =>
+                (msgs ++ diagnostics).map { msg =>
                   new MessageEnvelope(id, msg)
-                } ++
-                diagnostics.map { diag =>
-                  new MessageEnvelope(id, diag)
                 }
               }
             } catch {
