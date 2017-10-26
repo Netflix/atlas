@@ -122,26 +122,44 @@ private[stream] class FinalExprEval(step: Long = 60000L)
       // addressed to each recipient
       private def handleData(group: TimeGroup[AggrDatapoint]): Unit = {
         // Finalize the DataExprs, needed as input for further evaluation
-        val data = noData ++ group.values.groupBy(_.expr).map {
-          case (k, vs) =>
-            k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries(step))
-        }
+        val (exprDataBldr, exprDiagBldr) = group.values.groupBy(_.expr).
+          foldLeft(Map.newBuilder[DataExpr, List[TimeSeries]], Map.newBuilder[DataExpr, DiagnosticMessage]) {
+            case ((dataBldr, diagBldr), (dataExpr, datapoints)) =>
+              val timeseries = AggrDatapoint.aggregate(datapoints).map(_.toTimeSeries(step))
+              val diagnosticMessage = DiagnosticMessage.info(s"Stats for expression: [$dataExpr]. " +
+                s"Input of ${datapoints.length} datapoints further aggregated to ${timeseries.length} datapoints.")
+
+              dataBldr += dataExpr -> timeseries
+              diagBldr += dataExpr -> diagnosticMessage
+
+              (dataBldr, diagBldr)
+          }
+
+        val expressionDatapoints = noData ++ exprDataBldr.result()
+        val expressionDiagnostics = exprDiagBldr.result()
+
         val s = group.timestamp
 
-        // Generate the time series output
+        // Generate the time series and diagnostic output
         val output = recipients.flatMap {
           case (expr, ids) =>
             val state = states.getOrElse(expr, Map.empty[StatefulExpr, Any])
             val context = EvalContext(s, s + step, step, state)
             try {
-              val result = expr.expr.eval(context, data)
+              val result = expr.expr.eval(context, expressionDatapoints)
               states(expr) = result.state
               val msgs = result.data.map { t =>
                 TimeSeriesMessage(expr.toString, context, t)
               }
+
+              val diagnostics = expr.expr.dataExprs.flatMap(expressionDiagnostics.get)
+
               ids.flatMap { id =>
                 msgs.map { msg =>
                   new MessageEnvelope(id, msg)
+                } ++
+                diagnostics.map { diag =>
+                  new MessageEnvelope(id, diag)
                 }
               }
             } catch {
