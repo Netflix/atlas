@@ -11,7 +11,7 @@ object Dependencies {
     val guice      = "4.1.0"
     val jackson    = "2.9.1"
     val log4j      = "2.9.1"
-    val scala      = "2.12.4"
+    val scala      = "2.12.3" // must be 2.12.3 due to https://github.com/sbt/sbt/issues/3560
     val slf4j      = "1.7.25"
     val spectator  = "0.58.2"
 
