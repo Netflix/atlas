@@ -9,7 +9,7 @@ feel free to propose changes to this document in a pull request.
 
 [How can I contribute?](#how-can-i-contribute)
 * [Asking Questions](#asking-questions)
-* [Reporting Issues or Feature Requests](#reporting-bugs)
+* [Reporting Issues or Feature Requests](#reporting-issues-or-feature-requests)
 * [Contributing Code](#contributing-code)
 
 [Guides](#guides)
