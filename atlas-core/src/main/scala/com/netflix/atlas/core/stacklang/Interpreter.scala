@@ -108,7 +108,7 @@ case class Interpreter(vocabulary: List[Word]) {
   }
 
   final def execute(program: String): Context = {
-    execute(program.trim.split("\\s*,\\s*").filter(_.nonEmpty).toList)
+    execute(splitAndTrim(program))
   }
 
   @scala.annotation.tailrec
@@ -126,7 +126,7 @@ case class Interpreter(vocabulary: List[Word]) {
   }
 
   final def debug(program: String): List[Step] = {
-    debug(program.trim.split("\\s*,\\s*").filter(_.nonEmpty).toList)
+    debug(splitAndTrim(program))
   }
 
   /**
@@ -178,5 +178,24 @@ object Interpreter {
       case v: AnyRef   => v.toString
     }
     parts.mkString(",")
+  }
+
+  /**
+    * Helper for efficiently splitting the input string. See StringSplit benchmark for
+    * comparison with more naive approach. The string split method optimizes simple cases
+    * with a single character so that it does not require compiling the regex. This method
+    * uses a single character and does a simple `trim` operation to cleanup the whitespace.
+    */
+  private[stacklang] def splitAndTrim(str: String): List[String] = {
+    val parts = str.split(",")
+    val builder = List.newBuilder[String]
+    var i = 0
+    while (i < parts.length) {
+      val tmp = parts(i).trim
+      if (!tmp.isEmpty)
+        builder += tmp
+      i += 1
+    }
+    builder.result()
   }
 }

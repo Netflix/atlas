@@ -143,6 +143,25 @@ class InterpreterSuite extends FunSuite {
   test("typeSummary: a :: b :: Nil") {
     assert(Interpreter.typeSummary(List("a" :: "b" :: Nil)) === "[List]")
   }
+
+  //
+  // splitAndTrim
+  //
+
+  test("splitAndTrim should split by comma") {
+    val actual = Interpreter.splitAndTrim("a,b,c")
+    assert(actual === List("a", "b", "c"))
+  }
+
+  test("splitAndTrim should trim whitespace") {
+    val actual = Interpreter.splitAndTrim("  a\n,\t\nb ,c")
+    assert(actual === List("a", "b", "c"))
+  }
+
+  test("splitAndTrim should ignore empty strings") {
+    val actual = Interpreter.splitAndTrim(", ,\t,\n\n,")
+    assert(actual === Nil)
+  }
 }
 
 object InterpreterSuite {
