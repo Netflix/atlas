@@ -91,8 +91,8 @@ private[stream] class SubscriptionManager(context: StreamContext)
       private def handleDataSources(dataSources: DataSources): Unit = {
         // Log changes to the data sources for easier debugging
         import scala.collection.JavaConverters._
-        logSources("added", sources.addedSources(dataSources).asScala.toList)
-        logSources("removed", sources.removedSources(dataSources).asScala.toList)
+        logSources("added", dataSources.addedSources(sources).asScala.toList)
+        logSources("removed", dataSources.removedSources(sources).asScala.toList)
         sources = dataSources
 
         // Generate the subscribe payloads to use for each eureka backend. Other backend
