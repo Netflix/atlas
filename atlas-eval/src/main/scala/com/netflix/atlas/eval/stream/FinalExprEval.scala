@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.eval.stream
 
+import java.time.Instant
+
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
 import akka.stream.Attributes
@@ -122,25 +124,35 @@ private[stream] class FinalExprEval(step: Long = 60000L)
       // addressed to each recipient
       private def handleData(group: TimeGroup[AggrDatapoint]): Unit = {
         // Finalize the DataExprs, needed as input for further evaluation
-        val data = noData ++ group.values.groupBy(_.expr).map {
+        val timestamp = group.timestamp
+        val groupedDatapoints = group.values.groupBy(_.expr)
+
+        val expressionDatapoints = noData ++ groupedDatapoints.map {
           case (k, vs) =>
             k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries(step))
         }
-        val s = group.timestamp
+        val expressionDiagnostics = groupedDatapoints.map {
+          case (k, vs) =>
+            val t = Instant.ofEpochMilli(timestamp)
+            k -> DiagnosticMessage.info(s"$t: ${vs.length} input datapoints for [$k]")
+        }
 
-        // Generate the time series output
+        // Generate the time series and diagnostic output
         val output = recipients.flatMap {
           case (expr, ids) =>
             val state = states.getOrElse(expr, Map.empty[StatefulExpr, Any])
-            val context = EvalContext(s, s + step, step, state)
+            val context = EvalContext(timestamp, timestamp + step, step, state)
             try {
-              val result = expr.expr.eval(context, data)
+              val result = expr.expr.eval(context, expressionDatapoints)
               states(expr) = result.state
               val msgs = result.data.map { t =>
                 TimeSeriesMessage(expr.toString, context, t)
               }
+
+              val diagnostics = expr.expr.dataExprs.flatMap(expressionDiagnostics.get)
+
               ids.flatMap { id =>
-                msgs.map { msg =>
+                (msgs ++ diagnostics).map { msg =>
                   new MessageEnvelope(id, msg)
                 }
               }

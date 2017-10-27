@@ -19,6 +19,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
+import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
@@ -112,14 +113,28 @@ class FinalExprEvalSuite extends FunSuite {
       group(3, AggrDatapoint(0, expr, "i-1", tags, 44.0)),
     )
 
-    val expected = List(Double.NaN, 42.0, 43.0, 44.0)
     val output = run(input)
-    assert(output.size === 4)
-    output.zip(expected).foreach {
+
+    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    assert(timeseries.size === 4)
+    val expectedTimeseries = List(Double.NaN, 42.0, 43.0, 44.0)
+    timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
         assert(env.getId === "a")
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
+    }
+
+    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
+    assert(diagnostics.size === 3)
+    val expectedDiagnostics = List(
+      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr]"),
+      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 1 input datapoints for [$expr]"),
+      DiagnosticMessage.info(s"1970-01-01T00:03:00Z: 1 input datapoints for [$expr]")
+    )
+    diagnostics.zip(expectedDiagnostics).foreach {
+      case (actual, expected) =>
+        assert(actual.getMessage === expected)
     }
   }
 
@@ -143,15 +158,30 @@ class FinalExprEvalSuite extends FunSuite {
       ),
     )
 
-    val expected = List(Double.NaN, 42.0, 129.0, 87.0)
     val output = run(input)
-    assert(output.size === 4)
-    output.zip(expected).foreach {
+
+    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    assert(timeseries.size === 4)
+    val expectedTimeseries = List(Double.NaN, 42.0, 129.0, 87.0)
+    timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
         assert(env.getId === "a")
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
+
+    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
+    assert(diagnostics.size === 3)
+    val expectedDiagnostics = List(
+      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr]"),
+      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 3 input datapoints for [$expr]"),
+      DiagnosticMessage.info(s"1970-01-01T00:03:00Z: 2 input datapoints for [$expr]")
+    )
+    diagnostics.zip(expectedDiagnostics).foreach {
+      case (actual, expected) =>
+        assert(actual.getMessage === expected)
+    }
+
   }
 
   test("aggregate with multiple expressions") {
@@ -178,17 +208,39 @@ class FinalExprEvalSuite extends FunSuite {
       ),
     )
 
-    val expected1 = scala.collection.mutable.Queue(42.0, 84.0, 44.0)
-    val expected2 = scala.collection.mutable.Queue(Double.NaN, 45.0, 49.0)
-
     val output = run(input)
-    assert(output.size === 3 + 3) // 3 for expr1, 3 for expr2
-    output.foreach { env =>
-      val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+
+    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    assert(timeseries.size === 3 + 3) // 3 for expr1, 3 for expr2
+
+    val expectedTimeseries1 = scala.collection.mutable.Queue(42.0, 84.0, 44.0)
+    val expectedTimeseries2 = scala.collection.mutable.Queue(Double.NaN, 45.0, 49.0)
+    timeseries.foreach { env =>
+      val actual = env.getMessage.asInstanceOf[TimeSeriesMessage]
       if (env.getId == "a")
-        checkValue(ts, expected1.dequeue())
+        checkValue(actual, expectedTimeseries1.dequeue())
       else
-        checkValue(ts, expected2.dequeue())
+        checkValue(actual, expectedTimeseries2.dequeue())
+    }
+
+    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
+    assert(diagnostics.size === 3 + 2) // 3 for datasource a, 2 for datasource b
+
+    val expectedDiagnostics1 = scala.collection.mutable.Queue(
+      DiagnosticMessage.info(s"1970-01-01T00:00:00Z: 1 input datapoints for [$expr1]"),
+      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 2 input datapoints for [$expr1]"),
+      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 1 input datapoints for [$expr1]")
+    )
+    val expectedDiagnostics2 = scala.collection.mutable.Queue(
+      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr2]"),
+      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 2 input datapoints for [$expr2]")
+    )
+    diagnostics.foreach { env =>
+      val actual = env.getMessage.asInstanceOf[DiagnosticMessage]
+      if (env.getId == "a")
+        assert(actual === expectedDiagnostics1.dequeue())
+      else
+        assert(actual === expectedDiagnostics2.dequeue())
     }
   }
 
@@ -220,8 +272,10 @@ class FinalExprEvalSuite extends FunSuite {
     )
 
     val output = run(input)
-    assert(output.size === 4)
-    output.foreach { env =>
+
+    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    assert(timeseries.size === 4)
+    timeseries.foreach { env =>
       val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
       if (ts.tags("node") == "i-1") {
         assert(ts.start < 120000)
@@ -230,6 +284,22 @@ class FinalExprEvalSuite extends FunSuite {
         assert(ts.start > 0)
         checkValue(ts, 21.0)
       }
+    }
+
+    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
+    assert(diagnostics.size === 6)
+
+    val expectedDiagnostics = List(
+      DiagnosticMessage.info(s"1970-01-01T00:00:00Z: 1 input datapoints for [$expr1]"),
+      DiagnosticMessage.info(s"1970-01-01T00:00:00Z: 2 input datapoints for [$expr2]"),
+      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 2 input datapoints for [$expr1]"),
+      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 2 input datapoints for [$expr2]"),
+      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 2 input datapoints for [$expr1]"),
+      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 1 input datapoints for [$expr2]")
+    )
+    diagnostics.zip(expectedDiagnostics).foreach {
+      case (actual, expected) =>
+        assert(actual.getMessage === expected)
     }
   }
 }
