@@ -227,6 +227,7 @@ private[stream] abstract class EvaluatorImpl(
         .via(new EurekaGroupsLookup(context, 30.seconds))
         .via(context.countEvents("01_EurekaGroups"))
         .flatMapMerge(Int.MaxValue, s => s)
+        .via(context.countEvents("01_EurekaRefresh"))
       datasources.out(0).map(_.remoteOnly()) ~> eurekaLookup ~> eurekaGroups.in
       eurekaGroups.out(0) ~> new SubscriptionManager(context)
 

@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.eval.stream
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import akka.Done
 import akka.NotUsed
 import akka.stream.ActorMaterializer
@@ -81,12 +83,14 @@ private[stream] object EvaluationFlows {
     * Source that will repeat the item with the specified delay in between while the
     * condition is still true.
     */
-  def repeatWhile[T](item: T, delay: FiniteDuration, condition: => Boolean): Source[T, NotUsed] = {
+  def repeatWhile[T](item: T, delay: FiniteDuration): (Source[T, NotUsed], AtomicBoolean) = {
+    val continue = new AtomicBoolean(true)
     val iterator = new Iterator[T] {
-      override def hasNext: Boolean = condition
+      override def hasNext: Boolean = continue.get()
       override def next(): T = item
     }
-    Source.fromIterator(() => iterator).throttle(1, delay, 1, ThrottleMode.Shaping)
+    val src = Source.fromIterator(() => iterator).throttle(1, delay, 1, ThrottleMode.Shaping)
+    src -> continue
   }
 
   /**

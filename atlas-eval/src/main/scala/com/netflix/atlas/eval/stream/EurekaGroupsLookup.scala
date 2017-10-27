@@ -60,7 +60,6 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
         // If there is an existing source polling Eureka, then tell it to stop. Create a
         // new instance of the flag for the next source
         continue.set(false)
-        continue = new AtomicBoolean(true)
 
         val next = grab(in)
 
@@ -90,7 +89,8 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
           .map(gs => next -> Groups(gs))
 
         // Regularly refresh the metadata until the returned continue flag is set to false
-        val src = EvaluationFlows.repeatWhile(NotUsed, frequency, continue.get())
+        val (src, hasNext) = EvaluationFlows.repeatWhile(NotUsed, frequency)
+        continue = hasNext
         push(out, src.flatMapConcat(_ => lookup))
       }
 
