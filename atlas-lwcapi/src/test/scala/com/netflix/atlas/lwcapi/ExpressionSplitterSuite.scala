@@ -29,24 +29,22 @@ class ExpressionSplitterSuite extends FunSuite {
   private val splitter = new ExpressionSplitter
 
   test("splits single expression into data expressions") {
-    val ret = splitter.split(query1, frequency1)
-    assert(
-      ret === List(
-        Subscription(matchList1, ExpressionMetadata(ds1a, frequency1)),
-        Subscription(matchList1, ExpressionMetadata(ds1b, frequency1))
-      ).reverse
-    )
+    val actual = splitter.split(query1, frequency1)
+    val expected = List(
+      Subscription(matchList1, ExpressionMetadata(ds1a, frequency1)),
+      Subscription(matchList1, ExpressionMetadata(ds1b, frequency1))
+    ).reverse
+    assert(actual === expected)
   }
 
   test("splits compound expression into data expressions") {
     val expr = query1 + "," + query1
-    val ret = splitter.split(expr, frequency1)
-    assert(
-      ret === List(
-        Subscription(matchList1, ExpressionMetadata(ds1a, frequency1)),
-        Subscription(matchList1, ExpressionMetadata(ds1b, frequency1))
-      ).reverse
-    )
+    val actual = splitter.split(expr, frequency1)
+    val expected = List(
+      Subscription(matchList1, ExpressionMetadata(ds1a, frequency1)),
+      Subscription(matchList1, ExpressionMetadata(ds1b, frequency1))
+    ).reverse
+    assert(actual === expected)
   }
 
   test("throws IAE for invalid expressions") {

@@ -15,18 +15,54 @@
  */
 package com.netflix.atlas.lwcapi
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Query.KeyQuery
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
+/**
+  * Splits a complete graph expression (StyleExpr) string into a set of subscriptions. Each
+  * subscription is based on the underlying data expressions (DataExpr) that get pushed back
+  * to the systems supplying data to LWCAPI.
+  */
 class ExpressionSplitter {
+
+  import ExpressionSplitter._
 
   private val keepKeys = Set("nf.app", "nf.stack", "nf.cluster")
 
   private val interpreter = Interpreter(StyleVocabulary.allWords)
-  private val interner = scala.collection.mutable.AnyRefMap[Query, Query]()
+
+  /**
+    * Processing the expressions can be quite expensive. In particular compiling regular
+    * expressions to ensure they are valid. Generally the set of expressions should not
+    * vary much over time and the evaluator library will regularly submit the full list
+    * to sync with. This cache prevents the reprocessing for expressions that have already
+    * been seen recently.
+    */
+  private val exprCache = {
+    val loader = new CacheLoader[String, Try[List[DataExprMeta]]] {
+      def load(expr: String): Try[List[DataExprMeta]] = parse(expr)
+    }
+    Caffeine
+      .newBuilder()
+      .expireAfterAccess(10, TimeUnit.MINUTES)
+      .build(loader)
+  }
+
+  // TODO: https://github.com/Netflix/atlas/issues/729
+  private val interner = new ConcurrentHashMap[Query, Query]()
 
   private[lwcapi] def intern(query: Query): Query = {
     query match {
@@ -35,33 +71,33 @@ class ExpressionSplitter {
       case Query.False =>
         query
       case q: Query.Equal =>
-        interner.getOrElseUpdate(q, Query.Equal(q.k.intern(), q.v.intern()))
+        interner.computeIfAbsent(q, _ => Query.Equal(q.k.intern(), q.v.intern()))
       case q: Query.LessThan =>
-        interner.getOrElseUpdate(q, Query.LessThan(q.k.intern(), q.v.intern()))
+        interner.computeIfAbsent(q, _ => Query.LessThan(q.k.intern(), q.v.intern()))
       case q: Query.LessThanEqual =>
-        interner.getOrElseUpdate(q, Query.LessThanEqual(q.k.intern(), q.v.intern()))
+        interner.computeIfAbsent(q, _ => Query.LessThanEqual(q.k.intern(), q.v.intern()))
       case q: Query.GreaterThan =>
-        interner.getOrElseUpdate(q, Query.GreaterThan(q.k.intern(), q.v.intern()))
+        interner.computeIfAbsent(q, _ => Query.GreaterThan(q.k.intern(), q.v.intern()))
       case q: Query.GreaterThanEqual =>
-        interner.getOrElseUpdate(q, Query.GreaterThanEqual(q.k.intern(), q.v.intern()))
+        interner.computeIfAbsent(q, _ => Query.GreaterThanEqual(q.k.intern(), q.v.intern()))
       case q: Query.Regex =>
-        interner.getOrElseUpdate(q, Query.Regex(q.k.intern(), q.v.intern()))
+        interner.computeIfAbsent(q, _ => Query.Regex(q.k.intern(), q.v.intern()))
       case q: Query.RegexIgnoreCase =>
-        interner.getOrElseUpdate(q, Query.RegexIgnoreCase(q.k.intern(), q.v.intern()))
+        interner.computeIfAbsent(q, _ => Query.RegexIgnoreCase(q.k.intern(), q.v.intern()))
       case q: Query.In =>
-        interner.getOrElseUpdate(q, Query.In(q.k.intern(), q.vs.map(_.intern())))
+        interner.computeIfAbsent(q, _ => Query.In(q.k.intern(), q.vs.map(_.intern())))
       case q: Query.HasKey =>
-        interner.getOrElseUpdate(q, Query.HasKey(q.k.intern()))
+        interner.computeIfAbsent(q, _ => Query.HasKey(q.k.intern()))
       case q: Query.And =>
-        interner.getOrElseUpdate(q, Query.And(intern(q.q1), intern(q.q2)))
+        interner.computeIfAbsent(q, _ => Query.And(intern(q.q1), intern(q.q2)))
       case q: Query.Or =>
-        interner.getOrElseUpdate(q, Query.Or(intern(q.q1), intern(q.q2)))
+        interner.computeIfAbsent(q, _ => Query.Or(intern(q.q1), intern(q.q2)))
       case q: Query.Not =>
-        interner.getOrElseUpdate(q, Query.Not(intern(q.q)))
+        interner.computeIfAbsent(q, _ => Query.Not(intern(q.q)))
     }
   }
 
-  def split(expression: String, frequency: Long): List[Subscription] = synchronized {
+  private def parse(expression: String): Try[List[DataExprMeta]] = Try {
     val context = interpreter.execute(expression)
     val dataExprs = context.stack.flatMap {
       case ModelExtractors.PresentationType(t) => t.expr.dataExprs
@@ -78,9 +114,20 @@ class ExpressionSplitter {
     }
 
     dataExprs.distinct.map { e =>
-      val q = intern(compress(e.dataExprs.head.query))
-      Subscription(q, ExpressionMetadata(e.toString, frequency))
+      val q = intern(compress(e.query))
+      DataExprMeta(e, e.toString, q)
     }
+  }
+
+  def split(expression: String, frequency: Long): List[Subscription] = {
+    exprCache.get(expression) match {
+      case Success(dataExprs: List[DataExpr]) => dataExprs.map(e => toSubscription(e, frequency))
+      case Failure(t)                         => throw t
+    }
+  }
+
+  private def toSubscription(meta: DataExprMeta, frequency: Long): Subscription = {
+    Subscription(meta.compressedQuery, ExpressionMetadata(meta.exprString, frequency))
   }
 
   private def simplify(query: Query): Query = {
@@ -107,4 +154,8 @@ class ExpressionSplitter {
     val tmp = expr.rewrite { case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True }
     simplify(tmp.asInstanceOf[Query])
   }
+}
+
+object ExpressionSplitter {
+  private case class DataExprMeta(expr: DataExpr, exprString: String, compressedQuery: Query)
 }
