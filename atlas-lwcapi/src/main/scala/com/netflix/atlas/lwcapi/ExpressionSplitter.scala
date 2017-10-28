@@ -18,7 +18,6 @@ package com.netflix.atlas.lwcapi
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.ModelExtractors
@@ -26,6 +25,7 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Query.KeyQuery
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.spectator.api.Utils
 
 import scala.util.Failure
 import scala.util.Success
@@ -50,19 +50,25 @@ class ExpressionSplitter {
     * vary much over time and the evaluator library will regularly submit the full list
     * to sync with. This cache prevents the reprocessing for expressions that have already
     * been seen recently.
+    *
+    * Note: do not use LoadingCache, see `getFromCache`.
     */
-  private val exprCache = {
-    val loader = new CacheLoader[String, Try[List[DataExprMeta]]] {
-      def load(expr: String): Try[List[DataExprMeta]] = parse(expr)
-    }
-    Caffeine
-      .newBuilder()
-      .expireAfterAccess(10, TimeUnit.MINUTES)
-      .build(loader)
-  }
+  private val exprCache = Caffeine
+    .newBuilder()
+    .expireAfterAccess(10, TimeUnit.MINUTES)
+    .build[String, Try[List[DataExprMeta]]]()
 
   // TODO: https://github.com/Netflix/atlas/issues/729
   private val interner = new ConcurrentHashMap[Query, Query]()
+
+  /**
+    * Avoid using `ConcurrentHashMap.computeIfAbsent` here, on some of the instance types
+    * with more cores it causes a heavy thread contention. It is better for this use-case
+    * to spend some additional CPU cycles computing a value that will not get used.
+    */
+  private def internQuery(q: Query, newQuery: => Query): Query = {
+    Utils.computeIfAbsent[Query, Query](interner, q, _ => newQuery)
+  }
 
   private[lwcapi] def intern(query: Query): Query = {
     query match {
@@ -71,29 +77,29 @@ class ExpressionSplitter {
       case Query.False =>
         query
       case q: Query.Equal =>
-        interner.computeIfAbsent(q, _ => Query.Equal(q.k.intern(), q.v.intern()))
+        internQuery(q, Query.Equal(q.k.intern(), q.v.intern()))
       case q: Query.LessThan =>
-        interner.computeIfAbsent(q, _ => Query.LessThan(q.k.intern(), q.v.intern()))
+        internQuery(q, Query.LessThan(q.k.intern(), q.v.intern()))
       case q: Query.LessThanEqual =>
-        interner.computeIfAbsent(q, _ => Query.LessThanEqual(q.k.intern(), q.v.intern()))
+        internQuery(q, Query.LessThanEqual(q.k.intern(), q.v.intern()))
       case q: Query.GreaterThan =>
-        interner.computeIfAbsent(q, _ => Query.GreaterThan(q.k.intern(), q.v.intern()))
+        internQuery(q, Query.GreaterThan(q.k.intern(), q.v.intern()))
       case q: Query.GreaterThanEqual =>
-        interner.computeIfAbsent(q, _ => Query.GreaterThanEqual(q.k.intern(), q.v.intern()))
+        internQuery(q, Query.GreaterThanEqual(q.k.intern(), q.v.intern()))
       case q: Query.Regex =>
-        interner.computeIfAbsent(q, _ => Query.Regex(q.k.intern(), q.v.intern()))
+        internQuery(q, Query.Regex(q.k.intern(), q.v.intern()))
       case q: Query.RegexIgnoreCase =>
-        interner.computeIfAbsent(q, _ => Query.RegexIgnoreCase(q.k.intern(), q.v.intern()))
+        internQuery(q, Query.RegexIgnoreCase(q.k.intern(), q.v.intern()))
       case q: Query.In =>
-        interner.computeIfAbsent(q, _ => Query.In(q.k.intern(), q.vs.map(_.intern())))
+        internQuery(q, Query.In(q.k.intern(), q.vs.map(_.intern())))
       case q: Query.HasKey =>
-        interner.computeIfAbsent(q, _ => Query.HasKey(q.k.intern()))
+        internQuery(q, Query.HasKey(q.k.intern()))
       case q: Query.And =>
-        interner.computeIfAbsent(q, _ => Query.And(intern(q.q1), intern(q.q2)))
+        internQuery(q, Query.And(intern(q.q1), intern(q.q2)))
       case q: Query.Or =>
-        interner.computeIfAbsent(q, _ => Query.Or(intern(q.q1), intern(q.q2)))
+        internQuery(q, Query.Or(intern(q.q1), intern(q.q2)))
       case q: Query.Not =>
-        interner.computeIfAbsent(q, _ => Query.Not(intern(q.q)))
+        internQuery(q, Query.Not(intern(q.q)))
     }
   }
 
@@ -119,10 +125,28 @@ class ExpressionSplitter {
     }
   }
 
+  /**
+    * On instance types with a lot of cores, the loading cache causes a lot of thread
+    * contention and most threads are blocked. This just does and get/put which potentially
+    * recomputes some values, but for this case that is preferable.
+    */
+  private def getFromCache(k: String): Try[List[DataExprMeta]] = {
+    val value = exprCache.getIfPresent(k)
+    if (value == null) {
+      val tmp = parse(k)
+      exprCache.put(k, tmp)
+      tmp
+    } else {
+      value
+    }
+  }
+
   def split(expression: String, frequency: Long): List[Subscription] = {
-    exprCache.get(expression) match {
-      case Success(dataExprs: List[DataExpr]) => dataExprs.map(e => toSubscription(e, frequency))
-      case Failure(t)                         => throw t
+    getFromCache(expression) match {
+      case Success(exprs: List[_]) =>
+        val dataExprs = exprs.asInstanceOf[List[DataExpr]]
+        exprs.map(e => toSubscription(e, frequency))
+      case Failure(t) => throw t
     }
   }
 
