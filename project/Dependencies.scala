@@ -13,7 +13,7 @@ object Dependencies {
     val log4j      = "2.9.1"
     val scala      = "2.12.3" // must be 2.12.3 due to https://github.com/sbt/sbt/issues/3560
     val slf4j      = "1.7.25"
-    val spectator  = "0.58.2"
+    val spectator  = "0.59.0"
 
     val crossScala = Seq(scala)
   }
