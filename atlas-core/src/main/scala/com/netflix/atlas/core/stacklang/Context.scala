@@ -15,4 +15,40 @@
  */
 package com.netflix.atlas.core.stacklang
 
-case class Context(interpreter: Interpreter, stack: List[Any], variables: Map[String, Any])
+/**
+  * State related to the execution of a stack language expression.
+  *
+  * @param interpreter
+  *     Interpreter that is performing the execution.
+  * @param stack
+  *     Stack that maintains the state for the program.
+  * @param variables
+  *     Variables that can be set to keep state outside of the main stack. See the
+  *     `:get` and `:set` operators for more information.
+  * @param frozenStack
+  *     Separate stack that has been frozen to prevent further modification. See the
+  *     `:freeze` operator for more information.
+  */
+case class Context(
+  interpreter: Interpreter,
+  stack: List[Any],
+  variables: Map[String, Any],
+  frozenStack: List[Any] = Nil
+) {
+
+  /**
+    * Remove the contents of the stack and push them onto the frozen stack. The variable
+    * state will also be cleared.
+    */
+  def freeze: Context = {
+    copy(stack = Nil, variables = Map.empty[String, Any], frozenStack = stack ::: frozenStack)
+  }
+
+  /**
+    * Combine the stack and frozen stack to a final result stack. The frozen contents will
+    * be older entries on the final result stack.
+    */
+  def unfreeze: Context = {
+    copy(stack = stack ::: frozenStack, frozenStack = Nil)
+  }
+}
