@@ -100,7 +100,7 @@ case class Interpreter(vocabulary: List[Word]) {
   }
 
   final def execute(program: List[Any], context: Context): Context = {
-    execute(Step(program, context))
+    execute(Step(program, context)).unfreeze
   }
 
   final def execute(program: List[Any]): Context = {
@@ -118,7 +118,11 @@ case class Interpreter(vocabulary: List[Word]) {
   }
 
   final def debug(program: List[Any], context: Context): List[Step] = {
-    debugImpl(Nil, Step(program, context)).reverse
+    val result = debugImpl(Nil, Step(program, context)) match {
+      case s :: steps => s.copy(context = s.context.unfreeze) :: steps
+      case Nil        => Nil
+    }
+    result.reverse
   }
 
   final def debug(program: List[Any]): List[Step] = {
