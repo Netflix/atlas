@@ -143,10 +143,8 @@ class ExpressionSplitter {
 
   def split(expression: String, frequency: Long): List[Subscription] = {
     getFromCache(expression) match {
-      case Success(exprs: List[_]) =>
-        val dataExprs = exprs.asInstanceOf[List[DataExpr]]
-        exprs.map(e => toSubscription(e, frequency))
-      case Failure(t) => throw t
+      case Success(exprs: List[_]) => exprs.map(e => toSubscription(e, frequency))
+      case Failure(t)              => throw t
     }
   }
 
