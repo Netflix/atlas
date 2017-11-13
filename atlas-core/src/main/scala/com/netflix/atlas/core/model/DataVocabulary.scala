@@ -71,6 +71,8 @@ object DataVocabulary extends Vocabulary {
         |> :warning: This operation is primarily intended for debugging and can have strange
         |behaviour when used with rollups. Most users should use [:by](data-by) instead.
       """.stripMargin.trim
+
+    override def examples: List[String] = List("name,sps,:eq,nf.cluster,nccp-ps3,:eq,:and")
   }
 
   case object Sum extends DataWord {
