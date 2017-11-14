@@ -99,8 +99,9 @@ case class Interpreter(vocabulary: List[Word]) {
     if (s.program.isEmpty) s.context else execute(nextStep(s))
   }
 
-  final def execute(program: List[Any], context: Context): Context = {
-    execute(Step(program, context)).unfreeze
+  final def execute(program: List[Any], context: Context, unfreeze: Boolean = true): Context = {
+    val result = execute(Step(program, context))
+    if (unfreeze) result.unfreeze else result
   }
 
   final def execute(program: List[Any]): Context = {
