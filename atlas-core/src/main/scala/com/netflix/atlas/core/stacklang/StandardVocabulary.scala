@@ -57,7 +57,7 @@ object StandardVocabulary extends Vocabulary {
     override def matches(stack: List[Any]): Boolean = true
 
     override def execute(context: Context): Context = {
-      context.interpreter.execute(body, context)
+      context.interpreter.execute(body, context, unfreeze = false)
     }
 
     override def summary: String =

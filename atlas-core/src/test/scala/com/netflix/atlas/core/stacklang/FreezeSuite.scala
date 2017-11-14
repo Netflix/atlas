@@ -45,4 +45,11 @@ class FreezeSuite extends FunSuite {
     assert(context.stack === List("i", "h", "g", "f", "e", "d", "c", "b", "a"))
     assert(context.frozenStack.isEmpty)
   }
+
+  test("freeze works with macros") {
+    // Before macros would force unfreeze after execution
+    val context = interpreter.execute("a,b,:freeze,d,e,:2over,:clear")
+    assert(context.stack === List("b", "a"))
+    assert(context.frozenStack.isEmpty)
+  }
 }
