@@ -534,7 +534,7 @@ object StandardVocabulary extends Vocabulary {
     override def execute(context: Context): Context = {
       context.stack match {
         case (v: Any) :: (k: String) :: vs =>
-          Context(context.interpreter, vs, context.variables + (k -> v))
+          context.copy(stack = vs, variables = context.variables + (k -> v))
         case _ => invalidStack
       }
     }
