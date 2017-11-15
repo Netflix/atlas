@@ -70,4 +70,10 @@ class FreezeSuite extends FunSuite {
     assert(context.stack === List("b", "a"))
     assert(context.frozenStack.isEmpty)
   }
+
+  test("freeze works with :get/:set") {
+    val context = interpreter.execute("a,b,:freeze,d,e,:set,d,:get,:clear")
+    assert(context.stack === List("b", "a"))
+    assert(context.frozenStack.isEmpty)
+  }
 }
