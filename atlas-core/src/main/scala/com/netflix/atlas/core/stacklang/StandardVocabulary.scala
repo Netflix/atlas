@@ -81,7 +81,7 @@ object StandardVocabulary extends Vocabulary {
     override def execute(context: Context): Context = {
       context.stack match {
         case (vs: List[_]) :: stack =>
-          context.interpreter.execute(vs, context.copy(stack = stack))
+          context.interpreter.execute(vs, context.copy(stack = stack), unfreeze = false)
         case _ => invalidStack
       }
     }
@@ -198,7 +198,7 @@ object StandardVocabulary extends Vocabulary {
       context.stack match {
         case (f: List[_]) :: (vs: List[_]) :: stack =>
           vs.reverse.foldLeft(context.copy(stack = stack)) { (c, v) =>
-            c.interpreter.execute(f, c.copy(stack = v :: c.stack))
+            c.interpreter.execute(f, c.copy(stack = v :: c.stack), unfreeze = false)
           }
         case _ => invalidStack
       }
@@ -362,7 +362,7 @@ object StandardVocabulary extends Vocabulary {
           val init = context.copy(stack = stack)
           val res = vs.foldLeft(List.empty[Any] -> init) {
             case ((rs, c), v) =>
-              val rc = c.interpreter.execute(f, c.copy(stack = v :: c.stack))
+              val rc = c.interpreter.execute(f, c.copy(stack = v :: c.stack), unfreeze = false)
               (rc.stack.head :: rs) -> rc.copy(stack = rc.stack.tail)
           }
           res._2.copy(stack = res._1.reverse :: res._2.stack)

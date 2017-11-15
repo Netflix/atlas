@@ -52,4 +52,22 @@ class FreezeSuite extends FunSuite {
     assert(context.stack === List("b", "a"))
     assert(context.frozenStack.isEmpty)
   }
+
+  test("freeze works with :call") {
+    val context = interpreter.execute("a,b,:freeze,d,(,:dup,),:call,:clear")
+    assert(context.stack === List("b", "a"))
+    assert(context.frozenStack.isEmpty)
+  }
+
+  test("freeze works with :each") {
+    val context = interpreter.execute("a,b,:freeze,(,d,),(,:dup,),:each,:clear")
+    assert(context.stack === List("b", "a"))
+    assert(context.frozenStack.isEmpty)
+  }
+
+  test("freeze works with :map") {
+    val context = interpreter.execute("a,b,:freeze,(,d,),(,:dup,),:map,:clear")
+    assert(context.stack === List("b", "a"))
+    assert(context.frozenStack.isEmpty)
+  }
 }
