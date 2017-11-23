@@ -92,12 +92,7 @@ object GraphApi {
 
     def shouldOutputImage: Boolean = (format == "png")
 
-    val timezoneIds: List[ZoneId] = {
-      val zoneStrs = if (timezones.isEmpty) List(ApiSettings.timezone) else timezones
-      zoneStrs.map { z =>
-        ZoneId.of(z)
-      }
-    }
+    val timezoneIds: List[ZoneId] = getTimeZoneIds(timezones)
 
     val tz: ZoneId = timezoneIds.head
 
@@ -307,6 +302,11 @@ object GraphApi {
     )
   }
 
+  private def getTimeZoneIds(timezones: List[String]): List[ZoneId] = {
+    val zoneStrs = if (timezones.isEmpty) List(ApiSettings.timezone) else timezones
+    zoneStrs.map(ZoneId.of)
+  }
+
   def toRequest(req: HttpRequest): Request = toRequest(req.uri)
 
   def toRequest(uri: Uri): Request = {
@@ -338,8 +338,10 @@ object GraphApi {
       throw new IllegalArgumentException("missing required parameter 'q'")
     }
 
+    val timezones = params.getAll("tz").reverse
     val parsedQuery = Try {
-      interpreter.execute(q.get).stack.reverse.flatMap {
+      val vars = Map("tz" -> getTimeZoneIds(timezones).head)
+      interpreter.execute(q.get, vars).stack.reverse.flatMap {
         case ModelExtractors.PresentationType(s) => s.perOffset
       }
     }
@@ -349,7 +351,7 @@ object GraphApi {
       parsedQuery = parsedQuery,
       start = params.get("s"),
       end = params.get("e"),
-      timezones = params.getAll("tz").reverse,
+      timezones = timezones,
       step = params.get("step"),
       flags = flags,
       format = params.get("format").getOrElse("png"),

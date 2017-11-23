@@ -356,6 +356,16 @@ object Strings {
   }
 
   /**
+    * Returns the name of the reference point for relative dates. For example, with the
+    * relative date `now-5m`, it would return `now`.
+    */
+  def extractReferencePointDate(str: String): Option[String] = str match {
+    case RelativeDate(r, _, _) => Some(r)
+    case NamedDate(r)          => Some(r)
+    case _                     => None
+  }
+
+  /**
     * Return the time associated with a given string. The time will be relative
     * to `now`.
     */

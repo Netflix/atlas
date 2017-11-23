@@ -112,6 +112,10 @@ case class Interpreter(vocabulary: List[Word]) {
     execute(splitAndTrim(program))
   }
 
+  final def execute(program: String, vars: Map[String, Any]): Context = {
+    execute(splitAndTrim(program), Context(this, Nil, vars))
+  }
+
   @scala.annotation.tailrec
   private def debugImpl(steps: List[Step], s: Step): List[Step] = {
     val trace = s :: steps

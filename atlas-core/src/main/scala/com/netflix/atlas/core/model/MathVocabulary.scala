@@ -15,6 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
+import java.time.ZoneId
+import java.time.ZoneOffset
+
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
 import com.netflix.atlas.core.stacklang.Context
@@ -37,6 +40,7 @@ object MathVocabulary extends Vocabulary {
     Const,
     Random,
     Time,
+    TimeSpan,
     CommonQuery,
     NamedRewrite,
     ClampMin,
@@ -325,13 +329,63 @@ object MathVocabulary extends Vocabulary {
         |Generates a line based on the current time. Supported modes are secondOfMinute,
         |secondOfDay, minuteOfHour, minuteOfDay, hourOfDay, dayOfWeek, dayOfMonth, dayOfYear,
         |monthOfYear, yearOfCentury, yearOfEra, seconds (since epoch), or days (since epoch). The
-        |mode can also be one of the [ChronoField values]
-        |(https://docs.oracle.com/javase/8/docs/api/java/time/temporal/ChronoField.html).
+        |mode can also be a value of the enum
+        |[ChronoField](https://docs.oracle.com/javase/8/docs/api/java/time/temporal/ChronoField.html).
       """.stripMargin.trim
 
     override def signature: String = "String -- TimeSeriesExpr"
 
     override def examples: List[String] = List("hourOfDay", "HOUR_OF_DAY")
+  }
+
+  case object TimeSpan extends Word {
+
+    override def name: String = "time-span"
+
+    def matches(stack: List[Any]): Boolean = stack match {
+      case (_: String) :: (_: String) :: _ => true
+      case _                               => false
+    }
+
+    def execute(context: Context): Context = {
+      val zone = context.variables.get("tz") match {
+        case Some(z: String) => ZoneId.of(z)
+        case Some(z: ZoneId) => z
+        case _               => ZoneOffset.UTC
+      }
+      val newStack = context.stack match {
+        case (e: String) :: (s: String) :: stack => MathExpr.TimeSpan(s, e, zone) :: stack
+        case _                                   => invalidStack
+      }
+      context.copy(stack = newStack)
+    }
+
+    override def summary: String =
+      """
+        |Generates a signal line based on the specified time range. The line will be 1
+        |within the range and 0 for all other times. The format of the start and end times
+        |is the same as the start and end [time parameters](Time-Parameters) on the Graph
+        |API. If the time zone is not explicitly specified, then the value from the `tz`
+        |variable will get used. The default value for the `tz` variable is the primary
+        |time zone used for the graph.
+        |
+        |The following named times are supported for time spans:
+        |
+        || Name     | Description                                                 |
+        ||----------|-------------------------------------------------------------|
+        || gs       | Graph start time.                                           |
+        || ge       | Graph end time.                                             |
+        || s        | Start time for the span, can only be used for the end time. |
+        || e        | End time for the span, can only be used for the start time. |
+        || now      | Current time.                                               |
+        || epoch    | January 1, 1970 UTC.                                        |
+        |
+        |Since: 1.6
+      """.stripMargin.trim
+
+    override def signature: String = "s:String e:String -- TimeSeriesExpr"
+
+    override def examples: List[String] = List("e-30m,ge", "2014-02-20T13:00,s%2B30m")
   }
 
   case object CommonQuery extends SimpleWord {

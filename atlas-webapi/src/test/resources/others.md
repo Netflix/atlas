@@ -161,3 +161,6 @@
 
 # Issue 684, errors from db actor
 /api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,(,nf.node,),:by
+
+# Issue 565, time span operator
+/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,e-6h,ge,:time-span,:vspan,40,:alpha
