@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
@@ -23,6 +24,7 @@ import java.time.temporal.ChronoField
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Math
+import com.netflix.atlas.core.util.Strings
 import com.netflix.spectator.api.histogram.PercentileBuckets
 
 trait MathExpr extends TimeSeriesExpr
@@ -119,6 +121,84 @@ object MathExpr {
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, valueFunc)
       val ts = TimeSeries(Map("name" -> mode), mode, seq)
+      ResultSet(this, List(ts), context.state)
+    }
+  }
+
+  case class TimeSpan(s: String, e: String, zone: ZoneId) extends TimeSeriesExpr {
+
+    def dataExprs: List[DataExpr] = Nil
+
+    override def toString: String = s"$s,$e,:time-span"
+
+    def isGrouped: Boolean = false
+
+    def groupByKey(tags: Map[String, String]): Option[String] = None
+
+    private def parseDate(
+      gs: ZonedDateTime,
+      ge: ZonedDateTime,
+      ref: Option[String],
+      d: String
+    ): ZonedDateTime = {
+      ref match {
+        case Some("gs") => Strings.parseDate(gs, d, zone)
+        case Some("ge") => Strings.parseDate(ge, d, zone)
+        case _          => Strings.parseDate(d, zone)
+      }
+    }
+
+    private def parseDates(context: EvalContext): (ZonedDateTime, ZonedDateTime) = {
+      val gs = Instant.ofEpochMilli(context.start).atZone(zone)
+      val ge = Instant.ofEpochMilli(context.end).atZone(zone)
+
+      val sref = Strings.extractReferencePointDate(s)
+      val eref = Strings.extractReferencePointDate(e)
+
+      // Sanity check that the relative dates are sane
+      if (sref.contains("e") && eref.contains("s")) {
+        throw new IllegalArgumentException("start and end time are relative to each other")
+      }
+      if (sref.contains("s")) {
+        throw new IllegalArgumentException("start time is relative to itself")
+      }
+      if (eref.contains("e")) {
+        throw new IllegalArgumentException("end time is relative to itself")
+      }
+
+      // If one is relative to the other, the absolute date must be computed first
+      if (sref.contains("e")) {
+        // start time is relative to end time
+        val end = parseDate(gs, ge, eref, e)
+        val start = Strings.parseDate(end, s, zone)
+        start -> end
+      } else if (eref.contains("s")) {
+        // end time is relative to start time
+        val start = parseDate(gs, ge, sref, s)
+        val end = Strings.parseDate(start, e, zone)
+        start -> end
+      } else {
+        val start = parseDate(gs, ge, sref, s)
+        val end = parseDate(gs, ge, eref, e)
+        start -> end
+      }
+    }
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+
+      val (start, end) = parseDates(context)
+
+      val startMillis = start.toInstant.toEpochMilli
+      val endMillis = end.toInstant.toEpochMilli
+
+      require(startMillis <= endMillis, "start must be <= end")
+
+      def contains(t: Long): Double = {
+        if (startMillis <= t && t <= endMillis) 1.0 else 0.0
+      }
+
+      val seq = new FunctionTimeSeq(DsType.Gauge, context.step, contains)
+      val ts = TimeSeries(Map("name" -> s"$s to $e"), s"$s to $e", seq)
       ResultSet(this, List(ts), context.state)
     }
   }
