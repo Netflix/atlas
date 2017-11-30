@@ -25,12 +25,12 @@ import com.netflix.spectator.api.patterns.PolledMeter
 
 object BlockStats {
   private val registry = Spectator.globalRegistry
-  private val arrayCount = createGauge("atlas.block.arrayCount")
-  private val constantCount = createGauge("atlas.block.constantCount")
-  private val sparseCount = createGauge("atlas.block.sparseCount")
-  private val arrayBytes = createGauge("atlas.block.arrayBytes")
-  private val constantBytes = createGauge("atlas.block.constantBytes")
-  private val sparseBytes = createGauge("atlas.block.sparseBytes")
+  private[db] val arrayCount = createGauge("atlas.block.arrayCount")
+  private[db] val constantCount = createGauge("atlas.block.constantCount")
+  private[db] val sparseCount = createGauge("atlas.block.sparseCount")
+  private[db] val arrayBytes = createGauge("atlas.block.arrayBytes")
+  private[db] val constantBytes = createGauge("atlas.block.constantBytes")
+  private[db] val sparseBytes = createGauge("atlas.block.sparseBytes")
 
   private def createGauge(name: String): AtomicLong = {
     PolledMeter
@@ -89,6 +89,15 @@ object BlockStats {
       "counts" -> mkStatMap(arrayCount.get, constantCount.get, sparseCount.get),
       "bytes"  -> mkStatMap(arrayBytes.get, constantBytes.get, sparseBytes.get)
     )
+  }
+
+  def clear(): Unit = {
+    arrayCount.set(0)
+    sparseCount.set(0)
+    constantCount.set(0)
+    arrayBytes.set(0)
+    sparseBytes.set(0)
+    constantCount.set(0)
   }
 }
 
@@ -185,11 +194,13 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     }
     val newBlock =
       if (oldBlock eq currentBlock) {
+        // Unable to compress so the ArrayBlock cannot be reused
         if (rollup)
           newRollupBlock(start, blockSize)
         else
           newArrayBlock(start, blockSize)
       } else {
+        // New compressed block created so we can reuse the ArrayBlock
         reused.increment()
         currentBlock.reset(start)
         currentBlock
