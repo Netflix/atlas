@@ -664,10 +664,10 @@ object MathExpr {
 
     override def toString: String = {
       val baseExpr =
-        if (evalGroupKeys.isEmpty) expr.af.query.toString
-        else {
+        if (evalGroupKeys.isEmpty)
+          expr.af.query.toString
+        else
           s"${expr.af.query},(,${evalGroupKeys.mkString(",")},),:by"
-        }
       s"$baseExpr,(,${pcts.mkString(",")},),:percentiles"
     }
 
@@ -779,10 +779,16 @@ object MathExpr {
           i += 1
         }
 
-        // Apply the tags and labels to the output
+        // Apply the tags and labels to the output. The percentile values are padded with a
+        // space so that the decimal place will line up vertically when using a monospace font
+        // for rendering.
         output.toList.zipWithIndex.map {
           case (seq, j) =>
-            val p = f"${pcts(j)}%5.1f"
+            val p = pcts(j) match {
+              case v if v < 10.0  => s"  $v"
+              case v if v < 100.0 => s" $v"
+              case v              => v.toString
+            }
             val tags = data.head.tags + (TagKey.percentile -> p)
             TimeSeries(tags, f"percentile($baseLabel, $p)", seq)
         }

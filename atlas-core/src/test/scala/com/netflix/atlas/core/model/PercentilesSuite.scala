@@ -165,6 +165,29 @@ class PercentilesSuite extends FunSuite {
     }
   }
 
+  private def checkPercentile(v: Double, s: String): Unit = {
+    val data = eval(s"name,test,:eq,(,$v,),:percentiles", inputSpectatorTimer)
+
+    assert(data.size === 1)
+    List(v).zip(data).foreach {
+      case (p, t) =>
+        assert(t.tags === Map("name" -> "test", "percentile" -> s))
+        assert(t.label === f"percentile(name=test, $s)")
+    }
+  }
+
+  test("9.99999999th percentile") {
+    checkPercentile(9.99999999, "  9.99999999")
+  }
+
+  test("99.99th percentile") {
+    checkPercentile(99.99, " 99.99")
+  }
+
+  test("99.999999th percentile") {
+    checkPercentile(99.999999, " 99.999999")
+  }
+
   test("distribution summary :max") {
     val data = eval("name,test,:eq,:max,(,25,50,90,),:percentiles", input100)
 
