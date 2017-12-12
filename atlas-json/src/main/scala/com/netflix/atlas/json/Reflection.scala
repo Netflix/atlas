@@ -86,8 +86,6 @@ private[json] object Reflection {
     // companion object.
     val params = ctor.paramLists.head.zipWithIndex.map {
       case (p, i) =>
-        val name = p.name.toString
-        val alias = getAlias(p.annotations)
         val dflt =
           if (!p.asTerm.isParamWithDefault) None
           else {
@@ -99,6 +97,12 @@ private[json] object Reflection {
               Some(instanceMirror.reflectMethod(dfltArg.asMethod).apply())
             }
           }
+        val name = p.name.toString
+
+        // If there isn't an explicit alias with the annotations, then use the decoded
+        // name for the symbol. This allows names with special characters like `.` to
+        // work correctly.
+        val alias = getAlias(p.annotations).orElse(Some(p.name.decodedName.toString))
         Param(name, alias, dflt)
     }
 
