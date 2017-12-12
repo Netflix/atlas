@@ -429,7 +429,14 @@ class JsonSuite extends FunSuite {
     val json = Json.encode(obj)
     assert(json === """{"foo":0}""")
   }
+
+  test("dots in field name") {
+    val obj = Json.decode[JsonKeyWithDot]("""{"a.b": "bar"}""")
+    assert(obj === JsonKeyWithDot("bar"))
+  }
 }
+
+case class JsonKeyWithDot(`a.b`: String)
 
 case object JsonSuiteObject
 
