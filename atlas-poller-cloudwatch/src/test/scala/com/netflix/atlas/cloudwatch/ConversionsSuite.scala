@@ -262,6 +262,12 @@ class ConversionsSuite extends FunSuite {
     assert(v === 42.0)
   }
 
+  test("ratio to percent") {
+    val cnv = Conversions.fromName("sum,percent")
+    val v = cnv(null, newDatapoint(0.42, StandardUnit.Percent))
+    assert(v === 42.0)
+  }
+
   test("unit none") {
     val cnv = Conversions.fromName("sum")
     val v = cnv(null, newDatapoint(42.0, StandardUnit.None))
