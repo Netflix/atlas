@@ -44,14 +44,15 @@ object Conversions {
 
   private def from(name: String, conversions: List[String]): Conversion = {
     conversions match {
-      case "min" :: Nil   => min
-      case "max" :: Nil   => max
-      case "sum" :: Nil   => sum
-      case "count" :: Nil => count
-      case "avg" :: Nil   => avg
-      case "rate" :: cs   => rate(from(name, cs))
-      case v :: cs        => throw new IllegalArgumentException(s"unknown conversion '$v' ($name)")
-      case Nil            => throw new IllegalArgumentException(s"empty conversion list ($name)")
+      case "min" :: Nil    => min
+      case "max" :: Nil    => max
+      case "sum" :: Nil    => sum
+      case "count" :: Nil  => count
+      case "avg" :: Nil    => avg
+      case "rate" :: cs    => rate(from(name, cs))
+      case "percent" :: cs => multiply(from(name, cs), 100.0)
+      case v :: cs         => throw new IllegalArgumentException(s"unknown conversion '$v' ($name)")
+      case Nil             => throw new IllegalArgumentException(s"empty conversion list ($name)")
     }
   }
 
