@@ -189,8 +189,8 @@ class MemoryBlockStoreSuite extends FunSuite {
     assert(bs.fetch(120, 122, Block.Sum).toList === List(4.0, 5.0, 6.0))
   }
 
-  private def blockCounts: (Long, Long, Long) = {
-    (BlockStats.arrayCount.get, BlockStats.sparseCount.get, BlockStats.constantCount.get)
+  private def blockCounts: List[Long] = {
+    List(BlockStats.arrayCount.get, BlockStats.sparseCount.get, BlockStats.constantCount.get)
   }
 
   test("block counts update correctly on roll over") {
@@ -200,10 +200,10 @@ class MemoryBlockStoreSuite extends FunSuite {
     bs.update(0, List(1.0, 2.0, 3.0))
     bs.update(60, List(1.0, 2.0, 3.0))
     bs.update(120, List(1.0, 2.0, 3.0))
-    assert(blockCounts === (1, 2, 0))
+    assert(blockCounts === List(1, 2, 0))
 
     bs.update(180, List(1.0, 2.0, 3.0))
-    assert(blockCounts === (1, 2, 0))
+    assert(blockCounts === List(1, 2, 0))
   }
 
   test("block counts update correctly on update(ts)") {
@@ -211,10 +211,10 @@ class MemoryBlockStoreSuite extends FunSuite {
 
     val bs = new MemoryBlockStore(1, 60, 3)
     bs.update(0, List(1.0, 2.0, 3.0))
-    assert(blockCounts === (1, 0, 0))
+    assert(blockCounts === List(1, 0, 0))
 
     bs.update(0)
-    assert(blockCounts === (0, 1, 0))
+    assert(blockCounts === List(0, 1, 0))
   }
 
   test("block counts update correctly on cleanup(ts)") {
@@ -222,10 +222,10 @@ class MemoryBlockStoreSuite extends FunSuite {
 
     val bs = new MemoryBlockStore(1, 60, 3)
     bs.update(0, List(1.0, 2.0, 3.0))
-    assert(blockCounts === (1, 0, 0))
+    assert(blockCounts === List(1, 0, 0))
 
     bs.cleanup(60)
-    assert(blockCounts === (0, 0, 0))
+    assert(blockCounts === List(0, 0, 0))
   }
 
   test("block counts update for update with gap") {
@@ -234,6 +234,6 @@ class MemoryBlockStoreSuite extends FunSuite {
     val bs = new MemoryBlockStore(1, 60, 3)
     bs.update(0, List(1.0, 2.0, 3.0))
     bs.update(62, List(1.0))
-    assert(blockCounts === (1, 1, 0))
+    assert(blockCounts === List(1, 1, 0))
   }
 }
