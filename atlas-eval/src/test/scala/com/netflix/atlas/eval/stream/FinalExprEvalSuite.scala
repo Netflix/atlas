@@ -302,4 +302,27 @@ class FinalExprEvalSuite extends FunSuite {
         assert(actual.getMessage === expected)
     }
   }
+
+  // https://github.com/Netflix/atlas/issues/762
+  test(":legend is honored") {
+    val expr = DataExpr.Sum(Query.Equal("name", "rps"))
+    val tags = Map("name" -> "rps")
+    val input = List(
+      sources(ds("a", s"http://atlas/graph?q=$expr,legend+for+$$name,:legend")),
+      group(0),
+      group(1, AggrDatapoint(0, expr, "i-1", tags, 42.0)),
+      group(2, AggrDatapoint(0, expr, "i-1", tags, 43.0)),
+      group(3, AggrDatapoint(0, expr, "i-1", tags, 44.0))
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    assert(timeseries.size === 4)
+    // tail to ignore initial no data entry
+    timeseries.tail.foreach { env =>
+      val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+      assert(ts.label === "legend for rps")
+    }
+  }
 }
