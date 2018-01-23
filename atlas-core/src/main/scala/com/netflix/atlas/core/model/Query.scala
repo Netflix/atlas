@@ -168,8 +168,8 @@ object Query {
     val newQuery = query match {
       case Query.And(Query.True, q)  => simplify(q, ignore)
       case Query.And(q, Query.True)  => simplify(q, ignore)
-      case Query.And(Query.False, q) => Query.False
-      case Query.And(q, Query.False) => Query.False
+      case Query.And(Query.False, _) => Query.False
+      case Query.And(_, Query.False) => Query.False
       case Query.And(q1, q2)         => Query.And(simplify(q1, ignore), simplify(q2, ignore))
 
       case Query.Or(Query.True, _)  => Query.True
