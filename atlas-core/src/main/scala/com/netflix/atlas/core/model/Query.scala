@@ -172,17 +172,17 @@ object Query {
       case Query.And(q, Query.False) => Query.False
       case Query.And(q1, q2)         => Query.And(simplify(q1, ignore), simplify(q2, ignore))
 
-      case Query.Or(Query.True, _)   => Query.True
-      case Query.Or(_, Query.True)   => Query.True
-      case Query.Or(Query.False, q)  => simplify(q)
-      case Query.Or(q, Query.False)  => simplify(q)
-      case Query.Or(q1, q2)          => Query.Or(simplify(q1, ignore), simplify(q2, ignore))
+      case Query.Or(Query.True, _)  => Query.True
+      case Query.Or(_, Query.True)  => Query.True
+      case Query.Or(Query.False, q) => simplify(q)
+      case Query.Or(q, Query.False) => simplify(q)
+      case Query.Or(q1, q2)         => Query.Or(simplify(q1, ignore), simplify(q2, ignore))
 
-      case Query.Not(Query.True)     => if (ignore) Query.True else Query.False
-      case Query.Not(Query.False)    => Query.True
-      case Query.Not(q)              => Query.Not(simplify(q, ignore))
+      case Query.Not(Query.True)  => if (ignore) Query.True else Query.False
+      case Query.Not(Query.False) => Query.True
+      case Query.Not(q)           => Query.Not(simplify(q, ignore))
 
-      case q                         => q
+      case q => q
     }
 
     if (newQuery != query) simplify(newQuery, ignore) else newQuery
