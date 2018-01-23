@@ -132,6 +132,62 @@ object Query {
     for (q1 <- qs1; q2 <- qs2) yield And(q1, q2)
   }
 
+  /**
+    * Simplify a query expression that contains True and False constants.
+    *
+    * @param query
+    *     Query expression to simplify.
+    * @param ignore
+    *     If true, then the simplification is for the purposes of ignoring certain
+    *     query terms. This comes up in some automatic rewriting use-cases where
+    *     we need to have a restriction clause based on a subset of the keys and
+    *     ignore the rest. Consider the following example:
+    *
+    *     ```
+    *     nf.app,www,:eq,name,http.requests,:eq,:and,status,200,:eq,:not,:and,:sum
+    *     ```
+    *
+    *     Lets suppose I want to simplify this to a base query for the common tags
+    *     that could be reused with other metrics. One way would be to rewrite all
+    *     key query clauses that are not using common tags (prefixed with nf.) to
+    *     `Query.True` and simplify. However the not clause causes a problem:
+    *
+    *     ```
+    *              rewrite - nf.app,www,:eq,:true,:and,:true,:not,:and
+    *     simplification 1 - nf.app,www.:eq,:false,:and
+    *     simplification 2 - :false
+    *     ```
+    *
+    *     The ignore mode will cause `:true,:not` to map to `:true` so the term will
+    *     get ignored rather than reduce the entire expression to `:false`. Default
+    *     value is false.
+    * @return
+    *     The simplified query expression.
+    */
+  def simplify(query: Query, ignore: Boolean = false): Query = {
+    val newQuery = query match {
+      case Query.And(Query.True, q)  => simplify(q, ignore)
+      case Query.And(q, Query.True)  => simplify(q, ignore)
+      case Query.And(Query.False, q) => Query.False
+      case Query.And(q, Query.False) => Query.False
+      case Query.And(q1, q2)         => Query.And(simplify(q1, ignore), simplify(q2, ignore))
+
+      case Query.Or(Query.True, _)   => Query.True
+      case Query.Or(_, Query.True)   => Query.True
+      case Query.Or(Query.False, q)  => simplify(q)
+      case Query.Or(q, Query.False)  => simplify(q)
+      case Query.Or(q1, q2)          => Query.Or(simplify(q1, ignore), simplify(q2, ignore))
+
+      case Query.Not(Query.True)     => if (ignore) Query.True else Query.False
+      case Query.Not(Query.False)    => Query.True
+      case Query.Not(q)              => Query.Not(simplify(q, ignore))
+
+      case q                         => q
+    }
+
+    if (newQuery != query) simplify(newQuery, ignore) else newQuery
+  }
+
   case object True extends Query {
 
     def matches(tags: Map[String, String]): Boolean = true

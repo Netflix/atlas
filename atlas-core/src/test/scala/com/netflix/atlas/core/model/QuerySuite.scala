@@ -446,4 +446,89 @@ class QuerySuite extends FunSuite {
     assert(Query.dnfList(q) === List(Not(a), Not(b)))
     assert(Query.dnf(q) === Or(Not(a), Not(b)))
   }
+
+  test("simplify and(true, eq)") {
+    val q = And(True, Equal("a", "b"))
+    assert(Query.simplify(q) === Equal("a", "b"))
+  }
+
+  test("simplify and(eq, true)") {
+    val q = And(Equal("a", "b"), True)
+    assert(Query.simplify(q) === Equal("a", "b"))
+  }
+
+  test("simplify and(false, eq)") {
+    val q = And(False, Equal("a", "b"))
+    assert(Query.simplify(q) === False)
+  }
+
+  test("simplify and(eq, false)") {
+    val q = And(Equal("a", "b"), False)
+    assert(Query.simplify(q) === False)
+  }
+
+  test("simplify and(eq, eq)") {
+    val q = And(Equal("a", "b"), Equal("c", "d"))
+    assert(Query.simplify(q) === q)
+  }
+
+  test("simplify and recursive") {
+    val q = And(And(True, Equal("a", "b")), And(Equal("c", "d"), False))
+    assert(Query.simplify(q) === False)
+  }
+
+  test("simplify or(true, eq)") {
+    val q = Or(True, Equal("a", "b"))
+    assert(Query.simplify(q) === True)
+  }
+
+  test("simplify or(eq, true)") {
+    val q = Or(Equal("a", "b"), True)
+    assert(Query.simplify(q) === True)
+  }
+
+  test("simplify or(false, eq)") {
+    val q = Or(False, Equal("a", "b"))
+    assert(Query.simplify(q) === Equal("a", "b"))
+  }
+
+  test("simplify or(eq, false)") {
+    val q = Or(Equal("a", "b"), False)
+    assert(Query.simplify(q) === Equal("a", "b"))
+  }
+
+  test("simplify or(eq, eq)") {
+    val q = Or(Equal("a", "b"), Equal("c", "d"))
+    assert(Query.simplify(q) === q)
+  }
+
+  test("simplify or recursive") {
+    val q = Or(Or(True, Equal("a", "b")), Or(Equal("c", "d"), False))
+    assert(Query.simplify(q) === True)
+  }
+
+  test("simplify not(true)") {
+    val q = Not(True)
+    assert(Query.simplify(q) === False)
+  }
+
+  test("simplify not(true), ignore") {
+    val q = Not(True)
+    assert(Query.simplify(q, ignore = true) === True)
+  }
+
+  test("simplify not(false)") {
+    val q = Not(False)
+    assert(Query.simplify(q) === True)
+  }
+
+  test("simplify not recursive") {
+    val q = Not(And(Not(False), Equal("a", "b")))
+    assert(Query.simplify(q) === Not(Equal("a", "b")))
+  }
+
+  test("simplify not recursive ignore") {
+    val q = Not(And(Not(True), Equal("a", "b")))
+    assert(Query.simplify(q, ignore = true) === Not(Equal("a", "b")))
+  }
 }
