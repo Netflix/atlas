@@ -28,7 +28,10 @@ case object DistAvg extends StackWordPage {
 
   override def summary: String =
     """
-      |Compute the average of the total time for [timers](http://netflix.github.io/spectator/en/latest/intro/timer/)
-      |and total count [distribution summaries](http://netflix.github.io/spectator/en/latest/intro/dist-summary/).
+      |Compute the average recorded value for [timers] and [distribution summaries]. This
+      |is calculated by dividing the total amount recorded by the number of recorded values.
+      |
+      |[timers]: http://netflix.github.io/spectator/en/latest/intro/timer/
+      |[distribution summaries]: http://netflix.github.io/spectator/en/latest/intro/dist-summary/
     """.stripMargin.trim
 }
