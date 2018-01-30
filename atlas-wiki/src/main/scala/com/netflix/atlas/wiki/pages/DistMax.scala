@@ -29,7 +29,7 @@ case object DistMax extends StackWordPage {
   override def summary: String =
     """
       |Compute the maximum recorded value for [timers] and [distribution summaries]. This
-      |is a helper for selecting both the max aggregation and max statistic for the meter.
+      |is a helper for aggregating by the max of the max statistic for the meter.
       |
       |[timers]: http://netflix.github.io/spectator/en/latest/intro/timer/
       |[distribution summaries]: http://netflix.github.io/spectator/en/latest/intro/dist-summary/
