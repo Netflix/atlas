@@ -111,6 +111,8 @@ object Main extends StrictLogging {
     SDesFast.word      -> SDesFast,
     SDesSlow.word      -> SDesSlow,
     SDesSlower.word    -> SDesSlower,
+    DistAvg.word       -> DistAvg,
+    DistMax.word       -> DistMax,
     DistStddev.word    -> DistStddev,
     Stddev.word        -> Stddev,
     Line.word          -> Line,
