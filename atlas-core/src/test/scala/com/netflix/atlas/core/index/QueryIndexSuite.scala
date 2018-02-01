@@ -98,6 +98,19 @@ class QueryIndexSuite extends FunSuite {
     assert(!index.matches(Map("a" -> "1", "b" -> "3", "c" -> "3")))
   }
 
+  test("single query: in expansion is limited") {
+    // If the :in clauses are fully expanded, then this will cause an OOM error because
+    // of the combinatorial explosion of simple queries (10k * 10k * 10k).
+    val q1 = Query.In("a", (0 until 10000).map(_.toString).toList)
+    val q2 = Query.In("b", (0 until 10000).map(_.toString).toList)
+    val q3 = Query.In("c", (0 until 10000).map(_.toString).toList)
+    val q = Query.And(Query.And(q1, q2), q3)
+    val index = QueryIndex(List(q))
+
+    assert(index.matches(Map("a" -> "1", "b" -> "9999", "c" -> "727")))
+    assert(!index.matches(Map("a" -> "1", "b" -> "10000", "c" -> "727")))
+  }
+
   test("matchingEntries single query: complex") {
     val q = Query.And(Query.And(Query.Equal("a", "1"), Query.Equal("b", "2")), Query.HasKey("c"))
     val index = QueryIndex(List(q))

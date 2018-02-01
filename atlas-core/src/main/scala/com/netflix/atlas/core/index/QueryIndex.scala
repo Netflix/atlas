@@ -190,12 +190,15 @@ object QueryIndex {
   }
 
   /**
-    * Split :in queries into a list of queries using :eq.
+    * Split :in queries into a list of queries using :eq. In order to avoid a massive
+    * combinatorial explosion clauses that have more than 5 expressions will not be
+    * expanded. The number is somewhat arbitrary, but seems to work well in practice
+    * for the current query data sets at Netflix.
     */
   private def split(query: Query): List[Query] = {
     query match {
       case Query.And(q1, q2) => for (a <- split(q1); b <- split(q2)) yield { Query.And(a, b) }
-      case Query.In(k, vs) =>
+      case Query.In(k, vs) if vs.lengthCompare(5) < 0 =>
         vs.map { v =>
           Query.Equal(k, v)
         }
