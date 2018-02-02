@@ -24,7 +24,7 @@ There are only four reserved symbols used for structuring the expression: `,:()`
    [duplicate](std-dup) operation.
 3. Parenthesis are used to indicate the start and end of a list. The expression `(,)` puts an
    empty list on the stack. Commands inside of a list will not be executed unless the list is
-   passed to the [call][std-call] command. For example, `(,:dup,)` will push a list with a single
+   passed to the [call](std-call) command. For example, `(,:dup,)` will push a list with a single
    string value of `":dup"` on to the stack.
 
 ## Data Model
