@@ -29,6 +29,9 @@ import com.typesafe.config.Config
   * @param conversion
   *     Conversion to apply to the datapoint when extracting the value. See [[Conversions]]
   *     for more information.
+  * @param monotonicValue
+  *     Set to true if the value is monotonically increasing. These values will get converted
+  *     to a delta before passing into the conversion function.
   * @param tags
   *     Tags that should be applied to the metric.
   */
@@ -36,6 +39,7 @@ case class MetricDefinition(
   name: String,
   alias: String,
   conversion: (MetricMetadata, Datapoint) => Double,
+  monotonicValue: Boolean,
   tags: Map[String, String]
 )
 
@@ -99,10 +103,12 @@ object MetricDefinition {
   }
 
   private def newMetricDef(config: Config, cnv: String, tags: Tags): MetricDefinition = {
+    val monotonic = config.hasPath("monotonic") && config.getBoolean("monotonic")
     MetricDefinition(
       name = config.getString("name"),
       alias = config.getString("alias"),
       conversion = Conversions.fromName(cnv),
+      monotonicValue = monotonic,
       tags = tags
     )
   }
