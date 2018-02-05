@@ -178,18 +178,21 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   /** Add a datapoint to the cache. */
   private def processMetricData(data: MetricData): Unit = {
     pendingGets.decrementAndGet()
-    metricCache.put(data.meta, data)
+    val prev = Option(metricCache.getIfPresent(data.meta)).flatMap(_.current)
+    metricCache.put(data.meta, data.copy(previous = prev))
   }
 
   /** Send all metrics that are currently in the cache. */
   private def sendMetricData(): Unit = {
     metricCache.asMap().forEach { (meta, data) =>
       val d = data.datapoint
-      val ts = tagger(meta.dimensions) ++ meta.definition.tags + ("name" -> meta.definition.alias)
-      val now = System.currentTimeMillis()
-      val newValue = meta.convert(d)
-      metricBatch += new AtlasDatapoint(ts, now, newValue)
-      flush()
+      if (!d.getSum.isNaN) {
+        val ts = tagger(meta.dimensions) ++ meta.definition.tags + ("name" -> meta.definition.alias)
+        val now = System.currentTimeMillis()
+        val newValue = meta.convert(d)
+        metricBatch += new AtlasDatapoint(ts, now, newValue)
+        flush()
+      }
     }
   }
 
@@ -214,6 +217,14 @@ object CloudWatchPoller {
     .withTimestamp(new Date())
     .withUnit(StandardUnit.None)
 
+  private val DatapointNaN = new Datapoint()
+    .withMinimum(Double.NaN)
+    .withMaximum(Double.NaN)
+    .withSum(Double.NaN)
+    .withSampleCount(Double.NaN)
+    .withTimestamp(new Date())
+    .withUnit(StandardUnit.None)
+
   private def getCategories(config: Config): List[MetricCategory] = {
     import scala.collection.JavaConverters._
     val categories = config.getStringList("atlas.cloudwatch.categories").asScala.map { name =>
@@ -231,9 +242,32 @@ object CloudWatchPoller {
 
   case class GetMetricData(metric: MetricMetadata)
 
-  case class MetricData(meta: MetricMetadata, data: Option[Datapoint]) {
+  case class MetricData(
+    meta: MetricMetadata,
+    previous: Option[Datapoint],
+    current: Option[Datapoint]
+  ) {
 
-    def datapoint: Datapoint = data.getOrElse(Zero)
+    def datapoint: Datapoint = {
+      if (meta.definition.monotonicValue) {
+        previous.fold(DatapointNaN) { p =>
+          // For a monotonic counter, the sum and the sample count are the only meaningful
+          // stats. If for some reason the current is less than the previous, then use the
+          // derive behavior and treat the result as a zero.
+          val c = current.getOrElse(DatapointNaN)
+          val delta = math.max(c.getSum - p.getSum, 0.0)
+          new Datapoint()
+            .withMinimum(delta)
+            .withMaximum(delta)
+            .withSum(delta)
+            .withSampleCount(c.getSampleCount)
+            .withTimestamp(c.getTimestamp)
+            .withUnit(c.getUnit)
+        }
+      } else {
+        current.getOrElse(Zero)
+      }
+    }
   }
 
   case class ListMetrics(categories: List[MetricCategory])

@@ -30,7 +30,7 @@ class GetMetricActor(client: AmazonCloudWatch) extends Actor with StrictLogging 
   import CloudWatchPoller._
 
   def receive: Receive = {
-    case m: MetricMetadata => sender() ! MetricData(m, getMetric(m))
+    case m: MetricMetadata => sender() ! MetricData(m, None, getMetric(m))
   }
 
   /**
