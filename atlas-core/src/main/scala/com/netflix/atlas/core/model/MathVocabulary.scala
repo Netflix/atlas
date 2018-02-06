@@ -475,10 +475,13 @@ object MathVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case DoubleType(_) :: TimeSeriesType(_) :: _ => true
+      case DoubleType(_) :: (_: StyleExpr) :: _    => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case DoubleType(mn) :: TimeSeriesType(t) :: stack => MathExpr.ClampMin(t, mn) :: stack
+      case DoubleType(mn) :: (t: StyleExpr) :: stack =>
+        t.copy(expr = MathExpr.ClampMin(t.expr, mn)) :: stack
     }
 
     override def summary: String =
@@ -499,10 +502,13 @@ object MathVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case DoubleType(_) :: TimeSeriesType(_) :: _ => true
+      case DoubleType(_) :: (_: StyleExpr) :: _    => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case DoubleType(mx) :: TimeSeriesType(t) :: stack => MathExpr.ClampMax(t, mx) :: stack
+      case DoubleType(mx) :: (t: StyleExpr) :: stack =>
+        t.copy(expr = MathExpr.ClampMax(t.expr, mx)) :: stack
     }
 
     override def summary: String =
@@ -521,12 +527,14 @@ object MathVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case TimeSeriesType(_) :: _ => true
+      case (_: StyleExpr) :: _    => true
     }
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case TimeSeriesType(t) :: stack => newInstance(t) :: stack
+      case (t: StyleExpr) :: stack    => t.copy(expr = newInstance(t.expr)) :: stack
     }
 
     override def signature: String = "TimeSeriesExpr -- TimeSeriesExpr"
@@ -591,12 +599,19 @@ object MathVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case TimeSeriesType(_) :: TimeSeriesType(_) :: _ => true
+      case (_: StyleExpr) :: TimeSeriesType(_) :: _    => true
+      case TimeSeriesType(_) :: (_: StyleExpr) :: _    => true
     }
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case TimeSeriesType(t2) :: TimeSeriesType(t1) :: stack => newInstance(t1, t2) :: stack
+      case TimeSeriesType(t2) :: TimeSeriesType(t1) :: stack =>
+        newInstance(t1, t2) :: stack
+      case (t2: StyleExpr) :: TimeSeriesType(t1) :: stack =>
+        t2.copy(expr = newInstance(t1, t2.expr)) :: stack
+      case TimeSeriesType(t2) :: (t1: StyleExpr) :: stack =>
+        t1.copy(expr = newInstance(t1.expr, t2)) :: stack
     }
 
     override def signature: String = "TimeSeriesExpr TimeSeriesExpr -- TimeSeriesExpr"
