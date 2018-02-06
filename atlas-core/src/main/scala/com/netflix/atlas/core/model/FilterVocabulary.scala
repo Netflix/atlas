@@ -48,10 +48,13 @@ object FilterVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: String) :: TimeSeriesType(_) :: _ => true
+      case (_: String) :: (_: StyleExpr) :: _    => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (s: String) :: TimeSeriesType(t) :: stack => FilterExpr.Stat(t, s) :: stack
+      case (s: String) :: (t: StyleExpr) :: stack =>
+        t.copy(expr = FilterExpr.Stat(t.expr, s)) :: stack
     }
 
     override def signature: String = "TimeSeriesExpr String -- FilterExpr"

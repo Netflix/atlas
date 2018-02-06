@@ -60,10 +60,13 @@ object StatefulVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case IntType(_) :: TimeSeriesType(_) :: _ => true
+      case IntType(_) :: (_: StyleExpr) :: _    => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case IntType(v) :: TimeSeriesType(t) :: s => StatefulExpr.RollingCount(t, v) :: s
+      case IntType(v) :: (t: StyleExpr) :: s =>
+        t.copy(expr = StatefulExpr.RollingCount(t.expr, v)) :: s
     }
 
     override def summary: String =
@@ -115,11 +118,14 @@ object StatefulVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: String) :: (_: String) :: (_: String) :: TimeSeriesType(_) :: _ => true
+      case (_: String) :: (_: String) :: (_: String) :: (_: StyleExpr) :: _    => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case DoubleType(b) :: DoubleType(a) :: IntType(n) :: TimeSeriesType(t) :: s =>
         StatefulExpr.Des(t, n, a, b) :: s
+      case DoubleType(b) :: DoubleType(a) :: IntType(n) :: (t: StyleExpr) :: s =>
+        t.copy(StatefulExpr.Des(t.expr, n, a, b)) :: s
     }
 
     override def summary: String =
@@ -140,11 +146,14 @@ object StatefulVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: String) :: (_: String) :: (_: String) :: TimeSeriesType(_) :: _ => true
+      case (_: String) :: (_: String) :: (_: String) :: (_: StyleExpr) :: _    => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case DoubleType(b) :: DoubleType(a) :: IntType(n) :: TimeSeriesType(t) :: s =>
         StatefulExpr.SlidingDes(t, n, a, b) :: s
+      case DoubleType(b) :: DoubleType(a) :: IntType(n) :: (t: StyleExpr) :: s =>
+        t.copy(expr = StatefulExpr.SlidingDes(t.expr, n, a, b)) :: s
     }
 
     override def summary: String =
@@ -203,11 +212,14 @@ object StatefulVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: String) :: TimeSeriesType(_) :: _ => true
+      case (_: String) :: (_: StyleExpr) :: _    => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (v: String) :: TimeSeriesType(t) :: s =>
         StatefulExpr.Trend(t, Strings.parseDuration(v)) :: s
+      case (v: String) :: (t: StyleExpr) :: s =>
+        t.copy(expr = StatefulExpr.Trend(t.expr, Strings.parseDuration(v))) :: s
     }
 
     override def summary: String =
@@ -247,10 +259,12 @@ object StatefulVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case TimeSeriesType(_) :: _ => true
+      case (_: StyleExpr) :: _    => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case TimeSeriesType(t) :: s => StatefulExpr.Integral(t) :: s
+      case (t: StyleExpr) :: s    => t.copy(expr = StatefulExpr.Integral(t.expr)) :: s
     }
 
     override def summary: String =
@@ -292,10 +306,12 @@ object StatefulVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case TimeSeriesType(_) :: _ => true
+      case (_: StyleExpr) :: _    => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case TimeSeriesType(t) :: s => StatefulExpr.Derivative(t) :: s
+      case (t: StyleExpr) :: s    => t.copy(expr = StatefulExpr.Derivative(t.expr)) :: s
     }
 
     override def summary: String =
