@@ -210,8 +210,10 @@ object ExprApi {
     import MathExpr.NamedRewrite
     val cleaned = exprs.map { e =>
       val clean = e.rewrite {
-        case r @ NamedRewrite(_, orig: Query, _, _)          => r.copy(evalExpr = DataExpr.Sum(orig))
-        case r @ NamedRewrite(_, orig: TimeSeriesExpr, _, _) => r.copy(evalExpr = orig)
+        case r @ NamedRewrite(_, orig: Query, _, _, _) =>
+          r.copy(evalExpr = DataExpr.Sum(orig))
+        case r @ NamedRewrite(_, orig: TimeSeriesExpr, _, _, _) =>
+          r.copy(evalExpr = orig)
       }
       clean.asInstanceOf[StyleExpr]
     }
