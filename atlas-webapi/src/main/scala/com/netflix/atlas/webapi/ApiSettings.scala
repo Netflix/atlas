@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit
 import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.db.Database
+import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.model.DefaultSettings
-import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.validation.Rule
 import com.typesafe.config.Config
@@ -71,7 +71,7 @@ class ApiSettings(root: => Config) {
 
   def graphVocabulary: Vocabulary = {
     config.getString("graph.vocabulary") match {
-      case "default" => StyleVocabulary
+      case "default" => new CustomVocabulary(root)
       case cls       => Class.forName(cls).newInstance().asInstanceOf[Vocabulary]
     }
   }

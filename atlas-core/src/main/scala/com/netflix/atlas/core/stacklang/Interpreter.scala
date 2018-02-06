@@ -195,7 +195,7 @@ object Interpreter {
     * with a single character so that it does not require compiling the regex. This method
     * uses a single character and does a simple `trim` operation to cleanup the whitespace.
     */
-  private[stacklang] def splitAndTrim(str: String): List[String] = {
+  def splitAndTrim(str: String): List[String] = {
     val parts = str.split(",")
     val builder = List.newBuilder[String]
     var i = 0

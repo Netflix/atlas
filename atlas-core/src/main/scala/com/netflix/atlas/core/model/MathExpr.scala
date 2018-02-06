@@ -21,6 +21,7 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
 
+import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Math
@@ -818,7 +819,8 @@ object MathExpr {
     name: String,
     displayExpr: Expr,
     evalExpr: TimeSeriesExpr,
-    context: Context
+    context: Context,
+    groupByRewrite: Option[(Expr, List[String]) => Expr] = None
   ) extends TimeSeriesExpr {
 
     def dataExprs: List[DataExpr] = evalExpr.dataExprs
@@ -882,6 +884,17 @@ object MathExpr {
             }
         }
       }
+    }
+
+    def groupBy(keys: List[String]): NamedRewrite = {
+      def applyGroupBy: PartialFunction[Expr, Expr] = {
+        case af: AggregateFunction => DataExpr.GroupBy(af, keys)
+      }
+      val newDisplayExpr = displayExpr.rewrite(applyGroupBy)
+      val newEvalExpr = groupByRewrite.fold(evalExpr.rewrite(applyGroupBy)) { f =>
+        f(displayExpr, keys)
+      }
+      copy(displayExpr = newDisplayExpr, evalExpr = newEvalExpr.asInstanceOf[TimeSeriesExpr])
     }
   }
 }

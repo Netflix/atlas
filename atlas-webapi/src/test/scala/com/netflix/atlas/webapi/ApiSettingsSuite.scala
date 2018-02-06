@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.webapi
 
-import com.netflix.atlas.core.model.StyleVocabulary
+import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
 import com.typesafe.config.ConfigFactory
@@ -24,8 +24,16 @@ import org.scalatest.FunSuite
 class ApiSettingsSuite extends FunSuite {
 
   test("graphVocabulary default") {
-    val cfg = new ApiSettings(ConfigFactory.parseString("atlas.webapi.graph.vocabulary=default"))
-    assert(cfg.graphVocabulary === StyleVocabulary)
+    val cfg = new ApiSettings(ConfigFactory.parseString("""
+        |atlas {
+        |  core.vocabulary {
+        |    words = []
+        |    custom-averages = []
+        |  }
+        |  webapi.graph.vocabulary=default
+        |}
+      """.stripMargin))
+    assert(cfg.graphVocabulary.isInstanceOf[CustomVocabulary])
   }
 
   test("graphVocabulary class") {

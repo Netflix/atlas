@@ -20,6 +20,7 @@ import java.time.ZoneOffset
 
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
+import com.netflix.atlas.core.model.MathExpr.NamedRewrite
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
@@ -255,6 +256,7 @@ object MathVocabulary extends Vocabulary {
       case StringListType(keys) :: TimeSeriesType(t) :: stack =>
         // Default data group by applied across math operations
         val f = t.rewrite {
+          case nr: NamedRewrite      => nr.groupBy(keys)
           case af: AggregateFunction => DataExpr.GroupBy(af, keys)
         }
         f :: stack
