@@ -865,7 +865,7 @@ object MathExpr {
     }
 
     override def rewrite(f: PartialFunction[Expr, Expr]): Expr = {
-      if (f.isDefinedAt(this) && !f.isDefinedAt(displayExpr) && !f.isDefinedAt(evalExpr)) {
+      if (f.isDefinedAt(this)) {
         // The partial function is defined for the rewrite itself, assume the caller
         // knows what to do
         super.rewrite(f)

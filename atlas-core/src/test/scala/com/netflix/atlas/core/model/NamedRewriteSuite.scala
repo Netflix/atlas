@@ -24,8 +24,51 @@ class NamedRewriteSuite extends FunSuite {
 
   private def eval(program: String): List[TimeSeriesExpr] = {
     interpreter.execute(program).stack.map {
+      case nr: MathExpr.NamedRewrite         => nr.evalExpr
       case ModelExtractors.TimeSeriesType(t) => t
     }
+  }
+
+  test("avg") {
+    val actual = eval("name,a,:eq,:avg")
+    val expected = eval("name,a,:eq,:sum,name,a,:eq,:count,:div")
+    assert(actual === expected)
+  }
+
+  test("avg with group by") {
+    val actual = eval("name,a,:eq,:avg,(,name,),:by")
+    val expected = eval("name,a,:eq,:sum,name,a,:eq,:count,:div,(,name,),:by")
+    assert(actual === expected)
+  }
+
+  test("dist-max") {
+    val actual = eval("name,a,:eq,:dist-max")
+    val expected = eval("statistic,max,:eq,name,a,:eq,:and,:max")
+    assert(actual === expected)
+  }
+
+  test("dist-max with group by") {
+    val actual = eval("name,a,:eq,:dist-max,(,name,),:by")
+    val expected = eval("statistic,max,:eq,name,a,:eq,:and,:max,(,name,),:by")
+    assert(actual === expected)
+  }
+
+  test("dist-max with offset") {
+    val actual = eval("name,a,:eq,:dist-max,1h,:offset")
+    val expected = eval("statistic,max,:eq,name,a,:eq,:and,:max,1h,:offset")
+    assert(actual === expected)
+  }
+
+  test("dist-avg") {
+    val actual = eval("name,a,:eq,:dist-avg")
+    val expected = eval("statistic,(,totalTime,totalAmount,),:in,:sum,statistic,count,:eq,:sum,:div,name,a,:eq,:cq")
+    assert(actual === expected)
+  }
+
+  test("dist-avg with group by") {
+    val actual = eval("name,a,:eq,:dist-avg,(,name,),:by")
+    val expected = eval("statistic,(,totalTime,totalAmount,),:in,:sum,statistic,count,:eq,:sum,:div,name,a,:eq,:cq,(,name,),:by")
+    assert(actual === expected)
   }
 
   test("freeze works with named rewrite, cq") {
