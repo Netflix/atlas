@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -864,24 +865,16 @@ object MathExpr {
     }
 
     override def rewrite(f: PartialFunction[Expr, Expr]): Expr = {
-      if (f.isDefinedAt(this) && !f.isDefinedAt(displayExpr) && !f.isDefinedAt(evalExpr)) {
+      if (f.isDefinedAt(this)) {
         // The partial function is defined for the rewrite itself, assume the caller
         // knows what to do
         super.rewrite(f)
       } else {
-        displayExpr match {
-          case q: Query =>
-            copy(
-              displayExpr = displayExpr.rewrite(f),
-              evalExpr = evalExpr.rewrite(f).asInstanceOf[TimeSeriesExpr]
-            )
-          case _ =>
-            val newDisplayExpr = displayExpr.rewrite(f)
-            val ctxt = context.interpreter.execute(toString(newDisplayExpr))
-            ctxt.stack match {
-              case (r: NamedRewrite) :: Nil => r
-              case _                        => throw new IllegalStateException(s"invalid stack for :$name")
-            }
+        val newDisplayExpr = displayExpr.rewrite(f)
+        val ctxt = context.interpreter.execute(toString(newDisplayExpr))
+        ctxt.stack match {
+          case (r: NamedRewrite) :: Nil => r
+          case _                        => throw new IllegalStateException(s"invalid stack for :$name")
         }
       }
     }
@@ -895,6 +888,10 @@ object MathExpr {
         f(displayExpr, keys)
       }
       copy(displayExpr = newDisplayExpr, evalExpr = newEvalExpr.asInstanceOf[TimeSeriesExpr])
+    }
+
+    override def withOffset(d: Duration): TimeSeriesExpr = {
+      copy(evalExpr = evalExpr.withOffset(d))
     }
   }
 }

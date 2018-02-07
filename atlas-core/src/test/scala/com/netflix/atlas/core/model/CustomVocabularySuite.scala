@@ -76,6 +76,14 @@ class CustomVocabularySuite extends FunSuite {
     assert(expr === expected)
   }
 
+  test("expr with cq using non-infrastructure tags") {
+    val expr = eval(s"$cpuUser,:node-avg,core,1,:eq,:cq").rewrite {
+      case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
+    }
+    val expected = eval(s"$cpuUser,core,1,:eq,:and,:sum,$numInstances,:sum,:div")
+    assert(expr === expected)
+  }
+
   test("expr grouped by infrastructure tags") {
     val expr = eval(s"$cpuUser,cluster,foo,:eq,:and,:node-avg,(,zone,),:by").rewrite {
       case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
