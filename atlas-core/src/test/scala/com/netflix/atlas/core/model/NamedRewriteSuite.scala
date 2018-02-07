@@ -61,13 +61,17 @@ class NamedRewriteSuite extends FunSuite {
 
   test("dist-avg") {
     val actual = eval("name,a,:eq,:dist-avg")
-    val expected = eval("statistic,(,totalTime,totalAmount,),:in,:sum,statistic,count,:eq,:sum,:div,name,a,:eq,:cq")
+    val expected = eval(
+      "statistic,(,totalTime,totalAmount,),:in,:sum,statistic,count,:eq,:sum,:div,name,a,:eq,:cq"
+    )
     assert(actual === expected)
   }
 
   test("dist-avg with group by") {
     val actual = eval("name,a,:eq,:dist-avg,(,name,),:by")
-    val expected = eval("statistic,(,totalTime,totalAmount,),:in,:sum,statistic,count,:eq,:sum,:div,name,a,:eq,:cq,(,name,),:by")
+    val expected = eval(
+      "statistic,(,totalTime,totalAmount,),:in,:sum,statistic,count,:eq,:sum,:div,name,a,:eq,:cq,(,name,),:by"
+    )
     assert(actual === expected)
   }
 
