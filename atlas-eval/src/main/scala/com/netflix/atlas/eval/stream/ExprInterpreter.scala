@@ -16,14 +16,15 @@
 package com.netflix.atlas.eval.stream
 
 import akka.http.scaladsl.model.Uri
+import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
-import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.typesafe.config.Config
 
-private[stream] object ExprInterpreter {
+private[stream] class ExprInterpreter(config: Config) {
 
-  private val interpreter = Interpreter(StyleVocabulary.allWords)
+  private val interpreter = Interpreter(new CustomVocabulary(config).allWords)
 
   def eval(expr: String): List[StyleExpr] = {
     interpreter.execute(expr).stack.map {

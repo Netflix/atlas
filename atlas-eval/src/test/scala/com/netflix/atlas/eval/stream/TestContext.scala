@@ -32,18 +32,25 @@ object TestContext {
 
   private val config =
     ConfigFactory.parseString("""
-      |backends = [
-      |  {
-      |    host = "localhost"
-      |    eureka-uri = "http://localhost:7102/v2/vips/local-dev:7001"
-      |    instance-uri = "http://{host}:{port}"
-      |  },
-      |  {
-      |    host = "atlas"
-      |    eureka-uri = "http://eureka/v2/vips/atlas-lwcapi:7001"
-      |    instance-uri = "http://{host}:{port}"
-      |  }
-      |]
+      |atlas.core.vocabulary {
+      |  words = []
+      |  custom-averages = []
+      |}
+      |
+      |atlas.eval.stream {
+      |  backends = [
+      |    {
+      |      host = "localhost"
+      |      eureka-uri = "http://localhost:7102/v2/vips/local-dev:7001"
+      |      instance-uri = "http://{host}:{port}"
+      |    },
+      |    {
+      |      host = "atlas"
+      |      eureka-uri = "http://eureka/v2/vips/atlas-lwcapi:7001"
+      |      instance-uri = "http://{host}:{port}"
+      |    }
+      |  ]
+      |}
     """.stripMargin)
 
   def createContext(

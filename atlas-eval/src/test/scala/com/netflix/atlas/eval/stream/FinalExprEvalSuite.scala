@@ -29,6 +29,7 @@ import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
+import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await
@@ -39,9 +40,11 @@ class FinalExprEvalSuite extends FunSuite {
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val mat = ActorMaterializer()
 
+  private val interpreter = new ExprInterpreter(ConfigFactory.load())
+
   private def run(input: List[AnyRef]): List[MessageEnvelope] = {
     val future = Source(input)
-      .via(new FinalExprEval)
+      .via(new FinalExprEval(interpreter))
       .flatMapConcat(s => s)
       .runWith(Sink.seq)
     Await.result(future, Duration.Inf).toList

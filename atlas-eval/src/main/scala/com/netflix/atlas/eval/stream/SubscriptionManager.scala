@@ -115,7 +115,7 @@ private[stream] class SubscriptionManager(context: StreamContext)
 
       private def toSubscribeRequest(ds: List[DataSource]): String = {
         val exprs = ds.flatMap { d =>
-          ExprInterpreter.eval(Uri(d.getUri)).map { expr =>
+          context.interpreter.eval(Uri(d.getUri)).map { expr =>
             Expression(expr.toString)
           }
         }

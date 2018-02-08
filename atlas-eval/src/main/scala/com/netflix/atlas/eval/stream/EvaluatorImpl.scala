@@ -67,7 +67,7 @@ private[stream] abstract class EvaluatorImpl(
 
   private def newStreamContext(dsLogger: DataSourceLogger = (_, _) => ()): StreamContext = {
     new StreamContext(
-      config.getConfig("atlas.eval.stream"),
+      config,
       Http().superPool(),
       materializer,
       registry,
@@ -190,7 +190,7 @@ private[stream] abstract class EvaluatorImpl(
     Flow[DataSources]
       .map(s => context.validate(s))
       .via(g)
-      .via(new FinalExprEval)
+      .via(new FinalExprEval(context.interpreter))
       .flatMapConcat(s => s)
       .via(context.countEvents("13_OutputMessages"))
       .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))

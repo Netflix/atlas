@@ -45,10 +45,12 @@ import com.typesafe.scalalogging.StrictLogging
   * Takes the set of data sources and time grouped partial aggregates as input and performs
   * the final evaluation step.
   *
+  * @param interpreter
+  *     Used for evaluating the expressions.
   * @param step
   *     Step size for the input data.
   */
-private[stream] class FinalExprEval(step: Long = 60000L)
+private[stream] class FinalExprEval(interpreter: ExprInterpreter, step: Long = 60000L)
     extends GraphStage[FlowShape[AnyRef, Source[MessageEnvelope, NotUsed]]]
     with StrictLogging {
 
@@ -92,7 +94,7 @@ private[stream] class FinalExprEval(step: Long = 60000L)
         recipients = sources
           .flatMap { s =>
             try {
-              val exprs = ExprInterpreter.eval(Uri(s.getUri))
+              val exprs = interpreter.eval(Uri(s.getUri))
               exprs.map(e => e -> s.getId)
             } catch {
               case e: Exception =>
