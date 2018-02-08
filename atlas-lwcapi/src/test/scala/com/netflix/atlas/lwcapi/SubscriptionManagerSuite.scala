@@ -15,12 +15,13 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 class SubscriptionManagerSuite extends FunSuite {
 
   private def sub(expr: String): Subscription = {
-    val splitter = new ExpressionSplitter
+    val splitter = new ExpressionSplitter(ConfigFactory.load())
     splitter.split(expr, 60).head
   }
 

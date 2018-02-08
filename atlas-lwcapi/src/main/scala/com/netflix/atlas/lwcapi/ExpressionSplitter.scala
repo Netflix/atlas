@@ -19,13 +19,14 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Query.KeyQuery
-import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.spectator.api.Utils
+import com.typesafe.config.Config
 
 import scala.util.Failure
 import scala.util.Success
@@ -36,13 +37,13 @@ import scala.util.Try
   * subscription is based on the underlying data expressions (DataExpr) that get pushed back
   * to the systems supplying data to LWCAPI.
   */
-class ExpressionSplitter {
+class ExpressionSplitter(config: Config) {
 
   import ExpressionSplitter._
 
   private val keepKeys = Set("nf.app", "nf.stack", "nf.cluster")
 
-  private val interpreter = Interpreter(StyleVocabulary.allWords)
+  private val interpreter = Interpreter(new CustomVocabulary(config).allWords)
 
   /**
     * Processing the expressions can be quite expensive. In particular compiling regular

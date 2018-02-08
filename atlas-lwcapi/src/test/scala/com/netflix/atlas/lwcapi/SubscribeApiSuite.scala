@@ -22,6 +22,7 @@ import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.atlas.akka.RequestHandler
 import com.netflix.spectator.api.NoopRegistry
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 
@@ -33,7 +34,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
   private val sm = new ActorSubscriptionManager
-  private val splitter = new ExpressionSplitter
+  private val splitter = new ExpressionSplitter(ConfigFactory.load())
 
   private val api = new SubscribeApi(new NoopRegistry, sm, splitter)
 
