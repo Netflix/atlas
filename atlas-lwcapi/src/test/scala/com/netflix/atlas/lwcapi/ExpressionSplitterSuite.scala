@@ -16,6 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.core.model.Query
+import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 class ExpressionSplitterSuite extends FunSuite {
@@ -26,7 +27,7 @@ class ExpressionSplitterSuite extends FunSuite {
   private val ds1b = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:sum,(,nf.node,),:by"
   private val matchList1 = Query.Equal("nf.cluster", "skan-test")
 
-  private val splitter = new ExpressionSplitter
+  private val splitter = new ExpressionSplitter(ConfigFactory.load())
 
   test("splits single expression into data expressions") {
     val actual = splitter.split(query1, frequency1)

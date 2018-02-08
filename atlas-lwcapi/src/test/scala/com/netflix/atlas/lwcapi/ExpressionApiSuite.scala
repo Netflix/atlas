@@ -22,6 +22,7 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.spectator.api.NoopRegistry
+import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
@@ -36,7 +37,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }))
 
-  val splitter = new ExpressionSplitter()
+  val splitter = new ExpressionSplitter(ConfigFactory.load())
 
   val sm = new ActorSubscriptionManager
   val endpoint = ExpressionApi(sm, new NoopRegistry, system)

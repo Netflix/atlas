@@ -23,6 +23,7 @@ import com.netflix.atlas.akka.AkkaModule
 import com.netflix.atlas.lwcapi.ActorSubscriptionManager
 import com.netflix.atlas.lwcapi.ExpressionSplitter
 import com.netflix.iep.guice.LifecycleModule
+import com.typesafe.config.Config
 
 final class LwcApiModule extends AbstractModule {
 
@@ -33,8 +34,8 @@ final class LwcApiModule extends AbstractModule {
 
   @Provides
   @Singleton
-  protected def providesExpressionSplitter(): ExpressionSplitter = {
-    new ExpressionSplitter()
+  protected def providesExpressionSplitter(config: Config): ExpressionSplitter = {
+    new ExpressionSplitter(config)
   }
 
   @Provides
