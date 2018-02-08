@@ -41,7 +41,7 @@ import com.typesafe.config.Config
 import scala.concurrent.Future
 
 private[stream] class StreamContext(
-  config: Config,
+  rootConfig: Config,
   val client: Client,
   val materializer: ActorMaterializer,
   val registry: Registry = new NoopRegistry,
@@ -51,6 +51,8 @@ private[stream] class StreamContext(
   import StreamContext._
 
   val id: String = UUID.randomUUID().toString
+
+  private val config = rootConfig.getConfig("atlas.eval.stream")
 
   private val backends = {
     import scala.collection.JavaConverters._
@@ -62,6 +64,8 @@ private[stream] class StreamContext(
       )
     }
   }
+
+  val interpreter = new ExprInterpreter(rootConfig)
 
   def findBackendForUri(uri: Uri): Backend = {
     if (uri.isRelative || uri.scheme == "file")
@@ -95,7 +99,7 @@ private[stream] class StreamContext(
       val uri = Uri(ds.getUri)
 
       // Check that expression is parseable
-      ExprInterpreter.eval(uri)
+      interpreter.eval(uri)
 
       // Check that there is a backend available for it
       findBackendForUri(uri)
