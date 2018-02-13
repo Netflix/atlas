@@ -68,6 +68,11 @@ case class TimeSeriesMessage(
     gen.writeStringField("type", "timeseries")
     gen.writeStringField("id", id)
     gen.writeStringField("query", query)
+    if (groupByKeys.nonEmpty) {
+      gen.writeArrayFieldStart("groupByKeys")
+      groupByKeys.foreach(gen.writeString)
+      gen.writeEndArray()
+    }
     gen.writeStringField("label", label)
     encodeTags(gen, tags)
     gen.writeNumberField("start", start)
