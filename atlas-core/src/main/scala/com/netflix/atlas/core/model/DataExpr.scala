@@ -38,6 +38,8 @@ sealed trait DataExpr extends TimeSeriesExpr {
     Some(TaggedItem.computeId(tags).toString)
   }
 
+  def finalGrouping: List[String] = Nil
+
   def exprString: String
 
   protected def consolidate(step: Long, ts: List[TimeSeries]): List[TimeSeries] = {
@@ -277,6 +279,8 @@ object DataExpr {
     def keyString(tags: Map[String, String]): String = DataExpr.keyString(keys, tags)
 
     override def groupByKey(tags: Map[String, String]): Option[String] = Option(keyString(tags))
+
+    override def finalGrouping: List[String] = keys
 
     override def exprString: String = s"$af,(,${keys.mkString(",")},),:by"
 

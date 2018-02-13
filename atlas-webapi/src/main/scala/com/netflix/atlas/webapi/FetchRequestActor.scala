@@ -116,7 +116,7 @@ class FetchRequestActor(request: GraphApi.Request)
         state = result.state
         result.data.foreach { ts =>
           if (!isAllNaN(ts.data, chunk.start, chunk.end, chunk.step))
-            queue.add(TimeSeriesMessage(s.toString, chunk, ts))
+            queue.add(TimeSeriesMessage(s, chunk, ts))
         }
       }
       chunk = null

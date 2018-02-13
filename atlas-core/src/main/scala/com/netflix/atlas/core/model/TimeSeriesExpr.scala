@@ -17,10 +17,21 @@ package com.netflix.atlas.core.model
 
 import java.time.Duration
 
+/**
+  * Base type for expressions that have a set of time series as the result.
+  */
 trait TimeSeriesExpr extends Expr {
 
+  /**
+    * The underlying data expressions that supply input for the evaluation. These are
+    * used to fetch data from the data stores. There may be some expressions types that
+    * generate data and will have an empty set. Examples are constants, random, or time.
+    */
   def dataExprs: List[DataExpr]
 
+  /**
+    * Apply a time shift to all underlying data expressions.
+    */
   def withOffset(d: Duration): TimeSeriesExpr = {
     val expr = rewrite {
       case e: DataExpr => e.withOffset(d)
@@ -28,9 +39,21 @@ trait TimeSeriesExpr extends Expr {
     expr.asInstanceOf[TimeSeriesExpr]
   }
 
+  /** Returns true if the result is grouped. See GroupBy operators. */
   def isGrouped: Boolean
 
+  /**
+    * Returns the grouping key generated for a given tag map. All keys for the group by
+    * must be present in the map.
+    */
   def groupByKey(tags: Map[String, String]): Option[String]
+
+  /**
+    * Returns the final grouping for the expression. For non-grouped expressions this will
+    * be an empty list. If a multi-level group by is used, then this will return the grouping
+    * of the final result and ignore any intermediate groupings.
+    */
+  def finalGrouping: List[String]
 
   def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
     val rs = dataExprs.map { expr =>

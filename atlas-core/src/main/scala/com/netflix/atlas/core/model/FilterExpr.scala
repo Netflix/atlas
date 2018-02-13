@@ -31,6 +31,8 @@ object FilterExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
+    def finalGrouping: List[String] = expr.finalGrouping
+
     private def value(s: SummaryStats): Double = stat match {
       case "avg"   => s.avg
       case "max"   => s.max
@@ -61,6 +63,8 @@ object FilterExpr {
     def isGrouped: Boolean = false
 
     def groupByKey(tags: Map[String, String]): Option[String] = None
+
+    def finalGrouping: List[String] = Nil
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       ResultSet(this, Nil, context.state)
@@ -103,6 +107,8 @@ object FilterExpr {
     def isGrouped: Boolean = expr1.isGrouped
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr1.groupByKey(tags)
+
+    def finalGrouping: List[String] = expr1.finalGrouping
 
     def matches(context: EvalContext, ts: TimeSeries): Boolean = {
       var m = false

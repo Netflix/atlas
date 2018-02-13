@@ -43,6 +43,8 @@ object MathExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = None
 
+    def finalGrouping: List[String] = Nil
+
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, _ => v)
       val ts = TimeSeries(Map("name" -> v.toString), v.toString, seq)
@@ -59,6 +61,8 @@ object MathExpr {
     def isGrouped: Boolean = false
 
     def groupByKey(tags: Map[String, String]): Option[String] = None
+
+    def finalGrouping: List[String] = Nil
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, rand)
@@ -120,6 +124,8 @@ object MathExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = None
 
+    def finalGrouping: List[String] = Nil
+
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, valueFunc)
       val ts = TimeSeries(Map("name" -> mode), mode, seq)
@@ -136,6 +142,8 @@ object MathExpr {
     def isGrouped: Boolean = false
 
     def groupByKey(tags: Map[String, String]): Option[String] = None
+
+    def finalGrouping: List[String] = Nil
 
     private def parseDate(
       gs: ZonedDateTime,
@@ -217,6 +225,8 @@ object MathExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
+    def finalGrouping: List[String] = expr.finalGrouping
+
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
       ResultSet(this, rs.data.map { t =>
@@ -238,6 +248,8 @@ object MathExpr {
     def isGrouped: Boolean = expr.isGrouped
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def finalGrouping: List[String] = expr.finalGrouping
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
@@ -262,6 +274,8 @@ object MathExpr {
     def isGrouped: Boolean = expr.isGrouped
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def finalGrouping: List[String] = expr.finalGrouping
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
@@ -328,6 +342,10 @@ object MathExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = {
       expr1.groupByKey(tags).orElse(expr2.groupByKey(tags))
+    }
+
+    def finalGrouping: List[String] = {
+      if (expr1.isGrouped) expr1.finalGrouping else expr2.finalGrouping
     }
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
@@ -524,6 +542,8 @@ object MathExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = None
 
+    def finalGrouping: List[String] = Nil
+
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
       val ts =
@@ -609,6 +629,8 @@ object MathExpr {
     def groupByKey(tags: Map[String, String]): Option[String] =
       Option(DataExpr.keyString(keys, tags))
 
+    def finalGrouping: List[String] = keys
+
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val inner = expr.expr.eval(context, data)
 
@@ -682,6 +704,8 @@ object MathExpr {
     override def isGrouped: Boolean = true
 
     override def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def finalGrouping: List[String] = expr.finalGrouping
 
     override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val inner = expr.eval(context, data)
@@ -863,6 +887,8 @@ object MathExpr {
     def isGrouped: Boolean = evalExpr.isGrouped
 
     def groupByKey(tags: Map[String, String]): Option[String] = evalExpr.groupByKey(tags)
+
+    def finalGrouping: List[String] = evalExpr.finalGrouping
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       evalExpr.eval(context, data).copy(expr = this)

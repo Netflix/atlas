@@ -148,7 +148,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter, step: Long = 6
               val result = expr.expr.eval(context, expressionDatapoints)
               states(expr) = result.state
               val msgs = result.data.map { t =>
-                TimeSeriesMessage(expr.toString, context, t.withLabel(expr.legend(t)))
+                TimeSeriesMessage(expr, context, t.withLabel(expr.legend(t)))
               }
 
               val diagnostics = expr.expr.dataExprs.flatMap(expressionDiagnostics.get)

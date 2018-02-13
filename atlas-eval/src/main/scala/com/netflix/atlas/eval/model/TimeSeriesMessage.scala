@@ -32,6 +32,10 @@ import com.netflix.atlas.core.util.SmallHashMap
   *     Expression for the time series. Note, the same expression can result in many time
   *     series when using group by. For matching the data for a particular time series the
   *     id field should be used.
+  * @param groupByKeys
+  *     The final keys used for grouping the result. The value will be an empty list if
+  *     the expression is not grouped. For multi-level group by this will be the final
+  *     grouping used for the result.
   * @param start
   *     Start time for the data.
   * @param end
@@ -50,6 +54,7 @@ import com.netflix.atlas.core.util.SmallHashMap
 case class TimeSeriesMessage(
   id: String,
   query: String,
+  groupByKeys: List[String],
   start: Long,
   end: Long,
   step: Long,
@@ -63,6 +68,11 @@ case class TimeSeriesMessage(
     gen.writeStringField("type", "timeseries")
     gen.writeStringField("id", id)
     gen.writeStringField("query", query)
+    if (groupByKeys.nonEmpty) {
+      gen.writeArrayFieldStart("groupByKeys")
+      groupByKeys.foreach(gen.writeString)
+      gen.writeEndArray()
+    }
     gen.writeStringField("label", label)
     encodeTags(gen, tags)
     gen.writeNumberField("start", start)
@@ -94,7 +104,7 @@ object TimeSeriesMessage {
   /**
     * Create a new time series message.
     *
-    * @param query
+    * @param expr
     *     Expression for the time series. Note, the same expression can result in many time
     *     series when using group by. For matching the data for a particular time series the
     *     id field should be used.
@@ -104,12 +114,14 @@ object TimeSeriesMessage {
     * @param ts
     *     Time series to use for the message.
     */
-  def apply(query: String, context: EvalContext, ts: TimeSeries): TimeSeriesMessage = {
+  def apply(expr: StyleExpr, context: EvalContext, ts: TimeSeries): TimeSeriesMessage = {
+    val query = expr.toString
     val id = TaggedItem.computeId(ts.tags + ("atlas.query" -> query)).toString
     val data = ts.data.bounded(context.start, context.end)
     TimeSeriesMessage(
       id,
       query,
+      expr.expr.finalGrouping,
       context.start,
       context.end,
       context.step,

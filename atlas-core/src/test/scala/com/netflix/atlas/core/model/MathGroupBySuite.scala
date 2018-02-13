@@ -54,7 +54,7 @@ class MathGroupBySuite extends FunSuite {
     assert(rs.size === 1)
 
     val expected = ts(6).withTags(Map("name" -> "test")).withLabel("(name=test)")
-    assert(rs(0) === expected)
+    assert(rs.head === expected)
   }
 
   test("(,name,),:by,(,foo,),:by") {
