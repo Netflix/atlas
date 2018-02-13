@@ -117,7 +117,7 @@ object FilterExpr {
       val rs2 = expr2.eval(context, data)
       val result = (expr1.isGrouped, expr2.isGrouped) match {
         case (_, false) =>
-          require(rs2.data.size == 1)
+          require(rs2.data.lengthCompare(1) == 0, "empty result for filter expression")
           if (matches(context, rs2.data.head)) rs1.data else Nil
         case (false, _) =>
           // Shouldn't be able to get here
