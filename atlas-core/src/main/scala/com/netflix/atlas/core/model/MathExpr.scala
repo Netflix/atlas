@@ -334,12 +334,16 @@ object MathExpr {
       val rs1 = expr1.eval(context, data)
       val rs2 = expr2.eval(context, data)
       val result = (expr1.isGrouped, expr2.isGrouped) match {
+        case (_, false) if rs2.data.isEmpty =>
+          // Happens if the RHS is non-grouped but has had a filter applied that
+          // removes the single expected entry.
+          Nil
         case (_, false) =>
-          require(rs2.data.size == 1)
+          require(rs2.data.lengthCompare(1) == 0)
           val t2 = rs2.data.head
           rs1.data.map(_.binaryOp(t2, labelFmt, this))
         case (false, _) =>
-          require(rs1.data.size == 1)
+          require(rs1.data.lengthCompare(1) == 0)
           val t1 = rs1.data.head
           // Normally tags are kept for the lhs, in this case we want to prefer the tags from
           // the grouped expr on the rhs
