@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.stacklang
 
 import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeriesExpr
 import org.scalatest.FunSuite
 
@@ -60,6 +61,14 @@ abstract class BaseExamplesSuite extends FunSuite {
           }
           val stack2 = interpreter.execute(Interpreter.toString(prg)).stack
           assert(stack2 === prg)
+        }
+      }
+
+      test(s"finalGrouping and isGrouped match -- $ex,:${w.name}") {
+        interpreter.execute(s"$ex,:${w.name}").stack.foreach {
+          case s: StyleExpr      => assert(s.expr.finalGrouping.nonEmpty === s.expr.isGrouped)
+          case t: TimeSeriesExpr => assert(t.finalGrouping.nonEmpty === t.isGrouped)
+          case _                 =>
         }
       }
 

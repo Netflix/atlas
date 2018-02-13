@@ -40,6 +40,8 @@ object StatefulExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
+    def finalGrouping: List[String] = expr.finalGrouping
+
     private def eval(ts: ArrayTimeSeq, s: State): State = {
       val data = ts.data
       var pos = s.pos
@@ -107,6 +109,8 @@ object StatefulExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
+    def finalGrouping: List[String] = expr.finalGrouping
+
     private def eval(ts: ArrayTimeSeq, s: State): State = {
       val desF = OnlineDes(s.desState)
 
@@ -159,6 +163,8 @@ object StatefulExpr {
     def isGrouped: Boolean = expr.isGrouped
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def finalGrouping: List[String] = expr.finalGrouping
 
     private def eval(ts: ArrayTimeSeq, s: State): State = {
       val desF = OnlineSlidingDes(s.desState)
@@ -224,6 +230,8 @@ object StatefulExpr {
     def isGrouped: Boolean = expr.isGrouped
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def finalGrouping: List[String] = expr.finalGrouping
 
     private def eval(period: Int, ts: ArrayTimeSeq, s: State): State = {
       val data = ts.data
@@ -292,6 +300,8 @@ object StatefulExpr {
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
 
+    def finalGrouping: List[String] = expr.finalGrouping
+
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
       val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
@@ -334,6 +344,8 @@ object StatefulExpr {
     def isGrouped: Boolean = expr.isGrouped
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def finalGrouping: List[String] = expr.finalGrouping
 
     private def newState(): State = State(Double.NaN)
 
