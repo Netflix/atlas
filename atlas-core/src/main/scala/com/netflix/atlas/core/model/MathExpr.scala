@@ -872,15 +872,20 @@ object MathExpr {
             case _                     =>
           }
 
-          evalExpr.dataExprs
-            .collectFirst { case DataExpr.GroupBy(_, ks) => ks }
-            .foreach { ks =>
-              buffer.append(ks.mkString(",(,", ",", ",),:by"))
-            }
+          val grouping = evalExpr.finalGrouping
+          if (grouping.nonEmpty) {
+            buffer.append(grouping.mkString(",(,", ",", ",),:by"))
+          }
 
           buffer.toString()
+        case by: DataExpr.GroupBy if by.keys == evalExpr.finalGrouping =>
+          s"$by,:$name"
+        case by: MathExpr.GroupBy if by.keys == evalExpr.finalGrouping =>
+          s"$by,:$name"
         case _ =>
-          s"$expr,:$name"
+          val grouping = evalExpr.finalGrouping
+          val by = if (grouping.nonEmpty) grouping.mkString(",(,", ",", ",),:by") else ""
+          s"$expr,:$name$by"
       }
     }
 
@@ -912,12 +917,20 @@ object MathExpr {
     def groupBy(keys: List[String]): NamedRewrite = {
       def applyGroupBy: PartialFunction[Expr, Expr] = {
         case af: AggregateFunction => DataExpr.GroupBy(af, keys)
+        case af: AggrMathExpr      => MathExpr.GroupBy(af, keys)
       }
-      val newDisplayExpr = displayExpr.rewrite(applyGroupBy)
+      val newDisplayExpr = if (isDisplayGrouped) displayExpr else displayExpr.rewrite(applyGroupBy)
       val newEvalExpr = groupByRewrite.fold(evalExpr.rewrite(applyGroupBy)) { f =>
         f(displayExpr, keys)
       }
       copy(displayExpr = newDisplayExpr, evalExpr = newEvalExpr.asInstanceOf[TimeSeriesExpr])
+    }
+
+    private def isDisplayGrouped: Boolean = {
+      displayExpr match {
+        case t: TimeSeriesExpr => t.isGrouped
+        case _                 => false
+      }
     }
 
     override def withOffset(d: Duration): TimeSeriesExpr = {

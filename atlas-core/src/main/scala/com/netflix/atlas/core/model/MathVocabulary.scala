@@ -242,8 +242,8 @@ object MathVocabulary extends Vocabulary {
         // Multi-level group by with an implicit aggregate of :sum
         true
       case StringListType(_) :: TimeSeriesType(t) :: _ =>
-        // Default data group by applied across math operations
-        t.dataExprs.forall(_.isInstanceOf[DataExpr.AggregateFunction])
+        // Default data or math aggregate group by applied across math operations
+        true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
@@ -258,6 +258,7 @@ object MathVocabulary extends Vocabulary {
         val f = t.rewrite {
           case nr: NamedRewrite      => nr.groupBy(keys)
           case af: AggregateFunction => DataExpr.GroupBy(af, keys)
+          case af: AggrMathExpr      => MathExpr.GroupBy(af, keys)
         }
         f :: stack
     }

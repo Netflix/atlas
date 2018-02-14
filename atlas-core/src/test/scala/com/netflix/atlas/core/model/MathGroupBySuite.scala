@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
+import com.netflix.atlas.core.stacklang.Interpreter
 import org.scalatest.FunSuite
 
 class MathGroupBySuite extends FunSuite {
@@ -139,5 +140,50 @@ class MathGroupBySuite extends FunSuite {
       ts(2).withTags(Map("mode" -> "odd")).withLabel("(mode=odd)")
     )
     assert(rs === expected)
+  }
+
+  private val interpreter = Interpreter(MathVocabulary.allWords)
+
+  private def eval(s: String): TimeSeriesExpr = {
+    interpreter.execute(s).stack match {
+      case ModelExtractors.TimeSeriesType(t) :: Nil => t
+      case _                                        => throw new IllegalArgumentException(s)
+    }
+  }
+
+  test("multi-level group by and rewrites") {
+    val input = "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:avg,(,nf.cluster,),:by"
+    val expr = eval(input)
+    assert(expr.toString === input)
+  }
+
+  test("math group by and unary op") {
+    val input = "name,sps,:eq,:sum,:abs,(,nf.cluster,),:by"
+    val expr = eval(input)
+    assert(expr.toString === "name,sps,:eq,:sum,(,nf.cluster,),:by,:abs")
+  }
+
+  test("data group by, sum, unary op, math by") {
+    val input = "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:sum,:abs,(,nf.asg,),:by"
+    val expr = eval(input)
+    assert(expr.toString === "name,sps,:eq,:sum,(,nf.asg,),:by,:abs")
+  }
+
+  test("data group by, max, unary op, math by") {
+    val input = "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:max,:abs,(,nf.asg,),:by"
+    val expr = eval(input)
+    assert(expr.toString === "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:max,(,nf.asg,),:by,:abs")
+  }
+
+  test("data group by pct") {
+    val input = "name,sps,:eq,(,nf.cluster,),:by,:pct"
+    val expr = eval(input)
+    assert(expr.toString === "name,sps,:eq,:sum,(,nf.cluster,),:by,:pct")
+  }
+
+  test("multi-level group by pct") {
+    val input = "name,sps,:eq,(,nf.cluster,nf.asg,),:by,:max,(,nf.asg,),:by,:pct"
+    val expr = eval(input)
+    assert(expr.toString === "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:max,(,nf.asg,),:by,:pct")
   }
 }
