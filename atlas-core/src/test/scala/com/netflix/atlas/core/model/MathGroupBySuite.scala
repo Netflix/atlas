@@ -186,4 +186,16 @@ class MathGroupBySuite extends FunSuite {
     val expr = eval(input)
     assert(expr.toString === "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:max,(,nf.asg,),:by,:pct")
   }
+
+  test("avg rewrite followed by pct rewrite") {
+    val input = "app,foo,:eq,:avg,:pct"
+    val expr = eval(input)
+    assert(expr.toString === input)
+  }
+
+  test("avg rewrite grouped followed by pct rewrite") {
+    val input = "app,foo,:eq,:avg,(,nf.cluster,),:by,:pct"
+    val expr = eval(input)
+    assert(expr.toString === input)
+  }
 }

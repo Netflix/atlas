@@ -882,6 +882,8 @@ object MathExpr {
           s"$by,:$name"
         case by: MathExpr.GroupBy if by.keys == evalExpr.finalGrouping =>
           s"$by,:$name"
+        case nr: NamedRewrite =>
+          s"$nr,:$name"
         case _ =>
           val grouping = evalExpr.finalGrouping
           val by = if (grouping.nonEmpty) grouping.mkString(",(,", ",", ",),:by") else ""
