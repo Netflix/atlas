@@ -44,7 +44,7 @@ class EurekaGroupsLookupSuite extends FunSuite {
     applications = EurekaSource.Apps(
       List(
         EurekaSource.App("one", mkInstances("one", 5)),
-        EurekaSource.App("two", mkInstances("two", 3)),
+        EurekaSource.App("two", mkInstances("two", 3))
       )
     )
   )

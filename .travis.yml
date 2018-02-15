@@ -2,11 +2,14 @@ language: scala
 matrix:
   include:
   - jdk: oraclejdk8
+    scala: 2.11.12
+    env: BINTRAY_PUBLISH=true
+  - jdk: oraclejdk8
+    scala: 2.12.4
     env: BINTRAY_PUBLISH=true
   - jdk: oraclejdk9
+    scala: 2.12.4
     env: BINTRAY_PUBLISH=false
-scala:
-- 2.12.4
 script:
 - ./scripts/buildViaTravis.sh
 sudo: required
