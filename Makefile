@@ -12,7 +12,7 @@ WIKI_OUTPUT_DIR := $(shell pwd)/target/atlas.wiki
 
 LAUNCHER_JAR_URL := http://jcenter.bintray.com/com/netflix/iep/iep-launcher/0.4.3/iep-launcher-0.4.3.jar
 
-.PHONY: build snapshot release clean coverage license update-wiki publish-wiki
+.PHONY: build snapshot release clean coverage format update-wiki publish-wiki
 
 build:
 	$(SBT) clean test checkLicenseHeaders scalafmt::test test:scalafmt::test
@@ -44,8 +44,8 @@ coverage:
 	$(SBT) clean coverage test coverageReport
 	$(SBT) coverageAggregate
 
-license:
-	$(SBT) formatLicenseHeaders
+format:
+	$(SBT) formatLicenseHeaders scalafmt test:scalafmt
 
 $(WIKI_OUTPUT_DIR):
 	mkdir -p target
