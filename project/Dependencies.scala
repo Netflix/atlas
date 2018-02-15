@@ -6,14 +6,14 @@ object Dependencies {
   object Versions {
     val akka       = "2.5.9"
     val akkaHttpV  = "10.0.11"
-    val aws        = "1.11.264"
-    val iep        = "1.1.1"
+    val aws        = "1.11.277"
+    val iep        = "1.2.0"
     val guice      = "4.1.0"
     val jackson    = "2.9.4"
     val log4j      = "2.10.0"
     val scala      = "2.12.4"
     val slf4j      = "1.7.25"
-    val spectator  = "0.60.0"
+    val spectator  = "0.61.0"
 
     val crossScala = Seq(scala)
   }
@@ -31,8 +31,8 @@ object Dependencies {
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.6.0"
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.4"
+  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.6.1"
+  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.4.3"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.18.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -56,13 +56,13 @@ object Dependencies {
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.6.66"
+  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.7.0"
   val scalaCompiler   = "org.scala-lang" % "scala-compiler"
   val scalaLibrary    = "org.scala-lang" % "scala-library"
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all"
   val scalaLogging    = "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
   val scalaReflect    = "org.scala-lang" % "scala-reflect" % scala
-  val scalatest       = "org.scalatest" %% "scalatest" % "3.0.4"
+  val scalatest       = "org.scalatest" %% "scalatest" % "3.0.5"
   val slf4jApi        = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j      = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple     = "org.slf4j" % "slf4j-simple" % slf4j
