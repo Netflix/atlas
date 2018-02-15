@@ -113,7 +113,7 @@ class FinalExprEvalSuite extends FunSuite {
       group(0),
       group(1, AggrDatapoint(0, expr, "i-1", tags, 42.0)),
       group(2, AggrDatapoint(0, expr, "i-1", tags, 43.0)),
-      group(3, AggrDatapoint(0, expr, "i-1", tags, 44.0)),
+      group(3, AggrDatapoint(0, expr, "i-1", tags, 44.0))
     )
 
     val output = run(input)
@@ -158,7 +158,7 @@ class FinalExprEvalSuite extends FunSuite {
         3,
         AggrDatapoint(0, expr, "i-1", tags, 43.0),
         AggrDatapoint(0, expr, "i-2", tags, 44.0)
-      ),
+      )
     )
 
     val output = run(input)
@@ -194,7 +194,7 @@ class FinalExprEvalSuite extends FunSuite {
     val input = List(
       sources(
         ds("a", s"http://atlas/graph?q=$expr1"),
-        ds("b", s"http://atlas/graph?q=$expr2"),
+        ds("b", s"http://atlas/graph?q=$expr2")
       ),
       group(0, AggrDatapoint(0, expr1, "i-1", tags, 42.0)),
       group(
@@ -208,7 +208,7 @@ class FinalExprEvalSuite extends FunSuite {
         AggrDatapoint(0, expr2, "i-1", tags, 43.0),
         AggrDatapoint(0, expr2, "i-3", tags, 49.0),
         AggrDatapoint(0, expr1, "i-2", tags, 44.0)
-      ),
+      )
     )
 
     val output = run(input)
@@ -257,21 +257,21 @@ class FinalExprEvalSuite extends FunSuite {
         0, // Missing sum for i-2
         AggrDatapoint(0, expr1, "i-1", Map("node" -> "i-1"), 42.0),
         AggrDatapoint(0, expr2, "i-1", Map("node" -> "i-1"), 1.0),
-        AggrDatapoint(0, expr2, "i-2", Map("node" -> "i-2"), 1.0),
+        AggrDatapoint(0, expr2, "i-2", Map("node" -> "i-2"), 1.0)
       ),
       group(
         1,
         AggrDatapoint(0, expr1, "i-1", Map("node" -> "i-1"), 42.0),
         AggrDatapoint(0, expr1, "i-2", Map("node" -> "i-2"), 21.0),
         AggrDatapoint(0, expr2, "i-1", Map("node" -> "i-1"), 1.0),
-        AggrDatapoint(0, expr2, "i-2", Map("node" -> "i-2"), 1.0),
+        AggrDatapoint(0, expr2, "i-2", Map("node" -> "i-2"), 1.0)
       ),
       group(
         2, // Missing count for i-1
         AggrDatapoint(0, expr1, "i-1", Map("node" -> "i-1"), 42.0),
         AggrDatapoint(0, expr1, "i-2", Map("node" -> "i-2"), 21.0),
-        AggrDatapoint(0, expr2, "i-2", Map("node" -> "i-2"), 1.0),
-      ),
+        AggrDatapoint(0, expr2, "i-2", Map("node" -> "i-2"), 1.0)
+      )
     )
 
     val output = run(input)
