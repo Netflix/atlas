@@ -865,12 +865,7 @@ object MathExpr {
           // categories: offsets applied to the data function and group by.
           val buffer = new StringBuilder
           buffer.append(s"$q,:$name")
-
-          val offsets = evalExpr.dataExprs.map(_.offset).distinct
-          offsets match {
-            case d :: Nil if !d.isZero => buffer.append(s",$d,:offset")
-            case _                     =>
-          }
+          getOffset(evalExpr).foreach(d => buffer.append(s",$d,:offset"))
 
           val grouping = evalExpr.finalGrouping
           if (grouping.nonEmpty) {
@@ -922,16 +917,31 @@ object MathExpr {
         case af: AggrMathExpr      => MathExpr.GroupBy(af, keys)
       }
       val newDisplayExpr = if (isDisplayGrouped) displayExpr else displayExpr.rewrite(applyGroupBy)
-      val newEvalExpr = groupByRewrite.fold(evalExpr.rewrite(applyGroupBy)) { f =>
-        f(displayExpr, keys)
-      }
-      copy(displayExpr = newDisplayExpr, evalExpr = newEvalExpr.asInstanceOf[TimeSeriesExpr])
+
+      val newEvalExpr = groupByRewrite
+        .fold(evalExpr.rewrite(applyGroupBy)) { f =>
+          f(displayExpr, keys)
+        }
+        .asInstanceOf[TimeSeriesExpr]
+
+      // The display expression may not have the offset encoded, make sure we retain
+      // the offset from the eval expression
+      val finalEvalExpr = newEvalExpr.withOffset(getOffset(evalExpr).getOrElse(Duration.ZERO))
+      copy(displayExpr = newDisplayExpr, evalExpr = finalEvalExpr)
     }
 
     private def isDisplayGrouped: Boolean = {
       displayExpr match {
         case t: TimeSeriesExpr => t.isGrouped
         case _                 => false
+      }
+    }
+
+    private def getOffset(expr: TimeSeriesExpr): Option[Duration] = {
+      val offsets = expr.dataExprs.map(_.offset).distinct
+      offsets match {
+        case d :: Nil if !d.isZero => Some(d)
+        case _                     => None
       }
     }
 
