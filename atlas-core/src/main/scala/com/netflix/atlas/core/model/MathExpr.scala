@@ -878,12 +878,8 @@ object MathExpr {
           }
 
           buffer.toString()
-        case by: DataExpr.GroupBy if by.keys == evalExpr.finalGrouping =>
-          s"$by,:$name"
-        case by: MathExpr.GroupBy if by.keys == evalExpr.finalGrouping =>
-          s"$by,:$name"
-        case nr: NamedRewrite =>
-          s"$nr,:$name"
+        case t: TimeSeriesExpr if t.finalGrouping == evalExpr.finalGrouping =>
+          s"$t,:$name"
         case _ =>
           val grouping = evalExpr.finalGrouping
           val by = if (grouping.nonEmpty) grouping.mkString(",(,", ",", ",),:by") else ""
