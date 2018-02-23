@@ -157,6 +157,12 @@ class MathGroupBySuite extends FunSuite {
     assert(expr.toString === input)
   }
 
+  test("multi-level group by with intermediate math and rewrites") {
+    val input = "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:abs,:avg,(,nf.cluster,),:by"
+    val expr = eval(input)
+    assert(expr.toString === input)
+  }
+
   test("math group by and unary op") {
     val input = "name,sps,:eq,:sum,:abs,(,nf.cluster,),:by"
     val expr = eval(input)

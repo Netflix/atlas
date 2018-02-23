@@ -161,4 +161,29 @@ class NamedRewriteSuite extends FunSuite {
     val expected = eval("name,a,:eq,name,b,:eq,:avg,42,:add")
     assert(actual === expected)
   }
+
+  test("pct rewrite") {
+    val actual = eval("name,a,:eq,(,b,),:by,:pct")
+    val expected = eval("name,a,:eq,(,b,),:by,:dup,:sum,:div,100,:mul")
+    assert(actual === expected)
+  }
+
+  test("pct rewrite with cq") {
+    val actual = eval("name,a,:eq,(,b,),:by,:pct,c,:has,:cq")
+    val expected = eval("name,a,:eq,(,b,),:by,:dup,:sum,:div,100,:mul,c,:has,:cq")
+    assert(actual === expected)
+  }
+
+  test("pct after binary op") {
+    val actual = eval("name,a,:eq,(,b,),:by,10,:mul,:pct")
+    val expected = eval("name,a,:eq,(,b,),:by,10,:mul,:dup,:sum,:div,100,:mul")
+    assert(actual === expected)
+  }
+
+  // https://github.com/Netflix/atlas/issues/791
+  test("pct after binary op with cq") {
+    val actual = eval("name,a,:eq,(,b,),:by,10,:mul,:pct,c,:has,:cq")
+    val expected = eval("name,a,:eq,(,b,),:by,10,:mul,:dup,:sum,:div,100,:mul,c,:has,:cq")
+    assert(actual === expected)
+  }
 }
