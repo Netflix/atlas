@@ -24,8 +24,11 @@ class NamedRewriteSuite extends FunSuite {
 
   private def eval(program: String): List[TimeSeriesExpr] = {
     interpreter.execute(program).stack.map {
-      case nr: MathExpr.NamedRewrite         => nr.evalExpr
-      case ModelExtractors.TimeSeriesType(t) => t
+      case ModelExtractors.TimeSeriesType(t) =>
+        val expanded = t.rewrite {
+          case nr: MathExpr.NamedRewrite => nr.evalExpr
+        }
+        expanded.asInstanceOf[TimeSeriesExpr]
     }
   }
 
@@ -72,6 +75,18 @@ class NamedRewriteSuite extends FunSuite {
     val expected = eval(
       "statistic,(,totalTime,totalAmount,),:in,:sum,statistic,count,:eq,:sum,:div,name,a,:eq,:cq,(,name,),:by"
     )
+    assert(actual === expected)
+  }
+
+  test("avg, group by with offset") {
+    val actual = eval("name,a,:eq,:avg,(,b,),:by,1h,:offset")
+    val expected = eval("name,a,:eq,:dup,:sum,:swap,:count,:div,(,b,),:by,1h,:offset")
+    assert(actual === expected)
+  }
+
+  test("avg, group by, max with offset") {
+    val actual = eval("name,a,:eq,:avg,(,b,),:by,:max,1h,:offset")
+    val expected = eval("name,a,:eq,:dup,:sum,:swap,:count,:div,1h,:offset,(,b,),:by,:max")
     assert(actual === expected)
   }
 

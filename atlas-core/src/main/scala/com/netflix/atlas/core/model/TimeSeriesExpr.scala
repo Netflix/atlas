@@ -34,7 +34,8 @@ trait TimeSeriesExpr extends Expr {
     */
   def withOffset(d: Duration): TimeSeriesExpr = {
     val expr = rewrite {
-      case e: DataExpr => e.withOffset(d)
+      case e: DataExpr              => e.withOffset(d)
+      case e: MathExpr.NamedRewrite => e.withOffset(d)
     }
     expr.asInstanceOf[TimeSeriesExpr]
   }
