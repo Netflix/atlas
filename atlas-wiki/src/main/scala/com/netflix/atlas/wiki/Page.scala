@@ -120,7 +120,7 @@ trait StackWordPage extends Page {
         buf
           .append(s"<tr>\n<td>$p</td>\n")
           .append(s"${renderCell(i, graph, params)}\n")
-          .append(s"${renderCell(o, graph, params)}\n<s/tr>")
+          .append(s"${renderCell(o, graph, params)}\n</tr>")
     }
     buf.append("</tbody></table>\n")
     buf.toString()
