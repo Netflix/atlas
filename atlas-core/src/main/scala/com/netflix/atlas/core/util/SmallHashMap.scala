@@ -278,11 +278,15 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
   }
 
   def -(key: K): collection.immutable.Map[K, V] = {
-    val b = new SmallHashMap.Builder[K, V](size - 1)
-    foreachItem { (k, v) =>
-      if (key != k) b.add(k, v)
+    if (contains(key)) {
+      val b = new SmallHashMap.Builder[K, V](size - 1)
+      foreachItem { (k, v) =>
+        if (key != k) b.add(k, v)
+      }
+      b.result
+    } else {
+      this
     }
-    b.result
   }
 
   def ++(m: Map[K, V]): collection.immutable.Map[K, V] = {

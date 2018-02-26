@@ -232,6 +232,12 @@ class SmallHashMapSuite extends FunSuite {
     assert((m2 - "k2").isInstanceOf[SmallHashMap[_, _]])
   }
 
+  test("remove key not in map") {
+    val m1 = SmallHashMap("k1" -> "v1", "k2" -> "v2")
+    assert(m1 === m1 - "k3")
+    assert((m1 - "k3").isInstanceOf[SmallHashMap[_, _]])
+  }
+
   test("retains type after adding pair") {
     val m1 = SmallHashMap("k1" -> "v1")
     val m2 = SmallHashMap("k1" -> "v1", "k2" -> "v2")
