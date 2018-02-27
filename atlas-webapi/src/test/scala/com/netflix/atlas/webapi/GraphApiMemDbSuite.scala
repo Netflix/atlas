@@ -32,7 +32,7 @@ class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
   // issues outside of running with code coverage.
   private implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
 
-  private val db = MemoryDatabase(ConfigFactory.parseString("""
+  private val dbConfig = ConfigFactory.parseString("""
       |atlas.core.db {
       |  rebuild-frequency = 10s
       |  num-blocks = 2
@@ -40,10 +40,14 @@ class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
       |  test-mode = true
       |  intern-while-building = true
       |}
-    """.stripMargin))
+    """.stripMargin)
+
+  private val config = dbConfig.withFallback(ConfigFactory.load())
+
+  private val db = MemoryDatabase(dbConfig)
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
 
-  private val routes = RequestHandler.standardOptions((new GraphApi).routes)
+  private val routes = RequestHandler.standardOptions((new GraphApi(config, system)).routes)
 
   test("sendError image") {
     Get("/api/v1/graph?q=:foo") ~> routes ~> check {

@@ -13,27 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.webapi
+package com.netflix.atlas.eval.graph
 
-import com.netflix.atlas.json.Json
-import org.scalatest.FunSuite
+import com.netflix.atlas.chart.model.Layout
+import com.netflix.atlas.chart.model.VisionType
 
-class GraphResponseSuite extends FunSuite {
-  test("parse") {
-    val res = Json.decode[GraphApi.Response]("""
-        |{
-        |  "start": 1428791640000,
-        |  "step": 60000,
-        |  "legend": ["one"],
-        |  "metrics": [{"name": "one"}],
-        |  "values": [
-        |    [0.0],
-        |    [1.0],
-        |    [2.0]
-        |  ]
-        |}
-      """.stripMargin)
-    assert(res.legend === List("one"))
-    assert(res.metrics === List(Map("name" -> "one")))
-  }
-}
+case class ImageFlags(
+  title: Option[String],
+  width: Int,
+  height: Int,
+  zoom: Double,
+  axes: Map[Int, Axis],
+  axisPerLine: Boolean,
+  showLegend: Boolean,
+  showLegendStats: Boolean,
+  showOnlyGraph: Boolean,
+  vision: VisionType,
+  palette: String,
+  layout: Layout
+)

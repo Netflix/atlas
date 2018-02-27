@@ -33,10 +33,13 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.core.util.Strings
-import com.netflix.atlas.webapi.GraphEval
+import com.netflix.atlas.eval.graph.Grapher
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
 class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
+
+  private val grapher = Grapher(ConfigFactory.load())
 
   private val baseUri = s"https://raw.githubusercontent.com/wiki/Netflix/atlas/$path"
 
@@ -65,8 +68,8 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
   def image(uri: String, showQuery: Boolean = true): String = {
     logger.info(s"creating image for: $uri")
     val fname = imageFileName(uri)
-    val res = GraphEval.render(db, Uri(uri))
-    res.request.contentType.mediaType match {
+    val res = grapher.render(Uri(uri), db)
+    res.config.contentType.mediaType match {
       case MediaTypes.`image/png` =>
         dir.mkdirs()
         val image = PngImage(res.data)
@@ -97,7 +100,7 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
     val fname = imageFileName(uri)
     val file = new File(dir, fname)
     if (!file.exists()) {
-      val res = GraphEval.render(db, Uri(uri))
+      val res = grapher.render(Uri(uri), db)
       dir.mkdirs()
       val image = PngImage(res.data)
       scope(fileOut(file)) { out =>
