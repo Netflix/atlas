@@ -28,6 +28,7 @@ import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.test.GraphAssertions
 import com.netflix.atlas.test.SrcPath
+import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 class GraphApiSuite extends FunSuite with ScalatestRouteTest {
@@ -41,15 +42,14 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   private val db = StaticDatabase.demo
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
 
-  private val routes = RequestHandler.standardOptions((new GraphApi).routes)
+  private val config = ConfigFactory.load()
 
-  private val template = Streams.scope(Streams.resource("examples.md")) { in =>
-    Streams.lines(in).toList
-  }
+  private val routes = RequestHandler.standardOptions((new GraphApi(config, system)).routes)
+
   private val others = Streams.scope(Streams.resource("others.md")) { in =>
     Streams.lines(in).toList
   }
-  private val all = template ::: others
+  private val all = others
 
   // SBT working directory gets updated with fork to be the dir for the project
   private val baseDir = SrcPath.forProject("atlas-webapi")

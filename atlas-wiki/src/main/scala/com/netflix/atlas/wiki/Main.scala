@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.regex.Pattern
 
+import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.model.DataVocabulary
 import com.netflix.atlas.core.model.FilterVocabulary
 import com.netflix.atlas.core.model.MathVocabulary
@@ -32,7 +33,6 @@ import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.webapi.ApiSettings
 import com.netflix.atlas.wiki.pages._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
@@ -49,7 +49,7 @@ object Main extends StrictLogging {
   val GraphImage = """(.*)<img[^><]+src="([^"]+)"[^><]+>(.*)""".r
 
   val config = ConfigFactory.load()
-  val db = ApiSettings.newDbInstance
+  val db = StaticDatabase.demo
 
   val vocabs = List(
     StandardVocabulary,

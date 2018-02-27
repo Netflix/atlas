@@ -50,28 +50,31 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
       <head><title>{clazz.getSimpleName}</title></head>
       <body><h1>{clazz.getSimpleName}</h1><hr/> {
         val dir = new File(targetDir)
-        dir.listFiles.flatMap { f =>
-          val diffImg = new File(s"$targetDir/diff_${f.getName}")
-          if (!f.getName.endsWith(".png") || (diffsOnly && !diffImg.isFile)) None else {
-            val table = <div>
-              <h2>{f.getName}</h2>
-              <table border="1">
-                <tr><th>Golden</th><th>Test</th><th>Diff</th></tr>
-                <tr valign="top">
-                  <td><img src={goldenDir + '/' + f.getName}/></td>
-                  <td><img src={f.getName}/></td>
-                  {
-                    if (diffImg.isFile)
-                      <td><img src={s"diff_${f.getName}"}/></td>
-                    else
-                      <td></td>
-                  }
-                </tr>
-              </table>
-            </div>
-            Some(table)
+        dir.listFiles
+          .filter(_.getName.endsWith(".png"))
+          .filterNot(_.getName.startsWith("diff_"))
+          .flatMap { f =>
+            val diffImg = new File(s"$targetDir/diff_${f.getName}")
+            if (diffsOnly && !diffImg.isFile) None else {
+              val table = <div>
+                <h2>{f.getName}</h2>
+                <table border="1">
+                  <tr><th>Golden</th><th>Test</th><th>Diff</th></tr>
+                  <tr valign="top">
+                    <td><img src={goldenDir + '/' + f.getName}/></td>
+                    <td><img src={f.getName}/></td>
+                    {
+                      if (diffImg.isFile)
+                        <td><img src={s"diff_${f.getName}"}/></td>
+                      else
+                        <td></td>
+                    }
+                  </tr>
+                </table>
+              </div>
+              Some(table)
+            }
           }
-        }
       } </body>
     </html>
 
@@ -120,7 +123,7 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
     if (diff.metadata("identical") != "true")
       writeImage(diff, targetDir, "diff_" + f)
     else
-      new File(s"$targetDir/$f").delete()
+      new File(s"$targetDir/diff_$f").delete()
     assertEquals(i1, i2)
   }
 

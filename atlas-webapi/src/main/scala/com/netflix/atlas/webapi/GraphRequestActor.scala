@@ -26,11 +26,13 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.PngImage
+import com.netflix.atlas.eval.graph.GraphConfig
+import com.netflix.atlas.eval.graph.Grapher
 import com.netflix.spectator.api.Registry
 
 import scala.util.Failure
 
-class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
+class GraphRequestActor(grapher: Grapher, registry: Registry) extends Actor with ActorLogging {
 
   import com.netflix.atlas.webapi.GraphApi._
 
@@ -38,7 +40,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
 
   private val dbRef = context.actorSelection("/user/db")
 
-  private var request: Request = _
+  private var request: GraphConfig = _
   private var graphCtx: ImperativeRequestContext = _
 
   def receive: Receive = {
@@ -57,10 +59,10 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
   }
 
   def innerReceive: Receive = {
-    case ctx @ ImperativeRequestContext(req: Request, _) =>
+    case ctx @ ImperativeRequestContext(req: GraphConfig, _) =>
       request = req
       graphCtx = ctx
-      dbRef.tell(request.toDbRequest, self)
+      dbRef.tell(DataRequest(request), self)
 
     case DataResponse(data) => sendImage(data)
     case Failure(t)         => throw t
@@ -82,7 +84,7 @@ class GraphRequestActor(registry: Registry) extends Actor with ActorLogging {
   }
 
   private def sendImage(data: Map[DataExpr, List[TimeSeries]]): Unit = {
-    val result = GraphEval.render(request, data)
+    val result = grapher.render(request, data)
     val entity = HttpEntity.Strict(request.contentType, ByteString(result.data))
     graphCtx.complete(HttpResponse(StatusCodes.OK, entity = entity))
     context.stop(self)

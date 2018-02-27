@@ -60,7 +60,7 @@ lazy val `atlas-core` = project
 
 lazy val `atlas-eval` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-test` % "test")
+  .dependsOn(`atlas-akka`, `atlas-chart`, `atlas-core`, `atlas-test` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.akkaHttpTestkit % "test",
     Dependencies.akkaTestkit % "test",
@@ -191,7 +191,7 @@ lazy val `atlas-webapi` = project
 
 lazy val `atlas-wiki` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-core`, `atlas-webapi`)
+  .dependsOn(`atlas-core`, `atlas-eval`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.scalaCompiler % scalaVersion.value
   ))

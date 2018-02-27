@@ -28,21 +28,6 @@
 
 /api/v1/graph?e=2015-05-26T19:52&q=minuteOfHour,:time&s=e-10m
 
-# Make sure significant time boundaries adjust to time zone
-/api/v1/graph?q=name,sps,:eq,:sum&s=e-2d&e=2015-06-17T13:13&no_legend=1&tz=US/Pacific
-/api/v1/graph?q=name,sps,:eq,:sum&s=e-2d&e=2015-06-17T13:13&no_legend=1&tz=UTC
-
-# Daylight savings time transition
-/api/v1/graph?q=name,sps,:eq,:sum&s=e-4d&e=2015-03-10T13:13&no_legend=1&tz=US/Pacific
-/api/v1/graph?q=name,sps,:eq,:sum&s=e-4d&e=2015-03-10T13:13&no_legend=1&tz=US/Pacific&step=1d
-/api/v1/graph?q=name,sps,:eq,:sum&s=e-4d&e=2015-03-10T13:13&no_legend=1&tz=US/Pacific&tz=UTC
-/api/v1/graph?q=name,sps,:eq,:sum&s=e-4d&e=2015-03-10T13:13&no_legend=1&tz=UTC&tz=US/Pacific&tz=US/Eastern&step=1d
-
-# Vision flag
-/api/v1/graph?s=e-1d&e=2015-03-10T13:13&q=(,1,2,3,4,5,6,7,8,9,),(,nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum,:swap,:legend,),:each&vision=protanopia&no_legend=1&stack=1
-
-# Z-Order of stacked lines
-/api/v1/graph?q=t,name,sps,:eq,:sum,:set,t,:get,:stack,t,:get,1.1,:mul,6h,:offset,t,:get,4,:div,:stack&s=e-2d&e=2015-03-10T13:13
 
 # Layout
 /api/v1/graph?q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stack&s=e-3h&e=2015-03-10T13:13&w=70&h=70&layout=canvas
@@ -101,9 +86,6 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,1e18,:add&tick_labels=binary
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by,1e9,:add&tick_labels=binary&axis_per_line=1
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by,1e9,:add&tick_labels.2=binary&axis_per_line=1
-
-# issue-1146
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,:dup,30m,:offset,4,:axis&l.4=0
 
 # issue-349, legend sorting
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by

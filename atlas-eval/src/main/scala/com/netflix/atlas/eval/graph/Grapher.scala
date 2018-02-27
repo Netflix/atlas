@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.webapi
+package com.netflix.atlas.eval.graph
 
 import java.awt.Color
 import java.io.ByteArrayOutputStream
@@ -22,57 +22,182 @@ import java.time.Duration
 import akka.http.scaladsl.model.Uri
 import com.netflix.atlas.chart.Colors
 import com.netflix.atlas.chart.model.GraphDef
+import com.netflix.atlas.chart.model.Layout
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.MessageDef
 import com.netflix.atlas.chart.model.Palette
+import com.netflix.atlas.chart.model.VisionType
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.EvalContext
+import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.SummaryStats
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Strings
+import com.typesafe.config.Config
 
-/**
-  * Helper for rendering a graph image based on a query URI.
-  */
-object GraphEval {
+import scala.util.Try
 
-  case class Result(request: GraphApi.Request, data: Array[Byte]) {
+case class Grapher(settings: DefaultSettings) {
 
-    def dataString: String = new String(data, "UTF-8")
+  import Grapher._
+
+  /**
+    * Create a graph config from an Atlas URI.
+    */
+  def toGraphConfig(uri: Uri): GraphConfig = {
+    val params = uri.query()
+    val id = "default"
+
+    import com.netflix.atlas.chart.GraphConstants._
+    val axes = (0 to MaxYAxis).map(i => i -> newAxis(params, i)).toMap
+
+    val vision = params.get("vision").map(v => VisionType.valueOf(v))
+
+    val flags = ImageFlags(
+      title = params.get("title").filter(_ != ""),
+      width = params.get("w").fold(settings.width)(_.toInt),
+      height = params.get("h").fold(settings.height)(_.toInt),
+      zoom = params.get("zoom").fold(1.0)(_.toDouble),
+      axes = axes,
+      axisPerLine = params.get("axis_per_line").contains("1"),
+      showLegend = !params.get("no_legend").contains("1"),
+      showLegendStats = !params.get("no_legend_stats").contains("1"),
+      showOnlyGraph = params.get("only_graph").contains("1"),
+      vision = vision.getOrElse(VisionType.normal),
+      palette = params.get("palette").getOrElse(settings.palette),
+      layout = Layout.create(params.get("layout").getOrElse("canvas"))
+    )
+
+    val q = params.get("q")
+    if (q.isEmpty) {
+      throw new IllegalArgumentException("missing required parameter 'q'")
+    }
+
+    val timezones = params.getAll("tz").reverse
+    val parsedQuery = Try {
+      val vars = Map("tz" -> GraphConfig.getTimeZoneIds(settings, timezones).head)
+      settings.interpreter.execute(q.get, vars).stack.reverse.flatMap {
+        case ModelExtractors.PresentationType(s) => s.perOffset
+      }
+    }
+
+    GraphConfig(
+      settings = settings,
+      query = q.get,
+      parsedQuery = parsedQuery,
+      start = params.get("s"),
+      end = params.get("e"),
+      timezones = timezones,
+      step = params.get("step"),
+      flags = flags,
+      format = params.get("format").getOrElse("png"),
+      id = id,
+      isBrowser = false,
+      isAllowedFromBrowser = true,
+      uri = uri.toString
+    )
   }
 
-  def render(db: Database, uri: Uri): Result = {
-    val request = GraphApi.toRequest(uri)
-    val dataReq = request.toDbRequest
-    val data = dataReq.exprs.map(expr => expr -> db.execute(dataReq.context, expr)).toMap
-    render(request, data)
+  private def getAxisParam(params: Uri.Query, k: String, id: Int): Option[String] = {
+    params.get(s"$k.$id").orElse(params.get(k))
   }
 
-  def render(request: GraphApi.Request, data: Map[DataExpr, List[TimeSeries]]): Result = {
-    val graphDef = createGraph(request, data)
+  private def newAxis(params: Uri.Query, id: Int): Axis = {
+
+    // Prefer the scale parameter if present. If not, then fallback to look at
+    // the boolean `o` parameter for backwards compatibility.
+    val scale = getAxisParam(params, "scale", id).orElse {
+      if (getAxisParam(params, "o", id).contains("1")) Some("log") else None
+    }
+    Axis(
+      upper = getAxisParam(params, "u", id),
+      lower = getAxisParam(params, "l", id),
+      scale = scale,
+      stack = getAxisParam(params, "stack", id).contains("1"),
+      ylabel = getAxisParam(params, "ylabel", id).filter(_ != ""),
+      tickLabels = getAxisParam(params, "tick_labels", id),
+      palette = params.get(s"palette.$id"),
+      sort = getAxisParam(params, "sort", id),
+      order = getAxisParam(params, "order", id)
+    )
+  }
+
+  /** Render a chart using the config from the uri and the specified data. */
+  def render(uri: Uri, db: Database): Result = render(toGraphConfig(uri), db)
+
+  /** Render a chart using the config from the uri and the specified data. */
+  def render(uri: Uri, data: List[TimeSeries]): Result = render(toGraphConfig(uri), data)
+
+  /**
+    * Render a chart using the config from the uri and the specified data. The data must
+    * have already been pre-processed to only include relevant results for each DataExpr.
+    * It is up to the user to ensure the DataExprs in the map match those that will be
+    * extracted from the uri.
+    */
+  def render(uri: Uri, data: DataMap): Result = render(toGraphConfig(uri), data)
+
+  /** Render a chart using the specified config and data. */
+  def render(config: GraphConfig, db: Database): Result = {
+    val dataExprs = config.exprs.flatMap(_.expr.dataExprs).distinct
+    val result = dataExprs.map(expr => expr -> db.execute(config.evalContext, expr)).toMap
+    render(config, result)
+  }
+
+  /** Render a chart using the specified config and data. */
+  def render(config: GraphConfig, data: List[TimeSeries]): Result = {
+    val dataExprs = config.exprs.flatMap(_.expr.dataExprs).distinct
+    val result = dataExprs.map(expr => expr -> eval(config.evalContext, expr, data)).toMap
+    render(config, result)
+  }
+
+  private def eval(
+    context: EvalContext,
+    expr: DataExpr,
+    data: List[TimeSeries]
+  ): List[TimeSeries] = {
+    val matches = data.filter(t => expr.query.matches(t.tags))
+    val offset = expr.offset.toMillis
+    if (offset == 0) expr.eval(context, matches).data
+    else {
+      val offsetContext = context.withOffset(expr.offset.toMillis)
+      expr.eval(offsetContext, matches).data.map { t =>
+        t.offset(offset)
+      }
+    }
+  }
+
+  /**
+    * Render a chart using the specified config and data. The data must have already been
+    * pre-processed to only include relevant results for each DataExpr. It is up to the user
+    * to ensure the DataExprs in the map match those that will be extracted from the config.
+    */
+  def render(config: GraphConfig, data: DataMap): Result = {
+    val graphDef = create(config, data)
     val baos = new ByteArrayOutputStream
-    request.engine.write(graphDef, baos)
-    Result(request, baos.toByteArray)
+    config.engine.write(graphDef, baos)
+    Result(config, baos.toByteArray)
   }
 
-  def createGraph(request: GraphApi.Request, data: Map[DataExpr, List[TimeSeries]]): GraphDef = {
+  /** Create a new graph definition based on the specified config and data. */
+  def create(config: GraphConfig, data: DataMap): GraphDef = {
 
     val warnings = List.newBuilder[String]
 
-    val plotExprs = request.exprs.groupBy(_.axis.getOrElse(0))
+    val plotExprs = config.exprs.groupBy(_.axis.getOrElse(0))
     val multiY = plotExprs.size > 1
 
-    val palette = newPalette(request.flags.palette)
+    val palette = newPalette(config.flags.palette)
     val shiftPalette = newPalette("bw")
 
-    val start = request.startMillis
-    val end = request.endMillis
+    val start = config.startMillis
+    val end = config.endMillis
 
     val plots = plotExprs.toList.sortWith(_._1 < _._1).map {
       case (yaxis, exprs) =>
-        val axisCfg = request.flags.axes(yaxis)
+        val axisCfg = config.flags.axes(yaxis)
         val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
 
         val axisPalette = axisCfg.palette.fold(palette) { v =>
@@ -81,7 +206,7 @@ object GraphEval {
 
         var messages = List.empty[String]
         val lines = exprs.flatMap { s =>
-          val result = s.expr.eval(request.evalContext, data)
+          val result = s.expr.eval(config.evalContext, data)
 
           // Pick the last non empty message to appear. Right now they are only used
           // as a test for providing more information about the state of filtering. These
@@ -133,7 +258,7 @@ object GraphEval {
         axisCfg.newPlotDef(sortedLines ::: messages.map(s => MessageDef(s"... $s ...")), multiY)
     }
 
-    request.newGraphDef(plots, warnings.result())
+    config.newGraphDef(plots, warnings.result())
   }
 
   /**
@@ -235,5 +360,22 @@ object GraphEval {
       true // a should come first as it has a value
     else
       op(a, b)
+  }
+}
+
+object Grapher {
+  def apply(root: Config): Grapher = Grapher(DefaultSettings(root))
+
+  /**
+    * Rendered graph result.
+    *
+    * @param config
+    *     The config used to generate the graph.
+    * @param data
+    *     Rendered data. The format of this data will depend on the config settings
+    *     for the graph.
+    */
+  case class Result(config: GraphConfig, data: Array[Byte]) {
+    def dataString: String = new String(data, "UTF-8")
   }
 }
