@@ -52,6 +52,7 @@ object StyleVocabulary extends Vocabulary {
     // Operations for manipulating the line style or presentation
     Alpha,
     Color,
+    Palette,
     LineStyle,
     LineWidth,
     Macro("area", List("area", ":ls"), List("name,sps,:eq,:sum")),
@@ -135,7 +136,7 @@ object StyleVocabulary extends Vocabulary {
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (v: String) :: PresentationType(t) :: s =>
-        val settings = t.settings + ("color" -> v) - "alpha"
+        val settings = t.settings + ("color" -> v) - "alpha" - "palette"
         t.copy(settings = settings) :: s
     }
 
@@ -145,6 +146,35 @@ object StyleVocabulary extends Vocabulary {
       "name,sps,:eq,:sum,ff0000",
       "name,sps,:eq,:sum,f00",
       "name,sps,:eq,:sum,40,:alpha,f00"
+    )
+  }
+
+  case object Palette extends SimpleWord {
+
+    override def name: String = "palette"
+
+    override def summary: String =
+      """
+        |Set the [palette](Color-Palette) to use for the results of an expression.
+        |
+        |Since: 1.6
+      """.stripMargin.trim
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case (_: String) :: PresentationType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case (v: String) :: PresentationType(t) :: s =>
+        val settings = t.settings + ("palette" -> v) - "color" - "alpha"
+        t.copy(settings = settings) :: s
+    }
+
+    override def signature: String = "TimeSeriesExpr String -- StyleExpr"
+
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,reds",
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,reds"
     )
   }
 

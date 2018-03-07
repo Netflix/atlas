@@ -104,6 +104,8 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     Integer.parseInt(s, 16)
   }
 
+  def palette: Option[String] = settings.get("palette")
+
   def lineStyle: Option[String] = settings.get("ls")
 
   def lineWidth: Float = settings.get("lw").fold(1.0f)(_.toFloat)
