@@ -55,8 +55,12 @@ private[stream] class TimeGrouped[T](
 
   override val shape: FlowShape[T, TimeGroup[T]] = FlowShape(in, out)
 
-  private val dropped = context.registry.counter("atlas.eval.datapoints", "id", "dropped")
-  private val buffered = context.registry.counter("atlas.eval.datapoints", "id", "buffered")
+  private val metricName = "atlas.eval.datapoints"
+  private val droppedOld = context.registry.counter(metricName, "id", "dropped-old")
+  private val droppedFuture = context.registry.counter(metricName, "id", "dropped-future")
+  private val buffered = context.registry.counter(metricName, "id", "buffered")
+
+  private val clock = context.registry.clock()
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -85,8 +89,12 @@ private[stream] class TimeGrouped[T](
       override def onPush(): Unit = {
         val v = grab(in)
         val t = ts(v)
-        if (t <= cutoffTime) {
-          dropped.increment()
+        val now = clock.wallTime()
+        if (t > now) {
+          droppedFuture.increment()
+          pull(in)
+        } else if (t <= cutoffTime) {
+          droppedOld.increment()
           pull(in)
         } else {
           buffered.increment()
