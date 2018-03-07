@@ -84,7 +84,7 @@ class TimeGroupedSuite extends FunSuite {
   }
 
   private def counts: (Long, Long) = {
-    count("buffered") -> count("dropped")
+    count("buffered") -> (count("dropped-old") + count("dropped-future"))
   }
 
   test("late events dropped") {
@@ -112,6 +112,34 @@ class TimeGroupedSuite extends FunSuite {
 
     assert(before._1 + 6 === after._1) // 6 buffered messages
     assert(before._2 + 1 === after._2) // 1 dropped message
+  }
+
+  test("future events dropped") {
+    val future = System.currentTimeMillis() + 60 * 60 * 1000
+    val data = List(
+      Event(20, 1),
+      Event(10, 2),
+      Event(10, 3),
+      Event(future + 10, 1), // Dropped, timestamp in the future
+      Event(30, 1),
+      Event(30, 2),
+      Event(10, 4) // Dropped, came in late and out of window
+    )
+
+    val before = counts
+    val groups = run(data)
+    val after = counts
+
+    assert(
+      groups === List(
+        TimeGroup(10, List(Event(10, 2), Event(10, 3))),
+        TimeGroup(20, List(Event(20, 1))),
+        TimeGroup(30, List(Event(30, 1), Event(30, 2)))
+      )
+    )
+
+    assert(before._1 + 5 === after._1) // 5 buffered messages
+    assert(before._2 + 2 === after._2) // 2 dropped message
   }
 }
 
