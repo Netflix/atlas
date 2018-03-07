@@ -155,7 +155,7 @@ object StyleVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Set the [palette](Color-Palette) to use for the results of an expression.
+        |Set the [palette](Color-Palettes) to use for the results of an expression.
         |
         |Since: 1.6
       """.stripMargin.trim
