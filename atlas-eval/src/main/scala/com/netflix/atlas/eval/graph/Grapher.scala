@@ -225,9 +225,20 @@ case class Grapher(settings: DefaultSettings) {
             newT.withLabel(s.legend(newT))
           }
 
+          val linePalette = s.palette.map(newPalette).getOrElse {
+            s.color
+              .map { c =>
+                val p = Palette.singleColor(c).iterator
+                (_: String) =>
+                  p.next()
+              }
+              .getOrElse {
+                if (s.offset > 0L) shiftPalette else axisPalette
+              }
+          }
           val lineDefs = labelledTS.sortWith(_.label < _.label).map { t =>
             val color = s.color.getOrElse {
-              val c = if (s.offset > 0L) shiftPalette(t.label) else axisPalette(t.label)
+              val c = linePalette(t.label)
               // Alpha setting if present will set the alpha value for the color automatically
               // assigned by the palette. If using an explicit color it will have no effect as the
               // alpha can be set directly using an ARGB hex format for the color.

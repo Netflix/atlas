@@ -310,4 +310,44 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
   imageTest("issue-1146") {
     "/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,:dup,30m,:offset,4,:axis&l.4=0"
   }
+
+  imageTest("expr scoped palette") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack,name,sps,:eq,2,:lw,500e3,450e3"
+  }
+
+  imageTest("expr scoped palette in the middle") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,4,:lw,name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack,500e3,450e3"
+  }
+
+  imageTest("multiple expressions with scoped palettes") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,(,nf.cluster,),:by,:dup,reds,:palette,:stack,:swap,greens,:palette,:stack"
+  }
+
+  imageTest("expr palette overrides axis param") {
+    "/api/v1/graph?e=2012-01-01T00:00&palette=greens" +
+    "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack"
+  }
+
+  imageTest("expr palette then color") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,00f,:color,:stack"
+  }
+
+  imageTest("color then expr palette") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,(,nf.cluster,),:by,00f,:color,reds,:palette,:stack"
+  }
+
+  imageTest("expr palette with alpha") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=500e3,4,:lw,name,sps,:eq,(,nf.cluster,),:by,reds,:palette,40,:alpha,:stack"
+  }
+
+  imageTest("expr scoped hashed palette") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,(,nf.cluster,),:by,hash:reds,:palette,:stack"
+  }
 }
