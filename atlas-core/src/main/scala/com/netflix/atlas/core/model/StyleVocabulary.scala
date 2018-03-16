@@ -155,7 +155,20 @@ object StyleVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Set the [palette](Color-Palettes) to use for the results of an expression.
+        |Set the [palette](Color-Palettes) to use for the results of an expression. This
+        |operator is allows for scoping a palette to a particular group by instead of to
+        |all lines that share the same axis. A common use-case is to have multiple stacked
+        |group by expressions using different palettes. For example, suppose I want to create
+        |a graph showing overall request per second hitting my services with successful requests
+        |shown in shades of [green](Color-Palettes#greens) and errors in shades of
+        |[red](Color-Palettes#reds). This can make it easy to visually see if a change is
+        |due to an increase in errors:
+        |
+        |![Spike in Errors](images/palette-errors.png)
+        |
+        |Or a spike in successful requests:
+        |
+        |![Spike in Success](images/palette-success.png)
         |
         |Since: 1.6
       """.stripMargin.trim
