@@ -15,7 +15,10 @@
  */
 package com.netflix.atlas.chart.graphics
 
+import java.awt.Color
 import java.awt.Graphics2D
+import java.time.Duration
+import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.TextStyle
@@ -57,6 +60,15 @@ case class TimeAxis(
 
   override def height: Int = 10 + Constants.smallFontDims.height
 
+  private val transition = {
+    val s = Instant.ofEpochMilli(start)
+    zone.getRules.nextTransition(s)
+  }
+
+  private val transitionTime = {
+    if (transition == null) Long.MaxValue else transition.getInstant.toEpochMilli
+  }
+
   def scale(p1: Int, p2: Int): Scales.LongScale = {
     Scales.time(start - step, end - step, step, p1, p2)
   }
@@ -81,6 +93,7 @@ case class TimeAxis(
     style.configure(g)
     val xscale = scale(x1, x2)
     val majorTicks = ticks(x1, x2).filter(_.major)
+    var indicatedTransition = false
     majorTicks.foreach { tick =>
       val px = xscale(tick.timestamp)
       if (px >= x1 && px <= x2) {
@@ -88,8 +101,18 @@ case class TimeAxis(
         g.drawLine(px, y1, px, y1 + 4)
 
         // Label for the tick mark
-        val txt = Text(tick.label, font = Constants.smallFont, style = style)
-        txt.draw(g, px - labelPadding, y1 + txtH / 2, px + labelPadding, y1 + txtH)
+        if (tick.timestamp >= transitionTime && !indicatedTransition) {
+          indicatedTransition = true
+          val before = transition.getOffsetBefore
+          val after = transition.getOffsetAfter
+          val delta = Duration.ofSeconds(after.getTotalSeconds - before.getTotalSeconds)
+          val label = (if (delta.isNegative) "" else "+") + delta.toString.substring(2)
+          val txt = Text(label, font = Constants.smallFont, style = style.copy(color = Color.RED))
+          txt.draw(g, px - labelPadding, y1 + txtH / 2, px + labelPadding, y1 + txtH)
+        } else {
+          val txt = Text(tick.label, font = Constants.smallFont, style = style)
+          txt.draw(g, px - labelPadding, y1 + txtH / 2, px + labelPadding, y1 + txtH)
+        }
       }
     }
 
