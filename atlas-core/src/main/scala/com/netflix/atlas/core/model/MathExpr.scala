@@ -696,7 +696,10 @@ object MathExpr {
           expr.af.query.toString
         else
           s"${expr.af.query},(,${evalGroupKeys.mkString(",")},),:by"
-      s"$baseExpr,(,${pcts.mkString(",")},),:percentiles"
+      if (expr.offset.isZero)
+        s"$baseExpr,(,${pcts.mkString(",")},),:percentiles"
+      else
+        s"$baseExpr,(,${pcts.mkString(",")},),:percentiles,${expr.offset},:offset"
     }
 
     override def dataExprs: List[DataExpr] = List(expr)
