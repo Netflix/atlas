@@ -137,7 +137,8 @@ case class Grapher(settings: DefaultSettings) {
     * Evaluate the expressions and render a chart using the config from the uri and the
     * specified data.
     */
-  def evalAndRender(uri: Uri, data: List[TimeSeries]): Result = evalAndRender(toGraphConfig(uri), data)
+  def evalAndRender(uri: Uri, data: List[TimeSeries]): Result =
+    evalAndRender(toGraphConfig(uri), data)
 
   /**
     * Evaluate the expressions and render a chart using the config from the uri and the
