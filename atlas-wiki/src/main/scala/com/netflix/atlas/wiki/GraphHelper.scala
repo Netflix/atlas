@@ -68,7 +68,7 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
   def image(uri: String, showQuery: Boolean = true): String = {
     logger.info(s"creating image for: $uri")
     val fname = imageFileName(uri)
-    val res = grapher.render(Uri(uri), db)
+    val res = grapher.evalAndRender(Uri(uri), db)
     res.config.contentType.mediaType match {
       case MediaTypes.`image/png` =>
         dir.mkdirs()
@@ -100,7 +100,7 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
     val fname = imageFileName(uri)
     val file = new File(dir, fname)
     if (!file.exists()) {
-      val res = grapher.render(Uri(uri), db)
+      val res = grapher.evalAndRender(Uri(uri), db)
       dir.mkdirs()
       val image = PngImage(res.data)
       scope(fileOut(file)) { out =>

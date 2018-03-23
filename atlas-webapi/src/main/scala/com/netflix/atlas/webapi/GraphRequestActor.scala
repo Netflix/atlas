@@ -84,7 +84,7 @@ class GraphRequestActor(grapher: Grapher, registry: Registry) extends Actor with
   }
 
   private def sendImage(data: Map[DataExpr, List[TimeSeries]]): Unit = {
-    val result = grapher.render(request, data)
+    val result = grapher.evalAndRender(request, data)
     val entity = HttpEntity.Strict(request.contentType, ByteString(result.data))
     graphCtx.complete(HttpResponse(StatusCodes.OK, entity = entity))
     context.stop(self)
