@@ -32,6 +32,8 @@ import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.ResultSet
+import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.SummaryStats
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TimeSeries
@@ -125,32 +127,39 @@ case class Grapher(settings: DefaultSettings) {
     )
   }
 
-  /** Render a chart using the config from the uri and the specified data. */
-  def render(uri: Uri, db: Database): Result = render(toGraphConfig(uri), db)
-
-  /** Render a chart using the config from the uri and the specified data. */
-  def render(uri: Uri, data: List[TimeSeries]): Result = render(toGraphConfig(uri), data)
+  /**
+    * Evaluate the expressions and render a chart using the config from the uri and the
+    * specified data.
+    */
+  def evalAndRender(uri: Uri, db: Database): Result = evalAndRender(toGraphConfig(uri), db)
 
   /**
-    * Render a chart using the config from the uri and the specified data. The data must
-    * have already been pre-processed to only include relevant results for each DataExpr.
-    * It is up to the user to ensure the DataExprs in the map match those that will be
-    * extracted from the uri.
+    * Evaluate the expressions and render a chart using the config from the uri and the
+    * specified data.
     */
-  def render(uri: Uri, data: DataMap): Result = render(toGraphConfig(uri), data)
+  def evalAndRender(uri: Uri, data: List[TimeSeries]): Result =
+    evalAndRender(toGraphConfig(uri), data)
 
-  /** Render a chart using the specified config and data. */
-  def render(config: GraphConfig, db: Database): Result = {
+  /**
+    * Evaluate the expressions and render a chart using the config from the uri and the
+    * specified data. The data must have already been pre-processed to only include relevant
+    * results for each DataExpr. It is up to the user to ensure the DataExprs in the map
+    * match those that will be extracted from the uri.
+    */
+  def evalAndRender(uri: Uri, data: DataMap): Result = evalAndRender(toGraphConfig(uri), data)
+
+  /** Evaluate the expressions and render a chart using the specified config and data. */
+  def evalAndRender(config: GraphConfig, db: Database): Result = {
     val dataExprs = config.exprs.flatMap(_.expr.dataExprs).distinct
     val result = dataExprs.map(expr => expr -> db.execute(config.evalContext, expr)).toMap
-    render(config, result)
+    evalAndRender(config, result)
   }
 
-  /** Render a chart using the specified config and data. */
-  def render(config: GraphConfig, data: List[TimeSeries]): Result = {
+  /** Evaluate the expressions and render a chart using the specified config and data. */
+  def evalAndRender(config: GraphConfig, data: List[TimeSeries]): Result = {
     val dataExprs = config.exprs.flatMap(_.expr.dataExprs).distinct
     val result = dataExprs.map(expr => expr -> eval(config.evalContext, expr, data)).toMap
-    render(config, result)
+    evalAndRender(config, result)
   }
 
   private def eval(
@@ -170,19 +179,39 @@ case class Grapher(settings: DefaultSettings) {
   }
 
   /**
-    * Render a chart using the specified config and data. The data must have already been
-    * pre-processed to only include relevant results for each DataExpr. It is up to the user
-    * to ensure the DataExprs in the map match those that will be extracted from the config.
+    * Evaluate the expressions and render a chart using the specified config and data. The data
+    * must have already been pre-processed to only include relevant results for each DataExpr. It
+    * is up to the user to ensure the DataExprs in the map match those that will be extracted from
+    * the config.
     */
-  def render(config: GraphConfig, data: DataMap): Result = {
-    val graphDef = create(config, data)
+  def evalAndRender(config: GraphConfig, data: DataMap): Result = {
+    val graphDef = create(config, _.expr.eval(config.evalContext, data))
+    val baos = new ByteArrayOutputStream
+    config.engine.write(graphDef, baos)
+    Result(config, baos.toByteArray)
+  }
+
+  /**
+    * Render a chart using the config from the uri and the specified data. The data must
+    * have already been pre-processed to only include relevant results for each DataExpr.
+    * It is up to the user to ensure the DataExprs in the map match those that will be
+    * extracted from the uri.
+    */
+  def render(uri: Uri, data: StyleMap): Result = render(toGraphConfig(uri), data)
+
+  /**
+    * Render a chart using the specified config and data. It is up to the user to ensure the
+    * StyleExprs in the map match those that will be extracted from the config.
+    */
+  def render(config: GraphConfig, data: StyleMap): Result = {
+    val graphDef = create(config, s => ResultSet(s.expr, data.getOrElse(s, Nil)))
     val baos = new ByteArrayOutputStream
     config.engine.write(graphDef, baos)
     Result(config, baos.toByteArray)
   }
 
   /** Create a new graph definition based on the specified config and data. */
-  def create(config: GraphConfig, data: DataMap): GraphDef = {
+  def create(config: GraphConfig, eval: StyleExpr => ResultSet): GraphDef = {
 
     val warnings = List.newBuilder[String]
 
@@ -206,7 +235,7 @@ case class Grapher(settings: DefaultSettings) {
 
         var messages = List.empty[String]
         val lines = exprs.flatMap { s =>
-          val result = s.expr.eval(config.evalContext, data)
+          val result = eval(s)
 
           // Pick the last non empty message to appear. Right now they are only used
           // as a test for providing more information about the state of filtering. These

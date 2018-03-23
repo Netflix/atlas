@@ -16,8 +16,10 @@
 package com.netflix.atlas.eval
 
 import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeries
 
 package object graph {
   type DataMap = Map[DataExpr, List[TimeSeries]]
+  type StyleMap = Map[StyleExpr, List[TimeSeries]]
 }
