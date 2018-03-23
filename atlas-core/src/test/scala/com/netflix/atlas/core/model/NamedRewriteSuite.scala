@@ -150,6 +150,34 @@ class NamedRewriteSuite extends FunSuite {
     assert(offsets === List(Duration.ofHours(1)))
   }
 
+  test("percentiles, offset maintained after query rewrite") {
+    val exprs = rawEval("name,a,:eq,(,99,),:percentiles,1h,:offset").map { expr =>
+      expr.rewrite {
+        case q: Query => Query.And(q, Query.Equal("region", "east"))
+      }
+    }
+    val offsets = exprs
+      .collect {
+        case t: StyleExpr =>
+          t.expr.dataExprs.map(_.offset)
+      }
+      .flatten
+      .distinct
+    assert(offsets === List(Duration.ofHours(1)))
+  }
+
+  // https://github.com/Netflix/atlas/issues/809
+  test("percentiles, offset maintained in toString after query rewrite") {
+    val exprs = rawEval("name,a,:eq,(,99,),:percentiles,1h,:offset").map { expr =>
+      expr.rewrite {
+        case q: Query => Query.And(q, Query.Equal("region", "east"))
+      }
+    }
+    val actual = exprs.mkString(",")
+    val expected = "name,a,:eq,region,east,:eq,:and,(,99.0,),:percentiles,PT1H,:offset"
+    assert(actual === expected)
+  }
+
   test("freeze works with named rewrite, cq") {
     val actual = eval("name,a,:eq,:freeze,name,b,:eq,:avg,:list,(,app,foo,:eq,:cq,),:each")
     val expected = eval("name,a,:eq,name,b,:eq,:avg,app,foo,:eq,:cq")
