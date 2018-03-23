@@ -46,7 +46,7 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
   def imageTest(name: String)(uri: => String): Unit = {
     test(name) {
       val fname = Strings.zeroPad(Hash.sha1(name), 40).substring(0, 8) + ".png"
-      val result = grapher.render(Uri(uri), db)
+      val result = grapher.evalAndRender(Uri(uri), db)
       val image = PngImage(result.data)
       graphAssertions.assertEquals(image, fname, bless)
     }
