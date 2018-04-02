@@ -4,16 +4,16 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.5.9"
-    val akkaHttpV  = "10.1.0"
-    val aws        = "1.11.277"
-    val iep        = "1.2.0"
+    val akka       = "2.5.11"
+    val akkaHttpV  = "10.1.1"
+    val aws        = "1.11.299"
+    val iep        = "1.2.1"
     val guice      = "4.1.0"
-    val jackson    = "2.9.4"
-    val log4j      = "2.10.0"
+    val jackson    = "2.9.5"
+    val log4j      = "2.11.0"
     val scala      = "2.12.4"
     val slf4j      = "1.7.25"
-    val spectator  = "0.61.0"
+    val spectator  = "0.63.0"
 
     val crossScala = Seq(scala, "2.11.12")
   }
@@ -31,7 +31,7 @@ object Dependencies {
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.6.1"
+  val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.6.2"
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.4.3"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.18.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
@@ -47,7 +47,7 @@ object Dependencies {
   val jacksonMapper2  = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
   val jacksonScala2   = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
-  val jodaConvert     = "org.joda" % "joda-convert" % "1.9.2"
+  val jodaConvert     = "org.joda" % "joda-convert" % "2.0.1"
   val jol             = "org.openjdk.jol" % "jol-core" % "0.9"
   val jsr250          = "javax.annotation" % "jsr250-api" % "1.0"
   val jsr305          = "com.google.code.findbugs" % "jsr305" % "3.0.2"
@@ -56,11 +56,11 @@ object Dependencies {
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.7.0"
+  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.7.9"
   val scalaCompiler   = "org.scala-lang" % "scala-compiler"
   val scalaLibrary    = "org.scala-lang" % "scala-library"
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all"
-  val scalaLogging    = "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
+  val scalaLogging    = "com.typesafe.scala-logging" %% "scala-logging" % "3.8.0"
   val scalaReflect    = "org.scala-lang" % "scala-reflect" % scala
   val scalatest       = "org.scalatest" %% "scalatest" % "3.0.5"
   val slf4jApi        = "org.slf4j" % "slf4j-api" % slf4j
@@ -70,7 +70,7 @@ object Dependencies {
   val spectatorLog4j  = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2     = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
   val spectatorSandbox= "com.netflix.spectator" % "spectator-ext-sandbox" % spectator
-  val typesafeConfig  = "com.typesafe" % "config" % "1.3.2"
+  val typesafeConfig  = "com.typesafe" % "config" % "1.3.3"
 }
 
 // format: on

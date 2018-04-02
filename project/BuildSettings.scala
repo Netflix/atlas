@@ -57,6 +57,7 @@ object BuildSettings {
 
   val resolvers = Seq(
     Resolver.mavenLocal,
+    Resolver.mavenCentral,
     Resolver.jcenterRepo,
     "jfrog".at("http://oss.jfrog.org/oss-snapshot-local")
   )
