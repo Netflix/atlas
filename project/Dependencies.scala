@@ -5,7 +5,7 @@ import sbt._
 object Dependencies {
   object Versions {
     val akka       = "2.5.11"
-    val akkaHttpV  = "10.1.0"
+    val akkaHttpV  = "10.1.1"
     val aws        = "1.11.299"
     val iep        = "1.2.1"
     val guice      = "4.1.0"
