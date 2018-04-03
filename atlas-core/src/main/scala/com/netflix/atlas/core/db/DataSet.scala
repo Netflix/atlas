@@ -51,13 +51,13 @@ private[db] object DataSet {
     */
   def staticSps: List[TimeSeries] = {
 
-    // size, min, max, noise
+    // stack -> size, min, max, noise
     val settings = Map(
-      "silverlight" -> ((300, 50.0, 300.0, 5.0)),
-      "xbox"        -> ((120, 40.0, 220.0, 5.0)),
-      "wii"         -> ((111, 20.0, 240.0, 8.0)),
-      "ps3"         -> ((220, 40.0, 260.0, 15.0)),
-      "appletv"     -> ((10, 3.0, 40.0, 5.0)),
+      "silverlight" -> ((30, 50.0, 300.0, 5.0)),
+      "xbox"        -> ((12, 40.0, 220.0, 5.0)),
+      "wii"         -> ((11, 20.0, 240.0, 8.0)),
+      "ps3"         -> ((22, 40.0, 260.0, 15.0)),
+      "appletv"     -> ((5, 3.0, 40.0, 5.0)),
       "psvita"      -> ((3, 0.2, 1.2, 0.6))
     )
 
