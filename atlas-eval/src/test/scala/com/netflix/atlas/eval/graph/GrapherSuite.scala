@@ -106,7 +106,7 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
   imageTest("upper and lower bounds") {
     "/api/v1/graph?e=2012-01-01T00:00&q=" +
     "name,sps,:eq,nf.cluster,nccp-.*,:re,:and,:sum,(,nf.cluster,),:by,$nf.cluster,:legend" +
-    "&stack=1&l=0&u=500000"
+    "&stack=1&l=0&u=50e3"
   }
 
   private val baseAxisScaleQuery = "/api/v1/graph?e=2012-01-01T00:00" +
@@ -182,7 +182,7 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
     "/api/v1/graph?e=2012-01-01T00:00" +
     "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,:area," +
     "name,sps,:eq,nf.cluster,nccp-ps3,:eq,:and,:sum,:stack," +
-    "name,sps,:eq,:avg,1000,:mul"
+    "name,sps,:eq,:avg,100,:mul"
   }
 
   imageTest("transparency as part of color") {
@@ -313,12 +313,12 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
 
   imageTest("expr scoped palette") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack,name,sps,:eq,2,:lw,500e3,450e3"
+    "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack,name,sps,:eq,2,:lw,50e3,45e3"
   }
 
   imageTest("expr scoped palette in the middle") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,4,:lw,name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack,500e3,450e3"
+    "&q=name,sps,:eq,4,:lw,name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack,50e3,45e3"
   }
 
   imageTest("multiple expressions with scoped palettes") {
@@ -343,7 +343,7 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
 
   imageTest("expr palette with alpha") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=500e3,4,:lw,name,sps,:eq,(,nf.cluster,),:by,reds,:palette,40,:alpha,:stack"
+    "&q=50e3,4,:lw,name,sps,:eq,(,nf.cluster,),:by,reds,:palette,40,:alpha,:stack"
   }
 
   imageTest("expr scoped hashed palette") {

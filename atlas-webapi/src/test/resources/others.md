@@ -88,33 +88,33 @@
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,nf.cluster,nccp-wii,:lt,:and,:sum,(,nf.cluster,),:by,1e9,:add&tick_labels.2=binary&axis_per_line=1
 
 # issue-349, legend sorting
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,asc,:order
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,desc,:order
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,min,:sort
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,avg,:sort
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,total,:sort
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,last,:sort
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,count,:sort
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,legend,:sort
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,foo,:sort
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=foo&order=asc
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=foo&order=desc
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=max&order=desc
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=max
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&order=desc
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order&sort=max
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,asc,:order
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,desc,:order
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,min,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,avg,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,total,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,last,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,count,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,legend,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,foo,:sort
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=foo&order=asc
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=foo&order=desc
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=max&order=desc
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&sort=max
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by&order=desc
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,max,:sort,desc,:order&sort=max
 
 # Limits
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,2,:limit
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,asc,:order,2,:limit
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,desc,:order,2,:limit
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,3,:head
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,1,:head
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,0,:head
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=120e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,-1,:head
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,2,:limit
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,asc,:order,2,:limit
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,desc,:order,2,:limit
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,3,:head
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,1,:head
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,0,:head
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=12e3,threshold,:legend,name,sps,:eq,:sum,(,nf.cluster,),:by,-1,:head
 
 # sorting with NaN values
 /api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9,1,2,NaN,3,NaN,4,5,6,7,8,NaN,8,8,NaN,8,9&sort=max&order=desc
@@ -124,17 +124,17 @@
 
 
 # filtering
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,300e3,:gt,:filter
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,150e3,:gt,:filter
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,150e3,:gt,:filter,42
-/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,150e3,:gt,:filter,:dup
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,30e3,:gt,:filter
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,15e3,:gt,:filter
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,15e3,:gt,:filter,42
+/api/v1/graph?s=e-1d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,15e3,:gt,:filter,:dup
 
 # Stack crossing axis
-/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=-60e3,:stack,100e3,:stack,name,sps,:eq,300e3,:sub,:stack,-50e3,:stack&tz=UTC&layout=image&w=600&h=400&no_legend=1
+/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=-6e3,:stack,10e3,:stack,name,sps,:eq,30e3,:sub,:stack,-5e3,:stack&tz=UTC&layout=image&w=600&h=400&no_legend=1
 
 # Multi-Y and scales
-/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,200e3,:sub,:stack,(,1,2,3,4,),(,name,sps,:eq,:sum,:swap,:axis,),:each&scale.1=log&scale.2=pow2&scale.3=sqrt&scale.4=linear
-/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,200e3,:sub,:stack,(,1,2,3,4,),(,name,sps,:eq,:sum,:swap,:axis,),:each&scale.0=sqrt&scale.2=pow2&scale.3=log&scale.4=linear
+/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,20e3,:sub,:stack,(,1,2,3,4,),(,name,sps,:eq,:sum,:swap,:axis,),:each&scale.1=log&scale.2=pow2&scale.3=sqrt&scale.4=linear
+/api/v1/graph?s=e-2d&e=2012-01-01T00:00&q=name,sps,:eq,:sum,20e3,:sub,:stack,(,1,2,3,4,),(,name,sps,:eq,:sum,:swap,:axis,),:each&scale.0=sqrt&scale.2=pow2&scale.3=log&scale.4=linear
 
 # Long time ranges, NoSuchElementException bug
 /api/v1/graph?q=42&s=e-12month&e=2017-06-27T00:00&tz=UTC&w=430&h=120&layout=iw
