@@ -61,7 +61,9 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     extends Actor
     with StrictLogging {
 
+  import scala.concurrent.ExecutionContext.Implicits.global
   import CloudWatchPoller._
+  import scala.concurrent.duration._
 
   // Load the categories and tagger based on the config settings
   private val categories = getCategories(config)
@@ -120,7 +122,11 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   // List keeping track of current batch of metric data.
   private val metricBatch: MList = new MList
 
+  // Regularly flush any pending data that is still buffered
+  context.system.scheduler.schedule(5.seconds, 5.seconds, self, Flush)
+
   def receive: Receive = {
+    case Flush          => flush()
     case Messages.Tick  => refresh() // From PollerManager
     case m: MetricData  => processMetricData(m) // Response from GetMetricActor
     case MetricList(ms) => processMetricList(ms) // Response from ListMetricsActor
@@ -146,14 +152,20 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
 
   /** Schedule all metrics in the metadata list for a refresh. */
   private def fetchMetricsData(): Unit = {
-    if (pendingGets.get() > 0) {
-      logger.warn(s"not keeping up, still have ${pendingGets.get()} metrics pending")
-    }
     val ms = metricsMetadata.get()
-    pendingGets.addAndGet(ms.size)
-    logger.info(s"requesting data for ${ms.size} metrics")
-    ms.foreach { m =>
-      metricsGetRef ! m
+    val pending = pendingGets.get()
+    val num = ms.size
+    if (pending > num) {
+      logger.warn(s"skipping fetch, still have ${pendingGets.get()} metrics pending")
+    } else {
+      if (pending > 0) {
+        logger.warn(s"not keeping up, still have ${pendingGets.get()} metrics pending")
+      }
+      pendingGets.addAndGet(num)
+      logger.info(s"requesting data for $num metrics")
+      ms.foreach { m =>
+        metricsGetRef ! m
+      }
     }
   }
 
@@ -188,7 +200,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
       val d = data.datapoint
       if (!d.getSum.isNaN) {
         val ts = tagger(meta.dimensions) ++ meta.definition.tags + ("name" -> meta.definition.alias)
-        val now = System.currentTimeMillis()
+        val now = registry.clock().wallTime()
         val newValue = meta.convert(d)
         metricBatch += new AtlasDatapoint(ts, now, newValue)
         flush()
@@ -198,16 +210,29 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
 
   /** Flush data if the batch size is big enough or we are done with the current iteration. */
   private def flush(): Unit = {
-    if (metricBatch.nonEmpty && (pendingGets.get() <= 0 || metricBatch.size > batchSize)) {
-      val batch = metricBatch.toList
-      metricBatch.clear()
-      logger.info(s"writing ${batch.size} metrics to client")
-      responder ! Messages.MetricsPayload(Map.empty, batch)
+    val now = registry.clock().wallTime()
+    if (metricBatch.nonEmpty) {
+      val age = now - metricBatch.head.timestamp
+      if (age > 5000) {
+        val batch = metricBatch.toList
+        metricBatch.clear()
+        logger.info(s"writing ${batch.size} metrics to client, age = $age ms")
+        responder ! Messages.MetricsPayload(Map.empty, batch)
+      } else if (metricBatch.lengthCompare(batchSize) >= 0) {
+        val batch = metricBatch.toList
+        metricBatch.clear()
+        logger.info(s"writing ${batch.size} metrics to client, max batch size reached")
+        responder ! Messages.MetricsPayload(Map.empty, batch)
+      } else {
+        logger.debug(s"not writing metrics, age = $age ms, size = ${metricBatch.size}")
+      }
     }
   }
 }
 
 object CloudWatchPoller {
+
+  case object Flush
 
   private val Zero = new Datapoint()
     .withMinimum(0.0)
