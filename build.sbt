@@ -23,7 +23,7 @@ lazy val root = project.in(file("."))
     `atlas-test`,
     `atlas-webapi`,
     `atlas-wiki`)
-  .settings(BuildSettings.noPackaging: _*)
+  .settings(skip in publish := true)
 
 lazy val `atlas-akka` = project
   .configure(BuildSettings.profile)

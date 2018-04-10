@@ -62,14 +62,6 @@ object BuildSettings {
     "jfrog".at("http://oss.jfrog.org/oss-snapshot-local")
   )
 
-  // Don't create root.jar, from:
-  // http://stackoverflow.com/questions/20747296/producing-no-artifact-for-root-project-with-package-under-multi-project-build-in
-  lazy val noPackaging = Seq(
-    Keys.`package` := file(""),
-    packageBin in Global := file(""),
-    packagedArtifacts := Map()
-  )
-
   def profile: Project => Project = p => {
     bintrayProfile(p)
       .settings(buildSettings: _*)
