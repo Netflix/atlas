@@ -434,6 +434,21 @@ object MathExpr {
     }
   }
 
+  case class Power(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
+
+    def name: String = "pow"
+
+    def labelFmt: String = "pow(%s, %s)"
+
+    def apply(v1: Double, v2: Double): Double = {
+      // we just use the behavior of math.pow, so expressions like math.pow(0, 0)
+      // or math.pow(Double.PositiveInfinity, 0) will return 1, not NaN (or an arithmetic exception)
+      // even though they're technically undefined.
+
+      math.pow(v1, v2)
+    }
+  }
+
   case class GreaterThan(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
 
     def name: String = "gt"

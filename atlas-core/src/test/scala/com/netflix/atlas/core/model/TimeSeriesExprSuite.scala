@@ -66,6 +66,8 @@ class TimeSeriesExprSuite extends FunSuite {
     ":true,10,:sub"              -> const(ts(unknownTag, "(name=unknown - 10.0)", 55.0 - 10)),
     ":true,10,:mul"              -> const(ts(unknownTag, "(name=unknown * 10.0)", 55.0 * 10)),
     ":true,10,:div"              -> const(ts(unknownTag, "(name=unknown / 10.0)", 55.0 / 10)),
+    ":true,2,:pow"               -> const(ts(unknownTag, "pow(name=unknown, 2.0)", math.pow(55.0, 2.0))),
+    "2,:true,:pow"               -> const(ts(Map("name" -> "2.0"), "pow(2.0, name=unknown)", math.pow(2.0, 55.0))),
     ":true,0,:div"               -> const(ts(unknownTag, "(name=unknown / 0.0)", Double.NaN)),
     ":true,55,:gt"               -> const(ts(unknownTag, "(name=unknown > 55.0)", 0.0)),
     ":true,0,:gt"                -> const(ts(unknownTag, "(name=unknown > 0.0)", 1.0)),
