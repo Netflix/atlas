@@ -66,24 +66,28 @@ class TimeSeriesExprSuite extends FunSuite {
     ":true,10,:sub"              -> const(ts(unknownTag, "(name=unknown - 10.0)", 55.0 - 10)),
     ":true,10,:mul"              -> const(ts(unknownTag, "(name=unknown * 10.0)", 55.0 * 10)),
     ":true,10,:div"              -> const(ts(unknownTag, "(name=unknown / 10.0)", 55.0 / 10)),
-    ":true,0,:div"               -> const(ts(unknownTag, "(name=unknown / 0.0)", Double.NaN)),
-    ":true,55,:gt"               -> const(ts(unknownTag, "(name=unknown > 55.0)", 0.0)),
-    ":true,0,:gt"                -> const(ts(unknownTag, "(name=unknown > 0.0)", 1.0)),
-    ":true,55.1,:ge"             -> const(ts(unknownTag, "(name=unknown >= 55.1)", 0.0)),
-    ":true,55,:ge"               -> const(ts(unknownTag, "(name=unknown >= 55.0)", 1.0)),
-    ":true,0,:ge"                -> const(ts(unknownTag, "(name=unknown >= 0.0)", 1.0)),
-    ":true,55,:lt"               -> const(ts(unknownTag, "(name=unknown < 55.0)", 0.0)),
-    ":true,56,:lt"               -> const(ts(unknownTag, "(name=unknown < 56.0)", 1.0)),
-    ":true,55.1,:le"             -> const(ts(unknownTag, "(name=unknown <= 55.1)", 1.0)),
-    ":true,55,:le"               -> const(ts(unknownTag, "(name=unknown <= 55.0)", 1.0)),
-    ":true,0,:le"                -> const(ts(unknownTag, "(name=unknown <= 0.0)", 0.0)),
-    ":true,0,:and"               -> const(ts(unknownTag, "(name=unknown AND 0.0)", 0.0)),
-    ":true,1,:and"               -> const(ts(unknownTag, "(name=unknown AND 1.0)", 1.0)),
-    ":true,0,:or"                -> const(ts(unknownTag, "(name=unknown OR 0.0)", 1.0)),
-    ":true,1,:or"                -> const(ts(unknownTag, "(name=unknown OR 1.0)", 1.0)),
-    "0,0,:or"                    -> const(ts("name" -> "0.0", "(0.0 OR 0.0)", 0.0)),
-    "1,:per-step"                -> const(ts(Map("name" -> "1.0"), "per-step(1.0)", 60)),
-    "1,:integral"                -> const(integral(Map("name" -> "1.0"), "integral(1.0)", 1.0)),
+    ":true,2,:pow"               -> const(ts(unknownTag, "pow(name=unknown, 2.0)", math.pow(55.0, 2.0))),
+    "2,:true,:pow" -> const(
+      ts(Map("name" -> "2.0"), "pow(2.0, name=unknown)", math.pow(2.0, 55.0))
+    ),
+    ":true,0,:div"   -> const(ts(unknownTag, "(name=unknown / 0.0)", Double.NaN)),
+    ":true,55,:gt"   -> const(ts(unknownTag, "(name=unknown > 55.0)", 0.0)),
+    ":true,0,:gt"    -> const(ts(unknownTag, "(name=unknown > 0.0)", 1.0)),
+    ":true,55.1,:ge" -> const(ts(unknownTag, "(name=unknown >= 55.1)", 0.0)),
+    ":true,55,:ge"   -> const(ts(unknownTag, "(name=unknown >= 55.0)", 1.0)),
+    ":true,0,:ge"    -> const(ts(unknownTag, "(name=unknown >= 0.0)", 1.0)),
+    ":true,55,:lt"   -> const(ts(unknownTag, "(name=unknown < 55.0)", 0.0)),
+    ":true,56,:lt"   -> const(ts(unknownTag, "(name=unknown < 56.0)", 1.0)),
+    ":true,55.1,:le" -> const(ts(unknownTag, "(name=unknown <= 55.1)", 1.0)),
+    ":true,55,:le"   -> const(ts(unknownTag, "(name=unknown <= 55.0)", 1.0)),
+    ":true,0,:le"    -> const(ts(unknownTag, "(name=unknown <= 0.0)", 0.0)),
+    ":true,0,:and"   -> const(ts(unknownTag, "(name=unknown AND 0.0)", 0.0)),
+    ":true,1,:and"   -> const(ts(unknownTag, "(name=unknown AND 1.0)", 1.0)),
+    ":true,0,:or"    -> const(ts(unknownTag, "(name=unknown OR 0.0)", 1.0)),
+    ":true,1,:or"    -> const(ts(unknownTag, "(name=unknown OR 1.0)", 1.0)),
+    "0,0,:or"        -> const(ts("name" -> "0.0", "(0.0 OR 0.0)", 0.0)),
+    "1,:per-step"    -> const(ts(Map("name" -> "1.0"), "per-step(1.0)", 60)),
+    "1,:integral"    -> const(integral(Map("name" -> "1.0"), "integral(1.0)", 1.0)),
     "minuteOfDay,:time,1,:add" -> const(
       integral(Map("name" -> "minuteOfDay"), "(minuteOfDay + 1.0)", 1.0)
     ),
@@ -238,6 +242,7 @@ class TimeSeriesExprSuite extends FunSuite {
             val rs = expr.eval(p.ctxt, p.input)
             val ctxts = p.ctxt.partition(step, ChronoUnit.MINUTES)
             var state = Map.empty[StatefulExpr, Any]
+
             val incrResults = ctxts.map { ctxt =>
               val c = ctxt.copy(state = state)
               val results = expr.eval(c, bounded(p.input, ctxt))
@@ -245,6 +250,7 @@ class TimeSeriesExprSuite extends FunSuite {
               val boundedResults = results.data.map(_.mapTimeSeq(_.bounded(ctxt.start, ctxt.end)))
               boundedResults.groupBy(_.id)
             }
+
             val incrRS = ResultSet(
               expr,
               rs.data.map { t =>
@@ -352,6 +358,7 @@ class TimeSeriesExprSuite extends FunSuite {
   }
 
   def constants: List[TimeSeries] = {
+
     val ts = (0 to 10).map { i =>
       val seq = new FunctionTimeSeq(DsType.Gauge, 60000, _ => i)
       TimeSeries(Map("name" -> i.toString, "type" -> "constant"), seq)

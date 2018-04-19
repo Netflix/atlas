@@ -54,6 +54,7 @@ object MathVocabulary extends Vocabulary {
     Subtract,
     Multiply,
     Divide,
+    Power,
     GreaterThan,
     GreaterThanEqual,
     LessThan,
@@ -727,6 +728,21 @@ object MathVocabulary extends Vocabulary {
         || Input 2 | 2.0 | 0.0 | 0.0 | NaN | NaN |
         |
         |Use the [fdiv](math-fdiv) operator to get strict floating point behavior.
+      """.stripMargin.trim
+  }
+
+  case object Power extends BinaryWord {
+
+    override def name: String = "pow"
+
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+      MathExpr.Power(t1, t2)
+    }
+
+    override def summary: String =
+      """
+        |Compute a new time series where each interval has the value `(a power b)` where `a`
+        | and `b` are the corresponding intervals in the input time series.
       """.stripMargin.trim
   }
 
