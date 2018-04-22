@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.db
 
+import com.netflix.atlas.core.index.IndexStats
 import com.netflix.atlas.core.index.RoaringTagIndex
 import com.netflix.atlas.core.index.TagIndex
 import com.netflix.atlas.core.index.TagQuery
@@ -28,7 +29,7 @@ class SimpleStaticDatabase(data: List[TimeSeries], config: Config) extends Datab
   private val maxLines = config.getInt("max-lines")
   private val maxDatapoints = config.getInt("max-datapoints")
 
-  val index: TagIndex[TimeSeries] = new RoaringTagIndex(data.toArray)
+  val index: TagIndex[TimeSeries] = new RoaringTagIndex(data.toArray, new IndexStats())
 
   def execute(context: EvalContext, expr: DataExpr): List[TimeSeries] = {
     val q = TagQuery(Some(expr.query))

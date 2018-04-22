@@ -33,7 +33,7 @@ object RoaringTagIndex {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def empty[T <: TaggedItem: Manifest]: RoaringTagIndex[T] = {
-    new RoaringTagIndex(new Array[T](0))
+    new RoaringTagIndex(new Array[T](0), new IndexStats())
   }
 }
 
@@ -45,7 +45,7 @@ object RoaringTagIndex {
   * @param items
   *     Items to include in the index.
   */
-class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
+class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) extends TagIndex[T] {
 
   import com.netflix.atlas.core.index.RoaringTagIndex._
 
@@ -102,6 +102,22 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T]) extends TagIndex[T] {
   // * itemTags: map of key value pairs for an item. The key and value numbers are positions
   //   to the keys and values arrays respectively.
   private val (itemIds, itemIndex, keyIndex, tagIndex, itemTags) = buildItemIndex()
+
+  // Collect and log various index stats
+  collectStats()
+
+  private def collectStats(): Unit = {
+    logger.info(s"items = ${items.length}, keys = ${keys.length}, values = ${values.length}")
+    val builder = List.newBuilder[IndexStats.KeyStat]
+    var i = 0
+    while (i < keys.length) {
+      val numValues = itemIndex.get(i).size
+      val numItems = keyIndex.get(i).getCardinality
+      builder += IndexStats.KeyStat(keys(i), numItems, numValues)
+      i += 1
+    }
+    stats.updateKeyStats(builder.result())
+  }
 
   private def createPositionMap(data: Array[String]): RefIntHashMap[String] = {
     val m = new RefIntHashMap[String](2 * data.length)

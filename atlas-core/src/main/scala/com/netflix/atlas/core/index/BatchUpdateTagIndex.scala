@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
-import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.patterns.LongTaskTimer
 import com.netflix.spectator.api.patterns.PolledMeter
 
@@ -30,8 +30,9 @@ import scala.reflect.ClassTag
 
 object BatchUpdateTagIndex {
 
-  def newRoaringIndex[T <: TaggedItem: ClassTag]: BatchUpdateTagIndex[T] = {
-    new BatchUpdateTagIndex[T](items => new CachingTagIndex(new RoaringTagIndex(items)))
+  def newRoaringIndex[T <: TaggedItem: ClassTag](registry: Registry): BatchUpdateTagIndex[T] = {
+    val stats = new IndexStats(registry)
+    new BatchUpdateTagIndex[T](registry, items => new RoaringTagIndex(items, stats))
   }
 }
 
@@ -39,12 +40,15 @@ object BatchUpdateTagIndex {
   * Mutable tag index that batches updates and atomically swaps in a new index in the background at
   * a configured interval.
   *
-  * @param newIndex  function to create a new index from the set of items
+  * @param registry
+  *     Spectator registry to use for reporting metrics.
+  * @param newIndex
+  *     Function to create a new index from the set of items.
   */
-class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](newIndex: (Array[T]) => TagIndex[T])
-    extends MutableTagIndex[T] {
-
-  private def registry = Spectator.globalRegistry()
+class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
+  registry: Registry,
+  newIndex: (Array[T]) => TagIndex[T]
+) extends MutableTagIndex[T] {
 
   // Current index used for all query operations
   private val currentIndex = new AtomicReference[TagIndex[T]](newIndex(Array.empty[T]))
