@@ -16,14 +16,19 @@
 package com.netflix.atlas.core.index
 
 import com.netflix.atlas.core.model.LazyTaggedItem
+import com.netflix.spectator.api.NoopRegistry
 import org.scalatest.FunSuite
 
 class BatchUpdateTagIndexSuite extends FunSuite {
 
   case class Item(tags: Map[String, String], version: Int) extends LazyTaggedItem
 
+  private def newIndex: BatchUpdateTagIndex[Item] = {
+    BatchUpdateTagIndex.newRoaringIndex(new NoopRegistry)
+  }
+
   test("update") {
-    val idx = BatchUpdateTagIndex.newRoaringIndex[Item]
+    val idx = newIndex
     assert(idx.size === 0)
 
     val updates = List(Item(Map("a" -> "b"), 0))
@@ -35,7 +40,7 @@ class BatchUpdateTagIndexSuite extends FunSuite {
   }
 
   test("update, new items") {
-    val idx = BatchUpdateTagIndex.newRoaringIndex[Item]
+    val idx = newIndex
     assert(idx.size === 0)
 
     val updates1 = List(Item(Map("a" -> "b"), 0))
@@ -54,7 +59,7 @@ class BatchUpdateTagIndexSuite extends FunSuite {
   }
 
   test("update, prefer older item") {
-    val idx = BatchUpdateTagIndex.newRoaringIndex[Item]
+    val idx = newIndex
     assert(idx.size === 0)
 
     val updates1 = List(Item(Map("a" -> "b"), 0))
