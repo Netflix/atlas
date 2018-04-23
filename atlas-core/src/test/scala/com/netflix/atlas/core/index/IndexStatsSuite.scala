@@ -21,6 +21,8 @@ import com.netflix.spectator.api.patterns.PolledMeter
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 
+import scala.util.Random
+
 class IndexStatsSuite extends FunSuite with BeforeAndAfter {
 
   private val clock = new ManualClock()
@@ -77,5 +79,15 @@ class IndexStatsSuite extends FunSuite with BeforeAndAfter {
     PolledMeter.update(registry)
     val numValues = registry.gauge("atlas.index.numberOfValues", "key", "42").value()
     assert(numValues.isNaN)
+  }
+
+  test("sort with duplicates") {
+    (0 until 100).foreach { i =>
+      clock.setWallTime(i)
+      val keyStats = (0 until 100).map { j =>
+        IndexStats.KeyStat(j.toString, i, Random.nextInt(10))
+      }
+      stats.updateKeyStats(keyStats.toList)
+    }
   }
 }
