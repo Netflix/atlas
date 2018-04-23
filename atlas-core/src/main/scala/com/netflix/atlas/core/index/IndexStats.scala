@@ -58,7 +58,7 @@ class IndexStats(registry: Registry = new NoopRegistry) {
 
     val now = registry.clock().wallTime()
     val n = 20
-    val sorted = stats.sortWith(_.numValues >= _.numValues)
+    val sorted = stats.sortWith(_.numValues > _.numValues)
 
     // Include the key for the top-N
     sorted.take(n).foreach { stat =>
