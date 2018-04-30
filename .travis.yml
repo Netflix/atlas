@@ -5,10 +5,10 @@ matrix:
     scala: 2.11.12
     env: BINTRAY_PUBLISH=true
   - jdk: oraclejdk8
-    scala: 2.12.4
+    scala: 2.12.6
     env: BINTRAY_PUBLISH=true
   - jdk: oraclejdk9
-    scala: 2.12.4
+    scala: 2.12.6
     env: BINTRAY_PUBLISH=false
 script:
 - ./scripts/buildViaTravis.sh
