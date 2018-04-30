@@ -25,6 +25,7 @@ import com.netflix.atlas.core.model.Datapoint
 import com.netflix.iep.service.DefaultClassFactory
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
+import com.netflix.spectator.api.patterns.PolledMeter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuiteLike
@@ -134,12 +135,14 @@ class PollerManagerSuite extends TestKit(ActorSystem())
     val m = registry.get(registry.createId("atlas.poller.dataAge", "id", "poller-test"))
 
     val t = clock.wallTime()
+    PolledMeter.update(registry)
     assert(m.measure().iterator().next().value() === 0.0)
 
     clock.setWallTime(t + 60000L)
     dataRef.set(Success(payload))
     ref ! Messages.Tick
     waitForCompletion()
+    PolledMeter.update(registry)
     assert(m.measure().iterator().next().value() === 0.0)
 
   }
@@ -150,12 +153,14 @@ class PollerManagerSuite extends TestKit(ActorSystem())
     val m = registry.get(registry.createId("atlas.poller.dataAge", "id", "poller-test"))
 
     val t = clock.wallTime()
+    PolledMeter.update(registry)
     assert(m.measure().iterator().next().value() === 0.0)
 
     clock.setWallTime(t + 60000L)
     dataRef.set(Failure(e1))
     ref ! Messages.Tick
     waitForCompletion()
+    PolledMeter.update(registry)
     assert(m.measure().iterator().next().value() === 60.0)
 
   }

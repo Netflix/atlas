@@ -20,6 +20,7 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestActorRef
 import akka.testkit.TestKit
 import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.patterns.PolledMeter
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuiteLike
 import spray.can.Http
@@ -64,6 +65,7 @@ class ServerStatsActorSuite extends TestKit(ActorSystem())
     assert(2L === registry.counter("spray.requestTimeouts").count())
 
     // gauges
+    PolledMeter.update(registry)
     assert(4L === get("spray.openRequests"))
     assert(7L === get("spray.maxOpenRequests"))
     assert(5L === get("spray.openConnections"))
@@ -86,6 +88,7 @@ class ServerStatsActorSuite extends TestKit(ActorSystem())
     assert(4L === registry.counter("spray.requestTimeouts").count())
 
     // gauges
+    PolledMeter.update(registry)
     assert(5L === get("spray.openRequests"))
     assert(8L === get("spray.maxOpenRequests"))
     assert(6L === get("spray.openConnections"))

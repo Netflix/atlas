@@ -7,10 +7,10 @@ object Dependencies {
     val iep        = "0.4.9"
     val guice      = "4.1.0"
     val jackson    = "2.8.3"
-    val log4j      = "2.7"
-    val scala      = "2.11.8"
+    val log4j      = "2.10.0"
+    val scala      = "2.11.12"
     val slf4j      = "1.7.21"
-    val spectator  = "0.42.0"
+    val spectator  = "0.65.0"
     val spray      = "1.3.4"
 
     val crossScala = Seq(scala)
