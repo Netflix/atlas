@@ -25,6 +25,14 @@ import com.amazonaws.services.cloudwatch.model.StandardUnit
 object Conversions {
 
   /**
+    * Determine the Atlas DS type based on the conversion. Anything that has a rate
+    * conversion will use a rate, otherwise it will be treated as a gauge.
+    */
+  def determineDsType(name: String): String = {
+    if (name.contains("rate")) "rate" else "gauge"
+  }
+
+  /**
     * Create a new conversion based on a simple comma separated list of known mappings.
     * The first element should be the statistic to extract. Allowed values are: `min`,
     * `max`, `sum`, `count`, and `avg`.

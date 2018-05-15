@@ -17,6 +17,7 @@ package com.netflix.atlas.cloudwatch
 
 import com.amazonaws.services.cloudwatch.model.Datapoint
 import com.amazonaws.services.cloudwatch.model.StandardUnit
+import com.netflix.atlas.core.model.TagKey
 import com.typesafe.config.Config
 
 /**
@@ -103,13 +104,14 @@ object MetricDefinition {
   }
 
   private def newMetricDef(config: Config, cnv: String, tags: Tags): MetricDefinition = {
+    val dstype = Map(TagKey.dsType -> Conversions.determineDsType(cnv))
     val monotonic = config.hasPath("monotonic") && config.getBoolean("monotonic")
     MetricDefinition(
       name = config.getString("name"),
       alias = config.getString("alias"),
       conversion = Conversions.fromName(cnv),
       monotonicValue = monotonic,
-      tags = tags
+      tags = tags ++ dstype
     )
   }
 }
