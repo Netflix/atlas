@@ -52,6 +52,30 @@ class MetricDefinitionSuite extends FunSuite {
     assert(definitions.head.alias === "aws.elb.requests")
   }
 
+  test("config with dsytpe rate") {
+    val cfg = ConfigFactory.parseString("""
+        |name = "RequestCount"
+        |alias = "aws.elb.requests"
+        |conversion = "sum,rate"
+      """.stripMargin)
+
+    val definitions = MetricDefinition.fromConfig(cfg)
+    assert(definitions.size === 1)
+    assert(definitions.head.tags === Map("atlas.dstype" -> "rate"))
+  }
+
+  test("config with dsytpe gauge") {
+    val cfg = ConfigFactory.parseString("""
+        |name = "RequestCount"
+        |alias = "aws.elb.requests"
+        |conversion = "sum"
+      """.stripMargin)
+
+    val definitions = MetricDefinition.fromConfig(cfg)
+    assert(definitions.size === 1)
+    assert(definitions.head.tags === Map("atlas.dstype" -> "gauge"))
+  }
+
   test("config for timer") {
     val cfg = ConfigFactory.parseString("""
         |name = "Latency"

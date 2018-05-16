@@ -279,4 +279,24 @@ class ConversionsSuite extends FunSuite {
     val v = cnv(null, newDatapoint(42.0))
     assert(v === 4200.0)
   }
+
+  test("dstype for max") {
+    assert(Conversions.determineDsType("max") === "gauge")
+  }
+
+  test("dstype for sum") {
+    assert(Conversions.determineDsType("sum") === "gauge")
+  }
+
+  test("dstype for count") {
+    assert(Conversions.determineDsType("count") === "gauge")
+  }
+
+  test("dstype for sum,rate") {
+    assert(Conversions.determineDsType("sum,rate") === "rate")
+  }
+
+  test("dstype for count,rate") {
+    assert(Conversions.determineDsType("count,rate") === "rate")
+  }
 }
