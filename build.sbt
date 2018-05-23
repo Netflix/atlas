@@ -1,5 +1,5 @@
 
-scalafmtVersion in ThisBuild := "1.4.0"
+scalafmtVersion in ThisBuild := "1.5.1"
 
 lazy val root = project.in(file("."))
   .configure(BuildSettings.profile)
