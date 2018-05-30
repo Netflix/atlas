@@ -92,7 +92,7 @@ private[chart] object JsonCodec {
     gen.writeEndArray()
   }
 
-  // Writes out a pre-rendered image for the chart without the legend. This can be used
+  // Writes out a pre-rendered image for the chart. This can be used
   // for partially dynamic views.
   private def writeGraphImage(gen: JsonGenerator, config: GraphDef): Unit = {
     gen.writeStartObject()
@@ -102,8 +102,7 @@ private[chart] object JsonCodec {
   }
 
   private def toDataUri(config: GraphDef): String = {
-    val gdef = config.copy(legendType = LegendType.OFF)
-    val image = PngImage(pngEngine.createImage(gdef)).toByteArray
+    val image = PngImage(pngEngine.createImage(config)).toByteArray
     val encoded = Base64.getEncoder.encodeToString(image)
     s"data:image/png;base64,$encoded"
   }
