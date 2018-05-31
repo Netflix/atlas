@@ -15,9 +15,11 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.util.IdentityMap
+
 case class ResultSet(
   expr: TimeSeriesExpr,
   data: List[TimeSeries] = Nil,
-  state: Map[StatefulExpr, Any] = Map.empty,
+  state: Map[StatefulExpr, Any] = IdentityMap.empty,
   messages: List[String] = Nil
 )

@@ -34,6 +34,7 @@ import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.util.IdentityMap
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeSeriesMessage
@@ -85,7 +86,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter, step: Long = 6
         val sources = ds.getSources.asScala
 
         // Get set of expressions before we update the list
-        val previous = recipients.map(_._1).toSet
+        val previous = recipients.map(t => t._1 -> t._1).toMap
 
         // Error messages for invalid expressions
         val errors = List.newBuilder[MessageEnvelope]
@@ -95,7 +96,10 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter, step: Long = 6
           .flatMap { s =>
             try {
               val exprs = interpreter.eval(Uri(s.getUri))
-              exprs.map(e => e -> s.getId)
+              // Reuse the previous evaluated expression if available. States for the stateful
+              // expressions are maintained in an IdentityHashMap so if the instances change
+              // the state will be reset.
+              exprs.map(e => previous.getOrElse(e, e) -> s.getId)
             } catch {
               case e: Exception =>
                 errors += new MessageEnvelope(s.getId, error(s.getUri, "invalid expression", e))
@@ -107,7 +111,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter, step: Long = 6
           .toList
 
         // Cleanup state for any expressions that are no longer needed
-        val removed = previous -- recipients.map(_._1).toSet
+        val removed = previous.keySet -- recipients.map(_._1).toSet
         removed.foreach { expr =>
           states -= expr
         }
@@ -142,7 +146,9 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter, step: Long = 6
         // Generate the time series and diagnostic output
         val output = recipients.flatMap {
           case (expr, ids) =>
-            val state = states.getOrElse(expr, Map.empty[StatefulExpr, Any])
+            // Use an identity map for the state to ensure that multiple equivalent stateful
+            // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
+            val state = states.getOrElse(expr, IdentityMap.empty[StatefulExpr, Any])
             val context = EvalContext(timestamp, timestamp + step, step, state)
             try {
               val result = expr.expr.eval(context, expressionDatapoints)

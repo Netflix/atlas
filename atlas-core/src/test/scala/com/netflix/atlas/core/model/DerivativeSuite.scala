@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.util.IdentityMap
 import org.scalatest.FunSuite
 
 class DerivativeSuite extends FunSuite {
@@ -46,5 +47,28 @@ class DerivativeSuite extends FunSuite {
   test("basic with NaN values") {
     val input = ts(7.0, 42.0, Double.NaN, 43.0, 2.0, 5.0)
     assert(eval(input, 6).data === ts(Double.NaN, 35.0, Double.NaN, Double.NaN, -41.0, 3.0).data)
+  }
+
+  test("state across binary operations") {
+    val d1 = StatefulExpr.Derivative(DataExpr.Sum(Query.True))
+    val d2 = StatefulExpr.Derivative(DataExpr.Sum(Query.True))
+    val expr = MathExpr.Add(d1, d2)
+
+    var state: Map[StatefulExpr, Any] = IdentityMap.empty[StatefulExpr, Any]
+    List(1.0, 2.0, 3.0, 4.0, 5.0).zipWithIndex.foreach {
+      case (v, i) =>
+        val s = start + step * i
+        val e = s + step
+        val context = EvalContext(s, e, step, state)
+        val seq = new ArrayTimeSeq(DsType.Gauge, s, step, Array(v))
+        val input = TimeSeries(Map("name" -> "test"), seq)
+        val result = expr.eval(context, List(input))
+        state = result.state
+
+        val actual = result.data.head.data.bounded(s, e)
+        val expectedValue = if (i == 0) Double.NaN else 2.0
+        val expected = new ArrayTimeSeq(DsType.Gauge, s, step, Array(expectedValue))
+        assert(actual === expected)
+    }
   }
 }

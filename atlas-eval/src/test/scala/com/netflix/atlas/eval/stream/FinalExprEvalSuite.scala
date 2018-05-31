@@ -21,7 +21,9 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.TimeGroup
@@ -326,6 +328,64 @@ class FinalExprEvalSuite extends FunSuite {
     timeseries.tail.foreach { env =>
       val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
       assert(ts.label === "legend for rps")
+    }
+  }
+
+  test("state is isolated for duplicate stateful expressions") {
+    val exprA = DataExpr.Sum(Query.Equal("name", "a"))
+    val expr = MathExpr.And(
+      MathExpr.LessThanEqual(StatefulExpr.Derivative(exprA), MathExpr.Constant(0)),
+      MathExpr.GreaterThanEqual(StatefulExpr.Derivative(exprA), MathExpr.Constant(0))
+    )
+    val tagsA = Map("name" -> "a")
+    val input = List(
+      sources(ds("a", s"http://atlas/graph?q=$expr")),
+      group(0),
+      group(1, AggrDatapoint(0, exprA, "i-1", tagsA, 6.0)),
+      group(2, AggrDatapoint(0, exprA, "i-1", tagsA, 5.0)),
+      group(3, AggrDatapoint(0, exprA, "i-1", tagsA, 4.0))
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    assert(timeseries.size === 4)
+    val expectedTimeseries = List(0.0, 0.0, 0.0, 0.0)
+    timeseries.zip(expectedTimeseries).foreach {
+      case (env, expectedValue) =>
+        assert(env.getId === "a")
+        val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+        checkValue(ts, expectedValue)
+    }
+  }
+
+  test("state maintained on datasource refresh") {
+    val exprA = DataExpr.Sum(Query.Equal("name", "a"))
+    val expr = MathExpr.Add(
+      StatefulExpr.Derivative(exprA),
+      StatefulExpr.Derivative(exprA)
+    )
+    val tagsA = Map("name" -> "a")
+    val input = List(
+      sources(ds("a", s"http://atlas/graph?q=$expr")),
+      group(0),
+      group(1, AggrDatapoint(0, exprA, "i-1", tagsA, 6.0)),
+      sources(ds("a", s"http://atlas/graph?q=$expr")),
+      group(2, AggrDatapoint(0, exprA, "i-1", tagsA, 5.0)),
+      group(3, AggrDatapoint(0, exprA, "i-1", tagsA, 5.0)),
+      group(3, AggrDatapoint(0, exprA, "i-1", tagsA, 3.0))
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    assert(timeseries.size === 5)
+    val expectedTimeseries = List(Double.NaN, Double.NaN, -2.0, 0.0, -4.0)
+    timeseries.zip(expectedTimeseries).foreach {
+      case (env, expectedValue) =>
+        assert(env.getId === "a")
+        val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+        checkValue(ts, expectedValue)
     }
   }
 }

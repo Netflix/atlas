@@ -19,11 +19,13 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+import com.netflix.atlas.core.util.IdentityMap
+
 case class EvalContext(
   start: Long,
   end: Long,
   step: Long,
-  state: Map[StatefulExpr, Any] = Map.empty
+  state: Map[StatefulExpr, Any] = IdentityMap.empty
 ) {
   require(start < end, s"start time must be less than end time ($start >= $end)")
 
