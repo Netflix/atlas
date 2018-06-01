@@ -610,6 +610,21 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     check(name, graphDef)
   }
 
+  test("issue-832_log_scale_lower_bound") {
+    val plotDef = PlotDef(label(simpleSeriesDef(4, 6)),
+      lower = PlotBound("100"),
+      scale = Scale.LOGARITHMIC)
+
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(plotDef)
+    )
+
+    val name = prefix + "_issue-832_log_scale_lower_bound.png"
+    check(name, graphDef)
+  }
+
   test("zero_line_with_end_gap") {
     val start2 = ZonedDateTime.of(2012, 1, 1, 7, 4, 0, 0, ZoneOffset.UTC).toInstant
     val end2 = ZonedDateTime.of(2012, 1, 1, 7, 5, 0, 0, ZoneOffset.UTC).toInstant
