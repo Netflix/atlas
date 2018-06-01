@@ -7,10 +7,10 @@ matrix:
   - jdk: oraclejdk8
     scala: 2.12.6
     env: BINTRAY_PUBLISH=true
-  - jdk: openjdk10
+  - jdk: oraclejdk10
     scala: 2.12.6
     env: BINTRAY_PUBLISH=false
-  - jdk: openjdk11
+  - jdk: oraclejdk11
     scala: 2.12.6
     env: BINTRAY_PUBLISH=false
 script:
