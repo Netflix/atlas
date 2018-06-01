@@ -55,11 +55,11 @@ class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
     }
   }
 
-  test("/config/java.version") {
+  test("/config/os.arch") {
     import scala.collection.JavaConverters._
-    Get("/api/v2/config/java.version") ~> endpoint.routes ~> check {
+    Get("/api/v2/config/os.arch") ~> endpoint.routes ~> check {
       val config = ConfigFactory.parseString(responseAs[String])
-      val v = sysConfig.getString("java.version")
+      val v = sysConfig.getString("os.arch")
       val expected = ConfigFactory.parseMap(Map("value" -> v).asJava)
       assert(expected === config)
     }
