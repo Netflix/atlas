@@ -10,9 +10,6 @@ matrix:
   - jdk: oraclejdk10
     scala: 2.12.6
     env: BINTRAY_PUBLISH=false
-  - jdk: oraclejdk11
-    scala: 2.12.6
-    env: BINTRAY_PUBLISH=false
 script:
 - ./scripts/buildViaTravis.sh
 sudo: required
