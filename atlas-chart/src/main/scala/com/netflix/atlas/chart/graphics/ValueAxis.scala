@@ -45,7 +45,6 @@ sealed trait ValueAxis extends Element with FixedWidth {
 
   def ticks(y1: Int, y2: Int): List[ValueTick] = {
     val numTicks = (y2 - y1) / minTickLabelHeight
-    Ticks.value(min, max, numTicks)
     plotDef.tickLabelMode match {
       case TickLabelMode.BINARY => Ticks.binary(min, max, numTicks)
       case _                    => Ticks.value(min, max, numTicks)
