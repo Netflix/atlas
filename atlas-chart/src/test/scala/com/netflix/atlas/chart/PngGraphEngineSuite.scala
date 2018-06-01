@@ -611,9 +611,8 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("issue-832_log_scale_lower_bound") {
-    val plotDef = PlotDef(label(simpleSeriesDef(4, 6)),
-      lower = PlotBound("100"),
-      scale = Scale.LOGARITHMIC)
+    val plotDef =
+      PlotDef(label(simpleSeriesDef(4, 6)), lower = PlotBound("100"), scale = Scale.LOGARITHMIC)
 
     val graphDef = GraphDef(
       startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
