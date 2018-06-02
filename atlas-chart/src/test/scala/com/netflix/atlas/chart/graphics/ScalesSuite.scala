@@ -81,4 +81,19 @@ class ScalesSuite extends FunSuite {
     assert(scale(-100.0) === 0)
   }
 
+  test("logarithmic less than lower bound") {
+    val scale = Scales.logarithmic(15.0, 100.0, 0, 100)
+    assert(scale(0.0) === -1)
+    assert(scale(10.0) === -1)
+    assert(scale(20.0) === 40)
+    assert(scale(30.0) === 62)
+    assert(scale(40.0) === 73)
+    assert(scale(50.0) === 80)
+    assert(scale(60.0) === 85)
+    assert(scale(70.0) === 90)
+    assert(scale(80.0) === 94)
+    assert(scale(90.0) === 97)
+    assert(scale(100.0) === 100)
+  }
+
 }

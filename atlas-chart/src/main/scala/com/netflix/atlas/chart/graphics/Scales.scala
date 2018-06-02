@@ -63,7 +63,9 @@ object Scales {
     // Add 1.0 so that the value passed into the log10 function will be >= 1.0.
     val pixelSpan = math.log10(d2 - d1 + 1.0) / (r2 - r1)
     v =>
-      (math.log10(v - d1 + 1.0) / pixelSpan).toInt + r1
+      // If the value is too low, then explicitly set it be out of bounds so it will
+      // not get mapped to 0 and show up as a line along the axis
+      if (v < d1) r1 - 1 else (math.log10(v - d1 + 1.0) / pixelSpan).toInt + r1
   }
 
   private def negativeLog(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
