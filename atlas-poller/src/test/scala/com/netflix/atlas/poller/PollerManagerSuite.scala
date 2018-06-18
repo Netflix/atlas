@@ -25,6 +25,7 @@ import com.netflix.atlas.core.model.Datapoint
 import com.netflix.iep.service.DefaultClassFactory
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
+import com.netflix.spectator.api.patterns.PolledMeter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuiteLike
@@ -132,9 +133,8 @@ class PollerManagerSuite
   }
 
   private def updateGauges(): Unit = {
-
     // Forces the update of passive gauges
-    registry.iterator()
+    PolledMeter.update(registry)
   }
 
   test("age is updated on success") {
