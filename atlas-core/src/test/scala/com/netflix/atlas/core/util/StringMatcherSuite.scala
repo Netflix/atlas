@@ -103,6 +103,12 @@ class StringMatcherSuite extends FunSuite {
     assert(compile("^foo$", false) === EqualsIgnoreCase("foo"))
   }
 
+  test("compile starting glob") {
+    // Make sure this doesn't get mapped to an index of query
+    // https://github.com/Netflix/atlas/issues/841
+    assert(compile("^*foo*") === Regex(None, re("^*foo*")))
+  }
+
   test("compile IndexOf") {
     assert(compile("foo") === IndexOf("foo"))
     assert(compile(".*foo.*") === IndexOf("foo"))
