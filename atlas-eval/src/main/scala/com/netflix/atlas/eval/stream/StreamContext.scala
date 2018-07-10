@@ -65,6 +65,8 @@ private[stream] class StreamContext(
     }
   }
 
+  def numBuffers: Int = config.getInt("num-buffers")
+
   val interpreter = new ExprInterpreter(rootConfig)
 
   def findBackendForUri(uri: Uri): Backend = {

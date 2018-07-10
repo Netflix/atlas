@@ -32,10 +32,6 @@ import com.netflix.atlas.eval.model.TimeGroup
   *
   * @param context
   *     Shared context for the evaluation stream.
-  * @param numBuffers
-  *     Number of time buffers to maintain. The buffers are stored in a rolling array
-  *     and the data for a given buffer will be emitted when the first data comes in
-  *     for a new time that would evict the buffer with the minimum time.
   * @param max
   *     Maximum number of items that can be accumulated for a given time.
   * @param ts
@@ -45,10 +41,16 @@ import com.netflix.atlas.eval.model.TimeGroup
   */
 private[stream] class TimeGrouped[T](
   context: StreamContext,
-  numBuffers: Int,
   max: Int,
   ts: T => Long
 ) extends GraphStage[FlowShape[T, TimeGroup[T]]] {
+
+  /**
+   * Number of time buffers to maintain. The buffers are stored in a rolling array
+   * and the data for a given buffer will be emitted when the first data comes in
+   * for a new time that would evict the buffer with the minimum time.
+   */
+  private val numBuffers = context.numBuffers
 
   private val in = Inlet[T]("TimeGrouped.in")
   private val out = Outlet[TimeGroup[T]]("TimeGrouped.out")

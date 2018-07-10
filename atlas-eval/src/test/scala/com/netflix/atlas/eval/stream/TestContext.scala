@@ -50,6 +50,8 @@ object TestContext {
       |      instance-uri = "http://{host}:{port}"
       |    }
       |  ]
+      |
+      |  num-buffers = 2
       |}
     """.stripMargin)
 
