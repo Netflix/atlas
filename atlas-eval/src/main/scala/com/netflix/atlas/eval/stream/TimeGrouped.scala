@@ -46,10 +46,10 @@ private[stream] class TimeGrouped[T](
 ) extends GraphStage[FlowShape[T, TimeGroup[T]]] {
 
   /**
-   * Number of time buffers to maintain. The buffers are stored in a rolling array
-   * and the data for a given buffer will be emitted when the first data comes in
-   * for a new time that would evict the buffer with the minimum time.
-   */
+    * Number of time buffers to maintain. The buffers are stored in a rolling array
+    * and the data for a given buffer will be emitted when the first data comes in
+    * for a new time that would evict the buffer with the minimum time.
+    */
   private val numBuffers = context.numBuffers
 
   private val in = Inlet[T]("TimeGrouped.in")
