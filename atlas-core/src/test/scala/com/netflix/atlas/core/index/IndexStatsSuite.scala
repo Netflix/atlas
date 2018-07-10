@@ -38,12 +38,15 @@ class IndexStatsSuite extends FunSuite with BeforeAndAfter {
       IndexStats.KeyStat(i.toString, 50 - i, i)
     }
     stats.updateKeyStats(keyStats.toList)
+    stats.updateIndexStats(100)
     PolledMeter.update(registry)
   }
 
   test("expected number of gauges present") {
-    // Should have 43 metrics, 1 num keys, 21 num values, 21 num items
-    assert(registry.gauges().count() === 43)
+    // Should have 44 metrics in total:
+    // 43 key metrics: 1 num keys, 21 num values, 21 num items
+    //  1  db metrics: 1 num metrics
+    assert(registry.gauges().count() === 44)
   }
 
   test("top-N value") {
@@ -89,5 +92,10 @@ class IndexStatsSuite extends FunSuite with BeforeAndAfter {
       }
       stats.updateKeyStats(keyStats.toList)
     }
+  }
+
+  test("db size is present") {
+    val numMetrics = registry.gauge("atlas.db.size").value()
+    assert(numMetrics === 100)
   }
 }
