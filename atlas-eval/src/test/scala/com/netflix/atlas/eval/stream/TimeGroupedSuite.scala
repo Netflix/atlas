@@ -46,7 +46,7 @@ class TimeGroupedSuite extends FunSuite {
 
   private def run(data: List[Event]): List[TimeGroup[Event]] = {
     val future = Source(data)
-      .via(new TimeGrouped[Event](context, 2, 10, _.timestamp))
+      .via(new TimeGrouped[Event](context, 10, _.timestamp))
       .runFold(List.empty[TimeGroup[Event]])((acc, g) => g :: acc)
     result(future)
   }
