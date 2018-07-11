@@ -276,11 +276,13 @@ object CloudWatchPoller {
     def datapoint: Datapoint = {
       if (meta.definition.monotonicValue) {
         previous.fold(DatapointNaN) { p =>
-          // For a monotonic counter, the sum and the sample count are the only meaningful
-          // stats. If for some reason the current is less than the previous, then use the
-          // derive behavior and treat the result as a zero.
+          // For a monotonic counter, use the max statistic. These will typically have a
+          // single reporting source that maintains the state over time. If the sample count
+          // is larger than one, it will be a spike due to the reporter sending the value
+          // multiple times within that interval. The max will allow us to ignore those
+          // spikes and get the last written value.
           val c = current.getOrElse(DatapointNaN)
-          val delta = math.max(c.getSum - p.getSum, 0.0)
+          val delta = math.max(c.getMaximum - p.getMaximum, 0.0)
           new Datapoint()
             .withMinimum(delta)
             .withMaximum(delta)

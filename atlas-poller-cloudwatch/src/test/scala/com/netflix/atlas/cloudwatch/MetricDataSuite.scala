@@ -33,12 +33,12 @@ class MetricDataSuite extends FunSuite {
 
   private val monotonicMetadata = metadata.copy(definition = definition.copy(monotonicValue = true))
 
-  private def datapoint(v: Double): Option[Datapoint] = {
+  private def datapoint(v: Double, c: Double = 1.0): Option[Datapoint] = {
     val d = new Datapoint()
       .withMinimum(v)
       .withMaximum(v)
-      .withSum(v)
-      .withSampleCount(1.0)
+      .withSum(v * c)
+      .withSampleCount(c)
       .withTimestamp(new Date())
       .withUnit(StandardUnit.None)
     Some(d)
@@ -82,5 +82,10 @@ class MetricDataSuite extends FunSuite {
   test("access monotonic datapoint, previous equals current") {
     val data = MetricData(monotonicMetadata, datapoint(1.0), datapoint(1.0))
     assert(data.datapoint.getSum === 0.0)
+  }
+
+  test("access monotonic datapoint, current is larger, previous dup") {
+    val data = MetricData(monotonicMetadata, datapoint(1.0, 3), datapoint(2.0))
+    assert(data.datapoint.getSum === 1.0)
   }
 }
