@@ -117,6 +117,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
       i += 1
     }
     stats.updateKeyStats(builder.result())
+    stats.updateIndexStats(items.length)
   }
 
   private def createPositionMap(data: Array[String]): RefIntHashMap[String] = {

@@ -30,6 +30,7 @@ import com.netflix.spectator.api.patterns.PolledMeter
   * 1. Number of key strings
   * 2. Number of value strings
   * 3. Number of items
+  * 4. Number of metrics
   *
   * The number of strings help to determine how close we are to the size of the
   * string table used for interning. Items is mostly provided as a cross reference
@@ -43,15 +44,28 @@ class IndexStats(registry: Registry = new NoopRegistry) {
 
   import IndexStats._
 
-  private val numberOfKeys = PolledMeter
-    .using(registry)
-    .withName("atlas.index.numberOfKeys")
-    .monitorValue(new AtomicLong())
-
   private val numberOfValues = new ConcurrentHashMap[Id, ValueEntry]()
+  private val numberOfMetrics = createGauge("atlas.db.size")
+  private val numberOfKeys = createGauge("atlas.index.numberOfKeys")
+
+  private def createGauge(name: String): AtomicLong = {
+    PolledMeter
+      .using(registry)
+      .withName(name)
+      .monitorValue(new AtomicLong(0L))
+  }
 
   /**
-    * Update the stats based on the latest build of the index.
+    * Update stats that pertain to index as a whole, based on the latest build
+    * of the index. This may widen to include any other useful information about
+    * the index itself, such as size in memory, hash load factor, seek time etc.
+    */
+  def updateIndexStats(numItems: Int): Unit = {
+    numberOfMetrics.set(numItems)
+  }
+
+  /**
+    * Update key stats based on the latest build of the index.
     */
   def updateKeyStats(stats: List[KeyStat]): Unit = {
     numberOfKeys.set(stats.length)
