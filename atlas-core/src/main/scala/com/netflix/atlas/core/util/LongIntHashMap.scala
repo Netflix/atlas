@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.util
 
-
 /**
   * Mutable long to integer map based on open-addressing. Primary use-case is computing
   * a count for the number of times a particular value was encountered.
