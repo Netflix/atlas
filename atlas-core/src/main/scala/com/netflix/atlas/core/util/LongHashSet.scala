@@ -15,10 +15,6 @@
  */
 package com.netflix.atlas.core.util
 
-import java.nio.ByteBuffer
-
-import scala.util.hashing.MurmurHash3
-
 /**
   * Mutable integer set based on open-addressing. Primary use-case is deduping
   * integers so it only supports `add` and `foreach`.
@@ -35,10 +31,6 @@ class LongHashSet(noData: Long, capacity: Int = 10) {
   private[this] var data = newArray(capacity)
   private[this] var used = 0
   private[this] var cutoff = computeCutoff(data.length)
-
-  // Used for computing the hash code.
-  private[this] val buffer = ThreadLocal
-    .withInitial[ByteBuffer](() => ByteBuffer.allocate(java.lang.Long.BYTES))
 
   // Set at 50% capacity to get reasonable tradeoff between performance and
   // memory use. See IntIntMap benchmark.
@@ -66,15 +58,8 @@ class LongHashSet(noData: Long, capacity: Int = 10) {
     cutoff = computeCutoff(data.length)
   }
 
-  private def hash(v: Long): Int = {
-    val buf = buffer.get()
-    buf.clear()
-    buf.putLong(v)
-    MurmurHash3.bytesHash(buf.array())
-  }
-
   private def add(buffer: Array[Long], v: Long): Boolean = {
-    var pos = Hash.absOrZero(hash(v)) % buffer.length
+    var pos = Hash.absOrZero(Hash.murmur3(v)) % buffer.length
     var posV = buffer(pos)
     while (posV != noData && posV != v) {
       pos = (pos + 1) % buffer.length

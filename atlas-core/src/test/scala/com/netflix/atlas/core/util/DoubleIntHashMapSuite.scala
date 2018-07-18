@@ -110,8 +110,8 @@ class DoubleIntHashMapSuite extends FunSuite {
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)
 
-    // Only objects should be the key/value arrays, hash buffer, and the map itself
-    assert(igraph.totalCount() === 6)
+    // Only objects should be the key/value arrays and the map itself
+    assert(igraph.totalCount() === 4)
 
     // Sanity check size is < 300 bytes
     assert(igraph.totalSize() <= 300)
@@ -132,7 +132,7 @@ class DoubleIntHashMapSuite extends FunSuite {
     //println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself
-    assert(igraph.totalCount() === 6)
+    assert(igraph.totalCount() === 4)
 
     // Sanity check size is < 320kb
     assert(igraph.totalSize() <= 320000)

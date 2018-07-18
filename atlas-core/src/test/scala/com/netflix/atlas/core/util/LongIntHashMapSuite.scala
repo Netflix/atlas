@@ -136,8 +136,8 @@ class LongIntHashMapSuite extends FunSuite {
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)
 
-    // Only objects should be the key/value arrays, hash buffer, and the map itself
-    assert(igraph.totalCount() === 5)
+    // Only objects should be the key/value arrays and the map itself
+    assert(igraph.totalCount() === 3)
 
     // Sanity check size is < 300 bytes
     assert(igraph.totalSize() <= 300)
@@ -158,7 +158,7 @@ class LongIntHashMapSuite extends FunSuite {
     //println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself
-    assert(igraph.totalCount() === 5)
+    assert(igraph.totalCount() === 3)
 
     // Sanity check size is < 320kb
     assert(igraph.totalSize() <= 320000)
