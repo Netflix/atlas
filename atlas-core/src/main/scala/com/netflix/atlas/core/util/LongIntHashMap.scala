@@ -15,10 +15,6 @@
  */
 package com.netflix.atlas.core.util
 
-import java.nio.ByteBuffer
-
-import scala.util.hashing.MurmurHash3
-
 /**
   * Mutable long to integer map based on open-addressing. Primary use-case is computing
   * a count for the number of times a particular value was encountered.
@@ -36,10 +32,6 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
   private[this] var values = new Array[Int](keys.length)
   private[this] var used = 0
   private[this] var cutoff = computeCutoff(keys.length)
-
-  // Used for computing the hash code.
-  private[this] val buffer = ThreadLocal
-    .withInitial[ByteBuffer](() => ByteBuffer.allocate(java.lang.Long.BYTES))
 
   // Set at 50% capacity to get reasonable tradeoff between performance and
   // memory use. See IntIntMap benchmark.
@@ -70,11 +62,7 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
   }
 
   private def hash(ks: Array[Long], k: Long): Int = {
-    val buf = buffer.get()
-    buf.clear()
-    buf.putLong(k)
-    MurmurHash3.bytesHash(buf.array())
-    Hash.absOrZero(java.lang.Long.hashCode(k)) % ks.length
+    Hash.absOrZero(Hash.murmur3(k)) % ks.length
   }
 
   private def put(ks: Array[Long], vs: Array[Int], k: Long, v: Int): Boolean = {

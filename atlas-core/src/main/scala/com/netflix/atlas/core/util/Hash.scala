@@ -16,11 +16,25 @@
 package com.netflix.atlas.core.util
 
 import java.math.BigInteger
+import java.nio.ByteBuffer
 import java.security.MessageDigest
 
 import scala.util.Try
+import scala.util.hashing.MurmurHash3
 
 object Hash {
+
+  // Used for computing the hash code for Long values.
+  private[this] val buffer = ThreadLocal
+    .withInitial[ByteBuffer](() => ByteBuffer.allocate(java.lang.Long.BYTES))
+
+  /** Compute MurmurHash3 for a java long value. */
+  def murmur3(v: Long): Int = {
+    val buf = buffer.get()
+    buf.clear()
+    buf.putLong(v)
+    MurmurHash3.bytesHash(buf.array())
+  }
 
   // Seeing contention on MessageDigest.getInstance, following pattern used by jruby:
   // https://github.com/jruby/jruby/commit/e840823c435393e8365be1bae93f646c1bb0043f

@@ -80,7 +80,7 @@ class LongHashSetSuite extends FunSuite {
   test("memory per set") {
     // Sanity check to verify if some change introduces more overhead per set
     val bytes = ClassLayout.parseClass(classOf[LongHashSet]).instanceSize()
-    assert(bytes === 40)
+    assert(bytes === 32)
   }
 
   test("memory - 5 items") {
@@ -97,8 +97,8 @@ class LongHashSetSuite extends FunSuite {
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)
 
-    // Only objects should be the array, hash buffer, and the set itself
-    assert(igraph.totalCount() === 4)
+    // Only objects should be the array and the set itself
+    assert(igraph.totalCount() === 2)
 
     // Sanity check size is < 100 bytes
     assert(igraph.totalSize() <= 250)
@@ -118,8 +118,8 @@ class LongHashSetSuite extends FunSuite {
     //println(igraph.toFootprint)
     //println(jgraph.toFootprint)
 
-    // Only objects should be the array, hash buffer, and the set itself
-    assert(igraph.totalCount() === 4)
+    // Only objects should be the array and the set itself
+    assert(igraph.totalCount() === 2)
 
     // Sanity check size is < 220kb
     assert(igraph.totalSize() <= 220000)
