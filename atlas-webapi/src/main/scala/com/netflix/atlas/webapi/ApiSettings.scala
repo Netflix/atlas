@@ -64,15 +64,14 @@ class ApiSettings(root: => Config) {
   def engines: List[GraphEngine] = {
     import scala.collection.JavaConverters._
     config.getStringList("graph.engines").asScala.toList.map { cname =>
-      val cls = Class.forName(cname)
-      cls.newInstance().asInstanceOf[GraphEngine]
+      newInstance[GraphEngine](cname)
     }
   }
 
   def graphVocabulary: Vocabulary = {
     config.getString("graph.vocabulary") match {
       case "default" => new CustomVocabulary(root)
-      case cls       => Class.forName(cls).newInstance().asInstanceOf[Vocabulary]
+      case cls       => newInstance[Vocabulary](cls)
     }
   }
 
@@ -83,5 +82,9 @@ class ApiSettings(root: => Config) {
   def excludedWords: Set[String] = {
     import scala.collection.JavaConverters._
     config.getStringList("expr.complete.excluded-words").asScala.toSet
+  }
+
+  private def newInstance[T](cls: String): T = {
+    Class.forName(cls).getDeclaredConstructor().newInstance().asInstanceOf[T]
   }
 }
