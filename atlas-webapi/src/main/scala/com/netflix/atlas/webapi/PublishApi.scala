@@ -36,10 +36,11 @@ import com.netflix.atlas.core.validation.Rule
 import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
+import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.Promise
 
-class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
 
   import com.netflix.atlas.webapi.PublishApi._
 
@@ -93,7 +94,12 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
         case _ =>
           Rule.validate(v.tags, rules)
       }
-      if (result.isSuccess) validDatapoints += v else failures += result
+      if (result.isSuccess) {
+        validDatapoints += v
+      } else {
+        failures += result
+        logger.trace(s"rejected datapoint: $v, reason: $result")
+      }
     }
     validDatapoints.result() -> failures.result()
   }
