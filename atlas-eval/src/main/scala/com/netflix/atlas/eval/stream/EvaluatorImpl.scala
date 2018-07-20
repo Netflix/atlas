@@ -173,6 +173,7 @@ private[stream] abstract class EvaluatorImpl(
 
       val intermediateEval = createInputFlow(context)
         .map(_.decodeString(StandardCharsets.UTF_8))
+        .map(ReplayLogging.log)
         .via(context.countEvents("10_InputLines"))
         .via(new LwcToAggrDatapoint)
         .via(context.countEvents("11_LwcDatapoints"))
@@ -188,6 +189,7 @@ private[stream] abstract class EvaluatorImpl(
 
     // Final evaluation of the overall expression
     Flow[DataSources]
+      .map(ReplayLogging.log)
       .map(s => context.validate(s))
       .via(g)
       .via(new FinalExprEval(context.interpreter))
