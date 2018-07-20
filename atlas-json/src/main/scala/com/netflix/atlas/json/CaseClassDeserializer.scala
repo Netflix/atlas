@@ -52,8 +52,9 @@ class CaseClassDeserializer(
       val annoDeser = ctxt.getAnnotationIntrospector
         .findDeserializer(finfo.property.getMember)
         .asInstanceOf[Class[_]]
-      if (annoDeser != null) annoDeser.newInstance().asInstanceOf[JsonDeserializer[_]]
-      else {
+      if (annoDeser != null) {
+        annoDeser.getDeclaredConstructor().newInstance().asInstanceOf[JsonDeserializer[_]]
+      } else {
         // If possible, then get the type info from the bean description as it has more
         // context about generic types. In some cases it is null so fallback to using
         // the type we find for the field in the class.

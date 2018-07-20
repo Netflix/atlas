@@ -77,8 +77,7 @@ case class DefaultSettings(root: Config, config: Config) {
       .asScala
       .toList
       .map { cname =>
-        val cls = Class.forName(cname)
-        val e = cls.newInstance().asInstanceOf[GraphEngine]
+        val e = newInstance[GraphEngine](cname)
         e.name -> e
       }
       .toMap
@@ -94,12 +93,16 @@ case class DefaultSettings(root: Config, config: Config) {
   val graphVocabulary: Vocabulary = {
     config.getString("vocabulary") match {
       case "default" => new CustomVocabulary(root)
-      case cls       => Class.forName(cls).newInstance().asInstanceOf[Vocabulary]
+      case cls       => newInstance[Vocabulary](cls)
     }
   }
 
   /** Interpreter for the graph expressions. */
   val interpreter = Interpreter(graphVocabulary.allWords)
+
+  private def newInstance[T](cls: String): T = {
+    Class.forName(cls).getDeclaredConstructor().newInstance().asInstanceOf[T]
+  }
 }
 
 object DefaultSettings {
