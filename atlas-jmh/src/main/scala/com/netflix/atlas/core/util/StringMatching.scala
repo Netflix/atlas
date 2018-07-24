@@ -43,12 +43,12 @@ class StringMatching {
   private val startsWithMatcher = StringMatcher.StartsWith(prefix)
   private val ssIndexOfMatcher = StringMatcher.IndexOf(substr)
   private val icIndexOfMatcher = StringMatcher.IndexOfIgnoreCase(substr)
-  private val regexMatcher = StringMatcher.Regex(None, Pattern.compile(s"^$prefix"))
-  private val icRegexMatcher = StringMatcher.Regex(None, Pattern.compile(s"^$prefix", flags))
-  private val ssRegexMatcher = StringMatcher.Regex(None, Pattern.compile(s"^.*$substr"))
-  private val ssRegexMatcher2 = StringMatcher.Regex(None, Pattern.compile(substr))
-  private val ssICRegexMatcher = StringMatcher.Regex(None, Pattern.compile(s"^.*$substr", flags))
-  private val ssICRegexMatcher2 = StringMatcher.Regex(None, Pattern.compile(substr, flags))
+  private val regexMatcher = StringMatcher.Regex(Pattern.compile(s"^$prefix"))
+  private val icRegexMatcher = StringMatcher.Regex(Pattern.compile(s"^$prefix", flags))
+  private val ssRegexMatcher = StringMatcher.Regex(Pattern.compile(s"^.*$substr"))
+  private val ssRegexMatcher2 = StringMatcher.Regex(Pattern.compile(substr))
+  private val ssICRegexMatcher = StringMatcher.Regex(Pattern.compile(s"^.*$substr", flags))
+  private val ssICRegexMatcher2 = StringMatcher.Regex(Pattern.compile(substr, flags))
 
   @Threads(1)
   @Benchmark

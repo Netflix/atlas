@@ -55,19 +55,19 @@ class StringMatcherSuite extends FunSuite {
   }
 
   test("matches Regex") {
-    assert(Regex(None, re("^f")).matches("foo"))
-    assert(Regex(None, re("f")).matches("foo"))
-    assert(Regex(None, re("foo")).matches("foo"))
-    assert(Regex(None, re("oo")).matches("foo"))
-    assert(!Regex(None, re("Foo")).matches("foo"))
+    assert(Regex(re("^f")).matches("foo"))
+    assert(Regex(re("f")).matches("foo"))
+    assert(Regex(re("foo")).matches("foo"))
+    assert(Regex(re("oo")).matches("foo"))
+    assert(!Regex(re("Foo")).matches("foo"))
   }
 
   test("matches RegexIgnoreCase") {
-    assert(Regex(None, reic("^f")).matches("foo"))
-    assert(Regex(None, reic("f")).matches("foo"))
-    assert(Regex(None, reic("foo")).matches("foo"))
-    assert(Regex(None, reic("oo")).matches("foO"))
-    assert(Regex(None, reic("Foo")).matches("foo"))
+    assert(Regex(reic("^f")).matches("foo"))
+    assert(Regex(reic("f")).matches("foo"))
+    assert(Regex(reic("foo")).matches("foo"))
+    assert(Regex(reic("oo")).matches("foO"))
+    assert(Regex(reic("Foo")).matches("foo"))
   }
 
   test("matches Or") {
@@ -91,8 +91,12 @@ class StringMatcherSuite extends FunSuite {
     assert(compile("^foo.*") === StartsWith("foo"))
   }
 
+  test("compile StartsWith and dot") {
+    assert(compile("^foo.bar.*") === PrefixedRegex("foo", re("^foo.bar.*")))
+  }
+
   test("compile StartsWithIgnoreCase") {
-    assert(compile("^foo.*", false) === Regex(None, reic("^foo.*")))
+    assert(compile("^foo.*", false) === Regex(reic("^foo.*")))
   }
 
   test("compile Equals") {
@@ -106,7 +110,7 @@ class StringMatcherSuite extends FunSuite {
   test("compile starting glob") {
     // Make sure this doesn't get mapped to an index of query
     // https://github.com/Netflix/atlas/issues/841
-    assert(compile("^*foo*") === Regex(None, re("^*foo*")))
+    assert(compile("^*foo*") === Regex(re("^*foo*")))
   }
 
   test("compile IndexOf") {
@@ -122,36 +126,36 @@ class StringMatcherSuite extends FunSuite {
   }
 
   test("compile Prefix") {
-    val prefix = Some("foo")
-    assert(compile("^foo[bar]") === Regex(prefix, re("^foo[bar]")))
-    assert(compile("^foo[bar].*") === Regex(prefix, re("^foo[bar].*")))
-    assert(compile("^foo[bar].*$") === Regex(prefix, re("^foo[bar].*$")))
+    val prefix = "foo"
+    assert(compile("^foo[bar]") === PrefixedRegex(prefix, re("^foo[bar]")))
+    assert(compile("^foo[bar].*") === PrefixedRegex(prefix, re("^foo[bar].*")))
+    assert(compile("^foo[bar].*$") === PrefixedRegex(prefix, re("^foo[bar].*$")))
   }
 
   test("compile PrefixIgnoreCase") {
-    assert(compile("^foo[bar]", false) === Regex(None, reic("^foo[bar]")))
-    assert(compile("^foo[bar].*", false) === Regex(None, reic("^foo[bar].*")))
-    assert(compile("^foo[bar].*$", false) === Regex(None, reic("^foo[bar].*$")))
+    assert(compile("^foo[bar]", false) === Regex(reic("^foo[bar]")))
+    assert(compile("^foo[bar].*", false) === Regex(reic("^foo[bar].*")))
+    assert(compile("^foo[bar].*$", false) === Regex(reic("^foo[bar].*$")))
   }
 
   test("compile Regex") {
-    assert(compile("^.*foo[bar]") === Regex(None, re("^.*foo[bar]")))
-    assert(compile("^.*foo[bar].*") === Regex(None, re("^.*foo[bar].*")))
-    assert(compile("^.*foo[bar].*$") === Regex(None, re("^.*foo[bar].*$")))
+    assert(compile("^.*foo[bar]") === Regex(re("^.*foo[bar]")))
+    assert(compile("^.*foo[bar].*") === Regex(re("^.*foo[bar].*")))
+    assert(compile("^.*foo[bar].*$") === Regex(re("^.*foo[bar].*$")))
   }
 
   test("compile RegexIgnoreCase") {
-    assert(compile("^.*foo[bar]", false) === Regex(None, reic("^.*foo[bar]")))
-    assert(compile("^.*foo[bar].*", false) === Regex(None, reic("^.*foo[bar].*")))
-    assert(compile("^.*foo[bar].*$", false) === Regex(None, reic("^.*foo[bar].*$")))
+    assert(compile("^.*foo[bar]", false) === Regex(reic("^.*foo[bar]")))
+    assert(compile("^.*foo[bar].*", false) === Regex(reic("^.*foo[bar].*")))
+    assert(compile("^.*foo[bar].*$", false) === Regex(reic("^.*foo[bar].*$")))
   }
 
   test("compile Regex end anchor") {
-    assert(compile("^foo[1-3]$") === Regex(Some("foo"), re("^foo[1-3]$")))
+    assert(compile("^foo[1-3]$") === PrefixedRegex("foo", re("^foo[1-3]$")))
   }
 
   test("compile RegexIgnoreCase end anchor") {
-    assert(compile("^foo[1-3]$", false) === Regex(None, reic("^foo[1-3]$")))
+    assert(compile("^foo[1-3]$", false) === Regex(reic("^foo[1-3]$")))
   }
 
   test("compile Or anchored at start and end") {
@@ -165,7 +169,7 @@ class StringMatcherSuite extends FunSuite {
     assert(compile("^a|b|c", true) === Or(List(StartsWith("a"), IndexOf("b"), IndexOf("c"))))
     assert(
       compile("^.*a.*|.*b.*|c*)", true) === Or(
-        List(IndexOf("a"), IndexOf("b"), Regex(None, re("c*")))
+        List(IndexOf("a"), IndexOf("b"), Regex(re("c*")))
       )
     )
   }
@@ -174,13 +178,13 @@ class StringMatcherSuite extends FunSuite {
     assert(compile("(a|b|c)", true) === Or(List(IndexOf("a"), IndexOf("b"), IndexOf("c"))))
     assert(
       compile(".*a.*|.*b.*|c*)", true) === Or(
-        List(IndexOf("a"), IndexOf("b"), Regex(None, re("c*")))
+        List(IndexOf("a"), IndexOf("b"), Regex(re("c*")))
       )
     )
   }
 
   test("compile Or, too complex") {
-    assert(compile("(a(d|e)|b|c)", true) === Regex(None, re("(a(d|e)|b|c)")))
+    assert(compile("(a(d|e)|b|c)", true) === Regex(re("(a(d|e)|b|c)")))
   }
 
 }

@@ -47,10 +47,10 @@ class StringMatchingOr {
   private val query8 = "adec123|abc|2|23|12345|abc34521|fedbca*.|98a2def.*"
   private val query32 = s"$query8|$query8|$query8|$query8"
 
-  private val regex8 = StringMatcher.Regex(None, Pattern.compile(query8))
+  private val regex8 = StringMatcher.Regex(Pattern.compile(query8))
   private val orMatcher8 = StringMatcher.compile(query8)
 
-  private val regex32 = StringMatcher.Regex(None, Pattern.compile(query32))
+  private val regex32 = StringMatcher.Regex(Pattern.compile(query32))
   private val orMatcher32 = StringMatcher.compile(query32)
 
   @Threads(1)
