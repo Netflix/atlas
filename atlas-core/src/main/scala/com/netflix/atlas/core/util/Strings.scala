@@ -460,6 +460,37 @@ object Strings {
   }
 
   /**
+    * Parse start and end time strings that can be relative to each other and resolve to
+    * precise instants.
+    *
+    * @param s
+    *     Start time string in a format supported by `parseDate`.
+    * @param e
+    *     End time string in a format supported by `parseDate`.
+    * @param tz
+    *     Time zone to assume for the times if a zone is not explicitly specified. Defaults
+    *     to UTC.
+    * @return
+    *     Tuple `start -> end`.
+    */
+  def timeRange(s: String, e: String, tz: ZoneId = ZoneOffset.UTC): (Instant, Instant) = {
+    val range = if (Strings.isRelativeDate(s, true) || s == "e") {
+      require(!Strings.isRelativeDate(e, true), "start and end are both relative")
+      val end = Strings.parseDate(e, tz)
+      val start = Strings.parseDate(end, s, tz)
+      start.toInstant -> end.toInstant
+    } else {
+      val start = Strings.parseDate(s, tz)
+      val end = Strings.parseDate(start, e, tz)
+      start.toInstant -> end.toInstant
+    }
+    require(isBeforeOrEqual(range._1, range._2), "end time is before start time")
+    range
+  }
+
+  private def isBeforeOrEqual(s: Instant, e: Instant): Boolean = s.isBefore(e) || s.equals(e)
+
+  /**
     * Parse a color expressed as a hexadecimal RRGGBB string.
     */
   def parseColor(str: String): Color = {

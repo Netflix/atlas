@@ -56,7 +56,7 @@ case class GraphConfig(
 
   // Resolved start and end time
   val (resStart, resEnd) =
-    timeRange(start.getOrElse(settings.startTime), end.getOrElse(settings.endTime), tz)
+    Strings.timeRange(start.getOrElse(settings.startTime), end.getOrElse(settings.endTime), tz)
 
   /** Input step size rounded if necessary to a supported step. */
   val roundedStepSize: Long = {
@@ -78,19 +78,6 @@ case class GraphConfig(
   def startMillis: Long = fstart.toEpochMilli + stepSize
 
   def endMillis: Long = fend.toEpochMilli + stepSize
-
-  private def timeRange(s: String, e: String, tz: ZoneId): (Instant, Instant) = {
-    if (Strings.isRelativeDate(s, true) || s == "e") {
-      require(!Strings.isRelativeDate(e, true), "start and end are both relative")
-      val end = Strings.parseDate(e, tz)
-      val start = Strings.parseDate(end, s, tz)
-      start.toInstant -> end.toInstant
-    } else {
-      val start = Strings.parseDate(s, tz)
-      val end = Strings.parseDate(start, e, tz)
-      start.toInstant -> end.toInstant
-    }
-  }
 
   private def roundToStep(s: Instant, e: Instant): (Instant, Instant) = {
     val rs = roundToStep(s)
