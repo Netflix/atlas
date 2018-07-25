@@ -493,4 +493,39 @@ class StringsSuite extends FunSuite {
     assert(zeroPad(b, 3) === "02a")
     assert(zeroPad(b, 8) === "0000002a")
   }
+
+  test("range: both absolute") {
+    val (s, e) = timeRange("2018-07-24", "2018-07-24T00:05")
+    assert(s === parseDate("2018-07-24").toInstant)
+    assert(e === parseDate("2018-07-24T00:05").toInstant)
+  }
+
+  test("range: end is before start") {
+    intercept[IllegalArgumentException] {
+      timeRange("2018-07-24T00:05", "2018-07-24")
+    }
+  }
+
+  test("range: start time is the same as end time") {
+    val (s, e) = timeRange("2018-07-24", "2018-07-24")
+    assert(s === e)
+  }
+
+  test("range: both relative") {
+    intercept[IllegalArgumentException] {
+      timeRange("e-5m", "s+5m")
+    }
+  }
+
+  test("range: start relative to end") {
+    val (s, e) = timeRange("e-5m", "2018-07-24T00:05")
+    assert(s === parseDate("2018-07-24").toInstant)
+    assert(e === parseDate("2018-07-24T00:05").toInstant)
+  }
+
+  test("range: end relative to start") {
+    val (s, e) = timeRange("2018-07-24", "s+5m")
+    assert(s === parseDate("2018-07-24").toInstant)
+    assert(e === parseDate("2018-07-24T00:05").toInstant)
+  }
 }
