@@ -40,6 +40,7 @@ object MathVocabulary extends Vocabulary {
     GroupBy,
     Const,
     Random,
+    SeededRandom,
     Time,
     TimeSpan,
     CommonQuery,
@@ -308,12 +309,41 @@ object MathVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Generates a line where each datapoint is a random value between 0.0 and 1.0.
+        |Generate a time series that appears to be random noise for the purposes of
+        |experimentation and generating sample data. To ensure that the line is deterministic
+        |and reproducible it actually is based on a hash of the timestamp. Each datapoint is a
+        |value between 0.0 and 1.0.
       """.stripMargin.trim
 
     override def signature: String = " -- TimeSeriesExpr"
 
     override def examples: List[String] = List("")
+  }
+
+  case object SeededRandom extends SimpleWord {
+
+    override def name: String = "srandom"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(seed) :: s => MathExpr.SeededRandom(seed) :: s
+    }
+
+    override def summary: String =
+      """
+        |Generate a time series that appears to be random noise for the purposes of
+        |experimentation and generating sample data. To ensure that the line is deterministic
+        |and reproducible it actually is based on a hash of the timestamp. The seed value is
+        |used to vary the values for the purposes of creating mulitple different sample lines.
+        |Each datapoint is a value between 0.0 and 1.0.
+      """.stripMargin.trim
+
+    override def signature: String = "seed:Int -- TimeSeriesExpr"
+
+    override def examples: List[String] = List("42")
   }
 
   case object Time extends SimpleWord {

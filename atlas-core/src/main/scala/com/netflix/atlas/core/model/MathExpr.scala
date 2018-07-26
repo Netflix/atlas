@@ -25,6 +25,7 @@ import java.time.temporal.ChronoField
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.util.ArrayHelper
+import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.Strings
 import com.netflix.spectator.api.histogram.PercentileBuckets
@@ -52,6 +53,11 @@ object MathExpr {
     }
   }
 
+  /**
+    * Generate a time series that appears to be random noise for the purposes of
+    * experimentation and generating sample data. To ensure that the line is deterministic
+    * and reproducible it actually is based on a hash of the timestamp.
+    */
   case object Random extends TimeSeriesExpr {
 
     def dataExprs: List[DataExpr] = Nil
@@ -70,9 +76,36 @@ object MathExpr {
       ResultSet(this, List(ts), context.state)
     }
 
-    private def rand(t: Long): Double = {
-      scala.util.Random.nextDouble()
+    def rand(t: Long): Double = {
+      // Compute the hash and map the value to the range 0.0 to 1.0
+      (math.abs(Hash.murmur3(t)) % 1000) / 1000.0
     }
+  }
+
+  /**
+    * Same as [Random], but allows the user to specify a seed to vary the input. This allows
+    * multiple sample lines to be produced with different values.
+    */
+  case class SeededRandom(seed: Int) extends TimeSeriesExpr {
+
+    def dataExprs: List[DataExpr] = Nil
+
+    override def toString: String = s"$seed,:srandom"
+
+    def isGrouped: Boolean = false
+
+    def groupByKey(tags: Map[String, String]): Option[String] = None
+
+    def finalGrouping: List[String] = Nil
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      val seq = new FunctionTimeSeq(DsType.Gauge, context.step, rand)
+      val label = s"seeded-random($seed)"
+      val ts = TimeSeries(Map("name" -> label), label, seq)
+      ResultSet(this, List(ts), context.state)
+    }
+
+    def rand(t: Long): Double = Random.rand(t ^ seed)
   }
 
   case class Time(mode: String) extends TimeSeriesExpr {
