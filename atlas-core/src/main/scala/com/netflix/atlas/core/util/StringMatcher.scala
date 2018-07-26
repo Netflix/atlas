@@ -81,7 +81,7 @@ object StringMatcher {
     Or(s.split("\\|").toList.map(v => compile(f(v))))
   }
 
-  private def default(re: String, caseSensitive: Boolean = true): StringMatcher = {
+  private def default(re: String, caseSensitive: Boolean): StringMatcher = {
     val flags = if (caseSensitive) 0 else Pattern.CASE_INSENSITIVE
     Regex(Pattern.compile(re, flags))
   }
