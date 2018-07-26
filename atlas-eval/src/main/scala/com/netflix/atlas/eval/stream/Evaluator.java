@@ -32,7 +32,6 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.concurrent.duration.FiniteDuration;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -43,7 +42,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -304,7 +302,7 @@ public final class Evaluator extends EvaluatorImpl {
         .map(DataSources::new)
         .flatMapConcat(Source::repeat)                     // Repeat so stream doesn't shutdown
         .throttle(                                         // Throttle to avoid wasting CPU
-            1, FiniteDuration.apply(1, TimeUnit.MINUTES),
+            1, Duration.ofMinutes(1),
             1, ThrottleMode.shaping()
         )
         .via(Flow.fromProcessor(evaluator::createStreamsProcessor))
