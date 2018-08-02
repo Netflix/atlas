@@ -32,6 +32,7 @@ import com.netflix.atlas.core.model.TimeSeriesExpr
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.Word
+import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 
 import scala.util.Try
@@ -233,13 +234,16 @@ object ExprApi {
           s1.intersect(s2)
         }
 
+    // Normalize the legend vars
+    val styleExprs = exprs.map(normalizeLegendVars)
+
     // Normalize without extracting common queries
-    val normalized = exprStrings(exprs, cnfQueries, Set.empty)
+    val normalized = exprStrings(styleExprs, cnfQueries, Set.empty)
     val fullExpr = normalized.mkString(",")
 
     // Normalize with extracting common queries
     val cq = s":list,(,${sort(commonQueries, Set.empty)},:cq,),:each"
-    val normalizedCQ = cq :: exprStrings(exprs, cnfQueries, commonQueries)
+    val normalizedCQ = cq :: exprStrings(styleExprs, cnfQueries, commonQueries)
     val fullExprCQ = normalizedCQ.mkString(",")
 
     // If needed, then prepend a common query conversion to the list
@@ -247,6 +251,17 @@ object ExprApi {
 
     // Reverse the list to match the order the user would expect
     finalList.reverse
+  }
+
+  // For use-cases such as performing automated rewrites of expressions to move off of legacy
+  // data it is more convenient to have a consistent way of showing variables. This ensures
+  // that it will always include the parenthesis.
+  // https://github.com/Netflix/atlas/issues/863
+  private def normalizeLegendVars(expr: StyleExpr): StyleExpr = {
+    expr.settings.get("legend").fold(expr) { legend =>
+      val settings = expr.settings + ("legend" -> Strings.substitute(legend, k => s"$$($k)"))
+      expr.copy(settings = settings)
+    }
   }
 
   private def eval(interpreter: Interpreter, expr: String): List[StyleExpr] = {

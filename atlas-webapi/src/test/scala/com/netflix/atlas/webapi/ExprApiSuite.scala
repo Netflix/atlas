@@ -266,6 +266,23 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
     val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,:des-fast"
     assert(normalize(expr) === List(expr))
   }
+
+  test("normalize legend vars, include parenthesis") {
+    val expr = "name,cpuUser,:eq,:sum,$name,:legend"
+    val expected = "name,cpuUser,:eq,:sum,$(name),:legend"
+    assert(normalize(expr) === List(expected))
+  }
+
+  test("normalize legend vars, noop if parens already present") {
+    val expr = "name,cpuUser,:eq,:sum,$(name),:legend"
+    assert(normalize(expr) === List(expr))
+  }
+
+  test("normalize legend vars, mix") {
+    val expr = "name,cpuUser,:eq,:sum,foo$name$abc bar$(def)baz,:legend"
+    val expected = "name,cpuUser,:eq,:sum,foo$(name)$(abc) bar$(def)baz,:legend"
+    assert(normalize(expr) === List(expected))
+  }
 }
 
 object ExprApiSuite {
