@@ -181,11 +181,41 @@ public final class Evaluator extends EvaluatorImpl {
   public final static class DataSource {
     private final String id;
     private final String uri;
+    private final Duration frequency;
 
-    /** Create a new instance. */
+    /** The default frequency of metrics publication. */
+    public static final Duration DEFAULT_FREQUENCY = Duration.ofSeconds(60L);
+
+    /**
+     *  Create a new instance with the {@link #DEFAULT_FREQUENCY}.
+     *
+     * @param id
+     *     An identifier for this {@code DataSource}.
+     * @param uri
+     *     The URI for this {@code DataSource} (in atlas backend form).
+     */
     public DataSource(String id, String uri) {
+      this(id, uri, DEFAULT_FREQUENCY);
+    }
+
+    /**
+     *  Create a new instance.
+     *
+     * @param id
+     *     An identifier for this {@code DataSource}.
+     * @param uri
+     *     The URI for this {@code DataSource} (in atlas backend form).
+     * @param frequency
+     *     The requested frequency of metrics publication for this
+     *     {@code DataSource} in atlas backend form, with the ASL query as a
+     *     {@code query} param. <em>NOTE:</em> This may result in rejection of
+     *     this {@code DataSource} if the backing metrics producers do not
+     *     support the requested frequency.
+     */
+    public DataSource(String id, String uri, Duration frequency) {
       this.id = id;
       this.uri = uri;
+      this.frequency = frequency;
     }
 
     /** Returns the id for this data source. */
@@ -196,6 +226,11 @@ public final class Evaluator extends EvaluatorImpl {
     /** Returns the URI for this data source. */
     public String getUri() {
       return uri;
+    }
+
+    /** Returns the metrics publication frequency for this data source. */
+    public Duration getFrequency() {
+      return frequency;
     }
 
     /** Returns true if the URI is for a local file or classpath resource. */
