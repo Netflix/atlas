@@ -178,19 +178,20 @@ public final class Evaluator extends EvaluatorImpl {
   }
 
   /**
-   * Pair mapping an id to a URI that should be consumed. The id can be used to find the
-   * messages in the output that correspond to this data source.
+   * Triple mapping an id to a step size and a URI that should be consumed. The
+   * id can be used to find the messages in the output that correspond to this
+   * data source.
    */
   public final static class DataSource {
     private final String id;
+    private final Duration step;
     private final String uri;
-    private final Duration frequency;
 
-    /** The default frequency of metrics publication. */
-    private static final Duration DEFAULT_FREQUENCY = Duration.ofSeconds(60L);
+    /** The default step size. */
+    private static final Duration DEFAULT_STEP = Duration.ofSeconds(60L);
 
     /**
-     *  Create a new instance with the {@link #DEFAULT_FREQUENCY}.
+     * Create a new instance with the {@link #DEFAULT_STEP}.
      *
      * @param id
      *     An identifier for this {@code DataSource}. It will be added to
@@ -198,34 +199,38 @@ public final class Evaluator extends EvaluatorImpl {
      *     matching output messages with the data source.
      * @param uri
      *     The URI for this {@code DataSource} (in atlas backend form).
+     *
+     * @deprecated
+     *     Use {@link #DataSource(String, Duration, String)}. This constructor
+     *     is scheduled for removal in 1.7.
      */
+    @Deprecated
     public DataSource(String id, String uri) {
-      this(id, uri, DEFAULT_FREQUENCY);
+      this(id, DEFAULT_STEP, uri);
     }
 
     /**
-     *  Create a new instance.
+     * Create a new instance.
      *
      * @param id
      *     An identifier for this {@code DataSource}. It will be added to
      *     corresponding MessageEnvelope objects in the output, facilitating
      *     matching output messages with the data source.
+     * @param step
+     *     The requested step size for this {@code DataSource}. <em>NOTE:</em>
+     *     This may result in rejection of this {@code DataSource} if the
+     *     backing metrics producers do not support the requested step size.
      * @param uri
      *     The URI for this {@code DataSource} (in atlas backend form).
-     * @param frequency
-     *     The requested frequency of metrics publication for this {@code
-     *     DataSource}. <em>NOTE:</em> This may result in rejection of this
-     *     {@code DataSource} if the backing metrics producers do not support
-     *     the requested frequency.
      */
     @JsonCreator
     public DataSource(
             @JsonProperty("id") String id,
-            @JsonProperty("uri") String uri,
-            @JsonProperty("frequency") Duration frequency) {
+            @JsonProperty("step") Duration step,
+            @JsonProperty("uri") String uri) {
       this.id = id;
+      this.step = step;
       this.uri = uri;
-      this.frequency = frequency;
     }
 
     /** Returns the id for this data source. */
@@ -233,14 +238,14 @@ public final class Evaluator extends EvaluatorImpl {
       return id;
     }
 
+    /** Returns the step size for this data source. */
+    public Duration getStep() {
+      return step;
+    }
+
     /** Returns the URI for this data source. */
     public String getUri() {
       return uri;
-    }
-
-    /** Returns the metrics publication frequency for this data source. */
-    public Duration getFrequency() {
-      return frequency;
     }
 
     /** Returns true if the URI is for a local file or classpath resource. */
@@ -254,17 +259,17 @@ public final class Evaluator extends EvaluatorImpl {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       DataSource that = (DataSource) o;
-      return id.equals(that.id) && uri.equals(that.uri) && frequency.equals(that.frequency);
+      return id.equals(that.id) && step.equals(that.step) && uri.equals(that.uri);
     }
 
     @Override public int hashCode() {
       int result = id.hashCode();
-      result = 31 * result + uri.hashCode() + frequency.hashCode();
+      result = 31 * result + step.hashCode() + uri.hashCode();
       return result;
     }
 
     @Override public String toString() {
-      return "DataSource(" + id + "," + uri + "," + frequency + ")";
+      return "DataSource(" + id + "," + step + "," + uri + ")";
     }
   }
 
