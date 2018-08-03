@@ -30,10 +30,13 @@ import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.test.SrcPath
 import com.netflix.spectator.api.DefaultRegistry
 import com.typesafe.config.ConfigFactory
+import nl.jqno.equalsverifier.EqualsVerifier
+import nl.jqno.equalsverifier.Warning
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 
@@ -243,5 +246,41 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
           msg === s"IllegalArgumentException: :offset not supported for streaming evaluation [[$expr]]"
         )
     }
+  }
+
+  test("DataSource equals contract") {
+    EqualsVerifier
+      .forClass(classOf[Evaluator.DataSource])
+      .suppress(Warning.NULL_FIELDS)
+      .verify()
+  }
+
+  test("DataSources equals contract") {
+    EqualsVerifier
+      .forClass(classOf[Evaluator.DataSources])
+      .suppress(Warning.NULL_FIELDS)
+      .verify()
+  }
+
+  test("MessageEnvelope equals contract") {
+    EqualsVerifier
+      .forClass(classOf[Evaluator.MessageEnvelope])
+      .suppress(Warning.NULL_FIELDS)
+      .verify()
+  }
+
+  test("DataSource encode and decode") {
+    val expected = new Evaluator.DataSource("id", "uri")
+    val actual = Json.decode[Evaluator.DataSource](Json.encode(expected))
+    assert(actual === expected)
+  }
+
+  test("DataSources encode and decode") {
+    val expected = Evaluator.DataSources.of(
+      new Evaluator.DataSource("id1", "uri1"),
+      new Evaluator.DataSource("id2", "uri2")
+    )
+    val actual = Json.decode[Evaluator.DataSources](Json.encode(expected))
+    assert(actual === expected)
   }
 }

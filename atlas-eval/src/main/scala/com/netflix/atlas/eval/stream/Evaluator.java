@@ -23,6 +23,8 @@ import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.atlas.json.JsonSupport;
 import com.netflix.spectator.api.NoopRegistry;
 import com.netflix.spectator.api.Registry;
@@ -119,7 +121,8 @@ public final class Evaluator extends EvaluatorImpl {
     }
 
     /** Create a new instance. */
-    public DataSources(Set<DataSource> sources) {
+    @JsonCreator
+    public DataSources(@JsonProperty("sources") Set<DataSource> sources) {
       this.sources = Collections.unmodifiableSet(new HashSet<>(sources));
     }
 
@@ -215,7 +218,11 @@ public final class Evaluator extends EvaluatorImpl {
      *     {@code DataSource} if the backing metrics producers do not support
      *     the requested frequency.
      */
-    public DataSource(String id, String uri, Duration frequency) {
+    @JsonCreator
+    public DataSource(
+            @JsonProperty("id") String id,
+            @JsonProperty("uri") String uri,
+            @JsonProperty("frequency") Duration frequency) {
       this.id = id;
       this.uri = uri;
       this.frequency = frequency;
