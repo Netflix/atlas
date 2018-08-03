@@ -23,6 +23,7 @@ import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.netflix.atlas.json.JsonSupport;
 import com.netflix.spectator.api.NoopRegistry;
 import com.netflix.spectator.api.Registry;
@@ -119,6 +120,7 @@ public final class Evaluator extends EvaluatorImpl {
     }
 
     /** Create a new instance. */
+    @JsonCreator
     public DataSources(Set<DataSource> sources) {
       this.sources = Collections.unmodifiableSet(new HashSet<>(sources));
     }
