@@ -46,9 +46,9 @@ private[stream] class SubscriptionManager(context: StreamContext)
     extends GraphStageWithMaterializedValue[SinkShape[SourcesAndGroups], Future[NotUsed]]
     with StrictLogging {
 
-  import StreamContext._
   import EurekaSource._
   import Evaluator._
+  import StreamContext._
   import SubscriptionManager._
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -116,7 +116,7 @@ private[stream] class SubscriptionManager(context: StreamContext)
       private def toSubscribeRequest(ds: List[DataSource]): String = {
         val exprs = ds.flatMap { d =>
           context.interpreter.eval(Uri(d.getUri)).map { expr =>
-            Expression(expr.toString)
+            Expression(expr.toString, d.getStep.toMillis)
           }
         }
         Json.encode(SubscribePayload(context.id, exprs))
