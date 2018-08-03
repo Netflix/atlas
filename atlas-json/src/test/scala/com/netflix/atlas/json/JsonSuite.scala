@@ -17,6 +17,7 @@ package com.netflix.atlas.json
 
 import java.math.BigInteger
 import java.util
+import java.util.Optional
 import java.util.regex.Pattern
 
 import com.fasterxml.jackson.core.JsonParseException
@@ -197,6 +198,39 @@ class JsonSuite extends FunSuite {
     val v = Period.seconds(42)
     assert(encode(v) === "\"PT42S\"")
     assert(decode[Period](encode(v)) === v)
+  }
+
+  test("java8 Instant") {
+    // This form is a bit strange with floating point seconds, it would probably be
+    // better long term to disable WRITE_DATES_AS_TIMESTAMPS. However, that potentially
+    // breaks existing usages. Wait for 1.7.x
+    val v = java.time.Instant.parse("2012-01-13T04:37:52Z")
+    assert(encode(v) === "1326429472.000000000")
+    assert(decode[java.time.Instant](encode(v)) === v)
+  }
+
+  test("java8 Duration") {
+    val v = java.time.Duration.ofSeconds(42)
+    assert(encode(v) === "42.000000000")
+    assert(decode[java.time.Duration](encode(v)) === v)
+  }
+
+  test("java8 Period") {
+    val v = java.time.Period.ofDays(42)
+    assert(encode(v) === "\"P42D\"")
+    assert(decode[java.time.Period](encode(v)) === v)
+  }
+
+  test("java8 Optional[String] -- None") {
+    val v = Optional.empty[String]()
+    assert(encode(v) === "null")
+    assert(decode[Optional[String]](encode(v)) === v)
+  }
+
+  test("java8 Optional[String] -- Some") {
+    val v = Optional.of("42")
+    assert(encode(v) === "\"42\"")
+    assert(decode[Optional[String]](encode(v)) === v)
   }
 
   test("scala Option[String] -- None") {
