@@ -264,7 +264,7 @@ public final class Evaluator extends EvaluatorImpl {
     }
 
     @Override public String toString() {
-      return "DataSource(" + id + "," + frequency + "," + uri + ")";
+      return "DataSource(" + id + "," + uri + "," + frequency + ")";
     }
   }
 
