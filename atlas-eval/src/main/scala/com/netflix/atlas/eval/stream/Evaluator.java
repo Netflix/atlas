@@ -184,13 +184,15 @@ public final class Evaluator extends EvaluatorImpl {
     private final Duration frequency;
 
     /** The default frequency of metrics publication. */
-    public static final Duration DEFAULT_FREQUENCY = Duration.ofSeconds(60L);
+    private static final Duration DEFAULT_FREQUENCY = Duration.ofSeconds(60L);
 
     /**
      *  Create a new instance with the {@link #DEFAULT_FREQUENCY}.
      *
      * @param id
-     *     An identifier for this {@code DataSource}.
+     *     An identifier for this {@code DataSource}. It will be added to
+     *     corresponding MessageEnvelope objects in the output, facilitating
+     *     matching output messages with the data source.
      * @param uri
      *     The URI for this {@code DataSource} (in atlas backend form).
      */
@@ -202,15 +204,16 @@ public final class Evaluator extends EvaluatorImpl {
      *  Create a new instance.
      *
      * @param id
-     *     An identifier for this {@code DataSource}.
+     *     An identifier for this {@code DataSource}. It will be added to
+     *     corresponding MessageEnvelope objects in the output, facilitating
+     *     matching output messages with the data source.
      * @param uri
      *     The URI for this {@code DataSource} (in atlas backend form).
      * @param frequency
-     *     The requested frequency of metrics publication for this
-     *     {@code DataSource} in atlas backend form, with the ASL query as a
-     *     {@code query} param. <em>NOTE:</em> This may result in rejection of
-     *     this {@code DataSource} if the backing metrics producers do not
-     *     support the requested frequency.
+     *     The requested frequency of metrics publication for this {@code
+     *     DataSource}. <em>NOTE:</em> This may result in rejection of this
+     *     {@code DataSource} if the backing metrics producers do not support
+     *     the requested frequency.
      */
     public DataSource(String id, String uri, Duration frequency) {
       this.id = id;
@@ -244,17 +247,17 @@ public final class Evaluator extends EvaluatorImpl {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       DataSource that = (DataSource) o;
-      return id.equals(that.id) && uri.equals(that.uri);
+      return id.equals(that.id) && uri.equals(that.uri) && frequency.equals(that.frequency);
     }
 
     @Override public int hashCode() {
       int result = id.hashCode();
-      result = 31 * result + uri.hashCode();
+      result = 31 * result + uri.hashCode() + frequency.hashCode();
       return result;
     }
 
     @Override public String toString() {
-      return "DataSource(" + id + "," + uri + ")";
+      return "DataSource(" + id + "," + frequency + "," + uri + ")";
     }
   }
 
