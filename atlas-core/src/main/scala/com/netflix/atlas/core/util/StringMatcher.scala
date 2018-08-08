@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.util
 
+import java.io.IOException
+import java.io.ObjectInputStream
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -99,9 +101,18 @@ object StringMatcher {
 
     // Reuse matcher to reduce allocations, keep in thread local in-case this Regex instance is
     // shared across multiple threads.
-    private val matcher = new ThreadLocal[Matcher] {
+    @transient private var matcher = newThreadLocal
+
+    private def newThreadLocal: ThreadLocal[Matcher] = new ThreadLocal[Matcher] {
 
       override protected def initialValue: Matcher = pattern.matcher("")
+    }
+
+    @throws(classOf[IOException])
+    @throws(classOf[ClassNotFoundException])
+    private def readObject(in: ObjectInputStream): Unit = {
+      in.defaultReadObject()
+      matcher = newThreadLocal
     }
 
     private def reMatches(v: String): Boolean = {
@@ -131,9 +142,18 @@ object StringMatcher {
 
     // Reuse matcher to reduce allocations, keep in thread local in-case this Regex instance is
     // shared across multiple threads.
-    private val matcher = new ThreadLocal[Matcher] {
+    @transient private var matcher = newThreadLocal
+
+    private def newThreadLocal: ThreadLocal[Matcher] = new ThreadLocal[Matcher] {
 
       override protected def initialValue: Matcher = pattern.matcher("")
+    }
+
+    @throws(classOf[IOException])
+    @throws(classOf[ClassNotFoundException])
+    private def readObject(in: ObjectInputStream): Unit = {
+      in.defaultReadObject()
+      matcher = newThreadLocal
     }
 
     def matches(v: String): Boolean = {
