@@ -15,6 +15,10 @@
  */
 package com.netflix.atlas.core.util
 
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
 import java.util.regex.Pattern
 
 import org.scalatest.FunSuite
@@ -187,4 +191,24 @@ class StringMatcherSuite extends FunSuite {
     assert(compile("(a(d|e)|b|c)", true) === Regex(re("(a(d|e)|b|c)")))
   }
 
+  private def serde(pattern: String): StringMatcher = {
+    val baos = new ByteArrayOutputStream()
+    val out = new ObjectOutputStream(baos)
+    out.writeObject(compile(pattern))
+    out.close()
+
+    val bais = new ByteArrayInputStream(baos.toByteArray)
+    val in = new ObjectInputStream(bais)
+    in.readObject().asInstanceOf[StringMatcher]
+  }
+
+  test("Regex serializability") {
+    val matcher = serde(".*(a|b).*")
+    assert(matcher.matches("foobar"))
+  }
+
+  test("PrefixedRegex serializability") {
+    val matcher = serde("^foo(a|b).*")
+    assert(matcher.matches("foobar"))
+  }
 }
