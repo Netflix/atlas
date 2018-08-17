@@ -16,25 +16,30 @@
 package com.netflix.atlas.lwcapi
 
 import javax.inject.Inject
-
 import akka.actor.ActorRefFactory
-import akka.actor.Props
 import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.stream.ActorMaterializer
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
 class StreamApi @Inject()(
-  sm: ActorSubscriptionManager,
+  sm: StreamSubscriptionManager,
   splitter: ExpressionSplitter,
   implicit val actorRefFactory: ActorRefFactory,
   registry: Registry
@@ -42,6 +47,8 @@ class StreamApi @Inject()(
     with StrictLogging {
 
   import StreamApi._
+
+  private implicit val materializer = ActorMaterializer()
 
   def routes: Route = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { streamId =>
@@ -89,11 +96,14 @@ class StreamApi @Inject()(
   ): HttpResponse = {
 
     // Drop any other connections that may already be using the same id
-    sm.unregister(streamId).foreach { ref =>
-      ref ! SSEShutdown(
-        s"Dropped: another connection is using the same stream-id: $streamId",
-        unsub = false
+    sm.unregister(streamId).foreach { queue =>
+      queue.offer(
+        SSEShutdown(
+          s"Dropped: another connection is using the same stream-id: $streamId",
+          unsub = false
+        )
       )
+      queue.complete()
     }
 
     // Validate post data. This is done before creating an actor, since
@@ -101,9 +111,24 @@ class StreamApi @Inject()(
     // parse errors.
     val splits = splitRequest(req, expr, freqString)
 
-    val source = Source.actorPublisher(
-      Props(new SSEActor(streamId, name.getOrElse("unknown"), sm, splits, registry))
-    )
+    // Create queue to allow messages coming into /evaluate to be passed to this stream
+    val (queue, pub) = Source
+      .queue[SSERenderable](10000, OverflowStrategy.dropHead)
+      .map(msg => ChunkStreamPart(ByteString(msg.toSSE) ++ suffix))
+      .toMat(Sink.asPublisher[ChunkStreamPart](true))(Keep.both)
+      .run()
+
+    // Send initial setup messages
+    queue.offer(SSEHello(streamId, instanceId))
+    queue.offer(SSEStatistics(0))
+    sm.register(streamId, queue)
+    splits.foreach {
+      case (exprMeta, subscriptions) =>
+        subscriptions.foreach(s => sm.subscribe(streamId, s))
+        queue.offer(SSESubscribe(exprMeta.expression, subscriptions.map(_.metadata)))
+    }
+
+    val source = Source.fromPublisher(pub)
     val entity = HttpEntity.Chunked(MediaTypes.`text/event-stream`.toContentType, source)
     HttpResponse(StatusCodes.OK, entity = entity)
   }
@@ -115,6 +140,10 @@ trait SSERenderable {
 }
 
 object StreamApi {
+
+  private val instanceId = NetflixEnvironment.instanceId()
+
+  private val suffix = ByteString("\r\n\r\n")
 
   case class ExpressionsRequest(expressions: List[ExpressionMetadata]) extends JsonSupport
 

@@ -34,7 +34,7 @@ import scala.util.control.NonFatal
 
 class SubscribeApi @Inject()(
   registry: Registry,
-  sm: ActorSubscriptionManager,
+  sm: StreamSubscriptionManager,
   splitter: ExpressionSplitter
 ) extends WebApi
     with StrictLogging {
@@ -77,9 +77,9 @@ class SubscribeApi @Inject()(
         val splits = splitter.split(expr.expression, expr.frequency)
 
         // Add any new expressions
-        val ref = sm.subscribe(streamId, splits)
+        val queue = sm.subscribe(streamId, splits)
         splits.foreach { sub =>
-          ref ! SSESubscribe(expr.expression, List(sub.metadata))
+          queue.offer(SSESubscribe(expr.expression, List(sub.metadata)))
         }
 
         // Add expression ids in use by this split
