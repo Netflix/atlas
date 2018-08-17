@@ -35,7 +35,8 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
 
   // Dummy queue used for handler
-  private val queue = Source.queue[SSERenderable](1, OverflowStrategy.dropHead)
+  private val queue = Source
+    .queue[SSERenderable](1, OverflowStrategy.dropHead)
     .toMat(Sink.ignore)(Keep.left)
     .run()
 

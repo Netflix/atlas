@@ -97,10 +97,12 @@ class StreamApi @Inject()(
 
     // Drop any other connections that may already be using the same id
     sm.unregister(streamId).foreach { queue =>
-      queue.offer(SSEShutdown(
-        s"Dropped: another connection is using the same stream-id: $streamId",
-        unsub = false
-      ))
+      queue.offer(
+        SSEShutdown(
+          s"Dropped: another connection is using the same stream-id: $streamId",
+          unsub = false
+        )
+      )
       queue.complete()
     }
 
@@ -110,7 +112,8 @@ class StreamApi @Inject()(
     val splits = splitRequest(req, expr, freqString)
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
-    val (queue, pub) = Source.queue[SSERenderable](10000, OverflowStrategy.dropHead)
+    val (queue, pub) = Source
+      .queue[SSERenderable](10000, OverflowStrategy.dropHead)
       .map(msg => ChunkStreamPart(ByteString(msg.toSSE) ++ suffix))
       .toMat(Sink.asPublisher[ChunkStreamPart](true))(Keep.both)
       .run()
