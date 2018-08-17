@@ -26,7 +26,7 @@ import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.StreamApi._
 import com.netflix.spectator.api.Registry
 
-class EvaluateApi(registry: Registry, sm: ActorSubscriptionManager) extends WebApi {
+class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager) extends WebApi {
   import EvaluateApi._
 
   private val evalsCounter = registry.counter("atlas.lwcapi.evaluate.count")
@@ -57,7 +57,7 @@ class EvaluateApi(registry: Registry, sm: ActorSubscriptionManager) extends WebA
       if (actors.nonEmpty) {
         actorsCounter.increment(actors.size)
         val message = SSEMetric(timestamp, item)
-        actors.foreach(actor => actor ! message)
+        actors.foreach(_.offer(message))
       } else {
         ignoredCounter.increment()
       }

@@ -34,7 +34,7 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
 case class ExpressionApi @Inject()(
-  sm: ActorSubscriptionManager,
+  sm: StreamSubscriptionManager,
   registry: Registry,
   implicit val actorRefFactory: ActorRefFactory
 ) extends WebApi

@@ -20,7 +20,7 @@ import javax.inject.Singleton
 import com.google.inject.AbstractModule
 import com.google.inject.Provides
 import com.netflix.atlas.akka.AkkaModule
-import com.netflix.atlas.lwcapi.ActorSubscriptionManager
+import com.netflix.atlas.lwcapi.StreamSubscriptionManager
 import com.netflix.atlas.lwcapi.ExpressionSplitter
 import com.netflix.iep.guice.LifecycleModule
 import com.typesafe.config.Config
@@ -40,8 +40,8 @@ final class LwcApiModule extends AbstractModule {
 
   @Provides
   @Singleton
-  protected def providesSubscriptionManager(): ActorSubscriptionManager = {
-    new ActorSubscriptionManager()
+  protected def providesSubscriptionManager(): StreamSubscriptionManager = {
+    new StreamSubscriptionManager()
   }
 
   override def equals(obj: Any): Boolean = {

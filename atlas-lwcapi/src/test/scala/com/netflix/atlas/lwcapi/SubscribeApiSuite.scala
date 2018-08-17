@@ -15,11 +15,13 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.Actor
-import akka.actor.Props
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.RequestHandler
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
@@ -27,13 +29,17 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 
 class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
-  import SubscribeApiSuite._
 
   import scala.concurrent.duration._
 
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  private val sm = new ActorSubscriptionManager
+  // Dummy queue used for handler
+  private val queue = Source.queue[SSERenderable](1, OverflowStrategy.dropHead)
+    .toMat(Sink.ignore)(Keep.left)
+    .run()
+
+  private val sm = new StreamSubscriptionManager
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
 
   private val api = new SubscribeApi(new NoopRegistry, sm, splitter)
@@ -68,9 +74,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   }
 
   test("subscribe: correctly formatted expression") {
-    val ref = system.actorOf(Props(new TestActor))
-    sm.register("abc123", ref)
-    system.stop(ref)
+    sm.register("abc123", queue)
 
     val json = """
       |{
@@ -89,9 +93,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   }
 
   test("subscribe: sync expressions") {
-    val ref = system.actorOf(Props(new TestActor))
-    sm.register("abc123", ref)
-    system.stop(ref)
+    sm.register("abc123", queue)
 
     val exprs = List(
       "name,foo,:eq,:sum",
@@ -117,9 +119,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   }
 
   test("subscribe: sync multiple expressions") {
-    val ref = system.actorOf(Props(new TestActor))
-    sm.register("abc123", ref)
-    system.stop(ref)
+    sm.register("abc123", queue)
 
     val exprs = List(
       "name,foo,:eq,:sum",
@@ -166,16 +166,6 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
       }"""
     Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
       assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-}
-
-object SubscribeApiSuite {
-
-  class TestActor extends Actor {
-
-    def receive: Receive = {
-      case _ =>
     }
   }
 }
