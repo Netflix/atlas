@@ -31,6 +31,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
@@ -112,8 +113,8 @@ class StreamApi @Inject()(
     val splits = splitRequest(req, expr, freqString)
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
-    val (queue, pub) = Source
-      .queue[SSERenderable](10000, OverflowStrategy.dropHead)
+    val (queue, pub) = StreamOps
+      .queue[SSERenderable](registry, "StreamApi", 10000, OverflowStrategy.dropHead)
       .map(msg => ChunkStreamPart(ByteString(msg.toSSE) ++ suffix))
       .toMat(Sink.asPublisher[ChunkStreamPart](true))(Keep.both)
       .run()
@@ -128,7 +129,9 @@ class StreamApi @Inject()(
         queue.offer(SSESubscribe(exprMeta.expression, subscriptions.map(_.metadata)))
     }
 
-    val source = Source.fromPublisher(pub)
+    val source = Source
+      .fromPublisher(pub)
+      .via(StreamOps.monitorFlow(registry, "StreamApi"))
     val entity = HttpEntity.Chunked(MediaTypes.`text/event-stream`.toContentType, source)
     HttpResponse(StatusCodes.OK, entity = entity)
   }
