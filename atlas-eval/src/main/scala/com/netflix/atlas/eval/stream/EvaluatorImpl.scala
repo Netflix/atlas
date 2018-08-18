@@ -40,6 +40,7 @@ import akka.stream.scaladsl.Merge
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
@@ -149,8 +150,8 @@ private[stream] abstract class EvaluatorImpl(
   private[stream] def createProcessorFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
 
     // Flow used for logging diagnostic messages
-    val (queue, logSrc) = Source
-      .queue[MessageEnvelope](10, OverflowStrategy.dropNew)
+    val (queue, logSrc) = StreamOps
+      .queue[MessageEnvelope](registry, "DataSourceLogger", 10, OverflowStrategy.dropNew)
       .toMat(Sink.asPublisher(true))(Keep.both)
       .run()
     val dsLogger: DataSourceLogger = { (ds, msg) =>
@@ -174,11 +175,11 @@ private[stream] abstract class EvaluatorImpl(
       val intermediateEval = createInputFlow(context)
         .map(_.decodeString(StandardCharsets.UTF_8))
         .map(ReplayLogging.log)
-        .via(context.countEvents("10_InputLines"))
+        .via(context.monitorFlow("10_InputLines"))
         .via(new LwcToAggrDatapoint)
-        .via(context.countEvents("11_LwcDatapoints"))
+        .via(context.monitorFlow("11_LwcDatapoints"))
         .via(new TimeGrouped[AggrDatapoint](context, 50, _.timestamp))
-        .via(context.countEvents("12_GroupedDatapoints"))
+        .via(context.monitorFlow("12_GroupedDatapoints"))
 
       datasources.out(0) ~> intermediateEval ~> finalEvalInput.in(0)
       datasources.out(1) ~> finalEvalInput.in(1)
@@ -194,7 +195,7 @@ private[stream] abstract class EvaluatorImpl(
       .via(g)
       .via(new FinalExprEval(context.interpreter))
       .flatMapConcat(s => s)
-      .via(context.countEvents("13_OutputMessages"))
+      .via(context.monitorFlow("13_OutputMessages"))
       .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
       .merge(Source.fromPublisher(logSrc), eagerComplete = false)
   }
@@ -225,11 +226,11 @@ private[stream] abstract class EvaluatorImpl(
       val eurekaLookup = Flow[DataSources]
         .conflate((_, ds) => ds)
         .throttle(1, 1.second, 1, ThrottleMode.Shaping)
-        .via(context.countEvents("00_DataSourceUpdates"))
+        .via(context.monitorFlow("00_DataSourceUpdates"))
         .via(new EurekaGroupsLookup(context, 30.seconds))
-        .via(context.countEvents("01_EurekaGroups"))
+        .via(context.monitorFlow("01_EurekaGroups"))
         .flatMapMerge(Int.MaxValue, s => s)
-        .via(context.countEvents("01_EurekaRefresh"))
+        .via(context.monitorFlow("01_EurekaRefresh"))
       datasources.out(0).map(_.remoteOnly()) ~> eurekaLookup ~> eurekaGroups.in
       eurekaGroups.out(0) ~> new SubscriptionManager(context)
 
@@ -237,7 +238,7 @@ private[stream] abstract class EvaluatorImpl(
       val eurekaStream = Flow[SourcesAndGroups]
         .map(_._2)
         .via(new ConnectionManager(context))
-        .via(context.countEvents("02_ConnectionSources"))
+        .via(context.monitorFlow("02_ConnectionSources"))
         .flatMapMerge(Int.MaxValue, s => Source(s))
         .flatMapMerge(Int.MaxValue, s => s)
       eurekaGroups.out(1) ~> eurekaStream ~> intermediateInput.in(0)
