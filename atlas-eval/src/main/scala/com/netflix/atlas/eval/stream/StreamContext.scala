@@ -31,6 +31,7 @@ import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
@@ -129,12 +130,8 @@ private[stream] class StreamContext(
       }
   }
 
-  def countEvents[T](phase: String): Flow[T, T, NotUsed] = {
-    val counter = registry.counter("atlas.eval.numEvents", "id", phase)
-    Flow[T].map { value =>
-      counter.increment()
-      value
-    }
+  def monitorFlow[T](phase: String): Flow[T, T, NotUsed] = {
+    StreamOps.monitorFlow(registry, phase)
   }
 }
 
