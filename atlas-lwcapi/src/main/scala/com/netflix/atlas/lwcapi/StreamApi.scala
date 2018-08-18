@@ -132,7 +132,8 @@ class StreamApi @Inject()(
     }
 
     // Heartbeat messages to ensure that the socket is never idle
-    val heartbeatSrc = Source.repeat(heartbeat)
+    val heartbeatSrc = Source
+      .repeat(heartbeat)
       .throttle(1, 5.seconds, 1, ThrottleMode.Shaping)
 
     val source = Source
