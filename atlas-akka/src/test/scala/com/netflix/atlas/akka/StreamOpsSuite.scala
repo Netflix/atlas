@@ -41,16 +41,6 @@ class StreamOpsSuite extends FunSuite {
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val materializer = ActorMaterializer()
 
-  private def runStream(
-    source: Source[Int, SourceQueueWithComplete[Int]],
-    values: Seq[Int]
-  ): Unit = {
-    val queue = source.toMat(Sink.ignore)(Keep.left).run()
-    values.foreach(queue.offer)
-    queue.complete()
-    Await.result(queue.watchCompletion(), Duration.Inf)
-  }
-
   private def checkOfferedCounts(registry: Registry, expected: Map[String, Double]): Unit = {
     import scala.collection.JavaConverters._
     registry
@@ -68,7 +58,10 @@ class StreamOpsSuite extends FunSuite {
   test("source queue, enqueued") {
     val registry = new DefaultRegistry()
     val source = StreamOps.queue[Int](registry, "test", 10, OverflowStrategy.dropNew)
-    runStream(source, Seq(1, 2, 3, 4))
+    val queue = source.toMat(Sink.ignore)(Keep.left).run()
+    Await.result(Future.sequence(Seq(1, 2, 3, 4).map(queue.offer)), Duration.Inf)
+    queue.complete()
+    Await.result(queue.watchCompletion(), Duration.Inf)
     checkOfferedCounts(registry, Map("enqueued" -> 4.0))
   }
 
