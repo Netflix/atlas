@@ -114,6 +114,10 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     }
   }
 
+  private def ds(id: String, uri: String): Evaluator.DataSource = {
+    new Evaluator.DataSource(id, java.time.Duration.ofMinutes(1), uri)
+  }
+
   def testProcessor(baseUri: String): Unit = {
     import scala.concurrent.duration._
 
@@ -122,19 +126,19 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val uri = s"$baseUri?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
 
     val ds1 = Evaluator.DataSources.of(
-      new Evaluator.DataSource("one", uri)
+      ds("one", uri)
     )
 
     // Add source 2
     val ds2 = Evaluator.DataSources.of(
-      new Evaluator.DataSource("one", uri),
-      new Evaluator.DataSource("two", uri)
+      ds("one", uri),
+      ds("two", uri)
     )
     val p2 = Promise[Evaluator.DataSources]()
 
     // Remove source 1
     val ds3 = Evaluator.DataSources.of(
-      new Evaluator.DataSource("two", uri)
+      ds("two", uri)
     )
     val p3 = Promise[Evaluator.DataSources]()
 
@@ -211,10 +215,10 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val evaluator = new Evaluator(config, registry, system)
 
     val uri = "http://test/api/v1/graph"
-    val ds = Evaluator.DataSources.of(new Evaluator.DataSource("one", uri))
+    val ds1 = Evaluator.DataSources.of(ds("one", uri))
 
     val future = Source
-      .single(ds)
+      .single(ds1)
       .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
       .runWith(Sink.head)
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
@@ -232,10 +236,10 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
 
     val expr = "name,foo,:eq,:sum,PT168H,:offset"
     val uri = s"http://test/api/v1/graph?q=$expr"
-    val ds = Evaluator.DataSources.of(new Evaluator.DataSource("one", uri))
+    val ds1 = Evaluator.DataSources.of(ds("one", uri))
 
     val future = Source
-      .single(ds)
+      .single(ds1)
       .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
       .runWith(Sink.head)
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
@@ -270,15 +274,15 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
   }
 
   test("DataSource encode and decode") {
-    val expected = new Evaluator.DataSource("id", "uri")
+    val expected = ds("id", "uri")
     val actual = Json.decode[Evaluator.DataSource](Json.encode(expected))
     assert(actual === expected)
   }
 
   test("DataSources encode and decode") {
     val expected = Evaluator.DataSources.of(
-      new Evaluator.DataSource("id1", "uri1"),
-      new Evaluator.DataSource("id2", "uri2")
+      ds("id1", "uri1"),
+      ds("id2", "uri2")
     )
     val actual = Json.decode[Evaluator.DataSources](Json.encode(expected))
     assert(actual === expected)

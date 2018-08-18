@@ -21,7 +21,6 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.SourceQueueWithComplete
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
 import com.netflix.spectator.api.Registry

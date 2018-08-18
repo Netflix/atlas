@@ -65,7 +65,7 @@ class EurekaGroupsLookupSuite extends FunSuite {
   }
 
   private def ds(id: String, uri: String): DataSource = {
-    new DataSource(id, uri)
+    new DataSource(id, java.time.Duration.ofMinutes(1), uri)
   }
 
   private def run(input: List[DataSources], n: Int = 1): List[SourcesAndGroups] = {
