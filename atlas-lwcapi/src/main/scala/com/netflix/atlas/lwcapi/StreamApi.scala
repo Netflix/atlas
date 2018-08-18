@@ -26,6 +26,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import akka.stream.OverflowStrategy
+import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -38,6 +39,8 @@ import com.netflix.atlas.json.JsonSupport
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
+
+import scala.concurrent.duration._
 
 class StreamApi @Inject()(
   sm: StreamSubscriptionManager,
@@ -121,7 +124,6 @@ class StreamApi @Inject()(
 
     // Send initial setup messages
     queue.offer(SSEHello(streamId, instanceId))
-    queue.offer(SSEStatistics(0))
     sm.register(streamId, queue)
     splits.foreach {
       case (exprMeta, subscriptions) =>
@@ -129,8 +131,13 @@ class StreamApi @Inject()(
         queue.offer(SSESubscribe(exprMeta.expression, subscriptions.map(_.metadata)))
     }
 
+    // Heartbeat messages to ensure that the socket is never idle
+    val heartbeatSrc = Source.repeat(heartbeat)
+      .throttle(1, 5.seconds, 1, ThrottleMode.Shaping)
+
     val source = Source
       .fromPublisher(pub)
+      .merge(heartbeatSrc)
       .via(StreamOps.monitorFlow(registry, "StreamApi"))
     val entity = HttpEntity.Chunked(MediaTypes.`text/event-stream`.toContentType, source)
     HttpResponse(StatusCodes.OK, entity = entity)
@@ -178,10 +185,7 @@ object StreamApi {
   case class SSEGenericJson(what: String, msg: JsonSupport) extends SSEMessage("data", what, msg)
 
   // Heartbeat message
-  case class StatisticsContent(outputFullFailures: Long) extends JsonSupport
-
-  case class SSEStatistics(outputFullFailures: Long)
-      extends SSEMessage("info", "statistics", StatisticsContent(outputFullFailures))
+  private val heartbeat = ChunkStreamPart(ByteString(s"""data: {"type":"heartbeat"}\r\n\r\n"""))
 
   // Shutdown message
   case class ShutdownReason(reason: String) extends JsonSupport
