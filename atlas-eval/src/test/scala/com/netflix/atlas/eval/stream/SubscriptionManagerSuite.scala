@@ -74,7 +74,7 @@ class SubscriptionManagerSuite extends FunSuite with BeforeAndAfter {
   }
 
   private def ds(id: String, uri: String): DataSource = {
-    new DataSource(id, uri)
+    new DataSource(id, java.time.Duration.ofMinutes(1), uri)
   }
 
   private val requests = new ConcurrentLinkedQueue[HttpRequest]()

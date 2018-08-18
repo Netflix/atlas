@@ -57,7 +57,7 @@ class FinalExprEvalSuite extends FunSuite {
   }
 
   private def ds(id: String, uri: String): DataSource = {
-    new DataSource(id, uri)
+    new DataSource(id, java.time.Duration.ofMinutes(1), uri)
   }
 
   private def group(i: Long, vs: AggrDatapoint*): TimeGroup[AggrDatapoint] = {
