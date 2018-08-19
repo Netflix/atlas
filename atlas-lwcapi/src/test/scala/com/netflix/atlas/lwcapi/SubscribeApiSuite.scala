@@ -35,10 +35,13 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
   // Dummy queue used for handler
-  private val queue = Source
-    .queue[SSERenderable](1, OverflowStrategy.dropHead)
-    .toMat(Sink.ignore)(Keep.left)
-    .run()
+  private val queue = new QueueHandler(
+    "test",
+    Source
+      .queue[SSERenderable](1, OverflowStrategy.dropHead)
+      .toMat(Sink.ignore)(Keep.left)
+      .run()
+  )
 
   private val sm = new StreamSubscriptionManager
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
