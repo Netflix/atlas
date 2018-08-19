@@ -23,4 +23,4 @@ import akka.stream.scaladsl.SourceQueueWithComplete
   * is just to avoid those issues for the main use-cases where we need to inject a version
   * that needs a source queue.
   */
-class StreamSubscriptionManager extends SubscriptionManager[SourceQueueWithComplete[SSERenderable]]
+class StreamSubscriptionManager extends SubscriptionManager[QueueHandler]
