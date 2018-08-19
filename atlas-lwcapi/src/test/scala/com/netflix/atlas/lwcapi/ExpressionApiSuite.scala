@@ -35,10 +35,13 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
 
   // Dummy queue used for handler
-  private val queue = Source
-    .queue[SSERenderable](1, OverflowStrategy.dropHead)
-    .toMat(Sink.ignore)(Keep.left)
-    .run()
+  private val queue = new QueueHandler(
+    "test",
+    Source
+      .queue[SSERenderable](1, OverflowStrategy.dropHead)
+      .toMat(Sink.ignore)(Keep.left)
+      .run()
+  )
 
   private val sm = new StreamSubscriptionManager
   private val endpoint = ExpressionApi(sm, new NoopRegistry, system)
