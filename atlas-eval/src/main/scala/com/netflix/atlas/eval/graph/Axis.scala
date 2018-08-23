@@ -36,6 +36,10 @@ case class Axis(
   order: Option[String] = None
 ) {
 
+  val tickLabelMode: TickLabelMode = {
+    tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply)
+  }
+
   def newPlotDef(data: List[DataDef] = Nil, multiY: Boolean = false): PlotDef = {
     PlotDef(
       data = data,
@@ -44,7 +48,7 @@ case class Axis(
       ylabel = ylabel,
       scale = Scale.fromName(scale.getOrElse("linear")),
       axisColor = if (multiY) None else Some(Color.BLACK),
-      tickLabelMode = tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply)
+      tickLabelMode = tickLabelMode
     )
   }
 }

@@ -39,6 +39,36 @@ object TagKey {
     */
   final val offset = atlasPrefix + "offset"
 
+  /**
+    * Synthetic tag this is created for lines in a graph to substitute the average statistic
+    * for the line.
+    */
+  final val avg = atlasPrefix + "avg"
+
+  /**
+    * Synthetic tag this is created for lines in a graph to substitute the max statistic
+    * for the line.
+    */
+  final val max = atlasPrefix + "max"
+
+  /**
+    * Synthetic tag this is created for lines in a graph to substitute the min statistic
+    * for the line.
+    */
+  final val min = atlasPrefix + "min"
+
+  /**
+    * Synthetic tag this is created for lines in a graph to substitute the last statistic
+    * for the line.
+    */
+  final val last = atlasPrefix + "last"
+
+  /**
+    * Synthetic tag this is created for lines in a graph to substitute the total statistic
+    * for the line.
+    */
+  final val total = atlasPrefix + "total"
+
   /** Data source type for the metric. */
   final val dsType = atlasPrefix + "dstype"
 

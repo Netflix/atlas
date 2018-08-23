@@ -45,4 +45,15 @@ object SummaryStats {
 case class SummaryStats(count: Int, min: Double, max: Double, last: Double, total: Double) {
 
   def avg: Double = if (count > 0) total / count else Double.NaN
+
+  /**
+    * Tags corresponding to the stats available from `:stat` operator.
+    */
+  def tags(formatter: Double => String): Map[String, String] = Map(
+    TagKey.avg   -> formatter(avg),
+    TagKey.max   -> formatter(max),
+    TagKey.min   -> formatter(min),
+    TagKey.last  -> formatter(last),
+    TagKey.total -> formatter(total)
+  )
 }
