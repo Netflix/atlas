@@ -27,6 +27,7 @@ import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.MessageDef
 import com.netflix.atlas.chart.model.Palette
+import com.netflix.atlas.chart.model.TickLabelMode
 import com.netflix.atlas.chart.model.VisionType
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.model.DataExpr
@@ -38,6 +39,7 @@ import com.netflix.atlas.core.model.SummaryStats
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Strings
+import com.netflix.atlas.core.util.UnitPrefix
 import com.typesafe.config.Config
 
 import scala.util.Try
@@ -229,6 +231,15 @@ case class Grapher(settings: DefaultSettings) {
         val axisCfg = config.flags.axes(yaxis)
         val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
 
+        val statFormatter = axisCfg.tickLabelMode match {
+          case TickLabelMode.BINARY =>
+            (v: Double) =>
+              UnitPrefix.binary(v).format(v)
+          case _ =>
+            (v: Double) =>
+              UnitPrefix.decimal(v).format(v)
+        }
+
         val axisPalette = axisCfg.palette.fold(palette) { v =>
           newPalette(v)
         }
@@ -249,9 +260,10 @@ case class Grapher(settings: DefaultSettings) {
 
           val ts = result.data
           val labelledTS = ts.map { t =>
+            val stats = SummaryStats(t.data, start, end)
             val offset = Strings.toString(Duration.ofMillis(s.offset))
-            val newT = t.withTags(t.tags + (TagKey.offset -> offset))
-            newT.withLabel(s.legend(newT))
+            val newT = t.withTags(t.tags ++ stats.tags(statFormatter) + (TagKey.offset -> offset))
+            newT.withLabel(s.legend(newT)) -> stats
           }
 
           val linePalette = s.palette.map(newPalette).getOrElse {
@@ -265,22 +277,23 @@ case class Grapher(settings: DefaultSettings) {
                 if (s.offset > 0L) shiftPalette else axisPalette
               }
           }
-          val lineDefs = labelledTS.sortWith(_.label < _.label).map { t =>
-            val color = s.color.getOrElse {
-              val c = linePalette(t.label)
-              // Alpha setting if present will set the alpha value for the color automatically
-              // assigned by the palette. If using an explicit color it will have no effect as the
-              // alpha can be set directly using an ARGB hex format for the color.
-              s.alpha.fold(c)(a => Colors.withAlpha(c, a))
-            }
+          val lineDefs = labelledTS.sortWith(_._1.label < _._1.label).map {
+            case (t, stats) =>
+              val color = s.color.getOrElse {
+                val c = linePalette(t.label)
+                // Alpha setting if present will set the alpha value for the color automatically
+                // assigned by the palette. If using an explicit color it will have no effect as the
+                // alpha can be set directly using an ARGB hex format for the color.
+                s.alpha.fold(c)(a => Colors.withAlpha(c, a))
+              }
 
-            LineDef(
-              data = t,
-              color = color,
-              lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
-              lineWidth = s.lineWidth,
-              legendStats = SummaryStats(t.data, start, end)
-            )
+              LineDef(
+                data = t,
+                color = color,
+                lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
+                lineWidth = s.lineWidth,
+                legendStats = stats
+              )
           }
 
           // Lines must be sorted for presentation after the colors have been applied
