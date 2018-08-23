@@ -232,8 +232,12 @@ case class Grapher(settings: DefaultSettings) {
         val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
 
         val statFormatter = axisCfg.tickLabelMode match {
-          case TickLabelMode.BINARY  => (v: Double) => UnitPrefix.binary(v).format(v)
-          case _                     => (v: Double) => UnitPrefix.decimal(v).format(v)
+          case TickLabelMode.BINARY =>
+            (v: Double) =>
+              UnitPrefix.binary(v).format(v)
+          case _ =>
+            (v: Double) =>
+              UnitPrefix.decimal(v).format(v)
         }
 
         val axisPalette = axisCfg.palette.fold(palette) { v =>

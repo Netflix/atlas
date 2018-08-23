@@ -353,11 +353,11 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
 
   imageTest("substitute max stat in legend") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-      "&q=name,sps,:eq,(,nf.cluster,),:by,$atlas.max+is+max,:legend"
+    "&q=name,sps,:eq,(,nf.cluster,),:by,$atlas.max+is+max,:legend"
   }
 
   imageTest("substitute max stat in legend honors label mode") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-      "&q=name,sps,:eq,(,nf.cluster,),:by,$atlas.max+is+max,:legend&tick_labels=binary"
+    "&q=name,sps,:eq,(,nf.cluster,),:by,$atlas.max+is+max,:legend&tick_labels=binary"
   }
 }
