@@ -27,9 +27,6 @@ import com.netflix.iep.service.ClassFactory
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-
 /**
   * Exposes actor system as service for healthcheck and proper shutdown. Additional
   * actors to start up can be specified using the `atlas.akka.actors` property.
@@ -55,7 +52,5 @@ class ActorService @Inject()(system: ActorSystem, config: Config, classFactory: 
     if (config.hasPath(routerCfgPath)) FromConfig.props(props) else props
   }
 
-  override def stopImpl(): Unit = {
-    Await.ready(system.terminate(), Duration.Inf)
-  }
+  override def stopImpl(): Unit = {}
 }

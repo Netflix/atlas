@@ -68,7 +68,7 @@ class WebServer @Inject()(
   }
 
   protected def stopImpl(): Unit = {
-    bindingFuture.flatMap(_.unbind()).onComplete(_ => system.terminate())
+    bindingFuture.flatMap(_.unbind())
   }
 
   def actorSystem: ActorSystem = system
