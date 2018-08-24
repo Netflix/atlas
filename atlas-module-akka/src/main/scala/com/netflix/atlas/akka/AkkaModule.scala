@@ -16,7 +16,6 @@
 package com.netflix.atlas.akka
 
 import javax.inject.Singleton
-
 import akka.actor.ActorRefFactory
 import akka.actor.ActorSystem
 import com.google.inject.AbstractModule
@@ -25,6 +24,11 @@ import com.google.inject.multibindings.Multibinder
 import com.netflix.iep.guice.LifecycleModule
 import com.netflix.iep.service.Service
 import com.typesafe.config.Config
+import javax.inject.Inject
+import javax.inject.Provider
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 /**
   * Configures the actor system and web server. This module expects that bindings
@@ -34,16 +38,10 @@ final class AkkaModule extends AbstractModule {
 
   override def configure(): Unit = {
     install(new LifecycleModule)
+    bind(classOf[ActorSystem]).toProvider(classOf[AkkaModule.ActorSystemProvider])
     val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
     serviceBinder.addBinding().to(classOf[ActorService])
     serviceBinder.addBinding().to(classOf[WebServer])
-  }
-
-  @Provides
-  @Singleton
-  protected def providesActorSystem(config: Config): ActorSystem = {
-    val name = config.getString("atlas.akka.name")
-    ActorSystem(name, config)
   }
 
   @Provides
@@ -55,4 +53,21 @@ final class AkkaModule extends AbstractModule {
   }
 
   override def hashCode(): Int = getClass.hashCode()
+}
+
+object AkkaModule {
+
+  @Singleton
+  private class ActorSystemProvider @Inject()(config: Config)
+      extends Provider[ActorSystem]
+      with AutoCloseable {
+
+    private val system = ActorSystem(config.getString("atlas.akka.name"), config)
+
+    override def get(): ActorSystem = system
+
+    override def close(): Unit = {
+      Await.ready(system.terminate(), Duration.Inf)
+    }
+  }
 }

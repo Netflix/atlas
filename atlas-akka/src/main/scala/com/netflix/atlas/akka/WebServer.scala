@@ -17,7 +17,6 @@ package com.netflix.atlas.akka
 
 import javax.inject.Inject
 import javax.inject.Singleton
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
@@ -29,7 +28,9 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
+import scala.concurrent.Await
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 
 /**
   * Web server instance.
@@ -68,7 +69,9 @@ class WebServer @Inject()(
   }
 
   protected def stopImpl(): Unit = {
-    bindingFuture.flatMap(_.unbind()).onComplete(_ => system.terminate())
+    if (bindingFuture != null) {
+      Await.ready(bindingFuture.flatMap(_.unbind()), Duration.Inf)
+    }
   }
 
   def actorSystem: ActorSystem = system
