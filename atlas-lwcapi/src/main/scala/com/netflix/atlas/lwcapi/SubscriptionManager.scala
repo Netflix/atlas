@@ -65,13 +65,16 @@ class SubscriptionManager[T] extends StrictLogging {
   /**
     * Add handler that should receive data for a given subscription. The update is synchronized
     * to coordinate with the deletion of the handlers set when it is empty. Reads will just
-    * access the concurrent map without synchronization.
+    * access the concurrent map without synchronization. Returns true if a new handler was added.
     */
-  private def addHandler(subId: String, handler: T): Unit = {
-    logger.debug(s"adding handler for $subId: $handler")
+  private def addHandler(subId: String, handler: T): Boolean = {
     subHandlers.synchronized {
       val handlers = subHandlers.computeIfAbsent(subId, _ => new ConcurrentSet[T])
-      handlers.add(handler)
+      val added = handlers.add(handler)
+      if (added) {
+        logger.debug(s"added handler for $subId: $handler")
+      }
+      added
     }
   }
 
@@ -80,14 +83,20 @@ class SubscriptionManager[T] extends StrictLogging {
     * is empty check and removal are synchronized to coordinate with the updates adding
     * new handlers to the set.
     */
-  private def removeHandler(subId: String, handler: T): Unit = {
-    logger.debug(s"removing handler for $subId: $handler")
+  private def removeHandler(subId: String, handler: T): Boolean = {
     val handlers = subHandlers.get(subId)
-    if (handlers != null) {
-      handlers.remove(handler)
-      subHandlers.synchronized {
-        if (handlers.isEmpty) subHandlers.remove(subId)
+    (handlers != null) && {
+      val removed = handlers.remove(handler)
+      if (removed) {
+        logger.debug(s"removed handler for $subId: $handler")
       }
+      subHandlers.synchronized {
+        if (handlers.isEmpty) {
+          logger.debug(s"removing $subId, no more active handlers")
+          subHandlers.remove(subId)
+        }
+      }
+      removed
     }
   }
 
@@ -140,12 +149,11 @@ class SubscriptionManager[T] extends StrictLogging {
   def subscribe(streamId: String, subs: List[Subscription]): T = {
     logger.debug(s"updating subscriptions for $streamId")
     val info = getInfo(streamId)
-    subs.foreach { sub =>
+    queryListChanged = subs.exists { sub =>
       logger.debug(s"subscribing $streamId to $sub")
       info.subs.put(sub.metadata.id, sub)
       addHandler(sub.metadata.id, info.handler)
     }
-    queryListChanged = true
     info.handler
   }
 
@@ -156,8 +164,7 @@ class SubscriptionManager[T] extends StrictLogging {
     logger.debug(s"unsubscribing $streamId from $subId")
     val info = getInfo(streamId)
     info.subs.remove(subId)
-    removeHandler(subId, info.handler)
-    queryListChanged = true
+    queryListChanged = removeHandler(subId, info.handler)
   }
 
   /**
@@ -229,12 +236,12 @@ object SubscriptionManager {
   class ConcurrentSet[T] {
     private val data = new ConcurrentHashMap[T, T]()
 
-    def add(value: T): Unit = {
-      data.put(value, value)
+    def add(value: T): Boolean = {
+      data.put(value, value) == null
     }
 
-    def remove(value: T): Unit = {
-      data.remove(value)
+    def remove(value: T): Boolean = {
+      data.remove(value) != null
     }
 
     def isEmpty: Boolean = {
