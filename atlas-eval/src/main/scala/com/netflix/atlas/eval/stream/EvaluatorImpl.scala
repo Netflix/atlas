@@ -206,12 +206,21 @@ private[stream] abstract class EvaluatorImpl(
       .merge(Source.fromPublisher(logSrc), eagerComplete = false)
   }
 
+  /**
+    * Extract the step size from DataSources or TimeGroup objects. This is needed to group
+    * the objects so the FinalExprEval stage will only see a single step.
+    */
   private def stepSize: PartialFunction[AnyRef, Long] = {
     case ds: DataSources               => ds.stepSize()
     case grp: TimeGroup[AggrDatapoint] => grp.values.head.step
     case v                             => throw new IllegalArgumentException(s"unexpected value in stream: $v")
   }
 
+  /**
+    * Split a DataSources object into one object per distinct step size. Other objects will
+    * be left unchanged. This allows the DataSources per step to be flattened into the stream
+    * so we can group them by step along with the corresponding AggrDatapoint.
+    */
   private def splitByStep(value: AnyRef): List[AnyRef] = value match {
     case ds: DataSources =>
       import scala.collection.JavaConverters._
