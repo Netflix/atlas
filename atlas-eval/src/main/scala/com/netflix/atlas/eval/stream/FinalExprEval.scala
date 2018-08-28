@@ -48,10 +48,8 @@ import com.typesafe.scalalogging.StrictLogging
   *
   * @param interpreter
   *     Used for evaluating the expressions.
-  * @param step
-  *     Step size for the input data.
   */
-private[stream] class FinalExprEval(interpreter: ExprInterpreter, step: Long = 60000L)
+private[stream] class FinalExprEval(interpreter: ExprInterpreter)
     extends GraphStage[FlowShape[AnyRef, Source[MessageEnvelope, NotUsed]]]
     with StrictLogging {
 
@@ -66,6 +64,10 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter, step: Long = 6
       // limits to sanity check against running of our memory
       private val states =
         scala.collection.mutable.AnyRefMap.empty[StyleExpr, Map[StatefulExpr, Any]]
+
+      // Step size for datapoints flowing through, it will be determined by the first data
+      // sources message that arrives and should be consistent for the life of this stage
+      private var step = -1L
 
       // Each expression matched with a list of data source ids that should receive
       // the data for it
@@ -83,7 +85,8 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter, step: Long = 6
       // Updates the recipients list
       private def handleDataSources(ds: DataSources): Unit = {
         import scala.collection.JavaConverters._
-        val sources = ds.getSources.asScala
+        val sources = ds.getSources.asScala.toList
+        step = ds.stepSize()
 
         // Get set of expressions before we update the list
         val previous = recipients.map(t => t._1 -> t._1).toMap
@@ -135,7 +138,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter, step: Long = 6
 
         val expressionDatapoints = noData ++ groupedDatapoints.map {
           case (k, vs) =>
-            k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries(step))
+            k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries)
         }
         val expressionDiagnostics = groupedDatapoints.map {
           case (k, vs) =>

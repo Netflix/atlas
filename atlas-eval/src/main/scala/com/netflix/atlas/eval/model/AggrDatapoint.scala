@@ -31,6 +31,8 @@ import com.netflix.atlas.core.model.TimeSeries
   *     Timestamp for all values that contributed to the aggregate. It should already
   *     be normalized to the step interval for the data stream prior to aggregation
   *     taking place.
+  * @param step
+  *     Step size for the subscription. Datapoints should be received at this frequency.
   * @param expr
   *     Data expression associated with the value. This is needed if further aggregation
   *     is necessary and later for matching in the final evaluation phase.
@@ -45,6 +47,7 @@ import com.netflix.atlas.core.model.TimeSeries
   */
 case class AggrDatapoint(
   timestamp: Long,
+  step: Long,
   expr: DataExpr,
   source: String,
   tags: Map[String, String],
@@ -58,7 +61,7 @@ case class AggrDatapoint(
     * Converts this value to a time series type that can be used for the final evaluation
     * phase.
     */
-  def toTimeSeries(step: Long): TimeSeries = Datapoint(tags, timestamp, value, step)
+  def toTimeSeries: TimeSeries = Datapoint(tags, timestamp, value, step)
 }
 
 object AggrDatapoint {

@@ -23,8 +23,8 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
@@ -44,7 +44,7 @@ private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[String, Ag
     new GraphStageLogic(shape) with InHandler with OutHandler {
       import LwcToAggrDatapoint._
 
-      private var state: Map[String, DataExpr] = Map.empty
+      private var state: Map[String, LwcDataExpr] = Map.empty
 
       // HACK: needed until we can plumb the actual source through the system
       private var nextSource: Int = 0
@@ -60,7 +60,7 @@ private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[String, Ag
       private def updateState(msg: String): Unit = {
         val json = msg.substring(subscribePrefix.length)
         val sub = Json.decode[LwcSubscription](json)
-        state ++= sub.metrics.map(m => m.id -> m.expr).toMap
+        state ++= sub.metrics.map(m => m.id -> m).toMap
         pull(in)
       }
 
@@ -68,10 +68,12 @@ private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[String, Ag
         val json = msg.substring(metricDataPrefix.length)
         val d = Json.decode[LwcDatapoint](json)
         state.get(d.id) match {
-          case Some(expr) =>
+          case Some(sub) =>
             // TODO, put in source, for now make it random to avoid dedup
             nextSource += 1
-            push(out, AggrDatapoint(d.timestamp, expr, nextSource.toString, d.tags, d.value))
+            val expr = sub.expr
+            val step = sub.frequency
+            push(out, AggrDatapoint(d.timestamp, step, expr, nextSource.toString, d.tags, d.value))
           case None =>
             pull(in)
         }

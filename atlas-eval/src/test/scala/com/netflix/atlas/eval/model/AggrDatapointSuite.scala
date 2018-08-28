@@ -21,14 +21,16 @@ import org.scalatest.FunSuite
 
 class AggrDatapointSuite extends FunSuite {
 
+  private val step = 60000
+
   private def createDatapoints(expr: DataExpr, t: Long, nodes: Int): List[AggrDatapoint] = {
     (0 until nodes).toList.map { i =>
       val node = f"i-$i%08d"
       val tags = Map("name" -> "cpu")
       if (!expr.isInstanceOf[DataExpr.AggregateFunction])
-        AggrDatapoint(t, expr, node, tags + ("node" -> node), i)
+        AggrDatapoint(t, step, expr, node, tags + ("node" -> node), i)
       else
-        AggrDatapoint(t, expr, node, tags, i)
+        AggrDatapoint(t, step, expr, node, tags, i)
     }
   }
 
