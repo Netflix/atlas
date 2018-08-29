@@ -42,6 +42,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
@@ -178,7 +179,9 @@ private[stream] abstract class EvaluatorImpl(
         .via(context.monitorFlow("10_InputLines"))
         .via(new LwcToAggrDatapoint)
         .via(context.monitorFlow("11_LwcDatapoints"))
+        .groupBy(Int.MaxValue, _.step, allowClosedSubstreamRecreation = true)
         .via(new TimeGrouped[AggrDatapoint](context, 50, _.timestamp))
+        .mergeSubstreams
         .via(context.monitorFlow("12_GroupedDatapoints"))
 
       datasources.out(0) ~> intermediateEval ~> finalEvalInput.in(0)
@@ -193,11 +196,43 @@ private[stream] abstract class EvaluatorImpl(
       .map(ReplayLogging.log)
       .map(s => context.validate(s))
       .via(g)
+      .flatMapConcat(s => Source(splitByStep(s)))
+      .groupBy(Int.MaxValue, stepSize, allowClosedSubstreamRecreation = true)
       .via(new FinalExprEval(context.interpreter))
       .flatMapConcat(s => s)
+      .mergeSubstreams
       .via(context.monitorFlow("13_OutputMessages"))
       .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
       .merge(Source.fromPublisher(logSrc), eagerComplete = false)
+  }
+
+  /**
+    * Extract the step size from DataSources or TimeGroup objects. This is needed to group
+    * the objects so the FinalExprEval stage will only see a single step.
+    */
+  private def stepSize: PartialFunction[AnyRef, Long] = {
+    case ds: DataSources               => ds.stepSize()
+    case grp: TimeGroup[AggrDatapoint] => grp.values.head.step
+    case v                             => throw new IllegalArgumentException(s"unexpected value in stream: $v")
+  }
+
+  /**
+    * Split a DataSources object into one object per distinct step size. Other objects will
+    * be left unchanged. This allows the DataSources per step to be flattened into the stream
+    * so we can group them by step along with the corresponding AggrDatapoint.
+    */
+  private def splitByStep(value: AnyRef): List[AnyRef] = value match {
+    case ds: DataSources =>
+      import scala.collection.JavaConverters._
+      ds.getSources.asScala
+        .groupBy(_.getStep.toMillis)
+        .map {
+          case (_, sources) =>
+            new DataSources(sources.asJava)
+        }
+        .toList
+    case _ =>
+      List(value)
   }
 
   private[stream] def createInputFlow(

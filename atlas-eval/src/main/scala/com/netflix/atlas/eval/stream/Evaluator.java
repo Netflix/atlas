@@ -159,6 +159,23 @@ public final class Evaluator extends EvaluatorImpl {
           .collect(Collectors.toSet());
     }
 
+    /**
+     * Return the step size for the sources in this set. If there are mixed step sizes an
+     * IllegalStateException will be thrown. If the set is empty, then -1 will be returned.
+     */
+    long stepSize() {
+      long step = -1L;
+      for (DataSource source : sources) {
+        long sourceStep = source.getStep().toMillis();
+        if (step != -1L && step != sourceStep) {
+          throw new IllegalStateException("inconsistent step sizes, expected "
+              + step + ", found " + sourceStep + " on " + source);
+        }
+        step = sourceStep;
+      }
+      return step;
+    }
+
     @Override public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;

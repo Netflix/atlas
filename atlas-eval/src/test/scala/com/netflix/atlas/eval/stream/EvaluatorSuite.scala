@@ -30,6 +30,7 @@ import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.test.SrcPath
@@ -114,8 +115,8 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     }
   }
 
-  private def ds(id: String, uri: String): Evaluator.DataSource = {
-    new Evaluator.DataSource(id, java.time.Duration.ofMinutes(1), uri)
+  private def ds(id: String, uri: String, step: Long = 60): Evaluator.DataSource = {
+    new Evaluator.DataSource(id, java.time.Duration.ofSeconds(step), uri)
   }
 
   def testProcessor(baseUri: String): Unit = {
@@ -216,7 +217,6 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
 
     val uri = "http://test/api/v1/graph"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
-
     val future = Source
       .single(ds1)
       .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
@@ -250,6 +250,35 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
           msg === s"IllegalArgumentException: :offset not supported for streaming evaluation [[$expr]]"
         )
     }
+  }
+
+  test("processor handles multiple steps") {
+    val evaluator = new Evaluator(config, registry, system)
+
+    val ds1 = Evaluator.DataSources.of(
+      ds("one", "resource:///05s.dat?q=name,jvm.gc.allocationRate,:eq,:sum", 5),
+      ds("two", "resource:///60s.dat?q=name,jvm.gc.allocationRate,:eq,:sum", 60)
+    )
+
+    val future = Source
+      .single(ds1)
+      .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
+      .take(256) // Needed to force the stream to stop
+      .runWith(Sink.seq[MessageEnvelope])
+
+    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+
+    val dsOne = result
+      .filter(env => env.getId == "one" && env.getMessage.isInstanceOf[TimeSeriesMessage])
+      .map(_.getMessage.asInstanceOf[TimeSeriesMessage])
+    assert(dsOne.forall(_.step === 5000))
+    assert(dsOne.size === 119)
+
+    val dsTwo = result
+      .filter(env => env.getId == "two" && env.getMessage.isInstanceOf[TimeSeriesMessage])
+      .map(_.getMessage.asInstanceOf[TimeSeriesMessage])
+    assert(dsTwo.forall(_.step === 60000))
+    assert(dsTwo.size === 9)
   }
 
   test("DataSource equals contract") {

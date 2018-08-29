@@ -39,6 +39,8 @@ import scala.concurrent.duration.Duration
 
 class FinalExprEvalSuite extends FunSuite {
 
+  private val step = 60000L
+
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val mat = ActorMaterializer()
 
@@ -56,12 +58,12 @@ class FinalExprEvalSuite extends FunSuite {
     DataSources.of(vs: _*)
   }
 
-  private def ds(id: String, uri: String): DataSource = {
-    new DataSource(id, java.time.Duration.ofMinutes(1), uri)
+  private def ds(id: String, uri: String, step: Long = 60000L): DataSource = {
+    new DataSource(id, java.time.Duration.ofMillis(step), uri)
   }
 
   private def group(i: Long, vs: AggrDatapoint*): TimeGroup[AggrDatapoint] = {
-    val timestamp = i * 60000L
+    val timestamp = i * step
     TimeGroup(timestamp, vs.map(_.copy(timestamp = timestamp)).toList)
   }
 
@@ -113,9 +115,9 @@ class FinalExprEvalSuite extends FunSuite {
     val input = List(
       sources(ds("a", s"http://atlas/graph?q=$expr")),
       group(0),
-      group(1, AggrDatapoint(0, expr, "i-1", tags, 42.0)),
-      group(2, AggrDatapoint(0, expr, "i-1", tags, 43.0)),
-      group(3, AggrDatapoint(0, expr, "i-1", tags, 44.0))
+      group(1, AggrDatapoint(0, step, expr, "i-1", tags, 42.0)),
+      group(2, AggrDatapoint(0, step, expr, "i-1", tags, 43.0)),
+      group(3, AggrDatapoint(0, step, expr, "i-1", tags, 44.0))
     )
 
     val output = run(input)
@@ -149,17 +151,17 @@ class FinalExprEvalSuite extends FunSuite {
     val input = List(
       sources(ds("a", s"http://atlas/graph?q=$expr")),
       group(0),
-      group(1, AggrDatapoint(0, expr, "i-1", tags, 42.0)),
+      group(1, AggrDatapoint(0, step, expr, "i-1", tags, 42.0)),
       group(
         2,
-        AggrDatapoint(0, expr, "i-1", tags, 43.0),
-        AggrDatapoint(0, expr, "i-2", tags, 41.0),
-        AggrDatapoint(0, expr, "i-3", tags, 45.0)
+        AggrDatapoint(0, step, expr, "i-1", tags, 43.0),
+        AggrDatapoint(0, step, expr, "i-2", tags, 41.0),
+        AggrDatapoint(0, step, expr, "i-3", tags, 45.0)
       ),
       group(
         3,
-        AggrDatapoint(0, expr, "i-1", tags, 43.0),
-        AggrDatapoint(0, expr, "i-2", tags, 44.0)
+        AggrDatapoint(0, step, expr, "i-1", tags, 43.0),
+        AggrDatapoint(0, step, expr, "i-2", tags, 44.0)
       )
     )
 
@@ -198,18 +200,18 @@ class FinalExprEvalSuite extends FunSuite {
         ds("a", s"http://atlas/graph?q=$expr1"),
         ds("b", s"http://atlas/graph?q=$expr2")
       ),
-      group(0, AggrDatapoint(0, expr1, "i-1", tags, 42.0)),
+      group(0, AggrDatapoint(0, step, expr1, "i-1", tags, 42.0)),
       group(
         1,
-        AggrDatapoint(0, expr1, "i-1", tags, 43.0),
-        AggrDatapoint(0, expr1, "i-2", tags, 41.0),
-        AggrDatapoint(0, expr2, "i-1", tags, 45.0)
+        AggrDatapoint(0, step, expr1, "i-1", tags, 43.0),
+        AggrDatapoint(0, step, expr1, "i-2", tags, 41.0),
+        AggrDatapoint(0, step, expr2, "i-1", tags, 45.0)
       ),
       group(
         2,
-        AggrDatapoint(0, expr2, "i-1", tags, 43.0),
-        AggrDatapoint(0, expr2, "i-3", tags, 49.0),
-        AggrDatapoint(0, expr1, "i-2", tags, 44.0)
+        AggrDatapoint(0, step, expr2, "i-1", tags, 43.0),
+        AggrDatapoint(0, step, expr2, "i-3", tags, 49.0),
+        AggrDatapoint(0, step, expr1, "i-2", tags, 44.0)
       )
     )
 
@@ -257,22 +259,22 @@ class FinalExprEvalSuite extends FunSuite {
       sources(ds("a", s"http://atlas/graph?q=$expr1,$expr2,:div")),
       group(
         0, // Missing sum for i-2
-        AggrDatapoint(0, expr1, "i-1", Map("node" -> "i-1"), 42.0),
-        AggrDatapoint(0, expr2, "i-1", Map("node" -> "i-1"), 1.0),
-        AggrDatapoint(0, expr2, "i-2", Map("node" -> "i-2"), 1.0)
+        AggrDatapoint(0, step, expr1, "i-1", Map("node" -> "i-1"), 42.0),
+        AggrDatapoint(0, step, expr2, "i-1", Map("node" -> "i-1"), 1.0),
+        AggrDatapoint(0, step, expr2, "i-2", Map("node" -> "i-2"), 1.0)
       ),
       group(
         1,
-        AggrDatapoint(0, expr1, "i-1", Map("node" -> "i-1"), 42.0),
-        AggrDatapoint(0, expr1, "i-2", Map("node" -> "i-2"), 21.0),
-        AggrDatapoint(0, expr2, "i-1", Map("node" -> "i-1"), 1.0),
-        AggrDatapoint(0, expr2, "i-2", Map("node" -> "i-2"), 1.0)
+        AggrDatapoint(0, step, expr1, "i-1", Map("node" -> "i-1"), 42.0),
+        AggrDatapoint(0, step, expr1, "i-2", Map("node" -> "i-2"), 21.0),
+        AggrDatapoint(0, step, expr2, "i-1", Map("node" -> "i-1"), 1.0),
+        AggrDatapoint(0, step, expr2, "i-2", Map("node" -> "i-2"), 1.0)
       ),
       group(
         2, // Missing count for i-1
-        AggrDatapoint(0, expr1, "i-1", Map("node" -> "i-1"), 42.0),
-        AggrDatapoint(0, expr1, "i-2", Map("node" -> "i-2"), 21.0),
-        AggrDatapoint(0, expr2, "i-2", Map("node" -> "i-2"), 1.0)
+        AggrDatapoint(0, step, expr1, "i-1", Map("node" -> "i-1"), 42.0),
+        AggrDatapoint(0, step, expr1, "i-2", Map("node" -> "i-2"), 21.0),
+        AggrDatapoint(0, step, expr2, "i-2", Map("node" -> "i-2"), 1.0)
       )
     )
 
@@ -315,9 +317,9 @@ class FinalExprEvalSuite extends FunSuite {
     val input = List(
       sources(ds("a", s"http://atlas/graph?q=$expr,legend+for+$$name,:legend")),
       group(0),
-      group(1, AggrDatapoint(0, expr, "i-1", tags, 42.0)),
-      group(2, AggrDatapoint(0, expr, "i-1", tags, 43.0)),
-      group(3, AggrDatapoint(0, expr, "i-1", tags, 44.0))
+      group(1, AggrDatapoint(0, step, expr, "i-1", tags, 42.0)),
+      group(2, AggrDatapoint(0, step, expr, "i-1", tags, 43.0)),
+      group(3, AggrDatapoint(0, step, expr, "i-1", tags, 44.0))
     )
 
     val output = run(input)
@@ -341,9 +343,9 @@ class FinalExprEvalSuite extends FunSuite {
     val input = List(
       sources(ds("a", s"http://atlas/graph?q=$expr")),
       group(0),
-      group(1, AggrDatapoint(0, exprA, "i-1", tagsA, 6.0)),
-      group(2, AggrDatapoint(0, exprA, "i-1", tagsA, 5.0)),
-      group(3, AggrDatapoint(0, exprA, "i-1", tagsA, 4.0))
+      group(1, AggrDatapoint(0, step, exprA, "i-1", tagsA, 6.0)),
+      group(2, AggrDatapoint(0, step, exprA, "i-1", tagsA, 5.0)),
+      group(3, AggrDatapoint(0, step, exprA, "i-1", tagsA, 4.0))
     )
 
     val output = run(input)
@@ -369,11 +371,11 @@ class FinalExprEvalSuite extends FunSuite {
     val input = List(
       sources(ds("a", s"http://atlas/graph?q=$expr")),
       group(0),
-      group(1, AggrDatapoint(0, exprA, "i-1", tagsA, 6.0)),
+      group(1, AggrDatapoint(0, step, exprA, "i-1", tagsA, 6.0)),
       sources(ds("a", s"http://atlas/graph?q=$expr")),
-      group(2, AggrDatapoint(0, exprA, "i-1", tagsA, 5.0)),
-      group(3, AggrDatapoint(0, exprA, "i-1", tagsA, 5.0)),
-      group(3, AggrDatapoint(0, exprA, "i-1", tagsA, 3.0))
+      group(2, AggrDatapoint(0, step, exprA, "i-1", tagsA, 5.0)),
+      group(3, AggrDatapoint(0, step, exprA, "i-1", tagsA, 5.0)),
+      group(3, AggrDatapoint(0, step, exprA, "i-1", tagsA, 3.0))
     )
 
     val output = run(input)
@@ -387,5 +389,22 @@ class FinalExprEvalSuite extends FunSuite {
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
+  }
+
+  test("mixed step sizes should fail") {
+    val input = List(
+      sources(
+        ds("a", s"http://atlas/graph?q=name,rps,:eq,:sum"),
+        ds("b", s"http://atlas/graph?q=name,rps,:eq,:sum", 10000L)
+      )
+    )
+
+    val e = intercept[IllegalStateException] {
+      run(input)
+    }
+    assert(
+      e.getMessage === "inconsistent step sizes, expected 60000, found 10000 " +
+      "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
+    )
   }
 }
