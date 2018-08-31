@@ -118,6 +118,42 @@ class PublishApiJsonSuite extends FunSuite {
     assert(decoded.size === 1)
   }
 
+  test("decode legacy batch with empty name") {
+    val decoded = PublishApi.decodeBatch("""
+      {
+        "metrics": [
+          {
+            "tags": {"name": ""},
+            "start": 123456789,
+            "values": [1.0]
+          }
+        ]
+      }
+      """)
+    assert(decoded.size === 1)
+    decoded.foreach { d =>
+      assert(d.tags === Map("name" -> ""))
+    }
+  }
+
+  test("decode legacy batch with null name") {
+    val decoded = PublishApi.decodeBatch("""
+      {
+        "metrics": [
+          {
+            "tags": {"name": null},
+            "start": 123456789,
+            "values": [1.0]
+          }
+        ]
+      }
+      """)
+    assert(decoded.size === 1)
+    decoded.foreach { d =>
+      assert(d.tags === Map.empty)
+    }
+  }
+
   test("decode list empty") {
     val decoded = PublishApi.decodeList("""
       []

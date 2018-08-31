@@ -120,17 +120,12 @@ object PublishApi {
     foreachField(parser) {
       case key =>
         val value = parser.nextTextValue()
-        if (value == null || value.isEmpty) {
-          val loc = parser.getCurrentLocation
-          val line = loc.getLineNr
-          val col = loc.getColumnNr
-          val msg = s"tag value cannot be null or empty (key=$key, line=$line, col=$col)"
-          throw new IllegalArgumentException(msg)
+        if (value != null) {
+          if (intern)
+            b.add(strInterner.intern(key), strInterner.intern(value))
+          else
+            b.add(key, value)
         }
-        if (intern)
-          b.add(strInterner.intern(key), strInterner.intern(value))
-        else
-          b.add(key, value)
     }
     if (intern) TaggedItem.internTagsShallow(b.compact) else b.result
   }
