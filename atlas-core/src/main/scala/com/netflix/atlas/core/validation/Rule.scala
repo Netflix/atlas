@@ -18,6 +18,9 @@ package com.netflix.atlas.core.validation
 import com.netflix.atlas.core.util.SmallHashMap
 import com.typesafe.config.Config
 
+import scala.reflect.runtime.universe
+import scala.util.control.NonFatal
+
 /**
   * Base type for validation rules.
   */
@@ -56,9 +59,39 @@ object Rule {
   }
 
   def load(ruleConfigs: List[_ <: Config]): List[Rule] = {
+    val configClass = classOf[Config]
     ruleConfigs.map { cfg =>
       val cls = Class.forName(cfg.getString("class"))
-      cls.getConstructor(classOf[Config]).newInstance(cfg).asInstanceOf[Rule]
+
+      try {
+        cls.getConstructor(configClass).newInstance(cfg).asInstanceOf[Rule]
+      } catch {
+        case NonFatal(th) =>
+          val runtimeMirror = universe.runtimeMirror(cls.getClassLoader)
+          val moduleSymbol = runtimeMirror.moduleSymbol(cls)
+
+          val targetMethod = moduleSymbol.typeSignature.members
+            .collect {
+              case x if x.isMethod && x.name.toString == "apply" => x.asMethod
+            }
+            .find(_.paramLists match {
+              case List(List(param)) if param.info.toString == configClass.getName => true
+              case _                                                               => false
+            })
+            .getOrElse {
+              val err = new RuntimeException(
+                s"""Could not find a constructor for class ${cls.getName} which takes a single parameter
+                 |of type ${configClass.getName}, or an apply method with the same signature""".stripMargin
+              )
+              err.addSuppressed(th)
+              throw err
+            }
+
+          runtimeMirror
+            .reflect(runtimeMirror.reflectModule(moduleSymbol).instance)
+            .reflectMethod(targetMethod)(cfg)
+            .asInstanceOf[Rule]
+      }
     }
   }
 

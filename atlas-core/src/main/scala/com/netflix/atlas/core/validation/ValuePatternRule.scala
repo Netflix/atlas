@@ -26,14 +26,21 @@ import com.typesafe.config.Config
   * pattern = "^[-_.a-zA-Z0-9]{4,60}$"
   * ```
   */
-class ValuePatternRule(config: Config) extends TagRule {
-
-  private val pattern = Pattern.compile(config.getString("pattern"))
+class ValuePatternRule(pattern: Pattern) extends TagRule {
 
   def validate(k: String, v: String): ValidationResult = {
     if (pattern.matcher(v).matches()) ValidationResult.Pass
     else {
       failure(s"value doesn't match pattern '$pattern': [$v]")
     }
+  }
+}
+
+object ValuePatternRule {
+
+  def apply(config: Config): ValuePatternRule = {
+    val pattern = Pattern.compile(config.getString("pattern"))
+
+    new ValuePatternRule(pattern)
   }
 }

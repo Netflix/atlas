@@ -24,7 +24,7 @@ class ReservedKeyRuleSuite extends FunSuite {
       |prefix = "nf."
       |allowed-keys = ["region", "job", "task"]
     """.stripMargin)
-  private val rule = new ReservedKeyRule(config)
+  private val rule = ReservedKeyRule(config)
 
   test("valid") {
     assert(rule.validate("nf.region", "def") === ValidationResult.Pass)

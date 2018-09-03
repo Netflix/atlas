@@ -26,14 +26,21 @@ import com.typesafe.config.Config
   * pattern = "^[-_.a-zA-Z0-9]{4,60}$"
   * ```
   */
-class KeyPatternRule(config: Config) extends TagRule {
-
-  private val pattern = Pattern.compile(config.getString("pattern"))
+case class KeyPatternRule(pattern: Pattern) extends TagRule {
 
   def validate(k: String, v: String): ValidationResult = {
     if (pattern.matcher(k).matches()) ValidationResult.Pass
     else {
       failure(s"key doesn't match pattern '$pattern': [$k]")
     }
+  }
+}
+
+object KeyPatternRule {
+
+  def apply(config: Config): KeyPatternRule = {
+    val pattern = Pattern.compile(config.getString("pattern"))
+
+    new KeyPatternRule(pattern)
   }
 }

@@ -25,10 +25,18 @@ import com.typesafe.config.Config
   * key = name
   * ```
   */
-class HasKeyRule(config: Config) extends Rule {
-  private val key = config.getString("key")
+case class HasKeyRule(key: String) extends Rule {
 
   def validate(tags: SmallHashMap[String, String]): ValidationResult = {
     if (tags.contains(key)) ValidationResult.Pass else failure(s"missing '$key': ${tags.keys}")
+  }
+}
+
+object HasKeyRule {
+
+  def apply(config: Config): HasKeyRule = {
+    val key = config.getString("key")
+
+    new HasKeyRule(key)
   }
 }

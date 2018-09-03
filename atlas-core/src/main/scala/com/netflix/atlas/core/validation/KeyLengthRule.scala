@@ -25,9 +25,7 @@ import com.typesafe.config.Config
   * max-length = 60
   * ```
   */
-class KeyLengthRule(config: Config) extends TagRule {
-  private val minLength = config.getInt("min-length")
-  private val maxLength = config.getInt("max-length")
+case class KeyLengthRule(minLength: Int, maxLength: Int) extends TagRule {
 
   def validate(k: String, v: String): ValidationResult = {
     k.length match {
@@ -38,5 +36,15 @@ class KeyLengthRule(config: Config) extends TagRule {
       case _ =>
         ValidationResult.Pass
     }
+  }
+}
+
+object KeyLengthRule {
+
+  def apply(config: Config): KeyLengthRule = {
+    val minLength = config.getInt("min-length")
+    val maxLength = config.getInt("max-length")
+
+    new KeyLengthRule(minLength, maxLength)
   }
 }

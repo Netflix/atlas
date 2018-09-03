@@ -25,9 +25,7 @@ import com.typesafe.config.Config
   * max-length = 60
   * ```
   */
-class ValueLengthRule(config: Config) extends TagRule {
-  private val minLength = config.getInt("min-length")
-  private val maxLength = config.getInt("max-length")
+case class ValueLengthRule(minLength: Int, maxLength: Int) extends TagRule {
 
   def validate(k: String, v: String): ValidationResult = {
     v.length match {
@@ -38,5 +36,15 @@ class ValueLengthRule(config: Config) extends TagRule {
       case _ =>
         ValidationResult.Pass
     }
+  }
+}
+
+object ValueLengthRule {
+
+  def apply(config: Config): ValueLengthRule = {
+    val minLength = config.getInt("min-length")
+    val maxLength = config.getInt("max-length")
+
+    new ValueLengthRule(minLength, maxLength)
   }
 }

@@ -29,18 +29,24 @@ import com.typesafe.config.Config
   *
   * This config would only allow "nf.app" and "nf.cluster" with a prefix of "nf.".
   */
-class ReservedKeyRule(config: Config) extends TagRule {
-
-  import scala.collection.JavaConverters._
-
-  private val prefix = config.getString("prefix")
-  private val allowedkeys =
-    config.getStringList("allowed-keys").asScala.map(k => s"$prefix$k").toSet
-
+case class ReservedKeyRule(prefix: String, allowedKeys: Set[String]) extends TagRule {
   override def validate(k: String, v: String): ValidationResult = {
-    if (k.startsWith(prefix) && !allowedkeys.contains(k))
+    if (k.startsWith(prefix) && !allowedKeys.contains(k))
       failure(s"invalid key for reserved prefix '$prefix': $k")
     else
       ValidationResult.Pass
+  }
+}
+
+object ReservedKeyRule {
+
+  def apply(config: Config): ReservedKeyRule = {
+    import scala.collection.JavaConverters._
+
+    val prefix = config.getString("prefix")
+    val allowedKeys =
+      config.getStringList("allowed-keys").asScala.map(k => s"$prefix$k").toSet
+
+    new ReservedKeyRule(prefix, allowedKeys)
   }
 }

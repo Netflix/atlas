@@ -25,7 +25,7 @@ class ValueLengthRuleSuite extends FunSuite {
       |max-length = 4
     """.stripMargin)
 
-  private val rule = new ValueLengthRule(config)
+  private val rule = ValueLengthRule(config)
 
   test("valid") {
     assert(rule.validate("def", "ab") === ValidationResult.Pass)

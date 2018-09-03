@@ -15,20 +15,8 @@
  */
 package com.netflix.atlas.core.validation
 
-import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import com.typesafe.config.Config
 
-class HasKeyRuleSuite extends FunSuite {
-
-  private val config = ConfigFactory.parseString("key = name")
-  private val rule = HasKeyRule(config)
-
-  test("has key") {
-    assert(rule.validate(Map("name" -> "foo")) === ValidationResult.Pass)
-  }
-
-  test("missing key") {
-    val res = rule.validate(Map("cluster" -> "foo"))
-    assert(res.isFailure)
-  }
+class ConfigConstructorTestRule(config: Config) extends TagRule {
+  override def validate(k: String, v: String): ValidationResult = ValidationResult.Pass
 }

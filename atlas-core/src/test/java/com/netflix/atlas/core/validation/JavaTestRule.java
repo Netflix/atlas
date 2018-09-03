@@ -13,22 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.validation
+package com.netflix.atlas.core.validation;
 
-import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import com.typesafe.config.Config;
 
-class HasKeyRuleSuite extends FunSuite {
+public class JavaTestRule extends TagRuleWrapper {
+    private Config config;
 
-  private val config = ConfigFactory.parseString("key = name")
-  private val rule = HasKeyRule(config)
+    public JavaTestRule(Config conf) {
+        config = conf;
+    }
 
-  test("has key") {
-    assert(rule.validate(Map("name" -> "foo")) === ValidationResult.Pass)
-  }
-
-  test("missing key") {
-    val res = rule.validate(Map("cluster" -> "foo"))
-    assert(res.isFailure)
-  }
+    @Override
+    public ValidationResult validate(String k, String v) {
+        return ValidationResult.Pass$.MODULE$;
+    }
 }

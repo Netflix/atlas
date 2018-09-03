@@ -25,7 +25,7 @@ class KeyLengthRuleSuite extends FunSuite {
       |max-length = 4
     """.stripMargin)
 
-  private val rule = new KeyLengthRule(config)
+  private val rule = KeyLengthRule(config)
 
   test("valid") {
     assert(rule.validate("ab", "def") === ValidationResult.Pass)

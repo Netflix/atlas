@@ -22,7 +22,7 @@ class ValuePatternRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("""pattern = "^[a-c]+$" """)
 
-  private val rule = new ValuePatternRule(config)
+  private val rule = ValuePatternRule(config)
 
   test("valid") {
     assert(rule.validate("def", "abc") === ValidationResult.Pass)

@@ -21,7 +21,7 @@ import org.scalatest.FunSuite
 class MaxUserTagsRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("limit = 2")
-  private val rule = new MaxUserTagsRule(config)
+  private val rule = MaxUserTagsRule(config)
 
   test("ok") {
     assert(rule.validate(Map("name" -> "foo")) === ValidationResult.Pass)
