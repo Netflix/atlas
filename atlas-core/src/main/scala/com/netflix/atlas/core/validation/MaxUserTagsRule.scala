@@ -26,10 +26,7 @@ import com.typesafe.config.Config
   * limit = 10
   * ```
   */
-class MaxUserTagsRule(config: Config) extends Rule {
-
-  private val limit = config.getInt("limit")
-
+case class MaxUserTagsRule(limit: Int) extends Rule {
   override def validate(tags: SmallHashMap[String, String]): ValidationResult = {
     var count = 0
     val iter = tags.entriesIterator
@@ -41,5 +38,14 @@ class MaxUserTagsRule(config: Config) extends Rule {
     else {
       failure(s"too many user tags: $count > $limit")
     }
+  }
+}
+
+object MaxUserTagsRule {
+
+  def apply(config: Config): MaxUserTagsRule = {
+    val limit = config.getInt("limit")
+
+    new MaxUserTagsRule(limit)
   }
 }

@@ -21,7 +21,8 @@ import org.scalatest.FunSuite
 class RuleSuite extends FunSuite {
 
   private val config =
-    ConfigFactory.parseString("""
+    ConfigFactory.parseString(
+      """
       |rules = [
       |  {
       |    class = "com.netflix.atlas.core.validation.HasKeyRule"
@@ -51,13 +52,20 @@ class RuleSuite extends FunSuite {
       |  {
       |    class = "com.netflix.atlas.core.validation.MaxUserTagsRule"
       |    limit = 20
+      |  },
+      |  {
+      |    class = "com.netflix.atlas.core.validation.ConfigConstructorTestRule"
+      |  },
+      |  {
+      |    class = "com.netflix.atlas.core.validation.JavaTestRule"
       |  }
       |]
-    """.stripMargin)
+    """.stripMargin
+    )
 
   test("load") {
     val rules = Rule.load(config.getConfigList("rules"))
-    assert(rules.size === 7)
+    assert(rules.size === 9)
   }
 
   test("validate ok") {

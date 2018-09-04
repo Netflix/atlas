@@ -37,29 +37,8 @@ import com.typesafe.config.Config
   * ]
   * ```
   */
-class ValidCharactersRule(config: Config) extends TagRule {
-
-  private val defaultSet = {
-    if (config.hasPath("default-pattern"))
-      AsciiSet.fromPattern(config.getString("default-pattern"))
-    else
-      AsciiSet.fromPattern("-._A-Za-z0-9")
-  }
-
-  private val overrides = {
-    val m = if (config.hasPath("overrides")) loadOverrides else Map.empty[String, AsciiSet]
-    m.withDefaultValue(defaultSet)
-  }
-
-  private def loadOverrides: Map[String, AsciiSet] = {
-    import scala.collection.JavaConverters._
-    val entries = config.getConfigList("overrides").asScala.map { cfg =>
-      val k = cfg.getString("key")
-      val v = AsciiSet.fromPattern(cfg.getString("value"))
-      k -> v
-    }
-    entries.toMap
-  }
+case class ValidCharactersRule(defaultSet: AsciiSet, overrides: Map[String, AsciiSet])
+    extends TagRule {
 
   def validate(k: String, v: String): ValidationResult = {
     if (!defaultSet.containsAll(k)) {
@@ -72,5 +51,35 @@ class ValidCharactersRule(config: Config) extends TagRule {
     }
 
     ValidationResult.Pass
+  }
+}
+
+object ValidCharactersRule {
+
+  def apply(config: Config): ValidCharactersRule = {
+    import scala.collection.JavaConverters._
+
+    def loadOverrides: Map[String, AsciiSet] = {
+      val entries = config.getConfigList("overrides").asScala.map { cfg =>
+        val k = cfg.getString("key")
+        val v = AsciiSet.fromPattern(cfg.getString("value"))
+        k -> v
+      }
+      entries.toMap
+    }
+
+    val defaultSet = {
+      if (config.hasPath("default-pattern"))
+        AsciiSet.fromPattern(config.getString("default-pattern"))
+      else
+        AsciiSet.fromPattern("-._A-Za-z0-9")
+    }
+
+    val overrides = {
+      val m = if (config.hasPath("overrides")) loadOverrides else Map.empty[String, AsciiSet]
+      m.withDefaultValue(defaultSet)
+    }
+
+    new ValidCharactersRule(defaultSet, overrides)
   }
 }

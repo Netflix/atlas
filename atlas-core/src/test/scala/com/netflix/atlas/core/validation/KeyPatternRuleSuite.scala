@@ -22,7 +22,7 @@ class KeyPatternRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("""pattern = "^[a-c]+$" """)
 
-  private val rule = new KeyPatternRule(config)
+  private val rule = KeyPatternRule(config)
 
   test("valid") {
     assert(rule.validate("abc", "ab") === ValidationResult.Pass)
