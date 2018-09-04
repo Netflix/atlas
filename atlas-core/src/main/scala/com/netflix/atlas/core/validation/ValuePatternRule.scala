@@ -26,7 +26,7 @@ import com.typesafe.config.Config
   * pattern = "^[-_.a-zA-Z0-9]{4,60}$"
   * ```
   */
-class ValuePatternRule(pattern: Pattern) extends TagRule {
+case class ValuePatternRule(pattern: Pattern) extends TagRule {
 
   def validate(k: String, v: String): ValidationResult = {
     if (pattern.matcher(v).matches()) ValidationResult.Pass
