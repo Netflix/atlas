@@ -22,6 +22,7 @@ import java.util.regex.Pattern
 
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonToken
+import com.fasterxml.jackson.databind.JsonNode
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
 import org.joda.time.Duration
@@ -473,6 +474,19 @@ class JsonSuite extends FunSuite {
     val obj = Json.decode[JsonSuiteArrayString]("""{"name":"name", "values":[]}""")
     val json = Json.encode(obj)
     assert(json === """{"name":"name","values":[]}""")
+  }
+
+  test("decode from JsonData") {
+    def parse(json: String): List[JsonSuiteSimple] = {
+      val node = Json.decode[JsonNode](json)
+      if (node.isArray)
+        Json.decode[List[JsonSuiteSimple]](node)
+      else
+        List(Json.decode[JsonSuiteSimple](node))
+    }
+    val list = parse("""[{"foo":42,"bar":"abc"}]""")
+    val obj = parse("""{"foo":42,"bar":"abc"}""")
+    assert(list === obj)
   }
 }
 

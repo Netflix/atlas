@@ -42,9 +42,11 @@ object Json {
 
     def decode(json: String): T = decode(factory.createParser(json))
 
+    def decode(input: Reader): T = decode(factory.createParser(input))
+
     def decode(input: InputStream): T = decode(factory.createParser(input))
 
-    def decode(input: Reader): T = decode(factory.createParser(input))
+    def decode(node: JsonNode): T = reader.readValue[T](node)
 
     def decode(parser: JsonParser): T = {
       try {
@@ -167,6 +169,8 @@ object Json {
   def decode[T: Manifest](reader: Reader): T = decoder[T].decode(reader)
 
   def decode[T: Manifest](stream: InputStream): T = decoder[T].decode(stream)
+
+  def decode[T: Manifest](node: JsonNode): T = decoder[T].decode(node)
 
   def decode[T: Manifest](parser: JsonParser): T = {
     val reader: ObjectReader =
