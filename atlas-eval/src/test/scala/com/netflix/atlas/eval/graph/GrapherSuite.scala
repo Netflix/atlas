@@ -360,4 +360,30 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
     "/api/v1/graph?e=2012-01-01T00:00" +
     "&q=name,sps,:eq,(,nf.cluster,),:by,$atlas.max+is+max,:legend&tick_labels=binary"
   }
+
+  def renderTest(name: String)(uri: => String): Unit = {
+    test(name) {
+      val fname = Strings.zeroPad(Hash.sha1(name), 40).substring(0, 8) + ".png"
+      val config = grapher.toGraphConfig(Uri(uri))
+      val styleData = config.exprs.map { styleExpr =>
+        val dataResults = styleExpr.expr.dataExprs.distinct.map { dataExpr =>
+          dataExpr -> db.execute(config.evalContext, dataExpr)
+        }.toMap
+        styleExpr -> styleExpr.expr.eval(config.evalContext, dataResults).data
+      }.toMap
+      val result = grapher.render(Uri(uri), styleData)
+      val image = PngImage(result.data)
+      graphAssertions.assertEquals(image, fname, bless)
+    }
+  }
+
+  renderTest("rendering with pre-evaluated data set, legends") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend,10e3,threshold,:legend,3,:lw"
+  }
+
+  renderTest("rendering with pre-evaluated data set, multi-y") {
+    "/api/v1/graph?e=2012-01-01T00:00&u.1=56e3" +
+    "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend,:stack,20e3,1,:axis,:area,50,:alpha"
+  }
 }
