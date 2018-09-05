@@ -50,6 +50,16 @@ class SubscriptionManagerSuite extends FunSuite {
     assert(sm.unregister(sse1) === None)
   }
 
+  test("multiple subscriptions for stream") {
+    val sm = new SubscriptionManager[Integer]()
+    sm.register("a", 1)
+
+    val subs = List(sub("name,exp1,:eq"), sub("name,exp2,:eq"))
+    sm.subscribe("a", subs)
+
+    assert(sm.subscriptions.toSet === subs.toSet)
+  }
+
   test("duplicate subscriptions") {
     val sm = new SubscriptionManager[Integer]()
     sm.register("a", 1)
