@@ -57,6 +57,8 @@ class StreamApi @Inject()(
   private implicit val ec = scala.concurrent.ExecutionContext.global
   private implicit val materializer = ActorMaterializer()
 
+  private val reRegistrations = registry.counter("atlas.lwcapi.reRegistrations")
+
   def routes: Route = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { streamId =>
       parameters(('name.?, 'expression.?, 'frequency.?)) { (name, expr, frequency) =>
@@ -126,8 +128,9 @@ class StreamApi @Inject()(
       .run()
 
     // Send initial setup messages
+    val handler = new QueueHandler(streamId, queue)
     queue.offer(SSEHello(streamId, instanceId))
-    sm.register(streamId, new QueueHandler(streamId, queue))
+    sm.register(streamId, handler)
     splits.foreach {
       case (exprMeta, subscriptions) =>
         subscriptions.foreach(s => sm.subscribe(streamId, s))
@@ -138,6 +141,18 @@ class StreamApi @Inject()(
     val heartbeatSrc = Source
       .repeat(heartbeat)
       .throttle(1, 5.seconds, 1, ThrottleMode.Shaping)
+      .map { value =>
+        // There is a race condition on reconnects where the new connection can come in
+        // before the stream for the old connection is closed. The cleanup for the old
+        // connection will then unregister the stream id. This is a short-term work around
+        // to ensure running streams have a registered handler and track the number of
+        // events that we see.
+        if (!sm.register(streamId, handler)) {
+          logger.debug(s"re-registered handler for stream $streamId")
+          reRegistrations.increment()
+        }
+        value
+      }
 
     val source = Source
       .fromPublisher(pub)
