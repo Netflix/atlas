@@ -101,7 +101,7 @@ class StreamApi @Inject()(
         // connection will then unregister the stream id. This is a short-term work around
         // to ensure running streams have a registered handler and track the number of
         // events that we see.
-        if (!sm.register(streamId, handler)) {
+        if (sm.register(streamId, handler)) {
           logger.debug(s"re-registered handler for stream $streamId")
           reRegistrations.increment()
         }

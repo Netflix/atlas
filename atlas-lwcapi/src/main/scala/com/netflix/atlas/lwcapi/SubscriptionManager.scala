@@ -108,8 +108,11 @@ class SubscriptionManager[T] extends StrictLogging {
     * Returns true if it is a new registration.
     */
   def register(streamId: String, handler: T): Boolean = {
-    logger.debug(s"registering $streamId")
-    registrations.put(streamId, new StreamInfo[T](handler)) == null
+    val registered = registrations.putIfAbsent(streamId, new StreamInfo[T](handler)) == null
+    if (registered) {
+      logger.debug(s"registered $streamId")
+    }
+    registered
   }
 
   /**
@@ -118,8 +121,8 @@ class SubscriptionManager[T] extends StrictLogging {
     * removed.
     */
   def unregister(streamId: String): Option[T] = {
-    logger.debug(s"unregistering $streamId")
     val result = Option(registrations.remove(streamId)).map { info =>
+      logger.debug(s"unregistered $streamId")
       info.subscriptions.foreach { sub =>
         removeHandler(sub.metadata.id, info.handler)
       }
