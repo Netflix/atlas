@@ -149,10 +149,11 @@ class SubscriptionManager[T] extends StrictLogging {
   def subscribe(streamId: String, subs: List[Subscription]): T = {
     logger.debug(s"updating subscriptions for $streamId")
     val info = getInfo(streamId)
-    queryListChanged = subs.foldLeft(queryListChanged) { case (acc, sub) =>
-      logger.debug(s"subscribing $streamId to $sub")
-      info.subs.put(sub.metadata.id, sub)
-      addHandler(sub.metadata.id, info.handler) || acc
+    queryListChanged = subs.foldLeft(queryListChanged) {
+      case (acc, sub) =>
+        logger.debug(s"subscribing $streamId to $sub")
+        info.subs.put(sub.metadata.id, sub)
+        addHandler(sub.metadata.id, info.handler) || acc
     }
     info.handler
   }
