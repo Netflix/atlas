@@ -31,7 +31,6 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
@@ -61,48 +60,13 @@ class StreamApi @Inject()(
 
   def routes: Route = {
     path("lwc" / "api" / "v1" / "stream" / Segment) { streamId =>
-      parameters(('name.?, 'expression.?, 'frequency.?)) { (name, expr, frequency) =>
-        get {
-          complete(handleReq(None, streamId, name, expr, frequency))
-        } ~
-        post {
-          parseEntity(json[ExpressionsRequest]) { req =>
-            complete(handleReq(Some(req), streamId, name, expr, frequency))
-          }
-        }
+      get {
+        complete(handleReq(streamId))
       }
     }
   }
 
-  private def splitRequest(
-    requestOpt: Option[ExpressionsRequest],
-    urlExpr: Option[String],
-    urlFreq: Option[String]
-  ): Map[ExpressionMetadata, List[Subscription]] = {
-
-    val builder = Map.newBuilder[ExpressionMetadata, List[Subscription]]
-
-    val freq = urlFreq.fold(ApiSettings.defaultFrequency)(_.toInt)
-    urlExpr.foreach { expr =>
-      builder += ExpressionMetadata(expr, freq) -> splitter.split(expr, freq)
-    }
-
-    requestOpt.foreach { request =>
-      request.expressions.foreach { expr =>
-        builder += expr -> splitter.split(expr.expression, expr.frequency)
-      }
-    }
-
-    builder.result
-  }
-
-  private def handleReq(
-    req: Option[ExpressionsRequest],
-    streamId: String,
-    name: Option[String],
-    expr: Option[String],
-    freqString: Option[String]
-  ): HttpResponse = {
+  private def handleReq(streamId: String): HttpResponse = {
 
     // Drop any other connections that may already be using the same id
     sm.unregister(streamId).foreach { queue =>
@@ -115,11 +79,6 @@ class StreamApi @Inject()(
       queue.complete()
     }
 
-    // Validate post data. This is done before creating an actor, since
-    // creating the actor sends a chunked response, masking any expression
-    // parse errors.
-    val splits = splitRequest(req, expr, freqString)
-
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     val (queue, pub) = StreamOps
       .queue[SSERenderable](registry, "StreamApi", 10000, OverflowStrategy.dropHead)
@@ -131,11 +90,6 @@ class StreamApi @Inject()(
     val handler = new QueueHandler(streamId, queue)
     queue.offer(SSEHello(streamId, instanceId))
     sm.register(streamId, handler)
-    splits.foreach {
-      case (exprMeta, subscriptions) =>
-        subscriptions.foreach(s => sm.subscribe(streamId, s))
-        queue.offer(SSESubscribe(exprMeta.expression, subscriptions.map(_.metadata)))
-    }
 
     // Heartbeat messages to ensure that the socket is never idle
     val heartbeatSrc = Source
