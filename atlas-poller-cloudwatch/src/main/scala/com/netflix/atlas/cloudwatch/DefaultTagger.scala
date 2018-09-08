@@ -18,6 +18,8 @@ package com.netflix.atlas.cloudwatch
 import com.amazonaws.services.cloudwatch.model.Dimension
 import com.typesafe.config.Config
 
+import scala.util.matching.Regex
+
 /**
   * Tag datapoints with a set of common tags. Also allows mapping cloudwatch
   * dimension names to names that match some other convention. For example,
@@ -26,6 +28,12 @@ import com.typesafe.config.Config
   */
 class DefaultTagger(config: Config) extends Tagger {
   import scala.collection.JavaConverters._
+
+  private val extractors: Map[String, Regex] = config
+    .getConfigList("extractors")
+    .asScala
+    .map(c => c.getString("name") -> c.getString("pattern").r)
+    .toMap
 
   private val mappings: Map[String, String] = config
     .getConfigList("mappings")
@@ -40,7 +48,18 @@ class DefaultTagger(config: Config) extends Tagger {
     .toMap
 
   private def toTag(dimension: Dimension): (String, String) = {
-    mappings.getOrElse(dimension.getName, dimension.getName) -> dimension.getValue
+    val cwName = dimension.getName
+    val cwValue = dimension.getValue
+    val tagName = mappings.getOrElse(cwName, cwName)
+    val tagValue =
+      extractors
+        .get(cwName)
+        .fold(cwValue)(
+          _.findFirstMatchIn(cwValue).fold(cwValue) { matches =>
+            if (matches.groupCount > 0) matches.group(1) else cwValue
+          }
+        )
+    tagName -> tagValue
   }
 
   override def apply(dimensions: List[Dimension]): Map[String, String] = {
