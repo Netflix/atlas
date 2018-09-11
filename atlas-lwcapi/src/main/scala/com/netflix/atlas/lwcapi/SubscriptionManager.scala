@@ -155,8 +155,9 @@ class SubscriptionManager[T] extends StrictLogging {
     val info = getInfo(streamId)
     queryListChanged = subs.foldLeft(queryListChanged) {
       case (acc, sub) =>
-        logger.debug(s"subscribing $streamId to $sub")
-        info.subs.put(sub.metadata.id, sub)
+        if (info.subs.putIfAbsent(sub.metadata.id, sub) == null) {
+          logger.debug(s"subscribed $streamId to $sub")
+        }
         addHandler(sub.metadata.id, info.handler) || acc
     }
     info.handler
@@ -166,9 +167,10 @@ class SubscriptionManager[T] extends StrictLogging {
     * Stop sending data for the subscription to the given stream id.
     */
   def unsubscribe(streamId: String, subId: String): Unit = {
-    logger.debug(s"unsubscribing $streamId from $subId")
     val info = getInfo(streamId)
-    info.subs.remove(subId)
+    if (info.subs.remove(subId) != null) {
+      logger.debug(s"unsubscribed $streamId from $subId")
+    }
     queryListChanged = removeHandler(subId, info.handler)
   }
 
