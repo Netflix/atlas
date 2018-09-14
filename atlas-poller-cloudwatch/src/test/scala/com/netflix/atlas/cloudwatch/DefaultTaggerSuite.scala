@@ -90,7 +90,7 @@ class DefaultTaggerSuite extends FunSuite {
         |extractors = [
         |  {
         |    name = "ExtractDotDelimited"
-        |    patterns = [
+        |    directives = [
         |      {
         |        pattern = "[^.]+\\.[^.]+\\.(.*)"
         |      }
@@ -98,7 +98,7 @@ class DefaultTaggerSuite extends FunSuite {
         |  },
         |  {
         |    name = "ExtractSlashDelimited"
-        |    patterns = [
+        |    directives = [
         |      {
         |        pattern = "[^.]+/([^.]+)/.*"
         |      }
@@ -125,7 +125,7 @@ class DefaultTaggerSuite extends FunSuite {
         |extractors = [
         |  {
         |    name = "ExtractDotDelimited"
-        |    patterns = [
+        |    directives = [
         |      {
         |        pattern = "[^.]+\\.[^.]+\\.(.*"
         |      }
@@ -146,7 +146,7 @@ class DefaultTaggerSuite extends FunSuite {
         |extractors = [
         |  {
         |    name = "ExtractDotDelimited"
-        |    patterns = [
+        |    directives = [
         |      {
         |        alias = "new-name"
         |      }
@@ -167,7 +167,7 @@ class DefaultTaggerSuite extends FunSuite {
         |extractors = [
         |  {
         |    name = "ExtractDotDelimited"
-        |    patterns = [
+        |    directives = [
         |      {
         |        pattern = "[^.]+\\.[^.]+\\..*"
         |      }
@@ -194,7 +194,7 @@ class DefaultTaggerSuite extends FunSuite {
         |extractors = [
         |  {
         |    name = "ExtractDotDelimited"
-        |    patterns = [
+        |    directives = [
         |      {
         |        pattern = "[^.]+\\.[^.]+\\.(.*)"
         |      }
@@ -202,7 +202,7 @@ class DefaultTaggerSuite extends FunSuite {
         |  },
         |  {
         |    name = "ExtractSlashDelimited"
-        |    patterns = [
+        |    directives = [
         |      {
         |        pattern = "[^.]+/([^.]+)/.*"
         |        alias = "extracted"
@@ -230,7 +230,7 @@ class DefaultTaggerSuite extends FunSuite {
         |extractors = [
         |  {
         |    name = "ExtractSlashDelimited"
-        |    patterns = [
+        |    directives = [
         |      {
         |        pattern = "[^.]+/([^.]+)/.*"
         |        alias = "extracted"
@@ -263,7 +263,7 @@ class DefaultTaggerSuite extends FunSuite {
         |extractors = [
         |  {
         |    name = "ExtractSlashDelimited"
-        |    patterns = [
+        |    directives = [
         |      {
         |        pattern = "[^.]+/([^.]+)/.*"
         |        alias = "extracted"

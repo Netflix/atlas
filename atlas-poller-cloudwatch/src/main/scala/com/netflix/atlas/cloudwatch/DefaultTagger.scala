@@ -34,7 +34,7 @@ class DefaultTagger(config: Config) extends Tagger {
     .asScala
     .map { c =>
       val patterns = c
-        .getConfigList("patterns")
+        .getConfigList("directives")
         .asScala
         .map(cl => {
           val alias = if (cl.hasPath("alias")) cl.getString("alias") else c.getString("name")
