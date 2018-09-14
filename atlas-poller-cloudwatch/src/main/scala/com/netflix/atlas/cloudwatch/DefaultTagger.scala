@@ -32,7 +32,7 @@ class DefaultTagger(config: Config) extends Tagger {
   private val extractors: Map[String, Seq[(Regex, Option[String])]] = config
     .getConfigList("extractors")
     .asScala
-    .map(c => {
+    .map { c =>
       val patterns = c
         .getConfigList("patterns")
         .asScala
@@ -41,7 +41,7 @@ class DefaultTagger(config: Config) extends Tagger {
           cl.getString("pattern").r -> alias
         })
       c.getString("name") -> patterns
-    })
+    }
     .toMap
 
   private val mappings: Map[String, String] = config
