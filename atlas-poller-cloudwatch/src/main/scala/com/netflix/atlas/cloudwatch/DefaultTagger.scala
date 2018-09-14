@@ -36,10 +36,10 @@ class DefaultTagger(config: Config) extends Tagger {
       val directives = c
         .getConfigList("directives")
         .asScala
-        .map(cl => {
+        .map { cl =>
           val alias = if (cl.hasPath("alias")) cl.getString("alias") else c.getString("name")
           cl.getString("pattern").r -> alias
-        })
+        }
       c.getString("name") -> directives
     }
     .toMap
