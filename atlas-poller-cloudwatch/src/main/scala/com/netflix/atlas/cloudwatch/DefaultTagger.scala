@@ -65,7 +65,7 @@ class DefaultTagger(config: Config) extends Tagger {
       .get(cwName)
       .flatMap { directives =>
         directives.collectFirst {
-          case extractor(extracted) => extracted
+          case extractor(a, v) => a -> v
         }
       }
       .getOrElse(mappings.getOrElse(cwName, cwName) -> cwValue)
