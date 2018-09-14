@@ -29,10 +29,19 @@ import scala.util.matching.Regex
 class DefaultTagger(config: Config) extends Tagger {
   import scala.collection.JavaConverters._
 
-  private val extractors: Map[String, Regex] = config
+  private val extractors: Map[String, Seq[(Regex, String)]] = config
     .getConfigList("extractors")
     .asScala
-    .map(c => c.getString("name") -> c.getString("pattern").r)
+    .map { c =>
+      val directives = c
+        .getConfigList("directives")
+        .asScala
+        .map { cl =>
+          val alias = if (cl.hasPath("alias")) cl.getString("alias") else c.getString("name")
+          cl.getString("pattern").r -> alias
+        }
+      c.getString("name") -> directives
+    }
     .toMap
 
   private val mappings: Map[String, String] = config
@@ -50,19 +59,33 @@ class DefaultTagger(config: Config) extends Tagger {
   private def toTag(dimension: Dimension): (String, String) = {
     val cwName = dimension.getName
     val cwValue = dimension.getValue
-    val tagName = mappings.getOrElse(cwName, cwName)
-    val tagValue =
-      extractors
-        .get(cwName)
-        .fold(cwValue)(
-          _.findFirstMatchIn(cwValue).fold(cwValue) { matches =>
-            if (matches.groupCount > 0) matches.group(1) else cwValue
-          }
-        )
-    tagName -> tagValue
+
+    val extractor = DefaultTagger.ValueExtractor(cwValue)
+    extractors
+      .get(cwName)
+      .flatMap { directives =>
+        directives.collectFirst {
+          case extractor(a, v) => a -> v
+        }
+      }
+      .getOrElse(mappings.getOrElse(cwName, cwName) -> cwValue)
   }
 
   override def apply(dimensions: List[Dimension]): Map[String, String] = {
     commonTags ++ dimensions.map(toTag).toMap
+  }
+}
+
+object DefaultTagger {
+
+  private case class ValueExtractor(rawValue: String) {
+
+    def unapply(extractorDirective: (Regex, String)): Option[(String, String)] = {
+      val (regex, alias) = extractorDirective
+      regex.findFirstMatchIn(rawValue).map { matches =>
+        val value = if (matches.groupCount > 0) matches.group(1) else rawValue
+        alias -> value
+      }
+    }
   }
 }
