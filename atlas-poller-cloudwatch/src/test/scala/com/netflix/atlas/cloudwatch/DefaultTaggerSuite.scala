@@ -212,4 +212,20 @@ class DefaultTaggerSuite extends FunSuite {
     val tagger = new DefaultTagger(cfg)
     assert(tagger(dimensions) === expected)
   }
+
+  test("aws.alb is assigned to LoadBalancer names starting with app with main config") {
+    val cfg = ConfigFactory.parseResources("reference.conf").resolve()
+    val tagger = new DefaultTagger(cfg.getConfig("atlas.cloudwatch.tagger"))
+
+    val expected = Map(
+      "aws.alb"   -> "captured-portion",
+      "nf.region" -> "us-west-2"
+    )
+
+    val actual = tagger(
+      List(new Dimension().withName("LoadBalancer").withValue("app/captured-portion/42beef9876"))
+    )
+
+    assert(actual === expected)
+  }
 }
