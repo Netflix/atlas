@@ -33,14 +33,14 @@ class DefaultTagger(config: Config) extends Tagger {
     .getConfigList("extractors")
     .asScala
     .map { c =>
-      val patterns = c
+      val directives = c
         .getConfigList("directives")
         .asScala
         .map(cl => {
           val alias = if (cl.hasPath("alias")) cl.getString("alias") else c.getString("name")
           cl.getString("pattern").r -> alias
         })
-      c.getString("name") -> patterns
+      c.getString("name") -> directives
     }
     .toMap
 
@@ -60,21 +60,32 @@ class DefaultTagger(config: Config) extends Tagger {
     val cwName = dimension.getName
     val cwValue = dimension.getValue
 
-    val optionalExtractor = extractors.get(cwName)
-    val extracted = optionalExtractor.flatMap { patterns =>
-      patterns.flatMap {
-        case (regex, alias) =>
-          val extractedValue = regex.findFirstMatchIn(cwValue).map { matches =>
-            if (matches.groupCount > 0) matches.group(1) else cwValue
-          }
-          extractedValue.map(v => alias -> v)
-      }.headOption
-    }
-
-    extracted.getOrElse(mappings.getOrElse(cwName, cwName) -> cwValue)
+    val extractor = DefaultTagger.ValueExtractor(cwValue)
+    extractors
+      .get(cwName)
+      .flatMap { directives =>
+        directives.collectFirst {
+          case extractor(extracted) => extracted
+        }
+      }
+      .getOrElse(mappings.getOrElse(cwName, cwName) -> cwValue)
   }
 
   override def apply(dimensions: List[Dimension]): Map[String, String] = {
     commonTags ++ dimensions.map(toTag).toMap
+  }
+}
+
+object DefaultTagger {
+
+  private case class ValueExtractor(rawValue: String) {
+
+    def unapply(extractorDirective: (Regex, String)): Option[(String, String)] = {
+      val (regex, alias) = extractorDirective
+      regex.findFirstMatchIn(rawValue).map { matches =>
+        val value = if (matches.groupCount > 0) matches.group(1) else rawValue
+        alias -> value
+      }
+    }
   }
 }
