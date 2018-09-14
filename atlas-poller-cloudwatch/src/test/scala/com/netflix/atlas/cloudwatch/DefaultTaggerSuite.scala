@@ -90,11 +90,19 @@ class DefaultTaggerSuite extends FunSuite {
         |extractors = [
         |  {
         |    name = "ExtractDotDelimited"
-        |    pattern = "[^.]+\\.[^.]+\\.(.*)"
+        |    patterns = [
+        |      {
+        |        pattern = "[^.]+\\.[^.]+\\.(.*)"
+        |      }
+        |    ]
         |  },
         |  {
         |    name = "ExtractSlashDelimited"
-        |    pattern = "[^.]+/([^.]+)/.*"
+        |    patterns = [
+        |      {
+        |        pattern = "[^.]+/([^.]+)/.*"
+        |      }
+        |    ]
         |  }
         |]
         |mappings = []
@@ -117,7 +125,11 @@ class DefaultTaggerSuite extends FunSuite {
         |extractors = [
         |  {
         |    name = "ExtractDotDelimited"
-        |    pattern = "[^.]+\\.[^.]+\\.(.*"
+        |    patterns = [
+        |      {
+        |        pattern = "[^.]+\\.[^.]+\\.(.*"
+        |      }
+        |    ]
         |  }
         |]
         |mappings = []
@@ -127,7 +139,27 @@ class DefaultTaggerSuite extends FunSuite {
     intercept[PatternSyntaxException] {
       new DefaultTagger(cfg)
     }
+  }
 
+  test("missing pattern in extractor throws") {
+    val cfg = ConfigFactory.parseString("""
+        |extractors = [
+        |  {
+        |    name = "ExtractDotDelimited"
+        |    patterns = [
+        |      {
+        |        alias = "new-name"
+        |      }
+        |    ]
+        |  }
+        |]
+        |mappings = []
+        |common-tags = []
+      """.stripMargin)
+
+    intercept[ConfigException.Missing] {
+      new DefaultTagger(cfg)
+    }
   }
 
   test("extractor without capture group returns raw value") {
@@ -135,7 +167,11 @@ class DefaultTaggerSuite extends FunSuite {
         |extractors = [
         |  {
         |    name = "ExtractDotDelimited"
-        |    pattern = "[^.]+\\.[^.]+\\..*"
+        |    patterns = [
+        |      {
+        |        pattern = "[^.]+\\.[^.]+\\..*"
+        |      }
+        |    ]
         |  }
         |]
         |mappings = []
@@ -153,29 +189,99 @@ class DefaultTaggerSuite extends FunSuite {
     assert(tagger(dimensions) === expected)
   }
 
-  test("apply key mappings and extract value for configured keys") {
+  test("extract value and apply alias for configured keys") {
     val cfg = ConfigFactory.parseString("""
         |extractors = [
         |  {
         |    name = "ExtractDotDelimited"
-        |    pattern = "[^.]+\\.[^.]+\\.(.*)"
+        |    patterns = [
+        |      {
+        |        pattern = "[^.]+\\.[^.]+\\.(.*)"
+        |      }
+        |    ]
         |  },
         |  {
         |    name = "ExtractSlashDelimited"
-        |    pattern = "[^.]+/([^.]+)/.*"
+        |    patterns = [
+        |      {
+        |        pattern = "[^.]+/([^.]+)/.*"
+        |        alias = "extracted"
+        |      }
+        |    ]
+        |  }
+        |]
+        |mappings = []
+        |common-tags = []
+      """.stripMargin)
+
+    val expected = Map(
+      "ExtractDotDelimited" -> "captured-portion",
+      "extracted"           -> "captured-portion",
+      "CloudWatch"          -> "abc",
+      "NoMapping"           -> "def"
+    )
+
+    val tagger = new DefaultTagger(cfg)
+    assert(tagger(dimensions) === expected)
+  }
+
+  test("mapping is ignored if extractor of the same name exists") {
+    val cfg = ConfigFactory.parseString("""
+        |extractors = [
+        |  {
+        |    name = "ExtractSlashDelimited"
+        |    patterns = [
+        |      {
+        |        pattern = "[^.]+/([^.]+)/.*"
+        |        alias = "extracted"
+        |      }
+        |    ]
         |  }
         |]
         |mappings = [
         |  {
         |    name = "ExtractSlashDelimited"
-        |    alias = "extracted"
+        |    alias = "ignored"
         |  }
         |]
         |common-tags = []
       """.stripMargin)
 
     val expected = Map(
-      "ExtractDotDelimited" -> "captured-portion",
+      "ExtractDotDelimited" -> "abc.def.captured-portion",
+      "extracted"           -> "captured-portion",
+      "CloudWatch"          -> "abc",
+      "NoMapping"           -> "def"
+    )
+
+    val tagger = new DefaultTagger(cfg)
+    assert(tagger(dimensions) === expected)
+  }
+
+  test("first extractor pattern has precedence") {
+    val cfg = ConfigFactory.parseString("""
+        |extractors = [
+        |  {
+        |    name = "ExtractSlashDelimited"
+        |    patterns = [
+        |      {
+        |        pattern = "[^.]+/([^.]+)/.*"
+        |        alias = "extracted"
+        |      },
+        |      {
+        |        pattern = "[^.]+/[^.]+/(.*)"
+        |        alias = "ignored"
+        |      }
+        |
+        |    ]
+        |  }
+        |]
+        |mappings = []
+        |common-tags = []
+      """.stripMargin)
+
+    val expected = Map(
+      "ExtractDotDelimited" -> "abc.def.captured-portion",
       "extracted"           -> "captured-portion",
       "CloudWatch"          -> "abc",
       "NoMapping"           -> "def"
@@ -213,7 +319,7 @@ class DefaultTaggerSuite extends FunSuite {
     assert(tagger(dimensions) === expected)
   }
 
-  test("aws.alb is assigned to LoadBalancer names starting with app with main config") {
+  test("aws.alb is assigned to LoadBalancer names starting with 'app' using production config") {
     val cfg = ConfigFactory.parseResources("reference.conf").resolve()
     val tagger = new DefaultTagger(cfg.getConfig("atlas.cloudwatch.tagger"))
 
@@ -224,6 +330,22 @@ class DefaultTaggerSuite extends FunSuite {
 
     val actual = tagger(
       List(new Dimension().withName("LoadBalancer").withValue("app/captured-portion/42beef9876"))
+    )
+
+    assert(actual === expected)
+  }
+
+  test("aws.nlb is assigned to LoadBalancer names starting with 'net' using production config") {
+    val cfg = ConfigFactory.parseResources("reference.conf").resolve()
+    val tagger = new DefaultTagger(cfg.getConfig("atlas.cloudwatch.tagger"))
+
+    val expected = Map(
+      "aws.nlb"   -> "captured-portion",
+      "nf.region" -> "us-west-2"
+    )
+
+    val actual = tagger(
+      List(new Dimension().withName("LoadBalancer").withValue("net/captured-portion/42beef9876"))
     )
 
     assert(actual === expected)

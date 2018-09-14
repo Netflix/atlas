@@ -29,10 +29,19 @@ import scala.util.matching.Regex
 class DefaultTagger(config: Config) extends Tagger {
   import scala.collection.JavaConverters._
 
-  private val extractors: Map[String, Regex] = config
+  private val extractors: Map[String, Seq[(Regex, Option[String])]] = config
     .getConfigList("extractors")
     .asScala
-    .map(c => c.getString("name") -> c.getString("pattern").r)
+    .map(c => {
+      val patterns = c
+        .getConfigList("patterns")
+        .asScala
+        .map(cl => {
+          val alias = if (cl.hasPath("alias")) Some(cl.getString("alias")) else None
+          cl.getString("pattern").r -> alias
+        })
+      c.getString("name") -> patterns
+    })
     .toMap
 
   private val mappings: Map[String, String] = config
@@ -50,16 +59,19 @@ class DefaultTagger(config: Config) extends Tagger {
   private def toTag(dimension: Dimension): (String, String) = {
     val cwName = dimension.getName
     val cwValue = dimension.getValue
-    val tagName = mappings.getOrElse(cwName, cwName)
-    val tagValue =
-      extractors
-        .get(cwName)
-        .fold(cwValue)(
-          _.findFirstMatchIn(cwValue).fold(cwValue) { matches =>
+
+    val optionalExtractor = extractors.get(cwName)
+    val extracted = optionalExtractor.flatMap { patterns =>
+      patterns.flatMap {
+        case (regex, alias) =>
+          val extractedValue = regex.findFirstMatchIn(cwValue).map { matches =>
             if (matches.groupCount > 0) matches.group(1) else cwValue
           }
-        )
-    tagName -> tagValue
+          extractedValue.map(v => alias.getOrElse(cwName) -> v)
+      }.headOption
+    }
+
+    extracted.getOrElse(mappings.getOrElse(cwName, cwName) -> cwValue)
   }
 
   override def apply(dimensions: List[Dimension]): Map[String, String] = {
