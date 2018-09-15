@@ -54,8 +54,7 @@ class AccessLogger private (entry: IpcLogEntry, client: Boolean) {
     * This is currently ignored. The timing will always be for the arrival of the first
     * chunk.
     */
-  def chunkComplete(): Unit = {
-  }
+  def chunkComplete(): Unit = {}
 
   /** Complete the log entry and write out the result. */
   def complete(request: HttpRequest, result: Try[HttpResponse]): Unit = {
