@@ -17,7 +17,9 @@ package com.netflix.atlas.akka
 
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
-import com.netflix.spectator.sandbox.HttpLogEntry
+import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.ipc.IpcLogEntry
+import com.netflix.spectator.ipc.IpcLogger
 
 import scala.util.Failure
 import scala.util.Success
@@ -34,7 +36,7 @@ import scala.util.Try
   *     Server logs based on the endpoint. They will also be marked
   *     so that they can be partitioned into separate files if needed.
   */
-class AccessLogger private (entry: HttpLogEntry, client: Boolean) {
+class AccessLogger private (entry: IpcLogEntry, client: Boolean) {
 
   /**
     * We go ahead and log on the chunk-start so we can see how long it to start sending the
@@ -44,14 +46,15 @@ class AccessLogger private (entry: HttpLogEntry, client: Boolean) {
   def chunkStart(request: HttpRequest, response: HttpResponse): Unit = {
     AccessLogger.addRequestInfo(entry, request)
     AccessLogger.addResponseInfo(entry, response)
-    writeLog(AccessLogger.ChunkedStart)
+    entry.markEnd().log()
   }
 
   /**
     * Log again when the last chunk is received to mark the overall time for the request.
+    * This is currently ignored. The timing will always be for the arrival of the first
+    * chunk.
     */
   def chunkComplete(): Unit = {
-    writeLog(AccessLogger.Complete)
   }
 
   /** Complete the log entry and write out the result. */
@@ -66,22 +69,15 @@ class AccessLogger private (entry: HttpLogEntry, client: Boolean) {
       case Success(response) => AccessLogger.addResponseInfo(entry, response)
       case Failure(t)        => entry.withException(t)
     }
-    writeLog(AccessLogger.Complete)
-  }
-
-  private def writeLog(step: String): Unit = {
-    entry.mark(step)
-    if (client)
-      HttpLogEntry.logClientRequest(entry)
-    else
-      HttpLogEntry.logServerRequest(entry)
+    entry.markEnd().log()
   }
 }
 
 object AccessLogger {
 
-  private val ChunkedStart = "chunked-start"
-  private val Complete = "complete"
+  private val owner = "atlas-akka"
+
+  private[akka] val ipcLogger = new IpcLogger(Spectator.globalRegistry())
 
   /**
     * Create a new logger for a named client.
@@ -95,16 +91,16 @@ object AccessLogger {
     *     Logger for the request with the start time marked.
     */
   def newClientLogger(name: String, request: HttpRequest): AccessLogger = {
-    val entry = (new HttpLogEntry).withClientName(name)
+    val entry = ipcLogger.createClientEntry().withOwner(owner).addTag("id", name)
     addRequestInfo(entry, request)
-    entry.mark("start")
+    entry.markStart()
     new AccessLogger(entry, true)
   }
 
   /**
     * Create a new logger for a server. This will use a default entry.
     */
-  def newServerLogger: AccessLogger = newServerLogger(new HttpLogEntry)
+  def newServerLogger: AccessLogger = newServerLogger(ipcLogger.createServerEntry())
 
   /**
     * Create a new logger for a server based on the provided entry.
@@ -115,24 +111,20 @@ object AccessLogger {
     * @return
     *     Logger for the request with the start time marked.
     */
-  def newServerLogger(entry: HttpLogEntry): AccessLogger = {
-    entry.mark("start")
+  def newServerLogger(entry: IpcLogEntry): AccessLogger = {
+    entry.withOwner(owner).markStart()
     new AccessLogger(entry, false)
   }
 
-  private def addRequestInfo(entry: HttpLogEntry, request: HttpRequest): Unit = {
+  private def addRequestInfo(entry: IpcLogEntry, request: HttpRequest): Unit = {
     entry
-      .withMethod(request.method.name)
-      .withRequestUri(request.uri.toString(), request.uri.path.toString())
-      .withRequestContentLength(request.entity.contentLengthOption.getOrElse(-1))
-    request.headers.foreach(h => entry.withRequestHeader(h.name, h.value))
+      .withHttpMethod(request.method.name)
+      .withUri(request.uri.toString(), request.uri.path.toString())
+    request.headers.foreach(h => entry.addRequestHeader(h.name, h.value))
   }
 
-  private def addResponseInfo(entry: HttpLogEntry, response: HttpResponse): Unit = {
-    entry
-      .withStatusCode(response.status.intValue)
-      .withStatusReason(response.status.reason)
-      .withResponseContentLength(response.entity.contentLengthOption.getOrElse(-1L))
-    response.headers.foreach(h => entry.withResponseHeader(h.name, h.value))
+  private def addResponseInfo(entry: IpcLogEntry, response: HttpResponse): Unit = {
+    entry.withHttpStatus(response.status.intValue)
+    response.headers.foreach(h => entry.addResponseHeader(h.name, h.value))
   }
 }

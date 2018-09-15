@@ -37,7 +37,6 @@ import akka.http.scaladsl.server.directives.LoggingMagnet
 import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonParser
 import com.netflix.atlas.json.Json
-import com.netflix.spectator.sandbox.HttpLogEntry
 
 import scala.util.Failure
 import scala.util.Success
@@ -322,7 +321,7 @@ object CustomDirectives {
   def accessLog: Directive0 = {
     extractClientIP.flatMap { ip =>
       val addr = ip.toOption.fold("unknown")(_.getHostAddress)
-      val entry = (new HttpLogEntry).withRemoteAddr(addr)
+      val entry = AccessLogger.ipcLogger.createServerEntry.withRemoteAddress(addr)
       val logger = AccessLogger.newServerLogger(entry)
       logRequestResult(LoggingMagnet(_ => log(logger)))
     }
