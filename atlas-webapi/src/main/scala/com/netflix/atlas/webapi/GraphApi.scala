@@ -19,6 +19,7 @@ import akka.actor.ActorRefFactory
 import akka.actor.Props
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.model._
@@ -34,7 +35,7 @@ class GraphApi(config: Config, implicit val actorRefFactory: ActorRefFactory) ex
   private val registry = Spectator.globalRegistry()
 
   def routes: Route = {
-    path("api" / "v1" / "graph") {
+    endpointPath("api" / "v1" / "graph") {
       get { ctx =>
         val reqHandler = actorRefFactory.actorOf(Props(new GraphRequestActor(grapher, registry)))
         val graphCfg = grapher.toGraphConfig(ctx.request.uri)
@@ -43,7 +44,7 @@ class GraphApi(config: Config, implicit val actorRefFactory: ActorRefFactory) ex
         rc.promise.future
       }
     } ~
-    path("api" / "v2" / "fetch") {
+    endpointPath("api" / "v2" / "fetch") {
       get {
         extractRequest { request =>
           val graphCfg = grapher.toGraphConfig(request.uri)

@@ -23,6 +23,7 @@ import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.ServiceManager
 import com.typesafe.scalalogging.StrictLogging
@@ -35,7 +36,7 @@ class HealthcheckApi(serviceManagerProvider: Provider[ServiceManager])
     with StrictLogging {
 
   def routes: Route = {
-    path("healthcheck") {
+    endpointPath("healthcheck") {
       get {
         val status =
           if (serviceManager.isHealthy) StatusCodes.OK else StatusCodes.InternalServerError
