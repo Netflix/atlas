@@ -26,6 +26,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
@@ -46,7 +47,7 @@ case class ExpressionApi @Inject()(
   private val expressionCount = registry.distributionSummary("atlas.lwcapi.expressions.count")
 
   def routes: Route = {
-    pathPrefix("lwc" / "api" / "v1" / "expressions") {
+    endpointPathPrefix("lwc" / "api" / "v1" / "expressions") {
       optionalHeaderValueByName("If-None-Match") { etags =>
         get {
           pathEndOrSingleSlash {

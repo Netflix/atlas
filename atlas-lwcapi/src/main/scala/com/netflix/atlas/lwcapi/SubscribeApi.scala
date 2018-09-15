@@ -46,7 +46,7 @@ class SubscribeApi @Inject()(
   private val itemsId = registry.createId("atlas.lwcapi.subscribe.itemCount")
 
   def routes: Route = {
-    path("lwc" / "api" / "v1" / "subscribe") {
+    endpointPath("lwc" / "api" / "v1" / "subscribe") {
       post {
         parseEntity(json[SubscribeRequest]) {
           case SubscribeRequest(_, Nil) =>

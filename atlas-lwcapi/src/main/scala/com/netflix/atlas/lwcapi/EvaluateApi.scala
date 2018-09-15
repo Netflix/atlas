@@ -36,7 +36,7 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
   private val ignoredCounter = registry.counter("atlas.lwcapi.ignoredItems")
 
   def routes: Route = {
-    path("lwc" / "api" / "v1" / "evaluate") {
+    endpointPath("lwc" / "api" / "v1" / "evaluate") {
       post {
         parseEntity(json[EvaluateRequest]) { req =>
           if (req.metrics.isEmpty) {

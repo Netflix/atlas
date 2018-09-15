@@ -28,6 +28,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.Route
+import com.netflix.atlas.akka.CustomDirectives._
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
@@ -49,7 +50,7 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
   )
 
   def routes: Route = {
-    pathPrefix("api" / "v2" / "config") {
+    endpointPathPrefix("api" / "v2" / "config") {
       pathEndOrSingleSlash {
         get { ctx =>
           ctx.complete(doGet(ctx, None))

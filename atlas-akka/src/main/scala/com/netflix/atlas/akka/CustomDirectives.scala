@@ -27,16 +27,19 @@ import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.Directive
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.MalformedRequestContentRejection
+import akka.http.scaladsl.server.PathMatcher
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.directives.LoggingMagnet
 import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonParser
 import com.netflix.atlas.json.Json
+import com.netflix.spectator.ipc.NetflixHeader
 
 import scala.util.Failure
 import scala.util.Success
@@ -324,6 +327,70 @@ object CustomDirectives {
       val entry = AccessLogger.ipcLogger.createServerEntry.withRemoteAddress(addr)
       val logger = AccessLogger.newServerLogger(entry)
       logRequestResult(LoggingMagnet(_ => log(logger)))
+    }
+  }
+
+  /**
+    * Adds the `Netflix-Endpoint` header to the response if it is not already present. This
+    * directive is typically not used directly, it is preferred to use one of the `endpointPath*`
+    * directives instead.
+    */
+  def respondWithEndpointHeader: Directive0 = {
+    extractMatchedPath.flatMap { path =>
+      val header = RawHeader(NetflixHeader.Endpoint.headerName(), path.toString())
+      respondWithDefaultHeader(header)
+    }
+  }
+
+  /**
+    * Alternative to the built-in `path` directive that will set the `Netflix-Endpoint` header
+    * based on the currently matched path. To avoid matching paths with arbitrary values that
+    * should not be a part of the header, the path matcher is restricted so that values cannot
+    * be extracted. Use `endpointPathPrefix` with a nested `path` directive for those use-cases.
+    */
+  def endpointPath(pm: PathMatcher[Unit]): Directive0 = {
+    path(pm).tflatMap { _ =>
+      respondWithEndpointHeader
+    }
+  }
+
+  /**
+    * This is a convenience directive for the common pattern of have a fixed path with an
+    * extracted portion such as an identifier at the end. It will set the endpoint header based
+    * on the prefix matcher. Example:
+    *
+    * ```
+    * endpointPathPrefix("api" / "v1" / "instances") {
+    *   path(Remaining) { id =>
+    *     ...
+    *   }
+    * }
+    * ```
+    *
+    * Can instead be written as:
+    *
+    * ```
+    * endpointPath("api" / "v1" / "instances", Remaining) { id =>
+    *   ...
+    * }
+    * ```
+    */
+  def endpointPath[L](prefix: PathMatcher[Unit], remaining: PathMatcher[L]): Directive[L] = {
+    implicit val evidence = remaining.ev
+    endpointPathPrefix(prefix).tflatMap { _ =>
+      path(remaining)
+    }
+  }
+
+  /**
+    * Alternative to the built-in `pathPrefix` directive that will set the `Netflix-Endpoint`
+    * header based on the currently matched path. To avoid matching paths with arbitrary values
+    * that should not be a part of the header, the path matcher is restricted so that values cannot
+    * be extracted.
+    */
+  def endpointPathPrefix(pm: PathMatcher[Unit]): Directive0 = {
+    pathPrefix(pm).tflatMap { _ =>
+      respondWithEndpointHeader
     }
   }
 }

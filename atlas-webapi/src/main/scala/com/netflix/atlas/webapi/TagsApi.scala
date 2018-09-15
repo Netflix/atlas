@@ -27,6 +27,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult
+import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.Query
@@ -46,7 +47,7 @@ class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   private val dbRef = actorRefFactory.actorSelection("/user/db")
 
   def routes: Route = {
-    pathPrefix("api" / "v1" / "tags") {
+    endpointPathPrefix("api" / "v1" / "tags") {
       pathEndOrSingleSlash {
         handleReq(None)
       } ~

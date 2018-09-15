@@ -109,6 +109,28 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
                 val status = StatusCodes.custom(code, "Error")
                 complete(HttpResponse(status = status))
               }
+            } ~
+            endpointPath("endpoint") {
+              get {
+                complete(HttpResponse(status = StatusCodes.OK))
+              }
+            } ~
+            endpointPath("endpoint", IntNumber) { code =>
+              get {
+                val status = StatusCodes.custom(code, "Error")
+                complete(HttpResponse(status = status))
+              }
+            } ~
+            endpointPathPrefix("endpoint" / "v1") {
+              endpointPathPrefix("foo") {
+                pathPrefix(IntNumber) { _ =>
+                  endpointPath("bar", Remaining) { _ =>
+                    get {
+                      complete(HttpResponse(status = StatusCodes.OK))
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -386,6 +408,30 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
   test("valid ipc metrics are produced") {
     Get("/text") ~> endpoint.routes ~> check {
       IpcMetric.validate(Spectator.globalRegistry())
+    }
+  }
+
+  def getEndpoint(response: HttpResponse): String = {
+    response.headers.find(_.is("netflix-endpoint")).get.value()
+  }
+
+  test("endpoint header, nothing unmatched") {
+    Get("/endpoint") ~> endpoint.routes ~> check {
+      assert(getEndpoint(response) === "/endpoint")
+    }
+  }
+
+  test("endpoint header, int part") {
+    Get("/endpoint/404") ~> endpoint.routes ~> check {
+      assert(getEndpoint(response) === "/endpoint")
+    }
+  }
+
+  test("endpoint header, nested paths are appended") {
+    Get("/endpoint/v1/foo/404/bar/i-1234567890") ~> endpoint.routes ~> check {
+      // Ideally it wouldn't match the 404 value that was extracted, but since this sort
+      // of nesting is not common for our use-cases, that is left for later refinement
+      assert(getEndpoint(response) === "/endpoint/v1/foo/404/bar")
     }
   }
 }

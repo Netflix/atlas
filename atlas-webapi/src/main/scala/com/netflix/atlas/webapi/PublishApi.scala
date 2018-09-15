@@ -54,10 +54,10 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi w
 
   def routes: Route = {
     post {
-      path("api" / "v1" / "publish") {
+      endpointPath("api" / "v1" / "publish") {
         handleReq
       } ~
-      path("api" / "v1" / "publish-fast") {
+      endpointPath("api" / "v1" / "publish-fast") {
         // Legacy path from when there was more than one publish mode
         handleReq
       }

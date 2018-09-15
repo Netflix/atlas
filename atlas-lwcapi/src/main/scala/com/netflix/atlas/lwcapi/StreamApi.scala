@@ -31,6 +31,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
@@ -59,7 +60,7 @@ class StreamApi @Inject()(
   private val reRegistrations = registry.counter("atlas.lwcapi.reRegistrations")
 
   def routes: Route = {
-    path("lwc" / "api" / "v1" / "stream" / Segment) { streamId =>
+    endpointPath("lwc" / "api" / "v1" / "stream", Segment) { streamId =>
       get {
         complete(handleReq(streamId))
       }

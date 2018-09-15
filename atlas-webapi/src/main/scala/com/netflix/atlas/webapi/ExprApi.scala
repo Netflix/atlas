@@ -21,6 +21,7 @@ import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Expr
@@ -52,20 +53,20 @@ class ExprApi extends WebApi {
   private val excludedWords = ApiSettings.excludedWords
 
   def routes: Route = parameters(('q, 'vocab ? vocabulary.name)) { (q, vocab) =>
-    path("api" / "v1" / "expr") {
+    endpointPath("api" / "v1" / "expr") {
       get { complete(processDebugRequest(q, vocab)) }
     } ~
     pathPrefix("api" / "v1" / "expr") {
-      path("debug") {
+      endpointPath("debug") {
         get { complete(processDebugRequest(q, vocab)) }
       } ~
-      path("normalize") {
+      endpointPath("normalize") {
         get { complete(processNormalizeRequest(q, vocab)) }
       } ~
-      path("complete") {
+      endpointPath("complete") {
         get { complete(processCompleteRequest(q, vocab)) }
       } ~
-      path("queries") {
+      endpointPath("queries") {
         get { complete(processQueriesRequest(q, vocab)) }
       }
     }
