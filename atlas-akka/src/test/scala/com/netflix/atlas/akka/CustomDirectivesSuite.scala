@@ -31,11 +31,15 @@ import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import com.netflix.atlas.json.Json
+import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.ipc.IpcMetric
+import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 
 import scala.concurrent.duration._
 
-class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
+class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with BeforeAndAfter {
 
   import CustomDirectives._
   import CustomDirectivesSuite._
@@ -113,6 +117,12 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
   }
 
   val endpoint = new TestService(system)
+
+  before {
+    val registry = Spectator.globalRegistry()
+    registry.removeAll()
+    registry.add(new DefaultRegistry())
+  }
 
   test("text") {
     Get("/text") ~> endpoint.routes ~> check {
@@ -370,6 +380,12 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest {
           fail(s"unexpected header: $h")
       }
       assert("" === responseAs[String])
+    }
+  }
+
+  test("valid ipc metrics are produced") {
+    Get("/text") ~> endpoint.routes ~> check {
+      IpcMetric.validate(Spectator.globalRegistry())
     }
   }
 }

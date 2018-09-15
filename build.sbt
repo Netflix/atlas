@@ -34,7 +34,7 @@ lazy val `atlas-akka` = project
     Dependencies.akkaStream,
     Dependencies.iepService,
     Dependencies.jsr250,
-    Dependencies.spectatorSandbox,
+    Dependencies.spectatorIpc,
     Dependencies.akkaHttp,
     Dependencies.typesafeConfig,
     Dependencies.akkaHttpTestkit % "test",
@@ -186,7 +186,6 @@ lazy val `atlas-webapi` = project
     `atlas-json`,
     `atlas-test` % "test")
   .settings(libraryDependencies ++= Seq(
-    Dependencies.spectatorSandbox,
     Dependencies.akkaTestkit % "test",
     Dependencies.akkaHttpTestkit % "test"
   ))
