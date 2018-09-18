@@ -34,6 +34,7 @@ import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.Spectator
 import com.netflix.spectator.ipc.IpcMetric
+import com.netflix.spectator.ipc.NetflixHeader
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 
@@ -49,8 +50,10 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
 
   class TestService(val actorRefFactory: ActorRefFactory) {
 
+    private val zone = RawHeader(NetflixHeader.Zone.headerName(), "us-east-1e")
+
     def routes: Route = {
-      accessLog {
+      accessLog(List(zone)) {
         respondWithCorsHeaders(List("*")) {
           jsonpFilter {
             path("text") {
@@ -432,6 +435,13 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
       // Ideally it wouldn't match the 404 value that was extracted, but since this sort
       // of nesting is not common for our use-cases, that is left for later refinement
       assert(getEndpoint(response) === "/endpoint/v1/foo/404/bar")
+    }
+  }
+
+  test("diagnostic headers are added to response") {
+    Get("/text") ~> endpoint.routes ~> check {
+      val zone = response.headers.find(_.is("netflix-zone"))
+      assert(zone === Some(RawHeader("Netflix-Zone", "us-east-1e")))
     }
   }
 }

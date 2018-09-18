@@ -19,6 +19,7 @@ import java.io.StringWriter
 
 import akka.http.scaladsl.model.HttpCharsets
 import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -320,13 +321,20 @@ object CustomDirectives {
 
   /**
     * Generate an access log using spectator HttpLogEntry utility.
+    *
+    * @param headers
+    *     Additional headers to apply to the response before passing to the logger. This
+    *     is intended for providing additional context such as the server group and zone
+    *     of the particular server instance with common IPC.
     */
-  def accessLog: Directive0 = {
+  def accessLog(headers: List[HttpHeader]): Directive0 = {
     extractClientIP.flatMap { ip =>
       val addr = ip.toOption.fold("unknown")(_.getHostAddress)
       val entry = AccessLogger.ipcLogger.createServerEntry.withRemoteAddress(addr)
       val logger = AccessLogger.newServerLogger(entry)
-      logRequestResult(LoggingMagnet(_ => log(logger)))
+      logRequestResult(LoggingMagnet(_ => log(logger))).tflatMap { _ =>
+        respondWithDefaultHeaders(headers)
+      }
     }
   }
 

@@ -17,9 +17,11 @@ package com.netflix.atlas.akka
 
 import java.lang.reflect.Type
 
+import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.AuthenticationFailedRejection
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.MalformedRequestContentRejection
@@ -43,7 +45,7 @@ class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictL
       val routes = endpoints.tail.foldLeft(endpoints.head.routes) {
         case (acc, r) => acc ~ r.routes
       }
-      RequestHandler.standardOptions(routes, corsHostPatterns)
+      RequestHandler.standardOptions(routes, corsHostPatterns, diagnosticHeaders)
     }
   }
 
@@ -55,6 +57,18 @@ class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictL
   private def corsHostPatterns: List[String] = {
     import scala.collection.JavaConverters._
     config.getStringList("atlas.akka.cors-host-patterns").asScala.toList.distinct
+  }
+
+  private def diagnosticHeaders: List[HttpHeader] = {
+    import scala.collection.JavaConverters._
+    config
+      .getConfigList("atlas.akka.diagnostic-headers")
+      .asScala
+      .map { c =>
+        RawHeader(c.getString("name"), c.getString("value"))
+      }
+      .toList
+      .distinct
   }
 
   /**
@@ -86,8 +100,20 @@ object RequestHandler {
   /**
     * Wraps a route with the standard options that we typically use for error handling,
     * logging, CORS support, compression, etc.
+    *
+    * @param route
+    *     The user route to wrap with the standard options.
+    * @param corsHostPatterns
+    *     Host patterns that are permitted via CORS.
+    * @param diagnosticHeaders
+    *     Custom headers that are added to the response for the purposes of logging and
+    *     providing diagnostic information to the clients.
     */
-  def standardOptions(route: Route, corsHostPatterns: List[String] = Nil): Route = {
+  def standardOptions(
+    route: Route,
+    corsHostPatterns: List[String] = Nil,
+    diagnosticHeaders: List[HttpHeader] = Nil
+  ): Route = {
 
     // Default paths to always include
     val ok = path("ok") {
@@ -111,7 +137,7 @@ object RequestHandler {
     }
 
     // Include all requests in the access log
-    val log = accessLog { error }
+    val log = accessLog(diagnosticHeaders) { error }
 
     // Add CORS headers to all responses
     cors(corsHostPatterns) { log }

@@ -39,6 +39,12 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
       |  "com.netflix.atlas.akka.TestApi"
       |]
       |atlas.akka.cors-host-patterns = [".suffix.com", "www.exact-match.com", "localhost"]
+      |atlas.akka.diagnostic-headers = [
+      |  {
+      |    name = "test"
+      |    value = "12345"
+      |  }
+      |]
     """.stripMargin
   )
 
@@ -79,6 +85,8 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
           assert(v)
         case h if h.is("vary") =>
           assert(h.value === "Origin")
+        case h if h.is("test") =>
+          assert(h.value === "12345")
         case h =>
           fail(s"unexpected header: $h")
       }
@@ -112,7 +120,7 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
     val header = RawHeader("Origin", origin)
     Get("/ok").addHeader(header) ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
-      assert(response.headers.isEmpty)
+      assert(response.headers === List(RawHeader("test", "12345")))
     }
   }
 

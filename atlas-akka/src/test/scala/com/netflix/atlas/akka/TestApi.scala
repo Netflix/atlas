@@ -54,7 +54,7 @@ class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
         }
       }
     } ~
-    accessLog {
+    accessLog(Nil) {
       path("chunked") {
         get {
           val source = Source
