@@ -258,6 +258,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
+        case h if h.is("netflix-zone") =>
+          assert(h.value === "us-east-1e")
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
@@ -282,6 +284,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
           assert("foo" === vs.mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
+        case h if h.is("netflix-zone") =>
+          assert(h.value === "us-east-1e")
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h if h.lowercaseName == "foo" =>
@@ -309,6 +313,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
           assert("foo" === vs.mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
+        case h if h.is("netflix-zone") =>
+          assert(h.value === "us-east-1e")
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
@@ -332,6 +338,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
+        case h if h.is("netflix-zone") =>
+          assert(h.value === "us-east-1e")
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
@@ -356,6 +364,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
           assert("Vary" === vs.mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
+        case h if h.is("netflix-zone") =>
+          assert(h.value === "us-east-1e")
         case h if h.is("vary") =>
           assert(Set("Origin", "Host").contains(h.value))
         case h =>
@@ -378,6 +388,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
+        case h if h.is("netflix-zone") =>
+          assert(h.value === "us-east-1e")
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
@@ -399,6 +411,8 @@ class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with Before
           assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
+        case h if h.is("netflix-zone") =>
+          assert(h.value === "us-east-1e")
         case h if h.is("vary") =>
           assert(h.value === "Origin")
         case h =>
