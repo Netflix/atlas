@@ -4,9 +4,9 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.5.14"
+    val akka       = "2.5.16"
     val akkaHttpV  = "10.1.5"
-    val aws        = "1.11.387"
+    val aws        = "1.11.409"
     val iep        = "1.2.6"
     val guice      = "4.1.0"
     val jackson    = "2.9.6"
@@ -32,7 +32,7 @@ object Dependencies {
   val awsEC2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3           = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine        = "com.github.ben-manes.caffeine" % "caffeine" % "2.6.2"
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.5.1"
+  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "2.5.2"
   val frigga          = "com.netflix.frigga" % "frigga" % "0.18.0"
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -58,7 +58,7 @@ object Dependencies {
   val log4jJcl        = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul        = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j      = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.7.16"
+  val roaringBitmap   = "org.roaringbitmap" % "RoaringBitmap" % "0.7.17"
   val scalaCompiler   = "org.scala-lang" % "scala-compiler"
   val scalaLibrary    = "org.scala-lang" % "scala-library"
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all"
