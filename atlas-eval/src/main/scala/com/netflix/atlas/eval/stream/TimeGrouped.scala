@@ -39,7 +39,7 @@ import com.netflix.atlas.eval.model.TimeGroup
   */
 private[stream] class TimeGrouped(
   context: StreamContext,
-  max: Int,
+  max: Int
 ) extends GraphStage[FlowShape[AggrDatapoint, TimeGroup[AggrDatapoint]]] {
 
   type AggrMap = scala.collection.mutable.AnyRefMap[DataExpr, AggrDatapoint.Aggregator]
