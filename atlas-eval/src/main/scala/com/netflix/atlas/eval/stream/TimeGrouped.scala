@@ -23,6 +23,8 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
+import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.TimeGroup
 
 /**
@@ -34,16 +36,13 @@ import com.netflix.atlas.eval.model.TimeGroup
   *     Shared context for the evaluation stream.
   * @param max
   *     Maximum number of items that can be accumulated for a given time.
-  * @param ts
-  *     Function that extracts the timestamp for an item.
-  * @tparam T
-  *     Item from the input stream.
   */
-private[stream] class TimeGrouped[T](
+private[stream] class TimeGrouped(
   context: StreamContext,
-  max: Int,
-  ts: T => Long
-) extends GraphStage[FlowShape[T, TimeGroup[T]]] {
+  max: Int
+) extends GraphStage[FlowShape[AggrDatapoint, TimeGroup[AggrDatapoint]]] {
+
+  type AggrMap = scala.collection.mutable.AnyRefMap[DataExpr, AggrDatapoint.Aggregator]
 
   /**
     * Number of time buffers to maintain. The buffers are stored in a rolling array
@@ -52,10 +51,10 @@ private[stream] class TimeGrouped[T](
     */
   private val numBuffers = context.numBuffers
 
-  private val in = Inlet[T]("TimeGrouped.in")
-  private val out = Outlet[TimeGroup[T]]("TimeGrouped.out")
+  private val in = Inlet[AggrDatapoint]("TimeGrouped.in")
+  private val out = Outlet[TimeGroup[AggrDatapoint]]("TimeGrouped.out")
 
-  override val shape: FlowShape[T, TimeGroup[T]] = FlowShape(in, out)
+  override val shape: FlowShape[AggrDatapoint, TimeGroup[AggrDatapoint]] = FlowShape(in, out)
 
   private val metricName = "atlas.eval.datapoints"
   private val droppedOld = context.registry.counter(metricName, "id", "dropped-old")
@@ -66,16 +65,16 @@ private[stream] class TimeGrouped[T](
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
-      private val buf = new Array[List[T]](numBuffers)
+      private val buf = new Array[AggrMap](numBuffers)
       buf.indices.foreach { i =>
-        buf(i) = Nil
+        buf(i) = new AggrMap
       }
 
       private val timestamps = new Array[Long](numBuffers)
 
       private var cutoffTime = 0L
 
-      private var pending: List[TimeGroup[T]] = Nil
+      private var pending: List[TimeGroup[AggrDatapoint]] = Nil
 
       private def findBuffer(t: Long): Int = {
         var i = 0
@@ -90,7 +89,7 @@ private[stream] class TimeGrouped[T](
 
       override def onPush(): Unit = {
         val v = grab(in)
-        val t = ts(v)
+        val t = v.timestamp
         val now = clock.wallTime()
         if (t > now) {
           droppedFuture.increment()
@@ -102,14 +101,18 @@ private[stream] class TimeGrouped[T](
           buffered.increment()
           val i = findBuffer(t)
           if (i >= 0) {
-            buf(i) = v :: buf(i)
+            buf(i).get(v.expr) match {
+              case Some(aggr) => aggr.aggregate(v)
+              case None       => buf(i).put(v.expr, AggrDatapoint.newAggregator(v))
+            }
             pull(in)
           } else {
             val pos = -i - 1
-            val vs = buf(pos)
+            val vs = buf(pos).values.flatMap(_.datapoints).toList
             if (vs.nonEmpty) push(out, TimeGroup(timestamps(pos), vs)) else pull(in)
             cutoffTime = timestamps(pos)
-            buf(pos) = List(v)
+            buf(pos) = new AggrMap
+            buf(pos).put(v.expr, AggrDatapoint.newAggregator(v))
             timestamps(pos) = t
           }
         }
@@ -123,7 +126,10 @@ private[stream] class TimeGrouped[T](
       }
 
       override def onUpstreamFinish(): Unit = {
-        val groups = buf.indices.map(i => TimeGroup(timestamps(i), buf(i))).toList
+        val groups = buf.indices.map { i =>
+          val vs = buf(i).values.flatMap(_.datapoints).toList
+          TimeGroup(timestamps(i), vs)
+        }.toList
         pending = groups.filter(_.values.nonEmpty).sortWith(_.timestamp < _.timestamp)
         flush()
       }
