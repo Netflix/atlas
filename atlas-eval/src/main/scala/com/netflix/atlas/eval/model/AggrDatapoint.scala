@@ -18,9 +18,11 @@ package com.netflix.atlas.eval.model
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.model.DataExpr.All
+import com.netflix.atlas.core.model.DataExpr.Count
 import com.netflix.atlas.core.model.DataExpr.GroupBy
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.util.Math
 
 /**
   * Datapoint for an aggregate data expression. This type is used for the intermediate
@@ -67,6 +69,102 @@ case class AggrDatapoint(
 object AggrDatapoint {
 
   /**
+    * Base trait for an aggregator that can efficiently combine the datapoints as they
+    * arrive using the aggregation function for the data expression associated with the
+    * datapoint. The caller should ensure that all datapoints passed to a given aggregator
+    * instance have the same data expression.
+    */
+  trait Aggregator {
+    def aggregate(datapoint: AggrDatapoint): Aggregator
+    def datapoints: List[AggrDatapoint]
+  }
+
+  /**
+    * Aggregator for the simple base types: sum, min, max, and count. Note for count
+    * the values need to be transformed to NaN or 1 prior to using the default operation
+    * on DataExpr.Count of sum.
+    */
+  private class SimpleAggregator(init: AggrDatapoint, op: (Double, Double) => Double)
+      extends Aggregator {
+
+    private var value = init.value
+
+    override def aggregate(datapoint: AggrDatapoint): Aggregator = {
+      value = op(value, datapoint.value)
+      this
+    }
+
+    override def datapoints: List[AggrDatapoint] = List(datapoint)
+
+    def datapoint: AggrDatapoint = init.copy(value = value)
+  }
+
+  /**
+    * Group the datapoints by the tags and maintain a simple aggregator per distinct tag
+    * set.
+    */
+  private class GroupByAggregator extends Aggregator {
+    private val aggregators =
+      scala.collection.mutable.AnyRefMap.empty[Map[String, String], SimpleAggregator]
+
+    private def newAggregator(datapoint: AggrDatapoint): SimpleAggregator = {
+      datapoint.expr match {
+        case GroupBy(_: Count, _)              => newCountAggregator(datapoint)
+        case GroupBy(af: AggregateFunction, _) => new SimpleAggregator(datapoint, af)
+      }
+    }
+
+    override def aggregate(datapoint: AggrDatapoint): Aggregator = {
+      aggregators.get(datapoint.tags) match {
+        case Some(aggr) => aggr.aggregate(datapoint)
+        case None       => aggregators.put(datapoint.tags, newAggregator(datapoint))
+      }
+      this
+    }
+
+    override def datapoints: List[AggrDatapoint] = {
+      aggregators.values.map(_.datapoint).toList
+    }
+  }
+
+  /**
+    * Do not perform aggregation. Keep track of all datapoints that have been received.
+    */
+  private class AllAggregator extends Aggregator {
+    private var values = List.empty[AggrDatapoint]
+
+    override def aggregate(datapoint: AggrDatapoint): Aggregator = {
+      values = datapoint :: values
+      this
+    }
+
+    override def datapoints: List[AggrDatapoint] = values
+  }
+
+  private def count(acc: Double, value: Double): Double = {
+    val v = if (value.isNaN) Double.NaN else 1
+    Math.addNaN(acc, v)
+  }
+
+  private def newCountAggregator(datapoint: AggrDatapoint): SimpleAggregator = {
+    val v = if (datapoint.value.isNaN) Double.NaN else 1
+    new SimpleAggregator(datapoint.copy(value = v), count)
+  }
+
+  /**
+    * Create a new aggregator instance initialized with the specified datapoint. The
+    * datapoint will already be applied and should not get re-added to the aggregation.
+    */
+  def newAggregator(datapoint: AggrDatapoint): Aggregator = {
+    datapoint.expr match {
+      case _: Count              => newCountAggregator(datapoint)
+      case af: AggregateFunction => new SimpleAggregator(datapoint, af)
+      case _: GroupBy            => (new GroupByAggregator).aggregate(datapoint)
+      case _: All                => (new AllAggregator).aggregate(datapoint)
+    }
+  }
+
+  /**
     * Aggregate intermediate aggregates from each source to get the final aggregate for
     * a given expression. All values are expected to be for the same data expression.
     */
@@ -74,12 +172,12 @@ object AggrDatapoint {
     if (values.isEmpty) Nil
     else {
       val vs = dedup(values)
-      val expr = vs.head.expr
-      expr match {
-        case af: AggregateFunction => List(applyAF(af, vs))
-        case by: GroupBy           => applyGroupBy(by, vs)
-        case _: All                => vs
-      }
+      val aggr = newAggregator(vs.head)
+      vs.tail
+        .foldLeft(aggr) { (acc, d) =>
+          acc.aggregate(d)
+        }
+        .datapoints
     }
   }
 
@@ -90,19 +188,5 @@ object AggrDatapoint {
     */
   private def dedup(values: List[AggrDatapoint]): List[AggrDatapoint] = {
     values.groupBy(_.id).map(_._2.head).toList
-  }
-
-  /** Apply an aggregate function over the set of values to get the final aggregate. */
-  private def applyAF(af: AggregateFunction, values: List[AggrDatapoint]): AggrDatapoint = {
-    require(values.nonEmpty, "cannot apply aggregation function over empty list")
-    val dp = values.head
-    val value = values.map(_.value).reduce(af)
-    dp.copy(value = value)
-  }
-
-  /** Apply the aggregate function for each grouping. */
-  private def applyGroupBy(by: GroupBy, values: List[AggrDatapoint]): List[AggrDatapoint] = {
-    val groups = values.groupBy(_.tags).map { case (_, vs) => applyAF(by.af, vs) }
-    groups.toList
   }
 }
