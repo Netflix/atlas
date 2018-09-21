@@ -111,6 +111,8 @@ object AggrDatapoint {
       datapoint.expr match {
         case GroupBy(_: Count, _)              => newCountAggregator(datapoint)
         case GroupBy(af: AggregateFunction, _) => new SimpleAggregator(datapoint, af)
+        case _ =>
+          throw new IllegalArgumentException("datapoint is not for a grouped expression")
       }
     }
 
