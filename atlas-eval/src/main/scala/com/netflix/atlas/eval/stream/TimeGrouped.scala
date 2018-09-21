@@ -40,7 +40,7 @@ import com.netflix.atlas.eval.model.TimeGroup
 private[stream] class TimeGrouped(
   context: StreamContext,
   max: Int
-) extends GraphStage[FlowShape[AggrDatapoint, TimeGroup[AggrDatapoint]]] {
+) extends GraphStage[FlowShape[AggrDatapoint, TimeGroup]] {
 
   type AggrMap = scala.collection.mutable.AnyRefMap[DataExpr, AggrDatapoint.Aggregator]
 
@@ -52,9 +52,9 @@ private[stream] class TimeGrouped(
   private val numBuffers = context.numBuffers
 
   private val in = Inlet[AggrDatapoint]("TimeGrouped.in")
-  private val out = Outlet[TimeGroup[AggrDatapoint]]("TimeGrouped.out")
+  private val out = Outlet[TimeGroup]("TimeGrouped.out")
 
-  override val shape: FlowShape[AggrDatapoint, TimeGroup[AggrDatapoint]] = FlowShape(in, out)
+  override val shape: FlowShape[AggrDatapoint, TimeGroup] = FlowShape(in, out)
 
   private val metricName = "atlas.eval.datapoints"
   private val droppedOld = context.registry.counter(metricName, "id", "dropped-old")
@@ -74,7 +74,7 @@ private[stream] class TimeGrouped(
 
       private var cutoffTime = 0L
 
-      private var pending: List[TimeGroup[AggrDatapoint]] = Nil
+      private var pending: List[TimeGroup] = Nil
 
       private def findBuffer(t: Long): Int = {
         var i = 0
@@ -108,7 +108,7 @@ private[stream] class TimeGrouped(
             pull(in)
           } else {
             val pos = -i - 1
-            val vs = buf(pos).values.flatMap(_.datapoints).toList
+            val vs = buf(pos).mapValues(_.datapoints).toMap
             if (vs.nonEmpty) push(out, TimeGroup(timestamps(pos), vs)) else pull(in)
             cutoffTime = timestamps(pos)
             buf(pos) = new AggrMap
@@ -127,7 +127,7 @@ private[stream] class TimeGrouped(
 
       override def onUpstreamFinish(): Unit = {
         val groups = buf.indices.map { i =>
-          val vs = buf(i).values.flatMap(_.datapoints).toList
+          val vs = buf(i).mapValues(_.datapoints).toMap
           TimeGroup(timestamps(i), vs)
         }.toList
         pending = groups.filter(_.values.nonEmpty).sortWith(_.timestamp < _.timestamp)

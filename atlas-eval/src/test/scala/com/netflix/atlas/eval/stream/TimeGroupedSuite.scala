@@ -38,20 +38,23 @@ class TimeGroupedSuite extends FunSuite {
 
   private val context = TestContext.createContext(materializer, registry = registry)
 
-  private def result(
-    future: Future[List[TimeGroup[AggrDatapoint]]]
-  ): List[TimeGroup[AggrDatapoint]] = {
+  private def result(future: Future[List[TimeGroup]]): List[TimeGroup] = {
     Await
       .result(future, Duration.Inf)
       .reverse
-      .map(g => g.copy(values = g.values.sortWith(_.value < _.value)))
+      .map(g => g.copy(values = g.values.mapValues(_.sortWith(_.value < _.value))))
   }
 
-  private def run(data: List[AggrDatapoint]): List[TimeGroup[AggrDatapoint]] = {
+  private def run(data: List[AggrDatapoint]): List[TimeGroup] = {
     val future = Source(data)
       .via(new TimeGrouped(context, 10))
-      .runFold(List.empty[TimeGroup[AggrDatapoint]])((acc, g) => g :: acc)
+      .runFold(List.empty[TimeGroup])((acc, g) => g :: acc)
     result(future)
+  }
+
+  private def timeGroup(t: Long, vs: List[AggrDatapoint]): TimeGroup = {
+    val expr = DataExpr.All(Query.True)
+    TimeGroup(t, Map(expr -> vs))
   }
 
   private def datapoint(t: Long, v: Int): AggrDatapoint = {
@@ -74,9 +77,9 @@ class TimeGroupedSuite extends FunSuite {
     val groups = run(data)
     assert(
       groups === List(
-        TimeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-        TimeGroup(20, List(datapoint(20, 1))),
-        TimeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+        timeGroup(20, List(datapoint(20, 1))),
+        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
       )
     )
   }
@@ -95,9 +98,9 @@ class TimeGroupedSuite extends FunSuite {
     val groups = run(data)
     assert(
       groups === List(
-        TimeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-        TimeGroup(20, List(datapoint(20, 1))),
-        TimeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+        timeGroup(20, List(datapoint(20, 1))),
+        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
       )
     )
   }
@@ -127,9 +130,9 @@ class TimeGroupedSuite extends FunSuite {
 
     assert(
       groups === List(
-        TimeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-        TimeGroup(20, List(datapoint(20, 1))),
-        TimeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+        timeGroup(20, List(datapoint(20, 1))),
+        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
       )
     )
 
@@ -155,9 +158,9 @@ class TimeGroupedSuite extends FunSuite {
 
     assert(
       groups === List(
-        TimeGroup(10, List(datapoint(10, 2), datapoint(10, 3))),
-        TimeGroup(20, List(datapoint(20, 1))),
-        TimeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+        timeGroup(10, List(datapoint(10, 2), datapoint(10, 3))),
+        timeGroup(20, List(datapoint(20, 1))),
+        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
       )
     )
 
@@ -174,7 +177,7 @@ class TimeGroupedSuite extends FunSuite {
     val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n * (n - 1) / 2)
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, List(expected))))
+    assert(groups === List(TimeGroup(10, Map(expr -> List(expected)))))
   }
 
   test("simple aggregate: min") {
@@ -186,7 +189,7 @@ class TimeGroupedSuite extends FunSuite {
     val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, 0)
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, List(expected))))
+    assert(groups === List(TimeGroup(10, Map(expr -> List(expected)))))
   }
 
   test("simple aggregate: max") {
@@ -198,7 +201,7 @@ class TimeGroupedSuite extends FunSuite {
     val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n - 1)
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, List(expected))))
+    assert(groups === List(TimeGroup(10, Map(expr -> List(expected)))))
   }
 
   test("simple aggregate: count") {
@@ -210,19 +213,21 @@ class TimeGroupedSuite extends FunSuite {
     val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n)
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, List(expected))))
+    assert(groups === List(TimeGroup(10, Map(expr -> List(expected)))))
   }
 
   test("group by aggregate: sum") {
     val n = 5000
-    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("category"))
+    val expr: DataExpr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("category"))
     val data = (0 until 2 * n).toList.map { i =>
       val category = if (i % 2 == 0) "even" else "odd"
       AggrDatapoint(10, 10, expr, "test", Map("category" -> category), i)
     }
-    val expected = List(
-      AggrDatapoint(10, 10, expr, "test", Map("category" -> "even"), n * (n - 1)),
-      AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd"), n * n)
+    val expected = Map(
+      expr -> List(
+        AggrDatapoint(10, 10, expr, "test", Map("category" -> "even"), n * (n - 1)),
+        AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd"), n * n)
+      )
     )
 
     val groups = run(data)
@@ -231,14 +236,16 @@ class TimeGroupedSuite extends FunSuite {
 
   test("group by aggregate: min") {
     val n = 10000
-    val expr = DataExpr.GroupBy(DataExpr.Min(Query.True), List("category"))
+    val expr: DataExpr = DataExpr.GroupBy(DataExpr.Min(Query.True), List("category"))
     val data = (0 until n).toList.map { i =>
       val category = if (i % 2 == 0) "even" else "odd"
       AggrDatapoint(10, 10, expr, "test", Map("category" -> category), i)
     }
-    val expected = List(
-      AggrDatapoint(10, 10, expr, "test", Map("category" -> "even"), 0),
-      AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd"), 1)
+    val expected = Map(
+      expr -> List(
+        AggrDatapoint(10, 10, expr, "test", Map("category" -> "even"), 0),
+        AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd"), 1)
+      )
     )
 
     val groups = run(data)
@@ -247,14 +254,16 @@ class TimeGroupedSuite extends FunSuite {
 
   test("group by aggregate: max") {
     val n = 10000
-    val expr = DataExpr.GroupBy(DataExpr.Max(Query.True), List("category"))
+    val expr: DataExpr = DataExpr.GroupBy(DataExpr.Max(Query.True), List("category"))
     val data = (0 until n).toList.map { i =>
       val category = if (i % 2 == 0) "even" else "odd"
       AggrDatapoint(10, 10, expr, "test", Map("category" -> category), i)
     }
-    val expected = List(
-      AggrDatapoint(10, 10, expr, "test", Map("category" -> "even"), n - 2),
-      AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd"), n - 1)
+    val expected = Map(
+      expr -> List(
+        AggrDatapoint(10, 10, expr, "test", Map("category" -> "even"), n - 2),
+        AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd"), n - 1)
+      )
     )
 
     val groups = run(data)
@@ -263,14 +272,16 @@ class TimeGroupedSuite extends FunSuite {
 
   test("group by aggregate: count") {
     val n = 10000
-    val expr = DataExpr.GroupBy(DataExpr.Count(Query.True), List("category"))
+    val expr: DataExpr = DataExpr.GroupBy(DataExpr.Count(Query.True), List("category"))
     val data = (0 until n).toList.map { i =>
       val category = if (i % 2 == 0) "even" else "odd"
       AggrDatapoint(10, 10, expr, "test", Map("category" -> category), i)
     }
-    val expected = List(
-      AggrDatapoint(10, 10, expr, "test", Map("category" -> "even"), n / 2),
-      AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd"), n / 2)
+    val expected = Map(
+      expr -> List(
+        AggrDatapoint(10, 10, expr, "test", Map("category" -> "even"), n / 2),
+        AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd"), n / 2)
+      )
     )
 
     val groups = run(data)

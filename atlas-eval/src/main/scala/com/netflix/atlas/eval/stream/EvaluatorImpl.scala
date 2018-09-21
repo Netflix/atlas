@@ -41,7 +41,6 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.netflix.atlas.akka.StreamOps
-import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
@@ -211,9 +210,9 @@ private[stream] abstract class EvaluatorImpl(
     * the objects so the FinalExprEval stage will only see a single step.
     */
   private def stepSize: PartialFunction[AnyRef, Long] = {
-    case ds: DataSources               => ds.stepSize()
-    case grp: TimeGroup[AggrDatapoint] => grp.values.head.step
-    case v                             => throw new IllegalArgumentException(s"unexpected value in stream: $v")
+    case ds: DataSources => ds.stepSize()
+    case grp: TimeGroup  => grp.step
+    case v               => throw new IllegalArgumentException(s"unexpected value in stream: $v")
   }
 
   /**

@@ -131,10 +131,10 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
 
       // Perform the final evaluation and create a source with the TimeSeriesMessages
       // addressed to each recipient
-      private def handleData(group: TimeGroup[AggrDatapoint]): Unit = {
+      private def handleData(group: TimeGroup): Unit = {
         // Finalize the DataExprs, needed as input for further evaluation
         val timestamp = group.timestamp
-        val groupedDatapoints = group.values.groupBy(_.expr)
+        val groupedDatapoints = group.values
 
         val expressionDatapoints = noData ++ groupedDatapoints.map {
           case (k, vs) =>
@@ -181,8 +181,8 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
 
       override def onPush(): Unit = {
         grab(in) match {
-          case ds: DataSources    => handleDataSources(ds)
-          case data: TimeGroup[_] => handleData(data.asInstanceOf[TimeGroup[AggrDatapoint]])
+          case ds: DataSources => handleDataSources(ds)
+          case data: TimeGroup => handleData(data)
         }
       }
 
