@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.algorithm
 
+import com.typesafe.config.Config
+
 /**
   * Alternate between two DES functions after each training period. This provides a deterministic
   * estimate within a bounded amount of time.
@@ -26,19 +28,18 @@ package com.netflix.atlas.core.algorithm
   * @param beta
   *     Trend smoothing factor.
   */
-class OnlineSlidingDes(
+case class OnlineSlidingDes(
   training: Int,
   alpha: Double,
   beta: Double,
   des1: OnlineDes,
   des2: OnlineDes
-) {
-  import OnlineSlidingDes._
+) extends OnlineAlgorithm {
 
   private var useOne = true
   private var currentSample = 0
 
-  def next(v: Double): Double = {
+  override def next(v: Double): Double = {
     currentSample += 1
     val v1 = des1.next(v)
     val v2 = des2.next(v)
@@ -52,32 +53,41 @@ class OnlineSlidingDes(
     retval
   }
 
-  def reset(): Unit = {
+  override def reset(): Unit = {
     des1.reset()
     des2.reset()
   }
 
-  def state: State = State(training, alpha, beta, useOne, currentSample, des1.state, des2.state)
+  override def state: Config = {
+    OnlineAlgorithm.toConfig(
+      Map(
+        "type"          -> "sliding-des",
+        "training"      -> training,
+        "alpha"         -> alpha,
+        "beta"          -> beta,
+        "useOne"        -> useOne,
+        "currentSample" -> currentSample,
+        "des1"          -> des1.state,
+        "des2"          -> des2.state
+      )
+    )
+  }
 }
 
 object OnlineSlidingDes {
 
-  case class State(
-    training: Int,
-    alpha: Double,
-    beta: Double,
-    useOne: Boolean,
-    currentSample: Int,
-    des1State: OnlineDes.State,
-    des2State: OnlineDes.State
-  )
-
-  def apply(state: OnlineSlidingDes.State): OnlineSlidingDes = {
-    val des1 = OnlineDes(state.des1State)
-    val des2 = OnlineDes(state.des2State)
-    val sdes = new OnlineSlidingDes(state.training, state.alpha, state.beta, des1, des2)
-    sdes.useOne = state.useOne
-    sdes.currentSample = state.currentSample
+  def apply(config: Config): OnlineSlidingDes = {
+    val des1 = OnlineDes(config.getConfig("des1"))
+    val des2 = OnlineDes(config.getConfig("des2"))
+    val sdes = new OnlineSlidingDes(
+      config.getInt("training"),
+      config.getDouble("alpha"),
+      config.getDouble("beta"),
+      des1,
+      des2
+    )
+    sdes.useOne = config.getBoolean("useOne")
+    sdes.currentSample = config.getInt("currentSample")
     sdes
   }
 
