@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package com.netflix.atlas.core.algorithm
+
 import com.typesafe.config.Config
 
 /**
