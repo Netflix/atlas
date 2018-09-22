@@ -47,6 +47,7 @@ object OnlineAlgorithm {
     */
   def apply(config: Config): OnlineAlgorithm = {
     config.getString("type") match {
+      case "delay"       => OnlineDelay(config)
       case "rolling-min" => OnlineRollingMin(config)
       case "rolling-max" => OnlineRollingMax(config)
       case t             => throw new IllegalArgumentException(s"unknown type: '$t'")
