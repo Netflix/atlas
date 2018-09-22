@@ -20,6 +20,7 @@ import java.time.Duration
 import com.netflix.atlas.core.algorithm.OnlineDes
 import com.netflix.atlas.core.algorithm.OnlineSlidingDes
 import com.netflix.atlas.core.util.Math
+import com.typesafe.config.Config
 
 trait StatefulExpr extends TimeSeriesExpr {}
 
@@ -111,8 +112,8 @@ object StatefulExpr {
 
     def finalGrouping: List[String] = expr.finalGrouping
 
-    private def eval(ts: ArrayTimeSeq, s: State): State = {
-      val desF = OnlineDes(s.desState)
+    private def eval(ts: ArrayTimeSeq, s: Config): Config = {
+      val desF = OnlineDes(s)
 
       val data = ts.data
       var pos = 0
@@ -121,7 +122,7 @@ object StatefulExpr {
         data(pos) = desF.next(yn)
         pos += 1
       }
-      State(desF.state)
+      desF.state
     }
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
@@ -132,7 +133,7 @@ object StatefulExpr {
         val s = state.getOrElse(t.id, {
           val desF = OnlineDes(trainingSize, alpha, beta)
           desF.reset()
-          State(desF.state)
+          desF.state
         })
         state(t.id) = eval(bounded, s)
         TimeSeries(t.tags, s"des(${t.label})", bounded)
@@ -143,9 +144,7 @@ object StatefulExpr {
 
   object Des {
 
-    case class State(desState: OnlineDes.State)
-
-    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
+    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, Config]
   }
 
   //
@@ -211,7 +210,7 @@ object StatefulExpr {
 
   object SlidingDes {
 
-    case class State(skipUpTo: Long, desState: OnlineSlidingDes.State)
+    case class State(skipUpTo: Long, desState: Config)
 
     type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
   }
