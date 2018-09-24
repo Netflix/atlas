@@ -195,11 +195,9 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     pendingGets.decrementAndGet()
     val maybeMetricData = Option(metricCache.getIfPresent(data.meta))
     val prev = maybeMetricData.flatMap(_.current)
-    val timestamp =
-      if (data.lastReportedTimestamp.isDefined)
-        data.lastReportedTimestamp
-      else
-        maybeMetricData.flatMap(_.lastReportedTimestamp)
+    val timestamp = data.lastReportedTimestamp.orElse {
+      maybeMetricData.flatMap(_.lastReportedTimestamp)
+    }
     metricCache.put(data.meta, data.copy(previous = prev, lastReportedTimestamp = timestamp))
   }
 
