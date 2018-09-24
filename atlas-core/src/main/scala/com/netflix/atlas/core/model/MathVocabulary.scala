@@ -1085,7 +1085,7 @@ object MathVocabulary extends Vocabulary {
         |[PercentileDistributionSummary](http://netflix.github.io/spectator/en/latest/javadoc/spectator-api/com/netflix/spectator/api/histogram/PercentileDistributionSummary.html)
         |helper classes.
         |
-        |Available in `:legend` as `$percentile`
+        |The percentile values can be shown in the legend using `$percentile`.
         |
         |Since: 1.5.0 (first in 1.5.0-rc.4)
       """.stripMargin.trim
