@@ -43,8 +43,8 @@ import com.typesafe.scalalogging.StrictLogging
   * @param timeout
   *     How long the system should smooth out unreported CloudWatch metrics before
   *     ceasing to send them. CloudWatch will return 0 metrics in at least two cases:
-  *     1. No metrics were recorded.
-  *     1. The resource has been removed, but metrics for it still fall within
+  *     - No metrics were recorded.
+  *     - The resource has been removed, but metrics for it still fall within
   *        the retention window.
   * @param dimensions
   *     The dimensions to query for when getting data from CloudWatch. For the
