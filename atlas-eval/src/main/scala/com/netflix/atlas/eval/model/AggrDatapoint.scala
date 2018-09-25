@@ -18,11 +18,9 @@ package com.netflix.atlas.eval.model
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.model.DataExpr.All
-import com.netflix.atlas.core.model.DataExpr.Count
 import com.netflix.atlas.core.model.DataExpr.GroupBy
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.TimeSeries
-import com.netflix.atlas.core.util.Math
 
 /**
   * Datapoint for an aggregate data expression. This type is used for the intermediate
@@ -109,7 +107,6 @@ object AggrDatapoint {
 
     private def newAggregator(datapoint: AggrDatapoint): SimpleAggregator = {
       datapoint.expr match {
-        case GroupBy(_: Count, _)              => newCountAggregator(datapoint)
         case GroupBy(af: AggregateFunction, _) => new SimpleAggregator(datapoint, af)
         case _ =>
           throw new IllegalArgumentException("datapoint is not for a grouped expression")
@@ -143,23 +140,12 @@ object AggrDatapoint {
     override def datapoints: List[AggrDatapoint] = values
   }
 
-  private def count(acc: Double, value: Double): Double = {
-    val v = if (value.isNaN) Double.NaN else 1
-    Math.addNaN(acc, v)
-  }
-
-  private def newCountAggregator(datapoint: AggrDatapoint): SimpleAggregator = {
-    val v = if (datapoint.value.isNaN) Double.NaN else 1
-    new SimpleAggregator(datapoint.copy(value = v), count)
-  }
-
   /**
     * Create a new aggregator instance initialized with the specified datapoint. The
     * datapoint will already be applied and should not get re-added to the aggregation.
     */
   def newAggregator(datapoint: AggrDatapoint): Aggregator = {
     datapoint.expr match {
-      case _: Count              => newCountAggregator(datapoint)
       case af: AggregateFunction => new SimpleAggregator(datapoint, af)
       case _: GroupBy            => (new GroupByAggregator).aggregate(datapoint)
       case _: All                => (new AllAggregator).aggregate(datapoint)
