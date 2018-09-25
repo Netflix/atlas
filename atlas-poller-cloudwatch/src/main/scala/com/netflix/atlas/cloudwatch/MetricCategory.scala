@@ -45,8 +45,9 @@ import com.typesafe.scalalogging.StrictLogging
   *     metrics before ceasing to send them. CloudWatch will return 0 metrics for at
   *     least two cases:
   *     - No metrics were recorded.
-  *     - The resource has been removed, but metrics for it still fall within
-  *        the retention window.
+  *     - The resource has been removed, metrics still show up when listing metrics due
+  *       to the retention window, but the specified time interval for the metric
+  *       statistics request is after the removal.
   * @param dimensions
   *     The dimensions to query for when getting data from CloudWatch. For the
   *     GetMetricData calls we have to explicitly specify all of the dimensions. In some
