@@ -49,6 +49,8 @@ object OnlineAlgorithm {
     config.getString("type") match {
       case "delay"       => OnlineDelay(config)
       case "des"         => OnlineDes(config)
+      case "ignore"      => OnlineIgnoreN(config)
+      case "pipeline"    => Pipeline(config)
       case "rolling-min" => OnlineRollingMin(config)
       case "rolling-max" => OnlineRollingMax(config)
       case "sliding-des" => OnlineSlidingDes(config)
