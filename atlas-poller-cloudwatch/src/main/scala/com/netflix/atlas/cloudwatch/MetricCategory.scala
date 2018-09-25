@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.cloudwatch
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 import com.amazonaws.services.cloudwatch.model.DimensionFilter
@@ -26,7 +27,7 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
 /**
-  * Category of metrics to fetch from cloudwatch. This will typically correspond with
+  * Category of metrics to fetch from CloudWatch. This will typically correspond with
   * a CloudWatch namespace, though there may be multiple categories per namespace if
   * there is some variation in the behavior. For example, some namespaces will use a
   * different period for some metrics.
@@ -36,11 +37,18 @@ import com.typesafe.scalalogging.StrictLogging
   * @param period
   *     How frequently data in this category is updated. Atlas is meant for data that
   *     is continuously reported and requires a consistent step. To minimize confusion
-  *     for cloudwatch data we use the last reported value in cloudwatch as long as it
+  *     for CloudWatch data we use the last reported value in CloudWatch as long as it
   *     is within one period from the polling time. The period is also needed for
   *     performing rate conversions on some metrics.
+  * @param timeout
+  *     How long the system should interpolate a base value for unreported CloudWatch
+  *     metrics before ceasing to send them. CloudWatch will return 0 metrics for at
+  *     least two cases:
+  *     - No metrics were recorded.
+  *     - The resource has been removed, but metrics for it still fall within
+  *        the retention window.
   * @param dimensions
-  *     The dimensions to query for when getting data from cloudwatch. For the
+  *     The dimensions to query for when getting data from CloudWatch. For the
   *     GetMetricData calls we have to explicitly specify all of the dimensions. In some
   *     cases CloudWatch has duplicate data for pre-computed aggregates. For example,
   *     ELB data is reported overall for the load balancer and by zone. For Atlas it
@@ -56,6 +64,7 @@ import com.typesafe.scalalogging.StrictLogging
 case class MetricCategory(
   namespace: String,
   period: Int,
+  timeout: Option[Duration],
   dimensions: List[String],
   metrics: List[MetricDefinition],
   filter: Query
@@ -63,7 +72,7 @@ case class MetricCategory(
 
   /**
     * Returns a set of list requests to fetch the metadata for the metrics matching
-    * this category. As there may be a lot of data in cloudwatch that we are not
+    * this category. As there may be a lot of data in CloudWatch that we are not
     * interested in, the list is used to restrict to the subset we actually care
     * about rather than a single request fetching everything for the namespace.
     */
@@ -99,9 +108,12 @@ object MetricCategory extends StrictLogging {
       else {
         parseQuery(config.getString("filter"))
       }
+    val timeout = if (config.hasPath("timeout")) Some(config.getDuration("timeout")) else None
+
     apply(
       namespace = config.getString("namespace"),
       period = config.getDuration("period", TimeUnit.SECONDS).toInt,
+      timeout = timeout,
       dimensions = config.getStringList("dimensions").asScala.toList,
       metrics = metrics.flatMap(MetricDefinition.fromConfig),
       filter = filter

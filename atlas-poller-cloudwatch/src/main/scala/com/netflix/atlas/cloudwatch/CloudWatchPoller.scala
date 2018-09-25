@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.cloudwatch
 
+import java.time.Duration
+import java.time.Instant
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -61,8 +63,9 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     extends Actor
     with StrictLogging {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
   import CloudWatchPoller._
+
+  import scala.concurrent.ExecutionContext.Implicits.global
   import scala.concurrent.duration._
 
   // Load the categories and tagger based on the config settings
@@ -190,17 +193,21 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   /** Add a datapoint to the cache. */
   private def processMetricData(data: MetricData): Unit = {
     pendingGets.decrementAndGet()
-    val prev = Option(metricCache.getIfPresent(data.meta)).flatMap(_.current)
-    metricCache.put(data.meta, data.copy(previous = prev))
+    val maybeMetricData = Option(metricCache.getIfPresent(data.meta))
+    val prev = maybeMetricData.flatMap(_.current)
+    val timestamp = data.lastReportedTimestamp.orElse {
+      maybeMetricData.flatMap(_.lastReportedTimestamp)
+    }
+    metricCache.put(data.meta, data.copy(previous = prev, lastReportedTimestamp = timestamp))
   }
 
   /** Send all metrics that are currently in the cache. */
   private def sendMetricData(): Unit = {
     metricCache.asMap().forEach { (meta, data) =>
-      val d = data.datapoint
+      val now = registry.clock().wallTime()
+      val d = data.datapoint(Instant.ofEpochMilli(now))
       if (!d.getSum.isNaN) {
         val ts = tagger(meta.dimensions) ++ meta.definition.tags + ("name" -> meta.definition.alias)
-        val now = registry.clock().wallTime()
         val newValue = meta.convert(d)
         metricBatch += new AtlasDatapoint(ts, now, newValue)
         flush()
@@ -270,10 +277,11 @@ object CloudWatchPoller {
   case class MetricData(
     meta: MetricMetadata,
     previous: Option[Datapoint],
-    current: Option[Datapoint]
+    current: Option[Datapoint],
+    lastReportedTimestamp: Option[Instant]
   ) {
 
-    def datapoint: Datapoint = {
+    def datapoint(now: Instant = Instant.now): Datapoint = {
       if (meta.definition.monotonicValue) {
         previous.fold(DatapointNaN) { p =>
           // For a monotonic counter, use the max statistic. These will typically have a
@@ -292,7 +300,15 @@ object CloudWatchPoller {
             .withUnit(c.getUnit)
         }
       } else {
-        current.getOrElse(Zero)
+        current.getOrElse {
+          val timedOut = meta.category.timeout.exists { timeout =>
+            lastReportedTimestamp.exists { timestamp =>
+              Duration.between(timestamp, now).compareTo(timeout) > 0
+            }
+          }
+
+          if (timedOut) DatapointNaN else Zero
+        }
       }
     }
   }

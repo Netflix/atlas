@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.cloudwatch
 
+import java.time.Duration
+
 import com.netflix.atlas.core.model.Query
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
@@ -58,6 +60,32 @@ class MetricCategorySuite extends FunSuite {
     assert(category.period === 60)
     assert(category.toListRequests.size === 2)
     assert(category.filter === Query.True)
+  }
+
+  test("category without timeout") {
+    val cfg = ConfigFactory.parseString("""
+        |namespace = "AWS/ELB"
+        |period = 1 m
+        |dimensions = ["LoadBalancerName"]
+        |metrics = []
+      """.stripMargin)
+
+    val category = MetricCategory.fromConfig(cfg)
+    assert(category.timeout.isEmpty)
+  }
+
+  test("category with timeout") {
+    val cfg = ConfigFactory.parseString("""
+        |namespace = "AWS/ELB"
+        |period = 1 m
+        |timeout = 1d
+        |dimensions = ["LoadBalancerName"]
+        |metrics = []
+      """.stripMargin)
+
+    val category = MetricCategory.fromConfig(cfg)
+    assert(category.timeout.nonEmpty)
+    assert(category.timeout.get === Duration.ofDays(1))
   }
 
   test("config with filter") {
