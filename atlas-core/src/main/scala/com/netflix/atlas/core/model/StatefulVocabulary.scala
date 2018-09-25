@@ -31,7 +31,10 @@ object StatefulVocabulary extends Vocabulary {
   val dependsOn: List[Vocabulary] = List(MathVocabulary)
 
   val words: List[Word] = List(
+    Delay,
     RollingCount,
+    RollingMin,
+    RollingMax,
     Des,
     SlidingDes,
     Trend,
@@ -52,6 +55,37 @@ object StatefulVocabulary extends Vocabulary {
     val example = List("42")
     val fullBody = (":dup" :: body) ::: List(name, ":named-rewrite")
     Macro(name, fullBody, example)
+  }
+
+  case object Delay extends SimpleWord {
+
+    override def name: String = "delay"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: TimeSeriesType(_) :: _ => true
+      case IntType(_) :: (_: StyleExpr) :: _    => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(v) :: TimeSeriesType(t) :: s => StatefulExpr.Delay(t, v) :: s
+      case IntType(v) :: (t: StyleExpr) :: s =>
+        t.copy(expr = StatefulExpr.Delay(t.expr, v)) :: s
+    }
+
+    override def summary: String =
+      """
+        |Delays the values by the window size. This is similar to the `:offset` operator
+        |except that it can be applied to any input line instead of just changing the time
+        |window fetched with a DataExpr. Short delays can be useful for alerting to detect
+        |changes in slightly shifted trend lines.
+        |
+        | Since: 1.6
+      """.stripMargin.trim
+
+    override def signature: String =
+      "TimeSeriesExpr n:Int -- TimeSeriesExpr"
+
+    override def examples: List[String] = List("name,requestsPerSecond,:eq,:sum,5")
   }
 
   case object RollingCount extends SimpleWord {
@@ -110,6 +144,118 @@ object StatefulVocabulary extends Vocabulary {
     override def signature: String = "TimeSeriesExpr n:Int -- TimeSeriesExpr"
 
     override def examples: List[String] = List(":random,0.4,:gt,5")
+  }
+
+  case object RollingMin extends SimpleWord {
+
+    override def name: String = "rolling-min"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: TimeSeriesType(_) :: _ => true
+      case IntType(_) :: (_: StyleExpr) :: _    => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(v) :: TimeSeriesType(t) :: s => StatefulExpr.RollingMin(t, v) :: s
+      case IntType(v) :: (t: StyleExpr) :: s =>
+        t.copy(expr = StatefulExpr.RollingMin(t.expr, v)) :: s
+    }
+
+    override def summary: String =
+      """
+        |Minimum value within a specified window. This operation is can be used in
+        |alerting expressions to find a lower bound for noisy data based on recent
+        |samples. For example:
+        |
+        |```
+        |name,sps,:eq,:sum,
+        |:dup,
+        |5,:rolling-min
+        |```
+        |
+        |Missing values, `NaN`, will be ignored when computing the min. If all values
+        |within the window are `NaN`, then `NaN` will be emitted. For example:
+        |
+        || Input | 3,:rolling-min   |
+        ||-------|------------------|
+        || 0     | 0                |
+        || 1     | 0                |
+        || -1    | -1               |
+        || NaN   | -1               |
+        || 0     | -1               |
+        || 1     | 0                |
+        || 1     | 0                |
+        || 1     | 1                |
+        || 1     | 1                |
+        || 0     | 0                |
+        |
+        |The window size, `n`, is the number of datapoints to consider including the current
+        |value. Note that it is based on datapoints not a specific amount of time. As a result the
+        |number of occurrences will be reduced when transitioning to a larger time frame that
+        |causes consolidation.
+        |
+        |Since: 1.6
+      """.stripMargin.trim
+
+    override def signature: String = "TimeSeriesExpr n:Int -- TimeSeriesExpr"
+
+    override def examples: List[String] = List("name,sps,:eq,:sum,5")
+  }
+
+  case object RollingMax extends SimpleWord {
+
+    override def name: String = "rolling-max"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: TimeSeriesType(_) :: _ => true
+      case IntType(_) :: (_: StyleExpr) :: _    => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(v) :: TimeSeriesType(t) :: s => StatefulExpr.RollingMax(t, v) :: s
+      case IntType(v) :: (t: StyleExpr) :: s =>
+        t.copy(expr = StatefulExpr.RollingMax(t.expr, v)) :: s
+    }
+
+    override def summary: String =
+      """
+        |Maximum value within a specified window. This operation is can be used in
+        |alerting expressions to find a lower bound for noisy data based on recent
+        |samples. For example:
+        |
+        |```
+        |name,sps,:eq,:sum,
+        |:dup,
+        |5,:rolling-max
+        |```
+        |
+        |Missing values, `NaN`, will be ignored when computing the min. If all values
+        |within the window are `NaN`, then `NaN` will be emitted. For example:
+        |
+        || Input | 3,:rolling-max   |
+        ||-------|------------------|
+        || 0     | 0                |
+        || 1     | 1                |
+        || -1    | 1                |
+        || NaN   | 1                |
+        || 0     | 0                |
+        || 1     | 1                |
+        || 1     | 1                |
+        || 1     | 1                |
+        || 1     | 1                |
+        || 0     | 1                |
+        |
+        |The window size, `n`, is the number of datapoints to consider including the current
+        |value. Note that it is based on datapoints not a specific amount of time. As a result the
+        |number of occurrences will be reduced when transitioning to a larger time frame that
+        |causes consolidation.
+        |
+        |Since: 1.6
+      """.stripMargin.trim
+
+    override def signature: String = "TimeSeriesExpr n:Int -- TimeSeriesExpr"
+
+    override def examples: List[String] = List("name,sps,:eq,:sum,5")
   }
 
   case object Des extends SimpleWord {

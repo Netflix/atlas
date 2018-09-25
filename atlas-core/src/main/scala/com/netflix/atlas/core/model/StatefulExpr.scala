@@ -17,8 +17,14 @@ package com.netflix.atlas.core.model
 
 import java.time.Duration
 
+import com.netflix.atlas.core.algorithm.OnlineAlgorithm
+import com.netflix.atlas.core.algorithm.OnlineDelay
 import com.netflix.atlas.core.algorithm.OnlineDes
+import com.netflix.atlas.core.algorithm.OnlineIgnoreN
+import com.netflix.atlas.core.algorithm.OnlineRollingMax
+import com.netflix.atlas.core.algorithm.OnlineRollingMin
 import com.netflix.atlas.core.algorithm.OnlineSlidingDes
+import com.netflix.atlas.core.algorithm.Pipeline
 import com.netflix.atlas.core.util.Math
 import com.typesafe.config.Config
 
@@ -90,127 +96,6 @@ object StatefulExpr {
   object RollingCount {
 
     case class State(pos: Int, value: Double, buf: Array[Double])
-
-    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
-  }
-
-  //
-  // Des
-  //
-
-  case class Des(expr: TimeSeriesExpr, trainingSize: Int, alpha: Double, beta: Double)
-      extends StatefulExpr {
-    import com.netflix.atlas.core.model.StatefulExpr.Des._
-
-    def dataExprs: List[DataExpr] = expr.dataExprs
-
-    override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:des"
-
-    def isGrouped: Boolean = expr.isGrouped
-
-    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
-
-    def finalGrouping: List[String] = expr.finalGrouping
-
-    private def eval(ts: ArrayTimeSeq, s: Config): Config = {
-      val desF = OnlineDes(s)
-
-      val data = ts.data
-      var pos = 0
-      while (pos < data.length) {
-        val yn = data(pos)
-        data(pos) = desF.next(yn)
-        pos += 1
-      }
-      desF.state
-    }
-
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
-      val newData = rs.data.map { t =>
-        val bounded = t.data.bounded(context.start, context.end)
-        val s = state.getOrElse(t.id, {
-          val desF = OnlineDes(trainingSize, alpha, beta)
-          desF.reset()
-          desF.state
-        })
-        state(t.id) = eval(bounded, s)
-        TimeSeries(t.tags, s"des(${t.label})", bounded)
-      }
-      ResultSet(this, newData, rs.state + (this -> state))
-    }
-  }
-
-  object Des {
-
-    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, Config]
-  }
-
-  //
-  // SlidingDes
-  //
-
-  case class SlidingDes(expr: TimeSeriesExpr, trainingSize: Int, alpha: Double, beta: Double)
-      extends StatefulExpr {
-    import com.netflix.atlas.core.model.StatefulExpr.SlidingDes._
-
-    def dataExprs: List[DataExpr] = expr.dataExprs
-
-    override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:sdes"
-
-    def isGrouped: Boolean = expr.isGrouped
-
-    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
-
-    def finalGrouping: List[String] = expr.finalGrouping
-
-    private def eval(ts: ArrayTimeSeq, s: State): State = {
-      val desF = OnlineSlidingDes(s.desState)
-      val skipUpTo = s.skipUpTo
-      val data = ts.data
-      var pos = 0
-      while (pos < data.length) {
-        if (ts.start + pos * ts.step < skipUpTo) {
-          data(pos) = Double.NaN
-        } else {
-          val yn = data(pos)
-          data(pos) = desF.next(yn)
-        }
-        pos += 1
-      }
-      State(skipUpTo, desF.state)
-    }
-
-    private def getAlignedStartTime(context: EvalContext): Long = {
-      val trainingStep = context.step * trainingSize
-      if (context.start % trainingStep == 0)
-        context.start
-      else
-        context.start / trainingStep * trainingStep + trainingStep
-    }
-
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
-      val newData = rs.data.map { t =>
-        val bounded = t.data.bounded(context.start, context.end)
-        val s = state.getOrElse(t.id, {
-          val alignedStart = getAlignedStartTime(context)
-          val desF = OnlineSlidingDes(trainingSize, alpha, beta)
-          desF.reset()
-          State(alignedStart, desF.state)
-        })
-        state(t.id) = eval(bounded, s)
-        TimeSeries(t.tags, s"sdes(${t.label})", bounded)
-      }
-      ResultSet(this, newData, rs.state + (this -> state))
-    }
-  }
-
-  object SlidingDes {
-
-    case class State(skipUpTo: Long, desState: Config)
 
     type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
   }
@@ -378,4 +263,136 @@ object StatefulExpr {
     type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
   }
 
+  /**
+    * Delay the input time series by `n` intervals. This can be useful for alerting to see
+    * if recent trends deviate from delayed trends.
+    */
+  case class Delay(expr: TimeSeriesExpr, n: Int) extends OnlineExpr {
+
+    override protected def name: String = "delay"
+
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineDelay(n)
+    }
+
+    override def toString: String = s"$expr,$n,:delay"
+  }
+
+  /**
+    * Computes the minimum value over the last `n` intervals.
+    */
+  case class RollingMin(expr: TimeSeriesExpr, n: Int) extends OnlineExpr {
+
+    override protected def name: String = "rolling-min"
+
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineRollingMin(n)
+    }
+
+    override def toString: String = s"$expr,$n,:rolling-min"
+  }
+
+  /**
+    * Computes the maximum value over the last `n` intervals.
+    */
+  case class RollingMax(expr: TimeSeriesExpr, n: Int) extends OnlineExpr {
+
+    override protected def name: String = "rolling-max"
+
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineRollingMax(n)
+    }
+
+    override def toString: String = s"$expr,$n,:rolling-max"
+  }
+
+  /**
+    * DES expression. In order to get the same results, it must be replayed from the same
+    * starting point. Used sliding DES if deterministic results are important.
+    */
+  case class Des(expr: TimeSeriesExpr, trainingSize: Int, alpha: Double, beta: Double)
+      extends OnlineExpr {
+
+    override protected def name: String = "des"
+
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineDes(trainingSize, alpha, beta)
+    }
+
+    override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:des"
+  }
+
+  /**
+    * Sliding DES expression. In order to keep the values deterministic the start time must
+    * be aligned to a step boundary. As a result, the initial gap before predicted values
+    * start showing up will be the offset to align to a step boundary plus the training
+    * window.
+    */
+  case class SlidingDes(expr: TimeSeriesExpr, trainingSize: Int, alpha: Double, beta: Double)
+      extends OnlineExpr {
+
+    override protected def name: String = "sdes"
+
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      val sdes = OnlineSlidingDes(trainingSize, alpha, beta)
+      val alignedStart = getAlignedStartTime(context)
+      val alignedOffset = ((alignedStart - context.start) / context.step).toInt
+      if (alignedOffset > 0)
+        Pipeline(OnlineIgnoreN(alignedOffset), sdes)
+      else
+        sdes
+    }
+
+    private def getAlignedStartTime(context: EvalContext): Long = {
+      val trainingStep = context.step * trainingSize
+      if (context.start % trainingStep == 0)
+        context.start
+      else
+        context.start / trainingStep * trainingStep + trainingStep
+    }
+
+    override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:sdes"
+  }
+
+  /**
+    * Base type for stateful expressions that are based on an implementation of
+    * OnlineAlgorithm.
+    */
+  trait OnlineExpr extends StatefulExpr {
+    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, Config]
+
+    protected def name: String
+
+    protected def expr: TimeSeriesExpr
+
+    protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm
+
+    def dataExprs: List[DataExpr] = expr.dataExprs
+
+    def isGrouped: Boolean = expr.isGrouped
+
+    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def finalGrouping: List[String] = expr.finalGrouping
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      val rs = expr.eval(context, data)
+      val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
+      val newData = rs.data.map { t =>
+        val bounded = t.data.bounded(context.start, context.end)
+        val length = bounded.data.length
+        val algo = state.get(t.id).fold(newAlgorithmInstance(context)) { s =>
+          OnlineAlgorithm(s)
+        }
+        var i = 0
+        while (i < length) {
+          bounded.data(i) = algo.next(bounded.data(i))
+          i += 1
+        }
+        state(t.id) = algo.state
+        TimeSeries(t.tags, s"$name(${t.label})", bounded)
+      }
+      ResultSet(this, newData, rs.state + (this -> state))
+    }
+  }
 }
