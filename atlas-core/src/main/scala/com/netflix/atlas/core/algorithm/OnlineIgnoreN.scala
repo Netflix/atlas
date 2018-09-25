@@ -43,8 +43,6 @@ case class OnlineIgnoreN(n: Int) extends OnlineAlgorithm {
 
 object OnlineIgnoreN {
 
-  def apply(n: Int): OnlineIgnoreN = new OnlineIgnoreN(n)
-
   def apply(config: Config): OnlineIgnoreN = {
     val algo = apply(config.getInt("n"))
     algo.pos = config.getInt("pos")
