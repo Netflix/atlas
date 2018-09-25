@@ -78,6 +78,8 @@ object StatefulVocabulary extends Vocabulary {
         |except that it can be applied to any input line instead of just changing the time
         |window fetched with a DataExpr. Short delays can be useful for alerting to detect
         |changes in slightly shifted trend lines.
+        |
+        | Since: 1.6
       """.stripMargin.trim
 
     override def signature: String =
