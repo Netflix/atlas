@@ -41,8 +41,9 @@ import com.typesafe.scalalogging.StrictLogging
   *     is within one period from the polling time. The period is also needed for
   *     performing rate conversions on some metrics.
   * @param timeout
-  *     How long the system should smooth out unreported CloudWatch metrics before
-  *     ceasing to send them. CloudWatch will return 0 metrics in at least two cases:
+  *     How long the system should interpolate a base value for unreported CloudWatch
+  *     metrics before ceasing to send them. CloudWatch will return 0 metrics for at
+  *     least two cases:
   *     - No metrics were recorded.
   *     - The resource has been removed, but metrics for it still fall within
   *        the retention window.
