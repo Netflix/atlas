@@ -15,6 +15,9 @@
  */
 package com.netflix.atlas.eval.stream
 
+import java.nio.charset.StandardCharsets
+
+import akka.util.ByteString
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.Json
 import com.typesafe.scalalogging.StrictLogging
@@ -28,6 +31,13 @@ import com.typesafe.scalalogging.StrictLogging
   * level is set to trace.
   */
 private[stream] object ReplayLogging extends StrictLogging {
+
+  def log(msg: ByteString): ByteString = {
+    if (msg.nonEmpty) {
+      logger.trace(msg.decodeString(StandardCharsets.UTF_8))
+    }
+    msg
+  }
 
   def log(msg: String): String = {
     val trimmed = msg.trim

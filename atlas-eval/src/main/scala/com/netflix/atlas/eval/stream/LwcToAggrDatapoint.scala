@@ -23,6 +23,7 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
+import akka.util.ByteString
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
@@ -33,40 +34,54 @@ import com.netflix.atlas.json.Json
   * Process the SSE output from an LWC service and convert it into a stream of
   * [[AggrDatapoint]]s that can be used for evaluation.
   */
-private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[String, AggrDatapoint]] {
+private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[ByteString, AggrDatapoint]] {
 
-  private val in = Inlet[String]("LwcToAggrDatapoint.in")
+  private val in = Inlet[ByteString]("LwcToAggrDatapoint.in")
   private val out = Outlet[AggrDatapoint]("LwcToAggrDatapoint.out")
 
-  override val shape: FlowShape[String, AggrDatapoint] = FlowShape(in, out)
+  override val shape: FlowShape[ByteString, AggrDatapoint] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
       import LwcToAggrDatapoint._
 
-      private var state: Map[String, LwcDataExpr] = Map.empty
+      // Default to a decent size so it is unlikely there'll be a need to allocate
+      // a larger array
+      private[this] var buffer = new Array[Byte](16384)
+
+      private[this] var state: Map[String, LwcDataExpr] = Map.empty
 
       // HACK: needed until we can plumb the actual source through the system
       private var nextSource: Int = 0
 
       override def onPush(): Unit = {
-        grab(in).trim match {
-          case msg: String if msg.startsWith(subscribePrefix)  => updateState(msg)
-          case msg: String if msg.startsWith(metricDataPrefix) => pushDatapoint(msg)
-          case msg: String                                     => ignoreMessage(msg)
+        grab(in) match {
+          case msg if msg.startsWith(subscribePrefix)  => updateState(msg)
+          case msg if msg.startsWith(metricDataPrefix) => pushDatapoint(msg)
+          case msg                                     => ignoreMessage(msg)
         }
       }
 
-      private def updateState(msg: String): Unit = {
-        val json = msg.substring(subscribePrefix.length)
-        val sub = Json.decode[LwcSubscription](json)
+      private def copy(msg: ByteString, length: Int): Int = {
+        if (length > buffer.length) {
+          buffer = new Array[Byte](length)
+        }
+        msg.copyToArray(buffer, 0, length)
+        length
+      }
+
+      private def updateState(msg: ByteString): Unit = {
+        val json = msg.drop(subscribePrefix.length)
+        val length = copy(json, json.length)
+        val sub = Json.decode[LwcSubscription](buffer, 0, length)
         state ++= sub.metrics.map(m => m.id -> m).toMap
         pull(in)
       }
 
-      private def pushDatapoint(msg: String): Unit = {
-        val json = msg.substring(metricDataPrefix.length)
-        val d = Json.decode[LwcDatapoint](json)
+      private def pushDatapoint(msg: ByteString): Unit = {
+        val json = msg.drop(metricDataPrefix.length)
+        val length = copy(json, json.length)
+        val d = Json.decode[LwcDatapoint](buffer, 0, length)
         state.get(d.id) match {
           case Some(sub) =>
             // TODO, put in source, for now make it random to avoid dedup
@@ -79,7 +94,7 @@ private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[String, Ag
         }
       }
 
-      private def ignoreMessage(msg: String): Unit = {
+      private def ignoreMessage(msg: ByteString): Unit = {
         pull(in)
       }
 
@@ -97,6 +112,6 @@ private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[String, Ag
 }
 
 object LwcToAggrDatapoint {
-  private val subscribePrefix = "info: subscribe "
-  private val metricDataPrefix = "data: metric "
+  private val subscribePrefix = ByteString("info: subscribe ")
+  private val metricDataPrefix = ByteString("data: metric ")
 }
