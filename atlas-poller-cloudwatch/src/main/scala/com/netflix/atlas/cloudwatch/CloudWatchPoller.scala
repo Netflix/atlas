@@ -301,13 +301,29 @@ object CloudWatchPoller {
         }
       } else {
         current.getOrElse {
-          val timedOut = meta.category.timeout.exists { timeout =>
-            lastReportedTimestamp.exists { timestamp =>
+          // We send 0 values for gaps in CloudWatch data because previously, users were
+          // confused or concerned when they saw spans of NaN values in the data reported.
+          // Those spans occur especially for low-volume resources and resources where the
+          // only available period is greater than than the period configured for the
+          // `MetricCategory` (although, that may indicate a misconfiguration).
+          //
+          // This implementation reports `0` if there's no configured timeout or if we've
+          // received at least one datapoint until the timeout is exceeded. It reports `NaN`
+          // until the first datapoint is received or for no data within and beyond the
+          // timeout threshold.
+          //
+          // Requiring at least one datapoint prevents interpolating `0` from startup until
+          // the timeout for obsolete resources.  It may result in NaN gaps for low volume
+          // resources when deploying. But that is likely preferable to suddenly and briefly
+          // reporting `0` for obsolete resources and possibly triggering alerts for those
+          // with expressions that use wildcards for the resource selector.
+          val reportNaN = meta.category.timeout.exists { timeout =>
+            lastReportedTimestamp.fold(true) { timestamp =>
               Duration.between(timestamp, now).compareTo(timeout) > 0
             }
           }
 
-          if (timedOut) DatapointNaN else Zero
+          if (reportNaN) DatapointNaN else Zero
         }
       }
     }
