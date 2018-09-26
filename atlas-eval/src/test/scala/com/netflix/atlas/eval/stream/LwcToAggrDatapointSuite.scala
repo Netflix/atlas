@@ -19,6 +19,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
@@ -57,6 +58,7 @@ class LwcToAggrDatapointSuite extends FunSuite {
 
   private def eval(data: List[String]): List[AggrDatapoint] = {
     val future = Source(data)
+      .map(ByteString.apply)
       .via(new LwcToAggrDatapoint)
       .runWith(Sink.seq[AggrDatapoint])
     Await.result(future, Duration.Inf).toList

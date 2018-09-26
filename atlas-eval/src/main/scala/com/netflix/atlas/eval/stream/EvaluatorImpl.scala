@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.eval.stream
 
-import java.nio.charset.StandardCharsets
 import java.nio.file.OpenOption
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -173,7 +172,6 @@ private[stream] abstract class EvaluatorImpl(
       val finalEvalInput = builder.add(Merge[AnyRef](2))
 
       val intermediateEval = createInputFlow(context)
-        .map(_.decodeString(StandardCharsets.UTF_8))
         .map(ReplayLogging.log)
         .via(context.monitorFlow("10_InputLines"))
         .via(new LwcToAggrDatapoint)
