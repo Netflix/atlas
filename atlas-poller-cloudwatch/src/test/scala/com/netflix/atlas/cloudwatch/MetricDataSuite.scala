@@ -59,15 +59,9 @@ class MetricDataSuite extends FunSuite {
     assert(data.datapoint().getSum === 1.0)
   }
 
-  test("category with timeout, datapoint with no current value and not timed out") {
+  test("category with timeout, first datapoint not yet received") {
     val now = Instant.now()
-    val data = MetricData(metadataWithTimeout, None, None, Some(now.minusSeconds(60)))
-    assert(data.datapoint(now).getSum === 0.0)
-  }
-
-  test("category with timeout, datapoint with no current value and timed out") {
-    val now = Instant.now()
-    val data = MetricData(metadataWithTimeout, None, None, Some(now.minusSeconds(600)))
+    val data = MetricData(metadataWithTimeout, None, None, None)
     assert(data.datapoint(now).getSum.isNaN)
   }
 
@@ -77,7 +71,7 @@ class MetricDataSuite extends FunSuite {
     assert(data.datapoint(now).getSum === 1.0)
   }
 
-  // current and timed out shouldn't be possible, but fail open by ensuring current's value is
+  // current and timed out shouldn't be possible, but fail open by ensuring the current value is
   // reported
   test("category with timeout, datapoint with current value and timed out") {
     val now = Instant.now()
@@ -92,7 +86,7 @@ class MetricDataSuite extends FunSuite {
     assert(data.datapoint(now).getSum === 1.0)
   }
 
-  // current and timed out shouldn't be possible, but fail open by ensuring current's value is
+  // current and timed out shouldn't be possible, but fail open by ensuring the current value is
   // reported
   test("category with timeout, datapoint with current and previous value and timed out") {
     val now = Instant.now()
@@ -110,6 +104,18 @@ class MetricDataSuite extends FunSuite {
   test("category with timeout, datapoint with only previous value and timed out") {
     val now = Instant.now()
     val data = MetricData(metadataWithTimeout, datapoint(1.0), None, Some(now.minusSeconds(600)))
+    assert(data.datapoint(now).getSum.isNaN)
+  }
+
+  test("category with timeout, datapoint with no current or previous value and not timed out") {
+    val now = Instant.now()
+    val data = MetricData(metadataWithTimeout, None, None, Some(now.minusSeconds(60)))
+    assert(data.datapoint(now).getSum === 0.0)
+  }
+
+  test("category with timeout, datapoint with no current or previous value and timed out") {
+    val now = Instant.now()
+    val data = MetricData(metadataWithTimeout, None, None, Some(now.minusSeconds(600)))
     assert(data.datapoint(now).getSum.isNaN)
   }
 
