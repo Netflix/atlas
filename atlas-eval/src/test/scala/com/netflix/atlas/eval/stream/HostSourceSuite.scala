@@ -167,5 +167,4 @@ class HostSourceSuite extends FunSuite {
     val result = Await.result(future, Duration.Inf).toList
     assert(result === (0 until 5).map(_ => "ok").toList)
   }
-
 }

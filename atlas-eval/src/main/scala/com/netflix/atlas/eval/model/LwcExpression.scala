@@ -15,19 +15,16 @@
  */
 package com.netflix.atlas.eval.model
 
-import com.fasterxml.jackson.annotation.JsonAlias
-import com.netflix.atlas.core.model.DataExpr
-import com.netflix.atlas.core.model.DataVocabulary
-import com.netflix.atlas.core.stacklang.Interpreter
-
 /**
-  * Subscription message that is returned by the LWC service.
+  * Pair representing the expression and step size for data being requested from the LWCAPI
+  * service. A set of data expressions corresponding with this request will be returned as
+  * an [LwcSubscription] response message.
   *
   * @param expression
-  *     Expression that was used for the initial subscription.
-  * @param metrics
-  *     Data expressions that result from the root expression.
+  *     Expression to subscribe to from LWCAPI.
+  * @param step
+  *     The step size used for this stream of data.
   */
-case class LwcSubscription(expression: String, metrics: List[LwcDataExpr]) {
-  val `type`: String = "subscription"
+case class LwcExpression(expression: String, step: Long) {
+  val `type`: String = "expression"
 }

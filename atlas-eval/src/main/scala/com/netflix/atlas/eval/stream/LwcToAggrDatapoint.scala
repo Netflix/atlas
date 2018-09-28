@@ -87,7 +87,7 @@ private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[ByteString
             // TODO, put in source, for now make it random to avoid dedup
             nextSource += 1
             val expr = sub.expr
-            val step = sub.frequency
+            val step = sub.step
             push(out, AggrDatapoint(d.timestamp, step, expr, nextSource.toString, d.tags, d.value))
           case None =>
             pull(in)

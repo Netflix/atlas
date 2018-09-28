@@ -32,8 +32,12 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
+import com.netflix.atlas.eval.model.LwcDataExpr
+import com.netflix.atlas.eval.model.LwcDatapoint
+import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.iep.NetflixEnvironment
@@ -131,6 +135,8 @@ class StreamApi @Inject()(
 trait SSERenderable {
 
   def toSSE: String
+
+  def toJson: String
 }
 
 object StreamApi {
@@ -163,10 +169,18 @@ object StreamApi {
   case class HelloContent(streamId: String, instanceId: String) extends JsonSupport
 
   case class SSEHello(streamId: String, instanceId: String)
-      extends SSEMessage("info", "hello", HelloContent(streamId, instanceId))
+      extends SSEMessage("info", "hello", HelloContent(streamId, instanceId)) {
+
+    def toJson: String = {
+      Json.encode(DiagnosticMessage.info(s"setup stream $streamId on $instanceId"))
+    }
+  }
 
   // Generic message string
-  case class SSEGenericJson(what: String, msg: JsonSupport) extends SSEMessage("data", what, msg)
+  case class SSEGenericJson(what: String, msg: JsonSupport) extends SSEMessage("data", what, msg) {
+
+    def toJson: String = msg.toJson
+  }
 
   // Heartbeat message
   private val heartbeat = ChunkStreamPart(ByteString(s"""data: {"type":"heartbeat"}\r\n\r\n"""))
@@ -177,6 +191,10 @@ object StreamApi {
   case class SSEShutdown(reason: String, private val unsub: Boolean = true)
       extends SSEMessage("info", "shutdown", ShutdownReason(reason)) {
 
+    def toJson: String = {
+      Json.encode(DiagnosticMessage.info(s"shutting down stream on $instanceId: $reason"))
+    }
+
     def shouldUnregister: Boolean = unsub
   }
 
@@ -185,7 +203,14 @@ object StreamApi {
       extends JsonSupport
 
   case class SSESubscribe(expr: String, metrics: List[ExpressionMetadata])
-      extends SSEMessage("info", "subscribe", SubscribeContent(expr, metrics))
+      extends SSEMessage("info", "subscribe", SubscribeContent(expr, metrics)) {
+
+    def toJson: String = {
+      Json.encode(
+        LwcSubscription(expr, metrics.map(m => LwcDataExpr(m.id, m.expression, m.frequency)))
+      )
+    }
+  }
 
   case class SSEMetricContent(timestamp: Long, id: String, tags: EvaluateApi.TagMap, value: Double)
       extends JsonSupport
@@ -196,5 +221,10 @@ object StreamApi {
         "data",
         "metric",
         SSEMetricContent(timestamp, data.id, data.tags, data.value)
-      )
+      ) {
+
+    def toJson: String = {
+      Json.encode(LwcDatapoint(timestamp, data.id, data.tags, data.value))
+    }
+  }
 }

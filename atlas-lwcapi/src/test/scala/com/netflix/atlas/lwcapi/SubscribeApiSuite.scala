@@ -16,13 +16,21 @@
 package com.netflix.atlas.lwcapi
 
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.testkit.WSProbe
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
+import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.RequestHandler
+import com.netflix.atlas.eval.model.LwcDatapoint
+import com.netflix.atlas.eval.model.LwcExpression
+import com.netflix.atlas.eval.model.LwcMessages
+import com.netflix.atlas.eval.model.LwcSubscription
+import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
@@ -46,12 +54,54 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   private val sm = new StreamSubscriptionManager
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
 
-  private val api = new SubscribeApi(new NoopRegistry, sm, splitter)
+  private val api = new SubscribeApi(new NoopRegistry, sm, splitter, system)
 
   private val routes = RequestHandler.standardOptions(api.routes)
 
   before {
     sm.clear()
+  }
+
+  //
+  // Subscribe websocket
+  //
+
+  private def parse(msg: Message): AnyRef = {
+    LwcMessages.parse(msg.asTextMessage.getStrictText)
+  }
+
+  test("subscribe websocket") {
+    val client = WSProbe()
+    WS("/api/v1/subscribe", client.flow) ~> routes ~> check {
+      assert(isWebSocketUpgrade)
+
+      // Send list of expressions to subscribe to
+      val exprs = List(LwcExpression("name,cpu,:eq,:avg", 60000))
+      client.sendMessage(Json.encode(exprs))
+
+      // Look for subscription messages, one for sum and one for count
+      var subscriptions = List.empty[LwcSubscription]
+      while (subscriptions.size < 2) {
+        parse(client.expectMessage()) match {
+          case msg: DiagnosticMessage =>
+          case sub: LwcSubscription   => subscriptions = sub :: subscriptions
+        }
+      }
+
+      // Verify subscription is in the manager, push a message to the queue check that it
+      // is received by the client
+      assert(subscriptions.flatMap(_.metrics).size === 2)
+      subscriptions.flatMap(_.metrics).foreach { m =>
+        val tags = Map("name" -> "cpu")
+        val sseMetric = StreamApi.SSEMetric(60000, EvaluateApi.Item(m.id, tags, 42.0))
+        val handlers = sm.handlersForSubscription(m.id)
+        assert(handlers.size === 1)
+        handlers.head.offer(sseMetric)
+
+        val expected = LwcDatapoint(60000, m.id, tags, 42.0)
+        assert(parse(client.expectMessage()) === expected)
+      }
+    }
   }
 
   //

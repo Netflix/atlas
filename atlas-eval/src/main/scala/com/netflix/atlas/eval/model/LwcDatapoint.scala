@@ -29,4 +29,6 @@ package com.netflix.atlas.eval.model
   * @param value
   *     Value for the datapoint.
   */
-case class LwcDatapoint(timestamp: Long, id: String, tags: Map[String, String], value: Double)
+case class LwcDatapoint(timestamp: Long, id: String, tags: Map[String, String], value: Double) {
+  val `type`: String = "datapoint"
+}
