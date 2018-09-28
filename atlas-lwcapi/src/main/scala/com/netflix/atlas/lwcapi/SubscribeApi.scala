@@ -15,37 +15,65 @@
  */
 package com.netflix.atlas.lwcapi
 
-import javax.inject.Inject
+import java.nio.charset.StandardCharsets
+import java.util.UUID
 
+import akka.actor.ActorSystem
+import javax.inject.Inject
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.ws.BinaryMessage
+import akka.http.scaladsl.model.ws.Message
+import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.stream.ActorMaterializer
+import akka.stream.OverflowStrategy
+import akka.stream.ThrottleMode
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
+import com.netflix.atlas.eval.model.LwcExpression
+import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
 import scala.util.control.NonFatal
 
 class SubscribeApi @Inject()(
   registry: Registry,
   sm: StreamSubscriptionManager,
-  splitter: ExpressionSplitter
+  splitter: ExpressionSplitter,
+  implicit val system: ActorSystem
 ) extends WebApi
     with StrictLogging {
 
   import SubscribeApi._
   import StreamApi._
 
+  private implicit val ec = scala.concurrent.ExecutionContext.global
+  private implicit val materializer = ActorMaterializer()
+
   private val evalsId = registry.createId("atlas.lwcapi.subscribe.count")
   private val itemsId = registry.createId("atlas.lwcapi.subscribe.itemCount")
 
   def routes: Route = {
+    endpointPath("api" / "v1" / "subscribe") {
+      handleWebSocketMessages(handlerFlow)
+    } ~
     endpointPath("lwc" / "api" / "v1" / "subscribe") {
       post {
         parseEntity(json[SubscribeRequest]) {
@@ -63,6 +91,64 @@ class SubscribeApi @Inject()(
         }
       }
     }
+  }
+
+  private val handlerFlow = Flow[Message]
+    .flatMapConcat {
+      case msg: TextMessage =>
+        msg.textStream.fold("")(_ + _)
+      case msg: BinaryMessage =>
+        msg.dataStream.fold(ByteString.empty)(_ ++ _).map(_.decodeString(StandardCharsets.UTF_8))
+    }
+    .flatMapConcat { msg =>
+      val expressions = Json
+        .decode[List[LwcExpression]](msg)
+        .map(v => ExpressionMetadata(v.expression, v.step))
+      val streamId = UUID.randomUUID().toString
+      val (queue, dataStream) = register(streamId)
+      val errors = subscribe(streamId, expressions)
+      errors.foreach { error =>
+        val msg = DiagnosticMessage.error(s"[${error.expression}] ${error.message}")
+        queue.offer(SSEGenericJson("diagnostic", msg))
+      }
+      dataStream
+    }
+
+  private def register(streamId: String): (QueueHandler, Source[Message, Unit]) = {
+
+    // Create queue to allow messages coming into /evaluate to be passed to this stream
+    val (queue, pub) = StreamOps
+      .queue[SSERenderable](registry, "SubscribeApi", 10000, OverflowStrategy.dropHead)
+      .map(msg => TextMessage(msg.toJson))
+      .toMat(Sink.asPublisher[Message](true))(Keep.both)
+      .run()
+
+    // Send initial setup messages
+    queue.offer(SSEHello(streamId, instanceId))
+    val handler = new QueueHandler(streamId, queue)
+    sm.register(streamId, handler)
+
+    // Heartbeat messages to ensure that the socket is never idle
+    val heartbeatSrc = Source
+      .repeat(heartbeat)
+      .throttle(1, 5.seconds, 1, ThrottleMode.Shaping)
+
+    val source = Source
+      .fromPublisher(pub)
+      .merge(heartbeatSrc)
+      .via(StreamOps.monitorFlow(registry, "StreamApi"))
+      .watchTermination() { (_, f) =>
+        f.onComplete {
+          case Success(_) =>
+            logger.debug(s"lost client for $streamId")
+            sm.unregister(streamId)
+          case Failure(t) =>
+            logger.debug(s"lost client for $streamId", t)
+            sm.unregister(streamId)
+        }
+      }
+
+    handler -> source
   }
 
   private def subscribe(streamId: String, expressions: List[ExpressionMetadata]): List[ErrorMsg] = {
@@ -102,6 +188,11 @@ class SubscribeApi @Inject()(
 }
 
 object SubscribeApi {
+
+  private val instanceId = NetflixEnvironment.instanceId()
+
+  // Heartbeat message
+  private val heartbeat = TextMessage("""{"type":"heartbeat"}""")
 
   case class SubscribeRequest(streamId: String, expressions: List[ExpressionMetadata])
       extends JsonSupport {
