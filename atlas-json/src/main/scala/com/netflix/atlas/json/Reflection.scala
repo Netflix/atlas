@@ -18,6 +18,7 @@ package com.netflix.atlas.json
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.ParameterizedType
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind.BeanProperty
@@ -41,9 +42,9 @@ private[json] object Reflection {
   type JType = java.lang.reflect.Type
 
   // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
-  def typeReference[T: Manifest] = new TypeReference[T] {
+  def typeReference[T: Manifest]: TypeReference[T] = new TypeReference[T] {
 
-    override def getType = typeFromManifest(manifest[T])
+    override def getType: JType = typeFromManifest(manifest[T])
   }
 
   // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
@@ -51,11 +52,11 @@ private[json] object Reflection {
     if (m.typeArguments.isEmpty) { m.runtimeClass } else
       new ParameterizedType {
 
-        def getRawType = m.runtimeClass
+        def getRawType: Class[_] = m.runtimeClass
 
-        def getActualTypeArguments = m.typeArguments.map(typeFromManifest).toArray
+        def getActualTypeArguments: Array[JType] = m.typeArguments.map(typeFromManifest).toArray
 
-        def getOwnerType = null
+        def getOwnerType: JType = null
       }
   }
 
@@ -193,7 +194,14 @@ private[json] object Reflection {
       params.zipWithIndex.foreach {
         case (p, i) =>
           val field = jt.getRawClass.getDeclaredField(p.name)
-          fieldsMap.put(p.field, FieldInfo(i, field.getType, field.getGenericType, props(i)))
+          val info = FieldInfo(i, field.getType, field.getGenericType, props(i))
+          fieldsMap.put(p.field, info)
+          val aliasAnno = props(i).getAnnotation(classOf[JsonAlias])
+          if (aliasAnno != null) {
+            aliasAnno.value().foreach { alias =>
+              fieldsMap.put(alias, info)
+            }
+          }
       }
       fieldsMap
     }
