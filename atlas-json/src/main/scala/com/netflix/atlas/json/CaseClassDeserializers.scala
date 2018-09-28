@@ -30,7 +30,7 @@ class CaseClassDeserializers extends Deserializers.Base {
     javaType: JavaType,
     config: DeserializationConfig,
     beanDesc: BeanDescription
-  ) = {
+  ): CaseClassDeserializer = {
 
     if (Reflection.isCaseClass(javaType.getRawClass))
       new CaseClassDeserializer(javaType, config, beanDesc)

@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.json
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.Version
@@ -184,6 +185,12 @@ class CaseClassDeserializerSuite extends FunSuite {
     assert(actual === expected)
   }
 
+  test("honors @JsonAlias annotation") {
+    val expected = AliasAnno("foo")
+    val actual = decode[AliasAnno]("""{"v":"foo"}""")
+    assert(actual === expected)
+  }
+
   test("honors @JsonProperty annotation") {
     val expected = PropAnno("foo")
     val actual = decode[PropAnno]("""{"v":"foo"}""")
@@ -238,6 +245,8 @@ object CaseClassDeserializerSuite {
   case class Outer(vs: List[List[Inner]])
 
   case class OuterT[T](vs: T)
+
+  case class AliasAnno(@JsonAlias(Array("v")) value: String)
 
   case class PropAnno(@JsonProperty("v") value: String)
 
