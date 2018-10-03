@@ -32,6 +32,7 @@ import akka.util.ByteString
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.StreamOps
+import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
@@ -91,13 +92,24 @@ private[stream] class StreamContext(
     }
   }
 
+  /**
+    * Current set of data sources being processed by the stream. This may be updated while
+    * there are still some in-flight data for a given data source that was previously being
+    * processed.
+    */
+  @volatile var dataSources: DataSources = DataSources.empty()
+
+  /**
+    * Validate the input and return a new object with only the valid data sources. A diagnostic
+    * message will be written to the `dsLogger` for any failures.
+    */
   def validate(input: DataSources): DataSources = {
     import scala.collection.JavaConverters._
     val valid = input.getSources.asScala.flatMap(validateDataSource).asJava
     new DataSources(valid)
   }
 
-  def validateDataSource(ds: DataSource): Option[DataSource] = {
+  private def validateDataSource(ds: DataSource): Option[DataSource] = {
     try {
       val uri = Uri(ds.getUri)
 
@@ -113,6 +125,16 @@ private[stream] class StreamContext(
       case e: Exception =>
         dsLogger(ds, DiagnosticMessage.error(e))
         None
+    }
+  }
+
+  /**
+    * Send a diagnostic message to all data sources that use a particular data expression.
+    */
+  def log(expr: DataExpr, msg: DiagnosticMessage): Unit = {
+    val map = interpreter.dataExprMap(dataSources)
+    map.get(expr).foreach { ds =>
+      ds.foreach(s => dsLogger(s, msg))
     }
   }
 

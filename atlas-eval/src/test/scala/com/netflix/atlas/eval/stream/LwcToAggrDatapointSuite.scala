@@ -15,14 +15,21 @@
  */
 package com.netflix.atlas.eval.stream
 
+import java.util.concurrent.ArrayBlockingQueue
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.stream.Evaluator.DataSource
+import com.netflix.atlas.eval.stream.Evaluator.DataSources
+import com.netflix.atlas.json.JsonSupport
+import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
 import scala.concurrent.Await
@@ -53,13 +60,27 @@ class LwcToAggrDatapointSuite extends FunSuite {
     """data: metric {"timestamp":20000,"id":"sum","tags":{"name":"cpu"},"value":3.0}""",
     """data: metric {"timestamp":20000,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
     """data: metric {"timestamp":30000,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
-    """data: metric {"timestamp":30000,"id":"sum","tags":{"name":"cpu"},"value":4.0}"""
+    """data: metric {"timestamp":30000,"id":"sum","tags":{"name":"cpu"},"value":4.0}""",
+    """data: diagnostic {"type":"diagnostic","id":"sum","message":{"type":"error","message":"bad expression"}}"""
+  )
+
+  private val logMessages = new ArrayBlockingQueue[(DataSource, JsonSupport)](10)
+
+  private val context = new StreamContext(
+    ConfigFactory.load(),
+    null,
+    materializer,
+    dsLogger = (ds, msg) => logMessages.add(ds -> msg)
+  )
+
+  context.dataSources = DataSources.of(
+    new DataSource("abc", java.time.Duration.ofMinutes(1), "/api/v1/graph?q=name,cpu,:eq,:avg")
   )
 
   private def eval(data: List[String]): List[AggrDatapoint] = {
     val future = Source(data)
       .map(ByteString.apply)
-      .via(new LwcToAggrDatapoint)
+      .via(new LwcToAggrDatapoint(context))
       .runWith(Sink.seq[AggrDatapoint])
     Await.result(future, Duration.Inf).toList
   }
@@ -77,5 +98,18 @@ class LwcToAggrDatapointSuite extends FunSuite {
     val countData = groups(DataExpr.Count(Query.Equal("name", "cpu")))
     assert(countData.size === 4)
     assert(countData.map(_.value).toSet === Set(4.0))
+  }
+
+  test("diagnostic messages are logged") {
+    logMessages.clear()
+    eval(input)
+    assert(logMessages.size() === 1)
+    logMessages.poll() match {
+      case (_, msg: DiagnosticMessage) =>
+        assert(msg.`type` === "error")
+        assert(msg.message === "bad expression")
+      case v =>
+        fail(s"unexpected message: $v")
+    }
   }
 }

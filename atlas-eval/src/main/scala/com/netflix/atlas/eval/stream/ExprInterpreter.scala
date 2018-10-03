@@ -17,9 +17,12 @@ package com.netflix.atlas.eval.stream
 
 import akka.http.scaladsl.model.Uri
 import com.netflix.atlas.core.model.CustomVocabulary
+import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.eval.stream.Evaluator.DataSource
+import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.typesafe.config.Config
 
 private[stream] class ExprInterpreter(config: Config) {
@@ -51,5 +54,18 @@ private[stream] class ExprInterpreter(config: Config) {
     }
 
     results
+  }
+
+  def dataExprMap(ds: DataSources): Map[DataExpr, List[DataSource]] = {
+    import scala.collection.JavaConverters._
+    ds.getSources.asScala.toList
+      .flatMap { s =>
+        val exprs = eval(Uri(s.getUri)).flatMap(_.expr.dataExprs).distinct
+        exprs.map(_ -> s)
+      }
+      .groupBy(_._1)
+      .map {
+        case (expr, vs) => expr -> vs.map(_._2)
+      }
   }
 }
