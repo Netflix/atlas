@@ -94,7 +94,7 @@ private[stream] class StreamContext(
 
   /**
     * Current set of data sources being processed by the stream. This may be updated while
-    * there is still some in-flight data for a given data source that was previously being
+    * there are still some in-flight data for a given data source that was previously being
     * processed.
     */
   @volatile var dataSources: DataSources = DataSources.empty()
