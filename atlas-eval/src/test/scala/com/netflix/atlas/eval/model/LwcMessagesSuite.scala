@@ -51,4 +51,10 @@ class LwcMessagesSuite extends FunSuite {
     val actual = LwcMessages.parse(Json.encode(expected))
     assert(actual === expected)
   }
+
+  test("diagnostic message for a particular expression") {
+    val expected = LwcDiagnosticMessage("abc", DiagnosticMessage.error("something bad happened"))
+    val actual = LwcMessages.parse(Json.encode(expected))
+    assert(actual === expected)
+  }
 }

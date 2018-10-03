@@ -27,6 +27,7 @@ import akka.util.ByteString
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
+import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
 
@@ -34,7 +35,8 @@ import com.netflix.atlas.json.Json
   * Process the SSE output from an LWC service and convert it into a stream of
   * [[AggrDatapoint]]s that can be used for evaluation.
   */
-private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[ByteString, AggrDatapoint]] {
+private[stream] class LwcToAggrDatapoint(context: StreamContext)
+    extends GraphStage[FlowShape[ByteString, AggrDatapoint]] {
 
   private val in = Inlet[ByteString]("LwcToAggrDatapoint.in")
   private val out = Outlet[AggrDatapoint]("LwcToAggrDatapoint.out")
@@ -58,6 +60,7 @@ private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[ByteString
         grab(in) match {
           case msg if msg.startsWith(subscribePrefix)  => updateState(msg)
           case msg if msg.startsWith(metricDataPrefix) => pushDatapoint(msg)
+          case msg if msg.startsWith(diagnosticPrefix) => pushDiagnosticMessage(msg)
           case msg                                     => ignoreMessage(msg)
         }
       }
@@ -94,6 +97,16 @@ private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[ByteString
         }
       }
 
+      private def pushDiagnosticMessage(msg: ByteString): Unit = {
+        val json = msg.drop(diagnosticPrefix.length)
+        val length = copy(json, json.length)
+        val d = Json.decode[LwcDiagnosticMessage](buffer, 0, length)
+        state.get(d.id) match {
+          case Some(sub) => context.log(sub.expr, d.message)
+          case None      => pull(in)
+        }
+      }
+
       private def ignoreMessage(msg: ByteString): Unit = {
         pull(in)
       }
@@ -114,4 +127,5 @@ private[stream] class LwcToAggrDatapoint extends GraphStage[FlowShape[ByteString
 object LwcToAggrDatapoint {
   private val subscribePrefix = ByteString("info: subscribe ")
   private val metricDataPrefix = ByteString("data: metric ")
+  private val diagnosticPrefix = ByteString("data: diagnostic ")
 }

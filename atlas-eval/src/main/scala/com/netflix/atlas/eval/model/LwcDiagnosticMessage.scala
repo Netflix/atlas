@@ -15,14 +15,17 @@
  */
 package com.netflix.atlas.eval.model
 
+import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.json.JsonSupport
+
 /**
-  * Subscription message that is returned by the LWC service.
+  * Diagnostic message for a particular expression.
   *
-  * @param expression
-  *     Expression that was used for the initial subscription.
-  * @param metrics
-  *     Data expressions that result from the root expression.
+  * @param id
+  *     Identifies the expression that resulted in this message being generated.
+  * @param message
+  *     Actual message to pass through to the user.
   */
-case class LwcSubscription(expression: String, metrics: List[LwcDataExpr]) {
-  val `type`: String = "subscription"
+case class LwcDiagnosticMessage(id: String, message: DiagnosticMessage) extends JsonSupport {
+  val `type`: String = "diagnostic"
 }

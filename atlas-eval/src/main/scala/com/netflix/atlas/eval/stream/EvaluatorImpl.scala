@@ -174,7 +174,7 @@ private[stream] abstract class EvaluatorImpl(
       val intermediateEval = createInputFlow(context)
         .map(ReplayLogging.log)
         .via(context.monitorFlow("10_InputLines"))
-        .via(new LwcToAggrDatapoint)
+        .via(new LwcToAggrDatapoint(context))
         .via(context.monitorFlow("11_LwcDatapoints"))
         .groupBy(Int.MaxValue, _.step, allowClosedSubstreamRecreation = true)
         .via(new TimeGrouped(context, 50))
@@ -191,7 +191,11 @@ private[stream] abstract class EvaluatorImpl(
     // Final evaluation of the overall expression
     Flow[DataSources]
       .map(ReplayLogging.log)
-      .map(s => context.validate(s))
+      .map { s =>
+        val validated = context.validate(s)
+        context.dataSources = validated
+        validated
+      }
       .via(g)
       .flatMapConcat(s => Source(splitByStep(s)))
       .groupBy(Int.MaxValue, stepSize, allowClosedSubstreamRecreation = true)

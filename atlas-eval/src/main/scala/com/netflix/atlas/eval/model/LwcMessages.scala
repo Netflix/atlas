@@ -33,6 +33,7 @@ object LwcMessages {
       case "expression"   => Json.decode[LwcExpression](data)
       case "subscription" => Json.decode[LwcSubscription](data)
       case "datapoint"    => Json.decode[LwcDatapoint](data)
+      case "diagnostic"   => Json.decode[LwcDiagnosticMessage](data)
       case _              => Json.decode[DiagnosticMessage](data)
     }
   }
