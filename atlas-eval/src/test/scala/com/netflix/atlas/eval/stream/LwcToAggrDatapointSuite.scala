@@ -49,6 +49,7 @@ class LwcToAggrDatapointSuite extends FunSuite {
   private val input = List(
     s"""info: subscribe {"expression":"name,cpu,:eq,:avg","metrics":[$sumMetric,$countMetric]}""",
     """info: other {"type":"info","msg":"something"}""",
+    """data: diagnostic {"type":"diagnostic","id":"sum","message":{"type":"error","message":"1"}}""",
     """data: metric {"timestamp":0,"id":"sum","tags":{"name":"cpu"},"value":1.0}""",
     """data: metric {"timestamp":0,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
     """data: metric {"timestamp":10000,"id":"sum","tags":{"name":"cpu"},"value":2.0}""",
@@ -61,7 +62,7 @@ class LwcToAggrDatapointSuite extends FunSuite {
     """data: metric {"timestamp":20000,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
     """data: metric {"timestamp":30000,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
     """data: metric {"timestamp":30000,"id":"sum","tags":{"name":"cpu"},"value":4.0}""",
-    """data: diagnostic {"type":"diagnostic","id":"sum","message":{"type":"error","message":"bad expression"}}"""
+    """data: diagnostic {"type":"diagnostic","id":"sum","message":{"type":"error","message":"2"}}"""
   )
 
   private val logMessages = new ArrayBlockingQueue[(DataSource, JsonSupport)](10)
@@ -103,13 +104,15 @@ class LwcToAggrDatapointSuite extends FunSuite {
   test("diagnostic messages are logged") {
     logMessages.clear()
     eval(input)
-    assert(logMessages.size() === 1)
-    logMessages.poll() match {
-      case (_, msg: DiagnosticMessage) =>
-        assert(msg.`type` === "error")
-        assert(msg.message === "bad expression")
-      case v =>
-        fail(s"unexpected message: $v")
+    assert(logMessages.size() === 2)
+    List("1", "2").foreach { i =>
+      logMessages.poll() match {
+        case (_, msg: DiagnosticMessage) =>
+          assert(msg.`type` === "error")
+          assert(msg.message === i)
+        case v =>
+          fail(s"unexpected message: $v")
+      }
     }
   }
 }
