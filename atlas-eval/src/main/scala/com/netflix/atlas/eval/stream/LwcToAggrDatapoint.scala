@@ -101,10 +101,10 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
         val json = msg.drop(diagnosticPrefix.length)
         val length = copy(json, json.length)
         val d = Json.decode[LwcDiagnosticMessage](buffer, 0, length)
-        state.get(d.id) match {
-          case Some(sub) => context.log(sub.expr, d.message)
-          case None      => pull(in)
+        state.get(d.id).foreach { sub =>
+          context.log(sub.expr, d.message)
         }
+        pull(in)
       }
 
       private def ignoreMessage(msg: ByteString): Unit = {
