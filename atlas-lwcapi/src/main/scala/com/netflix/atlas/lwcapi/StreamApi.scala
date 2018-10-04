@@ -93,8 +93,7 @@ class StreamApi @Inject()(
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     val (queue, pub) = StreamOps
       .queue[SSERenderable](registry, "StreamApi", 10000, OverflowStrategy.dropHead)
-      .map(msg => ChunkStreamPart(ByteString(msg.toSSE) ++ suffix))
-      .toMat(Sink.asPublisher[ChunkStreamPart](true))(Keep.both)
+      .toMat(Sink.asPublisher[SSERenderable](true))(Keep.both)
       .run()
 
     // Send initial setup messages
@@ -125,7 +124,7 @@ class StreamApi @Inject()(
           .distinct
           .map { step =>
             val heartbeat = LwcHeartbeat(stepAlignedTime(step), step)
-            ChunkStreamPart(SSEGenericJson("heartbeat", heartbeat).toSSE)
+            SSEGenericJson("heartbeat", heartbeat)
           }
         Source(steps)
       }
@@ -133,6 +132,7 @@ class StreamApi @Inject()(
     val source = Source
       .fromPublisher(pub)
       .merge(heartbeatSrc)
+      .map(msg => ChunkStreamPart(ByteString(msg.toSSE) ++ suffix))
       .via(StreamOps.monitorFlow(registry, "StreamApi"))
       .watchTermination() { (_, f) =>
         f.onComplete {
