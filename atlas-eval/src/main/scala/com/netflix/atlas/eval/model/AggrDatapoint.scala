@@ -20,6 +20,7 @@ import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.model.DataExpr.All
 import com.netflix.atlas.core.model.DataExpr.GroupBy
 import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TimeSeries
 
 /**
@@ -62,9 +63,23 @@ case class AggrDatapoint(
     * phase.
     */
   def toTimeSeries: TimeSeries = Datapoint(tags, timestamp, value, step)
+
+  /** Check if it is a heartbeat datapoint. */
+  def isHeartbeat: Boolean = source == "heartbeat"
 }
 
 object AggrDatapoint {
+
+  /**
+    * Creates a dummy datapoint passed along when a heartbeat message is received from the
+    * lwcapi server. These are used to ensure regular messages are flowing into the time
+    * grouping stage so it will flush even if there is no matching data for any of the
+    * expressions being evaluated.
+    */
+  def heartbeat(timestamp: Long, step: Long): AggrDatapoint = {
+    val t = timestamp / step * step
+    AggrDatapoint(t, step, DataExpr.All(Query.False), "heartbeat", Map.empty, Double.NaN)
+  }
 
   /**
     * Base trait for an aggregator that can efficiently combine the datapoints as they

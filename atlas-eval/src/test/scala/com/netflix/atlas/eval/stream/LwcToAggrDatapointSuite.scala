@@ -115,4 +115,17 @@ class LwcToAggrDatapointSuite extends FunSuite {
       }
     }
   }
+
+  test("heartbeat messages are passed through") {
+    val data = List(
+      """data: heartbeat {"type":"heartbeat","timestamp":1234567890,"step":10}"""
+    )
+    val results = eval(data)
+    assert(results.size === 1)
+
+    val d = results.head
+    assert(d.isHeartbeat)
+    assert(d.timestamp === 1234567890)
+    assert(d.step === 10)
+  }
 }

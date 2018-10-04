@@ -87,6 +87,32 @@ private[stream] class TimeGrouped(
         -min - 1
       }
 
+      /**
+        * Add a value to the aggregate or create a new aggregate initialized to the provided
+        * value. Heartbeat datapoints will be ignored as they are just used to trigger flushing
+        * of the time group.
+        */
+      private def aggregate(i: Int, v: AggrDatapoint): Unit = {
+        if (!v.isHeartbeat) {
+          buf(i).get(v.expr) match {
+            case Some(aggr) => aggr.aggregate(v)
+            case None       => buf(i).put(v.expr, AggrDatapoint.newAggregator(v))
+          }
+        }
+      }
+
+      /**
+        * Push the most recently completed time group to the next stage and reset the buffer
+        * so it can be used for a new time window.
+        */
+      private def flush(i: Int): Unit = {
+        val vs = buf(i).mapValues(_.datapoints).toMap
+        val t = timestamps(i)
+        if (t > 0) push(out, TimeGroup(t, vs)) else pull(in)
+        cutoffTime = t
+        buf(i) = new AggrMap
+      }
+
       override def onPush(): Unit = {
         val v = grab(in)
         val t = v.timestamp
@@ -101,18 +127,12 @@ private[stream] class TimeGrouped(
           buffered.increment()
           val i = findBuffer(t)
           if (i >= 0) {
-            buf(i).get(v.expr) match {
-              case Some(aggr) => aggr.aggregate(v)
-              case None       => buf(i).put(v.expr, AggrDatapoint.newAggregator(v))
-            }
+            aggregate(i, v)
             pull(in)
           } else {
             val pos = -i - 1
-            val vs = buf(pos).mapValues(_.datapoints).toMap
-            if (vs.nonEmpty) push(out, TimeGroup(timestamps(pos), vs)) else pull(in)
-            cutoffTime = timestamps(pos)
-            buf(pos) = new AggrMap
-            buf(pos).put(v.expr, AggrDatapoint.newAggregator(v))
+            flush(pos)
+            aggregate(pos, v)
             timestamps(pos) = t
           }
         }
@@ -120,7 +140,7 @@ private[stream] class TimeGrouped(
 
       override def onPull(): Unit = {
         if (isClosed(in))
-          flush()
+          flushPending()
         else
           pull(in)
       }
@@ -130,11 +150,11 @@ private[stream] class TimeGrouped(
           val vs = buf(i).mapValues(_.datapoints).toMap
           TimeGroup(timestamps(i), vs)
         }.toList
-        pending = groups.filter(_.values.nonEmpty).sortWith(_.timestamp < _.timestamp)
-        flush()
+        pending = groups.filter(_.timestamp > 0).sortWith(_.timestamp < _.timestamp)
+        flushPending()
       }
 
-      private def flush(): Unit = {
+      private def flushPending(): Unit = {
         if (pending.nonEmpty) {
           push(out, pending.head)
           pending = pending.tail

@@ -57,4 +57,16 @@ class LwcMessagesSuite extends FunSuite {
     val actual = LwcMessages.parse(Json.encode(expected))
     assert(actual === expected)
   }
+
+  test("heartbeat") {
+    val expected = LwcHeartbeat(1234567890L, 10L)
+    val actual = LwcMessages.parse(Json.encode(expected))
+    assert(actual === expected)
+  }
+
+  test("heartbeat not on step boundary") {
+    intercept[IllegalArgumentException] {
+      LwcHeartbeat(1234567891L, 10L)
+    }
+  }
 }

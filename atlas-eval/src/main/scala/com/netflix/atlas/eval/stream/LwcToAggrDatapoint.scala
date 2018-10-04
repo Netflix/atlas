@@ -28,6 +28,7 @@ import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
+import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
 
@@ -61,6 +62,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
           case msg if msg.startsWith(subscribePrefix)  => updateState(msg)
           case msg if msg.startsWith(metricDataPrefix) => pushDatapoint(msg)
           case msg if msg.startsWith(diagnosticPrefix) => pushDiagnosticMessage(msg)
+          case msg if msg.startsWith(heartbeatPrefix)  => pushHeartbeat(msg)
           case msg                                     => ignoreMessage(msg)
         }
       }
@@ -107,6 +109,13 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
         pull(in)
       }
 
+      private def pushHeartbeat(msg: ByteString): Unit = {
+        val json = msg.drop(heartbeatPrefix.length)
+        val length = copy(json, json.length)
+        val d = Json.decode[LwcHeartbeat](buffer, 0, length)
+        push(out, AggrDatapoint.heartbeat(d.timestamp, d.step))
+      }
+
       private def ignoreMessage(msg: ByteString): Unit = {
         pull(in)
       }
@@ -128,4 +137,5 @@ object LwcToAggrDatapoint {
   private val subscribePrefix = ByteString("info: subscribe ")
   private val metricDataPrefix = ByteString("data: metric ")
   private val diagnosticPrefix = ByteString("data: diagnostic ")
+  private val heartbeatPrefix = ByteString("data: heartbeat ")
 }

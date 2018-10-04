@@ -18,6 +18,7 @@ package com.netflix.atlas.lwcapi
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import javax.inject.Inject
 import akka.http.scaladsl.model.HttpEntity
@@ -42,6 +43,7 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.eval.model.LwcExpression
+import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.iep.NetflixEnvironment
@@ -114,6 +116,10 @@ class SubscribeApi @Inject()(
       dataStream
     }
 
+  private def stepAlignedTime(step: Long): Long = {
+    registry.clock().wallTime() / step * step
+  }
+
   private def register(streamId: String): (QueueHandler, Source[Message, Unit]) = {
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
@@ -130,8 +136,18 @@ class SubscribeApi @Inject()(
 
     // Heartbeat messages to ensure that the socket is never idle
     val heartbeatSrc = Source
-      .repeat(heartbeat)
+      .repeat(NotUsed)
       .throttle(1, 5.seconds, 1, ThrottleMode.Shaping)
+      .flatMapConcat { _ =>
+        val steps = sm
+          .subscriptionsForStream(streamId)
+          .map(_.metadata.frequency)
+          .distinct
+          .map { step =>
+            TextMessage(LwcHeartbeat(stepAlignedTime(step), step).toJson)
+          }
+        Source(steps)
+      }
 
     val source = Source
       .fromPublisher(pub)
@@ -190,9 +206,6 @@ class SubscribeApi @Inject()(
 object SubscribeApi {
 
   private val instanceId = NetflixEnvironment.instanceId()
-
-  // Heartbeat message
-  private val heartbeat = TextMessage("""{"type":"heartbeat"}""")
 
   case class SubscribeRequest(streamId: String, expressions: List[ExpressionMetadata])
       extends JsonSupport {

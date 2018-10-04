@@ -38,6 +38,8 @@ class TimeGroupedSuite extends FunSuite {
 
   private val context = TestContext.createContext(materializer, registry = registry)
 
+  private val step = 10
+
   private def result(future: Future[List[TimeGroup]]): List[TimeGroup] = {
     Await
       .result(future, Duration.Inf)
@@ -54,11 +56,13 @@ class TimeGroupedSuite extends FunSuite {
 
   private def timeGroup(t: Long, vs: List[AggrDatapoint]): TimeGroup = {
     val expr = DataExpr.All(Query.True)
-    TimeGroup(t, Map(expr -> vs))
+    if (vs.isEmpty)
+      TimeGroup(t, Map.empty)
+    else
+      TimeGroup(t, Map(expr -> vs))
   }
 
   private def datapoint(t: Long, v: Int): AggrDatapoint = {
-    val step = 10
     val expr = DataExpr.All(Query.True)
     AggrDatapoint(t, step, expr, "test", Map.empty, v)
   }
@@ -166,6 +170,29 @@ class TimeGroupedSuite extends FunSuite {
 
     assert(before._1 + 5 === after._1) // 5 buffered messages
     assert(before._2 + 2 === after._2) // 2 dropped message
+  }
+
+  test("heartbeat will flush if no data for an interval") {
+    val data =
+      List(
+        AggrDatapoint.heartbeat(10, step),
+        datapoint(10, 1),
+        datapoint(10, 2),
+        datapoint(10, 3),
+        AggrDatapoint.heartbeat(20, step),
+        datapoint(30, 1),
+        datapoint(30, 2),
+        AggrDatapoint.heartbeat(30, step)
+      )
+
+    val groups = run(data)
+    assert(
+      groups === List(
+        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+        timeGroup(20, Nil),
+        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+      )
+    )
   }
 
   test("simple aggregate: sum") {
