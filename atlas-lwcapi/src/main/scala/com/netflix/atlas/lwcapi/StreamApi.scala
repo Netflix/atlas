@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
+import akka.NotUsed
 import javax.inject.Inject
 import akka.actor.ActorRefFactory
 import akka.http.scaladsl.model.HttpEntity
@@ -37,6 +38,7 @@ import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
+import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
@@ -71,6 +73,10 @@ class StreamApi @Inject()(
     }
   }
 
+  private def stepAlignedTime(step: Long): Long = {
+    registry.clock().wallTime() / step * step
+  }
+
   private def handleReq(streamId: String): HttpResponse = {
 
     // Drop any other connections that may already be using the same id
@@ -98,7 +104,7 @@ class StreamApi @Inject()(
 
     // Heartbeat messages to ensure that the socket is never idle
     val heartbeatSrc = Source
-      .repeat(heartbeat)
+      .repeat(NotUsed)
       .throttle(1, 5.seconds, 1, ThrottleMode.Shaping)
       .map { value =>
         // There is a race condition on reconnects where the new connection can come in
@@ -111,6 +117,17 @@ class StreamApi @Inject()(
           reRegistrations.increment()
         }
         value
+      }
+      .flatMapConcat { _ =>
+        val steps = sm
+          .subscriptionsForStream(streamId)
+          .map(_.metadata.frequency)
+          .distinct
+          .map { step =>
+            val heartbeat = LwcHeartbeat(stepAlignedTime(step), step)
+            ChunkStreamPart(SSEGenericJson("heartbeat", heartbeat).toSSE)
+          }
+        Source(steps)
       }
 
     val source = Source
@@ -181,9 +198,6 @@ object StreamApi {
 
     def toJson: String = msg.toJson
   }
-
-  // Heartbeat message
-  private val heartbeat = ChunkStreamPart(ByteString(s"""data: {"type":"heartbeat"}\r\n\r\n"""))
 
   // Shutdown message
   case class ShutdownReason(reason: String) extends JsonSupport

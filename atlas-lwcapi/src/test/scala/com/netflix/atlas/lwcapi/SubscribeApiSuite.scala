@@ -28,6 +28,7 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcExpression
+import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
@@ -85,6 +86,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
         parse(client.expectMessage()) match {
           case msg: DiagnosticMessage =>
           case sub: LwcSubscription   => subscriptions = sub :: subscriptions
+          case h: LwcHeartbeat        => assert(h.step === 60000)
         }
       }
 
