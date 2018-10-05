@@ -72,6 +72,7 @@ private[stream] class TimeGrouped(
 
       private val timestamps = new Array[Long](numBuffers)
 
+      private var step = -1L
       private var cutoffTime = 0L
 
       private var pending: List[TimeGroup] = Nil
@@ -108,7 +109,7 @@ private[stream] class TimeGrouped(
       private def flush(i: Int): Unit = {
         val vs = buf(i).mapValues(_.datapoints).toMap
         val t = timestamps(i)
-        if (t > 0) push(out, TimeGroup(t, vs)) else pull(in)
+        if (t > 0) push(out, TimeGroup(t, step, vs)) else pull(in)
         cutoffTime = t
         buf(i) = new AggrMap
       }
@@ -117,6 +118,7 @@ private[stream] class TimeGrouped(
         val v = grab(in)
         val t = v.timestamp
         val now = clock.wallTime()
+        step = v.step
         if (t > now) {
           droppedFuture.increment()
           pull(in)
@@ -148,7 +150,7 @@ private[stream] class TimeGrouped(
       override def onUpstreamFinish(): Unit = {
         val groups = buf.indices.map { i =>
           val vs = buf(i).mapValues(_.datapoints).toMap
-          TimeGroup(timestamps(i), vs)
+          TimeGroup(timestamps(i), step, vs)
         }.toList
         pending = groups.filter(_.timestamp > 0).sortWith(_.timestamp < _.timestamp)
         flushPending()

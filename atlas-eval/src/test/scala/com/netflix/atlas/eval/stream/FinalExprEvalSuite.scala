@@ -65,7 +65,7 @@ class FinalExprEvalSuite extends FunSuite {
   private def group(i: Long, vs: AggrDatapoint*): TimeGroup = {
     val timestamp = i * step
     val values = vs.map(_.copy(timestamp = timestamp)).groupBy(_.expr).mapValues(_.toList)
-    TimeGroup(timestamp, values)
+    TimeGroup(timestamp, step, values)
   }
 
   test("exception while parsing exprs") {
@@ -86,7 +86,7 @@ class FinalExprEvalSuite extends FunSuite {
   test("division with no data should result in no data line") {
     val input = List(
       sources(ds("a", "http://atlas/graph?q=name,latency,:eq,:dist-avg")),
-      TimeGroup(0L, Map.empty)
+      TimeGroup(0L, step, Map.empty)
     )
     val output = run(input)
     assert(output.size === 1)
