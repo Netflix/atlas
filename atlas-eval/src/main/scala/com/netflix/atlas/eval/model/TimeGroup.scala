@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package com.netflix.atlas.eval.model
+
 import com.netflix.atlas.core.model.DataExpr
 
 /**
@@ -25,17 +26,9 @@ import com.netflix.atlas.core.model.DataExpr
   *
   * @param timestamp
   *     Timestamp that applies to all values within the group.
+  * @param step
+  *     Step size for the data within this group.
   * @param values
   *     Values associated with this time.
   */
-case class TimeGroup(timestamp: Long, values: Map[DataExpr, List[AggrDatapoint]]) {
-
-  /**
-    * Extract the step size from the time group. It is not explicitly checked on construction
-    * to avoid the overhead, but a group should always have a uniform step size for all
-    * datapoints.
-    */
-  def step: Long = {
-    values.values.find(_.nonEmpty).fold(-1L)(_.head.step)
-  }
-}
+case class TimeGroup(timestamp: Long, step: Long, values: Map[DataExpr, List[AggrDatapoint]])
