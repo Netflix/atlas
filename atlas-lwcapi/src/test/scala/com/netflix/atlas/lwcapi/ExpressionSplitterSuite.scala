@@ -63,6 +63,15 @@ class ExpressionSplitterSuite extends FunSuite {
     assert(msg.getMessage === s":offset not supported for streaming evaluation [[$expr]]")
   }
 
+  test("throws IAE for expressions with style offset") {
+    val expr = "name,foo,:eq,:sum,(,0h,1w,),:offset"
+    val msg = intercept[IllegalArgumentException] {
+      splitter.split(expr, frequency1)
+    }
+    val badExpr = "name,foo,:eq,:sum,PT168H,:offset"
+    assert(msg.getMessage === s":offset not supported for streaming evaluation [[$badExpr]]")
+  }
+
   //
   // Tests for compress()
   //
