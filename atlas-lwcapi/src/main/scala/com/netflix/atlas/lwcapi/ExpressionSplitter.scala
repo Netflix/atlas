@@ -107,7 +107,7 @@ class ExpressionSplitter(config: Config) {
   private def parse(expression: String): Try[List[DataExprMeta]] = Try {
     val context = interpreter.execute(expression)
     val dataExprs = context.stack.flatMap {
-      case ModelExtractors.PresentationType(t) => t.expr.dataExprs
+      case ModelExtractors.PresentationType(t) => t.perOffset.flatMap(_.expr.dataExprs)
       case _                                   => throw new IllegalArgumentException("expression is invalid")
     }
 
