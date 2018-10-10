@@ -74,8 +74,10 @@ class LwcToAggrDatapointSuite extends FunSuite {
     dsLogger = (ds, msg) => logMessages.add(ds -> msg)
   )
 
-  context.dataSources = DataSources.of(
-    new DataSource("abc", java.time.Duration.ofMinutes(1), "/api/v1/graph?q=name,cpu,:eq,:avg")
+  context.setDataSources(
+    DataSources.of(
+      new DataSource("abc", java.time.Duration.ofMinutes(1), "/api/v1/graph?q=name,cpu,:eq,:avg")
+    )
   )
 
   private def eval(data: List[String]): List[AggrDatapoint] = {

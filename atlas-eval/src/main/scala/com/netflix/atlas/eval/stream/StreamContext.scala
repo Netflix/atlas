@@ -97,7 +97,17 @@ private[stream] class StreamContext(
     * there are still some in-flight data for a given data source that was previously being
     * processed.
     */
-  @volatile var dataSources: DataSources = DataSources.empty()
+  @volatile private var dataSources: DataSources = DataSources.empty()
+
+  /** Map of DataExpr to data sources for being able to quickly log information. */
+  @volatile private var dataExprMap: Map[DataExpr, List[DataSource]] = Map.empty
+
+  def setDataSources(ds: DataSources): Unit = {
+    if (dataSources != ds) {
+      dataSources = ds
+      dataExprMap = interpreter.dataExprMap(ds)
+    }
+  }
 
   /**
     * Validate the input and return a new object with only the valid data sources. A diagnostic
@@ -132,8 +142,7 @@ private[stream] class StreamContext(
     * Send a diagnostic message to all data sources that use a particular data expression.
     */
   def log(expr: DataExpr, msg: DiagnosticMessage): Unit = {
-    val map = interpreter.dataExprMap(dataSources)
-    map.get(expr).foreach { ds =>
+    dataExprMap.get(expr).foreach { ds =>
       ds.foreach(s => dsLogger(s, msg))
     }
   }

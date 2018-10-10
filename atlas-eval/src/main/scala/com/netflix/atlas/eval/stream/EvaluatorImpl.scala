@@ -193,7 +193,7 @@ private[stream] abstract class EvaluatorImpl(
       .map(ReplayLogging.log)
       .map { s =>
         val validated = context.validate(s)
-        context.dataSources = validated
+        context.setDataSources(validated)
         validated
       }
       .via(g)
