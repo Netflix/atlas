@@ -42,7 +42,7 @@ private[stream] class ExprInterpreter(config: Config) {
 
     // Check that data expressions are supported. The streaming path doesn't support
     // time shifts.
-    val results = eval(expr)
+    val results = eval(expr).flatMap(_.perOffset)
     results.foreach { result =>
       result.expr.dataExprs.foreach { dataExpr =>
         if (!dataExpr.offset.isZero) {

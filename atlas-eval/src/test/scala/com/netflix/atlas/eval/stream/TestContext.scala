@@ -52,6 +52,8 @@ object TestContext {
       |  ]
       |
       |  num-buffers = 2
+      |
+      |  ignored-tag-keys = []
       |}
     """.stripMargin)
 

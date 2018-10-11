@@ -212,44 +212,72 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     testProcessor("resource:///gc-pause.dat")
   }
 
-  test("create processor, missing q parameter") {
+  private def testError(ds: Evaluator.DataSources, expectedMsg: String): Unit = {
     val evaluator = new Evaluator(config, registry, system)
-
-    val uri = "http://test/api/v1/graph"
-    val ds1 = Evaluator.DataSources.of(ds("one", uri))
     val future = Source
-      .single(ds1)
+      .single(ds)
       .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
       .runWith(Sink.head)
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
     result.getMessage match {
       case DiagnosticMessage(t, msg, None) =>
         assert(t === "error")
-        assert(
-          msg === "IllegalArgumentException: missing required URI parameter `q`: http://test/api/v1/graph"
-        )
+        assert(msg === expectedMsg)
     }
   }
 
-  test("create processor, expression uses :offset") {
-    val evaluator = new Evaluator(config, registry, system)
+  test("create processor, missing q parameter") {
+    val uri = "http://test/api/v1/graph"
+    val ds1 = Evaluator.DataSources.of(ds("one", uri))
+    val msg =
+      "IllegalArgumentException: missing required URI parameter `q`: http://test/api/v1/graph"
+    testError(ds1, msg)
+  }
 
+  test("create processor, expression uses :offset") {
     val expr = "name,foo,:eq,:sum,PT168H,:offset"
     val uri = s"http://test/api/v1/graph?q=$expr"
+    val msg = s"IllegalArgumentException: :offset not supported for streaming evaluation [[$expr]]"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
+    testError(ds1, msg)
+  }
 
-    val future = Source
-      .single(ds1)
-      .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
-      .runWith(Sink.head)
-    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
-    result.getMessage match {
-      case DiagnosticMessage(t, msg, None) =>
-        assert(t === "error")
-        assert(
-          msg === s"IllegalArgumentException: :offset not supported for streaming evaluation [[$expr]]"
-        )
-    }
+  test("create processor, expression uses style variant of :offset") {
+    val expr = "name,foo,:eq,:sum,(,0h,1w,),:offset"
+    val badExpr = "name,foo,:eq,:sum,PT168H,:offset"
+    val uri = s"http://test/api/v1/graph?q=$expr"
+    val msg =
+      s"IllegalArgumentException: :offset not supported for streaming evaluation [[$badExpr]]"
+    val ds1 = Evaluator.DataSources.of(ds("one", uri))
+    testError(ds1, msg)
+  }
+
+  test("create processor, reject expensive :in queries") {
+    val expr = "name,(,1,2,3,4,5,6,),:in,:sum"
+    val uri = s"http://test/api/v1/graph?q=$expr"
+    val msg = s"IllegalArgumentException: rejected expensive query [name,(,1,2,3,4,5,6,),:in], " +
+    "narrow the scope to a specific app or name"
+    val ds1 = Evaluator.DataSources.of(ds("one", uri))
+    testError(ds1, msg)
+  }
+
+  test("create processor, reject expensive :re queries") {
+    val expr = "name,foo,:re,:sum"
+    val uri = s"http://test/api/v1/graph?q=$expr"
+    val msg = s"IllegalArgumentException: rejected expensive query [name,foo,:re], " +
+    "narrow the scope to a specific app or name"
+    val ds1 = Evaluator.DataSources.of(ds("one", uri))
+    testError(ds1, msg)
+  }
+
+  test("create processor, ignored tag keys are honored") {
+    val query = "name,foo,:re,nf.account,12345,:eq,:and"
+    val expr = s"$query,:sum"
+    val uri = s"http://test/api/v1/graph?q=$expr"
+    val msg = s"IllegalArgumentException: rejected expensive query [$query], " +
+    "narrow the scope to a specific app or name"
+    val ds1 = Evaluator.DataSources.of(ds("one", uri))
+    testError(ds1, msg)
   }
 
   test("processor handles multiple steps") {

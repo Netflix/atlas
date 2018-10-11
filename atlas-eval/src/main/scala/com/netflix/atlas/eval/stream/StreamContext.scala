@@ -33,6 +33,7 @@ import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
@@ -65,6 +66,11 @@ private[stream] class StreamContext(
         cfg.getString("instance-uri")
       )
     }
+  }
+
+  private val ignoredTagKeys = {
+    import scala.collection.JavaConverters._
+    config.getStringList("ignored-tag-keys").asScala.toSet
   }
 
   def numBuffers: Int = config.getInt("num-buffers")
@@ -123,8 +129,10 @@ private[stream] class StreamContext(
     try {
       val uri = Uri(ds.getUri)
 
-      // Check that expression is parseable
-      interpreter.eval(uri)
+      // Check that expression is parseable and perform basic static analysis of DataExprs to
+      // weed out expensive queries up front
+      val results = interpreter.eval(uri)
+      results.foreach(_.expr.dataExprs.foreach(validateDataExpr))
 
       // Check that there is a backend available for it
       findBackendForUri(uri)
@@ -135,6 +143,21 @@ private[stream] class StreamContext(
       case e: Exception =>
         dsLogger(ds, DiagnosticMessage.error(e))
         None
+    }
+  }
+
+  private def validateDataExpr(expr: DataExpr): Unit = {
+    Query
+      .dnfList(expr.query)
+      .flatMap(q => Query.expandInClauses(q))
+      .foreach(validateQuery)
+  }
+
+  private def validateQuery(query: Query): Unit = {
+    val keys = Query.exactKeys(query) -- ignoredTagKeys
+    if (keys.isEmpty) {
+      val msg = s"rejected expensive query [$query], narrow the scope to a specific app or name"
+      throw new IllegalArgumentException(msg)
     }
   }
 
