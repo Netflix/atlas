@@ -531,4 +531,47 @@ class QuerySuite extends FunSuite {
     val q = Not(And(Not(True), Equal("a", "b")))
     assert(Query.simplify(q, ignore = true) === Not(Equal("a", "b")))
   }
+
+  test("expandInClauses, simple query") {
+    val q = Equal("a", "b")
+    assert(Query.expandInClauses(q) === List(q))
+  }
+
+  test("expandInClauses, in query") {
+    val q = In("a", List("b", "c"))
+    assert(Query.expandInClauses(q) === List(Equal("a", "b"), Equal("a", "c")))
+  }
+
+  test("expandInClauses, conjunction with in query") {
+    val base = Equal("a", "1")
+    val q = And(base, In("b", List("v1", "v2")))
+    val expected = List(
+      And(base, Equal("b", "v1")),
+      And(base, Equal("b", "v2"))
+    )
+    assert(Query.expandInClauses(q) === expected)
+  }
+
+  test("expandInClauses, number of values exceeds limit") {
+    val q = In("a", List("b", "c"))
+    assert(Query.expandInClauses(q, 1) === List(q))
+  }
+
+  test("expandInClauses, number of values equals limit") {
+    val q = In("a", List("b", "c"))
+    assert(Query.expandInClauses(q, 2) === List(Equal("a", "b"), Equal("a", "c")))
+  }
+
+  test("expandInClauses, conjunction with multiple in queries") {
+    val q = And(In("a", List("a1", "a2")), In("b", List("b1", "b2", "b3")))
+    val expected = for (a <- List("a1", "a2"); b <- List("b1", "b2", "b3")) yield {
+      And(Equal("a", a), Equal("b", b))
+    }
+    assert(Query.expandInClauses(q) === expected)
+  }
+
+  test("expandInClauses, disjunction") {
+    val q = Or(Equal("a", "1"), In("b", List("1", "2")))
+    assert(Query.expandInClauses(q, 1) === List(q))
+  }
 }

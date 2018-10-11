@@ -133,6 +133,31 @@ object Query {
   }
 
   /**
+    * Split :in queries into a list of queries using :eq. The query should be normalized ahead
+    * of time so it is a string of conjunctions. See `dnfList` for more information.
+    *
+    * In order to avoid a massive combinatorial explosion clauses that have more than `limit`
+    * expressions will not be expanded. The default limit is 5. It is somewhat arbitrary, but
+    * seems to work well in practice for the current query data sets at Netflix.
+    */
+  def expandInClauses(query: Query, limit: Int = 5): List[Query] = {
+    query match {
+      case Query.And(q1, q2) =>
+        for {
+          a <- expandInClauses(q1, limit)
+          b <- expandInClauses(q2, limit)
+        } yield {
+          Query.And(a, b)
+        }
+      case Query.In(k, vs) if vs.lengthCompare(limit) <= 0 =>
+        vs.map { v =>
+          Query.Equal(k, v)
+        }
+      case _ => List(query)
+    }
+  }
+
+  /**
     * Simplify a query expression that contains True and False constants.
     *
     * @param query
