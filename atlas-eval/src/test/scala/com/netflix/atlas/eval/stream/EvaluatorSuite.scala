@@ -275,7 +275,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val expr = s"$query,:sum"
     val uri = s"http://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: rejected expensive query [$query], " +
-      "narrow the scope to a specific app or name"
+    "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     testError(ds1, msg)
   }
