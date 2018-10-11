@@ -65,8 +65,7 @@ private[stream] object HostSource extends StrictLogging {
 
   private def singleCall(client: SimpleClient)(uri: String): Source[ByteString, Any] = {
     logger.info(s"subscribing to $uri")
-    val headers =
-      List(Accept(MediaTypes.`text/event-stream`), `Accept-Encoding`(HttpEncodings.gzip))
+    val headers = List(Accept(MediaTypes.`text/event-stream`))
     val request = HttpRequest(HttpMethods.GET, uri, headers)
 
     Source
