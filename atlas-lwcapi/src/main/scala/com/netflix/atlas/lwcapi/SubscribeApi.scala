@@ -179,8 +179,8 @@ class SubscribeApi @Inject()(
         val splits = splitter.split(expr.expression, expr.frequency)
 
         // Add any new expressions
-        val queue = sm.subscribe(streamId, splits)
-        splits.foreach { sub =>
+        val (queue, addedSubs) = sm.subscribe(streamId, splits)
+        addedSubs.foreach { sub =>
           queue.offer(SSESubscribe(expr.expression, List(sub.metadata)))
         }
 

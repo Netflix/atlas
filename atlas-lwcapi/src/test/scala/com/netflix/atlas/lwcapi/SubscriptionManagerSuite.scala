@@ -20,8 +20,10 @@ import org.scalatest.FunSuite
 
 class SubscriptionManagerSuite extends FunSuite {
 
+  private val config = ConfigFactory.load()
+
   private def sub(expr: String): Subscription = {
-    val splitter = new ExpressionSplitter(ConfigFactory.load())
+    val splitter = new ExpressionSplitter(config)
     splitter.split(expr, 60).head
   }
 
@@ -170,5 +172,21 @@ class SubscriptionManagerSuite extends FunSuite {
 
     sm.unregister("a")
     assert(sm.handlersForSubscription(s.metadata.id) === Nil)
+  }
+
+  test("subscribe returns added expressions") {
+    val sm = new SubscriptionManager[Integer]()
+    assert(sm.register("a", 1))
+    assert(sm.register("b", 2))
+
+    val s1 = sub("name,exp1,:eq")
+    val s2 = sub("name,exp2,:eq")
+    val s3 = sub("name,exp3,:eq")
+
+    assert(sm.subscribe("a", List(s1, s2)) === 1     -> List(s1, s2))
+    assert(sm.subscribe("a", List(s1, s2)) === 1     -> Nil)
+    assert(sm.subscribe("b", List(s1, s2)) === 2     -> List(s1, s2))
+    assert(sm.subscribe("b", List(s1, s2, s3)) === 2 -> List(s3))
+    assert(sm.subscribe("a", List(s1, s3)) === 1     -> List(s3))
   }
 }

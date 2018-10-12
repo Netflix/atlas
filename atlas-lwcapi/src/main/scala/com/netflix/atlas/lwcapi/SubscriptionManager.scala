@@ -143,24 +143,26 @@ class SubscriptionManager[T] extends StrictLogging {
   /**
     * Start sending data for the subscription to the given stream id.
     */
-  def subscribe(streamId: String, sub: Subscription): T = {
-    subscribe(streamId, List(sub))
+  private[lwcapi] def subscribe(streamId: String, sub: Subscription): T = {
+    subscribe(streamId, List(sub))._1
   }
 
   /**
-    * Start sending data for the subscription to the given stream id.
+    * Start sending data for the subscription to the given stream id. Returns the handler
+    * along with a list of newly added subscriptions.
     */
-  def subscribe(streamId: String, subs: List[Subscription]): T = {
+  def subscribe(streamId: String, subs: List[Subscription]): (T, List[Subscription]) = {
     logger.debug(s"updating subscriptions for $streamId")
     val info = getInfo(streamId)
-    queryListChanged = subs.foldLeft(queryListChanged) {
-      case (acc, sub) =>
-        if (info.subs.putIfAbsent(sub.metadata.id, sub) == null) {
-          logger.debug(s"subscribed $streamId to $sub")
-        }
-        addHandler(sub.metadata.id, info.handler) || acc
+    val addedSubs = List.newBuilder[Subscription]
+    subs.foreach { sub =>
+      if (info.subs.putIfAbsent(sub.metadata.id, sub) == null) {
+        logger.debug(s"subscribed $streamId to $sub")
+        addedSubs += sub
+      }
+      queryListChanged |= addHandler(sub.metadata.id, info.handler)
     }
-    info.handler
+    info.handler -> addedSubs.result()
   }
 
   /**
