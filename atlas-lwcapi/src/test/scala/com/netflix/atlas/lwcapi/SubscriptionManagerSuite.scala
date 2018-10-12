@@ -183,10 +183,10 @@ class SubscriptionManagerSuite extends FunSuite {
     val s2 = sub("name,exp2,:eq")
     val s3 = sub("name,exp3,:eq")
 
-    assert(sm.subscribe("a", List(s1, s2)) === 1 -> List(s1, s2))
-    assert(sm.subscribe("a", List(s1, s2)) === 1 -> Nil)
-    assert(sm.subscribe("b", List(s1, s2)) === 2 -> List(s1, s2))
+    assert(sm.subscribe("a", List(s1, s2)) === 1     -> List(s1, s2))
+    assert(sm.subscribe("a", List(s1, s2)) === 1     -> Nil)
+    assert(sm.subscribe("b", List(s1, s2)) === 2     -> List(s1, s2))
     assert(sm.subscribe("b", List(s1, s2, s3)) === 2 -> List(s3))
-    assert(sm.subscribe("a", List(s1, s3)) === 1 -> List(s3))
+    assert(sm.subscribe("a", List(s1, s3)) === 1     -> List(s3))
   }
 }

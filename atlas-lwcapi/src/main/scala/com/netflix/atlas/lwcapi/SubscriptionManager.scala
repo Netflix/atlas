@@ -156,11 +156,11 @@ class SubscriptionManager[T] extends StrictLogging {
     val info = getInfo(streamId)
     val addedSubs = List.newBuilder[Subscription]
     subs.foreach { sub =>
-        if (info.subs.putIfAbsent(sub.metadata.id, sub) == null) {
-          logger.debug(s"subscribed $streamId to $sub")
-          addedSubs += sub
-        }
-        queryListChanged |= addHandler(sub.metadata.id, info.handler)
+      if (info.subs.putIfAbsent(sub.metadata.id, sub) == null) {
+        logger.debug(s"subscribed $streamId to $sub")
+        addedSubs += sub
+      }
+      queryListChanged |= addHandler(sub.metadata.id, info.handler)
     }
     info.handler -> addedSubs.result()
   }
