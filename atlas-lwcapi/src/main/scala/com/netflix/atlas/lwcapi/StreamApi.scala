@@ -44,6 +44,7 @@ import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
+import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.duration._
@@ -51,10 +52,11 @@ import scala.util.Failure
 import scala.util.Success
 
 class StreamApi @Inject()(
+  config: Config,
+  registry: Registry,
   sm: StreamSubscriptionManager,
   splitter: ExpressionSplitter,
-  implicit val actorRefFactory: ActorRefFactory,
-  registry: Registry
+  implicit val actorRefFactory: ActorRefFactory
 ) extends WebApi
     with StrictLogging {
 
@@ -62,6 +64,8 @@ class StreamApi @Inject()(
 
   private implicit val ec = scala.concurrent.ExecutionContext.global
   private implicit val materializer = ActorMaterializer()
+
+  private val queueSize = config.getInt("atlas.lwcapi.queue-size")
 
   private val reRegistrations = registry.counter("atlas.lwcapi.reRegistrations")
 
@@ -92,7 +96,7 @@ class StreamApi @Inject()(
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     val (queue, pub) = StreamOps
-      .queue[SSERenderable](registry, "StreamApi", 10000, OverflowStrategy.dropHead)
+      .queue[SSERenderable](registry, "StreamApi", queueSize, OverflowStrategy.dropHead)
       .toMat(Sink.asPublisher[SSERenderable](true))(Keep.both)
       .run()
 
