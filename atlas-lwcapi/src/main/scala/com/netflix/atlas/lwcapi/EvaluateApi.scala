@@ -21,9 +21,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
+import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.lwcapi.StreamApi._
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
@@ -39,27 +39,31 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
     endpointPath("lwc" / "api" / "v1" / "evaluate") {
       post {
         parseEntity(json[EvaluateRequest]) { req =>
-          evaluate(req.timestamp, req.toSSE)
+          payloadSize.record(req.metrics.size)
+          val timestamp = req.timestamp
+          req.metrics.foreach { m =>
+            val datapoint = LwcDatapoint(timestamp, m.id, m.tags, m.value)
+            evaluate(m.id, datapoint)
+          }
+          req.messages.foreach { m =>
+            evaluate(m.id, m)
+          }
           complete(HttpResponse(StatusCodes.OK))
         }
       }
     }
   }
 
-  private def evaluate(timestamp: Long, items: List[(String, SSERenderable)]): Unit = {
-    payloadSize.record(items.size)
-    items.foreach { item =>
-      val (id, msg) = item
-      val queues = sm.handlersForSubscription(id)
-      if (queues.nonEmpty) {
-        queues.foreach { queue =>
-          logger.trace(s"sending $msg to $queue")
-          queue.offer(msg)
-        }
-      } else {
-        logger.trace(s"no subscriptions, ignoring $msg")
-        ignoredCounter.increment()
+  private def evaluate(id: String, msg: JsonSupport): Unit = {
+    val queues = sm.handlersForSubscription(id)
+    if (queues.nonEmpty) {
+      queues.foreach { queue =>
+        logger.trace(s"sending $msg to $queue")
+        queue.offer(msg)
       }
+    } else {
+      logger.trace(s"no subscriptions, ignoring $msg")
+      ignoredCounter.increment()
     }
   }
 }
@@ -67,19 +71,11 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
 object EvaluateApi {
   type TagMap = Map[String, String]
 
-  case class Item(id: String, tags: TagMap, value: Double) extends JsonSupport
+  case class Item(id: String, tags: TagMap, value: Double)
 
   case class EvaluateRequest(
     timestamp: Long,
     metrics: List[Item] = Nil,
     messages: List[LwcDiagnosticMessage] = Nil
-  ) extends JsonSupport {
-
-    def toSSE: List[(String, SSERenderable)] = {
-      val builder = List.newBuilder[(String, SSERenderable)]
-      builder ++= metrics.map(m => m.id  -> SSEMetric(timestamp, m))
-      builder ++= messages.map(m => m.id -> SSEGenericJson("diagnostic", m))
-      builder.result()
-    }
-  }
+  ) extends JsonSupport
 }

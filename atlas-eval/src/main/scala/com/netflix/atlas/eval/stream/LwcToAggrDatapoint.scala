@@ -46,7 +46,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
-      import LwcToAggrDatapoint._
+      import com.netflix.atlas.eval.model.LwcMessages._
 
       // Default to a decent size so it is unlikely there'll be a need to allocate
       // a larger array
@@ -131,11 +131,4 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       setHandlers(in, out, this)
     }
   }
-}
-
-object LwcToAggrDatapoint {
-  private val subscribePrefix = ByteString("info: subscribe ")
-  private val metricDataPrefix = ByteString("data: metric ")
-  private val diagnosticPrefix = ByteString("data: diagnostic ")
-  private val heartbeatPrefix = ByteString("data: heartbeat ")
 }

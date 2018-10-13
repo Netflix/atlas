@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.eval.model
 
+import com.netflix.atlas.json.JsonSupport
+
 /**
   * Pair representing the expression and step size for data being requested from the LWCAPI
   * service. A set of data expressions corresponding with this request will be returned as
@@ -25,6 +27,6 @@ package com.netflix.atlas.eval.model
   * @param step
   *     The step size used for this stream of data.
   */
-case class LwcExpression(expression: String, step: Long) {
+case class LwcExpression(expression: String, step: Long) extends JsonSupport {
   val `type`: String = "expression"
 }

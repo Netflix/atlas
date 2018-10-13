@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.eval.model
 
+import com.netflix.atlas.json.JsonSupport
+
 /**
   * Datapoint read in from the LWC service.
   *
@@ -29,6 +31,7 @@ package com.netflix.atlas.eval.model
   * @param value
   *     Value for the datapoint.
   */
-case class LwcDatapoint(timestamp: Long, id: String, tags: Map[String, String], value: Double) {
+case class LwcDatapoint(timestamp: Long, id: String, tags: Map[String, String], value: Double)
+    extends JsonSupport {
   val `type`: String = "datapoint"
 }

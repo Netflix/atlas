@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.eval.model
 
+import com.netflix.atlas.json.JsonSupport
+
 /**
   * Subscription message that is returned by the LWC service.
   *
@@ -23,6 +25,6 @@ package com.netflix.atlas.eval.model
   * @param metrics
   *     Data expressions that result from the root expression.
   */
-case class LwcSubscription(expression: String, metrics: List[LwcDataExpr]) {
+case class LwcSubscription(expression: String, metrics: List[LwcDataExpr]) extends JsonSupport {
   val `type`: String = "subscription"
 }

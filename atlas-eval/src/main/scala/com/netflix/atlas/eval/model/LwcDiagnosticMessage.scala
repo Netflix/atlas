@@ -29,3 +29,14 @@ import com.netflix.atlas.json.JsonSupport
 case class LwcDiagnosticMessage(id: String, message: DiagnosticMessage) extends JsonSupport {
   val `type`: String = "diagnostic"
 }
+
+object LwcDiagnosticMessage {
+
+  def info(id: String, message: String): LwcDiagnosticMessage = {
+    apply(id, DiagnosticMessage.info(message))
+  }
+
+  def error(id: String, message: String): LwcDiagnosticMessage = {
+    apply(id, DiagnosticMessage.error(message))
+  }
+}

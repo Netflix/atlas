@@ -17,6 +17,7 @@ package com.netflix.atlas.lwcapi
 
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
+import com.netflix.atlas.json.JsonSupport
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.Future
@@ -30,11 +31,10 @@ import scala.concurrent.Future
   * @param queue
   *     Underlying queue that will receive the messsages.
   */
-class QueueHandler(id: String, queue: SourceQueueWithComplete[SSERenderable])
-    extends StrictLogging {
+class QueueHandler(id: String, queue: SourceQueueWithComplete[JsonSupport]) extends StrictLogging {
 
-  def offer(msg: SSERenderable): Future[QueueOfferResult] = {
-    logger.trace(s"enqueuing message for $id: ${msg.toSSE}")
+  def offer(msg: JsonSupport): Future[QueueOfferResult] = {
+    logger.trace(s"enqueuing message for $id: ${msg.toJson}")
     queue.offer(msg)
   }
 
