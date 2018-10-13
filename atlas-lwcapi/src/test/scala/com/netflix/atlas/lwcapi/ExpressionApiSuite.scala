@@ -23,6 +23,7 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
+import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
@@ -38,7 +39,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   private val queue = new QueueHandler(
     "test",
     Source
-      .queue[SSERenderable](1, OverflowStrategy.dropHead)
+      .queue[JsonSupport](1, OverflowStrategy.dropHead)
       .toMat(Sink.ignore)(Keep.left)
       .run()
   )

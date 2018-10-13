@@ -31,16 +31,12 @@ import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.util.ByteString
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.eval.model.LwcDataExpr
-import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcHeartbeat
-import com.netflix.atlas.eval.model.LwcSubscription
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
@@ -85,24 +81,20 @@ class StreamApi @Inject()(
 
     // Drop any other connections that may already be using the same id
     sm.unregister(streamId).foreach { queue =>
-      queue.offer(
-        SSEShutdown(
-          s"Dropped: another connection is using the same stream-id: $streamId",
-          unsub = false
-        )
-      )
+      val msg = DiagnosticMessage.info(s"dropped: another connection is using id: $streamId")
+      queue.offer(msg)
       queue.complete()
     }
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     val (queue, pub) = StreamOps
-      .queue[SSERenderable](registry, "StreamApi", queueSize, OverflowStrategy.dropHead)
-      .toMat(Sink.asPublisher[SSERenderable](true))(Keep.both)
+      .queue[JsonSupport](registry, "StreamApi", queueSize, OverflowStrategy.dropHead)
+      .toMat(Sink.asPublisher[JsonSupport](true))(Keep.both)
       .run()
 
     // Send initial setup messages
     val handler = new QueueHandler(streamId, queue)
-    queue.offer(SSEHello(streamId, instanceId))
+    queue.offer(DiagnosticMessage.info(s"setup stream $streamId on $instanceId"))
     sm.register(streamId, handler)
 
     // Heartbeat messages to ensure that the socket is never idle
@@ -127,8 +119,7 @@ class StreamApi @Inject()(
           .map(_.metadata.frequency)
           .distinct
           .map { step =>
-            val heartbeat = LwcHeartbeat(stepAlignedTime(step), step)
-            SSEGenericJson("heartbeat", heartbeat)
+            LwcHeartbeat(stepAlignedTime(step), step)
           }
         Source(steps)
       }
@@ -136,7 +127,7 @@ class StreamApi @Inject()(
     val source = Source
       .fromPublisher(pub)
       .merge(heartbeatSrc)
-      .map(msg => ChunkStreamPart(ByteString(msg.toSSE) ++ suffix))
+      .map(msg => ChunkStreamPart(LwcMessages.toSSE(msg)))
       .via(StreamOps.monitorFlow(registry, "StreamApi"))
       .watchTermination() { (_, f) =>
         f.onComplete {
@@ -153,96 +144,7 @@ class StreamApi @Inject()(
   }
 }
 
-trait SSERenderable {
-
-  def toSSE: String
-
-  def toJson: String
-}
-
 object StreamApi {
 
   private val instanceId = NetflixEnvironment.instanceId()
-
-  private val suffix = ByteString("\r\n\r\n")
-
-  case class ExpressionsRequest(expressions: List[ExpressionMetadata]) extends JsonSupport
-
-  object ExpressionsRequest {
-
-    def fromJson(json: String): ExpressionsRequest = {
-      val decoded = Json.decode[ExpressionsRequest](json)
-      if (decoded.expressions == null || decoded.expressions.isEmpty)
-        throw new IllegalArgumentException("Missing or empty expressions array")
-      decoded
-    }
-  }
-
-  abstract class SSEMessage(msgType: String, what: String, content: JsonSupport)
-      extends SSERenderable {
-
-    def toSSE = s"$msgType: $what ${content.toJson}"
-
-    def getWhat: String = what
-  }
-
-  // Hello message
-  case class HelloContent(streamId: String, instanceId: String) extends JsonSupport
-
-  case class SSEHello(streamId: String, instanceId: String)
-      extends SSEMessage("info", "hello", HelloContent(streamId, instanceId)) {
-
-    def toJson: String = {
-      Json.encode(DiagnosticMessage.info(s"setup stream $streamId on $instanceId"))
-    }
-  }
-
-  // Generic message string
-  case class SSEGenericJson(what: String, msg: JsonSupport) extends SSEMessage("data", what, msg) {
-
-    def toJson: String = msg.toJson
-  }
-
-  // Shutdown message
-  case class ShutdownReason(reason: String) extends JsonSupport
-
-  case class SSEShutdown(reason: String, private val unsub: Boolean = true)
-      extends SSEMessage("info", "shutdown", ShutdownReason(reason)) {
-
-    def toJson: String = {
-      Json.encode(DiagnosticMessage.info(s"shutting down stream on $instanceId: $reason"))
-    }
-
-    def shouldUnregister: Boolean = unsub
-  }
-
-  // Subscribe message
-  case class SubscribeContent(expression: String, metrics: List[ExpressionMetadata])
-      extends JsonSupport
-
-  case class SSESubscribe(expr: String, metrics: List[ExpressionMetadata])
-      extends SSEMessage("info", "subscribe", SubscribeContent(expr, metrics)) {
-
-    def toJson: String = {
-      Json.encode(
-        LwcSubscription(expr, metrics.map(m => LwcDataExpr(m.id, m.expression, m.frequency)))
-      )
-    }
-  }
-
-  case class SSEMetricContent(timestamp: Long, id: String, tags: EvaluateApi.TagMap, value: Double)
-      extends JsonSupport
-
-  // Evaluate message
-  case class SSEMetric(timestamp: Long, data: EvaluateApi.Item)
-      extends SSEMessage(
-        "data",
-        "metric",
-        SSEMetricContent(timestamp, data.id, data.tags, data.value)
-      ) {
-
-    def toJson: String = {
-      Json.encode(LwcDatapoint(timestamp, data.id, data.tags, data.value))
-    }
-  }
 }

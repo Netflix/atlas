@@ -42,8 +42,10 @@ import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
+import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcHeartbeat
+import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.iep.NetflixEnvironment
@@ -115,7 +117,7 @@ class SubscribeApi @Inject()(
       val errors = subscribe(streamId, expressions)
       errors.foreach { error =>
         val msg = DiagnosticMessage.error(s"[${error.expression}] ${error.message}")
-        queue.offer(SSEGenericJson("diagnostic", msg))
+        queue.offer(msg)
       }
       dataStream
     }
@@ -128,13 +130,13 @@ class SubscribeApi @Inject()(
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     val (queue, pub) = StreamOps
-      .queue[SSERenderable](registry, "SubscribeApi", queueSize, OverflowStrategy.dropHead)
+      .queue[JsonSupport](registry, "SubscribeApi", queueSize, OverflowStrategy.dropHead)
       .map(msg => TextMessage(msg.toJson))
       .toMat(Sink.asPublisher[Message](true))(Keep.both)
       .run()
 
     // Send initial setup messages
-    queue.offer(SSEHello(streamId, instanceId))
+    queue.offer(DiagnosticMessage.info(s"setup stream $streamId on $instanceId"))
     val handler = new QueueHandler(streamId, queue)
     sm.register(streamId, handler)
 
@@ -185,7 +187,9 @@ class SubscribeApi @Inject()(
         // Add any new expressions
         val (queue, addedSubs) = sm.subscribe(streamId, splits)
         addedSubs.foreach { sub =>
-          queue.offer(SSESubscribe(expr.expression, List(sub.metadata)))
+          val meta = sub.metadata
+          val exprInfo = LwcDataExpr(meta.id, meta.expression, meta.frequency)
+          queue.offer(LwcSubscription(expr.expression, List(exprInfo)))
         }
 
         // Add expression ids in use by this split

@@ -32,6 +32,7 @@ import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
@@ -47,7 +48,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   private val queue = new QueueHandler(
     "test",
     Source
-      .queue[SSERenderable](1, OverflowStrategy.dropHead)
+      .queue[JsonSupport](1, OverflowStrategy.dropHead)
       .toMat(Sink.ignore)(Keep.left)
       .run()
   )
@@ -96,13 +97,12 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
       assert(subscriptions.flatMap(_.metrics).size === 2)
       subscriptions.flatMap(_.metrics).foreach { m =>
         val tags = Map("name" -> "cpu")
-        val sseMetric = StreamApi.SSEMetric(60000, EvaluateApi.Item(m.id, tags, 42.0))
+        val datapoint = LwcDatapoint(60000, m.id, tags, 42.0)
         val handlers = sm.handlersForSubscription(m.id)
         assert(handlers.size === 1)
-        handlers.head.offer(sseMetric)
+        handlers.head.offer(datapoint)
 
-        val expected = LwcDatapoint(60000, m.id, tags, 42.0)
-        assert(parse(client.expectMessage()) === expected)
+        assert(parse(client.expectMessage()) === datapoint)
       }
     }
   }

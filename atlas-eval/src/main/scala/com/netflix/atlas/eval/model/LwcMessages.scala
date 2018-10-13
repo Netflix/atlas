@@ -15,9 +15,11 @@
  */
 package com.netflix.atlas.eval.model
 
+import akka.util.ByteString
 import com.fasterxml.jackson.databind.JsonNode
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.JsonSupport
 
 /**
   * Helpers for working with messages coming back from the LWCAPI service.
@@ -38,4 +40,23 @@ object LwcMessages {
       case _              => Json.decode[DiagnosticMessage](data)
     }
   }
+
+  def toSSE(msg: JsonSupport): ByteString = {
+    val prefix = msg match {
+      case _: LwcSubscription      => subscribePrefix
+      case _: LwcDatapoint         => metricDataPrefix
+      case _: LwcDiagnosticMessage => diagnosticPrefix
+      case _: LwcHeartbeat         => heartbeatPrefix
+      case _                       => defaultPrefix
+    }
+    prefix ++ ByteString(msg.toJson) ++ suffix
+  }
+
+  val subscribePrefix = ByteString("info: subscribe ")
+  val metricDataPrefix = ByteString("data: metric ")
+  val diagnosticPrefix = ByteString("data: diagnostic ")
+  val heartbeatPrefix = ByteString("data: heartbeat ")
+  val defaultPrefix = ByteString("data: ")
+
+  private val suffix = ByteString("\r\n\r\n")
 }
