@@ -174,11 +174,11 @@ object StreamOps {
       }
     }
 
-    private[akka] def pull(): Unit = {
-      if (queue.isEmpty)
+    private[akka] def poll(): T = {
+      val value = queue.poll()
+      if (value == null)
         pushImmediately = true
-      else
-        push(queue.poll())
+      value
     }
 
     /**
@@ -207,10 +207,12 @@ object StreamOps {
       val queue = new SourceQueue[T](registry, id, new ArrayBlockingQueue[T](size))
       val logic = new GraphStageLogic(shape) with OutHandler {
         override def onPull(): Unit = {
-          if (queue.isDone)
+          if (queue.isDone) {
             complete(out)
-          else
-            queue.pull()
+          } else {
+            val value = queue.poll()
+            if (value != null) push(out, value)
+          }
         }
 
         setHandler(out, this)
