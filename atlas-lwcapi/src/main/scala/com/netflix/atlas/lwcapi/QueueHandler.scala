@@ -15,12 +15,9 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.stream.QueueOfferResult
-import akka.stream.scaladsl.SourceQueueWithComplete
+import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.json.JsonSupport
 import com.typesafe.scalalogging.StrictLogging
-
-import scala.concurrent.Future
 
 /**
   * Message handler for use with the [SubscriptionManager].
@@ -31,9 +28,9 @@ import scala.concurrent.Future
   * @param queue
   *     Underlying queue that will receive the messsages.
   */
-class QueueHandler(id: String, queue: SourceQueueWithComplete[JsonSupport]) extends StrictLogging {
+class QueueHandler(id: String, queue: StreamOps.SourceQueue[JsonSupport]) extends StrictLogging {
 
-  def offer(msg: JsonSupport): Future[QueueOfferResult] = {
+  def offer(msg: JsonSupport): Boolean = {
     logger.trace(s"enqueuing message for $id: ${msg.toJson}")
     queue.offer(msg)
   }

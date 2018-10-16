@@ -19,10 +19,9 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
@@ -38,8 +37,8 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
   // Dummy queue used for handler
   private val queue = new QueueHandler(
     "test",
-    Source
-      .queue[JsonSupport](1, OverflowStrategy.dropHead)
+    StreamOps
+      .blockingQueue[JsonSupport](new NoopRegistry, "test", 1)
       .toMat(Sink.ignore)(Keep.left)
       .run()
   )
