@@ -127,8 +127,7 @@ object StreamOps {
     *     Source that emits values offered to the queue.
     */
   def blockingQueue[T](registry: Registry, id: String, size: Int): Source[T, SourceQueue[T]] = {
-    val sourceQueue = new SourceQueue[T](registry, id, new ArrayBlockingQueue[T](size))
-    Source.fromGraph(new QueueSource[T](sourceQueue))
+    Source.fromGraph(new QueueSource[T](registry, id, size))
   }
 
   /** Bounded queue for submitting elements to a stream. */
@@ -195,7 +194,7 @@ object StreamOps {
     def isDone: Boolean = completed && queue.isEmpty
   }
 
-  private class QueueSource[T](queue: SourceQueue[T])
+  private class QueueSource[T](registry: Registry, id: String, size: Int)
       extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueue[T]] {
 
     private val out = Outlet[T]("QueueSource")
@@ -205,6 +204,7 @@ object StreamOps {
     override def createLogicAndMaterializedValue(
       attrs: Attributes
     ): (GraphStageLogic, SourceQueue[T]) = {
+      val queue = new SourceQueue[T](registry, id, new ArrayBlockingQueue[T](size))
       val logic = new GraphStageLogic(shape) with OutHandler {
         override def onPull(): Unit = {
           if (queue.isDone)
@@ -214,7 +214,7 @@ object StreamOps {
         }
 
         setHandler(out, this)
-        queue.push = v => push(out, v)
+        queue.push = getAsyncCallback[T](v => push(out, v)).invoke _
       }
       logic -> queue
     }
