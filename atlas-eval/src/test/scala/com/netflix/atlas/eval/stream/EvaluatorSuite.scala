@@ -344,4 +344,24 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val actual = Json.decode[Evaluator.DataSources](Json.encode(expected))
     assert(actual === expected)
   }
+
+  private def newDataSource(stepParam: Option[String]): Evaluator.DataSource = {
+    val uri = "/api/v1/graph?q=a,b,:eq" + stepParam.map(s => s"&step=$s").getOrElse("")
+    new Evaluator.DataSource("_", uri)
+  }
+
+  test("extractStepFromUri, step param not set") {
+    val ds = newDataSource(None)
+    assert(ds.getStep === Duration.ofMinutes(1))
+  }
+
+  test("extractStepFromUri, 5s step") {
+    val ds = newDataSource(Some("5s"))
+    assert(ds.getStep === Duration.ofSeconds(5))
+  }
+
+  test("extractStepFromUri, invalid step") {
+    val ds = newDataSource(Some("abc"))
+    assert(ds.getStep === Duration.ofMinutes(1))
+  }
 }
