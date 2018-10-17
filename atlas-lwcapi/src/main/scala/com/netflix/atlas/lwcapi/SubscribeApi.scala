@@ -31,7 +31,6 @@ import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import akka.stream.OverflowStrategy
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
@@ -130,7 +129,7 @@ class SubscribeApi @Inject()(
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     val (queue, pub) = StreamOps
-      .queue[JsonSupport](registry, "SubscribeApi", queueSize, OverflowStrategy.dropHead)
+      .blockingQueue[JsonSupport](registry, "SubscribeApi", queueSize)
       .map(msg => TextMessage(msg.toJson))
       .toMat(Sink.asPublisher[Message](true))(Keep.both)
       .run()

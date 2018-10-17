@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.akka
 
+import java.util.concurrent.CountDownLatch
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.OverflowStrategy
@@ -78,6 +80,56 @@ class StreamOpsSuite extends FunSuite {
     queue.complete()
     Await.result(queue.watchCompletion(), Duration.Inf)
     checkOfferedCounts(registry, Map("enqueued" -> 2.0, "droppedQueueFull" -> 3.0))
+  }
+
+  test("blocking queue, enqueued") {
+    val registry = new DefaultRegistry()
+    val source = StreamOps.blockingQueue[Int](registry, "test", 10)
+    val queue = source.toMat(Sink.ignore)(Keep.left).run()
+    Seq(1, 2, 3, 4).foreach(queue.offer)
+    queue.complete()
+    checkOfferedCounts(registry, Map("enqueued" -> 4.0))
+  }
+
+  test("blocking queue, droppedQueueFull") {
+    val registry = new DefaultRegistry()
+    val source = StreamOps.blockingQueue[Future[Int]](registry, "test", 1)
+    val queue = source
+      .flatMapConcat(Source.fromFuture)
+      .toMat(Sink.ignore)(Keep.left)
+      .run()
+    val promise = Promise[Int]()
+    queue.offer(promise.future) // will pass through without going to the queue
+    queue.offer(promise.future) // fills the 1 slot in the queue
+    Seq(2, 3, 4, 5).foreach(i => queue.offer(Future(i)))
+    promise.complete(Success(1))
+    queue.complete()
+    checkOfferedCounts(registry, Map("enqueued" -> 2.0, "droppedQueueFull" -> 4.0))
+  }
+
+  test("blocking queue, droppedQueueClosed") {
+    val registry = new DefaultRegistry()
+    val source = StreamOps.blockingQueue[Int](registry, "test", 1)
+    val queue = source
+      .toMat(Sink.ignore)(Keep.left)
+      .run()
+    queue.offer(1)
+    queue.complete()
+    Seq(2, 3, 4, 5).foreach(i => queue.offer(i))
+    checkOfferedCounts(registry, Map("enqueued" -> 1.0, "droppedQueueClosed" -> 4.0))
+  }
+
+  test("blocking queue, complete with no data") {
+    val registry = new DefaultRegistry()
+    val source = StreamOps.blockingQueue[Int](registry, "test", 1)
+    val latch = new CountDownLatch(1)
+    val (queue, fut) = source
+      .toMat(Sink.foreach(_ => latch.countDown()))(Keep.both)
+      .run()
+    queue.offer(1)
+    latch.await()
+    queue.complete()
+    Await.ready(fut, Duration.Inf)
   }
 
   private def checkCounts(registry: Registry, name: String, expected: Map[String, Double]): Unit = {

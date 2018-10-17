@@ -28,7 +28,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
 import akka.stream.ActorMaterializer
 import akka.stream.FlowShape
-import akka.stream.OverflowStrategy
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Broadcast
 import akka.stream.scaladsl.FileIO
@@ -150,7 +149,7 @@ private[stream] abstract class EvaluatorImpl(
 
     // Flow used for logging diagnostic messages
     val (queue, logSrc) = StreamOps
-      .queue[MessageEnvelope](registry, "DataSourceLogger", 10, OverflowStrategy.dropNew)
+      .blockingQueue[MessageEnvelope](registry, "DataSourceLogger", 10)
       .toMat(Sink.asPublisher(true))(Keep.both)
       .run()
     val dsLogger: DataSourceLogger = { (ds, msg) =>

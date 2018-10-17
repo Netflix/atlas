@@ -20,12 +20,11 @@ import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.testkit.WSProbe
-import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.RequestHandler
+import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcHeartbeat
@@ -47,8 +46,8 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   // Dummy queue used for handler
   private val queue = new QueueHandler(
     "test",
-    Source
-      .queue[JsonSupport](1, OverflowStrategy.dropHead)
+    StreamOps
+      .blockingQueue[JsonSupport](new NoopRegistry, "test", 1)
       .toMat(Sink.ignore)(Keep.left)
       .run()
   )

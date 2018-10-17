@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.akka
 
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
 
 import akka.Done
@@ -25,11 +27,13 @@ import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.OverflowStrategy
 import akka.stream.QueueOfferResult
+import akka.stream.SourceShape
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import com.netflix.spectator.api.Registry
@@ -49,6 +53,9 @@ object StreamOps {
     * Wraps a source queue and adds monitoring for the results of items offered to the queue.
     * This can be used to detect if items are being dropped or offered after the associated
     * stream has been closed.
+    *
+    * **Warning:** can have high memory use if the incoming data rate for the queue is not
+    * limited based on the future returned from `SourceQueueWithComplete.offer`.
     *
     * @param registry
     *     Spectator registry to manage metrics for this queue.
@@ -76,7 +83,7 @@ object StreamOps {
     queue: SourceQueueWithComplete[T]
   ) extends SourceQueueWithComplete[T] {
 
-    private implicit val ec = scala.concurrent.ExecutionContext.Implicits.global
+    private implicit val ec = scala.concurrent.ExecutionContext.global
 
     private val baseId = registry.createId("akka.stream.offeredToQueue", "id", id)
     private val enqueued = registry.counter(baseId.withTag("result", "enqueued"))
@@ -99,6 +106,125 @@ object StreamOps {
         case Success(QueueOfferResult.Failure(_))  => failed.increment()
         case Failure(t)                            => completed.increment()
       }
+    }
+  }
+
+  /**
+    * Creates a queue source based on an `ArrayBlockingQueue`. Values offered to the queue
+    * will be emitted by the source. This can be used as an alternative to `Source.queue`
+    * or `Source.actorRef` that can have unbounded memory use if the consumer cannot keep
+    * up with the rate of data being offered ([#25798]).
+    *
+    * [#25798]: https://github.com/akka/akka/issues/25798
+    *
+    * @param registry
+    *     Spectator registry to manage metrics for this queue.
+    * @param id
+    *     Dimension used to distinguish a particular queue usage.
+    * @param size
+    *     Number of enqueued items to allow before triggering the overflow strategy.
+    * @return
+    *     Source that emits values offered to the queue.
+    */
+  def blockingQueue[T](registry: Registry, id: String, size: Int): Source[T, SourceQueue[T]] = {
+    Source.fromGraph(new QueueSource[T](registry, id, size))
+  }
+
+  /** Bounded queue for submitting elements to a stream. */
+  class SourceQueue[T] private[akka] (registry: Registry, id: String, queue: BlockingQueue[T]) {
+
+    private val baseId = registry.createId("akka.stream.offeredToQueue", "id", id)
+    private val enqueued = registry.counter(baseId.withTag("result", "enqueued"))
+    private val dropped = registry.counter(baseId.withTag("result", "droppedQueueFull"))
+    private val closed = registry.counter(baseId.withTag("result", "droppedQueueClosed"))
+
+    private[akka] var push: T => Unit = _
+
+    @volatile private var pushImmediately: Boolean = false
+
+    @volatile private var completed: Boolean = false
+
+    private def increment(result: Boolean): Boolean = {
+      (if (result) enqueued else dropped).increment()
+      result
+    }
+
+    /**
+      * Add the value into the queue if there is room. Returns true if the value was successfully
+      * enqueued.
+      */
+    def offer(value: T): Boolean = {
+      if (completed) {
+        closed.increment()
+        false
+      } else {
+        if (pushImmediately) {
+          synchronized {
+            if (pushImmediately) {
+              pushImmediately = false
+              push(value)
+              increment(true)
+            } else {
+              increment(queue.offer(value))
+            }
+          }
+        } else {
+          increment(queue.offer(value))
+        }
+      }
+    }
+
+    private[akka] def poll(): T = {
+      val value = queue.poll()
+      if (value == null)
+        pushImmediately = true
+      value
+    }
+
+    /**
+      * Indicate that the use of the queue is complete. This will allow the associated stream
+      * to finish processing elements and then shutdown. Any new elements offered to the queue
+      * will be dropped.
+      */
+    def complete(): Unit = {
+      completed = true
+      // push null to indicate to the graph stage that it is complete, otherwise it can hang
+      // if it has already been pulled
+      if (pushImmediately && queue.isEmpty) push(null.asInstanceOf[T])
+    }
+
+    /** Check if the queue is done, i.e., it has been completed and the queue is empty. */
+    def isDone: Boolean = completed && queue.isEmpty
+  }
+
+  private class QueueSource[T](registry: Registry, id: String, size: Int)
+      extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueue[T]] {
+
+    private val out = Outlet[T]("QueueSource")
+
+    override val shape: SourceShape[T] = SourceShape(out)
+
+    override def createLogicAndMaterializedValue(
+      attrs: Attributes
+    ): (GraphStageLogic, SourceQueue[T]) = {
+      val queue = new SourceQueue[T](registry, id, new ArrayBlockingQueue[T](size))
+      val logic = new GraphStageLogic(shape) with OutHandler {
+        override def onPull(): Unit = {
+          if (queue.isDone) {
+            complete(out)
+          } else {
+            val value = queue.poll()
+            if (value != null) push(out, value)
+          }
+        }
+
+        setHandler(out, this)
+        queue.push = {
+          val callback = getAsyncCallback[T](v => if (v == null) complete(out) else push(out, v))
+          callback.invoke
+        }
+      }
+      logic -> queue
     }
   }
 

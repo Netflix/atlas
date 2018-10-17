@@ -26,7 +26,6 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import akka.stream.OverflowStrategy
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -88,7 +87,7 @@ class StreamApi @Inject()(
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     val (queue, pub) = StreamOps
-      .queue[JsonSupport](registry, "StreamApi", queueSize, OverflowStrategy.dropHead)
+      .blockingQueue[JsonSupport](registry, "StreamApi", queueSize)
       .toMat(Sink.asPublisher[JsonSupport](true))(Keep.both)
       .run()
 
