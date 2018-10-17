@@ -188,6 +188,9 @@ object StreamOps {
       */
     def complete(): Unit = {
       completed = true
+      // push null to indicate to the graph stage that it is complete, otherwise it can hang
+      // if it has already been pulled
+      if (pushImmediately && queue.isEmpty) push(null.asInstanceOf[T])
     }
 
     /** Check if the queue is done, i.e., it has been completed and the queue is empty. */
@@ -216,7 +219,10 @@ object StreamOps {
         }
 
         setHandler(out, this)
-        queue.push = getAsyncCallback[T](v => push(out, v)).invoke _
+        queue.push = {
+          val callback = getAsyncCallback[T](v => if (v == null) complete(out) else push(out, v))
+          callback.invoke
+        }
       }
       logic -> queue
     }

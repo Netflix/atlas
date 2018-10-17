@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.akka
 
+import java.util.concurrent.CountDownLatch
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.OverflowStrategy
@@ -115,6 +117,19 @@ class StreamOpsSuite extends FunSuite {
     queue.complete()
     Seq(2, 3, 4, 5).foreach(i => queue.offer(i))
     checkOfferedCounts(registry, Map("enqueued" -> 1.0, "droppedQueueClosed" -> 4.0))
+  }
+
+  test("blocking queue, complete with no data") {
+    val registry = new DefaultRegistry()
+    val source = StreamOps.blockingQueue[Int](registry, "test", 1)
+    val latch = new CountDownLatch(1)
+    val (queue, fut) = source
+      .toMat(Sink.foreach(_ => latch.countDown()))(Keep.both)
+      .run()
+    queue.offer(1)
+    latch.await()
+    queue.complete()
+    Await.ready(fut, Duration.Inf)
   }
 
   private def checkCounts(registry: Registry, name: String, expected: Map[String, Double]): Unit = {
