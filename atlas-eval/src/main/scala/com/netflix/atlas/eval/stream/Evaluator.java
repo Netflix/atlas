@@ -16,6 +16,7 @@
 package com.netflix.atlas.eval.stream;
 
 import akka.actor.ActorSystem;
+import akka.http.javadsl.model.Uri;
 import akka.stream.ActorMaterializer;
 import akka.stream.ThrottleMode;
 import akka.stream.javadsl.Flow;
@@ -25,6 +26,7 @@ import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.netflix.atlas.core.util.Strings$;
 import com.netflix.atlas.json.JsonSupport;
 import com.netflix.spectator.api.NoopRegistry;
 import com.netflix.spectator.api.Registry;
@@ -204,11 +206,9 @@ public final class Evaluator extends EvaluatorImpl {
     private final Duration step;
     private final String uri;
 
-    /** The default step size. */
-    private static final Duration DEFAULT_STEP = Duration.ofSeconds(60L);
-
     /**
-     * Create a new instance with the {@link #DEFAULT_STEP}.
+     * Create a new instance with the step size being derived from the URI or falling
+     * back to {@link #DEFAULT_STEP}.
      *
      * @param id
      *     An identifier for this {@code DataSource}. It will be added to
@@ -223,7 +223,7 @@ public final class Evaluator extends EvaluatorImpl {
      */
     @Deprecated
     public DataSource(String id, String uri) {
-      this(id, DEFAULT_STEP, uri);
+      this(id, extractStepFromUri(uri), uri);
     }
 
     /**
@@ -329,6 +329,25 @@ public final class Evaluator extends EvaluatorImpl {
 
     @Override public String toString() {
       return "MessageEnvelope(" + id + "," + message + ")";
+    }
+  }
+
+  /** The default step size. */
+  private static final Duration DEFAULT_STEP = Duration.ofSeconds(60L);
+
+  /**
+   * Try to extract the step size based on the URI query parameter. If this fails for any
+   * reason or the parameter is not present, then use the default of 1 minute.
+   */
+  private static Duration extractStepFromUri(String uriString) {
+    try {
+      Uri uri = Uri.create(uriString, Uri.RELAXED);
+      return uri.query()
+          .get("step")
+          .map(Strings$.MODULE$::parseDuration)
+          .orElse(DEFAULT_STEP);
+    } catch (Exception e) {
+      return DEFAULT_STEP;
     }
   }
 
