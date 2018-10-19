@@ -566,4 +566,31 @@ object Strings {
 
   /** Convert BigInteger value to hex string and zero pad. */
   def zeroPad(v: BigInteger, width: Int): String = zeroPad(v.toString(16), width)
+
+  // Pre-computed set of hex strings for each byte value
+  private val byteHexStrings = {
+    (0 until 256).map(i => zeroPad(Integer.toHexString(i), 2)).toArray
+  }
+
+  /**
+    * Convert integer represented as a byte array to a hex string and zero pad. This can be
+    * used to avoid a conversion to BigInteger if the hex string is the only result needed.
+    * The minimum padding width is 2, smaller values will get ignored.
+    */
+  def zeroPad(v: Array[Byte], width: Int): String = {
+    val n = width - 2 * v.length
+    val builder = new StringBuilder(math.max(width, 2 * v.length))
+    var i = 0
+    while (i < n) {
+      builder.append('0')
+      i += 1
+    }
+    i = 0
+    while (i < v.length) {
+      val idx = java.lang.Byte.toUnsignedInt(v(i))
+      builder.append(byteHexStrings(idx))
+      i += 1
+    }
+    builder.toString()
+  }
 }

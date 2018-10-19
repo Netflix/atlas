@@ -28,25 +28,39 @@ import org.openjdk.jmh.infra.Blackhole
   * `Strings.zeroPad`.
   *
   * ```
-  * > jmh:run -prof jmh.extras.JFR -wi 10 -i 10 -f1 -t1 .*ZeroPad.*
+  * > jmh:run -prof gc -wi 10 -i 10 -f1 -t1 .*ZeroPad.*
   * ```
   *
-  * Initial results:
+  * Throughput
   *
   * ```
-  * [info] Benchmark                Mode  Cnt        Score        Error  Units
-  * [info] ZeroPad.hashFormat      thrpt   10   494319.963 ±  28396.222  ops/s
-  * [info] ZeroPad.hashPad         thrpt   10   794528.844 ±  47922.416  ops/s
-  * [info] ZeroPad.oneFormat       thrpt   10   904410.430 ±  55786.780  ops/s
-  * [info] ZeroPad.onePad          thrpt   10  3391001.622 ± 288190.044  ops/s
+  * Benchmark                         Mode  Cnt        Score        Error   Units
+  * hashArrayPad                     thrpt   10  4721308.898 ± 151781.009   ops/s
+  * hashBigIntPad                    thrpt   10   867143.537 ±  19475.920   ops/s
+  * hashFormat                       thrpt   10   519479.340 ±  36074.274   ops/s
+  * oneArrayPad                      thrpt   10  7666430.180 ± 727283.845   ops/s
+  * oneBigIntPad                     thrpt   10  3212304.227 ± 235176.496   ops/s
+  * oneFormat                        thrpt   10   964090.075 ±  39087.882   ops/s
+  * ```
+  *
+  * Allocations
+  *
+  * ```
+  * hashArrayPad        gc.alloc.rate.norm   10      240.000 ±      0.001    B/op
+  * hashBigIntPad       gc.alloc.rate.norm   10     1824.000 ±      0.001    B/op
+  * hashFormat          gc.alloc.rate.norm   10     3344.000 ±      0.001    B/op
+  * oneArrayPad         gc.alloc.rate.norm   10      240.000 ±      0.001    B/op
+  * oneBigIntPad        gc.alloc.rate.norm   10      664.000 ±      0.001    B/op
+  * oneFormat           gc.alloc.rate.norm   10     2176.000 ±      0.001    B/op
   * ```
   */
 @State(Scope.Thread)
 class ZeroPad {
 
+  private val one = Array(1.toByte)
   private val hash = Hash.sha1("zero-pad")
+  private val hashBytes = Hash.sha1bytes("zero-pad")
 
-  @Threads(1)
   @Benchmark
   def oneFormat(bh: Blackhole): Unit = {
 
@@ -54,15 +68,20 @@ class ZeroPad {
     bh.consume("%040x".format(BigInteger.ONE))
   }
 
-  @Threads(1)
   @Benchmark
-  def onePad(bh: Blackhole): Unit = {
+  def oneBigIntPad(bh: Blackhole): Unit = {
 
     // Needs a lot of padding
     bh.consume(Strings.zeroPad(BigInteger.ONE, 40))
   }
 
-  @Threads(1)
+  @Benchmark
+  def oneArrayPad(bh: Blackhole): Unit = {
+
+    // Needs a lot of padding
+    bh.consume(Strings.zeroPad(one, 40))
+  }
+
   @Benchmark
   def hashFormat(bh: Blackhole): Unit = {
 
@@ -70,11 +89,17 @@ class ZeroPad {
     bh.consume("%040x".format(hash))
   }
 
-  @Threads(1)
   @Benchmark
-  def hashPad(bh: Blackhole): Unit = {
+  def hashBigIntPad(bh: Blackhole): Unit = {
 
     // Common case, hash value that will likely not need much if any padding
     bh.consume(Strings.zeroPad(hash, 40))
+  }
+
+  @Benchmark
+  def hashArrayPad(bh: Blackhole): Unit = {
+
+    // Common case, hash value that will likely not need much if any padding
+    bh.consume(Strings.zeroPad(hashBytes, 40))
   }
 }

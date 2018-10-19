@@ -46,6 +46,6 @@ object ExpressionMetadata {
   }
 
   def computeId(e: String, f: Long): String = {
-    Strings.zeroPad(Hash.sha1(s"$f~$e"), 40)
+    Strings.zeroPad(Hash.sha1bytes(s"$f~$e"), 40)
   }
 }

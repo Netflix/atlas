@@ -26,4 +26,10 @@ class HashSuite extends FunSuite {
   test("sha1") {
     assert(Hash.sha1("42").toString(10) == "838146913046966959093018715372872234545534447190")
   }
+
+  test("sha1bytes zeroPad") {
+    val expected = Strings.zeroPad(Hash.sha1("42"), 40)
+    val actual = Strings.zeroPad(Hash.sha1bytes("42"), 40)
+    assert(actual === expected)
+  }
 }

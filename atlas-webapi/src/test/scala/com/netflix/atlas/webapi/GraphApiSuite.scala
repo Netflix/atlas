@@ -85,7 +85,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   private def imageFileName(uri: String): String = {
-    s"${Strings.zeroPad(Hash.sha1(uri), 40).substring(0, 8)}.png"
+    s"${Strings.zeroPad(Hash.sha1bytes(uri), 40).substring(0, 8)}.png"
   }
 
 }

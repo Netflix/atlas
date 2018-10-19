@@ -45,7 +45,7 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
 
   def imageTest(name: String)(uri: => String): Unit = {
     test(name) {
-      val fname = Strings.zeroPad(Hash.sha1(name), 40).substring(0, 8) + ".png"
+      val fname = Strings.zeroPad(Hash.sha1bytes(name), 40).substring(0, 8) + ".png"
       val result = grapher.evalAndRender(Uri(uri), db)
       val image = PngImage(result.data)
       graphAssertions.assertEquals(image, fname, bless)
@@ -363,7 +363,7 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
 
   def renderTest(name: String)(uri: => String): Unit = {
     test(name) {
-      val fname = Strings.zeroPad(Hash.sha1(name), 40).substring(0, 8) + ".png"
+      val fname = Strings.zeroPad(Hash.sha1bytes(name), 40).substring(0, 8) + ".png"
       val config = grapher.toGraphConfig(Uri(uri))
       val styleData = config.exprs.map { styleExpr =>
         val dataResults = styleExpr.expr.dataExprs.distinct.map { dataExpr =>
