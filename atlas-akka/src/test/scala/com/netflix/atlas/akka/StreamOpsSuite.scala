@@ -94,17 +94,27 @@ class StreamOpsSuite extends FunSuite {
   test("blocking queue, droppedQueueFull") {
     val registry = new DefaultRegistry()
     val source = StreamOps.blockingQueue[Future[Int]](registry, "test", 1)
+    val streamStarted = new CountDownLatch(1)
     val queue = source
       .flatMapConcat(Source.fromFuture)
+      .map { value =>
+        streamStarted.countDown()
+        value
+      }
       .toMat(Sink.ignore)(Keep.left)
       .run()
+
+    // wait for stream to start and first item to pass through
+    queue.offer(Promise.successful(0).future)
+    streamStarted.await()
+
     val promise = Promise[Int]()
     queue.offer(promise.future) // will pass through without going to the queue
     queue.offer(promise.future) // fills the 1 slot in the queue
     Seq(2, 3, 4, 5).foreach(i => queue.offer(Future(i)))
     promise.complete(Success(1))
     queue.complete()
-    checkOfferedCounts(registry, Map("enqueued" -> 2.0, "droppedQueueFull" -> 4.0))
+    checkOfferedCounts(registry, Map("enqueued" -> 3.0, "droppedQueueFull" -> 4.0))
   }
 
   test("blocking queue, droppedQueueClosed") {
