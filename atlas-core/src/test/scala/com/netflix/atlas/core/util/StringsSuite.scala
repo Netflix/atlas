@@ -494,6 +494,38 @@ class StringsSuite extends FunSuite {
     assert(zeroPad(b, 8) === "0000002a")
   }
 
+  test("zeroPad byte array empty") {
+    val b = Array.empty[Byte]
+    assert(zeroPad(b, 1) === "0")
+    assert(zeroPad(b, 2) === "00")
+    assert(zeroPad(b, 3) === "000")
+    assert(zeroPad(b, 8) === "00000000")
+  }
+
+  test("zeroPad byte array unsigned conversion") {
+    val b = Array[Byte](-1)
+    assert(zeroPad(b, 1) === "ff")
+    assert(zeroPad(b, 2) === "ff")
+    assert(zeroPad(b, 3) === "0ff")
+    assert(zeroPad(b, 8) === "000000ff")
+  }
+
+  test("zeroPad byte array minimum padding of 2") {
+    val b = Array[Byte](1)
+    assert(zeroPad(b, 1) === "01")
+    assert(zeroPad(b, 2) === "01")
+    assert(zeroPad(b, 3) === "001")
+    assert(zeroPad(b, 8) === "00000001")
+  }
+
+  test("zeroPad byte array all values") {
+    (java.lang.Byte.MIN_VALUE until java.lang.Byte.MAX_VALUE).foreach { i =>
+      val s = zeroPad(Array(i.toByte), 1)
+      val v = Integer.parseInt(s, 16).byteValue()
+      assert(v === i)
+    }
+  }
+
   test("range: both absolute") {
     val (s, e) = timeRange("2018-07-24", "2018-07-24T00:05")
     assert(s === parseDate("2018-07-24").toInstant)
