@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.eval.model
 
+import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.json.JsonSupport
 
 /**
@@ -34,4 +35,18 @@ import com.netflix.atlas.json.JsonSupport
 case class LwcDatapoint(timestamp: Long, id: String, tags: Map[String, String], value: Double)
     extends JsonSupport {
   val `type`: String = "datapoint"
+
+  override def encode(gen: JsonGenerator): Unit = {
+    gen.writeStartObject()
+    gen.writeStringField("type", `type`)
+    gen.writeNumberField("timestamp", timestamp)
+    gen.writeStringField("id", id)
+    gen.writeObjectFieldStart("tags")
+    tags.foreach { t =>
+      gen.writeStringField(t._1, t._2)
+    }
+    gen.writeEndObject()
+    gen.writeNumberField("value", value)
+    gen.writeEndObject()
+  }
 }

@@ -46,6 +46,12 @@ class LwcMessagesSuite extends FunSuite {
     assert(actual === expected)
   }
 
+  test("datapoint, custom encode") {
+    val expected = LwcDatapoint(step, "a", Map("foo" -> "bar"), 42.0)
+    val actual = LwcMessages.parse(expected.toJson)
+    assert(actual === expected)
+  }
+
   test("diagnostic message") {
     val expected = DiagnosticMessage.error("something bad happened")
     val actual = LwcMessages.parse(Json.encode(expected))
