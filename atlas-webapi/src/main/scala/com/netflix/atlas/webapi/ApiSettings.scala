@@ -75,6 +75,8 @@ class ApiSettings(root: => Config) {
     }
   }
 
+  def maxPermittedTags: Int = config.getInt("publish.max-permitted-tags")
+
   def maxDatapointAge: Long = config.getDuration("publish.max-age", TimeUnit.MILLISECONDS)
 
   def validationRules: List[Rule] = Rule.load(config.getConfigList("publish.rules"))
