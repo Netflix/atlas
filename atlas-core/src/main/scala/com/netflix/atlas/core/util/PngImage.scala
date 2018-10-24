@@ -35,6 +35,9 @@ import com.sun.imageio.plugins.png.PNGMetadata
 
 object PngImage {
 
+  // Disable using on-disk cache for images. Avoids temp files on shared services.
+  ImageIO.setUseCache(false)
+
   def apply(bytes: Array[Byte]): PngImage = {
     val input = new ByteArrayInputStream(bytes)
     apply(input)
