@@ -111,7 +111,7 @@ object PublishApi {
 
   type TagMap = Map[String, String]
 
-  private final val maxPermittedTags = 30
+  private final val maxPermittedTags = ApiSettings.maxPermittedTags
 
   private def decodeTags(parser: JsonParser, commonTags: TagMap, intern: Boolean): TagMap = {
     val strInterner = Interner.forStrings
