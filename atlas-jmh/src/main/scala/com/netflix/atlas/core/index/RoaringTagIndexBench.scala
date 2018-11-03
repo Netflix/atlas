@@ -36,24 +36,15 @@ import org.openjdk.jmh.infra.Blackhole
   * > jmh:run -wi 10 -i 10 -f1 -t1 .*RoaringTagIndexBench.*
   * ```
   *
-  * Initial results:
+  * Results:
   *
   * ```
-  * Before
-  * [info] Benchmark                                Mode  Cnt     Score     Error  Units
-  * [info] RoaringTagIndexBench.create             thrpt   10    13.210 ±   1.041  ops/s
-  * [info] RoaringTagIndexBench.findKeysAll        thrpt   10  4646.344 ± 176.685  ops/s
-  * [info] RoaringTagIndexBench.findKeysQuery      thrpt   10   450.728 ±  39.296  ops/s
-  * [info] RoaringTagIndexBench.findValuesAllMany  thrpt   10   739.919 ±  41.530  ops/s
-  * [info] RoaringTagIndexBench.findValuesAllOne   thrpt   10  2194.050 ± 248.351  ops/s
-  *
-  * After
-  * [info] Benchmark                                Mode  Cnt        Score        Error  Units
-  * [info] RoaringTagIndexBench.create             thrpt   10       20.270 ±      0.798  ops/s
-  * [info] RoaringTagIndexBench.findKeysAll        thrpt   10  6382544.499 ± 353321.426  ops/s
-  * [info] RoaringTagIndexBench.findKeysQuery      thrpt   10     1118.262 ±    370.960  ops/s
-  * [info] RoaringTagIndexBench.findValuesAllMany  thrpt   10     3849.128 ±    416.156  ops/s
-  * [info] RoaringTagIndexBench.findValuesAllOne   thrpt   10     4485.419 ±    424.741  ops/s
+  * Benchmark                                Mode  Cnt         Score        Error  Units
+  * RoaringTagIndexBench.create             thrpt   10        22.204 ±      0.907  ops/s
+  * RoaringTagIndexBench.findKeysAll        thrpt   10  14053463.630 ± 656709.056  ops/s
+  * RoaringTagIndexBench.findKeysQuery      thrpt   10      1323.195 ±     81.122  ops/s
+  * RoaringTagIndexBench.findValuesAllMany  thrpt   10      4172.656 ±    305.764  ops/s
+  * RoaringTagIndexBench.findValuesAllOne   thrpt   10    357671.851 ±  17709.502  ops/s
   * ```
   */
 @State(Scope.Thread)
