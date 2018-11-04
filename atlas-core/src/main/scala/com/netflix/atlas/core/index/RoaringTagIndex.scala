@@ -411,22 +411,50 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   def findValues(query: TagQuery): List[String] = {
     require(query.key.isDefined)
     val k = query.key.get
+    val kp = keyMap.get(k, -1)
+    if (kp < 0) return Nil
+
     val has = Query.HasKey(k)
     val q = query.query.fold[Query](has)(q => q.and(has))
     val itemSet = findImpl(q, 0)
     val offset = findOffset(values, query.offset)
 
-    val kp = keyMap.get(k, -1)
     val results = new util.BitSet(values.length)
-    val iter = itemSet.getIntIterator
+
+    // If there are many items with the same value for a key, then we can prune the item set
+    // by doing an AND NOT operation with set for that key and value. This will perform worse
+    // if there aren't a lot of items with the same value. We estimate the chances by comparing
+    // the cardinality of the key with the number of items. For less than 5% it is assumed that
+    // pruning is the better option.
+    val keyCardinality = itemIndex.get(kp).size
+    val attemptPruning = (100.0 * keyCardinality / items.length) < 5.0
+
+    // Find all matching values by looking up the key for each matching item
+    var iter = itemSet.getIntIterator
     while (iter.hasNext) {
-      val tags = itemTags(iter.next())
+      val i = iter.next()
+      val tags = itemTags(i)
       val v = tags.get(kp, -1)
-      if (v >= offset)
+      if (v >= offset && !results.get(v)) {
         results.set(v)
+      } else if (v >= 0 && attemptPruning) {
+        // If the value is repeated, then lookup the set of all items with the given value
+        // for the key and removing those from the item set
+        itemSet.andNot(equal(kp, v))
+        iter = itemSet.getIntIterator
+      }
     }
 
     createResultList(values, results, query.limit)
+  }
+
+  private def equal(k: Int, v: Int): RoaringBitmap = {
+    val vidx = itemIndex.get(k)
+    if (vidx == null) new RoaringBitmap()
+    else {
+      val matchSet = vidx.get(v)
+      if (matchSet == null) new RoaringBitmap() else matchSet
+    }
   }
 
   def findItems(query: TagQuery): List[T] = {
