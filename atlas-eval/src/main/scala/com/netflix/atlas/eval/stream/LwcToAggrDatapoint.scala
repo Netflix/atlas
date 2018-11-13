@@ -31,6 +31,7 @@ import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
+import com.typesafe.scalalogging.Logger
 
 /**
   * Process the SSE output from an LWC service and convert it into a stream of
@@ -38,6 +39,10 @@ import com.netflix.atlas.json.Json
   */
 private[stream] class LwcToAggrDatapoint(context: StreamContext)
     extends GraphStage[FlowShape[ByteString, AggrDatapoint]] {
+
+  private val logger = Logger(getClass)
+
+  private val badMessages = context.registry.counter("atlas.eval.badMessages")
 
   private val in = Inlet[ByteString]("LwcToAggrDatapoint.in")
   private val out = Outlet[AggrDatapoint]("LwcToAggrDatapoint.out")
@@ -58,13 +63,39 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       private var nextSource: Int = 0
 
       override def onPush(): Unit = {
-        grab(in) match {
-          case msg if msg.startsWith(subscribePrefix)  => updateState(msg)
-          case msg if msg.startsWith(metricDataPrefix) => pushDatapoint(msg)
-          case msg if msg.startsWith(diagnosticPrefix) => pushDiagnosticMessage(msg)
-          case msg if msg.startsWith(heartbeatPrefix)  => pushHeartbeat(msg)
-          case msg                                     => ignoreMessage(msg)
+        val message = grab(in)
+        try {
+          message match {
+            case msg if msg.startsWith(subscribePrefix)  => updateState(msg)
+            case msg if msg.startsWith(metricDataPrefix) => pushDatapoint(msg)
+            case msg if msg.startsWith(diagnosticPrefix) => pushDiagnosticMessage(msg)
+            case msg if msg.startsWith(heartbeatPrefix)  => pushHeartbeat(msg)
+            case msg                                     => ignoreMessage(msg)
+          }
+        } catch {
+          case e: Exception =>
+            val messageString = toString(message)
+            logger.warn(s"failed to process message [$messageString]", e)
+            badMessages.increment()
         }
+      }
+
+      private def toString(bytes: ByteString): String = {
+        val builder = new StringBuilder()
+        bytes.foreach { b =>
+          val c = b & 0xFF
+          if (isPrintable(c))
+            builder.append(c.asInstanceOf[Char])
+          else if (c <= 0xF)
+            builder.append("\\x0").append(Integer.toHexString(c))
+          else
+            builder.append("\\x").append(Integer.toHexString(c))
+        }
+        builder.toString()
+      }
+
+      private def isPrintable(c: Int): Boolean = {
+        c >= 32 && c < 127
       }
 
       private def copy(msg: ByteString, length: Int): Int = {
