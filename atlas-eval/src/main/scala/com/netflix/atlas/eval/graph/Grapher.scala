@@ -19,6 +19,7 @@ import java.awt.Color
 import java.io.ByteArrayOutputStream
 import java.time.Duration
 
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri
 import com.netflix.atlas.chart.Colors
 import com.netflix.atlas.chart.model.GraphDef
@@ -47,6 +48,20 @@ import scala.util.Try
 case class Grapher(settings: DefaultSettings) {
 
   import Grapher._
+
+  /**
+    * Create a graph config from a request object. This will look at the URI and try to
+    * extract some context from the headers.
+    */
+  def toGraphConfig(request: HttpRequest): GraphConfig = {
+    val config = toGraphConfig(request.uri)
+    val agent = request.headers
+      .find(_.is("user-agent"))
+      .map(_.value())
+      .getOrElse("unknown")
+    val isBrowser = settings.browserAgentPattern.matcher(agent).find()
+    config.copy(isBrowser = isBrowser)
+  }
 
   /**
     * Create a graph config from an Atlas URI.

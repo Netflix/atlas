@@ -47,7 +47,7 @@ class GraphRequestActor(grapher: Grapher, registry: Registry) extends Actor with
     case v =>
       try innerReceive(v)
       catch {
-        case t: Exception if request != null && request.shouldOutputImage =>
+        case t: Exception if request != null && request.isBrowser && request.shouldOutputImage =>
           // When viewing a page in a browser an error response is not rendered. To make it more
           // clear to the user we return a 200 with the error information encoded into an image.
           sendErrorImage(t, request.flags.width, request.flags.height)

@@ -18,6 +18,7 @@ package com.netflix.atlas.webapi
 import akka.actor.Props
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.atlas.akka.RequestHandler
@@ -73,7 +74,8 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   // the report: $ open ./atlas-webapi/target/GraphApiSuite/report.html
   all.filter(_.startsWith("/api/v1/graph")).foreach { uri =>
     test(uri) {
-      Get(uri) ~> routes ~> check {
+      val agent = `User-Agent`("Mozilla/5.0")
+      Get(uri).addHeader(agent) ~> routes ~> check {
         // Note: will fail prior to 8u20:
         // https://github.com/Netflix/atlas/issues/9
         assert(response.status === StatusCodes.OK)

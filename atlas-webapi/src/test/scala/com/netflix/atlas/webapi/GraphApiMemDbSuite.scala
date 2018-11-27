@@ -17,10 +17,13 @@ package com.netflix.atlas.webapi
 
 import akka.actor.Props
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.db.MemoryDatabase
+import com.netflix.atlas.json.Json
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
@@ -49,9 +52,20 @@ class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
 
   private val routes = RequestHandler.standardOptions((new GraphApi(config, system)).routes)
 
-  test("sendError image") {
-    Get("/api/v1/graph?q=:foo") ~> routes ~> check {
+  test("sendError image if browser") {
+    val agent = `User-Agent`("Mozilla/5.0 (Android; Mobile; rv:13.0) Gecko/13.0 Firefox/13.0")
+    Get("/api/v1/graph?q=:foo").addHeader(agent) ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
+    }
+  }
+
+  test("sendError json if not browser") {
+    val agent = `User-Agent`("java")
+    Get("/api/v1/graph?q=:foo").addHeader(agent) ~> routes ~> check {
+      assert(response.status === StatusCodes.BadRequest)
+      val msg = Json.decode[DiagnosticMessage](responseAs[String])
+      assert(msg.typeName === "error")
+      assert(msg.message === "IllegalStateException: unknown word ':foo'")
     }
   }
 
