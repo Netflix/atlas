@@ -16,6 +16,7 @@
 package com.netflix.atlas.eval.graph
 
 import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 
 import akka.http.scaladsl.model.ContentType
 import com.netflix.atlas.chart.GraphEngine
@@ -65,6 +66,11 @@ case class DefaultSettings(root: Config, config: Config) {
 
   /** Should the uri and other graph metadata be encoded as text fields in the image? */
   val metadataEnabled: Boolean = config.getBoolean("png-metadata-enabled")
+
+  /** Pattern to use for detecting if a user-agent is a web-browser. */
+  val browserAgentPattern: Pattern = {
+    Pattern.compile(config.getString("browser-agent-pattern"), Pattern.CASE_INSENSITIVE)
+  }
 
   /** Maximum number of datapoints allowed for a line in a chart. */
   val maxDatapoints: Int = config.getInt("max-datapoints")
