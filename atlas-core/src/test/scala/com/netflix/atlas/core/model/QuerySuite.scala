@@ -15,330 +15,349 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.util.SmallHashMap
 import org.scalatest.FunSuite
 
 class QuerySuite extends FunSuite {
 
   import com.netflix.atlas.core.model.Query._
 
+  def matches(q: Query, tags: Map[String, String]): Boolean = {
+    val result = q.matches(tags)
+    assert(result === q.matches(SmallHashMap(tags)))
+    result
+  }
+
+  def matchesAny(q: Query, tags: Map[String, List[String]]): Boolean = {
+    val result = q.matchesAny(tags)
+    assert(result === q.matchesAny(SmallHashMap(tags)))
+    result
+  }
+
+  def couldMatch(q: Query, tags: Map[String, String]): Boolean = {
+    val result = q.couldMatch(tags)
+    assert(result === q.couldMatch(SmallHashMap(tags)))
+    result
+  }
+
   test("matches true") {
     val q = True
-    assert(q.matches(Map("foo"  -> "bar")))
-    assert(q.matches(Map("foo"  -> "bar2")))
-    assert(q.matches(Map("foo2" -> "bar")))
+    assert(matches(q, Map("foo"  -> "bar")))
+    assert(matches(q, Map("foo"  -> "bar2")))
+    assert(matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches false") {
     val q = False
-    assert(!q.matches(Map("foo"  -> "bar")))
-    assert(!q.matches(Map("foo"  -> "bar2")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(!matches(q, Map("foo"  -> "bar")))
+    assert(!matches(q, Map("foo"  -> "bar2")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches eq") {
     val q = Equal("foo", "bar")
-    assert(q.matches(Map("foo" -> "bar")))
-    assert(!q.matches(Map("foo"  -> "bar2")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(!matches(q, Map("foo"  -> "bar2")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches gt") {
     val q = GreaterThan("foo", "bar")
-    assert(!q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("foo" -> "bar2")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(!matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar2")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches ge") {
     val q = GreaterThanEqual("foo", "bar")
-    assert(q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("foo" -> "bar2")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar2")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches lt") {
     val q = LessThan("foo", "bar")
-    assert(!q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("foo" -> "ba")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(!matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo" -> "ba")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches le") {
     val q = LessThanEqual("foo", "bar")
-    assert(q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("foo" -> "ba")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo" -> "ba")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches re") {
     val q = Regex("foo", "^b.*")
-    assert(q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("foo" -> "bar2")))
-    assert(!q.matches(Map("foo"  -> "fubar2")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar2")))
+    assert(!matches(q, Map("foo"  -> "fubar2")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches re implicit start anchor") {
     val q = Regex("foo", "b.*")
-    assert(q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("foo" -> "bar2")))
-    assert(!q.matches(Map("foo"  -> "fubar2")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar2")))
+    assert(!matches(q, Map("foo"  -> "fubar2")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches reic") {
     val q = RegexIgnoreCase("foo", "^B.*")
-    assert(q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("foo" -> "Bar2")))
-    assert(!q.matches(Map("foo"  -> "fubar2")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo" -> "Bar2")))
+    assert(!matches(q, Map("foo"  -> "fubar2")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches reic implicit start anchor") {
     val q = RegexIgnoreCase("foo", "B.*")
-    assert(q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("foo" -> "Bar2")))
-    assert(!q.matches(Map("foo"  -> "fubar2")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo" -> "Bar2")))
+    assert(!matches(q, Map("foo"  -> "fubar2")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches in") {
     val q = In("foo", List("bar", "baz"))
-    assert(q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("foo" -> "baz")))
-    assert(!q.matches(Map("foo"  -> "bbb")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo" -> "baz")))
+    assert(!matches(q, Map("foo"  -> "bbb")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches has") {
     val q = HasKey("foo")
-    assert(q.matches(Map("foo" -> "bar")))
-    assert(!q.matches(Map("foo2" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches not") {
     val q = Not(HasKey("foo"))
-    assert(!q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("foo2" -> "bar")))
+    assert(!matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches and") {
     val q = And(HasKey("foo"), HasKey("bar"))
-    assert(q.matches(Map("foo" -> "bar", "bar" -> "foo")))
-    assert(!q.matches(Map("foo" -> "bar")))
-    assert(!q.matches(Map("bar" -> "foo")))
+    assert(matches(q, Map("foo" -> "bar", "bar" -> "foo")))
+    assert(!matches(q, Map("foo" -> "bar")))
+    assert(!matches(q, Map("bar" -> "foo")))
   }
 
   test("matches or") {
     val q = Or(HasKey("foo"), HasKey("bar"))
-    assert(q.matches(Map("foo" -> "bar", "bar" -> "foo")))
-    assert(q.matches(Map("foo" -> "bar")))
-    assert(q.matches(Map("bar" -> "foo")))
-    assert(!q.matches(Map("foo2" -> "bar", "bar2" -> "foo")))
+    assert(matches(q, Map("foo" -> "bar", "bar" -> "foo")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("bar" -> "foo")))
+    assert(!matches(q, Map("foo2" -> "bar", "bar2" -> "foo")))
   }
 
   test("matchesAny true") {
     val q = True
-    assert(q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny false") {
     val q = False
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny eq with key match") {
     val q = Equal("foo", "bar")
-    assert(q.matchesAny(Map("foo" -> List("bar"), "bar"        -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
   }
 
   test("matchesAny eq with key no match") {
     val q = Equal("foo", "baz")
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar"        -> List("foo"))))
-    assert(!q.matchesAny(Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny eq without key no match") {
     val q = Equal("foo2", "bar")
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny gt with key") {
     val q = GreaterThan("foo", "bar")
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
   }
 
   test("matchesAny gt without key") {
     val q = GreaterThan("foo2", "bar")
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny ge with key") {
     val q = GreaterThanEqual("foo", "bar")
-    assert(q.matchesAny(Map("foo" -> List("bar"), "bar"        -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
   }
 
   test("matchesAny ge without key") {
     val q = GreaterThanEqual("foo2", "bar")
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny lt with key") {
     val q = LessThan("foo", "bar")
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("bah", "bar"), "bar" -> List("foo"))))
-    assert(!q.matchesAny(Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bah", "bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
   }
 
   test("matchesAny lt without key") {
     val q = LessThan("foo2", "bar")
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny le with key") {
     val q = LessThanEqual("foo", "bar")
-    assert(q.matchesAny(Map("foo" -> List("bar"), "bar"        -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("bah", "bar"), "bar" -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bah", "bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
   }
 
   test("matchesAny le without key") {
     val q = LessThanEqual("foo2", "bar")
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny re with key match") {
     val q = GreaterThan("foo", "b")
-    assert(q.matchesAny(Map("foo" -> List("bar"), "bar"        -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
-    assert(q.matchesAny(Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
   }
 
   test("matchesAny re with key no match") {
     val q = Regex("foo", "z")
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar"        -> List("foo"))))
-    assert(!q.matchesAny(Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny re without key no match") {
     val q = Regex("foo2", "bar")
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny has with key match") {
     val q = HasKey("foo")
-    assert(q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny has with key no match") {
     val q = HasKey("foo")
-    assert(q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny !true") {
     val q = Not(True)
-    assert(!q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("matchesAny !false") {
     val q = Not(False)
-    assert(q.matchesAny(Map("foo" -> List("bar"), "bar" -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
   }
 
   test("couldMatch true") {
     val q = True
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch false") {
     val q = False
-    assert(!q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(!couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch eq with key match") {
     val q = Equal("foo", "bar")
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch eq with key no match") {
     val q = Equal("foo", "baz")
-    assert(!q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(!couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch eq without key") {
     val q = Equal("foo2", "bar")
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch gt with key match") {
     val q = GreaterThan("foo", "bar")
-    assert(q.couldMatch(Map("foo" -> "baz", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "baz", "bar" -> "foo")))
   }
 
   test("couldMatch gt with key no match") {
     val q = GreaterThan("foo", "bar")
-    assert(!q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(!couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch gt without key") {
     val q = GreaterThan("foo2", "bar")
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch lt with key match") {
     val q = LessThan("foo", "bar")
-    assert(q.couldMatch(Map("foo" -> "bah", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bah", "bar" -> "foo")))
   }
 
   test("couldMatch lt with key no match") {
     val q = LessThan("foo", "bar")
-    assert(!q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(!couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch lt without key") {
     val q = LessThan("foo2", "bar")
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch re with key match") {
     val q = Regex("foo", "b")
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch re with key no match") {
     val q = Regex("foo", "z")
-    assert(!q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(!couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch re without key") {
     val q = Regex("foo2", "bar")
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch has with key match") {
     val q = HasKey("foo")
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch has with key no match") {
     val q = HasKey("foo")
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch !true") {
     val q = Not(True)
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch !false") {
     val q = Not(False)
-    assert(q.couldMatch(Map("foo" -> "bar", "bar" -> "foo")))
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   val a = HasKey("A")

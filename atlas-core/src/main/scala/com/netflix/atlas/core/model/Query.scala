@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.StringMatcher
 
 sealed trait Query extends Expr {
@@ -260,11 +261,35 @@ object Query {
 
     def check(s: String): Boolean
 
-    def matches(tags: Map[String, String]): Boolean = tags.get(k).exists(check)
+    def matches(tags: Map[String, String]): Boolean = {
+      tags match {
+        case ts: SmallHashMap[String, String] =>
+          val v = ts.getOrNull(k)
+          v != null && check(v)
+        case _ =>
+          tags.get(k).exists(check)
+      }
+    }
 
-    def matchesAny(tags: Map[String, List[String]]): Boolean = tags.get(k).exists(_.exists(check))
+    def matchesAny(tags: Map[String, List[String]]): Boolean = {
+      tags match {
+        case ts: SmallHashMap[String, List[String]] =>
+          val vs = ts.getOrNull(k)
+          vs != null && vs.exists(check)
+        case _ =>
+          tags.get(k).exists(_.exists(check))
+      }
+    }
 
-    def couldMatch(tags: Map[String, String]): Boolean = tags.get(k).fold(true)(check)
+    def couldMatch(tags: Map[String, String]): Boolean = {
+      tags match {
+        case ts: SmallHashMap[String, String] =>
+          val v = ts.getOrNull(k)
+          v == null || check(v)
+        case _ =>
+          tags.get(k).fold(true)(check)
+      }
+    }
   }
 
   case class HasKey(k: String) extends KeyQuery {
