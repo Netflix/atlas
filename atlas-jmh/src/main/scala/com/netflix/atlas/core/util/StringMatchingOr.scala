@@ -18,6 +18,7 @@ package com.netflix.atlas.core.util
 import java.util.UUID
 import java.util.regex.Pattern
 
+import com.netflix.spectator.impl.PatternMatcher
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
@@ -47,16 +48,16 @@ class StringMatchingOr {
   private val query8 = "adec123|abc|2|23|12345|abc34521|fedbca*.|98a2def.*"
   private val query32 = s"$query8|$query8|$query8|$query8"
 
-  private val regex8 = StringMatcher.Regex(Pattern.compile(query8))
-  private val orMatcher8 = StringMatcher.compile(query8)
+  private val regex8 = Pattern.compile(query8)
+  private val orMatcher8 = PatternMatcher.compile(query8)
 
-  private val regex32 = StringMatcher.Regex(Pattern.compile(query32))
-  private val orMatcher32 = StringMatcher.compile(query32)
+  private val regex32 = Pattern.compile(query32)
+  private val orMatcher32 = PatternMatcher.compile(query32)
 
   @Threads(1)
   @Benchmark
   def testRegex08(bh: Blackhole): Unit = {
-    bh.consume(ids.filter(id => regex8.matches(id)))
+    bh.consume(ids.filter(id => regex8.matcher(id).find()))
   }
 
   @Threads(1)
@@ -68,7 +69,7 @@ class StringMatchingOr {
   @Threads(1)
   @Benchmark
   def testRegex32(bh: Blackhole): Unit = {
-    bh.consume(ids.filter(id => regex32.matches(id)))
+    bh.consume(ids.filter(id => regex32.matcher(id).find()))
   }
 
   @Threads(1)

@@ -18,6 +18,7 @@ package com.netflix.atlas.core.util
 import java.util.UUID
 import java.util.regex.Pattern
 
+import com.netflix.spectator.impl.PatternMatcher
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
@@ -42,13 +43,13 @@ class StringMatchingPrefix {
 
   private val patternWithDot = "^disk.percentused."
 
-  private val regex = StringMatcher.Regex(Pattern.compile(patternWithDot))
-  private val matcher = StringMatcher.compile(patternWithDot)
+  private val regex = Pattern.compile(patternWithDot)
+  private val matcher = PatternMatcher.compile(patternWithDot)
 
   @Threads(1)
   @Benchmark
   def regex(bh: Blackhole): Unit = {
-    bh.consume(ids.filter(id => regex.matches(id)))
+    bh.consume(ids.filter(id => regex.matcher(id).find()))
   }
 
   @Threads(1)
