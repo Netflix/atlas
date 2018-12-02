@@ -16,7 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.SmallHashMap
-import com.netflix.atlas.core.util.StringMatcher
+import com.netflix.spectator.impl.PatternMatcher
 
 sealed trait Query extends Expr {
 
@@ -352,11 +352,11 @@ object Query {
 
   sealed trait PatternQuery extends KeyValueQuery {
 
-    def pattern: StringMatcher
+    def pattern: PatternMatcher
   }
 
   case class Regex(k: String, v: String) extends PatternQuery {
-    val pattern = StringMatcher.compile(s"^$v")
+    val pattern = PatternMatcher.compile(s"^$v")
 
     def check(s: String): Boolean = pattern.matches(s)
 
@@ -366,7 +366,7 @@ object Query {
   }
 
   case class RegexIgnoreCase(k: String, v: String) extends PatternQuery {
-    val pattern = StringMatcher.compile(s"^$v", false)
+    val pattern = PatternMatcher.compile(s"^$v").ignoreCase()
 
     def check(s: String): Boolean = pattern.matches(s)
 

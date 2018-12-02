@@ -309,8 +309,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     if (vidx == null) new RoaringBitmap()
     else {
       val set = new RoaringBitmap()
-      if (q.pattern.prefix.isDefined) {
-        val prefix = q.pattern.prefix.get
+      val prefix = q.pattern.prefix()
+      if (prefix != null) {
         val vp = findOffset(values, prefix, 0)
         val t = tag(kp, vp)
         var i = tagOffset(t)

@@ -17,6 +17,7 @@ package com.netflix.atlas.core.util
 
 import java.util.regex.Pattern
 
+import com.netflix.spectator.impl.PatternMatcher
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
@@ -40,26 +41,27 @@ class StringMatching {
 
   private val flags = Pattern.CASE_INSENSITIVE
 
-  private val startsWithMatcher = StringMatcher.StartsWith(prefix)
-  private val ssIndexOfMatcher = StringMatcher.IndexOf(substr)
-  private val icIndexOfMatcher = StringMatcher.IndexOfIgnoreCase(substr)
-  private val regexMatcher = StringMatcher.Regex(Pattern.compile(s"^$prefix"))
-  private val icRegexMatcher = StringMatcher.Regex(Pattern.compile(s"^$prefix", flags))
-  private val ssRegexMatcher = StringMatcher.Regex(Pattern.compile(s"^.*$substr"))
-  private val ssRegexMatcher2 = StringMatcher.Regex(Pattern.compile(substr))
-  private val ssICRegexMatcher = StringMatcher.Regex(Pattern.compile(s"^.*$substr", flags))
-  private val ssICRegexMatcher2 = StringMatcher.Regex(Pattern.compile(substr, flags))
+  private val startsWithMatcher = PatternMatcher.compile(s"^$prefix")
+  private val ssIndexOfMatcher = PatternMatcher.compile(substr)
+  private val icIndexOfMatcher = PatternMatcher.compile(substr).ignoreCase()
+  private val regexMatcher = Pattern.compile(s"^$prefix")
+  private val icRegexMatcher = Pattern.compile(s"^$prefix", flags)
+  private val ssRegexMatcher = Pattern.compile(s"^.*$substr")
+  private val ssRegexMatcher2 = Pattern.compile(substr)
+  private val ssICRegexMatcher = Pattern.compile(s"^.*$substr", flags)
+  private val ssICRegexMatcher2 = Pattern.compile(substr, flags)
 
   @Threads(1)
   @Benchmark
   def testPrefixRegex(bh: Blackhole): Unit = {
-    bh.consume(regexMatcher.matches(value))
+    bh.consume(regexMatcher.matcher(value).find())
   }
 
+  // TODO
   @Threads(1)
   @Benchmark
   def testPrefixRegexNewMatcher(bh: Blackhole): Unit = {
-    bh.consume(regexMatcher.pattern.matcher(value).find)
+    bh.consume(regexMatcher.matcher(value).find)
   }
 
   @Threads(1)
@@ -71,12 +73,14 @@ class StringMatching {
   @Threads(1)
   @Benchmark
   def testPrefixICRegex(bh: Blackhole): Unit = {
-    bh.consume(icRegexMatcher.matches(value))
+    bh.consume(icRegexMatcher.matcher(value).find())
   }
 
   // regionMatches is slower than regex when ignoring case. This seems to be mostly due to
   // the regex doing simple ascii conversion for case (not using UNICODE_CASE flag) where the
   // String class is trying to do a unicode aware case conversion.
+  //
+  // On jdk11 the note above is no longer true if the encoding for the String is latin1.
   @Threads(1)
   @Benchmark
   def testPrefixICStartsWith(bh: Blackhole): Unit = {
@@ -92,13 +96,13 @@ class StringMatching {
   @Threads(1)
   @Benchmark
   def testSubstrRegex(bh: Blackhole): Unit = {
-    bh.consume(ssRegexMatcher.matches(value))
+    bh.consume(ssRegexMatcher.matcher(value).find())
   }
 
   @Threads(1)
   @Benchmark
   def testSubstrRegex2(bh: Blackhole): Unit = {
-    bh.consume(ssRegexMatcher2.matches(value))
+    bh.consume(ssRegexMatcher2.matcher(value).find())
   }
 
   @Threads(1)
@@ -110,13 +114,13 @@ class StringMatching {
   @Threads(1)
   @Benchmark
   def testSubstrICRegex(bh: Blackhole): Unit = {
-    bh.consume(ssICRegexMatcher.matches(value))
+    bh.consume(ssICRegexMatcher.matcher(value).find())
   }
 
   @Threads(1)
   @Benchmark
   def testSubstrICRegex2(bh: Blackhole): Unit = {
-    bh.consume(ssICRegexMatcher2.matches(value))
+    bh.consume(ssICRegexMatcher2.matcher(value).find())
   }
 
 }
