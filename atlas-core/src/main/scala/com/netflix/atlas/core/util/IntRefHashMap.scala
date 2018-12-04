@@ -15,10 +15,6 @@
  */
 package com.netflix.atlas.core.util
 
-import java.nio.ByteBuffer
-
-import scala.util.hashing.MurmurHash3
-
 /**
   * Mutable integer map based on open-addressing. Primary use-case is computing
   * a count for the number of times a particular value was encountered.
@@ -33,10 +29,6 @@ class IntRefHashMap[T <: AnyRef: Manifest](noData: Int, capacity: Int = 10) {
   private[this] var values = ArrayHelper.newInstance[T](keys.length)
   private[this] var used = 0
   private[this] var cutoff = computeCutoff(keys.length)
-
-  // Used for computing the hash code.
-  private[this] var buffer = ThreadLocal
-    .withInitial[ByteBuffer](() => ByteBuffer.allocate(Integer.BYTES))
 
   // Set at 50% capacity to get reasonable tradeoff between performance and
   // memory use. See IntIntMap benchmark.
@@ -66,12 +58,8 @@ class IntRefHashMap[T <: AnyRef: Manifest](noData: Int, capacity: Int = 10) {
     cutoff = computeCutoff(tmpKS.length)
   }
 
-  private def hash(v: Int, length: Int): Int = {
-    val buf = buffer.get()
-    buf.clear()
-    buf.putInt(v)
-    val h = MurmurHash3.bytesHash(buf.array())
-    Hash.absOrZero(h) % length
+  private def hash(k: Int, length: Int): Int = {
+    Hash.absOrZero(k) % length
   }
 
   private def put(ks: Array[Int], vs: Array[T], k: Int, v: T): Boolean = {

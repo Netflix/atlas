@@ -83,7 +83,7 @@ class IntRefHashMapSuite extends FunSuite {
   test("memory per map") {
     // Sanity check to verify if some change introduces more overhead per set
     val bytes = ClassLayout.parseClass(classOf[IntRefHashMap[Integer]]).instanceSize()
-    assert(bytes === 40)
+    assert(bytes === 32)
   }
 
   test("memory - 5 items") {
@@ -101,7 +101,7 @@ class IntRefHashMapSuite extends FunSuite {
     //println(jgraph.toFootprint)
 
     // Integer class creates a bunch of objects
-    assert(igraph.totalCount() === 10)
+    assert(igraph.totalCount() === 8)
 
     // Sanity check size is < 340, mostly for Integer static fields
     assert(igraph.totalSize() <= 340)
@@ -122,7 +122,7 @@ class IntRefHashMapSuite extends FunSuite {
     //println(jgraph.toFootprint)
 
     // Around 10 or so for the Integer class + 10k for the values
-    assert(igraph.totalCount() === 10005)
+    assert(igraph.totalCount() === 10003)
 
     // Sanity check size is < 370kb
     assert(igraph.totalSize() <= 370e3)
