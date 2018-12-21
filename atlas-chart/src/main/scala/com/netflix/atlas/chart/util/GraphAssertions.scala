@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.test
+package com.netflix.atlas.chart.util
 
 import java.awt.image.RenderedImage
 import java.io.File
@@ -22,14 +22,12 @@ import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.InputStream
 
-import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
-import org.scalatest.Assertions
 
 /**
   * Helper assertions for working with graphs.
   */
-class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
+class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) => Unit) {
 
   private def getInputStream(file: String): InputStream = {
     new FileInputStream(new File(s"$goldenDir/$file"))
@@ -46,37 +44,36 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
   }
 
   def generateReport(clazz: Class[_], diffsOnly: Boolean = true) {
-    val report = <html>
-      <head><title>{clazz.getSimpleName}</title></head>
-      <body><h1>{clazz.getSimpleName}</h1><hr/> {
-        val dir = new File(targetDir)
-        dir.listFiles
-          .filter(_.getName.endsWith(".png"))
-          .filterNot(_.getName.startsWith("diff_"))
-          .flatMap { f =>
-            val diffImg = new File(s"$targetDir/diff_${f.getName}")
-            if (diffsOnly && !diffImg.isFile) None else {
-              val table = <div>
-                <h2>{f.getName}</h2>
+    val report = s"""<html>
+      <head><title>${clazz.getSimpleName}</title></head>
+      <body><h1>${clazz.getSimpleName}</h1><hr/> ${
+      val dir = new File(targetDir)
+      dir.listFiles
+        .filter(_.getName.endsWith(".png"))
+        .filterNot(_.getName.startsWith("diff_"))
+        .map { f =>
+          val diffImg = new File(s"$targetDir/diff_${f.getName}")
+          if (diffsOnly && !diffImg.isFile) ""
+          else {
+            s"""<div>
+                <h2>${f.getName}</h2>
                 <table border="1">
                   <tr><th>Golden</th><th>Test</th><th>Diff</th></tr>
                   <tr valign="top">
-                    <td><img src={goldenDir + '/' + f.getName}/></td>
-                    <td><img src={f.getName}/></td>
-                    {
-                      if (diffImg.isFile)
-                        <td><img src={s"diff_${f.getName}"}/></td>
-                      else
-                        <td></td>
-                    }
+                    <td><img src=${goldenDir + '/' + f.getName}/></td>
+                    <td><img src=${f.getName}/></td>
+                    ${if (diffImg.isFile)
+              s"""<td><img src=${s"diff_${f.getName}"}/></td>"""
+            else
+              """<td></td>"""}
                   </tr>
                 </table>
-              </div>
-              Some(table)
-            }
+              </div>"""
           }
-      } </body>
-    </html>
+        }
+        .mkString("")
+    } </body>
+    </html>"""
 
     Streams.scope(Streams.fileOut(new File(s"$targetDir/report.html"))) { out =>
       out.write(report.toString.getBytes("UTF-8"))
@@ -99,12 +96,12 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
 
   def assertEquals(i1: RenderedImage, i2: RenderedImage) {
     val diff = PngImage.diff(i1, i2)
-    assert(diff.metadata("identical") === "true")
+    assert(diff.metadata("identical"), "true")
   }
 
   def assertEquals(i1: PngImage, i2: PngImage) {
     assertEquals(i1.data, i2.data)
-    assert(i1.metadata === i2.metadata)
+    assert(i1.metadata, i2.metadata)
   }
 
   def assertEquals(i1: PngImage, f: String, bless: Boolean = false) {
@@ -141,7 +138,7 @@ class GraphAssertions(goldenDir: String, targetDir: String) extends Assertions {
   def assertEquals(s1: String, f: String, bless: Boolean) {
     if (bless) blessString(s1, f)
     val s2 = getString(f)
-    assert(s1 === s2)
+    assert(s1, s2)
   }
 
   private def blessString(s: String, f: String) {

@@ -24,8 +24,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.netflix.atlas.akka.ImperativeRequestContext
+import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.core.model._
-import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.graph.Grapher
 import com.netflix.spectator.api.Registry

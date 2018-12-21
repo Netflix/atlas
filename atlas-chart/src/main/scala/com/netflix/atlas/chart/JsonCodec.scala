@@ -27,11 +27,11 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.atlas.chart.model._
+import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.TimeSeries
-import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 

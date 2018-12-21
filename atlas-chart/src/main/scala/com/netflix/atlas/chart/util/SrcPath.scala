@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.test
+package com.netflix.atlas.chart.util
 
 import java.io.File
 

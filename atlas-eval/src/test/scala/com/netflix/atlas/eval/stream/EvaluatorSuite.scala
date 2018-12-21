@@ -28,12 +28,12 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.test.SrcPath
 import com.netflix.spectator.api.DefaultRegistry
 import com.typesafe.config.ConfigFactory
 import nl.jqno.equalsverifier.EqualsVerifier

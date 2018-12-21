@@ -19,7 +19,7 @@ import java.awt.image.RenderedImage
 import java.io.OutputStream
 
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.core.util.PngImage
+import com.netflix.atlas.chart.util.PngImage
 
 trait PngGraphEngine extends GraphEngine {
   val contentType: String = "image/png"
