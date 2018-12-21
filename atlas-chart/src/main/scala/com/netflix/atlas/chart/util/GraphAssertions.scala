@@ -60,10 +60,10 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
                 <table border="1">
                   <tr><th>Golden</th><th>Test</th><th>Diff</th></tr>
                   <tr valign="top">
-                    <td><img src=${goldenDir + '/' + f.getName}/></td>
-                    <td><img src=${f.getName}/></td>
+                    <td><img src="${goldenDir + '/' + f.getName}"/></td>
+                    <td><img src="${f.getName}"/></td>
                     ${if (diffImg.isFile)
-              s"""<td><img src=${s"diff_${f.getName}"}/></td>"""
+              s"""<td><img src="${s"diff_${f.getName}"}"/></td>"""
             else
               """<td></td>"""}
                   </tr>

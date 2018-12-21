@@ -22,6 +22,7 @@ import java.awt.Stroke
 import java.awt.image.BufferedImage
 
 import com.netflix.atlas.config.ConfigManager
+import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 
 object Constants {
@@ -58,18 +59,23 @@ object Constants {
   val majorGridColor = color("grid-major")
   val majorGridStyle = Style(color = majorGridColor, stroke = dashedStroke)
 
-  // Try to avoid problems with different default fonts on various platforms. Java will use the
-  // "Dialog" font by default which can get mapped differently on various systems. It looks like
-  // passing a bad font name into the font constructor will just silently fall back to the
-  // default so it should still function if this font isn't present. However, the lucida font
-  // was chosen as it is expected to be widely available:
-  // https://docs.oracle.com/javase/tutorial/2d/text/fonts.html
-  val regularFont = new Font(config.getString("fonts.regular"), Font.PLAIN, 12)
+  private def loadTrueTypeFont(resource: String): Font = {
+    Streams.scope(getClass.getClassLoader.getResourceAsStream(resource)) { in =>
+      Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(12.0f)
+    }
+  }
+
+  private def loadFont(font: String): Font = {
+    if (font.endsWith(".ttf"))
+      loadTrueTypeFont(font)
+    else
+      new Font(font, Font.PLAIN, 12)
+  }
 
   /**
     * Base monospaced font used for graphics. Monospace is used to make the layout easier.
     */
-  val monospaceFont = new Font(config.getString("fonts.monospace"), Font.PLAIN, 12)
+  val monospaceFont = loadFont(config.getString("fonts.monospace"))
 
   /** Small sized monospaced font. */
   val smallFont = monospaceFont.deriveFont(10.0f)
