@@ -204,4 +204,16 @@ class MathGroupBySuite extends FunSuite {
     val expr = eval(input)
     assert(expr.toString === input)
   }
+
+  test("issue-852: constant sum group by") {
+    val input = "0,:const,:sum,(,foo,),:by"
+    val expr = eval(input)
+    assert(expr.toString === "0.0,:const,:sum")
+  }
+
+  test("issue-852: constant group by") {
+    val input = "0,:const,(,foo,),:by"
+    val expr = eval(input)
+    assert(expr.toString === "0.0,:const")
+  }
 }

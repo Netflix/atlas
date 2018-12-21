@@ -237,10 +237,10 @@ object MathVocabulary extends Vocabulary {
     override def name: String = "by"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (StringListType(ks) :: (t: AggrMathExpr) :: _) if t.expr.isGrouped =>
+      case StringListType(_) :: (t: AggrMathExpr) :: _ if t.expr.isGrouped =>
         // Multi-level group by with an explicit aggregate specified
         true
-      case (StringListType(ks) :: TimeSeriesType(t) :: _) if t.isGrouped =>
+      case StringListType(_) :: TimeSeriesType(t) :: _ if t.isGrouped =>
         // Multi-level group by with an implicit aggregate of :sum
         true
       case StringListType(_) :: TimeSeriesType(t) :: _ =>
@@ -249,18 +249,18 @@ object MathVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (StringListType(keys) :: (t: AggrMathExpr) :: stack) if t.expr.isGrouped =>
+      case StringListType(keys) :: (t: AggrMathExpr) :: stack if t.expr.isGrouped =>
         // Multi-level group by with an explicit aggregate specified
         MathExpr.GroupBy(t, keys) :: stack
-      case (StringListType(keys) :: TimeSeriesType(t) :: stack) if t.isGrouped =>
+      case StringListType(keys) :: TimeSeriesType(t) :: stack if t.isGrouped =>
         // Multi-level group by with an implicit aggregate of :sum
         MathExpr.GroupBy(MathExpr.Sum(t), keys) :: stack
       case StringListType(keys) :: TimeSeriesType(t) :: stack =>
         // Default data group by applied across math operations
         val f = t.rewrite {
-          case nr: NamedRewrite      => nr.groupBy(keys)
-          case af: AggregateFunction => DataExpr.GroupBy(af, keys)
-          case af: AggrMathExpr      => MathExpr.GroupBy(af, keys)
+          case nr: NamedRewrite                      => nr.groupBy(keys)
+          case af: AggregateFunction                 => DataExpr.GroupBy(af, keys)
+          case af: AggrMathExpr if af.expr.isGrouped => MathExpr.GroupBy(af, keys)
         }
         f :: stack
     }
