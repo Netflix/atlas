@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.util
+package com.netflix.atlas.chart.util
 
+import java.io.FileOutputStream
 import java.io.InputStream
 
+import com.netflix.atlas.core.util.Streams
 import org.scalatest.FunSuite
 
 class PngImageSuite extends FunSuite {

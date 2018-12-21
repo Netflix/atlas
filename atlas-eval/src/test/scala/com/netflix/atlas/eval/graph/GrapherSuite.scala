@@ -16,12 +16,12 @@
 package com.netflix.atlas.eval.graph
 
 import akka.http.scaladsl.model.Uri
+import com.netflix.atlas.chart.util.GraphAssertions
+import com.netflix.atlas.chart.util.PngImage
+import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.util.Hash
-import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Strings
-import com.netflix.atlas.test.GraphAssertions
-import com.netflix.atlas.test.SrcPath
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuite
@@ -34,7 +34,7 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
   private val baseDir = SrcPath.forProject("atlas-eval")
   private val goldenDir = s"$baseDir/src/test/resources/graph/${getClass.getSimpleName}"
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
-  private val graphAssertions = new GraphAssertions(goldenDir, targetDir)
+  private val graphAssertions = new GraphAssertions(goldenDir, targetDir, (a, b) => assert(a === b))
 
   private val db = StaticDatabase.demo
   private val grapher = Grapher(ConfigFactory.load())

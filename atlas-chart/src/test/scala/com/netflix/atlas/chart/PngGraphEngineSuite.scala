@@ -26,16 +26,16 @@ import java.time.temporal.ChronoUnit
 import com.netflix.atlas.chart.model.PlotBound.AutoData
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.chart.model._
+import com.netflix.atlas.chart.util.GraphAssertions
+import com.netflix.atlas.chart.util.PngImage
+import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
-import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.test.GraphAssertions
-import com.netflix.atlas.test.SrcPath
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuite
 
@@ -47,7 +47,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   private val baseDir = SrcPath.forProject("atlas-chart")
   private val goldenDir = s"$baseDir/src/test/resources/graphengine/${getClass.getSimpleName}"
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
-  private val graphAssertions = new GraphAssertions(goldenDir, targetDir)
+  private val graphAssertions = new GraphAssertions(goldenDir, targetDir, (a, b) => assert(a === b))
 
   val bless = false
 

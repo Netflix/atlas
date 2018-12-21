@@ -26,11 +26,11 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Hash
-import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams._
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.eval.graph.Grapher

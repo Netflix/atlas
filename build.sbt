@@ -20,7 +20,6 @@ lazy val root = project.in(file("."))
     `atlas-poller`,
     `atlas-poller-cloudwatch`,
     `atlas-standalone`,
-    `atlas-test`,
     `atlas-webapi`,
     `atlas-wiki`)
   .settings(skip in publish := true)
@@ -44,7 +43,7 @@ lazy val `atlas-akka` = project
 
 lazy val `atlas-chart` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-core`, `atlas-json`, `atlas-test` % "test")
+  .dependsOn(`atlas-core`, `atlas-json`)
 
 lazy val `atlas-config` = project
   .configure(BuildSettings.profile)
@@ -61,7 +60,7 @@ lazy val `atlas-core` = project
 
 lazy val `atlas-eval` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`, `atlas-chart`, `atlas-core`, `atlas-test` % "test")
+  .dependsOn(`atlas-akka`, `atlas-chart`, `atlas-core`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.akkaHttpTestkit % "test",
     Dependencies.akkaStreamTestkit % "test",
@@ -89,7 +88,7 @@ lazy val `atlas-json` = project
 
 lazy val `atlas-lwcapi` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-eval`, `atlas-json`, `atlas-test` % "test")
+  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-eval`, `atlas-json`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepNflxEnv,
     Dependencies.frigga,
@@ -173,13 +172,6 @@ lazy val `atlas-standalone` = project
     Dependencies.spectatorLog4j
   ))
 
-lazy val `atlas-test` = project
-  .configure(BuildSettings.profile)
-  .dependsOn(`atlas-core`)
-  .settings(libraryDependencies ++= Seq(
-    Dependencies.scalatest
-  ))
-
 lazy val `atlas-webapi` = project
   .configure(BuildSettings.profile)
   .dependsOn(
@@ -187,8 +179,7 @@ lazy val `atlas-webapi` = project
     `atlas-chart`,
     `atlas-core`,
     `atlas-eval`,
-    `atlas-json`,
-    `atlas-test` % "test")
+    `atlas-json`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.akkaTestkit % "test",
     Dependencies.akkaHttpTestkit % "test",

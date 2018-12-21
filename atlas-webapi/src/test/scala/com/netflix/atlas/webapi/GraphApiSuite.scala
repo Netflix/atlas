@@ -22,13 +22,13 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.atlas.akka.RequestHandler
+import com.netflix.atlas.chart.util.GraphAssertions
+import com.netflix.atlas.chart.util.PngImage
+import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.util.Hash
-import com.netflix.atlas.core.util.PngImage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
-import com.netflix.atlas.test.GraphAssertions
-import com.netflix.atlas.test.SrcPath
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
@@ -56,7 +56,7 @@ class GraphApiSuite extends FunSuite with ScalatestRouteTest {
   private val baseDir = SrcPath.forProject("atlas-webapi")
   private val goldenDir = s"$baseDir/src/test/resources/${getClass.getSimpleName}"
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
-  private val graphAssertions = new GraphAssertions(goldenDir, targetDir)
+  private val graphAssertions = new GraphAssertions(goldenDir, targetDir, (a, b) => assert(a === b))
 
   private val bless = false
 
