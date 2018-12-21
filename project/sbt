@@ -8,8 +8,8 @@ OPTIONS=""
 
 java \
   -XX:+UseG1GC \
-  -Xms2g \
-  -Xmx2g \
+  -Xms3g \
+  -Xmx3g \
   -XX:ReservedCodeCacheSize=128m \
   -XX:+UseCodeCacheFlushing \
   -Dsbt.boot.directory=${WORKSPACE:-$HOME}/.sbt \
