@@ -214,4 +214,10 @@ class NamedRewriteSuite extends FunSuite {
     val expected = eval("name,a,:eq,(,b,),:by,10,:mul,:dup,:sum,:div,100,:mul,c,:has,:cq")
     assert(actual === expected)
   }
+
+  test("issue-763: avg with cf-max") {
+    val actual = eval("name,a,:eq,:avg,:cf-max")
+    val expected = eval("name,a,:eq,:sum,:cf-max,name,a,:eq,:count,:cf-max,:div")
+    assert(actual === expected)
+  }
 }

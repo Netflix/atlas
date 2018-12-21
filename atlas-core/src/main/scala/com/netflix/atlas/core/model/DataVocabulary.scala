@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
+import com.netflix.atlas.core.model.MathExpr.NamedRewrite
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
@@ -220,11 +221,22 @@ object DataVocabulary extends Vocabulary {
     def cf: ConsolidationFunction
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case AggrType(_) :: _ => true
+      case TimeSeriesType(_) :: _ => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case AggrType(af) :: stack => af.withConsolidation(cf) :: stack
+      case TimeSeriesType(t) :: stack =>
+        // Expand rewrites, custom consolidation cannot be preserved with the rewrite in
+        // place. Expand so we can preserve correctness.
+        val evalExpr = t.rewrite {
+          case nr: NamedRewrite => nr.evalExpr
+        }
+        // Update the aggregation functions within the expression to use the specified
+        // consolidation function
+        val expr = evalExpr.rewrite {
+          case af: AggregateFunction => af.withConsolidation(cf)
+        }
+        expr :: stack
     }
 
     override def signature: String = "AggregateFunction -- DataExpr"
