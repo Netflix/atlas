@@ -407,4 +407,14 @@ class TicksSuite extends FunSuite {
     val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5)
     assert(ticks.size === 6)
   }
+
+  test("issue-948: [6.667e-3, 0.01]") {
+    val ticks = Ticks.value(6.667e-3, 0.01, 7)
+    sanityCheck(ticks)
+    assert(ticks.size === 34)
+    assert(ticks.count(_.major) === 7)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "6.7m")
+    assert(ticks.last.label === "10.0m")
+  }
 }

@@ -124,7 +124,7 @@ object Ticks {
     */
   private def getPrefix(v: Double, major: Double): UnitPrefix = {
     val m = UnitPrefix.forRange(major, 3)
-    if (v < 10.0 * m.factor) m else UnitPrefix.forRange(v, 3)
+    if (v <= 10.0 * m.factor) m else UnitPrefix.forRange(v, 3)
   }
 
   /**
