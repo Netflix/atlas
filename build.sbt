@@ -38,6 +38,7 @@ lazy val `atlas-akka` = project
     Dependencies.akkaHttp,
     Dependencies.typesafeConfig,
     Dependencies.akkaHttpTestkit % "test",
+    Dependencies.akkaStreamTestkit % "test",
     Dependencies.akkaTestkit % "test"
   ))
 
@@ -63,6 +64,7 @@ lazy val `atlas-eval` = project
   .dependsOn(`atlas-akka`, `atlas-chart`, `atlas-core`, `atlas-test` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.akkaHttpTestkit % "test",
+    Dependencies.akkaStreamTestkit % "test",
     Dependencies.akkaTestkit % "test",
     Dependencies.equalsVerifier % "test"
   ))
@@ -92,7 +94,8 @@ lazy val `atlas-lwcapi` = project
     Dependencies.iepNflxEnv,
     Dependencies.frigga,
     Dependencies.akkaTestkit % "test",
-    Dependencies.akkaHttpTestkit % "test"
+    Dependencies.akkaHttpTestkit % "test",
+    Dependencies.akkaStreamTestkit % "test"
   ))
 
 lazy val `atlas-module-akka` = project
@@ -143,7 +146,8 @@ lazy val `atlas-poller` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.akkaHttpCore,
     Dependencies.akkaTestkit % "test",
-    Dependencies.akkaHttpTestkit % "test"
+    Dependencies.akkaHttpTestkit % "test",
+    Dependencies.akkaStreamTestkit % "test"
   ))
 
 lazy val `atlas-poller-cloudwatch` = project
@@ -187,7 +191,8 @@ lazy val `atlas-webapi` = project
     `atlas-test` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.akkaTestkit % "test",
-    Dependencies.akkaHttpTestkit % "test"
+    Dependencies.akkaHttpTestkit % "test",
+    Dependencies.akkaStreamTestkit % "test"
   ))
 
 lazy val `atlas-wiki` = project
