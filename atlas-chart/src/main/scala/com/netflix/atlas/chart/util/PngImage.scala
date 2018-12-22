@@ -67,7 +67,8 @@ object PngImage {
   }
 
   private def extractTxtFields(m: IIOMetadata): Map[String, String] = {
-    val elements = m.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName)
+    val elements = m
+      .getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName)
       .asInstanceOf[IIOMetadataNode]
       .getElementsByTagName("TextEntry")
     (0 until elements.getLength)
