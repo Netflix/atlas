@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.chart.util
 
-import java.io.FileOutputStream
 import java.io.InputStream
 
 import com.netflix.atlas.core.util.Streams

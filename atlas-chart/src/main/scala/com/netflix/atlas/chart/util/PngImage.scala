@@ -29,9 +29,12 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.text.AttributedString
 
-import com.sun.imageio.plugins.png.PNGMetadata
 import javax.imageio.IIOImage
 import javax.imageio.ImageIO
+import javax.imageio.ImageTypeSpecifier
+import javax.imageio.metadata.IIOMetadata
+import javax.imageio.metadata.IIOMetadataFormatImpl
+import javax.imageio.metadata.IIOMetadataNode
 
 object PngImage {
 
@@ -52,8 +55,8 @@ object PngImage {
       reader.setInput(ImageIO.createImageInputStream(input), true)
 
       val index = 0
-      val metadata = reader.getImageMetadata(index).asInstanceOf[PNGMetadata]
-      val fields = extractTxtFields(metadata) ++ extractUtf8Fields(metadata)
+      val metadata = reader.getImageMetadata(index)
+      val fields = extractTxtFields(metadata)
 
       val image = reader.read(index)
 
@@ -63,18 +66,14 @@ object PngImage {
     }
   }
 
-  private def extractTxtFields(m: PNGMetadata): Map[String, String] = {
-    import scala.collection.JavaConverters._
-    val keys = m.tEXt_keyword.asScala.toList
-    val values = m.tEXt_text.asScala.toList
-    keys.zip(values).toMap
-  }
-
-  private def extractUtf8Fields(m: PNGMetadata): Map[String, String] = {
-    import scala.collection.JavaConverters._
-    val keys = m.iTXt_keyword.asScala.toList
-    val values = m.iTXt_text.asScala.toList
-    keys.zip(values).toMap
+  private def extractTxtFields(m: IIOMetadata): Map[String, String] = {
+    val elements = m.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName)
+      .asInstanceOf[IIOMetadataNode]
+      .getElementsByTagName("TextEntry")
+    (0 until elements.getLength)
+      .map(i => elements.item(i).asInstanceOf[IIOMetadataNode])
+      .map(m => m.getAttribute("keyword") -> m.getAttribute("value"))
+      .toMap
   }
 
   def userError(imgText: String, width: Int, height: Int): PngImage = {
@@ -211,18 +210,23 @@ case class PngImage(data: RenderedImage, metadata: Map[String, String] = Map.emp
       val writer = iterator.next()
       writer.setOutput(ImageIO.createImageOutputStream(output))
 
-      val pngMeta = new PNGMetadata
+      val pngMeta = writer.getDefaultImageMetadata(new ImageTypeSpecifier(data), null)
       metadata.foreach { t =>
-        pngMeta.iTXt_keyword.add(t._1)
-        pngMeta.iTXt_text.add(t._2)
-        pngMeta.iTXt_compressionFlag.add(t._2.length > 100)
-        pngMeta.iTXt_compressionMethod.add(0)
-        pngMeta.iTXt_languageTag.add("")
-        pngMeta.iTXt_translatedKeyword.add("")
+        val textEntry = new IIOMetadataNode("TextEntry")
+        textEntry.setAttribute("keyword", t._1)
+        textEntry.setAttribute("value", t._2)
+        textEntry.setAttribute("compression", if (t._2.length > 100) "zip" else "none")
+
+        val text = new IIOMetadataNode("Text")
+        text.appendChild(textEntry)
+
+        val root = new IIOMetadataNode(IIOMetadataFormatImpl.standardMetadataFormatName)
+        root.appendChild(text)
+
+        pngMeta.mergeTree(IIOMetadataFormatImpl.standardMetadataFormatName, root)
       }
 
-      val iioImage = new IIOImage(data, null, null)
-      iioImage.setMetadata(pngMeta)
+      val iioImage = new IIOImage(data, null, pngMeta)
       writer.write(null, iioImage, null)
     } finally {
       output.close()
