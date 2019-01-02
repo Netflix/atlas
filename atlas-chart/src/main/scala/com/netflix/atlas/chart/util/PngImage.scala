@@ -16,8 +16,8 @@
 package com.netflix.atlas.chart.util
 
 import java.awt.Color
-import java.awt.Font
 import java.awt.Rectangle
+import java.awt.RenderingHints
 import java.awt.font.LineBreakMeasurer
 import java.awt.font.TextAttribute
 import java.awt.geom.AffineTransform
@@ -40,6 +40,10 @@ object PngImage {
 
   // Disable using on-disk cache for images. Avoids temp files on shared services.
   ImageIO.setUseCache(false)
+
+  // Should we use antialiasing? This will typically need to be disabled for tests to
+  // get reliable image comparisons.
+  var useAntiAliasing: Boolean = true
 
   def apply(bytes: Array[Byte]): PngImage = {
     val input = new ByteArrayInputStream(bytes)
@@ -100,13 +104,16 @@ object PngImage {
     val image = newBufferedImage(width, height)
     val g = image.createGraphics
 
+    if (useAntiAliasing) {
+      g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+    }
+
     // Try to avoid problems with different default fonts on various platforms. Java will use the
     // "Dialog" font by default which can get mapped differently on various systems. It looks like
     // passing a bad font name into the font constructor will just silently fall back to the
-    // default so it should still function if this font isn't present. However, the lucida font
-    // was chosen as it is expected to be widely available:
-    // https://docs.oracle.com/javase/tutorial/2d/text/fonts.html
-    val font = new Font("Lucida Sans Regular", Font.PLAIN, 12)
+    // default so it should still function if this font isn't present. Uses a default font that
+    // is included as part of this library.
+    val font = Fonts.default
     g.setFont(font)
 
     g.setPaint(imgBackgroundColor)
