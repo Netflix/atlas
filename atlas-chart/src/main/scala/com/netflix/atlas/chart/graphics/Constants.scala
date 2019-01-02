@@ -21,8 +21,8 @@ import java.awt.Font
 import java.awt.Stroke
 import java.awt.image.BufferedImage
 
+import com.netflix.atlas.chart.util.Fonts
 import com.netflix.atlas.config.ConfigManager
-import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 
 object Constants {
@@ -59,23 +59,10 @@ object Constants {
   val majorGridColor = color("grid-major")
   val majorGridStyle = Style(color = majorGridColor, stroke = dashedStroke)
 
-  private def loadTrueTypeFont(resource: String): Font = {
-    Streams.scope(getClass.getClassLoader.getResourceAsStream(resource)) { in =>
-      Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(12.0f)
-    }
-  }
-
-  private def loadFont(font: String): Font = {
-    if (font.endsWith(".ttf"))
-      loadTrueTypeFont(font)
-    else
-      new Font(font, Font.PLAIN, 12)
-  }
-
   /**
     * Base monospaced font used for graphics. Monospace is used to make the layout easier.
     */
-  val monospaceFont = loadFont(config.getString("fonts.monospace"))
+  val monospaceFont = Fonts.loadFont(config.getString("fonts.monospace"))
 
   /** Small sized monospaced font. */
   val smallFont = monospaceFont.deriveFont(10.0f)

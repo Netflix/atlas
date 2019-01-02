@@ -22,6 +22,8 @@ import org.scalatest.FunSuite
 
 class PngImageSuite extends FunSuite {
 
+  PngImage.useAntiAliasing = false
+
   // From: http://en.wikipedia.org/wiki/Atlas_(mythology)
   val sampleText = """
     |In Greek mythology, Atlas (English pronunciation: /ˈætləs/)
@@ -91,7 +93,7 @@ class PngImageSuite extends FunSuite {
     val i2 = PngImage.error(sampleText.toLowerCase, 800, 120)
     val diff = PngImage.diff(i1.data, i2.data)
     assert(diff.metadata("identical") === "false")
-    assert(diff.metadata("diff-pixel-count") === "30631")
+    assert(diff.metadata("diff-pixel-count") === "16571")
 
     val diff2 = PngImage.diff(expected.data, diff.data)
     assert(diff2.metadata("identical") === "true")
