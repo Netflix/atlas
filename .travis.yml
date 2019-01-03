@@ -1,4 +1,5 @@
 language: scala
+os: osx
 matrix:
   include:
   - jdk: openjdk11
@@ -9,8 +10,6 @@ matrix:
     env: BINTRAY_PUBLISH=true
 script:
 - ./scripts/buildViaTravis.sh
-sudo: required
-dist: trusty
 env:
   global:
   - secure: EakB0ihwg817KJghs6NJ/C75H138DDDDY7jhnuph+2tbA65InChFEtPT6OBW6N/RWd1QOZRZ3UjUMMHoRshgKNMTeU6F6aZORRlJVbtCLDEyaelhfyjiNPkE6xPL1g/h2JqTv8Hv6eWLe8rbDqArSkefFbFXcvztmoKHbmaCkPg=
