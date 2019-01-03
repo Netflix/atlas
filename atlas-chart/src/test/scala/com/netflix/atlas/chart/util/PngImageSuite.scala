@@ -22,7 +22,13 @@ import org.scalatest.FunSuite
 
 class PngImageSuite extends FunSuite {
 
-  PngImage.useAntiAliasing = false
+  // SBT working directory gets updated with fork to be the dir for the project
+  private val baseDir = SrcPath.forProject("atlas-chart")
+  private val goldenDir = s"$baseDir/src/test/resources/pngimage"
+  private val targetDir = s"$baseDir/target/pngimage"
+  private val graphAssertions = new GraphAssertions(goldenDir, targetDir, (a, b) => assert(a === b))
+
+  private val bless = false
 
   // From: http://en.wikipedia.org/wiki/Atlas_(mythology)
   val sampleText = """
@@ -74,48 +80,30 @@ class PngImageSuite extends FunSuite {
   }
 
   test("error image, 400x300") {
-    val expected = getImage("test_error_400x300.png")
     val found = PngImage.error(sampleText, 400, 300)
-    val diff = PngImage.diff(expected.data, found.data)
-    assert(diff.metadata("identical") === "true")
+    graphAssertions.assertEquals(found, "test_error_400x300.png", bless)
   }
 
   test("error image, 800x100") {
-    val expected = getImage("test_error_800x100.png")
     val found = PngImage.error(sampleText, 800, 100)
-    val diff = PngImage.diff(expected.data, found.data)
-    assert(diff.metadata("identical") === "true")
+    graphAssertions.assertEquals(found, "test_error_800x100.png", bless)
   }
 
   test("error diff image, 800x100") {
-    val expected = getImage("test_diff.png")
     val i1 = PngImage.error(sampleText, 800, 100)
     val i2 = PngImage.error(sampleText.toLowerCase, 800, 120)
     val diff = PngImage.diff(i1.data, i2.data)
-    assert(diff.metadata("identical") === "false")
-    assert(diff.metadata("diff-pixel-count") === "16571")
-
-    val diff2 = PngImage.diff(expected.data, diff.data)
-    assert(diff2.metadata("identical") === "true")
-    assert(diff2.metadata("diff-pixel-count") === "0")
+    graphAssertions.assertEquals(diff, "test_diff.png", bless)
   }
 
   test("user error image matches expected") {
-    val expectedImage = getImage("test_user_error.png")
-    val userErrorImage = PngImage.userError("User Error Text", 800, 100)
-    val diff = PngImage.diff(expectedImage.data, userErrorImage.data)
-
-    assert(diff.metadata("identical") === "true")
-    assert(diff.metadata("diff-pixel-count") === "0")
+    val found = PngImage.userError("User Error Text", 800, 100)
+    graphAssertions.assertEquals(found, "test_user_error.png", bless)
   }
 
   test("system error image matches expected") {
-    val expectedImage = getImage("test_system_error.png")
-    val systemErrorImage = PngImage.systemError("System Error Text", 800, 100)
-    val diff = PngImage.diff(expectedImage.data, systemErrorImage.data)
-
-    assert(diff.metadata("identical") === "true")
-    assert(diff.metadata("diff-pixel-count") === "0")
+    val found = PngImage.systemError("System Error Text", 800, 100)
+    graphAssertions.assertEquals(found, "test_system_error.png", bless)
   }
 
   test("user error image is different than system error image") {
