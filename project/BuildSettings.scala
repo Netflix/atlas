@@ -8,8 +8,7 @@ object BuildSettings {
     "-unchecked",
     "-Xexperimental",
     "-Xlint:_,-infer-any",
-    "-feature",
-    "-release", "8"
+    "-feature"
   )
 
   lazy val checkLicenseHeaders = taskKey[Unit]("Check the license headers for all source files.")
@@ -23,7 +22,14 @@ object BuildSettings {
   lazy val buildSettings = baseSettings ++ Seq(
     organization := "com.netflix.atlas_v1",
     scalaVersion := Dependencies.Versions.scala,
-    scalacOptions ++= BuildSettings.compilerFlags,
+    scalacOptions ++= {
+      // -release option is not supported in scala 2.11
+      val v = scalaVersion.value
+      CrossVersion.partialVersion(v).map(_._2.toInt) match {
+        case Some(12) => compilerFlags ++ Seq("-release", "8")
+        case _        => compilerFlags ++ Seq("-target:jvm-1.8")
+      }
+    },
     crossPaths := true,
     crossScalaVersions := Dependencies.Versions.crossScala,
     sourcesInBase := false,
