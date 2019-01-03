@@ -20,5 +20,3 @@ cache:
   directories:
   - $HOME/.sbt
   - $HOME/.ivy2
-services:
-  - redis-server
