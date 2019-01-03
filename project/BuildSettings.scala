@@ -25,9 +25,10 @@ object BuildSettings {
     scalacOptions ++= {
       // -release option is not supported in scala 2.11
       val v = scalaVersion.value
+      val isJdk11 = System.getProperty("java.specification.version") == "11"
       CrossVersion.partialVersion(v).map(_._2.toInt) match {
-        case Some(12) => compilerFlags ++ Seq("-release", "8")
-        case _        => compilerFlags ++ Seq("-target:jvm-1.8")
+        case Some(12) if isJdk11 => compilerFlags ++ Seq("-release", "8")
+        case _                   => compilerFlags ++ Seq("-target:jvm-1.8")
       }
     },
     crossPaths := true,

@@ -29,6 +29,8 @@ import com.netflix.atlas.core.util.Streams
   */
 class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) => Unit) {
 
+  PngImage.useAntiAliasing = false
+
   private def getInputStream(file: String): InputStream = {
     new FileInputStream(new File(s"$goldenDir/$file"))
   }
@@ -48,6 +50,7 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
       <head><title>${clazz.getSimpleName}</title></head>
       <body><h1>${clazz.getSimpleName}</h1><hr/> ${
       val dir = new File(targetDir)
+      dir.mkdirs()
       dir.listFiles
         .filter(_.getName.endsWith(".png"))
         .filterNot(_.getName.startsWith("diff_"))
@@ -105,6 +108,9 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
   }
 
   def assertEquals(i1: PngImage, f: String, bless: Boolean = false) {
+    // Skip on systems with incompatible font rendering
+    if (!Fonts.shouldRunTests) return
+
     if (bless) blessImage(i1, f)
     val i2 = try getImage(f)
     catch {

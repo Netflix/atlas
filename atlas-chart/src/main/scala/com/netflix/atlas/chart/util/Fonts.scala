@@ -44,4 +44,15 @@ object Fonts {
     * may be slight differences in the rendering on different versions of the JDK.
     */
   val default: Font = loadFont("fonts/RobotoMono-Regular.ttf")
+
+  /**
+    * Returns true if the JDK and OS being used match those used to generate the blessed
+    * reference images for test cases. On other systems there will be slight differences in
+    * the font rendering causing diffs.
+    */
+  def shouldRunTests: Boolean = {
+    val isJdk11 = System.getProperty("java.specification.version") == "11"
+    val isMacOS = System.getProperty("os.name") == "Mac OS X"
+    isJdk11 && isMacOS
+  }
 }
