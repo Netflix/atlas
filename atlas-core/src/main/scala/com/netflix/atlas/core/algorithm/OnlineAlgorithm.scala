@@ -68,6 +68,7 @@ object OnlineAlgorithm {
       case vs: Iterable[_] => toConfigList(vs)
       case vs: Array[_]    => toConfigList(vs.toList)
       case c: Config       => c.root()
+      case c: ConfigValue  => c
       case v               => ConfigValueFactory.fromAnyRef(v)
     }
   }
