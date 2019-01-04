@@ -135,12 +135,11 @@ class RollingBufferSuite extends FunSuite {
   }
 
   test("n = 2, state") {
-    import scala.collection.JavaConverters._
     val buf = RollingBuffer(2)
     buf.add(0.0)
     val cfg = buf.state
     assert(cfg.getInt("pos") === 1)
-    val actual = cfg.getDoubleList("values").asScala.toList
+    val actual = cfg.getDoubleArray("values")
     val expected = List(0.0, Double.NaN)
     assert(actual.size === 2)
     actual.zip(expected).foreach {

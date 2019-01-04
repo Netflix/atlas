@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.typesafe.config.Config
-
 /**
   * Keeps track of the maximum value within a given window. This is typically used as a
   * way to get a smooth upper bound line that closely tracks a noisy input.
@@ -39,8 +37,8 @@ case class OnlineRollingMax(buf: RollingBuffer) extends OnlineAlgorithm {
     max = Double.NaN
   }
 
-  override def state: Config = {
-    OnlineAlgorithm.toConfig(Map("type" -> "rolling-max", "buffer" -> buf.state))
+  override def state: AlgoState = {
+    AlgoState("rolling-max", "buffer" -> buf.state)
   }
 }
 
@@ -48,7 +46,7 @@ object OnlineRollingMax {
 
   def apply(n: Int): OnlineRollingMax = apply(RollingBuffer(n))
 
-  def apply(config: Config): OnlineRollingMax = {
-    apply(RollingBuffer(config.getConfig("buffer")))
+  def apply(state: AlgoState): OnlineRollingMax = {
+    apply(RollingBuffer(state.getState("buffer")))
   }
 }

@@ -50,7 +50,7 @@ lazy val `atlas-config` = project
 
 lazy val `atlas-core` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-config`)
+  .dependsOn(`atlas-config`, `atlas-json` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.caffeine,
     Dependencies.roaringBitmap,

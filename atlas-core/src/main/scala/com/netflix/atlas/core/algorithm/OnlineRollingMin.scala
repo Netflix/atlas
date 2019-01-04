@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.typesafe.config.Config
-
 /**
   * Keeps track of the minimum value within a given window. This is typically used as a
   * way to get a smooth lower bound line that closely tracks a noisy input.
@@ -39,8 +37,8 @@ case class OnlineRollingMin(buf: RollingBuffer) extends OnlineAlgorithm {
     min = Double.NaN
   }
 
-  override def state: Config = {
-    OnlineAlgorithm.toConfig(Map("type" -> "rolling-min", "buffer" -> buf.state))
+  override def state: AlgoState = {
+    AlgoState("rolling-min", "buffer" -> buf.state)
   }
 }
 
@@ -48,7 +46,7 @@ object OnlineRollingMin {
 
   def apply(n: Int): OnlineRollingMin = apply(RollingBuffer(n))
 
-  def apply(config: Config): OnlineRollingMin = {
-    apply(RollingBuffer(config.getConfig("buffer")))
+  def apply(state: AlgoState): OnlineRollingMin = {
+    apply(RollingBuffer(state.getState("buffer")))
   }
 }

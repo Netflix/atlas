@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.typesafe.config.Config
-
 /**
   * Ignore the first N datapoints that are passed in. This is typically used to achieve an
   * initial alignment to step boundaries when using a deterministic sliding window approach
@@ -36,16 +34,16 @@ case class OnlineIgnoreN(n: Int) extends OnlineAlgorithm {
     pos = 0
   }
 
-  override def state: Config = {
-    OnlineAlgorithm.toConfig(Map("type" -> "ignore", "n" -> n, "pos" -> pos))
+  override def state: AlgoState = {
+    AlgoState("ignore", "n" -> n, "pos" -> pos)
   }
 }
 
 object OnlineIgnoreN {
 
-  def apply(config: Config): OnlineIgnoreN = {
-    val algo = apply(config.getInt("n"))
-    algo.pos = config.getInt("pos")
+  def apply(state: AlgoState): OnlineIgnoreN = {
+    val algo = apply(state.getInt("n"))
+    algo.pos = state.getInt("pos")
     algo
   }
 }
