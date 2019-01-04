@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.typesafe.config.Config
-
 /**
   * Helper to compute DES value iteratively for a set of numbers.
   *
@@ -55,29 +53,28 @@ case class OnlineDes(training: Int, alpha: Double, beta: Double) extends OnlineA
     bp = Double.NaN
   }
 
-  override def state: Config = {
-    OnlineAlgorithm.toConfig(
-      Map(
-        "type"          -> "des",
-        "training"      -> training,
-        "alpha"         -> alpha,
-        "beta"          -> beta,
-        "currentSample" -> currentSample,
-        "sp"            -> sp,
-        "bp"            -> bp
-      )
+  override def state: AlgoState = {
+    AlgoState(
+      "des",
+      "type"          -> "des",
+      "training"      -> training,
+      "alpha"         -> alpha,
+      "beta"          -> beta,
+      "currentSample" -> currentSample,
+      "sp"            -> sp,
+      "bp"            -> bp
     )
   }
 }
 
 object OnlineDes {
 
-  def apply(config: Config): OnlineDes = {
+  def apply(state: AlgoState): OnlineDes = {
     val des =
-      new OnlineDes(config.getInt("training"), config.getDouble("alpha"), config.getDouble("beta"))
-    des.currentSample = config.getInt("currentSample")
-    des.sp = config.getDouble("sp")
-    des.bp = config.getDouble("bp")
+      new OnlineDes(state.getInt("training"), state.getDouble("alpha"), state.getDouble("beta"))
+    des.currentSample = state.getInt("currentSample")
+    des.sp = state.getDouble("sp")
+    des.bp = state.getDouble("bp")
     des
   }
 }

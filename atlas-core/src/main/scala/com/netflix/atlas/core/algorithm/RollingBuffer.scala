@@ -17,7 +17,6 @@ package com.netflix.atlas.core.algorithm
 
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Math
-import com.typesafe.config.Config
 
 /**
   * Buffer for tracking the last N values of a time series.
@@ -83,8 +82,9 @@ class RollingBuffer(values: Array[Double], start: Int = 0) {
     size = 0
   }
 
-  def state: Config = {
-    OnlineAlgorithm.toConfig(Map("values" -> values, "pos" -> pos))
+  def state: AlgoState = {
+    val vs = java.util.Arrays.copyOf(values, values.length)
+    AlgoState("rolling-buffer", "values" -> vs, "pos" -> pos)
   }
 }
 
@@ -96,14 +96,9 @@ object RollingBuffer {
   }
 
   /** Create a new buffer based on previously captured state. */
-  def apply(config: Config): RollingBuffer = {
-    import scala.collection.JavaConverters._
-    val values = config
-      .getDoubleList("values")
-      .asScala
-      .map(_.doubleValue())
-      .toArray
-    val pos = config.getInt("pos")
+  def apply(state: AlgoState): RollingBuffer = {
+    val values = state.getDoubleArray("values")
+    val pos = state.getInt("pos")
     new RollingBuffer(values, pos)
   }
 }

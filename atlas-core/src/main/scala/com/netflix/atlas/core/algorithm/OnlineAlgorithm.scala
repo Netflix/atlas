@@ -15,12 +15,6 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigList
-import com.typesafe.config.ConfigObject
-import com.typesafe.config.ConfigValue
-import com.typesafe.config.ConfigValueFactory
-
 /**
   * Base trait for online algorithms used on time series.
   */
@@ -36,7 +30,7 @@ trait OnlineAlgorithm {
     * Capture the current state of the algorithm. It can be restored in a new instance
     * with the [OnlineAlgorithm#apply] method.
     */
-  def state: Config
+  def state: AlgoState
 }
 
 object OnlineAlgorithm {
@@ -45,41 +39,16 @@ object OnlineAlgorithm {
     * Create a new instance initialized with the captured state from a previous instance
     * of an online algorithm.
     */
-  def apply(config: Config): OnlineAlgorithm = {
-    config.getString("type") match {
-      case "delay"       => OnlineDelay(config)
-      case "des"         => OnlineDes(config)
-      case "ignore"      => OnlineIgnoreN(config)
-      case "pipeline"    => Pipeline(config)
-      case "rolling-min" => OnlineRollingMin(config)
-      case "rolling-max" => OnlineRollingMax(config)
-      case "sliding-des" => OnlineSlidingDes(config)
+  def apply(state: AlgoState): OnlineAlgorithm = {
+    state.algorithm match {
+      case "delay"       => OnlineDelay(state)
+      case "des"         => OnlineDes(state)
+      case "ignore"      => OnlineIgnoreN(state)
+      case "pipeline"    => Pipeline(state)
+      case "rolling-min" => OnlineRollingMin(state)
+      case "rolling-max" => OnlineRollingMax(state)
+      case "sliding-des" => OnlineSlidingDes(state)
       case t             => throw new IllegalArgumentException(s"unknown type: '$t'")
     }
-  }
-
-  private[algorithm] def toConfig(state: Map[String, _]): Config = {
-    toConfigObject(state).toConfig
-  }
-
-  private def toConfigValue(state: Any): ConfigValue = {
-    state match {
-      case m: Map[_, _]    => toConfigObject(m.asInstanceOf[Map[String, _]])
-      case vs: Iterable[_] => toConfigList(vs)
-      case vs: Array[_]    => toConfigList(vs.toList)
-      case c: Config       => c.root()
-      case c: ConfigValue  => c
-      case v               => ConfigValueFactory.fromAnyRef(v)
-    }
-  }
-
-  private def toConfigObject(state: Map[String, _]): ConfigObject = {
-    import scala.collection.JavaConverters._
-    ConfigValueFactory.fromMap(state.mapValues(toConfigValue).asJava)
-  }
-
-  private def toConfigList(state: Iterable[_]): ConfigList = {
-    import scala.collection.JavaConverters._
-    ConfigValueFactory.fromIterable(state.map(toConfigValue).asJava)
   }
 }

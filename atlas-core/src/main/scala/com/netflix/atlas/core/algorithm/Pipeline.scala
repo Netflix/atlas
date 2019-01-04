@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.typesafe.config.Config
-
 /**
   * Push a value through a sequence of online algorithms and return the result.
   */
@@ -32,16 +30,15 @@ case class Pipeline(stages: List[OnlineAlgorithm]) extends OnlineAlgorithm {
     stages.foreach(_.reset())
   }
 
-  override def state: Config = {
-    OnlineAlgorithm.toConfig(Map("type" -> "pipeline", "stages" -> stages.map(_.state)))
+  override def state: AlgoState = {
+    AlgoState("pipeline", "stages" -> stages.map(_.state))
   }
 }
 
 object Pipeline {
 
-  def apply(config: Config): Pipeline = {
-    import scala.collection.JavaConverters._
-    apply(config.getConfigList("stages").asScala.map(OnlineAlgorithm.apply).toList)
+  def apply(state: AlgoState): Pipeline = {
+    apply(state.getStateList("stages").map(OnlineAlgorithm.apply))
   }
 
   def apply(stages: OnlineAlgorithm*): Pipeline = apply(stages.toList)

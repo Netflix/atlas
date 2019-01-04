@@ -15,50 +15,13 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.typesafe.config.ConfigException
 import org.scalatest.FunSuite
 
 class OnlineAlgorithmSuite extends FunSuite {
 
   test("restore unknown type") {
-    val cfg = OnlineAlgorithm.toConfig(Map("type" -> "foo"))
     intercept[IllegalArgumentException] {
-      OnlineAlgorithm(cfg)
+      OnlineAlgorithm(AlgoState("foo", Map.empty[String, Any]))
     }
-  }
-
-  test("no type specified") {
-    val cfg = OnlineAlgorithm.toConfig(Map("foo" -> "bar"))
-    intercept[ConfigException] {
-      OnlineAlgorithm(cfg)
-    }
-  }
-
-  test("toConfig: string field") {
-    val cfg = OnlineAlgorithm.toConfig(Map("value" -> "str"))
-    assert("str" === cfg.getString("value"))
-  }
-
-  test("toConfig: int field") {
-    val cfg = OnlineAlgorithm.toConfig(Map("value" -> 42))
-    assert(42 === cfg.getInt("value"))
-  }
-
-  test("toConfig: double field") {
-    val cfg = OnlineAlgorithm.toConfig(Map("value" -> 42.0))
-    assert(42.0 === cfg.getInt("value"))
-  }
-
-  test("toConfig: double array field") {
-    val cfg = OnlineAlgorithm.toConfig(Map("array" -> Array(1.0, 2.0)))
-    val vs = cfg.getDoubleList("array")
-    assert(vs.size() === 2)
-    assert(vs.get(1) === 2.0)
-  }
-
-  test("toConfig: config field") {
-    val subCfg = OnlineAlgorithm.toConfig(Map("foo" -> "bar"))
-    val cfg = OnlineAlgorithm.toConfig(Map("cfg"    -> subCfg))
-    assert(subCfg === cfg.getConfig("cfg"))
   }
 }

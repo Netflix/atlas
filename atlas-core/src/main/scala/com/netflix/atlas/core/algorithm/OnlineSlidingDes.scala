@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.typesafe.config.Config
-
 /**
   * Alternate between two DES functions after each training period. This provides a deterministic
   * estimate within a bounded amount of time.
@@ -58,36 +56,34 @@ case class OnlineSlidingDes(
     des2.reset()
   }
 
-  override def state: Config = {
-    OnlineAlgorithm.toConfig(
-      Map(
-        "type"          -> "sliding-des",
-        "training"      -> training,
-        "alpha"         -> alpha,
-        "beta"          -> beta,
-        "useOne"        -> useOne,
-        "currentSample" -> currentSample,
-        "des1"          -> des1.state,
-        "des2"          -> des2.state
-      )
+  override def state: AlgoState = {
+    AlgoState(
+      "sliding-des",
+      "training"      -> training,
+      "alpha"         -> alpha,
+      "beta"          -> beta,
+      "useOne"        -> useOne,
+      "currentSample" -> currentSample,
+      "des1"          -> des1.state,
+      "des2"          -> des2.state
     )
   }
 }
 
 object OnlineSlidingDes {
 
-  def apply(config: Config): OnlineSlidingDes = {
-    val des1 = OnlineDes(config.getConfig("des1"))
-    val des2 = OnlineDes(config.getConfig("des2"))
+  def apply(state: AlgoState): OnlineSlidingDes = {
+    val des1 = OnlineDes(state.getState("des1"))
+    val des2 = OnlineDes(state.getState("des2"))
     val sdes = new OnlineSlidingDes(
-      config.getInt("training"),
-      config.getDouble("alpha"),
-      config.getDouble("beta"),
+      state.getInt("training"),
+      state.getDouble("alpha"),
+      state.getDouble("beta"),
       des1,
       des2
     )
-    sdes.useOne = config.getBoolean("useOne")
-    sdes.currentSample = config.getInt("currentSample")
+    sdes.useOne = state.getBoolean("useOne")
+    sdes.currentSample = state.getInt("currentSample")
     sdes
   }
 

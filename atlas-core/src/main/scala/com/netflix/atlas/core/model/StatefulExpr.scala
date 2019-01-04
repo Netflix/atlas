@@ -25,8 +25,8 @@ import com.netflix.atlas.core.algorithm.OnlineRollingMax
 import com.netflix.atlas.core.algorithm.OnlineRollingMin
 import com.netflix.atlas.core.algorithm.OnlineSlidingDes
 import com.netflix.atlas.core.algorithm.Pipeline
+import com.netflix.atlas.core.algorithm.AlgoState
 import com.netflix.atlas.core.util.Math
-import com.typesafe.config.Config
 
 trait StatefulExpr extends TimeSeriesExpr {}
 
@@ -359,7 +359,7 @@ object StatefulExpr {
     * OnlineAlgorithm.
     */
   trait OnlineExpr extends StatefulExpr {
-    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, Config]
+    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, AlgoState]
 
     protected def name: String
 

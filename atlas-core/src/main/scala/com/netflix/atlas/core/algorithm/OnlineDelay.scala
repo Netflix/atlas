@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.typesafe.config.Config
-
 /**
   * Delays the values by the window size. This is similar to the `:offset` operator
   * except that it can be applied to any input line instead of just changing the time
@@ -29,8 +27,8 @@ case class OnlineDelay(buf: RollingBuffer) extends OnlineAlgorithm {
 
   override def reset(): Unit = buf.clear()
 
-  override def state: Config = {
-    OnlineAlgorithm.toConfig(Map("type" -> "delay", "buffer" -> buf.state))
+  override def state: AlgoState = {
+    AlgoState("delay", "buffer" -> buf.state)
   }
 }
 
@@ -38,7 +36,7 @@ object OnlineDelay {
 
   def apply(n: Int): OnlineDelay = new OnlineDelay(RollingBuffer(n))
 
-  def apply(config: Config): OnlineDelay = {
-    apply(RollingBuffer(config.getConfig("buffer")))
+  def apply(state: AlgoState): OnlineDelay = {
+    apply(RollingBuffer(state.getState("buffer")))
   }
 }
