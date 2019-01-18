@@ -370,7 +370,8 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val ds = new Evaluator.DataSource(
       "test",
       Duration.ofMinutes(1),
-      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by")
+      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
+    )
     evaluator.validate(ds)
   }
 
@@ -379,7 +380,8 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val ds = new Evaluator.DataSource(
       "test",
       Duration.ofMinutes(1),
-      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:b")
+      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:b"
+    )
     val e = intercept[IllegalStateException] {
       evaluator.validate(ds)
     }
@@ -391,7 +393,8 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val ds = new Evaluator.DataSource(
       "test",
       Duration.ofMinutes(1),
-      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:sum,1w,:offset")
+      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:sum,1w,:offset"
+    )
     val e = intercept[IllegalArgumentException] {
       evaluator.validate(ds)
     }
@@ -403,7 +406,8 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val ds = new Evaluator.DataSource(
       "test",
       Duration.ofMinutes(1),
-      "http://unknownhost.com?q=name,jvm.gc.pause,:eq,:sum")
+      "http://unknownhost.com?q=name,jvm.gc.pause,:eq,:sum"
+    )
     val e = intercept[NoSuchElementException] {
       evaluator.validate(ds)
     }
