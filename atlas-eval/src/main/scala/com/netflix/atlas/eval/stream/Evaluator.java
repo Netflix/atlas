@@ -106,6 +106,17 @@ public final class Evaluator extends EvaluatorImpl {
   }
 
   /**
+   * Perform static analysis checks to ensure that the provided data source is supported
+   * by this evaluator instance.
+   *
+   * @param ds
+   *     Data source to validate.
+   */
+  public void validate(DataSource ds) {
+    validateImpl(ds);
+  }
+
+  /**
    * Immutable set of data sources that should be consumed.
    */
   public final static class DataSources {
