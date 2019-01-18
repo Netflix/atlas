@@ -277,8 +277,12 @@ case class Grapher(settings: DefaultSettings) {
           val labelledTS = ts.map { t =>
             val stats = SummaryStats(t.data, start, end)
             val offset = Strings.toString(Duration.ofMillis(s.offset))
-            val newT = t.withTags(t.tags ++ stats.tags(statFormatter) + (TagKey.offset -> offset))
-            newT.withLabel(s.legend(newT)) -> stats
+            val outputTags = t.tags + (TagKey.offset -> offset)
+            // Additional stats can be used for substitutions, but should not be included
+            // as part of the output tag map
+            val legendTags = outputTags ++ stats.tags(statFormatter)
+            val newT = t.withTags(outputTags)
+            newT.withLabel(s.legend(newT.label, legendTags)) -> stats
           }
 
           val linePalette = s.palette.map(newPalette).getOrElse {

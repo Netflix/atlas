@@ -22,6 +22,7 @@ import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
+import com.netflix.atlas.json.Json
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuite
@@ -386,4 +387,27 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
     "/api/v1/graph?e=2012-01-01T00:00&u.1=56e3" +
     "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend,:stack,20e3,1,:axis,:area,50,:alpha"
   }
+
+  test("stat vars are not included in tag map") {
+    val uri = "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,nf.app,nccp,:eq,:and,:sum&format=json"
+    val json = grapher.evalAndRender(Uri(uri), db).data
+    val response = Json.decode[GrapherSuite.GraphResponse](json)
+    List("avg", "last", "max", "min", "total").foreach { stat =>
+      response.metrics.foreach { m =>
+        assert(!m.contains(s"atlas.$stat"))
+      }
+    }
+  }
+}
+
+object GrapherSuite {
+  case class GraphResponse(
+    start: Long,
+    step: Long,
+    legend: List[String],
+    metrics: List[Map[String, String]],
+    values: Array[Array[Double]],
+    notices: List[String],
+    explain: Map[String, Long]
+  )
 }
