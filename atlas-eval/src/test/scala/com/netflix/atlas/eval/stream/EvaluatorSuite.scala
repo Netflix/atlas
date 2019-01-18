@@ -364,4 +364,53 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val ds = newDataSource(Some("abc"))
     assert(ds.getStep === Duration.ofMinutes(1))
   }
+
+  test("validate: ok") {
+    val evaluator = new Evaluator(config, registry, system)
+    val ds = new Evaluator.DataSource(
+      "test",
+      Duration.ofMinutes(1),
+      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
+    )
+    evaluator.validate(ds)
+  }
+
+  test("validate: bad expression") {
+    val evaluator = new Evaluator(config, registry, system)
+    val ds = new Evaluator.DataSource(
+      "test",
+      Duration.ofMinutes(1),
+      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:b"
+    )
+    val e = intercept[IllegalStateException] {
+      evaluator.validate(ds)
+    }
+    assert(e.getMessage === "unknown word ':b'")
+  }
+
+  test("validate: unsupported operation `:offset`") {
+    val evaluator = new Evaluator(config, registry, system)
+    val ds = new Evaluator.DataSource(
+      "test",
+      Duration.ofMinutes(1),
+      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:sum,1w,:offset"
+    )
+    val e = intercept[IllegalArgumentException] {
+      evaluator.validate(ds)
+    }
+    assert(e.getMessage.startsWith(":offset not supported for streaming evaluation "))
+  }
+
+  test("validate: unknown backend") {
+    val evaluator = new Evaluator(config, registry, system)
+    val ds = new Evaluator.DataSource(
+      "test",
+      Duration.ofMinutes(1),
+      "http://unknownhost.com?q=name,jvm.gc.pause,:eq,:sum"
+    )
+    val e = intercept[NoSuchElementException] {
+      evaluator.validate(ds)
+    }
+    assert(e.getMessage === "unknownhost.com")
+  }
 }

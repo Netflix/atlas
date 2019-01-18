@@ -42,6 +42,9 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 
 import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 private[stream] class StreamContext(
   rootConfig: Config,
@@ -121,12 +124,22 @@ private[stream] class StreamContext(
     */
   def validate(input: DataSources): DataSources = {
     import scala.collection.JavaConverters._
-    val valid = input.getSources.asScala.flatMap(validateDataSource).asJava
+    val valid = new java.util.HashSet[DataSource]()
+    input.getSources.asScala.foreach { ds =>
+      validateDataSource(ds) match {
+        case Success(v) => valid.add(v)
+        case Failure(e) => dsLogger(ds, DiagnosticMessage.error(e))
+      }
+    }
     new DataSources(valid)
   }
 
-  private def validateDataSource(ds: DataSource): Option[DataSource] = {
-    try {
+  /**
+    * Perform static checks to verify that the provide data source can be evaluated correctly
+    * in this context.
+    */
+  def validateDataSource(ds: DataSource): Try[DataSource] = {
+    Try {
       val uri = Uri(ds.getUri)
 
       // Check that expression is parseable and perform basic static analysis of DataExprs to
@@ -138,11 +151,7 @@ private[stream] class StreamContext(
       findBackendForUri(uri)
 
       // Everything is ok
-      Some(ds)
-    } catch {
-      case e: Exception =>
-        dsLogger(ds, DiagnosticMessage.error(e))
-        None
+      ds
     }
   }
 

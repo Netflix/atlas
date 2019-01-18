@@ -64,6 +64,9 @@ private[stream] abstract class EvaluatorImpl(
 
   private implicit val materializer = ActorMaterializer()
 
+  // Cached context instance used for things like expression validation.
+  private val validationStreamContext = newStreamContext()
+
   private def newStreamContext(dsLogger: DataSourceLogger = (_, _) => ()): StreamContext = {
     new StreamContext(
       config,
@@ -72,6 +75,10 @@ private[stream] abstract class EvaluatorImpl(
       registry,
       dsLogger
     )
+  }
+
+  protected def validateImpl(ds: DataSource): Unit = {
+    validationStreamContext.validateDataSource(ds).get
   }
 
   protected def writeInputToFileImpl(uri: String, file: Path, duration: Duration): Unit = {
