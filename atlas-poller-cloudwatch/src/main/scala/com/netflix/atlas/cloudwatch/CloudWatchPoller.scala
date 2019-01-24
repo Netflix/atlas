@@ -26,6 +26,11 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.routing.FromConfig
+import akka.stream.ActorMaterializer
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch
 import com.amazonaws.services.cloudwatch.model.Datapoint
 import com.amazonaws.services.cloudwatch.model.StandardUnit
@@ -68,6 +73,8 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   import scala.concurrent.ExecutionContext.Implicits.global
   import scala.concurrent.duration._
 
+  private implicit val mat: ActorMaterializer = ActorMaterializer.create(context.system)
+
   // Load the categories and tagger based on the config settings
   private val categories = getCategories(config)
   private val tagger = getTagger(config)
@@ -81,10 +88,30 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   private val metricsGetRef =
     context.actorOf(FromConfig.props(Props(new GetMetricActor(client))), "metrics-get")
 
+  // Throttler to control the rate of get metrics calls in order to stay within AWS SDK limits.
+  private val throttledMetricsGetRef = Source
+    .actorRef[Any](
+      config.getInt("atlas.cloudwatch.metrics-get-buffer-size"),
+      OverflowStrategy.dropNew
+    )
+    .throttle(config.getInt("atlas.cloudwatch.metrics-get-max-rate-per-second"), 1.second)
+    .toMat(Sink.foreach(message => metricsGetRef.tell(message, self)))(Keep.left)
+    .run()
+
   // Child actor for listing metrics. This will do the call using the
   // AWS SDK which is blocking and should be run in an isolated dispatcher.
   private val metricsListRef =
     context.actorOf(FromConfig.props(Props(new ListMetricsActor(client, tagger))), "metrics-list")
+
+  // Throttler to control the rate of list metrics calls in order to stay within AWS SDK limits.
+  private val throttledMetricsListRef = Source
+    .actorRef[Any](
+      config.getInt("atlas.cloudwatch.metrics-list-buffer-size"),
+      OverflowStrategy.dropNew
+    )
+    .throttle(config.getInt("atlas.cloudwatch.metrics-list-max-rate-per-second"), 1.second)
+    .toMat(Sink.foreach(message => metricsListRef.tell(message, self)))(Keep.left)
+    .run()
 
   // Batch size to use for flushing data back to the poller manager.
   private val batchSize = config.getInt("atlas.cloudwatch.batch-size")
@@ -149,7 +176,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     } else {
       logger.info(s"refreshing list of cloudwatch metrics for ${categories.size} categories")
       pendingList = true
-      metricsListRef ! ListMetrics(categories)
+      throttledMetricsListRef ! ListMetrics(categories)
     }
   }
 
@@ -167,7 +194,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
       pendingGets.addAndGet(num)
       logger.info(s"requesting data for $num metrics")
       ms.foreach { m =>
-        metricsGetRef ! m
+        throttledMetricsGetRef ! m
       }
     }
   }
@@ -175,7 +202,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   /**
     * Process the returned list of metrics. An empty list will get ignored as it is likely
     * in error. The `atlas.cloudwatch.listAge` metric can be used to monitor how long it
-    * has been since the metadata was succesfully updated.
+    * has been since the metadata was successfully updated.
     */
   private def processMetricList(ms: List[MetricMetadata]): Unit = {
     pendingList = false
