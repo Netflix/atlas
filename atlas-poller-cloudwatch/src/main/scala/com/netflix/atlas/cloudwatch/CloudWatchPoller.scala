@@ -104,15 +104,6 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     context.actorOf(FromConfig.props(Props(new ListMetricsActor(client, tagger))), "metrics-list")
 
   // Throttler to control the rate of list metrics calls in order to stay within AWS SDK limits.
-  private val throttledMetricsListRef = Source
-    .actorRef[Any](
-      config.getInt("atlas.cloudwatch.metrics-list-buffer-size"),
-      OverflowStrategy.dropNew
-    )
-    .throttle(config.getInt("atlas.cloudwatch.metrics-list-max-rate-per-second"), 1.second)
-    .toMat(Sink.foreach(message => metricsListRef.tell(message, self)))(Keep.left)
-    .run()
-
   // Batch size to use for flushing data back to the poller manager.
   private val batchSize = config.getInt("atlas.cloudwatch.batch-size")
 
@@ -176,7 +167,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
     } else {
       logger.info(s"refreshing list of cloudwatch metrics for ${categories.size} categories")
       pendingList = true
-      throttledMetricsListRef ! ListMetrics(categories)
+      metricsListRef ! ListMetrics(categories)
     }
   }
 
