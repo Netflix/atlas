@@ -90,10 +90,11 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
 
   // Throttler to control the rate of get metrics calls in order to stay within AWS SDK limits.
   private val throttledMetricsGetRef = Source
-    .actorRef[Any](
+    .actorRef[List[MetricMetadata]](
       config.getInt("atlas.cloudwatch.metrics-get-buffer-size"),
       OverflowStrategy.dropNew
     )
+    .flatMapConcat(ms => Source(ms))
     .throttle(config.getInt("atlas.cloudwatch.metrics-get-max-rate-per-second"), 1.second)
     .toMat(Sink.foreach(message => metricsGetRef.tell(message, self)))(Keep.left)
     .run()
@@ -184,9 +185,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
       }
       pendingGets.addAndGet(num)
       logger.info(s"requesting data for $num metrics")
-      ms.foreach { m =>
-        throttledMetricsGetRef ! m
-      }
+      throttledMetricsGetRef ! ms
     }
   }
 
