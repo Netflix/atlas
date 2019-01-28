@@ -104,7 +104,6 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   private val metricsListRef =
     context.actorOf(FromConfig.props(Props(new ListMetricsActor(client, tagger))), "metrics-list")
 
-  // Throttler to control the rate of list metrics calls in order to stay within AWS SDK limits.
   // Batch size to use for flushing data back to the poller manager.
   private val batchSize = config.getInt("atlas.cloudwatch.batch-size")
 
