@@ -92,7 +92,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   private val throttledMetricsGetRef = Source
     .actorRef[List[MetricMetadata]](
       config.getInt("atlas.cloudwatch.metrics-get-buffer-size"),
-      OverflowStrategy.dropNew
+      OverflowStrategy.dropHead
     )
     .flatMapConcat(ms => Source(ms))
     .throttle(config.getInt("atlas.cloudwatch.metrics-get-max-rate-per-second"), 1.second)
