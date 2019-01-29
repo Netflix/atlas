@@ -49,6 +49,7 @@ object OnlineAlgorithm {
       case "pipeline"      => Pipeline(state)
       case "rolling-count" => OnlineRollingCount(state)
       case "rolling-max"   => OnlineRollingMax(state)
+      case "rolling-mean"  => OnlineRollingMean(state)
       case "rolling-min"   => OnlineRollingMin(state)
       case "sliding-des"   => OnlineSlidingDes(state)
       case "trend"         => OnlineTrend(state)

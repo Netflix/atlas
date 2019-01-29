@@ -35,6 +35,7 @@ object StatefulVocabulary extends Vocabulary {
     RollingCount,
     RollingMin,
     RollingMax,
+    RollingMean,
     Des,
     SlidingDes,
     Trend,
@@ -258,6 +259,55 @@ object StatefulVocabulary extends Vocabulary {
     override def examples: List[String] = List("name,sps,:eq,:sum,5")
   }
 
+  case object RollingMean extends SimpleWord {
+
+    override def name: String = "rolling-mean"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: IntType(_) :: TimeSeriesType(_) :: _ => true
+      case IntType(_) :: IntType(_) :: (_: StyleExpr) :: _    => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(m) :: IntType(n) :: TimeSeriesType(t) :: s =>
+        StatefulExpr.RollingMean(t, n, m) :: s
+      case IntType(m) :: IntType(n) :: (t: StyleExpr) :: s =>
+        t.copy(expr = StatefulExpr.RollingMean(t.expr, n, m)) :: s
+    }
+
+    override def summary: String =
+      """
+        |Mean of the values within a specified window. The mean will only be emitted
+        |if there are at least a minimum number of actual values (not `NaN`) within
+        |the window. Otherwise `NaN` will be emitted for that time period.
+        |
+        || Input | 3,2,:rolling-mean   |
+        ||-------|---------------------|
+        || 0     | NaN                 |
+        || 1     | 0.5                 |
+        || -1    | 0.0                 |
+        || NaN   | 0.0                 |
+        || NaN   | NaN                 |
+        || 0     | NaN                 |
+        || 1     | 0.5                 |
+        || 1     | 0.667               |
+        || 1     | 1                   |
+        || 0     | 0.667               |
+        |
+        |The window size, `n`, is the number of datapoints to consider including the current
+        |value. There must be at least `minNumValues` non-NaN values within that window before
+        |it will emit a mean. Note that it is based on datapoints, not a specific amount of time.
+        |As a result the number of occurrences will be reduced when transitioning to a larger time
+        |frame that causes consolidation.
+        |
+        |Since: 1.6
+      """.stripMargin.trim
+
+    override def signature: String = "TimeSeriesExpr n:Int minNumValues:Int -- TimeSeriesExpr"
+
+    override def examples: List[String] = List("name,sps,:eq,:sum,5,3")
+  }
+
   case object Des extends SimpleWord {
 
     override def name: String = "des"
@@ -370,6 +420,8 @@ object StatefulVocabulary extends Vocabulary {
 
     override def summary: String =
       """
+        |> :warning: **Deprecated:** Use [:rolling-mean](stateful-rolling‐mean) instead.
+        |
         |Computes a moving average over the input window. Until there is at least one sample
         |for the whole window it will emit `NaN`. If the input line has `NaN` values, then they
         |will be treated as zeros. Example:
