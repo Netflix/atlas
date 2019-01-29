@@ -30,5 +30,5 @@ trait GraphEngine {
 
   def contentType: String
 
-  def write(config: GraphDef, output: OutputStream)
+  def write(config: GraphDef, output: OutputStream): Unit
 }

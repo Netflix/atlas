@@ -223,7 +223,7 @@ object PublishApi {
     finally parser.close()
   }
 
-  private def encodeTags(gen: JsonGenerator, tags: Map[String, String]) {
+  private def encodeTags(gen: JsonGenerator, tags: Map[String, String]): Unit = {
     gen.writeObjectFieldStart("tags")
     tags match {
       case m: SmallHashMap[String, String] =>
@@ -238,7 +238,7 @@ object PublishApi {
     gen.writeEndObject()
   }
 
-  def encodeDatapoint(gen: JsonGenerator, d: Datapoint) {
+  def encodeDatapoint(gen: JsonGenerator, d: Datapoint): Unit = {
     gen.writeStartObject()
     encodeTags(gen, d.tags)
     gen.writeNumberField("timestamp", d.timestamp)
@@ -254,7 +254,7 @@ object PublishApi {
     }
   }
 
-  def encodeBatch(gen: JsonGenerator, tags: Map[String, String], values: List[Datapoint]) {
+  def encodeBatch(gen: JsonGenerator, tags: Map[String, String], values: List[Datapoint]): Unit = {
     gen.writeStartObject()
     encodeTags(gen, tags)
     gen.writeArrayFieldStart("metrics")

@@ -41,7 +41,7 @@ object AggregateCollector {
 trait AggregateCollector {
 
   /** Add `b` to the aggregate. */
-  def add(b: TimeSeriesBuffer)
+  def add(b: TimeSeriesBuffer): Unit
 
   /**
     * Add a block to the aggregate directly. The underlying buffer must be using the same step size
@@ -78,7 +78,7 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
 
   val statBuffer = new CollectorStatsBuilder
 
-  protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer)
+  protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer): Unit
 
   def add(b: TimeSeriesBuffer): Unit = {
     statBuffer.updateInput(b.values.length)
