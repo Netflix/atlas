@@ -29,6 +29,7 @@ import com.netflix.atlas.core.algorithm.AlgoState
 import com.netflix.atlas.core.algorithm.OnlineDerivative
 import com.netflix.atlas.core.algorithm.OnlineIntegral
 import com.netflix.atlas.core.algorithm.OnlineRollingCount
+import com.netflix.atlas.core.algorithm.OnlineRollingMean
 import com.netflix.atlas.core.algorithm.OnlineTrend
 
 trait StatefulExpr extends TimeSeriesExpr {}
@@ -139,6 +140,20 @@ object StatefulExpr {
     }
 
     override def toString: String = s"$expr,$n,:rolling-max"
+  }
+
+  /**
+    * Computes the mean of the values over the last `n` intervals.
+    */
+  case class RollingMean(expr: TimeSeriesExpr, n: Int, minNumValues: Int) extends OnlineExpr {
+
+    override protected def name: String = "rolling-mean"
+
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineRollingMean(n, minNumValues)
+    }
+
+    override def toString: String = s"$expr,$n,$minNumValues,:rolling-mean"
   }
 
   /**
