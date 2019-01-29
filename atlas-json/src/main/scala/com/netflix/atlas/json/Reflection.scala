@@ -112,8 +112,10 @@ private[json] object Reflection {
 
   private def getAlias(annotations: List[Annotation]): Option[String] = {
     annotations.find(_.tree.tpe =:= typeOf[JsonProperty]).flatMap { anno =>
-      val constants = anno.tree.children.tail.collect {
-        case AssignOrNamedArg(_, Literal(Constant(v: String))) => v
+      val constants = anno.tree.children.flatMap { c =>
+        c.collect {
+          case Literal(Constant(v: String)) => v
+        }
       }
       constants.headOption
     }
