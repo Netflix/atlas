@@ -35,7 +35,7 @@ trait InternMap[K <: AnyRef] extends Interner[K] {
 
   def intern(k: K): K
 
-  def retain(f: Long => Boolean)
+  def retain(f: Long => Boolean): Unit
 
   def size: Int
 }
@@ -52,7 +52,7 @@ class OpenHashInternMap[K <: AnyRef: Manifest](initialCapacity: Int, clock: Cloc
     if (h < 0) -h else h
   }
 
-  private def resize(newCapacity: Int, keep: Long => Boolean) = {
+  private def resize(newCapacity: Int, keep: Long => Boolean): Unit = {
     val oldData = data
     val oldTimestamps = timestamps
 

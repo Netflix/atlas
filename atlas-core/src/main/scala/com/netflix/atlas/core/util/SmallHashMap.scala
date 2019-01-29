@@ -190,7 +190,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     * Call the function `f` for each tuple in the map without requiring a temporary object to be
     * created.
     */
-  def foreachItem(f: (K, V) => Unit) {
+  def foreachItem(f: (K, V) => Unit): Unit = {
     var i = 0
     while (i < data.length) {
       if (data(i) != null) f(data(i).asInstanceOf[K], data(i + 1).asInstanceOf[V])

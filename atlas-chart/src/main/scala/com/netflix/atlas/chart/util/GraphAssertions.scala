@@ -45,7 +45,7 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
     }
   }
 
-  def generateReport(clazz: Class[_], diffsOnly: Boolean = true) {
+  def generateReport(clazz: Class[_], diffsOnly: Boolean = true): Unit = {
     val report = s"""<html>
       <head><title>${clazz.getSimpleName}</title></head>
       <body><h1>${clazz.getSimpleName}</h1><hr/> ${
@@ -83,31 +83,31 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
     }
   }
 
-  def assertEquals(v1: Double, v2: Double, delta: Double) {
+  def assertEquals(v1: Double, v2: Double, delta: Double): Unit = {
     val diff = scala.math.abs(v1 - v2)
     if (diff > delta) {
       throw new AssertionError("%f != %f".format(v1, v2))
     }
   }
 
-  def assertEquals(v1: Double, v2: Double, delta: Double, msg: String) {
+  def assertEquals(v1: Double, v2: Double, delta: Double, msg: String): Unit = {
     val diff = scala.math.abs(v1 - v2)
     if (diff > delta) {
       throw new AssertionError("%f != %f, %s".format(v1, v2, msg))
     }
   }
 
-  def assertEquals(i1: RenderedImage, i2: RenderedImage) {
+  def assertEquals(i1: RenderedImage, i2: RenderedImage): Unit = {
     val diff = PngImage.diff(i1, i2)
     assert(diff.metadata("identical"), "true")
   }
 
-  def assertEquals(i1: PngImage, i2: PngImage) {
+  def assertEquals(i1: PngImage, i2: PngImage): Unit = {
     assertEquals(i1.data, i2.data)
     assert(i1.metadata, i2.metadata)
   }
 
-  def assertEquals(i1: PngImage, f: String, bless: Boolean = false) {
+  def assertEquals(i1: PngImage, f: String, bless: Boolean = false): Unit = {
     // Skip on systems with incompatible font rendering
     if (!Fonts.shouldRunTests) return
 
@@ -130,28 +130,28 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
     assertEquals(i1, i2)
   }
 
-  private def blessImage(img: PngImage, f: String) {
+  private def blessImage(img: PngImage, f: String): Unit = {
     writeImage(img, goldenDir, f)
   }
 
-  private def writeImage(img: PngImage, dir: String, f: String) {
+  private def writeImage(img: PngImage, dir: String, f: String): Unit = {
     val file = new File(new File(dir), f)
     file.getParentFile.mkdirs()
     val stream = new FileOutputStream(file)
     img.write(stream)
   }
 
-  def assertEquals(s1: String, f: String, bless: Boolean) {
+  def assertEquals(s1: String, f: String, bless: Boolean): Unit = {
     if (bless) blessString(s1, f)
     val s2 = getString(f)
     assert(s1, s2)
   }
 
-  private def blessString(s: String, f: String) {
+  private def blessString(s: String, f: String): Unit = {
     writeString(s, goldenDir, f)
   }
 
-  private def writeString(s: String, dir: String, f: String) {
+  private def writeString(s: String, dir: String, f: String): Unit = {
     val file = new File(new File(dir), f)
     file.getParentFile.mkdirs()
     val stream = new FileOutputStream(file)

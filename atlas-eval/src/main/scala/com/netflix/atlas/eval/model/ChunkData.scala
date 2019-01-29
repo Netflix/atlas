@@ -38,7 +38,7 @@ final case class ArrayData(values: Array[Double]) extends ChunkData {
 
   def typeName: String = "array"
 
-  override def encode(gen: JsonGenerator) {
+  override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "array")
     gen.writeArrayFieldStart("values")

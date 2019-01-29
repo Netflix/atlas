@@ -17,7 +17,7 @@ package com.netflix.atlas.core.norm
 
 trait ValueFunction {
 
-  def apply(timestamp: Long, value: Double)
+  def apply(timestamp: Long, value: Double): Unit
 }
 
 /**

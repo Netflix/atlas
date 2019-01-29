@@ -34,5 +34,5 @@ trait TagIndex[T <: TaggedItem] {
 trait MutableTagIndex[T <: TaggedItem] extends TagIndex[T] {
 
   /** Update the index with the given items. */
-  def update(items: List[T])
+  def update(items: List[T]): Unit
 }

@@ -63,7 +63,7 @@ case class TimeSeriesMessage(
   data: ChunkData
 ) extends JsonSupport {
 
-  override def encode(gen: JsonGenerator) {
+  override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "timeseries")
     gen.writeStringField("id", id)
@@ -83,7 +83,7 @@ case class TimeSeriesMessage(
     gen.writeEndObject()
   }
 
-  private def encodeTags(gen: JsonGenerator, tags: Map[String, String]) {
+  private def encodeTags(gen: JsonGenerator, tags: Map[String, String]): Unit = {
     gen.writeObjectFieldStart("tags")
     tags match {
       case m: SmallHashMap[String, String] =>

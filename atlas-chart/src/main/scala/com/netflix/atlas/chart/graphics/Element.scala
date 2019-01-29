@@ -22,7 +22,7 @@ import java.awt.Graphics2D
   */
 trait Element {
 
-  def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int)
+  def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit
 
   /** Compute the width for the element if restricted to the specified height. */
   def getWidth(g: Graphics2D, height: Int): Int = {
