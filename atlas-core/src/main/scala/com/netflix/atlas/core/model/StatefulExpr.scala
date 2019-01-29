@@ -26,241 +26,62 @@ import com.netflix.atlas.core.algorithm.OnlineRollingMin
 import com.netflix.atlas.core.algorithm.OnlineSlidingDes
 import com.netflix.atlas.core.algorithm.Pipeline
 import com.netflix.atlas.core.algorithm.AlgoState
-import com.netflix.atlas.core.util.Math
+import com.netflix.atlas.core.algorithm.OnlineDerivative
+import com.netflix.atlas.core.algorithm.OnlineIntegral
+import com.netflix.atlas.core.algorithm.OnlineRollingCount
+import com.netflix.atlas.core.algorithm.OnlineTrend
 
 trait StatefulExpr extends TimeSeriesExpr {}
 
 object StatefulExpr {
 
-  //
-  // RollingCount
-  //
+  /**
+    * Compute a moving average for values within the input time series. The duration will
+    * be rounded down to the nearest step boundary.
+    */
+  case class Trend(expr: TimeSeriesExpr, window: Duration) extends OnlineExpr {
 
-  case class RollingCount(expr: TimeSeriesExpr, n: Int) extends StatefulExpr {
-    import com.netflix.atlas.core.model.StatefulExpr.RollingCount._
+    override protected def name: String = "trend"
 
-    def dataExprs: List[DataExpr] = expr.dataExprs
-
-    override def toString: String = s"$expr,$n,:rolling-count"
-
-    def isGrouped: Boolean = expr.isGrouped
-
-    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
-
-    def finalGrouping: List[String] = expr.finalGrouping
-
-    private def eval(ts: ArrayTimeSeq, s: State): State = {
-      val data = ts.data
-      var pos = s.pos
-      var value = s.value
-      val buf = s.buf.clone()
-      var i = 0
-      while (i < data.length) {
-        if (pos < n) {
-          buf(pos % n) = data(i)
-          value = value + Math.toBooleanDouble(data(i))
-          data(i) = value
-        } else {
-          val p = pos % n
-          value = value - Math.toBooleanDouble(buf(p))
-          value = value + Math.toBooleanDouble(data(i))
-          buf(p) = data(i)
-          data(i) = value
-        }
-        pos += 1
-        i += 1
-      }
-      State(pos, value, buf)
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      // IgnoreN of 0 is used as an identity algorithm if the specified window is small
+      // enough that no averaging will take place
+      val period = (window.toMillis / context.step).toInt
+      if (period <= 1) OnlineIgnoreN(0) else OnlineTrend(period)
     }
-
-    private def newState: State = {
-      State(0, 0.0, new Array[Double](n))
-    }
-
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      if (n <= 1) rs
-      else {
-        val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
-        val newData = rs.data.map { t =>
-          val bounded = t.data.bounded(context.start, context.end)
-          val s = state.getOrElse(t.id, newState)
-          state(t.id) = eval(bounded, s)
-          TimeSeries(t.tags, s"rolling-count(${t.label}, $n)", bounded)
-        }
-        ResultSet(this, newData, rs.state + (this -> state))
-      }
-    }
-  }
-
-  object RollingCount {
-
-    case class State(pos: Int, value: Double, buf: Array[Double])
-
-    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
-  }
-
-  //
-  // Trend
-  //
-
-  case class Trend(expr: TimeSeriesExpr, window: Duration) extends StatefulExpr {
-    import com.netflix.atlas.core.model.StatefulExpr.Trend._
-
-    def dataExprs: List[DataExpr] = expr.dataExprs
 
     override def toString: String = s"$expr,$window,:trend"
-
-    def isGrouped: Boolean = expr.isGrouped
-
-    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
-
-    def finalGrouping: List[String] = expr.finalGrouping
-
-    private def eval(period: Int, ts: ArrayTimeSeq, s: State): State = {
-      val data = ts.data
-      var nanCount = s.nanCount
-      var pos = s.pos
-      var value = s.value
-      val buf = s.buf.clone()
-      var i = 0
-      while (i < data.length) {
-        if (data(i).isNaN) nanCount += 1
-        if (pos < period - 1) {
-          buf(pos % period) = data(i)
-          value = Math.addNaN(value, data(i))
-          data(i) = Double.NaN
-        } else {
-          val p = pos % period
-          if (buf(p).isNaN) nanCount -= 1
-          value = Math.addNaN(Math.subtractNaN(value, buf(p)), data(i))
-          buf(p) = data(i)
-          data(i) = if (nanCount < period) value / period else Double.NaN
-        }
-        pos += 1
-        i += 1
-      }
-      State(nanCount, pos, value, buf)
-    }
-
-    private def newState(period: Int): State = State(0, 0, 0.0, new Array[Double](period))
-
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val period = (window.toMillis / context.step).toInt
-      val rs = expr.eval(context, data)
-      if (period <= 1) rs
-      else {
-        val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
-        val newData = rs.data.map { t =>
-          val bounded = t.data.bounded(context.start, context.end)
-          val s = state.getOrElse(t.id, newState(period))
-          state(t.id) = eval(period, bounded, s)
-          TimeSeries(t.tags, s"trend(${t.label}, $window)", bounded)
-        }
-        ResultSet(this, newData, rs.state + (this -> state))
-      }
-    }
   }
 
-  object Trend {
+  /**
+    * Sum the values across the evaluation context. This is typically used to approximate the
+    * distinct number of events that occurred. If the input is non-negative, then each datapoint
+    * for the output line will represent the area under the input line from the start of the graph
+    * to the time for that datapoint. Missing values, `NaN`, will be treated as zeroes.
+    */
+  case class Integral(expr: TimeSeriesExpr) extends OnlineExpr {
 
-    case class State(nanCount: Int, pos: Int, value: Double, buf: Array[Double])
+    override protected def name: String = "integral"
 
-    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
-  }
-
-  //
-  // Integral
-  //
-
-  case class Integral(expr: TimeSeriesExpr) extends StatefulExpr {
-    import com.netflix.atlas.core.model.StatefulExpr.Integral._
-
-    def dataExprs: List[DataExpr] = expr.dataExprs
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineIntegral(Double.NaN)
+    }
 
     override def toString: String = s"$expr,:integral"
+  }
 
-    def isGrouped: Boolean = expr.isGrouped
+  /**
+    * Determine the rate of change per step interval for the input time series.
+    */
+  case class Derivative(expr: TimeSeriesExpr) extends OnlineExpr {
 
-    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+    override protected def name: String = "derivative"
 
-    def finalGrouping: List[String] = expr.finalGrouping
-
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
-      val newData = rs.data.map { t =>
-        val bounded = t.data.bounded(context.start, context.end)
-        val length = bounded.data.length
-        var i = 1
-        val s = state.getOrElse(t.id, newState())
-        bounded.data(0) = Math.addNaN(bounded.data(0), s.value)
-        while (i < length) {
-          bounded.data(i) = Math.addNaN(bounded.data(i), bounded.data(i - 1))
-          i += 1
-        }
-        state(t.id) = State(bounded.data(i - 1))
-        TimeSeries(t.tags, s"integral(${t.label})", bounded)
-      }
-      ResultSet(this, newData, rs.state + (this -> state))
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineDerivative(Double.NaN)
     }
-
-    private def newState(): State = State(Double.NaN)
-  }
-
-  object Integral {
-
-    case class State(value: Double)
-
-    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
-  }
-
-  //
-  // Derivative
-  //
-  case class Derivative(expr: TimeSeriesExpr) extends StatefulExpr {
-    import com.netflix.atlas.core.model.StatefulExpr.Derivative._
-
-    def dataExprs: List[DataExpr] = expr.dataExprs
 
     override def toString: String = s"$expr,:derivative"
-
-    def isGrouped: Boolean = expr.isGrouped
-
-    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
-
-    def finalGrouping: List[String] = expr.finalGrouping
-
-    private def newState(): State = State(Double.NaN)
-
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
-      val newData = rs.data.map { t =>
-        val bounded = t.data.bounded(context.start, context.end)
-        val length = bounded.data.length
-        var i = 1
-        var prev = bounded.data(0)
-        val s = state.getOrElse(t.id, newState())
-        bounded.data(0) -= s.value
-        while (i < length) {
-          val tmp = prev
-          prev = bounded.data(i)
-          bounded.data(i) -= tmp
-          i += 1
-        }
-        state(t.id) = State(prev)
-        TimeSeries(t.tags, s"derivative(${t.label})", bounded)
-      }
-      ResultSet(this, newData, rs.state + (this -> state))
-    }
-  }
-
-  object Derivative {
-
-    case class State(value: Double)
-
-    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, State]
   }
 
   /**
@@ -276,6 +97,20 @@ object StatefulExpr {
     }
 
     override def toString: String = s"$expr,$n,:delay"
+  }
+
+  /**
+    * Computes the number of true values over the last `n` intervals.
+    */
+  case class RollingCount(expr: TimeSeriesExpr, n: Int) extends OnlineExpr {
+
+    override protected def name: String = "rolling-count"
+
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineRollingCount(n)
+    }
+
+    override def toString: String = s"$expr,$n,:rolling-count"
   }
 
   /**
