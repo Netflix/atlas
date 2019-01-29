@@ -67,4 +67,16 @@ class OnlineRollingMeanSuite extends BaseOnlineAlgorithmSuite {
       OnlineRollingMean(1, 2)
     }
   }
+
+  test("min = 0") {
+    intercept[IllegalArgumentException] {
+      OnlineRollingMean(2, 0)
+    }
+  }
+
+  test("min < 0") {
+    intercept[IllegalArgumentException] {
+      OnlineRollingMean(2, -4)
+    }
+  }
 }

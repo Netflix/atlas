@@ -31,9 +31,8 @@ case class OnlineRollingMean(buf: RollingBuffer, minNumValues: Int) extends Onli
 
   import java.lang.{Double => JDouble}
 
+  require(minNumValues > 0, "minimum number of values must be >= 1")
   require(buf.values.length >= minNumValues, "minimum number of values must be <= window size")
-
-  private[this] val n = buf.values.length
 
   private[this] var sum = Math.addNaN(0.0, buf.sum)
   private[this] var count = buf.values.count(v => !JDouble.isNaN(v))
