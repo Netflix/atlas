@@ -101,9 +101,9 @@ class TimeSeriesExprSuite extends FunSuite {
     //"1,:integral,PT2M,:trend"     -> const(ts(Map("name" -> "random"), "trend(integral(random), PT2M)", Double.NaN)),
     //"1,5,0.1,0.5,:des"            -> const(ts(Map("name" -> "1.0"), "des(1.0)", 1.0)),
     //":false"                -> const(Nil)
-    "1,10,:rolling-count"          -> const(integral(Map("name" -> "1.0"), "rolling-count(1.0, 10)", 1.0)),
-    "8,10,:rolling-count"          -> const(integral(Map("name" -> "8.0"), "rolling-count(8.0, 10)", 1.0)),
-    "0,10,:rolling-count"          -> const(integral(Map("name" -> "0.0"), "rolling-count(0.0, 10)", 0.0)),
+    "1,10,:rolling-count"          -> const(integral(Map("name" -> "1.0"), "rolling-count(1.0)", 1.0)),
+    "8,10,:rolling-count"          -> const(integral(Map("name" -> "8.0"), "rolling-count(8.0)", 1.0)),
+    "0,10,:rolling-count"          -> const(integral(Map("name" -> "0.0"), "rolling-count(0.0)", 0.0)),
     "1,2,:rolling-count"           -> const(rollingCount2),
     ":false,:all"                  -> const(Nil),
     ":true,(,name,),:by"           -> const(byName),
@@ -281,7 +281,7 @@ class TimeSeriesExprSuite extends FunSuite {
 
   def rollingCount2: TimeSeries = {
     val seq = new FunctionTimeSeq(DsType.Gauge, 60000, t => if (t == 0L) 1.0 else 2.0)
-    TimeSeries(Map("name" -> "1.0"), "rolling-count(1.0, 2)", seq)
+    TimeSeries(Map("name" -> "1.0"), "rolling-count(1.0)", seq)
   }
 
   def byName: List[TimeSeries] = constants.zipWithIndex.map {

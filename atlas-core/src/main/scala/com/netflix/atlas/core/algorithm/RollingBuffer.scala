@@ -29,7 +29,7 @@ import com.netflix.atlas.core.util.Math
   *     Starting position within the array. This is typically only used when restoring from
   *     state captured from another buffer.
   */
-class RollingBuffer(values: Array[Double], start: Int = 0) {
+class RollingBuffer(val values: Array[Double], start: Int = 0) {
   require(values.length > 0, "values array cannot be empty")
   require(start >= 0, s"starting position is out of bounds: $start < 0")
   require(start < values.length, s"starting position is out of bounds: $start >= ${values.length}")
@@ -50,6 +50,26 @@ class RollingBuffer(values: Array[Double], start: Int = 0) {
     if (!v.isNaN) size += 1
     if (!previous.isNaN) size -= 1
     previous
+  }
+
+  def count: Double = {
+    var result = 0.0
+    var i = 0
+    while (i < values.length) {
+      result += Math.toBooleanDouble(values(i))
+      i += 1
+    }
+    result
+  }
+
+  def sum: Double = {
+    var result = Double.NaN
+    var i = 0
+    while (i < values.length) {
+      result = Math.addNaN(result, values(i))
+      i += 1
+    }
+    result
   }
 
   def min: Double = {
@@ -85,6 +105,10 @@ class RollingBuffer(values: Array[Double], start: Int = 0) {
   def state: AlgoState = {
     val vs = java.util.Arrays.copyOf(values, values.length)
     AlgoState("rolling-buffer", "values" -> vs, "pos" -> pos)
+  }
+
+  override def toString: String = {
+    s"RollingBuffer([${values.mkString(",")}], start=$start, pos=$pos)"
   }
 }
 

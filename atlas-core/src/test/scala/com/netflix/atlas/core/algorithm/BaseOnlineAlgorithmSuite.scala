@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.algorithm
 
 import org.scalatest.FunSuite
+import org.scalatest.Matchers._
 
 abstract class BaseOnlineAlgorithmSuite extends FunSuite {
 
@@ -31,7 +32,11 @@ abstract class BaseOnlineAlgorithmSuite extends FunSuite {
       val v = if (random.nextDouble() < 0.01) Double.NaN else random.nextDouble()
       val expected = algo.next(v)
       val actual = restoredAlgo.next(v)
-      assert(java.lang.Double.compare(actual, expected) === 0, s"$actual != $expected")
+      if (expected.isNaN) {
+        assert(actual.isNaN, s"$actual != $expected")
+      } else {
+        assert(actual === expected +- 1e-12)
+      }
       if (i % n == 0) {
         restoredAlgo = OnlineAlgorithm(algo.state)
       }

@@ -54,7 +54,7 @@ class TrendSuite extends FunSuite {
 
   val trend = StatefulExpr.Trend(
     DataExpr.Sum(Query.Equal("name", "cpu")),
-    Duration.ofNanos(step * 3 * 1000000)
+    Duration.ofMillis(step * 3)
   )
 
   def eval(expr: TimeSeriesExpr, data: List[List[Datapoint]]): List[List[TimeSeries]] = {
