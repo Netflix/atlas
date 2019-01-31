@@ -87,7 +87,7 @@ class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
     }
     sm.regenerateQueryIndex()
     Get("/lwc/api/v1/expressions/skan") ~> endpoint.routes ~> check {
-      val expected = s"""{"expressions":[$skanSum,$skanCount]}"""
+      val expected = s"""{"expressions":[$skanCount,$skanSum]}"""
       assert(responseAs[String] === expected)
     }
   }

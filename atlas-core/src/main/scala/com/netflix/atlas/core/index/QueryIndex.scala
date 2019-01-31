@@ -37,7 +37,7 @@ import com.netflix.atlas.core.util.SmallHashMap
   */
 case class QueryIndex[T](
   indexes: Map[Query.Equal, QueryIndex[T]],
-  entries: List[QueryIndex.Entry[T]]
+  entries: Array[QueryIndex.Entry[T]]
 ) {
 
   /** Returns true if the tags match any of the queries in the index. */
@@ -53,9 +53,9 @@ case class QueryIndex[T](
           case Some(qt) => qt.matches(tags, qs)
           case None     => false
         }
-        children || entries.exists(_.query.matches(tags)) || matches(tags, qs)
+        children || entriesExists(tags) || matches(tags, qs)
       case Nil =>
-        entries.exists(_.query.matches(tags))
+        entriesExists(tags)
     }
   }
 
@@ -72,13 +72,35 @@ case class QueryIndex[T](
           case Some(qt) => qt.matchingEntries(tags, qs)
           case None     => Nil
         }
-        children ::: entries.filter(_.query.matches(tags)).map(_.value) ::: matchingEntries(
-          tags,
-          qs
-        )
+        children ::: entriesFilter(tags) ::: matchingEntries(tags, qs)
       case Nil =>
-        entries.filter(_.query.matches(tags)).map(_.value)
+        entriesFilter(tags)
     }
+  }
+
+  /** Performance optimization for: entries.exists(_.query.matches(tags)) */
+  private def entriesExists(tags: Map[String, String]): Boolean = {
+    var i = 0
+    while (i < entries.length) {
+      if (entries(i).query.matches(tags)) {
+        return true
+      }
+      i += 1
+    }
+    false
+  }
+
+  /** Performance optimization for: entries.filter(_.query.matches(tags)).map(_.value) */
+  private def entriesFilter(tags: Map[String, String]): List[T] = {
+    var result = List.empty[T]
+    var i = 0
+    while (i < entries.length) {
+      if (entries(i).query.matches(tags)) {
+        result = entries(i).value :: result
+      }
+      i += 1
+    }
+    result
   }
 
   /**
@@ -158,7 +180,7 @@ object QueryIndex {
           case (q, ts) =>
             q -> createImpl(idxMap, ts.map(_._2))
         }
-        val idx = QueryIndex(smallMap(trees), leaf.map(_.entry))
+        val idx = QueryIndex(smallMap(trees), leaf.map(_.entry).toArray)
         idxMap += entries -> idx
         idx
     }
