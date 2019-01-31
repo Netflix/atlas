@@ -166,13 +166,13 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     val pos = hash(key)
     var i = pos
     var ki = data(i * 2)
-    if (ki != null && ki != key) {
+    if (ki != null && !ki.equals(key)) {
       do {
         i = (i + 1) % capacity
         ki = data(i * 2)
-      } while (ki != null && ki != key && i != pos)
+      } while (ki != null && !ki.equals(key) && i != pos)
     }
-    val v = if (ki != null && ki == key) data(i * 2 + 1) else null
+    val v = if (ki != null && ki.equals(key)) data(i * 2 + 1) else null
     v.asInstanceOf[V]
   }
 
@@ -262,7 +262,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     var total = 0
     keys.foreach { k =>
       var i = hash(k)
-      while (data(i * 2) != k) {
+      while (!areEqual(data(i * 2), k)) {
         total += 1
         i = (i + 1) % capacity
       }
@@ -281,7 +281,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     if (contains(key)) {
       val b = new SmallHashMap.Builder[K, V](size - 1)
       foreachItem { (k, v) =>
-        if (key != k) b.add(k, v)
+        if (!areEqual(key, k)) b.add(k, v)
       }
       b.result
     } else {
@@ -374,10 +374,10 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
       val k1 = data(i).asInstanceOf[K]
       val k2 = m.data(i).asInstanceOf[K]
 
-      if (k1 == k2) {
+      if (areEqual(k1, k2)) {
         val v1 = data(i + 1)
         val v2 = m.data(i + 1)
-        if (v1 != v2) return false
+        if (!areEqual(v1, v2)) return false
       } else {
         if (!keyEquals(m, k1) || !keyEquals(m, k2)) return false
       }
@@ -396,12 +396,20 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     }
   }
 
+  /**
+    * Helper function to avoid BoxesRunTime.equals. This function should be easy for
+    * hotspot to inline.
+    */
+  private def areEqual[T](v1: T, v2: T): Boolean = {
+    (v1 == null && v2 == null) || (v1 != null && v1.equals(v2))
+  }
+
   /** This is here to allow for testing and benchmarks. Should note be used otherwise. */
   private[util] def superEquals(obj: Any): Boolean = super.equals(obj)
 
   /**
     * Returns a wrapper that adheres to the java Map interface. This wrapper helps to avoid
-    * unnecesary allocation of Option
+    * unnecessary allocation of Option
     */
   def asJavaMap: java.util.Map[K, V] = {
     val self = this

@@ -25,7 +25,7 @@ import org.openjdk.jmh.infra.Blackhole
   * calls.
   *
   * ```
-  * > jmh:run -prof jmh.extras.JFR -wi 10 -i 10 -f1 -t1 .*SmallHashMapHashCode.*
+  * > jmh:run -prof gc -wi 10 -i 10 -f1 -t1 .*SmallHashMapJavaGet.*
   * ...
   * [info] Benchmark               Mode  Cnt         Score         Error  Units
   * [info] customGetFound         thrpt   10  94270900.203 ± 5825997.538  ops/s
