@@ -6,7 +6,7 @@ object Dependencies {
     val aws        = "1.11.49"
     val iep        = "0.4.9"
     val guice      = "4.1.0"
-    val jackson    = "2.8.3"
+    val jackson    = "2.8.11"
     val log4j      = "2.10.0"
     val scala      = "2.11.12"
     val slf4j      = "1.7.21"
@@ -36,7 +36,7 @@ object Dependencies {
   val jacksonAnno2    = "com.fasterxml.jackson.core" % "jackson-annotations" % jackson
   val jacksonCore2    = "com.fasterxml.jackson.core" % "jackson-core" % jackson
   val jacksonJoda2    = "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % jackson
-  val jacksonMapper2  = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
+  val jacksonMapper2  = "com.fasterxml.jackson.core" % "jackson-databind" % s"$jackson.3"
   val jacksonScala2   = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile2   = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jodaConvert     = "org.joda" % "joda-convert" % "1.8.1"
