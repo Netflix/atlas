@@ -198,15 +198,14 @@ class TicksSuite extends FunSuite {
     assert(ticks.filter(_.major).last.label === "1.2m")
   }
 
-  // TODO: major tick labels should be possible for this range without using an offset.
   test("values [4560.0, 4569.9]") {
     val ticks = Ticks.value(4559.9, 4569.9, 5)
     sanityCheck(ticks)
     assert(ticks.size === 20)
     assert(ticks.count(_.major) === 5)
-    assert(ticks.head.offset === 4558.0)
-    assert(ticks.head.label === "2.0")
-    assert(ticks.last.label === "11.5")
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "4.560k")
+    assert(ticks.last.label === "4.570k")
   }
 
   test("values [0.0, Infinity]") {
@@ -416,5 +415,25 @@ class TicksSuite extends FunSuite {
     assert(ticks.head.offset === 0.0)
     assert(ticks.head.label === "6.7m")
     assert(ticks.last.label === "10.0m")
+  }
+
+  test("issue-991: [99.938845, 100]") {
+    val ticks = Ticks.value(99.938845, 100, 7)
+    sanityCheck(ticks)
+    assert(ticks.size === 31)
+    assert(ticks.count(_.major) === 7)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "99.94")
+    assert(ticks.last.label === "100.00")
+  }
+
+  test("issue-991: [99.9, 100]") {
+    val ticks = Ticks.value(99.9, 100, 7)
+    sanityCheck(ticks)
+    assert(ticks.size === 21)
+    assert(ticks.count(_.major) === 6)
+    assert(ticks.head.offset === 0.0)
+    assert(ticks.head.label === "99.90")
+    assert(ticks.last.label === "100.00")
   }
 }

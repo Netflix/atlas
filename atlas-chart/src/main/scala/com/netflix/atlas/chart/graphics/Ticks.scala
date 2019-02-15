@@ -206,6 +206,11 @@ object Ticks {
     List(ValueTick(v1, 0.0), ValueTick(v2, 0.0))
   }
 
+  private def majorLabelDuplication(ticks: List[ValueTick]): Boolean = {
+    val majorTicks = ticks.filter(_.major)
+    majorTicks.size > majorTicks.map(_.label).distinct.size
+  }
+
   private def normalTicks(v1: Double, v2: Double, t: (Double, Double, Int)): List[ValueTick] = {
     val (major, minor, minorPerMajor) = t
     val ticks = List.newBuilder[ValueTick]
@@ -226,7 +231,7 @@ object Ticks {
     }
     val ts = ticks.result()
 
-    val useOffset = major < math.abs(v1) / 1e3
+    val useOffset = majorLabelDuplication(ts)
     if (useOffset) ts.map(t => t.copy(offset = base, labelOpt = None)) else ts
   }
 
