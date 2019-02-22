@@ -16,9 +16,12 @@
 package com.netflix.atlas.akka
 
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -178,5 +181,48 @@ class StreamOpsSuite extends FunSuite {
 
   test("monitor flow: upstream delay") {
     testMonitorFlow("upstreamDelay", Map("count" -> 8.0, "totalTime" -> 0.0))
+  }
+
+  private def dispose(implicit mat: Materializer): Unit = {}
+
+  private class Message(latch: CountDownLatch, val data: Source[Int, NotUsed]) {
+
+    def dispose(mat: Materializer): Unit = {
+      data
+        .map { v =>
+          latch.countDown()
+          v
+        }
+        .runWith(Sink.ignore)(mat)
+    }
+  }
+
+  test("map") {
+    val latch = new CountDownLatch(100)
+    val future = Source(0 until 10)
+      .map { v =>
+        new Message(latch, Source(0 until 10))
+      }
+      .via(StreamOps.map { (msg, mat) =>
+        msg.dispose(mat)
+      })
+      .runWith(Sink.ignore)
+    Await.result(future, Duration.Inf)
+    latch.await(1, TimeUnit.MINUTES)
+  }
+
+  test("flatMapConcat") {
+    val latch = new CountDownLatch(100)
+    val future = Source(0 until 10)
+      .map { v =>
+        new Message(latch, Source(0 until 10))
+      }
+      .via(StreamOps.flatMapConcat { (msg, mat) =>
+        msg.dispose(mat)
+        msg.data
+      })
+      .runWith(Sink.ignore)
+    Await.result(future, Duration.Inf)
+    latch.await(1, TimeUnit.MINUTES)
   }
 }
