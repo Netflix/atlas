@@ -23,7 +23,9 @@ import akka.Done
 import akka.NotUsed
 import akka.stream.Attributes
 import akka.stream.FlowShape
+import akka.stream.Graph
 import akka.stream.Inlet
+import akka.stream.Materializer
 import akka.stream.Outlet
 import akka.stream.OverflowStrategy
 import akka.stream.QueueOfferResult
@@ -295,5 +297,56 @@ object StreamOps {
         setHandlers(in, out, this)
       }
     }
+  }
+
+  /**
+    * Map operation that passes in the materializer for the graph stage.
+    *
+    * @param f
+    *     Function that maps the input value to a new value.
+    * @return
+    *     Flow that applies the mapping function to each value.
+    */
+  def map[V1, V2](f: (V1, Materializer) => V2): Flow[V1, V2, NotUsed] = {
+    Flow[V1].via(new MapFlow(f))
+  }
+
+  private final class MapFlow[V1, V2](f: (V1, Materializer) => V2)
+      extends GraphStage[FlowShape[V1, V2]] {
+
+    private val in = Inlet[V1]("MapFlow.in")
+    private val out = Outlet[V2]("MapFlow.out")
+
+    override val shape: FlowShape[V1, V2] = FlowShape(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+
+      new GraphStageLogic(shape) with InHandler with OutHandler {
+
+        override def onPush(): Unit = {
+          push(out, f(grab(in), materializer))
+        }
+
+        override def onPull(): Unit = {
+          pull(in)
+        }
+
+        setHandlers(in, out, this)
+      }
+    }
+  }
+
+  /**
+    * Flat map operation that passes in the materializer for the graph stage.
+    *
+    * @param f
+    *     Function that maps the input value to a new value.
+    * @return
+    *     Flow that applies the mapping function to each value.
+    */
+  def flatMapConcat[V1, V2, M](
+    f: (V1, Materializer) => Graph[SourceShape[V2], M]
+  ): Flow[V1, V2, NotUsed] = {
+    map(f).flatMapConcat(src => src)
   }
 }
