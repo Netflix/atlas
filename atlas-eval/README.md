@@ -26,7 +26,7 @@ an entry for localhost.
 
 Create a [reactive streams publisher] from an Atlas graph URI. For example:
 
-[publisher]: https://github.com/reactive-streams/reactive-streams-jvm#1-publisher-code
+[reactive streams publisher]: https://github.com/reactive-streams/reactive-streams-jvm#1-publisher-code
 
 ```java
 String uri = "http://localhost:7101/api/v1/graph?q=name,ssCpuUser,:eq,:avg";
