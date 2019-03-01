@@ -309,13 +309,14 @@ object CloudWatchPoller {
   ): Map[Id, BucketCounter] = {
 
     metricCategories.flatMap { category =>
-      val periodCount = category.periodCount
+      val noDataThreshold = category.periodCount + category.endPeriodOffset
+
       val bucketFunction: LongFunction[String] =
-        (periods: Long) =>
-          if (periods > periodCount) // periodCount is intended to be small (< 10)
+        (periodCount: Long) =>
+          if (periodCount > noDataThreshold) // threshold is intended to be small (< 10)
             "no_data"
           else
-            periods.toString
+            periodCount.toString
 
       val id = registry
         .createId(PeriodLagIdName)
