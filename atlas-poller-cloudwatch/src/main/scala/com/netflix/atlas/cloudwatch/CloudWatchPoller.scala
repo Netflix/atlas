@@ -21,6 +21,7 @@ import java.util.Date
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
+import java.util.function.LongFunction
 
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -37,7 +38,9 @@ import com.amazonaws.services.cloudwatch.model.StandardUnit
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.poller.Messages
 import com.netflix.spectator.api.Functions
+import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.histogram.BucketCounter
 import com.netflix.spectator.api.patterns.PolledMeter
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
@@ -86,7 +89,17 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   // Child actor for getting the data for a metric. This will do the call using the
   // AWS SDK which is blocking and should be run in an isolated dispatcher.
   private val metricsGetRef =
-    context.actorOf(FromConfig.props(Props(new GetMetricActor(client))), "metrics-get")
+    context.actorOf(
+      FromConfig.props(
+        Props(
+          classOf[GetMetricActor],
+          client,
+          registry,
+          buildBucketCounterCache(registry, categories)
+        )
+      ),
+      "metrics-get"
+    )
 
   // Throttler to control the rate of get metrics calls in order to stay within AWS SDK limits.
   private val throttledMetricsGetRef = Source
@@ -286,6 +299,41 @@ object CloudWatchPoller {
     val cfg = config.getConfig("atlas.cloudwatch.tagger")
     val cls = Class.forName(cfg.getString("class"))
     cls.getConstructor(classOf[Config]).newInstance(cfg).asInstanceOf[Tagger]
+  }
+
+  val PeriodLagIdName: String = "atlas.cloudwatch.periodLag"
+
+  private def buildBucketCounterCache(
+    registry: Registry,
+    metricCategories: List[MetricCategory]
+  ): Map[Id, BucketCounter] = {
+
+    metricCategories.flatMap { category =>
+      val noDataThreshold = category.periodCount + category.endPeriodOffset
+
+      val bucketFunction: LongFunction[String] =
+        (periodCount: Long) =>
+          if (periodCount > noDataThreshold) // threshold is intended to be small (< 10)
+            "no_data"
+          else
+            periodCount.toString
+
+      val id = registry
+        .createId(PeriodLagIdName)
+        .withTag("cwNamespace", category.namespace)
+        .withTag("periodSeconds", category.period.toString)
+
+      category.metrics.map { metric =>
+        val periodLagId = id.withTag("cwMetricName", metric.name)
+        periodLagId -> BucketCounter
+          .get(
+            registry,
+            periodLagId,
+            bucketFunction
+          )
+
+      }
+    }.toMap
   }
 
   case class GetMetricData(metric: MetricMetadata)

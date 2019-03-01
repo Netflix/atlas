@@ -40,6 +40,10 @@ import com.typesafe.scalalogging.StrictLogging
   *     for CloudWatch data we use the last reported value in CloudWatch as long as it
   *     is within one period from the polling time. The period is also needed for
   *     performing rate conversions on some metrics.
+  * @param endPeriodOffset
+  *     How many periods back from `now` to set the end of the time range.
+  * @param periodCount
+  *     How many periods total to retrieve.
   * @param timeout
   *     How long the system should interpolate a base value for unreported CloudWatch
   *     metrics before ceasing to send them. CloudWatch will return 0 metrics for at
@@ -65,6 +69,8 @@ import com.typesafe.scalalogging.StrictLogging
 case class MetricCategory(
   namespace: String,
   period: Int,
+  endPeriodOffset: Int,
+  periodCount: Int,
   timeout: Option[Duration],
   dimensions: List[String],
   metrics: List[MetricDefinition],
@@ -110,10 +116,15 @@ object MetricCategory extends StrictLogging {
         parseQuery(config.getString("filter"))
       }
     val timeout = if (config.hasPath("timeout")) Some(config.getDuration("timeout")) else None
+    val endPeriodOffset =
+      if (config.hasPath("end-period-offset")) config.getInt("end-period-offset") else 1
+    val periodCount = if (config.hasPath("period-count")) config.getInt("period-count") else 6
 
     apply(
       namespace = config.getString("namespace"),
       period = config.getDuration("period", TimeUnit.SECONDS).toInt,
+      endPeriodOffset = endPeriodOffset,
+      periodCount = periodCount,
       timeout = timeout,
       dimensions = config.getStringList("dimensions").asScala.toList,
       metrics = metrics.flatMap(MetricDefinition.fromConfig),
