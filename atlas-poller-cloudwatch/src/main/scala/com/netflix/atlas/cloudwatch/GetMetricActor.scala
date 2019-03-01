@@ -15,19 +15,31 @@
  */
 package com.netflix.atlas.cloudwatch
 
+import java.time.Duration
 import java.time.Instant
+import java.util.Date
 
 import akka.actor.Actor
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch
 import com.amazonaws.services.cloudwatch.model.Datapoint
+import com.netflix.spectator.api.Id
+import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.histogram.BucketCounter
 import com.typesafe.scalalogging.StrictLogging
 
 /**
   * Queries CloudWatch to get a datapoint for given metric. This actor makes blocking
   * calls to the Amazon SDK, it should be run in a dedicated dispatcher.
   */
-class GetMetricActor(client: AmazonCloudWatch) extends Actor with StrictLogging {
+class GetMetricActor(
+  client: AmazonCloudWatch,
+  registry: Registry,
+  bucketCounterCache: Map[Id, BucketCounter]
+) extends Actor
+    with StrictLogging {
   import CloudWatchPoller._
+
+  private val basePeriodLagId = registry.createId(PeriodLagIdName)
 
   def receive: Receive = {
     case m: MetricMetadata =>
@@ -37,14 +49,17 @@ class GetMetricActor(client: AmazonCloudWatch) extends Actor with StrictLogging 
   }
 
   /**
-    * Queries cloudwatch for two periods of the metric and returns the most recent
-    * value or None if no values were reported in that window.
+    * Queries CloudWatch for the metric with a time range ending at the configured end
+    * offset and starting at the configured number of periods prior to that end. It returns
+    * the most recent value or None if no values were reported in that time range.
     */
   private def getMetric(m: MetricMetadata): Option[Datapoint] = {
     try {
       import scala.collection.JavaConverters._
-      val e = Instant.now().minusSeconds(m.category.period)
-      val s = e.minusSeconds(2 * m.category.period)
+      val now = Instant.now()
+      val e = now.minusSeconds(m.category.endPeriodOffset * m.category.period)
+      val s = e.minusSeconds(m.category.periodCount * m.category.period)
+
       val request = m.toGetRequest(s, e)
       val result = client.getMetricStatistics(request)
 
@@ -53,11 +68,31 @@ class GetMetricActor(client: AmazonCloudWatch) extends Actor with StrictLogging 
       val sorted = datapoints
         .filter(!_.getSum.isNaN)
         .sortWith(_.getTimestamp.getTime > _.getTimestamp.getTime)
-      sorted.headOption
+      val maybeDatapoint = sorted.headOption
+      recordLag(now, maybeDatapoint.map(_.getTimestamp), m)
+      maybeDatapoint
     } catch {
       case e: Exception =>
         logger.warn(s"failed to get data for ${m.category.namespace}/${m.definition.name}", e)
         None
     }
+  }
+
+  /**
+    * Record how many periods back from now the latest returned datapoint is. Though not perfect,
+    * this will give a reasonable approximation of data latency across the collected metrics.
+    */
+  private def recordLag(now: Instant, maybeTimestamp: Option[Date], m: MetricMetadata): Unit = {
+    val mostRecentDatapointTimestamp = maybeTimestamp.map(_.toInstant).getOrElse(Instant.EPOCH)
+    val lagDuration = Duration.between(mostRecentDatapointTimestamp, now)
+
+    val lagSeconds = lagDuration.toMillis / 1000L
+    val periodLag = lagSeconds / m.category.period
+    val id = basePeriodLagId
+      .withTag("cwMetricName", m.definition.name)
+      .withTag("cwNamespace", m.category.namespace)
+      .withTag("periodSeconds", m.category.period.toString)
+
+    bucketCounterCache.get(id).foreach(_.record(periodLag))
   }
 }
