@@ -117,8 +117,8 @@ object MetricCategory extends StrictLogging {
       }
     val timeout = if (config.hasPath("timeout")) Some(config.getDuration("timeout")) else None
     val endPeriodOffset =
-      if (config.hasPath("end-period-offset")) config.getInt("end-period-offset") else 1
-    val periodCount = if (config.hasPath("period-count")) config.getInt("period-count") else 5
+      if (config.hasPath("end-period-offset")) config.getInt("end-period-offset") else 2
+    val periodCount = if (config.hasPath("period-count")) config.getInt("period-count") else 6
 
     apply(
       namespace = config.getString("namespace"),

@@ -49,18 +49,19 @@ class GetMetricActor(
   }
 
   /**
-    * Queries CloudWatch for the metric with a time range ending at the configured end
-    * offset and starting at the configured number of periods prior to that end. It returns
-    * the most recent value or None if no values were reported in that time range.
+    * Queries CloudWatch for the metric with a time range ending at the current time and
+    * starting at the configured number of periods.
+    *
+    * @return the most recent value prior to the configured end offset or None (if no
+    *         values were reported in that time range).
     */
   private def getMetric(m: MetricMetadata): Option[Datapoint] = {
     try {
       import scala.collection.JavaConverters._
       val now = Instant.now()
-      val e = now.minusSeconds(m.category.endPeriodOffset * m.category.period)
-      val s = e.minusSeconds(m.category.periodCount * m.category.period)
+      val start = now.minusSeconds(m.category.periodCount * m.category.period)
 
-      val request = m.toGetRequest(s, e)
+      val request = m.toGetRequest(start, now)
       val result = client.getMetricStatistics(request)
 
       // Datapoints might not be ordered by time, sort before using
@@ -68,9 +69,10 @@ class GetMetricActor(
       val sorted = datapoints
         .filter(!_.getSum.isNaN)
         .sortWith(_.getTimestamp.getTime > _.getTimestamp.getTime)
-      val maybeDatapoint = sorted.headOption
-      recordLag(now, maybeDatapoint.map(_.getTimestamp), m)
-      maybeDatapoint
+      recordLag(now, sorted.headOption.map(_.getTimestamp), m)
+
+      val endOffset = now.minusSeconds(m.category.endPeriodOffset * m.category.period)
+      sorted.find(_.getTimestamp.toInstant.isBefore(endOffset))
     } catch {
       case e: Exception =>
         logger.warn(s"failed to get data for ${m.category.namespace}/${m.definition.name}", e)
