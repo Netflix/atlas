@@ -27,7 +27,7 @@ import org.scalatest.FunSuite
 class MetricDefinitionSuite extends FunSuite {
 
   private val meta = MetricMetadata(
-    MetricCategory("AWS/ELB", 60, None, Nil, Nil, Query.True),
+    MetricCategory("AWS/ELB", 60, 1, 5, None, Nil, Nil, Query.True),
     null,
     Nil
   )
