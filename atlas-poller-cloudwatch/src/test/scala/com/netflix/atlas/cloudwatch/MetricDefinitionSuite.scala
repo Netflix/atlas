@@ -23,8 +23,9 @@ import com.netflix.atlas.core.model.Query
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
+import org.scalatest.Matchers
 
-class MetricDefinitionSuite extends FunSuite {
+class MetricDefinitionSuite extends FunSuite with Matchers {
 
   private val meta = MetricMetadata(
     MetricCategory("AWS/ELB", 60, 1, 5, None, Nil, Nil, Query.True),
@@ -216,4 +217,33 @@ class MetricDefinitionSuite extends FunSuite {
     }
   }
 
+  test("config for max with unit of millis has correct unit") {
+    val cfg = ConfigFactory.parseString("""
+        |name = "ReplicaLagMaximum"
+        |alias = "aws.aurora.replicaLagMaximum"
+        |conversion = "max"
+      """.stripMargin)
+
+    val definitions = MetricDefinition.fromConfig(cfg)
+    assert(definitions.size === 1)
+
+    val definition = definitions.head
+    assert(definition.tags === Map("atlas.dstype" -> "gauge"))
+
+    val dp = new Datapoint()
+      .withMaximum(15.867)
+      .withMinimum(15.867)
+      .withSum(15.867)
+      .withSampleCount(1.0)
+      .withUnit(StandardUnit.Milliseconds)
+      .withTimestamp(new Date)
+
+    val metadata = MetricMetadata(
+      MetricCategory("AWS/RDS", 60, 1, 5, None, Nil, Nil, Query.True),
+      definition,
+      Nil
+    )
+
+    metadata.convert(dp) shouldEqual 15.867 / 1000.0 +- 1e-7
+  }
 }
