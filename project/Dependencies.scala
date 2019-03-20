@@ -6,14 +6,14 @@ object Dependencies {
   object Versions {
     val akka       = "2.5.21"
     val akkaHttpV  = "10.1.7"
-    val aws        = "1.11.501"
-    val iep        = "1.2.10"
+    val aws        = "1.11.521"
+    val iep        = "2.0.0"
     val guice      = "4.1.0"
     val jackson    = "2.9.8"
     val log4j      = "2.11.2"
     val scala      = "2.12.8"
     val slf4j      = "1.7.26"
-    val spectator  = "0.86.0"
+    val spectator  = "0.87.0"
 
     val crossScala = Seq(scala, "2.11.12")
   }
@@ -33,7 +33,7 @@ object Dependencies {
   val awsEC2            = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3             = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.6.2"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.1.5"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.1.7"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.19.0"
   val guiceCore         = "com.google.inject" % "guice" % guice
   val guiceMulti        = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -65,7 +65,7 @@ object Dependencies {
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
   val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
   val scalaReflect      = "org.scala-lang" % "scala-reflect" % scala
-  val scalatest         = "org.scalatest" %% "scalatest" % "3.0.6"
+  val scalatest         = "org.scalatest" %% "scalatest" % "3.0.7"
   val slf4jApi          = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j        = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple       = "org.slf4j" % "slf4j-simple" % slf4j
