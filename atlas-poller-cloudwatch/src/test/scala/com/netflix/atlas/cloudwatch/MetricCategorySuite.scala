@@ -30,6 +30,64 @@ class MetricCategorySuite extends FunSuite {
     }
   }
 
+  test("production config loads") {
+    val cfg = ConfigFactory.parseResources("reference.conf").resolve()
+    val categories = CloudWatchPoller.getCategories(cfg)
+    assert(categories.nonEmpty)
+  }
+
+  test("load category with empty dimensions succeeds") {
+    val cfg = ConfigFactory.parseString("""
+        |      namespace = "AWS/Lambda"
+        |      period = 1m
+        |
+        |      dimensions = []
+        |
+        |      metrics = [
+        |        {
+        |          name = "UnreservedConcurrentExecutions"
+        |          alias = "aws.lambda.concurrentExecutions"
+        |          conversion = "max"
+        |          tags = [
+        |            {
+        |              key = "concurrencyLimit"
+        |              value = "unreserved"
+        |            }
+        |          ]
+        |        },
+        |      ]
+      """.stripMargin)
+
+    val category = MetricCategory.fromConfig(cfg)
+    assert(category.namespace === "AWS/Lambda")
+    assert(category.dimensions.isEmpty)
+  }
+
+  test("load category with no dimensions throws") {
+    val cfg = ConfigFactory.parseString("""
+        |      namespace = "AWS/Lambda"
+        |      period = 1m
+        |
+        |      metrics = [
+        |        {
+        |          name = "UnreservedConcurrentExecutions"
+        |          alias = "aws.lambda.concurrentExecutions"
+        |          conversion = "max"
+        |          tags = [
+        |            {
+        |              key = "concurrencyLimit"
+        |              value = "unreserved"
+        |            }
+        |          ]
+        |        },
+        |      ]
+      """.stripMargin)
+
+    intercept[ConfigException.Missing] {
+      MetricCategory.fromConfig(cfg)
+    }
+  }
+
   test("load from config") {
     val cfg = ConfigFactory.parseString("""
         |namespace = "AWS/ELB"

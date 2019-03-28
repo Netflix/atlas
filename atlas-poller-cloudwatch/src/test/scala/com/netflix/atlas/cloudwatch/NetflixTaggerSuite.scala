@@ -27,6 +27,20 @@ class NetflixTaggerSuite extends FunSuite {
     new Dimension().withName("ClusterName").withValue("different_name-foo-bar-v002")
   )
 
+  test("production config loads") {
+    val cfg = ConfigFactory.parseResources("reference.conf").resolve()
+
+    val tagger = CloudWatchPoller.getTagger(cfg)
+    val tagged = tagger(
+      List(
+        new Dimension().withName("aTag").withValue("aValue"),
+        new Dimension().withName("LinkedAccount").withValue("12345")
+      )
+    )
+    assert(tagged.getOrElse("aTag", "fail") === "aValue")
+    assert(tagged.getOrElse("aws.account", "fail") === "12345")
+  }
+
   test("bad config") {
     val cfg = ConfigFactory.parseString("")
     intercept[ConfigException] {
