@@ -66,7 +66,8 @@ object Scales {
     val lg1 = log10(d1)
     val lg2 = log10(d2)
     val scale = linear(lg1, lg2, r1, r2)
-    v => scale(log10(v))
+    v =>
+      scale(log10(v))
   }
 
   private def pow(value: Double, exp: Double): Double = {
@@ -82,7 +83,8 @@ object Scales {
     val p1 = pow(d1, exp)
     val p2 = pow(d2, exp)
     val scale = linear(p1, p2, r1, r2)
-    v => scale(pow(v, exp))
+    v =>
+      scale(pow(v, exp))
   }
 
   /**
