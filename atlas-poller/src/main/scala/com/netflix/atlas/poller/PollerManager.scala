@@ -52,6 +52,7 @@ class PollerManager(registry: Registry, classFactory: ClassFactory, config: Conf
 
   override val supervisorStrategy = OneForOneStrategy() {
     case e: ActorInitializationException =>
+      logger.error(s"initialization failed for ${sender().path}", e)
       SupervisorStrategy.Escalate
     case e: Exception =>
       logRestart(sender().path, e)
