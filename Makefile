@@ -20,14 +20,14 @@ build:
 snapshot:
 	# Travis uses a depth when fetching git data so the tags needed for versioning may not
 	# be available unless we explicitly fetch them
-	git fetch --unshallow
+	git fetch --tags
 	$(SBT) storeBintrayCredentials
 	$(SBT) clean test checkLicenseHeaders publish
 
 release:
 	# Travis uses a depth when fetching git data so the tags needed for versioning may not
 	# be available unless we explicitly fetch them
-	git fetch --unshallow
+	git fetch --tags
 
 	# Storing the bintray credentials needs to be done as a separate command so they will
 	# be available early enough for the publish task.
