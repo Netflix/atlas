@@ -266,7 +266,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
   }
 }
 
-object CloudWatchPoller extends StrictLogging {
+object CloudWatchPoller {
 
   case object Flush
 
@@ -288,29 +288,17 @@ object CloudWatchPoller extends StrictLogging {
 
   private[cloudwatch] def getCategories(config: Config): List[MetricCategory] = {
     import scala.collection.JavaConverters._
-    val categories = try {
-      config.getStringList("atlas.cloudwatch.categories").asScala.map { name =>
-        val cfg = config.getConfig(s"atlas.cloudwatch.$name")
-        MetricCategory.fromConfig(cfg)
-      }
-    } catch {
-      case t: Throwable =>
-        logger.error("Problem loading categories", t)
-        throw t
+    val categories = config.getStringList("atlas.cloudwatch.categories").asScala.map { name =>
+      val cfg = config.getConfig(s"atlas.cloudwatch.$name")
+      MetricCategory.fromConfig(cfg)
     }
     categories.toList
   }
 
   private[cloudwatch] def getTagger(config: Config): Tagger = {
-    try {
-      val cfg = config.getConfig("atlas.cloudwatch.tagger")
-      val cls = Class.forName(cfg.getString("class"))
-      cls.getConstructor(classOf[Config]).newInstance(cfg).asInstanceOf[Tagger]
-    } catch {
-      case t: Throwable =>
-        logger.error("Problem loading tagger", t)
-        throw t
-    }
+    val cfg = config.getConfig("atlas.cloudwatch.tagger")
+    val cls = Class.forName(cfg.getString("class"))
+    cls.getConstructor(classOf[Config]).newInstance(cfg).asInstanceOf[Tagger]
   }
 
   val PeriodLagIdName: String = "atlas.cloudwatch.periodLag"
