@@ -286,7 +286,7 @@ object CloudWatchPoller {
     .withTimestamp(new Date())
     .withUnit(StandardUnit.None)
 
-  private def getCategories(config: Config): List[MetricCategory] = {
+  private[cloudwatch] def getCategories(config: Config): List[MetricCategory] = {
     import scala.collection.JavaConverters._
     val categories = config.getStringList("atlas.cloudwatch.categories").asScala.map { name =>
       val cfg = config.getConfig(s"atlas.cloudwatch.$name")
@@ -295,7 +295,7 @@ object CloudWatchPoller {
     categories.toList
   }
 
-  private def getTagger(config: Config): Tagger = {
+  private[cloudwatch] def getTagger(config: Config): Tagger = {
     val cfg = config.getConfig("atlas.cloudwatch.tagger")
     val cls = Class.forName(cfg.getString("class"))
     cls.getConstructor(classOf[Config]).newInstance(cfg).asInstanceOf[Tagger]
