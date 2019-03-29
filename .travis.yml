@@ -8,7 +8,8 @@ matrix:
     env: BINTRAY_PUBLISH=true
   - jdk: openjdk11
     scala: 2.12.8
-    os: osx
+    os: linux
+    dist: trusty
     env: BINTRAY_PUBLISH=true
 script:
 - ./scripts/buildViaTravis.sh
