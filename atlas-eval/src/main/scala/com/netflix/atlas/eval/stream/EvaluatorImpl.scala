@@ -39,9 +39,13 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.netflix.atlas.akka.StreamOps
+import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
+import com.netflix.atlas.eval.stream.Evaluator.DatapointGroup
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
@@ -49,6 +53,7 @@ import com.typesafe.config.Config
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -213,6 +218,79 @@ private[stream] abstract class EvaluatorImpl(
       .merge(Source.fromPublisher(logSrc), eagerComplete = false)
   }
 
+  protected def createDatapointProcessorImpl(
+    sources: DataSources
+  ): Processor[DatapointGroup, MessageEnvelope] = {
+
+    // There should be a single step size across all sources, this will throw otherwise
+    val stepSize = sources.stepSize()
+
+    // Flow used for logging diagnostic messages
+    val (queue, logSrc) = StreamOps
+      .blockingQueue[MessageEnvelope](registry, "DataSourceLogger", 10)
+      .toMat(Sink.asPublisher(true))(Keep.both)
+      .run()
+    val dsLogger: DataSourceLogger = { (ds, msg) =>
+      val env = new MessageEnvelope(ds.getId, msg)
+      queue.offer(env)
+    }
+
+    // Initialize context with fixed data sources
+    val context = newStreamContext(dsLogger)
+    context.validate(sources)
+    context.setDataSources(sources)
+
+    // Extract data expressions to reuse for creating time groups
+    val exprs = sources.getSources.asScala
+      .flatMap(ds => context.interpreter.eval(Uri(ds.getUri)))
+      .flatMap(_.expr.dataExprs)
+      .toList
+      .distinct
+
+    Flow[DatapointGroup]
+      .map(g => toTimeGroup(stepSize, exprs, g))
+      .merge(Source.single(sources), eagerComplete = false)
+      .via(new FinalExprEval(context.interpreter))
+      .flatMapConcat(s => s)
+      .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
+      .merge(Source.fromPublisher(logSrc), eagerComplete = false)
+      .toProcessor
+      .run()
+  }
+
+  private def toTimeGroup(step: Long, exprs: List[DataExpr], group: DatapointGroup): TimeGroup = {
+    val values = group.getDatapoints.asScala.zipWithIndex
+      .flatMap {
+        case (d, i) =>
+          val tags = d.getTags.asScala.toMap
+          exprs.filter(_.query.matches(tags)).map { expr =>
+            // Restrict the tags to the common set for all matches to the data expression
+            val keys = Query.exactKeys(expr.query) ++ expr.finalGrouping
+            val exprTags = tags.filterKeys(keys.contains)
+
+            // Need to do the init for count aggregate
+            val v = d.getValue
+            val value = if (isCount(expr) && !v.isNaN) 1.0 else v
+
+            // Position is used as source to avoid dedup of datapoints
+            AggrDatapoint(group.getTimestamp, step, expr, i.toString, exprTags, value)
+          }
+      }
+      .groupBy(_.expr)
+      .map(t => t._1 -> AggrDatapoint.aggregate(t._2.toList))
+    TimeGroup(group.getTimestamp, step, values)
+  }
+
+  @scala.annotation.tailrec
+  private def isCount(expr: DataExpr): Boolean = {
+    expr match {
+      case by: DataExpr.GroupBy       => isCount(by.af)
+      case cf: DataExpr.Consolidation => isCount(cf.af)
+      case _: DataExpr.Count          => true
+      case _                          => false
+    }
+  }
+
   /**
     * Extract the step size from DataSources or TimeGroup objects. This is needed to group
     * the objects so the FinalExprEval stage will only see a single step.
@@ -230,7 +308,6 @@ private[stream] abstract class EvaluatorImpl(
     */
   private def splitByStep(value: AnyRef): List[AnyRef] = value match {
     case ds: DataSources =>
-      import scala.collection.JavaConverters._
       ds.getSources.asScala
         .groupBy(_.getStep.toMillis)
         .map {
@@ -245,7 +322,6 @@ private[stream] abstract class EvaluatorImpl(
   private[stream] def createInputFlow(
     context: StreamContext
   ): Flow[DataSources, ByteString, NotUsed] = {
-    import scala.collection.JavaConverters._
 
     val g = GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._

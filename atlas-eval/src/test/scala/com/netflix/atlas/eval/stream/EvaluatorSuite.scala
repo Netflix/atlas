@@ -30,6 +30,7 @@ import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.core.util.Hash
+import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
@@ -330,6 +331,20 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
       .verify()
   }
 
+  test("Datapoint equals contract") {
+    EqualsVerifier
+      .forClass(classOf[Evaluator.Datapoint])
+      .suppress(Warning.NULL_FIELDS)
+      .verify()
+  }
+
+  test("DatapointGroup equals contract") {
+    EqualsVerifier
+      .forClass(classOf[Evaluator.DatapointGroup])
+      .suppress(Warning.NULL_FIELDS)
+      .verify()
+  }
+
   test("DataSource encode and decode") {
     val expected = ds("id", "uri")
     val actual = Json.decode[Evaluator.DataSource](Json.encode(expected))
@@ -412,5 +427,123 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
       evaluator.validate(ds)
     }
     assert(e.getMessage === "unknownhost.com")
+  }
+
+  private val datapointStep = Duration.ofMillis(1)
+
+  private def sampleData(numGroups: Int, numDatapoints: Int): List[Evaluator.DatapointGroup] = {
+    import scala.collection.JavaConverters._
+    (0 until numGroups).map { i =>
+      val ds = (0 until numDatapoints)
+        .map { j =>
+          val tags = Map("name" -> "foo", "id" -> j.toString).asJava
+          new Evaluator.Datapoint(tags, j.toDouble)
+        }
+        .toList
+        .asJava
+      new Evaluator.DatapointGroup(i, ds)
+    }.toList
+  }
+
+  private def timeSeriesMessages(msgs: Seq[Evaluator.MessageEnvelope]): List[TimeSeriesMessage] = {
+    msgs
+      .map(_.getMessage)
+      .collect {
+        case ts: TimeSeriesMessage => ts
+      }
+      .toList
+  }
+
+  private def runDatapointFlow(
+    sources: Evaluator.DataSources,
+    input: List[Evaluator.DatapointGroup]
+  ): List[Evaluator.MessageEnvelope] = {
+
+    val evaluator = new Evaluator(config, registry, system)
+
+    val future = Source(sampleData(1, 10))
+      .via(Flow.fromProcessor(() => evaluator.createDatapointProcessor(sources)))
+      .runWith(Sink.seq[MessageEnvelope])
+    Await.result(future, scala.concurrent.duration.Duration.Inf).toList
+  }
+
+  private def basicAggregationTest(af: String, expected: Double): Unit = {
+    val ds = new Evaluator.DataSource(
+      "test",
+      datapointStep,
+      s"http://localhost/api/v1/graph?q=name,foo,:eq,:$af"
+    )
+    val sources = Evaluator.DataSources.of(ds)
+
+    val msgs = runDatapointFlow(sources, sampleData(1, 10))
+
+    assert(msgs.map(_.getId).distinct === List("test"))
+    assert(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]) === 1)
+
+    val ts = timeSeriesMessages(msgs).head
+    assert(ts.tags === Map("name" -> "foo"))
+    assert(ts.data === ArrayData(Array(expected)))
+  }
+
+  test("datapoint flow: sum") {
+    basicAggregationTest("sum", 45.0)
+  }
+
+  test("datapoint flow: count") {
+    basicAggregationTest("count", 10.0)
+  }
+
+  test("datapoint flow: avg") {
+    basicAggregationTest("avg", 4.5)
+  }
+
+  test("datapoint flow: max") {
+    basicAggregationTest("max", 9.0)
+  }
+
+  test("datapoint flow: min") {
+    basicAggregationTest("min", 0.0)
+  }
+
+  test("datapoint flow: grouping") {
+    val ds = new Evaluator.DataSource(
+      "test",
+      datapointStep,
+      "http://localhost/api/v1/graph?q=name,foo,:eq,:sum,(,id,),:by"
+    )
+    val sources = Evaluator.DataSources.of(ds)
+
+    val msgs = runDatapointFlow(sources, sampleData(1, 10))
+
+    assert(msgs.map(_.getId).distinct === List("test"))
+    assert(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]) === 10)
+
+    timeSeriesMessages(msgs).foreach { ts =>
+      val expected = ts.tags("id").toDouble
+      assert(ts.data === ArrayData(Array(expected)))
+    }
+  }
+
+  test("datapoint flow: multiple subs for same id") {
+    val ds1 = new Evaluator.DataSource(
+      "a",
+      datapointStep,
+      "http://localhost/api/v1/graph?q=name,foo,:eq,:sum"
+    )
+    val ds2 = new Evaluator.DataSource(
+      "b",
+      datapointStep,
+      "http://localhost/api/v1/graph?q=name,foo,:eq,:sum"
+    )
+    val sources = Evaluator.DataSources.of(ds1, ds2)
+
+    val msgs = runDatapointFlow(sources, sampleData(1, 10))
+
+    assert(msgs.map(_.getId).distinct === List("a", "b"))
+    assert(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]) === 2)
+
+    timeSeriesMessages(msgs).foreach { ts =>
+      assert(ts.data === ArrayData(Array(45.0)))
+    }
   }
 }
