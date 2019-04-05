@@ -45,6 +45,10 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -103,6 +107,28 @@ public final class Evaluator extends EvaluatorImpl {
    */
   public Processor<DataSources, MessageEnvelope> createStreamsProcessor() {
     return createStreamsProcessorImpl();
+  }
+
+  /**
+   * Creates a processor that evaluates a fixed set of expressions against the stream of
+   * time grouped datapoints. The caller must ensure:
+   *
+   * <ul>
+   *   <li>All data sources have the same step size. This is required because there is a
+   *       single input datapoint stream with a fixed step.</li>
+   *   <li>There should be a single group for each step interval with timestamps aligned to
+   *       the step boundary.</li>
+   *   <li>Operations are feasible for the input. Time based operators may or may not work
+   *       correctly depending on how the timestamps for the input groups are determined.
+   *       For use-cases where the the timestamps are generated arbitrarily, such as incrementing
+   *       for each group once a certain number of datapoints is available, then operators
+   *       based on a clock such as {@code :time} will have bogus values based on the arbitrary
+   *       times for the group. If the data is a snapshot of an actual stream, then time based
+   *       operators should work correctly.</li>
+   * </ul>
+   */
+  public Processor<DatapointGroup, MessageEnvelope> createDatapointProcessor(DataSources sources) {
+    return createDatapointProcessorImpl(sources);
   }
 
   /**
@@ -227,12 +253,7 @@ public final class Evaluator extends EvaluatorImpl {
      *     matching output messages with the data source.
      * @param uri
      *     The URI for this {@code DataSource} (in atlas backend form).
-     *
-     * @deprecated
-     *     Use {@link #DataSource(String, Duration, String)}. This constructor
-     *     is scheduled for removal in 1.7.
      */
-    @Deprecated
     public DataSource(String id, String uri) {
       this(id, extractStepFromUri(uri), uri);
     }
@@ -340,6 +361,86 @@ public final class Evaluator extends EvaluatorImpl {
 
     @Override public String toString() {
       return "MessageEnvelope(" + id + "," + message + ")";
+    }
+  }
+
+  /**
+   * Group of datapoints for the same time.
+   */
+  public final static class DatapointGroup {
+    private final long timestamp;
+    private final List<Datapoint> datapoints;
+
+    /** Create a new instance. */
+    public DatapointGroup(long timestamp, List<Datapoint> datapoints) {
+      this.timestamp = timestamp;
+      this.datapoints = datapoints;
+    }
+
+    /** Returns the timestamp (in milliseconds) for datapoints within this group. */
+    public long getTimestamp() {
+      return timestamp;
+    }
+
+    /** Returns the set of datapoints for this group. */
+    public List<Datapoint> getDatapoints() {
+      return datapoints;
+    }
+
+    @Override public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      DatapointGroup that = (DatapointGroup) o;
+      return timestamp == that.timestamp && Objects.equals(datapoints, that.datapoints);
+    }
+
+    @Override public int hashCode() {
+      return Objects.hash(timestamp, datapoints);
+    }
+
+    @Override public String toString() {
+      return "DatapointGroup(" + timestamp + "," + datapoints + ")";
+    }
+  }
+
+  /**
+   * Represents a datapoint for a dataset that is generated independently of the LWC clusters.
+   * This can be used for synthetic data or if there is an alternative data source such as a
+   * stream of events that are being mapped into streaming time series.
+   */
+  public final static class Datapoint {
+    private final Map<String, String> tags;
+    private final double value;
+
+    /** Create a new instance. */
+    public Datapoint(Map<String, String> tags, double value) {
+      this.tags = tags;
+      this.value = value;
+    }
+
+    /** Returns the tags for this datapoint. */
+    public Map<String, String> getTags() {
+      return tags;
+    }
+
+    /** Returns the value for this datapoint. */
+    public double getValue() {
+      return value;
+    }
+
+    @Override public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Datapoint datapoint = (Datapoint) o;
+      return Double.compare(datapoint.value, value) == 0 && Objects.equals(tags, datapoint.tags);
+    }
+
+    @Override public int hashCode() {
+      return Objects.hash(tags, value);
+    }
+
+    @Override public String toString() {
+      return "Datapoint(" + tags + "," + value + ")";
     }
   }
 
