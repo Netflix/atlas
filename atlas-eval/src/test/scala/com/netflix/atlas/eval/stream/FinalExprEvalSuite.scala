@@ -408,4 +408,33 @@ class FinalExprEvalSuite extends FunSuite {
       "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
     )
   }
+
+  test("stateful windows move even if there is no data for expr") {
+    val exprA = DataExpr.Sum(Query.Equal("name", "a"))
+    val expr = StatefulExpr.RollingCount(exprA, 3)
+    val tagsA = Map("name" -> "a")
+    val input = List(
+      sources(ds("a", s"http://atlas/graph?q=$expr")),
+      group(0),
+      group(1, AggrDatapoint(0, step, exprA, "i-1", tagsA, 6.0)),
+      group(2),
+      group(3, AggrDatapoint(0, step, exprA, "i-1", tagsA, 5.0)),
+      group(4),
+      group(5),
+      group(6),
+      group(7, AggrDatapoint(0, step, exprA, "i-1", tagsA, 4.0))
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    assert(timeseries.size === 8)
+    val expectedTimeseries = List(0.0, 1.0, 1.0, 2.0, 1.0, 1.0, 0.0, 1.0)
+    timeseries.zip(expectedTimeseries).foreach {
+      case (env, expectedValue) =>
+        assert(env.getId === "a")
+        val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+        checkValue(ts, expectedValue)
+    }
+  }
 }
