@@ -183,8 +183,6 @@ class StreamOpsSuite extends FunSuite {
     testMonitorFlow("upstreamDelay", Map("count" -> 8.0, "totalTime" -> 0.0))
   }
 
-  private def dispose(implicit mat: Materializer): Unit = {}
-
   private class Message(latch: CountDownLatch, val data: Source[Int, NotUsed]) {
 
     def dispose(mat: Materializer): Unit = {
