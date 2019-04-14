@@ -164,7 +164,7 @@ object StatefulVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Minimum value within a specified window. This operation is can be used in
+        |Minimum value within a specified window. This operation can be used in
         |alerting expressions to find a lower bound for noisy data based on recent
         |samples. For example:
         |
@@ -220,7 +220,7 @@ object StatefulVocabulary extends Vocabulary {
 
     override def summary: String =
       """
-        |Maximum value within a specified window. This operation is can be used in
+        |Maximum value within a specified window. This operation can be used in
         |alerting expressions to find a lower bound for noisy data based on recent
         |samples. For example:
         |
