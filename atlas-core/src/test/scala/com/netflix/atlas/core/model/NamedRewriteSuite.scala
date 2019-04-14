@@ -220,4 +220,16 @@ class NamedRewriteSuite extends FunSuite {
     val expected = eval("name,a,:eq,:sum,:cf-max,name,a,:eq,:count,:cf-max,:div")
     assert(actual === expected)
   }
+
+  test("issue-1021: offset with des macros, af") {
+    val actual = eval("name,a,:eq,:des-fast,1w,:offset,foo,bar,:eq,:cq")
+    val expected = eval("name,a,:eq,foo,bar,:eq,:and,:des-fast,1w,:offset")
+    assert(actual === expected)
+  }
+
+  test("issue-1021: offset with des macros, math") {
+    val actual = eval("name,a,:eq,:sum,:des-fast,1w,:offset,foo,bar,:eq,:cq")
+    val expected = eval("name,a,:eq,foo,bar,:eq,:and,:sum,:des-fast,1w,:offset")
+    assert(actual === expected)
+  }
 }

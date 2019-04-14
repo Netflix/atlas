@@ -925,7 +925,11 @@ object MathExpr {
 
           buffer.toString()
         case t: TimeSeriesExpr if t.finalGrouping == evalExpr.finalGrouping =>
-          s"$t,:$name"
+          val evalOffset = getOffset(evalExpr)
+          evalOffset.fold(s"$t,:$name") { d =>
+            val displayOffset = getOffset(t).getOrElse(Duration.ZERO)
+            if (d != displayOffset) s"${t.withOffset(d)},:$name" else s"$t,:$name"
+          }
         case _ =>
           val grouping = evalExpr.finalGrouping
           val by = if (grouping.nonEmpty) grouping.mkString(",(,", ",", ",),:by") else ""
