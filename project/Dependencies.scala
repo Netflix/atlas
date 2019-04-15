@@ -32,7 +32,7 @@ object Dependencies {
   val awsCore           = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2            = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3             = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.6.2"
+  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.7.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.1.7"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.19.0"
   val guiceCore         = "com.google.inject" % "guice" % guice
