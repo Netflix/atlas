@@ -22,16 +22,10 @@ import com.netflix.atlas.core.util.Math
   *
   * @param buf
   *     Rolling buffer to keep track of the input for a given window.
-  * @param minNumValues
-  *     Minimum number of values that must be present within the buffer for a sum
-  *     to be emitted. If there are not enough non-NaN values, then NaN will be emitted.
   */
-case class OnlineRollingSum(buf: RollingBuffer, minNumValues: Int) extends OnlineAlgorithm {
+case class OnlineRollingSum(buf: RollingBuffer) extends OnlineAlgorithm {
 
   import java.lang.{Double => JDouble}
-
-  require(minNumValues > 0, "minimum number of values must be >= 1")
-  require(buf.values.length >= minNumValues, "minimum number of values must be <= window size")
 
   private[this] var sum = Math.addNaN(0.0, buf.sum)
   private[this] var count = buf.values.count(v => !JDouble.isNaN(v))
@@ -49,7 +43,7 @@ case class OnlineRollingSum(buf: RollingBuffer, minNumValues: Int) extends Onlin
       count += 1
     }
 
-    if (count >= minNumValues) sum else Double.NaN
+    if (count > 0) sum else Double.NaN
   }
 
   override def reset(): Unit = {
@@ -61,18 +55,16 @@ case class OnlineRollingSum(buf: RollingBuffer, minNumValues: Int) extends Onlin
   override def state: AlgoState = {
     AlgoState(
       "rolling-sum",
-      "buffer"       -> buf.state,
-      "minNumValues" -> minNumValues
+      "buffer"       -> buf.state
     )
   }
 }
 
 object OnlineRollingSum {
 
-  def apply(n: Int, minNumValues: Int): OnlineRollingSum = apply(RollingBuffer(n), minNumValues)
+  def apply(n: Int): OnlineRollingSum = apply(RollingBuffer(n))
 
   def apply(state: AlgoState): OnlineRollingSum = {
-    val minIntervals = state.getInt("minNumValues")
-    apply(RollingBuffer(state.getState("buffer")), minIntervals)
+    apply(RollingBuffer(state.getState("buffer")))
   }
 }
