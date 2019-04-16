@@ -36,6 +36,7 @@ object StatefulVocabulary extends Vocabulary {
     RollingMin,
     RollingMax,
     RollingMean,
+    RollingSum,
     Des,
     SlidingDes,
     Trend,

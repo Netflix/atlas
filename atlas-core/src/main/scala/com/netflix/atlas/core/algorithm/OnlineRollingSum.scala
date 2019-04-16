@@ -18,8 +18,7 @@ package com.netflix.atlas.core.algorithm
 import com.netflix.atlas.core.util.Math
 
 /**
-  * Sum of the values within a moving window of the input. The denominator is the number
-  * of values (non-NaN entries) in the rolling buffer.
+  * Sum of the values within a moving window of the input.
   *
   * @param buf
   *     Rolling buffer to keep track of the input for a given window.
