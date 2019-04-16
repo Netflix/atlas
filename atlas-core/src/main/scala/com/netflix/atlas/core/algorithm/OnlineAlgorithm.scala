@@ -48,6 +48,7 @@ object OnlineAlgorithm {
       case "integral"      => OnlineIntegral(state)
       case "pipeline"      => Pipeline(state)
       case "rolling-count" => OnlineRollingCount(state)
+      case "rolling-sum"   => OnlineRollingSum(state)
       case "rolling-max"   => OnlineRollingMax(state)
       case "rolling-mean"  => OnlineRollingMean(state)
       case "rolling-min"   => OnlineRollingMin(state)

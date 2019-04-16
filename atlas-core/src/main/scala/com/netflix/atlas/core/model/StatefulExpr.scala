@@ -157,6 +157,20 @@ object StatefulExpr {
   }
 
   /**
+    * Computes the sum of the values over the last `n` intervals.
+    */
+  case class RollingSum(expr: TimeSeriesExpr, n: Int, minNumValues: Int) extends OnlineExpr {
+
+    override protected def name: String = "rolling-sum"
+
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineRollingMean(n, minNumValues)
+    }
+
+    override def toString: String = s"$expr,$n,$minNumValues,:rolling-sum"
+  }
+
+  /**
     * DES expression. In order to get the same results, it must be replayed from the same
     * starting point. Used sliding DES if deterministic results are important.
     */
