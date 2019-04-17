@@ -55,7 +55,7 @@ case class OnlineRollingSum(buf: RollingBuffer) extends OnlineAlgorithm {
   override def state: AlgoState = {
     AlgoState(
       "rolling-sum",
-      "buffer"       -> buf.state
+      "buffer" -> buf.state
     )
   }
 }
