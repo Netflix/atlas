@@ -30,6 +30,7 @@ import com.netflix.atlas.core.algorithm.OnlineDerivative
 import com.netflix.atlas.core.algorithm.OnlineIntegral
 import com.netflix.atlas.core.algorithm.OnlineRollingCount
 import com.netflix.atlas.core.algorithm.OnlineRollingMean
+import com.netflix.atlas.core.algorithm.OnlineRollingSum
 import com.netflix.atlas.core.algorithm.OnlineTrend
 
 trait StatefulExpr extends TimeSeriesExpr {}
@@ -154,6 +155,20 @@ object StatefulExpr {
     }
 
     override def toString: String = s"$expr,$n,$minNumValues,:rolling-mean"
+  }
+
+  /**
+    * Computes the sum of the values over the last `n` intervals.
+    */
+  case class RollingSum(expr: TimeSeriesExpr, n: Int) extends OnlineExpr {
+
+    override protected def name: String = "rolling-sum"
+
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineRollingSum(n)
+    }
+
+    override def toString: String = s"$expr,$n,:rolling-sum"
   }
 
   /**
