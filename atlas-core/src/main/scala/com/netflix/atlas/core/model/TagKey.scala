@@ -72,9 +72,6 @@ object TagKey {
   /** Data source type for the metric. */
   final val dsType = atlasPrefix + "dstype"
 
-  /** Rollup message id for the metric. */
-  final val rollup = atlasPrefix + "rollup"
-
   /** Indicates the legacy system the metric came from such as epic. */
   final val legacy = atlasPrefix + "legacy"
 
