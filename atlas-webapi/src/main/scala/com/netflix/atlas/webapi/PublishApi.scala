@@ -66,10 +66,10 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi w
 
   private def handleReq: Route = {
     extractRequestContext { ctx =>
-      parseEntity(customJson(p => decodePayload(p, internWhileParsing))) { payload =>
-        val (good, bad) = validate(payload.values)
+      parseEntity(customJson(p => decodeBatch(p, internWhileParsing))) { values =>
+        val (good, bad) = validate(values)
         val promise = Promise[RouteResult]()
-        val req = PublishRequest(payload.id, good, bad, promise, ctx)
+        val req = PublishRequest(good, bad, promise, ctx)
         publishRef ! req
         _ =>
           promise.future
@@ -167,23 +167,17 @@ object PublishApi {
     finally parser.close()
   }
 
-  def decodeBatch(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
-    decodePayload(parser, intern).values
-  }
-
   def decodeBatch(json: String): List[Datapoint] = {
     val parser = Json.newJsonParser(json)
     try decodeBatch(parser)
     finally parser.close()
   }
 
-  def decodePayload(parser: JsonParser, intern: Boolean = false): PublishPayload = {
-    var id: String = null
+  def decodeBatch(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
     var tags: Map[String, String] = null
     var metrics: List[Datapoint] = null
     var tagsLoadedFirst = false
     foreachField(parser) {
-      case "id"   => id = parser.nextTextValue()
       case "tags" => tags = decodeTags(parser, null, intern)
       case "metrics" =>
         tagsLoadedFirst = (tags != null)
@@ -194,19 +188,11 @@ object PublishApi {
 
     // If the tags were loaded first they got merged with the datapoints while parsing. Otherwise
     // they need to be merged here.
-    val values =
-      if (tagsLoadedFirst || tags == null) {
-        if (metrics == null) Nil else metrics
-      } else {
-        metrics.map(d => d.copy(tags = d.tags ++ tags))
-      }
-    PublishPayload(id, values)
-  }
-
-  def decodePayload(json: String): PublishPayload = {
-    val parser = Json.newJsonParser(json)
-    try decodePayload(parser)
-    finally parser.close()
+    if (tagsLoadedFirst || tags == null) {
+      if (metrics == null) Nil else metrics
+    } else {
+      metrics.map(d => d.copy(tags = d.tags ++ tags))
+    }
   }
 
   def decodeList(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
@@ -271,10 +257,7 @@ object PublishApi {
     }
   }
 
-  case class PublishPayload(id: String, values: List[Datapoint])
-
   case class PublishRequest(
-    id: String,
     values: List[Datapoint],
     failures: List[ValidationResult],
     promise: Promise[RouteResult],
