@@ -362,6 +362,10 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
     "&q=name,sps,:eq,(,nf.cluster,),:by,$atlas.max+is+max,:legend&tick_labels=binary"
   }
 
+  imageTest("empty legend string") {
+    "/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,(,nf.cluster,),:by,$(),:legend"
+  }
+
   def renderTest(name: String)(uri: => String): Unit = {
     test(name) {
       val fname = Strings.zeroPad(Hash.sha1bytes(name), 40).substring(0, 8) + ".png"
