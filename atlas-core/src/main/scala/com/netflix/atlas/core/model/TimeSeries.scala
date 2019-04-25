@@ -112,7 +112,8 @@ trait TimeSeries extends TaggedItem {
   }
 
   def withLabel(s: String): TimeSeries = {
-    LazyTimeSeries(tags, s, data)
+    // If the specified label is empty, then fallback to the default
+    if (s.isEmpty) this else LazyTimeSeries(tags, s, data)
   }
 
   def consolidate(step: Long, cf: ConsolidationFunction): TimeSeries = {
