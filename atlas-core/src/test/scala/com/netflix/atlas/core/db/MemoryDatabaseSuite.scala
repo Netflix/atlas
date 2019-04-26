@@ -93,11 +93,18 @@ class MemoryDatabaseSuite extends FunSuite {
 
   private def ts(name: String, label: String, mul: Int, values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, 0L, mul * step, values.toArray)
-    TimeSeries(Map("name" -> name), label, seq)
+    TimeSeries(Map("name" -> name, "foo" -> "bar"), label, seq)
+  }
+
+  private def expTS(name: String, label: String, mul: Int, values: Double*): TimeSeries = {
+    val tmp = ts(name, label, mul, values: _*)
+    tmp.withTags(tmp.tags - "foo")
   }
 
   test(":eq query") {
-    assert(exec("name,a,:eq") === List(ts("a", "sum(name=a)", 1, 1.0, 2.0, 3.0)))
+    val result = exec("name,a,:eq")
+    assert(result.map(_.tags) === List(Map("name" -> "a")))
+    assert(result === List(expTS("a", "sum(name=a)", 1, 1.0, 2.0, 3.0)))
   }
 
   test(":in query") {
@@ -138,18 +145,18 @@ class MemoryDatabaseSuite extends FunSuite {
 
   test(":by expr") {
     val expected = List(
-      ts("a", "(name=a)", 1, 1.0, 2.0, 3.0),
-      ts("b", "(name=b)", 1, 3.0, 2.0, 1.0),
-      ts("c", "(name=c)", 1, 15.0, 18.0, 21.0)
+      expTS("a", "(name=a)", 1, 1.0, 2.0, 3.0),
+      expTS("b", "(name=b)", 1, 3.0, 2.0, 1.0),
+      expTS("c", "(name=c)", 1, 15.0, 18.0, 21.0)
     )
     assert(exec(":true,(,name,),:by") === expected)
   }
 
   test(":all expr") {
     val expected = List(
-      ts("a", "name=a", 1, 1.0, 2.0, 3.0),
-      ts("b", "name=b", 1, 3.0, 2.0, 1.0),
-      ts("c", "name=c", 1, 15.0, 18.0, 21.0)
+      expTS("a", "name=a", 1, 1.0, 2.0, 3.0),
+      expTS("b", "name=b", 1, 3.0, 2.0, 1.0),
+      expTS("c", "name=c", 1, 15.0, 18.0, 21.0)
     )
     assert(exec(":true,:all") === expected)
   }
@@ -188,18 +195,18 @@ class MemoryDatabaseSuite extends FunSuite {
 
   test(":by expr, c=3") {
     val expected = List(
-      ts("a", "(name=a)", 3, 2.0),
-      ts("b", "(name=b)", 3, 2.0),
-      ts("c", "(name=c)", 3, 18.0)
+      expTS("a", "(name=a)", 3, 2.0),
+      expTS("b", "(name=b)", 3, 2.0),
+      expTS("c", "(name=c)", 3, 18.0)
     )
     assert(exec(":true,(,name,),:by", 3 * step) === expected)
   }
 
   test(":all expr, c=3") {
     val expected = List(
-      ts("a", "name=a", 3, 6.0),
-      ts("b", "name=b", 3, 6.0),
-      ts("c", "name=c", 3, 54.0)
+      expTS("a", "name=a", 3, 6.0),
+      expTS("b", "name=b", 3, 6.0),
+      expTS("c", "name=c", 3, 54.0)
     )
     assert(exec(":true,:all", 3 * step) === expected)
   }
