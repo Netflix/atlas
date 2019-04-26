@@ -27,6 +27,7 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.EvalContext
+import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Spectator
@@ -135,6 +136,16 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     case DataExpr.Consolidation(af, _) => blockAggr(af)
   }
 
+  @scala.annotation.tailrec
+  private def finalGrouping(expr: DataExpr): List[String] = {
+    expr match {
+      case e: DataExpr.Head          => finalGrouping(e.expr)
+      case e: DataExpr.Consolidation => finalGrouping(e.af)
+      case e: DataExpr.GroupBy       => e.keys
+      case _                         => Nil
+    }
+  }
+
   private def executeImpl(context: EvalContext, expr: DataExpr): List[TimeSeries] = {
     val cfStep = context.step
     require(cfStep >= step, "step for query must be >= step for the database")
@@ -157,7 +168,13 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     val bufEnd = bufStart + cfStepLength * cfStep - cfStep
 
     def newBuffer(tags: Map[String, String]): TimeSeriesBuffer = {
-      TimeSeriesBuffer(tags, cfStep, bufStart, bufEnd)
+      val resultTags = expr match {
+        case _: DataExpr.All => tags
+        case _ =>
+          val resultKeys = Query.exactKeys(expr.query) ++ finalGrouping(expr)
+          tags.filterKeys(resultKeys.contains)
+      }
+      TimeSeriesBuffer(resultTags, cfStep, bufStart, bufEnd)
     }
 
     index.findItems(query).foreach { item =>
