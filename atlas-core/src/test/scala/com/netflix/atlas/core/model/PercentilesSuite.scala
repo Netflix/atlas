@@ -59,6 +59,15 @@ class PercentilesSuite extends FunSuite {
     } toList
   }
 
+  private val inputBad100 = {
+    // simulates bad client that incorrectly encodes the percentile tag
+    (0 until 100).map { i =>
+      val bucket = f"D${PercentileBuckets.indexOf(i)}%04x"
+      val v = 1.0 / 60.0
+      ts(bucket, v, v)
+    } toList
+  }
+
   private val inputTimer100 = {
     (0 until 100).map { i =>
       val bucket = f"T${PercentileBuckets.indexOf(i)}%04X"
@@ -121,6 +130,13 @@ class PercentilesSuite extends FunSuite {
         assert(p === (estimate +- 2.0))
     }
     assert(data.last.label === f"percentile(name=test, 100.0)")
+  }
+
+  test("distribution summary, bad data") {
+    val e = intercept[IllegalArgumentException] {
+      eval("name,test,:eq,(,9,25,50,90,100,),:percentiles", input100 ::: inputBad100)
+    }
+    assert(e.getMessage === "requirement failed: invalid percentile encoding: [D000A,D000a]")
   }
 
   test("timer :sum") {

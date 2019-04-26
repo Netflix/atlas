@@ -819,7 +819,10 @@ object MathExpr {
         var i = 0
         while (i < usedCounts.length) {
           val vs = byBucket(usedCounts(i))
-          assert(vs.size == 1)
+          require(
+            vs.lengthCompare(1) == 0,
+            s"invalid percentile encoding: [${vs.map(_.tags(TagKey.percentile)).mkString(",")}]"
+          )
           bounded(i) = vs.head.data.bounded(context.start, context.end)
           i += 1
         }
