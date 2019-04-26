@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 import com.github.benmanes.caffeine.cache.Caffeine
@@ -25,7 +24,6 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Query.KeyQuery
 import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.spectator.api.Utils
 import com.typesafe.config.Config
 
 import scala.util.Failure
@@ -59,16 +57,28 @@ class ExpressionSplitter(config: Config) {
     .expireAfterAccess(10, TimeUnit.MINUTES)
     .build[String, Try[List[DataExprMeta]]]()
 
-  // TODO: https://github.com/Netflix/atlas/issues/729
-  private val interner = new ConcurrentHashMap[Query, Query]()
+  /**
+    * Cache used to reduce the memory overhead of the query objects.
+    */
+  private val interner = Caffeine
+    .newBuilder()
+    .expireAfterAccess(12, TimeUnit.HOURS)
+    .build[Query, Query]()
 
   /**
-    * Avoid using `ConcurrentHashMap.computeIfAbsent` here, on some of the instance types
-    * with more cores it causes a heavy thread contention. It is better for this use-case
-    * to spend some additional CPU cycles computing a value that will not get used.
+    * On instance types with a lot of cores, the loading cache causes a lot of thread
+    * contention and most threads are blocked. This just does and get/put which potentially
+    * recomputes some values, but for this case that is preferable.
     */
   private def internQuery(q: Query, newQuery: => Query): Query = {
-    Utils.computeIfAbsent[Query, Query](interner, q, _ => newQuery)
+    val cached = interner.getIfPresent(q)
+    if (cached == null) {
+      val tmp = newQuery
+      interner.put(tmp, tmp)
+      tmp
+    } else {
+      cached
+    }
   }
 
   private[lwcapi] def intern(query: Query): Query = {
