@@ -18,4 +18,15 @@ package com.netflix.atlas.core.algorithm
 class OnlineDesSuite extends BaseOnlineAlgorithmSuite {
 
   override def newInstance: OnlineAlgorithm = OnlineDes(10, 0.1, 0.2)
+
+  test("training = 2, NaNs") {
+    val algo = OnlineDes(2, 0.25, 0.25)
+    assert(algo.next(0.0).isNaN)
+    assert(algo.next(1.0).isNaN)
+    algo.next(2.0)
+    algo.next(Double.NaN)
+    assert(!algo.isEmpty)
+    algo.next(Double.NaN)
+    assert(algo.isEmpty)
+  }
 }

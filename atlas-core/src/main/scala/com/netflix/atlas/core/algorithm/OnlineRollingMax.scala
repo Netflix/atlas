@@ -37,6 +37,8 @@ case class OnlineRollingMax(buf: RollingBuffer) extends OnlineAlgorithm {
     max = Double.NaN
   }
 
+  override def isEmpty: Boolean = buf.isEmpty
+
   override def state: AlgoState = {
     AlgoState("rolling-max", "buffer" -> buf.state)
   }

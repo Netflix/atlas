@@ -102,6 +102,8 @@ class RollingBuffer(val values: Array[Double], start: Int = 0) {
     size = 0
   }
 
+  def isEmpty: Boolean = size == 0
+
   def state: AlgoState = {
     val vs = java.util.Arrays.copyOf(values, values.length)
     AlgoState("rolling-buffer", "values" -> vs, "pos" -> pos)

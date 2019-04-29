@@ -59,6 +59,8 @@ case class OnlineRollingMean(buf: RollingBuffer, minNumValues: Int) extends Onli
     count = 0
   }
 
+  override def isEmpty: Boolean = buf.isEmpty
+
   override def state: AlgoState = {
     AlgoState(
       "rolling-mean",

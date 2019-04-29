@@ -254,7 +254,10 @@ object StatefulExpr {
           bounded.data(i) = algo.next(bounded.data(i))
           i += 1
         }
-        state(t.id) = algo.state
+        if (algo.isEmpty)
+          state -= t.id
+        else
+          state(t.id) = algo.state
         TimeSeries(t.tags, s"$name(${t.label})", bounded)
       }
       ResultSet(this, newData, rs.state + (this -> state))

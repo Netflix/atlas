@@ -27,6 +27,15 @@ trait OnlineAlgorithm {
   def reset(): Unit
 
   /**
+    * Returns true if the state is the same as if it had been reset. This means that the state
+    * does not need to be stored and can just be recreated if a new values shows up. When
+    * processing a stream this is needed to avoid a memory leak for state objects if there are
+    * some transient values associated with a group by. This check becomes the effective lifespan
+    * for the state if no data is received for a given interval.
+    */
+  def isEmpty: Boolean
+
+  /**
     * Capture the current state of the algorithm. It can be restored in a new instance
     * with the [OnlineAlgorithm#apply] method.
     */

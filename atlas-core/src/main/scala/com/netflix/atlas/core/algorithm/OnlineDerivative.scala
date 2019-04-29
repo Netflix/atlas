@@ -30,6 +30,8 @@ case class OnlineDerivative(private var prev: Double) extends OnlineAlgorithm {
     prev = Double.NaN
   }
 
+  override def isEmpty: Boolean = java.lang.Double.isNaN(prev)
+
   override def state: AlgoState = {
     AlgoState("derivative", "prev" -> prev)
   }

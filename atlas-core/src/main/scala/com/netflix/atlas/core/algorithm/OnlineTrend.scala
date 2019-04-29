@@ -57,6 +57,8 @@ case class OnlineTrend(buf: RollingBuffer) extends OnlineAlgorithm {
     nanCount = 0
   }
 
+  override def isEmpty: Boolean = buf.isEmpty
+
   override def state: AlgoState = {
     AlgoState(
       "trend",
