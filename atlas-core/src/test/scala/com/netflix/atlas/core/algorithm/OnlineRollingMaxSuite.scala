@@ -45,7 +45,9 @@ class OnlineRollingMaxSuite extends BaseOnlineAlgorithmSuite {
     assert(algo.next(1.0) === 1.0)
     assert(algo.next(2.0) === 2.0)
     assert(algo.next(Double.NaN) === 2.0)
+    assert(!algo.isEmpty)
     assert(algo.next(Double.NaN).isNaN)
+    assert(algo.isEmpty)
   }
 
   test("n = 2, reset") {

@@ -34,6 +34,8 @@ case class OnlineIgnoreN(n: Int) extends OnlineAlgorithm {
     pos = 0
   }
 
+  override def isEmpty: Boolean = false
+
   override def state: AlgoState = {
     AlgoState("ignore", "n" -> n, "pos" -> pos)
   }

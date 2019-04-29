@@ -37,6 +37,8 @@ case class OnlineRollingCount(buf: RollingBuffer) extends OnlineAlgorithm {
     count = 0.0
   }
 
+  override def isEmpty: Boolean = buf.isEmpty
+
   override def state: AlgoState = {
     AlgoState("rolling-count", "buffer" -> buf.state)
   }

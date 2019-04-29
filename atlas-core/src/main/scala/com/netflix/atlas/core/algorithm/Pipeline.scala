@@ -30,6 +30,8 @@ case class Pipeline(stages: List[OnlineAlgorithm]) extends OnlineAlgorithm {
     stages.foreach(_.reset())
   }
 
+  override def isEmpty: Boolean = stages.forall(_.isEmpty)
+
   override def state: AlgoState = {
     AlgoState("pipeline", "stages" -> stages.map(_.state))
   }

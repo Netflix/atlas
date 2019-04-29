@@ -34,6 +34,8 @@ case class OnlineIntegral(private var value: Double) extends OnlineAlgorithm {
     value = Double.NaN
   }
 
+  override def isEmpty: Boolean = false
+
   override def state: AlgoState = {
     AlgoState("integral", "value" -> value)
   }

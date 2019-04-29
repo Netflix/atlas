@@ -27,6 +27,8 @@ case class OnlineDelay(buf: RollingBuffer) extends OnlineAlgorithm {
 
   override def reset(): Unit = buf.clear()
 
+  override def isEmpty: Boolean = buf.isEmpty
+
   override def state: AlgoState = {
     AlgoState("delay", "buffer" -> buf.state)
   }

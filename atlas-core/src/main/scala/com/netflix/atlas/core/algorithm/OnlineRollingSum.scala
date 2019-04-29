@@ -52,6 +52,8 @@ case class OnlineRollingSum(buf: RollingBuffer) extends OnlineAlgorithm {
     count = 0
   }
 
+  override def isEmpty: Boolean = buf.isEmpty
+
   override def state: AlgoState = {
     AlgoState(
       "rolling-sum",

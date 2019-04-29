@@ -28,6 +28,7 @@ package com.netflix.atlas.core.algorithm
 case class OnlineDes(training: Int, alpha: Double, beta: Double) extends OnlineAlgorithm {
 
   private var currentSample = 0
+  private var missingSamples = 0
   private var sp = Double.NaN
   private var bp = Double.NaN
 
@@ -43,26 +44,33 @@ case class OnlineDes(training: Int, alpha: Double, beta: Double) extends OnlineA
         sp = sn; bp = bn
       }
       currentSample += 1
+      missingSamples = 0
+    } else {
+      missingSamples += 1
     }
     retval
   }
 
   override def reset(): Unit = {
     currentSample = 0
+    missingSamples = 0
     sp = Double.NaN
     bp = Double.NaN
   }
 
+  override def isEmpty: Boolean = missingSamples >= training
+
   override def state: AlgoState = {
     AlgoState(
       "des",
-      "type"          -> "des",
-      "training"      -> training,
-      "alpha"         -> alpha,
-      "beta"          -> beta,
-      "currentSample" -> currentSample,
-      "sp"            -> sp,
-      "bp"            -> bp
+      "type"           -> "des",
+      "training"       -> training,
+      "alpha"          -> alpha,
+      "beta"           -> beta,
+      "currentSample"  -> currentSample,
+      "missingSamples" -> missingSamples,
+      "sp"             -> sp,
+      "bp"             -> bp
     )
   }
 }
@@ -73,6 +81,7 @@ object OnlineDes {
     val des =
       new OnlineDes(state.getInt("training"), state.getDouble("alpha"), state.getDouble("beta"))
     des.currentSample = state.getInt("currentSample")
+    des.missingSamples = state.getInt("missingSamples")
     des.sp = state.getDouble("sp")
     des.bp = state.getDouble("bp")
     des

@@ -56,6 +56,8 @@ case class OnlineSlidingDes(
     des2.reset()
   }
 
+  override def isEmpty: Boolean = false
+
   override def state: AlgoState = {
     AlgoState(
       "sliding-des",

@@ -53,8 +53,10 @@ class OnlineDerivativeSuite extends BaseOnlineAlgorithmSuite {
   test("reset") {
     val algo = OnlineDerivative(Double.NaN)
     assert(algo.next(1.0).isNaN)
+    assert(!algo.isEmpty)
     assert(algo.next(2.0) === 1.0)
     algo.reset()
+    assert(algo.isEmpty)
     assert(algo.next(3.0).isNaN)
     assert(algo.next(7.0) === 4.0)
   }

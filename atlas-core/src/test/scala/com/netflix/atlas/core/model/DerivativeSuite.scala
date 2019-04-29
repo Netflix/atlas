@@ -71,4 +71,13 @@ class DerivativeSuite extends FunSuite {
         assert(actual === expected)
     }
   }
+
+  test("state will expire and get cleaned up") {
+    val expr = StatefulExpr.Derivative(DataExpr.Sum(Query.True))
+
+    val context = EvalContext(start, start + step * 4, step)
+    val rs = expr.eval(context, List(ts(1.0, 2.0, 3.0, Double.NaN)))
+
+    assert(rs.state(expr).asInstanceOf[scala.collection.mutable.Map[_, _]].isEmpty)
+  }
 }

@@ -37,6 +37,8 @@ case class OnlineRollingMin(buf: RollingBuffer) extends OnlineAlgorithm {
     min = Double.NaN
   }
 
+  override def isEmpty: Boolean = buf.isEmpty
+
   override def state: AlgoState = {
     AlgoState("rolling-min", "buffer" -> buf.state)
   }
