@@ -465,7 +465,7 @@ class FinalExprEvalSuite extends FunSuite {
       group(4),
       group(5, AggrDatapoint(0, step, exprA, "i-1", tagsA, 4.0)),
       group(6),
-      group(7, AggrDatapoint(0, step, exprA, "i-1", tagsA, 4.0)),
+      group(7, AggrDatapoint(0, step, exprA, "i-1", tagsA, 4.0))
     )
 
     val output = run(input)
