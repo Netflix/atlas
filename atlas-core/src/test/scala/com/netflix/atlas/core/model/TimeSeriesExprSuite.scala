@@ -183,6 +183,7 @@ class TimeSeriesExprSuite extends FunSuite {
     ":true,1w,:offset"             -> const(ts(unknownTag, "name=unknown (offset=1w)", 55)),
     ":true,5,:add,1w,:offset"      -> const(ts(unknownTag, "(name=unknown (offset=1w) + 5.0)", 60)),
     "issue,283,:eq"                -> const(ts(Map("issue" -> "283"), "NO DATA", Double.NaN)),
+    ":false,(,name,),:by,:count"   -> const(Nil),
     ":true,(,name,),:by,:stddev" -> const(
       ts(Map.empty[String, String], stddevLegend("NO TAGS"), 3.1622776601683795)
     ),
