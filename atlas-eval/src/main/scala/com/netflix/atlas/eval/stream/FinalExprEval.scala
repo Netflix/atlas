@@ -123,10 +123,25 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
         noData = recipients
           .flatMap(_._1.expr.dataExprs)
           .distinct
-          .map(e => e -> List(TimeSeries.noData(e.query, step)))
+          .map {
+            // If there is no grouping, then use a no data line, otherwise use an empty set
+            case e if e.finalGrouping.isEmpty =>
+              e -> List(TimeSeries.noData(e.query, step))
+            case e =>
+              e -> Nil
+          }
           .toMap
 
         push(out, Source(errors.result()))
+      }
+
+      // Generate a no data line for a full expression. Use the tagging information from the
+      // first data expression that is found.
+      private def noData(expr: StyleExpr): TimeSeries = {
+        expr.expr.dataExprs.headOption match {
+          case Some(e) => TimeSeries.noData(e.query, step)
+          case None    => TimeSeries.noData(step)
+        }
       }
 
       // Perform the final evaluation and create a source with the TimeSeriesMessages
@@ -156,7 +171,8 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
             try {
               val result = expr.expr.eval(context, expressionDatapoints)
               states(expr) = result.state
-              val msgs = result.data.map { t =>
+              val data = if (result.data.isEmpty) List(noData(expr)) else result.data
+              val msgs = data.map { t =>
                 TimeSeriesMessage(expr, context, t.withLabel(expr.legend(t)))
               }
 

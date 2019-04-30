@@ -243,6 +243,8 @@ object StatefulExpr {
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
       val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
+
+      // Update expressions with data
       val newData = rs.data.map { t =>
         val bounded = t.data.bounded(context.start, context.end)
         val length = bounded.data.length
@@ -260,6 +262,20 @@ object StatefulExpr {
           state(t.id) = algo.state
         TimeSeries(t.tags, s"$name(${t.label})", bounded)
       }
+
+      // Update the stateful buffers for expressions that do not have an explicit value for
+      // this interval. For streaming contexts only data that is reported for that interval
+      // will be present, but the state needs to be moved for all entries.
+      val noDataIds = state.keySet -- rs.data.map(_.id)
+      noDataIds.foreach { id =>
+        val algo = OnlineAlgorithm(state(id))
+        algo.next(Double.NaN)
+        if (algo.isEmpty)
+          state -= id
+        else
+          state(id) = algo.state
+      }
+
       ResultSet(this, newData, rs.state + (this -> state))
     }
   }

@@ -97,17 +97,22 @@ class FinalExprEvalSuite extends FunSuite {
     }
   }
 
-  private def checkValue(ts: TimeSeriesMessage, expected: Double): Unit = {
+  private def getValue(ts: TimeSeriesMessage): Double = {
     ts.data match {
       case ArrayData(vs) =>
         assert(vs.length === 1)
-        if (expected.isNaN)
-          assert(vs(0).isNaN)
-        else
-          assert(vs(0) === expected)
+        vs(0)
       case v =>
         fail(s"unexpected data value: $v")
     }
+  }
+
+  private def checkValue(ts: TimeSeriesMessage, expected: Double): Unit = {
+    val v = getValue(ts)
+    if (expected.isNaN)
+      assert(v.isNaN)
+    else
+      assert(v === expected)
   }
 
   test("aggregate with single datapoint per group") {
@@ -435,6 +440,45 @@ class FinalExprEvalSuite extends FunSuite {
         assert(env.getId === "a")
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
+    }
+  }
+
+  test("stateful windows move even if there is no data for expr grouping") {
+    val exprA = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "a")), List("k"))
+    val expr = MathExpr.GreaterThan(
+      StatefulExpr.RollingCount(
+        MathExpr.LessThan(
+          MathExpr.Add(exprA, MathExpr.Constant(0.0)),
+          MathExpr.Constant(1.0)
+        ),
+        5
+      ),
+      MathExpr.Constant(3.5)
+    )
+    val tagsA = Map("name" -> "a", "k" -> "v")
+    val input = List(
+      sources(ds("a", s"http://atlas/graph?q=$expr")),
+      group(0),
+      group(1, AggrDatapoint(0, step, exprA, "i-1", tagsA, 6.0)),
+      group(2),
+      group(3, AggrDatapoint(0, step, exprA, "i-1", tagsA, 5.0)),
+      group(4),
+      group(5, AggrDatapoint(0, step, exprA, "i-1", tagsA, 4.0)),
+      group(6),
+      group(7, AggrDatapoint(0, step, exprA, "i-1", tagsA, 4.0))
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    assert(timeseries.size === 8)
+    timeseries.foreach { env =>
+      val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+      val v = getValue(ts)
+      if (ts.label == "NO DATA")
+        assert(v.isNaN)
+      else
+        assert(v === 0.0)
     }
   }
 }
