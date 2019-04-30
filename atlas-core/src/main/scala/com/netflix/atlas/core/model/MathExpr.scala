@@ -619,11 +619,16 @@ object MathExpr {
 
     override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
-      val init = rs.data.map { t =>
-        TimeSeries(t.tags, t.label, t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0))
-      }
-      val t = TimeSeries.aggregate(init.iterator, context.start, context.end, this)
-      ResultSet(this, List(TimeSeries(t.tags, s"$name(${t.label})", t.data)), rs.state)
+      val ts =
+        if (rs.data.isEmpty) Nil
+        else {
+          val init = rs.data.map { t =>
+            TimeSeries(t.tags, t.label, t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0))
+          }
+          val t = TimeSeries.aggregate(init.iterator, context.start, context.end, this)
+          List(TimeSeries(t.tags, s"$name(${t.label})", t.data))
+        }
+      ResultSet(this, ts, rs.state)
     }
   }
 
