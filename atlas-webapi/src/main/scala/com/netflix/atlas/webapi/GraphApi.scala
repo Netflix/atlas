@@ -48,7 +48,7 @@ class GraphApi(config: Config, implicit val actorRefFactory: ActorRefFactory) ex
       get {
         extractRequest { request =>
           val graphCfg = grapher.toGraphConfig(request)
-          complete(FetchRequestActor.createResponse(actorRefFactory, graphCfg))
+          complete(FetchRequestSource.createResponse(actorRefFactory, graphCfg))
         }
       }
     }
