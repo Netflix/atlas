@@ -18,11 +18,13 @@ package com.netflix.atlas.eval.graph
 import java.awt.Color
 
 import com.netflix.atlas.chart.model.DataDef
+import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotBound
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.chart.model.TickLabelMode
+import com.netflix.atlas.core.util.Strings
 
 case class Axis(
   upper: Option[String] = None,
@@ -40,12 +42,23 @@ case class Axis(
     tickLabels.fold(TickLabelMode.DECIMAL)(TickLabelMode.apply)
   }
 
+  private def getAxisTags(data: List[DataDef]): Map[String, String] = {
+    val lines = data.collect { case line: LineDef => line.data.tags }
+    if (lines.isEmpty)
+      Map.empty
+    else
+      lines.reduce { (a, b) =>
+        a.toSet.intersect(b.toSet).toMap
+      }
+  }
+
   def newPlotDef(data: List[DataDef] = Nil, multiY: Boolean = false): PlotDef = {
+    val label = ylabel.map(s => Strings.substitute(s, getAxisTags(data)))
     PlotDef(
       data = data,
       lower = lower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
       upper = upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
-      ylabel = ylabel,
+      ylabel = label,
       scale = Scale.fromName(scale.getOrElse("linear")),
       axisColor = if (multiY) None else Some(Color.BLACK),
       tickLabelMode = tickLabelMode

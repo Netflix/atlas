@@ -366,6 +366,24 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
     "/api/v1/graph?e=2012-01-01T00:00&q=name,sps,:eq,(,nf.cluster,),:by,$(),:legend"
   }
 
+  imageTest("substitutions for ylabel, name present, cluster missing") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,nf.cluster,nccp-silver,:lt,:and,(,nf.cluster,),:by" +
+    "&ylabel=$name+$nf.cluster"
+  }
+
+  imageTest("substitutions for ylabel, name present, cluster present") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,nf.cluster,nccp-silver,:lt,:and,(,nf.cluster,),:by" +
+    "&ylabel=$name+$nf.cluster&axis_per_line=1"
+  }
+
+  imageTest("substitutions for title, name present, cluster missing") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,nf.cluster,nccp-silver,:lt,:and,(,nf.cluster,),:by" +
+    "&title=$name+$nf.cluster&axis_per_line=1"
+  }
+
   def renderTest(name: String)(uri: => String): Unit = {
     test(name) {
       val fname = Strings.zeroPad(Hash.sha1bytes(name), 40).substring(0, 8) + ".png"

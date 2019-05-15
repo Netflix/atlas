@@ -22,6 +22,7 @@ import akka.http.scaladsl.model.ContentType
 import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LegendType
+import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StyleExpr
@@ -100,6 +101,16 @@ case class GraphConfig(
 
   def exprs: List[StyleExpr] = parsedQuery.get
 
+  private def getGraphTags(plots: List[PlotDef]): Map[String, String] = {
+    val lines = plots.flatMap(_.data).collect { case line: LineDef => line.data.tags }
+    if (lines.isEmpty)
+      Map.empty
+    else
+      lines.reduce { (a, b) =>
+        a.toSet.intersect(b.toSet).toMap
+      }
+  }
+
   def newGraphDef(plots: List[PlotDef], warnings: List[String] = Nil): GraphDef = {
     val legendType = (flags.showLegend, flags.showLegendStats) match {
       case (false, _) => LegendType.OFF
@@ -107,8 +118,10 @@ case class GraphConfig(
       case (_, true)  => LegendType.LABELS_WITH_STATS
     }
 
+    val title = flags.title.map(s => Strings.substitute(s, getGraphTags(plots)))
+
     var gdef = GraphDef(
-      title = flags.title,
+      title = title,
       timezones = timezoneIds,
       startTime = fstart.plusMillis(stepSize),
       endTime = fend.plusMillis(stepSize),
