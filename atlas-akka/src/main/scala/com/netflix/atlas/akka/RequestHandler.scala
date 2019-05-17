@@ -16,7 +16,11 @@
 package com.netflix.atlas.akka
 
 import java.lang.reflect.Type
+import java.util.zip.Deflater
 
+import akka.http.scaladsl.coding.Deflate
+import akka.http.scaladsl.coding.Gzip
+import akka.http.scaladsl.coding.NoCoding
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCode
@@ -97,6 +101,14 @@ object RequestHandler {
 
   import com.netflix.atlas.akka.CustomDirectives._
 
+  // Custom set of encoders, same as the default set used with the `encodeResponse` directive
+  // except that the compression level is set to best speed rather than the default to reduce
+  // the computation overhead
+  private val CompressedResponseEncoders = Seq(
+    Gzip.withLevel(Deflater.BEST_SPEED),
+    Deflate.withLevel(Deflater.BEST_SPEED)
+  )
+
   /**
     * Wraps a route with the standard options that we typically use for error handling,
     * logging, CORS support, compression, etc.
@@ -127,7 +139,7 @@ object RequestHandler {
     val finalRoutes = ok ~ route
 
     // Automatically deal with compression
-    val gzip = encodeResponse {
+    val gzip = encodeResponseWith(NoCoding, CompressedResponseEncoders: _*) {
       decodeRequest { finalRoutes }
     }
 
