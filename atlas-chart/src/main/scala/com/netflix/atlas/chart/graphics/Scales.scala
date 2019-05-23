@@ -46,8 +46,7 @@ object Scales {
   /** Factory for a linear mapping. */
   def linear(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
     val pixelSpan = (d2 - d1) / (r2 - r1)
-    v =>
-      ((v - d1) / pixelSpan).toInt + r1
+    v => ((v - d1) / pixelSpan).toInt + r1
   }
 
   private def log10(value: Double): Double = {
@@ -66,8 +65,7 @@ object Scales {
     val lg1 = log10(d1)
     val lg2 = log10(d2)
     val scale = linear(lg1, lg2, r1, r2)
-    v =>
-      scale(log10(v))
+    v => scale(log10(v))
   }
 
   private def pow(value: Double, exp: Double): Double = {
@@ -83,8 +81,7 @@ object Scales {
     val p1 = pow(d1, exp)
     val p2 = pow(d2, exp)
     val scale = linear(p1, p2, r1, r2)
-    v =>
-      scale(pow(v, exp))
+    v => scale(pow(v, exp))
   }
 
   /**
@@ -94,15 +91,13 @@ object Scales {
     */
   def yscale(s: DoubleFactory)(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
     val std = s(d1, d2, r1, r2)
-    v =>
-      r2 - std(v) + r1
+    v => r2 - std(v) + r1
   }
 
   /** Factory for creating a mapping for time values. */
   def time(d1: Double, d2: Double, step: Long, r1: Int, r2: Int): LongScale = {
     val dr = (d2 - d1) / step
     val pixelsPerStep = (r2 - r1) / dr
-    v =>
-      ((v - d1) / step * pixelsPerStep).toInt + r1
+    v => ((v - d1) / step * pixelsPerStep).toInt + r1
   }
 }

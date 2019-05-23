@@ -111,12 +111,12 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   private val baseAxisScaleQuery = "/api/v1/graph?e=2012-01-01T00:00" +
-  "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and," +
-  ":dup,:sum," +
-  ":swap,:count," +
-  ":over,:over,:div,average,:legend," +
-  ":rot,sum,:legend," +
-  ":rot,count,:legend"
+    "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and," +
+    ":dup,:sum," +
+    ":swap,:count," +
+    ":over,:over,:div,average,:legend," +
+    ":rot,sum,:legend," +
+    ":rot,count,:legend"
 
   imageTest("axis using legacy o=1 param") {
     baseAxisScaleQuery + "&o=1"
@@ -143,7 +143,7 @@ class GrapherSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   private val baseStatAxisScaleQuery = "/api/v1/graph?e=2012-01-01T00:00&s=e-2d" +
-  "&q=name,sps,:eq,:sum,:dup,:dup,min,:stat,:sub,:swap,max,:stat,0.5,:mul,:sub"
+    "&q=name,sps,:eq,:sum,:dup,:dup,min,:stat,:sub,:swap,max,:stat,0.5,:mul,:sub"
 
   imageTest("stat query with axis using log scale") {
     baseStatAxisScaleQuery + "&scale=log"

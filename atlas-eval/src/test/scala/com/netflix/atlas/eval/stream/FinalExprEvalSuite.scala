@@ -78,7 +78,7 @@ class FinalExprEvalSuite extends FunSuite {
       assert(env.getId === "a")
 
       val msg = "invalid expression [[http://atlas/graph?q=foo,:time]]: " +
-      "IllegalArgumentException: No enum constant java.time.temporal.ChronoField.foo"
+        "IllegalArgumentException: No enum constant java.time.temporal.ChronoField.foo"
       assert(env.getMessage.toJson.contains(msg))
     }
   }
@@ -410,7 +410,7 @@ class FinalExprEvalSuite extends FunSuite {
     }
     assert(
       e.getMessage === "inconsistent step sizes, expected 60000, found 10000 " +
-      "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
+        "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
     )
   }
 

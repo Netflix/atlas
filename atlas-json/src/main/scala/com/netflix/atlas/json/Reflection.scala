@@ -49,7 +49,9 @@ private[json] object Reflection {
 
   // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
   def typeFromManifest(m: Manifest[_]): java.lang.reflect.Type = {
-    if (m.typeArguments.isEmpty) { m.runtimeClass } else
+    if (m.typeArguments.isEmpty) {
+      m.runtimeClass
+    } else
       new ParameterizedType {
 
         def getRawType: Class[_] = m.runtimeClass

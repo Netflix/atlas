@@ -183,9 +183,9 @@ class QueryIndexSuite extends FunSuite {
     )
     assert(
       index.matchingEntries(Map("name" -> "diskUsage", "nf.node" -> "i-00099")) === List(
-        diskUsagePerNode.last,
-        diskUsage
-      )
+          diskUsagePerNode.last,
+          diskUsage
+        )
     )
     assert(
       index.matchingEntries(Map("name" -> "diskUsage", "nf.node" -> "unknown")) === List(diskUsage)

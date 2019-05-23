@@ -152,9 +152,9 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
         val groupedDatapoints = group.values
 
         val expressionDatapoints = noData ++ groupedDatapoints.map {
-          case (k, vs) =>
-            k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries)
-        }
+            case (k, vs) =>
+              k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries)
+          }
         val expressionDiagnostics = groupedDatapoints.map {
           case (k, vs) =>
             val t = Instant.ofEpochMilli(timestamp)
