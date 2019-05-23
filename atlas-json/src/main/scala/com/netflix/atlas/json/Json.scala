@@ -27,7 +27,6 @@ import com.fasterxml.jackson.core._
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.datatype.joda.JodaModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
@@ -82,7 +81,6 @@ object Json {
     mapper.registerModule(new AtlasModule)
     mapper.registerModule(new JavaTimeModule)
     mapper.registerModule(new Jdk8Module)
-    mapper.registerModule(new JodaModule)
     mapper
   }
 

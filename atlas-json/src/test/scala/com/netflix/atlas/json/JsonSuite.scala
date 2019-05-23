@@ -23,10 +23,6 @@ import java.util.regex.Pattern
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.JsonNode
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone
-import org.joda.time.Duration
-import org.joda.time.Period
 import org.scalatest.FunSuite
 
 /**
@@ -181,24 +177,6 @@ class JsonSuite extends FunSuite {
     val v = JsonToken.NOT_AVAILABLE
     assert(encode(v) === "\"NOT_AVAILABLE\"")
     assert(decode[JsonToken](encode(v)) === v)
-  }
-
-  test("joda DateTime") {
-    val v = new DateTime(2012, 1, 13, 4, 37, 52, 0, DateTimeZone.UTC)
-    assert(encode(v) === v.getMillis.toString)
-    assert(decode[DateTime](encode(v)) === v)
-  }
-
-  test("joda Duration") {
-    val v = Duration.standardSeconds(42)
-    assert(encode(v) === v.getMillis.toString)
-    assert(decode[Duration](encode(v)) === v)
-  }
-
-  test("joda Period") {
-    val v = Period.seconds(42)
-    assert(encode(v) === "\"PT42S\"")
-    assert(decode[Period](encode(v)) === v)
   }
 
   test("java8 Instant") {

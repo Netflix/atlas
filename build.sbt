@@ -76,12 +76,10 @@ lazy val `atlas-json` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.jacksonCore,
     Dependencies.jacksonJava8,
-    Dependencies.jacksonJoda,
     Dependencies.jacksonJsr310,
     Dependencies.jacksonMapper,
     Dependencies.jacksonScala,
-    Dependencies.jacksonSmile,
-    Dependencies.jodaConvert
+    Dependencies.jacksonSmile
   ))
 
 lazy val `atlas-lwcapi` = project
