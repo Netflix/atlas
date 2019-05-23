@@ -203,7 +203,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   private def tagKey(t: Long): Int = (t >> 32).toInt
 
   /** Extract the value for an encoded tag. */
-  private def tagValue(t: Long): Int = (t & 0x00000000FFFFFFFFL).toInt
+  private def tagValue(t: Long): Int = (t & 0X00000000FFFFFFFFL).toInt
 
   private[index] def findImpl(query: Query, offset: Int): RoaringBitmap = {
     import com.netflix.atlas.core.model.Query._

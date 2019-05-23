@@ -71,8 +71,7 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi w
         val promise = Promise[RouteResult]()
         val req = PublishRequest(good, bad, promise, ctx)
         publishRef ! req
-        _ =>
-          promise.future
+        _ => promise.future
       }
     }
   }

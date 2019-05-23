@@ -257,7 +257,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val expr = "name,(,1,2,3,4,5,6,),:in,:sum"
     val uri = s"http://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: rejected expensive query [name,(,1,2,3,4,5,6,),:in], " +
-    "narrow the scope to a specific app or name"
+      "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     testError(ds1, msg)
   }
@@ -266,7 +266,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val expr = "name,foo,:re,:sum"
     val uri = s"http://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: rejected expensive query [name,foo,:re], " +
-    "narrow the scope to a specific app or name"
+      "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     testError(ds1, msg)
   }
@@ -276,7 +276,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val expr = s"$query,:sum"
     val uri = s"http://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: rejected expensive query [$query], " +
-    "narrow the scope to a specific app or name"
+      "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     testError(ds1, msg)
   }
