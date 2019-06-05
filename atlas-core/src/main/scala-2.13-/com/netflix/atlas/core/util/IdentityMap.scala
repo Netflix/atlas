@@ -20,7 +20,7 @@ package com.netflix.atlas.core.util
   * in a copy of the wrapped map being created and used with the new instance.
   */
 class IdentityMap[K <: AnyRef, V] private (jmap: java.util.IdentityHashMap[K, V])
-  extends scala.collection.immutable.Map[K, V] {
+    extends scala.collection.immutable.Map[K, V] {
 
   override def get(key: K): Option[V] = Option(jmap.get(key))
 

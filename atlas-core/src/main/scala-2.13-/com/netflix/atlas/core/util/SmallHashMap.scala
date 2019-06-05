@@ -149,7 +149,7 @@ object SmallHashMap {
   * @param dataLength  number of pairs contained within the array starting at index 0.
   */
 final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], dataLength: Int)
-  extends scala.collection.immutable.Map[K, V] {
+    extends scala.collection.immutable.Map[K, V] {
 
   require(data.length % 2 == 0)
 
