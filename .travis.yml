@@ -10,6 +10,11 @@ matrix:
     scala: 2.12.8
     os: osx
     env: BINTRAY_PUBLISH=true
+  - jdk: openjdk11
+    scala: 2.13.0-RC3
+    os: linux
+    dist: xenial
+    env: BINTRAY_PUBLISH=true
 script:
 - ./scripts/buildViaTravis.sh
 env:
