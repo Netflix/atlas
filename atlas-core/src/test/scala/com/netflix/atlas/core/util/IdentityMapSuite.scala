@@ -54,4 +54,12 @@ class IdentityMapSuite extends FunSuite {
     val m = IdentityMap.empty[String, Int] + ("a" -> 42)
     assert(m.get(new String("a")) === None)
   }
+
+  test("++ preserves map type") {
+    val m1 = IdentityMap(new String("a") -> 1)
+    val m2 = IdentityMap(new String("a") -> 2)
+    val m3 = m1 ++ m2
+    assert(m3.size === 2)
+    assert(m3.values.toSet === Set(1, 2))
+  }
 }

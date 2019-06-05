@@ -20,13 +20,7 @@ package com.netflix.atlas.core.util
   * in a copy of the wrapped map being created and used with the new instance.
   */
 class IdentityMap[K <: AnyRef, V] private (jmap: java.util.IdentityHashMap[K, V])
-    extends scala.collection.immutable.Map[K, V] {
-
-  override def +[V1 >: V](kv: (K, V1)): IdentityMap[K, V1] = {
-    val copy = new java.util.IdentityHashMap[K, V1](jmap)
-    copy.put(kv._1, kv._2)
-    new IdentityMap(copy)
-  }
+  extends scala.collection.immutable.Map[K, V] {
 
   override def get(key: K): Option[V] = Option(jmap.get(key))
 
@@ -39,6 +33,12 @@ class IdentityMap[K <: AnyRef, V] private (jmap: java.util.IdentityHashMap[K, V]
         entry.getKey -> entry.getValue
       }
     }
+  }
+
+  override def +[V1 >: V](kv: (K, V1)): IdentityMap[K, V1] = {
+    val copy = new java.util.IdentityHashMap[K, V1](jmap)
+    copy.put(kv._1, kv._2)
+    new IdentityMap(copy)
   }
 
   override def -(key: K): IdentityMap[K, V] = {

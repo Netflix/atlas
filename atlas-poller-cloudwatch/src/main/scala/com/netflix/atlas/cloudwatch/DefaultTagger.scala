@@ -29,7 +29,7 @@ import scala.util.matching.Regex
 class DefaultTagger(config: Config) extends Tagger {
   import scala.collection.JavaConverters._
 
-  private val extractors: Map[String, Seq[(Regex, String)]] = config
+  private val extractors: Map[String, List[(Regex, String)]] = config
     .getConfigList("extractors")
     .asScala
     .map { c =>
@@ -40,6 +40,7 @@ class DefaultTagger(config: Config) extends Tagger {
           val alias = if (cl.hasPath("alias")) cl.getString("alias") else c.getString("name")
           cl.getString("pattern").r -> alias
         }
+        .toList
       c.getString("name") -> directives
     }
     .toMap
