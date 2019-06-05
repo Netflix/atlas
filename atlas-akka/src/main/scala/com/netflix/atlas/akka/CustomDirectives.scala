@@ -122,14 +122,6 @@ object CustomDirectives {
     * Filter to provide basic CORS support. By default it assumes that actual security is provided
     * elsewhere. The goal for this filter is to allow javascript UIs or other tools to access
     * the APIs and work with minimal fuss.
-    */
-  @deprecated(message = "Use respondWithCorsHeaders instead.", since = "1.6.0-rc.7")
-  def corsFilter: Directive0 = respondWithCorsHeaders(List("*"))
-
-  /**
-    * Filter to provide basic CORS support. By default it assumes that actual security is provided
-    * elsewhere. The goal for this filter is to allow javascript UIs or other tools to access
-    * the APIs and work with minimal fuss.
     *
     * The hosts param specifies a whitelist for allowing cross-origin requests. Default is no
     * requests will get CORS headers.
@@ -216,15 +208,6 @@ object CustomDirectives {
         complete(HttpResponse(StatusCodes.OK).withHeaders(`Access-Control-Max-Age`(600)))
       }
     }
-  }
-
-  /**
-    * Wraps a route with support for CORS. This will handle the preflight checks as well
-    * as adding the appropriate headers to the response of the inner route.
-    */
-  @deprecated(message = "Use cors(hostPatterns)(Route) instead.", since = "1.6.0-rc.7")
-  def cors(inner: Route): Route = {
-    corsPreflight(List("*")) ~ respondWithCorsHeaders(List("*")) { inner }
   }
 
   /**
