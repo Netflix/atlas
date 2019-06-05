@@ -266,7 +266,7 @@ private[stream] abstract class EvaluatorImpl(
           exprs.filter(_.query.matches(tags)).map { expr =>
             // Restrict the tags to the common set for all matches to the data expression
             val keys = Query.exactKeys(expr.query) ++ expr.finalGrouping
-            val exprTags = tags.filterKeys(keys.contains)
+            val exprTags = tags.filterKeys(keys.contains).toMap
 
             // Need to do the init for count aggregate
             val v = d.getValue

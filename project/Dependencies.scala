@@ -15,7 +15,7 @@ object Dependencies {
     val slf4j      = "1.7.26"
     val spectator  = "0.90.0"
 
-    val crossScala = Seq(scala, "2.11.12")
+    val crossScala = Seq("2.11.12", scala, "2.13.0-RC3")
   }
 
   import Versions._
@@ -63,9 +63,9 @@ object Dependencies {
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
-  val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
+  val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
   val scalaReflect      = "org.scala-lang" % "scala-reflect" % scala
-  val scalatest         = "org.scalatest" %% "scalatest" % "3.0.7"
+  val scalatest         = "org.scalatest" %% "scalatest" % "3.0.8-RC5"
   val slf4jApi          = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j        = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple       = "org.slf4j" % "slf4j-simple" % slf4j
