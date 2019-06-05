@@ -44,7 +44,7 @@ class TimeGroupedSuite extends FunSuite {
     Await
       .result(future, Duration.Inf)
       .reverse
-      .map(g => g.copy(values = g.values.mapValues(_.sortWith(_.value < _.value))))
+      .map(g => g.copy(values = g.values.mapValues(_.sortWith(_.value < _.value)).toMap))
   }
 
   private def run(data: List[AggrDatapoint]): List[TimeGroup] = {

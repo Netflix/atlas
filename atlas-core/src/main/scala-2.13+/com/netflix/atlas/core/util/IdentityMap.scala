@@ -22,12 +22,6 @@ package com.netflix.atlas.core.util
 class IdentityMap[K <: AnyRef, V] private (jmap: java.util.IdentityHashMap[K, V])
     extends scala.collection.immutable.Map[K, V] {
 
-  override def +[V1 >: V](kv: (K, V1)): IdentityMap[K, V1] = {
-    val copy = new java.util.IdentityHashMap[K, V1](jmap)
-    copy.put(kv._1, kv._2)
-    new IdentityMap(copy)
-  }
-
   override def get(key: K): Option[V] = Option(jmap.get(key))
 
   override def iterator: Iterator[(K, V)] = {
@@ -41,9 +35,23 @@ class IdentityMap[K <: AnyRef, V] private (jmap: java.util.IdentityHashMap[K, V]
     }
   }
 
-  override def -(key: K): IdentityMap[K, V] = {
+  override def updated[V1 >: V](k: K, v: V1): IdentityMap[K, V1] = {
+    val copy = new java.util.IdentityHashMap[K, V1](jmap)
+    copy.put(k, v)
+    new IdentityMap(copy)
+  }
+
+  override def removed(key: K): IdentityMap[K, V] = {
     val copy = new java.util.IdentityHashMap[K, V](jmap)
     copy.remove(key)
+    new IdentityMap(copy)
+  }
+
+  override def concat[V2 >: V](suffix: IterableOnce[(K, V2)]): IdentityMap[K, V2] = {
+    val copy = new java.util.IdentityHashMap[K, V2](jmap)
+    suffix.iterator.foreach {
+      case (k, v) => copy.put(k, v)
+    }
     new IdentityMap(copy)
   }
 
