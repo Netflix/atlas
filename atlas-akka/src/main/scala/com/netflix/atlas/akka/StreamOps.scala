@@ -21,6 +21,9 @@ import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Graph
@@ -30,6 +33,7 @@ import akka.stream.Outlet
 import akka.stream.OverflowStrategy
 import akka.stream.QueueOfferResult
 import akka.stream.SourceShape
+import akka.stream.Supervision
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.SourceQueueWithComplete
@@ -40,6 +44,7 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Timer
+import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.Future
 import scala.util.Failure
@@ -49,7 +54,28 @@ import scala.util.Success
   * Utility functions for commonly used operations on Akka streams. Most of these are for
   * the purpose of getting additional instrumentation into the behavior of the stream.
   */
-object StreamOps {
+object StreamOps extends StrictLogging {
+
+  /**
+    * Creates an instance of the materializer with a supervision strategy that will provide
+    * some insight into exceptions.
+    *
+    * @param system
+    *     Actor system to use for materializing the streams.
+    * @param registry
+    *     Registry to use for reporting metrics.
+    */
+  def materializer(system: ActorSystem, registry: Registry): ActorMaterializer = {
+    val settings = ActorMaterializerSettings(system)
+      .withSupervisionStrategy(t => {
+        registry
+          .counter("akka.stream.exceptions", "error", t.getClass.getSimpleName)
+          .increment()
+        logger.warn(s"exception from stream stage", t)
+        Supervision.Stop
+      })
+    ActorMaterializer(settings)(system)
+  }
 
   /**
     * Wraps a source queue and adds monitoring for the results of items offered to the queue.

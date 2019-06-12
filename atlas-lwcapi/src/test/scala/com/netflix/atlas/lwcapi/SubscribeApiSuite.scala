@@ -56,7 +56,7 @@ class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRoute
   private val sm = new StreamSubscriptionManager
   private val splitter = new ExpressionSplitter(config)
 
-  private val api = new SubscribeApi(config, new NoopRegistry, sm, splitter, system)
+  private val api = new SubscribeApi(config, new NoopRegistry, sm, splitter, materializer)
 
   private val routes = RequestHandler.standardOptions(api.routes)
 

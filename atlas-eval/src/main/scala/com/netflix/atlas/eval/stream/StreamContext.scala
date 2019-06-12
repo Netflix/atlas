@@ -22,8 +22,8 @@ import java.util.UUID
 import akka.NotUsed
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri
-import akka.stream.ActorMaterializer
 import akka.stream.IOResult
+import akka.stream.Materializer
 import akka.stream.scaladsl.FileIO
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
@@ -49,7 +49,7 @@ import scala.util.Try
 private[stream] class StreamContext(
   rootConfig: Config,
   val client: Client,
-  val materializer: ActorMaterializer,
+  val materializer: Materializer,
   val registry: Registry = new NoopRegistry,
   val dsLogger: DataSourceLogger = (_, _) => ()
 ) {

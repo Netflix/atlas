@@ -21,7 +21,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.server.Route
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.ClassFactory
 import com.netflix.spectator.api.Registry
@@ -51,11 +51,11 @@ class WebServer @Inject()(
   config: Config,
   classFactory: ClassFactory,
   registry: Registry,
-  implicit val system: ActorSystem
+  implicit val system: ActorSystem,
+  implicit val materializer: Materializer
 ) extends AbstractService
     with StrictLogging {
 
-  private implicit val materializer = ActorMaterializer()
   private implicit val executionContext = system.dispatcher
 
   private val port = config.getInt("atlas.akka.port")

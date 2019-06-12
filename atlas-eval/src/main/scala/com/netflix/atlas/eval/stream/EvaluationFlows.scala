@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.Done
 import akka.NotUsed
-import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
+import akka.stream.Materializer
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Framing
@@ -42,7 +42,7 @@ private[stream] object EvaluationFlows {
     * Run a stream connecting the source to the sink.
     */
   def run[T, M1, M2](source: Source[T, M1], sink: Sink[T, M2])(
-    implicit materializer: ActorMaterializer
+    implicit materializer: Materializer
   ): StreamRef[M2] = {
 
     val (killSwitch, value) = source

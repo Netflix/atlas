@@ -17,7 +17,6 @@ package com.netflix.atlas.lwcapi
 
 import akka.NotUsed
 import javax.inject.Inject
-import akka.actor.ActorRefFactory
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.HttpResponse
@@ -25,7 +24,7 @@ import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -51,14 +50,13 @@ class StreamApi @Inject()(
   registry: Registry,
   sm: StreamSubscriptionManager,
   splitter: ExpressionSplitter,
-  implicit val actorRefFactory: ActorRefFactory
+  implicit val materializer: Materializer
 ) extends WebApi
     with StrictLogging {
 
   import StreamApi._
 
   private implicit val ec = scala.concurrent.ExecutionContext.global
-  private implicit val materializer = ActorMaterializer()
 
   private val queueSize = config.getInt("atlas.lwcapi.queue-size")
 
