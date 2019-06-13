@@ -223,4 +223,17 @@ class StreamOpsSuite extends FunSuite {
     Await.result(future, Duration.Inf)
     latch.await(1, TimeUnit.MINUTES)
   }
+
+  test("materializer supervision") {
+    val registry = new DefaultRegistry()
+    val materializer = StreamOps.materializer(system, registry)
+    val future = Source
+      .single(42)
+      .map(_ / 0)
+      .runWith(Sink.ignore)(materializer)
+    Await.ready(future, Duration.Inf)
+
+    val c = registry.counter("akka.stream.exceptions", "error", "ArithmeticException")
+    assert(c.count() === 1)
+  }
 }

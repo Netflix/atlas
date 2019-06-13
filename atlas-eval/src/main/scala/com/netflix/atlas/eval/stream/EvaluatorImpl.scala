@@ -26,7 +26,6 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
-import akka.stream.ActorMaterializer
 import akka.stream.FlowShape
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Broadcast
@@ -67,7 +66,7 @@ private[stream] abstract class EvaluatorImpl(
   implicit val system: ActorSystem
 ) {
 
-  private implicit val materializer = ActorMaterializer()
+  private implicit val materializer = StreamOps.materializer(system, registry)
 
   // Cached context instance used for things like expression validation.
   private val validationStreamContext = newStreamContext()

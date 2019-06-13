@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 import akka.NotUsed
-import akka.actor.ActorSystem
 import javax.inject.Inject
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpResponse
@@ -30,7 +29,7 @@ import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
@@ -62,15 +61,13 @@ class SubscribeApi @Inject()(
   registry: Registry,
   sm: StreamSubscriptionManager,
   splitter: ExpressionSplitter,
-  implicit val system: ActorSystem
+  implicit val materializer: Materializer
 ) extends WebApi
     with StrictLogging {
 
   import SubscribeApi._
-  import StreamApi._
 
   private implicit val ec = scala.concurrent.ExecutionContext.global
-  private implicit val materializer = ActorMaterializer()
 
   private val queueSize = config.getInt("atlas.lwcapi.queue-size")
 

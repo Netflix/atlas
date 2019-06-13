@@ -24,7 +24,7 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.headers._
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.akka.CustomMediaTypes
 import com.netflix.atlas.core.model.Datapoint
@@ -46,10 +46,10 @@ import scala.util.Success
   * be logged and reflected in the `atlas.client.dropped` counter as well as standard
   * client access logging.
   */
-class ClientActor(registry: Registry, config: Config) extends Actor {
+class ClientActor(registry: Registry, config: Config, implicit val materializer: Materializer)
+    extends Actor {
 
   private implicit val xc = scala.concurrent.ExecutionContext.global
-  private implicit val materializer = ActorMaterializer()
 
   private val logger = LoggerFactory.getLogger(getClass)
 

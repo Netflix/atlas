@@ -18,6 +18,8 @@ package com.netflix.atlas.poller
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes
+import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActorRef
 import akka.testkit.TestKit
@@ -51,7 +53,8 @@ class ClientActorSuite
   private val clock = new ManualClock()
   private val registry = new DefaultRegistry(clock)
   private val config = ConfigFactory.load().getConfig("atlas.poller.sink")
-  private val ref = TestActorRef(new TestClientActor(registry, config))
+  private val materializer = ActorMaterializer()(system)
+  private val ref = TestActorRef(new TestClientActor(registry, config, materializer))
 
   override def afterAll(): Unit = {
     system.terminate()
@@ -148,7 +151,8 @@ object ClientActorSuite {
 
   object Done
 
-  class TestClientActor(registry: Registry, config: Config) extends ClientActor(registry, config) {
+  class TestClientActor(registry: Registry, config: Config, materializer: Materializer)
+      extends ClientActor(registry, config, materializer) {
 
     var response: Try[HttpResponse] = Failure(new RuntimeException("not set"))
 

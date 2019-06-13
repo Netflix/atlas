@@ -18,12 +18,15 @@ package com.netflix.atlas.akka
 import javax.inject.Singleton
 import akka.actor.ActorRefFactory
 import akka.actor.ActorSystem
+import akka.stream.Materializer
 import com.google.inject.AbstractModule
 import com.google.inject.Provides
 import com.google.inject.multibindings.Multibinder
 import com.netflix.iep.guice.LifecycleModule
 import com.netflix.iep.service.Service
+import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
+import com.typesafe.scalalogging.StrictLogging
 import javax.inject.Inject
 import javax.inject.Provider
 
@@ -39,6 +42,7 @@ final class AkkaModule extends AbstractModule {
   override def configure(): Unit = {
     install(new LifecycleModule)
     bind(classOf[ActorSystem]).toProvider(classOf[AkkaModule.ActorSystemProvider])
+    bind(classOf[Materializer]).toProvider(classOf[AkkaModule.MaterializerProvider])
     val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
     serviceBinder.addBinding().to(classOf[ActorService])
     serviceBinder.addBinding().to(classOf[WebServer])
@@ -55,7 +59,7 @@ final class AkkaModule extends AbstractModule {
   override def hashCode(): Int = getClass.hashCode()
 }
 
-object AkkaModule {
+object AkkaModule extends StrictLogging {
 
   @Singleton
   private class ActorSystemProvider @Inject()(config: Config)
@@ -68,6 +72,20 @@ object AkkaModule {
 
     override def close(): Unit = {
       Await.ready(system.terminate(), Duration.Inf)
+    }
+  }
+
+  @Singleton
+  private class MaterializerProvider @Inject()(system: ActorSystem, registry: Registry)
+      extends Provider[Materializer]
+      with AutoCloseable {
+
+    private val materializer = StreamOps.materializer(system, registry)
+
+    override def get(): Materializer = materializer
+
+    override def close(): Unit = {
+      materializer.shutdown()
     }
   }
 }
