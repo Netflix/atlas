@@ -6,7 +6,7 @@ matrix:
     os: osx
     env: BINTRAY_PUBLISH=true
   - jdk: openjdk11
-    scala: 2.13.0-RC3
+    scala: 2.13.0
     os: linux
     dist: xenial
     env: BINTRAY_PUBLISH=true
