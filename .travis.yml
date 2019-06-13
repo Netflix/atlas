@@ -1,11 +1,6 @@
 language: scala
 matrix:
   include:
-  - jdk: openjdk8
-    scala: 2.11.12
-    os: linux
-    dist: trusty
-    env: BINTRAY_PUBLISH=true
   - jdk: openjdk11
     scala: 2.12.8
     os: osx
