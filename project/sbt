@@ -14,5 +14,6 @@ java \
   -XX:+UseCodeCacheFlushing \
   -Dsbt.boot.directory=${WORKSPACE:-$HOME}/.sbt \
   -Dsbt.ivy.home=${WORKSPACE:-$HOME}/.ivy2 \
+  -Dsbt.gigahorse=false \
   $OPTIONS \
   -jar `dirname $0`/sbt-launch-1.2.8.jar "$@"
