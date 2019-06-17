@@ -115,22 +115,16 @@ class CustomVocabularySuite extends FunSuite {
     )
   }
 
-  private def ignoreRewrite(e: Expr): Expr = {
-    e.rewrite {
-      case nr: MathExpr.NamedRewrite => nr.copy(groupByRewrite = None)
-    }
-  }
-
   test("expr with cq") {
     val e1 = eval(s"$cpuUser,cluster,api,:eq,:and,:node-avg")
     val e2 = eval(s"$cpuUser,:node-avg,:list,(,cluster,api,:eq,:cq,),:each")
-    assert(ignoreRewrite(e1) === ignoreRewrite(e2))
+    assert(e1 === e2)
   }
 
   test("expr with group by") {
     val e1 = eval("name,(,a,b,c,),:in,app,beacon,:eq,zone,1c,:eq,:and,:and,:node-avg,(,name,),:by")
     val e2 = eval("name,(,a,b,c,),:in,:node-avg,(,name,),:by,app,beacon,:eq,zone,1c,:eq,:and,:cq")
-    assert(ignoreRewrite(e1) === ignoreRewrite(e2))
+    assert(e1 === e2)
   }
 
   test("expr with not") {
