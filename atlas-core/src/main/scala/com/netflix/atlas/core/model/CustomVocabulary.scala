@@ -124,7 +124,9 @@ object CustomVocabulary {
     }
   }
 
-  case class CustomAvg(name: String, baseQuery: Query, keys: Set[String]) extends Word {
+  case class CustomAvg(name: String, baseQuery: Query, keys: Set[String])
+      extends Word
+      with Function2[Expr, List[String], Expr] {
 
     def matches(stack: List[Any]): Boolean = {
       if (matcher.isDefinedAt(stack)) matcher(stack) else false
@@ -149,11 +151,16 @@ object CustomVocabulary {
         val denominator = DataExpr.Sum(baseQuery.and(nq))
         val avg = MathExpr.Divide(numerator, denominator)
         val ctxt = Context(context.interpreter, Nil, Map.empty)
-        val rewrite = Some(groupByRewrite _)
+        val rewrite = Some(this)
         MathExpr.NamedRewrite(name, q, avg, ctxt, rewrite) :: s
     }
 
-    private def groupByRewrite(expr: Expr, ks: List[String]): Expr = {
+    /**
+      * Function used for the group by rewrite, see MathExpr.NamedRewrite for more details. It
+      * is done this way to allow the equality check to work correctly as it will be based on
+      * this word rather than a generated function class.
+      */
+    def apply(expr: Expr, ks: List[String]): Expr = {
       val q = expr.asInstanceOf[Query]
       val nq = extractCommonQuery(q)
       val numerator = DataExpr.Sum(q)
