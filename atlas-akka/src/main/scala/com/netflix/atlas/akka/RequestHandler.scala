@@ -21,6 +21,7 @@ import java.util.zip.Deflater
 import akka.http.scaladsl.coding.Deflate
 import akka.http.scaladsl.coding.Gzip
 import akka.http.scaladsl.coding.NoCoding
+import akka.http.scaladsl.model.EntityStreamSizeException
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCode
@@ -170,6 +171,8 @@ object RequestHandler {
       DiagnosticMessage.error(StatusCodes.BadRequest, e)
     case e: NoSuchElementException =>
       DiagnosticMessage.error(StatusCodes.NotFound, e)
+    case e: EntityStreamSizeException =>
+      DiagnosticMessage.error(StatusCodes.RequestEntityTooLarge, e)
     case e: Throwable =>
       DiagnosticMessage.error(StatusCodes.InternalServerError, e)
   }
