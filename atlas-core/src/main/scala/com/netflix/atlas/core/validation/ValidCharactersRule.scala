@@ -57,7 +57,7 @@ case class ValidCharactersRule(defaultSet: AsciiSet, overrides: Map[String, Asci
 object ValidCharactersRule {
 
   def apply(config: Config): ValidCharactersRule = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     def loadOverrides: Map[String, AsciiSet] = {
       val entries = config.getConfigList("overrides").asScala.map { cfg =>

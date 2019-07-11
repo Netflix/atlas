@@ -56,7 +56,7 @@ class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
   }
 
   test("/config/os.arch") {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     Get("/api/v2/config/os.arch") ~> endpoint.routes ~> check {
       val config = ConfigFactory.parseString(responseAs[String])
       val v = sysConfig.getString("os.arch")
@@ -81,7 +81,7 @@ class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
 
   test("/config format properties") {
     Get("/api/v2/config?format=properties") ~> endpoint.routes ~> check {
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
       val props = new Properties
       props.load(new StringReader(responseAs[String]))
       val config = ConfigFactory.parseProperties(props)

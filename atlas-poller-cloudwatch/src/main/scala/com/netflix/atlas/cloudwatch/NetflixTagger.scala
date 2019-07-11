@@ -24,7 +24,7 @@ import com.typesafe.config.Config
   * on naming conventions used by Spinnaker and Asgard.
   */
 class NetflixTagger(config: Config) extends DefaultTagger(config) {
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   private val keys = config.getStringList("netflix-keys").asScala
 

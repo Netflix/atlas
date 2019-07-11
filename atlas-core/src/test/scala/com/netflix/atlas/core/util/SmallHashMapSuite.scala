@@ -284,7 +284,7 @@ class SmallHashMapSuite extends FunSuite {
     assert(expected === actual)
   }
 
-  private def testNumCollisions(m: SmallHashMap[String, String]) {
+  private def testNumCollisions(m: SmallHashMap[String, String]): Unit = {
 
     //printf("%d: %d collisions, %.2f probes%n", m.size, m.numCollisions, m.numProbesPerKey)
     assert(m.numProbesPerKey < m.size / 4)

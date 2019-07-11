@@ -78,7 +78,7 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
   def rebuildIndex(): Unit = {
     val timerId = rebuildTimer.start()
     try {
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
 
       // Drain the update queue and create map of items for deduping, we put new items in the
       // map first so that an older item, if present, will be preferred

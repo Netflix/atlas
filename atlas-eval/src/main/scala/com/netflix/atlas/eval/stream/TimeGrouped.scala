@@ -107,7 +107,7 @@ private[stream] class TimeGrouped(
         * so it can be used for a new time window.
         */
       private def flush(i: Int): Unit = {
-        val vs = buf(i).mapValues(_.datapoints).toMap
+        val vs = buf(i).map(t => t._1 -> t._2.datapoints).toMap
         val t = timestamps(i)
         if (t > 0) push(out, TimeGroup(t, step, vs)) else pull(in)
         cutoffTime = t
@@ -149,7 +149,7 @@ private[stream] class TimeGrouped(
 
       override def onUpstreamFinish(): Unit = {
         val groups = buf.indices.map { i =>
-          val vs = buf(i).mapValues(_.datapoints).toMap
+          val vs = buf(i).map(t => t._1 -> t._2.datapoints).toMap
           TimeGroup(timestamps(i), step, vs)
         }.toList
         pending = groups.filter(_.timestamp > 0).sortWith(_.timestamp < _.timestamp)

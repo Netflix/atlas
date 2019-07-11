@@ -77,7 +77,7 @@ case class DefaultSettings(root: Config, config: Config) {
 
   /** Available engines for rendering a chart. */
   val engines: Map[String, GraphEngine] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     config
       .getStringList("engines")
       .asScala
@@ -92,7 +92,7 @@ case class DefaultSettings(root: Config, config: Config) {
   /** Content types for the various rendering options. */
   val contentTypes: Map[String, ContentType] = engines.map {
     case (k, e) =>
-      k -> ContentType.parse(e.contentType).right.get
+      k -> ContentType.parse(e.contentType).toOption.get
   }
 
   /** Vocabulary to use in the interpreter when evaluating a graph expression. */

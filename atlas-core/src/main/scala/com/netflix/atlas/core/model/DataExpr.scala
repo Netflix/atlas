@@ -95,7 +95,9 @@ object DataExpr {
     // 32 is typically big enough to prevent a resize with a single key
     val builder = new StringBuilder(32 * keys.size)
     builder.append('(')
-    keys.foreach { k =>
+    val it = keys.iterator
+    while (it.hasNext) {
+      val k = it.next()
       val v = tags.get(k)
       if (v.isEmpty) return null
       builder.append(k).append('=').append(v.get).append(' ')

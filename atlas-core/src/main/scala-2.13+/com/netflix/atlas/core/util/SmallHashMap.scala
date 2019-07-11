@@ -178,7 +178,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
 
   def get(key: K): Option[V] = Option(getOrNull(key))
 
-  override def foreach[U](f: ((K, V)) => U) {
+  override def foreach[U](f: ((K, V)) => U): Unit = {
     var i = 0
     while (i < data.length) {
       if (data(i) != null) f(data(i).asInstanceOf[K] -> data(i + 1).asInstanceOf[V])
@@ -426,7 +426,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
         * the entry set is needed.
         */
       override def entrySet(): java.util.Set[java.util.Map.Entry[K, V]] = {
-        import scala.collection.JavaConverters._
+        import scala.jdk.CollectionConverters._
         self.asJava.entrySet()
       }
     }

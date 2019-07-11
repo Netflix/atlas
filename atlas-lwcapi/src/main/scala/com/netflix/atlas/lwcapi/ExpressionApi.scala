@@ -97,6 +97,6 @@ object ExpressionApi {
     // TODO: This should get refactored so we do not need to recompute each time
     val str = expressions.sorted.mkString(";")
     val hash = Strings.zeroPad(Hash.sha1bytes(str), 40).substring(20)
-    '"' + hash + '"'
+    s""""$hash""""
   }
 }

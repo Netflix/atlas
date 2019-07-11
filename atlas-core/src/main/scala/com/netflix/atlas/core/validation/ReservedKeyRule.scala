@@ -41,7 +41,7 @@ case class ReservedKeyRule(prefix: String, allowedKeys: Set[String]) extends Tag
 object ReservedKeyRule {
 
   def apply(config: Config): ReservedKeyRule = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     val prefix = config.getString("prefix")
     val allowedKeys =

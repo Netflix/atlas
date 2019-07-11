@@ -27,7 +27,7 @@ import scala.util.matching.Regex
   * and we would rather have a single key in use for common concepts.
   */
 class DefaultTagger(config: Config) extends Tagger {
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   private val extractors: Map[String, List[(Regex, String)]] = config
     .getConfigList("extractors")

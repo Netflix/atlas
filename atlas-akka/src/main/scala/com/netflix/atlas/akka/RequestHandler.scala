@@ -55,17 +55,17 @@ class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictL
   }
 
   private def endpoints: List[String] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     config.getStringList("atlas.akka.api-endpoints").asScala.toList.distinct
   }
 
   private def corsHostPatterns: List[String] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     config.getStringList("atlas.akka.cors-host-patterns").asScala.toList.distinct
   }
 
   private def diagnosticHeaders: List[HttpHeader] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     config
       .getConfigList("atlas.akka.diagnostic-headers")
       .asScala

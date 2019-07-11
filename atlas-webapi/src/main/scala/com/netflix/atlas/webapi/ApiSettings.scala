@@ -62,7 +62,7 @@ class ApiSettings(root: => Config) {
   def maxDatapoints: Int = config.getInt("graph.max-datapoints")
 
   def engines: List[GraphEngine] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     config.getStringList("graph.engines").asScala.toList.map { cname =>
       newInstance[GraphEngine](cname)
     }
@@ -82,7 +82,7 @@ class ApiSettings(root: => Config) {
   def validationRules: List[Rule] = Rule.load(config.getConfigList("publish.rules"))
 
   def excludedWords: Set[String] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     config.getStringList("expr.complete.excluded-words").asScala.toSet
   }
 

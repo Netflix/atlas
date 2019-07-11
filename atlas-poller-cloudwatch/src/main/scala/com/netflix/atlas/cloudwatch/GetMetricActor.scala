@@ -57,7 +57,7 @@ class GetMetricActor(
     */
   private def getMetric(m: MetricMetadata): Option[Datapoint] = {
     try {
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
       val now = Instant.now()
       val start = now.minusSeconds(m.category.periodCount * m.category.period)
 

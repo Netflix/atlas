@@ -85,7 +85,7 @@ class PercentilesSuite extends FunSuite {
   }
 
   private val inputSpectatorTimer = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val r = new DefaultRegistry()
     val t = PercentileTimer.get(r, r.createId("test"))
     (0 until 100).foreach { i =>
@@ -102,7 +102,7 @@ class PercentilesSuite extends FunSuite {
   }
 
   private val inputSpectatorDistSummary = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val r = new DefaultRegistry()
     val t = PercentileDistributionSummary.get(r, r.createId("test"))
     (0 until 100).foreach { i =>

@@ -23,7 +23,7 @@ import com.netflix.atlas.core.index.QueryIndex
 import com.netflix.frigga.Names
 import com.typesafe.scalalogging.StrictLogging
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
   * Manages the set of streams and associated subscriptions. There are two basic concepts:
@@ -258,7 +258,7 @@ object SubscriptionManager {
     }
 
     def values: List[T] = {
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
       data.values().asScala.toList
     }
   }

@@ -55,7 +55,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
       private var continue = new AtomicBoolean(true)
 
       override def onPush(): Unit = {
-        import scala.collection.JavaConverters._
+        import scala.jdk.CollectionConverters._
 
         // If there is an existing source polling Eureka, then tell it to stop. Create a
         // new instance of the flag for the next source

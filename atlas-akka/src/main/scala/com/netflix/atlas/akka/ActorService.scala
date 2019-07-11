@@ -37,7 +37,7 @@ class ActorService @Inject()(system: ActorSystem, config: Config, classFactory: 
     with StrictLogging {
 
   override def startImpl(): Unit = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     config.getConfigList("atlas.akka.actors").asScala.foreach { cfg =>
       val name = cfg.getString("name")
       val cls = Class.forName(cfg.getString("class"))
