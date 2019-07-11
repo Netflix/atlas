@@ -224,7 +224,7 @@ private[json] object Reflection {
 
     /** Create a new instance of the case class using the provided arguments. */
     def newInstance(args: Array[Any]): AnyRef = {
-      try ctor.apply(ArraySeq.unsafeWrapArray(args)).asInstanceOf[AnyRef]
+      try ctor.apply(ArraySeq.unsafeWrapArray(args): _*).asInstanceOf[AnyRef]
       catch {
         case e: InvocationTargetException => throw e.getCause
       }
