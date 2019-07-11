@@ -55,7 +55,7 @@ class ListMerge {
 
   @Benchmark
   def treeSet(bh: Blackhole): Unit = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val set = new java.util.TreeSet[String]()
     vs.foreach(_.foreach(set.add))
     bh.consume(set.asScala.toList.take(1000))

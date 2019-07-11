@@ -266,7 +266,7 @@ object StatefulExpr {
       // Update the stateful buffers for expressions that do not have an explicit value for
       // this interval. For streaming contexts only data that is reported for that interval
       // will be present, but the state needs to be moved for all entries.
-      val noDataIds = state.keySet -- rs.data.map(_.id)
+      val noDataIds = state.keySet diff rs.data.map(_.id).toSet
       noDataIds.foreach { id =>
         val algo = OnlineAlgorithm(state(id))
         algo.next(Double.NaN)

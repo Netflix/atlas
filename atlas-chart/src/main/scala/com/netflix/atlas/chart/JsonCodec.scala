@@ -298,7 +298,7 @@ private[chart] object JsonCodec {
   private def toGraphDef(node: JsonNode): GraphDef = {
 
     // format: off
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     GraphDef(
       Nil,
       startTime  = Instant.ofEpochMilli(node.get("startTime").asLong()),
@@ -395,7 +395,7 @@ private[chart] object JsonCodec {
   }
 
   private def toTimeSeries(gdef: GraphDef, node: JsonNode): TimeSeries = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val tags = node.get("tags").fields.asScala.map(e => e.getKey -> e.getValue.asText()).toMap
     val values = node.get("data").get("values").elements.asScala.map(_.asDouble()).toArray
     val seq = new ArrayTimeSeq(DsType.Gauge, gdef.startTime.toEpochMilli, gdef.step, values)

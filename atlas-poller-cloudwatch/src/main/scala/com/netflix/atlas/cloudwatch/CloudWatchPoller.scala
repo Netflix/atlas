@@ -287,7 +287,7 @@ object CloudWatchPoller {
     .withUnit(StandardUnit.None)
 
   private[cloudwatch] def getCategories(config: Config): List[MetricCategory] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val categories = config.getStringList("atlas.cloudwatch.categories").asScala.map { name =>
       val cfg = config.getConfig(s"atlas.cloudwatch.$name")
       MetricCategory.fromConfig(cfg)

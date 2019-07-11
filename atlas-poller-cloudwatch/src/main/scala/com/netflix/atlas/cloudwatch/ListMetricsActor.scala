@@ -46,7 +46,7 @@ class ListMetricsActor(client: AmazonCloudWatch, tagger: Tagger) extends Actor w
   }
 
   private def listMetrics(category: MetricCategory): List[MetricMetadata] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     category.toListRequests.flatMap {
       case (definition, request) =>
         val mname = s"${category.namespace}/${definition.name}"
@@ -65,7 +65,7 @@ class ListMetricsActor(client: AmazonCloudWatch, tagger: Tagger) extends Actor w
 
   @scala.annotation.tailrec
   private def listMetrics(request: ListMetricsRequest, metrics: List[Metric]): List[Metric] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val result = client.listMetrics(request)
     val ms = metrics ++ result.getMetrics.asScala
     if (result.getNextToken == null) ms

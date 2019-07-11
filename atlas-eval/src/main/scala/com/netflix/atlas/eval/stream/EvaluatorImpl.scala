@@ -52,7 +52,7 @@ import com.typesafe.config.Config
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -265,7 +265,7 @@ private[stream] abstract class EvaluatorImpl(
           exprs.filter(_.query.matches(tags)).map { expr =>
             // Restrict the tags to the common set for all matches to the data expression
             val keys = Query.exactKeys(expr.query) ++ expr.finalGrouping
-            val exprTags = tags.filterKeys(keys.contains).toMap
+            val exprTags = tags.filter(t => keys.contains(t._1))
 
             // Need to do the init for count aggregate
             val v = d.getValue

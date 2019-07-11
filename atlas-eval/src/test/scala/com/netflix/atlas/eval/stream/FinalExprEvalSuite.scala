@@ -64,8 +64,12 @@ class FinalExprEvalSuite extends FunSuite {
 
   private def group(i: Long, vs: AggrDatapoint*): TimeGroup = {
     val timestamp = i * step
-    val values = vs.map(_.copy(timestamp = timestamp)).groupBy(_.expr).mapValues(_.toList)
-    TimeGroup(timestamp, step, values.toMap)
+    val values = vs
+      .map(_.copy(timestamp = timestamp))
+      .groupBy(_.expr)
+      .map(t => t._1 -> t._2.toList)
+      .toMap
+    TimeGroup(timestamp, step, values)
   }
 
   test("exception while parsing exprs") {

@@ -33,7 +33,7 @@ import com.netflix.atlas.core.util.UnitPrefix
 class DefaultGraphEngine extends PngGraphEngine {
 
   private val renderingHints = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val config = ConfigManager.current.getConfig("atlas.chart.rendering-hints")
     config.entrySet.asScala.toList.map { entry =>
       val k = getField(entry.getKey).asInstanceOf[RenderingHints.Key]

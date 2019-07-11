@@ -61,7 +61,7 @@ object MetricDefinition {
     * unit.
     */
   def fromConfig(config: Config): List[MetricDefinition] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val tags =
       if (!config.hasPath("tags")) Map.empty[String, String]
       else {

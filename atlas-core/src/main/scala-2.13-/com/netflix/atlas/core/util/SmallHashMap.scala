@@ -426,7 +426,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
         * the entry set is needed.
         */
       override def entrySet(): java.util.Set[java.util.Map.Entry[K, V]] = {
-        import scala.collection.JavaConverters._
+        import scala.jdk.CollectionConverters._
         self.asJava.entrySet()
       }
     }

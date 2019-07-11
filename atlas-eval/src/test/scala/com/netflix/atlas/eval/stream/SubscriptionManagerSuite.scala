@@ -38,7 +38,7 @@ class SubscriptionManagerSuite extends FunSuite with BeforeAndAfter {
 
   import EurekaSource._
   import Evaluator._
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val mat = ActorMaterializer()

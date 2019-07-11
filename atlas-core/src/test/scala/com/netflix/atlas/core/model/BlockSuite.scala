@@ -31,7 +31,7 @@ class BlockSuite extends FunSuite {
     Block.compress(block)
   }
 
-  def checkValues(b: Block, values: List[Double]) {
+  def checkValues(b: Block, values: List[Double]): Unit = {
     values.zipWithIndex.foreach { v =>
       val msg = "b(%d) => %f != %f".format(v._2, b.get(v._2), v._1)
       val res = java.lang.Double.compare(v._1, b.get(v._2))

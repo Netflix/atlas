@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedParameter
 import com.fasterxml.jackson.databind.introspect.AnnotationMap
 import com.fasterxml.jackson.databind.util.ClassUtil
 
+import scala.collection.compat.immutable.ArraySeq
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe._
 
@@ -223,7 +224,7 @@ private[json] object Reflection {
 
     /** Create a new instance of the case class using the provided arguments. */
     def newInstance(args: Array[Any]): AnyRef = {
-      try ctor.apply(args: _*).asInstanceOf[AnyRef]
+      try ctor.apply(ArraySeq.unsafeWrapArray(args)).asInstanceOf[AnyRef]
       catch {
         case e: InvocationTargetException => throw e.getCause
       }

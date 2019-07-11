@@ -75,6 +75,7 @@ object BuildSettings {
 
   val commonDeps = Seq(
     Dependencies.jsr305,
+    Dependencies.scalaCompat,
     Dependencies.scalaLogging,
     Dependencies.slf4jApi,
     Dependencies.spectatorApi,

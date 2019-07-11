@@ -54,7 +54,7 @@ trait Rule {
 object Rule {
 
   def load(ruleConfigs: java.util.List[_ <: Config]): List[Rule] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     load(ruleConfigs.asScala.toList)
   }
 

@@ -90,7 +90,7 @@ private[stream] class SubscriptionManager(context: StreamContext)
 
       private def handleDataSources(dataSources: DataSources): Unit = {
         // Log changes to the data sources for easier debugging
-        import scala.collection.JavaConverters._
+        import scala.jdk.CollectionConverters._
         logSources("added", dataSources.addedSources(sources).asScala.toList)
         logSources("removed", dataSources.removedSources(sources).asScala.toList)
         sources = dataSources

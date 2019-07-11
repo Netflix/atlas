@@ -84,7 +84,7 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
   }
 
   private def getPathValue(config: Config, p: String): Config = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     try config.getConfig(p)
     catch {
       case e: ConfigException.WrongType =>
@@ -107,7 +107,7 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
   }
 
   private def formatProperties(config: Config): HttpResponse = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val props = new Properties
     config.entrySet.asScala.foreach { t =>
       props.setProperty(t.getKey, s"${t.getValue.unwrapped}")

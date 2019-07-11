@@ -52,7 +52,7 @@ class TimeZones extends SimplePage {
     """.stripMargin
 
   private def supportedIds: String = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val zones = ZoneId.getAvailableZoneIds.asScala.toList.sortWith(_ < _).map { id =>
       s"| $id | ${ZoneId.of(id).getDisplayName(TextStyle.SHORT, Locale.US)} |"
     }
@@ -63,7 +63,7 @@ class TimeZones extends SimplePage {
   }
 
   private def displayNameToZoneId: String = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val zones = ZoneId.getAvailableZoneIds.asScala.toList
     val byName = zones.groupBy(id => ZoneId.of(id).getDisplayName(TextStyle.SHORT, Locale.US))
     val sorted = byName.toList.sortWith(_._1 < _._1).map {

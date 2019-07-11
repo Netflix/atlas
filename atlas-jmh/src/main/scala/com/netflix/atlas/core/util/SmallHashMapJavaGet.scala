@@ -37,7 +37,7 @@ import org.openjdk.jmh.infra.Blackhole
 @State(Scope.Thread)
 class SmallHashMapJavaGet {
 
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   private val tagMap = Map(
     "nf.app"     -> "atlas_backend",

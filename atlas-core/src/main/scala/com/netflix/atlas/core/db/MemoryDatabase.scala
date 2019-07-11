@@ -171,7 +171,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
         case _: DataExpr.All => tags
         case _ =>
           val resultKeys = Query.exactKeys(expr.query) ++ expr.finalGrouping
-          tags.filterKeys(resultKeys.contains).toMap
+          tags.filter(t => resultKeys.contains(t._1))
       }
       TimeSeriesBuffer(resultTags, cfStep, bufStart, bufEnd)
     }

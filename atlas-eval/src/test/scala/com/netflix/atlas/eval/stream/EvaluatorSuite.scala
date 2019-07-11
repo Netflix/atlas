@@ -432,7 +432,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
   private val datapointStep = Duration.ofMillis(1)
 
   private def sampleData(numGroups: Int, numDatapoints: Int): List[Evaluator.DatapointGroup] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     (0 until numGroups).map { i =>
       val ds = (0 until numDatapoints)
         .map { j =>

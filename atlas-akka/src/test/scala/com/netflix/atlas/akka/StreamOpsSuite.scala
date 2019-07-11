@@ -46,7 +46,7 @@ class StreamOpsSuite extends FunSuite {
   private implicit val materializer = ActorMaterializer()
 
   private def checkOfferedCounts(registry: Registry, expected: Map[String, Double]): Unit = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     registry
       .stream()
       .iterator()
@@ -146,7 +146,7 @@ class StreamOpsSuite extends FunSuite {
   }
 
   private def checkCounts(registry: Registry, name: String, expected: Map[String, Double]): Unit = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     registry
       .stream()
       .iterator()

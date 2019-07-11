@@ -276,7 +276,7 @@ object DataSet {
           val sps = app + ("name" -> ("sps_" + j))
 
           val idealF = wave(conf._2, conf._3, Duration.ofDays(1))
-          idealF.withTags(sps + ("type" -> "ideal", "type2" -> "IDEAL"))
+          idealF.withTags(sps ++ Seq("type" -> "ideal", "type2" -> "IDEAL"))
         }
       }
     }

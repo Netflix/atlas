@@ -61,7 +61,7 @@ class ClientActor(registry: Registry, config: Config, implicit val materializer:
   private val validTagChars = AsciiSet.fromPattern(config.getString("valid-tag-characters"))
 
   private val validTagValueChars = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     config
       .getConfigList("valid-tag-value-characters")
       .asScala
