@@ -37,6 +37,7 @@ import com.amazonaws.services.cloudwatch.model.Datapoint
 import com.amazonaws.services.cloudwatch.model.StandardUnit
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.poller.Messages
+import com.netflix.iep.leader.api.LeaderStatus
 import com.netflix.spectator.api.Functions
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
@@ -67,8 +68,12 @@ import com.typesafe.scalalogging.StrictLogging
   * @param client
   *     AWS CloudWatch client.
   */
-class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWatch)
-    extends Actor
+class CloudWatchPoller(
+  config: Config,
+  registry: Registry,
+  client: AmazonCloudWatch,
+  leaderStatus: LeaderStatus
+) extends Actor
     with StrictLogging {
 
   import CloudWatchPoller._
@@ -168,9 +173,14 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
 
   private def refresh(): Unit = {
     responder = sender()
-    refreshMetricsList()
-    fetchMetricsData()
-    sendMetricData()
+    if (leaderStatus.hasLeadership) {
+      logger.debug("Refreshing metrics")
+      refreshMetricsList()
+      fetchMetricsData()
+      sendMetricData()
+    } else {
+      logger.debug("Skipping metrics refresh, do not have leadership.")
+    }
   }
 
   /** Refresh the metadata list if one is not already in progress. */
