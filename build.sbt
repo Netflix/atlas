@@ -151,7 +151,9 @@ lazy val `atlas-poller-cloudwatch` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.awsCloudWatch,
     Dependencies.frigga,
-    Dependencies.iepService
+    Dependencies.iepService,
+    Dependencies.iepModuleLeader,
+    Dependencies.iepLeaderDynamoDb
   ))
 
 lazy val `atlas-standalone` = project
