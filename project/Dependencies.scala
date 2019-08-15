@@ -4,16 +4,16 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.5.23"
-    val akkaHttpV  = "10.1.8"
-    val aws        = "1.11.579"
-    val iep        = "2.1.1"
+    val akka       = "2.5.24"
+    val akkaHttpV  = "10.1.9"
+    val aws        = "1.11.611"
+    val iep        = "2.1.2"
     val guice      = "4.1.0"
     val jackson    = "2.9.9"
-    val log4j      = "2.12.0"
-    val scala      = "2.12.8"
-    val slf4j      = "1.7.26"
-    val spectator  = "0.92.0"
+    val log4j      = "2.12.1"
+    val scala      = "2.12.9"
+    val slf4j      = "1.7.28"
+    val spectator  = "0.94.0"
 
     val crossScala = Seq(scala, "2.13.0")
   }
@@ -32,9 +32,9 @@ object Dependencies {
   val awsCore           = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2            = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3             = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.7.0"
+  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.8.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.1.9"
-  val frigga            = "com.netflix.frigga" % "frigga" % "0.19.1"
+  val frigga            = "com.netflix.frigga" % "frigga" % "0.19.2"
   val guiceCore         = "com.google.inject" % "guice" % guice
   val guiceMulti        = "com.google.inject.extensions" % "guice-multibindings" % guice
   val iepGuice          = "com.netflix.iep" % "iep-guice" % iep
@@ -60,8 +60,8 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.8.9"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.1"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.8.10"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
