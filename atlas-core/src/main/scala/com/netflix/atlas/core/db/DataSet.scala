@@ -16,11 +16,13 @@
 package com.netflix.atlas.core.db
 
 import java.time.Duration
+import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.TimeWave
+import com.netflix.spectator.api.histogram.PercentileBuckets
 
 private[db] object DataSet {
 
@@ -151,6 +153,31 @@ private[db] object DataSet {
     )
   }
 
+  def percentiles(
+    name: String,
+    start: Instant,
+    end: Instant,
+    series: List[TimeSeries]
+  ): List[TimeSeries] = {
+    var usedBuckets = Set.empty[Int]
+    series.foreach(_.data.foreach(start.toEpochMilli, end.toEpochMilli) { (_, d) =>
+      usedBuckets += PercentileBuckets.indexOf(d.toLong)
+    })
+
+    val rate = 1.0d / 60
+
+    def counts(idx: Int): Long => Double =
+      ts => rate * series.count(s => PercentileBuckets.indexOf(s.data(ts).toLong) == idx)
+
+    def bucketSeries(bucket: Int): TimeSeries =
+      TimeSeries(
+        Map("name" -> name, TagKey.percentile -> f"D$bucket%04X"),
+        new FunctionTimeSeq(DsType.Gauge, step, counts(bucket))
+      )
+
+    usedBuckets.map(bucketSeries).toList
+  }
+
   def noisyWaveSeries: TimeSeries = {
     val idealF = wave(50.0, 300.0, Duration.ofDays(1))
     noise(31, 25.0, idealF)
@@ -184,7 +211,7 @@ private[db] object DataSet {
     val ds2 = interval(ds1, bad, start2.toEpochMilli, end2.toEpochMilli)
     val ds3 = interval(ds2, noisyWaveSeries2h, start3.toEpochMilli, end3.toEpochMilli)
 
-    val name = ("name" -> "requestsPerSecond")
+    val name = "name" -> "requestsPerSecond"
     val tags = mkTags("alerttest", "alert1", None, Some(42)) + name
     ds3.withTags(tags)
   }
@@ -200,9 +227,31 @@ private[db] object DataSet {
     val ds1 = interval(normal, bad, start1.toEpochMilli, end2.toEpochMilli)
     val ds2 = interval(ds1, bad, start2.toEpochMilli, end2.toEpochMilli)
 
-    val name = ("name" -> "ssCpuUser")
+    val name = "name" -> "ssCpuUser"
     val tags = mkTags("alerttest", "alert1", None, Some(42)) + name
     ds2.withTags(tags)
+  }
+
+  def requestLatency: List[TimeSeries] = {
+    val start = ZonedDateTime.of(2012, 1, 1, 5, 0, 0, 0, ZoneOffset.UTC).toInstant
+    val end = ZonedDateTime.of(2012, 2, 1, 7, 5, 0, 0, ZoneOffset.UTC).toInstant
+    val name = "name" -> "requestLatency"
+
+    // size, min, max, noise
+    val settings = Map(
+      "silverlight" -> ((300, 500.0, 600.0, 5.0)),
+      "xbox"        -> ((120, 400.0, 520.0, 5.0)),
+      "wii"         -> ((111, 200.0, 440.0, 8.0))
+    )
+
+    val metrics = settings.toList.map {
+      case (stack, conf) =>
+        val (size, _, max, noiseFactor) = conf
+        val tags = mkTags("nccp", s"$stack-node", Some(stack), Some(42)) + name
+        noise(size, noiseFactor, constant(max)).withTags(tags)
+    }
+
+    metrics ++ percentiles("requestLatency", start, end, metrics)
   }
 
   def discoveryStatusUp: TimeSeries = {
@@ -213,7 +262,7 @@ private[db] object DataSet {
     val bad = constant(0)
     val ds = interval(normal, bad, start1.toEpochMilli, end1.toEpochMilli)
 
-    val name = ("name" -> "DiscoveryStatus_UP")
+    val name = "name" -> "DiscoveryStatus_UP"
     val tags = mkTags("alerttest", "alert1", None, Some(42)) + name
     ds.withTags(tags)
   }
@@ -226,12 +275,12 @@ private[db] object DataSet {
     val bad = constant(1)
     val ds = interval(normal, bad, start1.toEpochMilli, end1.toEpochMilli)
 
-    val name = ("name" -> "DiscoveryStatus_DOWN")
+    val name = "name" -> "DiscoveryStatus_DOWN"
     val tags = mkTags("alerttest", "alert1", None, Some(42)) + name
     ds.withTags(tags)
   }
 
-  // For the sample data sets it doesn't matter much wath the step size is, just use
+  // For the sample data sets it doesn't matter much what the step size is, just use
   // a minute
   val step = 60000
 
@@ -284,7 +333,7 @@ private[db] object DataSet {
     * Some metrics with problems that are used to test alerting.
     */
   def staticAlertSet: List[TimeSeries] = {
-    smallStaticSet ::: staticSpsTimer ::: List(
+    smallStaticSet ::: staticSpsTimer ::: requestLatency ::: List(
       waveWithOutages,
       cpuSpikes,
       discoveryStatusUp,

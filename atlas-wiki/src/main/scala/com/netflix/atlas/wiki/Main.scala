@@ -315,7 +315,7 @@ object Main extends StrictLogging {
 
     val output = new File(args(1))
     output.mkdirs()
-    require(output.isDirectory, s"could not find or create output directry: $output")
+    require(output.isDirectory, s"could not find or create output directory: $output")
 
     copy(input, output)
 
