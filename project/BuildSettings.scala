@@ -87,7 +87,7 @@ object BuildSettings {
     Resolver.mavenLocal,
     Resolver.mavenCentral,
     Resolver.jcenterRepo,
-    "jfrog".at("http://oss.jfrog.org/oss-snapshot-local")
+    "jfrog".at("https://oss.jfrog.org/oss-snapshot-local")
   )
 
   def profile: Project => Project = p => {
