@@ -4,18 +4,18 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.5.24"
+    val akka       = "2.5.25"
     val akkaHttpV  = "10.1.9"
-    val aws        = "1.11.611"
-    val iep        = "2.1.2"
+    val aws        = "1.11.629"
+    val iep        = "2.1.3"
     val guice      = "4.1.0"
     val jackson    = "2.9.9"
     val log4j      = "2.12.1"
-    val scala      = "2.12.9"
+    val scala      = "2.12.10"
     val slf4j      = "1.7.28"
-    val spectator  = "0.94.0"
+    val spectator  = "0.96.0"
 
-    val crossScala = Seq(scala, "2.13.0")
+    val crossScala = Seq(scala, "2.13.1")
   }
 
   import Versions._
@@ -60,7 +60,7 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.8.10"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.8.11"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
