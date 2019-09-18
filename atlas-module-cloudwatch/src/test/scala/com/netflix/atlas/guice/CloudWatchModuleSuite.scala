@@ -15,8 +15,7 @@
  */
 package com.netflix.atlas.guice
 
-import java.util.concurrent.TimeUnit
-
+import akka.actor.ActorSystem
 import com.google.inject.AbstractModule
 import com.google.inject.Guice
 import com.netflix.atlas.akka.ActorService
@@ -25,6 +24,9 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 class CloudWatchModuleSuite extends FunSuite {
 
@@ -40,20 +42,7 @@ class CloudWatchModuleSuite extends FunSuite {
     val actors = injector.getInstance(classOf[ActorService])
     assert(actors.isHealthy)
     actors.stop()
-  }
 
-  ignore("run locally") {
-    val deps = new AbstractModule {
-
-      override def configure(): Unit = {
-        bind(classOf[Config]).toInstance(ConfigFactory.load("local"))
-        bind(classOf[Registry]).toInstance(new DefaultRegistry())
-      }
-    }
-    val injector = Guice.createInjector(deps, new CloudWatchModule)
-    val actors = injector.getInstance(classOf[ActorService])
-    assert(actors.isHealthy)
-    Thread.sleep(TimeUnit.MILLISECONDS.convert(10, TimeUnit.MINUTES))
-    actors.stop()
+    Await.ready(injector.getInstance(classOf[ActorSystem]).terminate(), Duration.Inf)
   }
 }
