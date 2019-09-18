@@ -39,6 +39,7 @@ object FilterExpr {
       case "min"   => s.min
       case "last"  => s.last
       case "total" => s.total
+      case "count" => s.count
     }
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {

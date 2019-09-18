@@ -64,13 +64,14 @@ object FilterVocabulary extends Vocabulary {
         |Create a summary line showing the value of the specified statistic for the input line.
         |Valid statistic values are `avg`, `max`, `min`, `last`, and `total`. For example:
         |
-        || Input          |  0 |  5 |  1 |  3 |  1 |
-        ||----------------|----|----|----|----|----|
-        || `avg,:stat`    |  2 |  2 |  2 |  2 |  2 |
-        || `max,:stat`    |  5 |  5 |  5 |  5 |  5 |
-        || `min,:stat`    |  0 |  0 |  0 |  0 |  0 |
-        || `last,:stat`   |  1 |  1 |  1 |  1 |  1 |
-        || `total,:stat`  | 10 | 10 | 10 | 10 | 10 |
+        || Input          |   0 |   5 |   1 |   3 |   1 | NaN |
+        ||----------------|-----|-----|-----|-----|-----|-----|
+        || `avg,:stat`    |   2 |   2 |   2 |   2 |   2 |   2 |
+        || `max,:stat`    |   5 |   5 |   5 |   5 |   5 |   5 |
+        || `min,:stat`    |   0 |   0 |   0 |   0 |   0 |   0 |
+        || `last,:stat`   |   1 |   1 |   1 |   1 |   1 |   1 |
+        || `total,:stat`  |  10 |  10 |  10 |  10 |  10 |  10 |
+        || `count,:stat`  |   5 |   5 |   5 |   5 |   5 |   5 |
         |
         |When used with [filter](filter-filter) the corresponding `stat-$(name)` operation can be
         |used to simplify filtering based on stats.
@@ -99,7 +100,8 @@ object FilterVocabulary extends Vocabulary {
         "name,sps,:eq,:sum,max",
         "name,sps,:eq,:sum,min",
         "name,sps,:eq,:sum,last",
-        "name,sps,:eq,:sum,total"
+        "name,sps,:eq,:sum,total",
+        "name,sps,:eq,:sum,count"
       )
   }
 
@@ -175,6 +177,18 @@ object FilterVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Represents the `total,:stat` line when used with the filter operation.
+      """.stripMargin.trim
+  }
+
+  case object StatCount extends StatWord {
+
+    override def name: String = "stat-count"
+
+    def value: FilterExpr = FilterExpr.StatTotal
+
+    override def summary: String =
+      """
+        |Represents the `count,:stat` line when used with the filter operation.
       """.stripMargin.trim
   }
 
