@@ -21,9 +21,9 @@ import java.io.Reader
 import java.io.Writer
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.core.JsonGenerator.Feature._
-import com.fasterxml.jackson.core.JsonParser.Feature._
 import com.fasterxml.jackson.core._
+import com.fasterxml.jackson.core.json.JsonReadFeature
+import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
@@ -58,20 +58,25 @@ object Json {
     }
   }
 
-  private val jsonFactory = setup(new JsonFactory)
-  private val smileFactory = setup(new SmileFactory)
+  private val jsonFactory = JsonFactory
+    .builder()
+    .asInstanceOf[JsonFactoryBuilder]
+    .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+    .enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS)
+    .enable(StreamReadFeature.AUTO_CLOSE_SOURCE)
+    .enable(StreamWriteFeature.AUTO_CLOSE_TARGET)
+    .disable(JsonWriteFeature.WRITE_NAN_AS_STRINGS)
+    .build()
+
+  private val smileFactory = SmileFactory
+    .builder()
+    .enable(StreamReadFeature.AUTO_CLOSE_SOURCE)
+    .enable(StreamWriteFeature.AUTO_CLOSE_TARGET)
+    .build()
 
   private val jsonMapper = newMapper(jsonFactory)
 
   private val smileMapper = newMapper(smileFactory)
-
-  private def setup(factory: JsonFactory): JsonFactory = {
-    factory.enable(ALLOW_COMMENTS)
-    factory.enable(ALLOW_NON_NUMERIC_NUMBERS)
-    factory.enable(AUTO_CLOSE_SOURCE)
-    factory.enable(AUTO_CLOSE_TARGET)
-    factory.disable(QUOTE_NON_NUMERIC_NUMBERS)
-  }
 
   private def newMapper(factory: JsonFactory): ObjectMapper = {
     val mapper = new ObjectMapper(factory)
