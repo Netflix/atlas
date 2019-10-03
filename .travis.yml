@@ -1,7 +1,7 @@
 language: scala
 matrix:
   include:
-  - jdk: openjdk11
+  - jdk: openjdk12
     scala: 2.13.1
     os: osx
     osx_image: xcode11
