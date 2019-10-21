@@ -26,6 +26,7 @@ import akka.stream.scaladsl.Compression
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.atlas.json.Json
 import com.typesafe.scalalogging.StrictLogging
 
@@ -48,7 +49,6 @@ private[stream] object EurekaSource extends StrictLogging {
     */
   def apply(eurekaUri: String, context: StreamContext): Source[GroupResponse, NotUsed] = {
 
-    val useVipFormat = eurekaUri.contains("/vips/")
     val headers =
       List(Accept(MediaTypes.`application/json`), `Accept-Encoding`(HttpEncodings.gzip))
     val request = HttpRequest(HttpMethods.GET, eurekaUri, headers)
@@ -58,7 +58,7 @@ private[stream] object EurekaSource extends StrictLogging {
       .via(context.httpClient("eureka"))
       .flatMapConcat {
         case Success(res: HttpResponse) if res.status == StatusCodes.OK =>
-          parseResponse(eurekaUri, res, useVipFormat)
+          parseResponse(eurekaUri, res)
         case Success(res: HttpResponse) =>
           logger.warn(s"eureka refresh failed with status ${res.status}: $eurekaUri")
           res.discardEntityBytes(context.materializer)
@@ -76,8 +76,7 @@ private[stream] object EurekaSource extends StrictLogging {
 
   private def parseResponse(
     uri: String,
-    res: HttpResponse,
-    vipFormat: Boolean
+    res: HttpResponse
   ): Source[GroupResponse, Any] = {
     unzipIfNeeded(res)
       .reduce(_ ++ _)
@@ -88,11 +87,19 @@ private[stream] object EurekaSource extends StrictLogging {
       }
       .filter(_.nonEmpty)
       .map { bs =>
-        if (vipFormat)
+        if(uri.contains("/autoScalingGroups"))
+          decodeEddaResponse(bs.toArray).copy(uri = uri)
+        else if (uri.contains("/vips/"))
           Json.decode[VipResponse](bs.toArray).copy(uri = uri)
         else
           Json.decode[AppResponse](bs.toArray).copy(uri = uri)
       }
+  }
+
+  private def decodeEddaResponse(ba: Array[Byte]) = {
+    val responses = Json.decode[List[EddaResponse]](ba)
+    require(responses != null && !responses.isEmpty, "EddaResponse list cannot be empty")
+    responses(0)
   }
 
   //
@@ -122,6 +129,24 @@ private[stream] object EurekaSource extends StrictLogging {
 
   case class App(name: String, instance: List[Instance]) {
     require(instance != null, "instance cannot be null")
+  }
+  //the json field name "instances" conflicts with method name, need to explicitly map it with annotation
+  case class EddaResponse(uri: String, @JsonProperty("instances") eddaInstances: List[EddaInstance]) extends GroupResponse {
+    require(eddaInstances != null && !eddaInstances.isEmpty, "eddaInstances cannot be empty")
+
+    def instances: List[Instance] = eddaInstances.map(eddaInstance =>
+      Instance(
+        eddaInstance.instanceId,
+        "UP",
+        DataCenterInfo("Amazon", Map("local-ipv4" -> eddaInstance.privateIpAddress)),
+        PortInfo()
+      )
+    )
+  }
+
+  case class EddaInstance(instanceId: String, privateIpAddress: String) {
+    require(instanceId != null, "instanceId cannot be null")
+    require(privateIpAddress != null, "privateIpAddress cannot be null")
   }
 
   case class Instance(

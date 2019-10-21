@@ -177,4 +177,29 @@ class EurekaSourceSuite extends FunSuite {
       run(uri, Success(response))
     }
   }
+
+  test("handles edda uri") {
+    val uri = "http://edda/api/v2/group/autoScalingGroups;cluster=atlas_lwcapi-main;_expand"
+    val res = run(uri, Success(mkResponse(eddaResponseStr)))
+    assert(res.uri === uri)
+    assert(res.instances.size === 2)
+    assert(res.instances.map(_.instanceId).toSet === Set("id1", "id2"))
+    assert("http://1.2.3.4:7101" === res.instances(0).substitute("http://{local-ipv4}:{port}"))
+  }
+
+  val eddaResponseStr =
+    """[
+      |  {
+      |    "instances": [
+      |      {
+      |        "privateIpAddress": "1.2.3.4",
+      |        "instanceId": "id1"
+      |      },
+      |      {
+      |        "privateIpAddress": "1.2.3.5",
+      |        "instanceId": "id2"
+      |      }
+      |    ]
+      |  }
+      |]""".stripMargin
 }
