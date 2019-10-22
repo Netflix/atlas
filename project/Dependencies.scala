@@ -4,16 +4,16 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.5.25"
-    val akkaHttpV  = "10.1.9"
-    val aws        = "1.11.629"
-    val iep        = "2.1.3"
+    val akka       = "2.5.26"
+    val akkaHttpV  = "10.1.10"
+    val aws        = "1.11.656"
+    val iep        = "2.1.4"
     val guice      = "4.1.0"
     val jackson    = "2.10.0"
     val log4j      = "2.12.1"
     val scala      = "2.13.1"
     val slf4j      = "1.7.28"
-    val spectator  = "0.96.0"
+    val spectator  = "0.98.0"
 
     val crossScala = Seq(scala, "2.12.10")
   }
@@ -33,8 +33,8 @@ object Dependencies {
   val awsEC2            = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3             = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.8.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.1.9"
-  val frigga            = "com.netflix.frigga" % "frigga" % "0.19.2"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.1.10"
+  val frigga            = "com.netflix.frigga" % "frigga" % "0.20.0"
   val guiceCore         = "com.google.inject" % "guice" % guice
   val guiceMulti        = "com.google.inject.extensions" % "guice-multibindings" % guice
   val iepGuice          = "com.netflix.iep" % "iep-guice" % iep
@@ -75,7 +75,7 @@ object Dependencies {
   val spectatorIpc      = "com.netflix.spectator" % "spectator-ext-ipc" % spectator
   val spectatorLog4j    = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2       = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
-  val typesafeConfig    = "com.typesafe" % "config" % "1.3.4"
+  val typesafeConfig    = "com.typesafe" % "config" % "1.4.0"
 }
 
 // format: on
