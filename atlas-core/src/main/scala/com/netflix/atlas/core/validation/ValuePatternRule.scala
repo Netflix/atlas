@@ -15,8 +15,7 @@
  */
 package com.netflix.atlas.core.validation
 
-import java.util.regex.Pattern
-
+import com.netflix.spectator.impl.PatternMatcher
 import com.typesafe.config.Config
 
 /**
@@ -26,10 +25,10 @@ import com.typesafe.config.Config
   * pattern = "^[-_.a-zA-Z0-9]{4,60}$"
   * ```
   */
-case class ValuePatternRule(pattern: Pattern) extends TagRule {
+case class ValuePatternRule(pattern: PatternMatcher) extends TagRule {
 
   def validate(k: String, v: String): ValidationResult = {
-    if (pattern.matcher(v).matches()) ValidationResult.Pass
+    if (pattern.matches(v)) ValidationResult.Pass
     else {
       failure(s"value doesn't match pattern '$pattern': [$v]")
     }
@@ -39,7 +38,7 @@ case class ValuePatternRule(pattern: Pattern) extends TagRule {
 object ValuePatternRule {
 
   def apply(config: Config): ValuePatternRule = {
-    val pattern = Pattern.compile(config.getString("pattern"))
+    val pattern = PatternMatcher.compile(config.getString("pattern"))
 
     new ValuePatternRule(pattern)
   }
