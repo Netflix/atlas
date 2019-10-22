@@ -178,16 +178,38 @@ class EurekaSourceSuite extends FunSuite {
     }
   }
 
-  test("handles edda uri") {
+  test("handles edda uri, 1 group") {
     val uri = "http://edda/api/v2/group/autoScalingGroups;cluster=atlas_lwcapi-main;_expand"
-    val res = run(uri, Success(mkResponse(eddaResponseStr)))
+    val res = run(uri, Success(mkResponse(eddaResponseSingleGroup)))
     assert(res.uri === uri)
     assert(res.instances.size === 2)
     assert(res.instances.map(_.instanceId).toSet === Set("id1", "id2"))
     assert("http://1.2.3.4:7101" === res.instances(0).substitute("http://{local-ipv4}:{port}"))
+    assert("http://1.2.3.5:7101" === res.instances(1).substitute("http://{local-ipv4}:{port}"))
   }
 
-  val eddaResponseStr =
+  test("handles edda uri, 2 groups") {
+    val uri = "http://edda/api/v2/group/autoScalingGroups;cluster=atlas_lwcapi-main;_expand"
+    val res = run(uri, Success(mkResponse(eddaResponse2Groups)))
+    assert(res.uri === uri)
+    assert(res.instances.size === 3)
+    assert(res.instances.map(_.instanceId).toSet === Set("id1", "id2", "id3"))
+    assert("http://1.2.3.4:7101" === res.instances(0).substitute("http://{local-ipv4}:{port}"))
+    assert("http://1.2.3.5:7101" === res.instances(1).substitute("http://{local-ipv4}:{port}"))
+    assert("http://1.2.3.6:7101" === res.instances(2).substitute("http://{local-ipv4}:{port}"))
+  }
+
+  test("handles edda uri, 1 empty 1 not") {
+    val uri = "http://edda/api/v2/group/autoScalingGroups;cluster=atlas_lwcapi-main;_expand"
+    val res = run(uri, Success(mkResponse(eddaResponseOneEmptyGroup)))
+    assert(res.uri === uri)
+    assert(res.instances.size === 2)
+    assert(res.instances.map(_.instanceId).toSet === Set("id1", "id2"))
+    assert("http://1.2.3.4:7101" === res.instances(0).substitute("http://{local-ipv4}:{port}"))
+    assert("http://1.2.3.5:7101" === res.instances(1).substitute("http://{local-ipv4}:{port}"))
+  }
+
+  val eddaResponseSingleGroup =
     """[
       |  {
       |    "instances": [
@@ -201,5 +223,46 @@ class EurekaSourceSuite extends FunSuite {
       |      }
       |    ]
       |  }
+      |]""".stripMargin
+
+  val eddaResponse2Groups =
+    """[
+      |  {
+      |    "instances": [
+      |      {
+      |        "privateIpAddress": "1.2.3.4",
+      |        "instanceId": "id1"
+      |      },
+      |      {
+      |        "privateIpAddress": "1.2.3.5",
+      |        "instanceId": "id2"
+      |      }
+      |    ]
+      |  },
+      |  {
+      |    "instances": [
+      |      {
+      |        "privateIpAddress": "1.2.3.6",
+      |        "instanceId": "id3"
+      |      }
+      |    ]
+      |  }
+      |]""".stripMargin
+
+  val eddaResponseOneEmptyGroup =
+    """[
+      |  {
+      |    "instances": [
+      |      {
+      |        "privateIpAddress": "1.2.3.4",
+      |        "instanceId": "id1"
+      |      },
+      |      {
+      |        "privateIpAddress": "1.2.3.5",
+      |        "instanceId": "id2"
+      |      }
+      |    ]
+      |  },
+      |  {}
       |]""".stripMargin
 }

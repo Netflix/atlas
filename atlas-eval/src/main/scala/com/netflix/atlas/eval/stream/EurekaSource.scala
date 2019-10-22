@@ -87,7 +87,7 @@ private[stream] object EurekaSource extends StrictLogging {
       }
       .filter(_.nonEmpty)
       .map { bs =>
-        if(uri.contains("/autoScalingGroups"))
+        if (uri.contains("/autoScalingGroups"))
           decodeEddaResponse(bs.toArray).copy(uri = uri)
         else if (uri.contains("/vips/"))
           Json.decode[VipResponse](bs.toArray).copy(uri = uri)
@@ -96,10 +96,10 @@ private[stream] object EurekaSource extends StrictLogging {
       }
   }
 
-  private def decodeEddaResponse(ba: Array[Byte]) = {
+  private def decodeEddaResponse(ba: Array[Byte]): EddaResponse = {
     val responses = Json.decode[List[EddaResponse]](ba)
-    require(responses != null && !responses.isEmpty, "EddaResponse list cannot be empty")
-    responses(0)
+    require(responses != null, "EddaResponse list cannot be null")
+    EddaResponse(null, responses.filter(_.eddaInstances != null).map(_.eddaInstances).flatten)
   }
 
   //
@@ -131,17 +131,19 @@ private[stream] object EurekaSource extends StrictLogging {
     require(instance != null, "instance cannot be null")
   }
   //the json field name "instances" conflicts with method name, need to explicitly map it with annotation
-  case class EddaResponse(uri: String, @JsonProperty("instances") eddaInstances: List[EddaInstance]) extends GroupResponse {
-    require(eddaInstances != null && !eddaInstances.isEmpty, "eddaInstances cannot be empty")
+  case class EddaResponse(uri: String, @JsonProperty("instances") eddaInstances: List[EddaInstance])
+      extends GroupResponse {
 
-    def instances: List[Instance] = eddaInstances.map(eddaInstance =>
-      Instance(
-        eddaInstance.instanceId,
-        "UP",
-        DataCenterInfo("Amazon", Map("local-ipv4" -> eddaInstance.privateIpAddress)),
-        PortInfo()
+    def instances: List[Instance] =
+      eddaInstances.map(
+        eddaInstance =>
+          Instance(
+            eddaInstance.instanceId,
+            "UP",
+            DataCenterInfo("Amazon", Map("local-ipv4" -> eddaInstance.privateIpAddress)),
+            PortInfo()
+          )
       )
-    )
   }
 
   case class EddaInstance(instanceId: String, privateIpAddress: String) {
