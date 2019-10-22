@@ -99,7 +99,7 @@ private[stream] object EurekaSource extends StrictLogging {
   private def decodeEddaResponse(ba: Array[Byte]): EddaResponse = {
     val responses = Json.decode[List[EddaResponse]](ba)
     require(responses != null, "EddaResponse list cannot be null")
-    EddaResponse(null, responses.filter(_.eddaInstances != null).map(_.eddaInstances).flatten)
+    EddaResponse(null, responses.flatMap(_.eddaInstances))
   }
 
   //
@@ -133,6 +133,7 @@ private[stream] object EurekaSource extends StrictLogging {
   //the json field name "instances" conflicts with method name, need to explicitly map it with annotation
   case class EddaResponse(uri: String, @JsonProperty("instances") eddaInstances: List[EddaInstance])
       extends GroupResponse {
+    require(eddaInstances != null, "eddaInstances cannot be null")
 
     def instances: List[Instance] =
       eddaInstances.map(

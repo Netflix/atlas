@@ -263,6 +263,8 @@ class EurekaSourceSuite extends FunSuite {
       |      }
       |    ]
       |  },
-      |  {}
+      |  {
+      |    "instances": []
+      |  }
       |]""".stripMargin
 }
