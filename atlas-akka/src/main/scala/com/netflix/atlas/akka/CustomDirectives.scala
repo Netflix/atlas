@@ -15,7 +15,9 @@
  */
 package com.netflix.atlas.akka
 
+import java.io.InputStream
 import java.io.StringWriter
+import java.util.zip.GZIPInputStream
 
 import akka.http.scaladsl.model.HttpCharsets
 import akka.http.scaladsl.model.HttpEntity
@@ -47,6 +49,24 @@ import scala.util.Success
 
 object CustomDirectives {
 
+  // Magic header to recognize GZIP compressed data
+  // http://www.zlib.org/rfc-gzip.html#file-format
+  private val gzipMagicHeader = ByteString(Array(0x1f.toByte, 0x8b.toByte))
+
+  /**
+    * Create an InputStream for reading the content of the ByteString. If the data is
+    * gzip compressed, then it will be wrapped in a GZIPInputStream to handle the
+    * decompression of the data. This can be handled at the server layer, but it may
+    * be preferable to decompress while parsing into the final object model to reduce
+    * the need to allocate an intermediate ByteString of the uncompressed data.
+    */
+  private def inputStream(bytes: ByteString): InputStream = {
+    if (bytes.startsWith(gzipMagicHeader))
+      new GZIPInputStream(new ByteStringInputStream(bytes))
+    else
+      new ByteStringInputStream(bytes)
+  }
+
   private def isSmile(mediaType: MediaType): Boolean = {
     mediaType == CustomMediaTypes.`application/x-jackson-smile`
   }
@@ -65,9 +85,9 @@ object CustomDirectives {
   def json[T: Manifest]: MediaType => ByteString => T = { mediaType => bs =>
     {
       if (isSmile(mediaType))
-        Json.smileDecode[T](new ByteStringInputStream(bs))
+        Json.smileDecode[T](inputStream(bs))
       else
-        Json.decode[T](new ByteStringInputStream(bs))
+        Json.decode[T](inputStream(bs))
     }
   }
 
@@ -82,9 +102,9 @@ object CustomDirectives {
       {
         val p =
           if (isSmile(mediaType))
-            Json.newSmileParser(new ByteStringInputStream(bs))
+            Json.newSmileParser(inputStream(bs))
           else
-            Json.newJsonParser(new ByteStringInputStream(bs))
+            Json.newJsonParser(inputStream(bs))
         try decoder(p)
         finally p.close()
       }

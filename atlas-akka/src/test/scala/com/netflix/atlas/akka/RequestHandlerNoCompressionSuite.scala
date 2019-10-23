@@ -28,7 +28,7 @@ import com.netflix.iep.service.DefaultClassFactory
 import com.typesafe.config.ConfigFactory
 import org.scalatest.FunSuite
 
-class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
+class RequestHandlerNoCompressionsSuite extends FunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
@@ -38,107 +38,17 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
       |atlas.akka.api-endpoints = [
       |  "com.netflix.atlas.akka.TestApi"
       |]
-      |atlas.akka.cors-host-patterns = [".suffix.com", "www.exact-match.com", "localhost"]
-      |atlas.akka.diagnostic-headers = [
-      |  {
-      |    name = "test"
-      |    value = "12345"
-      |  }
-      |]
+      |atlas.akka.cors-host-patterns = []
+      |atlas.akka.diagnostic-headers = []
       |atlas.akka.request-handler {
-      |  compression = true
-      |  access-log = true
+      |  compression = false
+      |  access-log = false
       |}
     """.stripMargin
   )
 
   private val handler = new RequestHandler(config, new DefaultClassFactory())
   private val routes = handler.routes
-
-  test("/not-found") {
-    Get("/not-found") ~> routes ~> check {
-      assert(response.status === StatusCodes.NotFound)
-    }
-  }
-
-  test("/ok") {
-    Get("/ok") ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-    }
-  }
-
-  test("cors preflight") {
-    Options("/api/v2/ip") ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-    }
-  }
-
-  private def checkCorsHeaders(origin: String): Unit = {
-    val header = Origin(HttpOrigin(origin))
-    Options("/api/v2/ip").addHeader(header) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(response.headers.size >= 5)
-      response.headers.foreach {
-        case `Access-Control-Allow-Origin`(v) =>
-          assert(origin === v.toString)
-        case `Access-Control-Allow-Methods`(vs) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
-        case `Access-Control-Max-Age`(age) =>
-          assert(age === 600)
-        case `Access-Control-Allow-Credentials`(v) =>
-          assert(v)
-        case h if h.is("vary") =>
-          assert(h.value === "Origin")
-        case h if h.is("test") =>
-          assert(h.value === "12345")
-        case h =>
-          fail(s"unexpected header: $h")
-      }
-    }
-  }
-
-  test("cors preflight has cors headers") {
-    checkCorsHeaders("http://localhost")
-  }
-
-  test("cors headers with suffix match") {
-    checkCorsHeaders("http://www.suffix.com")
-    checkCorsHeaders("http://abc.def.foo.bar.suffix.com")
-  }
-
-  test("cors headers with exact match") {
-    checkCorsHeaders("http://www.exact-match.com")
-  }
-
-  test("cors headers with exact match and https") {
-    checkCorsHeaders("https://www.exact-match.com")
-  }
-
-  test("cors headers with exact match and explicit port") {
-    checkCorsHeaders("http://www.exact-match.com:12345")
-  }
-
-  private def checkNoCorsHeaders(origin: String): Unit = {
-    // Origin header validates the URI is valid, for this test case we use the RawHeader
-    // to bypass those checks
-    val header = RawHeader("Origin", origin)
-    Get("/ok").addHeader(header) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(response.headers === List(RawHeader("test", "12345")))
-    }
-  }
-
-  test("cors headers should not be applied if host does not match") {
-    checkNoCorsHeaders("https://www.unknown.com")
-  }
-
-  test("cors headers should not be applied if origin uri is invalid") {
-    checkNoCorsHeaders("https://www.bad-uri.||.suffix.com")
-  }
-
-  test("cors check works for local file") {
-    checkNoCorsHeaders("null")
-  }
 
   private def gzip(data: Array[Byte]): Array[Byte] = {
     val baos = new ByteArrayOutputStream
@@ -193,12 +103,6 @@ class RequestHandlerSuite extends FunSuite with ScalatestRouteTest {
     Post("/jsonparse", content).addHeader(gzipHeader) ~> routes ~> check {
       assert(response.status === StatusCodes.OK)
       assert(responseAs[String] === "foo")
-    }
-  }
-
-  test("/chunked with wrong method") {
-    Post("/chunked") ~> routes ~> check {
-      assert(response.status === StatusCodes.MethodNotAllowed)
     }
   }
 }
