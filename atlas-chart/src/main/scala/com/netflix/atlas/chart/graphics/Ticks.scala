@@ -253,7 +253,6 @@ object Ticks {
     while (curr <= max) {
       //show tick for 0 but not 1(10^0) if lower boundary is 0, because they are too close in log scale
       val v = if (v1 == 0 && curr == 0) 0 else math.pow(10, curr)
-      //val v = math.pow(10, curr)
       val label = UnitPrefix.format(v, "%.0f%s")
       ticks += ValueTick(v, 0.0, (curr - min) % logMajorStepSize == 0, Some(label))
       curr += 1
@@ -262,7 +261,7 @@ object Ticks {
     ticks.result()
   }
 
-  def getLogMajorStepSize(min: Double, max: Double, n: Int): Int = {
+  private def getLogMajorStepSize(min: Double, max: Double, n: Int): Int = {
     if (max - min <= n) {
       1
     } else {
