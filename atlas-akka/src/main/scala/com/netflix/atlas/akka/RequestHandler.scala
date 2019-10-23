@@ -37,6 +37,7 @@ import akka.http.scaladsl.server.Route
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.netflix.iep.service.ClassFactory
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
 class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictLogging {
@@ -50,30 +51,13 @@ class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictL
       val routes = endpoints.tail.foldLeft(endpoints.head.routes) {
         case (acc, r) => acc ~ r.routes
       }
-      RequestHandler.standardOptions(routes, corsHostPatterns, diagnosticHeaders)
+      RequestHandler.standardOptions(routes, RequestHandler.Settings(config))
     }
   }
 
   private def endpoints: List[String] = {
     import scala.jdk.CollectionConverters._
     config.getStringList("atlas.akka.api-endpoints").asScala.toList.distinct
-  }
-
-  private def corsHostPatterns: List[String] = {
-    import scala.jdk.CollectionConverters._
-    config.getStringList("atlas.akka.cors-host-patterns").asScala.toList.distinct
-  }
-
-  private def diagnosticHeaders: List[HttpHeader] = {
-    import scala.jdk.CollectionConverters._
-    config
-      .getConfigList("atlas.akka.diagnostic-headers")
-      .asScala
-      .map { c =>
-        RawHeader(c.getString("name"), c.getString("value"))
-      }
-      .toList
-      .distinct
   }
 
   /**
@@ -102,6 +86,45 @@ object RequestHandler {
 
   import com.netflix.atlas.akka.CustomDirectives._
 
+  private val defaultSettings = Settings(ConfigFactory.parseString("""
+      |atlas.akka {
+      |  cors-host-patterns = []
+      |  diagnostic-headers = []
+      |  request-handler {
+      |    compression = true
+      |    access-log = true
+      |  }
+      |}
+      |""".stripMargin))
+
+  case class Settings(config: Config) {
+
+    val corsHostPatterns: List[String] = {
+      import scala.jdk.CollectionConverters._
+      config.getStringList("atlas.akka.cors-host-patterns").asScala.toList.distinct
+    }
+
+    val diagnosticHeaders: List[HttpHeader] = {
+      import scala.jdk.CollectionConverters._
+      config
+        .getConfigList("atlas.akka.diagnostic-headers")
+        .asScala
+        .map { c =>
+          RawHeader(c.getString("name"), c.getString("value"))
+        }
+        .toList
+        .distinct
+    }
+
+    val handleCompression: Boolean = {
+      config.getBoolean("atlas.akka.request-handler.compression")
+    }
+
+    val enableAccessLog: Boolean = {
+      config.getBoolean("atlas.akka.request-handler.access-log")
+    }
+  }
+
   // Custom set of encoders, same as the default set used with the `encodeResponse` directive
   // except that the compression level is set to best speed rather than the default to reduce
   // the computation overhead
@@ -116,17 +139,11 @@ object RequestHandler {
     *
     * @param route
     *     The user route to wrap with the standard options.
-    * @param corsHostPatterns
-    *     Host patterns that are permitted via CORS.
-    * @param diagnosticHeaders
-    *     Custom headers that are added to the response for the purposes of logging and
-    *     providing diagnostic information to the clients.
+    * @param settings
+    *     Configuration options to adjust the behavior of the handler. See the reference.conf
+    *     for more information.
     */
-  def standardOptions(
-    route: Route,
-    corsHostPatterns: List[String] = Nil,
-    diagnosticHeaders: List[HttpHeader] = Nil
-  ): Route = {
+  def standardOptions(route: Route, settings: Settings = defaultSettings): Route = {
 
     // Default paths to always include
     val ok = path("ok") {
@@ -140,9 +157,12 @@ object RequestHandler {
     val finalRoutes = ok ~ route
 
     // Automatically deal with compression
-    val gzip = encodeResponseWith(NoCoding, CompressedResponseEncoders: _*) {
-      decodeRequest { finalRoutes }
-    }
+    val gzip =
+      if (!settings.handleCompression) finalRoutes
+      else
+        encodeResponseWith(NoCoding, CompressedResponseEncoders: _*) {
+          decodeRequest { finalRoutes }
+        }
 
     // Add a default exception handler
     val error = handleExceptions(exceptionHandler) {
@@ -150,10 +170,13 @@ object RequestHandler {
     }
 
     // Include all requests in the access log
-    val log = accessLog(diagnosticHeaders) { error }
+    val log =
+      if (!settings.enableAccessLog) error
+      else
+        accessLog(settings.diagnosticHeaders) { error }
 
     // Add CORS headers to all responses
-    cors(corsHostPatterns) { log }
+    cors(settings.corsHostPatterns) { log }
   }
 
   /**
