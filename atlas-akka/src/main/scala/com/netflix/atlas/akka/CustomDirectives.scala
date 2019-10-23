@@ -65,9 +65,9 @@ object CustomDirectives {
   def json[T: Manifest]: MediaType => ByteString => T = { mediaType => bs =>
     {
       if (isSmile(mediaType))
-        Json.smileDecode[T](bs.toArray)
+        Json.smileDecode[T](new ByteStringInputStream(bs))
       else
-        Json.decode[T](bs.toArray)
+        Json.decode[T](new ByteStringInputStream(bs))
     }
   }
 
@@ -82,9 +82,9 @@ object CustomDirectives {
       {
         val p =
           if (isSmile(mediaType))
-            Json.newSmileParser(bs.toArray)
+            Json.newSmileParser(new ByteStringInputStream(bs))
           else
-            Json.newJsonParser(bs.toArray)
+            Json.newJsonParser(new ByteStringInputStream(bs))
         try decoder(p)
         finally p.close()
       }
