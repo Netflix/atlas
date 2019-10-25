@@ -212,11 +212,57 @@ object Ticks {
     majorTicks.size > majorTicks.map(_.label).distinct.size
   }
 
-  private def decimalTicks(v1: Double, v2: Double, n: Int, t: (Double, Double, Int), scale: Scale): List[ValueTick] = {
-    if (Scale.LOGARITHMIC != scale || !exceedLogDiffLimit(v1, v2, 3)) {
+  private def decimalTicks(
+    v1: Double,
+    v2: Double,
+    n: Int,
+    t: (Double, Double, Int),
+    scale: Scale
+  ): List[ValueTick] = {
+    if (Scale.LOGARITHMIC != scale) {
       return normalTicks(v1, v2, t)
     }
-    logScaleTicks(v1, v2, n)
+
+    val logDistanceLimit = 2
+    var finalTicks: List[ValueTick] = null
+
+    if (v1 >= 0) {
+      //positive range
+      val logDistance = logDiff(v1, v2)
+      if (logDistance <= logDistanceLimit) {
+        return normalTicks(v1, v2, t)
+      }
+      finalTicks = logScaleTicks(v1, v2, getLogMajorStepSize(logDistance, n))
+    } else if (v2 <= 0) {
+      //negative range: convert range to pos, generate ticks and convert ticks to negs and reverse
+      val logDistance = logDiff(-v2, -v1)
+      if (logDistance <= logDistanceLimit) {
+        return normalTicks(v1, v2, t)
+      }
+      finalTicks = toNegTicks(logScaleTicks(-v2, -v1, getLogMajorStepSize(logDistance, n)))
+    } else {
+      //negative-positive range: split range to pos and neg, get ticks separately and combine
+      val posLogDistance = logDiff(0, v2)
+      val negLogDistance = logDiff(0, -v1)
+      val logDistance = posLogDistance + negLogDistance
+      if (posLogDistance <= logDistanceLimit && negLogDistance <= logDistanceLimit) {
+        return normalTicks(v1, v2, t)
+      }
+      val logMajorStepSize = getLogMajorStepSize(logDistance, n)
+      val negTicks = toNegTicks(logScaleTicks(0, -v1, logMajorStepSize))
+      val posTicks = logScaleTicks(0, v2, logMajorStepSize)
+      finalTicks = negTicks.dropRight(1) ++ posTicks // remove the dup 0 tick before combine
+    }
+
+    //trim unnecessary ticks
+    if (finalTicks.head.v < v1) {
+      finalTicks = finalTicks.drop(1)
+    }
+    if (finalTicks.last.v > v2) {
+      finalTicks = finalTicks.dropRight(1)
+    }
+
+    finalTicks
   }
 
   private def normalTicks(v1: Double, v2: Double, t: (Double, Double, Int)): List[ValueTick] = {
@@ -243,10 +289,14 @@ object Ticks {
     if (useOffset) ts.map(t => t.copy(offset = base, labelOpt = None)) else ts
   }
 
-  private def logScaleTicks(v1: Double, v2: Double, n: Int) = {
-    val min = logFloor(v1).toInt
-    val max = logCeil(v2).toInt
-    val logMajorStepSize = getLogMajorStepSize(min, max, n)
+  private def toNegTicks(ticks: List[ValueTick]): List[ValueTick] = {
+    ticks.map(t => t.copy(v = -1 * t.v, labelOpt = t.labelOpt.map("-" + _))).reverse
+  }
+
+  //Note: all below log* functions are assuming values are non-negative
+  private def logScaleTicks(v1: Double, v2: Double, logMajorStepSize: Int): List[ValueTick] = {
+    val min = logFloor(v1)
+    val max = logCeil(v2)
 
     val ticks = List.newBuilder[ValueTick]
     var curr = min
@@ -261,24 +311,26 @@ object Ticks {
     ticks.result()
   }
 
-  private def getLogMajorStepSize(min: Double, max: Double, n: Int): Int = {
-    if (max - min <= n) {
+  private def getLogMajorStepSize(logDistance: Int, n: Int): Int = {
+    if (logDistance <= n) {
       1
     } else {
-      math.ceil((max - min) / n).toInt
+      math.ceil(logDistance / n).toInt
     }
   }
 
-  private def exceedLogDiffLimit(v1: Double, v2: Double, logDiffLimit: Int): Boolean = {
-    (v2 - v1) >= math.pow(10, logDiffLimit) && (logCeil(v2) - logFloor(v1) >= logDiffLimit)
+  private def logDiff(v1: Double, v2: Double): Int = {
+    require(v1 >= 0, "v1 cannot be negative")
+    require(v1 <= v2, "v1 cannot be greater than v2")
+    logCeil(v2) - logFloor(v1)
   }
 
-  private def logFloor(v: Double): Double = {
-    if (v <= 1) 0 else math.floor(math.log10(v))
+  private def logFloor(v: Double): Int = {
+    if (v <= 1) 0 else math.floor(math.log10(v)).toInt
   }
 
-  private def logCeil(v: Double): Double = {
-    math.ceil(math.log10(v))
+  private def logCeil(v: Double): Int = {
+    math.ceil(math.log10(v)).toInt
   }
 
   private def binaryTicks(v1: Double, v2: Double, t: (Double, Double, Int)): List[ValueTick] = {
