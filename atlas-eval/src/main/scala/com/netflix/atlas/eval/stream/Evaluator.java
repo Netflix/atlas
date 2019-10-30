@@ -255,7 +255,7 @@ public final class Evaluator extends EvaluatorImpl {
      *     The URI for this {@code DataSource} (in atlas backend form).
      */
     public DataSource(String id, String uri) {
-      this(id, extractStepFromUri(uri), uri);
+      this(id, null, uri);
     }
 
     /**
@@ -278,7 +278,7 @@ public final class Evaluator extends EvaluatorImpl {
             @JsonProperty("step") Duration step,
             @JsonProperty("uri") String uri) {
       this.id = id;
-      this.step = step;
+      this.step = step == null ? extractStepFromUri(uri) : step;
       this.uri = uri;
     }
 
