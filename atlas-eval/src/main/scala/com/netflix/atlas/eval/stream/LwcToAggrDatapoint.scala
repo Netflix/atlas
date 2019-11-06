@@ -24,6 +24,7 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.util.ByteString
+import com.netflix.atlas.akka.ByteStringInputStream
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
@@ -52,10 +53,6 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
       import com.netflix.atlas.eval.model.LwcMessages._
-
-      // Default to a decent size so it is unlikely there'll be a need to allocate
-      // a larger array
-      private[this] var buffer = new Array[Byte](16384)
 
       private[this] var state: Map[String, LwcDataExpr] = Map.empty
 
@@ -98,26 +95,16 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
         c >= 32 && c < 127
       }
 
-      private def copy(msg: ByteString, length: Int): Int = {
-        if (length > buffer.length) {
-          buffer = new Array[Byte](length)
-        }
-        msg.copyToArray(buffer, 0, length)
-        length
-      }
-
       private def updateState(msg: ByteString): Unit = {
         val json = msg.drop(subscribePrefix.length)
-        val length = copy(json, json.length)
-        val sub = Json.decode[LwcSubscription](buffer, 0, length)
+        val sub = Json.decode[LwcSubscription](new ByteStringInputStream(json))
         state ++= sub.metrics.map(m => m.id -> m).toMap
         pull(in)
       }
 
       private def pushDatapoint(msg: ByteString): Unit = {
         val json = msg.drop(metricDataPrefix.length)
-        val length = copy(json, json.length)
-        val d = Json.decode[LwcDatapoint](buffer, 0, length)
+        val d = Json.decode[LwcDatapoint](new ByteStringInputStream(json))
         state.get(d.id) match {
           case Some(sub) =>
             // TODO, put in source, for now make it random to avoid dedup
@@ -132,8 +119,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
 
       private def pushDiagnosticMessage(msg: ByteString): Unit = {
         val json = msg.drop(diagnosticPrefix.length)
-        val length = copy(json, json.length)
-        val d = Json.decode[LwcDiagnosticMessage](buffer, 0, length)
+        val d = Json.decode[LwcDiagnosticMessage](new ByteStringInputStream(json))
         state.get(d.id).foreach { sub =>
           context.log(sub.expr, d.message)
         }
@@ -142,8 +128,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
 
       private def pushHeartbeat(msg: ByteString): Unit = {
         val json = msg.drop(heartbeatPrefix.length)
-        val length = copy(json, json.length)
-        val d = Json.decode[LwcHeartbeat](buffer, 0, length)
+        val d = Json.decode[LwcHeartbeat](new ByteStringInputStream(json))
         push(out, AggrDatapoint.heartbeat(d.timestamp, d.step))
       }
 

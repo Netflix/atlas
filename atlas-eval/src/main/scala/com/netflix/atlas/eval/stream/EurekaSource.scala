@@ -27,6 +27,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.netflix.atlas.akka.ByteStringInputStream
 import com.netflix.atlas.json.Json
 import com.typesafe.scalalogging.StrictLogging
 
@@ -88,16 +89,16 @@ private[stream] object EurekaSource extends StrictLogging {
       .filter(_.nonEmpty)
       .map { bs =>
         if (uri.contains("/autoScalingGroups"))
-          decodeEddaResponse(bs.toArray).copy(uri = uri)
+          decodeEddaResponse(new ByteStringInputStream(bs)).copy(uri = uri)
         else if (uri.contains("/vips/"))
-          Json.decode[VipResponse](bs.toArray).copy(uri = uri)
+          Json.decode[VipResponse](new ByteStringInputStream(bs)).copy(uri = uri)
         else
-          Json.decode[AppResponse](bs.toArray).copy(uri = uri)
+          Json.decode[AppResponse](new ByteStringInputStream(bs)).copy(uri = uri)
       }
   }
 
-  private def decodeEddaResponse(ba: Array[Byte]): EddaResponse = {
-    val responses = Json.decode[List[EddaResponse]](ba)
+  private def decodeEddaResponse(in: ByteStringInputStream): EddaResponse = {
+    val responses = Json.decode[List[EddaResponse]](in)
     require(responses != null, "EddaResponse list cannot be null")
     EddaResponse(null, responses.flatMap(_.eddaInstances))
   }
