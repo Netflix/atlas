@@ -20,6 +20,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
 
+import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.util.UnitPrefix
 
 /**
@@ -177,14 +178,16 @@ object Ticks {
     * Generate value tick marks with approximately `n` major ticks for the range `[v1, v2]`.
     * Uses decimal unit prefixes.
     */
-  def value(v1: Double, v2: Double, n: Int): List[ValueTick] = {
+  def value(v1: Double, v2: Double, n: Int, scale: Scale = Scale.LINEAR): List[ValueTick] = {
     require(JDouble.isFinite(v1), "lower bound must be finite")
     require(JDouble.isFinite(v2), "upper bound must be finite")
     require(v1 <= v2, s"v1 must be less than v2 ($v1 > $v2)")
     val range = v2 - v1
     val r = if (range < 1e-12) 1.0 else range
 
-    valueTickSizes.find(t => r / t._1 <= n).fold(sciTicks(v1, v2, n))(t => normalTicks(v1, v2, t))
+    valueTickSizes
+      .find(t => r / t._1 <= n)
+      .fold(sciTicks(v1, v2, n))(t => decimalTicks(v1, v2, n, t, scale))
   }
 
   /**
@@ -211,6 +214,59 @@ object Ticks {
     majorTicks.size > majorTicks.map(_.label).distinct.size
   }
 
+  private def decimalTicks(
+    v1: Double,
+    v2: Double,
+    n: Int,
+    t: (Double, Double, Int),
+    scale: Scale
+  ): List[ValueTick] = {
+    if (Scale.LOGARITHMIC != scale) {
+      return normalTicks(v1, v2, t)
+    }
+
+    val logDistanceLimit = 2
+    var finalTicks: List[ValueTick] = null
+
+    if (v1 >= 0) {
+      // positive range
+      val logDistance = logDiff(v1, v2)
+      if (logDistance <= logDistanceLimit) {
+        return normalTicks(v1, v2, t)
+      }
+      finalTicks = logScaleTicks(v1, v2, getLogMajorStepSize(logDistance, n))
+    } else if (v2 <= 0) {
+      // negative range: convert range to pos, generate ticks and convert ticks to negs and reverse
+      val logDistance = logDiff(-v2, -v1)
+      if (logDistance <= logDistanceLimit) {
+        return normalTicks(v1, v2, t)
+      }
+      finalTicks = toNegTicks(logScaleTicks(-v2, -v1, getLogMajorStepSize(logDistance, n)))
+    } else {
+      // negative-positive range: split range to pos and neg, get ticks separately and combine
+      val posLogDistance = logDiff(0, v2)
+      val negLogDistance = logDiff(0, -v1)
+      val logDistance = posLogDistance + negLogDistance
+      if (posLogDistance <= logDistanceLimit && negLogDistance <= logDistanceLimit) {
+        return normalTicks(v1, v2, t)
+      }
+      val logMajorStepSize = getLogMajorStepSize(logDistance, n)
+      val negTicks = toNegTicks(logScaleTicks(0, -v1, logMajorStepSize))
+      val posTicks = logScaleTicks(0, v2, logMajorStepSize)
+      finalTicks = negTicks.dropRight(1) ++ posTicks // remove the dup 0 tick before combine
+    }
+
+    // trim unnecessary ticks
+    if (finalTicks.head.v < v1) {
+      finalTicks = finalTicks.drop(1)
+    }
+    if (finalTicks.last.v > v2) {
+      finalTicks = finalTicks.dropRight(1)
+    }
+
+    finalTicks
+  }
+
   private def normalTicks(v1: Double, v2: Double, t: (Double, Double, Int)): List[ValueTick] = {
     val (major, minor, minorPerMajor) = t
     val ticks = List.newBuilder[ValueTick]
@@ -233,6 +289,51 @@ object Ticks {
 
     val useOffset = majorLabelDuplication(ts)
     if (useOffset) ts.map(t => t.copy(offset = base, labelOpt = None)) else ts
+  }
+
+  private def toNegTicks(ticks: List[ValueTick]): List[ValueTick] = {
+    ticks.map(t => t.copy(v = -1 * t.v, labelOpt = t.labelOpt.map("-" + _))).reverse
+  }
+
+  // Note: all below log* functions are assuming values are non-negative
+  private def logScaleTicks(v1: Double, v2: Double, logMajorStepSize: Int): List[ValueTick] = {
+    val min = logFloor(v1)
+    val max = logCeil(v2)
+
+    val ticks = List.newBuilder[ValueTick]
+    var curr = min
+    while (curr <= max) {
+      // show tick for 0 but not 1(10^0) if lower boundary is 0, because they are too close
+      // in log scale
+      val v = if (v1 == 0 && curr == 0) 0 else math.pow(10, curr)
+      val label = UnitPrefix.format(v, "%.0f%s")
+      ticks += ValueTick(v, 0.0, (curr - min) % logMajorStepSize == 0, Some(label))
+      curr += 1
+    }
+
+    ticks.result()
+  }
+
+  private def getLogMajorStepSize(logDistance: Int, n: Int): Int = {
+    if (logDistance <= n) {
+      1
+    } else {
+      math.ceil(logDistance / n).toInt
+    }
+  }
+
+  private def logDiff(v1: Double, v2: Double): Int = {
+    require(v1 >= 0, "v1 cannot be negative")
+    require(v1 <= v2, "v1 cannot be greater than v2")
+    logCeil(v2) - logFloor(v1)
+  }
+
+  private def logFloor(v: Double): Int = {
+    if (v <= 1) 0 else math.floor(math.log10(v)).toInt
+  }
+
+  private def logCeil(v: Double): Int = {
+    math.ceil(math.log10(v)).toInt
   }
 
   private def binaryTicks(v1: Double, v2: Double, t: (Double, Double, Int)): List[ValueTick] = {

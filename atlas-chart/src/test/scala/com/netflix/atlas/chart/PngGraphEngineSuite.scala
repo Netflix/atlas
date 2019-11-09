@@ -450,6 +450,11 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     Seq(-400, 15),
     v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC))
   )
+  lines(
+    "double_line_log_pos_neg_large",
+    Seq(-500000000, 10000), //(-500M,10k) top tick should be exactly 10k
+    v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC))
+  )
   lines("double_line_sqrt_pos_neg", Seq(-400, 15), v => v.adjustPlots(_.copy(scale = Scale.SQRT)))
   lines(
     "double_line_pow2_pos_neg",
