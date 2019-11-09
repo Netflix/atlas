@@ -185,7 +185,9 @@ object Ticks {
     val range = v2 - v1
     val r = if (range < 1e-12) 1.0 else range
 
-    valueTickSizes.find(t => r / t._1 <= n).fold(sciTicks(v1, v2, n))(t => decimalTicks(v1, v2, n, t, scale))
+    valueTickSizes
+      .find(t => r / t._1 <= n)
+      .fold(sciTicks(v1, v2, n))(t => decimalTicks(v1, v2, n, t, scale))
   }
 
   /**
