@@ -115,10 +115,18 @@ case class Grapher(settings: DefaultSettings) {
     val timezones = params.getAll("tz").reverse
     val parsedQuery = Try {
       val vars = Map("tz" -> GraphConfig.getTimeZoneIds(settings, timezones).head)
-      settings.interpreter.execute(q.get, vars).stack.reverse.flatMap {
-        case ModelExtractors.PresentationType(s) => s.perOffset
-        case v                                   => throw new MatchError(v)
-      }
+      val exprs = settings.interpreter
+        .execute(q.get, vars)
+        .stack
+        .reverse
+        .flatMap {
+          case ModelExtractors.PresentationType(s) => s.perOffset
+          case v                                   => throw new MatchError(v)
+        }
+      if (settings.simpleLegendsEnabled)
+        SimpleLegends.generate(exprs)
+      else
+        exprs
     }
 
     GraphConfig(
