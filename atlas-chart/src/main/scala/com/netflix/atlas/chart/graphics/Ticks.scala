@@ -229,21 +229,21 @@ object Ticks {
     var finalTicks: List[ValueTick] = null
 
     if (v1 >= 0) {
-      //positive range
+      // positive range
       val logDistance = logDiff(v1, v2)
       if (logDistance <= logDistanceLimit) {
         return normalTicks(v1, v2, t)
       }
       finalTicks = logScaleTicks(v1, v2, getLogMajorStepSize(logDistance, n))
     } else if (v2 <= 0) {
-      //negative range: convert range to pos, generate ticks and convert ticks to negs and reverse
+      // negative range: convert range to pos, generate ticks and convert ticks to negs and reverse
       val logDistance = logDiff(-v2, -v1)
       if (logDistance <= logDistanceLimit) {
         return normalTicks(v1, v2, t)
       }
       finalTicks = toNegTicks(logScaleTicks(-v2, -v1, getLogMajorStepSize(logDistance, n)))
     } else {
-      //negative-positive range: split range to pos and neg, get ticks separately and combine
+      // negative-positive range: split range to pos and neg, get ticks separately and combine
       val posLogDistance = logDiff(0, v2)
       val negLogDistance = logDiff(0, -v1)
       val logDistance = posLogDistance + negLogDistance
@@ -256,7 +256,7 @@ object Ticks {
       finalTicks = negTicks.dropRight(1) ++ posTicks // remove the dup 0 tick before combine
     }
 
-    //trim unnecessary ticks
+    // trim unnecessary ticks
     if (finalTicks.head.v < v1) {
       finalTicks = finalTicks.drop(1)
     }
@@ -295,7 +295,7 @@ object Ticks {
     ticks.map(t => t.copy(v = -1 * t.v, labelOpt = t.labelOpt.map("-" + _))).reverse
   }
 
-  //Note: all below log* functions are assuming values are non-negative
+  // Note: all below log* functions are assuming values are non-negative
   private def logScaleTicks(v1: Double, v2: Double, logMajorStepSize: Int): List[ValueTick] = {
     val min = logFloor(v1)
     val max = logCeil(v2)
@@ -303,7 +303,8 @@ object Ticks {
     val ticks = List.newBuilder[ValueTick]
     var curr = min
     while (curr <= max) {
-      //show tick for 0 but not 1(10^0) if lower boundary is 0, because they are too close in log scale
+      // show tick for 0 but not 1(10^0) if lower boundary is 0, because they are too close
+      // in log scale
       val v = if (v1 == 0 && curr == 0) 0 else math.pow(10, curr)
       val label = UnitPrefix.format(v, "%.0f%s")
       ticks += ValueTick(v, 0.0, (curr - min) % logMajorStepSize == 0, Some(label))
