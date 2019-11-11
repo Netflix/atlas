@@ -65,7 +65,9 @@ class RuleSuite extends FunSuite {
 
   test("load") {
     val rules = Rule.load(config.getConfigList("rules"))
-    assert(rules.size === 9)
+    assert(rules.size === 3)
+    assert(rules.head.isInstanceOf[CompositeTagRule])
+    assert(rules.head.asInstanceOf[CompositeTagRule].tagRules.size === 7)
   }
 
   test("validate ok") {
