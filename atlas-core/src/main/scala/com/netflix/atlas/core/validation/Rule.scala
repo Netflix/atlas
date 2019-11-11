@@ -60,7 +60,7 @@ object Rule {
 
   def load(ruleConfigs: List[_ <: Config]): List[Rule] = {
     val configClass = classOf[Config]
-    ruleConfigs.map { cfg =>
+    val rules = ruleConfigs.map { cfg =>
       val cls = Class.forName(cfg.getString("class"))
 
       try {
@@ -93,6 +93,12 @@ object Rule {
             .asInstanceOf[Rule]
       }
     }
+
+    val (tagRules, others) = rules.partition(_.isInstanceOf[TagRule])
+    if (tagRules.isEmpty)
+      others
+    else
+      CompositeTagRule(tagRules.map(_.asInstanceOf[TagRule])) :: others
   }
 
   @scala.annotation.tailrec
