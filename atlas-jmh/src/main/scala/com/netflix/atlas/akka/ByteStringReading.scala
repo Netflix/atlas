@@ -27,13 +27,13 @@ import org.openjdk.jmh.infra.Blackhole
   * Results:
   *
   * ```
-  * Benchmark                          Mode  Cnt          Score        Error   Units
-  * toArray                           thrpt   10         13.051 ±      0.549   ops/s
-  * inputStream                       thrpt   10         14.363 ±      0.420   ops/s
+  * Benchmark                        Mode  Cnt          Score          Error   Units
+  * toArray                         thrpt   10          9.092 ±        0.540   ops/s
+  * inputStream                     thrpt   10        159.626 ±       21.220   ops/s
   *
-  * Benchmark                          Mode  Cnt          Score        Error   Units
-  * toArray              gc.alloc.rate.norm   10  104857643.179 ±      0.278    B/op
-  * inputStream          gc.alloc.rate.norm   10       4138.877 ±      0.191    B/op
+  * Benchmark                        Mode  Cnt          Score          Error   Units
+  * toArray            gc.alloc.rate.norm   10  104857658.225 ±       64.153    B/op
+  * inputStream        gc.alloc.rate.norm   10       4185.017 ±        3.531    B/op
   * ```
   */
 @State(Scope.Benchmark)
