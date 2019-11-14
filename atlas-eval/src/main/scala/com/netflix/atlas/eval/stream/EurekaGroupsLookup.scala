@@ -65,33 +65,39 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
 
         // Create a list of sources, one for each distinct Eureka group that is needed
         // by one of the data sources
-        val eurekaSources = next.getSources.asScala
-          .flatMap { s =>
-            try {
-              Option(context.findEurekaBackendForUri(Uri(s.getUri)).eurekaUri)
-            } catch {
-              case e: Exception =>
-                val msg = DiagnosticMessage.error(e)
-                context.dsLogger(s, msg)
-                None
+        if (next.getSources.isEmpty) {
+          // If the Eureka based sources are empty, then just use an empty source to avoid
+          // potential delays to shutting down when the upstream completes.
+          Source.empty[SourcesAndGroups]
+        } else {
+          val eurekaSources = next.getSources.asScala
+            .flatMap { s =>
+              try {
+                Option(context.findEurekaBackendForUri(Uri(s.getUri)).eurekaUri)
+              } catch {
+                case e: Exception =>
+                  val msg = DiagnosticMessage.error(e)
+                  context.dsLogger(s, msg)
+                  None
+              }
             }
-          }
-          .toList
-          .distinct
-          .map { uri =>
-            EurekaSource(uri, context)
-          }
+            .toList
+            .distinct
+            .map { uri =>
+              EurekaSource(uri, context)
+            }
 
-        // Perform lookup for each vip and create groups composite
-        val lookup = Source(eurekaSources)
-          .flatMapConcat(s => s)
-          .fold(List.empty[GroupResponse])((acc, g) => g :: acc)
-          .map(gs => next -> Groups(gs))
+          // Perform lookup for each vip and create groups composite
+          val lookup = Source(eurekaSources)
+            .flatMapConcat(s => s)
+            .fold(List.empty[GroupResponse])((acc, g) => g :: acc)
+            .map(gs => next -> Groups(gs))
 
-        // Regularly refresh the metadata until the returned continue flag is set to false
-        val (src, hasNext) = EvaluationFlows.repeatWhile(NotUsed, frequency)
-        continue = hasNext
-        push(out, src.flatMapConcat(_ => lookup))
+          // Regularly refresh the metadata until the returned continue flag is set to false
+          val (src, hasNext) = EvaluationFlows.repeatWhile(NotUsed, frequency)
+          continue = hasNext
+          push(out, src.flatMapConcat(_ => lookup))
+        }
       }
 
       override def onPull(): Unit = {
