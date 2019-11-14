@@ -98,8 +98,8 @@ class EurekaGroupsLookupSuite extends FunSuite {
       DataSources.empty()
     )
     val future = Source(input)
-        .via(lookupFlow)
-        .runWith(Sink.seq)
+      .via(lookupFlow)
+      .runWith(Sink.seq)
     val output = Await.result(future, Duration.Inf)
     assert(output.isEmpty)
   }
