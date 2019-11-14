@@ -153,7 +153,30 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   protected def createStreamsProcessorImpl(): Processor[DataSources, MessageEnvelope] = {
-    createProcessorFlow.toProcessor.run()
+    createGroupedDataSourcesFlow.toProcessor.run()
+  }
+
+  private[stream] def createGroupedDataSourcesFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
+    Flow[DataSources]
+      .flatMapMerge(Int.MaxValue, dataSources => Source(groupByHost(dataSources)))
+      .groupBy(Int.MaxValue, _._1, true) // groupBy host
+      .map(_._2) //keep only DataSources
+      .via(createProcessorFlow)
+      .mergeSubstreams
+  }
+
+  protected def groupByHost(dataSources: DataSources): List[(String, DataSources)] = {
+    dataSources.getSources.asScala
+      .groupBy(getHost(_))
+      .map { case (host, sources) => host -> new DataSources(sources.asJava) }
+      .toList
+  }
+
+  private def getHost(dataSource: DataSource): String = {
+    if (dataSource.isLocal)
+      "_"
+    else
+      Uri(dataSource.getUri).authority.host.address
   }
 
   private[stream] def createProcessorFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
