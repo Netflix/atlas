@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.eval.stream
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -68,7 +69,7 @@ class EurekaGroupsLookupSuite extends FunSuite {
     new DataSource(id, java.time.Duration.ofMinutes(1), uri)
   }
 
-  private def run(input: List[DataSources], n: Int = 1): List[SourcesAndGroups] = {
+  private def lookupFlow: Flow[DataSources, Source[SourcesAndGroups, NotUsed], NotUsed] = {
     val client = Flow[(HttpRequest, AccessLogger)]
       .map {
         case (_, v) =>
@@ -76,9 +77,13 @@ class EurekaGroupsLookupSuite extends FunSuite {
           Success(HttpResponse(StatusCodes.OK, entity = json)) -> v
       }
     val context = TestContext.createContext(mat, client)
+    Flow[DataSources].via(new EurekaGroupsLookup(context, 5.microseconds))
+  }
+
+  private def run(input: List[DataSources], n: Int = 1): List[SourcesAndGroups] = {
     val future = Source(input)
       .concat(Source.repeat(input.last)) // Need to avoid source stopping until sink is full
-      .via(new EurekaGroupsLookup(context, 5.microseconds))
+      .via(lookupFlow)
       .flatMapConcat(s => s)
       .take(n)
       .fold(List.empty[SourcesAndGroups]) { (acc, v) =>
@@ -92,8 +97,11 @@ class EurekaGroupsLookupSuite extends FunSuite {
     val input = List(
       DataSources.empty()
     )
-    val output = run(input)
-    assert(output.head._2.groups.size === 0)
+    val future = Source(input)
+      .via(lookupFlow)
+      .runWith(Sink.seq)
+    val output = Await.result(future, Duration.Inf)
+    assert(output.isEmpty)
   }
 
   test("one data source") {

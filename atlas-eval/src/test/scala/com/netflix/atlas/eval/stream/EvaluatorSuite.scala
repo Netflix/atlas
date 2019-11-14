@@ -292,7 +292,6 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val future = Source
       .single(ds1)
       .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
-      .take(256) // Needed to force the stream to stop
       .runWith(Sink.seq[MessageEnvelope])
 
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
@@ -301,13 +300,13 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
       .filter(env => env.getId == "one" && env.getMessage.isInstanceOf[TimeSeriesMessage])
       .map(_.getMessage.asInstanceOf[TimeSeriesMessage])
     assert(dsOne.forall(_.step === 5000))
-    assert(dsOne.size === 119)
+    assert(dsOne.size === 120)
 
     val dsTwo = result
       .filter(env => env.getId == "two" && env.getMessage.isInstanceOf[TimeSeriesMessage])
       .map(_.getMessage.asInstanceOf[TimeSeriesMessage])
     assert(dsTwo.forall(_.step === 60000))
-    assert(dsTwo.size === 9)
+    assert(dsTwo.size === 10)
   }
 
   test("DataSource equals contract") {

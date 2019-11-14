@@ -157,7 +157,7 @@ private[stream] class TimeGrouped(
       }
 
       private def flushPending(): Unit = {
-        if (pending.nonEmpty) {
+        if (pending.nonEmpty && isAvailable(out)) {
           push(out, pending.head)
           pending = pending.tail
         }
