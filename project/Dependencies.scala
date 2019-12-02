@@ -5,15 +5,15 @@ import sbt._
 object Dependencies {
   object Versions {
     val akka       = "2.5.26"
-    val akkaHttpV  = "10.1.10"
-    val aws        = "1.11.656"
-    val iep        = "2.1.4"
+    val akkaHttpV  = "10.1.11"
+    val aws        = "1.11.681"
+    val iep        = "2.1.6"
     val guice      = "4.1.0"
-    val jackson    = "2.10.0"
+    val jackson    = "2.10.1"
     val log4j      = "2.12.1"
     val scala      = "2.13.1"
-    val slf4j      = "1.7.28"
-    val spectator  = "0.98.0"
+    val slf4j      = "1.7.29"
+    val spectator  = "0.99.2"
 
     val crossScala = Seq(scala, "2.12.10")
   }
@@ -67,7 +67,7 @@ object Dependencies {
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
   val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
   val scalaReflect      = "org.scala-lang" % "scala-reflect" % scala
-  val scalatest         = "org.scalatest" %% "scalatest" % "3.0.8"
+  val scalatest         = "org.scalatest" %% "scalatest" % "3.1.0"
   val slf4jApi          = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j        = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple       = "org.slf4j" % "slf4j-simple" % slf4j
