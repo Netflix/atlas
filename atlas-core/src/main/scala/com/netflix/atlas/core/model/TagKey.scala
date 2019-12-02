@@ -142,16 +142,15 @@ object TagKey {
   /** A list of standard tags. */
   val standard: List[String] = atlas ::: netflix
 
-  /**
-    * TagKey names with these prefixes are restricted and managed by the system. They should not be
-    * set or used directly by users.
-    */
-  val restrictedPrefixes: List[String] = List(atlasPrefix, netflixPrefix)
-
   private val standardTagKeys = standard.toSet
 
-  /** Returns true if the name uses a restricted prefix. */
-  def isRestricted(name: String): Boolean = restrictedPrefixes.exists(name.startsWith)
+  /**
+    * Returns true if the name uses a restricted prefix that is managed by the system. These
+    * tag keys should not be set or used directly by users
+    */
+  def isRestricted(name: String): Boolean = {
+    name.startsWith(netflixPrefix) || name.startsWith(atlasPrefix)
+  }
 
   /** Returns true if the name is one of the standard tag keys. */
   def isStandard(name: String): Boolean = standardTagKeys.contains(name)
