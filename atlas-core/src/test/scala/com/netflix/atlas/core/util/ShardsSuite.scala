@@ -129,6 +129,17 @@ class ShardsSuite extends FunSuite {
     }
   }
 
+  test("empty group") {
+    val groups = List(
+      Shards.Group("a", Array("0", "1")),
+      Shards.Group("b", Array.empty[String]),
+      Shards.Group("c", Array("6", "7"))
+    )
+
+    val mapper = Shards.mapper(groups)
+    assert(mapper.instanceForIndex(1) === null)
+  }
+
   test("local mapper containsIndex") {
     val groups = List(
       Shards.Group("a", Array(0, 1)),
