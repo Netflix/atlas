@@ -141,6 +141,7 @@ object Shards {
 
   /** Mapper for finding the instance that should receive data for an id or index of a file. */
   class Mapper[T](groups: Array[Group[T]]) {
+    require(groups.length > 0, "set of groups cannot be empty")
 
     /** Return the instance that should receive the data associated with `id`. */
     def instanceForId(id: BigInteger): T = {
@@ -152,7 +153,10 @@ object Shards {
     def instanceForIndex(i: Int): T = {
       require(i >= 0, "index cannot be negative")
       val group = groups(i % groups.length)
-      group.instances((i / groups.length) % group.size)
+      if (group.size > 0)
+        group.instances((i / groups.length) % group.size)
+      else
+        null.asInstanceOf[T]
     }
   }
 
