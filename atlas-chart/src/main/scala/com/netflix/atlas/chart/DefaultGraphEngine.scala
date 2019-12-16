@@ -24,10 +24,7 @@ import java.time.ZonedDateTime
 
 import com.netflix.atlas.chart.graphics.ChartSettings
 import com.netflix.atlas.chart.graphics.Element
-import com.netflix.atlas.chart.graphics.Styles
-import com.netflix.atlas.chart.graphics.Theme
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
