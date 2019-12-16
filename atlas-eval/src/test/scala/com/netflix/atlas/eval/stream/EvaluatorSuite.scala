@@ -40,13 +40,13 @@ import com.typesafe.config.ConfigFactory
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
 import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.Promise
 import scala.util.Success
 
-class EvaluatorSuite extends FunSuite with BeforeAndAfter {
+class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
 
   private val targetDir = Paths.get(SrcPath.forProject("atlas-eval"), "target", "EvaluatorSuite")
   private val resourcesDir =

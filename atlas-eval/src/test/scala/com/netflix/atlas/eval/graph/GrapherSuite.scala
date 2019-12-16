@@ -25,9 +25,9 @@ import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class GrapherSuite extends FunSuite with BeforeAndAfterAll {
+class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
 
   private val bless = false
 

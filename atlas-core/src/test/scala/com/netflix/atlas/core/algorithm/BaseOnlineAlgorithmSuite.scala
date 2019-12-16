@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 
-abstract class BaseOnlineAlgorithmSuite extends FunSuite {
+abstract class BaseOnlineAlgorithmSuite extends AnyFunSuite {
 
   protected def newInstance: OnlineAlgorithm
 

@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.eval.model
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class TimeSeriesMessageSuite extends FunSuite {
+class TimeSeriesMessageSuite extends AnyFunSuite {
   private val baseMessage = TimeSeriesMessage(
     id = "12345",
     query = "name,sps,:eq,(,cluster,),:by",

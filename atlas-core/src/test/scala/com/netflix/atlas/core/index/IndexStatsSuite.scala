@@ -19,11 +19,11 @@ import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
 import com.netflix.spectator.api.patterns.PolledMeter
 import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.Random
 
-class IndexStatsSuite extends FunSuite with BeforeAndAfter {
+class IndexStatsSuite extends AnyFunSuite with BeforeAndAfter {
 
   private val clock = new ManualClock()
   private var registry = new DefaultRegistry(clock)

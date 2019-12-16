@@ -19,9 +19,9 @@ import java.time.Duration
 
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.json.Json
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class DataSourceSuite extends FunSuite {
+class DataSourceSuite extends AnyFunSuite {
 
   test("parse without explicit step") {
     val id = "123"

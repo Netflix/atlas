@@ -22,9 +22,9 @@ import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class LwcApiModuleSuite extends FunSuite {
+class LwcApiModuleSuite extends AnyFunSuite {
 
   test("load module") {
     val deps = new AbstractModule {

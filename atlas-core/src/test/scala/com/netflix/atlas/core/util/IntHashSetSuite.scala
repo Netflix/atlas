@@ -17,11 +17,11 @@ package com.netflix.atlas.core.util
 
 import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.info.GraphLayout
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.Random
 
-class IntHashSetSuite extends FunSuite {
+class IntHashSetSuite extends AnyFunSuite {
 
   test("add") {
     val s = new IntHashSet(-1, 10)

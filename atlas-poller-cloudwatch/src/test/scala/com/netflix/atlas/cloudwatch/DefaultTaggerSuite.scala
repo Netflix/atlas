@@ -20,9 +20,9 @@ import java.util.regex.PatternSyntaxException
 import com.amazonaws.services.cloudwatch.model.Dimension
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class DefaultTaggerSuite extends FunSuite {
+class DefaultTaggerSuite extends AnyFunSuite {
 
   private val dimensions = List(
     new Dimension().withName("CloudWatch").withValue("abc"),

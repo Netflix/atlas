@@ -37,7 +37,7 @@ import akka.util.ByteString
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.EurekaSource.GroupResponse
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -46,7 +46,7 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-class EurekaSourceSuite extends FunSuite {
+class EurekaSourceSuite extends AnyFunSuite {
 
   private def mkResponse(data: String, status: StatusCode = StatusCodes.OK): HttpResponse = {
     mkResponse(data.getBytes(StandardCharsets.UTF_8), false, status)

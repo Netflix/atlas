@@ -16,7 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
   * Verify that basic math operations can be applied to StyleExprs. For binary operators
@@ -24,7 +24,7 @@ import org.scalatest.FunSuite
   *
   * https://github.com/Netflix/atlas/issues/761
   */
-class MathAcrossStyleSuite extends FunSuite {
+class MathAcrossStyleSuite extends AnyFunSuite {
 
   import ModelExtractors._
 

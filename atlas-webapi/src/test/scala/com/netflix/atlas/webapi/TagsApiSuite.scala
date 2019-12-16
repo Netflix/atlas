@@ -28,9 +28,9 @@ import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.model.TimeSeries
 import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class TagsApiSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
+class TagsApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRouteTest {
 
   import scala.concurrent.duration._
 

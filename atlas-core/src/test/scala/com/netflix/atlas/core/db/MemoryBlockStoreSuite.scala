@@ -17,9 +17,9 @@ package com.netflix.atlas.core.db
 
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.ConstantBlock
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class MemoryBlockStoreSuite extends FunSuite {
+class MemoryBlockStoreSuite extends AnyFunSuite {
 
   test("update, new") {
     val bs = new MemoryBlockStore(1, 60, 1)

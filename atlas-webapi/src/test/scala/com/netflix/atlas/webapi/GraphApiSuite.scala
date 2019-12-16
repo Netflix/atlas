@@ -30,9 +30,9 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class GraphApiSuite extends FunSuite with ScalatestRouteTest {
+class GraphApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
 

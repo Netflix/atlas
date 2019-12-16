@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.stacklang
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-abstract class BaseWordSuite extends FunSuite {
+abstract class BaseWordSuite extends AnyFunSuite {
 
   def interpreter: Interpreter
 

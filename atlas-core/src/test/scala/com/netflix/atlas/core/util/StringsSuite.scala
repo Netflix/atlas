@@ -25,9 +25,9 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class StringsSuite extends FunSuite {
+class StringsSuite extends AnyFunSuite {
 
   import com.netflix.atlas.core.util.Strings._
 

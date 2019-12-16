@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class BlockSuite extends FunSuite {
+class BlockSuite extends AnyFunSuite {
 
   def rleBlock(start: Long, data: List[(Int, Double)], size: Int = 60): Block = {
     val block = ArrayBlock(start, size)

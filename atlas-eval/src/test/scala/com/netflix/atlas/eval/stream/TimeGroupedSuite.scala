@@ -23,13 +23,13 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.spectator.api.DefaultRegistry
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
-class TimeGroupedSuite extends FunSuite {
+class TimeGroupedSuite extends AnyFunSuite {
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val materializer = ActorMaterializer()

@@ -18,9 +18,9 @@ package com.netflix.atlas.core.stacklang
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeriesExpr
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-abstract class BaseExamplesSuite extends FunSuite {
+abstract class BaseExamplesSuite extends AnyFunSuite {
 
   def vocabulary: Vocabulary
 

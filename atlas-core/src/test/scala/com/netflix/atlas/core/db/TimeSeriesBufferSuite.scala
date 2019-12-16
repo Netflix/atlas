@@ -24,9 +24,9 @@ import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.util.Math
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class TimeSeriesBufferSuite extends FunSuite {
+class TimeSeriesBufferSuite extends AnyFunSuite {
 
   import java.lang.{Double => JDouble}
 

@@ -35,9 +35,9 @@ import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class SubscribeApiSuite extends FunSuite with BeforeAndAfter with ScalatestRouteTest {
+class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRouteTest {
 
   import scala.concurrent.duration._
 

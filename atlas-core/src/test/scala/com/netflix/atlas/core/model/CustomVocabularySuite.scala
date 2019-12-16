@@ -17,9 +17,9 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class CustomVocabularySuite extends FunSuite {
+class CustomVocabularySuite extends AnyFunSuite {
 
   private val cpuUser = "name,cpuUser,:eq"
   private val numInstances = "name,aws.numInstances,:eq"

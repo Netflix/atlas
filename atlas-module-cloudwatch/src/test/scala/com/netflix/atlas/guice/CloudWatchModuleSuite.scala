@@ -23,12 +23,12 @@ import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class CloudWatchModuleSuite extends FunSuite {
+class CloudWatchModuleSuite extends AnyFunSuite {
 
   test("load module") {
     val deps = new AbstractModule {

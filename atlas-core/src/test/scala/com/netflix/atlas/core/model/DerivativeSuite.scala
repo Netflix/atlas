@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.IdentityMap
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class DerivativeSuite extends FunSuite {
+class DerivativeSuite extends AnyFunSuite {
 
   private val start = 0L
   private val step = 60000L

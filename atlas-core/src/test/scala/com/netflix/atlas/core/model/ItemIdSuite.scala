@@ -17,11 +17,11 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.hashing.MurmurHash3
 
-class ItemIdSuite extends FunSuite {
+class ItemIdSuite extends AnyFunSuite {
 
   test("create from byte array") {
     val bytes = Array(1.toByte, 2.toByte)

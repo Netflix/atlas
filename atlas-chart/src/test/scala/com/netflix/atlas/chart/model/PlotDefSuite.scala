@@ -21,9 +21,9 @@ import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.TimeSeries
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class PlotDefSuite extends FunSuite {
+class PlotDefSuite extends AnyFunSuite {
 
   test("lower >= upper") {
     intercept[IllegalArgumentException] {

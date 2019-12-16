@@ -23,13 +23,13 @@ import java.util.regex.Pattern
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.JsonNode
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
   * Test case for the capabilities we need from a json parser. Mostly to document what we are using
   * and ease transition to alternative libraries if we want to switch.
   */
-class JsonSuite extends FunSuite {
+class JsonSuite extends AnyFunSuite {
 
   import java.lang.{Double => JDouble}
 

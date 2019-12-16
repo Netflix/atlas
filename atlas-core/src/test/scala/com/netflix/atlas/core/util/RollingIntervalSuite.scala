@@ -19,9 +19,9 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class RollingIntervalSuite extends FunSuite {
+class RollingIntervalSuite extends AnyFunSuite {
 
   test("ceil should not round up if on exact boundary") {
     val expected = Instant.parse("2007-12-03T10:00:00.00Z")

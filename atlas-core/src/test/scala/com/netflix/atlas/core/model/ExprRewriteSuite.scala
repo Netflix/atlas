@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ExprRewriteSuite extends FunSuite {
+class ExprRewriteSuite extends AnyFunSuite {
 
   test("basic") {
     val avgHashCode = System.identityHashCode(ConsolidationFunction.Avg)

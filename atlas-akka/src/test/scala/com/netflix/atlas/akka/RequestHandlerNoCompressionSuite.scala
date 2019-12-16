@@ -26,9 +26,9 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.DefaultClassFactory
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class RequestHandlerNoCompressionsSuite extends FunSuite with ScalatestRouteTest {
+class RequestHandlerNoCompressionsSuite extends AnyFunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
   implicit val routeTestTimeout = RouteTestTimeout(5.second)

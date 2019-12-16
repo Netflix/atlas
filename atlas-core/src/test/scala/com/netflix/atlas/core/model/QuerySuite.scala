@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.SmallHashMap
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class QuerySuite extends FunSuite {
+class QuerySuite extends AnyFunSuite {
 
   import com.netflix.atlas.core.model.Query._
 

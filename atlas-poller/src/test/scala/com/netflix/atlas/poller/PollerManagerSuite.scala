@@ -28,7 +28,7 @@ import com.netflix.spectator.api.ManualClock
 import com.netflix.spectator.api.patterns.PolledMeter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.FunSuiteLike
+import org.scalatest.funsuite.AnyFunSuiteLike
 
 import scala.concurrent.Await
 import scala.util.Failure
@@ -37,7 +37,7 @@ import scala.util.Success
 class PollerManagerSuite
     extends TestKit(ActorSystem())
     with ImplicitSender
-    with FunSuiteLike
+    with AnyFunSuiteLike
     with BeforeAndAfterAll {
 
   import scala.concurrent.duration._

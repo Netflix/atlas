@@ -17,9 +17,9 @@ package com.netflix.atlas.chart
 
 import java.awt.Color
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ColorsSuite extends FunSuite {
+class ColorsSuite extends AnyFunSuite {
 
   test("load") {
     val expected = List(Color.RED, Color.GREEN)

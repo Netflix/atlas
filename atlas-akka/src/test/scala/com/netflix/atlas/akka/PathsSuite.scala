@@ -17,10 +17,10 @@ package com.netflix.atlas.akka
 
 import akka.actor.ActorPath
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /** Sanity check the default pattern for extracting an id from the path. */
-class PathsSuite extends FunSuite {
+class PathsSuite extends AnyFunSuite {
 
   private val mapper = Paths.createMapper(ConfigFactory.load().getConfig("atlas.akka"))
 

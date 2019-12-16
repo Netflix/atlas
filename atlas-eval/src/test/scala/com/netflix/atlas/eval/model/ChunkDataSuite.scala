@@ -17,9 +17,9 @@ package com.netflix.atlas.eval.model
 
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ChunkDataSuite extends FunSuite {
+class ChunkDataSuite extends AnyFunSuite {
   test("ArrayData equals") {
     EqualsVerifier
       .forClass(classOf[ArrayData])

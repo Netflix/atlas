@@ -26,13 +26,13 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.json.Json
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Success
 
-class EurekaGroupsLookupSuite extends FunSuite {
+class EurekaGroupsLookupSuite extends AnyFunSuite {
 
   import EurekaSource._
   import Evaluator._

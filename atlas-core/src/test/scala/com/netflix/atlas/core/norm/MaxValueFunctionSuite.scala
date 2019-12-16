@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.norm
 
 import com.netflix.atlas.core.util.Assert._
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class MaxValueFunctionSuite extends FunSuite {
+class MaxValueFunctionSuite extends AnyFunSuite {
 
   private def newFunction(step: Long, heartbeat: Long) = {
     val listVF = new ListValueFunction

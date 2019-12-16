@@ -30,7 +30,7 @@ import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Utils
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -38,7 +38,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Success
 
-class StreamOpsSuite extends FunSuite {
+class StreamOpsSuite extends AnyFunSuite {
 
   private implicit val ec = scala.concurrent.ExecutionContext.global
 

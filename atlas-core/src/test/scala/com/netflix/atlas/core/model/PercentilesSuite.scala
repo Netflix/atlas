@@ -24,12 +24,12 @@ import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.histogram.PercentileBuckets
 import com.netflix.spectator.api.histogram.PercentileDistributionSummary
 import com.netflix.spectator.api.histogram.PercentileTimer
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 
 import scala.language.postfixOps
 
-class PercentilesSuite extends FunSuite {
+class PercentilesSuite extends AnyFunSuite {
 
   private val interpreter = Interpreter(MathVocabulary.allWords)
 

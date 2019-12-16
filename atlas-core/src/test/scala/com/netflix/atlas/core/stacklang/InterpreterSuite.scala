@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.stacklang
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class InterpreterSuite extends FunSuite {
+class InterpreterSuite extends AnyFunSuite {
   import com.netflix.atlas.core.stacklang.InterpreterSuite._
 
   val interpreter = new Interpreter(

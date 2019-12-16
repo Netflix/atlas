@@ -19,9 +19,9 @@ import java.io.ByteArrayInputStream
 import java.util.Random
 
 import akka.util.ByteString
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ByteStringInputStreamSuite extends FunSuite {
+class ByteStringInputStreamSuite extends AnyFunSuite {
   test("read() and available()") {
     val random = new Random(42)
     val data = new Array[Byte](4096)

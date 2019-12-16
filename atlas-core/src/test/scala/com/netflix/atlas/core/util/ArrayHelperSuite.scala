@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ArrayHelperSuite extends FunSuite {
+class ArrayHelperSuite extends AnyFunSuite {
 
   test("merge arrays, limit 1: empty, one") {
     val v1 = Array.empty[String]

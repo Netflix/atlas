@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ModelExtractorsSuite extends FunSuite {
+class ModelExtractorsSuite extends AnyFunSuite {
 
   private val words = StyleVocabulary.allWords
   private val interpreter = Interpreter(words)

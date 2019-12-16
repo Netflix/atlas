@@ -17,11 +17,11 @@ package com.netflix.atlas.core.util
 
 import java.util.UUID
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.Random
 
-class SmallHashMapSuite extends FunSuite {
+class SmallHashMapSuite extends AnyFunSuite {
 
   // Set of keys taken from prod.us-east-1. This tends to be our biggest region and these are the
   // actual keys we see in the data.

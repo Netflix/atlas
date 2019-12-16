@@ -37,12 +37,12 @@ import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.Failure
 import scala.util.Try
 
-abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
+abstract class PngGraphEngineSuite extends AnyFunSuite with BeforeAndAfterAll {
 
   private val dataDir = s"graphengine/data"
 

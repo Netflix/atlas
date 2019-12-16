@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class HashSuite extends FunSuite {
+class HashSuite extends AnyFunSuite {
 
   test("md5") {
     assert(Hash.md5("42").toString(10) == "215089739385482443301854222253501995174")

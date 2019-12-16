@@ -20,11 +20,11 @@ import akka.actor.ActorSystem
 import akka.util.Timeout
 import com.netflix.iep.service.DefaultClassFactory
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 
-class ActorServiceSuite extends FunSuite {
+class ActorServiceSuite extends AnyFunSuite {
 
   import scala.concurrent.duration._
   implicit val timeout = Timeout(5.seconds)

@@ -17,11 +17,11 @@ package com.netflix.atlas.chart.graphics
 
 import java.time.ZoneOffset
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.Random
 
-class TicksSuite extends FunSuite {
+class TicksSuite extends AnyFunSuite {
 
   private def checkForDuplicates(ticks: List[ValueTick]): Unit = {
     val duplicates = ticks.filter(_.major).map(_.label).groupBy(v => v).filter(_._2.size > 1)

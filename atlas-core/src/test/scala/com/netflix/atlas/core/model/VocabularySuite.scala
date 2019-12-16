@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class VocabularySuite extends FunSuite {
+class VocabularySuite extends AnyFunSuite {
 
   for (vocab <- StyleVocabulary :: StyleVocabulary.dependencies; w <- vocab.words) {
     test(s"${vocab.name}: ${w.name} == self") {

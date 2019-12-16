@@ -19,9 +19,9 @@ import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ApiSettingsSuite extends FunSuite {
+class ApiSettingsSuite extends AnyFunSuite {
 
   test("graphVocabulary default") {
     val cfg = new ApiSettings(ConfigFactory.parseString("""

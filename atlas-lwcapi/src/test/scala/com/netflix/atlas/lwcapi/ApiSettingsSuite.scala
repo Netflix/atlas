@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.lwcapi
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ApiSettingsSuite extends FunSuite {
+class ApiSettingsSuite extends AnyFunSuite {
   test("loads") {
     assert(ApiSettings.defaultFrequency > 0)
   }

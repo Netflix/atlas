@@ -15,11 +15,11 @@
  */
 package com.netflix.atlas.json
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.Try
 
-class ReflectionSuite extends FunSuite {
+class ReflectionSuite extends AnyFunSuite {
   import ReflectionSuite._
 
   test("create instance") {

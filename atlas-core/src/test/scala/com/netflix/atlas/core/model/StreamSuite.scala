@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class StreamSuite extends FunSuite {
+class StreamSuite extends AnyFunSuite {
 
   val stream = List(
     List(

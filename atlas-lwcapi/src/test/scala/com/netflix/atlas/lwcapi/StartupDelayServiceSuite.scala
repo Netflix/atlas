@@ -20,9 +20,9 @@ import java.time.Duration
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class StartupDelayServiceSuite extends FunSuite {
+class StartupDelayServiceSuite extends AnyFunSuite {
 
   private def newInstance(delay: String): (StartupDelayService, ManualClock) = {
     val config = ConfigFactory.parseString(s"atlas.lwcapi.startup-delay = $delay")

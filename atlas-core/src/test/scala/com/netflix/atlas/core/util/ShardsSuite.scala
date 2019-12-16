@@ -17,9 +17,9 @@ package com.netflix.atlas.core.util
 
 import java.util.UUID
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ShardsSuite extends FunSuite {
+class ShardsSuite extends AnyFunSuite {
 
   private def createGroups(n: Int, sz: Int): List[Shards.Group[Int]] = {
     val groups = (0 until n).map { i =>

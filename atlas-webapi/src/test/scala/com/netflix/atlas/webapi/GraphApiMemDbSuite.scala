@@ -25,9 +25,9 @@ import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.db.MemoryDatabase
 import com.netflix.atlas.json.Json
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class GraphApiMemDbSuite extends FunSuite with ScalatestRouteTest {
+class GraphApiMemDbSuite extends AnyFunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
 

@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.validation
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ValidCharactersRuleSuite extends FunSuite {
+class ValidCharactersRuleSuite extends AnyFunSuite {
 
   private val config = ConfigFactory.parseString("")
 

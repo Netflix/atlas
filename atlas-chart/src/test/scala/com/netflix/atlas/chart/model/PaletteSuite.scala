@@ -17,9 +17,9 @@ package com.netflix.atlas.chart.model
 
 import java.awt.Color
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class PaletteSuite extends FunSuite {
+class PaletteSuite extends AnyFunSuite {
 
   test("colors:") {
     intercept[IllegalArgumentException] {

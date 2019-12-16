@@ -16,9 +16,9 @@
 package com.netflix.atlas.lwcapi
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class SubscriptionManagerSuite extends FunSuite {
+class SubscriptionManagerSuite extends AnyFunSuite {
 
   private val config = ConfigFactory.load()
 
