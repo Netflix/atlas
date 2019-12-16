@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ClampSuite extends FunSuite {
+class ClampSuite extends AnyFunSuite {
 
   val step = 60000L
   val dataTags = Map("name" -> "cpu", "node" -> "i-1")

@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ScalesSuite extends FunSuite {
+class ScalesSuite extends AnyFunSuite {
 
   test("linear") {
     val scale = Scales.linear(0.0, 100.0, 0, 100)

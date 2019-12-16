@@ -28,13 +28,13 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.AccessLogger
 import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.util.Success
 
-class SubscriptionManagerSuite extends FunSuite with BeforeAndAfter {
+class SubscriptionManagerSuite extends AnyFunSuite with BeforeAndAfter {
 
   import EurekaSource._
   import Evaluator._

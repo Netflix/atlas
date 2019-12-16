@@ -18,9 +18,9 @@ package com.netflix.atlas.core.model
 import java.time.zone.ZoneRulesException
 
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class TimeSpanSuite extends FunSuite {
+class TimeSpanSuite extends AnyFunSuite {
 
   private val step = 60000L
   private val start = 0L

@@ -28,12 +28,12 @@ import akka.testkit.TestKit
 import com.netflix.spectator.api.DefaultRegistry
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.FunSuiteLike
+import org.scalatest.funsuite.AnyFunSuiteLike
 
 class DeadLetterStatsActorSuite
     extends TestKit(ActorSystem())
     with ImplicitSender
-    with FunSuiteLike
+    with AnyFunSuiteLike
     with BeforeAndAfterAll {
 
   private val config = ConfigFactory.parseString(

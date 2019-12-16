@@ -25,9 +25,9 @@ import com.netflix.atlas.json.Json
 import com.netflix.iep.service.Service
 import com.netflix.iep.service.ServiceManager
 import com.netflix.iep.service.State
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class HealthcheckApiSuite extends FunSuite with ScalatestRouteTest {
+class HealthcheckApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
 

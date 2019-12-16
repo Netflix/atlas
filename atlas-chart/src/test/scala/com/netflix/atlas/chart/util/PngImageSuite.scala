@@ -18,9 +18,9 @@ package com.netflix.atlas.chart.util
 import java.io.InputStream
 
 import com.netflix.atlas.core.util.Streams
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class PngImageSuite extends FunSuite {
+class PngImageSuite extends AnyFunSuite {
 
   // SBT working directory gets updated with fork to be the dir for the project
   private val baseDir = SrcPath.forProject("atlas-chart")

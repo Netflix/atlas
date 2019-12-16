@@ -20,9 +20,9 @@ import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class MemoryDatabaseSuite extends FunSuite {
+class MemoryDatabaseSuite extends AnyFunSuite {
 
   private val interpreter = new Interpreter(DataVocabulary.allWords)
 

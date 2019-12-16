@@ -17,9 +17,9 @@ package com.netflix.atlas.config
 
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ConfigManagerSuite extends FunSuite {
+class ConfigManagerSuite extends AnyFunSuite {
   private val home = System.getProperty("user.home")
 
   test("init") {

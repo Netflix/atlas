@@ -22,10 +22,10 @@ import com.amazonaws.services.cloudwatch.model.StandardUnit
 import com.netflix.atlas.core.model.Query
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class MetricDefinitionSuite extends FunSuite with Matchers {
+class MetricDefinitionSuite extends AnyFunSuite with Matchers {
 
   private val meta = MetricMetadata(
     MetricCategory("AWS/ELB", 60, 1, 5, None, Nil, Nil, Query.True),

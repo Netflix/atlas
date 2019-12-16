@@ -24,9 +24,9 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class AkkaModuleSuite extends FunSuite {
+class AkkaModuleSuite extends AnyFunSuite {
 
   private val testCfg = ConfigFactory.parseString("""
       |atlas.akka.name = test

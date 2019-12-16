@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.stacklang
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class VocabularySuite extends FunSuite {
+class VocabularySuite extends AnyFunSuite {
   import com.netflix.atlas.core.stacklang.VocabularySuite._
 
   test("toMarkdown") {

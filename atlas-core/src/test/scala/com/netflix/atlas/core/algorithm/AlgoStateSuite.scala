@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.algorithm
 
 import com.netflix.atlas.json.Json
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class AlgoStateSuite extends FunSuite {
+class AlgoStateSuite extends AnyFunSuite {
 
   private def serde(state: AlgoState): AlgoState = {
     Json.decode[AlgoState](Json.encode(state))

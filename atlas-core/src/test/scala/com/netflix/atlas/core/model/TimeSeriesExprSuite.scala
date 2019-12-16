@@ -19,9 +19,9 @@ import java.time.temporal.ChronoUnit
 
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Math
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class TimeSeriesExprSuite extends FunSuite {
+class TimeSeriesExprSuite extends AnyFunSuite {
 
   import com.netflix.atlas.core.model.TimeSeriesExprSuite._
 

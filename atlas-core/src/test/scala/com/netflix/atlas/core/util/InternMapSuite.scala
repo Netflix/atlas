@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.util
 
 import com.netflix.spectator.api.ManualClock
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class InternMapSuite extends FunSuite {
+class InternMapSuite extends AnyFunSuite {
 
   test("open hash") {
     val i = new OpenHashInternMap[String](2)

@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.json
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class JsonParserHelperSuite extends FunSuite {
+class JsonParserHelperSuite extends AnyFunSuite {
 
   import JsonParserHelper._
 

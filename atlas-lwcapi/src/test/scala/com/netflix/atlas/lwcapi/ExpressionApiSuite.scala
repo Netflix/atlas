@@ -25,9 +25,9 @@ import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ExpressionApiSuite extends FunSuite with ScalatestRouteTest {
+class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
   import scala.concurrent.duration._
 
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)

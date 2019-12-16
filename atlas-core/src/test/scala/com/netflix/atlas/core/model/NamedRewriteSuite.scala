@@ -19,9 +19,9 @@ import java.time.Duration
 
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class NamedRewriteSuite extends FunSuite {
+class NamedRewriteSuite extends AnyFunSuite {
 
   private val config = ConfigFactory.parseString("""
       |atlas.core.vocabulary {

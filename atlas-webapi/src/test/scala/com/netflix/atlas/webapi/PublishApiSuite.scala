@@ -25,9 +25,9 @@ import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.webapi.PublishApi.FailureMessage
 import com.netflix.atlas.webapi.PublishApi.PublishRequest
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class PublishApiSuite extends FunSuite with ScalatestRouteTest {
+class PublishApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
   import PublishApiSuite._
 

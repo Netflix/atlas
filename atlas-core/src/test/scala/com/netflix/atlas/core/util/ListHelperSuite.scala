@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ListHelperSuite extends FunSuite {
+class ListHelperSuite extends AnyFunSuite {
 
   test("merge two sorted lists") {
     val v1 = List("a", "c", "d")

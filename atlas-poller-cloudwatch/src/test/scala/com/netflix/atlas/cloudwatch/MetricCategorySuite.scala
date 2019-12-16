@@ -20,9 +20,9 @@ import java.time.Duration
 import com.netflix.atlas.core.model.Query
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class MetricCategorySuite extends FunSuite {
+class MetricCategorySuite extends AnyFunSuite {
   test("bad config") {
     val cfg = ConfigFactory.empty()
     intercept[ConfigException] {

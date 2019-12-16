@@ -18,9 +18,9 @@ package com.netflix.atlas.core.norm
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.spectator.api.ManualClock
 import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class NormalizationCacheSuite extends FunSuite with BeforeAndAfter {
+class NormalizationCacheSuite extends AnyFunSuite with BeforeAndAfter {
 
   val clock = new ManualClock()
   val buffer = scala.collection.mutable.Buffer.empty[Datapoint]

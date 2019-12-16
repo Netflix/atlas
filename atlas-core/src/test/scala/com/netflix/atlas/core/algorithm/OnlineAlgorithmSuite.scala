@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class OnlineAlgorithmSuite extends FunSuite {
+class OnlineAlgorithmSuite extends AnyFunSuite {
 
   test("restore unknown type") {
     intercept[IllegalArgumentException] {

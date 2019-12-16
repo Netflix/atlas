@@ -18,9 +18,9 @@ package com.netflix.atlas.akka
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class StaticPagesSuite extends FunSuite with ScalatestRouteTest {
+class StaticPagesSuite extends AnyFunSuite with ScalatestRouteTest {
 
   val endpoint = new StaticPages(ConfigFactory.load())
 

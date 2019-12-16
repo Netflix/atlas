@@ -18,13 +18,13 @@ package com.netflix.atlas.core.index
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model._
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 object TagIndexSuite {
   val dataset: List[TimeSeries] = DataSet.largeStaticSet(10)
 }
 
-abstract class TagIndexSuite extends FunSuite {
+abstract class TagIndexSuite extends AnyFunSuite {
 
   def index: TagIndex[TimeSeries]
 

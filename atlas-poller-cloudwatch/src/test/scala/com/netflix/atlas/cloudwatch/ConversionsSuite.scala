@@ -20,9 +20,9 @@ import java.util.Date
 import com.amazonaws.services.cloudwatch.model.Datapoint
 import com.amazonaws.services.cloudwatch.model.StandardUnit
 import com.netflix.atlas.core.model.Query
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ConversionsSuite extends FunSuite {
+class ConversionsSuite extends AnyFunSuite {
 
   private val dp = new Datapoint()
     .withMinimum(1.0)

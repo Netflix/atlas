@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.stacklang
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class FreezeSuite extends FunSuite {
+class FreezeSuite extends AnyFunSuite {
 
   def interpreter: Interpreter = Interpreter(StandardVocabulary.allWords)
 

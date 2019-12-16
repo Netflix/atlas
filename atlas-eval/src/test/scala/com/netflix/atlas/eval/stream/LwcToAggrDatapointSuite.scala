@@ -30,12 +30,12 @@ import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.JsonSupport
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class LwcToAggrDatapointSuite extends FunSuite {
+class LwcToAggrDatapointSuite extends AnyFunSuite {
 
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()

@@ -17,9 +17,9 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.Hash
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class TaggedItemSuite extends FunSuite {
+class TaggedItemSuite extends AnyFunSuite {
 
   def expectedId(tags: Map[String, String]): ItemId = {
     ItemId(

@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class MapStepTimeSeqSuite extends FunSuite {
+class MapStepTimeSeqSuite extends AnyFunSuite {
 
   import ConsolidationFunction._
 

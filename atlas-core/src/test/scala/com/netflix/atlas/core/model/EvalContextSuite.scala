@@ -18,9 +18,9 @@ package com.netflix.atlas.core.model
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class EvalContextSuite extends FunSuite {
+class EvalContextSuite extends AnyFunSuite {
 
   // Was throwing:
   // requirement failed: start time must be less than end time (1495052210000 >= 1495051800000)

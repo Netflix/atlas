@@ -25,9 +25,9 @@ import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Streams
 import org.openjdk.jol.info.GraphLayout
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class QueryIndexSuite extends FunSuite {
+class QueryIndexSuite extends AnyFunSuite {
 
   test("empty") {
     val index = QueryIndex(Nil)

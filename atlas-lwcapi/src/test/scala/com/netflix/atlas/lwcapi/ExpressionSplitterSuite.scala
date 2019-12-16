@@ -17,9 +17,9 @@ package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.core.model.Query
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ExpressionSplitterSuite extends FunSuite {
+class ExpressionSplitterSuite extends AnyFunSuite {
   private val query1 =
     "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:avg,(,nf.node,),:by,4500000000,:gt,30,:rolling-count,15,:ge,$nf.node,:legend"
   private val frequency1 = 60000

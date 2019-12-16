@@ -36,11 +36,11 @@ import com.netflix.spectator.api.Spectator
 import com.netflix.spectator.ipc.IpcMetric
 import com.netflix.spectator.ipc.NetflixHeader
 import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.duration._
 
-class CustomDirectivesSuite extends FunSuite with ScalatestRouteTest with BeforeAndAfter {
+class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with BeforeAndAfter {
 
   import CustomDirectives._
   import CustomDirectivesSuite._

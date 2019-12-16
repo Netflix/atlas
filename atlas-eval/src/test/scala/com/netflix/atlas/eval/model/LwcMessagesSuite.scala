@@ -17,9 +17,9 @@ package com.netflix.atlas.eval.model
 
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.json.Json
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class LwcMessagesSuite extends FunSuite {
+class LwcMessagesSuite extends AnyFunSuite {
 
   private val step = 60000
 

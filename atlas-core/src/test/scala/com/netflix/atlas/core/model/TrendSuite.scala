@@ -17,10 +17,10 @@ package com.netflix.atlas.core.model
 
 import java.time.Duration
 
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 
-class TrendSuite extends FunSuite {
+class TrendSuite extends AnyFunSuite {
 
   val step = 60000L
   val dataTags = Map("name" -> "cpu", "node" -> "i-1")

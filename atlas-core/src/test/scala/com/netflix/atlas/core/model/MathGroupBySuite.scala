@@ -17,9 +17,9 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class MathGroupBySuite extends FunSuite {
+class MathGroupBySuite extends AnyFunSuite {
 
   private val start = 0L
   private val step = 60000L

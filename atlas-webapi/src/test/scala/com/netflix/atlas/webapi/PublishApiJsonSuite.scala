@@ -17,9 +17,9 @@ package com.netflix.atlas.webapi
 
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.json.Json
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class PublishApiJsonSuite extends FunSuite {
+class PublishApiJsonSuite extends AnyFunSuite {
 
   test("encode and decode datapoint") {
     val original = Datapoint(Map("name" -> "foo", "id" -> "bar"), 42L, 1024.0)

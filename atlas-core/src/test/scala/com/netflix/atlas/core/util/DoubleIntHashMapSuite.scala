@@ -17,11 +17,11 @@ package com.netflix.atlas.core.util
 
 import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.info.GraphLayout
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.Random
 
-class DoubleIntHashMapSuite extends FunSuite {
+class DoubleIntHashMapSuite extends AnyFunSuite {
 
   test("put") {
     val m = new DoubleIntHashMap

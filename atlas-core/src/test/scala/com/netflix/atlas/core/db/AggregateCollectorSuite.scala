@@ -20,9 +20,9 @@ import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.Query
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class AggregateCollectorSuite extends FunSuite {
+class AggregateCollectorSuite extends AnyFunSuite {
 
   private def newBuffer(v: Double, start: Long = 0L) = {
     new TimeSeriesBuffer(Map.empty, new ArrayTimeSeq(DsType.Gauge, start, 60000, Array.fill(1)(v)))

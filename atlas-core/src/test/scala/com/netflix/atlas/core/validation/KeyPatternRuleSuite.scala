@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.validation
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class KeyPatternRuleSuite extends FunSuite {
+class KeyPatternRuleSuite extends AnyFunSuite {
 
   private val config = ConfigFactory.parseString("""pattern = "^[a-c]+$" """)
 

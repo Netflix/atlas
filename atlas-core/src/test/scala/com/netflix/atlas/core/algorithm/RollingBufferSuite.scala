@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class RollingBufferSuite extends FunSuite {
+class RollingBufferSuite extends AnyFunSuite {
 
   test("n = 0") {
     intercept[IllegalArgumentException] {

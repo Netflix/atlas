@@ -22,9 +22,9 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.lwcapi.EvaluateApi._
 import com.netflix.spectator.api.NoopRegistry
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class EvaluateApiSuite extends FunSuite with ScalatestRouteTest {
+class EvaluateApiSuite extends AnyFunSuite with ScalatestRouteTest {
   import scala.concurrent.duration._
 
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)

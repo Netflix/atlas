@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class DataExprSuite extends FunSuite {
+class DataExprSuite extends AnyFunSuite {
   test("groupByKey") {
     val expr = DataExpr.Sum(Query.True)
     val tags = Map("name" -> "foo")

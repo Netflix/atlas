@@ -25,9 +25,9 @@ import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Streams
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class JsonGraphEngineSuite extends FunSuite {
+class JsonGraphEngineSuite extends AnyFunSuite {
 
   val step = 60000
 

@@ -21,9 +21,9 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StyleExpr
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class GraphUriSuite extends FunSuite {
+class GraphUriSuite extends AnyFunSuite {
 
   private val grapher = Grapher(ConfigFactory.load())
 

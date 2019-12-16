@@ -17,9 +17,9 @@ package com.netflix.atlas.core.model
 
 import java.time.Duration
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class StyleExprSuite extends FunSuite {
+class StyleExprSuite extends AnyFunSuite {
 
   private val oneDay = Duration.ofDays(1)
   private val oneWeek = Duration.ofDays(7)

@@ -17,9 +17,9 @@ package com.netflix.atlas.eval.model
 
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class AggrDatapointSuite extends FunSuite {
+class AggrDatapointSuite extends AnyFunSuite {
 
   private val step = 60000
 

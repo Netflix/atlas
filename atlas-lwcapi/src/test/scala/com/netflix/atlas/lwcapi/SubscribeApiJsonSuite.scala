@@ -18,9 +18,9 @@ package com.netflix.atlas.lwcapi
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.SubscribeApi._
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class SubscribeApiJsonSuite extends FunSuite {
+class SubscribeApiJsonSuite extends AnyFunSuite {
   test("encode and decode loop") {
     val expressions: List[ExpressionMetadata] = List(
       ExpressionMetadata("this", 1234, "idGoesHere"),

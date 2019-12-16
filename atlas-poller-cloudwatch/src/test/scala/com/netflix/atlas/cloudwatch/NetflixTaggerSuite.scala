@@ -18,9 +18,9 @@ package com.netflix.atlas.cloudwatch
 import com.amazonaws.services.cloudwatch.model.Dimension
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class NetflixTaggerSuite extends FunSuite {
+class NetflixTaggerSuite extends AnyFunSuite {
 
   private val dimensions = List(
     new Dimension().withName("AutoScalingGroupName").withValue("app_name-stack-detail-v001"),

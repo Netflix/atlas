@@ -17,9 +17,9 @@ package com.netflix.atlas.core.index
 
 import com.netflix.atlas.core.model.LazyTaggedItem
 import com.netflix.spectator.api.NoopRegistry
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class BatchUpdateTagIndexSuite extends FunSuite {
+class BatchUpdateTagIndexSuite extends AnyFunSuite {
 
   case class Item(tags: Map[String, String], version: Int) extends LazyTaggedItem
 

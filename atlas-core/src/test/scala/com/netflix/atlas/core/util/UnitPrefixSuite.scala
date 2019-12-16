@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class UnitPrefixSuite extends FunSuite {
+class UnitPrefixSuite extends AnyFunSuite {
 
   test("decimal isNearlyZero") {
     assert(UnitPrefix.decimal(1e-13).text === "")

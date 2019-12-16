@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class IdentityMapSuite extends FunSuite {
+class IdentityMapSuite extends AnyFunSuite {
 
   test("add") {
     val m = IdentityMap.empty[String, Int] + ("a" -> 42)

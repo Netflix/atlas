@@ -17,9 +17,9 @@ package com.netflix.atlas.lwcapi
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.netflix.atlas.json.Json
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ExpressionMetadataSuite extends FunSuite {
+class ExpressionMetadataSuite extends AnyFunSuite {
   test("default frequency is applied") {
     val ret1 = ExpressionMetadata("this")
     val ret2 = ExpressionMetadata("this", ApiSettings.defaultFrequency)

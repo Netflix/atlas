@@ -34,7 +34,7 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.FunSuiteLike
+import org.scalatest.funsuite.AnyFunSuiteLike
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -45,7 +45,7 @@ import scala.util.Try
 class ClientActorSuite
     extends TestKit(ActorSystem())
     with ImplicitSender
-    with FunSuiteLike
+    with AnyFunSuiteLike
     with BeforeAndAfterAll {
 
   import scala.concurrent.duration._

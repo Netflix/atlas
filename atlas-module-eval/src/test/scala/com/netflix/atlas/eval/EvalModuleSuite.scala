@@ -17,9 +17,9 @@ package com.netflix.atlas.eval
 
 import com.google.inject.Guice
 import com.netflix.atlas.eval.stream.Evaluator
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class EvalModuleSuite extends FunSuite {
+class EvalModuleSuite extends AnyFunSuite {
 
   test("load module") {
     // Module listed twice to verify dedup works

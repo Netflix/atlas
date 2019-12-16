@@ -27,9 +27,9 @@ import com.fasterxml.jackson.databind.Module.SetupContext
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class CaseClassDeserializerSuite extends FunSuite {
+class CaseClassDeserializerSuite extends AnyFunSuite {
 
   import CaseClassDeserializerSuite._
 

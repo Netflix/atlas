@@ -23,9 +23,9 @@ import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ConfigApiSuite extends FunSuite with ScalatestRouteTest {
+class ConfigApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
 

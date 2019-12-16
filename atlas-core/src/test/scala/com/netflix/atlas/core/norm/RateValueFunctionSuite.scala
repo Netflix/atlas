@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.norm
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class RateValueFunctionSuite extends FunSuite {
+class RateValueFunctionSuite extends AnyFunSuite {
 
   private def newFunction = {
     val listVF = new ListValueFunction

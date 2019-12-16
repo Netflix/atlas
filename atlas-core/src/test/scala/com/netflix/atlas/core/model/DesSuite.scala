@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 
-class DesSuite extends FunSuite {
+class DesSuite extends AnyFunSuite {
 
   val step = 60000L
   val dataTags = Map("name" -> "cpu", "node" -> "i-1")

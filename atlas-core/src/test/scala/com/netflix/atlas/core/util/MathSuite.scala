@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class MathSuite extends FunSuite {
+class MathSuite extends AnyFunSuite {
 
   import java.lang.{Double => JDouble}
 

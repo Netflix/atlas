@@ -35,7 +35,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -43,7 +43,7 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-class HostSourceSuite extends FunSuite {
+class HostSourceSuite extends AnyFunSuite {
 
   import scala.concurrent.duration._
 

@@ -17,9 +17,9 @@ package com.netflix.atlas.akka
 
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class TestApiSuite extends FunSuite with ScalatestRouteTest {
+class TestApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
 

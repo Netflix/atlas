@@ -32,12 +32,12 @@ import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.typesafe.config.ConfigFactory
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class FinalExprEvalSuite extends FunSuite {
+class FinalExprEvalSuite extends AnyFunSuite {
 
   private val step = 60000L
 

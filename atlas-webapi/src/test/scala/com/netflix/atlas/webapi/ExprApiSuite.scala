@@ -27,9 +27,9 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class ExprApiSuite extends FunSuite with ScalatestRouteTest {
+class ExprApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
 

@@ -23,9 +23,9 @@ import com.amazonaws.services.cloudwatch.model.Datapoint
 import com.amazonaws.services.cloudwatch.model.StandardUnit
 import com.netflix.atlas.cloudwatch.CloudWatchPoller.MetricData
 import com.netflix.atlas.core.model.Query
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class MetricDataSuite extends FunSuite {
+class MetricDataSuite extends AnyFunSuite {
 
   private val definition =
     MetricDefinition("test", "alias", Conversions.fromName("sum"), false, Map.empty)

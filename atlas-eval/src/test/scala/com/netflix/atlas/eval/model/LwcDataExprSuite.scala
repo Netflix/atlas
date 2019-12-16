@@ -19,9 +19,9 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class LwcDataExprSuite extends FunSuite {
+class LwcDataExprSuite extends AnyFunSuite {
 
   private def styleExpr(str: String): StyleExpr = {
     val interpreter = new Interpreter(StyleVocabulary.allWords)
