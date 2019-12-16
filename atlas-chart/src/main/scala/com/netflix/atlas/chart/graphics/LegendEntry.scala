@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import java.awt.Color
 import java.awt.Graphics2D
 
 import com.netflix.atlas.chart.model.DataDef
@@ -35,16 +34,16 @@ import com.netflix.atlas.core.util.UnitPrefix
   * @param showStats
   *     If true then summary stats will be shown below the label for the line.
   */
-case class LegendEntry(plot: PlotDef, data: DataDef, showStats: Boolean)
+case class LegendEntry(styles: Styles, plot: PlotDef, data: DataDef, showStats: Boolean)
     extends Element
     with FixedHeight {
 
   private def shouldShowStats: Boolean = showStats && data.isInstanceOf[LineDef]
 
   override def height: Int = {
-    if (!shouldShowStats) Constants.normalFontDims.height
+    if (!shouldShowStats) ChartSettings.normalFontDims.height
     else {
-      Constants.normalFontDims.height + Constants.smallFontDims.height * 3
+      ChartSettings.normalFontDims.height + ChartSettings.smallFontDims.height * 3
     }
   }
 
@@ -55,22 +54,21 @@ case class LegendEntry(plot: PlotDef, data: DataDef, showStats: Boolean)
       val truncated = txt.truncate(x2 - x1)
       truncated.draw(g, x1, y1, x2, y2)
     } else {
-      val d = Constants.normalFontDims.height - 4
+      val d = ChartSettings.normalFontDims.height - 4
 
       // Draw the color box for the legend entry. If the color has an alpha setting, then the
-      // background can impact the color so we first fill with white to make it the same as the
-      // background color of the chart.
-      g.setColor(Color.WHITE)
+      // background can impact the color so we first fill with the background color of the chart.
+      g.setColor(styles.background.color)
       g.fillRect(x1 + 2, y1 + 2, d, d)
       g.setColor(data.color)
       g.fillRect(x1 + 2, y1 + 2, d, d)
 
       // Border for the color box
-      g.setColor(Color.BLACK)
+      styles.line.configure(g)
       g.drawRect(x1 + 2, y1 + 2, d, d)
 
       // Draw the label
-      val txt = Text(data.label, alignment = TextAlignment.LEFT)
+      val txt = Text(data.label, alignment = TextAlignment.LEFT, style = styles.text)
       val truncated = txt.truncate(x2 - x1 - d - 4)
       truncated.draw(g, x1 + d + 4, y1, x2, y2)
 
@@ -88,11 +86,16 @@ case class LegendEntry(plot: PlotDef, data: DataDef, showStats: Boolean)
             "    Avg : %s    Last : %s".format(avg, last),
             "    Tot : %s    Cnt  : %s".format(total, count)
           )
-          val offset = y1 + Constants.normalFontDims.height
-          val rowHeight = Constants.smallFontDims.height
+          val offset = y1 + ChartSettings.normalFontDims.height
+          val rowHeight = ChartSettings.smallFontDims.height
           rows.zipWithIndex.foreach {
             case (row, i) =>
-              val txt = Text(row, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+              val txt = Text(
+                row,
+                font = ChartSettings.smallFont,
+                alignment = TextAlignment.LEFT,
+                style = styles.text
+              )
               txt.draw(g, x1 + d + 4, offset + i * rowHeight, x2, y2)
           }
         case _ =>

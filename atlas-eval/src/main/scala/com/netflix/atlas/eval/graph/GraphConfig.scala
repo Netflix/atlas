@@ -132,6 +132,7 @@ case class GraphConfig(
       zoom = flags.zoom,
       legendType = legendType,
       onlyGraph = flags.showOnlyGraph,
+      themeName = flags.theme,
       plots = plots,
       source = if (settings.metadataEnabled) Some(uri) else None,
       warnings = warnings

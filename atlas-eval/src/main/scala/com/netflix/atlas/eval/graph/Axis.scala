@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.eval.graph
 
-import java.awt.Color
-
 import com.netflix.atlas.chart.model.DataDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotBound
@@ -60,7 +58,7 @@ case class Axis(
       upper = upper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
       ylabel = label,
       scale = Scale.fromName(scale.getOrElse("linear")),
-      axisColor = if (multiY) None else Some(Color.BLACK),
+      axisColor = if (multiY) data.headOption.map(_.color) else None,
       tickLabelMode = tickLabelMode
     )
   }

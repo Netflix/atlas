@@ -31,7 +31,11 @@ object Colors {
     */
   def load(name: String): List[Color] = {
     Streams.scope(Streams.resource(name)) { in =>
-      Streams.lines(in).map(Strings.parseColor).toList
+      Streams
+        .lines(in)
+        .filterNot(s => s.isEmpty || s.startsWith("#"))
+        .map(Strings.parseColor)
+        .toList
     }
   }
 }

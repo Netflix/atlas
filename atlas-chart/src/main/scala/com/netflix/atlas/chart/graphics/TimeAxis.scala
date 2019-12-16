@@ -58,7 +58,7 @@ case class TimeAxis(
 ) extends Element
     with FixedHeight {
 
-  override def height: Int = 10 + Constants.smallFontDims.height
+  override def height: Int = 10 + ChartSettings.smallFontDims.height
 
   private val transition = {
     val s = Instant.ofEpochMilli(start)
@@ -82,7 +82,7 @@ case class TimeAxis(
   }
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
-    val txtH = Constants.smallFontDims.height
+    val txtH = ChartSettings.smallFontDims.height
     val labelPadding = TimeAxis.minTickLabelWidth / 2
 
     // Horizontal line across the bottom of the chart. The main horizontal line for the axis is
@@ -107,10 +107,11 @@ case class TimeAxis(
           val after = transition.getOffsetAfter
           val delta = Duration.ofSeconds(after.getTotalSeconds - before.getTotalSeconds)
           val label = (if (delta.isNegative) "" else "+") + delta.toString.substring(2)
-          val txt = Text(label, font = Constants.smallFont, style = style.copy(color = Color.RED))
+          val txt =
+            Text(label, font = ChartSettings.smallFont, style = style.copy(color = Color.RED))
           txt.draw(g, px - labelPadding, y1 + txtH / 2, px + labelPadding, y1 + txtH)
         } else {
-          val txt = Text(tick.label, font = Constants.smallFont, style = style)
+          val txt = Text(tick.label, font = ChartSettings.smallFont, style = style)
           txt.draw(g, px - labelPadding, y1 + txtH / 2, px + labelPadding, y1 + txtH)
         }
       }
@@ -120,8 +121,8 @@ case class TimeAxis(
     if (showZone) {
       val name = zone.getDisplayName(TextStyle.NARROW_STANDALONE, Locale.US)
       val zoneLabel =
-        Text(name, font = Constants.smallFont, style = style, alignment = TextAlignment.RIGHT)
-      val labelW = (name.length + 2) * Constants.smallFontDims.width
+        Text(name, font = ChartSettings.smallFont, style = style, alignment = TextAlignment.RIGHT)
+      val labelW = (name.length + 2) * ChartSettings.smallFontDims.width
       val padding = labelPadding + 2
       zoneLabel.draw(g, x1 - labelW - padding, y1 + txtH / 2, x1 - padding, y1 + txtH)
     }
@@ -129,5 +130,5 @@ case class TimeAxis(
 }
 
 object TimeAxis {
-  private val minTickLabelWidth = " 00:00 ".length * Constants.smallFontDims.width
+  private val minTickLabelWidth = " 00:00 ".length * ChartSettings.smallFontDims.width
 }

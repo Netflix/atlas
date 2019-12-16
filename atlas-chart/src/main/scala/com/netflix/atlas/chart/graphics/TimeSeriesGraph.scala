@@ -16,7 +16,6 @@
 package com.netflix.atlas.chart.graphics
 
 import java.awt.BasicStroke
-import java.awt.Color
 import java.awt.Graphics2D
 
 import com.netflix.atlas.chart.GraphConstants
@@ -64,7 +63,15 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
 
   val timeAxes = graphDef.timezones.zipWithIndex.map {
     case (tz, i) =>
-      TimeAxis(Style.default, start, end, graphDef.step, tz, if (i == 0) 40 else 0xff, showZone)
+      TimeAxis(
+        Style(color = graphDef.theme.axis.line.color),
+        start,
+        end,
+        graphDef.step,
+        tz,
+        if (i == 0) 40 else 0xff,
+        showZone
+      )
   }
 
   val timeAxis = timeAxes.head
@@ -73,14 +80,14 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     case (plot, i) =>
       val bounds = plot.bounds(start, end)
       if (i == 0)
-        LeftValueAxis(plot, bounds._1, bounds._2)
+        LeftValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
       else
-        RightValueAxis(plot, bounds._1, bounds._2)
+        RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
   }
 
   private def clip(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     g.setClip(x1, y1, x2 - x1, y2 - y1)
-    g.setColor(Color.WHITE)
+    g.setColor(graphDef.theme.canvas.background.color)
     g.fillRect(x1, y1, x2 - x1, y2 - y1)
   }
 
@@ -99,7 +106,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     val rightOffset = if (showAxes) rightSideW else TimeSeriesGraph.minRightSidePadding
 
     val timeAxisH = if (graphDef.onlyGraph) 10 else timeAxis.height
-    val timeGrid = TimeGrid(timeAxis)
+    val timeGrid = TimeGrid(timeAxis, graphDef.theme.majorGrid.line, graphDef.theme.minorGrid.line)
 
     val chartEnd = y2 - timeAxisH * timeAxes.size
 
@@ -144,7 +151,8 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
       }
     }
 
-    val valueGrid = ValueGrid(yaxes.head)
+    val valueGrid =
+      ValueGrid(yaxes.head, graphDef.theme.majorGrid.line, graphDef.theme.minorGrid.line)
     valueGrid.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
     if (showAxes) {
       yaxes.head.draw(g, x1, y1, x1 + leftAxisW - 1, chartEnd)
@@ -163,5 +171,5 @@ object TimeSeriesGraph {
     * Allow at least 4 small characters on the right side to prevent the final tick mark label
     * from getting truncated.
     */
-  private val minRightSidePadding = Constants.smallFontDims.width * 4
+  private val minRightSidePadding = ChartSettings.smallFontDims.width * 4
 }

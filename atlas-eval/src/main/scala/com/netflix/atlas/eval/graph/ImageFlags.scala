@@ -30,5 +30,6 @@ case class ImageFlags(
   showOnlyGraph: Boolean,
   vision: VisionType,
   palette: String,
+  theme: String,
   layout: Layout
 )

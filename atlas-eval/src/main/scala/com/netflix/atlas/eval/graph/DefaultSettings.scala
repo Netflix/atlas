@@ -61,8 +61,8 @@ case class DefaultSettings(root: Config, config: Config) {
   /** Default height for the chart. */
   val height: Int = config.getInt("height")
 
-  /** Default color palette for the chart. The armytage palette is recommended. */
-  val palette: String = config.getString("palette")
+  /** Default theme to use for the chart. */
+  val theme: String = config.getString("theme")
 
   /** Should the uri and other graph metadata be encoded as text fields in the image? */
   val metadataEnabled: Boolean = config.getBoolean("png-metadata-enabled")

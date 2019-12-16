@@ -17,6 +17,7 @@ package com.netflix.atlas.chart.model
 
 import java.awt.Color
 
+import com.netflix.atlas.chart.graphics.Theme
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotBound.Explicit
 
@@ -138,8 +139,8 @@ case class PlotDef(
     }
   }
 
-  def getAxisColor: Color = {
-    axisColor.getOrElse(data.headOption.fold(Color.BLACK)(_.color))
+  def getAxisColor(dflt: Color): Color = {
+    axisColor.getOrElse(dflt)
   }
 
   def showTickLabels: Boolean = tickLabelMode != TickLabelMode.OFF
@@ -150,5 +151,7 @@ case class PlotDef(
 
   def lines: List[LineDef] = data.collect { case v: LineDef => v }
 
-  def normalize: PlotDef = copy(axisColor = Some(getAxisColor))
+  def normalize(theme: Theme): PlotDef = {
+    copy(axisColor = Some(getAxisColor(theme.legend.text.color)))
+  }
 }

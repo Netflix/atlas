@@ -20,7 +20,8 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 
 import com.netflix.atlas.chart.GraphConstants
-import com.netflix.atlas.chart.graphics.Constants
+import com.netflix.atlas.chart.graphics.ChartSettings
+import com.netflix.atlas.chart.graphics.Theme
 import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.SummaryStats
 import com.netflix.atlas.core.model.TimeSeries
@@ -85,7 +86,8 @@ case class GraphDef(
   loadTime: Long = -1,
   stats: CollectorStats = CollectorStats.unknown,
   warnings: List[String] = Nil,
-  source: Option[String] = None
+  source: Option[String] = None,
+  themeName: String = ChartSettings.defaultTheme
 ) {
 
   /** Total number of lines for all plots. */
@@ -98,9 +100,12 @@ case class GraphDef(
   /** Return the primary timezone to use for the graph. */
   def timezone: ZoneId = timezones.head
 
+  /** Returns the color theme to use for the graph. */
+  def theme: Theme = ChartSettings.theme(themeName)
+
   /** Returns true if text should be shown. */
   def showText: Boolean = {
-    width >= Constants.minWidthForText
+    width >= ChartSettings.minWidthForText
   }
 
   /** Returns true if the legend should be shown. */
@@ -130,7 +135,7 @@ case class GraphDef(
         copy(warnings = msg :: warnings)
       } else {
         val newPlots = plot.data.map { d =>
-          plot.copy(data = List(d), axisColor = None)
+          plot.copy(data = List(d), axisColor = Some(d.color))
         }
         copy(plots = newPlots)
       }
@@ -186,5 +191,22 @@ case class GraphDef(
   }
 
   /** Normalize the definition so it can be reliably compared. Mostly used for test cases. */
-  def normalize: GraphDef = copy(plots = plots.map(_.normalize)).bounded
+  def normalize: GraphDef = {
+    if (plots.lengthCompare(1) > 0) {
+      // Default behavior for multi-Y is to make the axis color match the data for the plots
+      val ps = plots.map { plot =>
+        if (plot.axisColor.isEmpty) {
+          val axisColor = plot.data.headOption.map(_.color)
+          axisColor.fold(plot.normalize(theme)) { c =>
+            plot.copy(axisColor = Some(c))
+          }
+        } else {
+          plot
+        }
+      }
+      copy(plots = ps).bounded
+    } else {
+      copy(plots = plots.map(_.normalize(theme))).bounded
+    }
+  }
 }
