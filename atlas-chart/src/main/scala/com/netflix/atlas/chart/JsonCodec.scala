@@ -129,6 +129,7 @@ private[chart] object JsonCodec {
     }
     gen.writeStringField("legendType", config.legendType.name())
     gen.writeBooleanField("onlyGraph", config.onlyGraph)
+    gen.writeStringField("theme", config.themeName)
 
     if (config.loadTime > 0) {
       gen.writeNumberField("loadTime", config.loadTime)
@@ -158,8 +159,10 @@ private[chart] object JsonCodec {
     plot.ylabel.foreach { v =>
       gen.writeStringField("ylabel", v)
     }
-    gen.writeFieldName("axisColor")
-    writeColor(gen, plot.getAxisColor)
+    plot.axisColor.foreach { c =>
+      gen.writeFieldName("axisColor")
+      writeColor(gen, c)
+    }
     gen.writeStringField("scale", plot.scale.name())
     gen.writeStringField("upper", plot.upper.toString)
     gen.writeStringField("lower", plot.lower.toString)
@@ -314,7 +317,8 @@ private[chart] object JsonCodec {
       onlyGraph  = node.get("onlyGraph").asBoolean(),
       loadTime   = Option(node.get("loadTime")).fold(-1L)(_.asLong()),
       stats      = Option(node.get("stats")).fold(CollectorStats.unknown)(toCollectorStats),
-      warnings   = node.get("warnings").elements.asScala.map(_.asText()).toList
+      warnings   = node.get("warnings").elements.asScala.map(_.asText()).toList,
+      themeName  = node.get("theme").asText()
     )
     // format: on
   }

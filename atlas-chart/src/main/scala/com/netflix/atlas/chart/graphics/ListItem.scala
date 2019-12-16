@@ -22,7 +22,7 @@ import java.awt.Graphics2D
   */
 case class ListItem(txt: Text) extends Element with VariableHeight {
 
-  private val dims = Constants.dimensions(txt.font)
+  private val dims = ChartSettings.dimensions(txt.font)
   private val diameter = dims.width - 2
 
   override def minHeight: Int = txt.minHeight

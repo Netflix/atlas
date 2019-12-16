@@ -36,13 +36,13 @@ import java.text.AttributedString
   */
 case class Text(
   str: String,
-  font: Font = Constants.normalFont,
+  font: Font = ChartSettings.normalFont,
   alignment: TextAlignment = TextAlignment.CENTER,
   style: Style = Style.default
 ) extends Element
     with VariableHeight {
 
-  lazy val dims = Constants.dimensions(font)
+  lazy val dims = ChartSettings.dimensions(font)
 
   def truncate(width: Int): Text = {
     val maxChars = (width - Text.rightPadding) / dims.width

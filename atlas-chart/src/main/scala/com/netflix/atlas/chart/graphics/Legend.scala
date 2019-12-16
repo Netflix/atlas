@@ -32,27 +32,33 @@ import com.netflix.atlas.chart.model.PlotDef
   * @param maxEntries
   *     Maximum number of entries to show in the legend.
   */
-case class Legend(plot: PlotDef, label: Option[String], showStats: Boolean, maxEntries: Int)
-    extends Element
+case class Legend(
+  styles: Styles,
+  plot: PlotDef,
+  label: Option[String],
+  showStats: Boolean,
+  maxEntries: Int
+) extends Element
     with VariableHeight {
 
   private val numEntries = plot.data.size
 
   private val header = HorizontalPadding(5) :: label.toList.map { str =>
-      val bold = Constants.normalFont.deriveFont(Font.BOLD)
-      val style = Style(color = plot.getAxisColor)
-      Text(str, font = bold, alignment = TextAlignment.LEFT, style = style)
+      val bold = ChartSettings.normalFont.deriveFont(Font.BOLD)
+      val headerColor = plot.getAxisColor(styles.text.color)
+      Text(str, font = bold, alignment = TextAlignment.LEFT, style = Style(headerColor))
     }
 
   private val entries = plot.data.take(maxEntries).flatMap { data =>
-    List(HorizontalPadding(2), LegendEntry(plot, data, showStats))
+    List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))
   }
 
   private val footer =
     if (numEntries <= maxEntries) Nil
     else {
       val remaining = numEntries - maxEntries
-      val txt = Text(s"... $remaining suppressed ...", alignment = TextAlignment.LEFT)
+      val txt =
+        Text(s"... $remaining suppressed ...", alignment = TextAlignment.LEFT, style = styles.text)
       List(HorizontalPadding(2), txt)
     }
 

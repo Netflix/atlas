@@ -75,6 +75,9 @@ case class Grapher(settings: DefaultSettings) {
 
     val vision = params.get("vision").map(v => VisionType.valueOf(v))
 
+    val theme = params.get("theme").getOrElse("light")
+    val palette = if (theme == "light") "armytage" else "light24"
+
     val flags = ImageFlags(
       title = params.get("title").filter(_ != ""),
       width = params.get("w").fold(settings.width)(_.toInt),
@@ -86,7 +89,8 @@ case class Grapher(settings: DefaultSettings) {
       showLegendStats = !params.get("no_legend_stats").contains("1"),
       showOnlyGraph = params.get("only_graph").contains("1"),
       vision = vision.getOrElse(VisionType.normal),
-      palette = params.get("palette").getOrElse(settings.palette),
+      palette = params.get("palette").getOrElse(palette),
+      theme = theme,
       layout = Layout.create(params.get("layout").getOrElse("canvas"))
     )
 

@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.chart
 
-import java.awt.Color
 import java.awt.Font
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
@@ -23,7 +22,7 @@ import java.awt.image.RenderedImage
 import java.time.Duration
 import java.time.ZonedDateTime
 
-import com.netflix.atlas.chart.graphics.Constants
+import com.netflix.atlas.chart.graphics.ChartSettings
 import com.netflix.atlas.chart.graphics.Element
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.config.ConfigManager
@@ -72,7 +71,7 @@ class DefaultGraphEngine extends PngGraphEngine {
 
     config.title.foreach { str =>
       if (config.showText)
-        aboveCanvas += Text(str, font = Constants.largeFont).truncate(config.width)
+        aboveCanvas += Text(str, font = ChartSettings.largeFont).truncate(config.width)
     }
     aboveCanvas += HorizontalPadding(5)
 
@@ -88,17 +87,17 @@ class DefaultGraphEngine extends PngGraphEngine {
         } else {
           GraphConstants.MaxLinesInLegend / config.plots.size
         }
-      val showStats = config.showLegendStats && graph.width >= Constants.minWidthForStats
+      val showStats = config.showLegendStats && graph.width >= ChartSettings.minWidthForStats
       belowCanvas += HorizontalPadding(5)
       if (config.plots.size > 1) {
         config.plots.zipWithIndex.foreach {
           case (plot, i) =>
             val label = plot.ylabel.map(s => s"Axis $i: $s").getOrElse(s"Axis $i")
-            belowCanvas += Legend(plot, Some(label), showStats, entriesPerPlot)
+            belowCanvas += Legend(config.theme.legend, plot, Some(label), showStats, entriesPerPlot)
         }
       } else {
         config.plots.foreach { plot =>
-          belowCanvas += Legend(plot, None, showStats, entriesPerPlot)
+          belowCanvas += Legend(config.theme.legend, plot, None, showStats, entriesPerPlot)
         }
       }
 
@@ -109,7 +108,12 @@ class DefaultGraphEngine extends PngGraphEngine {
       val step = Strings.toString(Duration.ofMillis(config.step))
       val comment = "Frame: %s, End: %s, Step: %s".format(frame, endTime, step)
       belowCanvas += HorizontalPadding(15)
-      belowCanvas += Text(comment, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+      belowCanvas += Text(
+        comment,
+        font = ChartSettings.smallFont,
+        alignment = TextAlignment.LEFT,
+        style = config.theme.legend.text
+      )
 
       if (config.loadTime > 0 && config.stats.inputLines > 0) {
         val graphLines = config.plots.map(_.data.size).sum
@@ -123,10 +127,20 @@ class DefaultGraphEngine extends PngGraphEngine {
           UnitPrefix.format(config.stats.outputDatapoints),
           UnitPrefix.format(graphDatapoints)
         )
-        belowCanvas += Text(stats, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+        belowCanvas += Text(
+          stats,
+          font = ChartSettings.smallFont,
+          alignment = TextAlignment.LEFT,
+          style = config.theme.legend.text
+        )
       } else if (config.loadTime > 0) {
         val stats = "Fetch: %sms".format(config.loadTime.toString)
-        belowCanvas += Text(stats, font = Constants.smallFont, alignment = TextAlignment.LEFT)
+        belowCanvas += Text(
+          stats,
+          font = ChartSettings.smallFont,
+          alignment = TextAlignment.LEFT,
+          style = config.theme.legend.text
+        )
       }
     }
 
@@ -135,22 +149,28 @@ class DefaultGraphEngine extends PngGraphEngine {
       val warnings = List.newBuilder[Element]
       warnings += Text(
         "Warnings",
-        font = Constants.normalFont.deriveFont(Font.BOLD),
-        alignment = TextAlignment.LEFT
+        font = ChartSettings.normalFont.deriveFont(Font.BOLD),
+        alignment = TextAlignment.LEFT,
+        style = config.theme.warnings.text
       )
       noticeList.foreach { notice =>
         warnings += HorizontalPadding(2)
-        warnings += ListItem(Text(notice, alignment = TextAlignment.LEFT))
+        warnings += ListItem(
+          Text(notice, alignment = TextAlignment.LEFT, style = config.theme.warnings.text)
+        )
       }
       belowCanvas += HorizontalPadding(15)
-      belowCanvas += Block(warnings.result(), background = Some(Color.ORANGE))
+      belowCanvas += Block(
+        warnings.result(),
+        background = Some(config.theme.warnings.background.color)
+      )
     }
 
     val bgColor =
       if (noticeList.nonEmpty && (!config.showText || config.layout.isFixedHeight))
-        Color.ORANGE
+        config.theme.warnings.background.color
       else
-        Constants.backgroundColor
+        config.theme.image.background.color
 
     val above = aboveCanvas.result()
     val below = belowCanvas.result()
@@ -177,7 +197,7 @@ class DefaultGraphEngine extends PngGraphEngine {
 
     var y = 0
     elements.foreach { element =>
-      val h = element.getHeight(Constants.refGraphics, imgWidth)
+      val h = element.getHeight(ChartSettings.refGraphics, imgWidth)
       element.draw(g, 0, y, imgWidth, y + h)
       y += h
     }
@@ -187,7 +207,7 @@ class DefaultGraphEngine extends PngGraphEngine {
 
   private def height(elements: List[Element], w: Int): Int = {
     elements.foldLeft(0) { (acc, e) =>
-      acc + e.getHeight(Constants.refGraphics, w)
+      acc + e.getHeight(ChartSettings.refGraphics, w)
     }
   }
 }

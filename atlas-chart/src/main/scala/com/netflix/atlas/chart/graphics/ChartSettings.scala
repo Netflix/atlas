@@ -16,22 +16,32 @@
 package com.netflix.atlas.chart.graphics
 
 import java.awt.BasicStroke
-import java.awt.Color
 import java.awt.Font
 import java.awt.Stroke
 import java.awt.image.BufferedImage
+import java.util.concurrent.ConcurrentHashMap
 
 import com.netflix.atlas.chart.util.Fonts
 import com.netflix.atlas.config.ConfigManager
-import com.netflix.atlas.core.util.Strings
 
-object Constants {
+object ChartSettings {
 
   private val config = ConfigManager.current.getConfig("atlas.chart")
 
-  private def color(name: String): Color = Strings.parseColor(config.getString(s"colors.$name"))
+  val defaultTheme: String = config.getString(s"theme.default")
 
-  val backgroundColor = color("background")
+  private val themes = new ConcurrentHashMap[String, Theme]()
+
+  def theme(name: String): Theme = {
+    if (!config.hasPath(s"theme.$name")) {
+      throw new IllegalArgumentException(s"invalid theme name: '$name'")
+    } else {
+      themes.computeIfAbsent(name, n => {
+        val c = config.getConfig(s"theme.$n")
+        Theme(c)
+      })
+    }
+  }
 
   /**
     * For some of the font operations a graphics context is needed. This is a simple dummy instance
@@ -52,12 +62,6 @@ object Constants {
       0.0f
     )
   }
-
-  val minorGridColor = color("grid-minor")
-  val minorGridStyle = Style(color = minorGridColor, stroke = dashedStroke)
-
-  val majorGridColor = color("grid-major")
-  val majorGridStyle = Style(color = majorGridColor, stroke = dashedStroke)
 
   /**
     * Base monospaced font used for graphics. Monospace is used to make the layout easier.

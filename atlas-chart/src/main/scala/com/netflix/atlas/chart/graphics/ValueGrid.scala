@@ -28,11 +28,7 @@ import java.awt.Graphics2D
   * @param minor
   *     Style to use for drawing the minor tick lines.
   */
-case class ValueGrid(
-  yaxis: ValueAxis,
-  major: Style = Constants.majorGridStyle,
-  minor: Style = Constants.minorGridStyle
-) extends Element {
+case class ValueGrid(yaxis: ValueAxis, major: Style, minor: Style) extends Element {
 
   def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     val yscale = yaxis.scale(y1, y2)

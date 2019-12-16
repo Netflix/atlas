@@ -39,6 +39,9 @@ import com.netflix.atlas.json.Json
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuite
 
+import scala.util.Failure
+import scala.util.Try
+
 abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
   private val dataDir = s"graphengine/data"
@@ -145,13 +148,22 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     }
   }
 
-  def check(name: String, graphDef: GraphDef): Unit = {
+  def checkImpl(name: String, graphDef: GraphDef): Unit = {
     val json = JsonCodec.encode(graphDef)
-    assert(graphDef.normalize === JsonCodec.decode(json))
+    assert(graphDef.normalize === JsonCodec.decode(json).normalize)
 
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     graphAssertions.assertEquals(image, name, bless)
+  }
 
+  def check(name: String, graphDef: GraphDef): Unit = {
+    val c1 = Try { checkImpl(name, graphDef) }
+    val c2 = Try { checkImpl(s"dark_$name", graphDef.copy(themeName = "dark")) }
+    (c1, c2) match {
+      case (_, Failure(e)) => throw e
+      case (Failure(e), _) => throw e
+      case _               =>
+    }
   }
 
   /*
@@ -168,7 +180,6 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
     val graphDef = load(s"$dataDir/$dataFileName")
       .copy(width = 700)
-      .adjustPlots(_.copy(axisColor = Some(Color.BLACK)))
     //atlas generated sample is 780 wide less 64 origin less 16 r side padding == 700
     //expect to see width of spikes vary as x values repeat due to rounding
     //RrdGraph calculates x values based on number of pixels/second
@@ -205,7 +216,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     val seriesDef = LineDef(TimeSeries(tags, "0", seq))
 
     val plotDef =
-      PlotDef(List(seriesDef), upper = Explicit(0.005553 * 1.5), axisColor = Some(Color.BLACK))
+      PlotDef(List(seriesDef), upper = Explicit(0.005553 * 1.5))
 
     val graphDef = GraphDef(
       width = 1100,
@@ -224,7 +235,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       val series = vs.map { v =>
         if (v.isNaN) constantSeriesDef(v) else simpleSeriesDef(v.toInt)
       }
-      val plotDef = PlotDef(label(series: _*), axisColor = Some(Color.BLACK))
+      val plotDef = PlotDef(label(series: _*))
 
       val graphDef = GraphDef(
         startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
@@ -329,7 +340,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       val series = vs.map { v =>
         constantSeriesDef(v)
       }
-      val plotDef = PlotDef(label(series: _*), axisColor = Some(Color.BLACK))
+      val plotDef = PlotDef(label(series: _*))
 
       val graphDef = GraphDef(
         startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
@@ -372,7 +383,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       HSpanDef(5, 42, alpha(Color.BLUE), Some("really bad error"))
     )
 
-    val plotDef = PlotDef(spans ::: label(simpleSeriesDef(400)), axisColor = Some(Color.BLACK))
+    val plotDef = PlotDef(spans ::: label(simpleSeriesDef(400)))
 
     val graphDef = GraphDef(
       startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
@@ -391,7 +402,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     val errEnd = ZonedDateTime.of(2012, 1, 1, 8, 30, 0, 0, ZoneOffset.UTC).toInstant
     val spans = List(VSpanDef(errStart, errEnd, alpha(Color.RED), None))
 
-    val plotDef = PlotDef(spans ::: label(simpleSeriesDef(400)), axisColor = Some(Color.BLACK))
+    val plotDef = PlotDef(spans ::: label(simpleSeriesDef(400)))
 
     val graphDef = GraphDef(
       startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
@@ -406,7 +417,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   test("single_line_message") {
     val spans = List(MessageDef("arbitrary message in the legend", Color.BLUE))
 
-    val plotDef = PlotDef(spans ::: label(simpleSeriesDef(400)), axisColor = Some(Color.BLACK))
+    val plotDef = PlotDef(spans ::: label(simpleSeriesDef(400)))
 
     val graphDef = GraphDef(
       startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
@@ -468,8 +479,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     // refactoring the model.
     val plotDef1 = PlotDef(
       label(0, Palette.default, simpleSeriesDef(40000), simpleSeriesDef(42)) ++
-      label(2, Palette.default, simpleSeriesDef(400), simpleSeriesDef(150)),
-      axisColor = Some(Color.BLACK)
+      label(2, Palette.default, simpleSeriesDef(400), simpleSeriesDef(150))
     )
 
     val graphDef = GraphDef(
@@ -486,7 +496,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     val dataDef = outageSeriesDef(400).copy(lineWidth = 2.0f, color = Color.RED)
     val spanDef = outageSeriesDef(400)
       .copy(lineStyle = LineStyle.VSPAN, color = Colors.withAlpha(Color.GREEN, 40))
-    val plotDef = PlotDef(label(dataDef, spanDef), axisColor = Some(Color.BLACK))
+    val plotDef = PlotDef(label(dataDef, spanDef))
 
     val graphDef = GraphDef(
       width = 1200,
@@ -506,7 +516,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       plots = List(PlotDef(Nil), PlotDef(Nil))
     )
     val name = prefix + "_multiy_no_lines.png"
-    check(name, graphDef)
+    check(name, graphDef.normalize)
   }
 
   test("multiy_two") {
@@ -516,7 +526,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       plots = List(PlotDef(label(simpleSeriesDef(100))), PlotDef(label(simpleSeriesDef(100000))))
     )
     val name = prefix + "_multiy_two.png"
-    check(name, graphDef)
+    check(name, graphDef.normalize)
   }
 
   test("multiy_issue-119") {
@@ -530,7 +540,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       )
     )
     val name = prefix + "_multiy_issue-119.png"
-    check(name, graphDef)
+    check(name, graphDef.normalize)
   }
 
   test("multiy_two_colors") {
@@ -544,13 +554,14 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
       )
     )
     val name = prefix + "_multiy_two_colors.png"
-    check(name, graphDef)
+    check(name, graphDef.normalize)
   }
 
   def multiy(name: String, f: PlotDef => PlotDef): Unit = {
     test(name) {
       val plots = (0 until GraphConstants.MaxYAxis).map { i =>
-        val p = PlotDef(label(i, Palette.default, finegrainSeriesDef(i, 50 * i, i)))
+        val data = label(i, Palette.default, finegrainSeriesDef(i, 50 * i, i))
+        val p = PlotDef(data)
         if (i == 1) f(p) else p
       }
       val graphDef = GraphDef(
@@ -559,7 +570,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
         plots = plots.toList
       )
       val fname = s"${prefix}_multiy_n_$name.png"
-      check(fname, graphDef)
+      check(fname, graphDef.normalize)
     }
   }
 
@@ -577,7 +588,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   // https://github.com/Netflix/atlas/issues/119
   // TODO: fix to show label
   test("issue-119_missing_y_labels") {
-    val plotDef = PlotDef(label(constantSeriesDef(2027)), axisColor = Some(Color.BLACK))
+    val plotDef = PlotDef(label(constantSeriesDef(2027)))
 
     val graphDef = GraphDef(
       startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
@@ -590,7 +601,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("issue-119_small_range_large_base") {
-    val plotDef = PlotDef(label(simpleSeriesDef(2026, 2027)), axisColor = Some(Color.BLACK))
+    val plotDef = PlotDef(label(simpleSeriesDef(2026, 2027)))
 
     val graphDef = GraphDef(
       startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
@@ -603,7 +614,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("issue-119_small_range_large_negative") {
-    val plotDef = PlotDef(label(simpleSeriesDef(-2027, -2026)), axisColor = Some(Color.BLACK))
+    val plotDef = PlotDef(label(simpleSeriesDef(-2027, -2026)))
 
     val graphDef = GraphDef(
       startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
@@ -637,7 +648,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
     val normal = constant(0.0)
     val dataDef = LineDef(interval(normal, gap, start2.toEpochMilli, end2.toEpochMilli))
 
-    val plotDef = PlotDef(label(dataDef), axisColor = Some(Color.BLACK))
+    val plotDef = PlotDef(label(dataDef))
 
     val graphDef = GraphDef(
       width = 1200,
@@ -657,7 +668,7 @@ abstract class PngGraphEngineSuite extends FunSuite with BeforeAndAfterAll {
 
   test("notices") {
 
-    val plotDef = PlotDef(label(simpleSeriesDef(400)), axisColor = Some(Color.BLACK))
+    val plotDef = PlotDef(label(simpleSeriesDef(400)))
 
     val graphDef = GraphDef(
       startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,

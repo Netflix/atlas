@@ -33,7 +33,12 @@ sealed trait ValueAxis extends Element with FixedWidth {
 
   def max: Double
 
-  val style: Style = Style(color = plotDef.getAxisColor)
+  def styles: Styles
+
+  val style: Style = {
+    val axisColor = plotDef.getAxisColor(styles.line.color)
+    styles.line.copy(color = axisColor)
+  }
 
   val label: Option[Text] = plotDef.ylabel.map { str =>
     Text(str, style = style)
@@ -89,7 +94,8 @@ sealed trait ValueAxis extends Element with FixedWidth {
   }
 }
 
-case class LeftValueAxis(plotDef: PlotDef, min: Double, max: Double) extends ValueAxis {
+case class LeftValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Double)
+    extends ValueAxis {
 
   import ValueAxis._
 
@@ -128,11 +134,11 @@ case class LeftValueAxis(plotDef: PlotDef, min: Double, max: Double) extends Val
       if (plotDef.showTickLabels) {
         val txt = Text(
           tick.label,
-          font = Constants.smallFont,
+          font = ChartSettings.smallFont,
           alignment = TextAlignment.RIGHT,
           style = style
         )
-        val txtH = Constants.smallFontDims.height
+        val txtH = ChartSettings.smallFontDims.height
         val ty = py - txtH / 2
         txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
       }
@@ -151,9 +157,9 @@ case class LeftValueAxis(plotDef: PlotDef, min: Double, max: Double) extends Val
     val prefix = tickPrefix(ticks.last.v - offset)
     val offsetStr = prefix.format(offset, tickLabelFmt)
     val offsetTxt =
-      Text(offsetStr, font = Constants.smallFont, alignment = TextAlignment.LEFT, style = style)
-    val offsetH = Constants.smallFontDims.height * 2
-    val offsetW = Constants.smallFontDims.width * (offsetStr.length + 3)
+      Text(offsetStr, font = ChartSettings.smallFont, alignment = TextAlignment.LEFT, style = style)
+    val offsetH = ChartSettings.smallFontDims.height * 2
+    val offsetW = ChartSettings.smallFontDims.width * (offsetStr.length + 3)
 
     val yscale = scale(y1, y2)
     val oy = yscale(offset)
@@ -169,8 +175,13 @@ case class LeftValueAxis(plotDef: PlotDef, min: Double, max: Double) extends Val
       if (plotDef.showTickLabels) {
         val label = s"+${prefix.format(tick.v - offset, tickLabelFmt)}"
         val txt =
-          Text(label, font = Constants.smallFont, alignment = TextAlignment.RIGHT, style = style)
-        val txtH = Constants.smallFontDims.height
+          Text(
+            label,
+            font = ChartSettings.smallFont,
+            alignment = TextAlignment.RIGHT,
+            style = style
+          )
+        val txtH = ChartSettings.smallFontDims.height
         val ty = py - txtH / 2
         if (ty + txtH < otop)
           txt.draw(g, x1, ty, x2 - tickMarkLength - 1, ty + txtH)
@@ -179,7 +190,8 @@ case class LeftValueAxis(plotDef: PlotDef, min: Double, max: Double) extends Val
   }
 }
 
-case class RightValueAxis(plotDef: PlotDef, min: Double, max: Double) extends ValueAxis {
+case class RightValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Double)
+    extends ValueAxis {
 
   import ValueAxis._
 
@@ -218,11 +230,11 @@ case class RightValueAxis(plotDef: PlotDef, min: Double, max: Double) extends Va
       if (plotDef.showTickLabels) {
         val txt = Text(
           tick.label,
-          font = Constants.smallFont,
+          font = ChartSettings.smallFont,
           alignment = TextAlignment.LEFT,
           style = style
         )
-        val txtH = Constants.smallFontDims.height
+        val txtH = ChartSettings.smallFontDims.height
         val ty = py - txtH / 2
         txt.draw(g, x1 + tickMarkLength + 1, ty, x2, ty + txtH)
       }
@@ -241,9 +253,14 @@ case class RightValueAxis(plotDef: PlotDef, min: Double, max: Double) extends Va
     val prefix = tickPrefix(ticks.last.v - offset)
     val offsetStr = prefix.format(offset, tickLabelFmt)
     val offsetTxt =
-      Text(offsetStr, font = Constants.smallFont, alignment = TextAlignment.RIGHT, style = style)
-    val offsetH = Constants.smallFontDims.height * 2
-    val offsetW = Constants.smallFontDims.width * (offsetStr.length + 3)
+      Text(
+        offsetStr,
+        font = ChartSettings.smallFont,
+        alignment = TextAlignment.RIGHT,
+        style = style
+      )
+    val offsetH = ChartSettings.smallFontDims.height * 2
+    val offsetW = ChartSettings.smallFontDims.width * (offsetStr.length + 3)
 
     val yscale = scale(y1, y2)
     val oy = yscale(offset)
@@ -259,8 +276,8 @@ case class RightValueAxis(plotDef: PlotDef, min: Double, max: Double) extends Va
       if (plotDef.showTickLabels) {
         val label = s"+${prefix.format(tick.v - offset, tickLabelFmt)}"
         val txt =
-          Text(label, font = Constants.smallFont, alignment = TextAlignment.LEFT, style = style)
-        val txtH = Constants.smallFontDims.height
+          Text(label, font = ChartSettings.smallFont, alignment = TextAlignment.LEFT, style = style)
+        val txtH = ChartSettings.smallFontDims.height
         val ty = py - txtH / 2
         if (ty + txtH < otop)
           txt.draw(g, x1 + tickMarkLength + 1, ty, x2, ty + txtH)
@@ -271,7 +288,7 @@ case class RightValueAxis(plotDef: PlotDef, min: Double, max: Double) extends Va
 
 object ValueAxis {
 
-  val labelHeight = Constants.normalFontDims.height
+  val labelHeight = ChartSettings.normalFontDims.height
 
   /**
     * Width of value tick labels. The assumption is a monospace font with 7 characters. The 7 is
@@ -280,9 +297,9 @@ object ValueAxis {
     * - `[sign][3digits][decimal point][1digit][suffix]`: e.g., `-102.3K`
     * - `-1.0e-5`
     */
-  val tickLabelWidth = Constants.smallFontDims.width * 7
+  val tickLabelWidth = ChartSettings.smallFontDims.width * 7
 
   val tickMarkLength = 4
 
-  val minTickLabelHeight = Constants.smallFontDims.height * 3
+  val minTickLabelHeight = ChartSettings.smallFontDims.height * 3
 }
