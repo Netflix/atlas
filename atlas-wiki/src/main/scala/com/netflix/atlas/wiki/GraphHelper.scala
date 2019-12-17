@@ -21,9 +21,9 @@ import java.net.URI
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.Uri
 import com.fasterxml.jackson.core.JsonFactory
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonFactoryBuilder
+import com.fasterxml.jackson.core.json.JsonReadFeature
+import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.netflix.atlas.chart.util.PngImage
@@ -50,19 +50,15 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
   override def toString: String = s"GraphHelper($dir, $path)"
 
   private def prettyPrint(json: String): String = {
-    try {
-      val mapper = new ObjectMapper()
-      mapper.enable(SerializationFeature.INDENT_OUTPUT)
-      mapper.writeValueAsString(mapper.readTree(json))
-    } catch {
-      case e: JsonParseException =>
-        val factory = new JsonFactory()
-        factory.enable(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS)
-        factory.disable(JsonGenerator.Feature.QUOTE_NON_NUMERIC_NUMBERS)
-        val mapper = new ObjectMapper(factory)
-        mapper.enable(SerializationFeature.INDENT_OUTPUT)
-        mapper.writeValueAsString(mapper.readTree(json))
-    }
+    val factory = JsonFactory
+      .builder()
+      .asInstanceOf[JsonFactoryBuilder]
+      .enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS)
+      .disable(JsonWriteFeature.WRITE_NAN_AS_STRINGS)
+      .build()
+    val mapper = new ObjectMapper(factory)
+    mapper.enable(SerializationFeature.INDENT_OUTPUT)
+    mapper.writeValueAsString(mapper.readTree(json))
   }
 
   def image(uri: String, showQuery: Boolean = true): String = {
