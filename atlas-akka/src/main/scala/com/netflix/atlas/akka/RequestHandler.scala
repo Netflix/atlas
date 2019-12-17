@@ -195,7 +195,7 @@ object RequestHandler {
     case e: NoSuchElementException =>
       DiagnosticMessage.error(StatusCodes.NotFound, e)
     case e: EntityStreamSizeException =>
-      DiagnosticMessage.error(StatusCodes.RequestEntityTooLarge, e)
+      DiagnosticMessage.error(StatusCodes.PayloadTooLarge, e)
     case e: Throwable =>
       DiagnosticMessage.error(StatusCodes.InternalServerError, e)
   }
