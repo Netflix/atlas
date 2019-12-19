@@ -104,19 +104,8 @@ class SubscribeApi @Inject()(
       case msg: BinaryMessage =>
         msg.dataStream.fold(ByteString.empty)(_ ++ _).map(_.decodeString(StandardCharsets.UTF_8))
     }
-    .flatMapConcat { msg =>
-      val expressions = Json
-        .decode[List[LwcExpression]](msg)
-        .map(v => ExpressionMetadata(v.expression, v.step))
-      val streamId = UUID.randomUUID().toString
-      val (queue, dataStream) = register(streamId)
-      val errors = subscribe(streamId, expressions)
-      errors.foreach { error =>
-        val msg = DiagnosticMessage.error(s"[${error.expression}] ${error.message}")
-        queue.offer(msg)
-      }
-      dataStream
-    }
+    .via(new WebSocketSessionManager(UUID.randomUUID().toString, register, subscribe))
+    .flatMapMerge(Int.MaxValue, msg => msg)
 
   private def stepAlignedTime(step: Long): Long = {
     registry.clock().wallTime() / step * step
