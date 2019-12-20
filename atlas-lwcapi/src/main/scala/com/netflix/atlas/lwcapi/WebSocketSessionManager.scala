@@ -43,8 +43,8 @@ private[lwcapi] class WebSocketSessionManager(
   val subscribeFunc: (String, List[ExpressionMetadata]) => List[ErrorMsg]
 ) extends GraphStage[FlowShape[String, Source[Message, Unit]]]
     with StrictLogging {
-  private val in = Inlet[String]("WebSocketSession.in")
-  private val out = Outlet[Source[Message, Unit]]("WebSocketSession.out")
+  private val in = Inlet[String]("WebSocketSessionManager.in")
+  private val out = Outlet[Source[Message, Unit]]("WebSocketSessionManager.out")
 
   override val shape: FlowShape[String, Source[Message, Unit]] = FlowShape(in, out)
 
@@ -65,36 +65,25 @@ private[lwcapi] class WebSocketSessionManager(
 
       override def onPush(): Unit = {
         val exprStr = grab(in)
-
-        var newExpressions: List[ExpressionMetadata] = null
         try {
-          newExpressions = Json
+          val lwcExpressions = Json
             .decode[List[LwcExpression]](exprStr)
             .map(v => ExpressionMetadata(v.expression, v.step))
-        } catch {
-          case NonFatal(e) => {
-            queueHandler.offer(
-              DiagnosticMessage.error(s"cannot decode json: ${exprStr}, error: ${e.getMessage}")
-            )
+          val errors = subscribeFunc(streamId, lwcExpressions) //update subscription here
+          errors.foreach { error =>
+            queueHandler.offer(DiagnosticMessage.error(s"[${error.expression}] ${error.message}"))
           }
-          //need to pull here: no push out so no pull from downstream
-          pull(in)
-          return // stop here on json parsing error
-        }
-
-        val errors = subscribeFunc(streamId, newExpressions) //update subscription here
-        errors.foreach { error =>
-          val msg = DiagnosticMessage.error(s"[${error.expression}] ${error.message}")
-          queueHandler.offer(msg)
-        }
-
-        //only push out dataSource once
-        if (!dataSourcePushed) {
-          push(out, dataSource)
-          dataSourcePushed = true
-        } else {
-          //need to pull here: no push out so no pull from downstream
-          pull(in)
+        } catch {
+          case NonFatal(t) => queueHandler.offer(DiagnosticMessage.error(t))
+        } finally {
+          //push out dataSource only once
+          if (!dataSourcePushed) {
+            push(out, dataSource)
+            dataSourcePushed = true
+          } else {
+            //only pull when no push happened, because push should have triggered a pull from downstream
+            pull(in)
+          }
         }
       }
 
