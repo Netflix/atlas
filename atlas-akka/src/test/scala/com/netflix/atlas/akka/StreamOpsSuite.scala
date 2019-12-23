@@ -236,4 +236,13 @@ class StreamOpsSuite extends AnyFunSuite {
     val c = registry.counter("akka.stream.exceptions", "error", "ArithmeticException")
     assert(c.count() === 1)
   }
+
+  test("unique") {
+    val future = Source(List(1, 1, 2, 3, 3, 3, 4, 5, 6, 6, 7, 1))
+      .via(StreamOps.unique)
+      .runWith(Sink.seq[Int])
+    val vs = Await.result(future, Duration.Inf)
+    // Only consecutive repeated values are filtered out, so the final 1 should get repeated
+    assert(vs === List(1, 2, 3, 4, 5, 6, 7, 1))
+  }
 }
