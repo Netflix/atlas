@@ -159,8 +159,8 @@ object ClusterOps extends StrictLogging {
         }
 
         private def pushData(data: Map[M, D]): Unit = {
-          data.foreachEntry { (m, d) =>
-            membersSources.get(m).foreach(_.offer(d))
+          data.foreach {
+            case (m, d) => membersSources.get(m).foreach(_.offer(d))
           }
           if (isAvailable(out)) {
             pull(in)
