@@ -375,4 +375,42 @@ object StreamOps extends StrictLogging {
   ): Flow[V1, V2, NotUsed] = {
     map(f).flatMapConcat(src => src)
   }
+
+  /**
+    * Filter out repeated values in a stream. Similar to the unix `uniq` command.
+    */
+  def unique[V]: Flow[V, V, NotUsed] = {
+    Flow[V].via(new UniqueFlow[V]())
+  }
+
+  private final class UniqueFlow[V] extends GraphStage[FlowShape[V, V]] {
+
+    private val in = Inlet[V]("UniqueFlow.in")
+    private val out = Outlet[V]("UniqueFlow.out")
+
+    override val shape: FlowShape[V, V] = FlowShape(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+
+      new GraphStageLogic(shape) with InHandler with OutHandler {
+        private var previous: V = _
+
+        override def onPush(): Unit = {
+          val v = grab(in)
+          if (v == previous) {
+            pull(in)
+          } else {
+            previous = v
+            push(out, v)
+          }
+        }
+
+        override def onPull(): Unit = {
+          pull(in)
+        }
+
+        setHandlers(in, out, this)
+      }
+    }
+  }
 }
