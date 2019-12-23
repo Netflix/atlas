@@ -155,7 +155,8 @@ object StreamOps extends StrictLogging {
     *     Source that emits values offered to the queue.
     */
   def blockingQueue[T](registry: Registry, id: String, size: Int): Source[T, SourceQueue[T]] = {
-    Source.fromGraph(new QueueSource[T](registry, id, size))
+    val queueSupplier = () => new SourceQueue[T](registry, id, new ArrayBlockingQueue[T](size))
+    Source.fromGraph(new QueueSource[T](queueSupplier))
   }
 
   /** Bounded queue for submitting elements to a stream. */
@@ -225,7 +226,7 @@ object StreamOps extends StrictLogging {
     def isDone: Boolean = completed && queue.isEmpty
   }
 
-  private class QueueSource[T](registry: Registry, id: String, size: Int)
+  private[akka] final class QueueSource[T](queueSupplier: () => SourceQueue[T])
       extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueue[T]] {
 
     private val out = Outlet[T]("QueueSource")
@@ -235,7 +236,7 @@ object StreamOps extends StrictLogging {
     override def createLogicAndMaterializedValue(
       attrs: Attributes
     ): (GraphStageLogic, SourceQueue[T]) = {
-      val queue = new SourceQueue[T](registry, id, new ArrayBlockingQueue[T](size))
+      val queue = queueSupplier()
       val logic = new GraphStageLogic(shape) with OutHandler {
         override def onPull(): Unit = {
           if (queue.isDone) {
