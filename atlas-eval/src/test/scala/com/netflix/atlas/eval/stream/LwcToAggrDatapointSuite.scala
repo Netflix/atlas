@@ -47,22 +47,22 @@ class LwcToAggrDatapointSuite extends AnyFunSuite {
     s"""{"id":"count","expression":"name,cpu,:eq,:count","frequency":$step}"""
 
   private val input = List(
-    s"""info: subscribe {"expression":"name,cpu,:eq,:avg","metrics":[$sumMetric,$countMetric]}""",
-    """info: other {"type":"info","msg":"something"}""",
-    """data: diagnostic {"type":"diagnostic","id":"sum","message":{"type":"error","message":"1"}}""",
-    """data: metric {"timestamp":0,"id":"sum","tags":{"name":"cpu"},"value":1.0}""",
-    """data: metric {"timestamp":0,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
-    """data: metric {"timestamp":10000,"id":"sum","tags":{"name":"cpu"},"value":2.0}""",
-    """data: metric {"timestamp":10000,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
-    """data: other {"type":"info","msg":"something"}""",
-    """data: other {"type":"info","msg":"something"}""",
-    """data: other {"type":"info","msg":"something"}""",
-    """data: other {"type":"info","msg":"something"}""",
-    """data: metric {"timestamp":20000,"id":"sum","tags":{"name":"cpu"},"value":3.0}""",
-    """data: metric {"timestamp":20000,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
-    """data: metric {"timestamp":30000,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
-    """data: metric {"timestamp":30000,"id":"sum","tags":{"name":"cpu"},"value":4.0}""",
-    """data: diagnostic {"type":"diagnostic","id":"sum","message":{"type":"error","message":"2"}}"""
+    s"""{"type":"subscription","expression":"name,cpu,:eq,:avg","metrics":[$sumMetric,$countMetric]}""",
+    """{"type":"info","msg":"something"}""",
+    """{"type":"diagnostic","id":"sum","message":{"type":"error","message":"1"}}""",
+    """{"type":"datapoint","timestamp":0,"id":"sum","tags":{"name":"cpu"},"value":1.0}""",
+    """{"type":"datapoint","timestamp":0,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
+    """{"type":"datapoint","timestamp":10000,"id":"sum","tags":{"name":"cpu"},"value":2.0}""",
+    """{"type":"datapoint","timestamp":10000,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
+    """{"type":"info","msg":"something"}""",
+    """{"type":"info","msg":"something"}""",
+    """{"type":"info","msg":"something"}""",
+    """{"type":"info","msg":"something"}""",
+    """{"type":"datapoint","timestamp":20000,"id":"sum","tags":{"name":"cpu"},"value":3.0}""",
+    """{"type":"datapoint","timestamp":20000,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
+    """{"type":"datapoint","timestamp":30000,"id":"count","tags":{"name":"cpu"},"value":4.0}""",
+    """{"type":"datapoint","timestamp":30000,"id":"sum","tags":{"name":"cpu"},"value":4.0}""",
+    """{"type":"diagnostic","id":"sum","message":{"type":"error","message":"2"}}"""
   )
 
   private val logMessages = new ArrayBlockingQueue[(DataSource, JsonSupport)](10)
@@ -120,7 +120,7 @@ class LwcToAggrDatapointSuite extends AnyFunSuite {
 
   test("heartbeat messages are passed through") {
     val data = List(
-      """data: heartbeat {"type":"heartbeat","timestamp":1234567890,"step":10}"""
+      """{"type":"heartbeat","timestamp":1234567890,"step":10}"""
     )
     val results = eval(data)
     assert(results.size === 1)
@@ -133,7 +133,7 @@ class LwcToAggrDatapointSuite extends AnyFunSuite {
 
   test("invalid message") {
     val msg =
-      """data: metric {"timestamp":20000,"id":"sum","tags":{"name":"cpu"},\u007F"value":3.0}"""
+      """{"timestamp":20000,"id":"sum","tags":{"name":"cpu"},\u007F"value":3.0}"""
     val results = eval(List(msg))
     assert(results.size === 0)
   }

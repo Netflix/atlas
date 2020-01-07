@@ -31,7 +31,9 @@ object LwcMessages {
     */
   def parse(msg: String): AnyRef = {
     val data = Json.decode[JsonNode](msg)
-    data.get("type").asText() match {
+    val node: JsonNode = data.get("type")
+    val dataType = if (node == null) "" else node.asText()
+    dataType match {
       case "expression"   => Json.decode[LwcExpression](data)
       case "subscription" => Json.decode[LwcSubscription](data)
       case "datapoint"    => Json.decode[LwcDatapoint](data)
