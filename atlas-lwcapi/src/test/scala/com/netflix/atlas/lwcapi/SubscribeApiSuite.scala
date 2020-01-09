@@ -136,6 +136,25 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
       |{
       |  "streamId": "abc123",
       |  "expressions": [
+      |    { "expression": "nf.name,foo,:eq,:sum", "step": 99 }
+      |  ]
+      |}""".stripMargin
+    Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
+      assert(response.status === StatusCodes.OK)
+      val subs = sm.subscriptionsForStream("abc123")
+      assert(subs.length === 1)
+      assert(subs.head.metadata.expression === "nf.name,foo,:eq,:sum")
+      assert(subs.head.metadata.frequency === 99L)
+    }
+  }
+
+  test("subscribe: frequency is treated as alias to step") {
+    sm.register("abc123", queue)
+
+    val json = """
+      |{
+      |  "streamId": "abc123",
+      |  "expressions": [
       |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
       |  ]
       |}""".stripMargin
@@ -161,7 +180,7 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
         |{
         |  "streamId": "abc123",
         |  "expressions": [
-        |    { "expression": "$expr", "frequency": 99 }
+        |    { "expression": "$expr", "step": 99 }
         |  ]
         |}""".stripMargin
       Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
@@ -187,8 +206,8 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
         |{
         |  "streamId": "abc123",
         |  "expressions": [
-        |    { "expression": "name,fixed,:eq,:sum", "frequency": 99 },
-        |    { "expression": "$expr", "frequency": 99 }
+        |    { "expression": "name,fixed,:eq,:sum", "step": 99 },
+        |    { "expression": "$expr", "step": 99 }
         |  ]
         |}""".stripMargin
       Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {

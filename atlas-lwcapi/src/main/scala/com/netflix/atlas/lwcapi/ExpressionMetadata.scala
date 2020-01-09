@@ -15,13 +15,14 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.JsonSupport
 
 case class ExpressionMetadata(
   expression: String,
-  frequency: Long = ApiSettings.defaultFrequency,
+  @JsonAlias(Array("step")) frequency: Long = ApiSettings.defaultStep,
   id: String = ""
 ) extends JsonSupport
     with Ordered[ExpressionMetadata] {
@@ -36,13 +37,13 @@ case class ExpressionMetadata(
 
 object ExpressionMetadata {
 
-  def apply(expression: String, frequency: Long): ExpressionMetadata = {
-    val f = if (frequency > 0) frequency else ApiSettings.defaultFrequency
+  def apply(expression: String, step: Long): ExpressionMetadata = {
+    val f = if (step > 0) step else ApiSettings.defaultStep
     new ExpressionMetadata(expression, f, computeId(expression, f))
   }
 
   def apply(expression: String): ExpressionMetadata = {
-    apply(expression, ApiSettings.defaultFrequency)
+    apply(expression, ApiSettings.defaultStep)
   }
 
   def computeId(e: String, f: Long): String = {

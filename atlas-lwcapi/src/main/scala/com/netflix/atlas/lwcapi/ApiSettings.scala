@@ -24,5 +24,5 @@ class ApiSettings(root: => Config) {
 
   private def config = root.getConfig("atlas.lwcapi")
 
-  def defaultFrequency: Long = config.getDuration("register.default-frequency").toMillis
+  def defaultStep: Long = config.getDuration("register.default-step").toMillis
 }
