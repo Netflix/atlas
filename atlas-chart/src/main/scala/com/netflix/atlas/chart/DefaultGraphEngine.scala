@@ -71,7 +71,8 @@ class DefaultGraphEngine extends PngGraphEngine {
 
     config.title.foreach { str =>
       if (config.showText)
-        aboveCanvas += Text(str, font = ChartSettings.largeFont).truncate(config.width)
+        aboveCanvas += Text(str, font = ChartSettings.largeFont, style = config.theme.image.text)
+          .truncate(config.width)
     }
     aboveCanvas += HorizontalPadding(5)
 
