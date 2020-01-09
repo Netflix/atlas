@@ -24,9 +24,9 @@ import com.netflix.atlas.json.JsonSupport
   *
   * @param expression
   *     Expression to subscribe to from LWCAPI.
-  * @param frequency
+  * @param step
   *     The step size used for this stream of data.
   */
-case class LwcExpression(expression: String, frequency: Long) extends JsonSupport {
+case class LwcExpression(expression: String, step: Long) extends JsonSupport {
   val `type`: String = "expression"
 }

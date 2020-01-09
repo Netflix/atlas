@@ -31,15 +31,13 @@ object LwcMessages {
     */
   def parse(msg: String): AnyRef = {
     val data = Json.decode[JsonNode](msg)
-    val node: JsonNode = data.get("type")
-    val dataType = if (node == null) "" else node.asText()
-    dataType match {
-      case "expression"   => Json.decode[LwcExpression](data)
-      case "subscription" => Json.decode[LwcSubscription](data)
-      case "datapoint"    => Json.decode[LwcDatapoint](data)
-      case "diagnostic"   => Json.decode[LwcDiagnosticMessage](data)
-      case "heartbeat"    => Json.decode[LwcHeartbeat](data)
-      case _              => Json.decode[DiagnosticMessage](data)
+    Option(data.get("type")).map(_.asText()) match {
+      case Some("expression")   => Json.decode[LwcExpression](data)
+      case Some("subscription") => Json.decode[LwcSubscription](data)
+      case Some("datapoint")    => Json.decode[LwcDatapoint](data)
+      case Some("diagnostic")   => Json.decode[LwcDiagnosticMessage](data)
+      case Some("heartbeat")    => Json.decode[LwcHeartbeat](data)
+      case Some(_) | None       => Json.decode[DiagnosticMessage](data)
     }
   }
 

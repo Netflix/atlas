@@ -35,8 +35,8 @@ class WebSocketSessionManagerSuite extends AnyFunSuite {
 
   test("subscribe - one by one") {
     val subscriptionList = List(
-      """[{"expression": "name,a,:eq,:sum", "frequency": 10000}]""",
-      """[{"expression": "name,b,:eq", "frequency": 5000}]"""
+      """[{"expression": "name,a,:eq,:sum", "step": 10000}]""",
+      """[{"expression": "name,b,:eq", "step": 5000}]"""
     )
 
     val subsCollector = ArrayBuffer[List[ExpressionMetadata]]()
@@ -56,7 +56,7 @@ class WebSocketSessionManagerSuite extends AnyFunSuite {
   test("subscribe - ignore bad subscription") {
     val subscriptionList = List(
       """Bad Expression""",
-      """[{"expression": "name,b,:eq", "frequency": 5000}]"""
+      """[{"expression": "name,b,:eq", "step": 5000}]"""
     )
     val subsCollector = ArrayBuffer[List[ExpressionMetadata]]()
     val subFunc = createSubscribeFunc(subsCollector)

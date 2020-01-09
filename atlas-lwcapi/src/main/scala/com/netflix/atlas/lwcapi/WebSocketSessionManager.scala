@@ -68,7 +68,7 @@ private[lwcapi] class WebSocketSessionManager(
         try {
           val lwcExpressions = Json
             .decode[List[LwcExpression]](exprStr)
-            .map(v => ExpressionMetadata(v.expression, v.frequency))
+            .map(v => ExpressionMetadata(v.expression, v.step))
           val errors = subscribeFunc(streamId, lwcExpressions) //update subscription here
           errors.foreach { error =>
             queueHandler.offer(DiagnosticMessage.error(s"[${error.expression}] ${error.message}"))

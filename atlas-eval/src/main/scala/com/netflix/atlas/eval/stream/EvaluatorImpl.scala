@@ -60,6 +60,7 @@ import com.typesafe.config.Config
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 
+import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
@@ -372,7 +373,7 @@ private[stream] abstract class EvaluatorImpl(
         .flatMapMerge(Int.MaxValue, s => Source(s.getSources.asScala.toList))
         .flatMapMerge(Int.MaxValue, s => context.localSource(Uri(s.getUri)))
 
-      //broadcast to remote/local flow, process and merge
+      // Broadcast to remote/local flow, process and merge
       dataSourcesBroadcast.out(0).map(_.remoteOnly()) ~> remoteFlow ~> inputMerge.in(0)
       dataSourcesBroadcast.out(1).map(_.localOnly()) ~> localFlow ~> inputMerge.in(1)
 
@@ -402,17 +403,18 @@ private[stream] abstract class EvaluatorImpl(
   ): Flow[SourcesAndGroups, ByteString, NotUsed] = {
     Flow[SourcesAndGroups]
       .flatMapConcat { sourcesAndGroups =>
-        //Cluster message first: need to connect before subscribe
+        // Cluster message first: need to connect before subscribe
         Source(List(toClusterMessage(sourcesAndGroups), toDataMessage(sourcesAndGroups, context)))
       }
-      .via(ClusterOps.groupBy(createGroupByContext))
-      .map(ByteString(_))
+      .via(ClusterOps.groupBy(createGroupByContext(context)))
       .via(context.monitorFlow("02_ConnectionSources"))
   }
 
-  private def createGroupByContext: ClusterOps.GroupByContext[Instance, String, String] = {
+  private def createGroupByContext(
+    context: StreamContext
+  ): ClusterOps.GroupByContext[Instance, DataSources, ByteString] = {
     ClusterOps.GroupByContext(
-      instance => createWebSocketFlow(instance),
+      instance => createWebSocketFlow(instance, context),
       registry,
       queueSize = 10
     )
@@ -420,7 +422,7 @@ private[stream] abstract class EvaluatorImpl(
 
   private def toClusterMessage(
     sourcesAndGroups: SourcesAndGroups
-  ): ClusterOps.Cluster[Instance, String] = {
+  ): ClusterOps.Cluster[Instance, DataSources] = {
     val instances = sourcesAndGroups._2.groups.flatMap(_.instances).toSet
     ClusterOps.Cluster(instances)
   }
@@ -428,43 +430,38 @@ private[stream] abstract class EvaluatorImpl(
   private def toDataMessage(
     sourcesAndGroups: SourcesAndGroups,
     context: StreamContext
-  ): ClusterOps.Data[Instance, String] = {
+  ): ClusterOps.Data[Instance, DataSources] = {
     val dataSources = sourcesAndGroups._1
     val instances = sourcesAndGroups._2.groups.flatMap(_.instances).toSet
-    val dataMap = instances.map(i => i -> toExprsStr(dataSources, context)).toMap
+    val dataMap = instances.map(i => i -> dataSources).toMap
     ClusterOps.Data(dataMap)
   }
 
-  private def toExprsStr(dss: DataSources, context: StreamContext): String = {
-    val exprs = dss.getSources.asScala
+  private def toExprSet(dss: DataSources, interpreter: ExprInterpreter): mutable.Set[Expression] = {
+    dss.getSources.asScala
       .flatMap { dataSource =>
-        context.interpreter.eval(Uri(dataSource.getUri)).map { expr =>
+        interpreter.eval(Uri(dataSource.getUri)).map { expr =>
           Expression(expr.toString, dataSource.getStep.toMillis)
         }
       }
-      .toList
-      .sortWith(_.toString < _.toString) //sort to get a consistent string for "unique" later
-    Json.encode(exprs)
   }
 
   private def createWebSocketFlow(
-    instance: EurekaSource.Instance
-  ): Flow[String, String, NotUsed] = {
+    instance: EurekaSource.Instance,
+    context: StreamContext
+  ): Flow[DataSources, ByteString, NotUsed] = {
     val uri = instance.substitute("ws://{local-ipv4}:{port}") + "/api/v1/subscribe"
     val webSocketFlowOrigin = Http(system).webSocketClientFlow(WebSocketRequest(uri))
-    val webSocketFlow = Flow[String]
-      .via(StreamOps.unique) //updating subscriptions only if there's a change
-      .map(TextMessage(_))
+    Flow[DataSources]
+      .via(StreamOps.unique) // Updating subscriptions only if there's a change
+      .map(dss => TextMessage(Json.encode(toExprSet(dss, context.interpreter))))
       .via(webSocketFlowOrigin)
       .flatMapConcat {
         case msg: TextMessage =>
-          msg.textStream.fold("")(_ + _)
+          msg.textStream.fold("")(_ + _).map(ByteString(_))
         case msg: BinaryMessage =>
-          msg.dataStream
-            .fold(ByteString.empty)(_ ++ _)
-            .map(_.decodeString(StandardCharsets.UTF_8))
+          msg.dataStream.fold(ByteString.empty)(_ ++ _)
       }
       .mapMaterializedValue(_ => NotUsed)
-    webSocketFlow
   }
 }
