@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.eval.stream
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.OpenOption
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -26,6 +27,9 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.ws.BinaryMessage
+import akka.http.scaladsl.model.ws.TextMessage
+import akka.http.scaladsl.model.ws.WebSocketRequest
 import akka.stream.FlowShape
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Broadcast
@@ -37,24 +41,29 @@ import akka.stream.scaladsl.Merge
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.netflix.atlas.akka.ClusterOps
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.TimeGroup
+import com.netflix.atlas.eval.stream.EurekaSource.Instance
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.DatapointGroup
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
+import com.netflix.atlas.eval.stream.SubscriptionManager.Expression
+import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 
-import scala.jdk.CollectionConverters._
+import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 
 /**
   * Internal implementation details for [[Evaluator]]. Anything needing a stable API should
@@ -348,51 +357,111 @@ private[stream] abstract class EvaluatorImpl(
     val g = GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
 
-      // Split to 2 destinations: Eureka, File/Resources
-      val datasources = builder.add(Broadcast[DataSources](2))
+      // Split to 2 destinations: remote and local(File/Resources)
+      val dataSourcesBroadcast = builder.add(Broadcast[DataSources](2))
 
-      // Groups need to be sent to subscription step for posting the set of uris
-      // we are interested in and to the stream step for maintaining the connections
-      // and getting all of the data
-      val eurekaGroups = builder.add(Broadcast[SourcesAndGroups](2))
-
-      // Combine the data coming from Eureka and File/Resources before performing
+      // Merge the data coming from remote and local before performing
       // the time grouping and aggregation
-      val intermediateInput = builder.add(Merge[ByteString](2))
+      val inputMerge = builder.add(Merge[ByteString](2))
 
-      // Send DataSources and Eureka groups to subscription manager that does a
-      // `POST /lwc/api/v1/subscribe` to update the set of subscriptions being sent
-      // to each connection
-      val eurekaLookup = Flow[DataSources]
-        .conflate((_, ds) => ds)
-        .throttle(1, 1.second, 1, ThrottleMode.Shaping)
-        .via(context.monitorFlow("00_DataSourceUpdates"))
-        .via(new EurekaGroupsLookup(context, 30.seconds))
-        .via(context.monitorFlow("01_EurekaGroups"))
-        .flatMapMerge(Int.MaxValue, s => s)
-        .via(context.monitorFlow("01_EurekaRefresh"))
-      datasources.out(0).map(_.remoteOnly()) ~> eurekaLookup ~> eurekaGroups.in
-      eurekaGroups.out(0) ~> new SubscriptionManager(context)
+      // Streams for remote (lwc-api cluster)
+      val remoteFlow =
+        createClusterLookupFlow(context).via(createClusterStreamFlow(context))
 
-      // Streams, `GET /lwc/api/v1/stream/$id`, from each instance of the Eureka groups
-      val eurekaStream = Flow[SourcesAndGroups]
-        .map(_._2)
-        .via(new ConnectionManager(context))
-        .via(context.monitorFlow("02_ConnectionSources"))
-        .flatMapMerge(Int.MaxValue, s => Source(s))
-        .flatMapMerge(Int.MaxValue, s => s)
-      eurekaGroups.out(1) ~> eurekaStream ~> intermediateInput.in(0)
-
-      // Streams for local URIs like files or resources
-      val tmp = Flow[DataSources]
+      // Streams for local
+      val localFlow = Flow[DataSources]
         .flatMapMerge(Int.MaxValue, s => Source(s.getSources.asScala.toList))
         .flatMapMerge(Int.MaxValue, s => context.localSource(Uri(s.getUri)))
-      datasources.out(1).map(_.localOnly()) ~> tmp ~> intermediateInput.in(1)
+
+      // Broadcast to remote/local flow, process and merge
+      dataSourcesBroadcast.out(0).map(_.remoteOnly()) ~> remoteFlow ~> inputMerge.in(0)
+      dataSourcesBroadcast.out(1).map(_.localOnly()) ~> localFlow ~> inputMerge.in(1)
 
       // Overall to the outside it looks like a flow of DataSources to ByteString data
-      FlowShape(datasources.in, intermediateInput.out)
+      FlowShape(dataSourcesBroadcast.in, inputMerge.out)
     }
 
     Flow[DataSources].via(g)
+  }
+
+  private def createClusterLookupFlow(
+    context: StreamContext
+  ): Flow[DataSources, SourcesAndGroups, NotUsed] = {
+    Flow[DataSources]
+      .conflate((_, ds) => ds)
+      .throttle(1, 1.second, 1, ThrottleMode.Shaping)
+      .via(context.monitorFlow("00_DataSourceUpdates"))
+      .via(new EurekaGroupsLookup(context, 30.seconds))
+      .via(context.monitorFlow("01_EurekaGroups"))
+      .flatMapMerge(Int.MaxValue, s => s)
+      .via(context.monitorFlow("01_EurekaRefresh"))
+  }
+
+  // Streams via WebSocket API `/api/v1/subscribe`, from each instance of lwc-api cluster
+  private def createClusterStreamFlow(
+    context: StreamContext
+  ): Flow[SourcesAndGroups, ByteString, NotUsed] = {
+    Flow[SourcesAndGroups]
+      .flatMapConcat { sourcesAndGroups =>
+        // Cluster message first: need to connect before subscribe
+        Source(List(toClusterMessage(sourcesAndGroups), toDataMessage(sourcesAndGroups, context)))
+      }
+      .via(ClusterOps.groupBy(createGroupByContext(context)))
+      .via(context.monitorFlow("02_ConnectionSources"))
+  }
+
+  private def createGroupByContext(
+    context: StreamContext
+  ): ClusterOps.GroupByContext[Instance, DataSources, ByteString] = {
+    ClusterOps.GroupByContext(
+      instance => createWebSocketFlow(instance, context),
+      registry,
+      queueSize = 10
+    )
+  }
+
+  private def toClusterMessage(
+    sourcesAndGroups: SourcesAndGroups
+  ): ClusterOps.Cluster[Instance, DataSources] = {
+    val instances = sourcesAndGroups._2.groups.flatMap(_.instances).toSet
+    ClusterOps.Cluster(instances)
+  }
+
+  private def toDataMessage(
+    sourcesAndGroups: SourcesAndGroups,
+    context: StreamContext
+  ): ClusterOps.Data[Instance, DataSources] = {
+    val dataSources = sourcesAndGroups._1
+    val instances = sourcesAndGroups._2.groups.flatMap(_.instances).toSet
+    val dataMap = instances.map(i => i -> dataSources).toMap
+    ClusterOps.Data(dataMap)
+  }
+
+  private def toExprSet(dss: DataSources, interpreter: ExprInterpreter): mutable.Set[Expression] = {
+    dss.getSources.asScala
+      .flatMap { dataSource =>
+        interpreter.eval(Uri(dataSource.getUri)).map { expr =>
+          Expression(expr.toString, dataSource.getStep.toMillis)
+        }
+      }
+  }
+
+  private def createWebSocketFlow(
+    instance: EurekaSource.Instance,
+    context: StreamContext
+  ): Flow[DataSources, ByteString, NotUsed] = {
+    val uri = instance.substitute("ws://{local-ipv4}:{port}") + "/api/v1/subscribe"
+    val webSocketFlowOrigin = Http(system).webSocketClientFlow(WebSocketRequest(uri))
+    Flow[DataSources]
+      .via(StreamOps.unique) // Updating subscriptions only if there's a change
+      .map(dss => TextMessage(Json.encode(toExprSet(dss, context.interpreter))))
+      .via(webSocketFlowOrigin)
+      .flatMapConcat {
+        case msg: TextMessage =>
+          msg.textStream.fold("")(_ + _).map(ByteString(_))
+        case msg: BinaryMessage =>
+          msg.dataStream.fold(ByteString.empty)(_ ++ _)
+      }
+      .mapMaterializedValue(_ => NotUsed)
   }
 }

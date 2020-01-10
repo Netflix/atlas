@@ -166,5 +166,5 @@ private[stream] class SubscriptionManager(context: StreamContext)
 object SubscriptionManager {
   case class SubscribePayload(streamId: String, expressions: List[Expression])
 
-  case class Expression(expression: String, frequency: Long = 60000L)
+  case class Expression(expression: String, step: Long = 60000L)
 }

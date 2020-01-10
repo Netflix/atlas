@@ -24,14 +24,13 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.util.ByteString
-import com.netflix.atlas.akka.ByteStringInputStream
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.eval.model.LwcHeartbeat
+import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscription
-import com.netflix.atlas.json.Json
 import com.typesafe.scalalogging.Logger
 
 /**
@@ -52,7 +51,6 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
-      import com.netflix.atlas.eval.model.LwcMessages._
 
       private[this] var state: Map[String, LwcDataExpr] = Map.empty
 
@@ -62,18 +60,20 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       override def onPush(): Unit = {
         val message = grab(in)
         try {
-          message match {
-            case msg if msg.startsWith(subscribePrefix)  => updateState(msg)
-            case msg if msg.startsWith(metricDataPrefix) => pushDatapoint(msg)
-            case msg if msg.startsWith(diagnosticPrefix) => pushDiagnosticMessage(msg)
-            case msg if msg.startsWith(heartbeatPrefix)  => pushHeartbeat(msg)
-            case msg                                     => ignoreMessage(msg)
+          val parsedMsg = LwcMessages.parse(message.utf8String)
+          parsedMsg match {
+            case sb: LwcSubscription      => updateState(sb)
+            case dp: LwcDatapoint         => pushDatapoint(dp)
+            case dg: LwcDiagnosticMessage => pushDiagnosticMessage(dg)
+            case hb: LwcHeartbeat         => pushHeartbeat(hb)
+            case _                        => pull(in)
           }
         } catch {
           case e: Exception =>
             val messageString = toString(message)
             logger.warn(s"failed to process message [$messageString]", e)
             badMessages.increment()
+            pull(in)
         }
       }
 
@@ -95,45 +95,36 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
         c >= 32 && c < 127
       }
 
-      private def updateState(msg: ByteString): Unit = {
-        val json = msg.drop(subscribePrefix.length)
-        val sub = Json.decode[LwcSubscription](new ByteStringInputStream(json))
+      private def updateState(sub: LwcSubscription): Unit = {
         state ++= sub.metrics.map(m => m.id -> m).toMap
         pull(in)
       }
 
-      private def pushDatapoint(msg: ByteString): Unit = {
-        val json = msg.drop(metricDataPrefix.length)
-        val d = Json.decode[LwcDatapoint](new ByteStringInputStream(json))
-        state.get(d.id) match {
+      private def pushDatapoint(dp: LwcDatapoint): Unit = {
+        state.get(dp.id) match {
           case Some(sub) =>
             // TODO, put in source, for now make it random to avoid dedup
             nextSource += 1
             val expr = sub.expr
             val step = sub.step
-            push(out, AggrDatapoint(d.timestamp, step, expr, nextSource.toString, d.tags, d.value))
+            push(
+              out,
+              AggrDatapoint(dp.timestamp, step, expr, nextSource.toString, dp.tags, dp.value)
+            )
           case None =>
             pull(in)
         }
       }
 
-      private def pushDiagnosticMessage(msg: ByteString): Unit = {
-        val json = msg.drop(diagnosticPrefix.length)
-        val d = Json.decode[LwcDiagnosticMessage](new ByteStringInputStream(json))
-        state.get(d.id).foreach { sub =>
-          context.log(sub.expr, d.message)
+      private def pushDiagnosticMessage(diagMsg: LwcDiagnosticMessage): Unit = {
+        state.get(diagMsg.id).foreach { sub =>
+          context.log(sub.expr, diagMsg.message)
         }
         pull(in)
       }
 
-      private def pushHeartbeat(msg: ByteString): Unit = {
-        val json = msg.drop(heartbeatPrefix.length)
-        val d = Json.decode[LwcHeartbeat](new ByteStringInputStream(json))
-        push(out, AggrDatapoint.heartbeat(d.timestamp, d.step))
-      }
-
-      private def ignoreMessage(msg: ByteString): Unit = {
-        pull(in)
+      private def pushHeartbeat(hb: LwcHeartbeat): Unit = {
+        push(out, AggrDatapoint.heartbeat(hb.timestamp, hb.step))
       }
 
       override def onPull(): Unit = {
