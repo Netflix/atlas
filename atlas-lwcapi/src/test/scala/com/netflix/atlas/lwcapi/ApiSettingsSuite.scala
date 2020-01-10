@@ -19,6 +19,6 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class ApiSettingsSuite extends AnyFunSuite {
   test("loads") {
-    assert(ApiSettings.defaultFrequency > 0)
+    assert(ApiSettings.defaultStep > 0)
   }
 }

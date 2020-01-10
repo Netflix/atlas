@@ -22,7 +22,7 @@ import org.scalatest.funsuite.AnyFunSuite
 class ExpressionMetadataSuite extends AnyFunSuite {
   test("default frequency is applied") {
     val ret1 = ExpressionMetadata("this")
-    val ret2 = ExpressionMetadata("this", ApiSettings.defaultFrequency)
+    val ret2 = ExpressionMetadata("this", ApiSettings.defaultStep)
     assert(ret1 === ret2)
   }
 
@@ -40,7 +40,7 @@ class ExpressionMetadataSuite extends AnyFunSuite {
 
   test("default frequency") {
     val expr = ExpressionMetadata("test")
-    assert(expr.frequency === ApiSettings.defaultFrequency)
+    assert(expr.frequency === ApiSettings.defaultStep)
   }
 
   test("computes id") {
@@ -59,7 +59,7 @@ class ExpressionMetadataSuite extends AnyFunSuite {
 
     val o = Json.decode[ExpressionMetadata](json)
     assert(o.expression === "this")
-    assert(o.frequency === ApiSettings.defaultFrequency)
+    assert(o.frequency === ApiSettings.defaultStep)
   }
 
   test("parses from json with frequency, without id") {
