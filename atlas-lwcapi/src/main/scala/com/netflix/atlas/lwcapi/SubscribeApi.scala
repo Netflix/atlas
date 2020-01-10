@@ -41,10 +41,8 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.eval.model.LwcDataExpr
-import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcSubscription
-import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry

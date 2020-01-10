@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.eval.stream
 
-import java.nio.charset.StandardCharsets
 import java.nio.file.OpenOption
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption

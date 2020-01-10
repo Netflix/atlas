@@ -27,8 +27,6 @@ import scala.concurrent.duration.Duration
 
 class ClusterOpsSuite extends AnyFunSuite {
 
-  private implicit val ec = scala.concurrent.ExecutionContext.global
-
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val materializer = ActorMaterializer()
 
