@@ -22,18 +22,6 @@ object TagKey {
   private final val netflixPrefix = "nf."
 
   /**
-    * Synthetic tag that is created for lines in a graph to indicate all key/value pairs for
-    * a particular line on the graph.
-    */
-  final val allTags = atlasPrefix + "allTags"
-
-  /**
-    * Synthetic tag that is created for lines in a graph to indicate the unique key/value pairs for
-    * an aggregate line.
-    */
-  final val uniqueTags = atlasPrefix + "uniqueTags"
-
-  /**
     * Synthetic tag that is created for lines in a graph to indicate the time offset the line is
     * shifted by.
     */
@@ -75,12 +63,6 @@ object TagKey {
   /** Indicates the legacy system the metric came from such as epic. */
   final val legacy = atlasPrefix + "legacy"
 
-  /** Indicates whether the data was uploaded with the batch or real-time policy. */
-  final val policy = atlasPrefix + "policy"
-
-  /** Indicates the source of a metric such as plugin or snmp. */
-  final val source = atlasPrefix + "source"
-
   /** Application associated with the metric. */
   final val application = netflixPrefix + "app"
 
@@ -105,44 +87,8 @@ object TagKey {
   /** Image id for the instance reporting the metric. */
   final val image = netflixPrefix + "ami"
 
-  /** Name for a job running in a framework like hadoop. */
-  final val job = netflixPrefix + "job"
-
-  /** Id for a task that runs as part of a job.  */
-  final val task = netflixPrefix + "task"
-
-  /** ISO country code. */
-  final val country = netflixPrefix + "country"
-
-  /** ISO country code rollup used by NCCP. */
-  final val countryRollup = netflixPrefix + "country.rollup"
-
   /** Used to store the bucket id for percentile approximation. */
   final val percentile = "percentile"
-
-  /** List of atlas tag keys. */
-  val atlas: List[String] = List(allTags, uniqueTags, dsType, legacy, policy, source)
-
-  /** List of standard netflix tag keys. */
-  val netflix: List[String] = List(
-    application,
-    cluster,
-    autoScalingGroup,
-    node,
-    region,
-    availabilityZone,
-    vmType,
-    image,
-    job,
-    task,
-    country,
-    countryRollup
-  )
-
-  /** A list of standard tags. */
-  val standard: List[String] = atlas ::: netflix
-
-  private val standardTagKeys = standard.toSet
 
   /**
     * Returns true if the name uses a restricted prefix that is managed by the system. These
@@ -151,15 +97,6 @@ object TagKey {
   def isRestricted(name: String): Boolean = {
     name.startsWith(netflixPrefix) || name.startsWith(atlasPrefix)
   }
-
-  /** Returns true if the name is one of the standard tag keys. */
-  def isStandard(name: String): Boolean = standardTagKeys.contains(name)
-
-  /**
-    * Returns true if the name is valid. A name is invalid if it is a non-standard name using a
-    * restricted prefix.
-    */
-  def isValid(name: String): Boolean = !isRestricted(name) || isStandard(name)
 
   /** Creates a new tag key object with unknown count. */
   def apply(name: String): TagKey = TagKey(name, -1)
