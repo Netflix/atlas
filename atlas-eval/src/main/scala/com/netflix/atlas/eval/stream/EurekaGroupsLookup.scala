@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.eval.stream
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
 import akka.stream.Attributes
@@ -52,14 +50,14 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      private var continue = new AtomicBoolean(true)
+      private var lookupTickSwitch: Option[SourceRef[NotUsed, NotUsed]] = None
 
       override def onPush(): Unit = {
         import scala.jdk.CollectionConverters._
 
         // If there is an existing source polling Eureka, then tell it to stop. Create a
         // new instance of the flag for the next source
-        continue.set(false)
+        lookupTickSwitch.map(_.stop())
 
         val next = grab(in)
 
@@ -93,10 +91,12 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
             .fold(List.empty[GroupResponse])((acc, g) => g :: acc)
             .map(gs => next -> Groups(gs))
 
-          // Regularly refresh the metadata until the returned continue flag is set to false
-          val (src, hasNext) = EvaluationFlows.repeatWhile(NotUsed, frequency)
-          continue = hasNext
-          push(out, src.flatMapConcat(_ => lookup))
+          // Regularly refresh the metadata until it is stopped
+          val lookupTickSourceRef = EvaluationFlows.stoppableSource[NotUsed, NotUsed](
+            EvaluationFlows.repeat(NotUsed, frequency)
+          )
+          lookupTickSwitch = Option(lookupTickSourceRef)
+          push(out, lookupTickSourceRef.source.flatMapConcat(_ => lookup))
         }
       }
 
@@ -106,7 +106,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
 
       override def onUpstreamFinish(): Unit = {
         completeStage()
-        continue.set(false)
+        lookupTickSwitch.map(_.stop())
       }
 
       setHandlers(in, out, this)
