@@ -62,7 +62,7 @@ final class AkkaModule extends AbstractModule {
 object AkkaModule extends StrictLogging {
 
   @Singleton
-  private class ActorSystemProvider @Inject()(config: Config)
+  private class ActorSystemProvider @Inject() (config: Config)
       extends Provider[ActorSystem]
       with AutoCloseable {
 
@@ -76,7 +76,7 @@ object AkkaModule extends StrictLogging {
   }
 
   @Singleton
-  private class MaterializerProvider @Inject()(system: ActorSystem, registry: Registry)
+  private class MaterializerProvider @Inject() (system: ActorSystem, registry: Registry)
       extends Provider[Materializer]
       with AutoCloseable {
 

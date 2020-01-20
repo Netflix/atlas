@@ -70,6 +70,7 @@ class ItemId private (private val data: Array[Byte], private val hc: Int)
 }
 
 object ItemId {
+
   private val hexValueForByte = (0 until 256).toArray.map { i =>
     Strings.zeroPad(i, 2)
   }

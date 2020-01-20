@@ -54,7 +54,7 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NonFatal
 
-class SubscribeApi @Inject()(
+class SubscribeApi @Inject() (
   config: Config,
   registry: Registry,
   sm: StreamSubscriptionManager,

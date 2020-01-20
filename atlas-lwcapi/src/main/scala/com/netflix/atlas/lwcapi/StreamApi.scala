@@ -45,7 +45,7 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
-class StreamApi @Inject()(
+class StreamApi @Inject() (
   config: Config,
   registry: Registry,
   sm: StreamSubscriptionManager,

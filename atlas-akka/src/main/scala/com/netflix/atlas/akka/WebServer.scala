@@ -47,7 +47,7 @@ import scala.concurrent.duration.Duration
   *     Instance of the actor system.
   */
 @Singleton
-class WebServer @Inject()(
+class WebServer @Inject() (
   config: Config,
   classFactory: ClassFactory,
   registry: Registry,

@@ -117,6 +117,7 @@ object AggrDatapoint {
     * set.
     */
   private class GroupByAggregator extends Aggregator {
+
     private val aggregators =
       scala.collection.mutable.AnyRefMap.empty[Map[String, String], SimpleAggregator]
 

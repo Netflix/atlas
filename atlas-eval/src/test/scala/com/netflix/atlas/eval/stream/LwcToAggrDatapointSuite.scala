@@ -43,6 +43,7 @@ class LwcToAggrDatapointSuite extends AnyFunSuite {
   private val step = 10000
 
   private val sumMetric = s"""{"id":"sum","expression":"name,cpu,:eq,:sum","frequency":$step}"""
+
   private val countMetric =
     s"""{"id":"count","expression":"name,cpu,:eq,:count","frequency":$step}"""
 

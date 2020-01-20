@@ -30,6 +30,7 @@ import com.typesafe.config.Config
   * This config would only allow "nf.app" and "nf.cluster" with a prefix of "nf.".
   */
 case class ReservedKeyRule(prefix: String, allowedKeys: Set[String]) extends TagRule {
+
   override def validate(k: String, v: String): ValidationResult = {
     if (k.startsWith(prefix) && !allowedKeys.contains(k))
       failure(s"invalid key for reserved prefix '$prefix': $k")

@@ -49,6 +49,7 @@ import scala.util.Success
 class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
 
   private val targetDir = Paths.get(SrcPath.forProject("atlas-eval"), "target", "EvaluatorSuite")
+
   private val resourcesDir =
     Paths.get(SrcPath.forProject("atlas-eval"), "src", "test", "resources")
 

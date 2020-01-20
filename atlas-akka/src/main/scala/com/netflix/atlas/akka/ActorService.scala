@@ -32,7 +32,7 @@ import com.typesafe.scalalogging.StrictLogging
   * actors to start up can be specified using the `atlas.akka.actors` property.
   */
 @Singleton
-class ActorService @Inject()(system: ActorSystem, config: Config, classFactory: ClassFactory)
+class ActorService @Inject() (system: ActorSystem, config: Config, classFactory: ClassFactory)
     extends AbstractService
     with StrictLogging {
 
