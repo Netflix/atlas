@@ -154,8 +154,10 @@ class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
   private val skanCount =
     """{"expression":"nf.cluster,skan,:eq,:count","frequency":60000,"id":"6278fa6047c07316d7e265a1004882ab9e1007af"}"""
+
   private val skanSum =
     """{"expression":"nf.cluster,skan,:eq,:sum","frequency":60000,"id":"36e0a2c61b48e062bba5361d059afd313c82c674"}"""
+
   private val brhMax =
     """{"expression":"nf.app,brh,:eq,:max","frequency":60000,"id":"16f1b0930c0eeae0225374ea88c01e161e589aff"}"""
 }

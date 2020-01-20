@@ -27,6 +27,7 @@ import com.typesafe.config.Config
   * ```
   */
 case class MaxUserTagsRule(limit: Int) extends Rule {
+
   override def validate(tags: SmallHashMap[String, String]): ValidationResult = {
     var count = 0
     val iter = tags.entriesIterator

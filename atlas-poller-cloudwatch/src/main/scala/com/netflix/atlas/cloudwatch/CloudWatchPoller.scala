@@ -153,6 +153,7 @@ class CloudWatchPoller(
 
   // Cache of the last values received for a given metric
   private val cacheTTL = config.getDuration("atlas.cloudwatch.cache-ttl")
+
   private val metricCache = Caffeine
     .newBuilder()
     .expireAfterWrite(cacheTTL.toMillis, TimeUnit.MILLISECONDS)

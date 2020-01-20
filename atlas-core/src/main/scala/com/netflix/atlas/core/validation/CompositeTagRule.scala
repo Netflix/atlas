@@ -17,6 +17,7 @@ package com.netflix.atlas.core.validation
 
 /** Verifies that all of the tag rules match. */
 case class CompositeTagRule(tagRules: List[TagRule]) extends TagRule {
+
   override def validate(k: String, v: String): ValidationResult = {
     validate(tagRules, k, v)
   }

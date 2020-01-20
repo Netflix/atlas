@@ -23,6 +23,7 @@ import com.netflix.atlas.core.util.Streams
   * Helper functions for working with fonts.
   */
 object Fonts {
+
   private def loadTrueTypeFont(resource: String): Font = {
     Streams.scope(getClass.getClassLoader.getResourceAsStream(resource)) { in =>
       Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(12.0f)

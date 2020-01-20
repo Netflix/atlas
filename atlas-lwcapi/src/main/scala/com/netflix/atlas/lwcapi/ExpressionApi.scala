@@ -34,7 +34,7 @@ import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
-case class ExpressionApi @Inject()(
+case class ExpressionApi @Inject() (
   sm: StreamSubscriptionManager,
   registry: Registry,
   implicit val actorRefFactory: ActorRefFactory

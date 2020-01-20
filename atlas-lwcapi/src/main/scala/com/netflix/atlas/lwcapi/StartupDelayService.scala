@@ -26,7 +26,7 @@ import javax.inject.Inject
   * used to allow clients that will stream data time to connect before marking the instance
   * as UP so that clients publishing data will send to the instance.
   */
-class StartupDelayService @Inject()(registry: Registry, config: Config)
+class StartupDelayService @Inject() (registry: Registry, config: Config)
     extends AbstractService
     with StrictLogging {
 

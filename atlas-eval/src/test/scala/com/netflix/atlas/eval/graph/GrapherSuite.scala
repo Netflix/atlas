@@ -447,6 +447,7 @@ class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
 }
 
 object GrapherSuite {
+
   case class GraphResponse(
     start: Long,
     step: Long,
