@@ -34,8 +34,8 @@ import com.typesafe.scalalogging.StrictLogging
 import scala.util.control.NonFatal
 
 /**
-  * Operator that register a WebSocket Stream, subscribe/update Expressions on demand as they flow in,
-  * and produce output message stream a single "Source".
+  * Operator that register a WebSocket Stream, subscribe/update Expressions on demand as they
+  * flow in, and produce output message stream a single "Source".
   */
 private[lwcapi] class WebSocketSessionManager(
   val streamId: String,
@@ -69,19 +69,20 @@ private[lwcapi] class WebSocketSessionManager(
           val lwcExpressions = Json
             .decode[List[LwcExpression]](exprStr)
             .map(v => ExpressionMetadata(v.expression, v.step))
-          val errors = subscribeFunc(streamId, lwcExpressions) //update subscription here
+          val errors = subscribeFunc(streamId, lwcExpressions) // Update subscription here
           errors.foreach { error =>
             queueHandler.offer(DiagnosticMessage.error(s"[${error.expression}] ${error.message}"))
           }
         } catch {
           case NonFatal(t) => queueHandler.offer(DiagnosticMessage.error(t))
         } finally {
-          //push out dataSource only once
+          // Push out dataSource only once
           if (!dataSourcePushed) {
             push(out, dataSource)
             dataSourcePushed = true
           } else {
-            //only pull when no push happened, because push should have triggered a pull from downstream
+            // Only pull when no push happened, because push should have triggered a pull
+            // from downstream
             pull(in)
           }
         }

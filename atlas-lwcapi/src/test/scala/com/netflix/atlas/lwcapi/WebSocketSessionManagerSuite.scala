@@ -97,7 +97,7 @@ class WebSocketSessionManagerSuite extends AnyFunSuite {
 
   private def createNoopRegisterFunc(): String => (QueueHandler, Source[Message, Unit]) = {
     val noopQueueHandler = new QueueHandler("", null) {
-      override def offer(msg: JsonSupport): Boolean = true
+      override def offer(msg: JsonSupport): Unit = ()
       override def complete(): Unit = ()
     }
     val noopSource: Source[Message, Unit] = Source.empty[Message].mapMaterializedValue(_ => ())

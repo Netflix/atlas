@@ -30,9 +30,10 @@ import com.typesafe.scalalogging.StrictLogging
   */
 class QueueHandler(id: String, queue: StreamOps.SourceQueue[JsonSupport]) extends StrictLogging {
 
-  def offer(msg: JsonSupport): Boolean = {
+  def offer(msg: JsonSupport): Unit = {
     logger.trace(s"enqueuing message for $id: ${msg.toJson}")
-    queue.offer(msg)
+    if (!queue.offer(msg))
+      logger.debug(s"failed to enqueue message for $id: ${msg.toJson}")
   }
 
   def complete(): Unit = {
