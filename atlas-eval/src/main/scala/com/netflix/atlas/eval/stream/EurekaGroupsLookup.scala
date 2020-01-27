@@ -66,7 +66,8 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
         if (next.getSources.isEmpty) {
           // If the Eureka based sources are empty, then just use an empty source to avoid
           // potential delays to shutting down when the upstream completes.
-          Source.empty[SourcesAndGroups]
+          lookupTickSwitch = None // No need to stop Source.single
+          push(out, Source.single[SourcesAndGroups](DataSources.empty() -> Groups(List.empty)))
         } else {
           val eurekaSources = next.getSources.asScala
             .flatMap { s =>
@@ -106,6 +107,11 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
 
       override def onUpstreamFinish(): Unit = {
         completeStage()
+        lookupTickSwitch.map(_.stop())
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        super.onUpstreamFailure(ex)
         lookupTickSwitch.map(_.stop())
       }
 
