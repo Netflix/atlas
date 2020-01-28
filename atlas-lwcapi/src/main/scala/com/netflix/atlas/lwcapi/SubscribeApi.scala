@@ -16,10 +16,8 @@
 package com.netflix.atlas.lwcapi
 
 import java.nio.charset.StandardCharsets
-import java.util.UUID
 
 import akka.NotUsed
-import javax.inject.Inject
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
@@ -48,6 +46,7 @@ import com.netflix.iep.NetflixEnvironment
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
+import javax.inject.Inject
 
 import scala.concurrent.duration._
 import scala.util.Failure
@@ -73,8 +72,10 @@ class SubscribeApi @Inject()(
   private val itemsId = registry.createId("atlas.lwcapi.subscribe.itemCount")
 
   def routes: Route = {
-    endpointPath("api" / "v1" / "subscribe") {
-      handleWebSocketMessages(handlerFlow)
+    endpointPathPrefix("api" / "v1" / "subscribe") {
+      path(Remaining) { streamId =>
+        handleWebSocketMessages(createHandlerFlow(streamId))
+      }
     } ~
     endpointPath("lwc" / "api" / "v1" / "subscribe") {
       post {
@@ -95,15 +96,24 @@ class SubscribeApi @Inject()(
     }
   }
 
-  private val handlerFlow = Flow[Message]
-    .flatMapConcat {
-      case msg: TextMessage =>
-        msg.textStream.fold("")(_ + _)
-      case msg: BinaryMessage =>
-        msg.dataStream.fold(ByteString.empty)(_ ++ _).map(_.decodeString(StandardCharsets.UTF_8))
+  private def createHandlerFlow(streamId: String): Flow[Message, Message, Any] = {
+    // Drop any other connections that may already be using the same id
+    sm.unregister(streamId).foreach { queue =>
+      val msg = DiagnosticMessage.info(s"dropped: another connection is using id: $streamId")
+      queue.offer(msg)
+      queue.complete()
     }
-    .via(new WebSocketSessionManager(UUID.randomUUID().toString, register, subscribe))
-    .flatMapMerge(Int.MaxValue, msg => msg)
+
+    Flow[Message]
+      .flatMapConcat {
+        case msg: TextMessage =>
+          msg.textStream.fold("")(_ + _)
+        case msg: BinaryMessage =>
+          msg.dataStream.fold(ByteString.empty)(_ ++ _).map(_.decodeString(StandardCharsets.UTF_8))
+      }
+      .via(new WebSocketSessionManager(streamId, register, subscribe))
+      .flatMapMerge(Int.MaxValue, msg => msg)
+  }
 
   private def stepAlignedTime(step: Long): Long = {
     registry.clock().wallTime() / step * step

@@ -19,6 +19,7 @@ import java.nio.file.OpenOption
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.time.Duration
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
@@ -449,7 +450,8 @@ private[stream] abstract class EvaluatorImpl(
     instance: EurekaSource.Instance,
     context: StreamContext
   ): Flow[DataSources, ByteString, NotUsed] = {
-    val uri = instance.substitute("ws://{local-ipv4}:{port}") + "/api/v1/subscribe"
+    val uri = instance.substitute("ws://{local-ipv4}:{port}") + "/api/v1/subscribe/" +
+      UUID.randomUUID().toString
     val webSocketFlowOrigin = Http(system).webSocketClientFlow(WebSocketRequest(uri))
     Flow[DataSources]
       .via(StreamOps.unique) // Updating subscriptions only if there's a change

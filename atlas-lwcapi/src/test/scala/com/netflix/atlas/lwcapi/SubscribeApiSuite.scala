@@ -74,7 +74,7 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
 
   test("subscribe websocket") {
     val client = WSProbe()
-    WS("/api/v1/subscribe", client.flow) ~> routes ~> check {
+    WS("/api/v1/subscribe/123", client.flow) ~> routes ~> check {
       assert(isWebSocketUpgrade)
 
       // Send list of expressions to subscribe to
