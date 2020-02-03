@@ -52,9 +52,9 @@ private[stream] class FillRemovedKeysWith[K, V](valueForRemovedKey: K => V)
         val newMap = scala.collection.mutable.Map.empty[K, V] ++ map
 
         val removedKeys = prevKeySet -- newMap.keySet
-        removedKeys.foreach(k => {
+        removedKeys.foreach { k =>
           newMap.put(k, valueForRemovedKey(k))
-        })
+        }
 
         prevKeySet = map.keySet
         push(out, newMap)
@@ -63,6 +63,7 @@ private[stream] class FillRemovedKeysWith[K, V](valueForRemovedKey: K => V)
       override def onPull(): Unit = {
         pull(in)
       }
+
       setHandlers(in, out, this)
     }
   }
