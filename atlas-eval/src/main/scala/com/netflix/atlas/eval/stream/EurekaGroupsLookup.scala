@@ -57,7 +57,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
 
         // If there is an existing source polling Eureka, then tell it to stop. Create a
         // new instance of the flag for the next source
-        lookupTickSwitch.map(_.stop())
+        lookupTickSwitch.foreach(_.stop())
 
         val next = grab(in)
 
@@ -107,7 +107,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
 
       override def onUpstreamFinish(): Unit = {
         completeStage()
-        lookupTickSwitch.map(_.stop())
+        lookupTickSwitch.foreach(_.stop())
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
