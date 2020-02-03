@@ -167,18 +167,20 @@ private[stream] abstract class EvaluatorImpl(
 
   private[stream] def createGroupedDataSourcesFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
     Flow[DataSources]
-      .flatMapMerge(Int.MaxValue, dataSources => Source(groupByHost(dataSources)))
+      .map(dss => groupByHost(dss))
+      // Emit empty DataSource if no more DataSource for a host, so that the sub-stream get the info
+      .via(new FillRemovedKeysWith[String, DataSources](_ => DataSources.empty()))
+      .flatMapMerge(Int.MaxValue, dssMap => Source(dssMap.toList))
       .groupBy(Int.MaxValue, _._1, true) // groupBy host
       .map(_._2) //keep only DataSources
       .via(createProcessorFlow)
       .mergeSubstreams
   }
 
-  protected def groupByHost(dataSources: DataSources): List[(String, DataSources)] = {
+  protected def groupByHost(dataSources: DataSources): scala.collection.Map[String, DataSources] = {
     dataSources.getSources.asScala
       .groupBy(getHost(_))
-      .map { case (host, sources) => host -> new DataSources(sources.asJava) }
-      .toList
+      .map { case (host, dsSet) => host -> new DataSources(dsSet.asJava) }
   }
 
   private def getHost(dataSource: DataSource): String = {

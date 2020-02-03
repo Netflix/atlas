@@ -93,15 +93,14 @@ class EurekaGroupsLookupSuite extends AnyFunSuite {
     Await.result(future, Duration.Inf)
   }
 
-  test("no data sources") {
+  test("empty sources produces 1 empty sources") {
     val input = List(
       DataSources.empty()
     )
-    val future = Source(input)
-      .via(lookupFlow)
-      .runWith(Sink.seq)
-    val output = Await.result(future, Duration.Inf)
-    assert(output.isEmpty)
+    val output = run(input)
+    assert(output.size === 1)
+    assert(output.head._1.getSources.size() === 0)
+    assert(output.head._2.groups.size === 0)
   }
 
   test("one data source") {
