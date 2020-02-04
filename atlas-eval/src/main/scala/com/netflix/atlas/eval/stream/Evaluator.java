@@ -327,7 +327,7 @@ public final class Evaluator extends EvaluatorImpl {
    * can be used to route the message back to the appropriate consumer.
    */
   public final static class MessageEnvelope {
-    private final String id;
+    private String id;
     private final JsonSupport message;
 
     /** Create a new instance. */
@@ -344,6 +344,10 @@ public final class Evaluator extends EvaluatorImpl {
     /** Returns the message. */
     public JsonSupport getMessage() {
       return message;
+    }
+
+    public void setId(String id) {
+      this.id = id;
     }
 
     @Override public boolean equals(Object o) {

@@ -328,6 +328,7 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
     EqualsVerifier
       .forClass(classOf[Evaluator.MessageEnvelope])
       .suppress(Warning.NULL_FIELDS)
+      .suppress(Warning.NONFINAL_FIELDS)
       .verify()
   }
 
