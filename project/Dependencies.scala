@@ -15,7 +15,7 @@ object Dependencies {
     val slf4j      = "1.7.30"
     val spectator  = "0.101.1"
 
-    val crossScala = Seq("2.11.12", scala, "2.13.0")
+    val crossScala = Seq("2.11.12", scala, "2.13.1")
   }
 
   import Versions._
