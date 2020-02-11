@@ -180,17 +180,14 @@ class JsonSuite extends AnyFunSuite {
   }
 
   test("java8 Instant") {
-    // This form is a bit strange with floating point seconds, it would probably be
-    // better long term to disable WRITE_DATES_AS_TIMESTAMPS. However, that potentially
-    // breaks existing usages. Wait for 1.7.x
     val v = java.time.Instant.parse("2012-01-13T04:37:52Z")
-    assert(encode(v) === "1326429472.000000000")
+    assert(encode(v) === "1326429472000")
     assert(decode[java.time.Instant](encode(v)) === v)
   }
 
   test("java8 Duration") {
     val v = java.time.Duration.ofSeconds(42)
-    assert(encode(v) === "42.000000000")
+    assert(encode(v) === "42000")
     assert(decode[java.time.Duration](encode(v)) === v)
   }
 

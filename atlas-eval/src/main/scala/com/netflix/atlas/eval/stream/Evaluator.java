@@ -25,6 +25,7 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.atlas.core.util.Strings$;
 import com.netflix.atlas.json.JsonSupport;
@@ -298,6 +299,7 @@ public final class Evaluator extends EvaluatorImpl {
     }
 
     /** Returns true if the URI is for a local file or classpath resource. */
+    @JsonIgnore
     public boolean isLocal() {
       return uri.startsWith("/")
           || uri.startsWith("file:")
