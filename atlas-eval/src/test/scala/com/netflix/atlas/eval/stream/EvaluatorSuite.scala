@@ -546,4 +546,10 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
       assert(ts.data === ArrayData(Array(45.0)))
     }
   }
+
+  test("DataSource serde") {
+    val ds = new Evaluator.DataSource("_", Duration.ofSeconds(42L), ":true")
+    assert(Json.encode(ds) === """{"id":"_","step":42000,"uri":":true"}""")
+    assert(Json.decode[Evaluator.DataSource](Json.encode(ds)) === ds)
+  }
 }

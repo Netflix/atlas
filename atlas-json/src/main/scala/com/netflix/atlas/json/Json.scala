@@ -81,6 +81,8 @@ object Json {
   private def newMapper(factory: JsonFactory): ObjectMapper = {
     val mapper = new ObjectMapper(factory)
     mapper.setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
+    mapper.configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+    mapper.configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     mapper.registerModule(DefaultScalaModule)
     mapper.registerModule(new AtlasModule)
