@@ -4,16 +4,16 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.5.27"
+    val akka       = "2.5.29"
     val akkaHttpV  = "10.1.11"
-    val aws        = "1.11.702"
-    val iep        = "2.1.8"
+    val aws        = "1.11.723"
+    val iep        = "2.2.1"
     val guice      = "4.1.0"
     val jackson    = "2.10.2"
     val log4j      = "2.13.0"
     val scala      = "2.13.1"
     val slf4j      = "1.7.30"
-    val spectator  = "0.101.0"
+    val spectator  = "0.103.0"
 
     val crossScala = Seq(scala, "2.12.10")
   }
@@ -33,7 +33,7 @@ object Dependencies {
   val awsEC2            = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3             = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.8.1"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.1.11"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.1.12"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.20.0"
   val guiceCore         = "com.google.inject" % "guice" % guice
   val guiceMulti        = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -52,7 +52,7 @@ object Dependencies {
   val jacksonMapper     = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
   val jacksonScala      = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile      = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
-  val jol               = "org.openjdk.jol" % "jol-core" % "0.9"
+  val jol               = "org.openjdk.jol" % "jol-core" % "0.10"
   val jsr250            = "javax.annotation" % "jsr250-api" % "1.0"
   val jsr305            = "com.google.code.findbugs" % "jsr305" % "3.0.2"
   val log4jApi          = "org.apache.logging.log4j" % "log4j-api" % log4j
@@ -61,7 +61,7 @@ object Dependencies {
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.8.12"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.3"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
