@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.json
 
+import com.fasterxml.jackson.core.JsonToken
 import org.scalatest.funsuite.AnyFunSuite
 
 class JsonParserHelperSuite extends AnyFunSuite {
@@ -80,5 +81,26 @@ class JsonParserHelperSuite extends AnyFunSuite {
         builder += parser.nextIntValue(-1)
       }
     }
+  }
+
+  test("skipNext: empty object") {
+    val parser = Json.newJsonParser("""[{}]""")
+    assert(parser.nextToken() === JsonToken.START_ARRAY)
+    skipNext(parser)
+    assert(parser.nextToken() === JsonToken.END_ARRAY)
+  }
+
+  test("skipNext: object with simple fields") {
+    val parser = Json.newJsonParser("""[{"a":1,"b":"foo","c":false,"d":null}]""")
+    assert(parser.nextToken() === JsonToken.START_ARRAY)
+    skipNext(parser)
+    assert(parser.nextToken() === JsonToken.END_ARRAY)
+  }
+
+  test("skipNext: object with complex field") {
+    val parser = Json.newJsonParser("""[{"a":{"b":[{"c":{"d":["f",1,null]}}]}}]""")
+    assert(parser.nextToken() === JsonToken.START_ARRAY)
+    skipNext(parser)
+    assert(parser.nextToken() === JsonToken.END_ARRAY)
   }
 }
