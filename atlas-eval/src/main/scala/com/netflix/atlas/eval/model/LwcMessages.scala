@@ -18,6 +18,7 @@ package com.netflix.atlas.eval.model
 import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
+import com.netflix.atlas.akka.ByteStringInputStream
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.json.Json
@@ -32,11 +33,21 @@ object LwcMessages {
   /**
     * Parse the message string into an internal model object based on the type.
     */
+  def parse(msg: ByteString): AnyRef = {
+    parse(Json.newJsonParser(new ByteStringInputStream(msg)))
+  }
+
+  /**
+    * Parse the message string into an internal model object based on the type.
+    */
   def parse(msg: String): AnyRef = {
+    parse(Json.newJsonParser(msg))
+  }
+
+  private def parse(parser: JsonParser): AnyRef = {
     // This is a performance critical part of the code so the parsing is done by
     // hand rather than using ObjectMapper to minimize allocations and get peak
     // performance.
-    val parser = Json.newJsonParser(msg)
     try {
       // All
       var typeDesc: String = null
