@@ -16,9 +16,12 @@
 package com.netflix.atlas.eval.model
 
 import akka.util.ByteString
-import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonToken
 import com.netflix.atlas.akka.DiagnosticMessage
+import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.JsonParserHelper._
 import com.netflix.atlas.json.JsonSupport
 
 /**
@@ -30,15 +33,113 @@ object LwcMessages {
     * Parse the message string into an internal model object based on the type.
     */
   def parse(msg: String): AnyRef = {
-    val data = Json.decode[JsonNode](msg)
-    Option(data.get("type")).map(_.asText()) match {
-      case Some("expression")   => Json.decode[LwcExpression](data)
-      case Some("subscription") => Json.decode[LwcSubscription](data)
-      case Some("datapoint")    => Json.decode[LwcDatapoint](data)
-      case Some("diagnostic")   => Json.decode[LwcDiagnosticMessage](data)
-      case Some("heartbeat")    => Json.decode[LwcHeartbeat](data)
-      case Some(_) | None       => Json.decode[DiagnosticMessage](data)
+    // This is a performance critical part of the code so the parsing is done by
+    // hand rather than using ObjectMapper to minimize allocations and get peak
+    // performance.
+    val parser = Json.newJsonParser(msg)
+    try {
+      // All
+      var typeDesc: String = null
+
+      // LwcExpression
+      var expression: String = null
+      var step: Long = -1L
+
+      // LwcSubscription
+      // - expression
+      var metrics: List[LwcDataExpr] = Nil
+
+      // LwcDatapoint
+      var timestamp: Long = -1L
+      var id: String = null
+      var tags: Map[String, String] = Map.empty
+      var value: Double = Double.NaN
+
+      // LwcDiagnosticMessage
+      // - id
+      // - message: DiagnosticMessage
+      var diagnosticMessage: DiagnosticMessage = null
+
+      // LwcHeartbeat
+      // - timestamp
+      // - step
+
+      // DiagnosticMessage
+      // - message: String
+      var message: String = null
+
+      // Actually do the parsing work
+      foreachField(parser) {
+        case "type" => typeDesc = nextString(parser)
+
+        case "expression" => expression = nextString(parser)
+        case "step"       => step = nextLong(parser)
+        case "metrics"    => metrics = parseDataExprs(parser)
+
+        case "timestamp" => timestamp = nextLong(parser)
+        case "id"        => id = nextString(parser)
+        case "tags"      => tags = parseTags(parser)
+        case "value"     => value = nextDouble(parser)
+
+        case "message" =>
+          val t = parser.nextToken()
+          if (t == JsonToken.VALUE_STRING)
+            message = parser.getText
+          else
+            diagnosticMessage = parseDiagnosticMessage(parser)
+
+        case _ => skipNext(parser)
+      }
+
+      typeDesc match {
+        case "expression"   => LwcExpression(expression, step)
+        case "subscription" => LwcSubscription(expression, metrics)
+        case "datapoint"    => LwcDatapoint(timestamp, id, tags, value)
+        case "diagnostic"   => LwcDiagnosticMessage(id, diagnosticMessage)
+        case "heartbeat"    => LwcHeartbeat(timestamp, step)
+        case _              => DiagnosticMessage(typeDesc, message, None)
+      }
+    } finally {
+      parser.close()
     }
+  }
+
+  private[model] def parseDataExprs(parser: JsonParser): List[LwcDataExpr] = {
+    val builder = List.newBuilder[LwcDataExpr]
+    foreachItem(parser) {
+      var id: String = null
+      var expression: String = null
+      var step: Long = -1L
+
+      foreachField(parser) {
+        case "id"                 => id = nextString(parser)
+        case "expression"         => expression = nextString(parser)
+        case "step" | "frequency" => step = nextLong(parser)
+        case _                    => skipNext(parser)
+      }
+
+      builder += LwcDataExpr(id, expression, step)
+    }
+    builder.result()
+  }
+
+  private def parseDiagnosticMessage(parser: JsonParser): DiagnosticMessage = {
+    var typeDesc: String = null
+    var message: String = null
+    foreachField(parser) {
+      case "type"    => typeDesc = nextString(parser)
+      case "message" => message = nextString(parser)
+      case _         => skipNext(parser)
+    }
+    DiagnosticMessage(typeDesc, message, None)
+  }
+
+  private def parseTags(parser: JsonParser): Map[String, String] = {
+    val builder = new SmallHashMap.Builder[String, String](30)
+    foreachField(parser) {
+      case k => builder.add(k, nextString(parser))
+    }
+    builder.result
   }
 
   def toSSE(msg: JsonSupport): ByteString = {
@@ -52,11 +153,11 @@ object LwcMessages {
     prefix ++ ByteString(msg.toJson) ++ suffix
   }
 
-  val subscribePrefix = ByteString("info: subscribe ")
-  val metricDataPrefix = ByteString("data: metric ")
-  val diagnosticPrefix = ByteString("data: diagnostic ")
-  val heartbeatPrefix = ByteString("data: heartbeat ")
-  val defaultPrefix = ByteString("data: ")
+  private val subscribePrefix = ByteString("info: subscribe ")
+  private val metricDataPrefix = ByteString("data: metric ")
+  private val diagnosticPrefix = ByteString("data: diagnostic ")
+  private val heartbeatPrefix = ByteString("data: heartbeat ")
+  private val defaultPrefix = ByteString("data: ")
 
   private val suffix = ByteString("\r\n\r\n")
 }

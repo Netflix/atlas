@@ -24,10 +24,15 @@ class LwcMessagesSuite extends AnyFunSuite {
   private val step = 60000
 
   test("data expr, decode with legacy frequency field") {
-    val json = """{"id":"1234","expression":"name,cpu,:eq,:sum","frequency":10}"""
-    val actual = Json.decode[LwcDataExpr](json)
-    val expected = LwcDataExpr("1234", "name,cpu,:eq,:sum", 10)
-    assert(actual === expected)
+    val json = """[{"id":"1234","expression":"name,cpu,:eq,:sum","frequency":10}]"""
+    val parser = Json.newJsonParser(json)
+    try {
+      val actual = LwcMessages.parseDataExprs(parser).head
+      val expected = LwcDataExpr("1234", "name,cpu,:eq,:sum", 10)
+      assert(actual === expected)
+    } finally {
+      parser.close()
+    }
   }
 
   test("subscription info") {

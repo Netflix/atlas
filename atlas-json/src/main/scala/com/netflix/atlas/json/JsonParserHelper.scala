@@ -32,6 +32,22 @@ object JsonParserHelper {
     if (t == null || t == token || t == stop) t == token else skipTo(parser, token, stop)
   }
 
+  def skipNext(parser: JsonParser): Unit = {
+    parser.nextToken() match {
+      case JsonToken.START_ARRAY =>
+        var t = parser.currentToken()
+        while (t != null && t != JsonToken.END_ARRAY) {
+          skipNext(parser)
+          t = parser.nextToken()
+        }
+      case JsonToken.START_OBJECT =>
+        foreachField(parser) {
+          case f => skipNext(parser)
+        }
+      case _ =>
+    }
+  }
+
   def fail(parser: JsonParser, msg: String): Nothing = {
     val loc = parser.getCurrentLocation
     val line = loc.getLineNr
