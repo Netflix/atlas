@@ -118,6 +118,8 @@ object DataExpr {
       val rs = consolidate(context.step, data.filter(t => query.matches(t.tags)))
       ResultSet(this, rs, context.state)
     }
+
+    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   sealed trait AggregateFunction extends DataExpr with BinaryOp {
@@ -165,6 +167,8 @@ object DataExpr {
     }
 
     def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
+
+    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   case class Count(
@@ -202,6 +206,8 @@ object DataExpr {
     }
 
     def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
+
+    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   case class Min(query: Query, offset: Duration = Duration.ZERO) extends AggregateFunction {
@@ -219,6 +225,8 @@ object DataExpr {
     override def exprString: String = s"$query,:min"
 
     def apply(v1: Double, v2: Double): Double = Math.minNaN(v1, v2)
+
+    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   case class Max(query: Query, offset: Duration = Duration.ZERO) extends AggregateFunction {
@@ -236,6 +244,8 @@ object DataExpr {
     override def exprString: String = s"$query,:max"
 
     def apply(v1: Double, v2: Double): Double = Math.maxNaN(v1, v2)
+
+    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   case class Consolidation(af: AggregateFunction, cf: ConsolidationFunction)
@@ -262,6 +272,8 @@ object DataExpr {
     override def exprString: String = s"$af,$cf"
 
     def apply(v1: Double, v2: Double): Double = af(v1, v2)
+
+    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   case class GroupBy(af: AggregateFunction, keys: List[String]) extends DataExpr {
@@ -306,5 +318,7 @@ object DataExpr {
       val rs = consolidate(context.step, newData)
       ResultSet(this, rs, context.state)
     }
+
+    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 }
