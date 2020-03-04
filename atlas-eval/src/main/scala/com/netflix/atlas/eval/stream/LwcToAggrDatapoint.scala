@@ -60,7 +60,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       override def onPush(): Unit = {
         val message = grab(in)
         try {
-          val parsedMsg = LwcMessages.parse(message.utf8String)
+          val parsedMsg = LwcMessages.parse(message)
           parsedMsg match {
             case sb: LwcSubscription      => updateState(sb)
             case dp: LwcDatapoint         => pushDatapoint(dp)
