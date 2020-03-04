@@ -22,7 +22,7 @@ import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.Strings
 
-sealed trait DataExpr extends TimeSeriesExpr {
+sealed trait DataExpr extends TimeSeriesExpr with Product {
 
   def query: Query
 
@@ -66,6 +66,14 @@ sealed trait DataExpr extends TimeSeriesExpr {
   override def toString: String = {
     if (offset.isZero) exprString else s"$exprString,$offset,:offset"
   }
+
+  /**
+    * Hash code is cached to allow cheaper lookup during evaluation. This implementation
+    * in the base interface depends on the main fields of the case class being set prior
+    * to `super()` being called in the case class constructor. That appears to be the case
+    * with current scala versions.
+    */
+  override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
 }
 
 object DataExpr {
@@ -118,8 +126,6 @@ object DataExpr {
       val rs = consolidate(context.step, data.filter(t => query.matches(t.tags)))
       ResultSet(this, rs, context.state)
     }
-
-    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   sealed trait AggregateFunction extends DataExpr with BinaryOp {
@@ -167,8 +173,6 @@ object DataExpr {
     }
 
     def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
-
-    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   case class Count(
@@ -206,8 +210,6 @@ object DataExpr {
     }
 
     def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
-
-    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   case class Min(query: Query, offset: Duration = Duration.ZERO) extends AggregateFunction {
@@ -225,8 +227,6 @@ object DataExpr {
     override def exprString: String = s"$query,:min"
 
     def apply(v1: Double, v2: Double): Double = Math.minNaN(v1, v2)
-
-    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   case class Max(query: Query, offset: Duration = Duration.ZERO) extends AggregateFunction {
@@ -244,8 +244,6 @@ object DataExpr {
     override def exprString: String = s"$query,:max"
 
     def apply(v1: Double, v2: Double): Double = Math.maxNaN(v1, v2)
-
-    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   case class Consolidation(af: AggregateFunction, cf: ConsolidationFunction)
@@ -272,8 +270,6 @@ object DataExpr {
     override def exprString: String = s"$af,$cf"
 
     def apply(v1: Double, v2: Double): Double = af(v1, v2)
-
-    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 
   case class GroupBy(af: AggregateFunction, keys: List[String]) extends DataExpr {
@@ -318,7 +314,5 @@ object DataExpr {
       val rs = consolidate(context.step, newData)
       ResultSet(this, rs, context.state)
     }
-
-    override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
   }
 }
