@@ -36,6 +36,6 @@ class LwcDataExprSuite extends AnyFunSuite {
     val distExprStr = "name,foo,:eq,:dist-max,(,nf.asg,),:by"
     val lwcExpr = LwcDataExpr("123", exprStr, 10L)
     assert(lwcExpr.expr === styleExpr(distExprStr).expr.dataExprs.head)
-    assert(lwcExpr.expr.hashCode() === styleExpr(exprStr).expr.hashCode())
+    assert(lwcExpr.expr.hashCode === styleExpr(exprStr).expr.hashCode)
   }
 }

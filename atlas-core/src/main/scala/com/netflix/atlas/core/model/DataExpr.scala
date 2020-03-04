@@ -22,7 +22,7 @@ import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.Strings
 
-sealed trait DataExpr extends TimeSeriesExpr {
+sealed trait DataExpr extends TimeSeriesExpr with Product {
 
   def query: Query
 
@@ -66,6 +66,14 @@ sealed trait DataExpr extends TimeSeriesExpr {
   override def toString: String = {
     if (offset.isZero) exprString else s"$exprString,$offset,:offset"
   }
+
+  /**
+    * Hash code is cached to allow cheaper lookup during evaluation. This implementation
+    * in the base interface depends on the main fields of the case class being set prior
+    * to `super()` being called in the case class constructor. That appears to be the case
+    * with current scala versions.
+    */
+  override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
 }
 
 object DataExpr {
