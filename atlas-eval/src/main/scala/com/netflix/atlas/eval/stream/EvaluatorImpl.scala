@@ -31,6 +31,7 @@ import akka.http.scaladsl.model.ws.BinaryMessage
 import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.model.ws.WebSocketRequest
 import akka.stream.FlowShape
+import akka.stream.OverflowStrategy
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Broadcast
 import akka.stream.scaladsl.FileIO
@@ -225,8 +226,14 @@ private[stream] abstract class EvaluatorImpl(
         .mergeSubstreams
         .via(context.monitorFlow("12_GroupedDatapoints"))
 
-      datasources.out(0) ~> intermediateEval ~> finalEvalInput.in(0)
-      datasources.out(1) ~> finalEvalInput.in(1)
+      // Use "buffer + dropTail" to avoid back pressure of DataSources broadcast, so that the 2
+      // sub streams will not block each other
+      datasources
+        .out(0)
+        .buffer(1, OverflowStrategy.dropTail) ~> intermediateEval ~> finalEvalInput.in(0)
+      datasources
+        .out(1)
+        .buffer(1, OverflowStrategy.dropTail) ~> finalEvalInput.in(1)
 
       // Overall to the outside it looks like a flow of DataSources to MessageEnvelope
       FlowShape(datasources.in, finalEvalInput.out)
