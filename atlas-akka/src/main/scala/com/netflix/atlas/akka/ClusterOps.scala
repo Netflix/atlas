@@ -135,7 +135,11 @@ object ClusterOps extends StrictLogging {
           val sources = added.toList
             .map { m =>
               val queue =
-                new SourceQueue[D](registry, "_", new ArrayBlockingQueue[D](context.queueSize))
+                new SourceQueue[D](
+                  registry,
+                  "ClusterGroupBy",
+                  new ArrayBlockingQueue[D](context.queueSize)
+                )
               membersSources += m -> queue
               Source
                 .fromGraph(new QueueSource[D](() => queue))
