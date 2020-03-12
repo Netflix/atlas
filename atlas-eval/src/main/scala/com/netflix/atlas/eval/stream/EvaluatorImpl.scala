@@ -425,7 +425,7 @@ private[stream] abstract class EvaluatorImpl(
     ClusterOps.GroupByContext(
       instance => createWebSocketFlow(instance, context),
       registry,
-      queueSize = config.getInt("atlas.eval.stream.queue-size")
+      queueSize = 10
     )
   }
 
