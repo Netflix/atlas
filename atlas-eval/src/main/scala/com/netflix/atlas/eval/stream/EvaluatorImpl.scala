@@ -163,10 +163,14 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   protected def createStreamsProcessorImpl(): Processor[DataSources, MessageEnvelope] = {
-    createGroupedDataSourcesFlow.toProcessor.run()
+    createStreamsFlow.toProcessor.run()
   }
 
-  private[stream] def createGroupedDataSourcesFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
+  /**
+    * Internal API, may change in future releases, should only used by internal components
+    * to maximize throughput under heavy load by enabling operator fusion optimization.
+    */
+  def createStreamsFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
     Flow[DataSources]
       .map(dss => groupByHost(dss))
       // Emit empty DataSource if no more DataSource for a host, so that the sub-stream get the info
