@@ -25,11 +25,11 @@ import org.openjdk.jmh.infra.Blackhole
   * Check performance of creating a copy of the map when adding/removing a single pair.
   *
   * ```
-  * > jmh:run -prof jmh.extras.JFR -wi 10 -i 10 -f1 -t1 .*SmallHashMapModify.*
+  * > jmh:run -prof gc -wi 10 -i 10 -f1 -t1 .*SmallHashMapModify.*
   * ...
   * [info] Benchmark                           Mode  Cnt        Score       Error  Units
-  * [info] SmallHashMapModify.addPair         thrpt   10  1637470.772 ± 29948.315  ops/s
-  * [info] SmallHashMapModify.removePair      thrpt   10  2520939.662 ± 32320.759  ops/s
+  * [info] SmallHashMapModify.addPair         thrpt    5  2541571.202 ± 239240.513   ops/s
+  * [info] SmallHashMapModify.removePair      thrpt    5  3840622.669 ± 439259.261   ops/s
   * ```
   */
 @State(Scope.Thread)
