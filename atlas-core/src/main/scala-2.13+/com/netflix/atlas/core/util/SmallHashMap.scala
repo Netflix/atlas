@@ -272,7 +272,13 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
 
   def updated[V1 >: V](k: K, v: V1): collection.immutable.Map[K, V1] = {
     val b = new SmallHashMap.Builder[K, V1](size + 1)
-    foreachItem(b.add)
+    var i = 0
+    while (i < data.length) {
+      if (data(i) != null) {
+        b.add(data(i).asInstanceOf[K], data(i + 1).asInstanceOf[V])
+      }
+      i += 2
+    }
     b.add(k, v)
     b.result
   }
@@ -280,8 +286,13 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
   def removed(key: K): collection.immutable.Map[K, V] = {
     if (contains(key)) {
       val b = new SmallHashMap.Builder[K, V](size - 1)
-      foreachItem { (k, v) =>
-        if (!areEqual(key, k)) b.add(k, v)
+      var i = 0
+      while (i < data.length) {
+        val k = data(i).asInstanceOf[K]
+        if (k != null && !areEqual(key, k)) {
+          b.add(k, data(i + 1).asInstanceOf[V])
+        }
+        i += 2
       }
       b.result
     } else {
