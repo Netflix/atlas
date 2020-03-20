@@ -190,12 +190,21 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     * Call the function `f` for each tuple in the map without requiring a temporary object to be
     * created.
     */
-  def foreachItem(f: (K, V) => Unit): Unit = {
+  override def foreachEntry[U](f: (K, V) => U): Unit = {
     var i = 0
     while (i < data.length) {
       if (data(i) != null) f(data(i).asInstanceOf[K], data(i + 1).asInstanceOf[V])
       i += 2
     }
+  }
+
+  /**
+    * Call the function `f` for each tuple in the map without requiring a temporary object to be
+    * created.
+    */
+  @deprecated("Use `foreachEntry` instead.", "1.7.0")
+  def foreachItem(f: (K, V) => Unit): Unit = {
+    foreachEntry(f)
   }
 
   def find(f: (K, V) => Boolean): Option[(K, V)] = {
