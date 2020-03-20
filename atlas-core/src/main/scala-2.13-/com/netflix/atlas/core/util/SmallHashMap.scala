@@ -190,12 +190,21 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     * Call the function `f` for each tuple in the map without requiring a temporary object to be
     * created.
     */
-  def foreachItem(f: (K, V) => Unit): Unit = {
+  def foreachEntry(f: (K, V) => Unit): Unit = {
     var i = 0
     while (i < data.length) {
       if (data(i) != null) f(data(i).asInstanceOf[K], data(i + 1).asInstanceOf[V])
       i += 2
     }
+  }
+
+  /**
+    * Call the function `f` for each tuple in the map without requiring a temporary object to be
+    * created.
+    */
+  @deprecated("Use `foreachEntry` instead.", "1.7.0")
+  def foreachItem(f: (K, V) => Unit): Unit = {
+    foreachEntry(f)
   }
 
   def find(f: (K, V) => Boolean): Option[(K, V)] = {
@@ -272,7 +281,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
 
   def +[V1 >: V](kv: (K, V1)): collection.immutable.Map[K, V1] = {
     val b = new SmallHashMap.Builder[K, V1](size + 1)
-    foreachItem(b.add)
+    foreachEntry(b.add)
     b.add(kv._1, kv._2)
     b.result
   }
@@ -280,7 +289,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
   def -(key: K): collection.immutable.Map[K, V] = {
     if (contains(key)) {
       val b = new SmallHashMap.Builder[K, V](size - 1)
-      foreachItem { (k, v) =>
+      foreachEntry { (k, v) =>
         if (!areEqual(key, k)) b.add(k, v)
       }
       b.result

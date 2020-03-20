@@ -176,7 +176,7 @@ trait TaggedItem {
     */
   def foreach(f: (String, String) => Unit): Unit = {
     tags match {
-      case m: SmallHashMap[String, String] => m.foreachItem(f)
+      case m: SmallHashMap[String, String] => m.foreachEntry(f)
       case m: Map[String, String] =>
         m.foreach { t =>
           f(t._1, t._2)

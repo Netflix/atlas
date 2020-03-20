@@ -212,7 +212,7 @@ object PublishApi {
     gen.writeObjectFieldStart("tags")
     tags match {
       case m: SmallHashMap[String, String] =>
-        m.foreachItem { (k, v) =>
+        m.foreachEntry { (k, v) =>
           gen.writeStringField(k, v)
         }
       case m: Map[String, String] =>
