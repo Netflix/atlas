@@ -212,7 +212,7 @@ class QueryIndexSuite extends AnyFunSuite {
   test("queries for both nf.app and nf.cluster") {
     val appQuery = Query.Equal("nf.app", "testapp")
     val clusterQuery = Query.Equal("nf.cluster", "testapp-test")
-    val queries = List(appQuery, clusterQuery)
+    val queries = List(clusterQuery, appQuery)
     val index = QueryIndex(queries)
 
     val tags = Map("nf.app" -> "testapp", "nf.cluster" -> "testapp-test")
