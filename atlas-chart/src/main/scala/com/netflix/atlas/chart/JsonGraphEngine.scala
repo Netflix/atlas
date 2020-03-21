@@ -33,7 +33,6 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
   def write(config: GraphDef, output: OutputStream): Unit = {
     val writer = new OutputStreamWriter(output, "UTF-8")
     val seriesList = config.plots.flatMap(_.lines)
-    val count = seriesList.size
     val gen = jsonFactory.createGenerator(writer)
 
     gen.writeStartObject()
@@ -41,10 +40,9 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
     gen.writeNumberField("step", config.step)
 
     gen.writeArrayFieldStart("legend")
-    (0 until count).zip(seriesList).foreach {
-      case (i, series) =>
-        val label = series.data.label
-        gen.writeString(label)
+    seriesList.foreach { series =>
+      val label = series.data.label
+      gen.writeString(label)
     }
     gen.writeEndArray()
 

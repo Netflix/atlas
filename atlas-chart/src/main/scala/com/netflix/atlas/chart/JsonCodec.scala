@@ -201,7 +201,7 @@ private[chart] object JsonCodec {
     gen.writeStringField("lineStyle", line.lineStyle.name())
     gen.writeNumberField("lineWidth", line.lineWidth)
     gen.writeObjectFieldStart("tags")
-    line.data.tags.foreach { case (k, v) => gen.writeStringField(k, v) }
+    line.data.tags.foreachEntry(gen.writeStringField)
     gen.writeEndObject()
     gen.writeObjectFieldStart("data")
     gen.writeStringField("type", "array")

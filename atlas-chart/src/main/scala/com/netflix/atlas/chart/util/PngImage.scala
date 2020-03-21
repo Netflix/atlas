@@ -219,11 +219,11 @@ case class PngImage(data: RenderedImage, metadata: Map[String, String] = Map.emp
       writer.setOutput(ImageIO.createImageOutputStream(output))
 
       val pngMeta = writer.getDefaultImageMetadata(new ImageTypeSpecifier(data), null)
-      metadata.foreach { t =>
+      metadata.foreachEntry { (k, v) =>
         val textEntry = new IIOMetadataNode("TextEntry")
-        textEntry.setAttribute("keyword", t._1)
-        textEntry.setAttribute("value", t._2)
-        textEntry.setAttribute("compression", if (t._2.length > 100) "zip" else "none")
+        textEntry.setAttribute("keyword", k)
+        textEntry.setAttribute("value", v)
+        textEntry.setAttribute("compression", if (v.length > 100) "zip" else "none")
 
         val text = new IIOMetadataNode("Text")
         text.appendChild(textEntry)

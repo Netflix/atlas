@@ -40,6 +40,17 @@ class IdentityMapSuite extends AnyFunSuite {
     assert(values === Set(1, 2, 3))
   }
 
+  test("foreachEntry") {
+    val m = IdentityMap(Map("a" -> 42, "b" -> 2))
+    m.foreachEntry { (k, v) =>
+      k match {
+        case "a" => assert(v == 42)
+        case "b" => assert(v == 2)
+        case _   => fail(s"unexpected key: $k")
+      }
+    }
+  }
+
   test("toString") {
     val m = IdentityMap(new String("a") -> 2, new String("a") -> 1, "b" -> 3)
 

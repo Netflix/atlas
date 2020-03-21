@@ -210,9 +210,7 @@ object PublishApi {
 
   private def encodeTags(gen: JsonGenerator, tags: Map[String, String]): Unit = {
     gen.writeObjectFieldStart("tags")
-    tags.foreachEntry { (k, v) =>
-      gen.writeStringField(k, v)
-    }
+    tags.foreachEntry(gen.writeStringField)
     gen.writeEndObject()
   }
 

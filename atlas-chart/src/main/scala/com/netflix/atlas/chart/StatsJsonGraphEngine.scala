@@ -45,7 +45,6 @@ class StatsJsonGraphEngine extends GraphEngine {
   def write(config: GraphDef, output: OutputStream): Unit = {
     val writer = new OutputStreamWriter(output, "UTF-8")
     val seriesList = config.plots.flatMap(_.lines)
-    val count = seriesList.size
     val numberFmt = config.numberFormat
     val gen = jsonFactory.createGenerator(writer)
 
@@ -55,10 +54,9 @@ class StatsJsonGraphEngine extends GraphEngine {
     gen.writeNumberField("step", config.step)
 
     gen.writeArrayFieldStart("legend")
-    (0 until count).zip(seriesList).foreach {
-      case (i, series) =>
-        val label = series.data.label
-        gen.writeString(label)
+    seriesList.foreach { series =>
+      val label = series.data.label
+      gen.writeString(label)
     }
     gen.writeEndArray()
 
@@ -79,7 +77,7 @@ class StatsJsonGraphEngine extends GraphEngine {
 
       gen.writeStartObject()
       gen.writeNumberField("count", stats.count)
-      if (count > 0) {
+      if (seriesList.nonEmpty) {
         writeRawField(gen, "avg", numberStr(numberFmt, stats.avg))
         writeRawField(gen, "total", numberStr(numberFmt, stats.total))
         writeRawField(gen, "max", numberStr(numberFmt, stats.max))
