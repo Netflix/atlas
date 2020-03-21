@@ -2,9 +2,9 @@ language: scala
 matrix:
   include:
   - jdk: openjdk11
-    scala: 2.12.10
+    scala: 2.13.1
     os: osx
-    env: BINTRAY_PUBLISH=true
+    env: BINTRAY_PUBLISH=false
   - jdk: openjdk11
     scala: 2.13.1
     os: linux
