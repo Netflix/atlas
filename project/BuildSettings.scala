@@ -61,16 +61,7 @@ object BuildSettings {
     // scaladoc crashes on jdk11 using `-release 8` with assertion failure:
     // type AnyRef in java.lang
     // https://github.com/scala/community-builds/issues/796#issuecomment-423395500
-    publishArtifact in (Compile, packageDoc) := false,
-    // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
-    // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
-    unmanagedSourceDirectories in Compile += {
-      val sourceDir = (sourceDirectory in Compile).value
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
-        case _                       => sourceDir / "scala-2.13-"
-      }
-    }
+    publishArtifact in (Compile, packageDoc) := false
   )
 
   val commonDeps = Seq(

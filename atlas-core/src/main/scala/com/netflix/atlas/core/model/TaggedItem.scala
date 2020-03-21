@@ -175,13 +175,7 @@ trait TaggedItem {
     * implementations to optimize how the tag data is stored and traversed.
     */
   def foreach(f: (String, String) => Unit): Unit = {
-    tags match {
-      case m: SmallHashMap[String, String] => m.foreachEntry(f)
-      case m: Map[String, String] =>
-        m.foreach { t =>
-          f(t._1, t._2)
-        }
-    }
+    tags.foreachEntry(f)
   }
 }
 
