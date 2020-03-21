@@ -42,7 +42,10 @@ case class QueryIndex[T](
 
   /** Returns true if the tags match any of the queries in the index. */
   def matches(tags: Map[String, String]): Boolean = {
-    val qs = tags.map(t => Query.Equal(t._1, t._2)).toList
+    var qs = List.empty[Query.Equal]
+    tags.foreachEntry { (k, v) =>
+      qs = Query.Equal(k, v) :: qs
+    }
     matches(tags, qs)
   }
 
@@ -61,7 +64,10 @@ case class QueryIndex[T](
 
   /** Finds the set of items that match the provided tags. */
   def matchingEntries(tags: Map[String, String]): List[T] = {
-    val qs = tags.map(t => Query.Equal(t._1, t._2)).toList
+    var qs = List.empty[Query.Equal]
+    tags.foreachEntry { (k, v) =>
+      qs = Query.Equal(k, v) :: qs
+    }
     matchingEntries(tags, qs).distinct
   }
 
