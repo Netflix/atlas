@@ -18,7 +18,6 @@ package com.netflix.atlas.eval.model
 import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.core.util.SmallHashMap
 
 /**
   * Message type use for emitting time series data in LWC and fetch responses.

@@ -48,6 +48,14 @@ sealed trait Query extends Expr {
   }
 
   def not: Query = Query.Not(this)
+
+  /**
+    * Hash code is cached to allow cheaper lookup during evaluation. This implementation
+    * in the base interface depends on the main fields of the case class being set prior
+    * to `super()` being called in the case class constructor. That appears to be the case
+    * with current scala versions.
+    */
+  override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
 }
 
 object Query {
