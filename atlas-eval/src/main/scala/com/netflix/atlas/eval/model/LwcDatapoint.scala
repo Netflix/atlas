@@ -42,9 +42,7 @@ case class LwcDatapoint(timestamp: Long, id: String, tags: Map[String, String], 
     gen.writeNumberField("timestamp", timestamp)
     gen.writeStringField("id", id)
     gen.writeObjectFieldStart("tags")
-    tags.foreach { t =>
-      gen.writeStringField(t._1, t._2)
-    }
+    tags.foreachEntry(gen.writeStringField)
     gen.writeEndObject()
     gen.writeNumberField("value", value)
     gen.writeEndObject()

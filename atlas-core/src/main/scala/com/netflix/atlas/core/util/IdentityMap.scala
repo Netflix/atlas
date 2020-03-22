@@ -35,6 +35,10 @@ class IdentityMap[K <: AnyRef, V] private (jmap: java.util.IdentityHashMap[K, V]
     }
   }
 
+  override def foreachEntry[U](f: (K, V) => U): Unit = {
+    jmap.forEach((k, v) => f(k, v))
+  }
+
   override def updated[V1 >: V](k: K, v: V1): IdentityMap[K, V1] = {
     val copy = new java.util.IdentityHashMap[K, V1](jmap)
     copy.put(k, v)
@@ -75,9 +79,7 @@ object IdentityMap {
 
   def apply[K <: AnyRef, V](map: Map[K, V]): IdentityMap[K, V] = {
     val copy = new java.util.IdentityHashMap[K, V]()
-    map.foreach { t =>
-      copy.put(t._1, t._2)
-    }
+    map.foreachEntry(copy.put)
     new IdentityMap[K, V](copy)
   }
 
