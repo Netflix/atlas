@@ -112,8 +112,7 @@ class JsonParserHelperSuite extends AnyFunSuite {
   }
 
   test("skipNext: complex object") {
-    val parser = Json.newJsonParser(
-      """
+    val parser = Json.newJsonParser("""
         |[
         |  {
         |    "af": {
