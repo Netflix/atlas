@@ -34,17 +34,9 @@ object JsonParserHelper {
 
   def skipNext(parser: JsonParser): Unit = {
     parser.nextToken() match {
-      case JsonToken.START_ARRAY =>
-        var t = parser.currentToken()
-        while (t != null && t != JsonToken.END_ARRAY) {
-          skipNext(parser)
-          t = parser.nextToken()
-        }
-      case JsonToken.START_OBJECT =>
-        foreachField(parser) {
-          case f => skipNext(parser)
-        }
-      case _ =>
+      case JsonToken.START_ARRAY  => parser.skipChildren()
+      case JsonToken.START_OBJECT => parser.skipChildren()
+      case _                      =>
     }
   }
 
