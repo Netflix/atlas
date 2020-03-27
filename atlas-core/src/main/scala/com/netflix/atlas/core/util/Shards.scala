@@ -17,6 +17,8 @@ package com.netflix.atlas.core.util
 
 import java.math.BigInteger
 
+import com.netflix.atlas.core.model.ItemId
+
 /**
   * Utility functions for mapping ids or indices to a shard. For our purposes, a shard
   * is an instance with a set of server groups. The union of data from all groups comprises
@@ -146,6 +148,12 @@ object Shards {
     /** Return the instance that should receive the data associated with `id`. */
     def instanceForId(id: BigInteger): T = {
       val i = math.abs(id.intValue())
+      instanceForIndex(i)
+    }
+
+    /** Return the instance that should receive the data associated with `id`. */
+    def instanceForId(id: ItemId): T = {
+      val i = math.abs(id.intValue)
       instanceForIndex(i)
     }
 

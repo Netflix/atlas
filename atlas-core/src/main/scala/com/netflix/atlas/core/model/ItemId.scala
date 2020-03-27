@@ -67,6 +67,19 @@ class ItemId private (private val data: Array[Byte], private val hc: Int)
   }
 
   def toBigInteger: BigInteger = new BigInteger(1, data)
+
+  def intValue: Int = {
+    var result = 0
+    val end = math.max(0, data.length - 4)
+    var i = data.length - 1
+    var shift = 0
+    while (i >= end) {
+      result |= (data(i) & 0xFF) << shift
+      i -= 1
+      shift += 8
+    }
+    result
+  }
 }
 
 object ItemId {

@@ -109,4 +109,26 @@ class ItemIdSuite extends AnyFunSuite {
     assert(id1.compareTo(id2) < 0)
     assert(id2.compareTo(id1) > 0)
   }
+
+  test("int value") {
+    (0 until 100).foreach { i =>
+      val id = ItemId(Hash.sha1bytes(i.toString))
+      assert(id.intValue === id.toBigInteger.intValue())
+    }
+  }
+
+  test("int value: one byte") {
+    val id = ItemId(Array(57.toByte))
+    assert(id.intValue === id.toBigInteger.intValue())
+  }
+
+  test("int value: two bytes") {
+    val id = ItemId(Array(1.toByte, 2.toByte))
+    assert(id.intValue === id.toBigInteger.intValue())
+  }
+
+  test("int value: three bytes") {
+    val id = ItemId(Array(1.toByte, 2.toByte, 0xFF.toByte))
+    assert(id.intValue === id.toBigInteger.intValue())
+  }
 }
