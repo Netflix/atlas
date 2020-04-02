@@ -152,14 +152,24 @@ object ClusterOps extends StrictLogging {
 
         private def newSubFlow(m: M): Flow[D, O, NotUsed] = {
           implicit val xc: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-          RestartFlow.withBackoff(100.millis, 1.second, 0.0) { () =>
-            context.client(m).watchTermination() { (_, f) =>
-              f.onComplete {
-                case Success(_) => logger.trace(s"shutdown stream for $m")
-                case Failure(t) => logger.warn(s"restarting failed stream for $m", t)
+          RestartFlow
+            .withBackoff(100.millis, 1.second, 0.0) { () =>
+              context.client(m).watchTermination() { (_, f) =>
+                f.onComplete {
+                  case Success(_) => logger.trace(s"shutdown stream for $m")
+                  case Failure(t) => logger.warn(s"restarting failed stream for $m", t)
+                }
               }
             }
-          }
+            .recoverWithRetries(
+              -1, {
+                // Ignore non-fatal failure that may happen when a member is removed from cluster
+                case e: Exception => {
+                  logger.debug(s"suppressing failure for: $m", e)
+                  Source.empty[O]
+                }
+              }
+            )
         }
 
         private def pushData(data: Map[M, D]): Unit = {
