@@ -4,7 +4,6 @@ lazy val root = project.in(file("."))
   .aggregate(
     `atlas-akka`,
     `atlas-chart`,
-    `atlas-config`,
     `atlas-core`,
     `atlas-eval`,
     `atlas-jmh`,
@@ -43,14 +42,12 @@ lazy val `atlas-chart` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-core`, `atlas-json`)
 
-lazy val `atlas-config` = project
-  .configure(BuildSettings.profile)
-
 lazy val `atlas-core` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-config`, `atlas-json` % "test")
+  .dependsOn(`atlas-json` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.caffeine,
+    Dependencies.iepNflxEnv,
     Dependencies.roaringBitmap,
     Dependencies.equalsVerifier % "test",
     Dependencies.jol % "test"

@@ -18,7 +18,7 @@ package com.netflix.atlas.standalone
 import java.io.File
 
 import com.google.inject.AbstractModule
-import com.netflix.atlas.config.ConfigManager
+import com.netflix.iep.config.ConfigManager
 import com.netflix.iep.guice.GuiceHelper
 import com.netflix.iep.service.ServiceManager
 import com.typesafe.config.Config
@@ -45,7 +45,7 @@ object Main extends StrictLogging {
           ConfigFactory.parseFileAnySyntax(file)
         else
           ConfigFactory.parseResourcesAnySyntax(f)
-      ConfigManager.update(c)
+      ConfigManager.dynamicConfigManager.setOverrideConfig(c)
     }
   }
 
@@ -66,7 +66,7 @@ object Main extends StrictLogging {
     val configModule = new AbstractModule {
 
       override def configure(): Unit = {
-        bind(classOf[Config]).toInstance(ConfigManager.current)
+        bind(classOf[Config]).toInstance(ConfigManager.dynamicConfig())
       }
     }
 

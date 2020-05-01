@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.config.ConfigManager
+import com.netflix.iep.config.ConfigManager
 import com.typesafe.config.Config
 
-object ApiSettings extends ApiSettings(ConfigManager.current)
+object ApiSettings extends ApiSettings(ConfigManager.dynamicConfig())
 
 class ApiSettings(root: => Config) {
 
