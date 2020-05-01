@@ -18,15 +18,15 @@ package com.netflix.atlas.webapi
 import java.util.concurrent.TimeUnit
 
 import com.netflix.atlas.chart.GraphEngine
-import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.validation.Rule
+import com.netflix.iep.config.ConfigManager
 import com.typesafe.config.Config
 
-object ApiSettings extends ApiSettings(ConfigManager.current)
+object ApiSettings extends ApiSettings(ConfigManager.dynamicConfig())
 
 class ApiSettings(root: => Config) {
 

@@ -26,7 +26,6 @@ import com.fasterxml.jackson.core.JsonParser
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.Interner
@@ -36,6 +35,7 @@ import com.netflix.atlas.core.validation.Rule
 import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.iep.config.ConfigManager
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.Promise
@@ -46,7 +46,7 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi w
 
   private val publishRef = actorRefFactory.actorSelection("/user/publish")
 
-  private val config = ConfigManager.current.getConfig("atlas.webapi.publish")
+  private val config = ConfigManager.dynamicConfig().getConfig("atlas.webapi.publish")
 
   private val internWhileParsing = config.getBoolean("intern-while-parsing")
 

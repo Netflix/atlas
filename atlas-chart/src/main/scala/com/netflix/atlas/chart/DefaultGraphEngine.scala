@@ -25,15 +25,15 @@ import java.time.ZonedDateTime
 import com.netflix.atlas.chart.graphics.ChartSettings
 import com.netflix.atlas.chart.graphics.Element
 import com.netflix.atlas.chart.model.GraphDef
-import com.netflix.atlas.config.ConfigManager
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
+import com.netflix.iep.config.ConfigManager
 
 class DefaultGraphEngine extends PngGraphEngine {
 
   private val renderingHints = {
     import scala.jdk.CollectionConverters._
-    val config = ConfigManager.current.getConfig("atlas.chart.rendering-hints")
+    val config = ConfigManager.dynamicConfig().getConfig("atlas.chart.rendering-hints")
     config.entrySet.asScala.toList.map { entry =>
       val k = getField(entry.getKey).asInstanceOf[RenderingHints.Key]
       val v = getField(entry.getValue.unwrapped.asInstanceOf[String])

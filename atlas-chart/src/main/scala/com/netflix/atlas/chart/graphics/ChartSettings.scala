@@ -22,11 +22,11 @@ import java.awt.image.BufferedImage
 import java.util.concurrent.ConcurrentHashMap
 
 import com.netflix.atlas.chart.util.Fonts
-import com.netflix.atlas.config.ConfigManager
+import com.netflix.iep.config.ConfigManager
 
 object ChartSettings {
 
-  private val config = ConfigManager.current.getConfig("atlas.chart")
+  private val config = ConfigManager.dynamicConfig().getConfig("atlas.chart")
 
   val defaultTheme: String = config.getString(s"theme.default")
 
