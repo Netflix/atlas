@@ -65,7 +65,7 @@ object Json {
     .enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS)
     .enable(StreamReadFeature.AUTO_CLOSE_SOURCE)
     .enable(StreamWriteFeature.AUTO_CLOSE_TARGET)
-    .disable(JsonWriteFeature.WRITE_NAN_AS_STRINGS)
+    .enable(JsonWriteFeature.WRITE_NAN_AS_STRINGS)
     .build()
 
   private val smileFactory = SmileFactory

@@ -20,6 +20,7 @@ import java.util
 import java.util.Optional
 import java.util.regex.Pattern
 
+import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.JsonNode
@@ -91,7 +92,7 @@ class JsonSuite extends AnyFunSuite {
   // This is non-standard, but we prefer to differentiate from infinity or other special values
   test("double NaN") {
     val v = Double.NaN
-    assert(encode(v) === "NaN")
+    assert(encode(v) === "\"NaN\"")
     assert(JDouble.isNaN(decode[Double](encode(v))))
   }
 
@@ -463,6 +464,11 @@ class JsonSuite extends AnyFunSuite {
     val obj = parse("""{"foo":42,"bar":"abc"}""")
     assert(list === obj)
   }
+
+  test("JsonSupport NaN encoding") {
+    val obj = JsonObjectWithSupport(Double.NaN)
+    assert(obj.toJson === """{"v":"NaN"}""")
+  }
 }
 
 case class JsonKeyWithDot(`a.b`: String)
@@ -498,3 +504,12 @@ case class JsonSuiteObjectWithDefaults(
   bar: String = "abc",
   values: List[String] = Nil
 )
+
+case class JsonObjectWithSupport(v: Double) extends JsonSupport {
+
+  override def encode(gen: JsonGenerator): Unit = {
+    gen.writeStartObject()
+    gen.writeNumberField("v", v)
+    gen.writeEndObject()
+  }
+}
