@@ -60,6 +60,21 @@ class AlgoStateSuite extends AnyFunSuite {
     assert(serde(s).getDouble("test").isNaN)
   }
 
+  test("double: invalid string") {
+    val s = AlgoState("foo", "test" -> "invalid_numeric_value")
+    intercept[NumberFormatException] {
+      s.getDouble("test")
+    }
+  }
+
+  test("double: invalid type") {
+    val s = AlgoState("foo", "test" -> new Object)
+    val e = intercept[IllegalStateException] {
+      s.getDouble("test")
+    }
+    assert(e.getMessage === "test has non-numeric type: class java.lang.Object")
+  }
+
   test("double array") {
     val s = AlgoState("foo", "test" -> Array(42.0, 1.0))
     assertEquals(s, _.getDoubleArray("test"), Array(42.0, 1.0))

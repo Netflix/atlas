@@ -24,11 +24,30 @@ case class AlgoState(algorithm: String, settings: Map[String, Any]) {
 
   private def get[T](key: String): T = settings(key).asInstanceOf[T]
 
+  /**
+    * Handle conversion of value to a number. This is needed if special double values are
+    * used that cannot be represented in JSON (NaN, Infinity).
+    *
+    * @param key
+    *     Used to provide more context in the exception if there is a failure.
+    * @param value
+    *     Raw value for the key that needs to be converted to a number.
+    * @return
+    *     Numeric value for the key.
+    */
+  private def toNumber(key: String, value: Any): Number = {
+    value match {
+      case v: Number => v
+      case v: String => java.lang.Double.parseDouble(v)
+      case v         => throw new IllegalStateException(s"$key has non-numeric type: ${v.getClass}")
+    }
+  }
+
   /** Retrieve a boolean value for a given key. */
   def getBoolean(key: String): Boolean = get[Boolean](key)
 
   /** Retrieve a number value for a given key. */
-  def getNumber(key: String): Number = get[Number](key)
+  def getNumber(key: String): Number = toNumber(key, settings(key))
 
   /** Retrieve an integer value for a given key. */
   def getInt(key: String): Int = getNumber(key).intValue()
@@ -47,7 +66,7 @@ case class AlgoState(algorithm: String, settings: Map[String, Any]) {
     // When the state is from a de-serialized source the type may have changed to
     // a Seq type such as List.
     settings(key) match {
-      case vs: Seq[_]        => vs.map(_.asInstanceOf[Double]).toArray
+      case vs: Seq[_]        => vs.map(v => toNumber(key, v).doubleValue()).toArray
       case vs: Array[Double] => vs
     }
   }
