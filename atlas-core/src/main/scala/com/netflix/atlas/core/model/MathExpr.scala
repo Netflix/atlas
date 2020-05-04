@@ -147,7 +147,7 @@ object MathExpr {
       ZonedDateTime.ofInstant(Instant.ofEpochMilli(t), ZoneOffset.UTC).get(chronoField)
     }
 
-    private def sinceEpoch(divisor: Long)(t: Long): Double = t / divisor
+    private def sinceEpoch(divisor: Long)(t: Long): Double = t.toDouble / divisor
 
     def dataExprs: List[DataExpr] = Nil
 

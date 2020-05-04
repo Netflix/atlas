@@ -66,7 +66,7 @@ case class Text(
     val wrap = width - Text.rightPadding
     var y = 0.0f
     while (measurer.getPosition < str.length) {
-      val layout = measurer.nextLayout(wrap)
+      val layout = measurer.nextLayout(wrap.toFloat)
       y += layout.getAscent + layout.getDescent + layout.getLeading
     }
     math.ceil(y).toInt
@@ -84,7 +84,7 @@ case class Text(
     val wrap = width - Text.rightPadding
     var y = y1.toFloat
     while (measurer.getPosition < str.length) {
-      val layout = measurer.nextLayout(wrap)
+      val layout = measurer.nextLayout(wrap.toFloat)
       y += layout.getAscent
       alignment match {
         case TextAlignment.LEFT =>

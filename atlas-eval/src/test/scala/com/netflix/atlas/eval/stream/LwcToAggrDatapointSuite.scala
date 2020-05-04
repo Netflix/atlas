@@ -134,7 +134,7 @@ class LwcToAggrDatapointSuite extends AnyFunSuite {
 
   test("invalid message") {
     val msg =
-      """{"timestamp":20000,"id":"sum","tags":{"name":"cpu"},\u007F"value":3.0}"""
+      """{"timestamp":20000,"id":"sum","tags":{"name":"cpu"},&"value":3.0}"""
     val results = eval(List(msg))
     assert(results.size === 0)
   }
