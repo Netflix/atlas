@@ -551,6 +551,11 @@ class QuerySuite extends AnyFunSuite {
     assert(Query.simplify(q, ignore = true) === Not(Equal("a", "b")))
   }
 
+  test("simplify not recursive ignore - Or") {
+    val q = Or(And(Not(True), Equal("a", "b")), False)
+    assert(Query.simplify(q, ignore = true) === Equal("a", "b"))
+  }
+
   test("expandInClauses, simple query") {
     val q = Equal("a", "b")
     assert(Query.expandInClauses(q) === List(q))

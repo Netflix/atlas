@@ -115,7 +115,7 @@ object ClusterOps extends StrictLogging {
         }
 
         private def updateMembers(members: Set[M]): Unit = {
-          val current = membersSources.keySet
+          val current = membersSources.keySet.toSet
 
           val removed = current -- members
           if (removed.nonEmpty) {

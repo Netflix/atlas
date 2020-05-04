@@ -45,7 +45,7 @@ private[stream] class FillRemovedKeysWith[K, V](valueForRemovedKey: K => V)
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      private var prevKeySet = scala.collection.Set.empty[K]
+      private var prevKeySet = Set.empty[K]
 
       override def onPush(): Unit = {
         val map = grab(in)
@@ -56,7 +56,7 @@ private[stream] class FillRemovedKeysWith[K, V](valueForRemovedKey: K => V)
           newMap.put(k, valueForRemovedKey(k))
         }
 
-        prevKeySet = map.keySet
+        prevKeySet = map.keySet.toSet
         push(out, newMap)
       }
 

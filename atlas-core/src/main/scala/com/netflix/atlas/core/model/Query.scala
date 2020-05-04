@@ -208,8 +208,8 @@ object Query {
 
       case Query.Or(Query.True, _)  => Query.True
       case Query.Or(_, Query.True)  => Query.True
-      case Query.Or(Query.False, q) => simplify(q)
-      case Query.Or(q, Query.False) => simplify(q)
+      case Query.Or(Query.False, q) => simplify(q, ignore)
+      case Query.Or(q, Query.False) => simplify(q, ignore)
       case Query.Or(q1, q2)         => Query.Or(simplify(q1, ignore), simplify(q2, ignore))
 
       case Query.Not(Query.True)  => if (ignore) Query.True else Query.False

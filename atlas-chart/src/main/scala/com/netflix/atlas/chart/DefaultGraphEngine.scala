@@ -121,12 +121,12 @@ class DefaultGraphEngine extends PngGraphEngine {
         val graphDatapoints = graphLines * ((end - start) / (config.step / 1000) + 1)
         val stats = "Fetch: %sms (L: %s, %s, %s; D: %s, %s, %s)".format(
           config.loadTime.toString,
-          UnitPrefix.format(config.stats.inputLines),
-          UnitPrefix.format(config.stats.outputLines),
+          UnitPrefix.format(config.stats.inputLines.toDouble),
+          UnitPrefix.format(config.stats.outputLines.toDouble),
           UnitPrefix.format(graphLines),
-          UnitPrefix.format(config.stats.inputDatapoints),
-          UnitPrefix.format(config.stats.outputDatapoints),
-          UnitPrefix.format(graphDatapoints)
+          UnitPrefix.format(config.stats.inputDatapoints.toDouble),
+          UnitPrefix.format(config.stats.outputDatapoints.toDouble),
+          UnitPrefix.format(graphDatapoints.toDouble)
         )
         belowCanvas += Text(
           stats,
