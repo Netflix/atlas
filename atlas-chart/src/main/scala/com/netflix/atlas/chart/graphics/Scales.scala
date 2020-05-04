@@ -95,8 +95,10 @@ object Scales {
   }
 
   /** Factory for creating a mapping for time values. */
-  def time(d1: Long, d2: Long, step: Long, r1: Int, r2: Int): LongScale = {
-    val dr = (d2 - d1).toDouble / step
+  def time(t1: Long, t2: Long, step: Long, r1: Int, r2: Int): LongScale = {
+    val d1 = t1.toDouble
+    val d2 = t2.toDouble
+    val dr = (d2 - d1) / step
     val pixelsPerStep = (r2 - r1) / dr
     v => ((v - d1) / step * pixelsPerStep).toInt + r1
   }
