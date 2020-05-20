@@ -24,22 +24,32 @@ import akka.util.ByteString
   * can be used to avoid allocating a temporary array and using `ByteArrayInputStream`.
   */
 class ByteStringInputStream(data: ByteString) extends InputStream {
-  private val buffer = data.asByteBuffer
+  private val buffers = data.asByteBuffers.iterator
+  private var current = buffers.next()
+
+  private def nextBuffer(): Unit = {
+    if (!current.hasRemaining && buffers.hasNext) {
+      current = buffers.next()
+    }
+  }
 
   override def read(): Int = {
-    if (!buffer.hasRemaining) -1 else buffer.get() & 255
+    nextBuffer()
+    if (current.hasRemaining) current.get() & 255 else -1
   }
 
   override def read(bytes: Array[Byte], offset: Int, length: Int): Int = {
-    val amount = math.min(buffer.remaining(), length)
+    nextBuffer()
+    val amount = math.min(current.remaining(), length)
     if (amount == 0) -1
     else {
-      buffer.get(bytes, offset, amount)
+      current.get(bytes, offset, amount)
       amount
     }
   }
 
   override def available(): Int = {
-    buffer.remaining()
+    nextBuffer()
+    current.remaining()
   }
 }

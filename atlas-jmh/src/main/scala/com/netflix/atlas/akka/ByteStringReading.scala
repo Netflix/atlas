@@ -44,6 +44,16 @@ class ByteStringReading {
   random.nextBytes(byteArray)
   private val byteString = ByteString(byteArray)
 
+  private val compositeByteString = {
+    val builder = ByteString.newBuilder
+    (0 until 1024).foreach { _ =>
+      val bytes = new Array[Byte](1024 * 100)
+      random.nextBytes(bytes)
+      builder.append(ByteString(bytes))
+    }
+    builder.result()
+  }
+
   @Benchmark
   def toArray(bh: Blackhole): Unit = {
     bh.consume(byteString.toArray)
@@ -52,6 +62,22 @@ class ByteStringReading {
   @Benchmark
   def inputStream(bh: Blackhole): Unit = {
     val in = new ByteStringInputStream(byteString)
+    val buffer = new Array[Byte](4096)
+    var len = in.read(buffer)
+    while (len > 0) {
+      bh.consume(buffer)
+      len = in.read(buffer)
+    }
+  }
+
+  @Benchmark
+  def compositeToArray(bh: Blackhole): Unit = {
+    bh.consume(compositeByteString.toArray)
+  }
+
+  @Benchmark
+  def compositeInputStream(bh: Blackhole): Unit = {
+    val in = new ByteStringInputStream(compositeByteString)
     val buffer = new Array[Byte](4096)
     var len = in.read(buffer)
     while (len > 0) {
