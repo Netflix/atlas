@@ -97,7 +97,7 @@ object Streams {
     }
   }
 
-  def scope[R <: Closeable, T](res: R)(f: R => T): T = {
+  def scope[R <: AutoCloseable, T](res: R)(f: R => T): T = {
     var thrown = false
     try f(res)
     catch {
