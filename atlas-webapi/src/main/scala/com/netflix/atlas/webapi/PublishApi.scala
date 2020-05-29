@@ -39,6 +39,7 @@ import com.netflix.iep.config.ConfigManager
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.Promise
+import scala.util.Using
 
 class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
 
@@ -224,7 +225,7 @@ object PublishApi {
 
   def encodeDatapoint(d: Datapoint): String = {
     Streams.string { w =>
-      Streams.scope(Json.newJsonGenerator(w)) { gen =>
+      Using.resource(Json.newJsonGenerator(w)) { gen =>
         encodeDatapoint(gen, d)
       }
     }
@@ -241,7 +242,7 @@ object PublishApi {
 
   def encodeBatch(tags: Map[String, String], values: List[Datapoint]): String = {
     Streams.string { w =>
-      Streams.scope(Json.newJsonGenerator(w)) { gen =>
+      Using.resource(Json.newJsonGenerator(w)) { gen =>
         encodeBatch(gen, tags, values)
       }
     }

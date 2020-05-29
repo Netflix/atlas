@@ -20,7 +20,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.zip._
 
-import scala.util.control.Exception
+import scala.util.Using
 
 object Streams {
 
@@ -97,15 +97,8 @@ object Streams {
     }
   }
 
+  @deprecated("Use scala.util.Using instead.", "1.7.0")
   def scope[R <: AutoCloseable, T](res: R)(f: R => T): T = {
-    var thrown = false
-    try f(res)
-    catch {
-      case t: Throwable =>
-        thrown = true
-        throw t
-    } finally {
-      if (thrown) Exception.ignoring(classOf[Throwable]) { res.close() } else res.close()
-    }
+    Using.resource(res)(f)
   }
 }

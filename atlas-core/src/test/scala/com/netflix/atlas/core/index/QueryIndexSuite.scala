@@ -27,6 +27,8 @@ import com.netflix.atlas.core.util.Streams
 import org.openjdk.jol.info.GraphLayout
 import org.scalatest.funsuite.AnyFunSuite
 
+import scala.util.Using
+
 class QueryIndexSuite extends AnyFunSuite {
 
   test("empty") {
@@ -282,7 +284,7 @@ class QueryIndexSuite extends AnyFunSuite {
 
   ignore("memory") {
     val interner = new QueryInterner
-    val queries = Streams.scope(Streams.resource("queries.txt")) { in =>
+    val queries = Using.resource(Streams.resource("queries.txt")) { in =>
       Streams.lines(in).toList.flatMap { u =>
         val uri = URI.create(u.replace("|", "%7C").replace("^", "%5E"))
         val qstring = uri.getRawQuery

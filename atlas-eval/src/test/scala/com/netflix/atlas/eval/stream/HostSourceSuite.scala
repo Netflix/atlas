@@ -42,6 +42,7 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.util.Using
 
 class HostSourceSuite extends AnyFunSuite {
 
@@ -58,7 +59,7 @@ class HostSourceSuite extends AnyFunSuite {
   def compress(str: String): Array[Byte] = {
     import com.netflix.atlas.core.util.Streams._
     byteArray { out =>
-      scope(gzip(out))(_.write(str.getBytes(StandardCharsets.UTF_8)))
+      Using.resource(gzip(out))(_.write(str.getBytes(StandardCharsets.UTF_8)))
     }
   }
 

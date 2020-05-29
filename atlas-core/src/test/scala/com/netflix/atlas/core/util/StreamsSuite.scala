@@ -20,6 +20,7 @@ import java.nio.file.Paths
 
 import org.scalatest.funsuite.AnyFunSuite
 
+@scala.annotation.nowarn
 class StreamsSuite extends AnyFunSuite {
 
   test("scope with Stream") {

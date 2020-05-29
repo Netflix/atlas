@@ -37,6 +37,8 @@ import com.netflix.atlas.eval.graph.Grapher
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
+import scala.util.Using
+
 class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
 
   private val grapher = Grapher(ConfigFactory.load())
@@ -70,7 +72,7 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
         dir.mkdirs()
         val image = PngImage(res.data)
         val file = new File(dir, fname)
-        scope(fileOut(file)) { out =>
+        Using.resource(fileOut(file)) { out =>
           image.write(out)
         }
 
@@ -99,7 +101,7 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
       val res = grapher.evalAndRender(Uri(uri), db)
       dir.mkdirs()
       val image = PngImage(res.data)
-      scope(fileOut(file)) { out =>
+      Using.resource(fileOut(file)) { out =>
         image.write(out)
       }
     }
@@ -109,7 +111,7 @@ class GraphHelper(db: Database, dir: File, path: String) extends StrictLogging {
   }
 
   private def imageSize(file: File): (Int, Int) = {
-    val bytes = scope(fileIn(file))(byteArray)
+    val bytes = Using.resource(fileIn(file))(byteArray)
     val image = PngImage(bytes).data
     image.getWidth -> image.getHeight
   }

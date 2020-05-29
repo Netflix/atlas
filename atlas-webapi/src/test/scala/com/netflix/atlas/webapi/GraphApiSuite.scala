@@ -32,6 +32,8 @@ import com.netflix.atlas.core.util.Strings
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
 
+import scala.util.Using
+
 class GraphApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
   import scala.concurrent.duration._
@@ -47,7 +49,7 @@ class GraphApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
   private val routes = RequestHandler.standardOptions((new GraphApi(config, system)).routes)
 
-  private val others = Streams.scope(Streams.resource("others.md")) { in =>
+  private val others = Using.resource(Streams.resource("others.md")) { in =>
     Streams.lines(in).toList
   }
   private val all = others

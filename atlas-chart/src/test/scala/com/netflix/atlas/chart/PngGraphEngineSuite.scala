@@ -41,6 +41,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.Failure
 import scala.util.Try
+import scala.util.Using
 
 abstract class PngGraphEngineSuite extends AnyFunSuite with BeforeAndAfterAll {
 
@@ -143,7 +144,7 @@ abstract class PngGraphEngineSuite extends AnyFunSuite with BeforeAndAfterAll {
   }
 
   def load(resource: String): GraphDef = {
-    Streams.scope(Streams.resource(resource)) { in =>
+    Using.resource(Streams.resource(resource)) { in =>
       Json.decode[GraphData](in).toGraphDef
     }
   }
