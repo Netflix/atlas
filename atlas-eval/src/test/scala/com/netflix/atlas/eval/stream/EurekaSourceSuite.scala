@@ -45,6 +45,7 @@ import scala.concurrent.duration.Duration
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.util.Using
 
 class EurekaSourceSuite extends AnyFunSuite {
 
@@ -61,7 +62,7 @@ class EurekaSourceSuite extends AnyFunSuite {
 
   private def gzip(data: String): Array[Byte] = {
     Streams.byteArray { out =>
-      Streams.scope(Streams.gzip(out)) { gz =>
+      Using.resource(Streams.gzip(out)) { gz =>
         gz.write(data.getBytes(StandardCharsets.UTF_8))
       }
     }

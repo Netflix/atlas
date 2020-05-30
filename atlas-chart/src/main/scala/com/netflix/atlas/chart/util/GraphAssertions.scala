@@ -24,6 +24,8 @@ import java.io.InputStream
 
 import com.netflix.atlas.core.util.Streams
 
+import scala.util.Using
+
 /**
   * Helper assertions for working with graphs.
   */
@@ -40,7 +42,7 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
   }
 
   private def getString(file: String): String = {
-    Streams.scope(getInputStream(file)) { in =>
+    Using.resource(getInputStream(file)) { in =>
       new String(Streams.byteArray(in), "UTF-8")
     }
   }
@@ -78,7 +80,7 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
     } </body>
     </html>"""
 
-    Streams.scope(Streams.fileOut(new File(s"$targetDir/report.html"))) { out =>
+    Using.resource(Streams.fileOut(new File(s"$targetDir/report.html"))) { out =>
       out.write(report.toString.getBytes("UTF-8"))
     }
   }

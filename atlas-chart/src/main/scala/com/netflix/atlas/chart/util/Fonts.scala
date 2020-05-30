@@ -17,7 +17,7 @@ package com.netflix.atlas.chart.util
 
 import java.awt.Font
 
-import com.netflix.atlas.core.util.Streams
+import scala.util.Using
 
 /**
   * Helper functions for working with fonts.
@@ -25,7 +25,7 @@ import com.netflix.atlas.core.util.Streams
 object Fonts {
 
   private def loadTrueTypeFont(resource: String): Font = {
-    Streams.scope(getClass.getClassLoader.getResourceAsStream(resource)) { in =>
+    Using.resource(getClass.getClassLoader.getResourceAsStream(resource)) { in =>
       Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(12.0f)
     }
   }

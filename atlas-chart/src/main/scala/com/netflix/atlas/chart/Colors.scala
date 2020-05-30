@@ -20,6 +20,8 @@ import java.awt.Color
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 
+import scala.util.Using
+
 object Colors {
 
   def withAlpha(c: Color, alpha: Int): Color = {
@@ -30,7 +32,7 @@ object Colors {
     * Load a list of colors from a resource file.
     */
   def load(name: String): List[Color] = {
-    Streams.scope(Streams.resource(name)) { in =>
+    Using.resource(Streams.resource(name)) { in =>
       Streams
         .lines(in)
         .filterNot(s => s.isEmpty || s.startsWith("#"))
