@@ -47,12 +47,12 @@ object SmallHashMap {
       val pos = Hash.absOrZero(k.hashCode) % size
       var i = pos
       var ki = buf(i * 2)
-      var keq = (ki == k)
+      var keq = k.equals(ki)
       while (ki != null && !keq) {
         i = (i + 1) % size
         require(i != pos, "data array is full")
         ki = buf(i * 2)
-        keq = (ki == k)
+        keq = k.equals(ki)
       }
 
       if (keq) {
