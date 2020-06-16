@@ -4,7 +4,7 @@ matrix:
   - jdk: openjdk8
     scala: 2.11.12
     os: linux
-    dist: trusty
+    dist: xenial
     env: BINTRAY_PUBLISH=true
   - jdk: openjdk11
     scala: 2.12.8
