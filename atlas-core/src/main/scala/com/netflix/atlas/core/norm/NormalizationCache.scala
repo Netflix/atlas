@@ -90,7 +90,7 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
     var value = gaugeCache.get(meta)
     if (value == null) {
       val update = new UpdateValueFunction(meta, step, updateF)
-      val norm = new LastValueFunction(step, update)
+      val norm = new MaxValueFunction(step, update)
       value = new CacheValue(clock.wallTime, norm)
       gaugeCache.put(meta, value)
     }
