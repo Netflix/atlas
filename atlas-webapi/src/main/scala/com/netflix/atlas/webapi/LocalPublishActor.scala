@@ -116,6 +116,7 @@ object LocalPublishActor {
           case Some("counter") => cache.updateCounter(v)
           case Some("gauge")   => cache.updateGauge(v)
           case Some("rate")    => cache.updateRate(v)
+          case Some("sum")     => cache.updateSum(v)
           case _               => cache.updateRate(v)
         }
       }
