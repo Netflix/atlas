@@ -30,27 +30,21 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
 
   type CacheEntry = java.util.Map.Entry[TaggedItem, CacheValue]
 
-  private val counterCache = new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
+  private val counterCache = newCacheMap()
 
-    override def removeEldestEntry(eldest: CacheEntry): Boolean = {
-      val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
-      ageMillis > 4 * step
-    }
-  }
+  private val rateCache = newCacheMap()
 
-  private val rateCache = new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
+  private val sumCache = newCacheMap()
 
-    override def removeEldestEntry(eldest: CacheEntry): Boolean = {
-      val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
-      ageMillis > 4 * step
-    }
-  }
+  private val gaugeCache = newCacheMap()
 
-  private val gaugeCache = new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
+  private def newCacheMap(): java.util.LinkedHashMap[TaggedItem, CacheValue] = {
+    new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
 
-    override def removeEldestEntry(eldest: CacheEntry): Boolean = {
-      val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
-      ageMillis > 4 * step
+      override def removeEldestEntry(eldest: CacheEntry): Boolean = {
+        val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
+        ageMillis > 4 * step
+      }
     }
   }
 
@@ -80,6 +74,19 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
       val norm = new NormalizeValueFunction(step, step, update)
       value = new CacheValue(clock.wallTime, norm)
       rateCache.put(meta, value)
+    }
+    value.lastAccessTime = clock.wallTime
+    value.f(m.timestamp, m.value)
+  }
+
+  def updateSum(m: Datapoint): Unit = {
+    val meta = BasicTaggedItem(m.tags)
+    var value = sumCache.get(meta)
+    if (value == null) {
+      val update = new UpdateValueFunction(meta, step, updateF)
+      val norm = new SumValueFunction(step, update)
+      value = new CacheValue(clock.wallTime, norm)
+      sumCache.put(meta, value)
     }
     value.lastAccessTime = clock.wallTime
     value.f(m.timestamp, m.value)
