@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.norm
 
 import com.netflix.atlas.core.util.Assert._
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.FunSuite
 
-class SumValueFunctionSuite extends AnyFunSuite {
+class SumValueFunctionSuite extends FunSuite {
 
   private def newFunction(step: Long, heartbeat: Long) = {
     val listVF = new ListValueFunction
