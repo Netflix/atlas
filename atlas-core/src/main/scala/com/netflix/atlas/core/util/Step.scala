@@ -41,19 +41,16 @@ object Step {
     subMinute ::: subHour ::: subDay
   }
 
-  private final val stepSet = allowedStepSizes.toSet
-
-  private def validate(s: Long): Unit = {
-    require(stepSet.contains(s), s"step size must a member of the set: $allowedStepSizes")
-  }
-
   private def datapointsPerPixel(datapoints: Long, width: Int): Long = {
     val v = datapoints / width
     if (datapoints % width == 0) v else v + 1
   }
 
   private def roundToDayBoundary(step: Long): Long = {
-    step / oneDay * oneDay
+    if (step % oneDay == 0)
+      step
+    else
+      step / oneDay * oneDay + oneDay
   }
 
   /**
@@ -74,7 +71,6 @@ object Step {
     * @param end      end time for the graph
     */
   def compute(primary: Long, width: Int, start: Long, end: Long): Long = {
-    validate(primary)
     val datapoints = (end - start) / primary
     val minStep = datapointsPerPixel(datapoints, width) * primary
     val max = math.max(primary, minStep)

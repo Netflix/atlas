@@ -15,6 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 import org.scalatest.funsuite.AnyFunSuite
 
 class StepSuite extends AnyFunSuite {
@@ -27,9 +30,23 @@ class StepSuite extends AnyFunSuite {
     }
   }
 
+  test("round: up if less than a day") {
+    assert(days(1) === Step.round(60000, days(1) / 2 + 1))
+  }
+
+  test("round: up if not on day boundary") {
+    assert(days(3) === Step.round(60000, days(2) + 1))
+  }
+
   test("compute: allow arbitrary number of days") {
     (1 until 500).foreach { i =>
       assert(days(i) === Step.compute(60000, 1, 0L, days(i)))
     }
+  }
+
+  test("compute: round less than a day") {
+    val e = Instant.parse("2017-06-27T00:00:00Z")
+    val s = e.minus(12 * 30, ChronoUnit.DAYS)
+    assert(days(1) === Step.compute(60000, 430, s.toEpochMilli, e.toEpochMilli))
   }
 }
