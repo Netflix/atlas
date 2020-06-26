@@ -18,9 +18,9 @@ package com.netflix.atlas.core.util
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.FunSuite
 
-class StepSuite extends AnyFunSuite {
+class StepSuite extends FunSuite {
 
   private def days(n: Long): Long = n * 24 * 60 * 60 * 1000
 
