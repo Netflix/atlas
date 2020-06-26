@@ -30,8 +30,7 @@ object Step {
     val subMinute = div60.map(_ * oneSecond)
     val subHour = div60.map(_ * oneMinute)
     val subDay = List(1, 2, 3, 6, 8, 12).map(_ * oneHour)
-    val subMonth = List(1, 7).map(_ * oneDay)
-    subMinute ::: subHour ::: subDay ::: subMonth
+    subMinute ::: subHour ::: subDay
   }
 
   private final val autoStepSizes = {
@@ -39,16 +38,7 @@ object Step {
     val subMinute = div60.map(_ * oneSecond)
     val subHour = div60.map(_ * oneMinute)
     val subDay = List(1, 6, 12).map(_ * oneHour)
-    val subMonth = List(1, 7).map(_ * oneDay)
-    subMinute ::: subHour ::: subDay ::: subMonth
-  }
-
-  private final val largestStep = allowedStepSizes.last
-
-  private final val stepSet = allowedStepSizes.toSet
-
-  private def validate(s: Long): Unit = {
-    require(stepSet.contains(s), s"step size must a member of the set: $allowedStepSizes")
+    subMinute ::: subHour ::: subDay
   }
 
   private def datapointsPerPixel(datapoints: Long, width: Int): Long = {
@@ -56,12 +46,19 @@ object Step {
     if (datapoints % width == 0) v else v + 1
   }
 
+  private def roundToDayBoundary(step: Long): Long = {
+    if (step % oneDay == 0)
+      step
+    else
+      step / oneDay * oneDay + oneDay
+  }
+
   /**
     * Round an arbitrary step to the next largest allowed step size.
     */
   def round(primary: Long, step: Long): Long = {
     val max = math.max(primary, step)
-    allowedStepSizes.find(_ >= max).getOrElse(largestStep)
+    allowedStepSizes.find(_ >= max).getOrElse(roundToDayBoundary(step))
   }
 
   /**
@@ -74,10 +71,9 @@ object Step {
     * @param end      end time for the graph
     */
   def compute(primary: Long, width: Int, start: Long, end: Long): Long = {
-    validate(primary)
     val datapoints = (end - start) / primary
     val minStep = datapointsPerPixel(datapoints, width) * primary
     val max = math.max(primary, minStep)
-    autoStepSizes.find(_ >= max).getOrElse(largestStep)
+    autoStepSizes.find(_ >= max).getOrElse(roundToDayBoundary(max))
   }
 }
