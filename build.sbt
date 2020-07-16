@@ -1,5 +1,5 @@
 
-lazy val root = project.in(file("."))
+lazy val atlas = project.in(file("."))
   .configure(BuildSettings.profile)
   .aggregate(
     `atlas-akka`,
