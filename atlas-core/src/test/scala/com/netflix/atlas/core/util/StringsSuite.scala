@@ -335,10 +335,54 @@ class StringsSuite extends AnyFunSuite {
     assert(parseDate("2012-02-01T04:05:06.123Z") === expected)
   }
 
+  test("parseDate, iso date with time with millis and zone (+00:00)") {
+    val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
+    val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, nanos, ZoneOffset.UTC)
+    assert(parseDate("2012-02-01T04:05:06.123+00:00") === expected)
+  }
+
+  test("parseDate, iso date with time with millis and zone (+0000)") {
+    val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
+    val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, nanos, ZoneOffset.UTC)
+    assert(parseDate("2012-02-01T04:05:06.123+0000") === expected)
+  }
+
+  test("parseDate, iso date with time with millis and zone (+00)") {
+    val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
+    val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, nanos, ZoneOffset.UTC)
+    assert(parseDate("2012-02-01T04:05:06.123+00") === expected)
+  }
+
   test("parseDate, iso date with time with millis and zone offset") {
     val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
     val expected = ZonedDateTime.of(2012, 2, 1, 7, 5, 6, nanos, ZoneOffset.UTC).toInstant
     assert(parseDate("2012-02-01T04:05:06.123-03:00").toInstant === expected)
+  }
+
+  test("parseDate, iso formats") {
+    val offsets = List(
+      "",
+      "Z",
+      "+00",
+      "+0000",
+      "+000000",
+      "+00:00",
+      "+00:00:00",
+      "-04",
+      "-0402",
+      "-040231",
+      "-04:02",
+      "-04:02:31"
+    )
+    val times = List(
+      "2020-07-28",
+      "2020-07-28T05:43",
+      "2020-07-28T05:43:02",
+      "2020-07-28T05:43:02.143"
+    )
+    for (t <- times; o <- offsets) {
+      parseDate(s"$t$o")
+    }
   }
 
   test("parseDate, iso date with time with millis") {

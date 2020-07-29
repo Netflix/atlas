@@ -20,12 +20,9 @@ import java.math.BigInteger
 import java.net.URLEncoder
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
 /**
@@ -47,15 +44,6 @@ object Strings {
     * Period following the ISO8601 conventions.
     */
   private val IsoPeriod = """^(P.*)$""".r
-
-  /**
-    * Date following the ISO8601 conventions.
-    */
-  private val IsoDate = """^(\d{4}-\d{2}-\d{2}(?:[-+Z].*)?)$""".r
-  private val IsoDateTime = """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?Z?)$""".r
-
-  private val IsoOffsetDateTime =
-    """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?[-+].*)$""".r
 
   /**
     * Date relative to a given reference point.
@@ -391,14 +379,6 @@ object Strings {
     * - years, y:
     */
   def parseDate(ref: ZonedDateTime, str: String, tz: ZoneId): ZonedDateTime = str match {
-    case IsoDate(_) =>
-      val date = LocalDate.parse(str, DateTimeFormatter.ISO_DATE.withZone(tz))
-      ZonedDateTime.of(date, LocalTime.MIN, tz)
-    case IsoDateTime(_) =>
-      val z = if (str.endsWith("Z")) ZoneOffset.UTC else tz
-      ZonedDateTime.parse(str, DateTimeFormatter.ISO_DATE_TIME.withZone(z))
-    case IsoOffsetDateTime(_) =>
-      ZonedDateTime.parse(str, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
     case RelativeDate(r, op, p) =>
       op match {
         case "-" => parseRefVar(ref, r).minus(parseDuration(p))
@@ -415,8 +395,11 @@ object Strings {
       val v = d.toLong
       val t = if (v > Integer.MAX_VALUE) v else v * 1000L
       ZonedDateTime.ofInstant(Instant.ofEpochMilli(t), tz)
-    case _ =>
-      throw new IllegalArgumentException("invalid date " + str)
+    case str =>
+      try IsoDateTimeParser.parse(str, tz)
+      catch {
+        case e: Exception => throw new IllegalArgumentException(s"invalid date $str", e)
+      }
   }
 
   /**
@@ -436,7 +419,7 @@ object Strings {
     */
   def parseDuration(str: String): Duration = str match {
     case AtPeriod(a, u) => parseAtDuration(a, u)
-    case IsoPeriod(p)   => Duration.parse(str) //isoPeriodFmt.parsePeriod(p)
+    case IsoPeriod(p)   => Duration.parse(str)
     case _              => throw new IllegalArgumentException("invalid period " + str)
   }
 
