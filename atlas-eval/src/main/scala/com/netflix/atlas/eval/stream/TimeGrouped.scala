@@ -25,6 +25,7 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.model.AggrValuesInfo
 import com.netflix.atlas.eval.model.TimeGroup
 
 /**
@@ -107,11 +108,18 @@ private[stream] class TimeGrouped(
         * so it can be used for a new time window.
         */
       private def flush(i: Int): Unit = {
-        val vs = buf(i).map(t => t._1 -> t._2.datapoints).toMap
         val t = timestamps(i)
-        if (t > 0) push(out, TimeGroup(t, step, vs)) else pull(in)
+        if (t > 0) push(out, toTimeGroup(t, buf(i))) else pull(in)
         cutoffTime = t
         buf(i) = new AggrMap
+      }
+
+      private def toTimeGroup(ts: Long, aggrMap: AggrMap): TimeGroup = {
+        TimeGroup(
+          ts,
+          step,
+          aggrMap.map(t => t._1 -> AggrValuesInfo(t._2.datapoints, t._2.numRawDatapoints)).toMap
+        )
       }
 
       override def onPush(): Unit = {
@@ -149,8 +157,7 @@ private[stream] class TimeGrouped(
 
       override def onUpstreamFinish(): Unit = {
         val groups = buf.indices.map { i =>
-          val vs = buf(i).map(t => t._1 -> t._2.datapoints).toMap
-          TimeGroup(timestamps(i), step, vs)
+          toTimeGroup(timestamps(i), buf(i))
         }.toList
         pending = groups.filter(_.timestamp > 0).sortWith(_.timestamp < _.timestamp)
         flushPending()

@@ -42,6 +42,8 @@ import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.typesafe.scalalogging.StrictLogging
 
+import scala.collection.mutable
+
 /**
   * Takes the set of data sources and time grouped partial aggregates as input and performs
   * the final evaluation step.
@@ -72,6 +74,9 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
       // Each expression matched with a list of data source ids that should receive
       // the data for it
       private var recipients = List.empty[(StyleExpr, List[String])]
+
+      // Track the set of DataExprs per DataSource
+      private var dataSourceIdToDataExprs = mutable.Map.empty[String, mutable.Set[DataExpr]]
 
       // Empty data map used as base to account for expressions that do not have any
       // matches for a given time interval
@@ -110,8 +115,18 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
             }
           }
           .groupBy(_._1)
-          .map(t => t._1 -> t._2.map(_._2).toList)
+          .map(t => t._1 -> t._2.map(_._2))
           .toList
+
+        // Compute the map from DataSource id to DataExprs
+        dataSourceIdToDataExprs = mutable.Map.empty
+        recipients.foreach(kv => {
+          kv._2.foreach(id => {
+            val dataExprSet = dataSourceIdToDataExprs.getOrElse(id, mutable.Set.empty)
+            dataExprSet.addAll(kv._1.expr.dataExprs)
+            dataSourceIdToDataExprs(id) = dataExprSet
+          })
+        })
 
         // Cleanup state for any expressions that are no longer needed
         val removed = previous.keySet -- recipients.map(_._1).toSet
@@ -149,34 +164,44 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
       private def handleData(group: TimeGroup): Unit = {
         // Finalize the DataExprs, needed as input for further evaluation
         val timestamp = group.timestamp
-        val groupedDatapoints = group.values
+        val groupedDatapoints = group.dataExprValues
 
-        val expressionDatapoints = noData ++ groupedDatapoints.map {
+        val dataExprToDatapoints = noData ++ groupedDatapoints.map {
             case (k, vs) =>
-              k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries)
+              k -> AggrDatapoint.aggregate(vs.values).map(_.toTimeSeries)
           }
-        val expressionDiagnostics = groupedDatapoints.map {
+
+        val dataExprToDiagnostics = groupedDatapoints.map {
           case (k, vs) =>
             val t = Instant.ofEpochMilli(timestamp)
-            k -> DiagnosticMessage.info(s"$t: ${vs.length} input datapoints for [$k]")
+            k -> DiagnosticMessage.info(s"$t: ${vs.values.length} input datapoints for [$k]")
         }
 
+        val finalDataRateMap = mutable.Map.empty[String, Long]
         // Generate the time series and diagnostic output
         val output = recipients.flatMap {
-          case (expr, ids) =>
+          case (styleExpr, ids) =>
             // Use an identity map for the state to ensure that multiple equivalent stateful
             // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
-            val state = states.getOrElse(expr, IdentityMap.empty[StatefulExpr, Any])
+            val state = states.getOrElse(styleExpr, IdentityMap.empty[StatefulExpr, Any])
             val context = EvalContext(timestamp, timestamp + step, step, state)
             try {
-              val result = expr.expr.eval(context, expressionDatapoints)
-              states(expr) = result.state
-              val data = if (result.data.isEmpty) List(noData(expr)) else result.data
+              val result = styleExpr.expr.eval(context, dataExprToDatapoints)
+              states(styleExpr) = result.state
+              val data = if (result.data.isEmpty) List(noData(styleExpr)) else result.data
               val msgs = data.map { t =>
-                TimeSeriesMessage(expr, context, t.withLabel(expr.legend(t)))
+                TimeSeriesMessage(styleExpr, context, t.withLabel(styleExpr.legend(t)))
               }
 
-              val diagnostics = expr.expr.dataExprs.flatMap(expressionDiagnostics.get)
+              val diagnostics = styleExpr.expr.dataExprs.flatMap(dataExprToDiagnostics.get)
+
+              // Collect final output data count
+              ids.foreach(id =>
+                finalDataRateMap.get(id) match {
+                  case Some(count) => finalDataRateMap.update(id, count + data.length)
+                  case None        => finalDataRateMap += id -> data.length
+                }
+              )
 
               ids.flatMap { id =>
                 (msgs ++ diagnostics).map { msg =>
@@ -185,14 +210,41 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
               }
             } catch {
               case e: Exception =>
-                val msg = error(expr.toString, "final eval failed", e)
+                val msg = error(styleExpr.toString, "final eval failed", e)
                 ids.map { id =>
                   new MessageEnvelope(id, msg)
                 }
             }
         }
 
-        push(out, Source(output))
+        // Raw data rate for each DataSource
+        val rawDataRateMessages = dataSourceIdToDataExprs.map(kv =>
+          new MessageEnvelope(
+            kv._1,
+            DiagnosticMessage.rate("raw", getNumRawDatapoints(kv._2, group), group.timestamp, step)
+          )
+        )
+
+        // Final output data rate for each DataSource
+        val finalDataRateMessages = finalDataRateMap.map(kv => {
+          new MessageEnvelope(kv._1, DiagnosticMessage.rate("final", kv._2, group.timestamp, step))
+        })
+
+        push(out, Source(output ++ rawDataRateMessages ++ finalDataRateMessages))
+      }
+
+      private def getNumRawDatapoints(
+        dataExprs: mutable.Set[DataExpr],
+        timeGroup: TimeGroup
+      ): Long = {
+        dataExprs
+          .map(dataExpr => {
+            timeGroup.dataExprValues.get(dataExpr) match {
+              case Some(v) => v.numRawDatapoints
+              case None    => 0
+            }
+          })
+          .sum
       }
 
       override def onPush(): Unit = {

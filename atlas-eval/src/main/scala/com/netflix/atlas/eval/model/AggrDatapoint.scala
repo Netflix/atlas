@@ -88,6 +88,8 @@ object AggrDatapoint {
     * instance have the same data expression.
     */
   trait Aggregator {
+    protected[this] var rawDatapointCounter = 0
+    def numRawDatapoints: Long = rawDatapointCounter
     def aggregate(datapoint: AggrDatapoint): Aggregator
     def datapoints: List[AggrDatapoint]
   }
@@ -101,9 +103,11 @@ object AggrDatapoint {
       extends Aggregator {
 
     private var value = init.value
+    rawDatapointCounter += 1
 
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {
       value = op(value, datapoint.value)
+      rawDatapointCounter += 1
       this
     }
 
@@ -123,7 +127,9 @@ object AggrDatapoint {
 
     private def newAggregator(datapoint: AggrDatapoint): SimpleAggregator = {
       datapoint.expr match {
-        case GroupBy(af: AggregateFunction, _) => new SimpleAggregator(datapoint, af)
+        case GroupBy(af: AggregateFunction, _) =>
+          rawDatapointCounter += 1
+          new SimpleAggregator(datapoint, af)
         case _ =>
           throw new IllegalArgumentException("datapoint is not for a grouped expression")
       }
@@ -131,8 +137,10 @@ object AggrDatapoint {
 
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {
       aggregators.get(datapoint.tags) match {
-        case Some(aggr) => aggr.aggregate(datapoint)
-        case None       => aggregators.put(datapoint.tags, newAggregator(datapoint))
+        case Some(aggr) =>
+          rawDatapointCounter += 1
+          aggr.aggregate(datapoint)
+        case None => aggregators.put(datapoint.tags, newAggregator(datapoint))
       }
       this
     }
@@ -150,6 +158,7 @@ object AggrDatapoint {
 
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {
       values = datapoint :: values
+      rawDatapointCounter += 1
       this
     }
 

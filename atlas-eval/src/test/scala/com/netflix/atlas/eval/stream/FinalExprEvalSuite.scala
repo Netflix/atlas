@@ -25,6 +25,7 @@ import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.model.AggrValuesInfo
 import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeSeriesMessage
@@ -67,7 +68,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val values = vs
       .map(_.copy(timestamp = timestamp))
       .groupBy(_.expr)
-      .map(t => t._1 -> t._2.toList)
+      .map(t => t._1 -> AggrValuesInfo(t._2.toList, t._2.size))
       .toMap
     TimeGroup(timestamp, step, values)
   }

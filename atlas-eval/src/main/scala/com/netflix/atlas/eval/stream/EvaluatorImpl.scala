@@ -47,6 +47,7 @@ import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.model.AggrValuesInfo
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.stream.EurekaSource.Instance
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
@@ -303,7 +304,7 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   private def toTimeGroup(step: Long, exprs: List[DataExpr], group: DatapointGroup): TimeGroup = {
-    val values = group.getDatapoints.asScala.zipWithIndex
+    val valuesInfo = group.getDatapoints.asScala.zipWithIndex
       .flatMap {
         case (d, i) =>
           val tags = d.getTags.asScala.toMap
@@ -321,8 +322,8 @@ private[stream] abstract class EvaluatorImpl(
           }
       }
       .groupBy(_.expr)
-      .map(t => t._1 -> AggrDatapoint.aggregate(t._2.toList))
-    TimeGroup(group.getTimestamp, step, values)
+      .map(t => t._1 -> AggrValuesInfo(AggrDatapoint.aggregate(t._2.toList), t._2.size))
+    TimeGroup(group.getTimestamp, step, valuesInfo)
   }
 
   @scala.annotation.tailrec
