@@ -47,8 +47,8 @@ abstract class TagIndexSuite extends AnyFunSuite {
       tmp = index.findTags(TagQuery(None, offset = last, limit = pageSize)).map(_.copy(count = -1))
     }
     builder ++= tmp
-    assert(expected.size === builder.result.size)
-    assert(expected === builder.result)
+    assert(expected.size === builder.result().size)
+    assert(expected === builder.result())
   }
 
   test("findTags all with key restriction") {
@@ -71,8 +71,8 @@ abstract class TagIndexSuite extends AnyFunSuite {
         .map(_.copy(count = -1))
     }
     builder ++= tmp
-    assert(expected.size === builder.result.size)
-    assert(expected === builder.result)
+    assert(expected.size === builder.result().size)
+    assert(expected === builder.result())
   }
 
   test("findTags query") {
@@ -216,8 +216,8 @@ abstract class TagIndexSuite extends AnyFunSuite {
       tmp = index.findItems(TagQuery(Some(q), offset = last, limit = pageSize))
     }
     builder ++= tmp
-    assert(result.size === builder.result.size)
-    assert(result === builder.result)
+    assert(result.size === builder.result().size)
+    assert(result === builder.result())
   }
 
   test("gt query") {

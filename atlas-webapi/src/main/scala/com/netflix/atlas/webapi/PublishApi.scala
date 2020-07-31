@@ -183,7 +183,7 @@ object PublishApi {
         tagsLoadedFirst = (tags != null)
         val builder = List.newBuilder[Datapoint]
         foreachItem(parser) { builder += decode(parser, tags, intern) }
-        metrics = builder.result
+        metrics = builder.result()
     }
 
     // If the tags were loaded first they got merged with the datapoints while parsing. Otherwise
@@ -200,7 +200,7 @@ object PublishApi {
     foreachItem(parser) {
       builder += decode(parser, null, intern)
     }
-    builder.result
+    builder.result()
   }
 
   def decodeList(json: String): List[Datapoint] = {
