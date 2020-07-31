@@ -32,7 +32,7 @@ class ListValueFunction extends ValueFunction {
   def update(timestamp: Long, value: Double): List[(Long, Double)] = {
     builder = List.newBuilder[(Long, Double)]
     f(timestamp, value)
-    builder.result
+    builder.result()
   }
 
   def apply(timestamp: Long, value: Double): Unit = {

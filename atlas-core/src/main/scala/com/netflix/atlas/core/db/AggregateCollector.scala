@@ -269,7 +269,7 @@ class AllAggregateCollector extends LimitedAggregateCollector {
     buffer.values.length
   }
 
-  def result: List[TimeSeriesBuffer] = builder.result
+  def result: List[TimeSeriesBuffer] = builder.result()
 
   def stats: CollectorStats = statBuffer.result
 }
