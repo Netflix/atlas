@@ -311,7 +311,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
       if (b != null) bs += b
       pos += 1
     }
-    bs.result
+    bs.result()
   }
 
   def fetch(start: Long, end: Long, aggr: Int): Array[Double] = {

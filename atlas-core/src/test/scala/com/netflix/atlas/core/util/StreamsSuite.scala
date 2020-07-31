@@ -20,12 +20,13 @@ import java.nio.file.Paths
 
 import org.scalatest.funsuite.AnyFunSuite
 
-@scala.annotation.nowarn
+import scala.util.Using
+
 class StreamsSuite extends AnyFunSuite {
 
   test("scope with Stream") {
     val cwd = Paths.get(".")
-    val cnt = Streams.scope(Files.list(cwd))(_.count())
+    val cnt = Using.resource(Files.list(cwd))(_.count())
     assert(cnt >= 0)
   }
 }

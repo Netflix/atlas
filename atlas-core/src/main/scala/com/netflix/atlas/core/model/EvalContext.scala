@@ -47,7 +47,7 @@ case class EvalContext(
       builder += EvalContext(stime, etime, step)
       t = e
     }
-    builder.result
+    builder.result()
   }
 
   def partitionByHour: List[EvalContext] =
