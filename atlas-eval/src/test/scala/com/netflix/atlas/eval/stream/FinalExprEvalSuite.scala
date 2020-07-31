@@ -69,7 +69,6 @@ class FinalExprEvalSuite extends AnyFunSuite {
       .map(_.copy(timestamp = timestamp))
       .groupBy(_.expr)
       .map(t => t._1 -> AggrValuesInfo(t._2.toList, t._2.size))
-      .toMap
     TimeGroup(timestamp, step, values)
   }
 
@@ -94,11 +93,31 @@ class FinalExprEvalSuite extends AnyFunSuite {
       TimeGroup(0L, step, Map.empty)
     )
     val output = run(input)
-    assert(output.size === 1)
-    output.foreach { env =>
-      assert(env.getId === "a")
-      val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
-      assert(ts.label === "(NO DATA / NO DATA)")
+    assert(output.size === 3)
+
+    val tsMsgs = output.filter(isTimeSeries)
+    assert(tsMsgs.size === 1)
+    val (tsId, tsMsg) = tsMsgs.head.getId -> tsMsgs.head.getMessage.asInstanceOf[TimeSeriesMessage]
+    assert(tsId == "a")
+    assert(tsMsg.label === "(NO DATA / NO DATA)")
+
+  }
+
+  private def isTimeSeries(messageEnvelope: MessageEnvelope): Boolean = {
+    messageEnvelope.getMessage match {
+      case _: TimeSeriesMessage => true
+      case _                    => false
+    }
+  }
+
+  private def isDiagnosticMessageWith(
+    messageEnvelope: MessageEnvelope,
+    theType: String,
+    keyword: String
+  ): Boolean = {
+    messageEnvelope.getMessage match {
+      case DiagnosticMessage(tp, msg, _) if tp == theType && msg.contains(keyword) => true
+      case _                                                                       => false
     }
   }
 
@@ -133,7 +152,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 4)
     val expectedTimeseries = List(Double.NaN, 42.0, 43.0, 44.0)
     timeseries.zip(expectedTimeseries).foreach {
@@ -143,7 +162,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
         checkValue(ts, expectedValue)
     }
 
-    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
+    val diagnostics = output.filter(isDiagnosticMessageWith(_, "info", "input datapoints for"))
     assert(diagnostics.size === 3)
     val expectedDiagnostics = List(
       DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr]"),
@@ -178,7 +197,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 4)
     val expectedTimeseries = List(Double.NaN, 42.0, 129.0, 87.0)
     timeseries.zip(expectedTimeseries).foreach {
@@ -188,7 +207,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
         checkValue(ts, expectedValue)
     }
 
-    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
+    val diagnostics = output.filter(isDiagnosticMessageWith(_, "info", "input datapoints"))
     assert(diagnostics.size === 3)
     val expectedDiagnostics = List(
       DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr]"),
@@ -228,7 +247,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 3 + 3) // 3 for expr1, 3 for expr2
 
     val expectedTimeseries1 = scala.collection.mutable.Queue(42.0, 84.0, 44.0)
@@ -241,7 +260,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
         checkValue(actual, expectedTimeseries2.dequeue())
     }
 
-    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
+    val diagnostics = output.filter(isDiagnosticMessageWith(_, "info", "input datapoints"))
     assert(diagnostics.size === 3 + 2) // 3 for datasource a, 2 for datasource b
 
     val expectedDiagnostics1 = scala.collection.mutable.Queue(
@@ -291,7 +310,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 4)
     timeseries.foreach { env =>
       val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
@@ -304,7 +323,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
       }
     }
 
-    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
+    val diagnostics = output.filter(isDiagnosticMessageWith(_, "info", "input datapoints"))
     assert(diagnostics.size === 6)
 
     val expectedDiagnostics = List(
@@ -361,7 +380,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 4)
     val expectedTimeseries = List(0.0, 0.0, 0.0, 0.0)
     timeseries.zip(expectedTimeseries).foreach {
@@ -391,7 +410,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 5)
     val expectedTimeseries = List(Double.NaN, Double.NaN, -2.0, 0.0, -4.0)
     timeseries.zip(expectedTimeseries).foreach {
@@ -437,7 +456,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 8)
     val expectedTimeseries = List(0.0, 1.0, 1.0, 2.0, 1.0, 1.0, 0.0, 1.0)
     timeseries.zip(expectedTimeseries).foreach {
@@ -475,7 +494,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 8)
     timeseries.foreach { env =>
       val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
