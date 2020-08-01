@@ -89,7 +89,7 @@ object AggrDatapoint {
     */
   trait Aggregator {
     protected[this] var rawDatapointCounter = 0
-    def numRawDatapoints: Long = rawDatapointCounter
+    def numRawDatapoints: Int = rawDatapointCounter
     def aggregate(datapoint: AggrDatapoint): Aggregator
     def datapoints: List[AggrDatapoint]
   }

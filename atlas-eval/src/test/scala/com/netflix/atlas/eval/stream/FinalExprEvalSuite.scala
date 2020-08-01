@@ -19,7 +19,6 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.Query
@@ -93,7 +92,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
       TimeGroup(0L, step, Map.empty)
     )
     val output = run(input)
-    assert(output.size === 3)
+    assert(output.size === 1)
 
     val tsMsgs = output.filter(isTimeSeries)
     assert(tsMsgs.size === 1)
@@ -107,17 +106,6 @@ class FinalExprEvalSuite extends AnyFunSuite {
     messageEnvelope.getMessage match {
       case _: TimeSeriesMessage => true
       case _                    => false
-    }
-  }
-
-  private def isDiagnosticMessageWith(
-    messageEnvelope: MessageEnvelope,
-    theType: String,
-    keyword: String
-  ): Boolean = {
-    messageEnvelope.getMessage match {
-      case DiagnosticMessage(tp, msg, _) if tp == theType && msg.contains(keyword) => true
-      case _                                                                       => false
     }
   }
 
@@ -161,18 +149,6 @@ class FinalExprEvalSuite extends AnyFunSuite {
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
-
-    val diagnostics = output.filter(isDiagnosticMessageWith(_, "info", "input datapoints for"))
-    assert(diagnostics.size === 3)
-    val expectedDiagnostics = List(
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 1 input datapoints for [$expr]"),
-      DiagnosticMessage.info(s"1970-01-01T00:03:00Z: 1 input datapoints for [$expr]")
-    )
-    diagnostics.zip(expectedDiagnostics).foreach {
-      case (actual, expected) =>
-        assert(actual.getMessage === expected)
-    }
   }
 
   test("aggregate with multiple datapoints per group") {
@@ -206,19 +182,6 @@ class FinalExprEvalSuite extends AnyFunSuite {
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
-
-    val diagnostics = output.filter(isDiagnosticMessageWith(_, "info", "input datapoints"))
-    assert(diagnostics.size === 3)
-    val expectedDiagnostics = List(
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 3 input datapoints for [$expr]"),
-      DiagnosticMessage.info(s"1970-01-01T00:03:00Z: 2 input datapoints for [$expr]")
-    )
-    diagnostics.zip(expectedDiagnostics).foreach {
-      case (actual, expected) =>
-        assert(actual.getMessage === expected)
-    }
-
   }
 
   test("aggregate with multiple expressions") {
@@ -258,26 +221,6 @@ class FinalExprEvalSuite extends AnyFunSuite {
         checkValue(actual, expectedTimeseries1.dequeue())
       else
         checkValue(actual, expectedTimeseries2.dequeue())
-    }
-
-    val diagnostics = output.filter(isDiagnosticMessageWith(_, "info", "input datapoints"))
-    assert(diagnostics.size === 3 + 2) // 3 for datasource a, 2 for datasource b
-
-    val expectedDiagnostics1 = scala.collection.mutable.Queue(
-      DiagnosticMessage.info(s"1970-01-01T00:00:00Z: 1 input datapoints for [$expr1]"),
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 2 input datapoints for [$expr1]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 1 input datapoints for [$expr1]")
-    )
-    val expectedDiagnostics2 = scala.collection.mutable.Queue(
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr2]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 2 input datapoints for [$expr2]")
-    )
-    diagnostics.foreach { env =>
-      val actual = env.getMessage.asInstanceOf[DiagnosticMessage]
-      if (env.getId == "a")
-        assert(actual === expectedDiagnostics1.dequeue())
-      else
-        assert(actual === expectedDiagnostics2.dequeue())
     }
   }
 
@@ -321,22 +264,6 @@ class FinalExprEvalSuite extends AnyFunSuite {
         assert(ts.start > 0)
         checkValue(ts, 21.0)
       }
-    }
-
-    val diagnostics = output.filter(isDiagnosticMessageWith(_, "info", "input datapoints"))
-    assert(diagnostics.size === 6)
-
-    val expectedDiagnostics = List(
-      DiagnosticMessage.info(s"1970-01-01T00:00:00Z: 1 input datapoints for [$expr1]"),
-      DiagnosticMessage.info(s"1970-01-01T00:00:00Z: 2 input datapoints for [$expr2]"),
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 2 input datapoints for [$expr1]"),
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 2 input datapoints for [$expr2]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 2 input datapoints for [$expr1]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 1 input datapoints for [$expr2]")
-    )
-    diagnostics.zip(expectedDiagnostics).foreach {
-      case (actual, expected) =>
-        assert(actual.getMessage === expected)
     }
   }
 

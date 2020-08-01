@@ -32,4 +32,4 @@ import com.netflix.atlas.core.model.DataExpr
   *     Values associated with this time.
   */
 case class TimeGroup(timestamp: Long, step: Long, dataExprValues: Map[DataExpr, AggrValuesInfo])
-case class AggrValuesInfo(values: List[AggrDatapoint], numRawDatapoints: Long)
+case class AggrValuesInfo(values: List[AggrDatapoint], numRawDatapoints: Int)

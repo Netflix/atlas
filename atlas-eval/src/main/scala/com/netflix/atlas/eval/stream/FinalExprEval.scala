@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.eval.stream
 
-import java.time.Instant
-
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
 import akka.stream.Attributes
@@ -171,13 +169,21 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
               k -> AggrDatapoint.aggregate(vs.values).map(_.toTimeSeries)
           }
 
-        val dataExprToDiagnostics = groupedDatapoints.map {
-          case (k, vs) =>
-            val t = Instant.ofEpochMilli(timestamp)
-            k -> DiagnosticMessage.info(s"$t: ${vs.values.length} input datapoints for [$k]")
+        // Collect input and intermediate data size per DataSource
+        val rateCollector = new EvalDataRateCollector(timestamp, step)
+        dataSourceIdToDataExprs.foreach {
+          case (id, dataExprSet) => {
+            dataExprSet.foreach(dataExpr => {
+              group.dataExprValues.get(dataExpr).foreach { info =>
+                {
+                  rateCollector.incrementInput(id, dataExpr, info.numRawDatapoints)
+                  rateCollector.incrementIntermediate(id, dataExpr, info.values.size)
+                }
+              }
+            })
+          }
         }
 
-        val finalDataRateMap = mutable.Map.empty[String, Long]
         // Generate the time series and diagnostic output
         val output = recipients.flatMap {
           case (styleExpr, ids) =>
@@ -193,18 +199,11 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
                 TimeSeriesMessage(styleExpr, context, t.withLabel(styleExpr.legend(t)))
               }
 
-              val diagnostics = styleExpr.expr.dataExprs.flatMap(dataExprToDiagnostics.get)
-
-              // Collect final output data count
-              ids.foreach(id =>
-                finalDataRateMap.get(id) match {
-                  case Some(count) => finalDataRateMap.update(id, count + data.length)
-                  case None        => finalDataRateMap += id -> data.length
-                }
-              )
+              // Collect final data size per DataSource
+              ids.foreach(rateCollector.incrementOutput(_, data.size))
 
               ids.flatMap { id =>
-                (msgs ++ diagnostics).map { msg =>
+                msgs.map { msg =>
                   new MessageEnvelope(id, msg)
                 }
               }
@@ -217,34 +216,11 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
             }
         }
 
-        // Raw data rate for each DataSource
-        val rawDataRateMessages = dataSourceIdToDataExprs.map(kv =>
-          new MessageEnvelope(
-            kv._1,
-            DiagnosticMessage.rate("raw", getNumRawDatapoints(kv._2, group), group.timestamp, step)
-          )
-        )
+        val rateMessages = rateCollector.getAll.map {
+          case (id, rate) => new MessageEnvelope(id, rate)
+        }.toList
 
-        // Final output data rate for each DataSource
-        val finalDataRateMessages = finalDataRateMap.map(kv => {
-          new MessageEnvelope(kv._1, DiagnosticMessage.rate("final", kv._2, group.timestamp, step))
-        })
-
-        push(out, Source(output ++ rawDataRateMessages ++ finalDataRateMessages))
-      }
-
-      private def getNumRawDatapoints(
-        dataExprs: mutable.Set[DataExpr],
-        timeGroup: TimeGroup
-      ): Long = {
-        dataExprs
-          .map(dataExpr => {
-            timeGroup.dataExprValues.get(dataExpr) match {
-              case Some(v) => v.numRawDatapoints
-              case None    => 0
-            }
-          })
-          .sum
+        push(out, Source(output ++ rateMessages))
       }
 
       override def onPush(): Unit = {

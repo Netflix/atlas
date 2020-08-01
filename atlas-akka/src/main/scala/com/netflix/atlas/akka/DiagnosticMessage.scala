@@ -26,7 +26,6 @@ object DiagnosticMessage {
   final val Warning: String = "warn"
   final val Error: String = "error"
   final val Close: String = "close"
-  final val Rate: String = "rate"
 
   def info(message: String): DiagnosticMessage = {
     DiagnosticMessage(Info, message, None)
@@ -42,14 +41,6 @@ object DiagnosticMessage {
 
   def error(t: Throwable): DiagnosticMessage = {
     error(s"${t.getClass.getSimpleName}: ${t.getMessage}")
-  }
-
-  def rate(dataType: String, count: Long, timestamp: Long, step: Long): DiagnosticMessage = {
-    DiagnosticMessage(
-      Rate,
-      s"dataType=$dataType,count=$count,timestamp=$timestamp,step=$step",
-      None
-    )
   }
 
   val close: DiagnosticMessage = {
