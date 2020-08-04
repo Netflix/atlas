@@ -77,13 +77,7 @@ class EvalDataRateCollector(timestamp: Long, step: Long) {
     dataExpr: DataExpr,
     amount: Int
   ): Unit = {
-    counts.get(id) match {
-      case Some(v: RefIntHashMap[DataExpr]) => v.increment(dataExpr, amount)
-      case None =>
-        val temp = new RefIntHashMap[DataExpr]
-        temp.increment(dataExpr, amount)
-        counts += (id -> temp)
-    }
+    counts.getOrElseUpdate(id, new RefIntHashMap[DataExpr]).increment(dataExpr, amount)
   }
 }
 

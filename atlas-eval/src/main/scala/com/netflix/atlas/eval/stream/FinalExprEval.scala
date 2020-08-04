@@ -74,7 +74,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
       private var recipients = List.empty[(StyleExpr, List[String])]
 
       // Track the set of DataExprs per DataSource
-      private var dataSourceIdToDataExprs = mutable.Map.empty[String, mutable.Set[DataExpr]]
+      private var dataSourceIdToDataExprs = Map.empty[String, Set[DataExpr]]
 
       // Empty data map used as base to account for expressions that do not have any
       // matches for a given time interval
@@ -116,15 +116,19 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
           .map(t => t._1 -> t._2.map(_._2))
           .toList
 
-        // Compute the map from DataSource id to DataExprs
-        dataSourceIdToDataExprs = mutable.Map.empty
-        recipients.foreach(kv => {
-          kv._2.foreach(id => {
-            val dataExprSet = dataSourceIdToDataExprs.getOrElse(id, mutable.Set.empty)
-            dataExprSet.addAll(kv._1.expr.dataExprs)
-            dataSourceIdToDataExprs(id) = dataExprSet
-          })
-        })
+        dataSourceIdToDataExprs = recipients
+          .flatMap(styleExprAndIds =>
+            styleExprAndIds._2.map(id => id -> styleExprAndIds._1.expr.dataExprs.toSet)
+          )
+          // Fold to mutable map to avoid creating new Map on every update
+          .foldLeft(mutable.Map.empty[String, Set[DataExpr]]) {
+            case (map, (id, dataExprs)) => {
+              map += map.get(id).fold(id -> dataExprs) { vs =>
+                id -> (dataExprs ++ vs)
+              }
+            }
+          }
+          .toMap
 
         // Cleanup state for any expressions that are no longer needed
         val removed = previous.keySet -- recipients.map(_._1).toSet
@@ -172,16 +176,13 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
         // Collect input and intermediate data size per DataSource
         val rateCollector = new EvalDataRateCollector(timestamp, step)
         dataSourceIdToDataExprs.foreach {
-          case (id, dataExprSet) => {
+          case (id, dataExprSet) =>
             dataExprSet.foreach(dataExpr => {
               group.dataExprValues.get(dataExpr).foreach { info =>
-                {
-                  rateCollector.incrementInput(id, dataExpr, info.numRawDatapoints)
-                  rateCollector.incrementIntermediate(id, dataExpr, info.values.size)
-                }
+                rateCollector.incrementInput(id, dataExpr, info.numRawDatapoints)
+                rateCollector.incrementIntermediate(id, dataExpr, info.values.size)
               }
             })
-          }
         }
 
         // Generate the time series and diagnostic output

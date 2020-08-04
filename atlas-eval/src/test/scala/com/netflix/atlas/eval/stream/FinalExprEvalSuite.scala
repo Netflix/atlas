@@ -26,6 +26,8 @@ import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.AggrValuesInfo
 import com.netflix.atlas.eval.model.ArrayData
+import com.netflix.atlas.eval.model.EvalDataRate
+import com.netflix.atlas.eval.model.EvalDataSize
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
@@ -109,6 +111,34 @@ class FinalExprEvalSuite extends AnyFunSuite {
     }
   }
 
+  private def isEvalDataRate(messageEnvelope: MessageEnvelope): Boolean = {
+    messageEnvelope.getMessage match {
+      case _: EvalDataRate => true
+      case _               => false
+    }
+  }
+
+  private def getAsEvalDataRate(
+    env: MessageEnvelope
+  ): EvalDataRate = {
+    env.getMessage.asInstanceOf[EvalDataRate]
+  }
+
+  private def checkRate(
+    rate: EvalDataRate,
+    timestamp: Long,
+    step: Long,
+    inputSize: EvalDataSize,
+    intermediateSize: EvalDataSize,
+    outputSize: EvalDataSize
+  ): Unit = {
+    assert(rate.timestamp === timestamp)
+    assert(rate.step === step)
+    assert(rate.inputSize === inputSize)
+    assert(rate.intermediateSize === intermediateSize)
+    assert(rate.outputSize === outputSize)
+  }
+
   private def getValue(ts: TimeSeriesMessage): Double = {
     ts.data match {
       case ArrayData(vs) =>
@@ -149,6 +179,38 @@ class FinalExprEvalSuite extends AnyFunSuite {
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
+
+    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    assert(dataRateMsgs.size == 3)
+    val expectedSizes = Array(
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      )
+    )
+    dataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * (i + 1),
+        60000,
+        expectedSizes(i)(0),
+        expectedSizes(i)(1),
+        expectedSizes(i)(2)
+      )
+    })
   }
 
   test("aggregate with multiple datapoints per group") {
@@ -182,6 +244,38 @@ class FinalExprEvalSuite extends AnyFunSuite {
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
+
+    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    assert(dataRateMsgs.size == 3)
+    val expectedSizes = Array(
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(3, Map(expr.toString -> 3)),
+        EvalDataSize(3, Map(expr.toString -> 3)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(2, Map(expr.toString -> 2)),
+        EvalDataSize(2, Map(expr.toString -> 2)),
+        EvalDataSize(1)
+      )
+    )
+    dataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * (i + 1),
+        60000,
+        expectedSizes(i)(0),
+        expectedSizes(i)(1),
+        expectedSizes(i)(2)
+      )
+    })
   }
 
   test("aggregate with multiple expressions") {
@@ -222,6 +316,65 @@ class FinalExprEvalSuite extends AnyFunSuite {
       else
         checkValue(actual, expectedTimeseries2.dequeue())
     }
+
+    val expr1DataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    assert(expr1DataRateMsgs.size == 3)
+    val expr1ExpectedSizes = Array(
+      Array(
+        EvalDataSize(1, Map(expr1.toString -> 1)),
+        EvalDataSize(1, Map(expr1.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(2, Map(expr1.toString -> 2)),
+        EvalDataSize(2, Map(expr1.toString -> 2)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(1, Map(expr1.toString -> 1)),
+        EvalDataSize(1, Map(expr1.toString -> 1)),
+        EvalDataSize(1)
+      )
+    )
+    expr1DataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * i,
+        60000,
+        expr1ExpectedSizes(i)(0),
+        expr1ExpectedSizes(i)(1),
+        expr1ExpectedSizes(i)(2)
+      )
+    })
+
+    val expr2DataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "b")
+    assert(expr2DataRateMsgs.size == 2)
+    val expr2ExpectedSizes = Array(
+      Array(
+        EvalDataSize(1, Map(expr2.toString -> 1)),
+        EvalDataSize(1, Map(expr2.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(2, Map(expr2.toString -> 2)),
+        EvalDataSize(2, Map(expr2.toString -> 2)),
+        EvalDataSize(1)
+      )
+    )
+    expr2DataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * (i + 1),
+        60000,
+        expr2ExpectedSizes(i)(0),
+        expr2ExpectedSizes(i)(1),
+        expr2ExpectedSizes(i)(2)
+      )
+    })
   }
 
   // https://github.com/Netflix/atlas/issues/693
@@ -265,6 +418,38 @@ class FinalExprEvalSuite extends AnyFunSuite {
         checkValue(ts, 21.0)
       }
     }
+
+    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    assert(dataRateMsgs.size == 3)
+    val expectedSizes = Array(
+      Array(
+        EvalDataSize(3, Map(expr1.toString -> 1, expr2.toString -> 2)),
+        EvalDataSize(3, Map(expr1.toString -> 1, expr2.toString -> 2)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(4, Map(expr1.toString -> 2, expr2.toString -> 2)),
+        EvalDataSize(4, Map(expr1.toString -> 2, expr2.toString -> 2)),
+        EvalDataSize(2)
+      ),
+      Array(
+        EvalDataSize(3, Map(expr1.toString -> 2, expr2.toString -> 1)),
+        EvalDataSize(3, Map(expr1.toString -> 2, expr2.toString -> 1)),
+        EvalDataSize(1)
+      )
+    )
+    dataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * i,
+        60000,
+        expectedSizes(i)(0),
+        expectedSizes(i)(1),
+        expectedSizes(i)(2)
+      )
+    })
   }
 
   // https://github.com/Netflix/atlas/issues/762
