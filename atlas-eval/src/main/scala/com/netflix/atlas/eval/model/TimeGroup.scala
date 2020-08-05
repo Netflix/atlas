@@ -28,7 +28,8 @@ import com.netflix.atlas.core.model.DataExpr
   *     Timestamp that applies to all values within the group.
   * @param step
   *     Step size for the data within this group.
-  * @param values
+  * @param dataExprValues
   *     Values associated with this time.
   */
-case class TimeGroup(timestamp: Long, step: Long, values: Map[DataExpr, List[AggrDatapoint]])
+case class TimeGroup(timestamp: Long, step: Long, dataExprValues: Map[DataExpr, AggrValuesInfo])
+case class AggrValuesInfo(values: List[AggrDatapoint], numRawDatapoints: Int)

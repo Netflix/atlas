@@ -19,13 +19,15 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.model.AggrValuesInfo
 import com.netflix.atlas.eval.model.ArrayData
+import com.netflix.atlas.eval.model.EvalDataRate
+import com.netflix.atlas.eval.model.EvalDataSize
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
@@ -67,8 +69,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val values = vs
       .map(_.copy(timestamp = timestamp))
       .groupBy(_.expr)
-      .map(t => t._1 -> t._2.toList)
-      .toMap
+      .map(t => t._1 -> AggrValuesInfo(t._2.toList, t._2.size))
     TimeGroup(timestamp, step, values)
   }
 
@@ -94,11 +95,48 @@ class FinalExprEvalSuite extends AnyFunSuite {
     )
     val output = run(input)
     assert(output.size === 1)
-    output.foreach { env =>
-      assert(env.getId === "a")
-      val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
-      assert(ts.label === "(NO DATA / NO DATA)")
+
+    val tsMsgs = output.filter(isTimeSeries)
+    assert(tsMsgs.size === 1)
+    val (tsId, tsMsg) = tsMsgs.head.getId -> tsMsgs.head.getMessage.asInstanceOf[TimeSeriesMessage]
+    assert(tsId == "a")
+    assert(tsMsg.label === "(NO DATA / NO DATA)")
+
+  }
+
+  private def isTimeSeries(messageEnvelope: MessageEnvelope): Boolean = {
+    messageEnvelope.getMessage match {
+      case _: TimeSeriesMessage => true
+      case _                    => false
     }
+  }
+
+  private def isEvalDataRate(messageEnvelope: MessageEnvelope): Boolean = {
+    messageEnvelope.getMessage match {
+      case _: EvalDataRate => true
+      case _               => false
+    }
+  }
+
+  private def getAsEvalDataRate(
+    env: MessageEnvelope
+  ): EvalDataRate = {
+    env.getMessage.asInstanceOf[EvalDataRate]
+  }
+
+  private def checkRate(
+    rate: EvalDataRate,
+    timestamp: Long,
+    step: Long,
+    inputSize: EvalDataSize,
+    intermediateSize: EvalDataSize,
+    outputSize: EvalDataSize
+  ): Unit = {
+    assert(rate.timestamp === timestamp)
+    assert(rate.step === step)
+    assert(rate.inputSize === inputSize)
+    assert(rate.intermediateSize === intermediateSize)
+    assert(rate.outputSize === outputSize)
   }
 
   private def getValue(ts: TimeSeriesMessage): Double = {
@@ -132,7 +170,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 4)
     val expectedTimeseries = List(Double.NaN, 42.0, 43.0, 44.0)
     timeseries.zip(expectedTimeseries).foreach {
@@ -142,17 +180,37 @@ class FinalExprEvalSuite extends AnyFunSuite {
         checkValue(ts, expectedValue)
     }
 
-    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
-    assert(diagnostics.size === 3)
-    val expectedDiagnostics = List(
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 1 input datapoints for [$expr]"),
-      DiagnosticMessage.info(s"1970-01-01T00:03:00Z: 1 input datapoints for [$expr]")
+    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    assert(dataRateMsgs.size == 3)
+    val expectedSizes = Array(
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      )
     )
-    diagnostics.zip(expectedDiagnostics).foreach {
-      case (actual, expected) =>
-        assert(actual.getMessage === expected)
-    }
+    dataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * (i + 1),
+        60000,
+        expectedSizes(i)(0),
+        expectedSizes(i)(1),
+        expectedSizes(i)(2)
+      )
+    })
   }
 
   test("aggregate with multiple datapoints per group") {
@@ -177,7 +235,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 4)
     val expectedTimeseries = List(Double.NaN, 42.0, 129.0, 87.0)
     timeseries.zip(expectedTimeseries).foreach {
@@ -187,18 +245,37 @@ class FinalExprEvalSuite extends AnyFunSuite {
         checkValue(ts, expectedValue)
     }
 
-    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
-    assert(diagnostics.size === 3)
-    val expectedDiagnostics = List(
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 3 input datapoints for [$expr]"),
-      DiagnosticMessage.info(s"1970-01-01T00:03:00Z: 2 input datapoints for [$expr]")
+    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    assert(dataRateMsgs.size == 3)
+    val expectedSizes = Array(
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(3, Map(expr.toString -> 3)),
+        EvalDataSize(3, Map(expr.toString -> 3)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(2, Map(expr.toString -> 2)),
+        EvalDataSize(2, Map(expr.toString -> 2)),
+        EvalDataSize(1)
+      )
     )
-    diagnostics.zip(expectedDiagnostics).foreach {
-      case (actual, expected) =>
-        assert(actual.getMessage === expected)
-    }
-
+    dataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * (i + 1),
+        60000,
+        expectedSizes(i)(0),
+        expectedSizes(i)(1),
+        expectedSizes(i)(2)
+      )
+    })
   }
 
   test("aggregate with multiple expressions") {
@@ -227,7 +304,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 3 + 3) // 3 for expr1, 3 for expr2
 
     val expectedTimeseries1 = scala.collection.mutable.Queue(42.0, 84.0, 44.0)
@@ -240,25 +317,64 @@ class FinalExprEvalSuite extends AnyFunSuite {
         checkValue(actual, expectedTimeseries2.dequeue())
     }
 
-    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
-    assert(diagnostics.size === 3 + 2) // 3 for datasource a, 2 for datasource b
+    val expr1DataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    assert(expr1DataRateMsgs.size == 3)
+    val expr1ExpectedSizes = Array(
+      Array(
+        EvalDataSize(1, Map(expr1.toString -> 1)),
+        EvalDataSize(1, Map(expr1.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(2, Map(expr1.toString -> 2)),
+        EvalDataSize(2, Map(expr1.toString -> 2)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(1, Map(expr1.toString -> 1)),
+        EvalDataSize(1, Map(expr1.toString -> 1)),
+        EvalDataSize(1)
+      )
+    )
+    expr1DataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * i,
+        60000,
+        expr1ExpectedSizes(i)(0),
+        expr1ExpectedSizes(i)(1),
+        expr1ExpectedSizes(i)(2)
+      )
+    })
 
-    val expectedDiagnostics1 = scala.collection.mutable.Queue(
-      DiagnosticMessage.info(s"1970-01-01T00:00:00Z: 1 input datapoints for [$expr1]"),
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 2 input datapoints for [$expr1]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 1 input datapoints for [$expr1]")
+    val expr2DataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "b")
+    assert(expr2DataRateMsgs.size == 2)
+    val expr2ExpectedSizes = Array(
+      Array(
+        EvalDataSize(1, Map(expr2.toString -> 1)),
+        EvalDataSize(1, Map(expr2.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(2, Map(expr2.toString -> 2)),
+        EvalDataSize(2, Map(expr2.toString -> 2)),
+        EvalDataSize(1)
+      )
     )
-    val expectedDiagnostics2 = scala.collection.mutable.Queue(
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 1 input datapoints for [$expr2]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 2 input datapoints for [$expr2]")
-    )
-    diagnostics.foreach { env =>
-      val actual = env.getMessage.asInstanceOf[DiagnosticMessage]
-      if (env.getId == "a")
-        assert(actual === expectedDiagnostics1.dequeue())
-      else
-        assert(actual === expectedDiagnostics2.dequeue())
-    }
+    expr2DataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * (i + 1),
+        60000,
+        expr2ExpectedSizes(i)(0),
+        expr2ExpectedSizes(i)(1),
+        expr2ExpectedSizes(i)(2)
+      )
+    })
   }
 
   // https://github.com/Netflix/atlas/issues/693
@@ -290,7 +406,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 4)
     timeseries.foreach { env =>
       val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
@@ -303,21 +419,37 @@ class FinalExprEvalSuite extends AnyFunSuite {
       }
     }
 
-    val diagnostics = output.filter(_.getMessage.isInstanceOf[DiagnosticMessage])
-    assert(diagnostics.size === 6)
-
-    val expectedDiagnostics = List(
-      DiagnosticMessage.info(s"1970-01-01T00:00:00Z: 1 input datapoints for [$expr1]"),
-      DiagnosticMessage.info(s"1970-01-01T00:00:00Z: 2 input datapoints for [$expr2]"),
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 2 input datapoints for [$expr1]"),
-      DiagnosticMessage.info(s"1970-01-01T00:01:00Z: 2 input datapoints for [$expr2]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 2 input datapoints for [$expr1]"),
-      DiagnosticMessage.info(s"1970-01-01T00:02:00Z: 1 input datapoints for [$expr2]")
+    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    assert(dataRateMsgs.size == 3)
+    val expectedSizes = Array(
+      Array(
+        EvalDataSize(3, Map(expr1.toString -> 1, expr2.toString -> 2)),
+        EvalDataSize(3, Map(expr1.toString -> 1, expr2.toString -> 2)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(4, Map(expr1.toString -> 2, expr2.toString -> 2)),
+        EvalDataSize(4, Map(expr1.toString -> 2, expr2.toString -> 2)),
+        EvalDataSize(2)
+      ),
+      Array(
+        EvalDataSize(3, Map(expr1.toString -> 2, expr2.toString -> 1)),
+        EvalDataSize(3, Map(expr1.toString -> 2, expr2.toString -> 1)),
+        EvalDataSize(1)
+      )
     )
-    diagnostics.zip(expectedDiagnostics).foreach {
-      case (actual, expected) =>
-        assert(actual.getMessage === expected)
-    }
+    dataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * i,
+        60000,
+        expectedSizes(i)(0),
+        expectedSizes(i)(1),
+        expectedSizes(i)(2)
+      )
+    })
   }
 
   // https://github.com/Netflix/atlas/issues/762
@@ -360,7 +492,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 4)
     val expectedTimeseries = List(0.0, 0.0, 0.0, 0.0)
     timeseries.zip(expectedTimeseries).foreach {
@@ -390,7 +522,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 5)
     val expectedTimeseries = List(Double.NaN, Double.NaN, -2.0, 0.0, -4.0)
     timeseries.zip(expectedTimeseries).foreach {
@@ -436,7 +568,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 8)
     val expectedTimeseries = List(0.0, 1.0, 1.0, 2.0, 1.0, 1.0, 0.0, 1.0)
     timeseries.zip(expectedTimeseries).foreach {
@@ -474,7 +606,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(isTimeSeries)
     assert(timeseries.size === 8)
     timeseries.foreach { env =>
       val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]

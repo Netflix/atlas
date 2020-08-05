@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.eval.stream
 
-import java.time.Instant
-
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
 import akka.stream.Attributes
@@ -41,6 +39,8 @@ import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.typesafe.scalalogging.StrictLogging
+
+import scala.collection.mutable
 
 /**
   * Takes the set of data sources and time grouped partial aggregates as input and performs
@@ -72,6 +72,9 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
       // Each expression matched with a list of data source ids that should receive
       // the data for it
       private var recipients = List.empty[(StyleExpr, List[String])]
+
+      // Track the set of DataExprs per DataSource
+      private var dataSourceIdToDataExprs = Map.empty[String, Set[DataExpr]]
 
       // Empty data map used as base to account for expressions that do not have any
       // matches for a given time interval
@@ -110,8 +113,22 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
             }
           }
           .groupBy(_._1)
-          .map(t => t._1 -> t._2.map(_._2).toList)
+          .map(t => t._1 -> t._2.map(_._2))
           .toList
+
+        dataSourceIdToDataExprs = recipients
+          .flatMap(styleExprAndIds =>
+            styleExprAndIds._2.map(id => id -> styleExprAndIds._1.expr.dataExprs.toSet)
+          )
+          // Fold to mutable map to avoid creating new Map on every update
+          .foldLeft(mutable.Map.empty[String, Set[DataExpr]]) {
+            case (map, (id, dataExprs)) => {
+              map += map.get(id).fold(id -> dataExprs) { vs =>
+                id -> (dataExprs ++ vs)
+              }
+            }
+          }
+          .toMap
 
         // Cleanup state for any expressions that are no longer needed
         val removed = previous.keySet -- recipients.map(_._1).toSet
@@ -149,50 +166,62 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
       private def handleData(group: TimeGroup): Unit = {
         // Finalize the DataExprs, needed as input for further evaluation
         val timestamp = group.timestamp
-        val groupedDatapoints = group.values
+        val groupedDatapoints = group.dataExprValues
 
-        val expressionDatapoints = noData ++ groupedDatapoints.map {
+        val dataExprToDatapoints = noData ++ groupedDatapoints.map {
             case (k, vs) =>
-              k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries)
+              k -> AggrDatapoint.aggregate(vs.values).map(_.toTimeSeries)
           }
-        val expressionDiagnostics = groupedDatapoints.map {
-          case (k, vs) =>
-            val t = Instant.ofEpochMilli(timestamp)
-            k -> DiagnosticMessage.info(s"$t: ${vs.length} input datapoints for [$k]")
+
+        // Collect input and intermediate data size per DataSource
+        val rateCollector = new EvalDataRateCollector(timestamp, step)
+        dataSourceIdToDataExprs.foreach {
+          case (id, dataExprSet) =>
+            dataExprSet.foreach(dataExpr => {
+              group.dataExprValues.get(dataExpr).foreach { info =>
+                rateCollector.incrementInput(id, dataExpr, info.numRawDatapoints)
+                rateCollector.incrementIntermediate(id, dataExpr, info.values.size)
+              }
+            })
         }
 
         // Generate the time series and diagnostic output
         val output = recipients.flatMap {
-          case (expr, ids) =>
+          case (styleExpr, ids) =>
             // Use an identity map for the state to ensure that multiple equivalent stateful
             // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
-            val state = states.getOrElse(expr, IdentityMap.empty[StatefulExpr, Any])
+            val state = states.getOrElse(styleExpr, IdentityMap.empty[StatefulExpr, Any])
             val context = EvalContext(timestamp, timestamp + step, step, state)
             try {
-              val result = expr.expr.eval(context, expressionDatapoints)
-              states(expr) = result.state
-              val data = if (result.data.isEmpty) List(noData(expr)) else result.data
+              val result = styleExpr.expr.eval(context, dataExprToDatapoints)
+              states(styleExpr) = result.state
+              val data = if (result.data.isEmpty) List(noData(styleExpr)) else result.data
               val msgs = data.map { t =>
-                TimeSeriesMessage(expr, context, t.withLabel(expr.legend(t)))
+                TimeSeriesMessage(styleExpr, context, t.withLabel(styleExpr.legend(t)))
               }
 
-              val diagnostics = expr.expr.dataExprs.flatMap(expressionDiagnostics.get)
+              // Collect final data size per DataSource
+              ids.foreach(rateCollector.incrementOutput(_, data.size))
 
               ids.flatMap { id =>
-                (msgs ++ diagnostics).map { msg =>
+                msgs.map { msg =>
                   new MessageEnvelope(id, msg)
                 }
               }
             } catch {
               case e: Exception =>
-                val msg = error(expr.toString, "final eval failed", e)
+                val msg = error(styleExpr.toString, "final eval failed", e)
                 ids.map { id =>
                   new MessageEnvelope(id, msg)
                 }
             }
         }
 
-        push(out, Source(output))
+        val rateMessages = rateCollector.getAll.map {
+          case (id, rate) => new MessageEnvelope(id, rate)
+        }.toList
+
+        push(out, Source(output ++ rateMessages))
       }
 
       override def onPush(): Unit = {

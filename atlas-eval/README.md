@@ -49,3 +49,43 @@ Processor<Evaluator.DataSources, Evaluator.MessageEnvelope> processor =
 Each `DataSource` for the input has a string id that will be added to corresponding
 `MessageEnvelope` objects in the output. This allows the messages to be matched with
 the correct input by the user.
+
+### Data Rate Messages
+The library also emits data rate messages to help gain insights in the data rate per `DataSource` 
+per step. There are 3 type of data sizes in a data rate message:
+ - Input size: number of data points coming in as raw input.
+ - Intermediate size: number of aggregate data points that are used in the eval step.
+ - Output size: number of data points for the final result.
+
+The "size" has the 2 fields: 
+ - `total`: total number of data points 
+ - `details`: number of data points per data expression (empty for "outputSize")
+
+For example, given a query of "app,www,:eq,name,request,:eq,:and,:sum,(,cluster,),:by" with 4 nodes
+and 2 clusters, one of the data rate message evelope may look like this:
+```json5
+{
+  "id": "_",
+  "message": {
+    "type": "rate",
+    "timestamp": 1596570660000,
+    "step": 60000,
+    "inputSize": {
+      "total": 4,
+      "details": {
+        "app,www,:eq,name,request,:eq,:and,:sum,(,cluster,),:by": 4
+      }
+    },
+    "intermediateSize": {
+      "total": 2,
+      "details": {
+        "app,www,:eq,name,request,:eq,:and,:sum,(,cluster,),:by": 2
+      }
+    },
+    "outputSize": {
+      "total": 2,
+      "details": {}
+    }
+  }
+}
+```
