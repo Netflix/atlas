@@ -54,7 +54,6 @@ import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.DatapointGroup
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
-import com.netflix.atlas.eval.stream.SubscriptionManager.Expression
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
@@ -76,6 +75,8 @@ private[stream] abstract class EvaluatorImpl(
   registry: Registry,
   implicit val system: ActorSystem
 ) {
+
+  import EvaluatorImpl._
 
   private implicit val materializer = StreamOps.materializer(system, registry)
 
@@ -479,4 +480,8 @@ private[stream] abstract class EvaluatorImpl(
       }
       .mapMaterializedValue(_ => NotUsed)
   }
+}
+
+object EvaluatorImpl {
+  case class Expression(expression: String, step: Long = 60000L)
 }
