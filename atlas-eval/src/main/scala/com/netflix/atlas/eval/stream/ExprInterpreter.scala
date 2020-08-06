@@ -23,11 +23,14 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
+import com.netflix.atlas.eval.util.HostRewriter
 import com.typesafe.config.Config
 
 private[stream] class ExprInterpreter(config: Config) {
 
   private val interpreter = Interpreter(new CustomVocabulary(config).allWords)
+
+  private val hostRewriter = new HostRewriter(config.getConfig("atlas.eval.host-rewrite"))
 
   def eval(expr: String): List[StyleExpr] = {
     interpreter.execute(expr).stack.map {
@@ -53,7 +56,9 @@ private[stream] class ExprInterpreter(config: Config) {
       }
     }
 
-    results
+    // Perform host rewrites based on the Atlas hostname
+    val host = uri.authority.host.toString()
+    hostRewriter.rewrite(host, results)
   }
 
   def dataExprMap(ds: DataSources): Map[DataExpr, List[DataSource]] = {

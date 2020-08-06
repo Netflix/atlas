@@ -15,7 +15,9 @@
  */
 package com.netflix.atlas.eval.graph
 
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers.Host
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
@@ -443,6 +445,31 @@ class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
         assert(!m.contains(s"atlas.$stat"))
       }
     }
+  }
+
+  private def mkRequest(host: String, expr: String = "name,sps,:eq,:sum"): HttpRequest = {
+    HttpRequest(uri = Uri(s"/api/v1/graph?q=$expr"), headers = List(Host(host)))
+  }
+
+  test("host rewrite: no match") {
+    val request = mkRequest("foo.example.com")
+    val config = grapher.toGraphConfig(request)
+    assert(config === grapher.toGraphConfig(request.uri))
+  }
+
+  test("host rewrite: match") {
+    val request = mkRequest("foo.us-east-1.example.com")
+    val config = grapher.toGraphConfig(request)
+    assert(config !== grapher.toGraphConfig(request.uri))
+    assert(config.query.contains("region,us-east-1,:eq"))
+    assert(config.parsedQuery.get.forall(_.toString.contains("region,us-east-1,:eq")))
+  }
+
+  test("host rewrite: bad query") {
+    val request = mkRequest("foo.us-east-1.example.com", "a,b,:foo")
+    val config = grapher.toGraphConfig(request)
+    assert(config.query === "a,b,:foo")
+    assert(config.parsedQuery.isFailure)
   }
 }
 

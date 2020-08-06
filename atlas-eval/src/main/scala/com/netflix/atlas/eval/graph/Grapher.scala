@@ -54,13 +54,26 @@ case class Grapher(settings: DefaultSettings) {
     * extract some context from the headers.
     */
   def toGraphConfig(request: HttpRequest): GraphConfig = {
-    val config = toGraphConfig(request.uri)
+    val config = rewriteBasedOnHost(request, toGraphConfig(request.uri))
     val agent = request.headers
       .find(_.is("user-agent"))
       .map(_.value())
       .getOrElse("unknown")
     val isBrowser = settings.browserAgentPattern.matcher(agent).find()
     config.copy(isBrowser = isBrowser)
+  }
+
+  private def rewriteBasedOnHost(request: HttpRequest, config: GraphConfig): GraphConfig = {
+    request.headers
+      .find(_.is("host"))
+      .map(_.value())
+      .fold(config) { host =>
+        val newExprs = config.parsedQuery.map { exprs =>
+          settings.hostRewriter.rewrite(host, exprs)
+        }
+        val query = if (newExprs.isFailure) config.query else newExprs.get.mkString(",")
+        config.copy(query = query, parsedQuery = newExprs)
+      }
   }
 
   /**

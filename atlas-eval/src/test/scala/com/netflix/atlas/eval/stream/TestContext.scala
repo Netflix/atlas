@@ -55,6 +55,11 @@ object TestContext {
       |
       |  ignored-tag-keys = []
       |}
+      |
+      |atlas.eval.host-rewrite {
+      |  pattern = "$^"
+      |  key = ""
+      |}
     """.stripMargin)
 
   def createContext(

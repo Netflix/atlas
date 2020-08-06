@@ -23,6 +23,7 @@ import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.Vocabulary
+import com.netflix.atlas.eval.util.HostRewriter
 import com.typesafe.config.Config
 
 /**
@@ -109,6 +110,9 @@ case class DefaultSettings(root: Config, config: Config) {
   private def newInstance[T](cls: String): T = {
     Class.forName(cls).getDeclaredConstructor().newInstance().asInstanceOf[T]
   }
+
+  /** Host rewriter for restricting the expressions based on how the service was accessed. */
+  val hostRewriter = new HostRewriter(root.getConfig("atlas.eval.host-rewrite"))
 }
 
 object DefaultSettings {
