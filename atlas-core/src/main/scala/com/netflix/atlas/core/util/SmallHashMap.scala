@@ -442,12 +442,37 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
       override def containsKey(k: AnyRef): Boolean = self.getOrNull(k.asInstanceOf[K]) != null
 
       /**
-        * Required by AbstractMap. For this use-case we use the default scala wrapper if
-        * the entry set is needed.
+        * Overridden to avoid allocating memory for each entry when iterating over the map.
         */
       override def entrySet(): java.util.Set[java.util.Map.Entry[K, V]] = {
-        import scala.jdk.CollectionConverters._
-        self.asJava.entrySet()
+        new java.util.AbstractSet[java.util.Map.Entry[K, V]] {
+          override def size(): Int = self.size
+
+          override def iterator(): java.util.Iterator[java.util.Map.Entry[K, V]] = {
+            new java.util.Iterator[java.util.Map.Entry[K, V]] with java.util.Map.Entry[K, V] {
+              private[this] val it = entriesIterator
+              private[this] var key: K = _
+              private[this] var value: V = _
+
+              override def hasNext: Boolean = it.hasNext
+
+              override def next(): java.util.Map.Entry[K, V] = {
+                key = it.key
+                value = it.value
+                it.nextEntry()
+                this
+              }
+
+              override def getKey: K = key
+
+              override def getValue: V = value
+
+              override def setValue(value: V): V = {
+                throw new UnsupportedOperationException("setValue")
+              }
+            }
+          }
+        }
       }
     }
   }

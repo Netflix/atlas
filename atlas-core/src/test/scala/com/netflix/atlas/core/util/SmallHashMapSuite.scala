@@ -453,4 +453,32 @@ class SmallHashMapSuite extends AnyFunSuite {
     val m2 = SmallHashMap("a" -> "1", "c" -> "3")
     assert(!m1.dataEquals(m2))
   }
+
+  test("javaMap: get") {
+    val m = SmallHashMap("a" -> "1", "b" -> "2").asJavaMap
+    assert(m.get("a") === "1")
+    assert(m.get("b") === "2")
+    assert(m.get("c") === null)
+  }
+
+  test("javaMap: containsKey") {
+    val m = SmallHashMap("a" -> "1", "b" -> "2").asJavaMap
+    assert(m.containsKey("a"))
+    assert(m.containsKey("b"))
+    assert(!m.containsKey("c"))
+  }
+
+  test("javaMap: entrySet") {
+    val entries = SmallHashMap("a" -> "1", "b" -> "2").asJavaMap.entrySet()
+    assert(entries.size() === 2)
+
+    val it = entries.iterator()
+    while (it.hasNext) {
+      val entry = it.next()
+      entry.getKey match {
+        case "a" => assert(entry.getValue === "1")
+        case "b" => assert(entry.getValue === "2")
+      }
+    }
+  }
 }
