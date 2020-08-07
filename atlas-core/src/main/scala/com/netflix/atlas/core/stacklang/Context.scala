@@ -25,6 +25,10 @@ package com.netflix.atlas.core.stacklang
   * @param variables
   *     Variables that can be set to keep state outside of the main stack. See the
   *     `:get` and `:set` operators for more information.
+  * @param initialVariables
+  *     Initial set of variables used when beginning the execution. These values will be
+  *     used when operations like `:freeze` need to reset the interpreter to the initial
+  *     state.
   * @param frozenStack
   *     Separate stack that has been frozen to prevent further modification. See the
   *     `:freeze` operator for more information.
@@ -33,6 +37,7 @@ case class Context(
   interpreter: Interpreter,
   stack: List[Any],
   variables: Map[String, Any],
+  initialVariables: Map[String, Any] = Map.empty,
   frozenStack: List[Any] = Nil
 ) {
 
@@ -41,7 +46,7 @@ case class Context(
     * state will also be cleared.
     */
   def freeze: Context = {
-    copy(stack = Nil, variables = Map.empty[String, Any], frozenStack = stack ::: frozenStack)
+    copy(stack = Nil, variables = initialVariables, frozenStack = stack ::: frozenStack)
   }
 
   /**

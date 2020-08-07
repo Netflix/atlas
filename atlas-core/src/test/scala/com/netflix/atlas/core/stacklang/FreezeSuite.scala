@@ -40,6 +40,12 @@ class FreezeSuite extends AnyFunSuite {
     assert(e.getMessage === "key not found: foo")
   }
 
+  test("original variables are preserved") {
+    val vars = Map("foo" -> "original", "bar" -> "2")
+    val context = interpreter.execute("foo,1,:set,:freeze,foo,:get,bar,:get", vars)
+    assert(context.stack === List("2", "original"))
+  }
+
   test("multiple freeze operations") {
     val context = interpreter.execute("a,b,c,:freeze,d,e,f,:freeze,g,h,i,:freeze,j,k,l,:clear")
     assert(context.stack === List("i", "h", "g", "f", "e", "d", "c", "b", "a"))

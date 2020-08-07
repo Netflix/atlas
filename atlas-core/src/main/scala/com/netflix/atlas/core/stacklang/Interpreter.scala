@@ -113,7 +113,7 @@ case class Interpreter(vocabulary: List[Word]) {
   }
 
   final def execute(program: String, vars: Map[String, Any]): Context = {
-    execute(splitAndTrim(program), Context(this, Nil, vars))
+    execute(splitAndTrim(program), Context(this, Nil, vars, vars))
   }
 
   @scala.annotation.tailrec
