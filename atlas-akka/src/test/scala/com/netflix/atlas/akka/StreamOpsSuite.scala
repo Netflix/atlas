@@ -145,6 +145,19 @@ class StreamOpsSuite extends AnyFunSuite {
     Await.ready(fut, Duration.Inf)
   }
 
+  test("blocking queue, not open after completed") {
+    val registry = new DefaultRegistry()
+    val source = StreamOps.blockingQueue[Int](registry, "test", 1)
+    val queue = source
+      .toMat(Sink.ignore)(Keep.left)
+      .run()
+    assert(queue.isOpen)
+    queue.offer(1)
+    assert(queue.isOpen)
+    queue.complete()
+    assert(!queue.isOpen)
+  }
+
   private def checkCounts(registry: Registry, name: String, expected: Map[String, Double]): Unit = {
     import scala.jdk.CollectionConverters._
     registry
