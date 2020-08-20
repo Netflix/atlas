@@ -16,6 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -38,31 +39,33 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
   def routes: Route = {
     endpointPath("lwc" / "api" / "v1" / "evaluate") {
       post {
-        parseEntity(json[EvaluateRequest]) { req =>
-          payloadSize.record(req.metrics.size)
-          val timestamp = req.timestamp
-          req.metrics.foreach { m =>
-            val datapoint = LwcDatapoint(timestamp, m.id, m.tags, m.value)
-            evaluate(m.id, datapoint)
+        extractClientIP { addr =>
+          parseEntity(json[EvaluateRequest]) { req =>
+            payloadSize.record(req.metrics.size)
+            val timestamp = req.timestamp
+            req.metrics.foreach { m =>
+              val datapoint = LwcDatapoint(timestamp, m.id, m.tags, m.value)
+              evaluate(addr, m.id, datapoint)
+            }
+            req.messages.foreach { m =>
+              evaluate(addr, m.id, m)
+            }
+            complete(HttpResponse(StatusCodes.OK))
           }
-          req.messages.foreach { m =>
-            evaluate(m.id, m)
-          }
-          complete(HttpResponse(StatusCodes.OK))
         }
       }
     }
   }
 
-  private def evaluate(id: String, msg: JsonSupport): Unit = {
+  private def evaluate(addr: RemoteAddress, id: String, msg: JsonSupport): Unit = {
     val queues = sm.handlersForSubscription(id)
     if (queues.nonEmpty) {
       queues.foreach { queue =>
-        logger.trace(s"sending $msg to $queue")
+        logger.trace(s"sending $msg to $queue (from: $addr)")
         queue.offer(msg)
       }
     } else {
-      logger.trace(s"no subscriptions, ignoring $msg")
+      logger.trace(s"no subscriptions, ignoring $msg (from: $addr)")
       ignoredCounter.increment()
     }
   }
