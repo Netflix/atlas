@@ -225,7 +225,7 @@ object StreamOps extends StrictLogging {
     /** Check if the queue is done, i.e., it has been completed and the queue is empty. */
     def isDone: Boolean = completed && queue.isEmpty
 
-    /** Check if the queue is open to take more data.*/
+    /** Check if the queue is open to take more data. */
     def isOpen: Boolean = !completed
   }
 
