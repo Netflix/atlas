@@ -6,14 +6,14 @@ object Dependencies {
   object Versions {
     val akka       = "2.5.31"
     val akkaHttpV  = "10.1.12"
-    val aws        = "1.11.820"
-    val iep        = "2.5.5"
+    val aws        = "1.11.847"
+    val iep        = "2.6.0"
     val guice      = "4.1.0"
-    val jackson    = "2.11.1"
+    val jackson    = "2.11.2"
     val log4j      = "2.13.3"
     val scala      = "2.13.3"
     val slf4j      = "1.7.30"
-    val spectator  = "0.111.0"
+    val spectator  = "0.115.0"
 
     val crossScala = Seq(scala)
   }
@@ -33,7 +33,7 @@ object Dependencies {
   val awsEC2            = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3             = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.8.5"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.4.1"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.4.2"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.24.0"
   val guiceCore         = "com.google.inject" % "guice" % guice
   val guiceMulti        = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -52,7 +52,7 @@ object Dependencies {
   val jacksonMapper     = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
   val jacksonScala      = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile      = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
-  val jol               = "org.openjdk.jol" % "jol-core" % "0.11"
+  val jol               = "org.openjdk.jol" % "jol-core" % "0.13"
   val jsr250            = "javax.annotation" % "jsr250-api" % "1.0"
   val jsr305            = "com.google.code.findbugs" % "jsr305" % "3.0.2"
   val log4jApi          = "org.apache.logging.log4j" % "log4j-api" % log4j
@@ -67,7 +67,7 @@ object Dependencies {
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
   val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
   val scalaReflect      = "org.scala-lang" % "scala-reflect" % scala
-  val scalatest         = "org.scalatest" %% "scalatest" % "3.2.0"
+  val scalatest         = "org.scalatest" %% "scalatest" % "3.2.2"
   val slf4jApi          = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j        = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple       = "org.slf4j" % "slf4j-simple" % slf4j
