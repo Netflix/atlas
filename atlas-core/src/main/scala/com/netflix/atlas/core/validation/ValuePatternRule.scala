@@ -27,10 +27,10 @@ import com.typesafe.config.Config
   */
 case class ValuePatternRule(pattern: PatternMatcher) extends TagRule {
 
-  def validate(k: String, v: String): ValidationResult = {
-    if (pattern.matches(v)) ValidationResult.Pass
+  def validate(k: String, v: String): String = {
+    if (pattern.matches(v)) TagRule.Pass
     else {
-      failure(s"value doesn't match pattern '$pattern': [$v]")
+      s"value doesn't match pattern '$pattern': [$v]"
     }
   }
 }

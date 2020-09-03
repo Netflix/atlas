@@ -40,17 +40,17 @@ import com.typesafe.config.Config
 case class ValidCharactersRule(defaultSet: AsciiSet, overrides: Map[String, AsciiSet])
     extends TagRule {
 
-  def validate(k: String, v: String): ValidationResult = {
+  def validate(k: String, v: String): String = {
     if (!defaultSet.containsAll(k)) {
-      return failure(s"invalid characters in key: [$k] ([$defaultSet] are allowed)")
+      return s"invalid characters in key: [$k] ([$defaultSet] are allowed)"
     }
 
     val valueSet = overrides(k)
     if (!valueSet.containsAll(v)) {
-      return failure(s"invalid characters in value: $k = [$v] ([$valueSet] are allowed)")
+      return s"invalid characters in value: $k = [$v] ([$valueSet] are allowed)"
     }
 
-    ValidationResult.Pass
+    TagRule.Pass
   }
 }
 

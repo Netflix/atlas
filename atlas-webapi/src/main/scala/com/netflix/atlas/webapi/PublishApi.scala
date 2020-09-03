@@ -87,10 +87,10 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi w
       val result = diff match {
         case d if d > limit =>
           val msg = s"data is too old: now = $now, timestamp = ${v.timestamp}, $d > $limit"
-          ValidationResult.Fail("DataTooOld", msg)
+          ValidationResult.Fail("DataTooOld", msg, v.tags)
         case d if d < -limit =>
           val msg = s"data is from future: now = $now, timestamp = ${v.timestamp}"
-          ValidationResult.Fail("DataFromFuture", msg)
+          ValidationResult.Fail("DataFromFuture", msg, v.tags)
         case _ =>
           Rule.validate(v.tags, rules)
       }
@@ -270,14 +270,23 @@ object PublishApi {
 
   object FailureMessage {
 
+    private def createMessage(level: String, message: List[ValidationResult]): FailureMessage = {
+      val failures = message.collect {
+        case msg: ValidationResult.Fail => msg
+      }
+      // Limit encoding the tags to just the summary set
+      val summary = failures.take(5).map { msg =>
+        s"${msg.reason} (tags=${Json.encode(msg.tags)})"
+      }
+      new FailureMessage(level, failures.size, summary)
+    }
+
     def error(message: List[ValidationResult]): FailureMessage = {
-      val failures = message.collect { case ValidationResult.Fail(_, reason) => reason }
-      new FailureMessage(DiagnosticMessage.Error, failures.size, failures.take(5))
+      createMessage(DiagnosticMessage.Error, message)
     }
 
     def partial(message: List[ValidationResult]): FailureMessage = {
-      val failures = message.collect { case ValidationResult.Fail(_, reason) => reason }
-      new FailureMessage("partial", failures.size, failures.take(5))
+      createMessage("partial", message)
     }
   }
 }

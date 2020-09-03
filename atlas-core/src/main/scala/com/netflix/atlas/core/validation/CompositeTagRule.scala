@@ -18,18 +18,18 @@ package com.netflix.atlas.core.validation
 /** Verifies that all of the tag rules match. */
 case class CompositeTagRule(tagRules: List[TagRule]) extends TagRule {
 
-  override def validate(k: String, v: String): ValidationResult = {
+  override def validate(k: String, v: String): String = {
     validate(tagRules, k, v)
   }
 
   @scala.annotation.tailrec
-  private def validate(rules: List[TagRule], k: String, v: String): ValidationResult = {
+  private def validate(rules: List[TagRule], k: String, v: String): String = {
     if (rules.isEmpty) {
-      ValidationResult.Pass
+      TagRule.Pass
     } else {
       val r = rules.head
       val result = r.validate(k, v)
-      if (result == ValidationResult.Pass)
+      if (result == TagRule.Pass)
         validate(rules.tail, k, v)
       else
         result

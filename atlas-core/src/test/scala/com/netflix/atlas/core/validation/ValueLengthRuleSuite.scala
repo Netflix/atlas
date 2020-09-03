@@ -27,19 +27,23 @@ class ValueLengthRuleSuite extends AnyFunSuite {
 
   private val rule = ValueLengthRule(config)
 
+  private def validate(k: String, v: String): ValidationResult = {
+    rule.validate(Map(k -> v))
+  }
+
   test("valid") {
-    assert(rule.validate("def", "ab") === ValidationResult.Pass)
-    assert(rule.validate("def", "abc") === ValidationResult.Pass)
-    assert(rule.validate("def", "abcd") === ValidationResult.Pass)
+    assert(validate("def", "ab") === ValidationResult.Pass)
+    assert(validate("def", "abc") === ValidationResult.Pass)
+    assert(validate("def", "abcd") === ValidationResult.Pass)
   }
 
   test("too short") {
-    val res = rule.validate("def", "a")
+    val res = validate("def", "a")
     assert(res.isFailure)
   }
 
   test("too long") {
-    val res = rule.validate("def", "abcde")
+    val res = validate("def", "abcde")
     assert(res.isFailure)
   }
 }

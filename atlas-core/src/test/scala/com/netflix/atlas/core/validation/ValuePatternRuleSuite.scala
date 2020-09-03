@@ -24,13 +24,17 @@ class ValuePatternRuleSuite extends AnyFunSuite {
 
   private val rule = ValuePatternRule(config)
 
+  private def validate(k: String, v: String): ValidationResult = {
+    rule.validate(Map(k -> v))
+  }
+
   test("valid") {
-    assert(rule.validate("def", "abc") === ValidationResult.Pass)
-    assert(rule.validate("def", "aaa") === ValidationResult.Pass)
+    assert(validate("def", "abc") === ValidationResult.Pass)
+    assert(validate("def", "aaa") === ValidationResult.Pass)
   }
 
   test("invalid") {
-    val res = rule.validate("def", "abcd")
+    val res = validate("def", "abcd")
     assert(res.isFailure)
   }
 }

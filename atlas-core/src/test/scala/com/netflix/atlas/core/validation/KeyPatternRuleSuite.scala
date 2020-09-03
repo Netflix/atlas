@@ -24,13 +24,17 @@ class KeyPatternRuleSuite extends AnyFunSuite {
 
   private val rule = KeyPatternRule(config)
 
+  private def validate(k: String, v: String): ValidationResult = {
+    rule.validate(Map(k -> v))
+  }
+
   test("valid") {
-    assert(rule.validate("abc", "ab") === ValidationResult.Pass)
-    assert(rule.validate("aaa", "abc") === ValidationResult.Pass)
+    assert(validate("abc", "ab") === ValidationResult.Pass)
+    assert(validate("aaa", "abc") === ValidationResult.Pass)
   }
 
   test("invalid") {
-    val res = rule.validate("abcd", "a")
+    val res = validate("abcd", "a")
     assert(res.isFailure)
   }
 }
