@@ -28,10 +28,10 @@ import com.typesafe.config.Config
   */
 case class KeyPatternRule(pattern: Pattern) extends TagRule {
 
-  def validate(k: String, v: String): ValidationResult = {
-    if (pattern.matcher(k).matches()) ValidationResult.Pass
+  def validate(k: String, v: String): String = {
+    if (pattern.matcher(k).matches()) TagRule.Pass
     else {
-      failure(s"key doesn't match pattern '$pattern': [$k]")
+      s"key doesn't match pattern '$pattern': [$k]"
     }
   }
 }

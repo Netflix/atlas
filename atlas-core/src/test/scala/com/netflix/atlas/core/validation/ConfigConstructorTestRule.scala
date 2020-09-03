@@ -18,5 +18,5 @@ package com.netflix.atlas.core.validation
 import com.typesafe.config.Config
 
 class ConfigConstructorTestRule(config: Config) extends TagRule {
-  override def validate(k: String, v: String): ValidationResult = ValidationResult.Pass
+  override def validate(k: String, v: String): String = TagRule.Pass
 }

@@ -31,11 +31,11 @@ import com.typesafe.config.Config
   */
 case class ReservedKeyRule(prefix: String, allowedKeys: Set[String]) extends TagRule {
 
-  override def validate(k: String, v: String): ValidationResult = {
+  override def validate(k: String, v: String): String = {
     if (k.startsWith(prefix) && !allowedKeys.contains(k))
-      failure(s"invalid key for reserved prefix '$prefix': $k")
+      s"invalid key for reserved prefix '$prefix': $k"
     else
-      ValidationResult.Pass
+      TagRule.Pass
   }
 }
 

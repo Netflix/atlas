@@ -37,7 +37,7 @@ case class MaxUserTagsRule(limit: Int) extends Rule {
     }
     if (count <= limit) ValidationResult.Pass
     else {
-      failure(s"too many user tags: $count > $limit")
+      failure(s"too many user tags: $count > $limit", tags)
     }
   }
 }

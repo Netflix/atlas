@@ -24,27 +24,32 @@ class ReservedKeyRuleSuite extends AnyFunSuite {
       |prefix = "nf."
       |allowed-keys = ["region", "job", "task"]
     """.stripMargin)
+
   private val rule = ReservedKeyRule(config)
 
+  private def validate(k: String, v: String): ValidationResult = {
+    rule.validate(Map(k -> v))
+  }
+
   test("valid") {
-    assert(rule.validate("nf.region", "def") === ValidationResult.Pass)
+    assert(validate("nf.region", "def") === ValidationResult.Pass)
   }
 
   test("valid, no reserved prefix") {
-    assert(rule.validate("foo", "def") === ValidationResult.Pass)
+    assert(validate("foo", "def") === ValidationResult.Pass)
   }
 
   test("invalid") {
-    val res = rule.validate("nf.foo", "def")
+    val res = validate("nf.foo", "def")
     assert(res.isFailure)
   }
 
   test("job") {
-    assert(rule.validate("nf.job", "def") === ValidationResult.Pass)
+    assert(validate("nf.job", "def") === ValidationResult.Pass)
   }
 
   test("task") {
-    assert(rule.validate("nf.task", "def") === ValidationResult.Pass)
+    assert(validate("nf.task", "def") === ValidationResult.Pass)
   }
 
 }

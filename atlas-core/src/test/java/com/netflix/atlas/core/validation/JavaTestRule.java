@@ -25,7 +25,7 @@ public class JavaTestRule extends TagRuleWrapper {
     }
 
     @Override
-    public ValidationResult validate(String k, String v) {
-        return ValidationResult.Pass$.MODULE$;
+    public String validate(String k, String v) {
+        return null;
     }
 }

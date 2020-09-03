@@ -24,12 +24,25 @@ sealed trait ValidationResult {
 
 object ValidationResult {
 
+  /** Indicates the tag set passed validation with no issues. */
   case object Pass extends ValidationResult {
 
     def isSuccess: Boolean = true
   }
 
-  case class Fail(rule: String, reason: String) extends ValidationResult {
+  /**
+    * Indicates the tag set violates at least one of the rules.
+    *
+    * @param rule
+    *     Name of the rule that failed.
+    * @param reason
+    *     Description of the failure.
+    * @param tags
+    *     The set of tags that was checked. This is used to help provide context
+    *     to the user when the failure is displayed.
+    */
+  case class Fail(rule: String, reason: String, tags: Map[String, String] = Map.empty)
+      extends ValidationResult {
 
     def isSuccess: Boolean = false
   }

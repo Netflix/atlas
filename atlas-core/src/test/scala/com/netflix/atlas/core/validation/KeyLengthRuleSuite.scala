@@ -27,19 +27,23 @@ class KeyLengthRuleSuite extends AnyFunSuite {
 
   private val rule = KeyLengthRule(config)
 
+  private def validate(k: String, v: String): ValidationResult = {
+    rule.validate(Map(k -> v))
+  }
+
   test("valid") {
-    assert(rule.validate("ab", "def") === ValidationResult.Pass)
-    assert(rule.validate("abc", "def") === ValidationResult.Pass)
-    assert(rule.validate("abcd", "def") === ValidationResult.Pass)
+    assert(validate("ab", "def") === ValidationResult.Pass)
+    assert(validate("abc", "def") === ValidationResult.Pass)
+    assert(validate("abcd", "def") === ValidationResult.Pass)
   }
 
   test("too short") {
-    val res = rule.validate("a", "def")
+    val res = validate("a", "def")
     assert(res.isFailure)
   }
 
   test("too long") {
-    val res = rule.validate("abcde", "def")
+    val res = validate("abcde", "def")
     assert(res.isFailure)
   }
 }

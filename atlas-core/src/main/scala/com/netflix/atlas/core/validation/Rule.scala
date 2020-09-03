@@ -46,8 +46,8 @@ trait Rule {
   /**
     * Helper for generating the failure response.
     */
-  protected def failure(reason: String): ValidationResult = {
-    ValidationResult.Fail(ruleName, reason)
+  protected def failure(reason: String, tags: Map[String, String]): ValidationResult = {
+    ValidationResult.Fail(ruleName, reason, tags)
   }
 }
 
@@ -103,10 +103,12 @@ object Rule {
 
   @scala.annotation.tailrec
   def validate(tags: Map[String, String], rules: List[Rule]): ValidationResult = {
-    if (rules.isEmpty) ValidationResult.Pass
-    else {
-      val res = rules.head.validate(tags)
-      if (res.isFailure) res else validate(tags, rules.tail)
+    rules match {
+      case r :: rs =>
+        val result = r.validate(tags)
+        if (result.isFailure) result else validate(tags, rs)
+      case Nil =>
+        ValidationResult.Pass
     }
   }
 }

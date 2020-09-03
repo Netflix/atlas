@@ -35,42 +35,46 @@ class ValidCharactersRuleSuite extends AnyFunSuite {
 
   private val alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._"
 
+  private def validate(rule: Rule, k: String, v: String): ValidationResult = {
+    rule.validate(Map(k -> v))
+  }
+
   test("valid") {
     val rule = ValidCharactersRule(config)
-    assert(rule.validate(alpha, alpha) === ValidationResult.Pass)
+    assert(validate(rule, alpha, alpha) === ValidationResult.Pass)
   }
 
   test("invalid key") {
     val rule = ValidCharactersRule(config)
-    val res = rule.validate("spaces not allowed", alpha)
+    val res = validate(rule, "spaces not allowed", alpha)
     assert(res.isFailure)
   }
 
   test("invalid value") {
     val rule = ValidCharactersRule(config)
-    val res = rule.validate(alpha, "spaces not allowed")
+    val res = validate(rule, alpha, "spaces not allowed")
     assert(res.isFailure)
   }
 
   test("custom pattern valid") {
     val rule = ValidCharactersRule(customPattern)
-    assert(rule.validate("abcdef", "fedcba") === ValidationResult.Pass)
+    assert(validate(rule, "abcdef", "fedcba") === ValidationResult.Pass)
   }
 
   test("custom pattern invalid key") {
     val rule = ValidCharactersRule(customPattern)
-    val res = rule.validate(alpha, "fedcba")
+    val res = validate(rule, alpha, "fedcba")
     assert(res.isFailure)
   }
 
   test("custom pattern invalid value") {
     val rule = ValidCharactersRule(customPattern)
-    val res = rule.validate("abcdef", alpha)
+    val res = validate(rule, "abcdef", alpha)
     assert(res.isFailure)
   }
 
   test("custom pattern value override") {
     val rule = ValidCharactersRule(customPattern)
-    assert(rule.validate("nf.asg", alpha + "^~") === ValidationResult.Pass)
+    assert(validate(rule, "nf.asg", alpha + "^~") === ValidationResult.Pass)
   }
 }

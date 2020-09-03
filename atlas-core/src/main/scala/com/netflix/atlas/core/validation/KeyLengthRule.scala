@@ -27,14 +27,14 @@ import com.typesafe.config.Config
   */
 case class KeyLengthRule(minLength: Int, maxLength: Int) extends TagRule {
 
-  def validate(k: String, v: String): ValidationResult = {
+  def validate(k: String, v: String): String = {
     k.length match {
       case len if len > maxLength =>
-        failure(s"key too long: [$k] ($len > $maxLength)")
+        s"key too long: [$k] ($len > $maxLength)"
       case len if len < minLength =>
-        failure(s"key too short: [$k] ($len < $minLength)")
+        s"key too short: [$k] ($len < $minLength)"
       case _ =>
-        ValidationResult.Pass
+        TagRule.Pass
     }
   }
 }

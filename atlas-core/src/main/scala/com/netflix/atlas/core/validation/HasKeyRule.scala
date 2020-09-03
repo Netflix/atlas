@@ -28,7 +28,10 @@ import com.typesafe.config.Config
 case class HasKeyRule(key: String) extends Rule {
 
   def validate(tags: SmallHashMap[String, String]): ValidationResult = {
-    if (tags.contains(key)) ValidationResult.Pass else failure(s"missing '$key': ${tags.keys}")
+    if (tags.contains(key))
+      ValidationResult.Pass
+    else
+      failure(s"missing '$key': ${tags.keys}", tags)
   }
 }
 

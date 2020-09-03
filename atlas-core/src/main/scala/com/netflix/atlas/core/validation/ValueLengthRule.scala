@@ -27,14 +27,14 @@ import com.typesafe.config.Config
   */
 case class ValueLengthRule(minLength: Int, maxLength: Int) extends TagRule {
 
-  def validate(k: String, v: String): ValidationResult = {
+  def validate(k: String, v: String): String = {
     v.length match {
       case len if len > maxLength =>
-        failure(s"value too long: $k = [$v] ($len > $maxLength)")
+        s"value too long: $k = [$v] ($len > $maxLength)"
       case len if len < minLength =>
-        failure(s"value too short: $k = [$v] ($len < $minLength)")
+        s"value too short: $k = [$v] ($len < $minLength)"
       case _ =>
-        ValidationResult.Pass
+        TagRule.Pass
     }
   }
 }

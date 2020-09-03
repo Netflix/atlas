@@ -33,35 +33,39 @@ class NameValueLengthRuleSuite extends AnyFunSuite {
 
   private val rule = NameValueLengthRule(config)
 
+  private def validate(k: String, v: String): ValidationResult = {
+    rule.validate(Map(k -> v))
+  }
+
   test("name valid") {
-    assert(rule.validate("name", "abc") === ValidationResult.Pass)
-    assert(rule.validate("name", "abcd") === ValidationResult.Pass)
-    assert(rule.validate("name", "abcde") === ValidationResult.Pass)
+    assert(validate("name", "abc") === ValidationResult.Pass)
+    assert(validate("name", "abcd") === ValidationResult.Pass)
+    assert(validate("name", "abcde") === ValidationResult.Pass)
   }
 
   test("name too short") {
-    val res = rule.validate("name", "ab")
+    val res = validate("name", "ab")
     assert(res.isFailure)
   }
 
   test("name too long") {
-    val res = rule.validate("name", "abcdef")
+    val res = validate("name", "abcdef")
     assert(res.isFailure)
   }
 
   test("others valid") {
-    assert(rule.validate("def", "ab") === ValidationResult.Pass)
-    assert(rule.validate("def", "abc") === ValidationResult.Pass)
-    assert(rule.validate("def", "abcd") === ValidationResult.Pass)
+    assert(validate("def", "ab") === ValidationResult.Pass)
+    assert(validate("def", "abc") === ValidationResult.Pass)
+    assert(validate("def", "abcd") === ValidationResult.Pass)
   }
 
   test("others too short") {
-    val res = rule.validate("def", "a")
+    val res = validate("def", "a")
     assert(res.isFailure)
   }
 
   test("others too long") {
-    val res = rule.validate("def", "abcde")
+    val res = validate("def", "abcde")
     assert(res.isFailure)
   }
 }

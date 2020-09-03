@@ -25,12 +25,23 @@ trait TagRule extends Rule {
   def validate(tags: SmallHashMap[String, String]): ValidationResult = {
     val iter = tags.entriesIterator
     while (iter.hasNext) {
-      val res = validate(iter.key, iter.value)
-      if (res.isFailure) return res
+      val result = validate(iter.key, iter.value)
+      if (result != TagRule.Pass) return failure(result, tags)
       iter.nextEntry()
     }
     ValidationResult.Pass
   }
 
-  def validate(k: String, v: String): ValidationResult
+  /**
+    * Check the key/value pair and return `null` if it is valid or a reason string if
+    * there is a validation failure. The `null` type for success is used to avoid allocations
+    * or other overhead since the validation checks tend to be a hot path.
+    */
+  def validate(k: String, v: String): String
+}
+
+object TagRule {
+
+  /** Null string to make the code easier to follow when using null for a passing result. */
+  val Pass: String = null
 }
