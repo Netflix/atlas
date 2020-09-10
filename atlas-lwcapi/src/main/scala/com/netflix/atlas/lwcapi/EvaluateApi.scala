@@ -65,7 +65,7 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
         queue.offer(msg)
       }
     } else {
-      logger.trace(s"no subscriptions, ignoring $msg (from: $addr)")
+      logger.debug(s"no subscriptions, ignoring $msg (from: $addr)")
       ignoredCounter.increment()
     }
   }
