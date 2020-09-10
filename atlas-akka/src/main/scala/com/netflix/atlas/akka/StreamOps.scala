@@ -382,12 +382,14 @@ object StreamOps extends StrictLogging {
 
   /**
     * Filter out repeated values in a stream. Similar to the unix `uniq` command.
+    * @param timeout Repeated value will still be emitted if elapsed time since last emit exceeds
+    *                timeout; repeated value is never emitted if timeout <= 0.
     */
-  def unique[V]: Flow[V, V, NotUsed] = {
-    Flow[V].via(new UniqueFlow[V]())
+  def unique[V](timeout: Long = 0): Flow[V, V, NotUsed] = {
+    Flow[V].via(new UniqueFlow[V](timeout))
   }
 
-  private final class UniqueFlow[V] extends GraphStage[FlowShape[V, V]] {
+  private final class UniqueFlow[V](timeout: Long) extends GraphStage[FlowShape[V, V]] {
 
     private val in = Inlet[V]("UniqueFlow.in")
     private val out = Outlet[V]("UniqueFlow.out")
@@ -398,13 +400,19 @@ object StreamOps extends StrictLogging {
 
       new GraphStageLogic(shape) with InHandler with OutHandler {
         private var previous: V = _
+        private var lastPushedAt: Long = Long.MinValue
+
+        def isExpired(): Boolean = {
+          timeout > 0 && System.currentTimeMillis() - lastPushedAt > timeout
+        }
 
         override def onPush(): Unit = {
           val v = grab(in)
-          if (v == previous) {
+          if (v == previous && !isExpired()) {
             pull(in)
           } else {
             previous = v
+            lastPushedAt = System.currentTimeMillis()
             push(out, v)
           }
         }

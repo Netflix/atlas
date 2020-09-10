@@ -252,7 +252,7 @@ class StreamOpsSuite extends AnyFunSuite {
 
   test("unique") {
     val future = Source(List(1, 1, 2, 3, 3, 3, 4, 5, 6, 6, 7, 1))
-      .via(StreamOps.unique)
+      .via(StreamOps.unique())
       .runWith(Sink.seq[Int])
     val vs = Await.result(future, Duration.Inf)
     // Only consecutive repeated values are filtered out, so the final 1 should get repeated

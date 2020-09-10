@@ -83,6 +83,9 @@ private[stream] abstract class EvaluatorImpl(
   // Cached context instance used for things like expression validation.
   private val validationStreamContext = newStreamContext()
 
+  // Timeout for DataSources unique operator: emit repeating DataSources after timeout exceeds
+  private val uniqueTimeout: Long = config.getDuration("atlas.eval.unique-timeout").toMillis
+
   private def newStreamContext(dsLogger: DataSourceLogger = (_, _) => ()): StreamContext = {
     new StreamContext(
       config,
@@ -469,7 +472,7 @@ private[stream] abstract class EvaluatorImpl(
       UUID.randomUUID().toString
     val webSocketFlowOrigin = Http(system).webSocketClientFlow(WebSocketRequest(uri))
     Flow[DataSources]
-      .via(StreamOps.unique) // Updating subscriptions only if there's a change
+      .via(StreamOps.unique(uniqueTimeout)) // Updating subscriptions only if there's a change
       .map(dss => TextMessage(Json.encode(toExprSet(dss, context.interpreter))))
       .via(webSocketFlowOrigin)
       .flatMapConcat {
