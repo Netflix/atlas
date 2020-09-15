@@ -42,6 +42,7 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
+import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Timer
 import com.typesafe.scalalogging.StrictLogging
@@ -385,13 +386,14 @@ object StreamOps extends StrictLogging {
     *
     * @param timeout
     *     Repeated value will still be emitted if elapsed time since last emit exceeds
-    *     timeout; repeated value is never emitted if timeout <= 0.
+    *     timeout.
     */
-  def unique[V](timeout: Long = 0): Flow[V, V, NotUsed] = {
-    Flow[V].via(new UniqueFlow[V](timeout))
+  def unique[V](timeout: Long = Long.MaxValue, clock: Clock = Clock.SYSTEM): Flow[V, V, NotUsed] = {
+    Flow[V].via(new UniqueFlow[V](timeout, clock))
   }
 
-  private final class UniqueFlow[V](timeout: Long) extends GraphStage[FlowShape[V, V]] {
+  private final class UniqueFlow[V](timeout: Long, clock: Clock)
+      extends GraphStage[FlowShape[V, V]] {
 
     private val in = Inlet[V]("UniqueFlow.in")
     private val out = Outlet[V]("UniqueFlow.out")
@@ -402,10 +404,10 @@ object StreamOps extends StrictLogging {
 
       new GraphStageLogic(shape) with InHandler with OutHandler {
         private var previous: V = _
-        private var lastPushedAt: Long = Long.MinValue
+        private var lastPushedAt: Long = 0
 
-        def isExpired(): Boolean = {
-          timeout > 0 && System.currentTimeMillis() - lastPushedAt > timeout
+        private def isExpired(): Boolean = {
+          lastPushedAt == 0 || clock.wallTime() - lastPushedAt > timeout
         }
 
         override def onPush(): Unit = {
@@ -414,7 +416,7 @@ object StreamOps extends StrictLogging {
             pull(in)
           } else {
             previous = v
-            lastPushedAt = System.currentTimeMillis()
+            lastPushedAt = clock.wallTime()
             push(out, v)
           }
         }
