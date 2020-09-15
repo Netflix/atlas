@@ -260,7 +260,6 @@ class StreamOpsSuite extends AnyFunSuite {
   }
 
   test("unique timeout") {
-    println(Long.MaxValue == Long.MaxValue)
     val clock = new ManualClock
     clock.setWallTime(0)
     var count = 0
