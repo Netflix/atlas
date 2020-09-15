@@ -252,10 +252,28 @@ class StreamOpsSuite extends AnyFunSuite {
 
   test("unique") {
     val future = Source(List(1, 1, 2, 3, 3, 3, 4, 5, 6, 6, 7, 1))
-      .via(StreamOps.unique)
+      .via(StreamOps.unique())
       .runWith(Sink.seq[Int])
     val vs = Await.result(future, Duration.Inf)
     // Only consecutive repeated values are filtered out, so the final 1 should get repeated
     assert(vs === List(1, 2, 3, 4, 5, 6, 7, 1))
+  }
+
+  test("unique timeout") {
+    val clock = new ManualClock
+    clock.setWallTime(0)
+    var count = 0
+
+    val future = Source(List(1, 1, 1, 2, 2, 2))
+      .map(v => {
+        count += 1
+        // Set the timestamp same as value count, simulating 1 value per ms
+        clock.setWallTime(count)
+        v
+      })
+      .via(StreamOps.unique(1, clock))
+      .runWith(Sink.seq[Int])
+    val vs = Await.result(future, Duration.Inf)
+    assert(vs === List(1, 1, 2, 2))
   }
 }
