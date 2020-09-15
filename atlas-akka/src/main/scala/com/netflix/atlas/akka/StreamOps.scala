@@ -386,7 +386,7 @@ object StreamOps extends StrictLogging {
     *
     * @param timeout
     *     Repeated value will still be emitted if elapsed time since last emit exceeds
-    *     timeout.
+    *     timeout. Unit is milliseconds.
     */
   def unique[V](timeout: Long = Long.MaxValue, clock: Clock = Clock.SYSTEM): Flow[V, V, NotUsed] = {
     Flow[V].via(new UniqueFlow[V](timeout, clock))
