@@ -382,8 +382,10 @@ object StreamOps extends StrictLogging {
 
   /**
     * Filter out repeated values in a stream. Similar to the unix `uniq` command.
-    * @param timeout Repeated value will still be emitted if elapsed time since last emit exceeds
-    *                timeout; repeated value is never emitted if timeout <= 0.
+    *
+    * @param timeout
+    *     Repeated value will still be emitted if elapsed time since last emit exceeds
+    *     timeout; repeated value is never emitted if timeout <= 0.
     */
   def unique[V](timeout: Long = 0): Flow[V, V, NotUsed] = {
     Flow[V].via(new UniqueFlow[V](timeout))
