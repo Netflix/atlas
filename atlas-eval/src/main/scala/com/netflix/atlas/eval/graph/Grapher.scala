@@ -88,8 +88,8 @@ case class Grapher(settings: DefaultSettings) {
 
     val vision = params.get("vision").map(v => VisionType.valueOf(v))
 
-    val theme = params.get("theme").getOrElse("light")
-    val palette = if (theme == "light") "armytage" else "light24"
+    val theme = params.get("theme").getOrElse(settings.theme)
+    val palette = params.get("palette").getOrElse(settings.primaryPalette(theme))
 
     val flags = ImageFlags(
       title = params.get("title").filter(_ != ""),
@@ -102,7 +102,7 @@ case class Grapher(settings: DefaultSettings) {
       showLegendStats = !params.get("no_legend_stats").contains("1"),
       showOnlyGraph = params.get("only_graph").contains("1"),
       vision = vision.getOrElse(VisionType.normal),
-      palette = params.get("palette").getOrElse(palette),
+      palette = palette,
       theme = theme,
       layout = Layout.create(params.get("layout").getOrElse("canvas"))
     )
@@ -253,7 +253,7 @@ case class Grapher(settings: DefaultSettings) {
     val multiY = plotExprs.size > 1
 
     val palette = newPalette(config.flags.palette)
-    val shiftPalette = newPalette("bw")
+    val shiftPalette = newPalette(settings.offsetPalette(config.flags.theme))
 
     val start = config.startMillis
     val end = config.endMillis
