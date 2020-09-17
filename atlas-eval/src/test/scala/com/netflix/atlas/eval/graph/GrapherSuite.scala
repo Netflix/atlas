@@ -410,6 +410,12 @@ class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
     "&theme=dark"
   }
 
+  imageTest("using dark theme with offset") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+    "&q=name,sps,:eq,(,nf.cluster,),:by,:dup,1w,:offset" +
+    "&theme=dark"
+  }
+
   def renderTest(name: String)(uri: => String): Unit = {
     test(name) {
       val fname = Strings.zeroPad(Hash.sha1bytes(name), 40).substring(0, 8) + ".png"

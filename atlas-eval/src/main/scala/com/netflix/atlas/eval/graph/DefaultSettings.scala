@@ -65,6 +65,12 @@ case class DefaultSettings(root: Config, config: Config) {
   /** Default theme to use for the chart. */
   val theme: String = config.getString("theme")
 
+  /** Default palette name to use. */
+  def primaryPalette(theme: String): String = config.getString(s"$theme.palette.primary")
+
+  /** Default palette name to use for lines with an offset. */
+  def offsetPalette(theme: String): String = config.getString(s"$theme.palette.offset")
+
   /** Should the uri and other graph metadata be encoded as text fields in the image? */
   val metadataEnabled: Boolean = config.getBoolean("png-metadata-enabled")
 
