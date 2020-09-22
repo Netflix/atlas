@@ -20,7 +20,6 @@ import java.io.File
 import com.google.inject.AbstractModule
 import com.netflix.iep.config.ConfigManager
 import com.netflix.iep.guice.GuiceHelper
-import com.netflix.iep.service.ServiceManager
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
@@ -75,9 +74,6 @@ object Main extends StrictLogging {
 
     guice = new GuiceHelper
     guice.start(modules)
-
-    // Ensure that service manager instance has been created
-    guice.getInjector.getInstance(classOf[ServiceManager])
   }
 
   def shutdown(): Unit = guice.shutdown()
