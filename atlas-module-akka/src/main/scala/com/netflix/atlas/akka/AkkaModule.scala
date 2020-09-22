@@ -43,6 +43,12 @@ final class AkkaModule extends AbstractModule {
     install(new LifecycleModule)
     bind(classOf[ActorSystem]).toProvider(classOf[AkkaModule.ActorSystemProvider])
     bind(classOf[Materializer]).toProvider(classOf[AkkaModule.MaterializerProvider])
+
+    // Mark as eager to ensure they will be created
+    bind(classOf[ActorService]).asEagerSingleton()
+    bind(classOf[WebServer]).asEagerSingleton()
+
+    // Hookup to service manager for health tracking
     val serviceBinder = Multibinder.newSetBinder(binder, classOf[Service])
     serviceBinder.addBinding().to(classOf[ActorService])
     serviceBinder.addBinding().to(classOf[WebServer])
