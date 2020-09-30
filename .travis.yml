@@ -1,11 +1,11 @@
 language: scala
 matrix:
   include:
-  - jdk: openjdk14
+  - jdk: openjdk15
     scala: 2.13.3
     os: osx
     env: BINTRAY_PUBLISH=false
-  - jdk: openjdk14
+  - jdk: openjdk15
     scala: 2.13.3
     os: linux
     dist: xenial
