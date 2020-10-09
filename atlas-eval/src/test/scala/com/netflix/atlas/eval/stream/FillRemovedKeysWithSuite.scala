@@ -16,7 +16,6 @@
 package com.netflix.atlas.eval.stream
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import org.scalatest.funsuite.AnyFunSuite
@@ -27,7 +26,6 @@ import scala.concurrent.duration.Duration
 class FillRemovedKeysWithSuite extends AnyFunSuite {
 
   implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
 
   val map1 = Map[String, String]("a" -> "1")
   val map2 = Map[String, String]("b" -> "2")

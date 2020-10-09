@@ -24,7 +24,6 @@ import com.google.inject.Provides
 import com.google.inject.multibindings.Multibinder
 import com.netflix.iep.guice.LifecycleModule
 import com.netflix.iep.service.Service
-import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import javax.inject.Inject
@@ -82,11 +81,11 @@ object AkkaModule extends StrictLogging {
   }
 
   @Singleton
-  private class MaterializerProvider @Inject() (system: ActorSystem, registry: Registry)
+  private class MaterializerProvider @Inject() (system: ActorSystem)
       extends Provider[Materializer]
       with AutoCloseable {
 
-    private val materializer = StreamOps.materializer(system, registry)
+    private val materializer = Materializer(system)
 
     override def get(): Materializer = materializer
 

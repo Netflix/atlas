@@ -18,7 +18,7 @@ package com.netflix.atlas.eval.stream
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.spectator.api.NoopRegistry
@@ -63,7 +63,7 @@ object TestContext {
     """.stripMargin)
 
   def createContext(
-    mat: ActorMaterializer,
+    mat: Materializer,
     client: Client = defaultClient,
     registry: Registry = new NoopRegistry
   ): StreamContext = {

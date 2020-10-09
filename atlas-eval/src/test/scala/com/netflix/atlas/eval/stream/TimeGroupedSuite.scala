@@ -16,7 +16,7 @@
 package com.netflix.atlas.eval.stream
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
@@ -33,7 +33,7 @@ import scala.concurrent.duration.Duration
 class TimeGroupedSuite extends AnyFunSuite {
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val materializer = ActorMaterializer()
+  private implicit val materializer = Materializer(system)
 
   private val registry = new DefaultRegistry()
 

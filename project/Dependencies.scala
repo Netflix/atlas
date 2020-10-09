@@ -4,16 +4,16 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.5.31"
-    val akkaHttpV  = "10.1.12"
-    val aws        = "1.11.847"
-    val iep        = "2.6.0"
+    val akka       = "2.6.10"
+    val akkaHttpV  = "10.2.1"
+    val aws        = "1.11.877"
+    val iep        = "2.6.2"
     val guice      = "4.1.0"
-    val jackson    = "2.11.2"
+    val jackson    = "2.11.3"
     val log4j      = "2.13.3"
     val scala      = "2.13.3"
     val slf4j      = "1.7.30"
-    val spectator  = "0.115.0"
+    val spectator  = "0.119.0"
 
     val crossScala = Seq(scala)
   }
@@ -33,7 +33,7 @@ object Dependencies {
   val awsEC2            = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3             = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.8.5"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.4.2"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.4.3"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.24.0"
   val guiceCore         = "com.google.inject" % "guice" % guice
   val guiceMulti        = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -60,8 +60,8 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.1"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.2"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"

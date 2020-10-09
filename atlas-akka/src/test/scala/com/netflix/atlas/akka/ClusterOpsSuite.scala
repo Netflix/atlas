@@ -16,7 +16,6 @@
 package com.netflix.atlas.akka
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -28,7 +27,6 @@ import scala.concurrent.duration.Duration
 class ClusterOpsSuite extends AnyFunSuite {
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val materializer = ActorMaterializer()
 
   test("groupBy: empty cluster") {
     val input = List(

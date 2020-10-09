@@ -26,8 +26,9 @@ import java.util.function.LongFunction
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.Status
 import akka.routing.FromConfig
-import akka.stream.ActorMaterializer
+import akka.stream.CompletionStrategy
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -81,8 +82,6 @@ class CloudWatchPoller(
   import scala.concurrent.ExecutionContext.Implicits.global
   import scala.concurrent.duration._
 
-  private implicit val mat: ActorMaterializer = ActorMaterializer.create(context.system)
-
   // Load the categories and tagger based on the config settings
   private val categories = getCategories(config)
   private val tagger = getTagger(config)
@@ -107,8 +106,16 @@ class CloudWatchPoller(
     )
 
   // Throttler to control the rate of get metrics calls in order to stay within AWS SDK limits.
+  private implicit val system = context.system
+
   private val throttledMetricsGetRef = Source
     .actorRef[List[MetricMetadata]](
+      {
+        case Status.Success(s: CompletionStrategy) => s
+        case Status.Success(_)                     => CompletionStrategy.draining
+      }: PartialFunction[Any, CompletionStrategy], {
+        case Status.Failure(t) => t
+      }: PartialFunction[Any, Throwable],
       config.getInt("atlas.cloudwatch.metrics-get-buffer-size"),
       OverflowStrategy.dropHead
     )
@@ -163,7 +170,7 @@ class CloudWatchPoller(
   private val metricBatch: MList = new MList
 
   // Regularly flush any pending data that is still buffered
-  context.system.scheduler.schedule(5.seconds, 5.seconds, self, Flush)
+  context.system.scheduler.scheduleAtFixedRate(5.seconds, 5.seconds, self, Flush)
 
   def receive: Receive = {
     case Flush          => flush()

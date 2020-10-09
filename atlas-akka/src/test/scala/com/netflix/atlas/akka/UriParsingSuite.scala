@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.akka
 
-import java.nio.charset.StandardCharsets
-
 import akka.http.scaladsl.model.IllegalUriException
 import akka.http.scaladsl.model.Uri
 import org.scalatest.funsuite.AnyFunSuite
@@ -24,7 +22,7 @@ import org.scalatest.funsuite.AnyFunSuite
 class UriParsingSuite extends AnyFunSuite {
 
   private def query(mode: Uri.ParsingMode): String = {
-    Uri("/foo?regex=a|b|c").query(StandardCharsets.UTF_8, mode).get("regex").get
+    Uri("/foo?regex=a|b|c", mode).query().get("regex").get
   }
 
   test("relaxed: regex with |") {

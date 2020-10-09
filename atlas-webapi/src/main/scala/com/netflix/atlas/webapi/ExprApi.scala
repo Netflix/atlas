@@ -52,7 +52,7 @@ class ExprApi extends WebApi {
 
   private val excludedWords = ApiSettings.excludedWords
 
-  def routes: Route = parameters(("q", "vocab" ? vocabulary.name)) { (q, vocab) =>
+  def routes: Route = parameters("q", "vocab" ? vocabulary.name) { (q, vocab) =>
     endpointPath("api" / "v1" / "expr") {
       get { complete(processDebugRequest(q, vocab)) }
     } ~

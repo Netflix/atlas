@@ -22,7 +22,6 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -56,7 +55,6 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
   private val config = ConfigFactory.load()
   private val registry = new DefaultRegistry()
   private implicit val system = ActorSystem("test", config)
-  private implicit val materializer = ActorMaterializer()
 
   before {
     Files.createDirectories(targetDir)
@@ -150,8 +148,8 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
     val sourceRef = EvaluationFlows.stoppableSource(
       Source
         .single(ds1)
-        .concat(Source.fromFuture(p2.future))
-        .concat(Source.fromFuture(p3.future))
+        .concat(Source.future(p2.future))
+        .concat(Source.future(p3.future))
         .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
     )
 
