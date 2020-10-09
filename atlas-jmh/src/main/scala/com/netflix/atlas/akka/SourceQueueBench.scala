@@ -17,7 +17,7 @@ package com.netflix.atlas.akka
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -71,15 +71,10 @@ import scala.concurrent.duration.Duration
 class SourceQueueBench {
 
   private implicit val system = ActorSystem()
-  private implicit val materializer = ActorMaterializer()
+  private implicit val materializer = Materializer(system)
 
   private val queue = Source
     .queue[NotUsed](10, OverflowStrategy.dropNew)
-    .toMat(Sink.ignore)(Keep.left)
-    .run()
-
-  private val actorRef = Source
-    .actorRef[NotUsed](10, OverflowStrategy.dropNew)
     .toMat(Sink.ignore)(Keep.left)
     .run()
 
@@ -97,11 +92,6 @@ class SourceQueueBench {
   def sourceQueue(bh: Blackhole): Unit = {
     val result = Await.ready(queue.offer(NotUsed), Duration.Inf)
     bh.consume(result)
-  }
-
-  @Benchmark
-  def sourceActorRef(): Unit = {
-    actorRef ! NotUsed
   }
 
   @Benchmark

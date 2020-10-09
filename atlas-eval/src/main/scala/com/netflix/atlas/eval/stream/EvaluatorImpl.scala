@@ -31,6 +31,7 @@ import akka.http.scaladsl.model.ws.BinaryMessage
 import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.model.ws.WebSocketRequest
 import akka.stream.FlowShape
+import akka.stream.Materializer
 import akka.stream.OverflowStrategy
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Broadcast
@@ -73,12 +74,11 @@ import scala.jdk.CollectionConverters._
 private[stream] abstract class EvaluatorImpl(
   config: Config,
   registry: Registry,
-  implicit val system: ActorSystem
+  implicit val system: ActorSystem,
+  implicit val materializer: Materializer
 ) {
 
   import EvaluatorImpl._
-
-  private implicit val materializer = StreamOps.materializer(system, registry)
 
   // Cached context instance used for things like expression validation.
   private val validationStreamContext = newStreamContext()
@@ -130,15 +130,13 @@ private[stream] abstract class EvaluatorImpl(
     try {
       // If it is coming from a finite source like a file it will likely complete
       // before the timeout
-      val result = Await.result(ref.value, duration)
-      if (!result.wasSuccessful) throw result.getError
+      Await.ready(ref.value, duration)
     } catch {
       // For eureka sources they will go on forever, when the requested timeout
       // expires shutdown the stream and notify the user of any problems
-      case e: TimeoutException =>
+      case _: TimeoutException =>
         ref.killSwitch.shutdown()
-        val result = Await.result(ref.value, duration)
-        if (!result.wasSuccessful) throw result.getError
+        Await.ready(ref.value, duration)
     }
   }
 

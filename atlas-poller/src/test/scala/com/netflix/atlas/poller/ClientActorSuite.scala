@@ -18,7 +18,6 @@ package com.netflix.atlas.poller
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes
-import akka.stream.ActorMaterializer
 import akka.stream.Materializer
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActorRef
@@ -53,7 +52,7 @@ class ClientActorSuite
   private val clock = new ManualClock()
   private val registry = new DefaultRegistry(clock)
   private val config = ConfigFactory.load().getConfig("atlas.poller.sink")
-  private val materializer = ActorMaterializer()(system)
+  private val materializer = Materializer(system)
   private val ref = TestActorRef(new TestClientActor(registry, config, materializer))
 
   override def afterAll(): Unit = {

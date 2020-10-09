@@ -20,7 +20,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -38,7 +38,7 @@ class EurekaGroupsLookupSuite extends AnyFunSuite {
   import Evaluator._
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val mat = ActorMaterializer()
+  private implicit val mat = Materializer(system)
 
   private val eurekaGroup = EurekaSource.VipResponse(
     uri = "http://eureka/v2/vips/atlas-lwcapi:7001",

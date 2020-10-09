@@ -28,8 +28,8 @@ import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
-import akka.stream.ActorMaterializer
 import akka.stream.ConnectionException
+import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -96,7 +96,7 @@ class EurekaSourceSuite extends AnyFunSuite {
   private val vipJson = s"""{"applications": {"application": [$innerAppJson]}}"""
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val mat = ActorMaterializer()
+  private implicit val mat = Materializer(system)
 
   private def run(uri: String, response: Try[HttpResponse]): GroupResponse = {
     val client = Flow[(HttpRequest, AccessLogger)].map {
@@ -172,7 +172,7 @@ class EurekaSourceSuite extends AnyFunSuite {
   test("failed response stream") {
     val uri = "http://eureka/v1/vips/www-dev:7001"
     intercept[NoSuchElementException] {
-      val source = Source.fromFuture(Future.failed[ByteString](new IOException("peer reset")))
+      val source = Source.future(Future.failed[ByteString](new IOException("peer reset")))
       val entity = HttpEntity(MediaTypes.`application/json`, source)
       val response = HttpResponse(StatusCodes.OK, entity = entity)
       run(uri, Success(response))

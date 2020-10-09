@@ -16,7 +16,6 @@
 package com.netflix.atlas.eval.stream
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.core.model.DataExpr
@@ -44,7 +43,6 @@ class FinalExprEvalSuite extends AnyFunSuite {
   private val step = 60000L
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val mat = ActorMaterializer()
 
   private val interpreter = new ExprInterpreter(ConfigFactory.load())
 

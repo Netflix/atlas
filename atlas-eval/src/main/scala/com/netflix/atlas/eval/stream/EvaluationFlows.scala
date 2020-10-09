@@ -63,7 +63,7 @@ private[stream] object EvaluationFlows {
     // takeWhile condition.
     val promise = Promise[Done]()
     val stoppable = source
-      .merge(Source.fromFuture(promise.future))
+      .merge(Source.future(promise.future))
       .takeWhile(!_.isInstanceOf[Done])
       .map(_.asInstanceOf[T])
     SourceRef(stoppable, promise)

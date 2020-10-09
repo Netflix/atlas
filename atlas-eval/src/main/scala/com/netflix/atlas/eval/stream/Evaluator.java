@@ -17,7 +17,7 @@ package com.netflix.atlas.eval.stream;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.model.Uri;
-import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
 import akka.stream.ThrottleMode;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Framing;
@@ -46,7 +46,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -64,7 +63,7 @@ public final class Evaluator extends EvaluatorImpl {
    */
   @Inject
   public Evaluator(Config config, Registry registry, ActorSystem system) {
-    super(config, registry, system);
+    super(config, registry, system, Materializer.createMaterializer(system));
   }
 
   /**
@@ -488,7 +487,7 @@ public final class Evaluator extends EvaluatorImpl {
 
     // Setup evaluator
     ActorSystem system = ActorSystem.create();
-    ActorMaterializer mat = ActorMaterializer.create(system);
+    Materializer mat = Materializer.createMaterializer(system);
     Evaluator evaluator = new Evaluator(config, new NoopRegistry(), system);
 
     // Process URIs

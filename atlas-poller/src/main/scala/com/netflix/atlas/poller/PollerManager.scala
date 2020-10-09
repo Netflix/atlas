@@ -63,7 +63,7 @@ class PollerManager(registry: Registry, classFactory: ClassFactory, config: Conf
     config.getDuration("atlas.poller.frequency", TimeUnit.NANOSECONDS),
     TimeUnit.NANOSECONDS
   )
-  context.system.scheduler.schedule(frequency, frequency, self, Messages.Tick)
+  context.system.scheduler.scheduleAtFixedRate(frequency, frequency, self, Messages.Tick)
 
   def receive: Receive = {
     case Messages.Tick =>

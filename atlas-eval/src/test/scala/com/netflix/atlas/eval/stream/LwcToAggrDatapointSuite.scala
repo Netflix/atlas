@@ -18,7 +18,7 @@ package com.netflix.atlas.eval.stream
 import java.util.concurrent.ArrayBlockingQueue
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -38,7 +38,7 @@ import scala.concurrent.duration.Duration
 class LwcToAggrDatapointSuite extends AnyFunSuite {
 
   implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
+  private implicit val materializer = Materializer(system)
 
   private val step = 10000
 

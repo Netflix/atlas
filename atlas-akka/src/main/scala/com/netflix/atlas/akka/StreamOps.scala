@@ -21,9 +21,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.stream.ActorAttributes
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Graph
@@ -58,24 +56,20 @@ import scala.util.Success
 object StreamOps extends StrictLogging {
 
   /**
-    * Creates an instance of the materializer with a supervision strategy that will provide
+    * Return attributes for running a stream with a supervision strategy that will provide
     * some insight into exceptions.
     *
-    * @param system
-    *     Actor system to use for materializing the streams.
     * @param registry
     *     Registry to use for reporting metrics.
     */
-  def materializer(system: ActorSystem, registry: Registry): ActorMaterializer = {
-    val settings = ActorMaterializerSettings(system)
-      .withSupervisionStrategy(t => {
-        registry
-          .counter("akka.stream.exceptions", "error", t.getClass.getSimpleName)
-          .increment()
-        logger.warn(s"exception from stream stage", t)
-        Supervision.Stop
-      })
-    ActorMaterializer(settings)(system)
+  def supervisionStrategy(registry: Registry): Attributes = {
+    ActorAttributes.withSupervisionStrategy { t =>
+      registry
+        .counter("akka.stream.exceptions", "error", t.getClass.getSimpleName)
+        .increment()
+      logger.warn(s"exception from stream stage", t)
+      Supervision.Stop
+    }
   }
 
   /**

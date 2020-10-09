@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.Materializer
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
@@ -43,7 +42,6 @@ class StreamOpsSuite extends AnyFunSuite {
   private implicit val ec = scala.concurrent.ExecutionContext.global
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val materializer = ActorMaterializer()
 
   private def checkOfferedCounts(registry: Registry, expected: Map[String, Double]): Unit = {
     import scala.jdk.CollectionConverters._
@@ -73,7 +71,7 @@ class StreamOpsSuite extends AnyFunSuite {
     val registry = new DefaultRegistry()
     val source = StreamOps.queue[Future[Int]](registry, "test", 1, OverflowStrategy.dropNew)
     val queue = source
-      .flatMapConcat(Source.fromFuture)
+      .flatMapConcat(Source.future)
       .toMat(Sink.ignore)(Keep.left)
       .run()
     val promise = Promise[Int]()
@@ -99,7 +97,7 @@ class StreamOpsSuite extends AnyFunSuite {
     val source = StreamOps.blockingQueue[Future[Int]](registry, "test", 1)
     val streamStarted = new CountDownLatch(1)
     val queue = source
-      .flatMapConcat(Source.fromFuture)
+      .flatMapConcat(Source.future)
       .map { value =>
         streamStarted.countDown()
         value
@@ -237,13 +235,13 @@ class StreamOpsSuite extends AnyFunSuite {
     latch.await(1, TimeUnit.MINUTES)
   }
 
-  test("materializer supervision") {
+  test("supervision strategy") {
     val registry = new DefaultRegistry()
-    val materializer = StreamOps.materializer(system, registry)
     val future = Source
       .single(42)
       .map(_ / 0)
-      .runWith(Sink.ignore)(materializer)
+      .withAttributes(StreamOps.supervisionStrategy(registry))
+      .runWith(Sink.ignore)
     Await.ready(future, Duration.Inf)
 
     val c = registry.counter("akka.stream.exceptions", "error", "ArithmeticException")

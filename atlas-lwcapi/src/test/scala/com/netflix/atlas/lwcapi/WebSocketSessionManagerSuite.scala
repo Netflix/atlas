@@ -17,7 +17,7 @@ package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ws.Message
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.json.JsonSupport
@@ -31,7 +31,7 @@ import scala.concurrent.duration.Duration
 class WebSocketSessionManagerSuite extends AnyFunSuite {
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val materializer = ActorMaterializer()
+  private implicit val materializer = Materializer(system)
 
   test("subscribe - one by one") {
     val subscriptionList = List(

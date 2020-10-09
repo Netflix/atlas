@@ -81,7 +81,7 @@ object FetchRequestSource {
         val req = DataRequest(graphCfg).copy(context = chunk)
         val future = ask(dbRef, req)(Timeout(30.seconds))
         Source
-          .fromFuture(future)
+          .future(future)
           .collect {
             case DataResponse(data) => DataChunk(chunk, data)
           }

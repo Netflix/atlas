@@ -28,7 +28,6 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
-import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
@@ -49,7 +48,6 @@ class HostSourceSuite extends AnyFunSuite {
   import scala.concurrent.duration._
 
   implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
 
   def source(response: => Try[HttpResponse]): Source[ByteString, NotUsed] = {
     val client = Flow[HttpRequest].map(_ => response)
@@ -133,7 +131,7 @@ class HostSourceSuite extends AnyFunSuite {
     val latch = new CountDownLatch(5)
     val (switch, future) = source {
       latch.countDown()
-      val source = Source.fromFuture(Future.failed[ByteString](new IOException("reset by peer")))
+      val source = Source.future(Future.failed[ByteString](new IOException("reset by peer")))
       val entity = HttpEntity(MediaTypes.`text/event-stream`, source)
       Success(HttpResponse(StatusCodes.OK, entity = entity))
     }.viaMat(KillSwitches.single)(Keep.right)
