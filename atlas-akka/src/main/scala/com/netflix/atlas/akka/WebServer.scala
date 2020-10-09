@@ -64,7 +64,9 @@ class WebServer @Inject() (
 
   protected def startImpl(): Unit = {
     val handler = new RequestHandler(config, classFactory)
-    bindingFuture = Http().bindAndHandle(Route.handlerFlow(handler.routes), "0.0.0.0", port)
+    bindingFuture = Http()
+      .newServerAt("0.0.0.0", port)
+      .bindFlow(Route.toFlow(handler.routes))
     logger.info(s"started $name on port $port")
   }
 
