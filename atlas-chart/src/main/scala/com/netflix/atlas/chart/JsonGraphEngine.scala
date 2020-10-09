@@ -20,11 +20,9 @@ import java.io.OutputStreamWriter
 
 import com.netflix.atlas.chart.model._
 
-class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
+class JsonGraphEngine extends GraphEngine {
 
   import com.netflix.atlas.chart.GraphEngine._
-
-  def this() = this(false)
 
   def name: String = "json"
 
@@ -64,12 +62,7 @@ class JsonGraphEngine(quoteNonNumeric: Boolean) extends GraphEngine {
       gen.writeStartArray()
       seriesList.foreach { series =>
         val v = series.data.data(timestamp)
-        if (java.lang.Double.isFinite(v))
-          gen.writeNumber(v)
-        else if (quoteNonNumeric)
-          gen.writeString(v.toString)
-        else
-          gen.writeRawValue(v.toString)
+        gen.writeNumber(v)
       }
       gen.writeEndArray()
       timestamp += step
