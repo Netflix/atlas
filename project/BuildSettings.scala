@@ -43,8 +43,9 @@ object BuildSettings {
     sourcesInBase := false,
     exportJars := true, // Needed for one-jar, with multi-project
     externalResolvers := BuildSettings.resolvers,
-    // https://github.com/sbt/sbt/issues/1636
-    evictionWarningOptions in update := EvictionWarningOptions.empty,
+    // Evictions: https://github.com/sbt/sbt/issues/1636
+    // Linting: https://github.com/sbt/sbt/pull/5153
+    (evictionWarningOptions in update).withRank(KeyRanks.Invisible) := EvictionWarningOptions.empty,
     checkLicenseHeaders := License.checkLicenseHeaders(streams.value.log, sourceDirectory.value),
     formatLicenseHeaders := License.formatLicenseHeaders(streams.value.log, sourceDirectory.value),
     storeBintrayCredentials := {
