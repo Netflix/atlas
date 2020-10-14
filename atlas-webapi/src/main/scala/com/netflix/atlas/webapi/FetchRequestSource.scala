@@ -168,7 +168,7 @@ object FetchRequestSource {
               state = result.state
               result.data
                 .filterNot(ts => isAllNaN(ts.data, context.start, context.end, context.step))
-                .map(ts => TimeSeriesMessage(s, context, ts))
+                .map(ts => TimeSeriesMessage(s, context, ts.withLabel(s.legend(ts))))
             }
           push(out, ts)
         }
