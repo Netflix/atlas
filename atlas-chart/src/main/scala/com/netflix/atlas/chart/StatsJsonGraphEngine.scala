@@ -18,7 +18,6 @@ package com.netflix.atlas.chart
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 
-import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.chart.model._
 import com.netflix.atlas.core.model.SummaryStats
 
@@ -33,19 +32,9 @@ class StatsJsonGraphEngine extends GraphEngine {
 
   def contentType: String = "application/json"
 
-  private def writeRawField(gen: JsonGenerator, name: String, value: String): Unit = {
-    gen.writeFieldName(name)
-    gen.writeRawValue(value)
-  }
-
-  private def numberStr(numberFmt: String, v: Double): String = {
-    numberFmt.format(v)
-  }
-
   def write(config: GraphDef, output: OutputStream): Unit = {
     val writer = new OutputStreamWriter(output, "UTF-8")
     val seriesList = config.plots.flatMap(_.lines)
-    val numberFmt = config.numberFormat
     val gen = jsonFactory.createGenerator(writer)
 
     gen.writeStartObject()
@@ -78,11 +67,11 @@ class StatsJsonGraphEngine extends GraphEngine {
       gen.writeStartObject()
       gen.writeNumberField("count", stats.count)
       if (seriesList.nonEmpty) {
-        writeRawField(gen, "avg", numberStr(numberFmt, stats.avg))
-        writeRawField(gen, "total", numberStr(numberFmt, stats.total))
-        writeRawField(gen, "max", numberStr(numberFmt, stats.max))
-        writeRawField(gen, "min", numberStr(numberFmt, stats.min))
-        writeRawField(gen, "last", numberStr(numberFmt, stats.last))
+        gen.writeNumberField("avg", stats.avg)
+        gen.writeNumberField("total", stats.total)
+        gen.writeNumberField("max", stats.max)
+        gen.writeNumberField("min", stats.min)
+        gen.writeNumberField("last", stats.last)
       }
       gen.writeEndObject()
     }

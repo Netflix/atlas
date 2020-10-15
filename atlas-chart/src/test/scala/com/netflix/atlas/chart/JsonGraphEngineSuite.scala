@@ -68,7 +68,7 @@ class JsonGraphEngineSuite extends AnyFunSuite {
         |"step":60000,
         |"legend":["0","1"],
         |"metrics":[{"name":"42.0"},{"name":"NaN"}],
-        |"values":[[42.0,NaN],[42.0,NaN],[42.0,NaN]],
+        |"values":[[42.0,"NaN"],[42.0,"NaN"],[42.0,"NaN"]],
         |"notices":[]
         |}"""
 
