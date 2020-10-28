@@ -32,9 +32,13 @@ import java.text.AttributedString
 import javax.imageio.IIOImage
 import javax.imageio.ImageIO
 import javax.imageio.ImageTypeSpecifier
+import javax.imageio.ImageWriter
 import javax.imageio.metadata.IIOMetadata
 import javax.imageio.metadata.IIOMetadataFormatImpl
 import javax.imageio.metadata.IIOMetadataNode
+
+import scala.util.Using
+import scala.util.Using.Releasable
 
 object PngImage {
 
@@ -198,6 +202,10 @@ object PngImage {
         bi
     }
   }
+
+  implicit object ReleasableImageWriter extends Releasable[ImageWriter] {
+    def release(resource: ImageWriter): Unit = resource.dispose()
+  }
 }
 
 case class PngImage(data: RenderedImage, metadata: Map[String, String] = Map.empty) {
@@ -211,33 +219,33 @@ case class PngImage(data: RenderedImage, metadata: Map[String, String] = Map.emp
   }
 
   def write(output: OutputStream): Unit = {
-    try {
-      val iterator = ImageIO.getImageWritersBySuffix("png")
-      require(iterator.hasNext, "no image writers for png")
+    import PngImage._
+    val iterator = ImageIO.getImageWritersBySuffix("png")
+    require(iterator.hasNext, "no image writers for png")
 
-      val writer = iterator.next()
-      writer.setOutput(ImageIO.createImageOutputStream(output))
+    Using.resource(iterator.next()) { writer =>
+      Using.resource(ImageIO.createImageOutputStream(output)) { imageOutput =>
+        writer.setOutput(imageOutput)
 
-      val pngMeta = writer.getDefaultImageMetadata(new ImageTypeSpecifier(data), null)
-      metadata.foreachEntry { (k, v) =>
-        val textEntry = new IIOMetadataNode("TextEntry")
-        textEntry.setAttribute("keyword", k)
-        textEntry.setAttribute("value", v)
-        textEntry.setAttribute("compression", if (v.length > 100) "zip" else "none")
+        val pngMeta = writer.getDefaultImageMetadata(new ImageTypeSpecifier(data), null)
+        metadata.foreachEntry { (k, v) =>
+          val textEntry = new IIOMetadataNode("TextEntry")
+          textEntry.setAttribute("keyword", k)
+          textEntry.setAttribute("value", v)
+          textEntry.setAttribute("compression", if (v.length > 100) "zip" else "none")
 
-        val text = new IIOMetadataNode("Text")
-        text.appendChild(textEntry)
+          val text = new IIOMetadataNode("Text")
+          text.appendChild(textEntry)
 
-        val root = new IIOMetadataNode(IIOMetadataFormatImpl.standardMetadataFormatName)
-        root.appendChild(text)
+          val root = new IIOMetadataNode(IIOMetadataFormatImpl.standardMetadataFormatName)
+          root.appendChild(text)
 
-        pngMeta.mergeTree(IIOMetadataFormatImpl.standardMetadataFormatName, root)
+          pngMeta.mergeTree(IIOMetadataFormatImpl.standardMetadataFormatName, root)
+        }
+
+        val iioImage = new IIOImage(data, null, pngMeta)
+        writer.write(null, iioImage, null)
       }
-
-      val iioImage = new IIOImage(data, null, pngMeta)
-      writer.write(null, iioImage, null)
-    } finally {
-      output.close()
     }
   }
 }
