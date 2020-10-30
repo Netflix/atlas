@@ -37,6 +37,10 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
   // memory use. See IntIntMap benchmark.
   private def computeCutoff(n: Int): Int = math.max(3, n / 2)
 
+  private def hash(k: Int, length: Int): Int = {
+    Hash.absOrZero(Hash.lowbias32(k)) % length
+  }
+
   private def newArray(n: Int): Array[Int] = {
     val tmp = new Array[Int](PrimeFinder.nextPrime(n))
     var i = 0
@@ -62,7 +66,7 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
   }
 
   private def put(ks: Array[Int], vs: Array[Int], k: Int, v: Int): Boolean = {
-    var pos = Hash.absOrZero(k) % ks.length
+    var pos = hash(k, ks.length)
     var posV = ks(pos)
     while (posV != noData && posV != k) {
       pos = (pos + 1) % ks.length
@@ -88,7 +92,7 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
     * `dflt` value will be returned.
     */
   def get(k: Int, dflt: Int): Int = {
-    var pos = Hash.absOrZero(k) % keys.length
+    var pos = hash(k, keys.length)
     while (true) {
       val prev = keys(pos)
       if (prev == noData)
@@ -113,7 +117,7 @@ class IntIntHashMap(noData: Int, capacity: Int = 10) {
     */
   def increment(k: Int, amount: Int): Unit = {
     if (used >= cutoff) resize()
-    var pos = Hash.absOrZero(k) % keys.length
+    var pos = hash(k, keys.length)
     var prev = keys(pos)
     while (prev != noData && prev != k) {
       pos = (pos + 1) % keys.length

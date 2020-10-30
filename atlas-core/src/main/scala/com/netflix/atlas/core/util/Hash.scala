@@ -36,6 +36,20 @@ object Hash {
     MurmurHash3.bytesHash(buf.array())
   }
 
+  /**
+    * Hash function for use with 32-bit integers. For more details on this hash see:
+    * https://nullprogram.com/blog/2018/07/31/
+    */
+  def lowbias32(v: Int): Int = {
+    var h = v
+    h ^= h >>> 16
+    h *= 0x7feb352d
+    h ^= h >>> 15
+    h *= 0x846ca68b
+    h ^= h >>> 16
+    h
+  }
+
   // Seeing contention on MessageDigest.getInstance, following pattern used by jruby:
   // https://github.com/jruby/jruby/commit/e840823c435393e8365be1bae93f646c1bb0043f
   private val cloneableDigests = createDigests()

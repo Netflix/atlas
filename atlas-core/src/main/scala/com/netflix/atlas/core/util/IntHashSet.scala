@@ -36,6 +36,10 @@ class IntHashSet(noData: Int, capacity: Int = 10) {
   // memory use. See IntIntMap benchmark.
   private def computeCutoff(n: Int): Int = math.max(3, n / 2)
 
+  private def hash(k: Int, length: Int): Int = {
+    Hash.absOrZero(Hash.lowbias32(k)) % length
+  }
+
   private def newArray(n: Int): Array[Int] = {
     val tmp = new Array[Int](PrimeFinder.nextPrime(n))
     var i = 0
@@ -59,7 +63,7 @@ class IntHashSet(noData: Int, capacity: Int = 10) {
   }
 
   private def add(buffer: Array[Int], v: Int): Boolean = {
-    var pos = Hash.absOrZero(v) % buffer.length
+    var pos = hash(v, buffer.length)
     var posV = buffer(pos)
     while (posV != noData && posV != v) {
       pos = (pos + 1) % buffer.length
