@@ -59,7 +59,7 @@ class IntRefHashMap[T <: AnyRef: Manifest](noData: Int, capacity: Int = 10) {
   }
 
   private def hash(k: Int, length: Int): Int = {
-    Hash.absOrZero(k) % length
+    Hash.absOrZero(Hash.lowbias32(k)) % length
   }
 
   private def put(ks: Array[Int], vs: Array[T], k: Int, v: T): Boolean = {
