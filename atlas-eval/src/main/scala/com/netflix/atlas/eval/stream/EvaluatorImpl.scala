@@ -35,6 +35,7 @@ import akka.stream.Materializer
 import akka.stream.OverflowStrategy
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Broadcast
+import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.FileIO
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.GraphDSL
@@ -203,7 +204,7 @@ private[stream] abstract class EvaluatorImpl(
     // Flow used for logging diagnostic messages
     val (queue, logSrc) = StreamOps
       .blockingQueue[MessageEnvelope](registry, "DataSourceLogger", 10)
-      .toMat(Sink.asPublisher(true))(Keep.both)
+      .toMat(BroadcastHub.sink(1))(Keep.both)
       .run()
     val dsLogger: DataSourceLogger = { (ds, msg) =>
       val env = new MessageEnvelope(ds.getId, msg)
@@ -262,7 +263,7 @@ private[stream] abstract class EvaluatorImpl(
       .mergeSubstreams
       .via(context.monitorFlow("13_OutputMessages"))
       .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
-      .merge(Source.fromPublisher(logSrc), eagerComplete = false)
+      .merge(logSrc, eagerComplete = false)
   }
 
   protected def createDatapointProcessorImpl(
@@ -275,7 +276,7 @@ private[stream] abstract class EvaluatorImpl(
     // Flow used for logging diagnostic messages
     val (queue, logSrc) = StreamOps
       .blockingQueue[MessageEnvelope](registry, "DataSourceLogger", 10)
-      .toMat(Sink.asPublisher(true))(Keep.both)
+      .toMat(BroadcastHub.sink(1))(Keep.both)
       .run()
     val dsLogger: DataSourceLogger = { (ds, msg) =>
       val env = new MessageEnvelope(ds.getId, msg)
@@ -300,7 +301,7 @@ private[stream] abstract class EvaluatorImpl(
       .via(new FinalExprEval(context.interpreter))
       .flatMapConcat(s => s)
       .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
-      .merge(Source.fromPublisher(logSrc), eagerComplete = false)
+      .merge(logSrc, eagerComplete = false)
       .toProcessor
       .run()
   }

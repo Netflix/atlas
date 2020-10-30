@@ -29,9 +29,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.stream.ThrottleMode
+import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.netflix.atlas.akka.CustomDirectives._
@@ -122,10 +122,10 @@ class SubscribeApi @Inject() (
   private def register(streamId: String): (QueueHandler, Source[Message, Unit]) = {
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
-    val (queue, pub) = StreamOps
+    val (queue, queueSrc) = StreamOps
       .blockingQueue[JsonSupport](registry, "SubscribeApi", queueSize)
       .map(msg => TextMessage(msg.toJson))
-      .toMat(Sink.asPublisher[Message](true))(Keep.both)
+      .toMat(BroadcastHub.sink(1))(Keep.both)
       .run()
 
     // Send initial setup messages
@@ -148,8 +148,7 @@ class SubscribeApi @Inject() (
         Source(steps)
       }
 
-    val source = Source
-      .fromPublisher(pub)
+    val source = queueSrc
       .merge(heartbeatSrc)
       .via(StreamOps.monitorFlow(registry, "StreamApi"))
       .watchTermination() { (_, f) =>
