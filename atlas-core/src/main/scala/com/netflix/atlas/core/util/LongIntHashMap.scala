@@ -62,7 +62,7 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
   }
 
   private def hash(ks: Array[Long], k: Long): Int = {
-    Hash.absOrZero(Hash.murmur3(k)) % ks.length
+    Hash.absOrZero(Hash.lowbias64(k)) % ks.length
   }
 
   private def put(ks: Array[Long], vs: Array[Int], k: Long, v: Int): Boolean = {

@@ -78,7 +78,7 @@ object MathExpr {
 
     def rand(t: Long): Double = {
       // Compute the hash and map the value to the range 0.0 to 1.0
-      (math.abs(Hash.murmur3(t)) % 1000) / 1000.0
+      (math.abs(Hash.lowbias64(t)) % 1000) / 1000.0
     }
   }
 

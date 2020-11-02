@@ -16,24 +16,17 @@
 package com.netflix.atlas.core.util
 
 import java.math.BigInteger
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 
 import scala.util.Try
-import scala.util.hashing.MurmurHash3
 
 object Hash {
 
-  // Used for computing the hash code for Long values.
-  private[this] val buffer = ThreadLocal
-    .withInitial[ByteBuffer](() => ByteBuffer.allocate(java.lang.Long.BYTES))
-
-  /** Compute MurmurHash3 for a java long value. */
-  def murmur3(v: Long): Int = {
-    val buf = buffer.get()
-    buf.clear()
-    buf.putLong(v)
-    MurmurHash3.bytesHash(buf.array())
+  /** Hash function for use with 64-bit integers. */
+  def lowbias64(v: Long): Int = {
+    val h1 = lowbias32((v >>> 32).toInt)
+    val h2 = lowbias32(v.toInt)
+    h1 ^ h2
   }
 
   /**

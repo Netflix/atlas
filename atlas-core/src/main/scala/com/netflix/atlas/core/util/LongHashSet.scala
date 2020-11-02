@@ -59,7 +59,7 @@ class LongHashSet(noData: Long, capacity: Int = 10) {
   }
 
   private def add(buffer: Array[Long], v: Long): Boolean = {
-    var pos = Hash.absOrZero(Hash.murmur3(v)) % buffer.length
+    var pos = Hash.absOrZero(Hash.lowbias64(v)) % buffer.length
     var posV = buffer(pos)
     while (posV != noData && posV != v) {
       pos = (pos + 1) % buffer.length
