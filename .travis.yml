@@ -9,7 +9,7 @@ matrix:
     scala: 2.13.3
     os: linux
     dist: xenial
-    env: BINTRAY_PUBLISH=true
+    env: BINTRAY_PUBLISH=false
 script:
 - ./scripts/buildViaTravis.sh
 env:
