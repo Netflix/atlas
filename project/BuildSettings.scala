@@ -56,8 +56,8 @@ object BuildSettings {
     },
     packageOptions in (Compile, packageBin) += Package.ManifestAttributes(
       "Build-Date"   -> java.time.Instant.now().toString,
-      "Build-Number" -> sys.env.getOrElse("TRAVIS_BUILD_NUMBER", "unknown"),
-      "Commit"       -> sys.env.getOrElse("TRAVIS_COMMIT", "unknown")
+      "Build-Number" -> sys.env.getOrElse("GITHUB_RUN_ID", "unknown"),
+      "Commit"       -> sys.env.getOrElse("GITHUB_SHA", "unknown")
     ),
     // scaladoc crashes on jdk11 using `-release 8` with assertion failure:
     // type AnyRef in java.lang

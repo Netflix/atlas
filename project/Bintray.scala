@@ -6,10 +6,9 @@ import bintray.BintrayKeys._
 object Bintray {
 
   lazy val now = System.currentTimeMillis
-  lazy val isPullRequest = sys.env.getOrElse("TRAVIS_PULL_REQUEST", "false") != "false"
 
   private def get(k: String): String = {
-    if (isPullRequest) s"dummy$k" else sys.env.getOrElse(s"bintray$k", s"missing$k")
+    sys.env.getOrElse(s"bintray$k", s"missing$k")
   }
 
   lazy val user = get("User")

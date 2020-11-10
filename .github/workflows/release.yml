@@ -1,0 +1,31 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+      - v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 15
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2
+          key: ${{ runner.os }}-${{ hashFiles('**/*.sbt') }}
+      - name: Build
+        env:
+          bintrayUser: ${{ secrets.ORG_BINTRAY_USER }}
+          bintrayKey: ${{ secrets.ORG_BINTRAY_KEY }}
+        run: |
+          git fetch --unshallow --tags
+          cat /dev/null | project/sbt storeBintrayCredentials
+          cat /dev/null | project/sbt clean test publish bintrayRelease
