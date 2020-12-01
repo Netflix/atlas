@@ -29,6 +29,7 @@ abstract class BaseExamplesSuite extends AnyFunSuite {
   protected def eval(program: String): TimeSeriesExpr = {
     interpreter.execute(program).stack match {
       case ModelExtractors.TimeSeriesType(t) :: Nil => t
+      case v                                        => throw new MatchError(v)
     }
   }
 

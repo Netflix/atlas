@@ -112,6 +112,8 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
         assert(
           msg === "IllegalArgumentException: missing required URI parameter `q`: resource:///gc-pause.dat/api/v1/graph"
         )
+      case v =>
+        throw new MatchError(v)
     }
   }
 
@@ -223,6 +225,8 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
       case DiagnosticMessage(t, msg, None) =>
         assert(t === "error")
         assert(msg === expectedMsg)
+      case v =>
+        throw new MatchError(v)
     }
   }
 

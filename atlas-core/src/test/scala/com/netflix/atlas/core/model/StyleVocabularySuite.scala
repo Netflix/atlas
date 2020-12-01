@@ -26,6 +26,7 @@ class StyleVocabularySuite extends AnyFunSuite {
   def eval(s: String): StyleExpr = {
     interpreter.execute(s).stack match {
       case PresentationType(v) :: Nil => v
+      case v                          => throw new MatchError(v)
     }
   }
 

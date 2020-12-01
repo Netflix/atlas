@@ -41,6 +41,7 @@ class NamedRewriteSuite extends AnyFunSuite {
   private def rawEval(program: String): List[StyleExpr] = {
     interpreter.execute(program).stack.flatMap {
       case ModelExtractors.PresentationType(t) => t.perOffset
+      case v                                   => throw new MatchError(v)
     }
   }
 
@@ -51,6 +52,8 @@ class NamedRewriteSuite extends AnyFunSuite {
           case nr: MathExpr.NamedRewrite => nr.evalExpr
         }
         expanded.asInstanceOf[StyleExpr].perOffset
+      case v =>
+        throw new MatchError(v)
     }
   }
 

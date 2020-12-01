@@ -73,6 +73,7 @@ class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
             case KeyListResponse(vs) if req.useJson   => asJson(vs, offsetString(limit, vs))
             case ValueListResponse(vs) if req.useJson => asJson(vs, offsetString(limit, vs))
             case Failure(t)                           => throw t
+            case v                                    => throw new MatchError(v)
           }
       }
     }

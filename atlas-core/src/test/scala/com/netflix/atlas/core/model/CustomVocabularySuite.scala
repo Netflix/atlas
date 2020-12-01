@@ -51,6 +51,7 @@ class CustomVocabularySuite extends AnyFunSuite {
     val result = interpreter.execute(program)
     result.stack match {
       case ModelExtractors.TimeSeriesType(v) :: Nil => v
+      case v                                        => throw new MatchError(v)
     }
   }
 

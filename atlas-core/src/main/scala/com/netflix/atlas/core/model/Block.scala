@@ -217,13 +217,13 @@ sealed trait Block {
     * primitives.
     */
   def sizeOf(value: Any): Int = value match {
-    case v: Boolean => 1
-    case v: Byte    => 1
-    case v: Short   => 2
-    case v: Int     => 4
-    case v: Long    => 8
-    case v: Float   => 4
-    case v: Double  => 8
+    case _: Boolean => 1
+    case _: Byte    => 1
+    case _: Short   => 2
+    case _: Int     => 4
+    case _: Long    => 8
+    case _: Float   => 4
+    case _: Double  => 8
 
     // Assume integer length + size for each value
     case vs: Array[Boolean] => 4 + vs.length
@@ -233,6 +233,8 @@ sealed trait Block {
     case vs: Array[Long]    => 4 + 8 * vs.length
     case vs: Array[Float]   => 4 + 4 * vs.length
     case vs: Array[Double]  => 4 + 8 * vs.length
+
+    case v => throw new MatchError(v)
   }
 }
 

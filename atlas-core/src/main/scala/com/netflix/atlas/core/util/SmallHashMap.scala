@@ -43,6 +43,7 @@ object SmallHashMap {
 
     def +=(pair: (K, V)): Unit = add(pair._1, pair._2)
 
+    @scala.annotation.nowarn
     def add(k: K, v: V): Builder[K, V] = {
       val pos = Hash.absOrZero(k.hashCode) % size
       var i = pos
@@ -160,6 +161,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     Hash.absOrZero(k.hashCode) % capacity
   }
 
+  @scala.annotation.nowarn
   def getOrNull(key: K): V = {
     if (dataLength == 0) return null.asInstanceOf[V]
     val capacity = data.length / 2
@@ -420,6 +422,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     * Helper function to avoid BoxesRunTime.equals. This function should be easy for
     * hotspot to inline.
     */
+  @scala.annotation.nowarn
   private def areEqual[T](v1: T, v2: T): Boolean = {
     (v1 == null && v2 == null) || (v1 != null && v1.equals(v2))
   }
