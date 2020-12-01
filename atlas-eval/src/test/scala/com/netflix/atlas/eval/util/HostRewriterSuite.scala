@@ -30,6 +30,7 @@ class HostRewriterSuite extends AnyFunSuite {
   private def interpret(str: String): List[StyleExpr] = {
     interpreter.execute(str).stack.reverse.flatMap {
       case ModelExtractors.PresentationType(t) => t.perOffset
+      case v                                   => throw new MatchError(v)
     }
   }
 

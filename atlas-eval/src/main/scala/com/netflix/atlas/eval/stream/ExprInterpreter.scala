@@ -35,6 +35,7 @@ private[stream] class ExprInterpreter(config: Config) {
   def eval(expr: String): List[StyleExpr] = {
     interpreter.execute(expr).stack.map {
       case ModelExtractors.PresentationType(t) => t
+      case v                                   => throw new MatchError(v)
     }
   }
 

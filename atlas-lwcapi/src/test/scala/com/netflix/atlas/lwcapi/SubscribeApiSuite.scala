@@ -85,9 +85,10 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
       var subscriptions = List.empty[LwcSubscription]
       while (subscriptions.size < 2) {
         parse(client.expectMessage()) match {
-          case msg: DiagnosticMessage =>
-          case sub: LwcSubscription   => subscriptions = sub :: subscriptions
-          case h: LwcHeartbeat        => assert(h.step === 60000)
+          case _: DiagnosticMessage =>
+          case sub: LwcSubscription => subscriptions = sub :: subscriptions
+          case h: LwcHeartbeat      => assert(h.step === 60000)
+          case v                    => throw new MatchError(v)
         }
       }
 

@@ -68,6 +68,7 @@ case class AlgoState(algorithm: String, settings: Map[String, Any]) {
     settings(key) match {
       case vs: Seq[_]        => vs.map(v => toNumber(key, v).doubleValue()).toArray
       case vs: Array[Double] => vs
+      case v                 => throw new MatchError(v)
     }
   }
 
@@ -95,6 +96,7 @@ object AlgoState {
     value match {
       case s: AlgoState => s
       case m: Map[_, _] => apply(m)
+      case v            => throw new MatchError(v)
     }
   }
 }

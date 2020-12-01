@@ -191,6 +191,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     val oldBlock = currentBlock match {
       case b: ArrayBlock  => Block.compress(b)
       case b: RollupBlock => b.compress
+      case b              => throw new MatchError(b)
     }
     val newBlock =
       if (oldBlock eq currentBlock) {
@@ -267,6 +268,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
       val oldBlock = currentBlock match {
         case b: ArrayBlock  => Block.compress(b)
         case b: RollupBlock => b.compress
+        case b              => throw new MatchError(b)
       }
       BlockStats.update(currentBlock, oldBlock)
       blocks(currentPos) = oldBlock

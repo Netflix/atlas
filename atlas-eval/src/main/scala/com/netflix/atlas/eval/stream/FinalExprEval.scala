@@ -228,6 +228,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
         grab(in) match {
           case ds: DataSources => handleDataSources(ds)
           case data: TimeGroup => handleData(data)
+          case v               => throw new MatchError(v)
         }
       }
 

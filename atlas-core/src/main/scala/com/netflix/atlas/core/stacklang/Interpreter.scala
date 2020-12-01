@@ -184,7 +184,7 @@ object Interpreter {
   private def toStringImpl(items: List[Any]): String = {
     val parts = items.map {
       case vs: List[_] => s"(,${toStringImpl(vs)},)"
-      case v: AnyRef   => v.toString
+      case v           => v.toString
     }
     parts.mkString(",")
   }
