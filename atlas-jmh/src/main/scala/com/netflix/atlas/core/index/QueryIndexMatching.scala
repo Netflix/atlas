@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.index
 
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.util.SmallHashMap
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
@@ -93,6 +94,8 @@ class QueryIndexMatching {
     "statistic"  -> "totalTime"
   )
 
+  private val smallId = SmallHashMap(id)
+
   @Threads(1)
   @Benchmark
   def loop_100(bh: Blackhole): Unit = {
@@ -139,6 +142,12 @@ class QueryIndexMatching {
   @Benchmark
   def index_100000(bh: Blackhole): Unit = {
     bh.consume(index_100000.matches(id))
+  }
+
+  @Threads(1)
+  @Benchmark
+  def index_smallmap_100000(bh: Blackhole): Unit = {
+    bh.consume(index_100000.matches(smallId))
   }
 
 }
