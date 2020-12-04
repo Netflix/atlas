@@ -35,7 +35,7 @@ import com.netflix.atlas.core.util.SmallHashMap
   *     using a linear scan to get final matching with regex or other more complicated query
   *     clauses.
   */
-class QueryIndex[T] private (
+case class QueryIndex[T](
   indexes: SmallHashMap[Query.Equal, QueryIndex[T]],
   entries: Array[QueryIndex.Entry[T]]
 ) {
@@ -226,7 +226,7 @@ object QueryIndex {
           case (q, ts) =>
             q -> createImpl(idxMap, ts.map(_._2))
         }
-        val idx = new QueryIndex(smallMap(trees), leaf.map(_.entry).toArray)
+        val idx = QueryIndex(smallMap(trees), leaf.map(_.entry).toArray)
         idxMap += entries -> idx
         idx
     }
