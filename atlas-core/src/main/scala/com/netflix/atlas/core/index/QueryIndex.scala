@@ -35,27 +35,47 @@ import com.netflix.atlas.core.util.SmallHashMap
   *     using a linear scan to get final matching with regex or other more complicated query
   *     clauses.
   */
-case class QueryIndex[T](
-  indexes: Map[Query.Equal, QueryIndex[T]],
+class QueryIndex[T] private (
+  indexes: SmallHashMap[Query.Equal, QueryIndex[T]],
   entries: Array[QueryIndex.Entry[T]]
 ) {
 
   /** Returns true if the tags match any of the queries in the index. */
   def matches(tags: Map[String, String]): Boolean = {
-    var qs = List.empty[Query.Equal]
-    tags.foreachEntry { (k, v) =>
-      qs = Query.Equal(k, v) :: qs
+    tags match {
+      case ts: SmallHashMap[String, String] =>
+        matches(ts, ts.entriesIterator)
+      case _ =>
+        var qs = List.empty[Query.Equal]
+        tags.foreachEntry { (k, v) =>
+          qs = Query.Equal(k, v) :: qs
+        }
+        matches(tags, qs)
     }
-    matches(tags, qs)
+  }
+
+  private def matches(
+    tags: SmallHashMap[String, String],
+    it: SmallHashMap.EntryIterator[String, String]
+  ): Boolean = {
+    if (it.hasNext) {
+      val q = Query.Equal(it.key, it.value)
+      it.nextEntry()
+      val pos = it.pos
+      val qt = indexes.getOrNull(q)
+      val children = if (qt != null) qt.matches(tags, it) else false
+      it.pos = pos // reset iterator position for the next call
+      children || entriesExists(tags) || matches(tags, it)
+    } else {
+      entriesExists(tags)
+    }
   }
 
   private def matches(tags: Map[String, String], queries: List[Query.Equal]): Boolean = {
     queries match {
       case q :: qs =>
-        val children = indexes.get(q) match {
-          case Some(qt) => qt.matches(tags, qs)
-          case None     => false
-        }
+        val qt = indexes.getOrNull(q)
+        val children = if (qt != null) qt.matches(tags, qs) else false
         children || entriesExists(tags) || matches(tags, qs)
       case Nil =>
         entriesExists(tags)
@@ -64,20 +84,40 @@ case class QueryIndex[T](
 
   /** Finds the set of items that match the provided tags. */
   def matchingEntries(tags: Map[String, String]): List[T] = {
-    var qs = List.empty[Query.Equal]
-    tags.foreachEntry { (k, v) =>
-      qs = Query.Equal(k, v) :: qs
+    tags match {
+      case ts: SmallHashMap[String, String] =>
+        matchingEntries(ts, ts.entriesIterator).distinct
+      case _ =>
+        var qs = List.empty[Query.Equal]
+        tags.foreachEntry { (k, v) =>
+          qs = Query.Equal(k, v) :: qs
+        }
+        matchingEntries(tags, qs).distinct
     }
-    matchingEntries(tags, qs).distinct
+  }
+
+  private def matchingEntries(
+    tags: SmallHashMap[String, String],
+    it: SmallHashMap.EntryIterator[String, String]
+  ): List[T] = {
+    if (it.hasNext) {
+      val q = Query.Equal(it.key, it.value)
+      it.nextEntry()
+      val pos = it.pos
+      val qt = indexes.getOrNull(q)
+      val children = if (qt != null) qt.matchingEntries(tags, it) else Nil
+      it.pos = pos // reset iterator position for the next call
+      children ::: entriesFilter(tags) ::: matchingEntries(tags, it)
+    } else {
+      entriesFilter(tags)
+    }
   }
 
   private def matchingEntries(tags: Map[String, String], queries: List[Query.Equal]): List[T] = {
     queries match {
       case q :: qs =>
-        val children = indexes.get(q) match {
-          case Some(qt) => qt.matchingEntries(tags, qs)
-          case None     => Nil
-        }
+        val qt = indexes.getOrNull(q)
+        val children = if (qt != null) qt.matchingEntries(tags, qs) else Nil
         children ::: entriesFilter(tags) ::: matchingEntries(tags, qs)
       case Nil =>
         entriesFilter(tags)
@@ -186,7 +226,7 @@ object QueryIndex {
           case (q, ts) =>
             q -> createImpl(idxMap, ts.map(_._2))
         }
-        val idx = QueryIndex(smallMap(trees), leaf.map(_.entry).toArray)
+        val idx = new QueryIndex(smallMap(trees), leaf.map(_.entry).toArray)
         idxMap += entries -> idx
         idx
     }
@@ -195,26 +235,24 @@ object QueryIndex {
   /**
     * Convert to a SmallHashMap to get a more compact memory representation.
     */
-  private def smallMap[T](m: Map[Query.Equal, QueryIndex[T]]): Map[Query.Equal, QueryIndex[T]] = {
+  private def smallMap[T](
+    m: Map[Query.Equal, QueryIndex[T]]
+  ): SmallHashMap[Query.Equal, QueryIndex[T]] = {
 
-    // Scala special cases immutable maps with size <= 4, so go ahead and keep those
-    if (m.size <= 4) m
-    else {
-      // Otherwise, convert to a SmallHashMap. Note that default apply will create a
-      // map with the exact size of the input to optimize for memory use. This results
-      // in terrible performance for lookups of items that are not in the map because
-      // the entire array has to be scanned.
-      //
-      // In this case we use the builder and give 2x the size of the input so there
-      // will be 50% unused entries. Since we expect many misses this gives us better
-      // performance and memory overhead isn't too bad. It is still much lower than
-      // default immutable map since we don't need entry objects.
-      val size = m.size * 2
-      val builder = new SmallHashMap.Builder[Query.Equal, QueryIndex[T]](size)
-      builder.addAll(m)
-      val sm = builder.result
-      sm
-    }
+    // Otherwise, convert to a SmallHashMap. Note that default apply will create a
+    // map with the exact size of the input to optimize for memory use. This results
+    // in terrible performance for lookups of items that are not in the map because
+    // the entire array has to be scanned.
+    //
+    // In this case we use the builder and give 2x the size of the input so there
+    // will be 50% unused entries. Since we expect many misses this gives us better
+    // performance and memory overhead isn't too bad. It is still much lower than
+    // default immutable map since we don't need entry objects.
+    val size = m.size * 2
+    val builder = new SmallHashMap.Builder[Query.Equal, QueryIndex[T]](size)
+    builder.addAll(m)
+    val sm = builder.result
+    sm
   }
 
   /**

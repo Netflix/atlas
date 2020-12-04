@@ -23,6 +23,7 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.Streams
 import org.openjdk.jol.info.GraphLayout
 import org.scalatest.funsuite.AnyFunSuite
@@ -31,16 +32,30 @@ import scala.util.Using
 
 class QueryIndexSuite extends AnyFunSuite {
 
+  private def matches[T](index: QueryIndex[T], tags: Map[String, String]): Boolean = {
+    val r1 = index.matches(tags)
+    val r2 = index.matches(SmallHashMap(tags))
+    assert(r1 === r2)
+    r1
+  }
+
+  private def matchingEntries[T](index: QueryIndex[T], tags: Map[String, String]): List[T] = {
+    val r1 = index.matchingEntries(tags)
+    val r2 = index.matchingEntries(SmallHashMap(tags))
+    assert(r1 === r2)
+    r1
+  }
+
   test("empty") {
     val index = QueryIndex(Nil)
-    assert(!index.matches(Map.empty))
-    assert(!index.matches(Map("a" -> "1")))
+    assert(!matches(index, Map.empty))
+    assert(!matches(index, Map("a" -> "1")))
   }
 
   test("matchingEntries empty") {
     val index = QueryIndex(Nil)
-    assert(index.matchingEntries(Map.empty).isEmpty)
-    assert(index.matchingEntries(Map("a" -> "1")).isEmpty)
+    assert(matchingEntries(index, Map.empty).isEmpty)
+    assert(matchingEntries(index, Map("a" -> "1")).isEmpty)
   }
 
   test("single query: simple") {
@@ -48,18 +63,18 @@ class QueryIndexSuite extends AnyFunSuite {
     val index = QueryIndex(List(q))
 
     // Not all tags are present
-    assert(!index.matches(Map.empty))
-    assert(!index.matches(Map("a" -> "1")))
+    assert(!matches(index, Map.empty))
+    assert(!matches(index, Map("a" -> "1")))
 
     // matches
-    assert(index.matches(Map("a" -> "1", "b" -> "2")))
-    assert(index.matches(Map("a" -> "1", "b" -> "2", "c" -> "3")))
+    assert(matches(index, Map("a" -> "1", "b" -> "2")))
+    assert(matches(index, Map("a" -> "1", "b" -> "2", "c" -> "3")))
 
     // a doesn't match
-    assert(!index.matches(Map("a" -> "2", "b" -> "2", "c" -> "3")))
+    assert(!matches(index, Map("a" -> "2", "b" -> "2", "c" -> "3")))
 
     // b doesn't match
-    assert(!index.matches(Map("a" -> "1", "b" -> "3", "c" -> "3")))
+    assert(!matches(index, Map("a" -> "1", "b" -> "3", "c" -> "3")))
   }
 
   test("matchingEntries single query: simple") {
@@ -67,18 +82,18 @@ class QueryIndexSuite extends AnyFunSuite {
     val index = QueryIndex(List(q))
 
     // Not all tags are present
-    assert(index.matchingEntries(Map.empty).isEmpty)
-    assert(index.matchingEntries(Map("a" -> "1")).isEmpty)
+    assert(matchingEntries(index, Map.empty).isEmpty)
+    assert(matchingEntries(index, Map("a" -> "1")).isEmpty)
 
     // matches
-    assert(index.matchingEntries(Map("a" -> "1", "b" -> "2")) === List(q))
-    assert(index.matchingEntries(Map("a" -> "1", "b" -> "2", "c" -> "3")) === List(q))
+    assert(matchingEntries(index, Map("a" -> "1", "b" -> "2")) === List(q))
+    assert(matchingEntries(index, Map("a" -> "1", "b" -> "2", "c" -> "3")) === List(q))
 
     // a doesn't match
-    assert(index.matchingEntries(Map("a" -> "2", "b" -> "2", "c" -> "3")).isEmpty)
+    assert(matchingEntries(index, Map("a" -> "2", "b" -> "2", "c" -> "3")).isEmpty)
 
     // b doesn't match
-    assert(index.matchingEntries(Map("a" -> "1", "b" -> "3", "c" -> "3")).isEmpty)
+    assert(matchingEntries(index, Map("a" -> "1", "b" -> "3", "c" -> "3")).isEmpty)
   }
 
   test("single query: complex") {
@@ -86,18 +101,18 @@ class QueryIndexSuite extends AnyFunSuite {
     val index = QueryIndex(List(q))
 
     // Not all tags are present
-    assert(!index.matches(Map.empty))
-    assert(!index.matches(Map("a" -> "1")))
-    assert(!index.matches(Map("a" -> "1", "b" -> "2")))
+    assert(!matches(index, Map.empty))
+    assert(!matches(index, Map("a" -> "1")))
+    assert(!matches(index, Map("a" -> "1", "b" -> "2")))
 
     // matches
-    assert(index.matches(Map("a" -> "1", "b" -> "2", "c" -> "3")))
+    assert(matches(index, Map("a" -> "1", "b" -> "2", "c" -> "3")))
 
     // a doesn't match
-    assert(!index.matches(Map("a" -> "2", "b" -> "2", "c" -> "3")))
+    assert(!matches(index, Map("a" -> "2", "b" -> "2", "c" -> "3")))
 
     // b doesn't match
-    assert(!index.matches(Map("a" -> "1", "b" -> "3", "c" -> "3")))
+    assert(!matches(index, Map("a" -> "1", "b" -> "3", "c" -> "3")))
   }
 
   test("single query: in expansion is limited") {
@@ -109,8 +124,8 @@ class QueryIndexSuite extends AnyFunSuite {
     val q = Query.And(Query.And(q1, q2), q3)
     val index = QueryIndex(List(q))
 
-    assert(index.matches(Map("a" -> "1", "b" -> "9999", "c" -> "727")))
-    assert(!index.matches(Map("a" -> "1", "b" -> "10000", "c" -> "727")))
+    assert(matches(index, Map("a" -> "1", "b" -> "9999", "c" -> "727")))
+    assert(!matches(index, Map("a" -> "1", "b" -> "10000", "c" -> "727")))
   }
 
   test("matchingEntries single query: complex") {
@@ -118,18 +133,18 @@ class QueryIndexSuite extends AnyFunSuite {
     val index = QueryIndex(List(q))
 
     // Not all tags are present
-    assert(index.matchingEntries(Map.empty).isEmpty)
-    assert(index.matchingEntries(Map("a" -> "1")).isEmpty)
-    assert(index.matchingEntries(Map("a" -> "1", "b" -> "2")).isEmpty)
+    assert(matchingEntries(index, Map.empty).isEmpty)
+    assert(matchingEntries(index, Map("a" -> "1")).isEmpty)
+    assert(matchingEntries(index, Map("a" -> "1", "b" -> "2")).isEmpty)
 
     // matchingEntries
-    assert(index.matchingEntries(Map("a" -> "1", "b" -> "2", "c" -> "3")) === List(q))
+    assert(matchingEntries(index, Map("a" -> "1", "b" -> "2", "c" -> "3")) === List(q))
 
     // a doesn't match
-    assert(index.matchingEntries(Map("a" -> "2", "b" -> "2", "c" -> "3")).isEmpty)
+    assert(matchingEntries(index, Map("a" -> "2", "b" -> "2", "c" -> "3")).isEmpty)
 
     // b doesn't match
-    assert(index.matchingEntries(Map("a" -> "1", "b" -> "3", "c" -> "3")).isEmpty)
+    assert(matchingEntries(index, Map("a" -> "1", "b" -> "3", "c" -> "3")).isEmpty)
   }
 
   test("many queries") {
@@ -146,17 +161,17 @@ class QueryIndexSuite extends AnyFunSuite {
     val index = QueryIndex(cpuUsage :: diskUsagePerNode)
 
     // Not all tags are present
-    assert(!index.matches(Map.empty))
-    assert(!index.matches(Map("a" -> "1")))
+    assert(!matches(index, Map.empty))
+    assert(!matches(index, Map("a" -> "1")))
 
     // matches
-    assert(index.matches(Map("name" -> "cpuUsage", "nf.node"  -> "unknown")))
-    assert(index.matches(Map("name" -> "cpuUsage", "nf.node"  -> "i-00099")))
-    assert(index.matches(Map("name" -> "diskUsage", "nf.node" -> "i-00099")))
+    assert(matches(index, Map("name" -> "cpuUsage", "nf.node"  -> "unknown")))
+    assert(matches(index, Map("name" -> "cpuUsage", "nf.node"  -> "i-00099")))
+    assert(matches(index, Map("name" -> "diskUsage", "nf.node" -> "i-00099")))
 
     // shouldn't match
-    assert(!index.matches(Map("name" -> "diskUsage", "nf.node"   -> "unknown")))
-    assert(!index.matches(Map("name" -> "memoryUsage", "nf.node" -> "i-00099")))
+    assert(!matches(index, Map("name" -> "diskUsage", "nf.node"   -> "unknown")))
+    assert(!matches(index, Map("name" -> "memoryUsage", "nf.node" -> "i-00099")))
   }
 
   test("matchingEntries many queries") {
@@ -173,28 +188,28 @@ class QueryIndexSuite extends AnyFunSuite {
     val index = QueryIndex(cpuUsage :: diskUsage :: diskUsagePerNode)
 
     // Not all tags are present
-    assert(index.matchingEntries(Map.empty).isEmpty)
-    assert(index.matchingEntries(Map("a" -> "1")).isEmpty)
+    assert(matchingEntries(index, Map.empty).isEmpty)
+    assert(matchingEntries(index, Map("a" -> "1")).isEmpty)
 
     // matchingEntries
     assert(
-      index.matchingEntries(Map("name" -> "cpuUsage", "nf.node" -> "unknown")) === List(cpuUsage)
+      matchingEntries(index, Map("name" -> "cpuUsage", "nf.node" -> "unknown")) === List(cpuUsage)
     )
     assert(
-      index.matchingEntries(Map("name" -> "cpuUsage", "nf.node" -> "i-00099")) === List(cpuUsage)
+      matchingEntries(index, Map("name" -> "cpuUsage", "nf.node" -> "i-00099")) === List(cpuUsage)
     )
     assert(
-      index.matchingEntries(Map("name" -> "diskUsage", "nf.node" -> "i-00099")) === List(
+      matchingEntries(index, Map("name" -> "diskUsage", "nf.node" -> "i-00099")) === List(
           diskUsagePerNode.last,
           diskUsage
         )
     )
     assert(
-      index.matchingEntries(Map("name" -> "diskUsage", "nf.node" -> "unknown")) === List(diskUsage)
+      matchingEntries(index, Map("name" -> "diskUsage", "nf.node" -> "unknown")) === List(diskUsage)
     )
 
     // shouldn't match
-    assert(index.matchingEntries(Map("name" -> "memoryUsage", "nf.node" -> "i-00099")).isEmpty)
+    assert(matchingEntries(index, Map("name" -> "memoryUsage", "nf.node" -> "i-00099")).isEmpty)
   }
 
   test("from list of exprs") {
@@ -207,8 +222,8 @@ class QueryIndexSuite extends AnyFunSuite {
     }
     val index = QueryIndex.create(entries)
 
-    assert(Set(expr1, expr2) === index.matchingEntries(Map("name" -> "cpuUsage")).toSet)
-    assert(Set(expr2) === index.matchingEntries(Map("name"        -> "numCores")).toSet)
+    assert(Set(expr1, expr2) === matchingEntries(index, Map("name" -> "cpuUsage")).toSet)
+    assert(Set(expr2) === matchingEntries(index, Map("name"        -> "numCores")).toSet)
   }
 
   test("queries for both nf.app and nf.cluster") {
@@ -218,8 +233,8 @@ class QueryIndexSuite extends AnyFunSuite {
     val index = QueryIndex(queries)
 
     val tags = Map("nf.app" -> "testapp", "nf.cluster" -> "testapp-test")
-    assert(index.matches(tags))
-    assert(index.matchingEntries(tags) === queries)
+    assert(matches(index, tags))
+    assert(matchingEntries(index, tags) === queries)
   }
 
   test("queries for both nf.app w/ nf.cluster miss and nf.cluster") {
@@ -230,8 +245,8 @@ class QueryIndexSuite extends AnyFunSuite {
     val index = QueryIndex(queries)
 
     val tags = Map("nf.app" -> "testapp", "nf.cluster" -> "testapp-test")
-    assert(index.matches(tags))
-    assert(index.matchingEntries(tags) === List(clusterQuery))
+    assert(matches(index, tags))
+    assert(matchingEntries(index, tags) === List(clusterQuery))
   }
 
   type QueryInterner = scala.collection.mutable.AnyRefMap[Query, Query]
