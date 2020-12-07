@@ -40,74 +40,63 @@ case class QueryIndex[T](
   entries: Array[QueryIndex.Entry[T]]
 ) {
 
+  import QueryIndex._
+
+  private def createQueryArray(tags: Map[String, String]): Array[Query.Equal] = {
+    val n = tags.size
+    var queries = queryArrays.get()
+    if (queries == null || queries.length < n) {
+      queries = new Array[Query.Equal](n)
+      queryArrays.set(queries)
+    }
+
+    var i = 0
+    tags.foreachEntry { (k, v) =>
+      queries(i) = Query.Equal(k, v)
+      i += 1
+    }
+    queries
+  }
+
   /** Returns true if the tags match any of the queries in the index. */
   def matches(tags: Map[String, String]): Boolean = {
-    tags match {
-      case ts: SmallHashMap[String, String] =>
-        matches(ts, ts.entriesIterator)
-      case _ =>
-        var qs = List.empty[Query.Equal]
-        tags.foreachEntry { (k, v) =>
-          qs = Query.Equal(k, v) :: qs
-        }
-        matches(tags, qs)
-    }
+    val queries = createQueryArray(tags)
+    matches(tags, queries, 0, tags.size)
   }
 
   private def matches(
-    tags: SmallHashMap[String, String],
-    it: SmallHashMap.EntryIterator[String, String]
+    tags: Map[String, String],
+    queries: Array[Query.Equal],
+    i: Int,
+    n: Int
   ): Boolean = {
-    if (it.hasNext) {
-      val q = Query.Equal(it.key, it.value)
-      it.nextEntry()
-      val pos = it.pos
+    if (i < n) {
+      val q = queries(i)
       val qt = indexes.getOrNull(q)
-      val children = if (qt != null) qt.matches(tags, it) else false
-      it.pos = pos // reset iterator position for the next call
-      children || entriesExists(tags) || matches(tags, it)
+      val children = if (qt != null) qt.matches(tags, queries, i + 1, n) else false
+      children || entriesExists(tags) || matches(tags, queries, i + 1, n)
     } else {
       entriesExists(tags)
     }
   }
 
-  private def matches(tags: Map[String, String], queries: List[Query.Equal]): Boolean = {
-    queries match {
-      case q :: qs =>
-        val qt = indexes.getOrNull(q)
-        val children = if (qt != null) qt.matches(tags, qs) else false
-        children || entriesExists(tags) || matches(tags, qs)
-      case Nil =>
-        entriesExists(tags)
-    }
-  }
-
   /** Finds the set of items that match the provided tags. */
   def matchingEntries(tags: Map[String, String]): List[T] = {
-    tags match {
-      case ts: SmallHashMap[String, String] =>
-        matchingEntries(ts, ts.entriesIterator).distinct
-      case _ =>
-        var qs = List.empty[Query.Equal]
-        tags.foreachEntry { (k, v) =>
-          qs = Query.Equal(k, v) :: qs
-        }
-        matchingEntries(tags, qs).distinct
-    }
+    val queries = createQueryArray(tags)
+    matchingEntries(tags, queries, 0, tags.size).distinct
   }
 
   private def matchingEntries(
-    tags: SmallHashMap[String, String],
-    it: SmallHashMap.EntryIterator[String, String]
+    tags: Map[String, String],
+    queries: Array[Query.Equal],
+    i: Int,
+    n: Int
   ): List[T] = {
-    if (it.hasNext) {
-      val q = Query.Equal(it.key, it.value)
-      it.nextEntry()
-      val pos = it.pos
+    if (i < n) {
+      val q = queries(i)
       val qt = indexes.getOrNull(q)
-      val children = if (qt != null) qt.matchingEntries(tags, it) else Nil
-      it.pos = pos // reset iterator position for the next call
-      children ::: entriesFilter(tags) ::: matchingEntries(tags, it)
+      val children = if (qt != null) qt.matchingEntries(tags, queries, i + 1, n) else Nil
+      children ::: entriesFilter(tags) ::: matchingEntries(tags, queries, i + 1, n)
     } else {
       entriesFilter(tags)
     }
@@ -282,4 +271,7 @@ object QueryIndex {
         }
     AnnotatedEntry(Entry(remainderQ, entry.value), filters.toSet)
   }
+
+  /** Arrays for the set of queries that can be reused across calls to avoid allocation. */
+  private val queryArrays = new ThreadLocal[Array[Query.Equal]]
 }
