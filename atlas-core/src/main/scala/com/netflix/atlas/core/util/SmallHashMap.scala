@@ -156,6 +156,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
 
   private[this] var cachedHashCode: Int = 0
 
+  @inline
   private def hash(k: Any): Int = {
     val capacity = data.length / 2
     Hash.absOrZero(k.hashCode) % capacity
@@ -168,14 +169,18 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     val pos = hash(key)
     var i = pos
     var ki = data(i * 2)
-    if (ki != null && !ki.equals(key)) {
+    if (ki == null || ki.equals(key)) {
+      data(i * 2 + 1).asInstanceOf[V]
+    } else {
+      var found = false
       do {
         i = (i + 1) % capacity
         ki = data(i * 2)
-      } while (ki != null && !ki.equals(key) && i != pos)
+        found = ki == null || ki.equals(key)
+      } while (!found && i != pos)
+      val v = if (found) data(i * 2 + 1) else null
+      v.asInstanceOf[V]
     }
-    val v = if (ki != null && ki.equals(key)) data(i * 2 + 1) else null
-    v.asInstanceOf[V]
   }
 
   def get(key: K): Option[V] = Option(getOrNull(key))
