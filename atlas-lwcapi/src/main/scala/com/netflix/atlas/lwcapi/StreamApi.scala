@@ -55,8 +55,7 @@ class StreamApi @Inject() (
     with StrictLogging {
 
   import StreamApi._
-
-  private implicit val ec = scala.concurrent.ExecutionContext.global
+  import com.netflix.atlas.akka.OpportunisticEC._
 
   private val queueSize = config.getInt("atlas.lwcapi.queue-size")
 

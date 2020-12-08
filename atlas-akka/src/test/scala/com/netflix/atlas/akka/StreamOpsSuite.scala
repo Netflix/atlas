@@ -39,7 +39,7 @@ import scala.util.Success
 
 class StreamOpsSuite extends AnyFunSuite {
 
-  private implicit val ec = scala.concurrent.ExecutionContext.global
+  import OpportunisticEC._
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
 
