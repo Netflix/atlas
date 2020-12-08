@@ -40,8 +40,8 @@ class QueryIndexSuite extends AnyFunSuite {
   }
 
   private def matchingEntries[T](index: QueryIndex[T], tags: Map[String, String]): List[T] = {
-    val r1 = index.matchingEntries(tags)
-    val r2 = index.matchingEntries(SmallHashMap(tags))
+    val r1 = index.matchingEntries(tags).sortWith(_.toString < _.toString)
+    val r2 = index.matchingEntries(SmallHashMap(tags)).sortWith(_.toString < _.toString)
     assert(r1 === r2)
     r1
   }
@@ -200,8 +200,8 @@ class QueryIndexSuite extends AnyFunSuite {
     )
     assert(
       matchingEntries(index, Map("name" -> "diskUsage", "nf.node" -> "i-00099")) === List(
-          diskUsagePerNode.last,
-          diskUsage
+          diskUsage,
+          diskUsagePerNode.last
         )
     )
     assert(
@@ -229,7 +229,7 @@ class QueryIndexSuite extends AnyFunSuite {
   test("queries for both nf.app and nf.cluster") {
     val appQuery = Query.Equal("nf.app", "testapp")
     val clusterQuery = Query.Equal("nf.cluster", "testapp-test")
-    val queries = List(clusterQuery, appQuery)
+    val queries = List(appQuery, clusterQuery)
     val index = QueryIndex(queries)
 
     val tags = Map("nf.app" -> "testapp", "nf.cluster" -> "testapp-test")
