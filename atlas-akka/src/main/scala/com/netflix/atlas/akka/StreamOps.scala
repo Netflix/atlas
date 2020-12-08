@@ -106,7 +106,7 @@ object StreamOps extends StrictLogging {
     queue: SourceQueueWithComplete[T]
   ) extends SourceQueueWithComplete[T] {
 
-    private implicit val ec = scala.concurrent.ExecutionContext.global
+    import OpportunisticEC._
 
     private val baseId = registry.createId("akka.stream.offeredToQueue", "id", id)
     private val enqueued = registry.counter(baseId.withTag("result", "enqueued"))
