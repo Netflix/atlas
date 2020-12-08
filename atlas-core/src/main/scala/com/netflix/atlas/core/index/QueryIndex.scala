@@ -102,17 +102,6 @@ case class QueryIndex[T](
     }
   }
 
-  private def matchingEntries(tags: Map[String, String], queries: List[Query.Equal]): List[T] = {
-    queries match {
-      case q :: qs =>
-        val qt = indexes.getOrNull(q)
-        val children = if (qt != null) qt.matchingEntries(tags, qs) else Nil
-        children ::: entriesFilter(tags) ::: matchingEntries(tags, qs)
-      case Nil =>
-        entriesFilter(tags)
-    }
-  }
-
   /** Performance optimization for: entries.exists(_.query.matches(tags)) */
   private def entriesExists(tags: Map[String, String]): Boolean = {
     var i = 0
