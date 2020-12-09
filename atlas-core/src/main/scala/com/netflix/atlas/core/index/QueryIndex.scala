@@ -61,7 +61,10 @@ case class QueryIndex[T](
   /** Returns true if the tags match any of the queries in the index. */
   def matches(tags: Map[String, String]): Boolean = {
     val queries = createQueryArray(tags)
-    matches(tags, queries, 0, tags.size)
+    val result = matches(tags, queries, 0, tags.size)
+    // clear array to ensure entries are eligible for GC
+    java.util.Arrays.fill(queries.asInstanceOf[Array[AnyRef]], null)
+    result
   }
 
   private def matches(
@@ -83,7 +86,10 @@ case class QueryIndex[T](
   /** Finds the set of items that match the provided tags. */
   def matchingEntries(tags: Map[String, String]): List[T] = {
     val queries = createQueryArray(tags)
-    matchingEntries(tags, queries, 0, tags.size).distinct
+    val result = matchingEntries(tags, queries, 0, tags.size).distinct
+    // clear array to ensure entries are eligible for GC
+    java.util.Arrays.fill(queries.asInstanceOf[Array[AnyRef]], null)
+    result
   }
 
   private def matchingEntries(
