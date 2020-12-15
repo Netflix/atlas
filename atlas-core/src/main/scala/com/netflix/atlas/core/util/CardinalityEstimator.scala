@@ -21,6 +21,7 @@ import org.apache.datasketches.cpc.CpcSketch
   * Utility for cheaply estimating the number of distinct values for a set of objects.
   */
 trait CardinalityEstimator {
+
   /**
     * Update the estimate with the provided value. The object should have a good hash code
     * implementation that is likely to be distinct for different values of the object.
