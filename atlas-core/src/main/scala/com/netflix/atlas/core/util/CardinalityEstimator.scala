@@ -17,31 +17,43 @@ package com.netflix.atlas.core.util
 
 import org.apache.datasketches.cpc.CpcSketch
 
+/**
+  * Utility for cheaply estimating the number of distinct values for a set of objects.
+  */
 trait CardinalityEstimator {
+  /**
+    * Update the estimate with the provided value. The object should have a good hash code
+    * implementation that is likely to be distinct for different values of the object.
+    */
   def update(obj: AnyRef): Unit
+
+  /** Return the current estimate for the number of distinct values seen. */
   def cardinality: Int
-}
-
-private class CpcEstimator(val lgK: Int) extends CardinalityEstimator {
-  private val sketch = new CpcSketch(lgK)
-
-  override def update(obj: AnyRef): Unit = {
-    sketch.update(obj.hashCode())
-  }
-
-  override def cardinality: Int = sketch.getEstimate.toInt
 }
 
 object CardinalityEstimator {
 
   /**
-    * Create a new estimator instance.
-    * @param lgK  Higher lgK means higher accuracy but higher space (2^lgK bytes), can be in range
-    *             of [4,26]. For lgk=9, accuracy is more than 97% for SHA1 hashed tags.
+    * Create a new estimator instance using the [CPC] algorithm.
+    *
+    * [CPC]: https://datasketches.apache.org/docs/CPC/CPC.html
+    *
+    * @param lgK
+    *     Higher lgK means higher accuracy but higher space (`2^lgK` bytes), can be in range
+    *     of [4,26]. For lgk=9, accuracy is more than 97% for SHA1 hashed tags.
     * @return estimator instance
     */
   def newEstimator(lgK: Int = 9): CardinalityEstimator = {
     new CpcEstimator(lgK)
   }
 
+  private class CpcEstimator(val lgK: Int) extends CardinalityEstimator {
+    private val sketch = new CpcSketch(lgK)
+
+    override def update(obj: AnyRef): Unit = {
+      sketch.update(obj.hashCode())
+    }
+
+    override def cardinality: Int = sketch.getEstimate.toInt
+  }
 }

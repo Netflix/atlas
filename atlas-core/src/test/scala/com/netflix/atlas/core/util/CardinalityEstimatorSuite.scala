@@ -47,4 +47,14 @@ class CardinalityEstimatorSuite extends AnyFunSuite {
     check(CardinalityEstimator.newEstimator(), values.slice(0, 200))
   }
 
+  test("estimate int string") {
+    // verify reasonably accurate estimate with strings that are fairly similar
+    val values = (0 until 1000).map(_.toString)
+
+    check(CardinalityEstimator.newEstimator(), values.slice(0, 1))
+    check(CardinalityEstimator.newEstimator(), values.slice(0, 10))
+    check(CardinalityEstimator.newEstimator(), values.slice(0, 100))
+    check(CardinalityEstimator.newEstimator(), values.slice(0, 200))
+  }
+
 }
