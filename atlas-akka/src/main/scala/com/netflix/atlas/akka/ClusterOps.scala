@@ -103,7 +103,7 @@ object ClusterOps extends StrictLogging {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
       new GraphStageLogic(shape) with InHandler with OutHandler {
 
-        private val registry = new NoopRegistry
+        private val registry = context.registry
         private val membersSources = mutable.AnyRefMap.empty[M, SourceQueue[D]]
 
         override def onPush(): Unit = {
