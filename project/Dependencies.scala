@@ -4,16 +4,16 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka       = "2.6.10"
+    val akka       = "2.6.11"
     val akkaHttpV  = "10.2.2"
-    val aws        = "1.11.901"
-    val iep        = "2.6.4"
+    val aws        = "1.11.934"
+    val iep        = "2.6.5"
     val guice      = "4.1.0"
-    val jackson    = "2.12.0"
+    val jackson    = "2.12.1"
     val log4j      = "2.14.0"
     val scala      = "2.13.4"
     val slf4j      = "1.7.30"
-    val spectator  = "0.122.0"
+    val spectator  = "0.123.1"
 
     val crossScala = Seq(scala)
   }
@@ -34,7 +34,7 @@ object Dependencies {
   val awsS3             = "com.amazonaws" % "aws-java-sdk-s3" % aws
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.8.8"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "1.3.0-incubating"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.5"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.5.1"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.24.0"
   val guiceCore         = "com.google.inject" % "guice" % guice
   val guiceMulti        = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -61,8 +61,8 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.5"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.3.1"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.7"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.3.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
