@@ -80,7 +80,7 @@ class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictL
   }
 }
 
-object RequestHandler {
+object RequestHandler extends StrictLogging {
 
   import com.netflix.atlas.akka.CustomDirectives._
 
@@ -186,16 +186,25 @@ object RequestHandler {
     }
   }
 
-  def errorResponse(t: Throwable): HttpResponse = t match {
-    case e @ (_: IllegalArgumentException | _: IllegalStateException |
-        _: JsonProcessingException) =>
-      DiagnosticMessage.error(StatusCodes.BadRequest, e)
-    case e: NoSuchElementException =>
-      DiagnosticMessage.error(StatusCodes.NotFound, e)
-    case e: EntityStreamSizeException =>
-      DiagnosticMessage.error(StatusCodes.PayloadTooLarge, e)
-    case e: Throwable =>
-      DiagnosticMessage.error(StatusCodes.InternalServerError, e)
+  def errorResponse(t: Throwable): HttpResponse = {
+    // Log exception to make it easier to access the full stack trace. This could be
+    // high volume if there are a lot of failed requests, so it could have a performance
+    // impact if enabled. The exception is logged here rather than in `exceptionHandler`
+    // so that any exceptions coming from `handleRejections` will also get logged.
+    logger.trace("request failed with exception", t)
+
+    // Determine most appropriate status code to use based on the exception type
+    t match {
+      case e @ (_: IllegalArgumentException | _: IllegalStateException |
+          _: JsonProcessingException) =>
+        DiagnosticMessage.error(StatusCodes.BadRequest, e)
+      case e: NoSuchElementException =>
+        DiagnosticMessage.error(StatusCodes.NotFound, e)
+      case e: EntityStreamSizeException =>
+        DiagnosticMessage.error(StatusCodes.PayloadTooLarge, e)
+      case e: Throwable =>
+        DiagnosticMessage.error(StatusCodes.InternalServerError, e)
+    }
   }
 
   private def exceptionHandler: PartialFunction[Throwable, Route] = {
