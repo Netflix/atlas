@@ -79,6 +79,9 @@ case class DefaultSettings(root: Config, config: Config) {
     Pattern.compile(config.getString("browser-agent-pattern"), Pattern.CASE_INSENSITIVE)
   }
 
+  /** Should the system try to generate a simplified legend? */
+  val simpleLegendsEnabled: Boolean = config.getBoolean("simple-legends-enabled")
+
   /** Maximum number of datapoints allowed for a line in a chart. */
   val maxDatapoints: Int = config.getInt("max-datapoints")
 
