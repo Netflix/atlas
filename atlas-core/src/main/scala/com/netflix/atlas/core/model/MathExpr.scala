@@ -359,6 +359,18 @@ object MathExpr {
 
   trait BinaryMathExpr extends TimeSeriesExpr with BinaryOp {
 
+    // Validate grouping is consistent with expectations
+    if (expr1.isGrouped && expr2.isGrouped) {
+      val g1 = expr1.finalGrouping
+      val g2 = expr2.finalGrouping
+      if (g1.toSet != g2.toSet) {
+        val detail = s"${g1.mkString("(,", ",", ",)")} != ${g2.mkString("(,", ",", ",)")}"
+        throw new IllegalArgumentException(
+          s"both sides of binary operation must have the same grouping [$detail]"
+        )
+      }
+    }
+
     def name: String
 
     def labelFmt: String
