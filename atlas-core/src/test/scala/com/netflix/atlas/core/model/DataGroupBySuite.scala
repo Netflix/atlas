@@ -83,4 +83,36 @@ class DataGroupBySuite extends AnyFunSuite {
     assert(rs.size === 1)
   }
 
+  def binaryOp(ks1: List[String], ks2: List[String]): List[TimeSeries] = {
+    val input = (0 until 10).map(ts).toList
+    val context = EvalContext(start, start + step * n, step)
+    val expr1 = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("mode", "even")), ks1)
+    val expr2 = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), ks2)
+    val binaryOpExpr = MathExpr.Add(expr1, expr2)
+    binaryOpExpr.eval(context, input).data
+  }
+
+  test("binary ops: both sides match") {
+    val rs = binaryOp(List("value"), List("value"))
+    assert(rs.size === 5) // only even values will be on both sides
+  }
+
+  test("binary ops: both sides match, different orders") {
+    val rs = binaryOp(List("name", "value"), List("value", "name"))
+    assert(rs.size === 5) // only even values will be on both sides
+  }
+
+  test("binary ops: mismatch") {
+    val e = intercept[IllegalArgumentException] {
+      binaryOp(List("value"), List("name"))
+    }
+    assert(e.getMessage.startsWith("both sides of binary operation"))
+  }
+
+  test("binary ops: subset") {
+    val e = intercept[IllegalArgumentException] {
+      binaryOp(List("name", "value"), List("name"))
+    }
+    assert(e.getMessage.startsWith("both sides of binary operation"))
+  }
 }
