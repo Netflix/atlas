@@ -56,4 +56,15 @@ case class SummaryStats(count: Int, min: Double, max: Double, last: Double, tota
     TagKey.last  -> formatter(last),
     TagKey.total -> formatter(total)
   )
+
+  /** Return the value of a statistic based on the name. */
+  def get(stat: String): Double = stat match {
+    case "avg"   => avg
+    case "max"   => max
+    case "min"   => min
+    case "last"  => last
+    case "total" => total
+    case "count" => count
+    case s       => throw new IllegalArgumentException(s"unknown statistic: $s")
+  }
 }
