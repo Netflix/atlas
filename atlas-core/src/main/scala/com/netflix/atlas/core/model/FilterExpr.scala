@@ -15,7 +15,10 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.util.BoundedPriorityBuffer
 import com.netflix.atlas.core.util.Math
+
+import java.util.Comparator
 
 trait FilterExpr extends TimeSeriesExpr
 
@@ -33,19 +36,10 @@ object FilterExpr {
 
     def finalGrouping: List[String] = expr.finalGrouping
 
-    private def value(s: SummaryStats): Double = stat match {
-      case "avg"   => s.avg
-      case "max"   => s.max
-      case "min"   => s.min
-      case "last"  => s.last
-      case "total" => s.total
-      case "count" => s.count
-    }
-
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
       val newData = rs.data.map { t =>
-        val v = value(SummaryStats(t, context.start, context.end))
+        val v = SummaryStats(t, context.start, context.end).get(stat)
         val seq = new FunctionTimeSeq(DsType.Gauge, context.step, _ => v)
         TimeSeries(t.tags, s"stat-$stat(${t.label})", seq)
       }
@@ -141,6 +135,76 @@ object FilterExpr {
       }
       val msg = s"${result.size} of ${rs1.data.size} lines matched filter"
       ResultSet(this, result, rs1.state ++ rs2.state, List(msg))
+    }
+  }
+
+  /**
+    * Base type for Top/Bottom K operators.
+    */
+  trait PriorityFilterExpr extends FilterExpr {
+
+    /** Operation name to use for encoding expression. */
+    def opName: String
+
+    /** Comparator that determines the priority order. */
+    def comparator: Comparator[TimeSeriesSummary]
+
+    /** Grouped expression to select the input from. */
+    def expr: TimeSeriesExpr
+
+    /** Summary statistic that should be used for the priority. */
+    def stat: String
+
+    /** Max number of entries to return. */
+    def k: Int
+
+    require(k > 0, s"k must be positive ($k <= 0)")
+
+    override def toString: String = s"$expr,$stat,$k,:$opName"
+
+    def dataExprs: List[DataExpr] = expr.dataExprs
+
+    def isGrouped: Boolean = expr.isGrouped
+
+    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def finalGrouping: List[String] = expr.finalGrouping
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      val buffer = new BoundedPriorityBuffer[TimeSeriesSummary](k, comparator)
+      val rs = expr.eval(context, data)
+      rs.data.foreach { t =>
+        val v = SummaryStats(t, context.start, context.end).get(stat)
+        buffer.add(TimeSeriesSummary(t, v))
+      }
+      val newData = buffer.toList.map(_.timeSeries)
+      ResultSet(this, newData, rs.state)
+    }
+  }
+
+  case class TopK(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+    override def opName: String = "topk"
+
+    override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
+  }
+
+  case class BottomK(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+    override def opName: String = "bottomk"
+
+    override def comparator: Comparator[TimeSeriesSummary] = StatComparator
+  }
+
+  /**
+    * Caches the statistic value associated with a time series. Used for priority filters to
+    * avoid recomputing the summary statistics on each comparison operation.
+    */
+  case class TimeSeriesSummary(timeSeries: TimeSeries, stat: Double)
+
+  /** Default natural order comparator used for priority filters. */
+  private object StatComparator extends Comparator[TimeSeriesSummary] {
+
+    override def compare(t1: TimeSeriesSummary, t2: TimeSeriesSummary): Int = {
+      java.lang.Double.compare(t1.stat, t2.stat)
     }
   }
 }

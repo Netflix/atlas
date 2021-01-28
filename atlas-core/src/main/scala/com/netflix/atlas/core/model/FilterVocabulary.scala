@@ -23,6 +23,7 @@ import com.netflix.atlas.core.stacklang.Word
 object FilterVocabulary extends Vocabulary {
 
   import com.netflix.atlas.core.model.ModelExtractors._
+  import com.netflix.atlas.core.stacklang.Extractors._
 
   val name: String = "filter"
 
@@ -39,7 +40,10 @@ object FilterVocabulary extends Vocabulary {
     // Legacy operations equivalent to `max,:stat`
     Macro("stat-min-mf", List("min", ":stat"), List("42")),
     Macro("stat-max-mf", List("max", ":stat"), List("42")),
-    Macro("stat-avg-mf", List("avg", ":stat"), List("42"))
+    Macro("stat-avg-mf", List("avg", ":stat"), List("42")),
+    // Priority operators: https://github.com/Netflix/atlas/issues/1224
+    BottomK,
+    TopK
   )
 
   case object Stat extends SimpleWord {
@@ -222,5 +226,61 @@ object FilterVocabulary extends Vocabulary {
 
     override def examples: List[String] =
       List("name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,30e3,:gt")
+  }
+
+  case object TopK extends SimpleWord {
+
+    override def name: String = "topk"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: (_: String) :: TimeSeriesType(_) :: _ => true
+      case IntType(_) :: (_: String) :: (_: StyleExpr) :: _    => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(k) :: (s: String) :: TimeSeriesType(t) :: stack =>
+        FilterExpr.TopK(t, s, k) :: stack
+      case IntType(k) :: (s: String) :: (t: StyleExpr) :: stack =>
+        t.copy(expr = FilterExpr.TopK(t.expr, s, k)) :: stack
+    }
+
+    override def signature: String = "TimeSeriesExpr stat:String k:Int -- FilterExpr"
+
+    override def summary: String =
+      """
+        |Limit the output to the `K` time series with the highest values for the specified
+        |summary statistic.
+      """.stripMargin.trim
+
+    override def examples: List[String] =
+      List("name,sps,:eq,:sum,(,nf.cluster,),:by,max,5")
+  }
+
+  case object BottomK extends SimpleWord {
+
+    override def name: String = "bottomk"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case IntType(_) :: (_: String) :: TimeSeriesType(_) :: _ => true
+      case IntType(_) :: (_: String) :: (_: StyleExpr) :: _    => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case IntType(k) :: (s: String) :: TimeSeriesType(t) :: stack =>
+        FilterExpr.BottomK(t, s, k) :: stack
+      case IntType(k) :: (s: String) :: (t: StyleExpr) :: stack =>
+        t.copy(expr = FilterExpr.BottomK(t.expr, s, k)) :: stack
+    }
+
+    override def signature: String = "TimeSeriesExpr stat:String k:Int -- FilterExpr"
+
+    override def summary: String =
+      """
+        |Limit the output to the `K` time series with the lowest values for the specified
+        |summary statistic.
+      """.stripMargin.trim
+
+    override def examples: List[String] =
+      List("name,sps,:eq,:sum,(,nf.cluster,),:by,max,5")
   }
 }
