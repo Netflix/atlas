@@ -109,10 +109,25 @@ class DataGroupBySuite extends AnyFunSuite {
     assert(e.getMessage.startsWith("both sides of binary operation"))
   }
 
-  test("binary ops: subset") {
-    val e = intercept[IllegalArgumentException] {
-      binaryOp(List("name", "value"), List("name"))
+  test("binary ops: lhs subset") {
+    // LHS: sum of even values < 10 (20)
+    // RHS: all values from 0 until 10
+    val rs = binaryOp(List("name"), List("name", "value"))
+    assert(rs.size === 10)
+    rs.foreach { t =>
+      val rhsValue = t.tags("value").toDouble
+      assert(t.datapoint(start).value === 20.0 + rhsValue)
     }
-    assert(e.getMessage.startsWith("both sides of binary operation"))
+  }
+
+  test("binary ops: rhs subset") {
+    // LHS: even values 0, 2, 4, 6, and 8
+    // RHS: sum of 0 to 9 (45)
+    val rs = binaryOp(List("name", "value"), List("name"))
+    assert(rs.size === 5)
+    rs.foreach { t =>
+      val lhsValue = t.tags("value").toDouble
+      assert(t.datapoint(start).value === 45.0 + lhsValue)
+    }
   }
 }

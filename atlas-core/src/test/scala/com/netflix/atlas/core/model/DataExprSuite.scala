@@ -21,8 +21,6 @@ class DataExprSuite extends AnyFunSuite {
   test("groupByKey") {
     val expr = DataExpr.Sum(Query.True)
     val tags = Map("name" -> "foo")
-    val expected = Some(TaggedItem.computeId(tags).toString)
-    val key = expr.groupByKey(tags)
-    assert(expected === key)
+    assert(expr.groupByKey(tags) === None)
   }
 }

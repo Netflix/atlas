@@ -34,9 +34,7 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
 
   def isGrouped: Boolean = false
 
-  def groupByKey(tags: Map[String, String]): Option[String] = {
-    Some(TaggedItem.computeId(tags).toString)
-  }
+  def groupByKey(tags: Map[String, String]): Option[String] = None
 
   def finalGrouping: List[String] = Nil
 
