@@ -359,16 +359,37 @@ object MathExpr {
 
   trait BinaryMathExpr extends TimeSeriesExpr with BinaryOp {
 
+    // Keep the original list to preserve the order in error message
+    private[this] val g1 = expr1.finalGrouping
+    private[this] val g2 = expr2.finalGrouping
+
+    // Set for checking consistency
+    private[this] val s1 = g1.toSet
+    private[this] val s2 = g2.toSet
+
     // Validate grouping is consistent with expectations
     if (expr1.isGrouped && expr2.isGrouped) {
-      val g1 = expr1.finalGrouping
-      val g2 = expr2.finalGrouping
-      if (g1.toSet != g2.toSet) {
-        val detail = s"${g1.mkString("(,", ",", ",)")} != ${g2.mkString("(,", ",", ",)")}"
+      if (!isSubsetOrEqual(s1, s2)) {
+        val detail = s"${g1.mkString("(,", ",", ",)")} ⊈ ${g2.mkString("(,", ",", ",)")}"
         throw new IllegalArgumentException(
-          s"both sides of binary operation must have the same grouping [$detail]"
+          "both sides of binary operation must have the same grouping or one side" +
+          s" must be a subset of the other [$detail]"
         )
       }
+    }
+
+    // For the final grouping and group by key of the result expression the larger
+    // set of keys should be used. This is used to determine which side is the superset.
+    private[this] val useLhsGrouping = s2.subsetOf(s1)
+
+    // Based-on grouping, choose the appropriate operation
+    private[this] val binaryOp: (ResultSet, ResultSet) => List[TimeSeries] = {
+      if (useLhsGrouping) rhsSubset else lhsSubset
+    }
+
+    /** Check if s1 equals s2, s1 is a subset of s2, or vice versa. */
+    private def isSubsetOrEqual(s1: Set[String], s2: Set[String]): Boolean = {
+      s1.subsetOf(s2) || s2.subsetOf(s1)
     }
 
     def name: String
@@ -386,42 +407,49 @@ object MathExpr {
     def isGrouped: Boolean = expr1.isGrouped || expr2.isGrouped
 
     def groupByKey(tags: Map[String, String]): Option[String] = {
-      expr1.groupByKey(tags).orElse(expr2.groupByKey(tags))
+      if (useLhsGrouping)
+        expr1.groupByKey(tags)
+      else
+        expr2.groupByKey(tags)
     }
 
     def finalGrouping: List[String] = {
-      if (expr1.isGrouped) expr1.finalGrouping else expr2.finalGrouping
+      if (useLhsGrouping) expr1.finalGrouping else expr2.finalGrouping
     }
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs1 = expr1.eval(context, data)
       val rs2 = expr2.eval(context, data)
-      val result = (expr1.isGrouped, expr2.isGrouped) match {
-        case (_, false) if rs2.data.isEmpty =>
-          // Happens if the RHS is non-grouped but has had a filter applied that
-          // removes the single expected entry.
-          Nil
-        case (_, false) =>
-          require(rs2.data.lengthCompare(1) == 0)
-          val t2 = rs2.data.head
-          rs1.data.map(_.binaryOp(t2, labelFmt, this))
-        case (false, _) =>
-          require(rs1.data.lengthCompare(1) == 0)
-          val t1 = rs1.data.head
+      val result = binaryOp(rs1, rs2)
+      ResultSet(this, result, rs1.state ++ rs2.state)
+    }
+
+    /** LHS grouping keys are subset of the RHS grouping keys. */
+    private def lhsSubset(rs1: ResultSet, rs2: ResultSet): List[TimeSeries] = {
+      val groupByKeyF = expr1.groupByKey _
+      val g1 = rs1.data.groupBy(t => groupByKeyF(t.tags))
+      rs2.data.flatMap { t2 =>
+        val k = groupByKeyF(t2.tags)
+        g1.get(k).map {
           // Normally tags are kept for the lhs, in this case we want to prefer the tags from
           // the grouped expr on the rhs
-          rs2.data.map(t2 => t1.binaryOp(t2, labelFmt, this).withTags(t2.tags))
-        case (true, true) =>
-          val g2 = rs2.data.groupBy(t => groupByKey(t.tags))
-          rs1.data.flatMap { t1 =>
-            val k = groupByKey(t1.tags)
-            g2.get(k).map {
-              case t2 :: Nil => t1.binaryOp(t2, labelFmt, this)
-              case _         => throw new IllegalStateException("too many values for key")
-            }
-          }
+          case t1 :: Nil => t1.binaryOp(t2, labelFmt, this).withTags(t2.tags)
+          case _         => throw new IllegalStateException("too many values for key")
+        }
       }
-      ResultSet(this, result, rs1.state ++ rs2.state)
+    }
+
+    /** RHS grouping keys are subset of the LHS grouping keys. */
+    private def rhsSubset(rs1: ResultSet, rs2: ResultSet): List[TimeSeries] = {
+      val groupByKeyF = expr2.groupByKey _
+      val g2 = rs2.data.groupBy(t => groupByKeyF(t.tags))
+      rs1.data.flatMap { t1 =>
+        val k = groupByKeyF(t1.tags)
+        g2.get(k).map {
+          case t2 :: Nil => t1.binaryOp(t2, labelFmt, this)
+          case _         => throw new IllegalStateException("too many values for key")
+        }
+      }
     }
   }
 
