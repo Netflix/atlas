@@ -15,9 +15,10 @@
  */
 package com.netflix.atlas.akka
 
+import akka.actor.ActorSystem
+
 import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPOutputStream
-
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
@@ -27,6 +28,8 @@ import com.netflix.atlas.json.Json
 import com.netflix.iep.service.DefaultClassFactory
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
+
+import java.lang.reflect.Type
 
 class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
 
@@ -52,7 +55,13 @@ class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
     """.stripMargin
   )
 
-  private val handler = new RequestHandler(config, new DefaultClassFactory())
+  private val bindings: java.util.function.Function[Type, AnyRef] = {
+    case c: Class[_] if c.isAssignableFrom(classOf[ActorSystem]) =>
+      system
+    case _ =>
+      null.asInstanceOf[AnyRef]
+  }
+  private val handler = new RequestHandler(config, new DefaultClassFactory(bindings))
   private val routes = handler.routes
 
   test("/not-found") {
@@ -199,6 +208,18 @@ class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
   test("/chunked with wrong method") {
     Post("/chunked") ~> routes ~> check {
       assert(response.status === StatusCodes.MethodNotAllowed)
+    }
+  }
+
+  test("/circuit-breaker") {
+    // Trigger failure to open the breaker
+    Get("/circuit-breaker") ~> routes ~> check {
+      assert(response.status === StatusCodes.InternalServerError)
+    }
+
+    // Ensure rejection handler returns 503
+    Get("/circuit-breaker") ~> routes ~> check {
+      assert(response.status === StatusCodes.ServiceUnavailable)
     }
   }
 }
