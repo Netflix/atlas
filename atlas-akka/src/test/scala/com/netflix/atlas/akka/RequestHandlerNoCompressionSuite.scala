@@ -15,9 +15,10 @@
  */
 package com.netflix.atlas.akka
 
+import akka.actor.ActorSystem
+
 import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPOutputStream
-
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
@@ -27,6 +28,8 @@ import com.netflix.atlas.json.Json
 import com.netflix.iep.service.DefaultClassFactory
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
+
+import java.lang.reflect.Type
 
 class RequestHandlerNoCompressionsSuite extends AnyFunSuite with ScalatestRouteTest {
 
@@ -47,7 +50,13 @@ class RequestHandlerNoCompressionsSuite extends AnyFunSuite with ScalatestRouteT
     """.stripMargin
   )
 
-  private val handler = new RequestHandler(config, new DefaultClassFactory())
+  private val bindings: java.util.function.Function[Type, AnyRef] = {
+    case c: Class[_] if c.isAssignableFrom(classOf[ActorSystem]) =>
+      system
+    case _ =>
+      null.asInstanceOf[AnyRef]
+  }
+  private val handler = new RequestHandler(config, new DefaultClassFactory(bindings))
   private val routes = handler.routes
 
   private def gzip(data: Array[Byte]): Array[Byte] = {

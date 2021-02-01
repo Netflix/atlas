@@ -17,7 +17,6 @@ package com.netflix.atlas.akka
 
 import java.lang.reflect.Type
 import java.util.zip.Deflater
-
 import akka.http.scaladsl.coding.Coders
 import akka.http.scaladsl.model.EntityStreamSizeException
 import akka.http.scaladsl.model.HttpHeader
@@ -26,12 +25,14 @@ import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.AuthenticationFailedRejection
+import akka.http.scaladsl.server.CircuitBreakerOpenRejection
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.MalformedRequestContentRejection
 import akka.http.scaladsl.server.MethodRejection
 import akka.http.scaladsl.server.Rejection
 import akka.http.scaladsl.server.RejectionHandler
 import akka.http.scaladsl.server.Route
+import akka.pattern.CircuitBreakerOpenException
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.netflix.iep.service.ClassFactory
 import com.typesafe.config.Config
@@ -202,6 +203,8 @@ object RequestHandler extends StrictLogging {
         DiagnosticMessage.error(StatusCodes.NotFound, e)
       case e: EntityStreamSizeException =>
         DiagnosticMessage.error(StatusCodes.PayloadTooLarge, e)
+      case e: CircuitBreakerOpenException =>
+        DiagnosticMessage.error(StatusCodes.ServiceUnavailable, e)
       case e: Throwable =>
         DiagnosticMessage.error(StatusCodes.InternalServerError, e)
     }
@@ -215,6 +218,8 @@ object RequestHandler extends StrictLogging {
     val builder = RejectionHandler
       .newBuilder()
       .handle {
+        case CircuitBreakerOpenRejection(t) =>
+          complete(errorResponse(t))
         case MalformedRequestContentRejection(_, t) =>
           complete(errorResponse(t))
         case MethodRejection(m) =>

@@ -15,25 +15,45 @@
  */
 package com.netflix.atlas.akka
 
-import akka.actor.ActorRefFactory
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.pattern.CircuitBreaker
 import akka.stream.scaladsl.Source
 
-class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+
+class TestApi(val system: ActorSystem) extends WebApi {
 
   import CustomDirectives._
+  import scala.concurrent.duration._
+
+  private implicit val ec: ExecutionContext = OpportunisticEC.ec
+
+  private val breaker = new CircuitBreaker(
+    system.scheduler,
+    maxFailures = 1,
+    callTimeout = 5.seconds,
+    resetTimeout = 1.second
+  )
+
+  private def fail(): Future[Unit] = {
+    Future.failed(new RuntimeException("circuit breaker test"))
+  }
 
   def routes: Route = {
     path("jsonparse") {
       post {
         parseEntity(json[String]) { v =>
-          complete(HttpResponse(status = OK, entity = v))
+          complete(HttpResponse(status = StatusCodes.OK, entity = v))
         }
       }
     } ~
@@ -41,7 +61,7 @@ class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
       get {
         parameter("regex") { v =>
           val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, v)
-          complete(HttpResponse(status = OK, entity = entity))
+          complete(HttpResponse(status = StatusCodes.OK, entity = entity))
         }
       }
     } ~
@@ -50,7 +70,7 @@ class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
         extractRequest { req =>
           val v = req.uri.query().get("regex").get
           val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, v)
-          complete(HttpResponse(status = OK, entity = entity))
+          complete(HttpResponse(status = StatusCodes.OK, entity = entity))
         }
       }
     } ~
@@ -61,7 +81,15 @@ class TestApi(val actorRefFactory: ActorRefFactory) extends WebApi {
             .single(ChunkStreamPart("start"))
             .concat(Source((1 until 42).map(i => ChunkStreamPart(i.toString)).toList))
           val entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, source)
-          complete(HttpResponse(status = OK, entity = entity))
+          complete(HttpResponse(status = StatusCodes.OK, entity = entity))
+        }
+      }
+    } ~
+    path("circuit-breaker") {
+      get {
+        onCompleteWithBreaker(breaker)(fail()) {
+          case Success(_) => complete(StatusCodes.OK)
+          case Failure(e) => complete(StatusCodes.InternalServerError, e.getMessage)
         }
       }
     }
