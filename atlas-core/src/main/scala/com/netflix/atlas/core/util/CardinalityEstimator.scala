@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.util
 
+import com.netflix.spectator.impl.AtomicDouble
 import org.apache.datasketches.cpc.CpcSketch
 
 /**
@@ -29,13 +30,16 @@ trait CardinalityEstimator {
   def update(obj: AnyRef): Unit
 
   /** Return the current estimate for the number of distinct values seen. */
-  def cardinality: Int
+  def cardinality: Long
+
+  override def toString: String = cardinality.toString
 }
 
 object CardinalityEstimator {
 
   /**
-    * Create a new estimator instance using the [CPC] algorithm.
+    * Create a new estimator instance using the [CPC] algorithm. This created estimator is NOT
+    * thread safe, use {@link newSyncEstimator} to create a thread-safe estimator.
     *
     * [CPC]: https://datasketches.apache.org/docs/CPC/CPC.html
     *
@@ -48,6 +52,11 @@ object CardinalityEstimator {
     new CpcEstimator(lgK)
   }
 
+  /** Create a thread-safe estimator. */
+  def newSyncEstimator(lgK: Int = 9): CardinalityEstimator = {
+    new SyncCpcEstimator(lgK)
+  }
+
   private class CpcEstimator(val lgK: Int) extends CardinalityEstimator {
     private val sketch = new CpcSketch(lgK)
 
@@ -55,6 +64,18 @@ object CardinalityEstimator {
       sketch.update(obj.hashCode())
     }
 
-    override def cardinality: Int = sketch.getEstimate.toInt
+    override def cardinality: Long = sketch.getEstimate.longValue()
+  }
+
+  private class SyncCpcEstimator(val lgK: Int) extends CardinalityEstimator {
+    private val sketch = new CpcSketch(lgK)
+    private val _cardinality = new AtomicDouble()
+
+    override def update(obj: AnyRef): Unit = {
+      sketch.update(obj.hashCode())
+      _cardinality.set(sketch.getEstimate)
+    }
+
+    override def cardinality: Long = _cardinality.longValue()
   }
 }
