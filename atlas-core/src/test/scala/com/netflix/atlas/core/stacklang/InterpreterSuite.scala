@@ -128,7 +128,7 @@ class InterpreterSuite extends AnyFunSuite {
   }
 
   test("toString") {
-    assert(interpreter.toString === "Interpreter(8 words)")
+    assert(interpreter.toString === "Interpreter(9 words)")
   }
 
   test("typeSummary: String") {

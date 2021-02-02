@@ -18,6 +18,7 @@ package com.netflix.atlas.core.stacklang
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeriesExpr
+import com.netflix.atlas.core.util.Features
 import org.scalatest.funsuite.AnyFunSuite
 
 abstract class BaseExamplesSuite extends AnyFunSuite {
@@ -26,8 +27,12 @@ abstract class BaseExamplesSuite extends AnyFunSuite {
 
   protected val interpreter = new Interpreter(vocabulary.allWords)
 
+  private def execute(program: String): Context = {
+    interpreter.execute(program, Map.empty[String, Any], Features.UNSTABLE)
+  }
+
   protected def eval(program: String): TimeSeriesExpr = {
-    interpreter.execute(program).stack match {
+    execute(program).stack match {
       case ModelExtractors.TimeSeriesType(t) :: Nil => t
       case v                                        => throw new MatchError(v)
     }
@@ -37,7 +42,7 @@ abstract class BaseExamplesSuite extends AnyFunSuite {
     if (ex.startsWith("UNK:")) {
       test(s"noException -- $ex,:${w.name}") {
         val prg = ex.substring("UNK:".length)
-        try interpreter.execute(s"$prg,:${w.name}")
+        try execute(s"$prg,:${w.name}")
         catch {
           case e: IllegalArgumentException if e.getMessage.startsWith("unknown word ") =>
           case e: Exception                                                            => throw e
@@ -46,27 +51,27 @@ abstract class BaseExamplesSuite extends AnyFunSuite {
     } else if (ex.startsWith("ERROR:")) {
       test(s"exception -- $ex,:${w.name}") {
         val prg = ex.substring("ERROR:".length)
-        intercept[Exception] { interpreter.execute(s"$prg,:${w.name}") }
+        intercept[Exception] { execute(s"$prg,:${w.name}") }
       }
     } else {
       test(s"noException -- $ex,:${w.name}") {
-        interpreter.execute(s"$ex,:${w.name}")
+        execute(s"$ex,:${w.name}")
       }
 
       test(s"toString(item) -- $ex,:${w.name}") {
-        val stack = interpreter.execute(s"$ex,:${w.name}").stack
+        val stack = execute(s"$ex,:${w.name}").stack
         stack.foreach { item =>
           val prg = item match {
             case vs: List[_] => vs
             case v           => List(v)
           }
-          val stack2 = interpreter.execute(Interpreter.toString(prg)).stack
+          val stack2 = execute(Interpreter.toString(prg)).stack
           assert(stack2 === prg)
         }
       }
 
       test(s"finalGrouping and isGrouped match -- $ex,:${w.name}") {
-        interpreter.execute(s"$ex,:${w.name}").stack.foreach {
+        execute(s"$ex,:${w.name}").stack.foreach {
           case s: StyleExpr      => assert(s.expr.finalGrouping.nonEmpty === s.expr.isGrouped)
           case t: TimeSeriesExpr => assert(t.finalGrouping.nonEmpty === t.isGrouped)
           case _                 =>
@@ -76,8 +81,8 @@ abstract class BaseExamplesSuite extends AnyFunSuite {
       // Exclude offset because list form is lazily evaluated and breaks the comparison
       if (w.name != "offset") {
         test(s"toString(stack) -- $ex,:${w.name}") {
-          val stack = interpreter.execute(s"$ex,:${w.name}").stack
-          assert(stack === interpreter.execute(Interpreter.toString(stack)).stack)
+          val stack = execute(s"$ex,:${w.name}").stack
+          assert(stack === execute(Interpreter.toString(stack)).stack)
         }
       }
     }

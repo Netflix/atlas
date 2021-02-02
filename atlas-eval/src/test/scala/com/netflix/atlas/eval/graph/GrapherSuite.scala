@@ -417,43 +417,43 @@ class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
   }
 
   imageTest("topk") {
-    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk"
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk&features=unstable"
   }
 
   imageTest("topk-others-min") {
-    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-min"
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-min&features=unstable"
   }
 
   imageTest("topk-others-max") {
-    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-max"
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-max&features=unstable"
   }
 
   imageTest("topk-others-sum") {
-    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-sum"
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-sum&features=unstable"
   }
 
   imageTest("topk-others-avg") {
-    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-avg"
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-avg&features=unstable"
   }
 
   imageTest("bottomk") {
-    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk"
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk&features=unstable"
   }
 
   imageTest("bottomk-others-min") {
-    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-min"
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-min&features=unstable"
   }
 
   imageTest("bottomk-others-max") {
-    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-max"
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-max&features=unstable"
   }
 
   imageTest("bottomk-others-sum") {
-    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-sum"
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-sum&features=unstable"
   }
 
   imageTest("bottomk-others-avg") {
-    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-avg"
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-avg&features=unstable"
   }
 
   def renderTest(name: String)(uri: => String): Unit = {
