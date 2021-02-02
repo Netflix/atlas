@@ -126,11 +126,13 @@ object DataExpr {
     }
   }
 
-  sealed trait AggregateFunction extends DataExpr with BinaryOp {
+  sealed trait AggregateFunction extends DataExpr {
 
     def labelString: String
 
     def withConsolidation(f: ConsolidationFunction): AggregateFunction
+
+    def aggregator(start: Long, end: Long): TimeSeries.Aggregator
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       val filtered = data.filter(t => query.matches(t.tags))
@@ -138,16 +140,13 @@ object DataExpr {
         if (filtered.isEmpty) TimeSeries.noData(query, context.step)
         else {
           val tags = commonTags(filtered.head.tags)
-          val t = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
+          val aggr = aggregator(context.start, context.end)
+          filtered.foreach(aggr.update)
+          val t = aggr.result()
           TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
         }
       val rs = consolidate(context.step, List(aggr))
       ResultSet(this, rs, context.state)
-    }
-
-    // Make sure we get toString locally rather than from BinaryOp
-    override def toString: String = {
-      if (offset.isZero) exprString else s"$exprString,$offset,:offset"
     }
   }
 
@@ -164,13 +163,15 @@ object DataExpr {
 
     override def withOffset(d: Duration): Sum = copy(offset = d)
 
-    def labelString: String = s"sum(${query.labelString})"
+    override def labelString: String = s"sum(${query.labelString})"
 
     override def exprString: String = {
       if (cf == ConsolidationFunction.Avg) s"$query,:sum" else s"$query,:sum,$cf"
     }
 
-    def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
+    override def aggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.addNaN)
+    }
   }
 
   case class Count(
@@ -179,21 +180,6 @@ object DataExpr {
     offset: Duration = Duration.ZERO
   ) extends AggregateFunction {
 
-    override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
-      val filtered = data.filter(t => query.matches(t.tags)).map { t =>
-        TimeSeries(t.tags, t.label, t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0))
-      }
-      val aggr =
-        if (filtered.isEmpty) TimeSeries.noData(query, context.step)
-        else {
-          val tags = commonTags(filtered.head.tags)
-          val t = TimeSeries.aggregate(filtered.iterator, context.start, context.end, this)
-          TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
-        }
-      val rs = consolidate(context.step, List(aggr))
-      ResultSet(this, rs, context.state)
-    }
-
     override def withConsolidation(f: ConsolidationFunction): AggregateFunction = f match {
       case v: SumOrAvgCf => copy(cf = v)
       case v             => Consolidation(copy(query = query, offset = offset), v)
@@ -201,13 +187,15 @@ object DataExpr {
 
     override def withOffset(d: Duration): Count = copy(offset = d)
 
-    def labelString: String = s"count(${query.labelString})"
+    override def labelString: String = s"count(${query.labelString})"
 
     override def exprString: String = {
       if (cf == ConsolidationFunction.Avg) s"$query,:count" else s"$query,:count,$cf"
     }
 
-    def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
+    override def aggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.CountAggregator(start, end)
+    }
   }
 
   case class Min(query: Query, offset: Duration = Duration.ZERO) extends AggregateFunction {
@@ -220,11 +208,13 @@ object DataExpr {
 
     override def withOffset(d: Duration): Min = copy(offset = d)
 
-    def labelString: String = s"min(${query.labelString})"
+    override def labelString: String = s"min(${query.labelString})"
 
     override def exprString: String = s"$query,:min"
 
-    def apply(v1: Double, v2: Double): Double = Math.minNaN(v1, v2)
+    override def aggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.minNaN)
+    }
   }
 
   case class Max(query: Query, offset: Duration = Duration.ZERO) extends AggregateFunction {
@@ -237,11 +227,13 @@ object DataExpr {
 
     override def withOffset(d: Duration): Max = copy(offset = d)
 
-    def labelString: String = s"max(${query.labelString})"
+    override def labelString: String = s"max(${query.labelString})"
 
     override def exprString: String = s"$query,:max"
 
-    def apply(v1: Double, v2: Double): Double = Math.maxNaN(v1, v2)
+    override def aggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.maxNaN)
+    }
   }
 
   case class Consolidation(af: AggregateFunction, cf: ConsolidationFunction)
@@ -263,11 +255,13 @@ object DataExpr {
       Consolidation(af.withOffset(d).asInstanceOf[AggregateFunction], cf)
     }
 
-    def labelString: String = af.labelString
+    override def labelString: String = af.labelString
 
     override def exprString: String = s"$af,$cf"
 
-    def apply(v1: Double, v2: Double): Double = af(v1, v2)
+    override def aggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      af.aggregator(start, end)
+    }
   }
 
   case class GroupBy(af: AggregateFunction, keys: List[String]) extends DataExpr {

@@ -62,4 +62,13 @@ class BoundedPriorityBufferSuite extends AnyFunSuite {
       new BoundedPriorityBuffer[Integer](-3, Comparator.naturalOrder[Integer]())
     }
   }
+
+  test("ejected value") {
+    val buffer = new BoundedPriorityBuffer[Integer](2, Comparator.naturalOrder[Integer]())
+    assert(buffer.add(2) === null)
+    assert(buffer.add(3) === null)
+    assert(buffer.add(1) === 3)
+    assert(buffer.add(4) === 4)
+    assert(buffer.add(0) === 2)
+  }
 }

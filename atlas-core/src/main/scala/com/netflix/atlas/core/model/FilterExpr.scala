@@ -149,6 +149,11 @@ object FilterExpr {
     /** Comparator that determines the priority order. */
     def comparator: Comparator[TimeSeriesSummary]
 
+    /** Aggregation to use for time series that are not one of the K highest priority. */
+    def othersAggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      TimeSeries.NoopAggregator
+    }
+
     /** Grouped expression to select the input from. */
     def expr: TimeSeriesExpr
 
@@ -172,12 +177,23 @@ object FilterExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val buffer = new BoundedPriorityBuffer[TimeSeriesSummary](k, comparator)
+      val aggregator = othersAggregator(context.start, context.end)
       val rs = expr.eval(context, data)
       rs.data.foreach { t =>
         val v = SummaryStats(t, context.start, context.end).get(stat)
-        buffer.add(TimeSeriesSummary(t, v))
+        val other = buffer.add(TimeSeriesSummary(t, v))
+        if (other != null) {
+          aggregator.update(other.timeSeries)
+        }
       }
-      val newData = buffer.toList.map(_.timeSeries)
+      val newData = aggregator match {
+        case aggr if aggr.isEmpty =>
+          buffer.toList.map(_.timeSeries)
+        case _ =>
+          val others = aggregator.result()
+          val otherTags = others.tags ++ finalGrouping.map(k => k -> "--others--").toMap
+          others.withTags(otherTags) :: buffer.toList.map(_.timeSeries)
+      }
       ResultSet(this, newData, rs.state)
     }
   }
@@ -188,10 +204,94 @@ object FilterExpr {
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
   }
 
+  case class TopKOthersMin(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+    override def opName: String = "topk-others-min"
+
+    override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
+
+    override def othersAggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.minNaN)
+    }
+  }
+
+  case class TopKOthersMax(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+    override def opName: String = "topk-others-max"
+
+    override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
+
+    override def othersAggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.maxNaN)
+    }
+  }
+
+  case class TopKOthersSum(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+    override def opName: String = "topk-others-sum"
+
+    override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
+
+    override def othersAggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.addNaN)
+    }
+  }
+
+  case class TopKOthersAvg(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+    override def opName: String = "topk-others-avg"
+
+    override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
+
+    override def othersAggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.AvgAggregator(start, end)
+    }
+  }
+
   case class BottomK(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
     override def opName: String = "bottomk"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator
+  }
+
+  case class BottomKOthersMin(expr: TimeSeriesExpr, stat: String, k: Int)
+      extends PriorityFilterExpr {
+    override def opName: String = "bottomk-others-min"
+
+    override def comparator: Comparator[TimeSeriesSummary] = StatComparator
+
+    override def othersAggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.minNaN)
+    }
+  }
+
+  case class BottomKOthersMax(expr: TimeSeriesExpr, stat: String, k: Int)
+      extends PriorityFilterExpr {
+    override def opName: String = "bottomk-others-max"
+
+    override def comparator: Comparator[TimeSeriesSummary] = StatComparator
+
+    override def othersAggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.maxNaN)
+    }
+  }
+
+  case class BottomKOthersSum(expr: TimeSeriesExpr, stat: String, k: Int)
+      extends PriorityFilterExpr {
+    override def opName: String = "bottomk-others-sum"
+
+    override def comparator: Comparator[TimeSeriesSummary] = StatComparator
+
+    override def othersAggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.addNaN)
+    }
+  }
+
+  case class BottomKOthersAvg(expr: TimeSeriesExpr, stat: String, k: Int)
+      extends PriorityFilterExpr {
+    override def opName: String = "bottomk-others-avg"
+
+    override def comparator: Comparator[TimeSeriesSummary] = StatComparator
+
+    override def othersAggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.AvgAggregator(start, end)
+    }
   }
 
   /**

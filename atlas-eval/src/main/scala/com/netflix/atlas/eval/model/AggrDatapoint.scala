@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.eval.model
 
+import com.netflix.atlas.core.model.BinaryOp
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.model.DataExpr.All
@@ -22,6 +23,7 @@ import com.netflix.atlas.core.model.DataExpr.GroupBy
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.util.Math
 
 /**
   * Datapoint for an aggregate data expression. This type is used for the intermediate
@@ -129,7 +131,7 @@ object AggrDatapoint {
       datapoint.expr match {
         case GroupBy(af: AggregateFunction, _) =>
           rawDatapointCounter += 1
-          new SimpleAggregator(datapoint, af)
+          new SimpleAggregator(datapoint, aggrOp(af))
         case _ =>
           throw new IllegalArgumentException("datapoint is not for a grouped expression")
       }
@@ -171,10 +173,20 @@ object AggrDatapoint {
     */
   def newAggregator(datapoint: AggrDatapoint): Aggregator = {
     datapoint.expr match {
-      case af: AggregateFunction => new SimpleAggregator(datapoint, af)
+      case af: AggregateFunction => new SimpleAggregator(datapoint, aggrOp(af))
       case _: GroupBy            => (new GroupByAggregator).aggregate(datapoint)
       case _: All                => (new AllAggregator).aggregate(datapoint)
     }
+  }
+
+  /** Return a binary operation that matches the requested aggregate function behavior. */
+  @scala.annotation.tailrec
+  private def aggrOp(af: AggregateFunction): BinaryOp = af match {
+    case _: DataExpr.Sum              => Math.addNaN
+    case _: DataExpr.Count            => Math.addNaN
+    case _: DataExpr.Min              => Math.minNaN
+    case _: DataExpr.Max              => Math.maxNaN
+    case DataExpr.Consolidation(f, _) => aggrOp(f)
   }
 
   /**
