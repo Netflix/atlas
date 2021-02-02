@@ -616,11 +616,13 @@ object MathExpr {
     }
   }
 
-  trait AggrMathExpr extends TimeSeriesExpr with BinaryOp {
+  trait AggrMathExpr extends TimeSeriesExpr {
 
     def name: String
 
     def expr: TimeSeriesExpr
+
+    def aggregator(start: Long, end: Long): TimeSeries.Aggregator
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
@@ -637,7 +639,9 @@ object MathExpr {
       val ts =
         if (rs.data.isEmpty) Nil
         else {
-          val t = TimeSeries.aggregate(rs.data.iterator, context.start, context.end, this)
+          val aggr = aggregator(context.start, context.end)
+          rs.data.foreach(aggr.update)
+          val t = aggr.result()
           List(TimeSeries(t.tags, s"$name(${t.label})", t.data))
         }
       ResultSet(this, ts, rs.state)
@@ -646,44 +650,38 @@ object MathExpr {
 
   case class Sum(expr: TimeSeriesExpr) extends AggrMathExpr {
 
-    def name: String = "sum"
+    override def name: String = "sum"
 
-    def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
+    override def aggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.addNaN)
+    }
   }
 
   case class Count(expr: TimeSeriesExpr) extends AggrMathExpr {
 
-    def name: String = "count"
+    override def name: String = "count"
 
-    def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
-
-    override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      val ts =
-        if (rs.data.isEmpty) Nil
-        else {
-          val init = rs.data.map { t =>
-            TimeSeries(t.tags, t.label, t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0))
-          }
-          val t = TimeSeries.aggregate(init.iterator, context.start, context.end, this)
-          List(TimeSeries(t.tags, s"$name(${t.label})", t.data))
-        }
-      ResultSet(this, ts, rs.state)
+    override def aggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.CountAggregator(start, end)
     }
   }
 
   case class Min(expr: TimeSeriesExpr) extends AggrMathExpr {
 
-    def name: String = "min"
+    override def name: String = "min"
 
-    def apply(v1: Double, v2: Double): Double = Math.minNaN(v1, v2)
+    override def aggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.minNaN)
+    }
   }
 
   case class Max(expr: TimeSeriesExpr) extends AggrMathExpr {
 
-    def name: String = "max"
+    override def name: String = "max"
 
-    def apply(v1: Double, v2: Double): Double = Math.maxNaN(v1, v2)
+    override def aggregator(start: Long, end: Long): TimeSeries.Aggregator = {
+      new TimeSeries.SimpleAggregator(start, end, Math.maxNaN)
+    }
   }
 
   case class GroupBy(expr: AggrMathExpr, keys: List[String]) extends TimeSeriesExpr {
@@ -734,21 +732,12 @@ object MathExpr {
       val sorted = groups.sortWith(_._1 < _._1)
       val newData = sorted.flatMap {
         case (null, _) => Nil
-        case (k, Nil)  => List(TimeSeries.noData(context.step))
+        case (_, Nil)  => List(TimeSeries.noData(context.step))
         case (k, ts) =>
           val tags = ts.head.tags.filter(e => ks.contains(e._1))
-          val init = expr match {
-            case c: Count =>
-              ts.map { t =>
-                TimeSeries(
-                  t.tags,
-                  t.label,
-                  t.data.mapValues(v => if (v.isNaN) Double.NaN else 1.0)
-                )
-              }
-            case _ => ts
-          }
-          val t = TimeSeries.aggregate(init.iterator, context.start, context.end, expr)
+          val aggr = expr.aggregator(context.start, context.end)
+          ts.foreach(aggr.update)
+          val t = aggr.result()
           List(TimeSeries(tags, k, t.data))
       }
 

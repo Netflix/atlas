@@ -72,17 +72,127 @@ object TimeSeries {
     if (keys.size == 1) str else s"$str"
   }
 
-  def aggregate(ds: Iterator[TimeSeries], start: Long, end: Long, f: BinaryOp): TimeSeries = {
-    require(ds.nonEmpty, "must have 1 or more time series to perform aggregation")
-    val init = ds.next()
-    val buf = init.data.bounded(start, end)
-    var tags = init.tags
-    while (ds.hasNext) {
-      val t = ds.next()
-      tags = TaggedItem.aggrTags(tags, t.tags)
-      buf.update(t.data)(f)
+  /**
+    * Base type for aggregators that can be used to combine a set of time series using
+    * some aggregation function. The aggregation is performed in-place on the buffer so
+    * it requires a bounded time range.
+    */
+  trait Aggregator {
+
+    /** Start of bounded range. */
+    def start: Long
+
+    /** End of bounded range. */
+    def end: Long
+
+    /** Update the aggregation with another time series. */
+    def update(t: TimeSeries): Unit
+
+    /** Check if the aggregation is empty, that is no time series have been added. */
+    def isEmpty: Boolean
+
+    /** Returns the aggregated time series. */
+    def result(): TimeSeries
+  }
+
+  /** No-operation aggregator that can be used when aggregation is optional. */
+  case object NoopAggregator extends Aggregator {
+    def start: Long = 0L
+    def end: Long = 0L
+
+    override def update(t: TimeSeries): Unit = ()
+
+    override def isEmpty: Boolean = true
+
+    override def result(): TimeSeries = {
+      throw new UnsupportedOperationException
     }
-    TimeSeries(tags, buf)
+  }
+
+  /**
+    * Simple aggregator that can combine the corresponding values using a basic math
+    * function.
+    */
+  class SimpleAggregator(val start: Long, val end: Long, f: BinaryOp) extends Aggregator {
+    private[this] var aggrBuffer: ArrayTimeSeq = _
+    private[this] var aggrTags: Map[String, String] = _
+
+    override def update(t: TimeSeries): Unit = {
+      if (aggrBuffer == null) {
+        aggrBuffer = t.data.bounded(start, end)
+        aggrTags = t.tags
+      } else {
+        aggrBuffer.update(t.data)(f)
+        aggrTags = TaggedItem.aggrTags(aggrTags, t.tags)
+      }
+    }
+
+    override def isEmpty: Boolean = {
+      aggrBuffer == null
+    }
+
+    override def result(): TimeSeries = {
+      require(aggrBuffer != null, "must have 1 or more time series to perform aggregation")
+      TimeSeries(aggrTags, aggrBuffer)
+    }
+  }
+
+  /**
+    * Aggregation that computes the number of time series that have a value for
+    * a given interval.
+    */
+  class CountAggregator(val start: Long, val end: Long) extends Aggregator {
+    private[this] var aggrBuffer: ArrayTimeSeq = _
+    private[this] var aggrTags: Map[String, String] = _
+
+    override def update(t: TimeSeries): Unit = {
+      if (aggrBuffer == null) {
+        aggrBuffer = t.data
+          .mapValues(v => if (v.isNaN) Double.NaN else 1.0)
+          .bounded(start, end)
+        aggrTags = t.tags
+      } else {
+        aggrBuffer.update(t.data)(countNaN)
+        aggrTags = TaggedItem.aggrTags(aggrTags, t.tags)
+      }
+    }
+
+    private def countNaN(v1: Double, v2: Double): Double = {
+      if (v2.isNaN) v1 else Math.addNaN(v1, 1.0)
+    }
+
+    override def isEmpty: Boolean = {
+      aggrBuffer == null
+    }
+
+    override def result(): TimeSeries = {
+      require(aggrBuffer != null, "must have 1 or more time series to perform aggregation")
+      TimeSeries(aggrTags, aggrBuffer)
+    }
+  }
+
+  /**
+    * Aggregator that computes the average for the input time series.
+    */
+  class AvgAggregator(val start: Long, val end: Long) extends Aggregator {
+    private[this] val sumAggregator = new SimpleAggregator(start, end, Math.addNaN)
+    private[this] val countAggregator = new CountAggregator(start, end)
+
+    override def update(t: TimeSeries): Unit = {
+      sumAggregator.update(t)
+      countAggregator.update(t)
+    }
+
+    override def isEmpty: Boolean = {
+      sumAggregator.isEmpty
+    }
+
+    override def result(): TimeSeries = {
+      val sum = sumAggregator.result()
+      val count = countAggregator.result()
+      val seq = new BinaryOpTimeSeq(sum.data, count.data, _ / _)
+      TimeSeries(sum.tags, seq)
+    }
   }
 }
 

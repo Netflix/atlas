@@ -40,9 +40,11 @@ class BoundedPriorityBuffer[T <: AnyRef](maxSize: Int, comparator: Comparator[T]
     * @param value
     *     Value to attempt to add into the buffer.
     * @return
-    *     True if the value was added into the buffer.
+    *     The return value is either: a) a value that was ejected because of the new addition,
+    *     b) the value that was passed in if it wasn't high enough priority, or c) `null` if
+    *     the max size has not yet been reached.
     */
-  def add(value: T): Boolean = {
+  def add(value: T): T = {
     if (queue.size == maxSize) {
       // Buffer is full, check if the new value is higher priority than the lowest priority
       // item in the heap
@@ -50,11 +52,13 @@ class BoundedPriorityBuffer[T <: AnyRef](maxSize: Int, comparator: Comparator[T]
       if (comparator.compare(value, lowestPriorityItem) < 0) {
         queue.poll()
         queue.offer(value)
+        lowestPriorityItem
       } else {
-        false
+        value
       }
     } else {
       queue.offer(value)
+      null.asInstanceOf[T]
     }
   }
 

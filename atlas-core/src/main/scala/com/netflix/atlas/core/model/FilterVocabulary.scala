@@ -42,8 +42,16 @@ object FilterVocabulary extends Vocabulary {
     Macro("stat-max-mf", List("max", ":stat"), List("42")),
     Macro("stat-avg-mf", List("avg", ":stat"), List("42")),
     // Priority operators: https://github.com/Netflix/atlas/issues/1224
-    BottomK,
-    TopK
+    PriorityK("bottomk", FilterExpr.BottomK.apply),
+    PriorityK("bottomk-others-min", FilterExpr.BottomKOthersMin.apply),
+    PriorityK("bottomk-others-max", FilterExpr.BottomKOthersMax.apply),
+    PriorityK("bottomk-others-sum", FilterExpr.BottomKOthersSum.apply),
+    PriorityK("bottomk-others-avg", FilterExpr.BottomKOthersAvg.apply),
+    PriorityK("topk", FilterExpr.TopK.apply),
+    PriorityK("topk-others-min", FilterExpr.TopKOthersMin.apply),
+    PriorityK("topk-others-max", FilterExpr.TopKOthersMax.apply),
+    PriorityK("topk-others-sum", FilterExpr.TopKOthersSum.apply),
+    PriorityK("topk-others-avg", FilterExpr.TopKOthersAvg.apply)
   )
 
   case object Stat extends SimpleWord {
@@ -228,37 +236,8 @@ object FilterVocabulary extends Vocabulary {
       List("name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,30e3,:gt")
   }
 
-  case object TopK extends SimpleWord {
-
-    override def name: String = "topk"
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case IntType(_) :: (_: String) :: TimeSeriesType(_) :: _ => true
-      case IntType(_) :: (_: String) :: (_: StyleExpr) :: _    => true
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case IntType(k) :: (s: String) :: TimeSeriesType(t) :: stack =>
-        FilterExpr.TopK(t, s, k) :: stack
-      case IntType(k) :: (s: String) :: (t: StyleExpr) :: stack =>
-        t.copy(expr = FilterExpr.TopK(t.expr, s, k)) :: stack
-    }
-
-    override def signature: String = "TimeSeriesExpr stat:String k:Int -- FilterExpr"
-
-    override def summary: String =
-      """
-        |Limit the output to the `K` time series with the highest values for the specified
-        |summary statistic.
-      """.stripMargin.trim
-
-    override def examples: List[String] =
-      List("name,sps,:eq,:sum,(,nf.cluster,),:by,max,5")
-  }
-
-  case object BottomK extends SimpleWord {
-
-    override def name: String = "bottomk"
+  case class PriorityK(name: String, op: (TimeSeriesExpr, String, Int) => FilterExpr)
+      extends SimpleWord {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case IntType(_) :: (_: String) :: TimeSeriesType(_) :: _ => true
@@ -267,17 +246,17 @@ object FilterVocabulary extends Vocabulary {
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case IntType(k) :: (s: String) :: TimeSeriesType(t) :: stack =>
-        FilterExpr.BottomK(t, s, k) :: stack
+        op(t, s, k) :: stack
       case IntType(k) :: (s: String) :: (t: StyleExpr) :: stack =>
-        t.copy(expr = FilterExpr.BottomK(t.expr, s, k)) :: stack
+        t.copy(expr = op(t.expr, s, k)) :: stack
     }
 
     override def signature: String = "TimeSeriesExpr stat:String k:Int -- FilterExpr"
 
     override def summary: String =
       """
-        |Limit the output to the `K` time series with the lowest values for the specified
-        |summary statistic.
+        |Limit the output to the `K` time series with the highest priority values for the
+        |specified summary statistic.
       """.stripMargin.trim
 
     override def examples: List[String] =

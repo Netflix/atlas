@@ -416,6 +416,46 @@ class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
     "&theme=dark"
   }
 
+  imageTest("topk") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk"
+  }
+
+  imageTest("topk-others-min") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-min"
+  }
+
+  imageTest("topk-others-max") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-max"
+  }
+
+  imageTest("topk-others-sum") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-sum"
+  }
+
+  imageTest("topk-others-avg") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk-others-avg"
+  }
+
+  imageTest("bottomk") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk"
+  }
+
+  imageTest("bottomk-others-min") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-min"
+  }
+
+  imageTest("bottomk-others-max") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-max"
+  }
+
+  imageTest("bottomk-others-sum") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-sum"
+  }
+
+  imageTest("bottomk-others-avg") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-avg"
+  }
+
   def renderTest(name: String)(uri: => String): Unit = {
     test(name) {
       val fname = Strings.zeroPad(Hash.sha1bytes(name), 40).substring(0, 8) + ".png"
