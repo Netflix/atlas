@@ -54,7 +54,7 @@ object Fonts {
   def shouldRunTests: Boolean = {
     // May work on others, but 15 is the earliest confirmed to have consistent rendering
     // at this point
-    val isAtLeastJdk15 = System.getProperty("java.specification.version").toInt >= 15
+    val isAtLeastJdk15 = System.getProperty("java.specification.version").toDouble >= 15.0
     val isMacOS = System.getProperty("os.name") == "Mac OS X"
     isAtLeastJdk15 && isMacOS
   }
