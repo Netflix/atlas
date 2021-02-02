@@ -35,6 +35,12 @@ trait Word {
   def examples: List[String]
 
   /**
+    * Returns true if this operation is considered stable. New operations should override
+    * this method to return false until the API is finalized.
+    */
+  def isStable: Boolean = true
+
+  /**
     * Check if the this word can be executed against the current stack. Can be used as a basis for
     * finding auto-completion candidates.
     */

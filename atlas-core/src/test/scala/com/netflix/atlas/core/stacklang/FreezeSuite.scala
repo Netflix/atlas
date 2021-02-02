@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.stacklang
 
+import com.netflix.atlas.core.util.Features
 import org.scalatest.funsuite.AnyFunSuite
 
 class FreezeSuite extends AnyFunSuite {
@@ -42,7 +43,7 @@ class FreezeSuite extends AnyFunSuite {
 
   test("original variables are preserved") {
     val vars = Map("foo" -> "original", "bar" -> "2")
-    val context = interpreter.execute("foo,1,:set,:freeze,foo,:get,bar,:get", vars)
+    val context = interpreter.execute("foo,1,:set,:freeze,foo,:get,bar,:get", vars, Features.STABLE)
     assert(context.stack === List("2", "original"))
   }
 

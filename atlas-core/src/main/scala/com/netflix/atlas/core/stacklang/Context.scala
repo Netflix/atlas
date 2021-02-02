@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.stacklang
 
+import com.netflix.atlas.core.util.Features
+
 /**
   * State related to the execution of a stack language expression.
   *
@@ -32,13 +34,16 @@ package com.netflix.atlas.core.stacklang
   * @param frozenStack
   *     Separate stack that has been frozen to prevent further modification. See the
   *     `:freeze` operator for more information.
+  * @param features
+  *     Set of features that are permitted for the execution.
   */
 case class Context(
   interpreter: Interpreter,
   stack: List[Any],
   variables: Map[String, Any],
   initialVariables: Map[String, Any] = Map.empty,
-  frozenStack: List[Any] = Nil
+  frozenStack: List[Any] = Nil,
+  features: Features = Features.STABLE
 ) {
 
   /**

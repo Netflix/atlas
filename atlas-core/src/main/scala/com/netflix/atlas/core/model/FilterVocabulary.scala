@@ -261,5 +261,7 @@ object FilterVocabulary extends Vocabulary {
 
     override def examples: List[String] =
       List("name,sps,:eq,:sum,(,nf.cluster,),:by,max,5")
+
+    override def isStable: Boolean = false
   }
 }
