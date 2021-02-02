@@ -52,8 +52,10 @@ object Fonts {
     * the font rendering causing diffs.
     */
   def shouldRunTests: Boolean = {
-    val isJdk11 = System.getProperty("java.specification.version") == "11"
+    // May work on others, but 15 is the earliest confirmed to have consistent rendering
+    // at this point
+    val isAtLeastJdk15 = System.getProperty("java.specification.version").toDouble >= 15.0
     val isMacOS = System.getProperty("os.name") == "Mac OS X"
-    isJdk11 && isMacOS
+    isAtLeastJdk15 && isMacOS
   }
 }
