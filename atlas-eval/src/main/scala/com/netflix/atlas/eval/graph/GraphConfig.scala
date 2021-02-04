@@ -17,7 +17,6 @@ package com.netflix.atlas.eval.graph
 
 import java.time.Instant
 import java.time.ZoneId
-
 import akka.http.scaladsl.model.ContentType
 import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.chart.model.GraphDef
@@ -26,6 +25,7 @@ import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StyleExpr
+import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.Step
 import com.netflix.atlas.core.util.Strings
 
@@ -42,6 +42,7 @@ case class GraphConfig(
   flags: ImageFlags,
   format: String,
   id: String,
+  features: Features,
   isBrowser: Boolean,
   isAllowedFromBrowser: Boolean,
   uri: String

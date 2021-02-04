@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.stacklang
 
+import com.netflix.atlas.core.util.Features
+
 /**
   * Interpreter for stack expressions.
   *
@@ -32,10 +34,14 @@ case class Interpreter(vocabulary: List[Word]) {
   private def executeFirstMatchingWordImpl(ws: List[Word], context: Context): Option[Context] = {
     ws match {
       case v :: vs =>
-        if (v.matches(context.stack))
+        if (v.matches(context.stack)) {
+          if (!v.isStable && context.features != Features.UNSTABLE) {
+            throw new IllegalStateException(s"to use :${v.name} enable unstable features")
+          }
           Some(v.execute(context))
-        else
+        } else {
           executeFirstMatchingWordImpl(vs, context)
+        }
       case Nil =>
         None
     }
@@ -112,8 +118,8 @@ case class Interpreter(vocabulary: List[Word]) {
     execute(splitAndTrim(program))
   }
 
-  final def execute(program: String, vars: Map[String, Any]): Context = {
-    execute(splitAndTrim(program), Context(this, Nil, vars, vars))
+  final def execute(program: String, vars: Map[String, Any], features: Features): Context = {
+    execute(splitAndTrim(program), Context(this, Nil, vars, vars, features = features))
   }
 
   @scala.annotation.tailrec

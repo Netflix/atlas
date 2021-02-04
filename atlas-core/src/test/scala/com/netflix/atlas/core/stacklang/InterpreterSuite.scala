@@ -29,7 +29,8 @@ class InterpreterSuite extends AnyFunSuite {
       Overloaded("overloaded2", "one", false),
       Overloaded("overloaded2", "two", true),
       Overloaded("overloaded2", "three", true),
-      Overloaded("no-match", "one", false)
+      Overloaded("no-match", "one", false),
+      Unstable
     )
   )
 
@@ -62,6 +63,14 @@ class InterpreterSuite extends AnyFunSuite {
       interpreter.execute(List(":no-match"))
     }
     val expected = "no matches for word ':no-match' with stack [], candidates: [exception]"
+    assert(e.getMessage === expected)
+  }
+
+  test("using unstable word fails by default") {
+    val e = intercept[IllegalStateException] {
+      interpreter.execute(List(":unstable"))
+    }
+    val expected = "to use :unstable enable unstable features"
     assert(e.getMessage === expected)
   }
 
@@ -119,7 +128,7 @@ class InterpreterSuite extends AnyFunSuite {
   }
 
   test("toString") {
-    assert(interpreter.toString === "Interpreter(8 words)")
+    assert(interpreter.toString === "Interpreter(9 words)")
   }
 
   test("typeSummary: String") {
@@ -192,5 +201,24 @@ object InterpreterSuite {
     override def signature: String = if (matches) "* -- * v" else "exception"
 
     override def examples: List[String] = Nil
+  }
+
+  case object Unstable extends Word {
+
+    override def name: String = "unstable"
+
+    override def matches(stack: List[Any]): Boolean = true
+
+    override def execute(context: Context): Context = {
+      context.copy(stack = "unstable" :: context.stack)
+    }
+
+    override def summary: String = ""
+
+    override def signature: String = "* -- * unstable"
+
+    override def examples: List[String] = Nil
+
+    override def isStable: Boolean = false
   }
 }

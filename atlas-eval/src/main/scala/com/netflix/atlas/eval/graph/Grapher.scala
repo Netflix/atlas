@@ -18,7 +18,6 @@ package com.netflix.atlas.eval.graph
 import java.awt.Color
 import java.io.ByteArrayOutputStream
 import java.time.Duration
-
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri
 import com.netflix.atlas.chart.Colors
@@ -39,10 +38,12 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.SummaryStats
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
 import com.typesafe.config.Config
 
+import java.util.Locale
 import scala.util.Try
 
 case class Grapher(settings: DefaultSettings) {
@@ -83,6 +84,11 @@ case class Grapher(settings: DefaultSettings) {
     val params = uri.query()
     val id = "default"
 
+    val features = params
+      .get("features")
+      .map(v => Features.valueOf(v.toUpperCase(Locale.US)))
+      .getOrElse(Features.STABLE)
+
     import com.netflix.atlas.chart.GraphConstants._
     val axes = (0 to MaxYAxis).map(i => i -> newAxis(params, i)).toMap
 
@@ -116,7 +122,7 @@ case class Grapher(settings: DefaultSettings) {
     val parsedQuery = Try {
       val vars = Map("tz" -> GraphConfig.getTimeZoneIds(settings, timezones).head)
       val exprs = settings.interpreter
-        .execute(q.get, vars)
+        .execute(q.get, vars, features)
         .stack
         .reverse
         .flatMap {
@@ -140,6 +146,7 @@ case class Grapher(settings: DefaultSettings) {
       flags = flags,
       format = params.get("format").getOrElse("png"),
       id = id,
+      features = features,
       isBrowser = false,
       isAllowedFromBrowser = true,
       uri = uri.toString
