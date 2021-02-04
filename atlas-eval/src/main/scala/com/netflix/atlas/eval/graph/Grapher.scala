@@ -126,8 +126,11 @@ case class Grapher(settings: DefaultSettings) {
         .stack
         .reverse
         .flatMap {
-          case ModelExtractors.PresentationType(s) => s.perOffset
-          case v                                   => throw new MatchError(v)
+          case ModelExtractors.PresentationType(s) =>
+            s.perOffset
+          case v =>
+            val tpe = v.getClass.getSimpleName
+            throw new IllegalArgumentException(s"expecting time series expr, found $tpe '$v'")
         }
       if (settings.simpleLegendsEnabled)
         SimpleLegends.generate(exprs)

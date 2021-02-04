@@ -456,6 +456,14 @@ class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
     "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-avg&features=unstable"
   }
 
+  test("invalid stuff on stack") {
+    val uri = "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,foo"
+    val e = intercept[IllegalArgumentException] {
+      grapher.toGraphConfig(Uri(uri)).parsedQuery.get
+    }
+    assert(e.getMessage === "expecting time series expr, found String 'foo'")
+  }
+
   def renderTest(name: String)(uri: => String): Unit = {
     test(name) {
       val fname = Strings.zeroPad(Hash.sha1bytes(name), 40).substring(0, 8) + ".png"
