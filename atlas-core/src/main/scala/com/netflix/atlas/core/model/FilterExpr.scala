@@ -86,6 +86,11 @@ object FilterExpr {
     def name: String = "last"
   }
 
+  case object StatCount extends StatExpr {
+
+    def name: String = "count"
+  }
+
   case object StatTotal extends StatExpr {
 
     def name: String = "total"

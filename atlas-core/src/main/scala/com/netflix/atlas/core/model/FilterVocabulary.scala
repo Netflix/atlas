@@ -35,6 +35,7 @@ object FilterVocabulary extends Vocabulary {
     StatMax,
     StatMin,
     StatLast,
+    StatCount,
     StatTotal,
     Filter,
     // Legacy operations equivalent to `max,:stat`
@@ -180,6 +181,18 @@ object FilterVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
+  case object StatCount extends StatWord {
+
+    override def name: String = "stat-count"
+
+    def value: FilterExpr = FilterExpr.StatCount
+
+    override def summary: String =
+      """
+        |Represents the `count,:stat` line when used with the filter operation.
+      """.stripMargin.trim
+  }
+
   case object StatTotal extends StatWord {
 
     override def name: String = "stat-total"
@@ -189,18 +202,6 @@ object FilterVocabulary extends Vocabulary {
     override def summary: String =
       """
         |Represents the `total,:stat` line when used with the filter operation.
-      """.stripMargin.trim
-  }
-
-  case object StatCount extends StatWord {
-
-    override def name: String = "stat-count"
-
-    def value: FilterExpr = FilterExpr.StatTotal
-
-    override def summary: String =
-      """
-        |Represents the `count,:stat` line when used with the filter operation.
       """.stripMargin.trim
   }
 
