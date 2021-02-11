@@ -150,10 +150,15 @@ class StreamOpsSuite extends AnyFunSuite {
       .toMat(Sink.ignore)(Keep.left)
       .run()
     assert(queue.isOpen)
+
     queue.offer(1)
     assert(queue.isOpen)
+    checkOfferedCounts(registry, Map("enqueued" -> 1.0, "droppedQueueClosed" -> 0.0))
+
     queue.complete()
     assert(!queue.isOpen)
+    queue.offer(1)
+    checkOfferedCounts(registry, Map("enqueued" -> 1.0, "droppedQueueClosed" -> 1.0))
   }
 
   private def checkCounts(registry: Registry, name: String, expected: Map[String, Double]): Unit = {
