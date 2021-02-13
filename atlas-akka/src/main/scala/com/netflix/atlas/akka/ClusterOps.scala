@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.akka
 
-import java.util.concurrent.ArrayBlockingQueue
-
 import akka.NotUsed
 import akka.stream.Attributes
 import akka.stream.FlowShape
@@ -24,13 +22,14 @@ import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.RestartSettings
 import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.RestartFlow
+import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import com.netflix.atlas.akka.StreamOps.QueueSource
 import com.netflix.atlas.akka.StreamOps.SourceQueue
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
@@ -134,16 +133,13 @@ object ClusterOps extends StrictLogging {
           }
           val sources = added.toList
             .map { m =>
-              val queue =
-                new SourceQueue[D](
-                  registry,
-                  "ClusterGroupBy",
-                  new ArrayBlockingQueue[D](context.queueSize)
-                )
+              val (queue, publisher) = StreamOps
+                .blockingQueue(registry, "ClusterGroupBy", context.queueSize)
+                .toMat(Sink.asPublisher[D](false))(Keep.both)
+                .run()(materializer)
               membersSources += m -> queue
               Source
-                .fromGraph(new QueueSource[D](() => queue))
-                .mapMaterializedValue(_ => NotUsed)
+                .fromPublisher(publisher)
                 .via(newSubFlow(m))
             }
 
