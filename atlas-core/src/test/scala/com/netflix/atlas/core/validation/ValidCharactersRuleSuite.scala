@@ -50,9 +50,21 @@ class ValidCharactersRuleSuite extends AnyFunSuite {
     assert(res.isFailure)
   }
 
+  test("invalid key null") {
+    val rule = ValidCharactersRule(config)
+    val res = validate(rule, "null\u0000char\u0000not\u0000allowed", alpha)
+    assert(res.isFailure)
+  }
+
   test("invalid value") {
     val rule = ValidCharactersRule(config)
     val res = validate(rule, alpha, "spaces not allowed")
+    assert(res.isFailure)
+  }
+
+  test("invalid value null") {
+    val rule = ValidCharactersRule(config)
+    val res = validate(rule, alpha, "null\u0000char\u0000not\u0000allowed")
     assert(res.isFailure)
   }
 
