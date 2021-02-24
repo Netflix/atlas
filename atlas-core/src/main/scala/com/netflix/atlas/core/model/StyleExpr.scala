@@ -27,7 +27,12 @@ import com.netflix.atlas.core.util.Strings
 case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extends Expr {
 
   override def toString: String = {
-    val vs = settings.toList.sortWith(_._1 < _._1).map {
+    // Use descending order to ensure that an explicit alpha used with
+    // a palette is not overwritten when reprocessing the expression string.
+    // This works because palette will be sorted before alpha, though a better
+    // future solution would be to use a map that preserves the order of
+    // updates to the object.
+    val vs = settings.toList.sortWith(_._1 > _._1).map {
       case ("sed", v) => v
       case (k, v)     => s"$v,:$k"
     }

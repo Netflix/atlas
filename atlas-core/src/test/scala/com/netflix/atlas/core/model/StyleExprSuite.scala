@@ -15,11 +15,14 @@
  */
 package com.netflix.atlas.core.model
 
-import java.time.Duration
+import com.netflix.atlas.core.stacklang.Interpreter
 
+import java.time.Duration
 import org.scalatest.funsuite.AnyFunSuite
 
 class StyleExprSuite extends AnyFunSuite {
+
+  private val interpreter = Interpreter(StyleVocabulary.allWords)
 
   private val oneDay = Duration.ofDays(1)
   private val oneWeek = Duration.ofDays(7)
@@ -77,4 +80,23 @@ class StyleExprSuite extends AnyFunSuite {
   check("hex,:decode,%,_25,:s", "one!_25&?")
   check("hex,:decode,%,_25,:s,hex,:decode", "one!%&?")
   check("none,:decode,%,_25,:s,hex,:decode", "one!%&?")
+
+  private def eval(str: String): StyleExpr = {
+    interpreter.execute(str).stack match {
+      case ModelExtractors.PresentationType(t) :: Nil => t
+      case _                                          => throw new MatchError(str)
+    }
+  }
+
+  test("alpha and color are preserved with exprString") {
+    val expr = eval(":true,ff0000,:color,40,:alpha")
+    val result = eval(expr.toString)
+    assert(expr.settings == result.settings)
+  }
+
+  test("alpha and palette are preserved with exprString") {
+    val expr = eval(":true,reds,:palette,40,:alpha")
+    val result = eval(expr.toString)
+    assert(expr.settings == result.settings)
+  }
 }
