@@ -512,6 +512,38 @@ class StringsSuite extends AnyFunSuite {
     assert(substitute("$missing ::: $bar", vars) === "missing ::: baz")
   }
 
+  test("substitute: ends with $") {
+    val vars = Map("foo" -> "bar", "bar" -> "baz")
+    assert(substitute("foo$", vars) === "foo$")
+  }
+
+  test("substitute: followed by whitespace") {
+    val vars = Map("foo" -> "bar", "bar" -> "baz")
+    assert(substitute("$ foo", vars) === "$ foo")
+  }
+
+  test("substitute: whitespace in paren") {
+    val vars = Map(" foo" -> "bar", "bar" -> "baz")
+    assert(substitute("$( foo)", vars) === "bar")
+  }
+
+  test("substitute: parens used to escape literal $") {
+    val vars = Map("foo" -> "bar", "bar" -> "baz")
+    assert(substitute("$()foo", vars) === "$foo")
+  }
+
+  test("substitute: unmatched open paren") {
+    val vars = Map("foo" -> "bar", "bar" -> "baz")
+    assert(substitute("$(foo", vars) === "$foo")
+    assert(substitute("foo$(", vars) === "foo$")
+  }
+
+  test("substitute: unmatched closed paren") {
+    val vars = Map("foo" -> "bar", "bar" -> "baz")
+    assert(substitute("$)foo", vars) === "$)foo")
+    assert(substitute("foo$)", vars) === "foo$)")
+  }
+
   test("zeroPad int") {
     assert(zeroPad(42, 1) === "2a")
     assert(zeroPad(42, 2) === "2a")
