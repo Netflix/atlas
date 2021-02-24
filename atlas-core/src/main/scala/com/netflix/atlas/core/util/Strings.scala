@@ -316,13 +316,17 @@ object Strings {
     var i = 0
     while (i < str.length) {
       val c = str.charAt(i)
-      if (c != '$') {
+      if (c != '$' || i == str.length - 1) {
         buf.append(c)
         i += 1
       } else {
         i = getKey(str, i, key)
         val k = key.toString()
-        if (!k.isEmpty) buf.append(vars(k))
+        // Empty keys are treated as '$' literals
+        if (k.isEmpty)
+          buf.append('$')
+        else
+          buf.append(vars(k))
         key.clear()
       }
     }
