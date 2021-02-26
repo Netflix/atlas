@@ -132,7 +132,7 @@ case class Grapher(settings: DefaultSettings) {
             val tpe = v.getClass.getSimpleName
             throw new IllegalArgumentException(s"expecting time series expr, found $tpe '$v'")
         }
-      if (settings.simpleLegendsEnabled || features == Features.UNSTABLE)
+      if (settings.simpleLegendsEnabled)
         SimpleLegends.generate(exprs)
       else
         exprs
