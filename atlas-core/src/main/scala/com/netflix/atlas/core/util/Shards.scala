@@ -57,7 +57,7 @@ object Shards {
   /**
     * Creates a mapper used to route data to the appropriate instance. This form is typically
     * used as data is flowing into the system when replicas are not a concern. If replication
-    * is needed, then see [[replicaMapper()]] instead.
+    * is needed, then see `replicaMapper` instead.
     *
     * @param group
     *     Single group that makes up the complete data set.
@@ -69,7 +69,7 @@ object Shards {
   /**
     * Creates a mapper used to route data to the appropriate instance. This form is typically
     * used as data is flowing into the system when replicas are not a concern. If replication
-    * is needed, then see [[replicaMapper()]] instead.
+    * is needed, then see `replicaMapper` instead.
     *
     * @param groups
     *     Set of groups that makes up the complete data set.

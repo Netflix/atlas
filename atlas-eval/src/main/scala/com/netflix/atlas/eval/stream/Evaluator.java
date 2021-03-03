@@ -101,9 +101,9 @@ public final class Evaluator extends EvaluatorImpl {
    * the backend producing the data.
    *
    * It takes a stream of data sources as an input and returns the output of evaluating
-   * those streams. Each {@link DataSources} object should be the complete set of
+   * those streams. Each {@code DataSources} object should be the complete set of
    * sources that should be evaluated at a given time. The output messages can be
-   * correlated with a particular data source using the id on the {@link MessageEnvelope}.
+   * correlated with a particular data source using the id on the {@code MessageEnvelope}.
    */
   public Processor<DataSources, MessageEnvelope> createStreamsProcessor() {
     return createStreamsProcessorImpl();
