@@ -102,7 +102,7 @@ class SubscriptionManager[T] extends StrictLogging {
 
   /**
     * Register a new stream with the provided id. The `handler` is used by the caller to
-    * interact with the stream. The caller can use [[handlersForSubscription()]] to get a
+    * interact with the stream. The caller can use `handlersForSubscription()` to get a
     * list of handlers that should be called for a given subscription.
     *
     * Returns true if it is a new registration.
