@@ -49,11 +49,7 @@ object BuildSettings {
       "Build-Date"   -> java.time.Instant.now().toString,
       "Build-Number" -> sys.env.getOrElse("GITHUB_RUN_ID", "unknown"),
       "Commit"       -> sys.env.getOrElse("GITHUB_SHA", "unknown")
-    ),
-    // scaladoc crashes on jdk11 using `-release 8` with assertion failure:
-    // type AnyRef in java.lang
-    // https://github.com/scala/community-builds/issues/796#issuecomment-423395500
-    publishArtifact in (Compile, packageDoc) := false
+    )
   )
 
   val commonDeps = Seq(

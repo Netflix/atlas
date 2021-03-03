@@ -19,7 +19,7 @@ import com.netflix.atlas.core.model.DataExpr
 
 /**
   * A group of values for the same timestamp. This type is typically created as the result
-  * of using the [[com.netflix.atlas.eval.stream.TimeGrouped]] operator on the stream.
+  * of using the `com.netflix.atlas.eval.stream.TimeGrouped` operator on the stream.
   *
   * The values map should always be non-empty and have datapoints for all entries. Empty
   * entries should be omitted.

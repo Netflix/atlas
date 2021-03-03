@@ -34,7 +34,7 @@ import com.typesafe.config.Config
   * ```
   *
   * This config would extract the second portion of the host name and use it as a region
-  * restriction (`region,$1,:eq`). The first group will be used as the value for the restriction
+  * restriction (`region,\$1,:eq`). The first group will be used as the value for the restriction
   * query.
   */
 class HostRewriter(config: Config) {

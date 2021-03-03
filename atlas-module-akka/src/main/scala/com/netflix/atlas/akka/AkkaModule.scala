@@ -34,7 +34,7 @@ import scala.concurrent.duration.Duration
 
 /**
   * Configures the actor system and web server. This module expects that bindings
-  * are available for [[com.typesafe.config.Config]] and [[com.netflix.spectator.api.Registry]].
+  * are available for `com.typesafe.config.Config` and `com.netflix.spectator.api.Registry`.
   */
 final class AkkaModule extends AbstractModule {
 
