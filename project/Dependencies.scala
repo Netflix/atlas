@@ -6,14 +6,14 @@ object Dependencies {
   object Versions {
     val akka       = "2.6.13"
     val akkaHttpV  = "10.2.4"
-    val aws        = "1.11.946"
+    val aws        = "1.11.965"
     val iep        = "2.6.7"
     val guice      = "4.1.0"
     val jackson    = "2.12.1"
     val log4j      = "2.14.0"
-    val scala      = "2.13.4"
+    val scala      = "2.13.5"
     val slf4j      = "1.7.30"
-    val spectator  = "0.124.0"
+    val spectator  = "0.125.0"
 
     val crossScala = Seq(scala)
   }
@@ -32,9 +32,9 @@ object Dependencies {
   val awsCore           = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsEC2            = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val awsS3             = "com.amazonaws" % "aws-java-sdk-s3" % aws
-  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.8.8"
-  val datasketches      = "org.apache.datasketches" % "datasketches-java" % "1.3.0-incubating"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.5.4"
+  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.0"
+  val datasketches      = "org.apache.datasketches" % "datasketches-java" % "2.0.0"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.5.5"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.24.0"
   val guiceCore         = "com.google.inject" % "guice" % guice
   val guiceMulti        = "com.google.inject.extensions" % "guice-multibindings" % guice
@@ -62,13 +62,13 @@ object Dependencies {
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.3"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.1"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
   val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
   val scalaReflect      = "org.scala-lang" % "scala-reflect" % scala
-  val scalatest         = "org.scalatest" %% "scalatest" % "3.2.3"
+  val scalatest         = "org.scalatest" %% "scalatest" % "3.2.5"
   val slf4jApi          = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j        = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple       = "org.slf4j" % "slf4j-simple" % slf4j
