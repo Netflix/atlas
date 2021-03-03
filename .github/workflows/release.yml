@@ -21,11 +21,18 @@ jobs:
             ~/.sbt
             ~/.ivy2
           key: ${{ runner.os }}-${{ hashFiles('**/*.sbt') }}
+      - name: SetupPGP
+        run: echo $ORG_SIGNING_KEY | sed -r 's/-----[^-]+-----//g;s/\n//g;s/ //g' | base64 --decode | gpg --batch --import
+        env:
+          ORG_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
       - name: Build
         env:
-          bintrayUser: ${{ secrets.ORG_BINTRAY_USER }}
-          bintrayKey: ${{ secrets.ORG_BINTRAY_KEY }}
+          NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
+          NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
+          NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
+          NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
+          PGP_PASSPHRASE: ${{ secrets.ORG_SIGNING_PASSWORD }}
         run: |
           git fetch --unshallow --tags
-          cat /dev/null | project/sbt storeBintrayCredentials
-          cat /dev/null | project/sbt clean test publish bintrayRelease
+          cat /dev/null | project/sbt clean test +publishSigned
+          cat /dev/null | project/sbt sonatypeBundleRelease
