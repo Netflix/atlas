@@ -394,6 +394,48 @@ class QuerySuite extends AnyFunSuite {
     assert(Query.exactKeys(q) === Set.empty)
   }
 
+  test("allKeys no key") {
+    val q1 = Query.False
+    assert(Query.allKeys(q1) === Set.empty)
+    val q2 = Query.True
+    assert(Query.allKeys(q2) === Set.empty)
+  }
+
+  test("allKeys ignore not") {
+    val q = Query.Not(Equal("k", "v"))
+    assert(Query.allKeys(q) === Set("k"))
+  }
+
+  test("allKeys eq") {
+    val q = Equal("k", "v")
+    assert(Query.allKeys(q) === Set("k"))
+  }
+
+  test("allKeys and eq") {
+    val q = And(Equal("k", "v"), Equal("p", "q"))
+    assert(Query.allKeys(q) === Set("k", "p"))
+  }
+
+  test("allKeys and hasKey") {
+    val q = Query.And(a, b)
+    assert(Query.allKeys(q) === Set("A", "B"))
+  }
+
+  test("allKeys or") {
+    val q = Or(Equal("k", "v"), Equal("p", "q"))
+    assert(Query.allKeys(q) === Set("k", "p"))
+  }
+
+  test("allKeys or - same key") {
+    val q = Or(Equal("k", "v"), Equal("k", "q"))
+    assert(Query.allKeys(q) === Set("k"))
+  }
+
+  test("allKeys or - one side no key") {
+    val q = Or(Equal("k", "v"), True)
+    assert(Query.allKeys(q) === Set("k"))
+  }
+
   test("cnfList (a)") {
     val q = a
     assert(Query.cnfList(q) === List(q))

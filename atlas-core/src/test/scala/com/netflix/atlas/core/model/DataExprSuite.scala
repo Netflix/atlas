@@ -23,4 +23,14 @@ class DataExprSuite extends AnyFunSuite {
     val tags = Map("name" -> "foo")
     assert(expr.groupByKey(tags) === None)
   }
+
+  test("allKeys") {
+    val expr = DataExpr.Sum(Query.Equal("k1", "v1"))
+    assert(DataExpr.allKeys(expr) === Set("k1"))
+  }
+
+  test("allKeys with GroupBy") {
+    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("k1", "v1")), List("k1", "k2"))
+    assert(DataExpr.allKeys(expr) === Set("k1", "k2"))
+  }
 }

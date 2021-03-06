@@ -76,6 +76,19 @@ object Query {
   }
 
   /**
+    * Return the set of keys referenced by in the query.
+    */
+  def allKeys(query: Query): Set[String] = {
+    query match {
+      case And(q1, q2) => allKeys(q1) ++ allKeys(q2)
+      case Or(q1, q2)  => allKeys(q1) ++ allKeys(q2)
+      case Not(q)      => allKeys(q)
+      case q: KeyQuery => Set(q.k)
+      case _           => Set.empty
+    }
+  }
+
+  /**
     * Extract a set of tags for the query based on the `:eq` clauses.
     */
   def tags(query: Query): Map[String, String] = {
