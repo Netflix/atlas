@@ -112,6 +112,10 @@ object DataExpr {
     builder.toString
   }
 
+  def allKeys(dataExpr: DataExpr): Set[String] = {
+    Query.allKeys(dataExpr.query) ++ dataExpr.finalGrouping
+  }
+
   case class All(query: Query, offset: Duration = Duration.ZERO) extends DataExpr {
 
     def cf: ConsolidationFunction = ConsolidationFunction.Sum
