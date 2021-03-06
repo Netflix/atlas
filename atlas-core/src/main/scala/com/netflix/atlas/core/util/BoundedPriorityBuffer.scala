@@ -81,4 +81,13 @@ class BoundedPriorityBuffer[T <: AnyRef](maxSize: Int, comparator: Comparator[T]
     }
     builder.result()
   }
+
+  /** Return a list containing all of the items in the buffer - preserving order by priority. */
+  def toOrderedList: List[T] = {
+    val builder = List.newBuilder[T]
+    while (!queue.isEmpty) {
+      builder += queue.poll()
+    }
+    builder.result()
+  }
 }
