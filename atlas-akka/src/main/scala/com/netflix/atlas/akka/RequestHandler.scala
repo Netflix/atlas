@@ -85,16 +85,7 @@ object RequestHandler extends StrictLogging {
 
   import com.netflix.atlas.akka.CustomDirectives._
 
-  private val defaultSettings = Settings(ConfigFactory.parseString("""
-      |atlas.akka {
-      |  cors-host-patterns = []
-      |  diagnostic-headers = []
-      |  request-handler {
-      |    compression = true
-      |    access-log = true
-      |  }
-      |}
-      |""".stripMargin))
+  private val defaultSettings = Settings(ConfigFactory.load())
 
   case class Settings(config: Config) {
 
@@ -121,6 +112,10 @@ object RequestHandler extends StrictLogging {
 
     val enableAccessLog: Boolean = {
       config.getBoolean("atlas.akka.request-handler.access-log")
+    }
+
+    val closeProbability: Double = {
+      config.getDouble("atlas.akka.request-handler.close-probability")
     }
   }
 
@@ -168,11 +163,16 @@ object RequestHandler extends StrictLogging {
       handleRejections(rejectionHandler) { gzip }
     }
 
+    // Add close directive to help balance connections
+    val close = closeConnection(settings.closeProbability) {
+      error
+    }
+
     // Include all requests in the access log
     val log =
-      if (!settings.enableAccessLog) error
+      if (!settings.enableAccessLog) close
       else
-        accessLog(settings.diagnosticHeaders) { error }
+        accessLog(settings.diagnosticHeaders) { close }
 
     // Add CORS headers to all responses
     cors(settings.corsHostPatterns) { log }

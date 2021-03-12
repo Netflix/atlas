@@ -46,6 +46,7 @@ class RequestHandlerNoCompressionsSuite extends AnyFunSuite with ScalatestRouteT
       |atlas.akka.request-handler {
       |  compression = false
       |  access-log = false
+      |  close-probability = 0.0
       |}
     """.stripMargin
   )
