@@ -134,6 +134,27 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
                   }
                 }
               }
+            } ~
+            closeConnection(0.0) {
+              path("close" / "0.0") {
+                get {
+                  complete(HttpResponse(status = StatusCodes.OK))
+                }
+              }
+            } ~
+            closeConnection(0.5) {
+              path("close" / "0.5") {
+                get {
+                  complete(HttpResponse(status = StatusCodes.OK))
+                }
+              }
+            } ~
+            closeConnection(1.0) {
+              path("close" / "1.0") {
+                get {
+                  complete(HttpResponse(status = StatusCodes.OK))
+                }
+              }
             }
           }
         }
@@ -456,6 +477,36 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     Get("/text") ~> endpoint.routes ~> check {
       val zone = response.headers.find(_.is("netflix-zone"))
       assert(zone === Some(RawHeader("Netflix-Zone", "us-east-1e")))
+    }
+  }
+
+  test("close: 0.0, none closed") {
+    (0 until 100).foreach { _ =>
+      Get("/close/0.0") ~> endpoint.routes ~> check {
+        assert(!response.headers.exists(_.is("connection")))
+      }
+    }
+  }
+
+  test("close: 0.5, roughly half closed") {
+    var closed = 0
+    (0 until 100).foreach { _ =>
+      Get("/close/0.5") ~> endpoint.routes ~> check {
+        if (response.headers.exists(_.is("connection"))) {
+          closed += 1
+        }
+      }
+    }
+    // there can be some random variation, this range should be wide enough to
+    // avoid spurious test failures
+    assert(closed >= 25 && closed <= 75)
+  }
+
+  test("close: 1.0, all closed") {
+    (0 until 100).foreach { _ =>
+      Get("/close/1.0") ~> endpoint.routes ~> check {
+        assert(response.headers.exists(_.is("connection")))
+      }
     }
   }
 }

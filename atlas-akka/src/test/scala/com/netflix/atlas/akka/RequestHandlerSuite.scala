@@ -51,6 +51,7 @@ class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
       |atlas.akka.request-handler {
       |  compression = true
       |  access-log = true
+      |  close-probability = 0.0
       |}
     """.stripMargin
   )

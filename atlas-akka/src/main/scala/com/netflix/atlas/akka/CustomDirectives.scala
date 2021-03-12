@@ -18,7 +18,6 @@ package com.netflix.atlas.akka
 import java.io.InputStream
 import java.io.StringWriter
 import java.util.zip.GZIPInputStream
-
 import akka.http.scaladsl.model.HttpCharsets
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpHeader
@@ -44,6 +43,7 @@ import com.fasterxml.jackson.core.JsonParser
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.ipc.NetflixHeader
 
+import java.util.concurrent.ThreadLocalRandom
 import scala.util.Failure
 import scala.util.Success
 
@@ -402,6 +402,35 @@ object CustomDirectives {
   def endpointPathPrefix(pm: PathMatcher[Unit]): Directive0 = {
     pathPrefix(pm).tflatMap { _ =>
       respondWithEndpointHeader
+    }
+  }
+
+  /**
+    * Add connection close header to some responses. This can be useful when using
+    * network load balancers to allow some connection reuse, but force connections
+    * to close frequently enough to ensure that traffic balances across instances.
+    *
+    * @param probability
+    *     A value of 0.0 means it will never be added, 1.0 means it will
+    *     always be added.
+    */
+  def closeConnection(probability: Double): Directive0 = {
+    val closeHeader = Connection("close")
+
+    if (probability <= 0.0) {
+      // Nothing to do
+      pass
+    } else if (probability >= 1.0) {
+      // Always close, no need to bother checking
+      respondWithHeader(closeHeader)
+    } else {
+      mapResponseHeaders { headers =>
+        val random = ThreadLocalRandom.current()
+        if (random.nextDouble() < probability)
+          headers
+        else
+          headers.prepended(closeHeader)
+      }
     }
   }
 }
