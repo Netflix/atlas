@@ -52,4 +52,13 @@ class InternerSuite extends AnyFunSuite {
     assert(i.intern(s1) eq s1)
     assert(i.intern(s2) eq s2)
   }
+
+  test("caffeine") {
+    val s1 = new String("foo")
+    val s2 = new String("foo")
+    val i = new CaffeineInterner[String](10)
+    assert(s1 ne s2)
+    assert(i.intern(s1) eq s1)
+    assert(i.intern(s2) eq s1)
+  }
 }

@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.util
 
+import com.github.benmanes.caffeine.cache.Caffeine
+
 import java.util.concurrent.atomic.AtomicReference
 
 /** Helper functions for interners. */
@@ -93,4 +95,26 @@ object StringInterner extends Interner[String] {
   def intern(value: String): String = value.intern
 
   def size: Int = 0
+}
+
+/**
+  * Interner based on a Caffeine cache. This implementation should only be used
+  * for memory reduction and not reference equality. If the cache is full, then
+  * some values will not be deduped.
+  *
+  * @param maxSize
+  *     Maximum number of strings to intern.
+  */
+class CaffeineInterner[T](maxSize: Int) extends Interner[T] {
+
+  private val cache = Caffeine
+    .newBuilder()
+    .maximumSize(maxSize)
+    .build[T, T]()
+
+  def intern(value: T): T = {
+    cache.get(value, v => v)
+  }
+
+  def size: Int = cache.estimatedSize().toInt
 }
