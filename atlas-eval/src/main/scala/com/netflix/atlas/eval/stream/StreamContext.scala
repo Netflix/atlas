@@ -85,6 +85,8 @@ private[stream] class StreamContext(
       FileBackend(Paths.get(uri.path.toString()))
     else if (uri.scheme == "resource")
       ResourceBackend(uri.path.toString().substring(1))
+    else if (uri.scheme == "synthetic")
+      SyntheticBackend(interpreter, uri)
     else
       findEurekaBackendForUri(uri)
   }
@@ -217,6 +219,13 @@ private[stream] object StreamContext {
       StreamConverters
         .fromInputStream(() => Streams.resource(resource))
         .via(EvaluationFlows.sseFraming)
+    }
+  }
+
+  case class SyntheticBackend(interpreter: ExprInterpreter, uri: Uri) extends Backend {
+
+    def source: Source[ByteString, Future[IOResult]] = {
+      SyntheticDataSource(interpreter, uri)
     }
   }
 

@@ -302,7 +302,8 @@ public final class Evaluator extends EvaluatorImpl {
     public boolean isLocal() {
       return uri.startsWith("/")
           || uri.startsWith("file:")
-          || uri.startsWith("resource:");
+          || uri.startsWith("resource:")
+          || uri.startsWith("synthetic:");
     }
 
     @Override public boolean equals(Object o) {
