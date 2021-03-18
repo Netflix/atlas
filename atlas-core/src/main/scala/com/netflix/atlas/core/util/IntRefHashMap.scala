@@ -112,6 +112,16 @@ class IntRefHashMap[T <: AnyRef: Manifest](noData: Int, capacity: Int = 10) {
     }
   }
 
+  /** Execute `f` for each key in the map. */
+  def foreachKey(f: Int => Unit): Unit = {
+    var i = 0
+    while (i < keys.length) {
+      val k = keys(i)
+      if (k != noData) f(k)
+      i += 1
+    }
+  }
+
   /** Return the number of items in the set. This is a constant time operation. */
   def size: Int = used
 

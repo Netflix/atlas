@@ -16,10 +16,42 @@
 package com.netflix.atlas.core.index
 
 import com.netflix.atlas.core.model.TimeSeries
+import org.roaringbitmap.RoaringBitmap
 
 class RoaringTagIndexSuite extends TagIndexSuite {
 
   val index: TagIndex[TimeSeries] = {
     new RoaringTagIndex(TagIndexSuite.dataset.toArray, new IndexStats())
+  }
+
+  test("hasNonEmptyIntersection: empty, empty") {
+    val b1 = new RoaringBitmap()
+    val b2 = new RoaringBitmap()
+    assert(!RoaringTagIndex.hasNonEmptyIntersection(b1, b2))
+  }
+
+  test("hasNonEmptyIntersection: equal") {
+    val b1 = new RoaringBitmap()
+    b1.add(10)
+    val b2 = new RoaringBitmap()
+    b2.add(10)
+    assert(RoaringTagIndex.hasNonEmptyIntersection(b1, b2))
+  }
+
+  test("hasNonEmptyIntersection: no match") {
+    val b1 = new RoaringBitmap()
+    (0 until 20 by 2).foreach(b1.add)
+    val b2 = new RoaringBitmap()
+    (1 until 21 by 2).foreach(b2.add)
+    assert(!RoaringTagIndex.hasNonEmptyIntersection(b1, b2))
+  }
+
+  test("hasNonEmptyIntersection: last match") {
+    val b1 = new RoaringBitmap()
+    (0 until 22 by 2).foreach(b1.add)
+    val b2 = new RoaringBitmap()
+    (1 until 21 by 2).foreach(b2.add)
+    b2.add(20)
+    assert(RoaringTagIndex.hasNonEmptyIntersection(b1, b2))
   }
 }

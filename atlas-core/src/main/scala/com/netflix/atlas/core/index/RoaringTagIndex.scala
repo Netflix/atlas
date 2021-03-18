@@ -29,14 +29,6 @@ import com.netflix.atlas.core.util.RefIntHashMap
 import org.roaringbitmap.RoaringBitmap
 import org.slf4j.LoggerFactory
 
-object RoaringTagIndex {
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  def empty[T <: TaggedItem: Manifest]: RoaringTagIndex[T] = {
-    new RoaringTagIndex(new Array[T](0), new IndexStats())
-  }
-}
-
 /**
   * Create a new index based on roaring bitmaps.
   *
@@ -414,47 +406,51 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     val kp = keyMap.get(k, -1)
     if (kp < 0) return Nil
 
-    val has = Query.HasKey(k)
-    val q = query.query.fold[Query](has)(q => q.and(has))
-    val itemSet = findImpl(q, 0)
-    val offset = findOffset(values, query.offset)
+    val vidx = itemIndex.get(kp)
+    if (vidx == null) return Nil
 
+    val offset = findOffset(values, query.offset)
     val results = new util.BitSet(values.length)
 
-    // If there are many items with the same value for a key, then we can prune the item set
-    // by doing an AND NOT operation with set for that key and value. This will perform worse
-    // if there aren't a lot of items with the same value. We estimate the chances by comparing
-    // the cardinality of the key with the number of items. For less than 5% it is assumed that
-    // pruning is the better option.
-    val keyCardinality = itemIndex.get(kp).size
-    val attemptPruning = (100.0 * keyCardinality / items.length) < 5.0
+    if (query.query.isEmpty) {
+      // No query filter, just use all values for a key
+      vidx.foreachKey { v =>
+        if (v >= offset) {
+          results.set(v)
+        }
+      }
+    } else {
+      // Need to restrict by the query, always include restriction for items with the key
+      val has = Query.HasKey(k)
+      val q = query.query.fold[Query](has)(q => q.and(has))
+      val itemSet = findImpl(q, 0)
 
-    // Find all matching values by looking up the key for each matching item
-    var iter = itemSet.getIntIterator
-    while (iter.hasNext) {
-      val i = iter.next()
-      val tags = itemTags(i)
-      val v = tags.get(kp, -1)
-      if (v >= offset && !results.get(v)) {
-        results.set(v)
-      } else if (v >= 0 && attemptPruning) {
-        // If the value is repeated, then lookup the set of all items with the given value
-        // for the key and removing those from the item set
-        itemSet.andNot(equal(kp, v))
-        iter = itemSet.getIntIterator
+      // Double check if there were any matches
+      if (itemSet.isEmpty) return Nil
+
+      if (vidx.size < itemSet.getCardinality / 8) {
+        // Loop over the values for a key since it is considerably smaller than the
+        // overall set of matches. All we need to confirm is that there is at least
+        // one item matching the query criteria with a given value
+        vidx.foreach { (v, items) =>
+          if (v >= offset && hasNonEmptyIntersection(itemSet, items)) {
+            results.set(v)
+          }
+        }
+      } else {
+        // Loop over the items that match the query
+        val iter = itemSet.getIntIterator
+        while (iter.hasNext) {
+          val tags = itemTags(iter.next())
+          val v = tags.get(kp, -1)
+          if (v >= offset) {
+            results.set(v)
+          }
+        }
       }
     }
 
     createResultList(values, results, query.limit)
-  }
-
-  private def equal(k: Int, v: Int): RoaringBitmap = {
-    val vidx = itemIndex.get(k)
-    if (vidx == null) new RoaringBitmap()
-    else {
-      val matchSet = vidx.get(v)
-      if (matchSet == null) new RoaringBitmap() else matchSet
-    }
   }
 
   def findItems(query: TagQuery): List[T] = {
@@ -492,4 +488,27 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   }
 
   val size: Int = items.length
+}
+
+object RoaringTagIndex {
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  def empty[T <: TaggedItem: Manifest]: RoaringTagIndex[T] = {
+    new RoaringTagIndex(new Array[T](0), new IndexStats())
+  }
+
+  private[index] def hasNonEmptyIntersection(b1: RoaringBitmap, b2: RoaringBitmap): Boolean = {
+    var v1 = b1.nextValue(0).asInstanceOf[Int]
+    var v2 = b2.nextValue(0).asInstanceOf[Int]
+    while (v1 >= 0 && v2 >= 0) {
+      if (v1 == v2) {
+        return true
+      } else if (v1 < v2) {
+        v1 = b1.nextValue(v2).asInstanceOf[Int]
+      } else if (v1 > v2) {
+        v2 = b2.nextValue(v1).asInstanceOf[Int]
+      }
+    }
+    false
+  }
 }
