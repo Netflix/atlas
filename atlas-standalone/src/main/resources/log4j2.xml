@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="warn" shutdownHook="disable">
   <Properties>
-    <Property name="dfltPattern">%d{yyyy-MM-dd'T'HH:mm:ss.SSS} %-5level [%t] %class: %msg%n</Property>
+    <Property name="dfltPattern">%d{yyyy-MM-dd'T'HH:mm:ss.SSS} %-5level [%t] %logger: %msg%n</Property>
   </Properties>
   <Appenders>
     <Console name="STDERR" target="SYSTEM_ERR">
