@@ -48,7 +48,7 @@ abstract class CardinalityLimiter(val limiterConfig: LimiterConfig) {
   def update(tags: Map[String, String], id: AnyRef): Map[String, String]
 
   /**
-    * Default to [[TaggedItem.computeId]] to compute id.
+    * Default to [[com.netflix.atlas.core.model.TaggedItem.computeId]] to compute id.
     */
   def update(tags: Map[String, String]): Map[String, String] = {
     update(tags, TaggedItem.computeId(tags))
