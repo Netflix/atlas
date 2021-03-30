@@ -15,18 +15,21 @@
  */
 package com.netflix.atlas.core.limiter
 
+import scala.collection.immutable.ArraySeq
+
 /**
   * The configuration for [[CardinalityLimiter]].
+  *
   * @param prefixConfigs list of config with prefix key and associated limits
   * @param tagValueLimit max number of values per non prefix key
   */
-case class LimiterConfig(prefixConfigs: Array[PrefixConfig], tagValueLimit: Int) {
+case class LimiterConfig(prefixConfigs: ArraySeq[PrefixConfig], tagValueLimit: Int) {
   require(prefixConfigs.length > 0)
 
   /**
     * All the prefix keys.
     */
-  val prefixKeys: Array[String] = prefixConfigs.map(_.key)
+  val prefixKeys: ArraySeq[String] = prefixConfigs.map(_.key)
 
   /**
     * get PrefixConfig by level.

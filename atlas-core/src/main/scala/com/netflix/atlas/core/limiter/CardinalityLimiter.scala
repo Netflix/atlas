@@ -15,14 +15,15 @@
  */
 package com.netflix.atlas.core.limiter
 
+import com.netflix.atlas.core.limiter.CardinalityLimiter._
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TaggedItem
-import com.netflix.atlas.core.limiter.CardinalityLimiter._
 import com.netflix.atlas.core.util.BoundedPriorityBuffer
 import com.netflix.atlas.core.util.CardinalityEstimator
 import com.typesafe.config.Config
 
 import java.util.concurrent.ConcurrentHashMap
+import scala.collection.compat.immutable.ArraySeq
 import scala.jdk.CollectionConverters._
 
 /**
@@ -31,7 +32,7 @@ import scala.jdk.CollectionConverters._
   */
 abstract class CardinalityLimiter(val limiterConfig: LimiterConfig) {
 
-  protected val totalEstimator: CardinalityEstimator = CardinalityEstimator.newSyncEstimator()
+  protected val totalEstimator: CardinalityEstimator = CardinalityEstimator.newEstimator()
 
   /**
     * Update cardinality stats for the given tags.
@@ -53,7 +54,9 @@ abstract class CardinalityLimiter(val limiterConfig: LimiterConfig) {
     update(tags, TaggedItem.computeId(tags))
   }
 
-  /** Get total cardinality for total tags ever seen. */
+  /**
+    * Get total cardinality for distinct tag maps ever seen.
+    */
   def cardinality: Long = totalEstimator.cardinality
 
   /**
@@ -74,9 +77,13 @@ abstract class CardinalityLimiter(val limiterConfig: LimiterConfig) {
   private[limiter] def canServe(queryInfo: QueryInfo): Boolean
 
   /**
-    * A convenient way get topk keys by cardinality at all levels, mainly used for debug/inspect.
+    * A convenient way get top k keys by cardinality at all levels, mainly used for debug/inspect.
+    * @param k
+    *   number of top keys
+    * @return
+    *   cardinality stats
     */
-  def topk(k: Int): AnyRef
+  def topK(k: Int): CardinalityStats
 }
 
 /**
@@ -97,12 +104,6 @@ private[limiter] class CardinalityLimiterInner(
   ): Map[String, String] = {
     val key = limiterConfig.prefixKeys(level)
     val value = tags.getOrElse(key, MissingKey)
-    val conf = limiterConfig.getPrefixConfig(level)
-
-    def reachLimit: Boolean = {
-      conf.totalLimit > 0 && (cardinality >= conf.totalLimit || children.size() >= conf.valueLimit)
-    }
-
     val newTags = {
       if (droppedValues.contains(value)) {
         null
@@ -115,8 +116,12 @@ private[limiter] class CardinalityLimiterInner(
       }
     }
     totalEstimator.update(id)
-
     newTags
+  }
+
+  private def reachLimit: Boolean = {
+    val conf = limiterConfig.getPrefixConfig(level)
+    conf.totalLimit > 0 && (cardinality >= conf.totalLimit || children.size() >= conf.valueLimit)
   }
 
   private def createChildNode() = {
@@ -164,16 +169,16 @@ private[limiter] class CardinalityLimiterInner(
     }
   }
 
-  override def topk(k: Int): AnyRef = {
+  override def topK(k: Int): CardinalityStats = {
     val buffer = new BoundedPriorityBuffer[java.util.Map.Entry[String, CardinalityLimiter]](
       k,
       Ordering.by(_.getValue.cardinality)
     )
     children.entrySet().forEach(buffer.add)
-    val key = limiterConfig.getPrefixConfig(level).key
-    val list = buffer.toOrderedList
-      .map(e => (s"$key: ${e.getKey}", e.getValue.topk(k)))
-    Map("total_ts" -> cardinality, s"num_of_$key" -> children.size(), s"top_$k" -> list)
+
+    val key = limiterConfig.prefixKeys(level)
+    val byValue = buffer.drainToOrderedList().map(e => (e.getKey, e.getValue.topK(k)))
+    CardinalityStats(key, cardinality, byValue, Nil)
   }
 
   // Not in dropped set, and then check next level
@@ -229,22 +234,21 @@ private[limiter] class CardinalityLimiterLeaf(override val limiterConfig: Limite
   private def updateCardinalityStats(tags: Map[String, String], id: AnyRef): Unit = {
     totalEstimator.update(id)
     tags.foreachEntry { (key, value) =>
-      // Size of defined prefix keys should be small, so array contains is efficient
       if (!limiterConfig.isPrefixKey(key)) {
         tagCardinality
-          .computeIfAbsent(key, _ => CardinalityEstimator.newSyncEstimator())
+          .computeIfAbsent(key, _ => CardinalityEstimator.newEstimator())
           .update(value)
       }
     }
   }
 
   private def rollup(tags: Map[String, String], rollupKeys: Seq[String]): Map[String, String] = {
-    tags.map {
-      case (k, v) =>
-        if (rollupKeys.contains(k))
-          (k, RollupValue)
-        else
-          (k, v)
+    // Use tuple for iteration to minimize allocation
+    tags.map { t =>
+      if (rollupKeys.contains(t._1)) {
+        (t._1, RollupValue)
+      } else
+        t
     }
   }
 
@@ -256,15 +260,13 @@ private[limiter] class CardinalityLimiterLeaf(override val limiterConfig: Limite
     if (estimator == null) 0 else estimator.cardinality
   }
 
-  override def topk(k: Int): AnyRef = {
+  override def topK(k: Int): CardinalityStats = {
     val topTags = tagCardinality.asScala
       .map(t => (t._1, t._2.cardinality))
       .toList
       .sortBy(-_._2)
       .take(k)
-      .mkString(",")
-
-    s"total: $cardinality, tags: $topTags"
+    CardinalityStats("_", cardinality, Nil, topTags)
   }
 
   override private[limiter] def canServe(queryInfo: QueryInfo): Boolean = {
@@ -294,9 +296,8 @@ object CardinalityLimiter {
             c.getInt("total-limit")
           )
         })
-    }.toArray
-
-    LimiterConfig(configs, conf.getInt("tag-value-limit"))
+    }
+    LimiterConfig(ArraySeq.from(configs), conf.getInt("tag-value-limit"))
   }
 
   val RollupValue = "_auto-rollup_"
@@ -304,16 +305,9 @@ object CardinalityLimiter {
 }
 
 case class QueryInfo(query: Query, limiterConfig: LimiterConfig) {
-  private var _queryKeys: Set[String] = _
   val prefixValues: Array[String] = genSearchPath()
-
-  // Not needed if drop found early in search path, so generate lazily
-  def queryKeys: Set[String] = {
-    if (_queryKeys eq null) {
-      _queryKeys = Query.allKeys(query) -- limiterConfig.prefixKeys
-    }
-    _queryKeys
-  }
+  // Not needed if dropped early in search path
+  lazy val queryKeys = Query.allKeys(query) -- limiterConfig.prefixKeys
 
   // Find the values of prefix keys to search through the tree, use default value if missing.
   private[limiter] def genSearchPath(): Array[String] = {
@@ -332,3 +326,10 @@ case class QueryInfo(query: Query, limiterConfig: LimiterConfig) {
     path
   }
 }
+
+case class CardinalityStats(
+  key: String,
+  total: Long,
+  cardinalityByValue: List[(String, CardinalityStats)],
+  cardinalityByTag: List[(String, Long)]
+)

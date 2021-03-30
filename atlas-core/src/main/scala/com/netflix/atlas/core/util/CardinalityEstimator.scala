@@ -39,8 +39,7 @@ trait CardinalityEstimator {
 object CardinalityEstimator {
 
   /**
-    * Create a new estimator instance using the [CPC] algorithm. This created estimator is NOT
-    * thread safe, use {@link newSyncEstimator} to create a thread-safe estimator.
+    * Create a new estimator instance using the [CPC] algorithm.
     *
     * [CPC]: https://datasketches.apache.org/docs/CPC/CPC.html
     *
@@ -53,22 +52,8 @@ object CardinalityEstimator {
     new CpcEstimator(lgK)
   }
 
-  /** Create a thread-safe estimator. */
-  def newSyncEstimator(lgK: Int = 9): CardinalityEstimator = {
-    new SyncCpcEstimator(lgK)
-  }
-
+  // It's expected to be updated by a single thread, while reading cardinality is thread-safe.
   private class CpcEstimator(val lgK: Int) extends CardinalityEstimator {
-    private val sketch = new CpcSketch(lgK)
-
-    override def update(obj: AnyRef): Unit = {
-      sketch.update(obj.hashCode())
-    }
-
-    override def cardinality: Long = sketch.getEstimate.longValue()
-  }
-
-  private class SyncCpcEstimator(val lgK: Int) extends CardinalityEstimator {
     private val sketch = new CpcSketch(lgK)
     private val _cardinality = new AtomicLong()
 
