@@ -18,7 +18,6 @@ package com.netflix.atlas.akka
 import javax.inject.Inject
 import javax.inject.Singleton
 import akka.actor.ActorSystem
-import akka.http.scaladsl.ConnectionContext
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.HttpsConnectionContext
@@ -29,15 +28,6 @@ import com.netflix.iep.service.ClassFactory
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import com.typesafe.sslconfig.ssl.ClientAuth
-import com.typesafe.sslconfig.ssl.ConfigSSLContextBuilder
-import com.typesafe.sslconfig.ssl.DefaultKeyManagerFactoryWrapper
-import com.typesafe.sslconfig.ssl.DefaultTrustManagerFactoryWrapper
-import com.typesafe.sslconfig.ssl.SSLConfigFactory
-import com.typesafe.sslconfig.ssl.SSLConfigSettings
-import com.typesafe.sslconfig.util.LoggerFactory
-import com.typesafe.sslconfig.util.NoDepsLogger
-import org.slf4j.Logger
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
@@ -101,32 +91,12 @@ object WebServer {
   private case class PortConfig(
     port: Int,
     secure: Boolean,
-    sslConfigOption: Option[SSLConfigSettings]
+    contextFactory: ConnectionContextFactory = null
   ) {
-    require(!secure || sslConfigOption.isDefined, s"ssl-config is not set for secure port $port")
-
-    private val sslContext = sslConfigOption.map { sslConfig =>
-      val keyManager = new DefaultKeyManagerFactoryWrapper(sslConfig.keyManagerConfig.algorithm)
-      val trustManager = new DefaultTrustManagerFactoryWrapper(
-        sslConfig.trustManagerConfig.algorithm
-      )
-      new ConfigSSLContextBuilder(SslLoggerFactory, sslConfig, keyManager, trustManager).build()
-    }.orNull
-
-    private val clientAuth = sslConfigOption.map(_.sslParametersConfig.clientAuth).orNull
+    require(!secure || contextFactory != null, s"context is not set for secure port $port")
 
     def createConnectionContext: HttpsConnectionContext = {
-      ConnectionContext.httpsServer { () =>
-        val sslEngine = sslContext.createSSLEngine()
-        sslEngine.setUseClientMode(false)
-        clientAuth match {
-          case ClientAuth.Default => sslEngine.setNeedClientAuth(true)
-          case ClientAuth.None    =>
-          case ClientAuth.Need    => sslEngine.setNeedClientAuth(true)
-          case ClientAuth.Want    => sslEngine.setWantClientAuth(true)
-        }
-        sslEngine
-      }
+      contextFactory.httpsConnectionContext
     }
   }
 
@@ -140,44 +110,13 @@ object WebServer {
   }
 
   private def toPortConfig(config: Config): PortConfig = {
-    PortConfig(
-      config.getInt("port"),
-      config.getBoolean("secure"),
-      if (config.hasPath("ssl-config"))
-        Some(SSLConfigFactory.parse(config.getConfig("ssl-config")))
-      else
-        None
-    )
-  }
-
-  /**
-    * The sslconfig library has its own logging interface to avoid dependencies. Map it
-    * to slf4j.
-    */
-  private object SslLoggerFactory extends LoggerFactory {
-
-    override def apply(clazz: Class[_]): NoDepsLogger = {
-      apply(clazz.getName)
+    val port = config.getInt("port")
+    val secure = config.getBoolean("secure")
+    if (secure) {
+      val contextFactory = ConnectionContextFactory(config)
+      PortConfig(port, secure, contextFactory)
+    } else {
+      PortConfig(port, secure)
     }
-
-    override def apply(name: String): NoDepsLogger = {
-      val logger = org.slf4j.LoggerFactory.getLogger(name)
-      new SslLogger(logger)
-    }
-  }
-
-  private class SslLogger(logger: Logger) extends NoDepsLogger {
-
-    override def isDebugEnabled: Boolean = logger.isDebugEnabled
-
-    override def debug(msg: String): Unit = logger.debug(msg)
-
-    override def info(msg: String): Unit = logger.info(msg)
-
-    override def warn(msg: String): Unit = logger.warn(msg)
-
-    override def error(msg: String): Unit = logger.error(msg)
-
-    override def error(msg: String, throwable: Throwable): Unit = logger.error(msg, throwable)
   }
 }
