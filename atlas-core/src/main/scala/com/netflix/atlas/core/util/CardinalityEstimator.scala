@@ -17,6 +17,8 @@ package com.netflix.atlas.core.util
 
 import org.apache.datasketches.cpc.CpcSketch
 
+import java.util.concurrent.atomic.AtomicLong
+
 /**
   * Utility for cheaply estimating the number of distinct values for a set of objects.
   */
@@ -29,7 +31,9 @@ trait CardinalityEstimator {
   def update(obj: AnyRef): Unit
 
   /** Return the current estimate for the number of distinct values seen. */
-  def cardinality: Int
+  def cardinality: Long
+
+  override def toString: String = cardinality.toString
 }
 
 object CardinalityEstimator {
@@ -48,13 +52,16 @@ object CardinalityEstimator {
     new CpcEstimator(lgK)
   }
 
+  // It's expected to be updated by a single thread, while reading cardinality is thread-safe.
   private class CpcEstimator(val lgK: Int) extends CardinalityEstimator {
     private val sketch = new CpcSketch(lgK)
+    private val _cardinality = new AtomicLong()
 
     override def update(obj: AnyRef): Unit = {
       sketch.update(obj.hashCode())
+      _cardinality.set(sketch.getEstimate.longValue())
     }
 
-    override def cardinality: Int = sketch.getEstimate.toInt
+    override def cardinality: Long = _cardinality.get()
   }
 }

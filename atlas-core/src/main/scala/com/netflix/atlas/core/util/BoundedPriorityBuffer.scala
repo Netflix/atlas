@@ -81,4 +81,13 @@ class BoundedPriorityBuffer[T <: AnyRef](maxSize: Int, comparator: Comparator[T]
     }
     builder.result()
   }
+
+  /** Drain elements to a list that is ordered by priority. */
+  def drainToOrderedList(): List[T] = {
+    val builder = List.newBuilder[T]
+    while (!queue.isEmpty) {
+      builder += queue.poll()
+    }
+    builder.result()
+  }
 }
