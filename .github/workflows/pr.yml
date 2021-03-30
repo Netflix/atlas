@@ -22,7 +22,7 @@ jobs:
             ~/.ivy2
           key: ${{ runner.os }}-${{ hashFiles('**/*.sbt') }}
       - name: Build
-        run: cat /dev/null | project/sbt ++${{ matrix.scala }} clean test
+        run: cat /dev/null | project/sbt ++${{ matrix.scala }} clean test doc
   check:
     runs-on: ubuntu-latest
     steps:
