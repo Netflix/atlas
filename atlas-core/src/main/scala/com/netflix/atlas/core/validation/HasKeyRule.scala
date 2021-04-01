@@ -15,7 +15,9 @@
  */
 package com.netflix.atlas.core.validation
 
+import com.netflix.atlas.core.util.IdMap
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.spectator.api.Id
 import com.typesafe.config.Config
 
 /**
@@ -27,11 +29,32 @@ import com.typesafe.config.Config
   */
 case class HasKeyRule(key: String) extends Rule {
 
-  def validate(tags: SmallHashMap[String, String]): ValidationResult = {
+  override def validate(tags: SmallHashMap[String, String]): ValidationResult = {
     if (tags.contains(key))
       ValidationResult.Pass
     else
-      failure(s"missing '$key': ${tags.keys}", tags)
+      failure(s"missing key '$key'", tags)
+  }
+
+  private def containsKey(id: Id): Boolean = {
+    val size = id.size()
+    var i = 1 // skip name
+    while (i < size) {
+      val k = id.getKey(i)
+      // The id tags are sorted by key, so if the search key is less
+      // than the key from the id, then it will not be present and we
+      // can short circuit the check.
+      if (key <= k) return key == k
+      i += 1
+    }
+    false
+  }
+
+  override def validate(id: Id): ValidationResult = {
+    if (key == "name" || containsKey(id))
+      ValidationResult.Pass
+    else
+      failure(s"missing key '$key'", IdMap(id))
   }
 }
 

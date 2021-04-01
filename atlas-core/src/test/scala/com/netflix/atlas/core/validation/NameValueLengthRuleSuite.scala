@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.validation
 
+import com.netflix.spectator.api.Id
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -35,6 +36,7 @@ class NameValueLengthRuleSuite extends AnyFunSuite {
 
   private def validate(k: String, v: String): ValidationResult = {
     rule.validate(Map(k -> v))
+    rule.validate(if (k == "name") Id.create(v) else Id.create("foo").withTag(k, v))
   }
 
   test("name valid") {

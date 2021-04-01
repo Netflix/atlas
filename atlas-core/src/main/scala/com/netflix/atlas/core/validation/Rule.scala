@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.validation
 
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.spectator.api.Id
 import com.typesafe.config.Config
 
 import scala.reflect.runtime.universe
@@ -42,6 +43,11 @@ trait Rule {
     * Validates that the tag map matches the rule.
     */
   def validate(tags: SmallHashMap[String, String]): ValidationResult
+
+  /**
+    * Validates that the id matches the rule.
+    */
+  def validate(id: Id): ValidationResult
 
   /**
     * Helper for generating the failure response.

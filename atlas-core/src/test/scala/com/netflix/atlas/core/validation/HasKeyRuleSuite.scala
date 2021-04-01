@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.validation
 
+import com.netflix.spectator.api.Id
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -30,5 +31,19 @@ class HasKeyRuleSuite extends AnyFunSuite {
   test("missing key") {
     val res = rule.validate(Map("cluster" -> "foo"))
     assert(res.isFailure)
+  }
+
+  test("id: has key name") {
+    assert(rule.validate(Id.create("foo")) === ValidationResult.Pass)
+  }
+
+  test("id: has key other") {
+    val id = Id.create("foo").withTag("a", "1")
+    assert(HasKeyRule("a").validate(id) === ValidationResult.Pass)
+  }
+
+  test("id: missing key other") {
+    val id = Id.create("foo").withTag("a", "1")
+    assert(HasKeyRule("b").validate(id).isFailure)
   }
 }
