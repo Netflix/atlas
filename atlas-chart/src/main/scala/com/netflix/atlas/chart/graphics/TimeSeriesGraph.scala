@@ -56,12 +56,10 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
     }
   }
 
-  val start = graphDef.startTime.toEpochMilli
-  val end = graphDef.endTime.toEpochMilli
+  val start: Long = graphDef.startTime.toEpochMilli
+  val end: Long = graphDef.endTime.toEpochMilli
 
-  private val showZone = graphDef.timezones.tail.nonEmpty
-
-  val timeAxes = graphDef.timezones.zipWithIndex.map {
+  val timeAxes: List[TimeAxis] = graphDef.timezones.zipWithIndex.map {
     case (tz, i) =>
       TimeAxis(
         Style(color = graphDef.theme.axis.line.color),
@@ -69,14 +67,13 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
         end,
         graphDef.step,
         tz,
-        if (i == 0) 40 else 0xff,
-        showZone
+        if (i == 0) 40 else 0xff
       )
   }
 
-  val timeAxis = timeAxes.head
+  val timeAxis: TimeAxis = timeAxes.head
 
-  val yaxes = graphDef.plots.zipWithIndex.map {
+  val yaxes: List[ValueAxis] = graphDef.plots.zipWithIndex.map {
     case (plot, i) =>
       val bounds = plot.bounds(start, end)
       if (i == 0)

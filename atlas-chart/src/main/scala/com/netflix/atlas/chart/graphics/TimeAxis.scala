@@ -54,7 +54,7 @@ case class TimeAxis(
   step: Long,
   zone: ZoneId = ZoneOffset.UTC,
   alpha: Int = 40,
-  showZone: Boolean = false
+  showZone: Boolean = true
 ) extends Element
     with FixedHeight {
 
