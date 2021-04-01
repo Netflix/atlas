@@ -106,11 +106,11 @@ class SumValueFunctionSuite extends AnyFunSuite {
     def t(m: Int, s: Int) = (m * 60 + s) * 1000L
     val n = newFunction(60000, 120000)
     assert(n.update(t(1, 13), 1.0) === List(t(2, 0) -> 1.0))
-    assert(n.update(t(1, 12), 1.0) === Nil)
+    assert(n.update(t(1, 12), 1.0) === List(t(2, 0) -> 2.0))
     assert(n.update(t(2, 13), 1.0) === List(t(3, 0) -> 1.0))
-    assert(n.update(t(2, 10), 1.0) === Nil)
+    assert(n.update(t(2, 10), 1.0) === List(t(3, 0) -> 2.0))
     assert(n.update(t(3, 13), 1.0) === List(t(4, 0) -> 1.0))
-    assert(n.update(t(3, 11), 1.0) === Nil)
+    assert(n.update(t(3, 11), 1.0) === List(t(4, 0) -> 2.0))
   }
 
   test("random offset, dual reporting") {
@@ -154,4 +154,21 @@ class SumValueFunctionSuite extends AnyFunSuite {
     assert(vs.tail === Nil)
   }
 
+  test("multi-node updates") {
+    val n = newFunction(10, 20)
+
+    // Node 1: if shutting down it can flush an interval early
+    assert(n.update(0, 1.0) === List(0   -> 1.0))
+    assert(n.update(10, 2.0) === List(10 -> 2.0))
+
+    // Other nodes: report around the same time. Need to ensure that the flush
+    // from the node shutting down doesn't block the updates from the other nodes
+    assert(n.update(0, 3.0) === List(0 -> 4.0))
+    assert(n.update(0, 4.0) === List(0 -> 8.0))
+    assert(n.update(0, 5.0) === List(0 -> 13.0))
+
+    assert(n.update(10, 6.0) === List(10 -> 8.0))
+    assert(n.update(10, 7.0) === List(10 -> 15.0))
+    assert(n.update(10, 8.0) === List(10 -> 23.0))
+  }
 }

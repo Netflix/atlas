@@ -106,11 +106,11 @@ class LastValueFunctionSuite extends AnyFunSuite {
     def t(m: Int, s: Int) = (m * 60 + s) * 1000L
     val n = newFunction(60000, 120000)
     assert(n.update(t(1, 13), 1.0) === List(t(2, 0) -> 1.0))
-    assert(n.update(t(1, 12), 1.0) === Nil)
+    assert(n.update(t(1, 12), 1.0) === List(t(2, 0) -> 1.0))
     assert(n.update(t(2, 13), 1.0) === List(t(3, 0) -> 1.0))
-    assert(n.update(t(2, 10), 1.0) === Nil)
+    assert(n.update(t(2, 10), 1.0) === List(t(3, 0) -> 1.0))
     assert(n.update(t(3, 13), 1.0) === List(t(4, 0) -> 1.0))
-    assert(n.update(t(3, 11), 1.0) === Nil)
+    assert(n.update(t(3, 11), 1.0) === List(t(4, 0) -> 1.0))
   }
 
   test("random offset, dual reporting") {
@@ -118,11 +118,11 @@ class LastValueFunctionSuite extends AnyFunSuite {
     def t(m: Int, s: Int) = (m * 60 + s) * 1000L
     val n = newFunction(60000, 120000)
     assert(n.update(t(1, 13), 1.0) === List(t(2, 0) -> 1.0))
-    assert(n.update(t(1, 13), 1.0) === Nil)
+    assert(n.update(t(1, 13), 1.0) === List(t(2, 0) -> 1.0))
     assert(n.update(t(2, 13), 1.0) === List(t(3, 0) -> 1.0))
-    assert(n.update(t(2, 13), 1.0) === Nil)
+    assert(n.update(t(2, 13), 1.0) === List(t(3, 0) -> 1.0))
     assert(n.update(t(3, 13), 1.0) === List(t(4, 0) -> 1.0))
-    assert(n.update(t(3, 13), 1.0) === Nil)
+    assert(n.update(t(3, 13), 1.0) === List(t(4, 0) -> 1.0))
   }
 
   test("init, 17") {

@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.norm
 
-import com.netflix.atlas.core.util.Math
-
 /**
   * Normalizes values by truncating the timestamp to the previous step boundary. All values will
   * be passed through to the `next` function.
@@ -30,22 +28,15 @@ class MaxValueFunction(step: Long, next: ValueFunction) extends ValueFunction {
 
   require(step >= 1, "step must be >= 1")
 
-  /**
-    * The last time an update was received. Used to ensure that we move forward and do not pass
-    * through older measurements that arrived at this function at a later time.
-    */
-  private var lastUpdateTime: Long = -1L
-
-  private var lastStepBoundary: Long = -1L
-  private var value: Double = Double.NaN
+  // For now use a fixed two interval buffer as other components assume recent data. Might
+  // be revisited later.
+  private val values = new RollingValueBuffer(step, 2)
 
   private def update(stepBoundary: Long, current: Double): Unit = {
-    if (stepBoundary > lastStepBoundary) {
-      lastStepBoundary = stepBoundary
-      value = Double.NaN
+    val value = values.max(stepBoundary, current)
+    if (!value.isNaN) {
+      next(stepBoundary, value)
     }
-    value = Math.maxNaN(value, current)
-    next(stepBoundary, value)
   }
 
   /**
@@ -53,17 +44,14 @@ class MaxValueFunction(step: Long, next: ValueFunction) extends ValueFunction {
     * actual timestamp on the measurement is newer than the last timestamp seen by this function.
     */
   def apply(timestamp: Long, value: Double): Unit = {
-    if (timestamp >= lastUpdateTime) {
-      lastUpdateTime = timestamp
-      val stepBoundary = timestamp / step * step
-      if (timestamp == stepBoundary)
-        update(stepBoundary, value)
-      else
-        update(stepBoundary + step, value)
-    }
+    val stepBoundary = timestamp / step * step
+    if (timestamp == stepBoundary)
+      update(stepBoundary, value)
+    else
+      update(stepBoundary + step, value)
   }
 
   override def toString: String = {
-    s"${getClass.getSimpleName}(step=$step, lastUpdateTime=$lastUpdateTime)"
+    s"${getClass.getSimpleName}(step=$step)"
   }
 }

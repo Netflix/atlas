@@ -28,28 +28,30 @@ class LastValueFunction(step: Long, next: ValueFunction) extends ValueFunction {
 
   require(step >= 1, "step must be >= 1")
 
-  /**
-    * The last time an update was received. Used to ensure that we move forward and do not pass
-    * through older measurements that arrived at this function at a later time.
-    */
-  private var lastUpdateTime: Long = -1L
+  // For now use a fixed two interval buffer as other components assume recent data. Might
+  // be revisited later.
+  private val values = new RollingValueBuffer(step, 2)
+
+  private def update(stepBoundary: Long, current: Double): Unit = {
+    val value = values.set(stepBoundary, current)
+    if (!value.isNaN) {
+      next(stepBoundary, value)
+    }
+  }
 
   /**
     * Truncate the timestamp to the step boundary and pass the value to the next function if the
     * actual timestamp on the measurement is newer than the last timestamp seen by this function.
     */
   def apply(timestamp: Long, value: Double): Unit = {
-    if (timestamp > lastUpdateTime) {
-      lastUpdateTime = timestamp
-      val stepBoundary = timestamp / step * step
-      if (timestamp == stepBoundary)
-        next(stepBoundary, value)
-      else
-        next(stepBoundary + step, value)
-    }
+    val stepBoundary = timestamp / step * step
+    if (timestamp == stepBoundary)
+      update(stepBoundary, value)
+    else
+      update(stepBoundary + step, value)
   }
 
   override def toString: String = {
-    s"${getClass.getSimpleName}(step=$step, lastUpdateTime=$lastUpdateTime)"
+    s"${getClass.getSimpleName}(step=$step)"
   }
 }
