@@ -15,14 +15,16 @@
  */
 package com.netflix.atlas.core.validation
 
+import com.netflix.atlas.core.util.IdMap
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.spectator.api.Id
 
 /**
   * Helper for rules that can be checked using a single key and value pair.
   */
 trait TagRule extends Rule {
 
-  def validate(tags: SmallHashMap[String, String]): ValidationResult = {
+  override def validate(tags: SmallHashMap[String, String]): ValidationResult = {
     val iter = tags.entriesIterator
     while (iter.hasNext) {
       val result = validate(iter.key, iter.value)
@@ -30,6 +32,20 @@ trait TagRule extends Rule {
       iter.nextEntry()
     }
     ValidationResult.Pass
+  }
+
+  override def validate(id: Id): ValidationResult = {
+    val size = id.size()
+    var i = 0
+    var result = TagRule.Pass
+    while (i < size && result == TagRule.Pass) {
+      result = validate(id.getKey(i), id.getValue(i))
+      i += 1
+    }
+    if (result == TagRule.Pass)
+      ValidationResult.Pass
+    else
+      failure(result, IdMap(id))
   }
 
   /**

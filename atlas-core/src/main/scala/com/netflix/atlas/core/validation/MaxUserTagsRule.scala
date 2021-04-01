@@ -16,7 +16,9 @@
 package com.netflix.atlas.core.validation
 
 import com.netflix.atlas.core.model.TagKey
+import com.netflix.atlas.core.util.IdMap
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.spectator.api.Id
 import com.typesafe.config.Config
 
 /**
@@ -38,6 +40,20 @@ case class MaxUserTagsRule(limit: Int) extends Rule {
     if (count <= limit) ValidationResult.Pass
     else {
       failure(s"too many user tags: $count > $limit", tags)
+    }
+  }
+
+  override def validate(id: Id): ValidationResult = {
+    val size = id.size()
+    var i = 1 // skip name
+    var count = 1 // name is counted
+    while (i < size) {
+      if (!TagKey.isRestricted(id.getKey(i))) count += 1
+      i += 1
+    }
+    if (count <= limit) ValidationResult.Pass
+    else {
+      failure(s"too many user tags: $count > $limit", IdMap(id))
     }
   }
 }
