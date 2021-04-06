@@ -17,22 +17,20 @@ package com.netflix.atlas.cloudwatch
 
 import java.time.Duration
 import java.time.Instant
-import java.util.Date
-
 import akka.actor.Actor
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch
-import com.amazonaws.services.cloudwatch.model.Datapoint
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.BucketCounter
 import com.typesafe.scalalogging.StrictLogging
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
+import software.amazon.awssdk.services.cloudwatch.model.Datapoint
 
 /**
   * Queries CloudWatch to get a datapoint for given metric. This actor makes blocking
   * calls to the Amazon SDK, it should be run in a dedicated dispatcher.
   */
 class GetMetricActor(
-  client: AmazonCloudWatch,
+  client: CloudWatchClient,
   registry: Registry,
   bucketCounterCache: Map[Id, BucketCounter]
 ) extends Actor
@@ -44,7 +42,7 @@ class GetMetricActor(
   def receive: Receive = {
     case m: MetricMetadata =>
       val metric = getMetric(m)
-      val timestamp = metric.map(m => m.getTimestamp.toInstant)
+      val timestamp = metric.map(m => m.timestamp)
       sender() ! MetricData(m, None, metric, timestamp)
   }
 
@@ -65,14 +63,14 @@ class GetMetricActor(
       val result = client.getMetricStatistics(request)
 
       // Datapoints might not be ordered by time, sort before using
-      val datapoints = result.getDatapoints.asScala.toList
+      val datapoints = result.datapoints.asScala.toList
       val sorted = datapoints
-        .filter(!_.getSum.isNaN)
-        .sortWith(_.getTimestamp.getTime > _.getTimestamp.getTime)
-      recordLag(now, sorted.headOption.map(_.getTimestamp), m)
+        .filter(!_.sum.isNaN)
+        .sortWith(_.timestamp.toEpochMilli > _.timestamp.toEpochMilli)
+      recordLag(now, sorted.headOption.map(_.timestamp), m)
 
       val endOffset = now.minusSeconds(m.category.endPeriodOffset * m.category.period)
-      sorted.find(_.getTimestamp.toInstant.isBefore(endOffset))
+      sorted.find(_.timestamp.isBefore(endOffset))
     } catch {
       case e: Exception =>
         logger.warn(s"failed to get data for ${m.category.namespace}/${m.definition.name}", e)
@@ -84,8 +82,8 @@ class GetMetricActor(
     * Record how many periods back from now the latest returned datapoint is. Though not perfect,
     * this will give a reasonable approximation of data latency across the collected metrics.
     */
-  private def recordLag(now: Instant, maybeTimestamp: Option[Date], m: MetricMetadata): Unit = {
-    val mostRecentDatapointTimestamp = maybeTimestamp.map(_.toInstant).getOrElse(Instant.EPOCH)
+  private def recordLag(now: Instant, maybeTimestamp: Option[Instant], m: MetricMetadata): Unit = {
+    val mostRecentDatapointTimestamp = maybeTimestamp.getOrElse(Instant.EPOCH)
     val lagDuration = Duration.between(mostRecentDatapointTimestamp, now)
 
     val lagSeconds = lagDuration.toMillis / 1000L

@@ -16,13 +16,12 @@
 package com.netflix.atlas.guice
 
 import javax.inject.Singleton
-
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch
 import com.google.inject.AbstractModule
 import com.google.inject.Provides
 import com.netflix.atlas.akka.AkkaModule
-import com.netflix.iep.aws.AwsClientFactory
-import com.netflix.iep.aws.AwsModule
+import com.netflix.iep.aws2.AwsClientFactory
+import com.netflix.iep.aws2.AwsModule
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
 
 /**
   * Configures the binding for the cloudwatch client and poller.
@@ -36,8 +35,8 @@ final class CloudWatchModule extends AbstractModule {
 
   @Provides
   @Singleton
-  protected def provideCloudWatchClient(factory: AwsClientFactory): AmazonCloudWatch = {
-    factory.newInstance(classOf[AmazonCloudWatch])
+  protected def provideCloudWatchClient(factory: AwsClientFactory): CloudWatchClient = {
+    factory.newInstance(classOf[CloudWatchClient])
   }
 
   override def equals(obj: Any): Boolean = {

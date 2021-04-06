@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas
 
-import com.amazonaws.services.cloudwatch.model.Datapoint
-import com.amazonaws.services.cloudwatch.model.Dimension
+import software.amazon.awssdk.services.cloudwatch.model.Datapoint
+import software.amazon.awssdk.services.cloudwatch.model.Dimension
 
 /**
   * Helper types used in this package.
