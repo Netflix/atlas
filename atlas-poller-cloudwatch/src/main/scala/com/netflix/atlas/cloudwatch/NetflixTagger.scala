@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.cloudwatch
 
-import com.amazonaws.services.cloudwatch.model.Dimension
 import com.netflix.frigga.Names
 import com.typesafe.config.Config
+import software.amazon.awssdk.services.cloudwatch.model.Dimension
 
 /**
   * Tag the datapoints using Frigga to extract app and cluster information based

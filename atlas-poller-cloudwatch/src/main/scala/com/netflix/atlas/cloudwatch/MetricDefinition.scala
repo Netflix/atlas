@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.cloudwatch
 
-import com.amazonaws.services.cloudwatch.model.Datapoint
-import com.amazonaws.services.cloudwatch.model.StandardUnit
 import com.netflix.atlas.core.model.TagKey
 import com.typesafe.config.Config
+import software.amazon.awssdk.services.cloudwatch.model.Datapoint
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
 
 /**
   * Definition for a particular cloudwatch metric.
@@ -99,7 +99,7 @@ object MetricDefinition {
   private def milliTimer(config: Config, tags: Tags): List[MetricDefinition] = {
     val ms = newDist(config, "totalTime", tags)
     ms.head :: ms.tail.map { m =>
-      m.copy(conversion = Conversions.toUnit(m.conversion, StandardUnit.Milliseconds))
+      m.copy(conversion = Conversions.toUnit(m.conversion, StandardUnit.MILLISECONDS))
     }
   }
 

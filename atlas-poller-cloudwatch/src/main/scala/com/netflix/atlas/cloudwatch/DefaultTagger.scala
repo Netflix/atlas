@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.cloudwatch
 
-import com.amazonaws.services.cloudwatch.model.Dimension
 import com.typesafe.config.Config
+import software.amazon.awssdk.services.cloudwatch.model.Dimension
 
 import scala.util.matching.Regex
 
@@ -58,8 +58,8 @@ class DefaultTagger(config: Config) extends Tagger {
     .toMap
 
   private def toTag(dimension: Dimension): (String, String) = {
-    val cwName = dimension.getName
-    val cwValue = dimension.getValue
+    val cwName = dimension.name
+    val cwValue = dimension.value
 
     val extractor = DefaultTagger.ValueExtractor(cwValue)
     extractors

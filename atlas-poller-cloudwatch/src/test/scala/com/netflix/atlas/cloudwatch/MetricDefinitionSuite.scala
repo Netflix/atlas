@@ -15,15 +15,15 @@
  */
 package com.netflix.atlas.cloudwatch
 
-import java.util.Date
-
-import com.amazonaws.services.cloudwatch.model.Datapoint
-import com.amazonaws.services.cloudwatch.model.StandardUnit
 import com.netflix.atlas.core.model.Query
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import software.amazon.awssdk.services.cloudwatch.model.Datapoint
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
+
+import java.time.Instant
 
 class MetricDefinitionSuite extends AnyFunSuite with Matchers {
 
@@ -88,13 +88,15 @@ class MetricDefinitionSuite extends AnyFunSuite with Matchers {
     assert(definitions.size === 3)
     assert(definitions.map(_.tags("statistic")).toSet === Set("totalTime", "count", "max"))
 
-    val dp = new Datapoint()
-      .withMaximum(6.0)
-      .withMinimum(0.0)
-      .withSum(600.0)
-      .withSampleCount(1000.0)
-      .withUnit(StandardUnit.Seconds)
-      .withTimestamp(new Date)
+    val dp = Datapoint
+      .builder()
+      .maximum(6.0)
+      .minimum(0.0)
+      .sum(600.0)
+      .sampleCount(1000.0)
+      .unit(StandardUnit.SECONDS)
+      .timestamp(Instant.now())
+      .build()
 
     definitions.find(_.tags("statistic") == "totalTime").foreach { d =>
       val m = meta.copy(definition = d)
@@ -123,13 +125,15 @@ class MetricDefinitionSuite extends AnyFunSuite with Matchers {
     assert(definitions.size === 3)
     assert(definitions.map(_.tags("statistic")).toSet === Set("totalTime", "count", "max"))
 
-    val dp = new Datapoint()
-      .withMaximum(6.0)
-      .withMinimum(0.0)
-      .withSum(600.0)
-      .withSampleCount(1000.0)
-      .withUnit(StandardUnit.None)
-      .withTimestamp(new Date)
+    val dp = Datapoint
+      .builder()
+      .maximum(6.0)
+      .minimum(0.0)
+      .sum(600.0)
+      .sampleCount(1000.0)
+      .unit(StandardUnit.NONE)
+      .timestamp(Instant.now())
+      .build()
 
     definitions.find(_.tags("statistic") == "totalTime").foreach { d =>
       val m = meta.copy(definition = d)
@@ -158,13 +162,15 @@ class MetricDefinitionSuite extends AnyFunSuite with Matchers {
     assert(definitions.size === 3)
     assert(definitions.map(_.tags("statistic")).toSet === Set("totalTime", "count", "max"))
 
-    val dp = new Datapoint()
-      .withMaximum(6.0)
-      .withMinimum(0.0)
-      .withSum(600.0)
-      .withSampleCount(1000.0)
-      .withUnit(StandardUnit.Milliseconds)
-      .withTimestamp(new Date)
+    val dp = Datapoint
+      .builder()
+      .maximum(6.0)
+      .minimum(0.0)
+      .sum(600.0)
+      .sampleCount(1000.0)
+      .unit(StandardUnit.MILLISECONDS)
+      .timestamp(Instant.now())
+      .build()
 
     definitions.find(_.tags("statistic") == "totalTime").foreach { d =>
       val m = meta.copy(definition = d)
@@ -193,13 +199,15 @@ class MetricDefinitionSuite extends AnyFunSuite with Matchers {
     assert(definitions.size === 3)
     assert(definitions.map(_.tags("statistic")).toSet === Set("totalAmount", "count", "max"))
 
-    val dp = new Datapoint()
-      .withMaximum(6.0)
-      .withMinimum(0.0)
-      .withSum(600.0)
-      .withSampleCount(1000.0)
-      .withUnit(StandardUnit.Bytes)
-      .withTimestamp(new Date)
+    val dp = Datapoint
+      .builder()
+      .maximum(6.0)
+      .minimum(0.0)
+      .sum(600.0)
+      .sampleCount(1000.0)
+      .unit(StandardUnit.BYTES)
+      .timestamp(Instant.now())
+      .build()
 
     definitions.find(_.tags("statistic") == "totalAmount").foreach { d =>
       val m = meta.copy(definition = d)
@@ -230,13 +238,15 @@ class MetricDefinitionSuite extends AnyFunSuite with Matchers {
     val definition = definitions.head
     assert(definition.tags === Map("atlas.dstype" -> "gauge"))
 
-    val dp = new Datapoint()
-      .withMaximum(15.867)
-      .withMinimum(15.867)
-      .withSum(15.867)
-      .withSampleCount(1.0)
-      .withUnit(StandardUnit.Milliseconds)
-      .withTimestamp(new Date)
+    val dp = Datapoint
+      .builder()
+      .maximum(15.867)
+      .minimum(15.867)
+      .sum(15.867)
+      .sampleCount(1.0)
+      .unit(StandardUnit.MILLISECONDS)
+      .timestamp(Instant.now())
+      .build()
 
     val metadata = MetricMetadata(
       MetricCategory("AWS/RDS", 60, 1, 5, None, Nil, Nil, Query.True),

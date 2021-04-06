@@ -17,14 +17,13 @@ package com.netflix.atlas.cloudwatch
 
 import java.time.Duration
 import java.util.concurrent.TimeUnit
-
-import com.amazonaws.services.cloudwatch.model.DimensionFilter
-import com.amazonaws.services.cloudwatch.model.ListMetricsRequest
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
+import software.amazon.awssdk.services.cloudwatch.model.DimensionFilter
+import software.amazon.awssdk.services.cloudwatch.model.ListMetricsRequest
 
 /**
   * Category of metrics to fetch from CloudWatch. This will typically correspond with
@@ -86,10 +85,12 @@ case class MetricCategory(
   def toListRequests: List[(MetricDefinition, ListMetricsRequest)] = {
     import scala.jdk.CollectionConverters._
     metrics.map { m =>
-      m -> new ListMetricsRequest()
-        .withNamespace(namespace)
-        .withMetricName(m.name)
-        .withDimensions(dimensions.map(d => new DimensionFilter().withName(d)).asJava)
+      m -> ListMetricsRequest
+        .builder()
+        .namespace(namespace)
+        .metricName(m.name)
+        .dimensions(dimensions.map(d => DimensionFilter.builder().name(d).build()).asJava)
+        .build()
     }
   }
 }

@@ -6,7 +6,7 @@ object Dependencies {
   object Versions {
     val akka       = "2.6.13"
     val akkaHttpV  = "10.2.4"
-    val aws        = "1.11.965"
+    val aws        = "2.16.10"
     val iep        = "2.6.7"
     val guice      = "4.1.0"
     val jackson    = "2.12.1"
@@ -28,10 +28,7 @@ object Dependencies {
   val akkaStream        = "com.typesafe.akka" %% "akka-stream" % akka
   val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
-  val awsCloudWatch     = "com.amazonaws" % "aws-java-sdk-cloudwatch" % aws
-  val awsCore           = "com.amazonaws" % "aws-java-sdk-core" % aws
-  val awsEC2            = "com.amazonaws" % "aws-java-sdk-ec2" % aws
-  val awsS3             = "com.amazonaws" % "aws-java-sdk-s3" % aws
+  val awsCloudWatch     = "software.amazon.awssdk" % "cloudwatch" % aws
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.0"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "2.0.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.5.5"
@@ -42,7 +39,7 @@ object Dependencies {
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
   val iepModuleAtlas    = "com.netflix.iep" % "iep-module-atlas" % iep
-  val iepModuleAws      = "com.netflix.iep" % "iep-module-aws" % iep
+  val iepModuleAws      = "com.netflix.iep" % "iep-module-aws2" % iep
   val iepModuleLeader   = "com.netflix.iep" % "iep-module-leader" % iep
   val iepNflxEnv        = "com.netflix.iep" % "iep-nflxenv" % iep
   val iepService        = "com.netflix.iep" % "iep-service" % iep

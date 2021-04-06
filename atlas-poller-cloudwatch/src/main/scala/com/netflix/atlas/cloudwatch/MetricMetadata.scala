@@ -15,13 +15,12 @@
  */
 package com.netflix.atlas.cloudwatch
 
-import java.time.Instant
-import java.util.Date
+import software.amazon.awssdk.services.cloudwatch.model.Datapoint
+import software.amazon.awssdk.services.cloudwatch.model.Dimension
+import software.amazon.awssdk.services.cloudwatch.model.GetMetricStatisticsRequest
+import software.amazon.awssdk.services.cloudwatch.model.Statistic
 
-import com.amazonaws.services.cloudwatch.model.Datapoint
-import com.amazonaws.services.cloudwatch.model.Dimension
-import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest
-import com.amazonaws.services.cloudwatch.model.Statistic
+import java.time.Instant
 
 /**
   * Metadata for a particular metric to retrieve from CloudWatch.
@@ -36,13 +35,15 @@ case class MetricMetadata(
 
   def toGetRequest(s: Instant, e: Instant): GetMetricStatisticsRequest = {
     import scala.jdk.CollectionConverters._
-    new GetMetricStatisticsRequest()
-      .withMetricName(definition.name)
-      .withNamespace(category.namespace)
-      .withDimensions(dimensions.asJava)
-      .withStatistics(Statistic.Maximum, Statistic.Minimum, Statistic.Sum, Statistic.SampleCount)
-      .withPeriod(category.period)
-      .withStartTime(new Date(s.toEpochMilli))
-      .withEndTime(new Date(e.toEpochMilli))
+    GetMetricStatisticsRequest
+      .builder()
+      .metricName(definition.name)
+      .namespace(category.namespace)
+      .dimensions(dimensions.asJava)
+      .statistics(Statistic.MAXIMUM, Statistic.MINIMUM, Statistic.SUM, Statistic.SAMPLE_COUNT)
+      .period(category.period)
+      .startTime(s)
+      .endTime(e)
+      .build()
   }
 }

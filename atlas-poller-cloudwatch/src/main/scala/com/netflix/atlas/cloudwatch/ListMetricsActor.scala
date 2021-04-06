@@ -16,16 +16,16 @@
 package com.netflix.atlas.cloudwatch
 
 import akka.actor.Actor
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch
-import com.amazonaws.services.cloudwatch.model.ListMetricsRequest
-import com.amazonaws.services.cloudwatch.model.Metric
 import com.typesafe.scalalogging.StrictLogging
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
+import software.amazon.awssdk.services.cloudwatch.model.ListMetricsRequest
+import software.amazon.awssdk.services.cloudwatch.model.Metric
 
 /**
   * Queries CloudWatch to get a list of for available metrics. This actor makes blocking
   * calls to the Amazon SDK, it should be run in a dedicated dispatcher.
   */
-class ListMetricsActor(client: AmazonCloudWatch, tagger: Tagger) extends Actor with StrictLogging {
+class ListMetricsActor(client: CloudWatchClient, tagger: Tagger) extends Actor with StrictLogging {
   import CloudWatchPoller._
 
   def receive: Receive = {
@@ -51,8 +51,8 @@ class ListMetricsActor(client: AmazonCloudWatch, tagger: Tagger) extends Actor w
       case (definition, request) =>
         val mname = s"${category.namespace}/${definition.name}"
         logger.debug(s"refreshing list for $mname")
-        val candidates = listMetrics(request, Nil).map { m =>
-          MetricMetadata(category, definition, m.getDimensions.asScala.toList)
+        val candidates = listMetrics(request).map { m =>
+          MetricMetadata(category, definition, m.dimensions.asScala.toList)
         }
         logger.debug(s"before filtering, found ${candidates.size} metrics for $mname")
         val after = candidates.filter { m =>
@@ -63,14 +63,12 @@ class ListMetricsActor(client: AmazonCloudWatch, tagger: Tagger) extends Actor w
     }
   }
 
-  @scala.annotation.tailrec
-  private def listMetrics(request: ListMetricsRequest, metrics: List[Metric]): List[Metric] = {
-    import scala.jdk.CollectionConverters._
-    val result = client.listMetrics(request)
-    val ms = metrics ++ result.getMetrics.asScala
-    if (result.getNextToken == null) ms
-    else {
-      listMetrics(request.withNextToken(result.getNextToken), ms)
-    }
+  private def listMetrics(request: ListMetricsRequest): List[Metric] = {
+    import scala.jdk.StreamConverters._
+    client
+      .listMetricsPaginator(request)
+      .metrics()
+      .stream()
+      .toScala(List)
   }
 }

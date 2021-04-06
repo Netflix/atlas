@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.cloudwatch
 
-import com.amazonaws.services.cloudwatch.model.Datapoint
-import com.amazonaws.services.cloudwatch.model.StandardUnit
+import software.amazon.awssdk.services.cloudwatch.model.Datapoint
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
 
 /**
   * Helpers for creating conversion functions to extract the value from a cloudwatch
@@ -64,25 +64,27 @@ object Conversions {
     }
   }
 
-  private def min: Conversion = (_, d) => d.getMinimum
+  private def min: Conversion = (_, d) => d.minimum
 
-  private def max: Conversion = (_, d) => d.getMaximum
+  private def max: Conversion = (_, d) => d.maximum
 
-  private def sum: Conversion = (_, d) => d.getSum
+  private def sum: Conversion = (_, d) => d.sum
 
-  private def count: Conversion = (_, d) => d.getSampleCount
+  private def count: Conversion = (_, d) => d.sampleCount
 
-  private def avg: Conversion = (_, d) => d.getSum / d.getSampleCount
+  private def avg: Conversion = (_, d) => d.sum / d.sampleCount
 
   private def unit(f: Conversion): Conversion = (m, d) => {
-    val factor = unitFactor(d.getUnit)
-    val newDatapoint = new Datapoint()
-      .withMinimum(d.getMinimum * factor)
-      .withMaximum(d.getMaximum * factor)
-      .withSum(d.getSum * factor)
-      .withSampleCount(d.getSampleCount)
-      .withTimestamp(d.getTimestamp)
-      .withUnit(d.getUnit)
+    val factor = unitFactor(d.unit)
+    val newDatapoint = Datapoint
+      .builder()
+      .minimum(d.minimum * factor)
+      .maximum(d.maximum * factor)
+      .sum(d.sum * factor)
+      .sampleCount(d.sampleCount)
+      .timestamp(d.timestamp)
+      .unit(d.unit)
+      .build()
     f(m, newDatapoint)
   }
 
@@ -93,7 +95,7 @@ object Conversions {
     */
   private def rate(f: Conversion): Conversion = (m, d) => {
     val v = f(m, d)
-    val unit = d.getUnit
+    val unit = d.unitAsString()
     if (unit.endsWith("/Second")) v else v / m.category.period
   }
 
@@ -102,58 +104,61 @@ object Conversions {
 
   /** Modifies a datapoint so that it has the specified unit. */
   def toUnit(f: Conversion, unit: StandardUnit): Conversion = (m, d) => {
-    val newDatapoint = new Datapoint()
-      .withMinimum(d.getMinimum)
-      .withMaximum(d.getMaximum)
-      .withSum(d.getSum)
-      .withSampleCount(d.getSampleCount)
-      .withTimestamp(d.getTimestamp)
-      .withUnit(unit)
+    val newDatapoint = Datapoint
+      .builder()
+      .minimum(d.minimum)
+      .maximum(d.maximum)
+      .sum(d.sum)
+      .sampleCount(d.sampleCount)
+      .timestamp(d.timestamp)
+      .unit(unit)
+      .build()
     f(m, newDatapoint)
   }
 
-  private def unitFactor(unit: String): Double = {
-    StandardUnit.fromValue(unit) match {
-      case StandardUnit.Count => 1.0
+  private def unitFactor(unit: StandardUnit): Double = {
+    unit match {
+      case StandardUnit.COUNT => 1.0
 
       //  Use a base unit of bytes
-      case StandardUnit.Bits     => 1.0 / 8.0
-      case StandardUnit.Kilobits => 1e3 / 8.0
-      case StandardUnit.Megabits => 1e6 / 8.0
-      case StandardUnit.Gigabits => 1e9 / 8.0
-      case StandardUnit.Terabits => 1e12 / 8.0
+      case StandardUnit.BITS     => 1.0 / 8.0
+      case StandardUnit.KILOBITS => 1e3 / 8.0
+      case StandardUnit.MEGABITS => 1e6 / 8.0
+      case StandardUnit.GIGABITS => 1e9 / 8.0
+      case StandardUnit.TERABITS => 1e12 / 8.0
 
       // Use a base unit of bytes. Assumes that the raw input is using
       // a decimal multiple, i.e., multiples of 1000 not 1024.
-      case StandardUnit.Bytes     => 1.0
-      case StandardUnit.Kilobytes => 1e3
-      case StandardUnit.Megabytes => 1e6
-      case StandardUnit.Gigabytes => 1e9
-      case StandardUnit.Terabytes => 1e12
+      case StandardUnit.BYTES     => 1.0
+      case StandardUnit.KILOBYTES => 1e3
+      case StandardUnit.MEGABYTES => 1e6
+      case StandardUnit.GIGABYTES => 1e9
+      case StandardUnit.TERABYTES => 1e12
 
-      case StandardUnit.CountSecond => 1.0
-
-      // Use base unit of bytes/second
-      case StandardUnit.BitsSecond     => 1.0 / 8.0
-      case StandardUnit.KilobitsSecond => 1e3 / 8.0
-      case StandardUnit.MegabitsSecond => 1e6 / 8.0
-      case StandardUnit.GigabitsSecond => 1e9 / 8.0
-      case StandardUnit.TerabitsSecond => 1e12 / 8.0
+      case StandardUnit.COUNT_SECOND => 1.0
 
       // Use base unit of bytes/second
-      case StandardUnit.BytesSecond     => 1.0
-      case StandardUnit.KilobytesSecond => 1e3
-      case StandardUnit.MegabytesSecond => 1e6
-      case StandardUnit.GigabytesSecond => 1e9
-      case StandardUnit.TerabytesSecond => 1e12
+      case StandardUnit.BITS_SECOND     => 1.0 / 8.0
+      case StandardUnit.KILOBITS_SECOND => 1e3 / 8.0
+      case StandardUnit.MEGABITS_SECOND => 1e6 / 8.0
+      case StandardUnit.GIGABITS_SECOND => 1e9 / 8.0
+      case StandardUnit.TERABITS_SECOND => 1e12 / 8.0
+
+      // Use base unit of bytes/second
+      case StandardUnit.BYTES_SECOND     => 1.0
+      case StandardUnit.KILOBYTES_SECOND => 1e3
+      case StandardUnit.MEGABYTES_SECOND => 1e6
+      case StandardUnit.GIGABYTES_SECOND => 1e9
+      case StandardUnit.TERABYTES_SECOND => 1e12
 
       // Use base unit of seconds
-      case StandardUnit.Microseconds => 1e-6
-      case StandardUnit.Milliseconds => 1e-3
-      case StandardUnit.Seconds      => 1.0
+      case StandardUnit.MICROSECONDS => 1e-6
+      case StandardUnit.MILLISECONDS => 1e-3
+      case StandardUnit.SECONDS      => 1.0
 
-      case StandardUnit.Percent => 1.0
-      case StandardUnit.None    => 1.0
+      case StandardUnit.PERCENT => 1.0
+      case StandardUnit.NONE    => 1.0
+      case _                    => 1.0
     }
   }
 

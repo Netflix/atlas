@@ -16,19 +16,22 @@
 package com.netflix.atlas.cloudwatch
 
 import java.util.regex.PatternSyntaxException
-
-import com.amazonaws.services.cloudwatch.model.Dimension
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
+import software.amazon.awssdk.services.cloudwatch.model.Dimension
 
 class DefaultTaggerSuite extends AnyFunSuite {
 
   private val dimensions = List(
-    new Dimension().withName("CloudWatch").withValue("abc"),
-    new Dimension().withName("ExtractDotDelimited").withValue("abc.def.captured-portion"),
-    new Dimension().withName("ExtractSlashDelimited").withValue("abc/captured-portion/42beef9876"),
-    new Dimension().withName("NoMapping").withValue("def")
+    Dimension.builder().name("CloudWatch").value("abc").build(),
+    Dimension.builder().name("ExtractDotDelimited").value("abc.def.captured-portion").build(),
+    Dimension
+      .builder()
+      .name("ExtractSlashDelimited")
+      .value("abc/captured-portion/42beef9876")
+      .build(),
+    Dimension.builder().name("NoMapping").value("def").build()
   )
 
   test("bad config") {
@@ -329,7 +332,9 @@ class DefaultTaggerSuite extends AnyFunSuite {
     )
 
     val actual = tagger(
-      List(new Dimension().withName("LoadBalancer").withValue("app/captured-portion/42beef9876"))
+      List(
+        Dimension.builder().name("LoadBalancer").value("app/captured-portion/42beef9876").build()
+      )
     )
 
     assert(actual === expected)
@@ -345,7 +350,9 @@ class DefaultTaggerSuite extends AnyFunSuite {
     )
 
     val actual = tagger(
-      List(new Dimension().withName("LoadBalancer").withValue("net/captured-portion/42beef9876"))
+      List(
+        Dimension.builder().name("LoadBalancer").value("net/captured-portion/42beef9876").build()
+      )
     )
 
     assert(actual === expected)

@@ -17,12 +17,10 @@ package com.netflix.atlas.cloudwatch
 
 import java.time.Duration
 import java.time.Instant
-import java.util.Date
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.LongFunction
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
@@ -33,9 +31,6 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch
-import com.amazonaws.services.cloudwatch.model.Datapoint
-import com.amazonaws.services.cloudwatch.model.StandardUnit
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.poller.Messages
 import com.netflix.iep.leader.api.LeaderStatus
@@ -46,6 +41,9 @@ import com.netflix.spectator.api.histogram.BucketCounter
 import com.netflix.spectator.api.patterns.PolledMeter
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
+import software.amazon.awssdk.services.cloudwatch.model.Datapoint
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
 
 /**
   * Poller for fetching data from CloudWatch and reporting the data into Atlas.
@@ -72,7 +70,7 @@ import com.typesafe.scalalogging.StrictLogging
 class CloudWatchPoller(
   config: Config,
   registry: Registry,
-  client: AmazonCloudWatch,
+  client: CloudWatchClient,
   leaderStatus: LeaderStatus
 ) extends Actor
     with StrictLogging {
@@ -253,7 +251,7 @@ class CloudWatchPoller(
     metricCache.asMap().forEach { (meta, data) =>
       val now = registry.clock().wallTime()
       val d = data.datapoint(Instant.ofEpochMilli(now))
-      if (!d.getSum.isNaN) {
+      if (!d.sum.isNaN) {
         val ts = tagger(meta.dimensions) ++ meta.definition.tags + ("name" -> meta.definition.alias)
         val newValue = meta.convert(d)
         metricBatch += new AtlasDatapoint(ts, now, newValue)
@@ -288,21 +286,25 @@ object CloudWatchPoller {
 
   case object Flush
 
-  private val Zero = new Datapoint()
-    .withMinimum(0.0)
-    .withMaximum(0.0)
-    .withSum(0.0)
-    .withSampleCount(0.0)
-    .withTimestamp(new Date())
-    .withUnit(StandardUnit.None)
+  private val Zero = Datapoint
+    .builder()
+    .minimum(0.0)
+    .maximum(0.0)
+    .sum(0.0)
+    .sampleCount(0.0)
+    .timestamp(Instant.now())
+    .unit(StandardUnit.NONE)
+    .build()
 
-  private val DatapointNaN = new Datapoint()
-    .withMinimum(Double.NaN)
-    .withMaximum(Double.NaN)
-    .withSum(Double.NaN)
-    .withSampleCount(Double.NaN)
-    .withTimestamp(new Date())
-    .withUnit(StandardUnit.None)
+  private val DatapointNaN = Datapoint
+    .builder()
+    .minimum(Double.NaN)
+    .maximum(Double.NaN)
+    .sum(Double.NaN)
+    .sampleCount(Double.NaN)
+    .timestamp(Instant.now())
+    .unit(StandardUnit.NONE)
+    .build()
 
   private[cloudwatch] def getCategories(config: Config): List[MetricCategory] = {
     import scala.jdk.CollectionConverters._
@@ -372,14 +374,16 @@ object CloudWatchPoller {
           // multiple times within that interval. The max will allow us to ignore those
           // spikes and get the last written value.
           val c = current.getOrElse(DatapointNaN)
-          val delta = math.max(c.getMaximum - p.getMaximum, 0.0)
-          new Datapoint()
-            .withMinimum(delta)
-            .withMaximum(delta)
-            .withSum(delta)
-            .withSampleCount(c.getSampleCount)
-            .withTimestamp(c.getTimestamp)
-            .withUnit(c.getUnit)
+          val delta = math.max(c.maximum - p.maximum, 0.0)
+          Datapoint
+            .builder()
+            .minimum(delta)
+            .maximum(delta)
+            .sum(delta)
+            .sampleCount(c.sampleCount)
+            .timestamp(c.timestamp)
+            .unit(c.unit)
+            .build()
         }
       } else {
         current.getOrElse {
