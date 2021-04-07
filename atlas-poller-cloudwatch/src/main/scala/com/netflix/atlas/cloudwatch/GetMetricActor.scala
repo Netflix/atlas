@@ -25,6 +25,8 @@ import com.typesafe.scalalogging.StrictLogging
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
 import software.amazon.awssdk.services.cloudwatch.model.Datapoint
 
+import java.time.temporal.ChronoUnit
+
 /**
   * Queries CloudWatch to get a datapoint for given metric. This actor makes blocking
   * calls to the Amazon SDK, it should be run in a dedicated dispatcher.
@@ -56,7 +58,9 @@ class GetMetricActor(
   private def getMetric(m: MetricMetadata): Option[Datapoint] = {
     try {
       import scala.jdk.CollectionConverters._
-      val now = Instant.now()
+      // Truncate to second boundary to avoid errors from CloudWatch service:
+      // https://github.com/aws/aws-sdk-java-v2/issues/2389
+      val now = Instant.now().truncatedTo(ChronoUnit.SECONDS)
       val start = now.minusSeconds(m.category.periodCount * m.category.period)
 
       val request = m.toGetRequest(start, now)
