@@ -124,8 +124,12 @@ object StreamOps extends StrictLogging {
         case Success(QueueOfferResult.Enqueued)    => enqueued.increment()
         case Success(QueueOfferResult.Dropped)     => dropped.increment()
         case Success(QueueOfferResult.QueueClosed) => closed.increment()
-        case Success(QueueOfferResult.Failure(_))  => failed.increment()
-        case Failure(t)                            => completed.increment()
+        case Success(QueueOfferResult.Failure(t)) =>
+          logger.warn(s"stream failed before or during call to the stream", t)
+          failed.increment()
+        case Failure(t) =>
+          logger.warn(s"stream completed with failure", t)
+          completed.increment()
       }
     }
   }
@@ -179,7 +183,10 @@ object StreamOps extends StrictLogging {
         case QueueOfferResult.Enqueued    => enqueued.increment(); true
         case QueueOfferResult.Dropped     => dropped.increment(); false
         case QueueOfferResult.QueueClosed => closed.increment(); false
-        case QueueOfferResult.Failure(_)  => failed.increment(); false
+        case QueueOfferResult.Failure(t) =>
+          logger.warn(s"stream failed before or during call to the stream", t)
+          failed.increment()
+          false
       }
     }
 
