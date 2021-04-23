@@ -85,6 +85,11 @@ class NormalizationCacheSuite extends AnyFunSuite with BeforeAndAfter {
     clock.setWallTime(41)
     cache.updateGauge(dp(40, 2.0))
 
+    // Force expiration to check that entry will be closed. Update a different entry
+    // to trigger the check
+    clock.setWallTime(100)
+    cache.updateGauge(dp(100, 1.0).copy(tags = Map("name" -> "test")))
+
     val expected = List(
       dp(10, 0.0),
       dp(20, 1.0),

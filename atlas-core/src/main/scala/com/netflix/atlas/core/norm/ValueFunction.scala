@@ -15,9 +15,11 @@
  */
 package com.netflix.atlas.core.norm
 
-trait ValueFunction {
+trait ValueFunction extends AutoCloseable {
 
   def apply(timestamp: Long, value: Double): Unit
+
+  override def close(): Unit = {}
 }
 
 /**
@@ -30,12 +32,21 @@ class ListValueFunction extends ValueFunction {
   var f: ValueFunction = this
 
   def update(timestamp: Long, value: Double): List[(Long, Double)] = {
-    builder = List.newBuilder[(Long, Double)]
     f(timestamp, value)
-    builder.result()
+    result()
   }
 
   def apply(timestamp: Long, value: Double): Unit = {
     builder += timestamp -> value
+  }
+
+  override def close(): Unit = {
+    f.close()
+  }
+
+  def result(): List[(Long, Double)] = {
+    val tmp = builder.result()
+    builder = List.newBuilder[(Long, Double)]
+    tmp
   }
 }

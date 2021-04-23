@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.norm
 
+import com.netflix.atlas.core.util.Math
+
 /**
   * Normalizes values by truncating the timestamp to the previous step boundary and accumulating
   * all values for a given time. All values will be passed through to the `next` function.
@@ -26,29 +28,14 @@ package com.netflix.atlas.core.norm
   */
 class SumValueFunction(step: Long, next: ValueFunction) extends ValueFunction {
 
-  require(step >= 1, "step must be >= 1")
+  private val impl = new RollingValueFunction(step, Math.addNaN, next)
 
-  // For now use a fixed two interval buffer as other components assume recent data. Might
-  // be revisited later.
-  private val values = new RollingValueBuffer(step, 2)
-
-  private def update(stepBoundary: Long, current: Double): Unit = {
-    val value = values.add(stepBoundary, current)
-    if (!value.isNaN) {
-      next(stepBoundary, value)
-    }
+  def apply(timestamp: Long, value: Double): Unit = {
+    impl.apply(timestamp, value)
   }
 
-  /**
-    * Truncate the timestamp to the step boundary and pass the value to the next function if the
-    * actual timestamp on the measurement is newer than the last timestamp seen by this function.
-    */
-  def apply(timestamp: Long, value: Double): Unit = {
-    val stepBoundary = timestamp / step * step
-    if (timestamp == stepBoundary)
-      update(stepBoundary, value)
-    else
-      update(stepBoundary + step, value)
+  override def close(): Unit = {
+    impl.close()
   }
 
   override def toString: String = {

@@ -18,6 +18,7 @@ package com.netflix.atlas.core.norm
 import com.netflix.atlas.core.model.BasicTaggedItem
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.TaggedItem
+import com.netflix.atlas.core.util.Math
 import com.netflix.spectator.api.Clock
 
 class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = Clock.SYSTEM) {
@@ -43,7 +44,12 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
 
       override def removeEldestEntry(eldest: CacheEntry): Boolean = {
         val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
-        ageMillis > 4 * step
+        if (ageMillis > 4 * step) {
+          eldest.getValue.f.close()
+          true
+        } else {
+          false
+        }
       }
     }
   }
@@ -84,7 +90,7 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
     var value = sumCache.get(meta)
     if (value == null) {
       val update = new UpdateValueFunction(meta, step, updateF)
-      val norm = new SumValueFunction(step, update)
+      val norm = new RollingValueFunction(step, Math.addNaN, update)
       value = new CacheValue(clock.wallTime, norm)
       sumCache.put(meta, value)
     }
@@ -97,7 +103,7 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
     var value = gaugeCache.get(meta)
     if (value == null) {
       val update = new UpdateValueFunction(meta, step, updateF)
-      val norm = new MaxValueFunction(step, update)
+      val norm = new RollingValueFunction(step, Math.maxNaN, update)
       value = new CacheValue(clock.wallTime, norm)
       gaugeCache.put(meta, value)
     }
