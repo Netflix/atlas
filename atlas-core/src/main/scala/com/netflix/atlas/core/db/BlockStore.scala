@@ -273,11 +273,6 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
       BlockStats.update(currentBlock, oldBlock)
       blocks(currentPos) = oldBlock
       currentBlock = null
-      currentPos = next(currentPos)
-      if (blocks(currentPos) != null) {
-        BlockStats.dec(blocks(currentPos))
-      }
-      blocks(currentPos) = currentBlock
     }
   }
 
@@ -292,7 +287,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
   private def fill(blk: Block, buf: Array[Double], start: Long, end: Long, aggr: Int): Unit = {
     val s = start / step
     val e = end / step
-    val bs = blk.start
+    val bs = blk.start / step
     val be = bs + blockSize - 1
     if (e >= bs && s <= be) {
       val spos = if (s > bs) s else bs

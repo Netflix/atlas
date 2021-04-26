@@ -189,6 +189,32 @@ class MemoryBlockStoreSuite extends AnyFunSuite {
     assert(bs.fetch(120, 122, Block.Sum).toList === List(4.0, 5.0, 6.0))
   }
 
+  test("cleanup, flush data") {
+    val step = 60_000L
+    val windowSize = step * 60 * 6
+
+    val baseTime = 2880 * step
+    val blockStore = new MemoryBlockStore(step, 60, 6)
+    val blockMillis = 60 * step
+    var nextFlushTime = baseTime / blockMillis * blockMillis
+    (0 until 1440).foreach { i =>
+      val t = baseTime + i * step
+      val boundary = t / blockMillis * blockMillis
+      if (boundary > nextFlushTime) {
+        blockStore.update(nextFlushTime)
+        nextFlushTime = boundary
+      }
+      blockStore.update(t, i)
+    }
+
+    val end = baseTime + 1440 * step - step
+    val start = end - windowSize + step
+    val data = blockStore.fetch(start, end, Block.Sum)
+    data.indices.foreach { i =>
+      assert(data(i) === 1080.0 + i)
+    }
+  }
+
   private def blockCounts: List[Long] = {
     List(BlockStats.arrayCount.get, BlockStats.sparseCount.get, BlockStats.constantCount.get)
   }
