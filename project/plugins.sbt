@@ -7,5 +7,5 @@ addSbtPlugin("com.typesafe.sbt"          % "sbt-git"              % "1.0.0")
 addSbtPlugin("org.scalameta"             % "sbt-scalafmt"         % "2.4.2")
 
 // Convenient helpers, not required
-addSbtPlugin("com.timushev.sbt"          % "sbt-updates"          % "0.5.1")
+addSbtPlugin("com.timushev.sbt"          % "sbt-updates"          % "0.5.3")
 
