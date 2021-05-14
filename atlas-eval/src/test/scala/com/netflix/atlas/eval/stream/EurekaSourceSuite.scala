@@ -129,6 +129,7 @@ class EurekaSourceSuite extends AnyFunSuite {
     assert(res.uri === uri)
     assert(res.instances.size === 1)
     assert(res.instances.map(_.instanceId).toSet === Set("i-12345"))
+    assert(res.instances.map(_.port.port).toSet === Set(7001))
   }
 
   test("invalid json response") {
