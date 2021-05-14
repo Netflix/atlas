@@ -16,6 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.netflix.atlas.json.Json
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -84,21 +85,21 @@ class ExpressionMetadataSuite extends AnyFunSuite {
 
   test("Fails to parse from json with empty expression") {
     val json = "{\"expression\": \"\"}"
-    intercept[IllegalArgumentException] {
+    intercept[ValueInstantiationException] {
       Json.decode[ExpressionMetadata](json)
     }
   }
 
   test("Fails to parse from json with null expression") {
     val json = "{\"expression\": null}"
-    intercept[IllegalArgumentException] {
+    intercept[ValueInstantiationException] {
       Json.decode[ExpressionMetadata](json)
     }
   }
 
   test("Fails to parse from json with missing expression") {
     val json = "{}"
-    intercept[IllegalArgumentException] {
+    intercept[ValueInstantiationException] {
       Json.decode[ExpressionMetadata](json)
     }
   }

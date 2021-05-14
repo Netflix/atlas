@@ -16,6 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import com.fasterxml.jackson.databind.JsonMappingException
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.SubscribeApi._
 import org.scalatest.funsuite.AnyFunSuite
@@ -33,13 +34,13 @@ class SubscribeApiJsonSuite extends AnyFunSuite {
   }
 
   test("decode empty expression list throws") {
-    intercept[IllegalArgumentException] {
+    intercept[ValueInstantiationException] {
       Json.decode[SubscribeRequest]("""{"streamId": "sid", "expressions": []}""")
     }
   }
 
   test("decode missing expression list throws") {
-    intercept[IllegalArgumentException] {
+    intercept[ValueInstantiationException] {
       Json.decode[SubscribeRequest]("{}")
     }
   }
