@@ -19,7 +19,6 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpRequest
@@ -34,6 +33,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.EurekaSource.GroupResponse
@@ -129,11 +129,12 @@ class EurekaSourceSuite extends AnyFunSuite {
     assert(res.uri === uri)
     assert(res.instances.size === 1)
     assert(res.instances.map(_.instanceId).toSet === Set("i-12345"))
+    assert(res.instances.map(_.port.port).toSet === Set(7001))
   }
 
   test("invalid json response") {
     val uri = "http://eureka/v1/vips/www-dev:7001"
-    intercept[IllegalArgumentException] {
+    intercept[ValueInstantiationException] {
       run(uri, Success(mkResponse(appJson)))
     }
   }

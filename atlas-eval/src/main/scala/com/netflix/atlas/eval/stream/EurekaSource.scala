@@ -179,10 +179,8 @@ private[stream] object EurekaSource extends StrictLogging {
     require(metadata != null, "metadata cannot be null")
   }
 
-  case class PortInfo(`$`: Int = 7101) {
+  case class PortInfo(@JsonProperty("$") port: Int = 7101) {
 
-    def port: Int = `$`
-
-    override def toString: String = `$`.toString
+    override def toString: String = port.toString
   }
 }

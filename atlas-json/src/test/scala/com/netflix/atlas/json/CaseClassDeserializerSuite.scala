@@ -18,14 +18,12 @@ package com.netflix.atlas.json
 import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.Version
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonMappingException
-import com.fasterxml.jackson.databind.Module
-import com.fasterxml.jackson.databind.Module.SetupContext
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -33,20 +31,8 @@ class CaseClassDeserializerSuite extends AnyFunSuite {
 
   import CaseClassDeserializerSuite._
 
-  private val module = new Module {
-
-    override def version(): Version = Version.unknownVersion()
-
-    override def getModuleName: String = "test"
-
-    override def setupModule(context: SetupContext): Unit = {
-      context.addDeserializers(new CaseClassDeserializers)
-    }
-  }
-
   private val mapper = new ObjectMapper()
     .registerModule(DefaultScalaModule)
-    .registerModule(module)
 
   def decode[T: Manifest](json: String): T = {
     mapper.readValue[T](json, Reflection.typeReference[T])
@@ -125,7 +111,7 @@ class CaseClassDeserializerSuite extends AnyFunSuite {
   }
 
   test("read simple object with error") {
-    intercept[IllegalArgumentException] {
+    intercept[ValueInstantiationException] {
       decode[SimpleObjectUnknownError]("""{"foo": "abc"}""")
     }
   }
