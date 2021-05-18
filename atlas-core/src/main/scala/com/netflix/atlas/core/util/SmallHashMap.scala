@@ -173,11 +173,14 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
       data(i * 2 + 1).asInstanceOf[V]
     } else {
       var found = false
-      do {
+      i = (i + 1) % capacity
+      ki = data(i * 2)
+      found = ki == null || ki.equals(key)
+      while (!found && i != pos) {
         i = (i + 1) % capacity
         ki = data(i * 2)
         found = ki == null || ki.equals(key)
-      } while (!found && i != pos)
+      }
       val v = if (found) data(i * 2 + 1) else null
       v.asInstanceOf[V]
     }
