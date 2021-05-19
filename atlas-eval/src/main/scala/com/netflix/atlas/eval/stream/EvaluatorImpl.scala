@@ -15,14 +15,6 @@
  */
 package com.netflix.atlas.eval.stream
 
-import java.nio.file.OpenOption
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.time.Duration
-import java.util.UUID
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -62,7 +54,16 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 
+import java.nio.file.OpenOption
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.time.Duration
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -167,7 +168,23 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   protected def createStreamsProcessorImpl(): Processor[DataSources, MessageEnvelope] = {
-    createStreamsFlow.toProcessor.run()
+    Source
+      .asSubscriber[DataSources]
+      .via(createStreamsFlow)
+      .toMat(Sink.asPublisher[MessageEnvelope](true))(
+        Keep.both[Subscriber[DataSources], Publisher[MessageEnvelope]]
+      )
+      .mapMaterializedValue {
+        case (sub, pub) =>
+          new Processor[DataSources, MessageEnvelope] {
+            override def onError(t: Throwable): Unit = sub.onError(t)
+            override def onSubscribe(s: Subscription): Unit = sub.onSubscribe(s)
+            override def onComplete(): Unit = sub.onComplete()
+            override def onNext(t: DataSources): Unit = sub.onNext(t)
+            override def subscribe(s: Subscriber[_ >: MessageEnvelope]): Unit = pub.subscribe(s)
+          }
+      }
+      .run()
   }
 
   /**
