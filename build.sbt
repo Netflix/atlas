@@ -19,7 +19,7 @@ lazy val atlas = project.in(file("."))
     `atlas-standalone`,
     `atlas-webapi`,
     `atlas-wiki`)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
 
 lazy val `atlas-akka` = project
   .configure(BuildSettings.profile)

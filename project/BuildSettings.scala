@@ -42,10 +42,10 @@ object BuildSettings {
     externalResolvers := BuildSettings.resolvers,
     // Evictions: https://github.com/sbt/sbt/issues/1636
     // Linting: https://github.com/sbt/sbt/pull/5153
-    (evictionWarningOptions in update).withRank(KeyRanks.Invisible) := EvictionWarningOptions.empty,
+    (update / evictionWarningOptions).withRank(KeyRanks.Invisible) := EvictionWarningOptions.empty,
     checkLicenseHeaders := License.checkLicenseHeaders(streams.value.log, sourceDirectory.value),
     formatLicenseHeaders := License.formatLicenseHeaders(streams.value.log, sourceDirectory.value),
-    packageOptions in (Compile, packageBin) += Package.ManifestAttributes(
+    packageBin / packageOptions += Package.ManifestAttributes(
       "Build-Date"   -> java.time.Instant.now().toString,
       "Build-Number" -> sys.env.getOrElse("GITHUB_RUN_ID", "unknown"),
       "Commit"       -> sys.env.getOrElse("GITHUB_SHA", "unknown")
