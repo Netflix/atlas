@@ -21,7 +21,7 @@ import com.netflix.spectator.api.Clock
 
 object InternMap {
 
-  def concurrent[K <: AnyRef: Manifest](
+  def concurrent[K <: AnyRef](
     initialCapacity: Int,
     clock: Clock = Clock.SYSTEM,
     concurrencyLevel: Int = 16
@@ -40,10 +40,10 @@ trait InternMap[K <: AnyRef] extends Interner[K] {
   def size: Int
 }
 
-class OpenHashInternMap[K <: AnyRef: Manifest](initialCapacity: Int, clock: Clock = Clock.SYSTEM)
+class OpenHashInternMap[K <: AnyRef](initialCapacity: Int, clock: Clock = Clock.SYSTEM)
     extends InternMap[K] {
   private val primeCapacity = nextCapacity(initialCapacity)
-  private var data = new Array[K](primeCapacity)
+  private var data = ArrayHelper.newInstance[K](primeCapacity)
   private var timestamps = new Array[Long](primeCapacity)
   private var currentSize = 0
 
@@ -57,11 +57,13 @@ class OpenHashInternMap[K <: AnyRef: Manifest](initialCapacity: Int, clock: Cloc
     val oldTimestamps = timestamps
 
     currentSize = 0
-    data = new Array[K](newCapacity)
+    data = ArrayHelper.newInstance[K](newCapacity)
     timestamps = new Array[Long](newCapacity)
     var i = 0
     while (i < oldData.length) {
-      if (oldData(i) != null && keep(oldTimestamps(i))) intern(oldData(i), oldTimestamps(i))
+      if (oldData(i) != null && keep(oldTimestamps(i))) {
+        intern(oldData(i), oldTimestamps(i))
+      }
       i += 1
     }
   }

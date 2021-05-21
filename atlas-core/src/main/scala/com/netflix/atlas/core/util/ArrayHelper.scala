@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.util
 
+import scala.reflect.ClassTag
+
 object ArrayHelper {
 
   import java.util.{Arrays => JArrays}
@@ -93,10 +95,10 @@ object ArrayHelper {
     * @return
     *     Object that can be used to merge the arrays.
     */
-  def merger[T <: Comparable[T]: Manifest](limit: Int): Merger[T] = new Merger[T](limit)
+  def merger[T <: Comparable[T]: ClassTag](limit: Int): Merger[T] = new Merger[T](limit)
 
   /** Helper for merging sorted arrays and lists. */
-  class Merger[T <: Comparable[T]: Manifest] private[util] (limit: Int) {
+  class Merger[T <: Comparable[T]: ClassTag] private[util] (limit: Int) {
     // Arrays used for storing the merged result. The `src` array will contain the
     // current merged dataset. During a merge operation, the data will be written
     // into the destination array. It is pre-allocated so it can be reused across
