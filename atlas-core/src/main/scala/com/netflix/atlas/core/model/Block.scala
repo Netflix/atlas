@@ -343,7 +343,7 @@ case class ArrayBlock(var start: Long, size: Int) extends MutableBlock {
   override def hashCode: Int = {
     val prime = 31
     var hc = prime
-    hc = hc * prime + java.lang.Long.valueOf(start).hashCode()
+    hc = hc * prime + java.lang.Long.hashCode(start)
     hc = hc * prime + java.util.Arrays.hashCode(buffer)
     hc
   }
@@ -401,7 +401,7 @@ case class FloatArrayBlock(start: Long, size: Int) extends Block {
   override def hashCode: Int = {
     val prime = 31
     var hc = prime
-    hc = hc * prime + java.lang.Long.valueOf(start).hashCode()
+    hc = hc * prime + java.lang.Long.hashCode(start)
     hc = hc * prime + java.util.Arrays.hashCode(buffer)
     hc
   }
@@ -499,7 +499,7 @@ case class SparseBlock(start: Long, indexes: Array[Byte], values: Array[Double])
   override def hashCode: Int = {
     val prime = 31
     var hc = prime
-    hc = hc * prime + java.lang.Long.valueOf(start).hashCode()
+    hc = hc * prime + java.lang.Long.hashCode(start)
     hc = hc * prime + java.util.Arrays.hashCode(indexes)
     hc = hc * prime + java.util.Arrays.hashCode(values)
     hc
