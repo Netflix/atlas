@@ -105,8 +105,12 @@ class SubscribeApi @Inject() (
 
     Flow[Message]
       .flatMapConcat {
+        case TextMessage.Strict(str) =>
+          Source.single(str)
         case msg: TextMessage =>
           msg.textStream.fold("")(_ + _)
+        case BinaryMessage.Strict(str) =>
+          Source.single(str.decodeString(StandardCharsets.UTF_8))
         case msg: BinaryMessage =>
           msg.dataStream.fold(ByteString.empty)(_ ++ _).map(_.decodeString(StandardCharsets.UTF_8))
       }
