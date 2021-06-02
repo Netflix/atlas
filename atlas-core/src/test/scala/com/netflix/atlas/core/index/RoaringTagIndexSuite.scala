@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.index
 
+import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.TimeSeries
 import org.roaringbitmap.RoaringBitmap
 
@@ -22,6 +23,11 @@ class RoaringTagIndexSuite extends TagIndexSuite {
 
   val index: TagIndex[TimeSeries] = {
     new RoaringTagIndex(TagIndexSuite.dataset.toArray, new IndexStats())
+  }
+
+  test("empty") {
+    val idx = RoaringTagIndex.empty[Datapoint]
+    assert(idx.size == 0)
   }
 
   test("hasNonEmptyIntersection: empty, empty") {

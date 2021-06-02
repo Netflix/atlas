@@ -21,13 +21,14 @@ import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
-import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.IntIntHashMap
 import com.netflix.atlas.core.util.IntRefHashMap
 import com.netflix.atlas.core.util.LongHashSet
 import com.netflix.atlas.core.util.RefIntHashMap
 import org.roaringbitmap.RoaringBitmap
 import org.slf4j.LoggerFactory
+
+import scala.reflect.ClassTag
 
 /**
   * Create a new index based on roaring bitmaps.
@@ -493,8 +494,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
 object RoaringTagIndex {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def empty[T <: TaggedItem]: RoaringTagIndex[T] = {
-    new RoaringTagIndex(ArrayHelper.newInstance[T](0), new IndexStats())
+  def empty[T <: TaggedItem: ClassTag]: RoaringTagIndex[T] = {
+    new RoaringTagIndex(new Array[T](0), new IndexStats())
   }
 
   private[index] def hasNonEmptyIntersection(b1: RoaringBitmap, b2: RoaringBitmap): Boolean = {
