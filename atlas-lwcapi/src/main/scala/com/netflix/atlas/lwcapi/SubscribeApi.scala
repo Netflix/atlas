@@ -146,7 +146,9 @@ class SubscribeApi @Inject() (
           .map(_.metadata.frequency)
           .distinct
           .map { step =>
-            TextMessage(LwcHeartbeat(stepAlignedTime(step), step).toJson)
+            // To account for some delays for data coming from real systems, the heartbeat
+            // timestamp is delayed by one interval
+            TextMessage(LwcHeartbeat(stepAlignedTime(step) - step, step).toJson)
           }
         Source(steps)
       }
