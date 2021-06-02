@@ -475,8 +475,12 @@ private[stream] abstract class EvaluatorImpl(
       .map(dss => TextMessage(Json.encode(toExprSet(dss, context.interpreter))))
       .via(webSocketFlowOrigin)
       .flatMapConcat {
+        case TextMessage.Strict(str) =>
+          Source.single(ByteString(str))
         case msg: TextMessage =>
           msg.textStream.fold("")(_ + _).map(ByteString(_))
+        case BinaryMessage.Strict(str) =>
+          Source.single(str)
         case msg: BinaryMessage =>
           msg.dataStream.fold(ByteString.empty)(_ ++ _)
       }
