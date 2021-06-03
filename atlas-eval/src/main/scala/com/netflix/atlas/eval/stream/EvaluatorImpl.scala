@@ -229,7 +229,7 @@ private[stream] abstract class EvaluatorImpl(
         .via(context.monitorFlow("10_InputLines"))
         .via(new LwcToAggrDatapoint(context))
         .via(context.monitorFlow("11_LwcDatapoints"))
-        .groupBy(Int.MaxValue, _.id, allowClosedSubstreamRecreation = true)
+        .groupBy(Int.MaxValue, _.groupByKey, allowClosedSubstreamRecreation = true)
         .via(new TimeGrouped(context, 50))
         .mergeSubstreams
         .via(context.monitorFlow("12_GroupedDatapoints"))

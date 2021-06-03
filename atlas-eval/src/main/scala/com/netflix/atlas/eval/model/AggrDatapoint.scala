@@ -24,6 +24,7 @@ import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Math
+import com.netflix.atlas.eval.stream.TimeGrouped
 
 /**
   * Datapoint for an aggregate data expression. This type is used for the intermediate
@@ -59,6 +60,9 @@ case class AggrDatapoint(
 
   /** Identifier used for deduping intermediate aggregates. */
   def id: String = s"$source:$expr"
+
+  /** GroupBy key before [[TimeGrouped]] stage */
+  def groupByKey: (String, DataExpr, Long) = (source, expr, step)
 
   /**
     * Converts this value to a time series type that can be used for the final evaluation
