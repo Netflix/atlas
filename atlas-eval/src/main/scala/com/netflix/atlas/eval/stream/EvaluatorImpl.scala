@@ -422,10 +422,12 @@ private[stream] abstract class EvaluatorImpl(
         val instances = sourcesAndGroups._2.groups.flatMap(_.instances).toSet
         val exprs = toExprSet(sourcesAndGroups._1, context.interpreter)
         val dataMap = instances.map(i => i -> exprs).toMap
-        Source(List(
-          ClusterOps.Cluster(instances),
-          ClusterOps.Data(dataMap)
-        ))
+        Source(
+          List(
+            ClusterOps.Cluster(instances),
+            ClusterOps.Data(dataMap)
+          )
+        )
       }
       .via(ClusterOps.groupBy(createGroupByContext(context)))
       .via(context.monitorFlow("02_ConnectionSources"))
@@ -442,13 +444,11 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   private def toExprSet(dss: DataSources, interpreter: ExprInterpreter): Set[Expression] = {
-    dss.getSources.asScala
-      .flatMap { dataSource =>
-        interpreter.eval(Uri(dataSource.getUri)).map { expr =>
-          Expression(expr.toString, dataSource.getStep.toMillis)
-        }
+    dss.getSources.asScala.flatMap { dataSource =>
+      interpreter.eval(Uri(dataSource.getUri)).map { expr =>
+        Expression(expr.toString, dataSource.getStep.toMillis)
       }
-      .toSet
+    }.toSet
   }
 
   private def createWebSocketFlow(
