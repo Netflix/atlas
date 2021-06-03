@@ -16,7 +16,6 @@
 package com.netflix.atlas.eval.stream
 
 import java.util.concurrent.ArrayBlockingQueue
-
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
@@ -26,6 +25,7 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.JsonSupport
@@ -84,6 +84,7 @@ class LwcToAggrDatapointSuite extends AnyFunSuite {
   private def eval(data: List[String]): List[AggrDatapoint] = {
     val future = Source(data)
       .map(ByteString.apply)
+      .map(LwcMessages.parse)
       .via(new LwcToAggrDatapoint(context))
       .runWith(Sink.seq[AggrDatapoint])
     Await.result(future, Duration.Inf).toList
@@ -130,12 +131,5 @@ class LwcToAggrDatapointSuite extends AnyFunSuite {
     assert(d.isHeartbeat)
     assert(d.timestamp === 1234567890)
     assert(d.step === 10)
-  }
-
-  test("invalid message") {
-    val msg =
-      """{"timestamp":20000,"id":"sum","tags":{"name":"cpu"},&"value":3.0}"""
-    val results = eval(List(msg))
-    assert(results.size === 0)
   }
 }

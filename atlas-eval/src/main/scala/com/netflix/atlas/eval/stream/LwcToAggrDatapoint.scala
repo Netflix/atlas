@@ -23,31 +23,24 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import akka.util.ByteString
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.eval.model.LwcHeartbeat
-import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscription
-import com.typesafe.scalalogging.Logger
 
 /**
   * Process the SSE output from an LWC service and convert it into a stream of
   * [[AggrDatapoint]]s that can be used for evaluation.
   */
 private[stream] class LwcToAggrDatapoint(context: StreamContext)
-    extends GraphStage[FlowShape[ByteString, AggrDatapoint]] {
+    extends GraphStage[FlowShape[AnyRef, AggrDatapoint]] {
 
-  private val logger = Logger(getClass)
-
-  private val badMessages = context.registry.counter("atlas.eval.badMessages")
-
-  private val in = Inlet[ByteString]("LwcToAggrDatapoint.in")
+  private val in = Inlet[AnyRef]("LwcToAggrDatapoint.in")
   private val out = Outlet[AggrDatapoint]("LwcToAggrDatapoint.out")
 
-  override val shape: FlowShape[ByteString, AggrDatapoint] = FlowShape(in, out)
+  override val shape: FlowShape[AnyRef, AggrDatapoint] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -58,41 +51,13 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       private var nextSource: Int = 0
 
       override def onPush(): Unit = {
-        val message = grab(in)
-        try {
-          val parsedMsg = LwcMessages.parse(message)
-          parsedMsg match {
-            case sb: LwcSubscription      => updateState(sb)
-            case dp: LwcDatapoint         => pushDatapoint(dp)
-            case dg: LwcDiagnosticMessage => pushDiagnosticMessage(dg)
-            case hb: LwcHeartbeat         => pushHeartbeat(hb)
-            case _                        => pull(in)
-          }
-        } catch {
-          case e: Exception =>
-            val messageString = toString(message)
-            logger.warn(s"failed to process message [$messageString]", e)
-            badMessages.increment()
-            pull(in)
+        grab(in) match {
+          case sb: LwcSubscription      => updateState(sb)
+          case dp: LwcDatapoint         => pushDatapoint(dp)
+          case dg: LwcDiagnosticMessage => pushDiagnosticMessage(dg)
+          case hb: LwcHeartbeat         => pushHeartbeat(hb)
+          case _                        => pull(in)
         }
-      }
-
-      private def toString(bytes: ByteString): String = {
-        val builder = new StringBuilder()
-        bytes.foreach { b =>
-          val c = b & 0xFF
-          if (isPrintable(c))
-            builder.append(c.asInstanceOf[Char])
-          else if (c <= 0xF)
-            builder.append("\\x0").append(Integer.toHexString(c))
-          else
-            builder.append("\\x").append(Integer.toHexString(c))
-        }
-        builder.toString()
-      }
-
-      private def isPrintable(c: Int): Boolean = {
-        c >= 32 && c < 127
       }
 
       private def updateState(sub: LwcSubscription): Unit = {

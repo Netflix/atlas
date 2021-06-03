@@ -20,7 +20,6 @@ import java.nio.file.Paths
 import java.time.Duration
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
@@ -28,8 +27,13 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.chart.util.SrcPath
-import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.eval.model.ArrayData
+import com.netflix.atlas.eval.model.LwcDatapoint
+import com.netflix.atlas.eval.model.LwcDiagnosticMessage
+import com.netflix.atlas.eval.model.LwcExpression
+import com.netflix.atlas.eval.model.LwcHeartbeat
+import com.netflix.atlas.eval.model.LwcMessages
+import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
@@ -41,9 +45,11 @@ import nl.jqno.equalsverifier.Warning
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 
+import java.nio.file.Path
 import scala.concurrent.Await
 import scala.concurrent.Promise
 import scala.util.Success
+import scala.util.Using
 
 class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
 
@@ -86,9 +92,28 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
     val duration = Duration.ofMinutes(1)
     evaluator.writeInputToFile(uri, path, duration)
 
-    val expected = Hash.sha1(Files.readAllBytes(resourcesDir.resolve("gc-pause.dat")))
-    val actual = Hash.sha1(Files.readAllBytes(path))
+    val expected = countMessages(resourcesDir.resolve("gc-pause.dat"))
+    val actual = countMessages(path)
     assert(expected === actual)
+  }
+
+  private def countMessages(path: Path): Map[String, Int] = {
+    import scala.jdk.StreamConverters._
+    Using.resource(Files.lines(path)) { lines =>
+      lines
+        .toScala(List)
+        .map(LwcMessages.parse)
+        .flatMap {
+          case m: LwcExpression        => Option(m.`type`)
+          case m: LwcSubscription      => Option(m.`type`)
+          case m: LwcDatapoint         => Option(m.`type`)
+          case m: LwcDiagnosticMessage => Option(m.`type`)
+          case m: LwcHeartbeat         => Option(m.`type`)
+          case _                       => None
+        }
+        .groupBy(v => v)
+        .map(t => t._1 -> t._2.size)
+    }
   }
 
   test("create publisher from file uri") {
