@@ -45,7 +45,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      private[this] var state: Map[String, LwcDataExpr] = Map.empty
+      private[this] val state = scala.collection.mutable.AnyRefMap.empty[String, LwcDataExpr]
 
       // HACK: needed until we can plumb the actual source through the system
       private var nextSource: Int = 0
@@ -61,7 +61,11 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       }
 
       private def updateState(sub: LwcSubscription): Unit = {
-        state ++= sub.metrics.map(m => m.id -> m).toMap
+        sub.metrics.foreach { m =>
+          if (!state.contains(m.id)) {
+            state.put(m.id, m)
+          }
+        }
         pull(in)
       }
 

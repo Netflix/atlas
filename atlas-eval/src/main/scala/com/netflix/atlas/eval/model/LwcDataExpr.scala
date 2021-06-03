@@ -38,7 +38,7 @@ import com.netflix.atlas.core.stacklang.Interpreter
 case class LwcDataExpr(id: String, expression: String, @JsonAlias(Array("frequency")) step: Long) {
 
   @JsonIgnore
-  val expr: DataExpr = LwcDataExpr.parseExpr(expression)
+  lazy val expr: DataExpr = LwcDataExpr.parseExpr(expression)
 }
 
 object LwcDataExpr {
