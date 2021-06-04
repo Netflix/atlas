@@ -25,6 +25,8 @@ import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonParserHelper._
 import com.netflix.atlas.json.JsonSupport
 
+import java.io.ByteArrayOutputStream
+
 /**
   * Helpers for working with messages coming back from the LWCAPI service.
   */
@@ -151,6 +153,148 @@ object LwcMessages {
       case k => builder.add(k, nextString(parser))
     }
     builder.result
+  }
+
+  private val Expression = 0
+  private val Subscription = 1
+  private val Datapoint = 2
+  private val LwcDiagnostic = 3
+  private val Diagnostic = 4
+  private val Heartbeat = 5
+
+  /**
+    * Encode messages using Jackson's smile format into a ByteString.
+    */
+  def encodeBatch(msgs: Seq[AnyRef]): ByteString = {
+    encodeBatch(msgs, new ByteArrayOutputStream())
+  }
+
+  /**
+    * Encode messages using Jackson's smile format into a ByteString. The
+    * `ByteArrayOutputStream` will be reset and used as a buffer for encoding
+    * the data.
+    */
+  def encodeBatch(msgs: Seq[AnyRef], baos: ByteArrayOutputStream): ByteString = {
+    baos.reset()
+    val gen = Json.newSmileGenerator(baos)
+    try {
+      gen.writeStartArray()
+      msgs.foreach {
+        case msg: LwcExpression =>
+          gen.writeNumber(Expression)
+          gen.writeString(msg.expression)
+          gen.writeNumber(msg.step)
+        case msg: LwcSubscription =>
+          gen.writeNumber(Subscription)
+          gen.writeString(msg.expression)
+          gen.writeStartArray()
+          msg.metrics.foreach { m =>
+            gen.writeString(m.id)
+            gen.writeString(m.expression)
+            gen.writeNumber(m.step)
+          }
+          gen.writeEndArray()
+        case msg: LwcDatapoint =>
+          gen.writeNumber(Datapoint)
+          gen.writeNumber(msg.timestamp)
+          gen.writeString(msg.id)
+          gen.writeNumber(msg.tags.size)
+          msg.tags.foreachEntry { (k, v) =>
+            gen.writeString(k)
+            gen.writeString(v)
+          }
+          gen.writeNumber(msg.value)
+        case msg: LwcDiagnosticMessage =>
+          gen.writeNumber(LwcDiagnostic)
+          gen.writeString(msg.id)
+          gen.writeString(msg.message.typeName)
+          gen.writeString(msg.message.message)
+        case msg: DiagnosticMessage =>
+          gen.writeNumber(Diagnostic)
+          gen.writeString(msg.typeName)
+          gen.writeString(msg.message)
+        case msg: LwcHeartbeat =>
+          gen.writeNumber(Heartbeat)
+          gen.writeNumber(msg.timestamp)
+          gen.writeNumber(msg.step)
+        case _ =>
+          throw new MatchError("foo")
+      }
+      gen.writeEndArray()
+    } finally {
+      gen.close()
+    }
+    ByteString(baos.toByteArray)
+  }
+
+  /**
+    * Parse a set of messages that were encoded with `encodeBatch`.
+    */
+  def parseBatch(msgs: ByteString): List[AnyRef] = {
+    parseBatch(Json.newSmileParser(new ByteStringInputStream(msgs)))
+  }
+
+  private def parseBatch(parser: JsonParser): List[AnyRef] = {
+    val builder = List.newBuilder[AnyRef]
+    try {
+      foreachItem(parser) {
+        parser.getIntValue match {
+          case Expression =>
+            builder += LwcExpression(parser.nextTextValue(), parser.nextLongValue(-1L))
+          case Subscription =>
+            val expression = parser.nextTextValue()
+            val dataExprs = List.newBuilder[LwcDataExpr]
+            foreachItem(parser) {
+              dataExprs += LwcDataExpr(
+                parser.getText,
+                parser.nextTextValue(),
+                parser.nextLongValue(-1L)
+              )
+            }
+            builder += LwcSubscription(expression, dataExprs.result())
+          case Datapoint =>
+            val timestamp = parser.nextLongValue(-1L)
+            val id = parser.nextTextValue()
+            val tags = parseTags(parser, parser.nextIntValue(0))
+            val value = nextDouble(parser)
+            builder += LwcDatapoint(timestamp, id, tags, value)
+          case LwcDiagnostic =>
+            val id = parser.nextTextValue()
+            val typeName = parser.nextTextValue()
+            val message = parser.nextTextValue()
+            builder += LwcDiagnosticMessage(id, DiagnosticMessage(typeName, message, None))
+          case Diagnostic =>
+            val typeName = parser.nextTextValue()
+            val message = parser.nextTextValue()
+            builder += DiagnosticMessage(typeName, message, None)
+          case Heartbeat =>
+            val timestamp = parser.nextLongValue(-1L)
+            val step = parser.nextLongValue(-1L)
+            builder += LwcHeartbeat(timestamp, step)
+          case v =>
+            throw new MatchError(s"invalid type id: $v")
+        }
+      }
+    } finally {
+      parser.close()
+    }
+    builder.result()
+  }
+
+  private def parseTags(parser: JsonParser, n: Int): Map[String, String] = {
+    if (n == 0) {
+      SmallHashMap.empty[String, String]
+    } else {
+      val builder = new SmallHashMap.Builder[String, String](2 * n)
+      var i = 0
+      while (i < n) {
+        val k = parser.nextTextValue()
+        val v = parser.nextTextValue()
+        builder.add(k, v)
+        i += 1
+      }
+      builder.result
+    }
   }
 
   def toSSE(msg: JsonSupport): ByteString = {

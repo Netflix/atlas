@@ -60,7 +60,7 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
 
   test("subscribe websocket") {
     val client = WSProbe()
-    WS("/api/v1/subscribe/123", client.flow) ~> routes ~> check {
+    WS("/api/v1/subscribe/111", client.flow) ~> routes ~> check {
       assert(isWebSocketUpgrade)
 
       // Send list of expressions to subscribe to
@@ -89,6 +89,45 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
         handlers.head.offer(datapoint)
 
         assert(parse(client.expectMessage()) === datapoint)
+      }
+    }
+  }
+
+  private def parseBatch(msg: Message): List[AnyRef] = {
+    LwcMessages.parseBatch(msg.asBinaryMessage.getStrictData)
+  }
+
+  test("subscribe websocket V2") {
+    val client = WSProbe()
+    WS("/api/v2/subscribe/222", client.flow) ~> routes ~> check {
+      assert(isWebSocketUpgrade)
+
+      // Send list of expressions to subscribe to
+      val exprs = List(LwcExpression("name,disk,:eq,:avg", 60000))
+      client.sendMessage(LwcMessages.encodeBatch(exprs))
+
+      // Look for subscription messages, one for sum and one for count
+      var subscriptions = List.empty[LwcSubscription]
+      while (subscriptions.size < 2) {
+        parseBatch(client.expectMessage()).foreach {
+          case _: DiagnosticMessage =>
+          case sub: LwcSubscription => subscriptions = sub :: subscriptions
+          case h: LwcHeartbeat      => assert(h.step === 60000)
+          case v                    => throw new MatchError(v)
+        }
+      }
+
+      // Verify subscription is in the manager, push a message to the queue check that it
+      // is received by the client
+      assert(subscriptions.flatMap(_.metrics).size === 2)
+      subscriptions.flatMap(_.metrics).foreach { m =>
+        val tags = Map("name" -> "disk")
+        val datapoint = LwcDatapoint(60000, m.id, tags, 42.0)
+        val handlers = sm.handlersForSubscription(m.id)
+        assert(handlers.size === 1)
+        handlers.head.offer(datapoint)
+
+        assert(parseBatch(client.expectMessage()) === List(datapoint))
       }
     }
   }

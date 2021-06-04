@@ -85,7 +85,6 @@ object Json {
     mapper.configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     mapper.registerModule(DefaultScalaModule)
-    //mapper.registerModule(new AtlasModule)
     mapper.registerModule(new JavaTimeModule)
     mapper.registerModule(new Jdk8Module)
     mapper
