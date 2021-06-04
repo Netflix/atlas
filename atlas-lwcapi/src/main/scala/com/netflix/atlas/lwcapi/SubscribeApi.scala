@@ -18,10 +18,6 @@ package com.netflix.atlas.lwcapi
 import java.nio.charset.StandardCharsets
 
 import akka.NotUsed
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.MediaTypes
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws.BinaryMessage
 import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.model.ws.TextMessage
@@ -74,23 +70,6 @@ class SubscribeApi @Inject() (
     endpointPathPrefix("api" / "v1" / "subscribe") {
       path(Remaining) { streamId =>
         handleWebSocketMessages(createHandlerFlow(streamId))
-      }
-    } ~
-    endpointPath("lwc" / "api" / "v1" / "subscribe") {
-      post {
-        parseEntity(json[SubscribeRequest]) {
-          case SubscribeRequest(_, Nil) =>
-            complete(DiagnosticMessage.error(StatusCodes.BadRequest, "empty payload"))
-          case SubscribeRequest(streamId, expressions) =>
-            val errors = subscribe(streamId, expressions)
-            val errorResponse = if (errors.isEmpty) {
-              Errors("success", "success", List())
-            } else {
-              Errors("error", "Some expressions could not be parsed", errors)
-            }
-            val entity = HttpEntity(MediaTypes.`application/json`, errorResponse.toJson)
-            complete(HttpResponse(StatusCodes.OK, entity = entity))
-        }
       }
     }
   }
