@@ -15,23 +15,18 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.testkit.WSProbe
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.RequestHandler
-import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
@@ -42,15 +37,6 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
   import scala.concurrent.duration._
 
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)
-
-  // Dummy queue used for handler
-  private val queue = new QueueHandler(
-    "test",
-    StreamOps
-      .blockingQueue[JsonSupport](new NoopRegistry, "test", 1)
-      .toMat(Sink.ignore)(Keep.left)
-      .run()
-  )
 
   private val config = ConfigFactory.load()
   private val sm = new StreamSubscriptionManager
@@ -104,144 +90,6 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
 
         assert(parse(client.expectMessage()) === datapoint)
       }
-    }
-  }
-
-  //
-  // Subscribe
-  //
-
-  test("subscribe: no content") {
-    Post("/lwc/api/v1/subscribe") ~> routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-
-  test("subscribe: empty object") {
-    Post("/lwc/api/v1/subscribe", "{}") ~> routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-
-  test("subscribe: empty array") {
-    val x = Post("/lwc/api/v1/subscribe", "[]")
-    x ~> routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-
-  test("subscribe: correctly formatted expression") {
-    sm.register("abc123", queue)
-
-    val json = """
-      |{
-      |  "streamId": "abc123",
-      |  "expressions": [
-      |    { "expression": "nf.name,foo,:eq,:sum", "step": 99 }
-      |  ]
-      |}""".stripMargin
-    Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      val subs = sm.subscriptionsForStream("abc123")
-      assert(subs.length === 1)
-      assert(subs.head.metadata.expression === "nf.name,foo,:eq,:sum")
-      assert(subs.head.metadata.frequency === 99L)
-    }
-  }
-
-  test("subscribe: frequency is treated as alias to step") {
-    sm.register("abc123", queue)
-
-    val json = """
-      |{
-      |  "streamId": "abc123",
-      |  "expressions": [
-      |    { "expression": "nf.name,foo,:eq,:sum", "frequency": 99 }
-      |  ]
-      |}""".stripMargin
-    Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      val subs = sm.subscriptionsForStream("abc123")
-      assert(subs.length === 1)
-      assert(subs.head.metadata.expression === "nf.name,foo,:eq,:sum")
-      assert(subs.head.metadata.frequency === 99L)
-    }
-  }
-
-  test("subscribe: sync expressions") {
-    sm.register("abc123", queue)
-
-    val exprs = List(
-      "name,foo,:eq,:sum",
-      "name,foo,:eq,:max",
-      "name,bar,:eq,:sum"
-    )
-    exprs.foreach { expr =>
-      val json = s"""
-        |{
-        |  "streamId": "abc123",
-        |  "expressions": [
-        |    { "expression": "$expr", "step": 99 }
-        |  ]
-        |}""".stripMargin
-      Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
-        assert(response.status === StatusCodes.OK)
-        val subs = sm.subscriptionsForStream("abc123")
-        assert(subs.length === 1)
-        assert(subs.head.metadata.expression === expr)
-        assert(subs.head.metadata.frequency === 99L)
-      }
-    }
-  }
-
-  test("subscribe: sync multiple expressions") {
-    sm.register("abc123", queue)
-
-    val exprs = List(
-      "name,foo,:eq,:sum",
-      "name,foo,:eq,:max",
-      "name,bar,:eq,:sum"
-    )
-    exprs.foreach { expr =>
-      val json = s"""
-        |{
-        |  "streamId": "abc123",
-        |  "expressions": [
-        |    { "expression": "name,fixed,:eq,:sum", "step": 99 },
-        |    { "expression": "$expr", "step": 99 }
-        |  ]
-        |}""".stripMargin
-      Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
-        assert(response.status === StatusCodes.OK)
-        val subs = sm.subscriptionsForStream("abc123")
-        assert(subs.length === 2)
-        val actual = subs.map(_.metadata.expression).toSet
-        val expected = Set("name,fixed,:eq,:sum", expr)
-        assert(actual === expected)
-      }
-    }
-  }
-
-  test("subscribe: bad json") {
-    Post("/lwc/api/v1/subscribe", "fubar") ~> routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-
-  test("subscribe: invalid object") {
-    Post("/lwc/api/v1/subscribe", "{\"foo\":\"bar\"}") ~> routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
-    }
-  }
-
-  test("subscribe: expression value is null") {
-    val json = s"""{
-        "expressions": [
-          { "expression": null }
-        ]
-      }"""
-    Post("/lwc/api/v1/subscribe", json) ~> routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
     }
   }
 }
