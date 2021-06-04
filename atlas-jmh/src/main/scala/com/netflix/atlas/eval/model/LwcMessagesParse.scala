@@ -31,18 +31,20 @@ import org.openjdk.jmh.infra.Blackhole
   *
   * ```
   * Benchmark                          Mode  Cnt        Score        Error   Units
-  * parseDatapoint                    thrpt    5  1228277.874 ± 43946.724   ops/s
-  * parseDatapointByteString          thrpt    5  1381682.708 ±  74560.401   ops/s
-  * parseDatapointByteStringUTF8      thrpt    5  1019061.212 ±  40733.781   ops/s
+  * parseDatapoint                    thrpt   10  1138229.827 ±  24986.495   ops/s
+  * parseDatapointBatch               thrpt   10  2151771.057 ±  54618.924   ops/s
+  * parseDatapointByteString          thrpt   10  1334170.515 ±   9543.687   ops/s
+  * parseDatapointByteStringUTF8      thrpt   10  1026735.084 ±   6455.626   ops/s
   * ```
   *
   * Allocations:
   *
   * ```
   * Benchmark                          Mode  Cnt        Score        Error   Units
-  * parseDatapoint                    alloc    5     1632.000 ±      0.001    B/op
-  * parseDatapointByteString          alloc    5     1816.000 ±      0.001    B/op
-  * parseDatapointByteStringUTF8      alloc    5     2128.000 ±      0.001    B/op
+  * parseDatapoint                    alloc   10     1680.000 ±      0.001    B/op
+  * parseDatapointBatch               alloc   10     1528.000 ±      0.001    B/op
+  * parseDatapointByteString          alloc   10     1976.000 ±      0.001    B/op
+  * parseDatapointByteStringUTF8      alloc   10     2176.000 ±      0.001    B/op
   * ```
   **/
 @State(Scope.Thread)
@@ -59,6 +61,7 @@ class LwcMessagesParse {
   private val datapoint = LwcDatapoint(1234567890L, "i-12345", tags, 42.0)
   private val json = Json.encode(datapoint)
   private val bytes = ByteString(json)
+  private val batchBytes = LwcMessages.encodeBatch(Seq(datapoint))
 
   @Benchmark
   def parseDatapoint(bh: Blackhole): Unit = {
@@ -73,5 +76,10 @@ class LwcMessagesParse {
   @Benchmark
   def parseDatapointByteStringUTF8(bh: Blackhole): Unit = {
     bh.consume(LwcMessages.parse(bytes.utf8String))
+  }
+
+  @Benchmark
+  def parseDatapointBatch(bh: Blackhole): Unit = {
+    bh.consume(LwcMessages.parseBatch(batchBytes))
   }
 }

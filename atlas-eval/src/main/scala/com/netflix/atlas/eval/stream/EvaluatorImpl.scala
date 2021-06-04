@@ -49,6 +49,7 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.AggrValuesInfo
+import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.stream.EurekaSource.Instance
@@ -79,15 +80,16 @@ private[stream] abstract class EvaluatorImpl(
   implicit val materializer: Materializer
 ) {
 
-  import EvaluatorImpl._
-
   private val logger = LoggerFactory.getLogger(getClass)
 
   // Cached context instance used for things like expression validation.
   private val validationStreamContext = newStreamContext()
 
   // Timeout for DataSources unique operator: emit repeating DataSources after timeout exceeds
-  private val uniqueTimeout: Long = config.getDuration("atlas.eval.unique-timeout").toMillis
+  private val uniqueTimeout: Long = config.getDuration("atlas.eval.stream.unique-timeout").toMillis
+
+  // Version of the LWC Server API to use
+  private val lwcapiVersion: Int = config.getInt("atlas.eval.stream.lwcapi-version")
 
   // Counter for message that cannot be parsed
   private val badMessages = registry.counter("atlas.eval.badMessages")
@@ -443,7 +445,7 @@ private[stream] abstract class EvaluatorImpl(
 
   private def createGroupByContext(
     context: StreamContext
-  ): ClusterOps.GroupByContext[Instance, Set[Expression], AnyRef] = {
+  ): ClusterOps.GroupByContext[Instance, Set[LwcExpression], AnyRef] = {
     ClusterOps.GroupByContext(
       instance => createWebSocketFlow(instance),
       registry,
@@ -451,23 +453,29 @@ private[stream] abstract class EvaluatorImpl(
     )
   }
 
-  private def toExprSet(dss: DataSources, interpreter: ExprInterpreter): Set[Expression] = {
+  private def toExprSet(dss: DataSources, interpreter: ExprInterpreter): Set[LwcExpression] = {
     dss.getSources.asScala.flatMap { dataSource =>
       interpreter.eval(Uri(dataSource.getUri)).map { expr =>
-        Expression(expr.toString, dataSource.getStep.toMillis)
+        LwcExpression(expr.toString, dataSource.getStep.toMillis)
       }
     }.toSet
   }
 
   private def createWebSocketFlow(
     instance: EurekaSource.Instance
-  ): Flow[Set[Expression], AnyRef, NotUsed] = {
-    val uri = instance.substitute("ws://{local-ipv4}:{port}") + "/api/v1/subscribe/" +
-      UUID.randomUUID().toString
+  ): Flow[Set[LwcExpression], AnyRef, NotUsed] = {
+    val base = instance.substitute("ws://{local-ipv4}:{port}")
+    val id = UUID.randomUUID().toString
+    val uri = s"$base/api/v$lwcapiVersion/subscribe/$id"
     val webSocketFlowOrigin = Http(system).webSocketClientFlow(WebSocketRequest(uri))
-    Flow[Set[Expression]]
+    Flow[Set[LwcExpression]]
       .via(StreamOps.unique(uniqueTimeout)) // Updating subscriptions only if there's a change
-      .map(exprs => TextMessage(Json.encode(exprs)))
+      .map { exprs =>
+        if (lwcapiVersion == 1)
+          TextMessage(Json.encode(exprs))
+        else
+          BinaryMessage(LwcMessages.encodeBatch(exprs.toSeq))
+      }
       .via(webSocketFlowOrigin)
       .flatMapConcat {
         case TextMessage.Strict(str) =>
@@ -475,9 +483,9 @@ private[stream] abstract class EvaluatorImpl(
         case msg: TextMessage =>
           msg.textStream.fold("")(_ + _).map(parseMessage)
         case BinaryMessage.Strict(str) =>
-          parseMessage(str)
+          parseBatch(str)
         case msg: BinaryMessage =>
-          msg.dataStream.fold(ByteString.empty)(_ ++ _).map(parseMessage)
+          msg.dataStream.fold(ByteString.empty)(_ ++ _).map(parseBatch)
       }
       .mapMaterializedValue(_ => NotUsed)
   }
@@ -486,6 +494,18 @@ private[stream] abstract class EvaluatorImpl(
     try {
       ReplayLogging.log(message)
       Source.single(LwcMessages.parse(message))
+    } catch {
+      case e: Exception =>
+        logger.warn(s"failed to process message [$message]", e)
+        badMessages.increment()
+        Source.empty
+    }
+  }
+
+  private def parseBatch(message: ByteString): Source[AnyRef, NotUsed] = {
+    try {
+      ReplayLogging.log(message)
+      Source(LwcMessages.parseBatch(message))
     } catch {
       case e: Exception =>
         logger.warn(s"failed to process message [$message]", e)
@@ -524,8 +544,4 @@ private[stream] abstract class EvaluatorImpl(
   private def isPrintable(c: Int): Boolean = {
     c >= 32 && c < 127
   }
-}
-
-object EvaluatorImpl {
-  case class Expression(expression: String, step: Long = 60000L)
 }

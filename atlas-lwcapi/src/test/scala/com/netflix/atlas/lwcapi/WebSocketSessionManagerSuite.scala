@@ -16,8 +16,6 @@
 package com.netflix.atlas.lwcapi
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ws.Message
-import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.json.JsonSupport
@@ -30,8 +28,7 @@ import scala.concurrent.duration.Duration
 
 class WebSocketSessionManagerSuite extends AnyFunSuite {
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val materializer = Materializer(system)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   test("subscribe - one by one") {
     val subscriptionList = List(
@@ -73,13 +70,13 @@ class WebSocketSessionManagerSuite extends AnyFunSuite {
 
   private def run(
     data: List[String],
-    registerFunc: String => (QueueHandler, Source[Message, Unit]),
+    registerFunc: String => (QueueHandler, Source[JsonSupport, Unit]),
     subscribeFunc: (String, List[ExpressionMetadata]) => List[ErrorMsg]
   ): List[String] = {
     val future = Source(data)
       .via(new WebSocketSessionManager("", registerFunc, subscribeFunc))
       .flatMapMerge(Int.MaxValue, source => source)
-      .map(_.asTextMessage.getStrictText)
+      .map(_.toJson)
       .runWith(Sink.seq)
 
     Await.result(future, Duration.Inf).toList
@@ -95,12 +92,12 @@ class WebSocketSessionManagerSuite extends AnyFunSuite {
     subFunc
   }
 
-  private def createNoopRegisterFunc(): String => (QueueHandler, Source[Message, Unit]) = {
+  private def createNoopRegisterFunc(): String => (QueueHandler, Source[JsonSupport, Unit]) = {
     val noopQueueHandler = new QueueHandler("", null) {
       override def offer(msg: JsonSupport): Unit = ()
       override def complete(): Unit = ()
     }
-    val noopSource: Source[Message, Unit] = Source.empty[Message].mapMaterializedValue(_ => ())
+    val noopSource = Source.empty[JsonSupport].mapMaterializedValue(_ => ())
     val noopRegisterFunc = (_: String) => (noopQueueHandler, noopSource)
 
     noopRegisterFunc
