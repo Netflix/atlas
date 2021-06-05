@@ -94,18 +94,14 @@ lazy val `atlas-lwcapi` = project
 lazy val `atlas-module-akka` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-akka`)
-  .settings(libraryDependencies ++= Seq(
-    Dependencies.guiceCore,
-    Dependencies.guiceMulti,
+  .settings(libraryDependencies ++= Dependencies.guiceCoreAndMulti ++ Seq(
     Dependencies.iepGuice
   ))
 
 lazy val `atlas-module-cloudwatch` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-module-akka`, `atlas-poller-cloudwatch`)
-  .settings(libraryDependencies ++= Seq(
-    Dependencies.guiceCore,
-    Dependencies.guiceMulti,
+  .settings(libraryDependencies ++= Dependencies.guiceCoreAndMulti ++ Seq(
     Dependencies.iepGuice,
     Dependencies.iepModuleAws
   ))
@@ -157,11 +153,9 @@ lazy val `atlas-poller-cloudwatch` = project
 lazy val `atlas-standalone` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-module-akka`, `atlas-module-lwcapi`, `atlas-module-webapi`)
-  .settings(libraryDependencies ++= Seq(
+  .settings(libraryDependencies ++= Dependencies.guiceCoreAndMulti ++ Seq(
     Dependencies.iepGuice,
     Dependencies.iepModuleAtlas,
-    Dependencies.guiceCore,
-    Dependencies.guiceMulti,
     Dependencies.log4jApi,
     Dependencies.log4jCore,
     Dependencies.log4jSlf4j,
