@@ -1,4 +1,5 @@
 import sbt._
+import sbt.librarymanagement.DependencyBuilders.OrganizationArtifactName
 
 // format: off
 
@@ -8,7 +9,7 @@ object Dependencies {
     val akkaHttpV  = "10.2.4"
     val aws        = "2.16.45"
     val iep        = "2.6.9"
-    val guice      = "4.1.0"
+    val guice      = "5.0.1"
     val jackson    = "2.12.3"
     val log4j      = "2.14.1"
     val scala      = "2.13.5"
@@ -33,8 +34,8 @@ object Dependencies {
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "2.0.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.6"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.25.0"
-  val guiceCore         = "com.google.inject" % "guice" % guice
-  val guiceMulti        = "com.google.inject.extensions" % "guice-multibindings" % guice
+  val guiceCoreBase     = "com.google.inject" % "guice"
+  val guiceMultiBase    = "com.google.inject.extensions" % "guice-multibindings"
   val iepGuice          = "com.netflix.iep" % "iep-guice" % iep
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
@@ -74,6 +75,23 @@ object Dependencies {
   val spectatorLog4j    = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2       = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
   val typesafeConfig    = "com.typesafe" % "config" % "1.4.1"
+
+  def isBeforeJava16: Boolean = {
+    System.getProperty("java.specification.version").toDouble < 16
+  }
+
+  private def guiceDep(base: OrganizationArtifactName): ModuleID = {
+    base % (if (isBeforeJava16) "4.1.0" else guice)
+  }
+
+  def guiceCore: ModuleID = guiceDep(guiceCoreBase)
+
+  def guiceCoreAndMulti: Seq[ModuleID] = {
+    if (isBeforeJava16)
+      Seq(guiceDep(guiceCoreBase), guiceDep(guiceMultiBase))
+    else
+      Seq(guiceDep(guiceCoreBase))
+  }
 }
 
 // format: on
