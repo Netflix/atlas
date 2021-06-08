@@ -420,6 +420,291 @@ case class FloatArrayBlock(start: Long, size: Int) extends Block {
 }
 
 /**
+  * Mutable block type that tries to compress data as it is updated. The main compression
+  * benefit comes by not needed to store the most common values that are seen in the data.
+  * Initially 2 bits per value will be used that indicate one of four common values: NaN,
+  * 0, 1, 1/60. If another value is used, then it will update the buffer to use 4 bits per
+  * value that can be one of the four common values or an index to an explicit value. If
+  * more than 12 distinct values are seen, then it will update the buffer to just be an array
+  * of double values.
+  *
+  * @param start
+  *     Start time for the block.
+  * @param size
+  *     Number of datapoints to include in the block.
+  */
+final case class CompressedArrayBlock(start: Long, size: Int) extends MutableBlock {
+
+  import CompressedArrayBlock._
+
+  private var buffer = {
+    if (size < 16)
+      newArray(size, compressed = false)
+    else
+      newArray(ceilingDivide(size * 2, bitsPerLong), compressed = true)
+  }
+
+  private def newArray(n: Int, compressed: Boolean): Array[Long] = {
+    val buf = new Array[Long](n)
+    if (!compressed) {
+      // Initialize to NaN if not compressed
+      val nanBits = java.lang.Double.doubleToLongBits(Double.NaN)
+      var i = 0
+      while (i < n) {
+        buf(i) = nanBits
+        i += 1
+      }
+    }
+    buf
+  }
+
+  private def determineMode(data: Array[Long]): Int = {
+    if (size < 16) {
+      Mode64Bit
+    } else {
+      val bitsPerValue = ceilingDivide(data.length * bitsPerLong, size)
+      if (bitsPerValue < 4)
+        Mode2Bit
+      else if (bitsPerValue >= 64)
+        Mode64Bit
+      else
+        Mode4Bit
+    }
+  }
+
+  override def get(pos: Int): Double = {
+    val data = buffer
+    determineMode(data) match {
+      case Mode2Bit => // 2 bits per value
+        val v = get2(data(pos / bit2PerLong), pos % bit2PerLong)
+        doubleValue(v)
+      case Mode4Bit => // 4 bits per value
+        val v = get4(data(pos / bit4PerLong), pos % bit4PerLong)
+        if (v < 4)
+          doubleValue(v)
+        else
+          java.lang.Double.longBitsToDouble(data(v - 4 + ceilingDivide(size * 4, bitsPerLong)))
+      case Mode64Bit => // 64 bits per value
+        java.lang.Double.longBitsToDouble(data(pos))
+      case mode =>
+        throw new IllegalStateException(s"unsupported mode: $mode")
+    }
+  }
+
+  override def byteCount: Int = {
+    byteCount(buffer)
+  }
+
+  private def byteCount(data: Array[Long]): Int = {
+    2 + sizeOf(buffer)
+  }
+
+  override def update(pos: Int, value: Double): Unit = {
+    determineMode(buffer) match {
+      case Mode2Bit => // 2 bits per value
+        val v = intValue(value)
+        if (v == -1)
+          switchToMode4Bit(pos, value)
+        else {
+          val i = pos / bit2PerLong
+          buffer(i) = set2(buffer(i), pos % bit2PerLong, v)
+        }
+      case Mode4Bit => // 4 bits per value
+        val v = intValue(value)
+        if (v == -1)
+          insertValue(pos, value)
+        else {
+          val i = pos / bit4PerLong
+          buffer(i) = set4(buffer(i), pos % bit4PerLong, v)
+        }
+      case Mode64Bit => // 64 bits per value
+        buffer(pos) = java.lang.Double.doubleToLongBits(value)
+      case mode =>
+        throw new IllegalStateException(s"unsupported mode: $mode")
+    }
+  }
+
+  private def switchToMode4Bit(pos: Int, value: Double): Unit = {
+    val baseSize = ceilingDivide(size * 4, bitsPerLong)
+    val data = newArray(baseSize + 1, compressed = true)
+
+    // Copy existing data
+    val oldData = buffer
+    var i = 0
+    while (i < size) {
+      val v = get2(oldData(i / bit2PerLong), i % bit2PerLong)
+      val j = i / bit4PerLong
+      data(j) = set4(data(j), i % bit4PerLong, v)
+      i += 1
+    }
+
+    // Put in new value
+    data(baseSize) = java.lang.Double.doubleToLongBits(value)
+    val j = pos / bit4PerLong
+    data(j) = set4(data(j), pos % bit4PerLong, 4)
+
+    // Update buffer
+    BlockStats.resize(this, byteCount(buffer), byteCount(data))
+    buffer = data
+  }
+
+  private def switchToMode64Bit(pos: Int, value: Double): Unit = {
+    val baseSize = ceilingDivide(size * 4, bitsPerLong)
+    val data = newArray(size, compressed = false)
+
+    // Copy existing data
+    val oldData = buffer
+    var i = 0
+    while (i < size) {
+      val v = get4(oldData(i / bit4PerLong), i % bit4PerLong)
+      if (v < 4)
+        data(i) = java.lang.Double.doubleToLongBits(doubleValue(v))
+      else
+        data(i) = oldData(v - 4 + baseSize)
+      i += 1
+    }
+
+    // Put in new value
+    data(pos) = java.lang.Double.doubleToLongBits(value)
+
+    // Update buffer
+    BlockStats.resize(this, byteCount(buffer), byteCount(data))
+    buffer = data
+  }
+
+  private def insertValue(pos: Int, value: Double): Unit = {
+    val v = java.lang.Double.doubleToLongBits(value)
+    val baseSize = ceilingDivide(size * 4, bitsPerLong)
+    var i = baseSize
+    while (i < buffer.length) {
+      if (buffer(i) == 0) {
+        // No matches, put in value in empty spot
+        buffer(i) = v
+        val j = pos / bit4PerLong
+        buffer(j) = set4(buffer(j), pos % bit4PerLong, i - baseSize + 4)
+        return
+      } else if (buffer(i) == v) {
+        // Found a match, just update the position
+        val j = pos / bit4PerLong
+        buffer(j) = set4(buffer(j), pos % bit4PerLong, i - baseSize + 4)
+        return
+      }
+      i += 1
+    }
+
+    // No matches found, grow or switch to 64 bit mode
+    val numEntries = buffer.length - baseSize
+    numEntries match {
+      case n if n < 4 =>
+        grow(baseSize + 4, baseSize, i, pos, v)
+      case n if n < 12 =>
+        grow(baseSize + 12, baseSize, i, pos, v)
+      case _ =>
+        switchToMode64Bit(pos, value)
+    }
+  }
+
+  private def grow(n: Int, baseSize: Int, i: Int, pos: Int, v: Long): Unit = {
+    val data = newArray(n, compressed = true)
+    System.arraycopy(buffer, 0, data, 0, buffer.length)
+    data(i) = v
+    val j = pos / bit4PerLong
+    data(j) = set4(data(j), pos % bit4PerLong, i - baseSize + 4)
+    BlockStats.resize(this, byteCount(buffer), byteCount(data))
+    buffer = data
+  }
+
+  override def reset(t: Long): Unit = {
+    throw new UnsupportedOperationException("reset")
+  }
+
+  override def equals(other: Any): Boolean = {
+
+    // Follows guidelines from: http://www.artima.com/pins1ed/object-equality.html#28.4
+    other match {
+      case that: CompressedArrayBlock =>
+        that.canEqual(this) &&
+        start == that.start &&
+        size == that.size &&
+        java.util.Arrays.equals(buffer, that.buffer)
+      case _ => false
+    }
+  }
+
+  override def hashCode: Int = {
+    val prime = 31
+    var hc = prime
+    hc = hc * prime + java.lang.Long.hashCode(start)
+    hc = hc * prime + java.lang.Integer.hashCode(size)
+    hc = hc * prime + java.util.Arrays.hashCode(buffer)
+    hc
+  }
+
+  def canEqual(other: Any): Boolean = {
+    other.isInstanceOf[CompressedArrayBlock]
+  }
+}
+
+object CompressedArrayBlock {
+
+  private val Mode2Bit = 0
+  private val Mode4Bit = 1
+  private val Mode64Bit = 2
+
+  private val oneOver60 = 1.0 / 60.0
+
+  private val bitsPerLong = 8 * 8
+
+  private val bit2PerLong = bitsPerLong / 2
+
+  private val bit4PerLong = bitsPerLong / 4
+
+  private[core] def ceilingDivide(dividend: Int, divisor: Int): Int = {
+    (dividend + divisor - 1) / divisor
+  }
+
+  private[core] def set2(buffer: Long, pos: Int, value: Long): Long = {
+    val shift = pos * 2
+    (buffer & ~(0x3L << shift)) | ((value & 0x3L) << shift)
+  }
+
+  private[core] def get2(buffer: Long, pos: Int): Int = {
+    val shift = pos * 2
+    ((buffer >>> shift) & 0x3L).asInstanceOf[Int]
+  }
+
+  private[core] def set4(buffer: Long, pos: Int, value: Long): Long = {
+    val shift = pos * 4
+    (buffer & ~(0xFL << shift)) | ((value & 0xFL) << shift)
+  }
+
+  private[core] def get4(buffer: Long, pos: Int): Int = {
+    val shift = pos * 4
+    ((buffer >>> shift) & 0xFL).asInstanceOf[Int]
+  }
+
+  private def intValue(value: Double): Int = {
+    value match {
+      case v if v != v         => 0
+      case v if v == 0.0       => 1
+      case v if v == 1.0       => 2
+      case v if v == oneOver60 => 3
+      case _                   => -1
+    }
+  }
+
+  private def doubleValue(value: Int): Double = {
+    value match {
+      case 0 => Double.NaN
+      case 1 => 0.0
+      case 2 => 1.0
+      case 3 => oneOver60
+      case _ => Double.NaN
+    }
+  }
+}
+
+/**
   * Simple block type where all data points have the same value.
   *
   * @param start  start time for the block (epoch in milliseconds)
@@ -580,23 +865,23 @@ case class RollupBlock(sum: Block, count: Block, min: Block, max: Block) extends
   }
 
   private def updateSum(pos: Int, value: Double): Unit = {
-    val buffer = sum.asInstanceOf[ArrayBlock].buffer
-    buffer(pos) = Math.addNaN(buffer(pos), value)
+    val block = sum.asInstanceOf[MutableBlock]
+    block.update(pos, Math.addNaN(block.get(pos), value))
   }
 
   private def updateCount(pos: Int, value: Double): Unit = {
-    val buffer = count.asInstanceOf[ArrayBlock].buffer
-    buffer(pos) = Math.addNaN(buffer(pos), 1.0)
+    val block = count.asInstanceOf[MutableBlock]
+    block.update(pos, Math.addNaN(block.get(pos), 1.0))
   }
 
   private def updateMin(pos: Int, value: Double): Unit = {
-    val buffer = min.asInstanceOf[ArrayBlock].buffer
-    buffer(pos) = Math.minNaN(buffer(pos), value)
+    val block = min.asInstanceOf[MutableBlock]
+    block.update(pos, Math.minNaN(block.get(pos), value))
   }
 
   private def updateMax(pos: Int, value: Double): Unit = {
-    val buffer = max.asInstanceOf[ArrayBlock].buffer
-    buffer(pos) = Math.maxNaN(buffer(pos), value)
+    val block = max.asInstanceOf[MutableBlock]
+    block.update(pos, Math.maxNaN(block.get(pos), value))
   }
 
   /** Reset this block so it can be re-used. */

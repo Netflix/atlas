@@ -135,6 +135,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     index.update(BlockStoreItem.create(dp.tags, blkStore))
   }
 
+  @scala.annotation.tailrec
   private def blockAggr(expr: DataExpr): Int = expr match {
     case by: DataExpr.GroupBy          => blockAggr(by.af)
     case _: DataExpr.All               => Block.Sum

@@ -15,7 +15,11 @@
  */
 package com.netflix.atlas.core.model
 
+import nl.jqno.equalsverifier.EqualsVerifier
+import nl.jqno.equalsverifier.Warning
 import org.scalatest.funsuite.AnyFunSuite
+
+import scala.util.Random
 
 class BlockSuite extends AnyFunSuite {
 
@@ -249,5 +253,136 @@ class BlockSuite extends AnyFunSuite {
       assert(r.get(i, Block.Min) === 0.5)
       assert(r.get(i, Block.Max) === 3.0)
     }
+  }
+
+  test("compressed array: get/set 2") {
+    import CompressedArrayBlock._
+
+    (0 until 32).foreach { i =>
+      assert(set2(0L, i, 0) === 0L)
+      assert(set2(0L, i, 1) === 1L << (2 * i))
+      assert(set2(0L, i, 2) === 2L << (2 * i))
+      assert(set2(0L, i, 3) === 3L << (2 * i))
+
+      (0 until 32).foreach { j =>
+        assert(get2(set2(-1L, i, 0), j) === (if (i == j) 0L else 3L))
+        assert(get2(set2(-1L, i, 1), j) === (if (i == j) 1L else 3L))
+        assert(get2(set2(-1L, i, 2), j) === (if (i == j) 2L else 3L))
+        assert(get2(set2(-1L, i, 3), j) === 3L)
+      }
+    }
+  }
+
+  test("compressed array: get/set 4") {
+    import CompressedArrayBlock._
+
+    (0 until 16).foreach { i =>
+      (0 until 16).foreach { v =>
+        assert(set4(0L, i, v) === v.toLong << (4 * i))
+      }
+
+      (0 until 16).foreach { j =>
+        (0 until 16).foreach { v =>
+          assert(get4(set4(-1L, i, v), j) === (if (i == j) v.toLong else 0xFL))
+        }
+      }
+    }
+  }
+
+  test("compressed array: ceiling division") {
+    import CompressedArrayBlock._
+    assert(ceilingDivide(8, 2) === 4)
+    assert(ceilingDivide(9, 2) === 5)
+  }
+
+  test("compressed array: empty") {
+    val block = CompressedArrayBlock(0L, 60)
+    (0 until 60).foreach { i =>
+      assert(block.get(i).isNaN)
+    }
+  }
+
+  test("compressed array: zero") {
+    val block = CompressedArrayBlock(0L, 60)
+    (0 until 60).foreach { i =>
+      block.update(i, 0.0)
+      assert(block.get(i) === 0.0)
+    }
+    assert(block.byteCount < 25)
+  }
+
+  test("compressed array: single increment") {
+    val block = CompressedArrayBlock(0L, 60)
+    block.update(14, 1.0 / 60.0)
+    assert(block.get(14) === 1.0 / 60.0)
+    (15 until 30).foreach { i =>
+      block.update(i, 0.0)
+      assert(block.get(i) === 0.0)
+    }
+    assert(block.byteCount < 25)
+  }
+
+  test("compressed array: double increment") {
+    val block = CompressedArrayBlock(0L, 60)
+    block.update(14, 2.0 / 60.0)
+    assert(block.get(14) === 2.0 / 60.0)
+    (15 until 30).foreach { i =>
+      block.update(i, 0.0)
+      assert(block.get(i) === 0.0)
+    }
+    assert(block.byteCount < 50)
+  }
+
+  test("compressed array: single uncommon value") {
+    val block = CompressedArrayBlock(0L, 60)
+    (0 until 60).foreach { i =>
+      block.update(i, 2.0)
+      assert(block.get(i) === 2.0)
+    }
+    assert(block.byteCount < 50)
+  }
+
+  test("compressed array: grow") {
+    val block = CompressedArrayBlock(0L, 60)
+    (0 until 60).foreach { i =>
+      block.update(i, i.toDouble)
+      assert(block.get(i) === i.toDouble)
+    }
+    assert(block.byteCount < 500)
+  }
+
+  test("compressed array: random access") {
+    val block = CompressedArrayBlock(0L, 60)
+    Random.shuffle((0 until 60).toList).foreach { i =>
+      block.update(i, i.toDouble)
+    }
+    (0 until 60).foreach { i =>
+      assert(block.get(i) === i.toDouble)
+    }
+    assert(block.byteCount < 500)
+  }
+
+  test("compressed array: various block sizes") {
+    (1 until 24 * 60).foreach { i =>
+      val block = CompressedArrayBlock(0L, i)
+      (0 until i).foreach { j =>
+        block.update(j, j.toDouble)
+        assert(block.get(j) === j.toDouble)
+      }
+    }
+  }
+
+  test("compressed array: small") {
+    val block = CompressedArrayBlock(0L, 2)
+    block.update(0, 1.0)
+    assert(block.get(0) === 1.0)
+    assert(block.get(1).isNaN)
+  }
+
+  test("compressed array: equals") {
+    EqualsVerifier
+      .forClass(classOf[CompressedArrayBlock])
+      .suppress(Warning.NONFINAL_FIELDS)
+      .verify()
   }
 }
