@@ -15,91 +15,9 @@
  */
 package com.netflix.atlas.core.db
 
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.atomic.AtomicLong
-
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.spectator.api.Spectator
-import com.netflix.spectator.api.patterns.PolledMeter
-
-object BlockStats {
-  private val registry = Spectator.globalRegistry
-  private[db] val arrayCount = createGauge("atlas.block.arrayCount")
-  private[db] val constantCount = createGauge("atlas.block.constantCount")
-  private[db] val sparseCount = createGauge("atlas.block.sparseCount")
-  private[db] val arrayBytes = createGauge("atlas.block.arrayBytes")
-  private[db] val constantBytes = createGauge("atlas.block.constantBytes")
-  private[db] val sparseBytes = createGauge("atlas.block.sparseBytes")
-
-  private def createGauge(name: String): AtomicLong = {
-    PolledMeter
-      .using(registry)
-      .withName(name)
-      .monitorValue(new AtomicLong(0L))
-  }
-
-  private def inc(block: Block, count: AtomicLong, bytes: AtomicLong): Unit = {
-    count.incrementAndGet
-    bytes.addAndGet(block.byteCount)
-  }
-
-  def inc(block: Block): Unit = {
-    block match {
-      case b: ArrayBlock    => inc(block, arrayCount, arrayBytes)
-      case b: ConstantBlock => inc(block, constantCount, constantBytes)
-      case b: SparseBlock   => inc(block, sparseCount, sparseBytes)
-      case b: RollupBlock   => b.blocks.foreach(inc)
-      case _                =>
-    }
-  }
-
-  private def dec(block: Block, count: AtomicLong, bytes: AtomicLong): Unit = {
-    count.decrementAndGet
-    bytes.addAndGet(-block.byteCount)
-  }
-
-  def dec(block: Block): Unit = {
-    block match {
-      case b: ArrayBlock    => dec(block, arrayCount, arrayBytes)
-      case b: ConstantBlock => dec(block, constantCount, constantBytes)
-      case b: SparseBlock   => dec(block, sparseCount, sparseBytes)
-      case b: RollupBlock   => b.blocks.foreach(dec)
-      case _                =>
-    }
-  }
-
-  def update(oldBlock: Block, newBlock: Block): Unit = {
-    dec(oldBlock)
-    inc(newBlock)
-  }
-
-  private def percent(value: Long, total: Long): Double = {
-    if (total == 0) 0.0 else (100.0 * value / total)
-  }
-
-  private def mkStatMap(array: Long, constant: Long, sparse: Long): Any = {
-    val raw = Map("array" -> array, "constant" -> constant, "sparse" -> sparse)
-    val total = raw.values.sum
-    Map("total" -> total, "raw" -> raw, "percents" -> raw.map(t => t._1 -> percent(t._2, total)))
-  }
-
-  def statsMap: Map[String, Any] = {
-    Map(
-      "counts" -> mkStatMap(arrayCount.get, constantCount.get, sparseCount.get),
-      "bytes"  -> mkStatMap(arrayBytes.get, constantBytes.get, sparseBytes.get)
-    )
-  }
-
-  def clear(): Unit = {
-    arrayCount.set(0)
-    sparseCount.set(0)
-    constantCount.set(0)
-    arrayBytes.set(0)
-    sparseBytes.set(0)
-    constantCount.set(0)
-  }
-}
 
 trait BlockStore {
 
@@ -129,39 +47,18 @@ trait BlockStore {
 object MemoryBlockStore {
   private val registry = Spectator.globalRegistry
   private val allocs = registry.counter("atlas.block.creationCount", "id", "alloc")
-  private val reused = registry.counter("atlas.block.creationCount", "id", "reused")
 
-  private val freeArrayBlocks = new ArrayBlockingQueue[ArrayBlock](100000)
-
-  def freeArrayBlock(b: ArrayBlock): Unit = {
-    freeArrayBlocks.offer(b)
-  }
-
-  def newArrayBlock(start: Long, size: Int): ArrayBlock = {
-    val b = freeArrayBlocks.poll()
-    if (b == null || b.size != size) {
-      allocs.increment()
-      ArrayBlock(start, size)
-    } else {
-      reused.increment()
-      b.reset(start)
-      b
-    }
-  }
-
-  def freeRollupBlock(b: RollupBlock): Unit = {
-    b.blocks.foreach {
-      case a: ArrayBlock => freeArrayBlock(a)
-      case _             =>
-    }
+  def newArrayBlock(start: Long, size: Int): MutableBlock = {
+    allocs.increment()
+    CompressedArrayBlock(start, size)
   }
 
   def newRollupBlock(start: Long, size: Int): RollupBlock = {
     RollupBlock(
-      newArrayBlock(start, size),
-      newArrayBlock(start, size),
-      newArrayBlock(start, size),
-      newArrayBlock(start, size)
+      CompressedArrayBlock(start, size),
+      CompressedArrayBlock(start, size),
+      CompressedArrayBlock(start, size),
+      CompressedArrayBlock(start, size)
     )
   }
 }
@@ -188,32 +85,17 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
 
   private def newBlock(start: Long, rollup: Boolean): Unit = {
     require(start % blockStep == 0, s"start time $start is not on block boundary")
-    val oldBlock = currentBlock match {
-      case b: ArrayBlock  => Block.compress(b)
-      case b: RollupBlock => b.compress
-      case b              => throw new MatchError(b)
-    }
+    val oldBlock = currentBlock
     val newBlock =
-      if (oldBlock eq currentBlock) {
-        // Unable to compress so the ArrayBlock cannot be reused
-        if (rollup)
-          newRollupBlock(start, blockSize)
-        else
-          newArrayBlock(start, blockSize)
-      } else {
-        // New compressed block created so we can reuse the ArrayBlock
-        reused.increment()
-        currentBlock.reset(start)
-        currentBlock
-      }
-    BlockStats.update(currentBlock, oldBlock)
+      if (rollup)
+        newRollupBlock(start, blockSize)
+      else
+        newArrayBlock(start, blockSize)
     BlockStats.inc(newBlock)
     blocks(currentPos) = oldBlock
     currentBlock = newBlock
     currentPos = next(currentPos)
-    if (blocks(currentPos) != null) {
-      BlockStats.dec(blocks(currentPos))
-    }
+    if (blocks(currentPos) != null) BlockStats.dec(blocks(currentPos))
     blocks(currentPos) = currentBlock
     hasData = true
   }
@@ -226,14 +108,9 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     while (pos < numBlocks) {
       val block = blocks(pos)
       if (block != null && block.start < cutoff) {
+        if (blocks(pos) != null) BlockStats.dec(blocks(pos))
         blocks(pos) = null
-        BlockStats.dec(block)
         if (block eq currentBlock) currentBlock = null
-        block match {
-          case b: ArrayBlock  => freeArrayBlock(b)
-          case b: RollupBlock => freeRollupBlock(b)
-          case _              =>
-        }
       } else {
         nonEmpty = nonEmpty || (block != null)
       }
@@ -249,9 +126,10 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
           newRollupBlock(alignStart(timestamp), blockSize)
         else
           newArrayBlock(alignStart(timestamp), blockSize)
-      currentPos = next(currentPos)
-      blocks(currentPos) = currentBlock
       BlockStats.inc(currentBlock)
+      currentPos = next(currentPos)
+      if (blocks(currentPos) != null) BlockStats.dec(blocks(currentPos))
+      blocks(currentPos) = currentBlock
       hasData = true
     }
     var pos = ((timestamp - currentBlock.start) / step).asInstanceOf[Int]
@@ -265,13 +143,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
 
   def update(timestamp: Long): Unit = {
     if (currentBlock != null && currentBlock.start == timestamp) {
-      val oldBlock = currentBlock match {
-        case b: ArrayBlock  => Block.compress(b)
-        case b: RollupBlock => b.compress
-        case b              => throw new MatchError(b)
-      }
-      BlockStats.update(currentBlock, oldBlock)
-      blocks(currentPos) = oldBlock
+      blocks(currentPos) = currentBlock
       currentBlock = null
     }
   }
