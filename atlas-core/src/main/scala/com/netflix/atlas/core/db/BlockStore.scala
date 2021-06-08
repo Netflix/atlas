@@ -17,7 +17,6 @@ package com.netflix.atlas.core.db
 
 import com.netflix.atlas.core.model._
 import com.netflix.atlas.core.util.ArrayHelper
-import com.netflix.spectator.api.Spectator
 
 trait BlockStore {
 
@@ -45,11 +44,8 @@ trait BlockStore {
 }
 
 object MemoryBlockStore {
-  private val registry = Spectator.globalRegistry
-  private val allocs = registry.counter("atlas.block.creationCount", "id", "alloc")
 
   def newArrayBlock(start: Long, size: Int): MutableBlock = {
-    allocs.increment()
     CompressedArrayBlock(start, size)
   }
 
