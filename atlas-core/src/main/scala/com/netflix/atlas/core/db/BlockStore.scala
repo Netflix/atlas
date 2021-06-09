@@ -65,7 +65,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
 
   private val blockStep = step * blockSize
 
-  private[db] val blocks: Array[Block] = new Array[Block](numBlocks)
+  private[db] val blocks: Array[MutableBlock] = new Array[MutableBlock](numBlocks)
 
   private[db] var currentPos: Int = 0
 
@@ -129,12 +129,26 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
       hasData = true
     }
     var pos = ((timestamp - currentBlock.start) / step).asInstanceOf[Int]
-    require(pos >= 0, "data is too old")
     if (pos >= blockSize) {
+      // Exceeded window of current block, create a new one for the next
+      // interval
       newBlock(alignStart(timestamp), rollup)
       pos = ((timestamp - currentBlock.start) / step).asInstanceOf[Int]
+      currentBlock.update(pos, value)
+    } else if (pos < 0) {
+      // Out of order update received for an older block, try to update the
+      // previous block
+      val previousPos = (currentPos - 1) % numBlocks
+      if (previousPos > 0 && blocks(previousPos) != null) {
+        val previousBlock = blocks(previousPos)
+        pos = ((timestamp - previousBlock.start) / step).asInstanceOf[Int]
+        if (pos >= 0 && pos < blockSize) {
+          previousBlock.update(pos, value)
+        }
+      }
+    } else {
+      currentBlock.update(pos, value)
     }
-    currentBlock.update(pos, value)
   }
 
   def update(timestamp: Long): Unit = {

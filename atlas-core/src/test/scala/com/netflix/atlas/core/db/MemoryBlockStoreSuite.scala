@@ -98,10 +98,20 @@ class MemoryBlockStoreSuite extends AnyFunSuite {
   test("update, old data") {
     val bs = new MemoryBlockStore(1, 1, 40)
     bs.update(0, List(1.0, 2.0, 3.0))
-    intercept[IllegalArgumentException] {
-      bs.update(0, List(4.0, 5.0))
-    }
-    assert(bs.fetch(0, 2, Block.Sum).toList === List(1.0, 2.0, 3.0))
+    bs.update(0, List(4.0, 5.0))
+    // previous block can still be updated, but older updates will be ignored
+    assert(bs.fetch(0, 2, Block.Sum).toList === List(1.0, 5.0, 3.0))
+  }
+
+  test("update, old data hour transition") {
+    val bs = new MemoryBlockStore(1, 60, 3)
+    val input = (0 to 61).map(_.toDouble).toList
+    bs.update(0, input)
+    assert(bs.fetch(0, 61, Block.Sum).toList === input)
+
+    bs.update(58, 60.0)
+    bs.update(59, 60.0)
+    assert(bs.fetch(58, 61, Block.Sum).toList === List(60.0, 60.0, 60.0, 61.0))
   }
 
   test("update, overwrite") {

@@ -60,36 +60,23 @@ class RollingValueFunction(
       // Update the current entry or old entry that is still within range
       val i = (t % size).toInt
       values(i) = aggr(values(i), value)
-    } else if (delta == 1) {
-      // Flush the old entry and overwrite for the new time
-      val i = (t % size).toInt
-      writeValue((t - size) * step, values(i))
-      lastUpdateTime = t
-      values(i) = value
-    } else if (delta > 1) {
-      // Flush the old values, and update for most recent value
-      close()
+      writeValue(t, values(i))
+    } else if (delta >= 1) {
+      // Create or overwrite an older entry
       val i = (t % size).toInt
       lastUpdateTime = t
       values(i) = value
+      writeValue(t, values(i))
     }
   }
 
   override def close(): Unit = {
-    // Flush all the old entries
-    var ts = math.max(lastUpdateTime - size + 1, 0L)
-    while (ts <= lastUpdateTime) {
-      val i = (ts % size).toInt
-      writeValue(ts * step, values(i))
-      values(i) = Double.NaN
-      ts += 1
-    }
     lastUpdateTime = -1L
   }
 
   private def writeValue(timestamp: Long, value: Double): Unit = {
     if (!value.isNaN) {
-      next(timestamp, value)
+      next(timestamp * step, value)
     }
   }
 
