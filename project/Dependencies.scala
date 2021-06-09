@@ -30,7 +30,7 @@ object Dependencies {
   val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
   val awsCloudWatch     = "software.amazon.awssdk" % "cloudwatch" % aws
-  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.0"
+  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.1"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "2.0.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.6.1"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.25.0"
