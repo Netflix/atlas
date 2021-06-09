@@ -129,7 +129,6 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
       hasData = true
     }
     var pos = ((timestamp - currentBlock.start) / step).asInstanceOf[Int]
-    //require(pos >= 0, "data is too old")
     if (pos >= blockSize) {
       // Exceeded window of current block, create a new one for the next
       // interval
