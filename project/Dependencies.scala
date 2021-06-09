@@ -60,7 +60,7 @@ object Dependencies {
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.10"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.3"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
