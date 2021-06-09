@@ -127,4 +127,8 @@ object BlockStats {
   def overallCount: Int = {
     countGauges.values().stream().mapToInt(_.get().toInt).sum()
   }
+
+  def overallBytes: Long = {
+    byteGauges.values().stream().mapToLong(_.get()).sum()
+  }
 }
