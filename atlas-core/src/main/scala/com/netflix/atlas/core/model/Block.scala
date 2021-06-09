@@ -496,7 +496,7 @@ final case class CompressedArrayBlock(start: Long, size: Int) extends MutableBlo
   }
 
   private def byteCount(data: Array[Long]): Int = {
-    2 + sizeOf(buffer)
+    2 + sizeOf(data)
   }
 
   override def update(pos: Int, value: Double): Unit = {
