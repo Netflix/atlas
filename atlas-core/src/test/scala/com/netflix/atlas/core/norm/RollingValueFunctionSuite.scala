@@ -30,33 +30,30 @@ class RollingValueFunctionSuite extends AnyFunSuite {
     val f = newFunction(1L)
     (0 until 20).foreach { i =>
       val vs = f.update(i, i)
-      if (i < 2)
-        assert(vs === Nil)
-      else
-        assert(vs === List((i - 2) -> (i - 2).toDouble))
+      assert(vs == List(i -> i.toDouble))
     }
     f.close()
-    assert(f.result() === List(18 -> 18.0, 19 -> 19.0))
+    assert(f.result() === Nil)
   }
 
   test("values received out of order") {
     val f = newFunction(1L)
-    assert(f.update(1, 1.0) === Nil)
-    assert(f.update(2, 2.0) === Nil)
-    assert(f.update(1, 0.5) === Nil)
-    assert(f.update(3, 3.0) === List(1 -> 0.5))
+    assert(f.update(1, 1.0) === List(1 -> 1.0))
+    assert(f.update(2, 2.0) === List(2 -> 2.0))
+    assert(f.update(1, 0.5) === List(1 -> 0.5))
+    assert(f.update(3, 3.0) === List(3 -> 3.0))
     assert(f.update(1, 0.0) === Nil) // too old
     f.close()
-    assert(f.result() === List(2 -> 2.0, 3 -> 3.0))
+    assert(f.result() === Nil)
   }
 
   test("values with gaps") {
     val f = newFunction(1L)
-    assert(f.update(1, 1.0) === Nil)
-    assert(f.update(5, 5.0) === List(1 -> 1.0))
-    assert(f.update(6, 6.0) === Nil)
-    assert(f.update(9, 9.0) === List(5 -> 5.0, 6 -> 6.0))
+    assert(f.update(1, 1.0) === List(1 -> 1.0))
+    assert(f.update(5, 5.0) === List(5 -> 5.0))
+    assert(f.update(6, 6.0) === List(6 -> 6.0))
+    assert(f.update(9, 9.0) === List(9 -> 9.0))
     f.close()
-    assert(f.result() === List(9 -> 9.0))
+    assert(f.result() === Nil)
   }
 }
