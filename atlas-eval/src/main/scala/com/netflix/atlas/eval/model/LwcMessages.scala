@@ -224,7 +224,7 @@ object LwcMessages {
     } finally {
       gen.close()
     }
-    ByteString(baos.toByteArray)
+    ByteString.fromArrayUnsafe(baos.toByteArray)
   }
 
   /**
