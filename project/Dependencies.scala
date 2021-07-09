@@ -32,7 +32,7 @@ object Dependencies {
   val awsCloudWatch     = "software.amazon.awssdk" % "cloudwatch" % aws
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.2"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "2.0.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.6.1"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.7"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.25.0"
   val guiceCoreBase     = "com.google.inject" % "guice"
   val guiceMultiBase    = "com.google.inject.extensions" % "guice-multibindings"
