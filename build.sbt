@@ -10,12 +10,9 @@ lazy val atlas = project.in(file("."))
     `atlas-json`,
     `atlas-lwcapi`,
     `atlas-module-akka`,
-    `atlas-module-cloudwatch`,
     `atlas-module-eval`,
     `atlas-module-lwcapi`,
     `atlas-module-webapi`,
-    `atlas-poller`,
-    `atlas-poller-cloudwatch`,
     `atlas-standalone`,
     `atlas-webapi`,
     `atlas-wiki`)
@@ -98,14 +95,6 @@ lazy val `atlas-module-akka` = project
     Dependencies.iepGuice
   ))
 
-lazy val `atlas-module-cloudwatch` = project
-  .configure(BuildSettings.profile)
-  .dependsOn(`atlas-module-akka`, `atlas-poller-cloudwatch`)
-  .settings(libraryDependencies ++= Dependencies.guiceCoreAndMulti ++ Seq(
-    Dependencies.iepGuice,
-    Dependencies.iepModuleAws
-  ))
-
 lazy val `atlas-module-eval` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-eval`)
@@ -127,27 +116,6 @@ lazy val `atlas-module-webapi` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.guiceCore,
     Dependencies.iepGuice
-  ))
-
-lazy val `atlas-poller` = project
-  .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-webapi` % "test")
-  .settings(libraryDependencies ++= Seq(
-    Dependencies.akkaHttpCore,
-    Dependencies.akkaTestkit % "test",
-    Dependencies.akkaHttpTestkit % "test",
-    Dependencies.akkaStreamTestkit % "test"
-  ))
-
-lazy val `atlas-poller-cloudwatch` = project
-  .configure(BuildSettings.profile)
-  .dependsOn(`atlas-core`, `atlas-poller`)
-  .settings(libraryDependencies ++= Seq(
-    Dependencies.awsCloudWatch,
-    Dependencies.frigga,
-    Dependencies.iepService,
-    Dependencies.iepModuleLeader,
-    Dependencies.iepLeaderDynamoDb
   ))
 
 lazy val `atlas-standalone` = project
