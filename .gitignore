@@ -11,6 +11,7 @@ gh-pages-build
 target
 
 # Ivy caches
+.bsp
 .gradle
 .ivy2
 .ivy2.cache
