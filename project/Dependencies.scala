@@ -6,7 +6,7 @@ import sbt.librarymanagement.DependencyBuilders.OrganizationArtifactName
 object Dependencies {
   object Versions {
     val akka       = "2.6.15"
-    val akkaHttpV  = "10.2.4"
+    val akkaHttpV  = "10.2.6"
     val aws        = "2.16.92"
     val iep        = "3.0.3"
     val guice      = "5.0.1"
