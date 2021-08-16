@@ -6,15 +6,15 @@ import sbt.librarymanagement.DependencyBuilders.OrganizationArtifactName
 object Dependencies {
   object Versions {
     val akka       = "2.6.15"
-    val akkaHttpV  = "10.2.4"
+    val akkaHttpV  = "10.2.6"
     val aws        = "2.16.92"
-    val iep        = "3.0.2"
+    val iep        = "3.0.3"
     val guice      = "5.0.1"
     val jackson    = "2.12.4"
     val log4j      = "2.14.1"
     val scala      = "2.13.6"
-    val slf4j      = "1.7.31"
-    val spectator  = "0.132.0"
+    val slf4j      = "1.7.32"
+    val spectator  = "0.133.0"
 
     val crossScala = Seq(scala)
   }
@@ -32,7 +32,7 @@ object Dependencies {
   val awsCloudWatch     = "software.amazon.awssdk" % "cloudwatch" % aws
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.2"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "2.0.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.7"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.7.1"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.25.0"
   val guiceCoreBase     = "com.google.inject" % "guice"
   val guiceMultiBase    = "com.google.inject.extensions" % "guice-multibindings"
@@ -59,7 +59,7 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.15"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.16"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
