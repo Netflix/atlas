@@ -326,6 +326,9 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     b.result
   }
 
+  /** Constant time operation to check if the map is empty */
+  override def isEmpty: Boolean = dataLength == 0
+
   /** Constant time operation to get the number of pairs in the map. */
   override def size: Int = dataLength
 
