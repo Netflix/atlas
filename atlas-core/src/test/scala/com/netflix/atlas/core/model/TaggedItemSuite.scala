@@ -16,7 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.Hash
-
+import com.netflix.atlas.core.util.SmallHashMap
 import org.scalatest.funsuite.AnyFunSuite
 
 class TaggedItemSuite extends AnyFunSuite {
@@ -35,9 +35,25 @@ class TaggedItemSuite extends AnyFunSuite {
     assert(TaggedItem.computeId(t1) != TaggedItem.computeId(t2))
   }
 
+  test("computeId, two") {
+    val t1 = Map("name" -> "foo", "cluster" -> "abc")
+    val t2 = Map("name" -> "bar", "cluster" -> "abc")
+    assert(TaggedItem.computeId(t1) === expectedId(t1))
+    assert(TaggedItem.computeId(t2) === expectedId(t2))
+    assert(TaggedItem.computeId(t1) != TaggedItem.computeId(t2))
+  }
+
   test("computeId, multi") {
     val t1 = Map("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "1")
     val t2 = Map("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "2")
+    assert(TaggedItem.computeId(t1) === expectedId(t1))
+    assert(TaggedItem.computeId(t2) === expectedId(t2))
+    assert(TaggedItem.computeId(t1) != TaggedItem.computeId(t2))
+  }
+
+  test("computeId, small hash map") {
+    val t1 = SmallHashMap("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "1")
+    val t2 = SmallHashMap("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "2")
     assert(TaggedItem.computeId(t1) === expectedId(t1))
     assert(TaggedItem.computeId(t2) === expectedId(t2))
     assert(TaggedItem.computeId(t1) != TaggedItem.computeId(t2))
