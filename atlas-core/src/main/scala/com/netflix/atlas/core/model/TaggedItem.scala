@@ -15,14 +15,6 @@
  */
 package com.netflix.atlas.core.model
 
-import java.nio.ByteBuffer
-import java.nio.CharBuffer
-import java.nio.charset.Charset
-import java.nio.charset.CharsetEncoder
-import java.security.MessageDigest
-import java.util
-
-import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.InternMap
 import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.SmallHashMap
@@ -32,85 +24,18 @@ import com.netflix.atlas.core.util.SmallHashMap
   */
 object TaggedItem {
 
-  import java.util.Comparator
-
   type Pair = (String, String)
-
-  private val emptyId = ItemId(Hash.sha1bytes(""))
 
   private val initCapacity = 1000000
   private val idInterner = InternMap.concurrent[ItemId](initCapacity)
   private val tagsInterner = InternMap.concurrent[Map[String, String]](initCapacity)
-
-  private val keyComparator = new Comparator[Pair] {
-
-    def compare(t1: Pair, t2: Pair): Int = {
-      t1._1.compareTo(t2._1)
-    }
-  }
-
-  private def writePair(
-    p: Pair,
-    cbuf: CharBuffer,
-    buf: ByteBuffer,
-    enc: CharsetEncoder,
-    md: MessageDigest
-  ): Unit = {
-    cbuf.clear()
-    cbuf.put(p._1)
-    cbuf.flip()
-    enc.encode(cbuf, buf, true)
-    buf.flip()
-    md.update(buf)
-    buf.clear()
-
-    md.update('='.asInstanceOf[Byte])
-
-    cbuf.clear()
-    cbuf.put(p._2)
-    cbuf.flip()
-    enc.encode(cbuf, buf, true)
-    buf.flip()
-    md.update(buf)
-    buf.clear()
-  }
 
   /**
     * Compute an identifier for a set of tags. The id is a sha1 hash of a normalized string
     * representation. Identical tags will always get the same id.
     */
   def computeId(tags: Map[String, String]): ItemId = {
-    if (tags.isEmpty) emptyId
-    else {
-
-      val pairs = new Array[Pair](tags.size)
-      val it = tags.iterator
-      var pos = 0
-      var maxLength = 0
-      while (it.hasNext) {
-        val t = it.next()
-        pairs(pos) = t
-        pos += 1
-        maxLength = math.max(t._1.length, maxLength)
-        maxLength = math.max(t._2.length, maxLength)
-      }
-
-      util.Arrays.sort(pairs, keyComparator)
-
-      val md = Hash.get("SHA1")
-      val enc = Charset.forName("UTF-8").newEncoder
-      val cbuf = CharBuffer.allocate(maxLength)
-      val buf = ByteBuffer.allocate(maxLength * 2)
-
-      writePair(pairs(0), cbuf, buf, enc, md)
-      pos = 1
-      while (pos < pairs.length) {
-        md.update(','.asInstanceOf[Byte])
-        writePair(pairs(pos), cbuf, buf, enc, md)
-        pos += 1
-      }
-      ItemId(md.digest)
-    }
+    ItemIdCalculator.compute(tags)
   }
 
   /**
