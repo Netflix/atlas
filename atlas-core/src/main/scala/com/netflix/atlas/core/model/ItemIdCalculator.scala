@@ -36,24 +36,18 @@ class ItemIdCalculator {
   private var buf = ByteBuffer.allocate(maxLength * 2)
   private var pairs = new Array[String](maxTags)
 
-  private def writeValue(v: String): Unit = {
-    cbuf.clear()
-    if (v.length > cbuf.length()) {
-      cbuf = CharBuffer.allocate(v.length)
-      buf = ByteBuffer.allocate(v.length * 2)
-    }
-    cbuf.put(v)
-    cbuf.flip()
-    enc.encode(cbuf, buf, true)
-    buf.flip()
-    md.update(buf)
-    buf.clear()
-  }
-
   private def writePair(k: String, v: String): Unit = {
-    writeValue(k)
-    md.update('='.asInstanceOf[Byte])
-    writeValue(v)
+    // The additional 2 are for separator characters that are used
+    val spaceNeeded = k.length + v.length + 2
+    if (cbuf.remaining() < spaceNeeded) {
+      cbuf.flip()
+      val tmp = CharBuffer.allocate(2 * (cbuf.capacity() + spaceNeeded))
+      tmp.put(cbuf)
+      cbuf = tmp
+    }
+    cbuf.put(k)
+    cbuf.put('=')
+    cbuf.put(v)
   }
 
   private def toSortedArray(tags: Map[String, String]): Array[String] = {
@@ -94,6 +88,9 @@ class ItemIdCalculator {
     if (tags.isEmpty) emptyId
     else {
       md.reset()
+      enc.reset()
+      cbuf.clear()
+      buf.clear()
 
       val length = tags.size * 2
       val pairs = toSortedArray(tags)
@@ -101,11 +98,18 @@ class ItemIdCalculator {
       writePair(pairs(0), pairs(1))
       var pos = 2
       while (pos < length) {
-        md.update(','.asInstanceOf[Byte])
+        cbuf.put(',')
         writePair(pairs(pos), pairs(pos + 1))
         pos += 2
       }
 
+      cbuf.flip()
+      if (buf.capacity() < 2 * cbuf.capacity()) {
+        buf = ByteBuffer.allocate(2 * cbuf.capacity())
+      }
+      enc.encode(cbuf, buf, true)
+      buf.flip()
+      md.update(buf)
       ItemId(md.digest)
     }
   }

@@ -19,6 +19,8 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.SmallHashMap
 import org.scalatest.funsuite.AnyFunSuite
 
+import java.util.UUID
+
 class TaggedItemSuite extends AnyFunSuite {
 
   def expectedId(tags: Map[String, String]): ItemId = {
@@ -59,4 +61,12 @@ class TaggedItemSuite extends AnyFunSuite {
     assert(TaggedItem.computeId(t1) != TaggedItem.computeId(t2))
   }
 
+  test("computeId, large tag maps") {
+    // verify buffers grow as expected
+    (10 until 10_000 by 1000).foreach { size =>
+      val tags = (0 until size).map(i => i.toString -> UUID.randomUUID().toString).toMap
+      val smallTags = SmallHashMap(tags)
+      assert(TaggedItem.computeId(smallTags) === expectedId(tags))
+    }
+  }
 }
