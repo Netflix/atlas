@@ -7,7 +7,6 @@ object Dependencies {
   object Versions {
     val akka       = "2.6.15"
     val akkaHttpV  = "10.2.6"
-    val aws        = "2.16.92"
     val iep        = "3.0.3"
     val guice      = "5.0.1"
     val jackson    = "2.12.4"
@@ -29,7 +28,6 @@ object Dependencies {
   val akkaStream        = "com.typesafe.akka" %% "akka-stream" % akka
   val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
-  val awsCloudWatch     = "software.amazon.awssdk" % "cloudwatch" % aws
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.2"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "2.0.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.7.1"
