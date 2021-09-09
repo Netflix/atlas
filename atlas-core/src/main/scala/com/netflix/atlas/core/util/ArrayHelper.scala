@@ -237,4 +237,54 @@ object ArrayHelper {
       builder.result()
     }
   }
+
+  /**
+    * Sort a string array that consists of tag key/value pairs by key. The array will be
+    * sorted in-place. The pair arrays are supposed to be fairly small, typically less than 20
+    * tags. With the small size a simple insertion sort works well.
+    */
+  def sortPairs[T <: Comparable[T]](data: Array[T]): Unit = {
+    sortPairs(data, data.length)
+  }
+
+  /**
+    * Sort a string array that consists of tag key/value pairs by key. The array will be
+    * sorted in-place. The pair arrays are supposed to be fairly small, typically less than 20
+    * tags. With the small size a simple insertion sort works well.
+    */
+  def sortPairs[T <: Comparable[T]](data: Array[T], length: Int): Unit = {
+    require(length % 2 == 0, "array must have even number of elements")
+    if (length == 4) {
+      // Two key/value pairs, swap if needed
+      if (data(0).compareTo(data(2)) > 0) {
+        // Swap key
+        var tmp = data(0)
+        data(0) = data(2)
+        data(2) = tmp
+        // Swap value
+        tmp = data(1)
+        data(1) = data(3)
+        data(3) = tmp
+      }
+    } else if (length > 4) {
+      // One entry is already sorted. Two entries handled above, for larger arrays
+      // use insertion sort.
+      var i = 2
+      while (i < length) {
+        val k = data(i)
+        val v = data(i + 1)
+        var j = i - 2
+
+        while (j >= 0 && data(j).compareTo(k) > 0) {
+          data(j + 2) = data(j)
+          data(j + 3) = data(j + 1)
+          j -= 2
+        }
+        data(j + 2) = k
+        data(j + 3) = v
+
+        i += 2
+      }
+    }
+  }
 }

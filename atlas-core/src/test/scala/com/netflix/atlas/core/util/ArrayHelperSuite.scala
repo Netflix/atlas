@@ -17,6 +17,8 @@ package com.netflix.atlas.core.util
 
 import org.scalatest.funsuite.AnyFunSuite
 
+import java.util.UUID
+
 class ArrayHelperSuite extends AnyFunSuite {
 
   test("merge arrays, limit 1: empty, one") {
@@ -129,5 +131,32 @@ class ArrayHelperSuite extends AnyFunSuite {
     val v2 = List("a", "d")
     val actual = ArrayHelper.merger[String](2).merge(v1).merge(v2).toList
     assert(actual === List("a", "b"))
+  }
+
+  test("sortPairs, empty") {
+    val data = Array.empty[String]
+    ArrayHelper.sortPairs(data)
+  }
+
+  test("sortPairs, single pair") {
+    val data = Array("b", "1")
+    ArrayHelper.sortPairs(data)
+    val expected = Array("b", "1")
+    assert(expected.toList === data.toList)
+  }
+
+  test("sortPairs, two pairs") {
+    val data = Array("b", "1", "a", "2")
+    ArrayHelper.sortPairs(data)
+    val expected = Array("a", "2", "b", "1")
+    assert(expected.toList === data.toList)
+  }
+
+  test("sortPairs, random") {
+    val input = (0 until 50).map(i => UUID.randomUUID().toString -> i.toString)
+    val data = input.flatMap(t => List(t._1, t._2)).toArray
+    ArrayHelper.sortPairs(data)
+    val expected = input.toList.sortWith(_._1 < _._1).flatMap(t => List(t._1, t._2))
+    assert(expected === data.toList)
   }
 }
