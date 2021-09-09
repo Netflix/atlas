@@ -481,11 +481,11 @@ private[stream] abstract class EvaluatorImpl(
         case TextMessage.Strict(str) =>
           parseMessage(str)
         case msg: TextMessage =>
-          msg.textStream.fold("")(_ + _).map(parseMessage)
+          msg.textStream.fold("")(_ + _).flatMapConcat(parseMessage)
         case BinaryMessage.Strict(str) =>
           parseBatch(str)
         case msg: BinaryMessage =>
-          msg.dataStream.fold(ByteString.empty)(_ ++ _).map(parseBatch)
+          msg.dataStream.fold(ByteString.empty)(_ ++ _).flatMapConcat(parseBatch)
       }
       .mapMaterializedValue(_ => NotUsed)
   }
