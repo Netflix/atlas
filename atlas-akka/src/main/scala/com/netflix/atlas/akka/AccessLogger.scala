@@ -20,6 +20,7 @@ import akka.http.scaladsl.model.HttpResponse
 import com.netflix.spectator.api.Spectator
 import com.netflix.spectator.ipc.IpcLogEntry
 import com.netflix.spectator.ipc.IpcLogger
+import org.slf4j.event.Level
 
 import scala.util.Failure
 import scala.util.Success
@@ -38,24 +39,6 @@ import scala.util.Try
   */
 class AccessLogger private (entry: IpcLogEntry, client: Boolean) {
 
-  /**
-    * We go ahead and log on the chunk-start so we can see how long it to start sending the
-    * response in the logs. Also for cases where a TCP error occurs this logger doesn't
-    * get notified so the complete message will be missing.
-    */
-  def chunkStart(request: HttpRequest, response: HttpResponse): Unit = {
-    AccessLogger.addRequestInfo(entry, request)
-    AccessLogger.addResponseInfo(entry, response)
-    entry.markEnd().log()
-  }
-
-  /**
-    * Log again when the last chunk is received to mark the overall time for the request.
-    * This is currently ignored. The timing will always be for the arrival of the first
-    * chunk.
-    */
-  def chunkComplete(): Unit = {}
-
   /** Complete the log entry and write out the result. */
   def complete(request: HttpRequest, result: Try[HttpResponse]): Unit = {
     AccessLogger.addRequestInfo(entry, request)
@@ -64,11 +47,16 @@ class AccessLogger private (entry: IpcLogEntry, client: Boolean) {
 
   /** Complete the log entry and write out the result. */
   def complete(result: Try[HttpResponse]): Unit = {
+    var failure = false
     result match {
-      case Success(response) => AccessLogger.addResponseInfo(entry, response)
-      case Failure(t)        => entry.withException(t)
+      case Success(response) =>
+        AccessLogger.addResponseInfo(entry, response)
+        failure = response.status.isFailure()
+      case Failure(t) =>
+        entry.withException(t)
+        failure = true
     }
-    entry.markEnd().log()
+    entry.markEnd().withLogLevel(if (failure) Level.WARN else Level.DEBUG).log()
   }
 }
 
