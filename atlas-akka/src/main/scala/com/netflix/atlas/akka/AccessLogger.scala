@@ -108,10 +108,14 @@ object AccessLogger {
       .withHttpMethod(request.method.name)
       .withUri(request.uri.toString(), request.uri.path.toString())
     request.headers.foreach(h => entry.addRequestHeader(h.name, h.value))
+    entry.addRequestHeader("Content-Type", request.entity.contentType.value)
+    request.entity.contentLengthOption.foreach(entry.withRequestContentLength)
   }
 
   private def addResponseInfo(entry: IpcLogEntry, response: HttpResponse): Unit = {
     entry.withHttpStatus(response.status.intValue)
     response.headers.foreach(h => entry.addResponseHeader(h.name, h.value))
+    entry.addResponseHeader("Content-Type", response.entity.contentType.value)
+    response.entity.contentLengthOption.foreach(entry.withResponseContentLength)
   }
 }
