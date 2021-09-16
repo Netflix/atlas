@@ -25,6 +25,7 @@ import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.AuthenticationFailedRejection
+import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.server.CircuitBreakerOpenRejection
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.MalformedRequestContentRejection
@@ -226,6 +227,10 @@ object RequestHandler extends StrictLogging {
           error(StatusCodes.MethodNotAllowed, s"method not allowed: ${m.name()}")
         case AuthenticationFailedRejection(_, _) =>
           error(StatusCodes.Forbidden, "not authorized")
+        case AuthorizationFailedRejection =>
+          error(StatusCodes.Unauthorized, "not authorized")
+        case CustomRejection(status, message) =>
+          error(status, message)
         case r: Rejection =>
           error(StatusCodes.BadRequest, r.toString)
       }

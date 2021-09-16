@@ -223,4 +223,10 @@ class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
       assert(response.status === StatusCodes.ServiceUnavailable)
     }
   }
+
+  test("authorization rejection") {
+    Post("/unauthorized") ~> routes ~> check {
+      assert(response.status === StatusCodes.Unauthorized)
+    }
+  }
 }
