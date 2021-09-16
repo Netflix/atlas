@@ -92,6 +92,11 @@ class TestApi(val system: ActorSystem) extends WebApi {
           case Failure(e) => complete(StatusCodes.InternalServerError, e.getMessage)
         }
       }
+    } ~
+    path("unauthorized") {
+      authorize(false) {
+        complete(StatusCodes.OK)
+      }
     }
   }
 }
