@@ -488,6 +488,12 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
           }
         }
       }
+
+      /**
+        * Overridden for efficiency to avoid need to allocate entry set iterator with default
+        * implementation.
+        */
+      override def size(): Int = self.size
     }
   }
 }
