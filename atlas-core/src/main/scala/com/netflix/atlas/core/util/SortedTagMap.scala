@@ -147,6 +147,14 @@ final class SortedTagMap private (data: Array[String], length: Int)
       size - other.size
     }
   }
+
+  /**
+    * Copy internal data for the map into a string array. The passed in buffer must have
+    * a length of at least twice the size of this map.
+    */
+  def copyToArray(buffer: Array[String]): Unit = {
+    System.arraycopy(data, 0, buffer, 0, length)
+  }
 }
 
 /** Helper functions for working with sorted tag maps. */
@@ -163,6 +171,14 @@ object SortedTagMap {
     val array = java.util.Arrays.copyOf(data, data.length)
     ArrayHelper.sortPairs(array)
     new SortedTagMap(array, array.length)
+  }
+
+  /**
+    * Create a new instance from varargs tuples.
+    */
+  def apply(data: (String, String)*): SortedTagMap = {
+    val size = data.knownSize
+    builder(if (size >= 0) size else 10).addAll(data).result()
   }
 
   /**

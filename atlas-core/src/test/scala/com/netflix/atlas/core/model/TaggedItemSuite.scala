@@ -17,6 +17,7 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.util.UUID
@@ -56,6 +57,14 @@ class TaggedItemSuite extends AnyFunSuite {
   test("computeId, small hash map") {
     val t1 = SmallHashMap("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "1")
     val t2 = SmallHashMap("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "2")
+    assert(TaggedItem.computeId(t1) === expectedId(t1))
+    assert(TaggedItem.computeId(t2) === expectedId(t2))
+    assert(TaggedItem.computeId(t1) != TaggedItem.computeId(t2))
+  }
+
+  test("computeId, sorted tag map") {
+    val t1 = SortedTagMap("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "1")
+    val t2 = SortedTagMap("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "2")
     assert(TaggedItem.computeId(t1) === expectedId(t1))
     assert(TaggedItem.computeId(t2) === expectedId(t2))
     assert(TaggedItem.computeId(t1) != TaggedItem.computeId(t2))
