@@ -17,6 +17,7 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
@@ -28,12 +29,19 @@ import org.openjdk.jmh.infra.Blackhole
   * new metrics that come in via publish.
   *
   * ```
-  * > jmh:run -prof jmh.extras.JFR -wi 10 -i 10 -f1 -t1 .*ComputeId.*
+  * > jmh:run -prof gc -prof stack -wi 5 -i 5 -f1 -t1 .*ComputeId.*
   * ...
-  * [info] Benchmark                            Mode  Cnt       Score       Error  Units
-  * [info] ComputeId.computeIdNaive            thrpt   10  233836.750 ± 6784.397  ops/s
-  * [info] ComputeId.computeIdSmallTagMap      thrpt   10  269421.710 ± 5123.143  ops/s
-  * [info] ComputeId.computeIdTagMap           thrpt   10  264154.483 ± 6833.347  ops/s
+  * Benchmark                             Mode  Cnt       Score       Error   Units
+  * computeIdNaive                       thrpt    5  326439.391 ± 30418.108   ops/s
+  * computeIdSmallTagMap                 thrpt    5  512260.825 ± 36192.269   ops/s
+  * computeIdSortedTagMap                thrpt    5  578262.359 ± 70766.713   ops/s
+  * computeIdTagMap                      thrpt    5  519393.255 ± 16961.856   ops/s
+  *
+  * Benchmark                             Mode  Cnt       Score       Error   Units
+  * computeIdNaive                       alloc    5    8408.000 ±     0.001    B/op
+  * computeIdSmallTagMap                 alloc    5      64.000 ±     0.001    B/op
+  * computeIdSortedTagMap                alloc    5      64.000 ±     0.001    B/op
+  * computeIdTagMap                      alloc    5      80.000 ±     0.001    B/op
   * ```
   *
   * Note, the naive method is mostly problematic in terms of allocated data, not
@@ -61,6 +69,8 @@ class ComputeId {
 
   private val smallTagMap = SmallHashMap(tagMap)
 
+  private val sortedTagMap = SortedTagMap(tagMap)
+
   @Threads(1)
   @Benchmark
   def computeIdNaive(bh: Blackhole): Unit = {
@@ -79,5 +89,11 @@ class ComputeId {
   @Benchmark
   def computeIdSmallTagMap(bh: Blackhole): Unit = {
     bh.consume(TaggedItem.computeId(smallTagMap))
+  }
+
+  @Threads(1)
+  @Benchmark
+  def computeIdSortedTagMap(bh: Blackhole): Unit = {
+    bh.consume(TaggedItem.computeId(sortedTagMap))
   }
 }
