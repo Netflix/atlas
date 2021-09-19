@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.SmallHashMap
 
@@ -75,7 +76,7 @@ class ItemIdCalculator {
         }
     }
 
-    insertionSort(pairs, length)
+    ArrayHelper.sortPairs(pairs, length)
     pairs
   }
 
@@ -138,45 +139,5 @@ object ItemIdCalculator {
     */
   def compute(tags: Map[String, String]): ItemId = {
     calculators.get().compute(tags)
-  }
-
-  /**
-    * Sort a string array that consists of tag key/value pairs by key. The array will be
-    * sorted in-place. Tag lists are supposed to be fairly small, typically less than 20
-    * tags. With the small size a simple insertion sort works well.
-    */
-  private def insertionSort(ts: Array[String], length: Int): Unit = {
-    if (length == 4) {
-      // Two key/value pairs, swap if needed
-      if (ts(0).compareTo(ts(2)) > 0) {
-        // Swap key
-        var tmp = ts(0)
-        ts(0) = ts(2)
-        ts(2) = tmp
-        // Swap value
-        tmp = ts(1)
-        ts(1) = ts(3)
-        ts(3) = tmp
-      }
-    } else if (length > 4) {
-      // One entry is already sorted. Two entries handled above, for larger arrays
-      // use insertion sort.
-      var i = 2
-      while (i < length) {
-        val k = ts(i)
-        val v = ts(i + 1)
-        var j = i - 2
-
-        while (j >= 0 && ts(j).compareTo(k) > 0) {
-          ts(j + 2) = ts(j)
-          ts(j + 3) = ts(j + 1)
-          j -= 2
-        }
-        ts(j + 2) = k
-        ts(j + 3) = v
-
-        i += 2
-      }
-    }
   }
 }
