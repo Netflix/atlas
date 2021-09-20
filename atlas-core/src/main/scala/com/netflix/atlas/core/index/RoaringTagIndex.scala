@@ -175,12 +175,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
       pos += 1
     }
 
-    val tagsArray = new Array[Long](tagsSet.size)
-    var i = 0
-    tagsSet.foreach { t =>
-      tagsArray(i) = t
-      i += 1
-    }
+    val tagsArray = tagsSet.toArray
     util.Arrays.sort(tagsArray)
 
     (itemIds, idx, kidx, tagsArray, itemTags)
