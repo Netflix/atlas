@@ -16,23 +16,33 @@
 package com.netflix.atlas.lwcapi
 
 import javax.inject.Inject
-
 import akka.actor.ActorRefFactory
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.util.ByteString
+import com.github.benmanes.caffeine.cache.CacheLoader
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.core.util.Hash
+import com.netflix.atlas.core.util.FastGzipOutputStream
 import com.netflix.atlas.core.util.Strings
+import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
+
+import java.io.ByteArrayOutputStream
+import java.time.Duration
+import java.util.zip.CRC32
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.Using
 
 case class ExpressionApi @Inject() (
   sm: StreamSubscriptionManager,
@@ -43,18 +53,40 @@ case class ExpressionApi @Inject() (
 
   import ExpressionApi._
 
-  private val expressionFetchesId = registry.createId("atlas.lwcapi.expressions.fetches")
+  private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+
   private val expressionCount = registry.distributionSummary("atlas.lwcapi.expressions.count")
+
+  private val responseCache = Caffeine
+    .newBuilder()
+    .expireAfterWrite(Duration.ofSeconds(10))
+    .build[Option[String], EncodedExpressions](
+      new CacheLoader[Option[String], EncodedExpressions] {
+
+        override def load(key: Option[String]): EncodedExpressions = {
+          val expressions = key match {
+            case Some(cluster) => sm.subscriptionsForCluster(cluster).map(_.metadata)
+            case None          => sm.subscriptions.map(_.metadata)
+          }
+          encode(expressions)
+        }
+      }
+    )
+
+  /** Helper for testing to force the recomputation of encoded expressions. */
+  private[lwcapi] def clearCache(): Unit = {
+    responseCache.invalidateAll()
+  }
 
   def routes: Route = {
     endpointPathPrefix("lwc" / "api" / "v1" / "expressions") {
       optionalHeaderValueByName("If-None-Match") { etags =>
         get {
           pathEndOrSingleSlash {
-            complete(handleList(etags))
+            complete(Future(handleList(etags)))
           } ~
           path(Segment) { (cluster) =>
-            complete(handleGet(etags, cluster))
+            complete(Future(handleGet(etags, cluster)))
           }
         }
       }
@@ -62,28 +94,26 @@ case class ExpressionApi @Inject() (
   }
 
   private def handleList(receivedETags: Option[String]): HttpResponse = {
-    handle(receivedETags, sm.subscriptions.map(_.metadata))
+    handle(receivedETags, responseCache.get(None))
   }
 
   private def handleGet(receivedETags: Option[String], cluster: String): HttpResponse = {
-    handle(receivedETags, sm.subscriptionsForCluster(cluster).map(_.metadata))
+    handle(receivedETags, responseCache.get(Some(cluster)))
   }
 
   private def handle(
     receivedETags: Option[String],
-    expressions: List[ExpressionMetadata]
+    expressions: EncodedExpressions
   ): HttpResponse = {
     expressionCount.record(expressions.size)
-    val tag = computeETag(expressions)
+    val tag = expressions.etag
     val headers: List[HttpHeader] = List(RawHeader("ETag", tag))
     val recvTags = receivedETags.getOrElse("")
     if (recvTags.contains(tag)) {
-      registry.counter(expressionFetchesId.withTag("etagmatch", "true")).increment()
       HttpResponse(StatusCodes.NotModified, headers = headers)
     } else {
-      registry.counter(expressionFetchesId.withTag("etagmatch", "false")).increment()
-      val json = Return(expressions).toJson
-      HttpResponse(StatusCodes.OK, headers, HttpEntity(MediaTypes.`application/json`, json))
+      val entity = HttpEntity(MediaTypes.`application/json`, expressions.data)
+      HttpResponse(StatusCodes.OK, `Content-Encoding`(HttpEncodings.gzip) :: headers, entity)
     }
   }
 }
@@ -92,11 +122,38 @@ object ExpressionApi {
 
   case class Return(expressions: List[ExpressionMetadata]) extends JsonSupport
 
-  private[lwcapi] def computeETag(expressions: List[ExpressionMetadata]): String = {
+  case class EncodedExpressions(etag: String, data: ByteString, size: Int)
 
-    // TODO: This should get refactored so we do not need to recompute each time
-    val str = expressions.sorted.mkString(";")
-    val hash = Strings.zeroPad(Hash.sha1bytes(str), 40).substring(20)
-    s""""$hash""""
+  private val streams = new ThreadLocal[ByteArrayOutputStream]
+
+  /** Use thread local to reuse byte array buffers across calls. */
+  private def getOrCreateStream: ByteArrayOutputStream = {
+    var baos = streams.get
+    if (baos == null) {
+      baos = new ByteArrayOutputStream
+      streams.set(baos)
+    } else {
+      baos.reset()
+    }
+    baos
+  }
+
+  private[lwcapi] def encode(expressions: List[ExpressionMetadata]): EncodedExpressions = {
+    val baos = getOrCreateStream
+    Using.resource(new FastGzipOutputStream(baos)) { out =>
+      Using.resource(Json.newJsonGenerator(out)) { gen =>
+        Return(expressions.sorted).encode(gen)
+      }
+    }
+    val bytes = baos.toByteArray
+
+    val crc = new CRC32
+    crc.update(bytes)
+    crc.getValue
+    val hash = Strings.zeroPad(crc.getValue, 16)
+    val etag = s""""$hash""""
+
+    val data = ByteString.fromArrayUnsafe(baos.toByteArray)
+    EncodedExpressions(etag, data, expressions.size)
   }
 }
