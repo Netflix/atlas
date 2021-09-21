@@ -44,7 +44,7 @@ class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
   private val queue = new QueueHandler(
     "test",
     StreamOps
-      .blockingQueue[JsonSupport](new NoopRegistry, "test", 1)
+      .blockingQueue[Seq[JsonSupport]](new NoopRegistry, "test", 1)
       .toMat(Sink.ignore)(Keep.left)
       .run()
   )

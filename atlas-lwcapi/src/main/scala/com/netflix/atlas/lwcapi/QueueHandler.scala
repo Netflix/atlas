@@ -28,12 +28,17 @@ import com.typesafe.scalalogging.StrictLogging
   * @param queue
   *     Underlying queue that will receive the messsages.
   */
-class QueueHandler(id: String, queue: StreamOps.SourceQueue[JsonSupport]) extends StrictLogging {
+class QueueHandler(id: String, queue: StreamOps.SourceQueue[Seq[JsonSupport]])
+    extends StrictLogging {
 
-  def offer(msg: JsonSupport): Unit = {
-    logger.trace(s"enqueuing message for $id: ${msg.toJson}")
-    if (!queue.offer(msg))
-      logger.debug(s"failed to enqueue message for $id: ${msg.toJson}")
+  private def toJson(msgs: Seq[JsonSupport]): String = {
+    msgs.map(_.toJson).mkString("[", ",", "]")
+  }
+
+  def offer(msgs: Seq[JsonSupport]): Unit = {
+    logger.trace(s"enqueuing message for $id: ${toJson(msgs)}")
+    if (!queue.offer(msgs))
+      logger.debug(s"failed to enqueue message for $id: ${toJson(msgs)}")
   }
 
   def complete(): Unit = {

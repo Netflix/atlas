@@ -73,12 +73,13 @@ private[lwcapi] class WebSocketSessionManager(
             case v               => throw new MatchError(s"invalid type: ${v.getClass.getName}")
           }
           val metadata = lwcExpressions.map(v => ExpressionMetadata(v.expression, v.step))
-          val errors = subscribeFunc(streamId, metadata) // Update subscription here
-          errors.foreach { error =>
-            queueHandler.offer(DiagnosticMessage.error(s"[${error.expression}] ${error.message}"))
+          // Update subscription here
+          val errors = subscribeFunc(streamId, metadata).map { error =>
+            DiagnosticMessage.error(s"[${error.expression}] ${error.message}")
           }
+          queueHandler.offer(errors)
         } catch {
-          case NonFatal(t) => queueHandler.offer(DiagnosticMessage.error(t))
+          case NonFatal(t) => queueHandler.offer(Seq(DiagnosticMessage.error(t)))
         } finally {
           // Push out dataSource only once
           if (!dataSourcePushed) {

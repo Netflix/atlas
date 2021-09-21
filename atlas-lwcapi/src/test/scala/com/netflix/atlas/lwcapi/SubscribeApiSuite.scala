@@ -86,7 +86,7 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
         val datapoint = LwcDatapoint(60000, m.id, tags, 42.0)
         val handlers = sm.handlersForSubscription(m.id)
         assert(handlers.size === 1)
-        handlers.head.offer(datapoint)
+        handlers.head.offer(Seq(datapoint))
 
         assert(parse(client.expectMessage()) === datapoint)
       }
@@ -125,7 +125,7 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
         val datapoint = LwcDatapoint(60000, m.id, tags, 42.0)
         val handlers = sm.handlersForSubscription(m.id)
         assert(handlers.size === 1)
-        handlers.head.offer(datapoint)
+        handlers.head.offer(Seq(datapoint))
 
         assert(parseBatch(client.expectMessage()) === List(datapoint))
       }

@@ -23,7 +23,6 @@ import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
-import akka.stream.ThrottleMode
 import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
@@ -89,7 +88,7 @@ class SubscribeApi @Inject() (
     // Drop any other connections that may already be using the same id
     sm.unregister(streamId).foreach { queue =>
       val msg = DiagnosticMessage.info(s"dropped: another connection is using id: $streamId")
-      queue.offer(msg)
+      queue.offer(Seq(msg))
       queue.complete()
     }
 
@@ -116,7 +115,7 @@ class SubscribeApi @Inject() (
     // Drop any other connections that may already be using the same id
     sm.unregister(streamId).foreach { queue =>
       val msg = DiagnosticMessage.info(s"dropped: another connection is using id: $streamId")
-      queue.offer(msg)
+      queue.offer(Seq(msg))
       queue.complete()
     }
 
@@ -152,19 +151,19 @@ class SubscribeApi @Inject() (
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     val (queue, queueSrc) = StreamOps
-      .blockingQueue[JsonSupport](registry, "SubscribeApi", queueSize)
+      .blockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", queueSize)
+      .flatMapConcat(Source.apply)
       .toMat(BroadcastHub.sink(1))(Keep.both)
       .run()
 
     // Send initial setup messages
-    queue.offer(DiagnosticMessage.info(s"setup stream $streamId on $instanceId"))
+    queue.offer(Seq(DiagnosticMessage.info(s"setup stream $streamId on $instanceId")))
     val handler = new QueueHandler(streamId, queue)
     sm.register(streamId, handler)
 
     // Heartbeat messages to ensure that the socket is never idle
     val heartbeatSrc = Source
-      .repeat(NotUsed)
-      .throttle(1, 5.seconds, 1, ThrottleMode.Shaping)
+      .tick(0.seconds, 5.seconds, NotUsed)
       .flatMapConcat { _ =>
         val steps = sm
           .subscriptionsForStream(streamId)
@@ -211,7 +210,7 @@ class SubscribeApi @Inject() (
         addedSubs.foreach { sub =>
           val meta = sub.metadata
           val exprInfo = LwcDataExpr(meta.id, meta.expression, meta.frequency)
-          queue.offer(LwcSubscription(expr.expression, List(exprInfo)))
+          queue.offer(Seq(LwcSubscription(expr.expression, List(exprInfo))))
         }
 
         // Add expression ids in use by this split

@@ -43,12 +43,15 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
           parseEntity(json[EvaluateRequest]) { req =>
             payloadSize.record(req.metrics.size)
             val timestamp = req.timestamp
-            req.metrics.foreach { m =>
-              val datapoint = LwcDatapoint(timestamp, m.id, m.tags, m.value)
-              evaluate(addr, m.id, datapoint)
+            req.metrics.groupBy(_.id).foreach {
+              case (id, ms) =>
+                val datapoints = ms.map { m =>
+                  LwcDatapoint(timestamp, m.id, m.tags, m.value)
+                }
+                evaluate(addr, id, datapoints)
             }
-            req.messages.foreach { m =>
-              evaluate(addr, m.id, m)
+            req.messages.groupBy(_.id).foreach {
+              case (id, ms) => evaluate(addr, id, ms)
             }
             complete(HttpResponse(StatusCodes.OK))
           }
@@ -57,16 +60,16 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
     }
   }
 
-  private def evaluate(addr: RemoteAddress, id: String, msg: JsonSupport): Unit = {
+  private def evaluate(addr: RemoteAddress, id: String, msgs: Seq[JsonSupport]): Unit = {
     val queues = sm.handlersForSubscription(id)
     if (queues.nonEmpty) {
       queues.foreach { queue =>
-        logger.trace(s"sending $msg to $queue (from: $addr)")
-        queue.offer(msg)
+        logger.trace(s"sending ${msgs.size} messages to $queue (from: $addr)")
+        queue.offer(msgs)
       }
     } else {
-      logger.debug(s"no subscriptions, ignoring $msg (from: $addr)")
-      ignoredCounter.increment()
+      logger.debug(s"no subscriptions, ignoring ${msgs.size} messages (from: $addr)")
+      ignoredCounter.increment(msgs.size)
     }
   }
 }
