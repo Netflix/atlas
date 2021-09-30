@@ -24,6 +24,7 @@ class SortedTagMapSuite extends AnyFunSuite {
     assert(m.isEmpty)
     assert(m.size == 0)
     assert(m.get("a").isEmpty)
+    assert(!m.contains("a"))
     assert(m.toList === List.empty)
   }
 
@@ -32,6 +33,7 @@ class SortedTagMapSuite extends AnyFunSuite {
     assert(m.nonEmpty)
     assert(m.size == 1)
     assert(m.get("a").contains("1"))
+    assert(m.contains("a"))
     assert(m.toList === List("a" -> "1"))
   }
 

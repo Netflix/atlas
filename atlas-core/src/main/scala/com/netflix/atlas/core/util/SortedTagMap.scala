@@ -99,6 +99,10 @@ final class SortedTagMap private (data: Array[String], length: Int)
     Option(getOrNull(key))
   }
 
+  override def contains(key: String): Boolean = {
+    getOrNull(key) != null
+  }
+
   override def iterator: Iterator[(String, String)] = {
     val n = length
     new Iterator[(String, String)] {
