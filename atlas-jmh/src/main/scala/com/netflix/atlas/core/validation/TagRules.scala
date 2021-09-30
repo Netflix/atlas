@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.validation
 
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.impl.AsciiSet
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
@@ -34,8 +35,10 @@ import org.openjdk.jmh.infra.Blackhole
   *
   * ```
   * Benchmark           Mode  Cnt        Score        Error   Units
-  * composite          thrpt   10  9138888.219 ± 338096.662   ops/s
-  * separate           thrpt   10  1909872.604 ±   5324.498   ops/s
+  * composite          thrpt   10  1345178.780 ± 220318.775   ops/s
+  * compositeSorted    thrpt   10  1330052.142 ± 100088.503   ops/s
+  * separate           thrpt   10  1827998.619 ± 126933.939   ops/s
+  * separateSorted     thrpt   10  2085370.740 ± 262945.382   ops/s
   * ```
   */
 @State(Scope.Thread)
@@ -57,6 +60,8 @@ class TagRules {
     "statistic"  -> "totalTime"
   )
 
+  private val sortedTags = SortedTagMap(tags)
+
   private val rules = List(
     KeyLengthRule(2, 80),
     NameValueLengthRule(ValueLengthRule(2, 255), ValueLengthRule(2, 120)),
@@ -66,7 +71,17 @@ class TagRules {
     ),
     ReservedKeyRule(
       "nf.",
-      Set("app", "cluster", "asg", "stack", "region", "zone", "node", "ami", "vmtype")
+      Set(
+        "nf.app",
+        "nf.cluster",
+        "nf.asg",
+        "nf.stack",
+        "nf.region",
+        "nf.zone",
+        "nf.node",
+        "nf.ami",
+        "nf.vmtype"
+      )
     ),
     ReservedKeyRule("atlas.", Set("legacy"))
   )
@@ -79,7 +94,17 @@ class TagRules {
   }
 
   @Benchmark
+  def separateSorted(bh: Blackhole): Unit = {
+    bh.consume(Rule.validate(sortedTags, rules))
+  }
+
+  @Benchmark
   def composite(bh: Blackhole): Unit = {
     bh.consume(composite.validate(tags))
+  }
+
+  @Benchmark
+  def compositeSorted(bh: Blackhole): Unit = {
+    bh.consume(composite.validate(sortedTags))
   }
 }

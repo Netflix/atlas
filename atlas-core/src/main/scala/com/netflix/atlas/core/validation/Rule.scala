@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.validation
 
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.api.Id
 import com.typesafe.config.Config
 
@@ -35,6 +36,7 @@ trait Rule {
   def validate(tags: Map[String, String]): ValidationResult = {
     tags match {
       case m: SmallHashMap[String, String] => validate(m)
+      case m: SortedTagMap                 => validate(m)
       case _                               => validate(SmallHashMap(tags))
     }
   }
@@ -43,6 +45,11 @@ trait Rule {
     * Validates that the tag map matches the rule.
     */
   def validate(tags: SmallHashMap[String, String]): ValidationResult
+
+  /**
+    * Validates that the tag map matches the rule.
+    */
+  def validate(tags: SortedTagMap): ValidationResult
 
   /**
     * Validates that the id matches the rule.
@@ -59,12 +66,12 @@ trait Rule {
 
 object Rule {
 
-  def load(ruleConfigs: java.util.List[_ <: Config]): List[Rule] = {
+  def load(ruleConfigs: java.util.List[_ <: Config], useComposite: Boolean = false): List[Rule] = {
     import scala.jdk.CollectionConverters._
-    load(ruleConfigs.asScala.toList)
+    load(ruleConfigs.asScala.toList, useComposite)
   }
 
-  def load(ruleConfigs: List[_ <: Config]): List[Rule] = {
+  def load(ruleConfigs: List[_ <: Config], useComposite: Boolean): List[Rule] = {
     val configClass = classOf[Config]
     val rules = ruleConfigs.map { cfg =>
       val cls = Class.forName(cfg.getString("class"))
@@ -100,11 +107,15 @@ object Rule {
       }
     }
 
-    val (tagRules, others) = rules.partition(_.isInstanceOf[TagRule])
-    if (tagRules.isEmpty)
-      others
-    else
-      CompositeTagRule(tagRules.map(_.asInstanceOf[TagRule])) :: others
+    if (useComposite) {
+      val (tagRules, others) = rules.partition(_.isInstanceOf[TagRule])
+      if (tagRules.isEmpty)
+        others
+      else
+        CompositeTagRule(tagRules.map(_.asInstanceOf[TagRule])) :: others
+    } else {
+      rules
+    }
   }
 
   @scala.annotation.tailrec
