@@ -208,7 +208,9 @@ class SmallHashMapSuite extends AnyFunSuite {
     assert(m2.size === 2)
 
     assert(m1("k1") === "v1")
+    assert(m1.contains("k1"))
     intercept[NoSuchElementException] { m1("k2") }
+    assert(!m1.contains("k2"))
     assert(m2("k1") === "v1")
     assert(m2("k2") === "v2")
 

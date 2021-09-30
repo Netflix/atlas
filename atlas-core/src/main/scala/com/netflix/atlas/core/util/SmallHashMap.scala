@@ -186,7 +186,11 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
     }
   }
 
-  def get(key: K): Option[V] = Option(getOrNull(key))
+  override def get(key: K): Option[V] = Option(getOrNull(key))
+
+  override def contains(key: K): Boolean = {
+    getOrNull(key) != null
+  }
 
   override def foreach[U](f: ((K, V)) => U): Unit = {
     var i = 0
