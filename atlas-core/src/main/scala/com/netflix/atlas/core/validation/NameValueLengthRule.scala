@@ -33,7 +33,8 @@ import com.typesafe.config.Config
   * }
   * ```
   */
-case class NameValueLengthRule(nameRule: TagRule, valueRule: TagRule) extends TagRule {
+case class NameValueLengthRule(nameRule: ValueLengthRule, valueRule: ValueLengthRule)
+    extends TagRule {
 
   override def validate(k: String, v: String): String = {
     if (k == "name") nameRule.validate(k, v) else valueRule.validate(k, v)

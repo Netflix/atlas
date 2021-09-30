@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.validation
 
+import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.api.Id
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
@@ -30,6 +31,15 @@ class HasKeyRuleSuite extends AnyFunSuite {
 
   test("missing key") {
     val res = rule.validate(Map("cluster" -> "foo"))
+    assert(res.isFailure)
+  }
+
+  test("sorted: has key") {
+    assert(rule.validate(SortedTagMap("name" -> "foo")) === ValidationResult.Pass)
+  }
+
+  test("sorted: missing key") {
+    val res = rule.validate(SortedTagMap("cluster" -> "foo"))
     assert(res.isFailure)
   }
 

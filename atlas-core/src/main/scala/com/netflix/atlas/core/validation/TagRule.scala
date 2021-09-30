@@ -17,6 +17,7 @@ package com.netflix.atlas.core.validation
 
 import com.netflix.atlas.core.util.IdMap
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.api.Id
 
 /**
@@ -30,6 +31,17 @@ trait TagRule extends Rule {
       val result = validate(iter.key, iter.value)
       if (result != TagRule.Pass) return failure(result, tags)
       iter.nextEntry()
+    }
+    ValidationResult.Pass
+  }
+
+  override def validate(tags: SortedTagMap): ValidationResult = {
+    val size = tags.size
+    var i = 0
+    while (i < size) {
+      val result = validate(tags.key(i), tags.value(i))
+      if (result != TagRule.Pass) return failure(result, tags)
+      i += 1
     }
     ValidationResult.Pass
   }
