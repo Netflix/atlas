@@ -124,7 +124,7 @@ lazy val `atlas-postgres` = project
   .dependsOn(`atlas-core`)
   .settings(libraryDependencies ++= Seq(
       Dependencies.postgres,
-      Dependencies.postgresEmbedded
+      Dependencies.postgresEmbedded % "test"
   ))
 
 lazy val `atlas-standalone` = project
