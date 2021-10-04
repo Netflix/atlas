@@ -83,14 +83,10 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
     buffer.clear()
     Using.resource(connection.createStatement()) { stmt =>
       createTable(stmt, dataType)
-      buffer
-        .putString(null)
-        .nextRow()
-        .putString("foo")
-        .nextRow()
-        .putString("bar")
-        .nextRow()
-        .copyIn(copyManager, tableName)
+      assert(buffer.putString(null).nextRow())
+      assert(buffer.putString("foo").nextRow())
+      assert(buffer.putString("bar").nextRow())
+      buffer.copyIn(copyManager, tableName)
       assert(getData(stmt, _.getString(1)) === List(null, "foo", "bar"))
     }
   }
@@ -109,14 +105,10 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
         buffer.clear()
         Using.resource(connection.createStatement()) { stmt =>
           createTable(stmt, "json")
-          buffer
-            .putTagsJson(SortedTagMap.empty)
-            .nextRow()
-            .putTagsJson(SortedTagMap("a" -> "1"))
-            .nextRow()
-            .putTagsJson(SortedTagMap("a" -> "1", "b" -> "2"))
-            .nextRow()
-            .copyIn(copyManager, tableName)
+          assert(buffer.putTagsJson(SortedTagMap.empty).nextRow())
+          assert(buffer.putTagsJson(SortedTagMap("a" -> "1")).nextRow())
+          assert(buffer.putTagsJson(SortedTagMap("a" -> "1", "b" -> "2")).nextRow())
+          buffer.copyIn(copyManager, tableName)
           val expected = List(
             "{}",
             """{"a":"1"}""",
@@ -131,14 +123,10 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
         buffer.clear()
         Using.resource(connection.createStatement()) { stmt =>
           createTable(stmt, "jsonb")
-          buffer
-            .putTagsJsonb(SortedTagMap.empty)
-            .nextRow()
-            .putTagsJsonb(SortedTagMap("a" -> "1"))
-            .nextRow()
-            .putTagsJsonb(SortedTagMap("a" -> "1", "b" -> "2"))
-            .nextRow()
-            .copyIn(copyManager, tableName)
+          assert(buffer.putTagsJsonb(SortedTagMap.empty).nextRow())
+          assert(buffer.putTagsJsonb(SortedTagMap("a" -> "1")).nextRow())
+          assert(buffer.putTagsJsonb(SortedTagMap("a" -> "1", "b" -> "2")).nextRow())
+          buffer.copyIn(copyManager, tableName)
           val expected = List(
             "{}",
             """{"a": "1"}""",
@@ -153,14 +141,10 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
         buffer.clear()
         Using.resource(connection.createStatement()) { stmt =>
           createTable(stmt, "hstore")
-          buffer
-            .putTagsHstore(SortedTagMap.empty)
-            .nextRow()
-            .putTagsHstore(SortedTagMap("a" -> "1"))
-            .nextRow()
-            .putTagsHstore(SortedTagMap("a" -> "1", "b" -> "2"))
-            .nextRow()
-            .copyIn(copyManager, tableName)
+          assert(buffer.putTagsHstore(SortedTagMap.empty).nextRow())
+          assert(buffer.putTagsHstore(SortedTagMap("a" -> "1")).nextRow())
+          assert(buffer.putTagsHstore(SortedTagMap("a" -> "1", "b" -> "2")).nextRow())
+          buffer.copyIn(copyManager, tableName)
           val expected = List(
             "",
             """"a"=>"1"""",
@@ -175,14 +159,10 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
         buffer.clear()
         Using.resource(connection.createStatement()) { stmt =>
           createTable(stmt, "smallint")
-          buffer
-            .putShort(0)
-            .nextRow()
-            .putShort(Short.MinValue)
-            .nextRow()
-            .putShort(Short.MaxValue)
-            .nextRow()
-            .copyIn(copyManager, tableName)
+          assert(buffer.putShort(0).nextRow())
+          assert(buffer.putShort(Short.MinValue).nextRow())
+          assert(buffer.putShort(Short.MaxValue).nextRow())
+          buffer.copyIn(copyManager, tableName)
           val expected = List(
             0,
             Short.MinValue,
@@ -197,14 +177,10 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
         buffer.clear()
         Using.resource(connection.createStatement()) { stmt =>
           createTable(stmt, "integer")
-          buffer
-            .putInt(0)
-            .nextRow()
-            .putInt(Int.MinValue)
-            .nextRow()
-            .putInt(Int.MaxValue)
-            .nextRow()
-            .copyIn(copyManager, tableName)
+          assert(buffer.putInt(0).nextRow())
+          assert(buffer.putInt(Int.MinValue).nextRow())
+          assert(buffer.putInt(Int.MaxValue).nextRow())
+          buffer.copyIn(copyManager, tableName)
           val expected = List(
             0,
             Int.MinValue,
@@ -219,14 +195,10 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
         buffer.clear()
         Using.resource(connection.createStatement()) { stmt =>
           createTable(stmt, "bigint")
-          buffer
-            .putLong(0L)
-            .nextRow()
-            .putLong(Long.MinValue)
-            .nextRow()
-            .putLong(Long.MaxValue)
-            .nextRow()
-            .copyIn(copyManager, tableName)
+          assert(buffer.putLong(0L).nextRow())
+          assert(buffer.putLong(Long.MinValue).nextRow())
+          assert(buffer.putLong(Long.MaxValue).nextRow())
+          buffer.copyIn(copyManager, tableName)
           val expected = List(
             0L,
             Long.MinValue,
@@ -241,22 +213,14 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
         buffer.clear()
         Using.resource(connection.createStatement()) { stmt =>
           createTable(stmt, "double precision")
-          buffer
-            .putDouble(0.0)
-            .nextRow()
-            .putDouble(Double.MinValue)
-            .nextRow()
-            .putDouble(Double.MaxValue)
-            .nextRow()
-            .putDouble(Double.MinPositiveValue)
-            .nextRow()
-            .putDouble(Double.NaN)
-            .nextRow()
-            .putDouble(Double.NegativeInfinity)
-            .nextRow()
-            .putDouble(Double.PositiveInfinity)
-            .nextRow()
-            .copyIn(copyManager, tableName)
+          assert(buffer.putDouble(0.0).nextRow())
+          assert(buffer.putDouble(Double.MinValue).nextRow())
+          assert(buffer.putDouble(Double.MaxValue).nextRow())
+          assert(buffer.putDouble(Double.MinPositiveValue).nextRow())
+          assert(buffer.putDouble(Double.NaN).nextRow())
+          assert(buffer.putDouble(Double.NegativeInfinity).nextRow())
+          assert(buffer.putDouble(Double.PositiveInfinity).nextRow())
+          buffer.copyIn(copyManager, tableName)
           val expected = List(
             0.0,
             Double.MinValue,
@@ -286,10 +250,8 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
             Double.NegativeInfinity,
             Double.PositiveInfinity
           )
-          buffer
-            .putDoubleArray(expected.toArray)
-            .nextRow()
-            .copyIn(copyManager, tableName)
+          assert(buffer.putDoubleArray(expected.toArray).nextRow())
+          buffer.copyIn(copyManager, tableName)
           val actual = getData(stmt, _.getArray(1).getArray.asInstanceOf[Array[java.lang.Double]])
           assert(actual.size === 1)
           actual.foreach { data =>

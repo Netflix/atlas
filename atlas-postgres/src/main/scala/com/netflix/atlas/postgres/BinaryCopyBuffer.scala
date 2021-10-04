@@ -18,11 +18,13 @@ package com.netflix.atlas.postgres
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.util.ByteBufferInputStream
 import com.netflix.atlas.core.util.SortedTagMap
+import com.netflix.atlas.core.util.Strings
 import org.postgresql.copy.CopyManager
 
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
+import java.nio.charset.CoderResult
 import java.nio.charset.StandardCharsets
 
 /**
@@ -46,7 +48,11 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
   require(numFields > 0, "number of fields per tuple must be greater than 0")
 
   private val data = ByteBuffer.allocate(size)
+  private var numRows = 0
+  private var rowStartPosition = 0
   clear()
+
+  private var incompleteWrite = false
 
   private val stringBuilder = new StringBuilder
   private val encoder = StandardCharsets.UTF_8.newEncoder()
@@ -59,12 +65,24 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
   private def putS(value: Short): BinaryCopyBuffer = {
     if (hasSpace(2))
       data.putShort(value)
+    else
+      incompleteWrite = true
     this
   }
 
   private def putI(value: Int): BinaryCopyBuffer = {
     if (hasSpace(4))
       data.putInt(value)
+    else
+      incompleteWrite = true
+    this
+  }
+
+  private def putI(index: Int, value: Int): BinaryCopyBuffer = {
+    if (data.limit() - index >= 4)
+      data.putInt(index, value)
+    else
+      incompleteWrite = true
     this
   }
 
@@ -74,7 +92,9 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
 
   private def encodeString(str: CharBuffer): Unit = {
     encoder.reset()
-    encoder.encode(str, data, true)
+    if (encoder.encode(str, data, true) == CoderResult.OVERFLOW) {
+      incompleteWrite = true
+    }
   }
 
   private def putString(str: CharBuffer): BinaryCopyBuffer = {
@@ -85,7 +105,7 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
       putI(0) // placeholder for size
       encodeString(str)
       val valueSize = data.position() - valueSizePos - 4
-      data.putInt(valueSizePos, valueSize)
+      putI(valueSizePos, valueSize)
       this
     }
   }
@@ -121,10 +141,13 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
   override def putTagsJsonb(tags: SortedTagMap): CopyBuffer = {
     val valueSizePos = data.position()
     putI(0) // placeholder for size
-    data.put(1.toByte)
+    if (hasSpace(1))
+      data.put(1.toByte)
+    else
+      incompleteWrite = true
     encodeString(toJson(tags))
     val valueSize = data.position() - valueSizePos - 4
-    data.putInt(valueSizePos, valueSize)
+    putI(valueSizePos, valueSize)
     this
   }
 
@@ -141,7 +164,7 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
     }
 
     val valueSize = data.position() - valueSizePos - 4
-    data.putInt(valueSizePos, valueSize)
+    putI(valueSizePos, valueSize)
     this
   }
 
@@ -161,6 +184,8 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
     if (hasSpace(16)) {
       data.putInt(8)
       data.putLong(value)
+    } else {
+      incompleteWrite = true
     }
     this
   }
@@ -169,6 +194,8 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
     if (hasSpace(16)) {
       data.putInt(8)
       data.putDouble(value)
+    } else {
+      incompleteWrite = true
     }
     this
   }
@@ -192,13 +219,27 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
         data.putDouble(values(i))
         i += 1
       }
+    } else {
+      incompleteWrite = true
     }
     this
   }
 
-  override def nextRow(): CopyBuffer = {
-    data.mark()
-    putS(numFields)
+  override def nextRow(): Boolean = {
+    val rowNonEmpty = data.position() > rowStartPosition
+    if (!incompleteWrite && data.remaining() >= 2 && rowNonEmpty) {
+      numRows += 1
+      data.mark()
+      putS(numFields)
+      rowStartPosition = data.position()
+      true
+    } else if (numRows > 0 && rowNonEmpty) {
+      false
+    } else {
+      throw new IllegalStateException(
+        "nextRow() called on empty row, usually means a row is too big to fit"
+      )
+    }
   }
 
   override def hasRemaining: Boolean = {
@@ -209,13 +250,16 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
     data.remaining()
   }
 
-  override def rows: Int = ???
+  override def rows: Int = numRows
 
   override def clear(): Unit = {
+    incompleteWrite = false
     data.clear()
     data.put(BinaryCopyBuffer.Signature)
     data.putInt(0) // flags
     data.putInt(0) // header extension
+    numRows = -1 // will get incremented by 0 in next step
+    rowStartPosition = 0
     nextRow() // prepare for first row
   }
 
@@ -231,6 +275,24 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
   override def copyIn(copyManager: CopyManager, table: String): Unit = {
     val copySql = s"copy $table from stdin (format binary)"
     copyManager.copyIn(copySql, inputStream())
+  }
+
+  override def toString: String = {
+    val builder = new StringBuilder
+    val bytes = data.array()
+    val n = data.position()
+    var i = 19 // ignore header
+    while (i < n) {
+      val b = bytes(i)
+      if (b >= ' ' && b <= '~') {
+        builder.append(b.asInstanceOf[Char])
+      } else {
+        val ub = b & 0xff
+        builder.append("\\x").append(Strings.zeroPad(ub, 2))
+      }
+      i += 1
+    }
+    builder.toString()
   }
 }
 

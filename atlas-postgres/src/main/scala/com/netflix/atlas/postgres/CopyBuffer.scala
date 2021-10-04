@@ -78,10 +78,8 @@ trait CopyBuffer {
     *
     * If a single row is too big to fit in the buffer, then an IllegalStateException
     * will be thrown to avoid an endless loop.
-    *
-    * TODO
     */
-  def nextRow(): CopyBuffer
+  def nextRow(): Boolean
 
   /** Returns true if there is space remaining in the buffer. */
   def hasRemaining: Boolean

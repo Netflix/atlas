@@ -23,6 +23,21 @@ import java.io.Reader
 
 class TextCopyBufferSuite extends AnyFunSuite {
 
+  test("too small") {
+    intercept[IllegalArgumentException] {
+      new TextCopyBuffer(0)
+    }
+  }
+
+  test("avoid endless loop") {
+    val buffer = new TextCopyBuffer(1)
+    assert(buffer.putString("").nextRow())
+    buffer.clear()
+    intercept[IllegalStateException] {
+      buffer.putString("foo").nextRow()
+    }
+  }
+
   test("putId") {
     val buffer = new TextCopyBuffer(100)
     val id = ItemIdCalculator.compute(SortedTagMap("a" -> "1"))
@@ -192,13 +207,8 @@ class TextCopyBufferSuite extends AnyFunSuite {
 
   test("reader with partial row") {
     val buffer = new TextCopyBuffer(9)
-    buffer
-      .putInt(0)
-      .putString("foo")
-      .nextRow()
-      .putInt(1)
-      .putString("bar") // too big to fit
-      .nextRow()
+    assert(buffer.putInt(0).putString("foo").nextRow())
+    assert(!buffer.putInt(1).putString("bar").nextRow())
     assert(toString(buffer.reader()) === "0\tfoo\n")
   }
 
@@ -211,6 +221,16 @@ class TextCopyBufferSuite extends AnyFunSuite {
     buffer.putString("foo")
     assert(!buffer.hasRemaining)
     assert(buffer.remaining === 0)
+  }
+
+  test("rows") {
+    val buffer = new TextCopyBuffer(100)
+    var i = 0
+    while (buffer.putInt(i).nextRow()) {
+      i = i + 1
+      assert(buffer.rows === i)
+    }
+    assert(buffer.rows === i)
   }
 
   test("clear") {

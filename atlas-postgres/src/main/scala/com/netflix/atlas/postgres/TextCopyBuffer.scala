@@ -29,7 +29,7 @@ import java.nio.CharBuffer
   * [text format]: https://www.postgresql.org/docs/13/sql-copy.html#id-1.9.3.55.9.2
   *
   * @param size
-  *     Size of the underlying character buffer.
+  *     Size of the underlying character buffer. Must be at least 1.
   * @param shouldEscapeValues
   *     True if string values should be escaped before being written to the buffer. For
   *     sources where the values are known not to include any special characters this
@@ -37,7 +37,10 @@ import java.nio.CharBuffer
   */
 class TextCopyBuffer(size: Int, shouldEscapeValues: Boolean = true) extends CopyBuffer {
 
+  require(size >= 1, "buffer size must be at least 1")
+
   private val data = CharBuffer.allocate(size)
+  private var numRows = 0
 
   override def putId(id: ItemId): CopyBuffer = {
     putString(id.toString)
@@ -175,16 +178,22 @@ class TextCopyBuffer(size: Int, shouldEscapeValues: Boolean = true) extends Copy
     }
   }
 
-  override def nextRow(): CopyBuffer = {
+  override def nextRow(): Boolean = {
     val i = data.position() - 1
-    if (i < 0 || data.get(i) == '\n') {
-      throw new IllegalStateException("empty row")
+    if (i < 0 || data.get(i) == '\n' || (data.get(i) != '\t' && numRows == 0)) {
+      throw new IllegalStateException(
+        "nextRow() called on empty row, usually means a row is too big to fit"
+      )
     } else if (data.get(i) == '\t') {
+      numRows += 1
       data.position(i)
       data.put('\n')
       data.mark()
+      true
+    } else {
+      // partial row written
+      false
     }
-    this
   }
 
   override def hasRemaining: Boolean = {
@@ -195,10 +204,11 @@ class TextCopyBuffer(size: Int, shouldEscapeValues: Boolean = true) extends Copy
     data.remaining()
   }
 
-  override def rows: Int = ???
+  override def rows: Int = numRows
 
   override def clear(): Unit = {
     data.clear()
+    numRows = 0
   }
 
   def reader(): Reader = {
