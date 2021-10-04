@@ -13,6 +13,7 @@ lazy val atlas = project.in(file("."))
     `atlas-module-eval`,
     `atlas-module-lwcapi`,
     `atlas-module-webapi`,
+    `atlas-postgres`,
     `atlas-standalone`,
     `atlas-webapi`,
     `atlas-wiki`)
@@ -116,6 +117,14 @@ lazy val `atlas-module-webapi` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.guiceCore,
     Dependencies.iepGuice
+  ))
+
+lazy val `atlas-postgres` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-core`)
+  .settings(libraryDependencies ++= Seq(
+      Dependencies.postgres,
+      Dependencies.postgresEmbedded % "test"
   ))
 
 lazy val `atlas-standalone` = project
