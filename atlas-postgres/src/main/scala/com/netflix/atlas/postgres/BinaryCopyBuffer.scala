@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets
   * [binary format] https://www.postgresql.org/docs/13/sql-copy.html#id-1.9.3.55.9.4
   *
   * @param size
-  *     Size of the underlying character buffer. Must be at least 27 bytes for headers
+  *     Size of the underlying byte buffer. Must be at least 27 bytes for headers
   *     and footers.
   * @param numFields
   *     Number of fields per tuple.
