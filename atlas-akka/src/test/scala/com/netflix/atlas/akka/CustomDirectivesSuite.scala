@@ -29,6 +29,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.DefaultRegistry
@@ -157,7 +158,8 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
               }
             }
           }
-        }
+        } ~
+        corsPreflight(Nil)
       }
     }
   }
@@ -440,6 +442,25 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
           fail(s"unexpected header: $h")
       }
       assert("" === responseAs[String])
+    }
+  }
+
+  test("cors preflight") {
+    Options("/json") ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.OK)
+    }
+  }
+
+  test("cors preflight with body") {
+    val request = HttpRequest(
+      method = HttpMethods.OPTIONS,
+      entity = HttpEntity.Chunked(
+        MediaTypes.`application/octet-stream`,
+        Source.single(HttpEntity.LastChunk(""))
+      )
+    )
+    request ~> endpoint.routes ~> check {
+      assert(response.status === StatusCodes.OK)
     }
   }
 

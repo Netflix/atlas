@@ -218,14 +218,21 @@ object CustomDirectives {
 
   /** Route for CORS handling pre-flight checks. */
   def corsPreflight(hosts: List[String] = Nil): Route = {
+    // Set max age header to minimize the number of round-trips the browser will need
+    // to make. Various browsers limit the max age that can be used. Ten minutes seems
+    // to be a common number (chrome and webkit) so that is what we use here.
+    val response = HttpResponse(StatusCodes.OK).withHeaders(`Access-Control-Max-Age`(600))
+
+    // Assume all OPTIONS requests are for pre-flight checks
     options {
-      // For some requests the browser wants the CORS headers to be present on the
-      // pre-flight response.
-      respondWithCorsHeaders(hosts) {
-        // Set max age header to minimize the number of round-trips the browser will need
-        // to make. Various browsers limit the max age that can be used. Ten minutes seems
-        // to be a common number (chrome and webkit) so that is what we use here.
-        complete(HttpResponse(StatusCodes.OK).withHeaders(`Access-Control-Max-Age`(600)))
+      extractRequestContext { ctx =>
+        // For some requests the browser wants the CORS headers to be present on the
+        // pre-flight response.
+        respondWithCorsHeaders(hosts) {
+          // Ignore request body if present
+          val future = ctx.request.discardEntityBytes(ctx.materializer).future()
+          onComplete(future) { _ => complete(response) }
+        }
       }
     }
   }
