@@ -7,13 +7,13 @@ object Dependencies {
   object Versions {
     val akka       = "2.6.16"
     val akkaHttpV  = "10.2.6"
-    val iep        = "3.0.5"
+    val iep        = "3.0.7"
     val guice      = "5.0.1"
-    val jackson    = "2.12.5"
+    val jackson    = "2.13.0"
     val log4j      = "2.14.1"
     val scala      = "2.13.6"
     val slf4j      = "1.7.32"
-    val spectator  = "1.0.1"
+    val spectator  = "1.0.3"
 
     val crossScala = Seq(scala)
   }
@@ -29,7 +29,7 @@ object Dependencies {
   val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.2"
-  val datasketches      = "org.apache.datasketches" % "datasketches-java" % "2.0.0"
+  val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.0.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.7.1"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.25.0"
   val guiceCoreBase     = "com.google.inject" % "guice"
@@ -57,16 +57,16 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val postgres          = "org.postgresql" % "postgresql" % "42.2.24.jre7"
+  val postgres          = "org.postgresql" % "postgresql" % "42.2.24"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "1.3.1"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.16"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.22"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
   val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4"
   val scalaReflect      = "org.scala-lang" % "scala-reflect" % scala
-  val scalatest         = "org.scalatest" %% "scalatest" % "3.2.9"
+  val scalatest         = "org.scalatest" %% "scalatest" % "3.2.10"
   val slf4jApi          = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j        = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple       = "org.slf4j" % "slf4j-simple" % slf4j
