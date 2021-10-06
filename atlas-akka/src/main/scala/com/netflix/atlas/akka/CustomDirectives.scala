@@ -231,7 +231,9 @@ object CustomDirectives {
         respondWithCorsHeaders(hosts) {
           // Ignore request body if present
           val future = ctx.request.discardEntityBytes(ctx.materializer).future()
-          onComplete(future) { _ => complete(response) }
+          onComplete(future) { _ =>
+            complete(response)
+          }
         }
       }
     }
