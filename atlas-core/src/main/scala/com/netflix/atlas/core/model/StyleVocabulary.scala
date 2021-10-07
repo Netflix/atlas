@@ -193,7 +193,7 @@ object StyleVocabulary extends Vocabulary {
     override def examples: List[String] = List(
       "name,sps,:eq,:sum,reds",
       "name,sps,:eq,:sum,(,nf.cluster,),:by,reds",
-      "name,sps,:eq,:sum,(,nf.cluster,),:by,(,1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027,)",
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,(,1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027,)"
     )
   }
 
