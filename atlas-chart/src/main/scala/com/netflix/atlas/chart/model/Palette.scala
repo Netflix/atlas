@@ -89,10 +89,10 @@ object Palette {
   /**
     * Creates a palette instance from a description string. The description can be an explicit
     * list of colors or the name of a palette file in the classpath. An explicit list is specified
-    * with a prefix of 'colors:' followed by a comma separated list of color values. For example:
+    * as an ASL list of colors. For example:
     *
     * ```
-    * colors:f00,00ff00,000000ff
+    * (,f00,00ff00,000000ff,)
     * ```
     *
     * The color values will be parsed using `Strings.parseColor`.
@@ -100,13 +100,26 @@ object Palette {
     * `palettes/{desc}_palette.txt` that has one color per line.
     */
   def create(desc: String): Palette = {
+    // `colors:` prefix is deprecated, use list variant that is consistent between
+    // the url parameter and expression
     if (desc.startsWith("colors:"))
-      fromArray("colors", desc.substring("colors:".length).split(",").map(Strings.parseColor))
+      fromArray("colors", parseColors(desc.substring("colors:".length)))
+    else if (desc.startsWith("("))
+      fromArray("colors", parseColors(desc))
     else
       fromResource(desc)
   }
 
+  private def parseColors(colorsString: String): Array[Color] = {
+    colorsString
+      .split(",")
+      .map(_.trim)
+      .filterNot(s => s.isEmpty || s == "(" || s == ")")
+      .map(Strings.parseColor)
+  }
+
   def fromArray(name: String, colors: Array[Color]): Palette = {
+    require(colors.nonEmpty, "palette must contain at least one color")
     Palette(name, i => colors(math.abs(i) % colors.length))
   }
 

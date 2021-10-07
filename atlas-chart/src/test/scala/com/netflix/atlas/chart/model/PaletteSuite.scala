@@ -51,6 +51,36 @@ class PaletteSuite extends AnyFunSuite {
     assert(p.colors(2) === Color.BLUE)
   }
 
+  test("(,)") {
+    intercept[IllegalArgumentException] {
+      Palette.create("(,)")
+    }
+  }
+
+  test("(,foo,)") {
+    intercept[IllegalArgumentException] {
+      Palette.create("(,foo,)")
+    }
+  }
+
+  test("(,f00,)") {
+    val p = Palette.create("(,f00,)")
+    assert(p.colors(0) === Color.RED)
+  }
+
+  test("(,f00,00ff00,)") {
+    val p = Palette.create("(,f00,00ff00,)")
+    assert(p.colors(0) === Color.RED)
+    assert(p.colors(1) === Color.GREEN)
+  }
+
+  test("(,f00,00ff00,ff0000ff,)") {
+    val p = Palette.create("(,f00,00ff00,ff0000ff,)")
+    assert(p.colors(0) === Color.RED)
+    assert(p.colors(1) === Color.GREEN)
+    assert(p.colors(2) === Color.BLUE)
+  }
+
   test("armytage") {
     val p = Palette.create("armytage")
     assert(p.colors(0) === new Color(0, 117, 220))
