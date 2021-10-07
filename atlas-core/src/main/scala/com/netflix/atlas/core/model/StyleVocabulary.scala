@@ -174,11 +174,16 @@ object StyleVocabulary extends Vocabulary {
       """.stripMargin.trim
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: PresentationType(_) :: _ => true
+      case (_: String) :: PresentationType(_) :: _       => true
+      case StringListType(_) :: PresentationType(_) :: _ => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (v: String) :: PresentationType(t) :: s =>
+        val settings = t.settings + ("palette" -> v) - "color" - "alpha"
+        t.copy(settings = settings) :: s
+      case StringListType(vs) :: PresentationType(t) :: s =>
+        val v = vs.mkString("(,", ",", ",)")
         val settings = t.settings + ("palette" -> v) - "color" - "alpha"
         t.copy(settings = settings) :: s
     }
@@ -187,7 +192,8 @@ object StyleVocabulary extends Vocabulary {
 
     override def examples: List[String] = List(
       "name,sps,:eq,:sum,reds",
-      "name,sps,:eq,:sum,(,nf.cluster,),:by,reds"
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,reds",
+      "name,sps,:eq,:sum,(,nf.cluster,),:by,(,1a9850,91cf60,d9ef8b,fee08b,fc8d59,d73027,)",
     )
   }
 
