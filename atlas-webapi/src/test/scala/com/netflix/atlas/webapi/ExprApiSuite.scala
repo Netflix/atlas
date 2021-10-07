@@ -138,7 +138,7 @@ class ExprApiSuite extends AnyFunSuite with ScalatestRouteTest {
   testGet("/api/v1/expr/complete?q=name,sps,:eq,(,nf.cluster,)") {
     assert(response.status === StatusCodes.OK)
     val data = Json.decode[List[ExprApiSuite.Candidate]](responseAs[String]).map(_.name)
-    assert(data === List("by", "by", "offset"))
+    assert(data === List("by", "by", "offset", "palette"))
   }
 
   // TODO: Right now these fail. As a future improvement suggestions should be possible within
