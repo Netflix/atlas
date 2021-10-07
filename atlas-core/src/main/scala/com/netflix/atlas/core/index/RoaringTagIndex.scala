@@ -21,7 +21,6 @@ import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
-import com.netflix.atlas.core.util.IntIntHashMap
 import com.netflix.atlas.core.util.IntRefHashMap
 import com.netflix.atlas.core.util.LongHashSet
 import com.netflix.atlas.core.util.RefIntHashMap
@@ -124,7 +123,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   }
 
   private def buildItemIndex()
-    : (Array[ItemId], RoaringKeyMap, RoaringValueMap, Array[Long], Array[IntIntHashMap]) = {
+    : (Array[ItemId], RoaringKeyMap, RoaringValueMap, Array[Long], Array[Array[Int]]) = {
 
     // Sort items array based on the id, allows for efficient paging of requests using the id
     // as the offset
@@ -136,12 +135,13 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     logger.debug(s"building index with ${items.length} items, create main key map")
     val kidx = new RoaringValueMap(-1)
     val idx = new RoaringKeyMap(-1)
-    val itemTags = new Array[IntIntHashMap](items.length)
+    val itemTags = new Array[Array[Int]](items.length)
     val tagsSet = new LongHashSet(-1L, items.length)
     var pos = 0
     while (pos < items.length) {
       itemIds(pos) = items(pos).id
-      itemTags(pos) = new IntIntHashMap(-1, 2 * items(pos).tags.size)
+      itemTags(pos) = new Array[Int](2 * items(pos).tags.size)
+      var itemTagsPos = 0
       items(pos).foreach { (k, v) =>
         val kp = keyMap.get(k, -1)
         var vidx = idx.get(kp)
@@ -167,7 +167,9 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         }
         matchSet.add(pos)
 
-        itemTags(pos).put(kp, vp)
+        itemTags(pos)(itemTagsPos) = kp
+        itemTags(pos)(itemTagsPos + 1) = vp
+        itemTagsPos += 2
 
         val t = (kp.toLong << 32) | vp.toLong
         tagsSet.add(t)
@@ -387,8 +389,11 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
       val iter = itemSet.getIntIterator
       while (iter.hasNext) {
         val tags = itemTags(iter.next())
-        tags.foreach { (k, _) =>
+        var i = 0
+        while (i < tags.length) {
+          val k = tags(i)
           if (k >= offset) results.set(k)
+          i += 2
         }
       }
 
@@ -438,7 +443,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         val iter = itemSet.getIntIterator
         while (iter.hasNext) {
           val tags = itemTags(iter.next())
-          val v = tags.get(kp, -1)
+          val v = getValue(tags, kp)
           if (v >= offset) {
             results.set(v)
           }
@@ -447,6 +452,15 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     }
 
     createResultList(values, results, query.limit)
+  }
+
+  private def getValue(tags: Array[Int], k: Int): Int = {
+    var i = 0
+    while (i < tags.length) {
+      if (k == tags(i)) return tags(i + 1)
+      i += 2
+    }
+    -1
   }
 
   def findItems(query: TagQuery): List[T] = {
