@@ -20,9 +20,9 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class SimpleLegendsSuite extends AnyFunSuite {
+class SimpleLegendsSuite extends FunSuite {
 
   private val notSet = "__NOT_SET__"
 
@@ -45,83 +45,83 @@ class SimpleLegendsSuite extends AnyFunSuite {
   }
 
   test("honor explicit legend") {
-    assert(legends("name,cpu,:eq,:sum,foo,:legend") === List("foo"))
+    assertEquals(legends("name,cpu,:eq,:sum,foo,:legend"), List("foo"))
   }
 
   test("just math") {
-    assert(legends("4,5,:add,10,:mul") === List(notSet))
+    assertEquals(legends("4,5,:add,10,:mul"), List(notSet))
   }
 
   test("reqular query and just math") {
-    assert(legends("name,cpu,:eq,:sum,seconds,:time") === List("cpu", notSet))
+    assertEquals(legends("name,cpu,:eq,:sum,seconds,:time"), List("cpu", notSet))
   }
 
   test("prefer just name") {
-    assert(legends("name,cpu,:eq,:sum") === List("cpu"))
-    assert(legends("name,cpu,:eq,id,user,:eq,:and,:sum") === List("cpu"))
+    assertEquals(legends("name,cpu,:eq,:sum"), List("cpu"))
+    assertEquals(legends("name,cpu,:eq,id,user,:eq,:and,:sum"), List("cpu"))
   }
 
   test("use group by keys") {
-    assert(legends("name,cpu,:eq,:sum,(,app,id,),:by") === List("$app $id"))
+    assertEquals(legends("name,cpu,:eq,:sum,(,app,id,),:by"), List("$app $id"))
   }
 
   test("name with math") {
-    assert(legends("name,cpu,:eq,:sum,4,:add,6,:mul,:abs") === List("cpu"))
+    assertEquals(legends("name,cpu,:eq,:sum,4,:add,6,:mul,:abs"), List("cpu"))
   }
 
   test("name regex") {
-    assert(legends("name,cpu,:re,:sum") === List("cpu"))
+    assertEquals(legends("name,cpu,:re,:sum"), List("cpu"))
   }
 
   test("name not present") {
-    assert(legends("id,user,:eq,:sum") === List("user"))
+    assertEquals(legends("id,user,:eq,:sum"), List("user"))
   }
 
   test("name with offsets") {
     val expr = "name,cpu,:eq,:sum,(,0h,1w,),:offset"
-    assert(legends(expr) === List("cpu", "cpu (offset=$atlas.offset)"))
+    assertEquals(legends(expr), List("cpu", "cpu (offset=$atlas.offset)"))
   }
 
   test("name with avg") {
-    assert(legends("name,cpu,:eq,:avg") === List("cpu"))
+    assertEquals(legends("name,cpu,:eq,:avg"), List("cpu"))
   }
 
   test("name with dist avg") {
-    assert(legends("name,cpu,:eq,:dist-avg") === List("cpu"))
+    assertEquals(legends("name,cpu,:eq,:dist-avg"), List("cpu"))
   }
 
   test("name with dist-stddev") {
-    assert(legends("name,cpu,:eq,:dist-stddev") === List("cpu"))
+    assertEquals(legends("name,cpu,:eq,:dist-stddev"), List("cpu"))
   }
 
   test("name not clause") {
-    assert(legends("name,cpu,:eq,:not,:sum") === List("!cpu"))
+    assertEquals(legends("name,cpu,:eq,:not,:sum"), List("!cpu"))
   }
 
   test("name with node avg") {
-    assert(legends("name,cpu,:eq,:node-avg") === List("cpu"))
+    assertEquals(legends("name,cpu,:eq,:node-avg"), List("cpu"))
   }
 
   test("group by with offsets") {
     val expr = "name,cpu,:eq,:sum,(,id,),:by,(,0h,1w,),:offset"
-    assert(legends(expr) === List("$id", "$id (offset=$atlas.offset)"))
+    assertEquals(legends(expr), List("$id", "$id (offset=$atlas.offset)"))
   }
 
   test("complex: same name and math") {
-    assert(legends("name,cpu,:eq,:sum,:dup,:add") === List("cpu"))
+    assertEquals(legends("name,cpu,:eq,:sum,:dup,:add"), List("cpu"))
   }
 
   test("complex: not clause") {
     val expr = "name,cpu,:eq,:dup,id,user,:eq,:and,:sum,:swap,id,user,:eq,:not,:and,:sum"
-    assert(legends(expr) === List("user", "!user"))
+    assertEquals(legends(expr), List("user", "!user"))
   }
 
   test("complex: different names and math") {
-    assert(legends("name,cpu,:eq,:sum,name,disk,:eq,:sum,:and") === List(notSet))
+    assertEquals(legends("name,cpu,:eq,:sum,name,disk,:eq,:sum,:and"), List(notSet))
   }
 
   test("multi: different names") {
-    assert(legends("name,cpu,:eq,:sum,name,disk,:eq,:sum") === List("cpu", "disk"))
+    assertEquals(legends("name,cpu,:eq,:sum,name,disk,:eq,:sum"), List("cpu", "disk"))
   }
 
   test("multi: same name further restricted") {
@@ -131,11 +131,11 @@ class SimpleLegendsSuite extends AnyFunSuite {
       "name,cpu,:eq,id,system,:eq,:and,:sum," +
       "name,cpu,:eq,id,idle,:eq,:and,:sum,"
     )
-    assert(vs === List("cpu", "user", "system", "idle"))
+    assertEquals(vs, List("cpu", "user", "system", "idle"))
   }
 
   test("multi: same name with math") {
     val vs = legends("name,cpu,:eq,:sum,:dup,4,:add")
-    assert(vs === List("cpu", "cpu"))
+    assertEquals(vs, List("cpu", "cpu"))
   }
 }

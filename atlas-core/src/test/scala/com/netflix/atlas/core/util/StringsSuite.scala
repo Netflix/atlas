@@ -25,9 +25,9 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class StringsSuite extends AnyFunSuite {
+class StringsSuite extends FunSuite {
 
   import com.netflix.atlas.core.util.Strings._
 
@@ -140,12 +140,12 @@ class StringsSuite extends AnyFunSuite {
 
   test("conversionsDateTimeZone - UTC") {
     val tz = ZoneId.of("UTC")
-    assert(conversions(classOf[ZoneId])("UTC") === tz)
+    assertEquals(conversions(classOf[ZoneId])("UTC"), tz)
   }
 
   test("conversionsDateTimeZone - US/Pacific") {
     val tz = ZoneId.of("US/Pacific")
-    assert(conversions(classOf[ZoneId])("US/Pacific") === tz)
+    assertEquals(conversions(classOf[ZoneId])("US/Pacific"), tz)
   }
 
   test("conversionsPeriod") {
@@ -172,101 +172,101 @@ class StringsSuite extends AnyFunSuite {
   test("urlDecode") {
     val str = "a b %25 % %%% %21%zb"
     val expected = "a b % % %%% !%zb"
-    assert(urlDecode(str) === expected)
+    assertEquals(urlDecode(str), expected)
   }
 
   test("hexDecode, escape with _") {
     val str = "a b %25 _ %_% _21%zb"
     val expected = "a b %25 _ %_% !%zb"
-    assert(hexDecode(str, '_') === expected)
+    assertEquals(hexDecode(str, '_'), expected)
   }
 
   test("urlEncode") {
     val str = "a&?= +[]()<>^$%\"':;-_|!@#*.~`\\/{}"
     val expected = "a%26%3F%3D%20%2B%5B%5D()%3C%3E%5E$%25%22':%3B-_%7C!@%23*.~`%5C/%7B%7D"
-    assert(urlEncode(str) === expected)
-    assert(urlDecode(expected) === str)
-    assert(urlDecode(expected.toLowerCase(Locale.US)) === str)
+    assertEquals(urlEncode(str), expected)
+    assertEquals(urlDecode(expected), str)
+    assertEquals(urlDecode(expected.toLowerCase(Locale.US)), str)
   }
 
   test("urlEncode: CLDMTA-1582") {
     val str = "aggregator.http.post.(?!200)._count"
     val expected = "aggregator.http.post.(%3F!200)._count"
-    assert(urlEncode(str) === expected)
+    assertEquals(urlEncode(str), expected)
   }
 
   test("parseQueryString, null") {
     val query = null
-    val expected = Map.empty
-    assert(parseQueryString(query) === expected)
+    val expected = Map.empty[String, List[String]]
+    assertEquals(parseQueryString(query), expected)
   }
 
   test("parseQueryString") {
     val query = "foo=bar&foo=baz;bar&foo=%21&;foo&abc=42"
     val expected =
       Map("abc" -> List("42"), "bar" -> List("1"), "foo" -> List("bar", "baz", "!", "1").reverse)
-    assert(parseQueryString(query) === expected)
+    assertEquals(parseQueryString(query), expected)
   }
 
   test("parseDuration, at seconds") {
-    assert(parseDuration("42seconds") === Duration.ofSeconds(42))
-    assert(parseDuration("42second") === Duration.ofSeconds(42))
-    assert(parseDuration("42s") === Duration.ofSeconds(42))
+    assertEquals(parseDuration("42seconds"), Duration.ofSeconds(42))
+    assertEquals(parseDuration("42second"), Duration.ofSeconds(42))
+    assertEquals(parseDuration("42s"), Duration.ofSeconds(42))
   }
 
   test("parseDuration, at minutes") {
-    assert(parseDuration("42minutes") === Duration.ofMinutes(42))
-    assert(parseDuration("42minute") === Duration.ofMinutes(42))
-    assert(parseDuration("42min") === Duration.ofMinutes(42))
-    assert(parseDuration("42m") === Duration.ofMinutes(42))
+    assertEquals(parseDuration("42minutes"), Duration.ofMinutes(42))
+    assertEquals(parseDuration("42minute"), Duration.ofMinutes(42))
+    assertEquals(parseDuration("42min"), Duration.ofMinutes(42))
+    assertEquals(parseDuration("42m"), Duration.ofMinutes(42))
   }
 
   test("parseDuration, at hours") {
-    assert(parseDuration("42hours") === Duration.ofHours(42))
-    assert(parseDuration("42hour") === Duration.ofHours(42))
-    assert(parseDuration("42h") === Duration.ofHours(42))
+    assertEquals(parseDuration("42hours"), Duration.ofHours(42))
+    assertEquals(parseDuration("42hour"), Duration.ofHours(42))
+    assertEquals(parseDuration("42h"), Duration.ofHours(42))
   }
 
   // TODO: Need a combination of period with duration using java.time, similar to joda Period
 
   test("parseDuration, at days") {
-    assert(parseDuration("42days") === Duration.ofDays(42))
-    assert(parseDuration("42day") === Duration.ofDays(42))
-    assert(parseDuration("42d") === Duration.ofDays(42))
+    assertEquals(parseDuration("42days"), Duration.ofDays(42))
+    assertEquals(parseDuration("42day"), Duration.ofDays(42))
+    assertEquals(parseDuration("42d"), Duration.ofDays(42))
   }
 
   test("parseDuration, at weeks") {
-    assert(parseDuration("42weeks") === Duration.ofDays(42 * 7))
-    assert(parseDuration("42week") === Duration.ofDays(42 * 7))
-    assert(parseDuration("42wk") === Duration.ofDays(42 * 7))
-    assert(parseDuration("42w") === Duration.ofDays(42 * 7))
+    assertEquals(parseDuration("42weeks"), Duration.ofDays(42 * 7))
+    assertEquals(parseDuration("42week"), Duration.ofDays(42 * 7))
+    assertEquals(parseDuration("42wk"), Duration.ofDays(42 * 7))
+    assertEquals(parseDuration("42w"), Duration.ofDays(42 * 7))
   }
 
   test("parseDuration, at months") {
-    assert(parseDuration("42months") === Duration.ofDays(42 * 30))
-    assert(parseDuration("42month") === Duration.ofDays(42 * 30))
+    assertEquals(parseDuration("42months"), Duration.ofDays(42 * 30))
+    assertEquals(parseDuration("42month"), Duration.ofDays(42 * 30))
   }
 
   test("parseDuration, at years") {
-    assert(parseDuration("42years") === Duration.ofDays(42 * 365))
-    assert(parseDuration("42year") === Duration.ofDays(42 * 365))
-    assert(parseDuration("42y") === Duration.ofDays(42 * 365))
+    assertEquals(parseDuration("42years"), Duration.ofDays(42 * 365))
+    assertEquals(parseDuration("42year"), Duration.ofDays(42 * 365))
+    assertEquals(parseDuration("42y"), Duration.ofDays(42 * 365))
   }
 
   test("parseDuration, at invalid unit") {
     val e = intercept[IllegalArgumentException] {
       parseDuration("42fubars")
     }
-    assert(e.getMessage === "unknown unit fubars")
+    assertEquals(e.getMessage, "unknown unit fubars")
   }
 
   test("parseDuration, iso") {
-    //assert(parseDuration("P42Y") === Period.years(42))
-    assert(parseDuration("PT42M") === Duration.ofMinutes(42))
+    //assertEquals(parseDuration("P42Y"), Period.years(42))
+    assertEquals(parseDuration("PT42M"), Duration.ofMinutes(42))
   }
 
   test("toString Duration: weeks") {
-    assert(Strings.toString(Duration.ofDays(5 * 7)) === "5w")
+    assertEquals(Strings.toString(Duration.ofDays(5 * 7)), "5w")
   }
 
   test("toString Duration: weeks + 10h") {
@@ -279,84 +279,84 @@ class StringsSuite extends AnyFunSuite {
     // res6: java.time.Duration = PT850H
     //
     // If it becomes enough of a pain point we can customize the output for the fallback
-    assert(Strings.toString(Duration.ofDays(5 * 7).plusHours(10)) === "850h")
+    assertEquals(Strings.toString(Duration.ofDays(5 * 7).plusHours(10)), "850h")
   }
 
   test("toString Duration: days") {
-    assert(Strings.toString(Duration.ofDays(5)) === "5d")
+    assertEquals(Strings.toString(Duration.ofDays(5)), "5d")
   }
 
   test("toString Duration: hours") {
-    assert(Strings.toString(Duration.ofHours(5)) === "5h")
+    assertEquals(Strings.toString(Duration.ofHours(5)), "5h")
   }
 
   test("toString Duration: minutes") {
-    assert(Strings.toString(Duration.ofMinutes(5)) === "5m")
+    assertEquals(Strings.toString(Duration.ofMinutes(5)), "5m")
   }
 
   test("toString Duration: seconds") {
-    assert(Strings.toString(Duration.ofSeconds(5)) === "5s")
+    assertEquals(Strings.toString(Duration.ofSeconds(5)), "5s")
   }
 
   test("parseDate, iso date only") {
     val expected = ZonedDateTime.of(2012, 2, 1, 0, 0, 0, 0, ZoneOffset.UTC)
-    assert(parseDate("2012-02-01") === expected)
+    assertEquals(parseDate("2012-02-01"), expected)
   }
 
   // Note: will fail prior to 8u20:
   // https://github.com/Netflix/atlas/issues/9
   test("parseDate, iso date with time no seconds") {
     val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 0, 0, ZoneOffset.UTC)
-    assert(parseDate("2012-02-01T04:05") === expected)
-    assert(parseDate("2012-02-01T04:05Z") === expected)
+    assertEquals(parseDate("2012-02-01T04:05"), expected)
+    assertEquals(parseDate("2012-02-01T04:05Z"), expected)
 
     val result =
       ZonedDateTime.ofInstant(parseDate("2012-02-01T12:05+08:00").toInstant, ZoneOffset.UTC)
-    assert(result === expected)
+    assertEquals(result, expected)
   }
 
   // Note: will fail prior to 8u20:
   // https://github.com/Netflix/atlas/issues/9
   test("parseDate, iso date with time") {
     val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, 0, ZoneOffset.UTC)
-    assert(parseDate("2012-02-01T04:05:06") === expected)
+    assertEquals(parseDate("2012-02-01T04:05:06"), expected)
   }
 
   test("parseDate, iso date with time and zone") {
     val expected = ZonedDateTime.of(2012, 1, 31, 20, 5, 6, 0, ZoneOffset.UTC)
     val result =
       ZonedDateTime.ofInstant(parseDate("2012-02-01T04:05:06+08:00").toInstant, ZoneOffset.UTC)
-    assert(result === expected)
+    assertEquals(result, expected)
   }
 
   test("parseDate, iso date with time with millis and zone") {
     val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
     val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, nanos, ZoneOffset.UTC)
-    assert(parseDate("2012-02-01T04:05:06.123Z") === expected)
+    assertEquals(parseDate("2012-02-01T04:05:06.123Z"), expected)
   }
 
   test("parseDate, iso date with time with millis and zone (+00:00)") {
     val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
     val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, nanos, ZoneOffset.UTC)
-    assert(parseDate("2012-02-01T04:05:06.123+00:00") === expected)
+    assertEquals(parseDate("2012-02-01T04:05:06.123+00:00"), expected)
   }
 
   test("parseDate, iso date with time with millis and zone (+0000)") {
     val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
     val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, nanos, ZoneOffset.UTC)
-    assert(parseDate("2012-02-01T04:05:06.123+0000") === expected)
+    assertEquals(parseDate("2012-02-01T04:05:06.123+0000"), expected)
   }
 
   test("parseDate, iso date with time with millis and zone (+00)") {
     val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
     val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, nanos, ZoneOffset.UTC)
-    assert(parseDate("2012-02-01T04:05:06.123+00") === expected)
+    assertEquals(parseDate("2012-02-01T04:05:06.123+00"), expected)
   }
 
   test("parseDate, iso date with time with millis and zone offset") {
     val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
     val expected = ZonedDateTime.of(2012, 2, 1, 7, 5, 6, nanos, ZoneOffset.UTC).toInstant
-    assert(parseDate("2012-02-01T04:05:06.123-03:00").toInstant === expected)
+    assertEquals(parseDate("2012-02-01T04:05:06.123-03:00").toInstant, expected)
   }
 
   test("parseDate, iso formats") {
@@ -388,7 +388,7 @@ class StringsSuite extends AnyFunSuite {
   test("parseDate, iso date with time with millis") {
     val nanos = TimeUnit.MILLISECONDS.toNanos(123).toInt
     val expected = ZonedDateTime.of(2012, 2, 1, 4, 5, 6, nanos, ZoneOffset.UTC)
-    assert(parseDate("2012-02-01T04:05:06.123") === expected)
+    assertEquals(parseDate("2012-02-01T04:05:06.123"), expected)
   }
 
   test("parseDate, iso invalid") {
@@ -400,32 +400,32 @@ class StringsSuite extends AnyFunSuite {
   test("parseDate, relative minus") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 0, 0, 0, 0, ZoneOffset.UTC)
-    assert(parseDate(ref, "e-3h", ZoneOffset.UTC) === expected)
+    assertEquals(parseDate(ref, "e-3h", ZoneOffset.UTC), expected)
   }
 
   test("parseDate, relative plus") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 3, 0, 42, 0, ZoneOffset.UTC)
-    assert(parseDate(ref, "start+42s", ZoneOffset.UTC) === expected)
+    assertEquals(parseDate(ref, "start+42s", ZoneOffset.UTC), expected)
   }
 
   test("parseDate, relative iso") {
     val ref = ZonedDateTime.of(2012, 2, 2, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 2, 54, 18, 0, ZoneOffset.UTC)
-    assert(parseDate(ref, "start-P1DT5M42S", ZoneOffset.UTC) === expected)
+    assertEquals(parseDate(ref, "start-P1DT5M42S", ZoneOffset.UTC), expected)
   }
 
   test("parseDate, epoch + 4h") {
     val ref = ZonedDateTime.of(2012, 2, 2, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(1970, 1, 1, 4, 0, 0, 0, ZoneOffset.UTC)
-    assert(parseDate(ref, "epoch+4h", ZoneOffset.UTC) === expected)
+    assertEquals(parseDate(ref, "epoch+4h", ZoneOffset.UTC), expected)
   }
 
   test("parseDate, relative invalid op") {
     val e = intercept[IllegalArgumentException] {
       parseDate("e*42h")
     }
-    assert(e.getMessage === "invalid date e*42h")
+    assertEquals(e.getMessage, "invalid date e*42h")
   }
 
   test("parseDate, named now") {
@@ -436,51 +436,51 @@ class StringsSuite extends AnyFunSuite {
 
   test("parseDate, named epoch") {
     val received = parseDate("epoch").toInstant.toEpochMilli
-    assert(received === 0)
+    assertEquals(received, 0L)
   }
 
   test("parseDate, unix") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val refStr = "%d".format(ref.toInstant.toEpochMilli / 1000)
     val received = parseDate(refStr)
-    assert(received === ref)
+    assertEquals(received, ref)
   }
 
   test("parseDate, unix millis") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val refStr = "%d".format(ref.toInstant.toEpochMilli)
     val received = parseDate(refStr)
-    assert(received === ref)
+    assertEquals(received, ref)
   }
 
   test("parseDate, s=e-0h") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
-    assert(parseDate(ref, "e-0h", ZoneOffset.UTC) === expected)
+    assertEquals(parseDate(ref, "e-0h", ZoneOffset.UTC), expected)
   }
 
   test("parseDate, s=e") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
-    assert(parseDate(ref, "e", ZoneOffset.UTC) === expected)
+    assertEquals(parseDate(ref, "e", ZoneOffset.UTC), expected)
   }
 
   test("parseColor") {
-    assert(parseColor("FF0000") === Color.RED)
-    assert(parseColor("ff0000") === Color.RED)
+    assertEquals(parseColor("FF0000"), Color.RED)
+    assertEquals(parseColor("ff0000"), Color.RED)
   }
 
   test("parseColor triple hex") {
-    assert(parseColor("f00") === Color.RED)
-    assert(parseColor("F00") === Color.RED)
+    assertEquals(parseColor("f00"), Color.RED)
+    assertEquals(parseColor("F00"), Color.RED)
   }
 
   test("parseColor with alpha") {
     val c = parseColor("0FFF0000")
-    assert(c.getAlpha === 15)
-    assert(c.getRed === 255)
-    assert(c.getGreen === 0)
-    assert(c.getBlue === 0)
+    assertEquals(c.getAlpha, 15)
+    assertEquals(c.getRed, 255)
+    assertEquals(c.getGreen, 0)
+    assertEquals(c.getBlue, 0)
   }
 
   test("isRelativeDate") {
@@ -503,109 +503,109 @@ class StringsSuite extends AnyFunSuite {
 
   test("substitute") {
     val vars = Map("foo" -> "bar", "bar" -> "baz")
-    assert(substitute("$(foo)", vars) === "bar")
-    assert(substitute("$(bar)", vars) === "baz")
-    assert(substitute("$foo", vars) === "bar")
-    assert(substitute("$(foo)$(bar)", vars) === "barbaz")
-    assert(substitute("$(foo) ::: $(bar)", vars) === "bar ::: baz")
-    assert(substitute("$(missing) ::: $(bar)", vars) === "missing ::: baz")
-    assert(substitute("$missing ::: $bar", vars) === "missing ::: baz")
+    assertEquals(substitute("$(foo)", vars), "bar")
+    assertEquals(substitute("$(bar)", vars), "baz")
+    assertEquals(substitute("$foo", vars), "bar")
+    assertEquals(substitute("$(foo)$(bar)", vars), "barbaz")
+    assertEquals(substitute("$(foo) ::: $(bar)", vars), "bar ::: baz")
+    assertEquals(substitute("$(missing) ::: $(bar)", vars), "missing ::: baz")
+    assertEquals(substitute("$missing ::: $bar", vars), "missing ::: baz")
   }
 
   test("substitute: ends with $") {
     val vars = Map("foo" -> "bar", "bar" -> "baz")
-    assert(substitute("foo$", vars) === "foo$")
+    assertEquals(substitute("foo$", vars), "foo$")
   }
 
   test("substitute: followed by whitespace") {
     val vars = Map("foo" -> "bar", "bar" -> "baz")
-    assert(substitute("$ foo", vars) === "$ foo")
+    assertEquals(substitute("$ foo", vars), "$ foo")
   }
 
   test("substitute: whitespace in paren") {
     val vars = Map(" foo" -> "bar", "bar" -> "baz")
-    assert(substitute("$( foo)", vars) === "bar")
+    assertEquals(substitute("$( foo)", vars), "bar")
   }
 
   test("substitute: parens used to escape literal $") {
     val vars = Map("foo" -> "bar", "bar" -> "baz")
-    assert(substitute("$()foo", vars) === "$foo")
+    assertEquals(substitute("$()foo", vars), "$foo")
   }
 
   test("substitute: unmatched open paren") {
     val vars = Map("foo" -> "bar", "bar" -> "baz")
-    assert(substitute("$(foo", vars) === "$foo")
-    assert(substitute("foo$(", vars) === "foo$")
+    assertEquals(substitute("$(foo", vars), "$foo")
+    assertEquals(substitute("foo$(", vars), "foo$")
   }
 
   test("substitute: unmatched closed paren") {
     val vars = Map("foo" -> "bar", "bar" -> "baz")
-    assert(substitute("$)foo", vars) === "$)foo")
-    assert(substitute("foo$)", vars) === "foo$)")
+    assertEquals(substitute("$)foo", vars), "$)foo")
+    assertEquals(substitute("foo$)", vars), "foo$)")
   }
 
   test("zeroPad int") {
-    assert(zeroPad(42, 1) === "2a")
-    assert(zeroPad(42, 2) === "2a")
-    assert(zeroPad(42, 3) === "02a")
-    assert(zeroPad(42, 8) === "0000002a")
-    assert(zeroPad(-42, 8) === "ffffffd6")
-    assert(zeroPad(-42, 12) === "0000ffffffd6")
+    assertEquals(zeroPad(42, 1), "2a")
+    assertEquals(zeroPad(42, 2), "2a")
+    assertEquals(zeroPad(42, 3), "02a")
+    assertEquals(zeroPad(42, 8), "0000002a")
+    assertEquals(zeroPad(-42, 8), "ffffffd6")
+    assertEquals(zeroPad(-42, 12), "0000ffffffd6")
   }
 
   test("zeroPad long") {
-    assert(zeroPad(42L, 1) === "2a")
-    assert(zeroPad(42L, 2) === "2a")
-    assert(zeroPad(42L, 3) === "02a")
-    assert(zeroPad(42L, 8) === "0000002a")
-    assert(zeroPad(-42L, 8) === "ffffffffffffffd6")
-    assert(zeroPad(-42L, 18) === "00ffffffffffffffd6")
+    assertEquals(zeroPad(42L, 1), "2a")
+    assertEquals(zeroPad(42L, 2), "2a")
+    assertEquals(zeroPad(42L, 3), "02a")
+    assertEquals(zeroPad(42L, 8), "0000002a")
+    assertEquals(zeroPad(-42L, 8), "ffffffffffffffd6")
+    assertEquals(zeroPad(-42L, 18), "00ffffffffffffffd6")
   }
 
   test("zeroPad BigInteger") {
     val b = new BigInteger("42")
-    assert(zeroPad(b, 1) === "2a")
-    assert(zeroPad(b, 2) === "2a")
-    assert(zeroPad(b, 3) === "02a")
-    assert(zeroPad(b, 8) === "0000002a")
+    assertEquals(zeroPad(b, 1), "2a")
+    assertEquals(zeroPad(b, 2), "2a")
+    assertEquals(zeroPad(b, 3), "02a")
+    assertEquals(zeroPad(b, 8), "0000002a")
   }
 
   test("zeroPad byte array empty") {
     val b = Array.empty[Byte]
-    assert(zeroPad(b, 1) === "0")
-    assert(zeroPad(b, 2) === "00")
-    assert(zeroPad(b, 3) === "000")
-    assert(zeroPad(b, 8) === "00000000")
+    assertEquals(zeroPad(b, 1), "0")
+    assertEquals(zeroPad(b, 2), "00")
+    assertEquals(zeroPad(b, 3), "000")
+    assertEquals(zeroPad(b, 8), "00000000")
   }
 
   test("zeroPad byte array unsigned conversion") {
     val b = Array[Byte](-1)
-    assert(zeroPad(b, 1) === "ff")
-    assert(zeroPad(b, 2) === "ff")
-    assert(zeroPad(b, 3) === "0ff")
-    assert(zeroPad(b, 8) === "000000ff")
+    assertEquals(zeroPad(b, 1), "ff")
+    assertEquals(zeroPad(b, 2), "ff")
+    assertEquals(zeroPad(b, 3), "0ff")
+    assertEquals(zeroPad(b, 8), "000000ff")
   }
 
   test("zeroPad byte array minimum padding of 2") {
     val b = Array[Byte](1)
-    assert(zeroPad(b, 1) === "01")
-    assert(zeroPad(b, 2) === "01")
-    assert(zeroPad(b, 3) === "001")
-    assert(zeroPad(b, 8) === "00000001")
+    assertEquals(zeroPad(b, 1), "01")
+    assertEquals(zeroPad(b, 2), "01")
+    assertEquals(zeroPad(b, 3), "001")
+    assertEquals(zeroPad(b, 8), "00000001")
   }
 
   test("zeroPad byte array all values") {
     (java.lang.Byte.MIN_VALUE until java.lang.Byte.MAX_VALUE).foreach { i =>
       val s = zeroPad(Array(i.toByte), 1)
       val v = Integer.parseInt(s, 16).byteValue()
-      assert(v === i)
+      assertEquals(v, i.toByte)
     }
   }
 
   test("range: both absolute") {
     val (s, e) = timeRange("2018-07-24", "2018-07-24T00:05")
-    assert(s === parseDate("2018-07-24").toInstant)
-    assert(e === parseDate("2018-07-24T00:05").toInstant)
+    assertEquals(s, parseDate("2018-07-24").toInstant)
+    assertEquals(e, parseDate("2018-07-24T00:05").toInstant)
   }
 
   test("range: end is before start") {
@@ -616,7 +616,7 @@ class StringsSuite extends AnyFunSuite {
 
   test("range: start time is the same as end time") {
     val (s, e) = timeRange("2018-07-24", "2018-07-24")
-    assert(s === e)
+    assertEquals(s, e)
   }
 
   test("range: both relative") {
@@ -627,13 +627,13 @@ class StringsSuite extends AnyFunSuite {
 
   test("range: start relative to end") {
     val (s, e) = timeRange("e-5m", "2018-07-24T00:05")
-    assert(s === parseDate("2018-07-24").toInstant)
-    assert(e === parseDate("2018-07-24T00:05").toInstant)
+    assertEquals(s, parseDate("2018-07-24").toInstant)
+    assertEquals(e, parseDate("2018-07-24T00:05").toInstant)
   }
 
   test("range: end relative to start") {
     val (s, e) = timeRange("2018-07-24", "s+5m")
-    assert(s === parseDate("2018-07-24").toInstant)
-    assert(e === parseDate("2018-07-24T00:05").toInstant)
+    assertEquals(s, parseDate("2018-07-24").toInstant)
+    assertEquals(e, parseDate("2018-07-24T00:05").toInstant)
   }
 }

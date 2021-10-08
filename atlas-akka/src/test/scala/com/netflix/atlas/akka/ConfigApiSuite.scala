@@ -17,15 +17,13 @@ package com.netflix.atlas.akka
 
 import java.io.StringReader
 import java.util.Properties
-
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
 
-class ConfigApiSuite extends AnyFunSuite with ScalatestRouteTest {
+class ConfigApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
@@ -37,21 +35,21 @@ class ConfigApiSuite extends AnyFunSuite with ScalatestRouteTest {
   test("/config") {
     Get("/api/v2/config") ~> endpoint.routes ~> check {
       val config = ConfigFactory.parseString(responseAs[String])
-      assert(sysConfig === config)
+      assertEquals(sysConfig, config)
     }
   }
 
   test("/config/") {
     Get("/api/v2/config/") ~> endpoint.routes ~> check {
       val config = ConfigFactory.parseString(responseAs[String])
-      assert(sysConfig === config)
+      assertEquals(sysConfig, config)
     }
   }
 
   test("/config/java") {
     Get("/api/v2/config/java") ~> endpoint.routes ~> check {
       val config = ConfigFactory.parseString(responseAs[String])
-      assert(sysConfig.getConfig("java") === config)
+      assertEquals(sysConfig.getConfig("java"), config)
     }
   }
 
@@ -61,21 +59,21 @@ class ConfigApiSuite extends AnyFunSuite with ScalatestRouteTest {
       val config = ConfigFactory.parseString(responseAs[String])
       val v = sysConfig.getString("os.arch")
       val expected = ConfigFactory.parseMap(Map("value" -> v).asJava)
-      assert(expected === config)
+      assertEquals(expected, config)
     }
   }
 
   test("/config format hocon") {
     Get("/api/v2/config?format=hocon") ~> endpoint.routes ~> check {
       val config = ConfigFactory.parseString(responseAs[String])
-      assert(sysConfig === config)
+      assertEquals(sysConfig, config)
     }
   }
 
   test("/config format json") {
     Get("/api/v2/config?format=json") ~> endpoint.routes ~> check {
       val config = ConfigFactory.parseString(responseAs[String])
-      assert(sysConfig === config)
+      assertEquals(sysConfig, config)
     }
   }
 
@@ -98,19 +96,19 @@ class ConfigApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
       val expected = normalize(sysConfig)
       val actual = normalize(config)
-      assert(expected === actual)
+      assertEquals(expected, actual)
     }
   }
 
   test("/config bad format") {
     Get("/api/v2/config?format=foo") ~> endpoint.routes ~> check {
-      assert(response.status === BadRequest)
+      assertEquals(response.status, BadRequest)
     }
   }
 
   test("/config/foo") {
     Get("/api/v2/config/foo") ~> endpoint.routes ~> check {
-      assert(response.status === NotFound)
+      assertEquals(response.status, NotFound)
     }
   }
 

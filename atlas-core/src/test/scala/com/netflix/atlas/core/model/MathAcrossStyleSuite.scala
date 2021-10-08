@@ -16,7 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 /**
   * Verify that basic math operations can be applied to StyleExprs. For binary operators
@@ -24,7 +24,7 @@ import org.scalatest.funsuite.AnyFunSuite
   *
   * https://github.com/Netflix/atlas/issues/761
   */
-class MathAcrossStyleSuite extends AnyFunSuite {
+class MathAcrossStyleSuite extends FunSuite {
 
   import ModelExtractors._
 
@@ -44,7 +44,7 @@ class MathAcrossStyleSuite extends AnyFunSuite {
       test(s"${w.name}, StyleExpr op") {
         val expected = eval(s"1,:${w.name},abc,:legend")
         val actual = eval(s"1,abc,:legend,:${w.name}")
-        assert(actual === expected)
+        assertEquals(actual, expected)
       }
     }
 
@@ -57,73 +57,73 @@ class MathAcrossStyleSuite extends AnyFunSuite {
       test(s"${w.name}, TimeSeriesExpr op StyleExpr") {
         val expected = eval(s"$a,$b,:${w.name},abc,:legend")
         val actual = eval(s"$a,$b,abc,:legend,:${w.name}")
-        assert(actual === expected)
+        assertEquals(actual, expected)
       }
 
       test(s"${w.name}, StyleExpr op TimeSeriesExpr") {
         val expected = eval(s"$a,$b,:${w.name},abc,:legend")
         val actual = eval(s"$a,abc,:legend,$b,:${w.name}")
-        assert(actual === expected)
+        assertEquals(actual, expected)
       }
     }
 
   test("clamp-min") {
     val expected = eval("a,:has,1,:clamp-min,abc,:legend")
     val actual = eval("a,:has,abc,:legend,1,:clamp-min")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("clamp-max") {
     val expected = eval("a,:has,1,:clamp-max,abc,:legend")
     val actual = eval("a,:has,abc,:legend,1,:clamp-max")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("rolling-count") {
     val expected = eval("a,:has,1,:rolling-count,abc,:legend")
     val actual = eval("a,:has,abc,:legend,1,:rolling-count")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("des") {
     val expected = eval("a,:has,1,0.1,0.2,:des,abc,:legend")
     val actual = eval("a,:has,abc,:legend,1,0.1,0.2,:des")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("sdes") {
     val expected = eval("a,:has,1,0.1,0.2,:sdes,abc,:legend")
     val actual = eval("a,:has,abc,:legend,1,0.1,0.2,:sdes")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("trend") {
     val expected = eval("a,:has,5m,:trend,abc,:legend")
     val actual = eval("a,:has,abc,:legend,5m,:trend")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("integral") {
     val expected = eval("a,:has,:integral,abc,:legend")
     val actual = eval("a,:has,abc,:legend,:integral")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("derivative") {
     val expected = eval("a,:has,:derivative,abc,:legend")
     val actual = eval("a,:has,abc,:legend,:derivative")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("stat") {
     val expected = eval("a,:has,max,:stat,abc,:legend")
     val actual = eval("a,:has,abc,:legend,max,:stat")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("filter") {
     val expected = eval("a,:has,:stat-max,1,:gt,:filter,abc,:legend")
     val actual = eval("a,:has,abc,:legend,:stat-max,1,:gt,:filter")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 }

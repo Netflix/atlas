@@ -20,13 +20,13 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.SubscribeApi.ErrorMsg
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class WebSocketSessionManagerSuite extends AnyFunSuite {
+class WebSocketSessionManagerSuite extends FunSuite {
 
   private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
@@ -42,11 +42,12 @@ class WebSocketSessionManagerSuite extends AnyFunSuite {
 
     run(subscriptionList, regFun, subFunc)
 
-    assert(
-      subsCollector.toList === List(
-          List(ExpressionMetadata("name,a,:eq,:sum", 10000)),
-          List(ExpressionMetadata("name,b,:eq", 5000))
-        )
+    assertEquals(
+      subsCollector.toList,
+      List(
+        List(ExpressionMetadata("name,a,:eq,:sum", 10000)),
+        List(ExpressionMetadata("name,b,:eq", 5000))
+      )
     )
   }
 
@@ -61,10 +62,11 @@ class WebSocketSessionManagerSuite extends AnyFunSuite {
 
     run(subscriptionList, regFun, subFunc)
 
-    assert(
-      subsCollector.toList === List(
-          List(ExpressionMetadata("name,b,:eq", 5000))
-        )
+    assertEquals(
+      subsCollector.toList,
+      List(
+        List(ExpressionMetadata("name,b,:eq", 5000))
+      )
     )
   }
 

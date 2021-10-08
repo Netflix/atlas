@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.norm
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class RateValueFunctionSuite extends AnyFunSuite {
+class RateValueFunctionSuite extends FunSuite {
 
   private def newFunction = {
     val listVF = new ListValueFunction
@@ -28,16 +28,16 @@ class RateValueFunctionSuite extends AnyFunSuite {
 
   test("basic") {
     val vf = newFunction
-    assert(vf.update(5, 1.0) === Nil)
-    assert(vf.update(15, 2.0) === List(15 -> 100.0))
-    assert(vf.update(25, 4.0) === List(25 -> 200.0))
+    assertEquals(vf.update(5L, 1.0), Nil)
+    assertEquals(vf.update(15L, 2.0), List(15L -> 100.0))
+    assertEquals(vf.update(25L, 4.0), List(25L -> 200.0))
   }
 
   test("decreasing value") {
     val vf = newFunction
-    assert(vf.update(5, 1.0) === Nil)
-    assert(vf.update(15, 2.0) === List(15 -> 100.0))
-    assert(vf.update(25, 1.0) === List(25 -> 0.0))
+    assertEquals(vf.update(5, 1.0), Nil)
+    assertEquals(vf.update(15, 2.0), List(15L -> 100.0))
+    assertEquals(vf.update(25, 1.0), List(25L -> 0.0))
   }
 
 }

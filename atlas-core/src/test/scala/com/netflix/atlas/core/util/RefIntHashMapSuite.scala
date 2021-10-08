@@ -17,40 +17,40 @@ package com.netflix.atlas.core.util
 
 import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.info.GraphLayout
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Random
 
-class RefIntHashMapSuite extends AnyFunSuite {
+class RefIntHashMapSuite extends FunSuite {
 
   import java.lang.{Long => JLong}
 
   test("put") {
     val m = new RefIntHashMap[JLong]
-    assert(0 === m.size)
+    assertEquals(0, m.size)
     m.put(11L, 42)
-    assert(1 === m.size)
-    assert(Map(11L -> 42) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(JLong.valueOf(11) -> 42), m.toMap)
   }
 
   test("putIfAbsent") {
     val m = new RefIntHashMap[JLong]
-    assert(0 === m.size)
+    assertEquals(0, m.size)
     assert(m.putIfAbsent(11L, 42))
-    assert(1 === m.size)
-    assert(Map(11L -> 42) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(JLong.valueOf(11) -> 42), m.toMap)
 
     assert(!m.putIfAbsent(11L, 43))
-    assert(1 === m.size)
-    assert(Map(11L -> 42) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(JLong.valueOf(11) -> 42), m.toMap)
   }
 
   test("get") {
     val m = new RefIntHashMap[JLong]
-    assert(m.get(42L, -1) === -1)
+    assertEquals(m.get(42L, -1), -1)
     m.put(11L, 27)
-    assert(m.get(42L, -1) === -1)
-    assert(m.get(11L, -1) === 27)
+    assertEquals(m.get(42L, -1), -1)
+    assertEquals(m.get(11L, -1), 27)
   }
 
   test("get - collisions") {
@@ -60,37 +60,37 @@ class RefIntHashMapSuite extends AnyFunSuite {
     m.put(0L, 0)
     m.put(11L, 1)
     m.put(22L, 2)
-    assert(m.size === 3)
-    assert(m.get(0L, -1) === 0)
-    assert(m.get(11L, -1) === 1)
-    assert(m.get(22L, -1) === 2)
+    assertEquals(m.size, 3)
+    assertEquals(m.get(0L, -1), 0)
+    assertEquals(m.get(11L, -1), 1)
+    assertEquals(m.get(22L, -1), 2)
   }
 
   test("dedup") {
     val m = new RefIntHashMap[JLong]
     m.put(42L, 1)
-    assert(Map(42L -> 1) === m.toMap)
-    assert(1 === m.size)
+    assertEquals(Map(JLong.valueOf(42) -> 1), m.toMap)
+    assertEquals(1, m.size)
     m.put(42L, 2)
-    assert(Map(42L -> 2) === m.toMap)
-    assert(1 === m.size)
+    assertEquals(Map(JLong.valueOf(42) -> 2), m.toMap)
+    assertEquals(1, m.size)
   }
 
   test("increment") {
     val m = new RefIntHashMap[JLong]
-    assert(0 === m.size)
+    assertEquals(0, m.size)
 
     m.increment(42L)
-    assert(1 === m.size)
-    assert(Map(42L -> 1) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(JLong.valueOf(42) -> 1), m.toMap)
 
     m.increment(42L)
-    assert(1 === m.size)
-    assert(Map(42L -> 2) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(JLong.valueOf(42) -> 2), m.toMap)
 
     m.increment(42L, 7)
-    assert(1 === m.size)
-    assert(Map(42L -> 9) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(JLong.valueOf(42) -> 9), m.toMap)
   }
 
   test("increment - collisions") {
@@ -100,9 +100,9 @@ class RefIntHashMapSuite extends AnyFunSuite {
     m.increment(0L)
     m.increment(11L)
     m.increment(22L)
-    assert(m.size === 3)
+    assertEquals(m.size, 3)
     m.foreach { (_, v) =>
-      assert(v === 1)
+      assertEquals(v, 1)
     }
   }
 
@@ -114,7 +114,7 @@ class RefIntHashMapSuite extends AnyFunSuite {
     val data = m.mapToArray(new Array[Long](m.size)) { (k, v) =>
       k + v
     }
-    assert(data.toList === List(1, 12, 23))
+    assertEquals(data.toList, List(1L, 12L, 23L))
   }
 
   test("mapToArray -- invalid length") {
@@ -132,31 +132,31 @@ class RefIntHashMapSuite extends AnyFunSuite {
   test("resize") {
     val m = new RefIntHashMap[JLong]
     (0 until 10000).foreach(i => m.put(i.toLong, i))
-    assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
+    assertEquals((0 until 10000).map(i => JLong.valueOf(i) -> i).toMap, m.toMap)
   }
 
   test("resize - increment") {
     val m = new RefIntHashMap[JLong]
     (0 until 10000).foreach(i => m.increment(i.toLong, i))
-    assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
+    assertEquals((0 until 10000).map(i => JLong.valueOf(i) -> i).toMap, m.toMap)
   }
 
   test("random") {
-    val jmap = new scala.collection.mutable.HashMap[Long, Int]
+    val jmap = new scala.collection.mutable.HashMap[JLong, Int]
     val imap = new RefIntHashMap[JLong]
     (0 until 10000).foreach { i =>
       val v = Random.nextInt()
       imap.put(v.toLong, i)
       jmap.put(v, i)
     }
-    assert(jmap.toMap === imap.toMap)
-    assert(jmap.size === imap.size)
+    assertEquals(jmap.toMap, imap.toMap)
+    assertEquals(jmap.size, imap.size)
   }
 
   test("memory per map") {
     // Sanity check to verify if some change introduces more overhead per set
     val bytes = ClassLayout.parseClass(classOf[RefIntHashMap[JLong]]).instanceSize()
-    assert(bytes === 32)
+    assertEquals(bytes, 32L)
   }
 
   test("memory - 5 items") {
@@ -174,7 +174,7 @@ class RefIntHashMapSuite extends AnyFunSuite {
     //println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself + 5 key objects
-    assert(igraph.totalCount() === 8)
+    assertEquals(igraph.totalCount(), 8L)
 
     // Sanity check size is < 300 bytes
     assert(igraph.totalSize() <= 300)
@@ -195,7 +195,7 @@ class RefIntHashMapSuite extends AnyFunSuite {
     //println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself + 10000 key objects
-    assert(igraph.totalCount() === 3 + 10000)
+    assertEquals(igraph.totalCount(), 3L + 10000)
 
     // Sanity check size is < 500kb
     assert(igraph.totalSize() <= 500000)
@@ -203,7 +203,7 @@ class RefIntHashMapSuite extends AnyFunSuite {
 
   test("negative absolute value") {
     val s = new RefIntHashMap[RefIntHashMapSuite.MinHash]()
-    assert(s.get(new RefIntHashMapSuite.MinHash, 0) === 0)
+    assertEquals(s.get(new RefIntHashMapSuite.MinHash, 0), 0)
   }
 }
 

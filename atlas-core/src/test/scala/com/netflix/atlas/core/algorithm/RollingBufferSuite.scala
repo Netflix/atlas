@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class RollingBufferSuite extends AnyFunSuite {
+class RollingBufferSuite extends FunSuite {
 
   test("n = 0") {
     intercept[IllegalArgumentException] {
@@ -28,29 +28,29 @@ class RollingBufferSuite extends AnyFunSuite {
   test("n = 1, add") {
     val buf = RollingBuffer(1)
     assert(buf.add(0.0).isNaN)
-    assert(buf.add(1.0) === 0.0)
-    assert(buf.add(2.0) === 1.0)
+    assertEquals(buf.add(1.0), 0.0)
+    assertEquals(buf.add(2.0), 1.0)
   }
 
   test("n = 2, add") {
     val buf = RollingBuffer(2)
     assert(buf.add(0.0).isNaN)
     assert(buf.add(1.0).isNaN)
-    assert(buf.add(2.0) === 0.0)
-    assert(buf.add(3.0) === 1.0)
-    assert(buf.add(4.0) === 2.0)
-    assert(buf.add(5.0) === 3.0)
-    assert(buf.add(6.0) === 4.0)
+    assertEquals(buf.add(2.0), 0.0)
+    assertEquals(buf.add(3.0), 1.0)
+    assertEquals(buf.add(4.0), 2.0)
+    assertEquals(buf.add(5.0), 3.0)
+    assertEquals(buf.add(6.0), 4.0)
   }
 
   test("n = 2, add NaNs") {
     val buf = RollingBuffer(2)
     assert(buf.add(0.0).isNaN)
     assert(buf.add(1.0).isNaN)
-    assert(buf.add(2.0) === 0.0)
-    assert(buf.add(3.0) === 1.0)
-    assert(buf.add(Double.NaN) === 2.0)
-    assert(buf.add(5.0) === 3.0)
+    assertEquals(buf.add(2.0), 0.0)
+    assertEquals(buf.add(3.0), 1.0)
+    assertEquals(buf.add(Double.NaN), 2.0)
+    assertEquals(buf.add(5.0), 3.0)
     assert(buf.add(6.0).isNaN)
   }
 
@@ -138,13 +138,13 @@ class RollingBufferSuite extends AnyFunSuite {
     val buf = RollingBuffer(2)
     buf.add(0.0)
     val cfg = buf.state
-    assert(cfg.getInt("pos") === 1)
+    assertEquals(cfg.getInt("pos"), 1)
     val actual = cfg.getDoubleArray("values")
     val expected = List(0.0, Double.NaN)
-    assert(actual.size === 2)
+    assertEquals(actual.size, 2)
     actual.zip(expected).foreach {
       // Used Double.compare to handle NaN properly
-      case (v1, v2) => assert(java.lang.Double.compare(v1, v2) === 0, s"$v1 != $v2")
+      case (v1, v2) => assertEquals(java.lang.Double.compare(v1, v2), 0, s"$v1 != $v2")
     }
   }
 
@@ -158,7 +158,7 @@ class RollingBufferSuite extends AnyFunSuite {
       val v = if (random.nextDouble() < 0.01) Double.NaN else random.nextDouble()
       val expected = buf.add(v)
       val actual = restoredBuf.add(v)
-      assert(java.lang.Double.compare(actual, expected) === 0, s"$actual != $expected")
+      assertEquals(java.lang.Double.compare(actual, expected), 0, s"$actual != $expected")
       if (i % n == 0) {
         restoredBuf = RollingBuffer(buf.state)
       }

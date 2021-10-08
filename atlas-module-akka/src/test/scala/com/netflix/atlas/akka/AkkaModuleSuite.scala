@@ -24,9 +24,9 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class AkkaModuleSuite extends AnyFunSuite {
+class AkkaModuleSuite extends FunSuite {
 
   private val testCfg = ConfigFactory.parseString("""
       |atlas.akka.name = test
@@ -45,7 +45,7 @@ class AkkaModuleSuite extends AnyFunSuite {
     // Module listed twice to verify dedup works
     val injector = Guice.createInjector(deps, new AkkaModule, new AkkaModule)
     assert(injector.getInstance(classOf[ActorSystem]) != null)
-    assert(injector.getInstance(classOf[ServiceManager]).services().size === 2)
+    assertEquals(injector.getInstance(classOf[ServiceManager]).services().size, 2)
     injector.getInstance(classOf[PreDestroyList]).invokeAll()
   }
 }

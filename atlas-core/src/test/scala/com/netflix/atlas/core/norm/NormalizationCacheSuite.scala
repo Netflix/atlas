@@ -17,10 +17,9 @@ package com.netflix.atlas.core.norm
 
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.spectator.api.ManualClock
-import org.scalatest.BeforeAndAfter
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class NormalizationCacheSuite extends AnyFunSuite with BeforeAndAfter {
+class NormalizationCacheSuite extends FunSuite {
 
   val clock = new ManualClock()
   val buffer = scala.collection.mutable.Buffer.empty[Datapoint]
@@ -28,7 +27,7 @@ class NormalizationCacheSuite extends AnyFunSuite with BeforeAndAfter {
 
   def dp(t: Long, v: Double): Datapoint = Datapoint(Map.empty, t, v)
 
-  before {
+  override def beforeEach(context: BeforeEach): Unit = {
     buffer.clear()
   }
 
@@ -50,7 +49,7 @@ class NormalizationCacheSuite extends AnyFunSuite with BeforeAndAfter {
     )
     val actual = buffer.toList
 
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("update counter on exact interval") {
@@ -71,7 +70,7 @@ class NormalizationCacheSuite extends AnyFunSuite with BeforeAndAfter {
     )
     val actual = buffer.toList
 
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("update gauge on exact interval") {
@@ -92,6 +91,6 @@ class NormalizationCacheSuite extends AnyFunSuite with BeforeAndAfter {
     )
     val actual = buffer.toList
 
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 }

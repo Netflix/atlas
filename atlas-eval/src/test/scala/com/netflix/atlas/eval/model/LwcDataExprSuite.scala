@@ -19,9 +19,9 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class LwcDataExprSuite extends AnyFunSuite {
+class LwcDataExprSuite extends FunSuite {
 
   private def styleExpr(str: String): StyleExpr = {
     val interpreter = new Interpreter(StyleVocabulary.allWords)
@@ -35,7 +35,7 @@ class LwcDataExprSuite extends AnyFunSuite {
     val exprStr = "statistic,max,:eq,name,foo,:eq,:and,:max,(,nf.asg,),:by"
     val distExprStr = "name,foo,:eq,:dist-max,(,nf.asg,),:by"
     val lwcExpr = LwcDataExpr("123", exprStr, 10L)
-    assert(lwcExpr.expr === styleExpr(distExprStr).expr.dataExprs.head)
-    assert(lwcExpr.expr.hashCode === styleExpr(exprStr).expr.hashCode)
+    assertEquals(lwcExpr.expr, styleExpr(distExprStr).expr.dataExprs.head)
+    assertEquals(lwcExpr.expr.hashCode, styleExpr(exprStr).expr.hashCode)
   }
 }

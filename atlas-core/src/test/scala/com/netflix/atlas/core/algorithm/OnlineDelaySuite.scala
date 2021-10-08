@@ -22,9 +22,9 @@ class OnlineDelaySuite extends BaseOnlineAlgorithmSuite {
   test("n = 1") {
     val algo = OnlineDelay(1)
     assert(algo.next(0.0).isNaN)
-    assert(algo.next(1.0) === 0.0)
-    assert(algo.next(2.0) === 1.0)
-    assert(algo.next(Double.NaN) === 2.0)
+    assertEquals(algo.next(1.0), 0.0)
+    assertEquals(algo.next(2.0), 1.0)
+    assertEquals(algo.next(Double.NaN), 2.0)
     assert(algo.isEmpty)
     assert(algo.next(Double.NaN).isNaN)
   }
@@ -32,20 +32,20 @@ class OnlineDelaySuite extends BaseOnlineAlgorithmSuite {
   test("n = 1, reset") {
     val algo = OnlineDelay(1)
     assert(algo.next(0.0).isNaN)
-    assert(algo.next(1.0) === 0.0)
+    assertEquals(algo.next(1.0), 0.0)
     algo.reset()
     assert(algo.next(2.0).isNaN)
-    assert(algo.next(3.0) === 2.0)
+    assertEquals(algo.next(3.0), 2.0)
   }
 
   test("n = 2") {
     val algo = OnlineDelay(2)
     assert(algo.next(0.0).isNaN)
     assert(algo.next(1.0).isNaN)
-    assert(algo.next(2.0) === 0.0)
-    assert(algo.next(Double.NaN) === 1.0)
+    assertEquals(algo.next(2.0), 0.0)
+    assertEquals(algo.next(Double.NaN), 1.0)
     assert(!algo.isEmpty)
-    assert(algo.next(Double.NaN) === 2.0)
+    assertEquals(algo.next(Double.NaN), 2.0)
     assert(algo.isEmpty)
     assert(algo.next(Double.NaN).isNaN)
     assert(algo.isEmpty)

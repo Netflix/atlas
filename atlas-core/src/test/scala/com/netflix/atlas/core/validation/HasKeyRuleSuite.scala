@@ -18,15 +18,15 @@ package com.netflix.atlas.core.validation
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.api.Id
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class HasKeyRuleSuite extends AnyFunSuite {
+class HasKeyRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("key = name")
   private val rule = HasKeyRule(config)
 
   test("has key") {
-    assert(rule.validate(Map("name" -> "foo")) === ValidationResult.Pass)
+    assertEquals(rule.validate(Map("name" -> "foo")), ValidationResult.Pass)
   }
 
   test("missing key") {
@@ -35,7 +35,7 @@ class HasKeyRuleSuite extends AnyFunSuite {
   }
 
   test("sorted: has key") {
-    assert(rule.validate(SortedTagMap("name" -> "foo")) === ValidationResult.Pass)
+    assertEquals(rule.validate(SortedTagMap("name" -> "foo")), ValidationResult.Pass)
   }
 
   test("sorted: missing key") {
@@ -44,12 +44,12 @@ class HasKeyRuleSuite extends AnyFunSuite {
   }
 
   test("id: has key name") {
-    assert(rule.validate(Id.create("foo")) === ValidationResult.Pass)
+    assertEquals(rule.validate(Id.create("foo")), ValidationResult.Pass)
   }
 
   test("id: has key other") {
     val id = Id.create("foo").withTag("a", "1")
-    assert(HasKeyRule("a").validate(id) === ValidationResult.Pass)
+    assertEquals(HasKeyRule("a").validate(id), ValidationResult.Pass)
   }
 
   test("id: missing key other") {

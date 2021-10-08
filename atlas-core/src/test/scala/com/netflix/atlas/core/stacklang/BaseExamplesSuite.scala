@@ -19,9 +19,9 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeriesExpr
 import com.netflix.atlas.core.util.Features
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-abstract class BaseExamplesSuite extends AnyFunSuite {
+abstract class BaseExamplesSuite extends FunSuite {
 
   def vocabulary: Vocabulary
 
@@ -66,14 +66,14 @@ abstract class BaseExamplesSuite extends AnyFunSuite {
             case v           => List(v)
           }
           val stack2 = execute(Interpreter.toString(prg)).stack
-          assert(stack2 === prg)
+          assertEquals(stack2, prg)
         }
       }
 
       test(s"finalGrouping and isGrouped match -- $ex,:${w.name}") {
         execute(s"$ex,:${w.name}").stack.foreach {
-          case s: StyleExpr      => assert(s.expr.finalGrouping.nonEmpty === s.expr.isGrouped)
-          case t: TimeSeriesExpr => assert(t.finalGrouping.nonEmpty === t.isGrouped)
+          case s: StyleExpr      => assertEquals(s.expr.finalGrouping.nonEmpty, s.expr.isGrouped)
+          case t: TimeSeriesExpr => assertEquals(t.finalGrouping.nonEmpty, t.isGrouped)
           case _                 =>
         }
       }
@@ -82,7 +82,7 @@ abstract class BaseExamplesSuite extends AnyFunSuite {
       if (w.name != "offset") {
         test(s"toString(stack) -- $ex,:${w.name}") {
           val stack = execute(s"$ex,:${w.name}").stack
-          assert(stack === execute(Interpreter.toString(stack)).stack)
+          assertEquals(stack, execute(Interpreter.toString(stack)).stack)
         }
       }
     }

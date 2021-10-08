@@ -15,81 +15,81 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class UnitPrefixSuite extends AnyFunSuite {
+class UnitPrefixSuite extends FunSuite {
 
   test("decimal isNearlyZero") {
-    assert(UnitPrefix.decimal(1e-13).text === "")
+    assertEquals(UnitPrefix.decimal(1e-13).text, "")
   }
 
   test("decimal infinity") {
-    assert(UnitPrefix.decimal(Double.PositiveInfinity).text === "")
+    assertEquals(UnitPrefix.decimal(Double.PositiveInfinity).text, "")
   }
 
   test("decimal NaN") {
-    assert(UnitPrefix.decimal(Double.NaN).text === "")
+    assertEquals(UnitPrefix.decimal(Double.NaN).text, "")
   }
 
   test("decimal milli") {
-    assert(UnitPrefix.decimal(1.23e-3).text === "milli")
-    assert(UnitPrefix.decimal(-1.23e-3).text === "milli")
+    assertEquals(UnitPrefix.decimal(1.23e-3).text, "milli")
+    assertEquals(UnitPrefix.decimal(-1.23e-3).text, "milli")
   }
 
   test("decimal kilo") {
-    assert(UnitPrefix.decimal(1.23e3).text === "kilo")
-    assert(UnitPrefix.decimal(-1.23e3).text === "kilo")
+    assertEquals(UnitPrefix.decimal(1.23e3).text, "kilo")
+    assertEquals(UnitPrefix.decimal(-1.23e3).text, "kilo")
   }
 
   test("decimal mega") {
-    assert(UnitPrefix.decimal(1.23e6).text === "mega")
-    assert(UnitPrefix.decimal(-1.23e6).text === "mega")
+    assertEquals(UnitPrefix.decimal(1.23e6).text, "mega")
+    assertEquals(UnitPrefix.decimal(-1.23e6).text, "mega")
   }
 
   test("decimal giga") {
-    assert(UnitPrefix.decimal(1.23e9).text === "giga")
-    assert(UnitPrefix.decimal(-1.23e9).text === "giga")
+    assertEquals(UnitPrefix.decimal(1.23e9).text, "giga")
+    assertEquals(UnitPrefix.decimal(-1.23e9).text, "giga")
   }
 
   test("binary isNearlyZero") {
-    assert(UnitPrefix.binary(1e-13).text === "")
+    assertEquals(UnitPrefix.binary(1e-13).text, "")
   }
 
   test("binary infinity") {
-    assert(UnitPrefix.binary(Double.PositiveInfinity).text === "")
+    assertEquals(UnitPrefix.binary(Double.PositiveInfinity).text, "")
   }
 
   test("binary NaN") {
-    assert(UnitPrefix.binary(Double.NaN).text === "")
+    assertEquals(UnitPrefix.binary(Double.NaN).text, "")
   }
 
   test("binary milli") {
-    assert(UnitPrefix.binary(1.23e-3).text === "milli")
-    assert(UnitPrefix.binary(-1.23e-3).text === "milli")
+    assertEquals(UnitPrefix.binary(1.23e-3).text, "milli")
+    assertEquals(UnitPrefix.binary(-1.23e-3).text, "milli")
   }
 
   test("binary kibi") {
-    assert(UnitPrefix.binary(1023.0).text === "")
-    assert(UnitPrefix.binary(1.23e3).text === "kibi")
-    assert(UnitPrefix.binary(-1.23e3).text === "kibi")
+    assertEquals(UnitPrefix.binary(1023.0).text, "")
+    assertEquals(UnitPrefix.binary(1.23e3).text, "kibi")
+    assertEquals(UnitPrefix.binary(-1.23e3).text, "kibi")
   }
 
   test("binary mebi") {
-    assert(UnitPrefix.binary(1.23e6).text === "mebi")
-    assert(UnitPrefix.binary(-1.23e6).text === "mebi")
+    assertEquals(UnitPrefix.binary(1.23e6).text, "mebi")
+    assertEquals(UnitPrefix.binary(-1.23e6).text, "mebi")
   }
 
   test("binary gibi") {
-    assert(UnitPrefix.binary(1.23e9).text === "gibi")
-    assert(UnitPrefix.binary(-1.23e9).text === "gibi")
+    assertEquals(UnitPrefix.binary(1.23e9).text, "gibi")
+    assertEquals(UnitPrefix.binary(-1.23e9).text, "gibi")
   }
 
   test("format MaxValue") {
-    assert(UnitPrefix.format(Double.MaxValue) === " 2e+308")
+    assertEquals(UnitPrefix.format(Double.MaxValue), " 2e+308")
   }
 
   test("format MinValue") {
-    assert(UnitPrefix.format(Double.MinValue) === "-2e+308")
+    assertEquals(UnitPrefix.format(Double.MinValue), "-2e+308")
   }
 
 }

@@ -17,26 +17,26 @@ package com.netflix.atlas.core.util
 
 import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.info.GraphLayout
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Random
 
-class LongIntHashMapSuite extends AnyFunSuite {
+class LongIntHashMapSuite extends FunSuite {
 
   test("put") {
     val m = new LongIntHashMap(-1)
-    assert(0 === m.size)
+    assertEquals(0, m.size)
     m.put(11, 42)
-    assert(1 === m.size)
-    assert(Map(11 -> 42) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(11L -> 42), m.toMap)
   }
 
   test("get") {
     val m = new LongIntHashMap(-1)
-    assert(m.get(42, -1) === -1)
+    assertEquals(m.get(42, -1), -1)
     m.put(11, 27)
-    assert(m.get(42, -1) === -1)
-    assert(m.get(11, -1) === 27)
+    assertEquals(m.get(42, -1), -1)
+    assertEquals(m.get(11, -1), 27)
   }
 
   test("get - collisions") {
@@ -46,37 +46,37 @@ class LongIntHashMapSuite extends AnyFunSuite {
     m.put(0, 0)
     m.put(11, 1)
     m.put(22, 2)
-    assert(m.size === 3)
-    assert(m.get(0, -1) === 0)
-    assert(m.get(11, -1) === 1)
-    assert(m.get(22, -1) === 2)
+    assertEquals(m.size, 3)
+    assertEquals(m.get(0, -1), 0)
+    assertEquals(m.get(11, -1), 1)
+    assertEquals(m.get(22, -1), 2)
   }
 
   test("dedup") {
     val m = new LongIntHashMap(-1)
     m.put(42, 1)
-    assert(Map(42 -> 1) === m.toMap)
-    assert(1 === m.size)
+    assertEquals(Map(42L -> 1), m.toMap)
+    assertEquals(1, m.size)
     m.put(42, 2)
-    assert(Map(42 -> 2) === m.toMap)
-    assert(1 === m.size)
+    assertEquals(Map(42L -> 2), m.toMap)
+    assertEquals(1, m.size)
   }
 
   test("increment") {
     val m = new LongIntHashMap(-1)
-    assert(0 === m.size)
+    assertEquals(0, m.size)
 
     m.increment(42)
-    assert(1 === m.size)
-    assert(Map(42 -> 1) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(42L -> 1), m.toMap)
 
     m.increment(42)
-    assert(1 === m.size)
-    assert(Map(42 -> 2) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(42L -> 2), m.toMap)
 
     m.increment(42, 7)
-    assert(1 === m.size)
-    assert(Map(42 -> 9) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(42L -> 9), m.toMap)
   }
 
   test("increment - collisions") {
@@ -86,22 +86,22 @@ class LongIntHashMapSuite extends AnyFunSuite {
     m.increment(0)
     m.increment(11)
     m.increment(22)
-    assert(m.size === 3)
+    assertEquals(m.size, 3)
     m.foreach { (_, v) =>
-      assert(v === 1)
+      assertEquals(v, 1)
     }
   }
 
   test("resize") {
     val m = new LongIntHashMap(-1, 10)
     (0 until 10000).foreach(i => m.put(i, i))
-    assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
+    assertEquals((0 until 10000).map(i => i.toLong -> i).toMap, m.toMap)
   }
 
   test("resize - increment") {
     val m = new LongIntHashMap(-1, 10)
     (0 until 10000).foreach(i => m.increment(i, i))
-    assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
+    assertEquals((0 until 10000).map(i => i.toLong -> i).toMap, m.toMap)
   }
 
   test("random") {
@@ -112,14 +112,14 @@ class LongIntHashMapSuite extends AnyFunSuite {
       imap.put(v, i)
       jmap.put(v, i)
     }
-    assert(jmap.toMap === imap.toMap)
-    assert(jmap.size === imap.size)
+    assertEquals(jmap.toMap, imap.toMap)
+    assertEquals(jmap.size, imap.size)
   }
 
   test("memory per map") {
     // Sanity check to verify if some change introduces more overhead per set
     val bytes = ClassLayout.parseClass(classOf[LongIntHashMap]).instanceSize()
-    assert(bytes === 40)
+    assertEquals(bytes, 40L)
   }
 
   test("memory - 5 items") {
@@ -137,7 +137,7 @@ class LongIntHashMapSuite extends AnyFunSuite {
     //println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself
-    assert(igraph.totalCount() === 3)
+    assertEquals(igraph.totalCount(), 3L)
 
     // Sanity check size is < 300 bytes
     assert(igraph.totalSize() <= 300)
@@ -158,7 +158,7 @@ class LongIntHashMapSuite extends AnyFunSuite {
     //println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself
-    assert(igraph.totalCount() === 3)
+    assertEquals(igraph.totalCount(), 3L)
 
     // Sanity check size is < 320kb
     assert(igraph.totalSize() <= 320000)
@@ -167,7 +167,7 @@ class LongIntHashMapSuite extends AnyFunSuite {
   test("negative absolute value") {
     // hashes to Integer.MIN_VALUE causing: java.lang.ArrayIndexOutOfBoundsException: -2
     val m = new LongIntHashMap(-1, 10)
-    assert(m.get(Integer.MIN_VALUE.toLong - 1, 0) === 0)
+    assertEquals(m.get(Integer.MIN_VALUE.toLong - 1, 0), 0)
   }
 
 }

@@ -16,42 +16,48 @@
 package com.netflix.atlas.core.algorithm
 
 import com.netflix.atlas.json.Json
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class AlgoStateSuite extends AnyFunSuite {
+class AlgoStateSuite extends FunSuite {
 
   private def serde(state: AlgoState): AlgoState = {
     Json.decode[AlgoState](Json.encode(state))
   }
 
-  private def assertEquals(state: AlgoState, get: AlgoState => Any, expected: Any): Unit = {
-    assert(get(state) === expected)
-    assert(get(serde(state)) === expected)
+  private def check(state: AlgoState, get: AlgoState => Any, expected: Any): Unit = {
+    // Map array to Seq
+    // https://github.com/scalameta/munit/issues/339
+    def f(v: Any): Any = v match {
+      case a: Array[_] => a.toSeq
+      case _           => v
+    }
+    assertEquals(f(get(state)), f(expected))
+    assertEquals(f(get(serde(state))), f(expected))
   }
 
   test("boolean") {
     val s = AlgoState("foo", "test" -> true)
-    assertEquals(s, _.getBoolean("test"), true)
+    check(s, _.getBoolean("test"), true)
   }
 
   test("int") {
     val s = AlgoState("foo", "test" -> 42)
-    assertEquals(s, _.getInt("test"), 42)
+    check(s, _.getInt("test"), 42)
   }
 
   test("long") {
     val s = AlgoState("foo", "test" -> 42L)
-    assertEquals(s, _.getLong("test"), 42L)
+    check(s, _.getLong("test"), 42L)
   }
 
   test("long as double") {
     val s = AlgoState("foo", "test" -> 42L)
-    assertEquals(s, _.getDouble("test"), 42.0)
+    check(s, _.getDouble("test"), 42.0)
   }
 
   test("double") {
     val s = AlgoState("foo", "test" -> 42.0)
-    assertEquals(s, _.getDouble("test"), 42.0)
+    check(s, _.getDouble("test"), 42.0)
   }
 
   test("double: NaN") {
@@ -72,39 +78,39 @@ class AlgoStateSuite extends AnyFunSuite {
     val e = intercept[IllegalStateException] {
       s.getDouble("test")
     }
-    assert(e.getMessage === "test has non-numeric type: class java.lang.Object")
+    assertEquals(e.getMessage, "test has non-numeric type: class java.lang.Object")
   }
 
   test("double array") {
     val s = AlgoState("foo", "test" -> Array(42.0, 1.0))
-    assertEquals(s, _.getDoubleArray("test"), Array(42.0, 1.0))
+    check(s, _.getDoubleArray("test"), Array(42.0, 1.0))
   }
 
   test("double array: NaN") {
     val s = AlgoState("foo", "test" -> Array(42.0, Double.NaN))
     val vs = s.getDoubleArray("test")
-    assert(vs(0) === 42.0)
+    assertEquals(vs(0), 42.0)
     assert(vs(1).isNaN)
-    assert(vs.count(!_.isNaN) === 1)
+    assertEquals(vs.count(!_.isNaN), 1)
   }
 
   test("double array: NaN serde") {
     val s = serde(AlgoState("foo", "test" -> Array(42.0, Double.NaN)))
     val vs = s.getDoubleArray("test")
-    assert(vs(0) === 42.0)
+    assertEquals(vs(0), 42.0)
     assert(vs(1).isNaN)
-    assert(vs.count(!_.isNaN) === 1)
+    assertEquals(vs.count(!_.isNaN), 1)
   }
 
   test("string") {
     val s = AlgoState("foo", "test" -> "42.0")
-    assertEquals(s, _.getString("test"), "42.0")
+    check(s, _.getString("test"), "42.0")
   }
 
   test("sub-state") {
     val expected = AlgoState("bar", "test" -> 42)
     val s = AlgoState("foo", "test"        -> expected)
-    assertEquals(s, _.getState("test"), expected)
+    check(s, _.getState("test"), expected)
   }
 
   test("sub-state list") {
@@ -112,6 +118,6 @@ class AlgoStateSuite extends AnyFunSuite {
       AlgoState("bar", "test" -> i)
     }
     val s = AlgoState("foo", "test" -> expected)
-    assertEquals(s, _.getStateList("test"), expected)
+    check(s, _.getStateList("test"), expected)
   }
 }

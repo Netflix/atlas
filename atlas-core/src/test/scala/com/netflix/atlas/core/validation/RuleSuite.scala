@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.validation
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class RuleSuite extends AnyFunSuite {
+class RuleSuite extends FunSuite {
 
   private val config =
     ConfigFactory.parseString(
@@ -65,14 +65,14 @@ class RuleSuite extends AnyFunSuite {
 
   test("load") {
     val rules = Rule.load(config.getConfigList("rules"))
-    assert(rules.size === 9)
+    assertEquals(rules.size, 9)
   }
 
   test("load, useComposite") {
     val rules = Rule.load(config.getConfigList("rules"), true)
-    assert(rules.size === 3)
+    assertEquals(rules.size, 3)
     assert(rules.head.isInstanceOf[CompositeTagRule])
-    assert(rules.head.asInstanceOf[CompositeTagRule].tagRules.size === 7)
+    assertEquals(rules.head.asInstanceOf[CompositeTagRule].tagRules.size, 7)
   }
 
   test("validate ok") {

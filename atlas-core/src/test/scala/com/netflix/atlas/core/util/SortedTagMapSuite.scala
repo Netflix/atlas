@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class SortedTagMapSuite extends AnyFunSuite {
+class SortedTagMapSuite extends FunSuite {
 
   test("empty") {
     val m = SortedTagMap.empty
@@ -25,7 +25,7 @@ class SortedTagMapSuite extends AnyFunSuite {
     assert(m.size == 0)
     assert(m.get("a").isEmpty)
     assert(!m.contains("a"))
-    assert(m.toList === List.empty)
+    assertEquals(m.toList, List.empty)
   }
 
   test("single pair") {
@@ -34,7 +34,7 @@ class SortedTagMapSuite extends AnyFunSuite {
     assert(m.size == 1)
     assert(m.get("a").contains("1"))
     assert(m.contains("a"))
-    assert(m.toList === List("a" -> "1"))
+    assertEquals(m.toList, List("a" -> "1"))
   }
 
   test("four pairs") {
@@ -45,7 +45,7 @@ class SortedTagMapSuite extends AnyFunSuite {
       val k = s"${('a' + i).asInstanceOf[Char]}"
       assert(m.get(k).contains(i.toString))
     }
-    assert(m.toList === List("a" -> "0", "b" -> "1", "c" -> "2", "d" -> "3"))
+    assertEquals(m.toList, List("a" -> "0", "b" -> "1", "c" -> "2", "d" -> "3"))
   }
 
   private def pairs: List[(String, String)] = {
@@ -63,7 +63,7 @@ class SortedTagMapSuite extends AnyFunSuite {
     input.foreach { t =>
       assert(m.get(t._1).contains(t._2))
     }
-    assert(m.toList === pairs)
+    assertEquals(m.toList, pairs)
   }
 
   test("updates: adding new keys") {
@@ -72,7 +72,7 @@ class SortedTagMapSuite extends AnyFunSuite {
       acc + t
     }
     val expected = SortedTagMap(input)
-    assert(actual === expected)
+    assertEquals(actual, expected)
     assert(actual.isInstanceOf[SortedTagMap])
   }
 
@@ -83,7 +83,7 @@ class SortedTagMapSuite extends AnyFunSuite {
       acc + t
     }
     val expected = SortedTagMap(input)
-    assert(actual === expected)
+    assertEquals(actual, expected)
     assert(actual.isInstanceOf[SortedTagMap])
   }
 
@@ -93,10 +93,10 @@ class SortedTagMapSuite extends AnyFunSuite {
       // remove key that exists
       val actual = SortedTagMap(input) - input.head._1
       val expected = SortedTagMap(input.tail)
-      assert(actual === expected)
+      assertEquals(actual, expected)
 
       // remove key that is missing
-      assert(actual - input.head._1 === expected)
+      assertEquals(actual - input.head._1, expected)
 
       // check type
       assert(actual.isInstanceOf[SortedTagMap])
@@ -115,7 +115,7 @@ class SortedTagMapSuite extends AnyFunSuite {
       actual += k -> v
     }
     val expected = pairs
-    assert(actual.result() === expected)
+    assertEquals(actual.result(), expected)
   }
 
   test("create from SortedTagMap") {
@@ -128,14 +128,14 @@ class SortedTagMapSuite extends AnyFunSuite {
     val map = pairs.toMap
     val actual = SortedTagMap(map)
     val expected = SortedTagMap(pairs)
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("create from IterableOnce") {
     val map = pairs.toMap.view
     val actual = SortedTagMap(map)
     val expected = SortedTagMap(pairs)
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("create uneven size") {
@@ -147,13 +147,13 @@ class SortedTagMapSuite extends AnyFunSuite {
   test("compareTo: empty") {
     val a = SortedTagMap.empty
     val b = SortedTagMap(List.empty)
-    assert(a.compareTo(b) === 0)
-    assert(b.compareTo(a) === 0)
+    assertEquals(a.compareTo(b), 0)
+    assertEquals(b.compareTo(a), 0)
   }
 
   test("compareTo: self") {
     val a = SortedTagMap(Array("a", "1", "b", "2"))
-    assert(a.compareTo(a) === 0)
+    assertEquals(a.compareTo(a), 0)
   }
 
   test("compareTo: different keys") {

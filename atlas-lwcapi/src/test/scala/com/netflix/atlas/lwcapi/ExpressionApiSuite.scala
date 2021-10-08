@@ -18,22 +18,21 @@ package com.netflix.atlas.lwcapi
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import com.netflix.atlas.akka.StreamOps
+import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
 
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
 import java.util.zip.GZIPInputStream
 import scala.util.Using
 
-class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
+class ExpressionApiSuite extends MUnitRouteSuite {
   import scala.concurrent.duration._
 
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)
@@ -61,10 +60,10 @@ class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
   test("get of a path returns empty data") {
     val expected_etag = ExpressionApi.encode(List()).etag
     Get("/lwc/api/v1/expressions/123") ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(unzip(responseAs[Array[Byte]]) === """{"expressions":[]}""")
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(unzip(responseAs[Array[Byte]]), """{"expressions":[]}""")
       assert(header("ETag").isDefined)
-      assert(header("ETag").get.value === expected_etag)
+      assertEquals(header("ETag").get.value, expected_etag)
     }
   }
 
@@ -72,10 +71,10 @@ class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
     val etag = ExpressionApi.encode(List()).etag
     val headers = List(RawHeader("If-None-Match", etag))
     Get("/lwc/api/v1/expressions/123").withHeaders(headers) ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.NotModified)
+      assertEquals(response.status, StatusCodes.NotModified)
       assert(responseAs[String].isEmpty)
       assert(header("ETag").isDefined)
-      assert(header("ETag").get.value === etag)
+      assertEquals(header("ETag").get.value, etag)
     }
   }
 
@@ -84,10 +83,10 @@ class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
     val emptyETag = ExpressionApi.encode(List()).etag
     val headers = List(RawHeader("If-None-Match", etag))
     Get("/lwc/api/v1/expressions/123").withHeaders(headers) ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(unzip(responseAs[Array[Byte]]) === """{"expressions":[]}""")
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(unzip(responseAs[Array[Byte]]), """{"expressions":[]}""")
       assert(header("ETag").isDefined)
-      assert(header("ETag").get.value === emptyETag)
+      assertEquals(header("ETag").get.value, emptyETag)
     }
   }
 
@@ -100,7 +99,7 @@ class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
     sm.regenerateQueryIndex()
     Get("/lwc/api/v1/expressions/skan") ~> endpoint.routes ~> check {
       val expected = s"""{"expressions":[$skanCount,$skanSum]}"""
-      assert(unzip(responseAs[Array[Byte]]) === expected)
+      assertEquals(unzip(responseAs[Array[Byte]]), expected)
     }
   }
 
@@ -113,7 +112,7 @@ class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
     sm.regenerateQueryIndex()
     Get("/lwc/api/v1/expressions") ~> endpoint.routes ~> check {
       val expected = s"""{"expressions":[$brhMax,$skanCount,$skanSum]}"""
-      assert(unzip(responseAs[Array[Byte]]) === expected)
+      assertEquals(unzip(responseAs[Array[Byte]]), expected)
     }
   }
 
@@ -122,7 +121,7 @@ class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
     endpoint.clearCache()
     Get("/lwc/api/v1/expressions") ~> endpoint.routes ~> check {
       val expected = """{"expressions":[]}"""
-      assert(unzip(responseAs[Array[Byte]]) === expected)
+      assertEquals(unzip(responseAs[Array[Byte]]), expected)
     }
   }
 
@@ -131,7 +130,7 @@ class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
     endpoint.clearCache()
     Get("/lwc/api/v1/expressions/") ~> endpoint.routes ~> check {
       val expected = """{"expressions":[]}"""
-      assert(unzip(responseAs[Array[Byte]]) === expected)
+      assertEquals(unzip(responseAs[Array[Byte]]), expected)
     }
   }
 
@@ -141,7 +140,7 @@ class ExpressionApiSuite extends AnyFunSuite with ScalatestRouteTest {
     val ordered = unordered.sorted
     val tagUnordered = ExpressionApi.encode(unordered).etag
     val tagOrdered = ExpressionApi.encode(ordered).etag
-    assert(tagUnordered === tagOrdered)
+    assertEquals(tagUnordered, tagOrdered)
   }
 
   test("etags for no expressions works") {

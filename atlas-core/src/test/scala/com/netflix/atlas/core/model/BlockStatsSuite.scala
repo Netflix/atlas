@@ -15,42 +15,42 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class BlockStatsSuite extends AnyFunSuite {
+class BlockStatsSuite extends FunSuite {
 
   test("resize") {
     BlockStats.clear()
     val block = CompressedArrayBlock(0L, 60)
 
     BlockStats.inc(block)
-    assert(BlockStats.overallCount === 1)
-    assert(BlockStats.overallBytes === 22)
+    assertEquals(BlockStats.overallCount, 1)
+    assertEquals(BlockStats.overallBytes, 22L)
 
     // Resize the block for a single value
     block.update(0, 2.0)
-    assert(BlockStats.overallCount === 1)
-    assert(BlockStats.overallBytes === 46)
+    assertEquals(BlockStats.overallCount, 1)
+    assertEquals(BlockStats.overallBytes, 46L)
 
     // Resize the block for up to 4 values
     block.update(1, 3.0)
-    assert(BlockStats.overallCount === 1)
-    assert(BlockStats.overallBytes === 70)
+    assertEquals(BlockStats.overallCount, 1)
+    assertEquals(BlockStats.overallBytes, 70L)
 
     // Resize the block for up to 12 values, 2 already used
     (0 until 10).foreach { i =>
       block.update(i, i + 4.0)
     }
-    assert(BlockStats.overallCount === 1)
-    assert(BlockStats.overallBytes === 134)
+    assertEquals(BlockStats.overallCount, 1)
+    assertEquals(BlockStats.overallBytes, 134L)
 
     // Resize to full array
     block.update(1, 14.0)
-    assert(BlockStats.overallCount === 1)
-    assert(BlockStats.overallBytes === 486)
+    assertEquals(BlockStats.overallCount, 1)
+    assertEquals(BlockStats.overallBytes, 486L)
 
     BlockStats.dec(block)
-    assert(BlockStats.overallCount === 0)
-    assert(BlockStats.overallBytes === 0)
+    assertEquals(BlockStats.overallCount, 0)
+    assertEquals(BlockStats.overallBytes, 0L)
   }
 }

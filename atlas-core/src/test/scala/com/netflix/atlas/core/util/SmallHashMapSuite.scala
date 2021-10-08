@@ -17,11 +17,11 @@ package com.netflix.atlas.core.util
 
 import java.util.UUID
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Random
 
-class SmallHashMapSuite extends AnyFunSuite {
+class SmallHashMapSuite extends FunSuite {
 
   // Set of keys taken from prod.us-east-1. This tends to be our biggest region and these are the
   // actual keys we see in the data.
@@ -203,78 +203,78 @@ class SmallHashMapSuite extends AnyFunSuite {
     val m1 = SmallHashMap("k1" -> "v1")
     val m2 = SmallHashMap("k1" -> "v1", "k2" -> "v2")
 
-    assert(empty.size === 0)
-    assert(m1.size === 1)
-    assert(m2.size === 2)
+    assertEquals(empty.size, 0)
+    assertEquals(m1.size, 1)
+    assertEquals(m2.size, 2)
 
-    assert(m1("k1") === "v1")
+    assertEquals(m1("k1"), "v1")
     assert(m1.contains("k1"))
     intercept[NoSuchElementException] { m1("k2") }
     assert(!m1.contains("k2"))
-    assert(m2("k1") === "v1")
-    assert(m2("k2") === "v2")
+    assertEquals(m2("k1"), "v1")
+    assertEquals(m2("k2"), "v2")
 
-    assert(m1.get("k1") === Some("v1"))
-    assert(m1.get("k2") === None)
-    assert(m2.get("k1") === Some("v1"))
-    assert(m2.get("k2") === Some("v2"))
+    assertEquals(m1.get("k1"), Some("v1"))
+    assertEquals(m1.get("k2"), None)
+    assertEquals(m2.get("k1"), Some("v1"))
+    assertEquals(m2.get("k2"), Some("v2"))
 
     val s = m2.toSet
     m2.foreach { t =>
       assert(s.contains(t))
     }
 
-    assert(m1 === m2 - "k2")
+    assertEquals(m2 - "k2", m1)
   }
 
   test("retains type after removal of key") {
     val m1 = SmallHashMap("k1" -> "v1")
     val m2 = SmallHashMap("k1" -> "v1", "k2" -> "v2")
-    assert(m1 === m2 - "k2")
+    assertEquals(m2 - "k2", m1)
     assert((m2 - "k2").isInstanceOf[SmallHashMap[_, _]])
   }
 
   test("remove key not in map") {
     val m1 = SmallHashMap("k1" -> "v1", "k2" -> "v2")
-    assert(m1 === m1 - "k3")
+    assertEquals(m1 - "k3", m1)
     assert((m1 - "k3").isInstanceOf[SmallHashMap[_, _]])
   }
 
   test("retains type after adding pair") {
     val m1 = SmallHashMap("k1" -> "v1")
     val m2 = SmallHashMap("k1" -> "v1", "k2" -> "v2")
-    assert(m1 + ("k2" -> "v2") === m2)
+    assertEquals(m1 + ("k2" -> "v2"), m2)
     assert((m1 + ("k2" -> "v2")).isInstanceOf[SmallHashMap[_, _]])
   }
 
   test("empty map") {
     val m = SmallHashMap.empty[String, String]
-    assert(m.keySet === Set.empty)
-    assert(m.get("k1") === None)
-    assert(m.size === 0)
+    assertEquals(m.keySet, Set.empty[String])
+    assertEquals(m.get("k1"), None)
+    assertEquals(m.size, 0)
   }
 
   test("map with 1 pair") {
     val m = SmallHashMap("k1" -> "v1")
-    assert(m.keySet === Set("k1"))
-    assert(m.get("k1") === Some("v1"))
-    assert(m.get("k2") === None)
-    assert(m.size === 1)
+    assertEquals(m.keySet, Set("k1"))
+    assertEquals(m.get("k1"), Some("v1"))
+    assertEquals(m.get("k2"), None)
+    assertEquals(m.size, 1)
   }
 
   test("keySet") {
     val m = SmallHashMap("k1" -> "v1", "k2" -> "v2")
-    assert(m.keySet === Set("k1", "k2"))
+    assertEquals(m.keySet, Set("k1", "k2"))
   }
 
   test("values") {
     val m = SmallHashMap("k1" -> "v1", "k2" -> "v2")
-    assert(m.values.toSet === Set("v1", "v2"))
+    assertEquals(m.values.toSet, Set("v1", "v2"))
   }
 
   test("toSet") {
-    val m = SmallHashMap("k1"   -> "v1", "k2" -> "v2")
-    assert(m.toSet === Set("k1" -> "v1", "k2" -> "v2"))
+    val m = SmallHashMap("k1"      -> "v1", "k2" -> "v2")
+    assertEquals(m.toSet, Set("k1" -> "v1", "k2" -> "v2"))
   }
 
   test("using builder") {
@@ -283,7 +283,7 @@ class SmallHashMapSuite extends AnyFunSuite {
       .add("k1", "v1")
       .addAll(Map("k2" -> "v2"))
       .result
-    assert(expected === actual)
+    assertEquals(expected, actual)
   }
 
   private def testNumCollisions(m: SmallHashMap[String, String]): Unit = {
@@ -307,8 +307,8 @@ class SmallHashMapSuite extends AnyFunSuite {
     builder.add(findStringWithHash(12, 42), "1")
     builder.add(findStringWithHash(12, 42), "2")
     val m = builder.result
-    assert(m.numCollisions === 1)
-    assert(m.numProbesPerKey === 0.5)
+    assertEquals(m.numCollisions, 1)
+    assertEquals(m.numProbesPerKey, 0.5)
   }
 
   test("numCollisions 25") {
@@ -316,7 +316,7 @@ class SmallHashMapSuite extends AnyFunSuite {
     val m = SmallHashMap(rkeys.take(25).map(v => v -> v): _*)
     testNumCollisions(m)
     rkeys.take(25).foreach { k =>
-      assert(m.get(k) === Some(k))
+      assertEquals(m.get(k), Some(k))
     }
   }
 
@@ -325,7 +325,7 @@ class SmallHashMapSuite extends AnyFunSuite {
     val m = SmallHashMap(rkeys.take(50).map(v => v -> v): _*)
     testNumCollisions(m)
     rkeys.take(50).foreach { k =>
-      assert(m.get(k) === Some(k))
+      assertEquals(m.get(k), Some(k))
     }
   }
 
@@ -334,7 +334,7 @@ class SmallHashMapSuite extends AnyFunSuite {
     val m = SmallHashMap(rkeys.map(v => v -> v): _*)
     testNumCollisions(m)
     rkeys.foreach { k =>
-      assert(m.get(k) === Some(k))
+      assertEquals(m.get(k), Some(k))
     }
   }
 
@@ -347,8 +347,8 @@ class SmallHashMapSuite extends AnyFunSuite {
       }
       val m1 = SmallHashMap(100, data.iterator)
       val m2 = SmallHashMap(100, Random.shuffle(data).iterator)
-      assert(m1.hashCode === m2.hashCode)
-      assert(m1 === m2)
+      assertEquals(m1.hashCode, m2.hashCode)
+      assertEquals(m1, m2)
     }
   }
 
@@ -361,8 +361,8 @@ class SmallHashMapSuite extends AnyFunSuite {
       }
       val m1 = SmallHashMap(data)
       val m2 = SmallHashMap(Random.shuffle(data))
-      assert(m1.hashCode === m2.hashCode)
-      assert(m1 === m2)
+      assertEquals(m1.hashCode, m2.hashCode)
+      assertEquals(m1, m2)
     }
   }
 
@@ -458,9 +458,9 @@ class SmallHashMapSuite extends AnyFunSuite {
 
   test("javaMap: get") {
     val m = SmallHashMap("a" -> "1", "b" -> "2").asJavaMap
-    assert(m.get("a") === "1")
-    assert(m.get("b") === "2")
-    assert(m.get("c") === null)
+    assertEquals(m.get("a"), "1")
+    assertEquals(m.get("b"), "2")
+    assertEquals(m.get("c"), null)
   }
 
   test("javaMap: containsKey") {
@@ -472,14 +472,14 @@ class SmallHashMapSuite extends AnyFunSuite {
 
   test("javaMap: entrySet") {
     val entries = SmallHashMap("a" -> "1", "b" -> "2").asJavaMap.entrySet()
-    assert(entries.size() === 2)
+    assertEquals(entries.size(), 2)
 
     val it = entries.iterator()
     while (it.hasNext) {
       val entry = it.next()
       entry.getKey match {
-        case "a" => assert(entry.getValue === "1")
-        case "b" => assert(entry.getValue === "2")
+        case "a" => assertEquals(entry.getValue, "1")
+        case "b" => assertEquals(entry.getValue, "2")
       }
     }
   }

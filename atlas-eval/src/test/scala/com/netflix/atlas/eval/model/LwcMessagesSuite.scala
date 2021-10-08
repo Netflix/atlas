@@ -19,13 +19,13 @@ import akka.util.ByteString
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import java.util.Random
 import java.util.UUID
 import scala.util.Using
 
-class LwcMessagesSuite extends AnyFunSuite {
+class LwcMessagesSuite extends FunSuite {
 
   private val step = 60000
 
@@ -35,7 +35,7 @@ class LwcMessagesSuite extends AnyFunSuite {
     try {
       val actual = LwcMessages.parseDataExprs(parser).head
       val expected = LwcDataExpr("1234", "name,cpu,:eq,:sum", 10)
-      assert(actual === expected)
+      assertEquals(actual, expected)
     } finally {
       parser.close()
     }
@@ -48,37 +48,37 @@ class LwcMessagesSuite extends AnyFunSuite {
     val dataExprs = List(LwcDataExpr("a", sum, step), LwcDataExpr("b", count, step))
     val expected = LwcSubscription(expr, dataExprs)
     val actual = LwcMessages.parse(Json.encode(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("datapoint") {
     val expected = LwcDatapoint(step, "a", Map("foo" -> "bar"), 42.0)
     val actual = LwcMessages.parse(Json.encode(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("datapoint, custom encode") {
     val expected = LwcDatapoint(step, "a", Map("foo" -> "bar"), 42.0)
     val actual = LwcMessages.parse(expected.toJson)
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("diagnostic message") {
     val expected = DiagnosticMessage.error("something bad happened")
     val actual = LwcMessages.parse(Json.encode(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("diagnostic message for a particular expression") {
     val expected = LwcDiagnosticMessage("abc", DiagnosticMessage.error("something bad happened"))
     val actual = LwcMessages.parse(Json.encode(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("heartbeat") {
     val expected = LwcHeartbeat(1234567890L, 10L)
     val actual = LwcMessages.parse(Json.encode(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("heartbeat not on step boundary") {
@@ -92,7 +92,7 @@ class LwcMessagesSuite extends AnyFunSuite {
       LwcExpression("name,cpu,:eq,:max", i)
     }
     val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected.toList)
   }
 
   test("batch: subscription") {
@@ -106,7 +106,7 @@ class LwcMessagesSuite extends AnyFunSuite {
       )
     }
     val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected.toList)
   }
 
   test("batch: datapoint") {
@@ -119,7 +119,7 @@ class LwcMessagesSuite extends AnyFunSuite {
       )
     }
     val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected.toList)
   }
 
   test("batch: lwc diagnostic") {
@@ -127,7 +127,7 @@ class LwcMessagesSuite extends AnyFunSuite {
       LwcDiagnosticMessage(s"$i", DiagnosticMessage.error("foo"))
     }
     val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected.toList)
   }
 
   test("batch: diagnostic") {
@@ -135,7 +135,7 @@ class LwcMessagesSuite extends AnyFunSuite {
       DiagnosticMessage.error(s"error $i")
     }
     val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected.toList)
   }
 
   test("batch: heartbeat") {
@@ -144,7 +144,7 @@ class LwcMessagesSuite extends AnyFunSuite {
       LwcHeartbeat(System.currentTimeMillis() / step * step, step)
     }
     val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected.toList)
   }
 
   test("batch: compatibility") {
@@ -179,7 +179,7 @@ class LwcMessagesSuite extends AnyFunSuite {
     val actual = Using.resource(Streams.resource("lwc-batch.smile")) { in =>
       LwcMessages.parseBatch(ByteString(Streams.byteArray(in)))
     }
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("batch: random") {
@@ -188,7 +188,7 @@ class LwcMessagesSuite extends AnyFunSuite {
       val n = random.nextInt(1000)
       val expected = (0 until n).map(_ => randomObject(random)).toList
       val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
-      assert(actual === expected)
+      assertEquals(actual, expected)
     }
   }
 

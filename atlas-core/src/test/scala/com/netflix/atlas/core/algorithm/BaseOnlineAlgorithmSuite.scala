@@ -15,10 +15,9 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers._
+import munit.FunSuite
 
-abstract class BaseOnlineAlgorithmSuite extends AnyFunSuite {
+abstract class BaseOnlineAlgorithmSuite extends FunSuite {
 
   protected def newInstance: OnlineAlgorithm
 
@@ -35,7 +34,7 @@ abstract class BaseOnlineAlgorithmSuite extends AnyFunSuite {
       if (expected.isNaN) {
         assert(actual.isNaN, s"$actual != $expected")
       } else {
-        assert(actual === expected +- 1e-12)
+        assertEqualsDouble(actual, expected, 1e-12)
       }
       if (i % n == 0) {
         restoredAlgo = OnlineAlgorithm(algo.state)

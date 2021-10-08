@@ -17,9 +17,9 @@ package com.netflix.atlas.core.limiter
 
 import com.netflix.atlas.core.model.Query
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class CardinalityLimiterSuite extends AnyFunSuite {
+class CardinalityLimiterSuite extends FunSuite {
 
   test("cardinality stats") {
     val ts = Seq(

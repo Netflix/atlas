@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ExprRewriteSuite extends AnyFunSuite {
+class ExprRewriteSuite extends FunSuite {
 
   test("basic") {
     val avgHashCode = System.identityHashCode(ConsolidationFunction.Avg)
@@ -26,8 +26,8 @@ class ExprRewriteSuite extends AnyFunSuite {
     val result = expr.rewrite {
       case q: Query => Query.False
     }
-    assert(result === DataExpr.Sum(Query.False))
-    assert(System.identityHashCode(result.asInstanceOf[AggregateFunction].cf) === avgHashCode)
+    assertEquals(result, DataExpr.Sum(Query.False))
+    assertEquals(System.identityHashCode(result.asInstanceOf[AggregateFunction].cf), avgHashCode)
     ConsolidationFunction.Avg
   }
 
@@ -39,8 +39,8 @@ class ExprRewriteSuite extends AnyFunSuite {
     val result = expr.rewrite {
       case Query.Not(q) => Query.False
     }
-    assert(result === Query.And(Query.True, Query.False))
-    assert(System.identityHashCode(result.asInstanceOf[Query.And].q1) === trueHashCode)
+    assertEquals(result, Query.And(Query.True, Query.False))
+    assertEquals(System.identityHashCode(result.asInstanceOf[Query.And].q1), trueHashCode)
   }
 
 }

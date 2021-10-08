@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class FinalGroupingSuite extends AnyFunSuite {
+class FinalGroupingSuite extends FunSuite {
 
   private val interpreter = Interpreter(StyleVocabulary.allWords)
 
@@ -31,42 +31,42 @@ class FinalGroupingSuite extends AnyFunSuite {
   }
 
   test("constant") {
-    assert(eval("42") === Nil)
+    assertEquals(eval("42"), Nil)
   }
 
   test("aggregate") {
-    assert(eval("name,sps,:eq,:sum") === Nil)
+    assertEquals(eval("name,sps,:eq,:sum"), Nil)
   }
 
   test("data group by") {
-    assert(eval("name,sps,:eq,(,cluster,),:by") === List("cluster"))
+    assertEquals(eval("name,sps,:eq,(,cluster,),:by"), List("cluster"))
   }
 
   test("data group by with multiple keys") {
-    assert(eval("name,sps,:eq,(,app,region,device,),:by") === List("app", "region", "device"))
+    assertEquals(eval("name,sps,:eq,(,app,region,device,),:by"), List("app", "region", "device"))
   }
 
   test("data group by with math aggregate") {
     val expr = "name,sps,:eq,(,app,region,device,),:by,:max"
     val expected = Nil
-    assert(eval(expr) === expected)
+    assertEquals(eval(expr), expected)
   }
 
   test("data group by with math group by") {
     val expr = "name,sps,:eq,(,app,region,device,),:by,:max,(,region,device,),:by"
     val expected = List("region", "device")
-    assert(eval(expr) === expected)
+    assertEquals(eval(expr), expected)
   }
 
   test("aggregate with percentiles") {
     val expr = "name,sps,:eq,(,50,),:percentiles"
     val expected = List("percentile")
-    assert(eval(expr) === expected)
+    assertEquals(eval(expr), expected)
   }
 
   test("data group by with percentiles") {
     val expr = "name,sps,:eq,(,app,),:by,(,50,),:percentiles"
     val expected = List("percentile", "app")
-    assert(eval(expr) === expected)
+    assertEquals(eval(expr), expected)
   }
 }

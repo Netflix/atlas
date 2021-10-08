@@ -20,8 +20,8 @@ import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.atlas.akka.RequestHandler
+import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
@@ -30,11 +30,10 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.Using
 
-class GraphApiSuite extends AnyFunSuite with ScalatestRouteTest {
+class GraphApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
@@ -60,7 +59,9 @@ class GraphApiSuite extends AnyFunSuite with ScalatestRouteTest {
   private val baseDir = SrcPath.forProject("atlas-webapi")
   private val goldenDir = s"$baseDir/src/test/resources/${getClass.getSimpleName}"
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
-  private val graphAssertions = new GraphAssertions(goldenDir, targetDir, (a, b) => assert(a === b))
+
+  private val graphAssertions =
+    new GraphAssertions(goldenDir, targetDir, (a, b) => assertEquals(a, b))
 
   private val bless = false
 
@@ -70,7 +71,7 @@ class GraphApiSuite extends AnyFunSuite with ScalatestRouteTest {
 
   test("simple line") {
     Get("/api/v1/graph?q=1") ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assertEquals(response.status, StatusCodes.OK)
     }
   }
 
@@ -82,8 +83,8 @@ class GraphApiSuite extends AnyFunSuite with ScalatestRouteTest {
       Get(uri).addHeader(agent) ~> routes ~> check {
         // Note: will fail prior to 8u20:
         // https://github.com/Netflix/atlas/issues/9
-        assert(response.status === StatusCodes.OK)
-        assert(response.entity.contentType.mediaType === MediaTypes.`image/png`)
+        assertEquals(response.status, StatusCodes.OK)
+        assertEquals(response.entity.contentType.mediaType, MediaTypes.`image/png`)
         val image = PngImage(responseAs[Array[Byte]])
         graphAssertions.assertEquals(image, imageFileName(uri), bless)
       }

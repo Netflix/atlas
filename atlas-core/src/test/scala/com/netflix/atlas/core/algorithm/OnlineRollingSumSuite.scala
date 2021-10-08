@@ -21,42 +21,42 @@ class OnlineRollingSumSuite extends BaseOnlineAlgorithmSuite {
 
   test("n = 1") {
     val algo = OnlineRollingSum(1)
-    assert(algo.next(0.0) === 0.0)
-    assert(algo.next(1.0) === 1.0)
-    assert(algo.next(2.0) === 2.0)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assertEquals(algo.next(2.0), 2.0)
   }
 
   test("n = 2") {
     val algo = OnlineRollingSum(2)
-    assert(algo.next(0.0) === 0.0)
-    assert(algo.next(1.0) === 1.0)
-    assert(algo.next(2.0) === 3.0)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assertEquals(algo.next(2.0), 3.0)
   }
 
   test("n = 3 - up and down") {
     val algo = OnlineRollingSum(3)
-    assert(algo.next(0.0) === 0.0)
-    assert(algo.next(1.0) === 1.0)
-    assert(algo.next(-1.0) === 0.0)
-    assert(algo.next(Double.NaN) === 0.0)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assertEquals(algo.next(-1.0), 0.0)
+    assertEquals(algo.next(Double.NaN), 0.0)
     assert(!algo.isEmpty)
-    assert(algo.next(Double.NaN) === -1.0)
+    assertEquals(algo.next(Double.NaN), -1.0)
     assert(!algo.isEmpty)
     assert(algo.next(Double.NaN).isNaN)
     assert(algo.isEmpty)
-    assert(algo.next(0.0) === 0.0)
-    assert(algo.next(1.0) === 1.0)
-    assert(algo.next(1.0) === 2.0)
-    assert(algo.next(1.0) === 3.0)
-    assert(algo.next(0.0) === 2.0)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assertEquals(algo.next(1.0), 2.0)
+    assertEquals(algo.next(1.0), 3.0)
+    assertEquals(algo.next(0.0), 2.0)
   }
 
   test("n = 2, NaNs") {
     val algo = OnlineRollingSum(2)
-    assert(algo.next(0.0) === 0.0)
-    assert(algo.next(1.0) === 1.0)
-    assert(algo.next(2.0) === 3.0)
-    assert(algo.next(Double.NaN) === 2.0)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assertEquals(algo.next(2.0), 3.0)
+    assertEquals(algo.next(Double.NaN), 2.0)
     assert(!algo.isEmpty)
     assert(algo.next(Double.NaN).isNaN)
     assert(algo.isEmpty)
@@ -64,8 +64,8 @@ class OnlineRollingSumSuite extends BaseOnlineAlgorithmSuite {
 
   test("n = 2, reset") {
     val algo = OnlineRollingSum(2)
-    assert(algo.next(1.0) === 1.0)
+    assertEquals(algo.next(1.0), 1.0)
     algo.reset()
-    assert(algo.next(5.0) === 5.0)
+    assertEquals(algo.next(5.0), 5.0)
   }
 }

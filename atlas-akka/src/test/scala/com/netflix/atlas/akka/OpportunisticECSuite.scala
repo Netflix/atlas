@@ -15,18 +15,18 @@
  */
 package com.netflix.atlas.akka
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
-class OpportunisticECSuite extends AnyFunSuite {
+class OpportunisticECSuite extends FunSuite {
 
   test("implicit ec available") {
     import OpportunisticEC._
     val future = Future(1).map(_ + 1)
     val result = Await.result(future, Duration.Inf)
-    assert(result === 2)
+    assertEquals(result, 2)
   }
 }

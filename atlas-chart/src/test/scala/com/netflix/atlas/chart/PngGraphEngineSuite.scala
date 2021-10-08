@@ -36,14 +36,13 @@ import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Failure
 import scala.util.Try
 import scala.util.Using
 
-abstract class PngGraphEngineSuite extends AnyFunSuite with BeforeAndAfterAll {
+abstract class PngGraphEngineSuite extends FunSuite {
 
   private val dataDir = s"graphengine/data"
 
@@ -51,7 +50,9 @@ abstract class PngGraphEngineSuite extends AnyFunSuite with BeforeAndAfterAll {
   private val baseDir = SrcPath.forProject("atlas-chart")
   private val goldenDir = s"$baseDir/src/test/resources/graphengine/${getClass.getSimpleName}"
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
-  private val graphAssertions = new GraphAssertions(goldenDir, targetDir, (a, b) => assert(a === b))
+
+  private val graphAssertions =
+    new GraphAssertions(goldenDir, targetDir, (a, b) => assertEquals(a, b))
 
   val bless = false
 
@@ -151,7 +152,7 @@ abstract class PngGraphEngineSuite extends AnyFunSuite with BeforeAndAfterAll {
 
   def checkImpl(name: String, graphDef: GraphDef): Unit = {
     val json = JsonCodec.encode(graphDef)
-    assert(graphDef.normalize === JsonCodec.decode(json).normalize)
+    assertEquals(graphDef.normalize, JsonCodec.decode(json).normalize)
 
     val image = PngImage(graphEngine.createImage(graphDef), Map.empty)
     graphAssertions.assertEquals(image, name, bless)

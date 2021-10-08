@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.validation
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ValuePatternRuleSuite extends AnyFunSuite {
+class ValuePatternRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("""pattern = "^[a-c]+$" """)
 
@@ -29,8 +29,8 @@ class ValuePatternRuleSuite extends AnyFunSuite {
   }
 
   test("valid") {
-    assert(validate("def", "abc") === ValidationResult.Pass)
-    assert(validate("def", "aaa") === ValidationResult.Pass)
+    assertEquals(validate("def", "abc"), ValidationResult.Pass)
+    assertEquals(validate("def", "aaa"), ValidationResult.Pass)
   }
 
   test("invalid") {

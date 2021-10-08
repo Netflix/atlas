@@ -17,9 +17,9 @@ package com.netflix.atlas.core.model
 
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ArrayTimeSeqSuite extends AnyFunSuite {
+class ArrayTimeSeqSuite extends FunSuite {
 
   test("equals") {
     EqualsVerifier

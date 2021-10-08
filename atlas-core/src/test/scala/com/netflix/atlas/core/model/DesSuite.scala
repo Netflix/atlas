@@ -15,10 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers._
+import munit.FunSuite
 
-class DesSuite extends AnyFunSuite {
+class DesSuite extends FunSuite {
 
   val step = 60000L
   val dataTags = Map("name" -> "cpu", "node" -> "i-1")
@@ -99,13 +98,13 @@ class DesSuite extends AnyFunSuite {
     val result = eval(des, alignedStream)
     result.zip(expected).zipWithIndex.foreach {
       case ((ts, v), i) =>
-        assert(ts.size === 1)
+        assertEquals(ts.size, 1)
         ts.foreach { t =>
           val r = t.data(i * step)
           if (i <= 1)
             assert(r.isNaN)
           else
-            assert(v === r +- 0.00001)
+            assertEqualsDouble(v, r, 0.00001)
         }
     }
   }
@@ -119,13 +118,13 @@ class DesSuite extends AnyFunSuite {
     val result = eval(sdes, alignedStream)
     result.zip(expected).zipWithIndex.foreach {
       case ((ts, v), i) =>
-        assert(ts.size === 1)
+        assertEquals(ts.size, 1)
         ts.foreach { t =>
           val r = t.data(i * step)
           if (i <= 1)
             assert(r.isNaN)
           else
-            assert(v === r +- 0.00001)
+            assertEqualsDouble(v, r, 0.00001)
         }
     }
   }
@@ -141,13 +140,13 @@ class DesSuite extends AnyFunSuite {
     //println(result.map { case v => v(0).data.asInstanceOf[ArrayTimeSeq].data(0) }.mkString(", "))
     result.zip(expected).zipWithIndex.foreach {
       case ((ts, v), i) =>
-        assert(ts.size === 1)
+        assertEquals(ts.size, 1)
         ts.foreach { t =>
           val r = t.data((i + 1) * step) // offset step by our skipped data
           if (i <= 2)
             assert(r.isNaN)
           else
-            assert(v === r +- 0.00001)
+            assertEqualsDouble(v, r, 0.00001)
         }
     }
   }

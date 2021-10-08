@@ -15,40 +15,40 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import java.nio.CharBuffer
 import scala.util.Using
 
-class CharBufferReaderSuite extends AnyFunSuite {
+class CharBufferReaderSuite extends FunSuite {
 
   test("read()") {
     val buffer = CharBuffer.wrap("abc")
     val reader = new CharBufferReader(buffer)
-    assert(reader.read() === 'a')
-    assert(reader.read() === 'b')
-    assert(reader.read() === 'c')
-    assert(reader.read() === -1)
+    assertEquals(reader.read(), 'a'.toInt)
+    assertEquals(reader.read(), 'b'.toInt)
+    assertEquals(reader.read(), 'c'.toInt)
+    assertEquals(reader.read(), -1)
   }
 
   test("read(cbuf)") {
     val buffer = CharBuffer.wrap("abc")
     val reader = new CharBufferReader(buffer)
     val array = new Array[Char](2)
-    assert(reader.read(array) === 2)
-    assert(array === Array('a', 'b'))
-    assert(reader.read(array) === 1)
-    assert(array === Array('c', 'b')) // b left over from previous
-    assert(reader.read(array) === -1)
+    assertEquals(reader.read(array), 2)
+    assertEquals(array.toSeq, Array('a', 'b').toSeq)
+    assertEquals(reader.read(array), 1)
+    assertEquals(array.toSeq, Array('c', 'b').toSeq) // b left over from previous
+    assertEquals(reader.read(array), -1)
   }
 
   test("read(cbuf, offset, length)") {
     val buffer = CharBuffer.wrap("abc")
     val reader = new CharBufferReader(buffer)
     val array = new Array[Char](5)
-    assert(reader.read(array, 2, 3) === 3)
-    assert(array === Array('\u0000', '\u0000', 'a', 'b', 'c'))
-    assert(reader.read(array) === -1)
+    assertEquals(reader.read(array, 2, 3), 3)
+    assertEquals(array.toSeq, Array('\u0000', '\u0000', 'a', 'b', 'c').toSeq)
+    assertEquals(reader.read(array), -1)
   }
 
   test("ready()") {
@@ -60,27 +60,27 @@ class CharBufferReaderSuite extends AnyFunSuite {
   test("skip()") {
     val buffer = CharBuffer.wrap("abc")
     val reader = new CharBufferReader(buffer)
-    assert(reader.skip(2) === 2)
-    assert(reader.read() === 'c')
-    assert(reader.read() === -1)
-    assert(reader.skip(2) === 0)
+    assertEquals(reader.skip(2), 2L)
+    assertEquals(reader.read(), 'c'.toInt)
+    assertEquals(reader.read(), -1)
+    assertEquals(reader.skip(2), 0L)
   }
 
   test("mark() and reset()") {
     val buffer = CharBuffer.wrap("abc")
     val reader = new CharBufferReader(buffer)
     assert(reader.markSupported())
-    assert(reader.read() === 'a')
+    assertEquals(reader.read(), 'a'.toInt)
 
     reader.mark(5)
-    assert(reader.read() === 'b')
-    assert(reader.read() === 'c')
+    assertEquals(reader.read(), 'b'.toInt)
+    assertEquals(reader.read(), 'c'.toInt)
 
     reader.reset()
-    assert(reader.read() === 'b')
+    assertEquals(reader.read(), 'b'.toInt)
 
     reader.reset()
-    assert(reader.read() === 'b')
+    assertEquals(reader.read(), 'b'.toInt)
   }
 
   test("close()") {
@@ -88,9 +88,9 @@ class CharBufferReaderSuite extends AnyFunSuite {
     val reader = new CharBufferReader(buffer)
     (0 until 10).foreach { _ =>
       Using.resource(reader) { r =>
-        assert(r.read() === 'a')
+        assertEquals(r.read(), 'a'.toInt)
         r.skip(100)
-        assert(r.read() === -1)
+        assertEquals(r.read(), -1)
       }
     }
   }

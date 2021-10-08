@@ -15,122 +15,122 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import java.util.UUID
 
-class ArrayHelperSuite extends AnyFunSuite {
+class ArrayHelperSuite extends FunSuite {
 
   test("merge arrays, limit 1: empty, one") {
     val v1 = Array.empty[String]
     val v2 = Array("a")
     val actual = ArrayHelper.merger[String](1).merge(v1).merge(v2).toArray
-    assert(actual === Array("a"))
+    assertEquals(actual.toSeq, Array("a").toSeq)
   }
 
   test("merge arrays, limit 1: empty, abcde") {
     val v1 = Array.empty[String]
     val v2 = Array("a", "b", "c", "d", "e")
     val actual = ArrayHelper.merger[String](1).merge(v1).merge(v2).toArray
-    assert(actual === Array("a"))
+    assertEquals(actual.toSeq, Array("a").toSeq)
   }
 
   test("merge arrays, limit 1: abcde, empty") {
     val v1 = Array("a", "b", "c", "d", "e")
     val v2 = Array.empty[String]
     val actual = ArrayHelper.merger[String](1).merge(v1).merge(v2).toArray
-    assert(actual === Array("a"))
+    assertEquals(actual.toSeq, Array("a").toSeq)
   }
 
   test("merge arrays, limit 1: b, a") {
     val v1 = Array("b")
     val v2 = Array("a")
     val actual = ArrayHelper.merger[String](1).merge(v1).merge(v2).toArray
-    assert(actual === Array("a"))
+    assertEquals(actual.toSeq, Array("a").toSeq)
   }
 
   test("merge arrays, limit 1: a, b") {
     val v1 = Array("a")
     val v2 = Array("b")
     val actual = ArrayHelper.merger[String](1).merge(v1).merge(v2).toArray
-    assert(actual === Array("a"))
+    assertEquals(actual.toSeq, Array("a").toSeq)
   }
 
   test("merge arrays, limit 2: b, a") {
     val v1 = Array("b")
     val v2 = Array("a")
     val actual = ArrayHelper.merger[String](2).merge(v1).merge(v2).toArray
-    assert(actual === Array("a", "b"))
+    assertEquals(actual.toSeq, Array("a", "b").toSeq)
   }
 
   test("merge arrays, limit 2: ab, a") {
     val v1 = Array("a", "b")
     val v2 = Array("a")
     val actual = ArrayHelper.merger[String](2).merge(v1).merge(v2).toArray
-    assert(actual === Array("a", "b"))
+    assertEquals(actual.toSeq, Array("a", "b").toSeq)
   }
 
   test("merge arrays, limit 2: bc, ad") {
     val v1 = Array("b", "c")
     val v2 = Array("a", "d")
     val actual = ArrayHelper.merger[String](2).merge(v1).merge(v2).toArray
-    assert(actual === Array("a", "b"))
+    assertEquals(actual.toSeq, Array("a", "b").toSeq)
   }
 
   test("merge list, limit 1: empty, one") {
     val v1 = List.empty[String]
     val v2 = List("a")
     val actual = ArrayHelper.merger[String](1).merge(v1).merge(v2).toList
-    assert(actual === List("a"))
+    assertEquals(actual, List("a"))
   }
 
   test("merge list, limit 1: empty, abcde") {
     val v1 = List.empty[String]
     val v2 = List("a", "b", "c", "d", "e")
     val actual = ArrayHelper.merger[String](1).merge(v1).merge(v2).toList
-    assert(actual === List("a"))
+    assertEquals(actual, List("a"))
   }
 
   test("merge list, limit 1: abcde, empty") {
     val v1 = List("a", "b", "c", "d", "e")
     val v2 = List.empty[String]
     val actual = ArrayHelper.merger[String](1).merge(v1).merge(v2).toList
-    assert(actual === List("a"))
+    assertEquals(actual, List("a"))
   }
 
   test("merge list, limit 1: b, a") {
     val v1 = List("b")
     val v2 = List("a")
     val actual = ArrayHelper.merger[String](1).merge(v1).merge(v2).toList
-    assert(actual === List("a"))
+    assertEquals(actual, List("a"))
   }
 
   test("merge list, limit 1: a, b") {
     val v1 = List("a")
     val v2 = List("b")
     val actual = ArrayHelper.merger[String](1).merge(v1).merge(v2).toList
-    assert(actual === List("a"))
+    assertEquals(actual, List("a"))
   }
 
   test("merge list, limit 2: b, a") {
     val v1 = List("b")
     val v2 = List("a")
     val actual = ArrayHelper.merger[String](2).merge(v1).merge(v2).toList
-    assert(actual === List("a", "b"))
+    assertEquals(actual, List("a", "b"))
   }
 
   test("merge list, limit 2: ab, a") {
     val v1 = List("a", "b")
     val v2 = List("a")
     val actual = ArrayHelper.merger[String](2).merge(v1).merge(v2).toList
-    assert(actual === List("a", "b"))
+    assertEquals(actual, List("a", "b"))
   }
 
   test("merge list, limit 2: bc, ad") {
     val v1 = List("b", "c")
     val v2 = List("a", "d")
     val actual = ArrayHelper.merger[String](2).merge(v1).merge(v2).toList
-    assert(actual === List("a", "b"))
+    assertEquals(actual, List("a", "b"))
   }
 
   test("sortPairs, empty") {
@@ -142,14 +142,14 @@ class ArrayHelperSuite extends AnyFunSuite {
     val data = Array("b", "1")
     ArrayHelper.sortPairs(data)
     val expected = Array("b", "1")
-    assert(expected.toList === data.toList)
+    assertEquals(expected.toList, data.toList)
   }
 
   test("sortPairs, two pairs") {
     val data = Array("b", "1", "a", "2")
     ArrayHelper.sortPairs(data)
     val expected = Array("a", "2", "b", "1")
-    assert(expected.toList === data.toList)
+    assertEquals(expected.toList, data.toList)
   }
 
   test("sortPairs, random") {
@@ -157,6 +157,6 @@ class ArrayHelperSuite extends AnyFunSuite {
     val data = input.flatMap(t => List(t._1, t._2)).toArray
     ArrayHelper.sortPairs(data)
     val expected = input.toList.sortWith(_._1 < _._1).flatMap(t => List(t._1, t._2))
-    assert(expected === data.toList)
+    assertEquals(expected, data.toList)
   }
 }

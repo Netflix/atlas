@@ -18,12 +18,12 @@ package com.netflix.atlas.akka
 import akka.http.scaladsl.HttpsConnectionContext
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 
-class ConnectionContextFactorySuite extends AnyFunSuite {
+class ConnectionContextFactorySuite extends FunSuite {
 
   import ConnectionContextFactorySuite._
 

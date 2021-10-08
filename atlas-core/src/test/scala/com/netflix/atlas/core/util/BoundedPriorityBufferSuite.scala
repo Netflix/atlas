@@ -15,16 +15,20 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import java.util.Comparator
 
-class BoundedPriorityBufferSuite extends AnyFunSuite {
+class BoundedPriorityBufferSuite extends FunSuite {
+
+  private def set(vs: Seq[Int]): Set[Integer] = {
+    vs.map(Integer.valueOf).toSet
+  }
 
   test("buffer is bounded, natural order") {
     val buffer = new BoundedPriorityBuffer[Integer](5, Comparator.naturalOrder[Integer]())
     (0 until 10).foreach(v => buffer.add(v))
-    assert(buffer.toList.toSet === (0 until 5).toSet)
+    assertEquals(buffer.toList.toSet, set(0 until 5))
     assert(buffer.size == 5)
   }
 
@@ -32,7 +36,7 @@ class BoundedPriorityBufferSuite extends AnyFunSuite {
     val cmp = Comparator.naturalOrder[Integer]().reversed()
     val buffer = new BoundedPriorityBuffer[Integer](5, cmp)
     (0 until 10).foreach(v => buffer.add(v))
-    assert(buffer.toList.toSet === (5 until 10).toSet)
+    assertEquals(buffer.toList.toSet, set(5 until 10))
     assert(buffer.size == 5)
   }
 
@@ -40,7 +44,7 @@ class BoundedPriorityBufferSuite extends AnyFunSuite {
     val cmp: Comparator[(Integer, Integer)] = (a, b) => Integer.compare(a._1, b._1)
     val buffer = new BoundedPriorityBuffer[(Integer, Integer)](5, cmp)
     (0 until 10).foreach(v => buffer.add(1.asInstanceOf[Integer] -> (9 - v).asInstanceOf[Integer]))
-    assert(buffer.toList.map(_._2).toSet === (5 until 10).toSet)
+    assertEquals(buffer.toList.map(_._2).toSet, set(5 until 10))
   }
 
   test("foreach") {
@@ -48,7 +52,7 @@ class BoundedPriorityBufferSuite extends AnyFunSuite {
     (0 until 10).foreach(v => buffer.add(v))
     val builder = Set.newBuilder[Integer]
     buffer.foreach(v => builder += v)
-    assert(builder.result() === Set(0, 1, 2))
+    assertEquals(builder.result(), set(Seq(0, 1, 2)))
   }
 
   test("max size of 0") {
@@ -65,10 +69,10 @@ class BoundedPriorityBufferSuite extends AnyFunSuite {
 
   test("ejected value") {
     val buffer = new BoundedPriorityBuffer[Integer](2, Comparator.naturalOrder[Integer]())
-    assert(buffer.add(2) === null)
-    assert(buffer.add(3) === null)
-    assert(buffer.add(1) === 3)
-    assert(buffer.add(4) === 4)
-    assert(buffer.add(0) === 2)
+    assertEquals(buffer.add(2), null)
+    assertEquals(buffer.add(3), null)
+    assertEquals(buffer.add(1).intValue(), 3)
+    assertEquals(buffer.add(4).intValue(), 4)
+    assertEquals(buffer.add(0).intValue(), 2)
   }
 }

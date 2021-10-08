@@ -17,9 +17,9 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class MathGroupBySuite extends AnyFunSuite {
+class MathGroupBySuite extends FunSuite {
 
   private val start = 0L
   private val step = 60000L
@@ -52,10 +52,10 @@ class MathGroupBySuite extends AnyFunSuite {
       ts(3)
     )
     val rs = groupBy(input, List("name"), List("name"), MathExpr.Sum)
-    assert(rs.size === 1)
+    assertEquals(rs.size, 1)
 
     val expected = ts(6).withTags(Map("name" -> "test")).withLabel("(name=test)")
-    assert(rs.head === expected)
+    assertEquals(rs.head, expected)
   }
 
   test("(,name,),:by,(,foo,),:by") {
@@ -68,7 +68,7 @@ class MathGroupBySuite extends AnyFunSuite {
     val e = intercept[IllegalArgumentException] {
       groupBy(input, List("name"), List("foo"), MathExpr.Sum)
     }
-    assert(e.getMessage === "requirement failed: (,foo,) is not a subset of (,name,)")
+    assertEquals(e.getMessage, "requirement failed: (,foo,) is not a subset of (,name,)")
   }
 
   test("(,name,mode,),:by,(,mode,),:by") {
@@ -78,13 +78,13 @@ class MathGroupBySuite extends AnyFunSuite {
       ts(3)
     )
     val rs = groupBy(input, List("name", "mode"), List("mode"), MathExpr.Sum)
-    assert(rs.size === 2)
+    assertEquals(rs.size, 2)
 
     val expected = List(
       ts(2).withTags(Map("mode" -> "even")).withLabel("(mode=even)"),
       ts(4).withTags(Map("mode" -> "odd")).withLabel("(mode=odd)")
     )
-    assert(rs === expected)
+    assertEquals(rs, expected)
   }
 
   test("(,name,mode,value,),:by,(,name,mode,),:by,(,name,),:by") {
@@ -99,12 +99,12 @@ class MathGroupBySuite extends AnyFunSuite {
     val mathBy1 = MathExpr.GroupBy(MathExpr.Sum(dataBy), List("name", "mode"))
     val expr = MathExpr.GroupBy(MathExpr.Sum(mathBy1), List("name"))
     val rs = expr.eval(context, input).data
-    assert(rs.size === 1)
+    assertEquals(rs.size, 1)
 
     val expected = List(
       ts(6).withTags(Map("name" -> "test")).withLabel("(name=test)")
     )
-    assert(rs === expected)
+    assertEquals(rs, expected)
   }
 
   test("name,test,:eq,(,mode,),:by,(,mode,),:by") {
@@ -117,13 +117,13 @@ class MathGroupBySuite extends AnyFunSuite {
     val dataBy = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), List("mode"))
     val expr = MathExpr.GroupBy(MathExpr.Sum(dataBy), List("mode"))
     val rs = expr.eval(context, input).data
-    assert(rs.size === 2)
+    assertEquals(rs.size, 2)
 
     val expected = List(
       ts(2).withTags(Map("name" -> "test", "mode" -> "even")).withLabel("(mode=even)"),
       ts(4).withTags(Map("name" -> "test", "mode" -> "odd")).withLabel("(mode=odd)")
     )
-    assert(rs === expected)
+    assertEquals(rs, expected)
   }
 
   test("(,value,mode,),:by,:count,(,mode,),:by") {
@@ -133,13 +133,13 @@ class MathGroupBySuite extends AnyFunSuite {
       ts(3)
     )
     val rs = groupBy(input, List("value", "mode"), List("mode"), MathExpr.Count)
-    assert(rs.size === 2)
+    assertEquals(rs.size, 2)
 
     val expected = List(
       ts(1).withTags(Map("mode" -> "even")).withLabel("(mode=even)"),
       ts(2).withTags(Map("mode" -> "odd")).withLabel("(mode=odd)")
     )
-    assert(rs === expected)
+    assertEquals(rs, expected)
   }
 
   private val interpreter = Interpreter(MathVocabulary.allWords)
@@ -154,66 +154,72 @@ class MathGroupBySuite extends AnyFunSuite {
   test("multi-level group by and rewrites") {
     val input = "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:avg,(,nf.cluster,),:by"
     val expr = eval(input)
-    assert(expr.toString === input)
+    assertEquals(expr.toString, input)
   }
 
   test("multi-level group by with intermediate math and rewrites") {
     val input = "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:abs,:avg,(,nf.cluster,),:by"
     val expr = eval(input)
-    assert(expr.toString === input)
+    assertEquals(expr.toString, input)
   }
 
   test("math group by and unary op") {
     val input = "name,sps,:eq,:sum,:abs,(,nf.cluster,),:by"
     val expr = eval(input)
-    assert(expr.toString === "name,sps,:eq,:sum,(,nf.cluster,),:by,:abs")
+    assertEquals(expr.toString, "name,sps,:eq,:sum,(,nf.cluster,),:by,:abs")
   }
 
   test("data group by, sum, unary op, math by") {
     val input = "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:sum,:abs,(,nf.asg,),:by"
     val expr = eval(input)
-    assert(expr.toString === "name,sps,:eq,:sum,(,nf.asg,),:by,:abs")
+    assertEquals(expr.toString, "name,sps,:eq,:sum,(,nf.asg,),:by,:abs")
   }
 
   test("data group by, max, unary op, math by") {
     val input = "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:max,:abs,(,nf.asg,),:by"
     val expr = eval(input)
-    assert(expr.toString === "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:max,(,nf.asg,),:by,:abs")
+    assertEquals(
+      expr.toString,
+      "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:max,(,nf.asg,),:by,:abs"
+    )
   }
 
   test("data group by pct") {
     val input = "name,sps,:eq,(,nf.cluster,),:by,:pct"
     val expr = eval(input)
-    assert(expr.toString === "name,sps,:eq,:sum,(,nf.cluster,),:by,:pct")
+    assertEquals(expr.toString, "name,sps,:eq,:sum,(,nf.cluster,),:by,:pct")
   }
 
   test("multi-level group by pct") {
     val input = "name,sps,:eq,(,nf.cluster,nf.asg,),:by,:max,(,nf.asg,),:by,:pct"
     val expr = eval(input)
-    assert(expr.toString === "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:max,(,nf.asg,),:by,:pct")
+    assertEquals(
+      expr.toString,
+      "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:max,(,nf.asg,),:by,:pct"
+    )
   }
 
   test("avg rewrite followed by pct rewrite") {
     val input = "app,foo,:eq,:avg,:pct"
     val expr = eval(input)
-    assert(expr.toString === input)
+    assertEquals(expr.toString, input)
   }
 
   test("avg rewrite grouped followed by pct rewrite") {
     val input = "app,foo,:eq,:avg,(,nf.cluster,),:by,:pct"
     val expr = eval(input)
-    assert(expr.toString === input)
+    assertEquals(expr.toString, input)
   }
 
   test("issue-852: constant sum group by") {
     val input = "0,:const,:sum,(,foo,),:by"
     val expr = eval(input)
-    assert(expr.toString === "0.0,:const,:sum")
+    assertEquals(expr.toString, "0.0,:const,:sum")
   }
 
   test("issue-852: constant group by") {
     val input = "0,:const,(,foo,),:by"
     val expr = eval(input)
-    assert(expr.toString === "0.0,:const")
+    assertEquals(expr.toString, "0.0,:const")
   }
 }

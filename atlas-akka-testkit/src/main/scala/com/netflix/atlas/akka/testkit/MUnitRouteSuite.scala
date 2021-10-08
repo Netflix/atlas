@@ -13,24 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.util
+package com.netflix.atlas.akka.testkit
 
-import org.scalatest.Assertions
+import akka.http.scaladsl.server.ExceptionHandler
+import akka.http.scaladsl.testkit.RouteTest
+import akka.http.scaladsl.testkit.TestFrameworkInterface
+import munit.FunSuite
 
-object Assert extends Assertions {
+abstract class MUnitRouteSuite extends FunSuite with RouteTest with TestFrameworkInterface {
 
-  def assertEquals(v1: Double, v2: Double, delta: Double): Unit = {
-    val diff = scala.math.abs(v1 - v2)
-    if (diff > delta) {
-      throw new AssertionError("%f != %f".format(v1, v2))
-    }
+  override def failTest(msg: String): Nothing = {
+    fail(msg)
   }
 
-  def assertEquals(v1: Double, v2: Double, delta: Double, msg: String): Unit = {
-    val diff = scala.math.abs(v1 - v2)
-    if (diff > delta) {
-      throw new AssertionError("%f != %f, %s".format(v1, v2, msg))
-    }
+  override def testExceptionHandler: ExceptionHandler = ExceptionHandler {
+    case e: Exception      => throw e
+    case e: AssertionError => throw e
   }
-
 }

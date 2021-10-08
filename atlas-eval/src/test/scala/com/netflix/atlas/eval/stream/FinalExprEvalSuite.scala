@@ -33,12 +33,12 @@ import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class FinalExprEvalSuite extends AnyFunSuite {
+class FinalExprEvalSuite extends FunSuite {
 
   private val step = 60000L
 
@@ -76,9 +76,9 @@ class FinalExprEvalSuite extends AnyFunSuite {
       sources(ds("a", "http://atlas/graph?q=foo,:time"))
     )
     val output = run(input)
-    assert(output.size === 1)
+    assertEquals(output.size, 1)
     output.foreach { env =>
-      assert(env.getId === "a")
+      assertEquals(env.getId, "a")
 
       val msg = "invalid expression [[http://atlas/graph?q=foo,:time]]: " +
         "IllegalArgumentException: No enum constant java.time.temporal.ChronoField.foo"
@@ -92,13 +92,13 @@ class FinalExprEvalSuite extends AnyFunSuite {
       TimeGroup(0L, step, Map.empty)
     )
     val output = run(input)
-    assert(output.size === 1)
+    assertEquals(output.size, 1)
 
     val tsMsgs = output.filter(isTimeSeries)
-    assert(tsMsgs.size === 1)
+    assertEquals(tsMsgs.size, 1)
     val (tsId, tsMsg) = tsMsgs.head.getId -> tsMsgs.head.getMessage.asInstanceOf[TimeSeriesMessage]
     assert(tsId == "a")
-    assert(tsMsg.label === "(NO DATA / NO DATA)")
+    assertEquals(tsMsg.label, "(NO DATA / NO DATA)")
 
   }
 
@@ -130,17 +130,17 @@ class FinalExprEvalSuite extends AnyFunSuite {
     intermediateSize: EvalDataSize,
     outputSize: EvalDataSize
   ): Unit = {
-    assert(rate.timestamp === timestamp)
-    assert(rate.step === step)
-    assert(rate.inputSize === inputSize)
-    assert(rate.intermediateSize === intermediateSize)
-    assert(rate.outputSize === outputSize)
+    assertEquals(rate.timestamp, timestamp)
+    assertEquals(rate.step, step)
+    assertEquals(rate.inputSize, inputSize)
+    assertEquals(rate.intermediateSize, intermediateSize)
+    assertEquals(rate.outputSize, outputSize)
   }
 
   private def getValue(ts: TimeSeriesMessage): Double = {
     ts.data match {
       case ArrayData(vs) =>
-        assert(vs.length === 1)
+        assertEquals(vs.length, 1)
         vs(0)
       case v =>
         fail(s"unexpected data value: $v")
@@ -152,7 +152,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
     if (expected.isNaN)
       assert(v.isNaN)
     else
-      assert(v === expected)
+      assertEquals(v, expected)
   }
 
   test("aggregate with single datapoint per group") {
@@ -169,11 +169,11 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val output = run(input)
 
     val timeseries = output.filter(isTimeSeries)
-    assert(timeseries.size === 4)
+    assertEquals(timeseries.size, 4)
     val expectedTimeseries = List(Double.NaN, 42.0, 43.0, 44.0)
     timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
-        assert(env.getId === "a")
+        assertEquals(env.getId, "a")
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
@@ -234,11 +234,11 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val output = run(input)
 
     val timeseries = output.filter(isTimeSeries)
-    assert(timeseries.size === 4)
+    assertEquals(timeseries.size, 4)
     val expectedTimeseries = List(Double.NaN, 42.0, 129.0, 87.0)
     timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
-        assert(env.getId === "a")
+        assertEquals(env.getId, "a")
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
@@ -303,7 +303,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val output = run(input)
 
     val timeseries = output.filter(isTimeSeries)
-    assert(timeseries.size === 3 + 3) // 3 for expr1, 3 for expr2
+    assertEquals(timeseries.size, 3 + 3) // 3 for expr1, 3 for expr2
 
     val expectedTimeseries1 = scala.collection.mutable.Queue(42.0, 84.0, 44.0)
     val expectedTimeseries2 = scala.collection.mutable.Queue(Double.NaN, 45.0, 49.0)
@@ -405,7 +405,7 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val output = run(input)
 
     val timeseries = output.filter(isTimeSeries)
-    assert(timeseries.size === 4)
+    assertEquals(timeseries.size, 4)
     timeseries.foreach { env =>
       val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
       if (ts.tags("node") == "i-1") {
@@ -465,11 +465,11 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val output = run(input)
 
     val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
-    assert(timeseries.size === 4)
+    assertEquals(timeseries.size, 4)
     // tail to ignore initial no data entry
     timeseries.tail.foreach { env =>
       val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
-      assert(ts.label === "legend for rps")
+      assertEquals(ts.label, "legend for rps")
     }
   }
 
@@ -491,11 +491,11 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val output = run(input)
 
     val timeseries = output.filter(isTimeSeries)
-    assert(timeseries.size === 4)
+    assertEquals(timeseries.size, 4)
     val expectedTimeseries = List(0.0, 0.0, 0.0, 0.0)
     timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
-        assert(env.getId === "a")
+        assertEquals(env.getId, "a")
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
@@ -521,11 +521,11 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val output = run(input)
 
     val timeseries = output.filter(isTimeSeries)
-    assert(timeseries.size === 5)
+    assertEquals(timeseries.size, 5)
     val expectedTimeseries = List(Double.NaN, Double.NaN, -2.0, 0.0, -4.0)
     timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
-        assert(env.getId === "a")
+        assertEquals(env.getId, "a")
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
@@ -542,9 +542,10 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val e = intercept[IllegalStateException] {
       run(input)
     }
-    assert(
-      e.getMessage === "inconsistent step sizes, expected 60000, found 10000 " +
-        "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
+    assertEquals(
+      e.getMessage,
+      "inconsistent step sizes, expected 60000, found 10000 " +
+      "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
     )
   }
 
@@ -567,11 +568,11 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val output = run(input)
 
     val timeseries = output.filter(isTimeSeries)
-    assert(timeseries.size === 8)
+    assertEquals(timeseries.size, 8)
     val expectedTimeseries = List(0.0, 1.0, 1.0, 2.0, 1.0, 1.0, 0.0, 1.0)
     timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
-        assert(env.getId === "a")
+        assertEquals(env.getId, "a")
         val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
@@ -605,14 +606,14 @@ class FinalExprEvalSuite extends AnyFunSuite {
     val output = run(input)
 
     val timeseries = output.filter(isTimeSeries)
-    assert(timeseries.size === 8)
+    assertEquals(timeseries.size, 8)
     timeseries.foreach { env =>
       val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
       val v = getValue(ts)
       if (ts.label == "NO DATA")
         assert(v.isNaN)
       else
-        assert(v === 0.0)
+        assertEquals(v, 0.0)
     }
   }
 }

@@ -23,15 +23,14 @@ import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.DefaultClassFactory
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
 
 import java.lang.reflect.Type
 
-class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
+class RequestHandlerSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
@@ -67,40 +66,40 @@ class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
 
   test("/not-found") {
     Get("/not-found") ~> routes ~> check {
-      assert(response.status === StatusCodes.NotFound)
+      assertEquals(response.status, StatusCodes.NotFound)
     }
   }
 
   test("/ok") {
     Get("/ok") ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assertEquals(response.status, StatusCodes.OK)
     }
   }
 
   test("cors preflight") {
     Options("/api/v2/ip") ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assertEquals(response.status, StatusCodes.OK)
     }
   }
 
   private def checkCorsHeaders(origin: String): Unit = {
     val header = Origin(HttpOrigin(origin))
     Options("/api/v2/ip").addHeader(header) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assertEquals(response.status, StatusCodes.OK)
       assert(response.headers.size >= 5)
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
-          assert(origin === v.toString)
+          assertEquals(origin, v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+          assertEquals("GET,PATCH,POST,PUT,DELETE", vs.map(_.name()).mkString(","))
         case `Access-Control-Max-Age`(age) =>
-          assert(age === 600)
+          assertEquals(age, 600L)
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
         case h if h.is("vary") =>
-          assert(h.value === "Origin")
+          assertEquals(h.value, "Origin")
         case h if h.is("test") =>
-          assert(h.value === "12345")
+          assertEquals(h.value, "12345")
         case h =>
           fail(s"unexpected header: $h")
       }
@@ -133,8 +132,8 @@ class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
     // to bypass those checks
     val header = RawHeader("Origin", origin)
     Get("/ok").addHeader(header) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(response.headers === List(RawHeader("test", "12345")))
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(response.headers, List(RawHeader("test", "12345")))
     }
   }
 
@@ -164,8 +163,8 @@ class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
 
   test("/jsonparse") {
     Post("/jsonparse", "\"foo\"") ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(responseAs[String] === "foo")
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(responseAs[String], "foo")
     }
   }
 
@@ -175,23 +174,23 @@ class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
       Json.smileEncode("foo")
     )
     Post("/jsonparse", content) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(responseAs[String] === "foo")
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(responseAs[String], "foo")
     }
   }
 
   test("/jsonparse with smile but wrong content-type") {
     val content = HttpEntity(Json.smileEncode("foo"))
     Post("/jsonparse", content) ~> routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
+      assertEquals(response.status, StatusCodes.BadRequest)
     }
   }
 
   test("/jsonparse with gzipped request") {
     val content = HttpEntity(gzip("\"foo\""))
     Post("/jsonparse", content).addHeader(gzipHeader) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(responseAs[String] === "foo")
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(responseAs[String], "foo")
     }
   }
 
@@ -201,32 +200,32 @@ class RequestHandlerSuite extends AnyFunSuite with ScalatestRouteTest {
       gzip(Json.smileEncode("foo"))
     )
     Post("/jsonparse", content).addHeader(gzipHeader) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(responseAs[String] === "foo")
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(responseAs[String], "foo")
     }
   }
 
   test("/chunked with wrong method") {
     Post("/chunked") ~> routes ~> check {
-      assert(response.status === StatusCodes.MethodNotAllowed)
+      assertEquals(response.status, StatusCodes.MethodNotAllowed)
     }
   }
 
   test("/circuit-breaker") {
     // Trigger failure to open the breaker
     Get("/circuit-breaker") ~> routes ~> check {
-      assert(response.status === StatusCodes.InternalServerError)
+      assertEquals(response.status, StatusCodes.InternalServerError)
     }
 
     // Ensure rejection handler returns 503
     Get("/circuit-breaker") ~> routes ~> check {
-      assert(response.status === StatusCodes.ServiceUnavailable)
+      assertEquals(response.status, StatusCodes.ServiceUnavailable)
     }
   }
 
   test("authorization rejection") {
     Post("/unauthorized") ~> routes ~> check {
-      assert(response.status === StatusCodes.Unauthorized)
+      assertEquals(response.status, StatusCodes.Unauthorized)
     }
   }
 }

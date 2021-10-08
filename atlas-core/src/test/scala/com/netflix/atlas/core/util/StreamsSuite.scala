@@ -18,11 +18,11 @@ package com.netflix.atlas.core.util
 import java.nio.file.Files
 import java.nio.file.Paths
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Using
 
-class StreamsSuite extends AnyFunSuite {
+class StreamsSuite extends FunSuite {
 
   test("scope with Stream") {
     val cwd = Paths.get(".")

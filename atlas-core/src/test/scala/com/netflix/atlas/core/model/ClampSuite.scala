@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ClampSuite extends AnyFunSuite {
+class ClampSuite extends FunSuite {
 
   val step = 60000L
   val dataTags = Map("name" -> "cpu", "node" -> "i-1")
@@ -52,7 +52,7 @@ class ClampSuite extends AnyFunSuite {
     val clamp = MathExpr.ClampMin(DataExpr.Sum(Query.Equal("name", "cpu")), 1.1)
     val actual = clamp.eval(context, List(inputTS)).data.head.data.bounded(s, e).data
     val expected = Array[Double](1.1, 1.5, 1.6, 1.7, 1.4, 1.3, 1.2, 1.1, 1.1, 1.1)
-    assert(actual === expected)
+    assertEquals(actual.toSeq, expected.toSeq)
   }
 
   test("clamp-max") {
@@ -62,7 +62,7 @@ class ClampSuite extends AnyFunSuite {
     val clamp = MathExpr.ClampMax(DataExpr.Sum(Query.Equal("name", "cpu")), 1.1)
     val actual = clamp.eval(context, List(inputTS)).data.head.data.bounded(s, e).data
     val expected = Array[Double](1.0, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.0, 0.0, 0.0)
-    assert(actual === expected)
+    assertEquals(actual.toSeq, expected.toSeq)
   }
 
 }

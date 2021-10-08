@@ -20,9 +20,9 @@ import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class MemoryDatabaseSuite extends AnyFunSuite {
+class MemoryDatabaseSuite extends FunSuite {
 
   private val interpreter = new Interpreter(DataVocabulary.allWords)
 
@@ -103,44 +103,45 @@ class MemoryDatabaseSuite extends AnyFunSuite {
 
   test(":eq query") {
     val result = exec("name,a,:eq")
-    assert(result.map(_.tags) === List(Map("name" -> "a")))
-    assert(result === List(expTS("a", "sum(name=a)", 1, 1.0, 2.0, 3.0)))
+    assertEquals(result.map(_.tags), List(Map("name" -> "a")))
+    assertEquals(result, List(expTS("a", "sum(name=a)", 1, 1.0, 2.0, 3.0)))
   }
 
   test(":in query") {
-    assert(exec("name,(,a,b,),:in") === List(ts("sum(name in (a,b))", 1, 4.0, 4.0, 4.0)))
+    assertEquals(exec("name,(,a,b,),:in"), List(ts("sum(name in (a,b))", 1, 4.0, 4.0, 4.0)))
   }
 
   test(":re query") {
-    assert(exec("name,[ab]$,:re") === List(ts("sum(name~/^[ab]$/)", 1, 4.0, 4.0, 4.0)))
+    assertEquals(exec("name,[ab]$,:re"), List(ts("sum(name~/^[ab]$/)", 1, 4.0, 4.0, 4.0)))
   }
 
   test(":has query") {
-    assert(exec("name,:has") === List(ts("sum(has(name))", 1, 19.0, 22.0, 25.0)))
+    assertEquals(exec("name,:has"), List(ts("sum(has(name))", 1, 19.0, 22.0, 25.0)))
   }
 
   test(":offset expr") {
-    assert(
-      exec(":true,:sum,1m,:offset") === List(
-          ts("sum(true) (offset=1m)", 1, Double.NaN, 19.0, 22.0)
-        )
+    assertEquals(
+      exec(":true,:sum,1m,:offset"),
+      List(
+        ts("sum(true) (offset=1m)", 1, Double.NaN, 19.0, 22.0)
+      )
     )
   }
 
   test(":sum expr") {
-    assert(exec(":true,:sum") === List(ts("sum(true)", 1, 19.0, 22.0, 25.0)))
+    assertEquals(exec(":true,:sum"), List(ts("sum(true)", 1, 19.0, 22.0, 25.0)))
   }
 
   test(":count expr") {
-    assert(exec(":true,:count") === List(ts("count(true)", 1, 5.0, 5.0, 5.0)))
+    assertEquals(exec(":true,:count"), List(ts("count(true)", 1, 5.0, 5.0, 5.0)))
   }
 
   test(":min expr") {
-    assert(exec(":true,:min") === List(ts("min(true)", 1, 1.0, 2.0, 1.0)))
+    assertEquals(exec(":true,:min"), List(ts("min(true)", 1, 1.0, 2.0, 1.0)))
   }
 
   test(":max expr") {
-    assert(exec(":true,:max") === List(ts("max(true)", 1, 6.0, 7.0, 8.0)))
+    assertEquals(exec(":true,:max"), List(ts("max(true)", 1, 6.0, 7.0, 8.0)))
   }
 
   test(":by expr") {
@@ -149,7 +150,7 @@ class MemoryDatabaseSuite extends AnyFunSuite {
       expTS("b", "(name=b)", 1, 3.0, 2.0, 1.0),
       expTS("c", "(name=c)", 1, 15.0, 18.0, 21.0)
     )
-    assert(exec(":true,(,name,),:by") === expected)
+    assertEquals(exec(":true,(,name,),:by"), expected)
   }
 
   test(":all expr") {
@@ -158,39 +159,39 @@ class MemoryDatabaseSuite extends AnyFunSuite {
       expTS("b", "name=b", 1, 3.0, 2.0, 1.0),
       expTS("c", "name=c", 1, 15.0, 18.0, 21.0)
     )
-    assert(exec(":true,:all") === expected)
+    assertEquals(exec(":true,:all"), expected)
   }
 
   test(":sum expr, c=3") {
-    assert(exec(":true,:sum", 3 * step) === List(ts("sum(true)", 3, 22.0)))
+    assertEquals(exec(":true,:sum", 3 * step), List(ts("sum(true)", 3, 22.0)))
   }
 
   test(":sum expr, c=3, cf=sum") {
-    assert(exec(":true,:sum,:cf-sum", 3 * step) === List(ts("sum(true)", 3, 66.0)))
+    assertEquals(exec(":true,:sum,:cf-sum", 3 * step), List(ts("sum(true)", 3, 66.0)))
   }
 
   test(":sum expr, c=3, cf=max") {
-    assert(exec(":true,:sum,:cf-max", 3 * step) === List(ts("sum(true)", 3, 27.0)))
+    assertEquals(exec(":true,:sum,:cf-max", 3 * step), List(ts("sum(true)", 3, 27.0)))
   }
 
   test(":count expr, c=3") {
-    assert(exec(":true,:count", 3 * step) === List(ts("count(true)", 3, 5.0)))
+    assertEquals(exec(":true,:count", 3 * step), List(ts("count(true)", 3, 5.0)))
   }
 
   test(":count expr, c=3, cf=sum") {
-    assert(exec(":true,:count,:cf-sum", 3 * step) === List(ts("count(true)", 3, 15.0)))
+    assertEquals(exec(":true,:count,:cf-sum", 3 * step), List(ts("count(true)", 3, 15.0)))
   }
 
   test(":count expr, c=3, cf=max") {
-    assert(exec(":true,:count,:cf-max", 3 * step) === List(ts("count(true)", 3, 5.0)))
+    assertEquals(exec(":true,:count,:cf-max", 3 * step), List(ts("count(true)", 3, 5.0)))
   }
 
   test(":min expr, c=3") {
-    assert(exec(":true,:min", 3 * step) === List(ts("min(true)", 3, 1.0)))
+    assertEquals(exec(":true,:min", 3 * step), List(ts("min(true)", 3, 1.0)))
   }
 
   test(":max expr, c=3") {
-    assert(exec(":true,:max", 3 * step) === List(ts("max(true)", 3, 8.0)))
+    assertEquals(exec(":true,:max", 3 * step), List(ts("max(true)", 3, 8.0)))
   }
 
   test(":by expr, c=3") {
@@ -199,7 +200,7 @@ class MemoryDatabaseSuite extends AnyFunSuite {
       expTS("b", "(name=b)", 3, 2.0),
       expTS("c", "(name=c)", 3, 18.0)
     )
-    assert(exec(":true,(,name,),:by", 3 * step) === expected)
+    assertEquals(exec(":true,(,name,),:by", 3 * step), expected)
   }
 
   test(":all expr, c=3") {
@@ -208,6 +209,6 @@ class MemoryDatabaseSuite extends AnyFunSuite {
       expTS("b", "name=b", 3, 6.0),
       expTS("c", "name=c", 3, 54.0)
     )
-    assert(exec(":true,:all", 3 * step) === expected)
+    assertEquals(exec(":true,:all", 3 * step), expected)
   }
 }

@@ -17,53 +17,53 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.hashing.MurmurHash3
 
-class ItemIdSuite extends AnyFunSuite {
+class ItemIdSuite extends FunSuite {
 
   test("create from byte array") {
     val bytes = Array(1.toByte, 2.toByte)
     val id = ItemId(bytes)
-    assert(id.hashCode() === MurmurHash3.bytesHash(bytes))
+    assertEquals(id.hashCode(), MurmurHash3.bytesHash(bytes))
   }
 
   test("equals") {
     val id1 = ItemId(Array(1.toByte, 2.toByte))
     val id2 = ItemId(Array(1.toByte, 2.toByte))
-    assert(id1 === id1)
-    assert(id1 === id2)
+    assertEquals(id1, id1)
+    assertEquals(id1, id2)
   }
 
   test("not equals") {
     val id1 = ItemId(Array(1.toByte, 2.toByte))
     val id2 = ItemId(Array(1.toByte, 3.toByte))
-    assert(id1 !== id2)
-    assert(id1.hashCode() !== id2.hashCode())
+    assertNotEquals(id1, id2)
+    assertNotEquals(id1.hashCode(), id2.hashCode())
   }
 
   test("does not equal wrong object type") {
     val id1 = ItemId(Array(1.toByte, 2.toByte))
-    assert(id1 !== "foo")
+    assert(!id1.equals("foo"))
   }
 
   test("does not equal null") {
     val id1 = ItemId(Array(1.toByte, 2.toByte))
-    assert(id1 !== null)
+    assert(id1 != null)
   }
 
   test("toString") {
     val bytes = Array(1.toByte, 2.toByte)
     val id = ItemId(bytes)
-    assert(id.toString === "0102")
+    assertEquals(id.toString, "0102")
   }
 
   test("toString sha1 bytes 0") {
     val bytes = new Array[Byte](20)
     val id = ItemId(bytes)
-    assert(id.toString === "0000000000000000000000000000000000000000")
-    assert(id === ItemId("0000000000000000000000000000000000000000"))
+    assertEquals(id.toString, "0000000000000000000000000000000000000000")
+    assertEquals(id, ItemId("0000000000000000000000000000000000000000"))
   }
 
   test("toString sha1") {
@@ -71,23 +71,23 @@ class ItemIdSuite extends AnyFunSuite {
       val sha1 = Hash.sha1(i.toString)
       val sha1str = Strings.zeroPad(sha1.toString(16), 40)
       val id = ItemId(Hash.sha1bytes(i.toString))
-      assert(id.toString === sha1str)
-      assert(id === ItemId(sha1str))
-      assert(id.compareTo(ItemId(sha1str)) === 0)
-      assert(sha1 === ItemId(sha1str).toBigInteger)
+      assertEquals(id.toString, sha1str)
+      assertEquals(id, ItemId(sha1str))
+      assertEquals(id.compareTo(ItemId(sha1str)), 0)
+      assertEquals(sha1, ItemId(sha1str).toBigInteger)
     }
   }
 
   test("from String lower") {
     val bytes = Array(10.toByte, 11.toByte)
     val id = ItemId(bytes)
-    assert(id === ItemId("0a0b"))
+    assertEquals(id, ItemId("0a0b"))
   }
 
   test("from String upper") {
     val bytes = Array(10.toByte, 11.toByte)
     val id = ItemId(bytes)
-    assert(id === ItemId("0A0B"))
+    assertEquals(id, ItemId("0A0B"))
   }
 
   test("from String invalid") {
@@ -99,8 +99,8 @@ class ItemIdSuite extends AnyFunSuite {
   test("compareTo equals") {
     val id1 = ItemId(Array(1.toByte, 2.toByte))
     val id2 = ItemId(Array(1.toByte, 2.toByte))
-    assert(id1.compareTo(id1) === 0)
-    assert(id1.compareTo(id2) === 0)
+    assertEquals(id1.compareTo(id1), 0)
+    assertEquals(id1.compareTo(id2), 0)
   }
 
   test("compareTo less than/greater than") {
@@ -113,22 +113,22 @@ class ItemIdSuite extends AnyFunSuite {
   test("int value") {
     (0 until 100).foreach { i =>
       val id = ItemId(Hash.sha1bytes(i.toString))
-      assert(id.intValue === id.toBigInteger.intValue())
+      assertEquals(id.intValue, id.toBigInteger.intValue())
     }
   }
 
   test("int value: one byte") {
     val id = ItemId(Array(57.toByte))
-    assert(id.intValue === id.toBigInteger.intValue())
+    assertEquals(id.intValue, id.toBigInteger.intValue())
   }
 
   test("int value: two bytes") {
     val id = ItemId(Array(1.toByte, 2.toByte))
-    assert(id.intValue === id.toBigInteger.intValue())
+    assertEquals(id.intValue, id.toBigInteger.intValue())
   }
 
   test("int value: three bytes") {
     val id = ItemId(Array(1.toByte, 2.toByte, 0xFF.toByte))
-    assert(id.intValue === id.toBigInteger.intValue())
+    assertEquals(id.intValue, id.toBigInteger.intValue())
   }
 }

@@ -34,7 +34,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -43,7 +43,7 @@ import scala.util.Success
 import scala.util.Try
 import scala.util.Using
 
-class HostSourceSuite extends AnyFunSuite {
+class HostSourceSuite extends FunSuite {
 
   import scala.concurrent.duration._
 
@@ -68,7 +68,7 @@ class HostSourceSuite extends AnyFunSuite {
       .map(_.decodeString(StandardCharsets.UTF_8))
       .runWith(Sink.seq[String])
     val result = Await.result(future, Duration.Inf).toList
-    assert(result === (0 until 5).map(_ => "ok").toList)
+    assertEquals(result, (0 until 5).map(_ => "ok").toList)
   }
 
   test("no size limit on data stream") {
@@ -79,7 +79,7 @@ class HostSourceSuite extends AnyFunSuite {
       .map(_.decodeString(StandardCharsets.UTF_8))
       .runWith(Sink.seq[String])
     val result = Await.result(future, Duration.Inf).toList
-    assert(result === (0 until 5).map(_ => "ok").toList)
+    assertEquals(result, (0 until 5).map(_ => "ok").toList)
   }
 
   test("handles decompression") {
@@ -91,7 +91,7 @@ class HostSourceSuite extends AnyFunSuite {
       .map(_.decodeString(StandardCharsets.UTF_8))
       .runWith(Sink.seq[String])
     val result = Await.result(future, Duration.Inf).toList
-    assert(result === (0 until 5).map(_ => "ok").toList)
+    assertEquals(result, (0 until 5).map(_ => "ok").toList)
   }
 
   test("retries on error response from host") {
@@ -164,6 +164,6 @@ class HostSourceSuite extends AnyFunSuite {
       .take(5)
       .runWith(Sink.seq[String])
     val result = Await.result(future, Duration.Inf).toList
-    assert(result === (0 until 5).map(_ => "ok").toList)
+    assertEquals(result, (0 until 5).map(_ => "ok").toList)
   }
 }

@@ -21,9 +21,9 @@ import com.netflix.atlas.core.db.Database
 import com.netflix.iep.guice.PreDestroyList
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class WebApiModuleSuite extends AnyFunSuite {
+class WebApiModuleSuite extends FunSuite {
 
   test("load module") {
     val deps = new AbstractModule {

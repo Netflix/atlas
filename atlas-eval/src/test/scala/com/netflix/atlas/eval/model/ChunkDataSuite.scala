@@ -17,9 +17,9 @@ package com.netflix.atlas.eval.model
 
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ChunkDataSuite extends AnyFunSuite {
+class ChunkDataSuite extends FunSuite {
   test("ArrayData equals") {
     EqualsVerifier
       .forClass(classOf[ArrayData])
@@ -29,11 +29,11 @@ class ChunkDataSuite extends AnyFunSuite {
 
   test("ArrayData encode empty") {
     val empty = ArrayData(Array())
-    assert(empty.toJson === """{"type":"array","values":[]}""")
+    assertEquals(empty.toJson, """{"type":"array","values":[]}""")
   }
 
   test("ArrayData encode values") {
     val data = ArrayData(Array(1.0, 2.0, 3.0))
-    assert(data.toJson === """{"type":"array","values":[1.0,2.0,3.0]}""")
+    assertEquals(data.toJson, """{"type":"array","values":[1.0,2.0,3.0]}""")
   }
 }

@@ -23,9 +23,9 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class JsonParserHelperSuite extends AnyFunSuite {
+class JsonParserHelperSuite extends FunSuite {
 
   import JsonParserHelper._
 
@@ -35,9 +35,9 @@ class JsonParserHelperSuite extends AnyFunSuite {
     foreachField(parser) {
       case v =>
         fields += v
-        assert(parser.nextIntValue(-1) === v.charAt(0) - 'a')
+        assertEquals(parser.nextIntValue(-1), v.charAt(0) - 'a')
     }
-    assert(fields.result() === Set("a", "b"))
+    assertEquals(fields.result(), Set("a", "b"))
   }
 
   test("foreachField unsupported field") {
@@ -55,9 +55,9 @@ class JsonParserHelperSuite extends AnyFunSuite {
     firstField(parser) {
       case "a" =>
         fields += "a"
-        assert(parser.nextIntValue(-1) === 0)
+        assertEquals(parser.nextIntValue(-1), 0)
     }
-    assert(fields.result() === Set("a"))
+    assertEquals(fields.result(), Set("a"))
   }
 
   test("firstField unsupported field") {
@@ -75,7 +75,7 @@ class JsonParserHelperSuite extends AnyFunSuite {
     foreachItem(parser) {
       builder += parser.getIntValue
     }
-    assert(builder.result() === List(1, 2, 3))
+    assertEquals(builder.result(), List(1, 2, 3))
   }
 
   test("foreachItem, endless loop bug") {
@@ -92,23 +92,23 @@ class JsonParserHelperSuite extends AnyFunSuite {
 
   test("skipNext: empty object") {
     val parser = Json.newJsonParser("""[{}]""")
-    assert(parser.nextToken() === JsonToken.START_ARRAY)
+    assertEquals(parser.nextToken(), JsonToken.START_ARRAY)
     skipNext(parser)
-    assert(parser.nextToken() === JsonToken.END_ARRAY)
+    assertEquals(parser.nextToken(), JsonToken.END_ARRAY)
   }
 
   test("skipNext: object with simple fields") {
     val parser = Json.newJsonParser("""[{"a":1,"b":"foo","c":false,"d":null}]""")
-    assert(parser.nextToken() === JsonToken.START_ARRAY)
+    assertEquals(parser.nextToken(), JsonToken.START_ARRAY)
     skipNext(parser)
-    assert(parser.nextToken() === JsonToken.END_ARRAY)
+    assertEquals(parser.nextToken(), JsonToken.END_ARRAY)
   }
 
   test("skipNext: object with complex field") {
     val parser = Json.newJsonParser("""[{"a":{"b":[{"c":{"d":["f",1,null]}}]}}]""")
-    assert(parser.nextToken() === JsonToken.START_ARRAY)
+    assertEquals(parser.nextToken(), JsonToken.START_ARRAY)
     skipNext(parser)
-    assert(parser.nextToken() === JsonToken.END_ARRAY)
+    assertEquals(parser.nextToken(), JsonToken.END_ARRAY)
   }
 
   test("skipNext: complex object") {
@@ -145,18 +145,18 @@ class JsonParserHelperSuite extends AnyFunSuite {
         |  }
         |]
         |""".stripMargin)
-    assert(parser.nextToken() === JsonToken.START_ARRAY)
+    assertEquals(parser.nextToken(), JsonToken.START_ARRAY)
     skipNext(parser)
-    assert(parser.nextToken() === JsonToken.END_ARRAY)
+    assertEquals(parser.nextToken(), JsonToken.END_ARRAY)
   }
 
   test("skipNext: random") {
     (0 until 10000).foreach { i =>
       val json = s"""[${randomJson(i)}]"""
       val parser = Json.newJsonParser(json)
-      assert(parser.nextToken() === JsonToken.START_ARRAY)
+      assertEquals(parser.nextToken(), JsonToken.START_ARRAY)
       skipNext(parser)
-      assert(parser.nextToken() === JsonToken.END_ARRAY, s"json: $json")
+      assertEquals(parser.nextToken(), JsonToken.END_ARRAY, s"json: $json")
     }
   }
 

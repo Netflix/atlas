@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class IntegralSuite extends AnyFunSuite {
+class IntegralSuite extends FunSuite {
 
   private val start = 0L
   private val step = 60000L
@@ -35,16 +35,16 @@ class IntegralSuite extends AnyFunSuite {
 
   test("basic") {
     val input = ts(1.0, 1.0, 1.0)
-    assert(eval(input, 3).data === ts(1.0, 2.0, 3.0).data)
+    assertEquals(eval(input, 3).data, ts(1.0, 2.0, 3.0).data)
   }
 
   test("basic with same value and decreasing") {
     val input = ts(Double.NaN, 35.0, 0.0, 1.0, -41.0, 3.0)
-    assert(eval(input, 6).data === ts(Double.NaN, 35.0, 35.0, 36.0, -5.0, -2.0).data)
+    assertEquals(eval(input, 6).data, ts(Double.NaN, 35.0, 35.0, 36.0, -5.0, -2.0).data)
   }
 
   test("basic with NaN values") {
     val input = ts(Double.NaN, 35.0, Double.NaN, Double.NaN, -41.0, 3.0)
-    assert(eval(input, 6).data === ts(Double.NaN, 35.0, 35.0, 35.0, -6.0, -3.0).data)
+    assertEquals(eval(input, 6).data, ts(Double.NaN, 35.0, 35.0, 35.0, -6.0, -3.0).data)
   }
 }

@@ -17,9 +17,9 @@ package com.netflix.atlas.core.index
 
 import com.netflix.atlas.core.model.LazyTaggedItem
 import com.netflix.spectator.api.NoopRegistry
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class BatchUpdateTagIndexSuite extends AnyFunSuite {
+class BatchUpdateTagIndexSuite extends FunSuite {
 
   case class Item(tags: Map[String, String], version: Int) extends LazyTaggedItem
 
@@ -29,24 +29,24 @@ class BatchUpdateTagIndexSuite extends AnyFunSuite {
 
   test("update") {
     val idx = newIndex
-    assert(idx.size === 0)
+    assertEquals(idx.size, 0)
 
     val updates = List(Item(Map("a" -> "b"), 0))
     idx.update(updates)
-    assert(idx.size === 0)
+    assertEquals(idx.size, 0)
 
     idx.rebuildIndex()
-    assert(idx.findItems(TagQuery(None)) === updates)
+    assertEquals(idx.findItems(TagQuery(None)), updates)
   }
 
   test("update, new items") {
     val idx = newIndex
-    assert(idx.size === 0)
+    assertEquals(idx.size, 0)
 
     val updates1 = List(Item(Map("a" -> "b"), 0))
     idx.update(updates1)
     idx.rebuildIndex()
-    assert(idx.findItems(TagQuery(None)) === updates1)
+    assertEquals(idx.findItems(TagQuery(None)), updates1)
 
     val updates2 = List(Item(Map("b" -> "c"), 0))
     idx.update(updates2)
@@ -55,21 +55,21 @@ class BatchUpdateTagIndexSuite extends AnyFunSuite {
     val expected = (updates1 ::: updates2).sortWith { (a, b) =>
       a.id.compareTo(b.id) < 0
     }
-    assert(idx.findItems(TagQuery(None)) === expected)
+    assertEquals(idx.findItems(TagQuery(None)), expected)
   }
 
   test("update, prefer older item") {
     val idx = newIndex
-    assert(idx.size === 0)
+    assertEquals(idx.size, 0)
 
     val updates1 = List(Item(Map("a" -> "b"), 0))
     idx.update(updates1)
     idx.rebuildIndex()
-    assert(idx.findItems(TagQuery(None)) === updates1)
+    assertEquals(idx.findItems(TagQuery(None)), updates1)
 
     val updates2 = List(Item(Map("a" -> "b"), 1))
     idx.update(updates2)
     idx.rebuildIndex()
-    assert(idx.findItems(TagQuery(None)) === updates1)
+    assertEquals(idx.findItems(TagQuery(None)), updates1)
   }
 }

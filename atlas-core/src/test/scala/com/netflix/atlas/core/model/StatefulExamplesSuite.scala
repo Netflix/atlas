@@ -24,6 +24,6 @@ class StatefulExamplesSuite extends BaseExamplesSuite {
 
   test("rewrite toString and cq") {
     val expr = eval("name,test,:eq,:sum,:des-fast,app,foo,:eq,:cq")
-    assert(expr.toString === "name,test,:eq,app,foo,:eq,:and,:sum,:des-fast")
+    assertEquals(expr.toString, "name,test,:eq,app,foo,:eq,:and,:sum,:des-fast")
   }
 }

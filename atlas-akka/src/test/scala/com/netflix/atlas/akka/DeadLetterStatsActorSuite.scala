@@ -24,17 +24,14 @@ import akka.actor.Props
 import akka.actor.SuppressedDeadLetter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActorRef
-import akka.testkit.TestKit
+import akka.testkit.TestKitBase
 import com.netflix.spectator.api.DefaultRegistry
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.funsuite.AnyFunSuiteLike
+import munit.FunSuite
 
-class DeadLetterStatsActorSuite
-    extends TestKit(ActorSystem())
-    with ImplicitSender
-    with AnyFunSuiteLike
-    with BeforeAndAfterAll {
+class DeadLetterStatsActorSuite extends FunSuite with TestKitBase with ImplicitSender {
+
+  override implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   private val config = ConfigFactory.parseString(
     """
@@ -70,9 +67,9 @@ class DeadLetterStatsActorSuite
       .withTag("sender", "from")
       .withTag("recipient", "to")
 
-    assert(0 === registry.counter(id).count())
+    assertEquals(registry.counter(id).count(), 0L)
     ref ! DeadLetter("foo", sender, recipient)
-    assert(1 === registry.counter(id).count())
+    assertEquals(registry.counter(id).count(), 1L)
   }
 
   test("SuppressedDeadLetter") {
@@ -82,8 +79,8 @@ class DeadLetterStatsActorSuite
       .withTag("sender", "from")
       .withTag("recipient", "to")
 
-    assert(0 === registry.counter(id).count())
+    assertEquals(registry.counter(id).count(), 0L)
     ref ! SuppressedDeadLetter(PoisonPill, sender, recipient)
-    assert(1 === registry.counter(id).count())
+    assertEquals(registry.counter(id).count(), 1L)
   }
 }

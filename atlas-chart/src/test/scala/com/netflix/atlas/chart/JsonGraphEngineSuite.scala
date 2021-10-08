@@ -25,9 +25,9 @@ import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Streams
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class JsonGraphEngineSuite extends AnyFunSuite {
+class JsonGraphEngineSuite extends FunSuite {
 
   val step = 60000
 
@@ -58,7 +58,7 @@ class JsonGraphEngineSuite extends AnyFunSuite {
       engine.write(graphDef, out)
     }
     val json = new String(bytes, "UTF-8")
-    assert(json === strip(expected))
+    assertEquals(json, strip(expected))
   }
 
   test("json") {

@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class FilterSuite extends AnyFunSuite {
+class FilterSuite extends FunSuite {
 
   private val start = 0L
   private val step = 60000L

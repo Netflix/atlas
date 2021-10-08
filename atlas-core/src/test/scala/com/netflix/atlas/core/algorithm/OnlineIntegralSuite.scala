@@ -21,41 +21,41 @@ class OnlineIntegralSuite extends BaseOnlineAlgorithmSuite {
 
   test("init") {
     val algo = OnlineIntegral(Double.NaN)
-    assert(algo.next(1.0) === 1.0)
-    assert(algo.next(1.0) === 2.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assertEquals(algo.next(1.0), 2.0)
   }
 
   test("NaN values") {
     val algo = OnlineIntegral(Double.NaN)
-    assert(algo.next(1.0) === 1.0)
-    assert(algo.next(1.0) === 2.0)
-    assert(algo.next(Double.NaN) === 2.0)
-    assert(algo.next(1.0) === 3.0)
-    assert(algo.next(1.0) === 4.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assertEquals(algo.next(1.0), 2.0)
+    assertEquals(algo.next(Double.NaN), 2.0)
+    assertEquals(algo.next(1.0), 3.0)
+    assertEquals(algo.next(1.0), 4.0)
   }
 
   test("increase") {
     val algo = OnlineIntegral(Double.NaN)
-    assert(algo.next(1.0) === 1.0)
-    assert(algo.next(2.0) === 3.0)
-    assert(algo.next(3.0) === 6.0)
-    assert(algo.next(7.0) === 13.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assertEquals(algo.next(2.0), 3.0)
+    assertEquals(algo.next(3.0), 6.0)
+    assertEquals(algo.next(7.0), 13.0)
   }
 
   test("decrease") {
     val algo = OnlineIntegral(Double.NaN)
-    assert(algo.next(10.0) === 10.0)
-    assert(algo.next(9.0) === 19.0)
-    assert(algo.next(8.0) === 27.0)
-    assert(algo.next(4.0) === 31.0)
+    assertEquals(algo.next(10.0), 10.0)
+    assertEquals(algo.next(9.0), 19.0)
+    assertEquals(algo.next(8.0), 27.0)
+    assertEquals(algo.next(4.0), 31.0)
   }
 
   test("reset") {
     val algo = OnlineIntegral(Double.NaN)
-    assert(algo.next(1.0) === 1.0)
-    assert(algo.next(2.0) === 3.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assertEquals(algo.next(2.0), 3.0)
     algo.reset()
-    assert(algo.next(3.0) === 3.0)
-    assert(algo.next(7.0) === 10.0)
+    assertEquals(algo.next(3.0), 3.0)
+    assertEquals(algo.next(7.0), 10.0)
   }
 }

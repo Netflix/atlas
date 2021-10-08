@@ -21,30 +21,30 @@ class OnlineTrendSuite extends BaseOnlineAlgorithmSuite {
 
   test("n = 1") {
     val algo = OnlineTrend(1)
-    assert(algo.next(0.0) === 0.0)
-    assert(algo.next(1.0) === 1.0)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0), 1.0)
   }
 
   test("n = 2") {
     val algo = OnlineTrend(2)
     assert(algo.next(0.0).isNaN)
-    assert(algo.next(1.0) === 0.5)
-    assert(algo.next(2.0) === 1.5)
+    assertEquals(algo.next(1.0), 0.5)
+    assertEquals(algo.next(2.0), 1.5)
   }
 
   test("n = 2, decreasing") {
     val algo = OnlineTrend(2)
     assert(algo.next(2.0).isNaN)
-    assert(algo.next(1.0) === 1.5)
-    assert(algo.next(0.0) === 0.5)
+    assertEquals(algo.next(1.0), 1.5)
+    assertEquals(algo.next(0.0), 0.5)
   }
 
   test("n = 2, NaNs") {
     val algo = OnlineTrend(2)
     assert(algo.next(0.0).isNaN)
-    assert(algo.next(1.0) === 0.5)
-    assert(algo.next(2.0) === 1.5)
-    assert(algo.next(Double.NaN) === 1.0)
+    assertEquals(algo.next(1.0), 0.5)
+    assertEquals(algo.next(2.0), 1.5)
+    assertEquals(algo.next(Double.NaN), 1.0)
     assert(!algo.isEmpty)
     assert(algo.next(Double.NaN).isNaN)
     assert(algo.isEmpty)

@@ -20,9 +20,9 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class HostRewriterSuite extends AnyFunSuite {
+class HostRewriterSuite extends FunSuite {
 
   private val config = ConfigFactory.load()
   private val interpreter = Interpreter(new CustomVocabulary(config).allWords)
@@ -38,7 +38,7 @@ class HostRewriterSuite extends AnyFunSuite {
     val rewriter = new HostRewriter(config.getConfig("atlas.eval.host-rewrite"))
     val exprs = interpret("name,sps,:eq,:sum")
     val host = "foo.example.com"
-    assert(rewriter.rewrite(host, exprs) === exprs)
+    assertEquals(rewriter.rewrite(host, exprs), exprs)
   }
 
   test("restrict by region extracted from host") {
@@ -50,7 +50,7 @@ class HostRewriterSuite extends AnyFunSuite {
     val exprs = interpret("name,sps,:eq,:sum")
     val expected = interpret("name,sps,:eq,region,us-east-1,:eq,:and,:sum")
     val host = "foo.us-east-1.example.com"
-    assert(rewriter.rewrite(host, exprs) === expected)
+    assertEquals(rewriter.rewrite(host, exprs), expected)
   }
 
   test("use first group if multiple in pattern") {
@@ -63,7 +63,7 @@ class HostRewriterSuite extends AnyFunSuite {
     val exprs = interpret("name,sps,:eq,:sum")
     val expected = interpret("name,sps,:eq,region,us-east-1,:eq,:and,:sum")
     val host = "foo.us-east-1.example.com"
-    assert(rewriter.rewrite(host, exprs) === expected)
+    assertEquals(rewriter.rewrite(host, exprs), expected)
   }
 
   test("no group in pattern") {

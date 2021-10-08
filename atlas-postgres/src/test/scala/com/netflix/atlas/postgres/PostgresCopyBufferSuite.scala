@@ -22,14 +22,13 @@ import java.sql.Statement
 import scala.util.Using
 import org.postgresql.copy.CopyManager
 import org.postgresql.core.BaseConnection
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.ResultSet
 
-class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
+class PostgresCopyBufferSuite extends FunSuite {
 
   private val buffers = List(
     "text"   -> new TextCopyBuffer(1024),
@@ -87,7 +86,7 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
       assert(buffer.putString("foo").nextRow())
       assert(buffer.putString("bar").nextRow())
       buffer.copyIn(copyManager, tableName)
-      assert(getData(stmt, _.getString(1)) === List(null, "foo", "bar"))
+      assertEquals(getData(stmt, _.getString(1)), List(null, "foo", "bar"))
     }
   }
 
@@ -115,7 +114,7 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
             """{"a":"1","b":"2"}"""
           )
           val actual = getData(stmt, _.getString(1))
-          assert(actual === expected)
+          assertEquals(actual, expected)
         }
       }
 
@@ -133,7 +132,7 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
             """{"a": "1", "b": "2"}"""
           )
           val actual = getData(stmt, _.getString(1))
-          assert(actual === expected)
+          assertEquals(actual, expected)
         }
       }
 
@@ -151,7 +150,7 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
             """"a"=>"1", "b"=>"2""""
           )
           val actual = getData(stmt, _.getString(1))
-          assert(actual === expected)
+          assertEquals(actual, expected)
         }
       }
 
@@ -164,12 +163,12 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
           assert(buffer.putShort(Short.MaxValue).nextRow())
           buffer.copyIn(copyManager, tableName)
           val expected = List(
-            0,
+            0.toShort,
             Short.MinValue,
             Short.MaxValue
           )
           val actual = getData(stmt, _.getShort(1))
-          assert(actual === expected)
+          assertEquals(actual, expected)
         }
       }
 
@@ -187,7 +186,7 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
             Int.MaxValue
           )
           val actual = getData(stmt, _.getInt(1))
-          assert(actual === expected)
+          assertEquals(actual, expected)
         }
       }
 
@@ -205,7 +204,7 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
             Long.MaxValue
           )
           val actual = getData(stmt, _.getLong(1))
-          assert(actual === expected)
+          assertEquals(actual, expected)
         }
       }
 
@@ -232,7 +231,7 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
           )
           val actual = getData(stmt, _.getDouble(1))
           actual.zip(expected).foreach {
-            case (a, e) => if (a.isNaN) assert(e.isNaN) else assert(a === e)
+            case (a, e) => if (a.isNaN) assert(e.isNaN) else assertEquals(a, e)
           }
         }
       }
@@ -253,10 +252,10 @@ class PostgresCopyBufferSuite extends AnyFunSuite with BeforeAndAfterAll {
           assert(buffer.putDoubleArray(expected.toArray).nextRow())
           buffer.copyIn(copyManager, tableName)
           val actual = getData(stmt, _.getArray(1).getArray.asInstanceOf[Array[java.lang.Double]])
-          assert(actual.size === 1)
+          assertEquals(actual.size, 1)
           actual.foreach { data =>
             data.toList.zip(expected).foreach {
-              case (a, e) => if (a.isNaN) assert(e.isNaN) else assert(a === e)
+              case (a, e) => if (a.isNaN) assert(e.isNaN) else assertEquals(a.doubleValue(), e)
             }
           }
         }

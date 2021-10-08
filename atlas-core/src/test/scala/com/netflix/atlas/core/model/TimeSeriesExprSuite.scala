@@ -19,9 +19,9 @@ import java.time.temporal.ChronoUnit
 
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Math
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class TimeSeriesExprSuite extends AnyFunSuite {
+class TimeSeriesExprSuite extends FunSuite {
 
   import com.netflix.atlas.core.model.TimeSeriesExprSuite._
 
@@ -227,18 +227,18 @@ class TimeSeriesExprSuite extends AnyFunSuite {
     case (prg, p) =>
       test(s"eval global: $prg") {
         val c = interpreter.execute(prg)
-        assert(c.stack.size === 1)
+        assertEquals(c.stack.size, 1)
         val expr = c.stack.collect { case ModelExtractors.TimeSeriesType(t) => t } head
         val rs = expr.eval(p.ctxt, p.input)
-        assert(rs.expr === expr)
-        assert(bounded(rs.data, p.ctxt) === bounded(p.output, p.ctxt))
+        assertEquals(rs.expr, expr)
+        assertEquals(bounded(rs.data, p.ctxt), bounded(p.output, p.ctxt))
       }
 
       List("1m" -> 60000, "5m" -> 300000).foreach {
         case (label, step) =>
           test(s"eval incremental $label: $prg") {
             val c = interpreter.execute(prg)
-            assert(c.stack.size === 1)
+            assertEquals(c.stack.size, 1)
             val expr = c.stack.collect { case ModelExtractors.TimeSeriesType(t) => t } head
             val rs = expr.eval(p.ctxt, p.input)
             val ctxts = p.ctxt.partition(step, ChronoUnit.MINUTES)
@@ -262,8 +262,8 @@ class TimeSeriesExprSuite extends AnyFunSuite {
                 TimeSeries(t.tags, t.label, seq)
               }
             )
-            assert(incrRS.expr === expr)
-            assert(bounded(incrRS.data, p.ctxt) === bounded(p.output, p.ctxt))
+            assertEquals(incrRS.expr, expr)
+            assertEquals(bounded(incrRS.data, p.ctxt), bounded(p.output, p.ctxt))
           }
       }
   }
@@ -272,11 +272,11 @@ class TimeSeriesExprSuite extends AnyFunSuite {
     case (prg, p) =>
       test(s"eval global: $prg") {
         val c = interpreter.execute(prg)
-        assert(c.stack.size === 1)
+        assertEquals(c.stack.size, 1)
         val expr = c.stack.collect { case ModelExtractors.PresentationType(t) => t } head
         val rs = expr.expr.eval(p.ctxt, p.input)
-        assert(rs.expr === expr.expr)
-        assert(bounded(rs.data, p.ctxt) === bounded(p.output, p.ctxt))
+        assertEquals(rs.expr, expr.expr)
+        assertEquals(bounded(rs.data, p.ctxt), bounded(p.output, p.ctxt))
       }
   }
 

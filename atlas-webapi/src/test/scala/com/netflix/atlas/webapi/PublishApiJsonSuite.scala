@@ -17,33 +17,33 @@ package com.netflix.atlas.webapi
 
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.json.Json
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class PublishApiJsonSuite extends AnyFunSuite {
+class PublishApiJsonSuite extends FunSuite {
 
   test("encode and decode datapoint") {
     val original = Datapoint(Map("name" -> "foo", "id" -> "bar"), 42L, 1024.0)
     val decoded = PublishApi.decodeDatapoint(PublishApi.encodeDatapoint(original))
-    assert(original === decoded)
+    assertEquals(original, decoded)
   }
 
   test("encode and decode batch") {
     val commonTags = Map("id" -> "bar")
     val original = List(Datapoint(Map("name" -> "foo"), 42L, 1024.0))
     val decoded = PublishApi.decodeBatch(PublishApi.encodeBatch(commonTags, original))
-    assert(original.map(d => d.copy(tags = d.tags ++ commonTags)) === decoded)
+    assertEquals(original.map(d => d.copy(tags = d.tags ++ commonTags)), decoded)
   }
 
   test("decode batch empty") {
     val decoded = PublishApi.decodeBatch("{}")
-    assert(decoded.size === 0)
+    assertEquals(decoded.size, 0)
   }
 
   test("decode with legacy array value") {
     val expected = Datapoint(Map("name" -> "foo"), 42L, 1024.0)
     val decoded =
       PublishApi.decodeDatapoint("""{"tags":{"name":"foo"},"timestamp":42,"values":[1024.0]}""")
-    assert(expected === decoded)
+    assertEquals(expected, decoded)
   }
 
   test("decode legacy batch empty") {
@@ -53,7 +53,7 @@ class PublishApiJsonSuite extends AnyFunSuite {
         "metrics": []
       }
       """)
-    assert(decoded.size === 0)
+    assertEquals(decoded.size, 0)
   }
 
   test("decode legacy batch no tags") {
@@ -62,7 +62,7 @@ class PublishApiJsonSuite extends AnyFunSuite {
         "metrics": []
       }
       """)
-    assert(decoded.size === 0)
+    assertEquals(decoded.size, 0)
   }
 
   test("decode legacy batch with tags before") {
@@ -80,8 +80,8 @@ class PublishApiJsonSuite extends AnyFunSuite {
         ]
       }
       """)
-    assert(decoded.size === 1)
-    assert(decoded.head.tags === Map("name" -> "test", "foo" -> "bar"))
+    assertEquals(decoded.size, 1)
+    assertEquals(decoded.head.tags, Map("name" -> "test", "foo" -> "bar"))
   }
 
   test("decode legacy batch with tags after") {
@@ -99,8 +99,8 @@ class PublishApiJsonSuite extends AnyFunSuite {
         }
       }
       """)
-    assert(decoded.size === 1)
-    assert(decoded.head.tags === Map("name" -> "test", "foo" -> "bar"))
+    assertEquals(decoded.size, 1)
+    assertEquals(decoded.head.tags, Map("name" -> "test", "foo" -> "bar"))
   }
 
   test("decode legacy batch no tags metric") {
@@ -115,7 +115,7 @@ class PublishApiJsonSuite extends AnyFunSuite {
         ]
       }
       """)
-    assert(decoded.size === 1)
+    assertEquals(decoded.size, 1)
   }
 
   test("decode legacy batch with empty name") {
@@ -130,9 +130,9 @@ class PublishApiJsonSuite extends AnyFunSuite {
         ]
       }
       """)
-    assert(decoded.size === 1)
+    assertEquals(decoded.size, 1)
     decoded.foreach { d =>
-      assert(d.tags === Map("name" -> ""))
+      assertEquals(d.tags, Map("name" -> ""))
     }
   }
 
@@ -148,9 +148,9 @@ class PublishApiJsonSuite extends AnyFunSuite {
         ]
       }
       """)
-    assert(decoded.size === 1)
+    assertEquals(decoded.size, 1)
     decoded.foreach { d =>
-      assert(d.tags === Map.empty)
+      assertEquals(d.tags, Map.empty[String, String])
     }
   }
 
@@ -158,7 +158,7 @@ class PublishApiJsonSuite extends AnyFunSuite {
     val decoded = PublishApi.decodeList("""
       []
       """)
-    assert(decoded.size === 0)
+    assertEquals(decoded.size, 0)
   }
 
   test("decode list") {
@@ -171,7 +171,7 @@ class PublishApiJsonSuite extends AnyFunSuite {
         }
       ]
       """)
-    assert(decoded.size === 1)
+    assertEquals(decoded.size, 1)
   }
 
   test("decode list with unknown key") {
@@ -203,7 +203,7 @@ class PublishApiJsonSuite extends AnyFunSuite {
         }
       ]
       """)
-    assert(decoded.size === 4)
+    assertEquals(decoded.size, 4)
   }
 
   test("decode batch bad object") {
@@ -215,12 +215,12 @@ class PublishApiJsonSuite extends AnyFunSuite {
   test("decode list from encoded datapoint") {
     val vs = List(Datapoint(Map("a" -> "b"), 0L, 42.0))
     val decoded = PublishApi.decodeList(Json.encode(vs))
-    assert(decoded.size === 1)
+    assertEquals(decoded.size, 1)
   }
 
   test("decode list from PublishApi.encoded datapoint") {
     val vs = "[" + PublishApi.encodeDatapoint(Datapoint(Map("a" -> "b"), 0L, 42.0)) + "]"
     val decoded = PublishApi.decodeList(vs)
-    assert(decoded.size === 1)
+    assertEquals(decoded.size, 1)
   }
 }

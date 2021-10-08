@@ -15,85 +15,85 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ScalesSuite extends AnyFunSuite {
+class ScalesSuite extends FunSuite {
 
   test("linear") {
     val scale = Scales.linear(0.0, 100.0, 0, 100)
-    assert(scale(0.0) === 0)
-    assert(scale(10.0) === 10)
-    assert(scale(20.0) === 20)
-    assert(scale(30.0) === 30)
-    assert(scale(40.0) === 40)
-    assert(scale(50.0) === 50)
-    assert(scale(60.0) === 60)
-    assert(scale(70.0) === 70)
-    assert(scale(80.0) === 80)
-    assert(scale(90.0) === 90)
-    assert(scale(100.0) === 100)
+    assertEquals(scale(0.0), 0)
+    assertEquals(scale(10.0), 10)
+    assertEquals(scale(20.0), 20)
+    assertEquals(scale(30.0), 30)
+    assertEquals(scale(40.0), 40)
+    assertEquals(scale(50.0), 50)
+    assertEquals(scale(60.0), 60)
+    assertEquals(scale(70.0), 70)
+    assertEquals(scale(80.0), 80)
+    assertEquals(scale(90.0), 90)
+    assertEquals(scale(100.0), 100)
   }
 
   test("ylinear_l1_u2_h300") {
     val scale = Scales.yscale(Scales.linear)(1.0, 2.0, 0, 300)
-    assert(scale(1.0) === 300)
-    assert(scale(2.0) === 0)
+    assertEquals(scale(1.0), 300)
+    assertEquals(scale(2.0), 0)
   }
 
   test("logarithmic") {
     val scale = Scales.logarithmic(0.0, 100.0, 0, 100)
-    assert(scale(0.0) === 0)
-    assert(scale(10.0) === 51)
-    assert(scale(20.0) === 65)
-    assert(scale(30.0) === 74)
-    assert(scale(40.0) === 80)
-    assert(scale(50.0) === 85)
-    assert(scale(60.0) === 89)
-    assert(scale(70.0) === 92)
-    assert(scale(80.0) === 95)
-    assert(scale(90.0) === 97)
-    assert(scale(100.0) === 100)
+    assertEquals(scale(0.0), 0)
+    assertEquals(scale(10.0), 51)
+    assertEquals(scale(20.0), 65)
+    assertEquals(scale(30.0), 74)
+    assertEquals(scale(40.0), 80)
+    assertEquals(scale(50.0), 85)
+    assertEquals(scale(60.0), 89)
+    assertEquals(scale(70.0), 92)
+    assertEquals(scale(80.0), 95)
+    assertEquals(scale(90.0), 97)
+    assertEquals(scale(100.0), 100)
   }
 
   test("logarithmic negative") {
     val scale = Scales.logarithmic(-100.0, 0.0, 0, 100)
-    assert(scale(0.0) === 100)
-    assert(scale(-10.0) === 48)
-    assert(scale(-20.0) === 34)
-    assert(scale(-30.0) === 25)
-    assert(scale(-40.0) === 19)
-    assert(scale(-50.0) === 14)
-    assert(scale(-60.0) === 10)
-    assert(scale(-70.0) === 7)
-    assert(scale(-80.0) === 4)
-    assert(scale(-90.0) === 2)
-    assert(scale(-100.0) === 0)
+    assertEquals(scale(0.0), 100)
+    assertEquals(scale(-10.0), 48)
+    assertEquals(scale(-20.0), 34)
+    assertEquals(scale(-30.0), 25)
+    assertEquals(scale(-40.0), 19)
+    assertEquals(scale(-50.0), 14)
+    assertEquals(scale(-60.0), 10)
+    assertEquals(scale(-70.0), 7)
+    assertEquals(scale(-80.0), 4)
+    assertEquals(scale(-90.0), 2)
+    assertEquals(scale(-100.0), 0)
   }
 
   test("logarithmic positive and negative") {
     val scale = Scales.logarithmic(-100.0, 100.0, 0, 100)
-    assert(scale(100.0) === 100)
-    assert(scale(50.0) === 92)
-    assert(scale(10.0) === 75)
-    assert(scale(0.0) === 50)
-    assert(scale(-10.0) === 24)
-    assert(scale(-50.0) === 7)
-    assert(scale(-100.0) === 0)
+    assertEquals(scale(100.0), 100)
+    assertEquals(scale(50.0), 92)
+    assertEquals(scale(10.0), 75)
+    assertEquals(scale(0.0), 50)
+    assertEquals(scale(-10.0), 24)
+    assertEquals(scale(-50.0), 7)
+    assertEquals(scale(-100.0), 0)
   }
 
   test("logarithmic less than lower bound") {
     val scale = Scales.logarithmic(15.0, 100.0, 0, 100)
-    assert(scale(0.0) === -150)
-    assert(scale(10.0) === -20)
-    assert(scale(20.0) === 14)
-    assert(scale(30.0) === 35)
-    assert(scale(40.0) === 51)
-    assert(scale(50.0) === 62)
-    assert(scale(60.0) === 72)
-    assert(scale(70.0) === 80)
-    assert(scale(80.0) === 88)
-    assert(scale(90.0) === 94)
-    assert(scale(100.0) === 100)
+    assertEquals(scale(0.0), -150)
+    assertEquals(scale(10.0), -20)
+    assertEquals(scale(20.0), 14)
+    assertEquals(scale(30.0), 35)
+    assertEquals(scale(40.0), 51)
+    assertEquals(scale(50.0), 62)
+    assertEquals(scale(60.0), 72)
+    assertEquals(scale(70.0), 80)
+    assertEquals(scale(80.0), 88)
+    assertEquals(scale(90.0), 94)
+    assertEquals(scale(100.0), 100)
   }
 
 }

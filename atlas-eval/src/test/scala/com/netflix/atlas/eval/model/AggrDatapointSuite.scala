@@ -17,9 +17,9 @@ package com.netflix.atlas.eval.model
 
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class AggrDatapointSuite extends AnyFunSuite {
+class AggrDatapointSuite extends FunSuite {
 
   private val step = 60000
 
@@ -35,37 +35,37 @@ class AggrDatapointSuite extends AnyFunSuite {
   }
 
   test("aggregate empty") {
-    assert(AggrDatapoint.aggregate(Nil) === Nil)
+    assertEquals(AggrDatapoint.aggregate(Nil), Nil)
   }
 
   test("aggregate simple") {
     val expr = DataExpr.Sum(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
     val result = AggrDatapoint.aggregate(dataset)
-    assert(result.size === 1)
-    assert(result.head.timestamp === 0L)
-    assert(result.head.tags === Map("name" -> "cpu"))
-    assert(result.head.value === 45.0)
+    assertEquals(result.size, 1)
+    assertEquals(result.head.timestamp, 0L)
+    assertEquals(result.head.tags, Map("name" -> "cpu"))
+    assertEquals(result.head.value, 45.0)
   }
 
   test("aggregate dedups using source") {
     val expr = DataExpr.Sum(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
     val result = AggrDatapoint.aggregate(dataset ::: dataset)
-    assert(result.size === 1)
-    assert(result.head.timestamp === 0L)
-    assert(result.head.tags === Map("name" -> "cpu"))
-    assert(result.head.value === 45.0)
+    assertEquals(result.size, 1)
+    assertEquals(result.head.timestamp, 0L)
+    assertEquals(result.head.tags, Map("name" -> "cpu"))
+    assertEquals(result.head.value, 45.0)
   }
 
   test("aggregate group by") {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createDatapoints(expr, 0, 10)
     val result = AggrDatapoint.aggregate(dataset)
-    assert(result.size === 10)
+    assertEquals(result.size, 10)
     result.foreach { d =>
       val v = d.tags("node").substring(2).toDouble
-      assert(d.value === v)
+      assertEquals(d.value, v)
     }
   }
 
@@ -73,10 +73,10 @@ class AggrDatapointSuite extends AnyFunSuite {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createDatapoints(expr, 0, 10)
     val result = AggrDatapoint.aggregate(dataset ::: dataset)
-    assert(result.size === 10)
+    assertEquals(result.size, 10)
     result.foreach { d =>
       val v = d.tags("node").substring(2).toDouble
-      assert(d.value === v)
+      assertEquals(d.value, v)
     }
   }
 
@@ -84,10 +84,10 @@ class AggrDatapointSuite extends AnyFunSuite {
     val expr = DataExpr.All(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
     val result = AggrDatapoint.aggregate(dataset)
-    assert(result.size === 10)
+    assertEquals(result.size, 10)
     result.foreach { d =>
       val v = d.tags("node").substring(2).toDouble
-      assert(d.value === v)
+      assertEquals(d.value, v)
     }
   }
 }

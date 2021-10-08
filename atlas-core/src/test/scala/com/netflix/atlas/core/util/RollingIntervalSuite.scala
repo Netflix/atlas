@@ -19,38 +19,38 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class RollingIntervalSuite extends AnyFunSuite {
+class RollingIntervalSuite extends FunSuite {
 
   test("ceil should not round up if on exact boundary") {
     val expected = Instant.parse("2007-12-03T10:00:00.00Z")
     val t = Instant.parse("2007-12-03T10:00:00.00Z")
-    assert(RollingInterval.ceil(t, ChronoUnit.HOURS) === expected)
+    assertEquals(RollingInterval.ceil(t, ChronoUnit.HOURS), expected)
   }
 
   test("ceil should round up to next boundary MINUTES") {
     val expected = Instant.parse("2007-12-03T10:16:00.00Z")
     val t = Instant.parse("2007-12-03T10:15:30.00Z")
-    assert(RollingInterval.ceil(t, ChronoUnit.MINUTES) === expected)
+    assertEquals(RollingInterval.ceil(t, ChronoUnit.MINUTES), expected)
   }
 
   test("ceil should round up to next boundary HOURS") {
     val expected = Instant.parse("2007-12-03T11:00:00.00Z")
     val t = Instant.parse("2007-12-03T10:15:30.00Z")
-    assert(RollingInterval.ceil(t, ChronoUnit.HOURS) === expected)
+    assertEquals(RollingInterval.ceil(t, ChronoUnit.HOURS), expected)
   }
 
   test("ceil should round up to next boundary DAYS") {
     val expected = Instant.parse("2007-12-04T00:00:00.00Z")
     val t = Instant.parse("2007-12-03T10:15:30.00Z")
-    assert(RollingInterval.ceil(t, ChronoUnit.DAYS) === expected)
+    assertEquals(RollingInterval.ceil(t, ChronoUnit.DAYS), expected)
   }
 
   test("from string") {
     val expected = RollingInterval(Duration.ZERO, Duration.ofDays(4), ChronoUnit.HOURS)
     val actual = RollingInterval("0h,4d,HOURS")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("from string, missing unit") {

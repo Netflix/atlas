@@ -20,9 +20,9 @@ import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.Query
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class AggregateCollectorSuite extends AnyFunSuite {
+class AggregateCollectorSuite extends FunSuite {
 
   private def newBuffer(v: Double, start: Long = 0L) = {
     new TimeSeriesBuffer(Map.empty, new ArrayTimeSeq(DsType.Gauge, start, 60000, Array.fill(1)(v)))
@@ -34,44 +34,44 @@ class AggregateCollectorSuite extends AnyFunSuite {
 
   test("sum collector") {
     val c = new SumAggregateCollector
-    assert(c.result === Nil)
+    assertEquals(c.result, Nil)
     c.add(newBuffer(1.0))
     c.add(newBuffer(1.0))
     c.add(newBuffer(1.0))
     c.add(newBuffer(1.0))
-    assert(c.result === List(newBuffer(4.0)))
-    assert(c.stats === CollectorStats(4, 4, 1, 1))
+    assertEquals(c.result, List(newBuffer(4.0)))
+    assertEquals(c.stats, CollectorStats(4, 4, 1, 1))
   }
 
   test("min collector") {
     val c = new MinAggregateCollector
-    assert(c.result === Nil)
+    assertEquals(c.result, Nil)
     c.add(newBuffer(3.0))
     c.add(newBuffer(1.0))
     c.add(newBuffer(2.0))
     c.add(newBuffer(5.0))
-    assert(c.result === List(newBuffer(1.0)))
-    assert(c.stats === CollectorStats(4, 4, 1, 1))
+    assertEquals(c.result, List(newBuffer(1.0)))
+    assertEquals(c.stats, CollectorStats(4, 4, 1, 1))
   }
 
   test("max collector") {
     val c = new MaxAggregateCollector
-    assert(c.result === Nil)
+    assertEquals(c.result, Nil)
     c.add(newBuffer(3.0))
     c.add(newBuffer(1.0))
     c.add(newBuffer(2.0))
     c.add(newBuffer(5.0))
-    assert(c.result === List(newBuffer(5.0)))
-    assert(c.stats === CollectorStats(4, 4, 1, 1))
+    assertEquals(c.result, List(newBuffer(5.0)))
+    assertEquals(c.stats, CollectorStats(4, 4, 1, 1))
   }
 
   test("all collector") {
     val expected = List(newBuffer(3.0), newBuffer(1.0), newBuffer(2.0), newBuffer(5.0))
     val c = new AllAggregateCollector
-    assert(c.result === Nil)
+    assertEquals(c.result, Nil)
     expected.foreach(c.add)
-    assert(c.result === expected)
-    assert(c.stats === CollectorStats(4, 4, 4, 4))
+    assertEquals(c.result, expected)
+    assertEquals(c.stats, CollectorStats(4, 4, 4, 4))
   }
 
   test("by collector -- all") {
@@ -83,10 +83,10 @@ class AggregateCollectorSuite extends AnyFunSuite {
     )
     val by = DataExpr.GroupBy(DataExpr.Sum(Query.False), List("a"))
     val c = new GroupByAggregateCollector(by)
-    assert(c.result === Nil)
+    assertEquals(c.result, Nil)
     expected.foreach(c.add)
-    assert(c.result.toSet === expected.toSet)
-    assert(c.stats === CollectorStats(4, 4, 4, 4))
+    assertEquals(c.result.toSet, expected.toSet)
+    assertEquals(c.stats, CollectorStats(4, 4, 4, 4))
   }
 
   test("by collector -- grp") {
@@ -102,10 +102,10 @@ class AggregateCollectorSuite extends AnyFunSuite {
     )
     val by = DataExpr.GroupBy(DataExpr.Sum(Query.False), List("b"))
     val c = new GroupByAggregateCollector(by)
-    assert(c.result === Nil)
+    assertEquals(c.result, Nil)
     input.foreach(c.add)
-    assert(c.result.toSet === expected.toSet)
-    assert(c.stats === CollectorStats(4, 4, 2, 2))
+    assertEquals(c.result.toSet, expected.toSet)
+    assertEquals(c.stats, CollectorStats(4, 4, 2, 2))
   }
 
   test("by collector -- missing key") {
@@ -118,9 +118,9 @@ class AggregateCollectorSuite extends AnyFunSuite {
     val expected = List(newTaggedBuffer(Map("a" -> "4", "b" -> "2", "c" -> "7"), 5.0))
     val by = DataExpr.GroupBy(DataExpr.Sum(Query.False), List("b", "c"))
     val c = new GroupByAggregateCollector(by)
-    assert(c.result === Nil)
+    assertEquals(c.result, Nil)
     input.foreach(c.add)
-    assert(c.result.toSet === expected.toSet)
-    assert(c.stats === CollectorStats(1, 1, 1, 1))
+    assertEquals(c.result.toSet, expected.toSet)
+    assertEquals(c.stats, CollectorStats(1, 1, 1, 1))
   }
 }

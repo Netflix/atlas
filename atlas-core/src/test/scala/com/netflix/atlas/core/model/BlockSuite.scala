@@ -17,11 +17,11 @@ package com.netflix.atlas.core.model
 
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Random
 
-class BlockSuite extends AnyFunSuite {
+class BlockSuite extends FunSuite {
 
   def rleBlock(start: Long, data: List[(Int, Double)], size: Int = 60): Block = {
     val block = ArrayBlock(start, size)
@@ -93,10 +93,10 @@ class BlockSuite extends AnyFunSuite {
     val b = ArrayBlock(0L, 2)
     b.buffer(0) = 0.0
     b.buffer(1) = Double.NaN
-    assert(b.get(0, Block.Sum) === 0.0)
-    assert(b.get(0, Block.Count) === 1.0)
-    assert(b.get(0, Block.Min) === 0.0)
-    assert(b.get(0, Block.Max) === 0.0)
+    assertEquals(b.get(0, Block.Sum), 0.0)
+    assertEquals(b.get(0, Block.Count), 1.0)
+    assertEquals(b.get(0, Block.Min), 0.0)
+    assertEquals(b.get(0, Block.Max), 0.0)
     assert(JDouble.isNaN(b.get(1, Block.Sum)))
     assert(JDouble.isNaN(b.get(1, Block.Count)))
     assert(JDouble.isNaN(b.get(1, Block.Min)))
@@ -113,10 +113,10 @@ class BlockSuite extends AnyFunSuite {
     val data = List(5 -> 42.0, 37 -> Double.NaN, 59 -> 21.0)
     val b = rleBlock(0L, data)
     val nb = Block.compress(b.toArrayBlock).asInstanceOf[SparseBlock]
-    //assert(nb.byteCount === 84)
-    assert(nb.values.length === 2)
+    //assertEquals(nb.byteCount, 84)
+    assertEquals(nb.values.length, 2)
     (0 until 60).foreach { i =>
-      assert(java.lang.Double.compare(b.get(i), nb.get(i)) === 0)
+      assertEquals(java.lang.Double.compare(b.get(i), nb.get(i)), 0)
     }
   }
 
@@ -124,9 +124,9 @@ class BlockSuite extends AnyFunSuite {
     val data = List(5 -> 2.0, 37 -> Double.NaN, 59 -> 0.0)
     val b = rleBlock(0L, data)
     val nb = Block.compress(b.toArrayBlock).asInstanceOf[SparseBlock]
-    assert(nb.values.length === 1)
+    assertEquals(nb.values.length, 1)
     (0 until 60).foreach { i =>
-      assert(java.lang.Double.compare(b.get(i), nb.get(i)) === 0)
+      assertEquals(java.lang.Double.compare(b.get(i), nb.get(i)), 0)
     }
   }
 
@@ -134,9 +134,9 @@ class BlockSuite extends AnyFunSuite {
     val data = List(5 -> 2.0, 37 -> Double.NaN, 359 -> 0.0)
     val b = rleBlock(0L, data, 360)
     val nb = Block.compress(b.toArrayBlock).asInstanceOf[SparseBlock]
-    assert(nb.values.length === 1)
+    assertEquals(nb.values.length, 1)
     (0 until 360).foreach { i =>
-      assert(java.lang.Double.compare(b.get(i), nb.get(i)) === 0)
+      assertEquals(java.lang.Double.compare(b.get(i), nb.get(i)), 0)
     }
   }
 
@@ -145,7 +145,7 @@ class BlockSuite extends AnyFunSuite {
     val b = rleBlock(0L, data, 360)
     val nb = Block.compress(b.toArrayBlock)
     (0 until 360).foreach { i =>
-      assert(java.lang.Double.compare(b.get(i), nb.get(i)) === 0)
+      assertEquals(java.lang.Double.compare(b.get(i), nb.get(i)), 0)
     }
   }
 
@@ -158,7 +158,7 @@ class BlockSuite extends AnyFunSuite {
   test("lossyCompress, array") {
     val b = ArrayBlock(0L, 60)
     (0 until 60).foreach(i => b.buffer(i) = i)
-    assert(Block.lossyCompress(b) === FloatArrayBlock(b))
+    assertEquals(Block.lossyCompress(b), FloatArrayBlock(b))
   }
 
   test("compress, small block") {
@@ -176,7 +176,7 @@ class BlockSuite extends AnyFunSuite {
     val b3 = Block.merge(b1, b2)
     val expBlock = rleBlock(0L, expected).toArrayBlock
     (0 until 60).foreach { i =>
-      assert(java.lang.Double.compare(b3.get(i), expBlock.get(i)) === 0)
+      assertEquals(java.lang.Double.compare(b3.get(i), expBlock.get(i)), 0)
     }
     assert(b3.isInstanceOf[SparseBlock])
   }
@@ -202,7 +202,7 @@ class BlockSuite extends AnyFunSuite {
       sum = ConstantBlock(0L, 60, 51.0),
       count = ConstantBlock(0L, 60, 3.0)
     )
-    assert(b3 === expected)
+    assertEquals(b3, expected)
   }
 
   test("merge prefer rollup to scalar") {
@@ -213,8 +213,8 @@ class BlockSuite extends AnyFunSuite {
       count = ConstantBlock(0L, 60, 2.0)
     )
     val b2 = ConstantBlock(0L, 60, 2.0)
-    assert(b1 === Block.merge(b1, b2))
-    assert(b1 === Block.merge(b2, b1))
+    assertEquals(Block.merge(b1, b2), b1)
+    assertEquals(Block.merge(b2, b1), b1)
   }
 
   test("rollup") {
@@ -232,26 +232,26 @@ class BlockSuite extends AnyFunSuite {
 
     r.rollup(ConstantBlock(0L, n, 1.0))
     (0 until n).foreach { i =>
-      assert(r.get(i, Block.Sum) === 1.0)
-      assert(r.get(i, Block.Count) === 1.0)
-      assert(r.get(i, Block.Min) === 1.0)
-      assert(r.get(i, Block.Max) === 1.0)
+      assertEquals(r.get(i, Block.Sum), 1.0)
+      assertEquals(r.get(i, Block.Count), 1.0)
+      assertEquals(r.get(i, Block.Min), 1.0)
+      assertEquals(r.get(i, Block.Max), 1.0)
     }
 
     r.rollup(ConstantBlock(0L, n, 3.0))
     (0 until n).foreach { i =>
-      assert(r.get(i, Block.Sum) === 4.0)
-      assert(r.get(i, Block.Count) === 2.0)
-      assert(r.get(i, Block.Min) === 1.0)
-      assert(r.get(i, Block.Max) === 3.0)
+      assertEquals(r.get(i, Block.Sum), 4.0)
+      assertEquals(r.get(i, Block.Count), 2.0)
+      assertEquals(r.get(i, Block.Min), 1.0)
+      assertEquals(r.get(i, Block.Max), 3.0)
     }
 
     r.rollup(ConstantBlock(0L, n, 0.5))
     (0 until n).foreach { i =>
-      assert(r.get(i, Block.Sum) === 4.5)
-      assert(r.get(i, Block.Count) === 3.0)
-      assert(r.get(i, Block.Min) === 0.5)
-      assert(r.get(i, Block.Max) === 3.0)
+      assertEquals(r.get(i, Block.Sum), 4.5)
+      assertEquals(r.get(i, Block.Count), 3.0)
+      assertEquals(r.get(i, Block.Min), 0.5)
+      assertEquals(r.get(i, Block.Max), 3.0)
     }
   }
 
@@ -259,16 +259,16 @@ class BlockSuite extends AnyFunSuite {
     import CompressedArrayBlock._
 
     (0 until 32).foreach { i =>
-      assert(set2(0L, i, 0) === 0L)
-      assert(set2(0L, i, 1) === 1L << (2 * i))
-      assert(set2(0L, i, 2) === 2L << (2 * i))
-      assert(set2(0L, i, 3) === 3L << (2 * i))
+      assertEquals(set2(0L, i, 0), 0L)
+      assertEquals(set2(0L, i, 1), 1L << (2 * i))
+      assertEquals(set2(0L, i, 2), 2L << (2 * i))
+      assertEquals(set2(0L, i, 3), 3L << (2 * i))
 
       (0 until 32).foreach { j =>
-        assert(get2(set2(-1L, i, 0), j) === (if (i == j) 0L else 3L))
-        assert(get2(set2(-1L, i, 1), j) === (if (i == j) 1L else 3L))
-        assert(get2(set2(-1L, i, 2), j) === (if (i == j) 2L else 3L))
-        assert(get2(set2(-1L, i, 3), j) === 3L)
+        assertEquals(get2(set2(-1L, i, 0), j), (if (i == j) 0 else 3))
+        assertEquals(get2(set2(-1L, i, 1), j), (if (i == j) 1 else 3))
+        assertEquals(get2(set2(-1L, i, 2), j), (if (i == j) 2 else 3))
+        assertEquals(get2(set2(-1L, i, 3), j), 3)
       }
     }
   }
@@ -278,12 +278,12 @@ class BlockSuite extends AnyFunSuite {
 
     (0 until 16).foreach { i =>
       (0 until 16).foreach { v =>
-        assert(set4(0L, i, v) === v.toLong << (4 * i))
+        assertEquals(set4(0L, i, v), v.toLong << (4 * i))
       }
 
       (0 until 16).foreach { j =>
         (0 until 16).foreach { v =>
-          assert(get4(set4(-1L, i, v), j) === (if (i == j) v.toLong else 0xFL))
+          assertEquals(get4(set4(-1L, i, v), j), (if (i == j) v else 0xF))
         }
       }
     }
@@ -291,8 +291,8 @@ class BlockSuite extends AnyFunSuite {
 
   test("compressed array: ceiling division") {
     import CompressedArrayBlock._
-    assert(ceilingDivide(8, 2) === 4)
-    assert(ceilingDivide(9, 2) === 5)
+    assertEquals(ceilingDivide(8, 2), 4)
+    assertEquals(ceilingDivide(9, 2), 5)
   }
 
   test("compressed array: empty") {
@@ -306,7 +306,7 @@ class BlockSuite extends AnyFunSuite {
     val block = CompressedArrayBlock(0L, 60)
     (0 until 60).foreach { i =>
       block.update(i, 0.0)
-      assert(block.get(i) === 0.0)
+      assertEquals(block.get(i), 0.0)
     }
     assert(block.byteCount < 25)
   }
@@ -314,10 +314,10 @@ class BlockSuite extends AnyFunSuite {
   test("compressed array: single increment") {
     val block = CompressedArrayBlock(0L, 60)
     block.update(14, 1.0 / 60.0)
-    assert(block.get(14) === 1.0 / 60.0)
+    assertEquals(block.get(14), 1.0 / 60.0)
     (15 until 30).foreach { i =>
       block.update(i, 0.0)
-      assert(block.get(i) === 0.0)
+      assertEquals(block.get(i), 0.0)
     }
     assert(block.byteCount < 25)
   }
@@ -325,10 +325,10 @@ class BlockSuite extends AnyFunSuite {
   test("compressed array: double increment") {
     val block = CompressedArrayBlock(0L, 60)
     block.update(14, 2.0 / 60.0)
-    assert(block.get(14) === 2.0 / 60.0)
+    assertEquals(block.get(14), 2.0 / 60.0)
     (15 until 30).foreach { i =>
       block.update(i, 0.0)
-      assert(block.get(i) === 0.0)
+      assertEquals(block.get(i), 0.0)
     }
     assert(block.byteCount < 50)
   }
@@ -337,7 +337,7 @@ class BlockSuite extends AnyFunSuite {
     val block = CompressedArrayBlock(0L, 60)
     (0 until 60).foreach { i =>
       block.update(i, 2.0)
-      assert(block.get(i) === 2.0)
+      assertEquals(block.get(i), 2.0)
     }
     assert(block.byteCount < 50)
   }
@@ -346,7 +346,7 @@ class BlockSuite extends AnyFunSuite {
     val block = CompressedArrayBlock(0L, 60)
     (0 until 60).foreach { i =>
       block.update(i, i.toDouble)
-      assert(block.get(i) === i.toDouble)
+      assertEquals(block.get(i), i.toDouble)
     }
     assert(block.byteCount < 500)
   }
@@ -357,7 +357,7 @@ class BlockSuite extends AnyFunSuite {
       block.update(i, i.toDouble)
     }
     (0 until 60).foreach { i =>
-      assert(block.get(i) === i.toDouble)
+      assertEquals(block.get(i), i.toDouble)
     }
     assert(block.byteCount < 500)
   }
@@ -367,7 +367,7 @@ class BlockSuite extends AnyFunSuite {
       val block = CompressedArrayBlock(0L, i)
       (0 until i).foreach { j =>
         block.update(j, j.toDouble)
-        assert(block.get(j) === j.toDouble)
+        assertEquals(block.get(j), j.toDouble)
       }
     }
   }
@@ -375,7 +375,7 @@ class BlockSuite extends AnyFunSuite {
   test("compressed array: small") {
     val block = CompressedArrayBlock(0L, 2)
     block.update(0, 1.0)
-    assert(block.get(0) === 1.0)
+    assertEquals(block.get(0), 1.0)
     assert(block.get(1).isNaN)
   }
 

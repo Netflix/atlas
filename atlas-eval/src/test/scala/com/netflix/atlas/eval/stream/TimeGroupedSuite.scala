@@ -24,13 +24,13 @@ import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.AggrValuesInfo
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.spectator.api.DefaultRegistry
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
-class TimeGroupedSuite extends AnyFunSuite {
+class TimeGroupedSuite extends FunSuite {
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val materializer = Materializer(system)
@@ -84,12 +84,13 @@ class TimeGroupedSuite extends AnyFunSuite {
       )
 
     val groups = run(data)
-    assert(
-      groups === List(
-          timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-          timeGroup(20, List(datapoint(20, 1))),
-          timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
-        )
+    assertEquals(
+      groups,
+      List(
+        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+        timeGroup(20, List(datapoint(20, 1))),
+        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+      )
     )
   }
 
@@ -105,12 +106,13 @@ class TimeGroupedSuite extends AnyFunSuite {
       )
 
     val groups = run(data)
-    assert(
-      groups === List(
-          timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-          timeGroup(20, List(datapoint(20, 1))),
-          timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
-        )
+    assertEquals(
+      groups,
+      List(
+        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+        timeGroup(20, List(datapoint(20, 1))),
+        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+      )
     )
   }
 
@@ -137,16 +139,17 @@ class TimeGroupedSuite extends AnyFunSuite {
     val groups = run(data)
     val after = counts
 
-    assert(
-      groups === List(
-          timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-          timeGroup(20, List(datapoint(20, 1))),
-          timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
-        )
+    assertEquals(
+      groups,
+      List(
+        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+        timeGroup(20, List(datapoint(20, 1))),
+        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+      )
     )
 
-    assert(before._1 + 6 === after._1) // 6 buffered messages
-    assert(before._2 + 1 === after._2) // 1 dropped message
+    assertEquals(before._1 + 6, after._1) // 6 buffered messages
+    assertEquals(before._2 + 1, after._2) // 1 dropped message
   }
 
   test("future events dropped") {
@@ -165,16 +168,17 @@ class TimeGroupedSuite extends AnyFunSuite {
     val groups = run(data)
     val after = counts
 
-    assert(
-      groups === List(
-          timeGroup(10, List(datapoint(10, 2), datapoint(10, 3))),
-          timeGroup(20, List(datapoint(20, 1))),
-          timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
-        )
+    assertEquals(
+      groups,
+      List(
+        timeGroup(10, List(datapoint(10, 2), datapoint(10, 3))),
+        timeGroup(20, List(datapoint(20, 1))),
+        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+      )
     )
 
-    assert(before._1 + 5 === after._1) // 5 buffered messages
-    assert(before._2 + 2 === after._2) // 2 dropped message
+    assertEquals(before._1 + 5, after._1) // 5 buffered messages
+    assertEquals(before._2 + 2, after._2) // 2 dropped message
   }
 
   test("heartbeat will flush if no data for an interval") {
@@ -191,12 +195,13 @@ class TimeGroupedSuite extends AnyFunSuite {
       )
 
     val groups = run(data)
-    assert(
-      groups === List(
-          timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-          timeGroup(20, Nil),
-          timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
-        )
+    assertEquals(
+      groups,
+      List(
+        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+        timeGroup(20, Nil),
+        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+      )
     )
   }
 
@@ -209,7 +214,7 @@ class TimeGroupedSuite extends AnyFunSuite {
     val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n * (n - 1) / 2)
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))
+    assertEquals(groups, List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))
   }
 
   test("simple aggregate: min") {
@@ -221,7 +226,7 @@ class TimeGroupedSuite extends AnyFunSuite {
     val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, 0)
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))
+    assertEquals(groups, List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))
   }
 
   test("simple aggregate: max") {
@@ -233,7 +238,7 @@ class TimeGroupedSuite extends AnyFunSuite {
     val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n - 1)
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))
+    assertEquals(groups, List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))
   }
 
   test("simple aggregate: count") {
@@ -245,7 +250,7 @@ class TimeGroupedSuite extends AnyFunSuite {
     val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n * (n - 1) / 2)
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))
+    assertEquals(groups, List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))
   }
 
   test("group by aggregate: sum") {
@@ -266,7 +271,7 @@ class TimeGroupedSuite extends AnyFunSuite {
     )
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, step, expected)))
+    assertEquals(groups, List(TimeGroup(10, step, expected)))
   }
 
   test("group by aggregate: min") {
@@ -287,7 +292,7 @@ class TimeGroupedSuite extends AnyFunSuite {
     )
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, step, expected)))
+    assertEquals(groups, List(TimeGroup(10, step, expected)))
   }
 
   test("group by aggregate: max") {
@@ -308,7 +313,7 @@ class TimeGroupedSuite extends AnyFunSuite {
     )
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, step, expected)))
+    assertEquals(groups, List(TimeGroup(10, step, expected)))
   }
 
   test("group by aggregate: count") {
@@ -329,6 +334,6 @@ class TimeGroupedSuite extends AnyFunSuite {
     )
 
     val groups = run(data)
-    assert(groups === List(TimeGroup(10, step, expected)))
+    assertEquals(groups, List(TimeGroup(10, step, expected)))
   }
 }

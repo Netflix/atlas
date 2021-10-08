@@ -17,34 +17,34 @@ package com.netflix.atlas.core.util
 
 import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.info.GraphLayout
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Random
 
-class LongHashSetSuite extends AnyFunSuite {
+class LongHashSetSuite extends FunSuite {
 
   test("add") {
     val s = new LongHashSet(-1, 10)
     s.add(11)
-    assert(List(11) === s.toList)
-    assert(1 === s.size)
+    assertEquals(List(11L), s.toList)
+    assertEquals(1, s.size)
   }
 
   test("dedup") {
     val s = new LongHashSet(-1, 10)
     s.add(42)
-    assert(List(42) === s.toList)
-    assert(1 === s.size)
+    assertEquals(List(42L), s.toList)
+    assertEquals(1, s.size)
     s.add(42)
-    assert(List(42) === s.toList)
-    assert(1 === s.size)
+    assertEquals(List(42L), s.toList)
+    assertEquals(1, s.size)
   }
 
   test("resize") {
     val s = new LongHashSet(-1L, 10)
     (0L until 10000L).foreach(s.add)
-    assert((0L until 10000L).toSet === s.toList.toSet)
-    assert(s.size === 10000)
+    assertEquals((0L until 10000L).toSet, s.toList.toSet)
+    assertEquals(s.size, 10000)
   }
 
   test("random") {
@@ -55,7 +55,7 @@ class LongHashSetSuite extends AnyFunSuite {
       iset.add(v)
       jset.add(v)
     }
-    assert(jset.toSet === iset.toList.toSet)
+    assertEquals(jset.toSet, iset.toList.toSet)
   }
 
   private def arrayCompare(a1: Array[Long], a2: Array[Long]): Unit = {
@@ -63,7 +63,7 @@ class LongHashSetSuite extends AnyFunSuite {
     // Need to sort as traversal order could be different when generating the arrays
     java.util.Arrays.sort(a1)
     java.util.Arrays.sort(a2)
-    assert(a1 === a2)
+    assertEquals(a1.toSeq, a2.toSeq)
   }
 
   test("toArray") {
@@ -80,7 +80,7 @@ class LongHashSetSuite extends AnyFunSuite {
   test("memory per set") {
     // Sanity check to verify if some change introduces more overhead per set
     val bytes = ClassLayout.parseClass(classOf[LongHashSet]).instanceSize()
-    assert(bytes === 32)
+    assertEquals(bytes, 32L)
   }
 
   test("memory - 5 items") {
@@ -98,7 +98,7 @@ class LongHashSetSuite extends AnyFunSuite {
     //println(jgraph.toFootprint)
 
     // Only objects should be the array and the set itself
-    assert(igraph.totalCount() === 2)
+    assertEquals(igraph.totalCount(), 2L)
 
     // Sanity check size is < 100 bytes
     assert(igraph.totalSize() <= 250)
@@ -119,7 +119,7 @@ class LongHashSetSuite extends AnyFunSuite {
     //println(jgraph.toFootprint)
 
     // Only objects should be the array and the set itself
-    assert(igraph.totalCount() === 2)
+    assertEquals(igraph.totalCount(), 2L)
 
     // Sanity check size is < 220kb
     assert(igraph.totalSize() <= 220000)

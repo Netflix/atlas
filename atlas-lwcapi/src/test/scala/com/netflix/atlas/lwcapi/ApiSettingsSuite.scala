@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.lwcapi
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ApiSettingsSuite extends AnyFunSuite {
+class ApiSettingsSuite extends FunSuite {
   test("loads") {
     assert(ApiSettings.defaultStep > 0)
   }

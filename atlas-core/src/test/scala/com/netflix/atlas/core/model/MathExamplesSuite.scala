@@ -24,28 +24,29 @@ class MathExamplesSuite extends BaseExamplesSuite {
 
   test("toString with offsets") {
     val expr = eval("name,test,:eq,:sum,1h,:offset")
-    assert(expr.toString === "name,test,:eq,:sum,PT1H,:offset")
+    assertEquals(expr.toString, "name,test,:eq,:sum,PT1H,:offset")
   }
 
   test("rewrite toString with offsets") {
     val expr = eval("name,test,:eq,:dist-avg,1h,:offset")
-    assert(expr.toString === "name,test,:eq,:dist-avg,PT1H,:offset")
+    assertEquals(expr.toString, "name,test,:eq,:dist-avg,PT1H,:offset")
   }
 
   test("rewrite toString with offsets and cq") {
     val expr = eval("name,test,:eq,:avg,1h,:offset,app,foo,:eq,:cq")
-    assert(expr.toString === "name,test,:eq,app,foo,:eq,:and,:avg,PT1H,:offset")
+    assertEquals(expr.toString, "name,test,:eq,app,foo,:eq,:and,:avg,PT1H,:offset")
   }
 
   test("rewrite group by toString with offsets") {
     val expr = eval("name,test,:eq,:dist-avg,(,cluster,),:by,1h,:offset")
-    assert(expr.toString === "name,test,:eq,:dist-avg,PT1H,:offset,(,cluster,),:by")
+    assertEquals(expr.toString, "name,test,:eq,:dist-avg,PT1H,:offset,(,cluster,),:by")
   }
 
   test("rewrite group by toString with offsets and cq") {
     val expr = eval("name,test,:eq,:dist-avg,(,cluster,),:by,1h,:offset,app,foo,:eq,:cq")
-    assert(
-      expr.toString === "name,test,:eq,app,foo,:eq,:and,:dist-avg,PT1H,:offset,(,cluster,),:by"
+    assertEquals(
+      expr.toString,
+      "name,test,:eq,app,foo,:eq,:and,:dist-avg,PT1H,:offset,(,cluster,),:by"
     )
   }
 }

@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.util
 
 import com.netflix.spectator.api.ManualClock
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class InternMapSuite extends AnyFunSuite {
+class InternMapSuite extends FunSuite {
 
   test("open hash") {
     val i = new OpenHashInternMap[String](2)
@@ -26,8 +26,8 @@ class InternMapSuite extends AnyFunSuite {
     val s2 = new String("foo")
     assert(s1 ne s2)
     assert(i.intern(s1) eq i.intern(s2))
-    assert(i.size === 1)
-    assert(i.capacity === 3)
+    assertEquals(i.size, 1)
+    assertEquals(i.capacity, 3)
   }
 
   test("open hash resize") {
@@ -37,7 +37,7 @@ class InternMapSuite extends AnyFunSuite {
       val s2 = new String(s1)
       assert(s1 ne s2)
       assert(interner.intern(s1) eq interner.intern(s2))
-      assert(interner.size === i)
+      assertEquals(interner.size, i)
     }
   }
 
@@ -70,7 +70,7 @@ class InternMapSuite extends AnyFunSuite {
     val s2 = new String("foo")
     assert(s1 ne s2)
     assert(i.intern(s1) eq i.intern(s2))
-    assert(i.size === 1)
+    assertEquals(i.size, 1)
   }
 
   test("concurrent resize") {
@@ -80,7 +80,7 @@ class InternMapSuite extends AnyFunSuite {
       val s2 = new String(s1)
       assert(s1 ne s2)
       assert(interner.intern(s1) eq interner.intern(s2))
-      assert(interner.size === i)
+      assertEquals(interner.size, i)
     }
   }
 

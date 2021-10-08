@@ -17,9 +17,9 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.model.ModelExtractors.PresentationType
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class StyleVocabularySuite extends AnyFunSuite {
+class StyleVocabularySuite extends FunSuite {
 
   val interpreter = new Interpreter(StyleVocabulary.allWords)
 
@@ -33,30 +33,30 @@ class StyleVocabularySuite extends AnyFunSuite {
   test("no additional style") {
     val expr = eval(":true")
     val expected = StyleExpr(DataExpr.Sum(Query.True), Map.empty)
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("alpha") {
     val expr = eval(":true,40,:alpha")
     val expected = StyleExpr(DataExpr.Sum(Query.True), Map("alpha" -> "40"))
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("color") {
     val expr = eval(":true,f00,:color")
     val expected = StyleExpr(DataExpr.Sum(Query.True), Map("color" -> "f00"))
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("alpha > color") {
     val expr = eval(":true,40,:alpha,f00,:color")
     val expected = StyleExpr(DataExpr.Sum(Query.True), Map("color" -> "f00"))
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("alpha > color > alpha") {
     val expr = eval(":true,40,:alpha,f00,:color,60,:alpha")
     val expected = StyleExpr(DataExpr.Sum(Query.True), Map("color" -> "60ff0000"))
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 }

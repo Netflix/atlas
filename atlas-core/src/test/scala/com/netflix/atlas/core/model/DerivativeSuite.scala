@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.IdentityMap
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class DerivativeSuite extends AnyFunSuite {
+class DerivativeSuite extends FunSuite {
 
   private val start = 0L
   private val step = 60000L
@@ -36,17 +36,17 @@ class DerivativeSuite extends AnyFunSuite {
 
   test("basic") {
     val input = ts(7.0, 8.0, 9.0)
-    assert(eval(input, 3).data === ts(Double.NaN, 1.0, 1.0).data)
+    assertEquals(eval(input, 3).data, ts(Double.NaN, 1.0, 1.0).data)
   }
 
   test("basic with same value and decreasing") {
     val input = ts(7.0, 42.0, 42.0, 43.0, 2.0, 5.0)
-    assert(eval(input, 6).data === ts(Double.NaN, 35.0, 0.0, 1.0, -41.0, 3.0).data)
+    assertEquals(eval(input, 6).data, ts(Double.NaN, 35.0, 0.0, 1.0, -41.0, 3.0).data)
   }
 
   test("basic with NaN values") {
     val input = ts(7.0, 42.0, Double.NaN, 43.0, 2.0, 5.0)
-    assert(eval(input, 6).data === ts(Double.NaN, 35.0, Double.NaN, Double.NaN, -41.0, 3.0).data)
+    assertEquals(eval(input, 6).data, ts(Double.NaN, 35.0, Double.NaN, Double.NaN, -41.0, 3.0).data)
   }
 
   test("state across binary operations") {
@@ -68,7 +68,7 @@ class DerivativeSuite extends AnyFunSuite {
         val actual = result.data.head.data.bounded(s, e)
         val expectedValue = if (i == 0) Double.NaN else 2.0
         val expected = new ArrayTimeSeq(DsType.Gauge, s, step, Array(expectedValue))
-        assert(actual === expected)
+        assertEquals(actual, expected)
     }
   }
 

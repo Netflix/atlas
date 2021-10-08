@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class MapStepTimeSeqSuite extends AnyFunSuite {
+class MapStepTimeSeqSuite extends FunSuite {
 
   import ConsolidationFunction._
 
@@ -54,70 +54,70 @@ class MapStepTimeSeqSuite extends AnyFunSuite {
   }
 
   test("consolidate: sum") {
-    assert(map(DsType.Gauge, 1, 2, Sum, 1.0, 2.0) === gauge(start, 2, 3.0))
+    assertEquals(map(DsType.Gauge, 1, 2, Sum, 1.0, 2.0), gauge(start, 2, 3.0))
   }
 
   test("consolidate: sum with partial interval") {
-    assert(map(DsType.Gauge, 1, 2, Sum, 1.0, 2.0, 3.0) === gauge(start, 2, 3.0, 3.0))
+    assertEquals(map(DsType.Gauge, 1, 2, Sum, 1.0, 2.0, 3.0), gauge(start, 2, 3.0, 3.0))
   }
 
   test("consolidate: sum with start time not on step boundary") {
     val step = 7
     val cstart = start / step * step
     val expected = gauge(cstart, step, 6.0, 22.0)
-    assert(map(DsType.Gauge, 1, step, Sum, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0) === expected)
+    assertEquals(map(DsType.Gauge, 1, step, Sum, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), expected)
   }
 
   test("consolidate: sum with NaN") {
-    assert(map(DsType.Gauge, 1, 2, Sum, 1.0, Double.NaN) === gauge(start, 2, 1.0))
+    assertEquals(map(DsType.Gauge, 1, 2, Sum, 1.0, Double.NaN), gauge(start, 2, 1.0))
   }
 
   test("consolidate: sum with all NaN") {
-    assert(map(DsType.Gauge, 1, 2, Sum, Double.NaN, Double.NaN) === gauge(start, 2, Double.NaN))
+    assertEquals(map(DsType.Gauge, 1, 2, Sum, Double.NaN, Double.NaN), gauge(start, 2, Double.NaN))
   }
 
   test("consolidate: avg") {
-    assert(map(DsType.Gauge, 1, 2, Avg, 1.0, 2.0) === gauge(start, 2, 1.5))
+    assertEquals(map(DsType.Gauge, 1, 2, Avg, 1.0, 2.0), gauge(start, 2, 1.5))
   }
 
   test("consolidate: avg with NaN") {
-    assert(map(DsType.Gauge, 1, 2, Avg, 1.0, Double.NaN) === gauge(start, 2, 1.0))
+    assertEquals(map(DsType.Gauge, 1, 2, Avg, 1.0, Double.NaN), gauge(start, 2, 1.0))
   }
 
   test("consolidate: avg rate with NaN") {
-    assert(map(DsType.Rate, 1, 2, Avg, 1.0, Double.NaN) === rate(start, 2, 0.5))
+    assertEquals(map(DsType.Rate, 1, 2, Avg, 1.0, Double.NaN), rate(start, 2, 0.5))
   }
 
   test("consolidate: avg with all NaN") {
-    assert(map(DsType.Gauge, 1, 2, Avg, Double.NaN, Double.NaN) === gauge(start, 2, Double.NaN))
+    assertEquals(map(DsType.Gauge, 1, 2, Avg, Double.NaN, Double.NaN), gauge(start, 2, Double.NaN))
   }
 
   test("consolidate: min") {
-    assert(map(DsType.Gauge, 1, 2, Min, 1.0, 2.0) === gauge(start, 2, 1.0))
+    assertEquals(map(DsType.Gauge, 1, 2, Min, 1.0, 2.0), gauge(start, 2, 1.0))
   }
 
   test("consolidate: min with NaN") {
-    assert(map(DsType.Gauge, 1, 2, Min, 1.0, Double.NaN) === gauge(start, 2, 1.0))
+    assertEquals(map(DsType.Gauge, 1, 2, Min, 1.0, Double.NaN), gauge(start, 2, 1.0))
   }
 
   test("consolidate: min with all NaN") {
-    assert(map(DsType.Gauge, 1, 2, Min, Double.NaN, Double.NaN) === gauge(start, 2, Double.NaN))
+    assertEquals(map(DsType.Gauge, 1, 2, Min, Double.NaN, Double.NaN), gauge(start, 2, Double.NaN))
   }
 
   test("consolidate: max") {
-    assert(map(DsType.Gauge, 1, 2, Max, 1.0, 2.0) === gauge(start, 2, 2.0))
+    assertEquals(map(DsType.Gauge, 1, 2, Max, 1.0, 2.0), gauge(start, 2, 2.0))
   }
 
   test("consolidate: max with NaN") {
-    assert(map(DsType.Gauge, 1, 2, Max, 1.0, Double.NaN) === gauge(start, 2, 1.0))
+    assertEquals(map(DsType.Gauge, 1, 2, Max, 1.0, Double.NaN), gauge(start, 2, 1.0))
   }
 
   test("consolidate: max with all NaN") {
-    assert(map(DsType.Gauge, 1, 2, Max, Double.NaN, Double.NaN) === gauge(start, 2, Double.NaN))
+    assertEquals(map(DsType.Gauge, 1, 2, Max, Double.NaN, Double.NaN), gauge(start, 2, Double.NaN))
   }
 
   test("expand: sum") {
-    assert(map(DsType.Gauge, 2, 1, Sum, 1.0, 2.0) === gauge(start, 1, 1.0, 1.0, 2.0, 2.0))
+    assertEquals(map(DsType.Gauge, 2, 1, Sum, 1.0, 2.0), gauge(start, 1, 1.0, 1.0, 2.0, 2.0))
   }
 
   test("expand: bad step") {

@@ -24,13 +24,13 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.JsonNode
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 /**
   * Test case for the capabilities we need from a json parser. Mostly to document what we are using
   * and ease transition to alternative libraries if we want to switch.
   */
-class JsonSuite extends AnyFunSuite {
+class JsonSuite extends FunSuite {
 
   import java.lang.{Double => JDouble}
 
@@ -43,56 +43,56 @@ class JsonSuite extends AnyFunSuite {
 
   test("true") {
     val v = true
-    assert(encode(v) === "true")
-    assert(decode[Boolean](encode(v)) === v)
+    assertEquals(encode(v), "true")
+    assertEquals(decode[Boolean](encode(v)), v)
   }
 
   test("false") {
     val v = false
-    assert(encode(v) === "false")
-    assert(decode[Boolean](encode(v)) === v)
+    assertEquals(encode(v), "false")
+    assertEquals(decode[Boolean](encode(v)), v)
   }
 
   test("byte") {
     val v = 42.asInstanceOf[Byte]
-    assert(encode(v) === "42")
-    assert(decode[Byte](encode(v)) === v)
+    assertEquals(encode(v), "42")
+    assertEquals(decode[Byte](encode(v)), v)
   }
 
   test("short") {
     val v = 42.asInstanceOf[Short]
-    assert(encode(v) === "42")
-    assert(decode[Short](encode(v)) === v)
+    assertEquals(encode(v), "42")
+    assertEquals(decode[Short](encode(v)), v)
   }
 
   test("int") {
     val v = 42
-    assert(encode(v) === "42")
-    assert(decode[Int](encode(v)) === v)
+    assertEquals(encode(v), "42")
+    assertEquals(decode[Int](encode(v)), v)
   }
 
   test("long") {
     val v = 42L
-    assert(encode(v) === "42")
-    assert(decode[Long](encode(v)) === v)
+    assertEquals(encode(v), "42")
+    assertEquals(decode[Long](encode(v)), v)
   }
 
   test("float") {
     val v = 42.0f
-    assert(encode(v) === "42.0")
-    assert(decode[Float](encode(v)) === v)
+    assertEquals(encode(v), "42.0")
+    assertEquals(decode[Float](encode(v)), v)
   }
 
   test("double") {
     val v = 42.0
-    assert(encode(v) === "42.0")
-    assert(decode[Double](encode(v)) === v)
+    assertEquals(encode(v), "42.0")
+    assertEquals(decode[Double](encode(v)), v)
   }
 
   // This is non-standard, but we prefer to differentiate from infinity or other special values
   test("double NaN") {
     val v = Double.NaN
-    assert(encode(v) === "\"NaN\"")
+    assertEquals(encode(v), "\"NaN\"")
     assert(JDouble.isNaN(decode[Double](encode(v))))
   }
 
@@ -144,7 +144,7 @@ class JsonSuite extends AnyFunSuite {
     assert(java.util.Arrays.equals(decode[JsonSuiteListDouble](vs).vs.toArray, expected))
   }
 
-  ignore("object double list and string non numeric values") {
+  test("object double list and string non numeric values".ignore) {
     val expected = Array(
       1.0,
       JDouble.NaN,
@@ -158,114 +158,114 @@ class JsonSuite extends AnyFunSuite {
 
   test("BigInteger") {
     val v = new BigInteger("42")
-    assert(encode(v) === "42")
-    assert(decode[BigInteger](encode(v)) === v)
+    assertEquals(encode(v), "42")
+    assertEquals(decode[BigInteger](encode(v)), v)
   }
 
   test("String") {
     val v = "42"
-    assert(encode(v) === "\"42\"")
-    assert(decode[String](encode(v)) === v)
+    assertEquals(encode(v), "\"42\"")
+    assertEquals(decode[String](encode(v)), v)
   }
 
   test("Pattern") {
     val v = Pattern.compile("^42.*")
-    assert(encode(v) === "\"^42.*\"")
-    assert(decode[Pattern](encode(v)).toString === v.toString)
+    assertEquals(encode(v), "\"^42.*\"")
+    assertEquals(decode[Pattern](encode(v)).toString, v.toString)
   }
 
   test("enum") {
     val v = JsonToken.NOT_AVAILABLE
-    assert(encode(v) === "\"NOT_AVAILABLE\"")
-    assert(decode[JsonToken](encode(v)) === v)
+    assertEquals(encode(v), "\"NOT_AVAILABLE\"")
+    assertEquals(decode[JsonToken](encode(v)), v)
   }
 
   test("java8 Instant") {
     val v = java.time.Instant.parse("2012-01-13T04:37:52Z")
-    assert(encode(v) === "1326429472000")
-    assert(decode[java.time.Instant](encode(v)) === v)
+    assertEquals(encode(v), "1326429472000")
+    assertEquals(decode[java.time.Instant](encode(v)), v)
   }
 
   test("java8 Duration") {
     val v = java.time.Duration.ofSeconds(42)
-    assert(encode(v) === "42000")
-    assert(decode[java.time.Duration](encode(v)) === v)
+    assertEquals(encode(v), "42000")
+    assertEquals(decode[java.time.Duration](encode(v)), v)
   }
 
   test("java8 Period") {
     val v = java.time.Period.ofDays(42)
-    assert(encode(v) === "\"P42D\"")
-    assert(decode[java.time.Period](encode(v)) === v)
+    assertEquals(encode(v), "\"P42D\"")
+    assertEquals(decode[java.time.Period](encode(v)), v)
   }
 
   test("java8 Optional[String] -- None") {
     val v = Optional.empty[String]()
-    assert(encode(v) === "null")
-    assert(decode[Optional[String]](encode(v)) === v)
+    assertEquals(encode(v), "null")
+    assertEquals(decode[Optional[String]](encode(v)), v)
   }
 
   test("java8 Optional[String] -- Some") {
     val v = Optional.of("42")
-    assert(encode(v) === "\"42\"")
-    assert(decode[Optional[String]](encode(v)) === v)
+    assertEquals(encode(v), "\"42\"")
+    assertEquals(decode[Optional[String]](encode(v)), v)
   }
 
   test("scala Option[String] -- None") {
     val v = None
-    assert(encode(v) === "null")
-    assert(decode[Option[String]](encode(v)) === v)
+    assertEquals(encode(v), "null")
+    assertEquals(decode[Option[String]](encode(v)), v)
   }
 
   test("scala Option[String] -- Some") {
     val v = Some("42")
-    assert(encode(v) === "\"42\"")
-    assert(decode[Option[String]](encode(v)) === v)
+    assertEquals(encode(v), "\"42\"")
+    assertEquals(decode[Option[String]](encode(v)), v)
   }
 
   test("scala Option[Int] -- None") {
     val v = None
-    assert(encode(v) === "null")
-    assert(decode[Option[Int]](encode(v)) === v)
+    assertEquals(encode(v), "null")
+    assertEquals(decode[Option[Int]](encode(v)), v)
   }
 
   test("scala Option[Int] -- Some") {
     val v = Some(42)
-    assert(encode(v) === "42")
-    assert(decode[Option[Int]](encode(v)) === v)
+    assertEquals(encode(v), "42")
+    assertEquals(decode[Option[Int]](encode(v)), v)
   }
 
   // Ugly nested generics, just to see if it would work
   test("scala List[Map[String, List[Option[Int]]]]") {
     val v = List(Map("foo" -> List(Some(42), None, Some(43))))
-    assert(encode(v) === """[{"foo":[42,null,43]}]""")
-    assert(decode[List[Map[String, List[Option[Int]]]]](encode(v)) === v)
+    assertEquals(encode(v), """[{"foo":[42,null,43]}]""")
+    assertEquals(decode[List[Map[String, List[Option[Int]]]]](encode(v)), v)
   }
 
   test("scala List[Int]") {
     val v = List(42, 43, 44)
-    assert(encode(v) === "[42,43,44]")
-    assert(decode[List[Int]](encode(v)) === v)
+    assertEquals(encode(v), "[42,43,44]")
+    assertEquals(decode[List[Int]](encode(v)), v)
   }
 
   test("scala Set[Int]") {
     val v = Set(42, 43, 44)
-    assert(encode(v) === "[42,43,44]")
-    assert(decode[Set[Int]](encode(v)) === v)
+    assertEquals(encode(v), "[42,43,44]")
+    assertEquals(decode[Set[Int]](encode(v)), v)
   }
 
   test("scala Map[String, Int]") {
     val v = Map("foo" -> 42)
-    assert(encode(v) === "{\"foo\":42}")
-    assert(decode[Map[String, Int]](encode(v)) === v)
+    assertEquals(encode(v), "{\"foo\":42}")
+    assertEquals(decode[Map[String, Int]](encode(v)), v)
   }
 
   test("scala Tuple2[String, Int]") {
     val v = "foo" -> 42
-    assert(encode(v) === "[\"foo\",42]")
-    assert(decode[(String, Int)](encode(v)) === v)
+    assertEquals(encode(v), "[\"foo\",42]")
+    assertEquals(decode[(String, Int)](encode(v)), v)
   }
 
-  ignore("comments") {
+  test("comments".ignore) {
     // UI now handles most config, comments aren't needed and trying to stick with standard
     // json if possible
     // factory.enable(ALLOW_COMMENTS) to enable in jackson if we want to reenable
@@ -278,29 +278,29 @@ class JsonSuite extends AnyFunSuite {
         "bar": 43
       }
     """
-    assert(decode[Map[String, Int]](json) === v)
+    assertEquals(decode[Map[String, Int]](json), v)
   }
 
   // It seems like this manages to break the singleton property of the object...
-  ignore("case object") {
+  test("case object".ignore) {
     val v = JsonSuiteObject
-    assert(encode(v) === """{}""")
+    assertEquals(encode(v), """{}""")
     val result = decode[JsonSuiteObject.type](encode(v))
-    assert(result === v)
+    assertEquals(result, v)
   }
 
   test("case class simple") {
     val v = JsonSuiteSimple(42, "forty-two")
-    assert(encode(v) === """{"foo":42,"bar":"forty-two"}""")
-    assert(decode[JsonSuiteSimple](encode(v)) === v)
+    assertEquals(encode(v), """{"foo":42,"bar":"forty-two"}""")
+    assertEquals(decode[JsonSuiteSimple](encode(v)), v)
   }
 
   // We don't want null values for fields of case classes, if a field is optional it should be
   // specified as Option[T].
-  ignore("case class simple -- missing field") {
+  test("case class simple -- missing field".ignore) {
     val v = JsonSuiteSimple(42, "forty-two")
     val json = """{"foo":42}"""
-    assert(decode[JsonSuiteSimple](json) === v)
+    assertEquals(decode[JsonSuiteSimple](json), v)
   }
 
   // We want to ignore unknown fields so we have the option of introducing new fields without
@@ -309,13 +309,13 @@ class JsonSuite extends AnyFunSuite {
   test("case class simple -- unknown field") {
     val v = JsonSuiteSimple(42, "forty-two")
     val json = """{"foo":42,"bar":"forty-two","baz":"new field"}"""
-    assert(decode[JsonSuiteSimple](json) === v)
+    assertEquals(decode[JsonSuiteSimple](json), v)
   }
 
   test("case class nested -- Some") {
     val v = JsonSuiteNested(Map("a" -> JsonSuiteSimple(42, "forty-two")), Some("forty-two"))
-    assert(encode(v) === """{"simple":{"a":{"foo":42,"bar":"forty-two"}},"bar":"forty-two"}""")
-    assert(decode[JsonSuiteNested](encode(v)) === v)
+    assertEquals(encode(v), """{"simple":{"a":{"foo":42,"bar":"forty-two"}},"bar":"forty-two"}""")
+    assertEquals(decode[JsonSuiteNested](encode(v)), v)
   }
 
   test("case class nested -- None") {
@@ -323,20 +323,20 @@ class JsonSuite extends AnyFunSuite {
     // java 8 Optional. It needs the NON_ABSENT include setting rather
     // than NON_NULL
     val v = JsonSuiteNested(Map("a" -> JsonSuiteSimple(42, "forty-two")), None)
-    assert(encode(v) === """{"simple":{"a":{"foo":42,"bar":"forty-two"}}}""")
-    assert(decode[JsonSuiteNested](encode(v)) === v)
+    assertEquals(encode(v), """{"simple":{"a":{"foo":42,"bar":"forty-two"}}}""")
+    assertEquals(decode[JsonSuiteNested](encode(v)), v)
   }
 
   test("case class nested -- missing Option") {
     val v = JsonSuiteNested(Map("a" -> JsonSuiteSimple(42, "forty-two")), None)
     val json = """{"simple":{"a":{"foo":42,"bar":"forty-two"}}}"""
-    assert(decode[JsonSuiteNested](json) === v)
+    assertEquals(decode[JsonSuiteNested](json), v)
   }
 
-  ignore("case class Option[Long]") {
+  test("case class Option[Long]".ignore) {
     val v = JsonSuiteOptionLong(Some(42L))
-    assert(encode(v) === """{"foo":42}""")
-    assert(decode[JsonSuiteOptionLong](encode(v)) === v)
+    assertEquals(encode(v), """{"foo":42}""")
+    assertEquals(decode[JsonSuiteOptionLong](encode(v)), v)
     assert(decode[JsonSuiteOptionLong](encode(v)).foo == v.foo)
 
     // java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.Long
@@ -345,80 +345,74 @@ class JsonSuite extends AnyFunSuite {
 
   test("case class Array[Double]") {
     val v = JsonSuiteArrayDouble("foo", Array(1.0, 2.0, 3.0, 4.0))
-    assert(encode(v) === """{"name":"foo","values":[1.0,2.0,3.0,4.0]}""")
-    assert(decode[JsonSuiteArrayDouble](encode(v)).name === v.name)
+    assertEquals(encode(v), """{"name":"foo","values":[1.0,2.0,3.0,4.0]}""")
+    assertEquals(decode[JsonSuiteArrayDouble](encode(v)).name, v.name)
     assert(util.Arrays.equals(decode[JsonSuiteArrayDouble](encode(v)).values, v.values))
-  }
-
-  ignore("trait") {
-    val v = List(JsonSuiteImpl1(42), JsonSuiteImpl2("42"))
-    val json = """{"simple":{"a":{"foo":42,"bar":"forty-two"}}}"""
-    assert(decode[JsonSuiteTrait](json) === v)
   }
 
   // Should get base64 encoded
   test("array Byte") {
     val v = Array[Byte](1, 2, 3, 4)
-    assert(encode(v) === "\"AQIDBA==\"")
+    assertEquals(encode(v), "\"AQIDBA==\"")
     assert(util.Arrays.equals(decode[Array[Byte]](encode(v)), v))
   }
 
   test("array Short") {
     val v = Array[Short](1, 2, 3, 4)
-    assert(encode(v) === """[1,2,3,4]""")
+    assertEquals(encode(v), """[1,2,3,4]""")
     assert(util.Arrays.equals(decode[Array[Short]](encode(v)), v))
   }
 
   test("array Int") {
     val v = Array[Int](1, 2, 3, 4)
-    assert(encode(v) === """[1,2,3,4]""")
+    assertEquals(encode(v), """[1,2,3,4]""")
     assert(util.Arrays.equals(decode[Array[Int]](encode(v)), v))
   }
 
   test("array Long") {
     val v = Array[Long](1L, 2L, 3L, 4L)
-    assert(encode(v) === """[1,2,3,4]""")
+    assertEquals(encode(v), """[1,2,3,4]""")
     assert(util.Arrays.equals(decode[Array[Long]](encode(v)), v))
   }
 
   test("array Float") {
     val v = Array[Float](1.0f, 2.0f, 3.0f, 4.0f)
-    assert(encode(v) === """[1.0,2.0,3.0,4.0]""")
+    assertEquals(encode(v), """[1.0,2.0,3.0,4.0]""")
     assert(util.Arrays.equals(decode[Array[Float]](encode(v)), v))
   }
 
   test("array Double") {
     val v = Array[Double](1.0, 2.0, 3.0, 4.0)
-    assert(encode(v) === """[1.0,2.0,3.0,4.0]""")
+    assertEquals(encode(v), """[1.0,2.0,3.0,4.0]""")
     assert(util.Arrays.equals(decode[Array[Double]](encode(v)), v))
   }
 
   test("array case class") {
     val v = Array[JsonSuiteSimple](JsonSuiteSimple(42, "a"), JsonSuiteSimple(43, "b"))
-    assert(encode(v) === """[{"foo":42,"bar":"a"},{"foo":43,"bar":"b"}]""")
-    assert(decode[Array[JsonSuiteSimple]](encode(v)).toList === v.toList)
+    assertEquals(encode(v), """[{"foo":42,"bar":"a"},{"foo":43,"bar":"b"}]""")
+    assertEquals(decode[Array[JsonSuiteSimple]](encode(v)).toList, v.toList)
   }
 
   // CLDMTA-2174
   test("case class defined in object") {
     import com.netflix.atlas.json.JsonSuiteObjectWithClass._
     val v = ClassInObject("a", 42)
-    assert(encode(v) === """{"s":"a","v":42}""")
-    assert(decode[ClassInObject](encode(v)) === v)
+    assertEquals(encode(v), """{"s":"a","v":42}""")
+    assertEquals(decode[ClassInObject](encode(v)), v)
   }
 
   // CLDMTA-2174
   test("list of case class defined in object") {
     import com.netflix.atlas.json.JsonSuiteObjectWithClass._
     val v = List(ClassInObject("a", 42))
-    assert(encode(v) === """[{"s":"a","v":42}]""")
-    assert(decode[List[ClassInObject]](encode(v)) === v)
+    assertEquals(encode(v), """[{"s":"a","v":42}]""")
+    assertEquals(decode[List[ClassInObject]](encode(v)), v)
   }
 
   test("smile encode/decode") {
     val v = List(1, 2, 3)
     val b = Json.smileEncode[List[Int]](v)
-    assert(Json.smileDecode[List[Int]](b) === v)
+    assertEquals(Json.smileDecode[List[Int]](b), v)
   }
 
   // See ObjWithLambda comments for details
@@ -426,30 +420,30 @@ class JsonSuite extends AnyFunSuite {
     val obj = new ObjWithLambda
     obj.setFoo("abc")
     val json = Json.encode(obj)
-    assert(json === """{"foo":"abc"}""")
+    assertEquals(json, """{"foo":"abc"}""")
   }
 
   test("object with defaults") {
     val obj = Json.decode[JsonSuiteObjectWithDefaults]("{}")
     val json = Json.encode(obj)
-    assert(json === """{"foo":42,"bar":"abc","values":[]}""")
+    assertEquals(json, """{"foo":42,"bar":"abc","values":[]}""")
   }
 
   test("object with missing key") {
     val obj = Json.decode[JsonSuiteSimple]("{}")
     val json = Json.encode(obj)
-    assert(json === """{"foo":0}""")
+    assertEquals(json, """{"foo":0}""")
   }
 
   test("dots in field name") {
     val obj = Json.decode[JsonKeyWithDot]("""{"a.b": "bar"}""")
-    assert(obj === JsonKeyWithDot("bar"))
+    assertEquals(obj, JsonKeyWithDot("bar"))
   }
 
   test("object with empty array renders empty array") {
     val obj = Json.decode[JsonSuiteArrayString]("""{"name":"name", "values":[]}""")
     val json = Json.encode(obj)
-    assert(json === """{"name":"name","values":[]}""")
+    assertEquals(json, """{"name":"name","values":[]}""")
   }
 
   test("decode from JsonData") {
@@ -462,12 +456,12 @@ class JsonSuite extends AnyFunSuite {
     }
     val list = parse("""[{"foo":42,"bar":"abc"}]""")
     val obj = parse("""{"foo":42,"bar":"abc"}""")
-    assert(list === obj)
+    assertEquals(list, obj)
   }
 
   test("JsonSupport NaN encoding") {
     val obj = JsonObjectWithSupport(Double.NaN)
-    assert(obj.toJson === """{"v":"NaN"}""")
+    assertEquals(obj.toJson, """{"v":"NaN"}""")
   }
 }
 
