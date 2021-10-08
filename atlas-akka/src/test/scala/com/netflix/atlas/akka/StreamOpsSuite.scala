@@ -29,7 +29,7 @@ import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Utils
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -37,7 +37,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Success
 
-class StreamOpsSuite extends AnyFunSuite {
+class StreamOpsSuite extends FunSuite {
 
   import OpportunisticEC._
 
@@ -53,7 +53,7 @@ class StreamOpsSuite extends AnyFunSuite {
       .filter(m => m.id().name().equals("akka.stream.offeredToQueue"))
       .foreach { m =>
         val result = Utils.getTagValue(m.id(), "result")
-        assert(m.value() === expected.getOrElse(result, 0.0), result)
+        assertEquals(m.value(), expected.getOrElse(result, 0.0), result)
       }
   }
 
@@ -172,7 +172,7 @@ class StreamOpsSuite extends AnyFunSuite {
       .foreach { m =>
         val value = Utils.getTagValue(m.id(), "statistic")
         val stat = if (value == null) "count" else value
-        assert(m.value() === expected.getOrElse(stat, 0.0), stat)
+        assertEquals(m.value(), expected.getOrElse(stat, 0.0), stat)
       }
   }
 
@@ -250,7 +250,7 @@ class StreamOpsSuite extends AnyFunSuite {
     Await.ready(future, Duration.Inf)
 
     val c = registry.counter("akka.stream.exceptions", "error", "ArithmeticException")
-    assert(c.count() === 1)
+    assertEquals(c.count(), 1L)
   }
 
   test("unique") {
@@ -259,7 +259,7 @@ class StreamOpsSuite extends AnyFunSuite {
       .runWith(Sink.seq[Int])
     val vs = Await.result(future, Duration.Inf)
     // Only consecutive repeated values are filtered out, so the final 1 should get repeated
-    assert(vs === List(1, 2, 3, 4, 5, 6, 7, 1))
+    assertEquals(vs, List(1, 2, 3, 4, 5, 6, 7, 1))
   }
 
   test("unique timeout") {
@@ -277,6 +277,6 @@ class StreamOpsSuite extends AnyFunSuite {
       .via(StreamOps.unique(1, clock))
       .runWith(Sink.seq[Int])
     val vs = Await.result(future, Duration.Inf)
-    assert(vs === List(1, 1, 2, 2))
+    assertEquals(vs, List(1, 1, 2, 2))
   }
 }

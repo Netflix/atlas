@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.norm
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class RollingValueFunctionSuite extends AnyFunSuite {
+class RollingValueFunctionSuite extends FunSuite {
 
   private def newFunction(step: Long) = {
     val listVF = new ListValueFunction
@@ -33,27 +33,27 @@ class RollingValueFunctionSuite extends AnyFunSuite {
       assert(vs == List(i -> i.toDouble))
     }
     f.close()
-    assert(f.result() === Nil)
+    assertEquals(f.result(), Nil)
   }
 
   test("values received out of order") {
     val f = newFunction(1L)
-    assert(f.update(1, 1.0) === List(1 -> 1.0))
-    assert(f.update(2, 2.0) === List(2 -> 2.0))
-    assert(f.update(1, 0.5) === List(1 -> 0.5))
-    assert(f.update(3, 3.0) === List(3 -> 3.0))
-    assert(f.update(1, 0.0) === Nil) // too old
+    assertEquals(f.update(1, 1.0), List(1L -> 1.0))
+    assertEquals(f.update(2, 2.0), List(2L -> 2.0))
+    assertEquals(f.update(1, 0.5), List(1L -> 0.5))
+    assertEquals(f.update(3, 3.0), List(3L -> 3.0))
+    assertEquals(f.update(1, 0.0), Nil) // too old
     f.close()
-    assert(f.result() === Nil)
+    assertEquals(f.result(), Nil)
   }
 
   test("values with gaps") {
     val f = newFunction(1L)
-    assert(f.update(1, 1.0) === List(1 -> 1.0))
-    assert(f.update(5, 5.0) === List(5 -> 5.0))
-    assert(f.update(6, 6.0) === List(6 -> 6.0))
-    assert(f.update(9, 9.0) === List(9 -> 9.0))
+    assertEquals(f.update(1, 1.0), List(1L -> 1.0))
+    assertEquals(f.update(5, 5.0), List(5L -> 5.0))
+    assertEquals(f.update(6, 6.0), List(6L -> 6.0))
+    assertEquals(f.update(9, 9.0), List(9L -> 9.0))
     f.close()
-    assert(f.result() === Nil)
+    assertEquals(f.result(), Nil)
   }
 }

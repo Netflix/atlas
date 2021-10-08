@@ -21,30 +21,30 @@ class OnlineRollingMinSuite extends BaseOnlineAlgorithmSuite {
 
   test("n = 1") {
     val algo = OnlineRollingMin(1)
-    assert(algo.next(0.0) === 0.0)
-    assert(algo.next(1.0) === 1.0)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0), 1.0)
   }
 
   test("n = 2") {
     val algo = OnlineRollingMin(2)
-    assert(algo.next(0.0) === 0.0)
-    assert(algo.next(1.0) === 0.0)
-    assert(algo.next(2.0) === 1.0)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0), 0.0)
+    assertEquals(algo.next(2.0), 1.0)
   }
 
   test("n = 2, decreasing") {
     val algo = OnlineRollingMin(2)
-    assert(algo.next(2.0) === 2.0)
-    assert(algo.next(1.0) === 1.0)
-    assert(algo.next(0.0) === 0.0)
+    assertEquals(algo.next(2.0), 2.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assertEquals(algo.next(0.0), 0.0)
   }
 
   test("n = 2, NaNs") {
     val algo = OnlineRollingMin(2)
-    assert(algo.next(0.0) === 0.0)
-    assert(algo.next(1.0) === 0.0)
-    assert(algo.next(2.0) === 1.0)
-    assert(algo.next(Double.NaN) === 2.0)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0), 0.0)
+    assertEquals(algo.next(2.0), 1.0)
+    assertEquals(algo.next(Double.NaN), 2.0)
     assert(!algo.isEmpty)
     assert(algo.next(Double.NaN).isNaN)
     assert(algo.isEmpty)
@@ -52,8 +52,8 @@ class OnlineRollingMinSuite extends BaseOnlineAlgorithmSuite {
 
   test("n = 2, reset") {
     val algo = OnlineRollingMin(2)
-    assert(algo.next(0.0) === 0.0)
+    assertEquals(algo.next(0.0), 0.0)
     algo.reset()
-    assert(algo.next(1.0) === 1.0)
+    assertEquals(algo.next(1.0), 1.0)
   }
 }

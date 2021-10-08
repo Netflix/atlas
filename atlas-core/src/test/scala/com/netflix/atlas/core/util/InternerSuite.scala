@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class InternerSuite extends AnyFunSuite {
+class InternerSuite extends FunSuite {
 
   test("noop") {
     val i = new NoopInterner[String]

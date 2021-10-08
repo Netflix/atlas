@@ -16,9 +16,9 @@
 package com.netflix.atlas.lwcapi
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class SubscriptionManagerSuite extends AnyFunSuite {
+class SubscriptionManagerSuite extends FunSuite {
 
   private val config = ConfigFactory.load()
 
@@ -38,25 +38,25 @@ class SubscriptionManagerSuite extends AnyFunSuite {
     sm.register(sse1, 1)
 
     sm.subscribe(sse1, exp1)
-    assert(sm.handlersForSubscription(exp1.metadata.id) === List(1))
+    assertEquals(sm.handlersForSubscription(exp1.metadata.id), List(Integer.valueOf(1)))
 
     sm.subscribe(sse1, exp2)
-    assert(sm.handlersForSubscription(exp2.metadata.id) === List(1))
+    assertEquals(sm.handlersForSubscription(exp2.metadata.id), List(Integer.valueOf(1)))
 
     sm.unsubscribe(sse1, exp1.metadata.id)
-    assert(sm.handlersForSubscription(exp1.metadata.id) === List.empty)
+    assertEquals(sm.handlersForSubscription(exp1.metadata.id), List.empty)
 
-    assert(sm.unregister(sse1) === Some(1))
-    assert(sm.handlersForSubscription(exp1.metadata.id) === List.empty)
+    assertEquals(sm.unregister(sse1), Some(Integer.valueOf(1)))
+    assertEquals(sm.handlersForSubscription(exp1.metadata.id), List.empty)
 
-    assert(sm.unregister(sse1) === None)
+    assertEquals(sm.unregister(sse1), None)
   }
 
   test("multiple registrations") {
     val sm = new SubscriptionManager[Integer]()
     assert(sm.register("a", 1))
     assert(!sm.register("a", 1))
-    assert(sm.unregister("a") === Some(1))
+    assertEquals(sm.unregister("a"), Some(Integer.valueOf(1)))
     assert(sm.register("a", 1))
   }
 
@@ -66,10 +66,10 @@ class SubscriptionManagerSuite extends AnyFunSuite {
 
     val exp1 = sub("name,exp1,:eq")
     sm.subscribe("a", exp1)
-    assert(sm.subscriptions === List(exp1))
+    assertEquals(sm.subscriptions, List(exp1))
 
     assert(!sm.register("a", 1))
-    assert(sm.subscriptions === List(exp1))
+    assertEquals(sm.subscriptions, List(exp1))
   }
 
   test("multiple subscriptions for stream") {
@@ -79,7 +79,7 @@ class SubscriptionManagerSuite extends AnyFunSuite {
     val subs = List(sub("name,exp1,:eq"), sub("name,exp2,:eq"))
     sm.subscribe("a", subs)
 
-    assert(sm.subscriptions.toSet === subs.toSet)
+    assertEquals(sm.subscriptions.toSet, subs.toSet)
   }
 
   test("duplicate subscriptions") {
@@ -90,7 +90,7 @@ class SubscriptionManagerSuite extends AnyFunSuite {
     sm.subscribe("a", s)
     sm.subscribe("a", s)
 
-    assert(sm.subscriptions === List(s))
+    assertEquals(sm.subscriptions, List(s))
   }
 
   test("same subscription for two streams") {
@@ -102,10 +102,13 @@ class SubscriptionManagerSuite extends AnyFunSuite {
     sm.subscribe("a", s)
     sm.subscribe("b", s)
 
-    assert(sm.subscriptions === List(s))
-    assert(sm.subscriptionsForStream("a") === List(s))
-    assert(sm.subscriptionsForStream("b") === List(s))
-    assert(sm.handlersForSubscription(s.metadata.id).sorted === List(1, 2))
+    assertEquals(sm.subscriptions, List(s))
+    assertEquals(sm.subscriptionsForStream("a"), List(s))
+    assertEquals(sm.subscriptionsForStream("b"), List(s))
+    assertEquals(
+      sm.handlersForSubscription(s.metadata.id).sorted,
+      List(Integer.valueOf(1), Integer.valueOf(2))
+    )
   }
 
   private def checkSubsForCluster(expr: String, cluster: String): Unit = {
@@ -114,7 +117,7 @@ class SubscriptionManagerSuite extends AnyFunSuite {
     sm.register("a", 1)
     sm.subscribe("a", s)
     sm.regenerateQueryIndex()
-    assert(sm.subscriptionsForCluster(cluster) === List(s))
+    assertEquals(sm.subscriptionsForCluster(cluster), List(s))
   }
 
   test("subscriptions for cluster, just name") {
@@ -159,7 +162,7 @@ class SubscriptionManagerSuite extends AnyFunSuite {
 
   test("unregister for unknown stream does not cause any exceptions") {
     val sm = new SubscriptionManager[Integer]()
-    assert(sm.unregister("a") === None)
+    assertEquals(sm.unregister("a"), None)
   }
 
   test("unregister should remove handlers") {
@@ -168,10 +171,10 @@ class SubscriptionManagerSuite extends AnyFunSuite {
 
     val s = sub("name,exp1,:eq")
     sm.subscribe("a", s)
-    assert(sm.handlersForSubscription(s.metadata.id) === List(1))
+    assertEquals(sm.handlersForSubscription(s.metadata.id), List(Integer.valueOf(1)))
 
     sm.unregister("a")
-    assert(sm.handlersForSubscription(s.metadata.id) === Nil)
+    assertEquals(sm.handlersForSubscription(s.metadata.id), Nil)
   }
 
   test("subscribe returns added expressions") {
@@ -183,10 +186,10 @@ class SubscriptionManagerSuite extends AnyFunSuite {
     val s2 = sub("name,exp2,:eq")
     val s3 = sub("name,exp3,:eq")
 
-    assert(sm.subscribe("a", List(s1, s2)) === 1     -> List(s1, s2))
-    assert(sm.subscribe("a", List(s1, s2)) === 1     -> Nil)
-    assert(sm.subscribe("b", List(s1, s2)) === 2     -> List(s1, s2))
-    assert(sm.subscribe("b", List(s1, s2, s3)) === 2 -> List(s3))
-    assert(sm.subscribe("a", List(s1, s3)) === 1     -> List(s3))
+    assertEquals(sm.subscribe("a", List(s1, s2)), Integer.valueOf(1)     -> List(s1, s2))
+    assertEquals(sm.subscribe("a", List(s1, s2)), Integer.valueOf(1)     -> Nil)
+    assertEquals(sm.subscribe("b", List(s1, s2)), Integer.valueOf(2)     -> List(s1, s2))
+    assertEquals(sm.subscribe("b", List(s1, s2, s3)), Integer.valueOf(2) -> List(s3))
+    assertEquals(sm.subscribe("a", List(s1, s3)), Integer.valueOf(1)     -> List(s3))
   }
 }

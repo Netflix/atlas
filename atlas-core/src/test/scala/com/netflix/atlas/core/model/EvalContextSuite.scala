@@ -18,9 +18,9 @@ package com.netflix.atlas.core.model
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class EvalContextSuite extends AnyFunSuite {
+class EvalContextSuite extends FunSuite {
 
   // Was throwing:
   // requirement failed: start time must be less than end time (1495052210000 >= 1495051800000)
@@ -30,6 +30,6 @@ class EvalContextSuite extends AnyFunSuite {
     val step = 10000L
     val size = 60 * step
     val partitions = EvalContext(s, e, step).partition(size, ChronoUnit.MILLIS)
-    assert(partitions.size === 3)
+    assertEquals(partitions.size, 3)
   }
 }

@@ -16,33 +16,33 @@
 package com.netflix.atlas.core.index
 
 import java.net.URI
-
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StyleVocabulary
+import com.netflix.atlas.core.model.TimeSeriesExpr
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.Streams
 import org.openjdk.jol.info.GraphLayout
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Using
 
-class QueryIndexSuite extends AnyFunSuite {
+class QueryIndexSuite extends FunSuite {
 
   private def matches[T](index: QueryIndex[T], tags: Map[String, String]): Boolean = {
     val r1 = index.matches(tags)
     val r2 = index.matches(SmallHashMap(tags))
-    assert(r1 === r2)
+    assertEquals(r1, r2)
     r1
   }
 
   private def matchingEntries[T](index: QueryIndex[T], tags: Map[String, String]): List[T] = {
     val r1 = index.matchingEntries(tags).sortWith(_.toString < _.toString)
     val r2 = index.matchingEntries(SmallHashMap(tags)).sortWith(_.toString < _.toString)
-    assert(r1 === r2)
+    assertEquals(r1, r2)
     r1
   }
 
@@ -86,8 +86,8 @@ class QueryIndexSuite extends AnyFunSuite {
     assert(matchingEntries(index, Map("a" -> "1")).isEmpty)
 
     // matches
-    assert(matchingEntries(index, Map("a" -> "1", "b" -> "2")) === List(q))
-    assert(matchingEntries(index, Map("a" -> "1", "b" -> "2", "c" -> "3")) === List(q))
+    assertEquals(matchingEntries(index, Map("a" -> "1", "b" -> "2")), List(q))
+    assertEquals(matchingEntries(index, Map("a" -> "1", "b" -> "2", "c" -> "3")), List(q))
 
     // a doesn't match
     assert(matchingEntries(index, Map("a" -> "2", "b" -> "2", "c" -> "3")).isEmpty)
@@ -138,7 +138,7 @@ class QueryIndexSuite extends AnyFunSuite {
     assert(matchingEntries(index, Map("a" -> "1", "b" -> "2")).isEmpty)
 
     // matchingEntries
-    assert(matchingEntries(index, Map("a" -> "1", "b" -> "2", "c" -> "3")) === List(q))
+    assertEquals(matchingEntries(index, Map("a" -> "1", "b" -> "2", "c" -> "3")), List(q))
 
     // a doesn't match
     assert(matchingEntries(index, Map("a" -> "2", "b" -> "2", "c" -> "3")).isEmpty)
@@ -192,20 +192,24 @@ class QueryIndexSuite extends AnyFunSuite {
     assert(matchingEntries(index, Map("a" -> "1")).isEmpty)
 
     // matchingEntries
-    assert(
-      matchingEntries(index, Map("name" -> "cpuUsage", "nf.node" -> "unknown")) === List(cpuUsage)
+    assertEquals(
+      matchingEntries(index, Map("name" -> "cpuUsage", "nf.node" -> "unknown")),
+      List(cpuUsage)
     )
-    assert(
-      matchingEntries(index, Map("name" -> "cpuUsage", "nf.node" -> "i-00099")) === List(cpuUsage)
+    assertEquals(
+      matchingEntries(index, Map("name" -> "cpuUsage", "nf.node" -> "i-00099")),
+      List(cpuUsage)
     )
-    assert(
-      matchingEntries(index, Map("name" -> "diskUsage", "nf.node" -> "i-00099")) === List(
-          diskUsage,
-          diskUsagePerNode.last
-        )
+    assertEquals(
+      matchingEntries(index, Map("name" -> "diskUsage", "nf.node" -> "i-00099")),
+      List(
+        diskUsage,
+        diskUsagePerNode.last
+      )
     )
-    assert(
-      matchingEntries(index, Map("name" -> "diskUsage", "nf.node" -> "unknown")) === List(diskUsage)
+    assertEquals(
+      matchingEntries(index, Map("name" -> "diskUsage", "nf.node" -> "unknown")),
+      List(diskUsage)
     )
 
     // shouldn't match
@@ -213,8 +217,9 @@ class QueryIndexSuite extends AnyFunSuite {
   }
 
   test("from list of exprs") {
-    val expr1 = DataExpr.Sum(Query.Equal("name", "cpuUsage"))
-    val expr2 = MathExpr.Divide(expr1, DataExpr.Sum(Query.Equal("name", "numCores")))
+    val expr1: TimeSeriesExpr = DataExpr.Sum(Query.Equal("name", "cpuUsage"))
+    val expr2: TimeSeriesExpr =
+      MathExpr.Divide(expr1, DataExpr.Sum(Query.Equal("name", "numCores")))
     val entries = List(expr1, expr2).flatMap { expr =>
       expr.dataExprs.map { d =>
         QueryIndex.Entry(d.query, expr)
@@ -222,8 +227,8 @@ class QueryIndexSuite extends AnyFunSuite {
     }
     val index = QueryIndex.create(entries)
 
-    assert(Set(expr1, expr2) === matchingEntries(index, Map("name" -> "cpuUsage")).toSet)
-    assert(Set(expr2) === matchingEntries(index, Map("name"        -> "numCores")).toSet)
+    assertEquals(matchingEntries(index, Map("name" -> "cpuUsage")).toSet, Set(expr1, expr2))
+    assertEquals(matchingEntries(index, Map("name" -> "numCores")).toSet, Set(expr2))
   }
 
   test("queries for both nf.app and nf.cluster") {
@@ -234,7 +239,7 @@ class QueryIndexSuite extends AnyFunSuite {
 
     val tags = Map("nf.app" -> "testapp", "nf.cluster" -> "testapp-test")
     assert(matches(index, tags))
-    assert(matchingEntries(index, tags) === queries)
+    assertEquals(matchingEntries(index, tags), queries)
   }
 
   test("queries for both nf.app w/ nf.cluster miss and nf.cluster") {
@@ -246,7 +251,7 @@ class QueryIndexSuite extends AnyFunSuite {
 
     val tags = Map("nf.app" -> "testapp", "nf.cluster" -> "testapp-test")
     assert(matches(index, tags))
-    assert(matchingEntries(index, tags) === List(clusterQuery))
+    assertEquals(matchingEntries(index, tags), List(clusterQuery))
   }
 
   type QueryInterner = scala.collection.mutable.AnyRefMap[Query, Query]
@@ -297,7 +302,7 @@ class QueryIndexSuite extends AnyFunSuite {
     }
   }
 
-  ignore("memory") {
+  test("memory".ignore) {
     val interner = new QueryInterner
     val queries = Using.resource(Streams.resource("queries.txt")) { in =>
       Streams.lines(in).toList.flatMap { u =>

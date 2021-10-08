@@ -21,9 +21,9 @@ import com.netflix.atlas.chart.model.PlotBound.Explicit
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.TimeSeries
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class PlotDefSuite extends AnyFunSuite {
+class PlotDefSuite extends FunSuite {
 
   test("lower >= upper") {
     intercept[IllegalArgumentException] {
@@ -33,102 +33,102 @@ class PlotDefSuite extends AnyFunSuite {
 
   test("finalBounds explicit") {
     val plotDef = PlotDef(Nil, lower = Explicit(1.0), upper = Explicit(42.0))
-    assert(plotDef.finalBounds(false, 0.0, 43.0) === 1.0 -> 42.0)
+    assertEquals(plotDef.finalBounds(false, 0.0, 43.0), 1.0 -> 42.0)
   }
 
   test("finalBounds explicit lower, auto upper") {
     val plotDef = PlotDef(Nil, lower = Explicit(1.0), upper = AutoStyle)
-    assert(plotDef.finalBounds(false, 0.0, 43.0) === 1.0 -> 43.0)
+    assertEquals(plotDef.finalBounds(false, 0.0, 43.0), 1.0 -> 43.0)
   }
 
   test("finalBounds auto lower, explict upper") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = Explicit(42.0))
-    assert(plotDef.finalBounds(false, 0.0, 43.0) === 0.0 -> 42.0)
+    assertEquals(plotDef.finalBounds(false, 0.0, 43.0), 0.0 -> 42.0)
   }
 
   test("finalBounds auto") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoStyle)
-    assert(plotDef.finalBounds(false, 0.0, 43.0) === 0.0 -> 43.0)
+    assertEquals(plotDef.finalBounds(false, 0.0, 43.0), 0.0 -> 43.0)
   }
 
   test("finalBounds constant, auto") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoStyle)
-    assert(plotDef.finalBounds(false, 0.0, 0.0) === 0.0 -> 1.0)
+    assertEquals(plotDef.finalBounds(false, 0.0, 0.0), 0.0 -> 1.0)
   }
 
   test("finalBounds constant, explicit lower") {
     val plotDef = PlotDef(Nil, lower = Explicit(0.0), upper = AutoStyle)
-    assert(plotDef.finalBounds(false, 0.0, 0.0) === 0.0 -> 1.0)
+    assertEquals(plotDef.finalBounds(false, 0.0, 0.0), 0.0 -> 1.0)
   }
 
   test("finalBounds constant, explicit lower > auto upper") {
     val plotDef = PlotDef(Nil, lower = Explicit(1.0), upper = AutoStyle)
-    assert(plotDef.finalBounds(false, 0.0, 0.0) === 1.0 -> 2.0)
+    assertEquals(plotDef.finalBounds(false, 0.0, 0.0), 1.0 -> 2.0)
   }
 
   test("finalBounds constant, explicit upper") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = Explicit(42.0))
-    assert(plotDef.finalBounds(false, 0.0, 0.0) === 0.0 -> 42.0)
+    assertEquals(plotDef.finalBounds(false, 0.0, 0.0), 0.0 -> 42.0)
   }
 
   test("finalBounds constant, explicit upper == auto lower") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = Explicit(0.0))
-    assert(plotDef.finalBounds(false, 0.0, 0.0) === -1.0 -> 0.0)
+    assertEquals(plotDef.finalBounds(false, 0.0, 0.0), -1.0 -> 0.0)
   }
 
   test("finalBounds constant, explicit upper < auto lower") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = Explicit(-1.0))
-    assert(plotDef.finalBounds(false, 0.0, 0.0) === -2.0 -> -1.0)
+    assertEquals(plotDef.finalBounds(false, 0.0, 0.0), -2.0 -> -1.0)
   }
 
   test("finalBounds area, auto") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoStyle)
-    assert(plotDef.finalBounds(true, 2.0, 2.0) === 0.0 -> 2.0)
+    assertEquals(plotDef.finalBounds(true, 2.0, 2.0), 0.0 -> 2.0)
   }
 
   test("finalBounds area, auto spans 0") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoStyle)
-    assert(plotDef.finalBounds(true, -42.0, 42.0) === -42.0 -> 42.0)
+    assertEquals(plotDef.finalBounds(true, -42.0, 42.0), -42.0 -> 42.0)
   }
 
   test("finalBounds area, auto lower > 0") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoStyle)
-    assert(plotDef.finalBounds(true, 50.0, 55.0) === 0.0 -> 55.0)
+    assertEquals(plotDef.finalBounds(true, 50.0, 55.0), 0.0 -> 55.0)
   }
 
   test("finalBounds area, auto upper < 0") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoStyle)
-    assert(plotDef.finalBounds(true, -50.0, -45.0) === -50.0 -> 0.0)
+    assertEquals(plotDef.finalBounds(true, -50.0, -45.0), -50.0 -> 0.0)
   }
 
   test("finalBounds area, explicit lower > 0") {
     val plotDef = PlotDef(Nil, lower = Explicit(1.0), upper = AutoStyle)
-    assert(plotDef.finalBounds(true, 2.0, 2.0) === 1.0 -> 2.0)
+    assertEquals(plotDef.finalBounds(true, 2.0, 2.0), 1.0 -> 2.0)
   }
 
   test("finalBounds area, explicit upper < 0") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = Explicit(-42.0))
-    assert(plotDef.finalBounds(true, -50.0, -45.0) === -50.0 -> -42.0)
+    assertEquals(plotDef.finalBounds(true, -50.0, -45.0), -50.0 -> -42.0)
   }
 
   test("finalBounds area, auto-data") {
     val plotDef = PlotDef(Nil, lower = AutoData, upper = AutoData)
-    assert(plotDef.finalBounds(true, 2.0, 2.0) === 2.0 -> 3.0)
+    assertEquals(plotDef.finalBounds(true, 2.0, 2.0), 2.0 -> 3.0)
   }
 
   test("finalBounds area, auto-data spans 0") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoStyle)
-    assert(plotDef.finalBounds(true, -42.0, 42.0) === -42.0 -> 42.0)
+    assertEquals(plotDef.finalBounds(true, -42.0, 42.0), -42.0 -> 42.0)
   }
 
   test("finalBounds area, auto-data lower > 0") {
     val plotDef = PlotDef(Nil, lower = AutoData, upper = AutoStyle)
-    assert(plotDef.finalBounds(true, 50.0, 55.0) === 50.0 -> 55.0)
+    assertEquals(plotDef.finalBounds(true, 50.0, 55.0), 50.0 -> 55.0)
   }
 
   test("finalBounds area, auto-data upper < 0") {
     val plotDef = PlotDef(Nil, lower = AutoStyle, upper = AutoData)
-    assert(plotDef.finalBounds(true, -50.0, -45.0) === -50.0 -> -45.0)
+    assertEquals(plotDef.finalBounds(true, -50.0, -45.0), -50.0 -> -45.0)
   }
 
   test("bounds infinity") {
@@ -137,8 +137,8 @@ class PlotDefSuite extends AnyFunSuite {
     val plotDef = PlotDef(List(LineDef(ts)))
 
     val (min, max) = plotDef.bounds(0L, 1L)
-    assert(min === 0.0)
-    assert(max === 1.0)
+    assertEquals(min, 0.0)
+    assertEquals(max, 1.0)
   }
 
   test("bounds infinity, stack") {
@@ -147,7 +147,7 @@ class PlotDefSuite extends AnyFunSuite {
     val plotDef = PlotDef(List(LineDef(ts, lineStyle = LineStyle.STACK)))
 
     val (min, max) = plotDef.bounds(0L, 1L)
-    assert(min === 0.0)
-    assert(max === 1.0)
+    assertEquals(min, 0.0)
+    assertEquals(max, 1.0)
   }
 }

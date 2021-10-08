@@ -20,9 +20,9 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class IsoDateTimeParserSuite extends AnyFunSuite {
+class IsoDateTimeParserSuite extends FunSuite {
 
   private val utcZones = List("Z", "+00", "+0000", "+000000", "+00:00", "+00:00:00")
 
@@ -31,14 +31,14 @@ class IsoDateTimeParserSuite extends AnyFunSuite {
   test("date") {
     val t = "2020-07-28"
     val expected = ZonedDateTime.parse(s"${t}T00:00:00Z")
-    assert(expected === IsoDateTimeParser.parse(t, ZoneOffset.UTC))
+    assertEquals(expected, IsoDateTimeParser.parse(t, ZoneOffset.UTC))
   }
 
   utcZones.foreach { zone =>
     test(s"date $zone") {
       val t = s"2020-07-28"
       val expected = ZonedDateTime.parse(s"${t}T00:00:00Z")
-      assert(expected === IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
+      assertEquals(expected, IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
     }
   }
 
@@ -48,7 +48,7 @@ class IsoDateTimeParserSuite extends AnyFunSuite {
         val t = s"2020-07-28"
         val z = if (zone.startsWith("-")) "-07:00:00" else "+07:00:00"
         val expected = ZonedDateTime.parse(s"${t}T00:00:00$z")
-        assert(expected === IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
+        assertEquals(expected, IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
       }
     }
   }
@@ -56,14 +56,14 @@ class IsoDateTimeParserSuite extends AnyFunSuite {
   test("date time hh:mm") {
     val t = "2020-07-28T21:07"
     val expected = ZonedDateTime.parse(s"$t:00Z")
-    assert(expected === IsoDateTimeParser.parse(t, ZoneOffset.UTC))
+    assertEquals(expected, IsoDateTimeParser.parse(t, ZoneOffset.UTC))
   }
 
   utcZones.foreach { zone =>
     test(s"date time hh:mm $zone") {
       val t = s"2020-07-28T21:07"
       val expected = ZonedDateTime.parse(s"$t:00Z")
-      assert(expected === IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
+      assertEquals(expected, IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
     }
   }
 
@@ -73,7 +73,7 @@ class IsoDateTimeParserSuite extends AnyFunSuite {
         val t = s"2020-07-28T21:07"
         val z = if (zone.startsWith("-")) "-07:00:00" else "+07:00:00"
         val expected = ZonedDateTime.parse(s"$t:00$z")
-        assert(expected === IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
+        assertEquals(expected, IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
       }
     }
   }
@@ -81,14 +81,14 @@ class IsoDateTimeParserSuite extends AnyFunSuite {
   test("date time hh:mm:ss") {
     val t = "2020-07-28T21:07:56"
     val expected = ZonedDateTime.parse(s"${t}Z")
-    assert(expected === IsoDateTimeParser.parse(t, ZoneOffset.UTC))
+    assertEquals(expected, IsoDateTimeParser.parse(t, ZoneOffset.UTC))
   }
 
   utcZones.foreach { zone =>
     test(s"date time hh:mm:ss $zone") {
       val t = s"2020-07-28T21:07:56"
       val expected = ZonedDateTime.parse(s"${t}Z")
-      assert(expected === IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
+      assertEquals(expected, IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
     }
   }
 
@@ -98,7 +98,7 @@ class IsoDateTimeParserSuite extends AnyFunSuite {
         val t = s"2020-07-28T21:07:56"
         val z = if (zone.startsWith("-")) "-07:00:00" else "+07:00:00"
         val expected = ZonedDateTime.parse(s"$t$z")
-        assert(expected === IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
+        assertEquals(expected, IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
       }
     }
   }
@@ -106,14 +106,14 @@ class IsoDateTimeParserSuite extends AnyFunSuite {
   test("date time hh:mm:ss.mmm") {
     val t = "2020-07-28T21:07:56.195"
     val expected = ZonedDateTime.parse(s"${t}Z")
-    assert(expected === IsoDateTimeParser.parse(t, ZoneOffset.UTC))
+    assertEquals(expected, IsoDateTimeParser.parse(t, ZoneOffset.UTC))
   }
 
   utcZones.foreach { zone =>
     test(s"date time hh:mm:ss.mmm $zone") {
       val t = s"2020-07-28T21:07:56.195"
       val expected = ZonedDateTime.parse(s"${t}Z")
-      assert(expected === IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
+      assertEquals(expected, IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
     }
   }
 
@@ -123,7 +123,7 @@ class IsoDateTimeParserSuite extends AnyFunSuite {
         val t = s"2020-07-28T21:07:56.195"
         val z = if (zone.startsWith("-")) "-07:00:00" else "+07:00:00"
         val expected = ZonedDateTime.parse(s"$t$z")
-        assert(expected === IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
+        assertEquals(expected, IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
       }
     }
   }
@@ -132,7 +132,7 @@ class IsoDateTimeParserSuite extends AnyFunSuite {
     val t = "2020-07-28"
     val zone = "+12:34:56"
     val expected = ZonedDateTime.parse(s"${t}T00:00:00$zone")
-    assert(expected === IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
+    assertEquals(expected, IsoDateTimeParser.parse(s"$t$zone", ZoneOffset.UTC))
   }
 
   test("date default US/Pacific") {
@@ -140,6 +140,6 @@ class IsoDateTimeParserSuite extends AnyFunSuite {
     val zone = ZoneId.of("US/Pacific")
     val expected =
       ZonedDateTime.parse(s"${t}T00:00:00", DateTimeFormatter.ISO_DATE_TIME.withZone(zone))
-    assert(expected === IsoDateTimeParser.parse(t, zone))
+    assertEquals(expected, IsoDateTimeParser.parse(t, zone))
   }
 }

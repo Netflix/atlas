@@ -26,13 +26,13 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.akka.AccessLogger
 import com.netflix.atlas.json.Json
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Success
 
-class EurekaGroupsLookupSuite extends AnyFunSuite {
+class EurekaGroupsLookupSuite extends FunSuite {
 
   import EurekaSource._
   import Evaluator._
@@ -98,9 +98,9 @@ class EurekaGroupsLookupSuite extends AnyFunSuite {
       DataSources.empty()
     )
     val output = run(input)
-    assert(output.size === 1)
-    assert(output.head._1.getSources.size() === 0)
-    assert(output.head._2.groups.size === 0)
+    assertEquals(output.size, 1)
+    assertEquals(output.head._1.getSources.size(), 0)
+    assertEquals(output.head._2.groups.size, 0)
   }
 
   test("one data source") {
@@ -108,8 +108,8 @@ class EurekaGroupsLookupSuite extends AnyFunSuite {
       sources(ds("a", "http://atlas/api/v1/graph?q=name,jvm.gc.pause,:eq,:dist-avg"))
     )
     val output = run(input)
-    assert(output.head._2.groups.size === 1)
-    assert(output.head._2.groups.head === eurekaGroup)
+    assertEquals(output.head._2.groups.size, 1)
+    assertEquals(output.head._2.groups.head, eurekaGroup)
   }
 
   test("unknown data source") {
@@ -117,7 +117,7 @@ class EurekaGroupsLookupSuite extends AnyFunSuite {
       sources(ds("a", "http://unknown/api/v1/graph?q=name,jvm.gc.pause,:eq,:dist-avg"))
     )
     val output = run(input)
-    assert(output.head._2.groups.size === 0)
+    assertEquals(output.head._2.groups.size, 0)
     // TODO: check for diagnostic message
   }
 
@@ -126,9 +126,9 @@ class EurekaGroupsLookupSuite extends AnyFunSuite {
       sources(ds("a", "http://atlas/api/v1/graph?q=name,jvm.gc.pause,:eq,:dist-avg"))
     )
     val output = run(input, 5)
-    assert(output.size === 5)
+    assertEquals(output.size, 5)
     output.foreach {
-      case (_, g) => assert(g.groups.size === 1)
+      case (_, g) => assertEquals(g.groups.size, 1)
     }
   }
 }

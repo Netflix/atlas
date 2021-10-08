@@ -17,13 +17,13 @@ package com.netflix.atlas.chart
 
 import java.awt.Color
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ColorsSuite extends AnyFunSuite {
+class ColorsSuite extends FunSuite {
 
   test("load") {
     val expected = List(Color.RED, Color.GREEN)
     val actual = Colors.load("palettes/epic_palette.txt").take(2)
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 }

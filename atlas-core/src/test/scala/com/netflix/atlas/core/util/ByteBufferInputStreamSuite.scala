@@ -15,13 +15,13 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import scala.util.Using
 
-class ByteBufferInputStreamSuite extends AnyFunSuite {
+class ByteBufferInputStreamSuite extends FunSuite {
 
   private def wrap(str: String): ByteBuffer = {
     ByteBuffer.wrap(str.getBytes(StandardCharsets.UTF_8))
@@ -30,66 +30,66 @@ class ByteBufferInputStreamSuite extends AnyFunSuite {
   test("read()") {
     val buffer = wrap("abc")
     val in = new ByteBufferInputStream(buffer)
-    assert(in.read() === 'a')
-    assert(in.read() === 'b')
-    assert(in.read() === 'c')
-    assert(in.read() === -1)
+    assertEquals(in.read(), 'a'.toInt)
+    assertEquals(in.read(), 'b'.toInt)
+    assertEquals(in.read(), 'c'.toInt)
+    assertEquals(in.read(), -1)
   }
 
   test("read(buf)") {
     val buffer = wrap("abc")
     val in = new ByteBufferInputStream(buffer)
     val array = new Array[Byte](2)
-    assert(in.read(array) === 2)
-    assert(array === Array('a', 'b'))
-    assert(in.read(array) === 1)
-    assert(array === Array('c', 'b')) // b left over from previous
-    assert(in.read(array) === -1)
+    assertEquals(in.read(array), 2)
+    assertEquals(array.toSeq, Array[Byte]('a', 'b').toSeq)
+    assertEquals(in.read(array), 1)
+    assertEquals(array.toSeq, Array[Byte]('c', 'b').toSeq) // b left over from previous
+    assertEquals(in.read(array), -1)
   }
 
   test("read(buf, offset, length)") {
     val buffer = wrap("abc")
     val in = new ByteBufferInputStream(buffer)
     val array = new Array[Byte](5)
-    assert(in.read(array, 2, 3) === 3)
-    assert(array === Array('\u0000', '\u0000', 'a', 'b', 'c'))
-    assert(in.read(array) === -1)
+    assertEquals(in.read(array, 2, 3), 3)
+    assertEquals(array.toSeq, Array[Byte]('\u0000', '\u0000', 'a', 'b', 'c').toSeq)
+    assertEquals(in.read(array), -1)
   }
 
   test("available()") {
     val buffer = wrap("abc")
     val in = new ByteBufferInputStream(buffer)
-    assert(in.available() === 3)
-    assert(in.skip(2) === 2)
-    assert(in.available() === 1)
-    assert(in.read() === 'c')
-    assert(in.available() === 0)
+    assertEquals(in.available(), 3)
+    assertEquals(in.skip(2), 2L)
+    assertEquals(in.available(), 1)
+    assertEquals(in.read(), 'c'.toInt)
+    assertEquals(in.available(), 0)
   }
 
   test("skip()") {
     val buffer = wrap("abc")
     val in = new ByteBufferInputStream(buffer)
-    assert(in.skip(2) === 2)
-    assert(in.read() === 'c')
-    assert(in.read() === -1)
-    assert(in.skip(2) === 0)
+    assertEquals(in.skip(2), 2L)
+    assertEquals(in.read(), 'c'.toInt)
+    assertEquals(in.read(), -1)
+    assertEquals(in.skip(2), 0L)
   }
 
   test("mark() and reset()") {
     val buffer = wrap("abc")
     val in = new ByteBufferInputStream(buffer)
     assert(in.markSupported())
-    assert(in.read() === 'a')
+    assertEquals(in.read(), 'a'.toInt)
 
     in.mark(5)
-    assert(in.read() === 'b')
-    assert(in.read() === 'c')
+    assertEquals(in.read(), 'b'.toInt)
+    assertEquals(in.read(), 'c'.toInt)
 
     in.reset()
-    assert(in.read() === 'b')
+    assertEquals(in.read(), 'b'.toInt)
 
     in.reset()
-    assert(in.read() === 'b')
+    assertEquals(in.read(), 'b'.toInt)
   }
 
   test("close()") {
@@ -97,9 +97,9 @@ class ByteBufferInputStreamSuite extends AnyFunSuite {
     val in = new ByteBufferInputStream(buffer)
     (0 until 10).foreach { _ =>
       Using.resource(in) { r =>
-        assert(r.read() === 'a')
+        assertEquals(r.read(), 'a'.toInt)
         r.skip(100)
-        assert(r.read() === -1)
+        assertEquals(r.read(), -1)
       }
     }
   }

@@ -17,10 +17,10 @@ package com.netflix.atlas.lwcapi
 
 import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.testkit.WSProbe
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.RequestHandler
+import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcHeartbeat
@@ -29,10 +29,8 @@ import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
-import org.scalatest.funsuite.AnyFunSuite
 
-class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRouteTest {
+class SubscribeApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
@@ -46,7 +44,7 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
 
   private val routes = RequestHandler.standardOptions(api.routes)
 
-  before {
+  override def beforeEach(context: BeforeEach): Unit = {
     sm.clear()
   }
 
@@ -73,22 +71,22 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
         parse(client.expectMessage()) match {
           case _: DiagnosticMessage =>
           case sub: LwcSubscription => subscriptions = sub :: subscriptions
-          case h: LwcHeartbeat      => assert(h.step === 60000)
+          case h: LwcHeartbeat      => assertEquals(h.step, 60000L)
           case v                    => throw new MatchError(v)
         }
       }
 
       // Verify subscription is in the manager, push a message to the queue check that it
       // is received by the client
-      assert(subscriptions.flatMap(_.metrics).size === 2)
+      assertEquals(subscriptions.flatMap(_.metrics).size, 2)
       subscriptions.flatMap(_.metrics).foreach { m =>
         val tags = Map("name" -> "cpu")
         val datapoint = LwcDatapoint(60000, m.id, tags, 42.0)
         val handlers = sm.handlersForSubscription(m.id)
-        assert(handlers.size === 1)
+        assertEquals(handlers.size, 1)
         handlers.head.offer(Seq(datapoint))
 
-        assert(parse(client.expectMessage()) === datapoint)
+        assertEquals(parse(client.expectMessage()), datapoint)
       }
     }
   }
@@ -112,22 +110,22 @@ class SubscribeApiSuite extends AnyFunSuite with BeforeAndAfter with ScalatestRo
         parseBatch(client.expectMessage()).foreach {
           case _: DiagnosticMessage =>
           case sub: LwcSubscription => subscriptions = sub :: subscriptions
-          case h: LwcHeartbeat      => assert(h.step === 60000)
+          case h: LwcHeartbeat      => assertEquals(h.step, 60000L)
           case v                    => throw new MatchError(v)
         }
       }
 
       // Verify subscription is in the manager, push a message to the queue check that it
       // is received by the client
-      assert(subscriptions.flatMap(_.metrics).size === 2)
+      assertEquals(subscriptions.flatMap(_.metrics).size, 2)
       subscriptions.flatMap(_.metrics).foreach { m =>
         val tags = Map("name" -> "disk")
         val datapoint = LwcDatapoint(60000, m.id, tags, 42.0)
         val handlers = sm.handlersForSubscription(m.id)
-        assert(handlers.size === 1)
+        assertEquals(handlers.size, 1)
         handlers.head.offer(Seq(datapoint))
 
-        assert(parseBatch(client.expectMessage()) === List(datapoint))
+        assertEquals(parseBatch(client.expectMessage()), List(datapoint))
       }
     }
   }

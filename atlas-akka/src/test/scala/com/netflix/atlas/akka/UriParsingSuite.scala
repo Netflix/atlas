@@ -17,21 +17,21 @@ package com.netflix.atlas.akka
 
 import akka.http.scaladsl.model.IllegalUriException
 import akka.http.scaladsl.model.Uri
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class UriParsingSuite extends AnyFunSuite {
+class UriParsingSuite extends FunSuite {
 
   private def query(mode: Uri.ParsingMode): String = {
     Uri("/foo?regex=a|b|c", mode).query().get("regex").get
   }
 
   test("relaxed: regex with |") {
-    assert(query(Uri.ParsingMode.Relaxed) === "a|b|c")
+    assertEquals(query(Uri.ParsingMode.Relaxed), "a|b|c")
   }
 
   test("strict: regex with |") {
     intercept[IllegalUriException] {
-      assert(query(Uri.ParsingMode.Strict) === "a|b|c")
+      assertEquals(query(Uri.ParsingMode.Strict), "a|b|c")
     }
   }
 }

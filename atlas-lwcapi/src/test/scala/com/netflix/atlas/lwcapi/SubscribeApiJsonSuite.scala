@@ -19,9 +19,9 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.SubscribeApi._
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class SubscribeApiJsonSuite extends AnyFunSuite {
+class SubscribeApiJsonSuite extends FunSuite {
   test("encode and decode loop") {
     val expressions: List[ExpressionMetadata] = List(
       ExpressionMetadata("this", 1234, "idGoesHere"),
@@ -30,7 +30,7 @@ class SubscribeApiJsonSuite extends AnyFunSuite {
     val original = SubscribeRequest("sid", expressions)
     val json = original.toJson
     val decoded = Json.decode[SubscribeRequest](json)
-    assert(original === decoded)
+    assertEquals(original, decoded)
   }
 
   test("decode empty expression list throws") {
@@ -62,8 +62,8 @@ class SubscribeApiJsonSuite extends AnyFunSuite {
         ]
       }
       """)
-    assert(decoded.expressions.size === 3)
-    assert(decoded.streamId === "testsink")
+    assertEquals(decoded.expressions.size, 3)
+    assertEquals(decoded.streamId, "testsink")
   }
 
 }

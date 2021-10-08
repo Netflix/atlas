@@ -49,7 +49,8 @@ object BuildSettings {
       "Build-Date"   -> java.time.Instant.now().toString,
       "Build-Number" -> sys.env.getOrElse("GITHUB_RUN_ID", "unknown"),
       "Commit"       -> sys.env.getOrElse("GITHUB_SHA", "unknown")
-    )
+    ),
+    testFrameworks += new TestFramework("munit.Framework")
   )
 
   val commonDeps = Seq(
@@ -59,7 +60,7 @@ object BuildSettings {
     Dependencies.slf4jApi,
     Dependencies.spectatorApi,
     Dependencies.typesafeConfig,
-    Dependencies.scalatest % "test"
+    Dependencies.munit % "test"
   )
 
   val resolvers = Seq(

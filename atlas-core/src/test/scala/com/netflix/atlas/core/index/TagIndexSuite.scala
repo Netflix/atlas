@@ -18,22 +18,22 @@ package com.netflix.atlas.core.index
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model._
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 object TagIndexSuite {
   val dataset: List[TimeSeries] = DataSet.largeStaticSet(10)
 }
 
-abstract class TagIndexSuite extends AnyFunSuite {
+abstract class TagIndexSuite extends FunSuite {
 
   def index: TagIndex[TimeSeries]
 
   test("size") {
-    assert(index.size === 7640)
+    assertEquals(index.size, 7640)
   }
 
   test("findTags all") {
-    assert(index.findTags(TagQuery(None)) === Nil)
+    assertEquals(index.findTags(TagQuery(None)), Nil)
   }
 
   test("findTags all with paging") {
@@ -47,14 +47,14 @@ abstract class TagIndexSuite extends AnyFunSuite {
       tmp = index.findTags(TagQuery(None, offset = last, limit = pageSize)).map(_.copy(count = -1))
     }
     builder ++= tmp
-    assert(expected.size === builder.result().size)
-    assert(expected === builder.result())
+    assertEquals(expected.size, builder.result().size)
+    assertEquals(expected, builder.result())
   }
 
   test("findTags all with key restriction") {
     val result = index.findTags(TagQuery(None, key = Some("nf.cluster"))).map(_.copy(count = -1))
-    assert(result.find(_.value == "nccp-appletv") === Some(Tag("nf.cluster", "nccp-appletv")))
-    assert(result.size === 6)
+    assertEquals(result.find(_.value == "nccp-appletv"), Some(Tag("nf.cluster", "nccp-appletv")))
+    assertEquals(result.size, 6)
   }
 
   test("findTags all with key restriction and paging") {
@@ -71,29 +71,29 @@ abstract class TagIndexSuite extends AnyFunSuite {
         .map(_.copy(count = -1))
     }
     builder ++= tmp
-    assert(expected.size === builder.result().size)
-    assert(expected === builder.result())
+    assertEquals(expected.size, builder.result().size)
+    assertEquals(expected, builder.result())
   }
 
   test("findTags query") {
     val q = Query.Equal("name", "sps_9")
-    assert(index.findTags(TagQuery(Some(q))) === Nil)
+    assertEquals(index.findTags(TagQuery(Some(q))), Nil)
   }
 
   test("findTags query with key restriction") {
     val q = Query.Equal("name", "sps_9")
     val result =
       index.findTags(TagQuery(Some(q), key = Some("nf.cluster"))).map(_.copy(count = -1))
-    assert(result.find(_.value == "nccp-appletv") === Some(Tag("nf.cluster", "nccp-appletv")))
-    assert(result.size === 6)
+    assertEquals(result.find(_.value == "nccp-appletv"), Some(Tag("nf.cluster", "nccp-appletv")))
+    assertEquals(result.size, 6)
   }
 
   test("findTags query with exact regex") {
     val q = Query.Regex("name", "sps_9")
     val result =
       index.findTags(TagQuery(Some(q), key = Some("nf.cluster"))).map(_.copy(count = -1))
-    assert(result.find(_.value == "nccp-appletv") === Some(Tag("nf.cluster", "nccp-appletv")))
-    assert(result.size === 6)
+    assertEquals(result.find(_.value == "nccp-appletv"), Some(Tag("nf.cluster", "nccp-appletv")))
+    assertEquals(result.size, 6)
   }
 
   test("findValues, with no key") {
@@ -104,84 +104,84 @@ abstract class TagIndexSuite extends AnyFunSuite {
 
   test("findValues, with limit") {
     val result = index.findValues(TagQuery(None, key = Some("name"), limit = 3))
-    assert(result === List("sps_0", "sps_1", "sps_2"))
+    assertEquals(result, List("sps_0", "sps_1", "sps_2"))
   }
 
   test("findValues, with offset") {
     val result = index.findValues(TagQuery(None, key = Some("name"), offset = "sps_7"))
-    assert(result === List("sps_8", "sps_9"))
+    assertEquals(result, List("sps_8", "sps_9"))
   }
 
   test("findValues, with offset that is not present") {
     val result = index.findValues(TagQuery(None, key = Some("name"), offset = "sps_77"))
-    assert(result === List("sps_8", "sps_9"))
+    assertEquals(result, List("sps_8", "sps_9"))
   }
 
   test("findValues, with offset and limit") {
     val result = index.findValues(TagQuery(None, key = Some("name"), offset = "sps_7", limit = 1))
-    assert(result === List("sps_8"))
+    assertEquals(result, List("sps_8"))
   }
 
   test("findKeys, with limit") {
     val result = index.findKeys(TagQuery(None, limit = 3))
-    assert(result === List("atlas.legacy", "name", "nf.app"))
+    assertEquals(result, List("atlas.legacy", "name", "nf.app"))
   }
 
   test("findKeys, with offset") {
     val result = index.findKeys(TagQuery(None, offset = "nf.asg"))
-    assert(result === List("nf.cluster", "nf.node", "type", "type2"))
+    assertEquals(result, List("nf.cluster", "nf.node", "type", "type2"))
   }
 
   test("findKeys, with offset that is not present") {
     val result = index.findKeys(TagQuery(None, offset = "nf.asg2"))
-    assert(result === List("nf.cluster", "nf.node", "type", "type2"))
+    assertEquals(result, List("nf.cluster", "nf.node", "type", "type2"))
   }
 
   test("findKeys, with offset and limit") {
     val result = index.findKeys(TagQuery(None, offset = "nf.asg", limit = 2))
-    assert(result === List("nf.cluster", "nf.node"))
+    assertEquals(result, List("nf.cluster", "nf.node"))
   }
 
   test("findKeys, with query and limit") {
     val q = Query.Equal("name", "sps_9")
     val result = index.findKeys(TagQuery(Some(q), limit = 3))
-    assert(result === List("atlas.legacy", "name", "nf.app"))
+    assertEquals(result, List("atlas.legacy", "name", "nf.app"))
   }
 
   test("findKeys, with query and offset") {
     val q = Query.Equal("name", "sps_9")
     val result = index.findKeys(TagQuery(Some(q), offset = "nf.asg"))
-    assert(result === List("nf.cluster", "nf.node", "type", "type2"))
+    assertEquals(result, List("nf.cluster", "nf.node", "type", "type2"))
   }
 
   test("findKeys, with query and offset that is not present") {
     val q = Query.Equal("name", "sps_9")
     val result = index.findKeys(TagQuery(Some(q), offset = "nf.asg2"))
-    assert(result === List("nf.cluster", "nf.node", "type", "type2"))
+    assertEquals(result, List("nf.cluster", "nf.node", "type", "type2"))
   }
 
   test("findKeys, with query, offset, and limit") {
     val q = Query.Equal("name", "sps_9")
     val result = index.findKeys(TagQuery(Some(q), offset = "nf.asg", limit = 2))
-    assert(result === List("nf.cluster", "nf.node"))
+    assertEquals(result, List("nf.cluster", "nf.node"))
   }
 
   test("equal query") {
     val q = Query.Equal("name", "sps_9")
     val result = index.findItems(TagQuery(Some(q)))
     result.foreach { m =>
-      assert(m.tags("name") === "sps_9")
+      assertEquals(m.tags("name"), "sps_9")
     }
-    assert(result.size === 764)
+    assertEquals(result.size, 764)
   }
 
   test("equal query repeat") {
     val q = Query.Equal("name", "sps_9")
     val result = index.findItems(TagQuery(Some(q)))
     result.foreach { m =>
-      assert(m.tags("name") === "sps_9")
+      assertEquals(m.tags("name"), "sps_9")
     }
-    assert(result.size === 764)
+    assertEquals(result.size, 764)
   }
 
   test("equal query with offset") {
@@ -191,7 +191,7 @@ abstract class TagIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.idString > offset)
     }
-    assert(result.size === 200)
+    assertEquals(result.size, 200)
   }
 
   test("equal query with offset repeat") {
@@ -201,7 +201,7 @@ abstract class TagIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.idString > offset)
     }
-    assert(result.size === 200)
+    assertEquals(result.size, 200)
   }
 
   test("equal query with paging") {
@@ -216,8 +216,8 @@ abstract class TagIndexSuite extends AnyFunSuite {
       tmp = index.findItems(TagQuery(Some(q), offset = last, limit = pageSize))
     }
     builder ++= tmp
-    assert(result.size === builder.result().size)
-    assert(result === builder.result())
+    assertEquals(result.size, builder.result().size)
+    assertEquals(result, builder.result())
   }
 
   test("gt query") {
@@ -226,7 +226,7 @@ abstract class TagIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") > "sps_4")
     }
-    assert(result.size === 3820)
+    assertEquals(result.size, 3820)
   }
 
   test("ge query") {
@@ -235,7 +235,7 @@ abstract class TagIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") >= "sps_4")
     }
-    assert(result.size === 4584)
+    assertEquals(result.size, 4584)
   }
 
   test("lt query") {
@@ -244,7 +244,7 @@ abstract class TagIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") < "sps_5")
     }
-    assert(result.size === 3820)
+    assertEquals(result.size, 3820)
   }
 
   test("le query") {
@@ -253,7 +253,7 @@ abstract class TagIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") <= "sps_5")
     }
-    assert(result.size === 4584)
+    assertEquals(result.size, 4584)
   }
 
   test("in query") {
@@ -262,40 +262,40 @@ abstract class TagIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") == "sps_5" || m.tags("name") == "sps_7")
     }
-    assert(result.size === 1528)
+    assertEquals(result.size, 1528)
   }
 
   test("regex query, prefix") {
     val q = Query.Regex("nf.cluster", "^nccp-silver.*")
     val result = index.findItems(TagQuery(Some(q)))
     result.foreach { m =>
-      assert(m.tags("nf.cluster") === "nccp-silverlight")
+      assertEquals(m.tags("nf.cluster"), "nccp-silverlight")
     }
-    assert(result.size === 3000)
+    assertEquals(result.size, 3000)
   }
 
   test("regex query, index of") {
     val q = Query.Regex("nf.cluster", ".*silver.*")
     val result = index.findItems(TagQuery(Some(q)))
     result.foreach { m =>
-      assert(m.tags("nf.cluster") === "nccp-silverlight")
+      assertEquals(m.tags("nf.cluster"), "nccp-silverlight")
     }
-    assert(result.size === 3000)
+    assertEquals(result.size, 3000)
   }
 
   test("regex query, case insensitive index of") {
     val q = Query.RegexIgnoreCase("type2", ".*dea.*")
     val result = index.findItems(TagQuery(Some(q)))
     result.foreach { m =>
-      assert(m.tags("type2") === "IDEAL")
+      assertEquals(m.tags("type2"), "IDEAL")
     }
-    assert(result.size === 7640)
+    assertEquals(result.size, 7640)
   }
 
   test("haskey query") {
     val q = Query.HasKey("nf.cluster")
     val result = index.findItems(TagQuery(Some(q)))
-    assert(result.size === 7640)
+    assertEquals(result.size, 7640)
   }
 
   test("and query") {
@@ -303,10 +303,10 @@ abstract class TagIndexSuite extends AnyFunSuite {
     val q2 = Query.Regex("nf.cluster", "^nccp-silver.*")
     val result = index.findItems(TagQuery(Some(Query.And(q1, q2))))
     result.foreach { m =>
-      assert(m.tags("name") === "sps_9")
-      assert(m.tags("nf.cluster") === "nccp-silverlight")
+      assertEquals(m.tags("name"), "sps_9")
+      assertEquals(m.tags("nf.cluster"), "nccp-silverlight")
     }
-    assert(result.size === 300)
+    assertEquals(result.size, 300)
   }
 
   test("and query: substring") {
@@ -314,10 +314,10 @@ abstract class TagIndexSuite extends AnyFunSuite {
     val q2 = Query.Regex("nf.cluster", ".*silver.*")
     val result = index.findItems(TagQuery(Some(Query.And(q1, q2))))
     result.foreach { m =>
-      assert(m.tags("name") === "sps_9")
-      assert(m.tags("nf.cluster") === "nccp-silverlight")
+      assertEquals(m.tags("name"), "sps_9")
+      assertEquals(m.tags("nf.cluster"), "nccp-silverlight")
     }
-    assert(result.size === 300)
+    assertEquals(result.size, 300)
   }
 
   test("or query") {
@@ -327,7 +327,7 @@ abstract class TagIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") == "sps_9" || m.tags("nf.cluster") == "nccp-silverlight")
     }
-    assert(result.size === 3464)
+    assertEquals(result.size, 3464)
   }
 
   test("not query") {
@@ -336,7 +336,7 @@ abstract class TagIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("nf.cluster") != "nccp-silverlight")
     }
-    assert(result.size === 4640)
+    assertEquals(result.size, 4640)
   }
 
   test("not query: CLDMTA-863") {
@@ -345,6 +345,6 @@ abstract class TagIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("nf.cluster") != "nccp-silverlight")
     }
-    assert(result.size === 4640)
+    assertEquals(result.size, 4640)
   }
 }

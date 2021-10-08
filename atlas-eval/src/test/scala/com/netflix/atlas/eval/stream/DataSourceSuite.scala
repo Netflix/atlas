@@ -19,9 +19,9 @@ import java.time.Duration
 
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.json.Json
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class DataSourceSuite extends AnyFunSuite {
+class DataSourceSuite extends FunSuite {
 
   test("parse without explicit step") {
     val id = "123"
@@ -34,7 +34,7 @@ class DataSourceSuite extends AnyFunSuite {
         |}
         |""".stripMargin
     val expected = new DataSource(id, Duration.ofSeconds(60), uri)
-    assert(expected === Json.decode[DataSource](json))
+    assertEquals(expected, Json.decode[DataSource](json))
   }
 
   test("parse with explicit step") {
@@ -49,7 +49,7 @@ class DataSourceSuite extends AnyFunSuite {
          |}
          |""".stripMargin
     val expected = new DataSource(id, Duration.ofSeconds(5), uri)
-    assert(expected === Json.decode[DataSource](json))
+    assertEquals(expected, Json.decode[DataSource](json))
   }
 
   test("parse with explicit step in uri") {
@@ -63,7 +63,7 @@ class DataSourceSuite extends AnyFunSuite {
          |}
          |""".stripMargin
     val expected = new DataSource(id, Duration.ofSeconds(10), uri)
-    assert(expected === Json.decode[DataSource](json))
+    assertEquals(expected, Json.decode[DataSource](json))
   }
 
   test("parse with explicit step in uri and paylaod") {
@@ -79,6 +79,6 @@ class DataSourceSuite extends AnyFunSuite {
          |""".stripMargin
     // Payload should win
     val expected = new DataSource(id, Duration.ofSeconds(5), uri)
-    assert(expected === Json.decode[DataSource](json))
+    assertEquals(expected, Json.decode[DataSource](json))
   }
 }

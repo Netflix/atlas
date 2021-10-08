@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.stacklang
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class InterpreterSuite extends AnyFunSuite {
+class InterpreterSuite extends FunSuite {
   import com.netflix.atlas.core.stacklang.InterpreterSuite._
 
   val interpreter = new Interpreter(
@@ -39,23 +39,23 @@ class InterpreterSuite extends AnyFunSuite {
   }
 
   test("empty") {
-    assert(interpreter.execute(Nil) === context(Nil))
+    assertEquals(interpreter.execute(Nil), context(Nil))
   }
 
   test("push items") {
-    assert(interpreter.execute(List("foo", "bar")) === context(List("bar", "foo")))
+    assertEquals(interpreter.execute(List("foo", "bar")), context(List("bar", "foo")))
   }
 
   test("execute word") {
-    assert(interpreter.execute(List(":push-foo")) === context(List("foo")))
+    assertEquals(interpreter.execute(List(":push-foo")), context(List("foo")))
   }
 
   test("overloaded word") {
-    assert(interpreter.execute(List(":overloaded")) === context(List("one")))
+    assertEquals(interpreter.execute(List(":overloaded")), context(List("one")))
   }
 
   test("overloaded word and some don't match") {
-    assert(interpreter.execute(List(":overloaded2")) === context(List("two")))
+    assertEquals(interpreter.execute(List(":overloaded2")), context(List("two")))
   }
 
   test("word with no matches") {
@@ -63,7 +63,7 @@ class InterpreterSuite extends AnyFunSuite {
       interpreter.execute(List(":no-match"))
     }
     val expected = "no matches for word ':no-match' with stack [], candidates: [exception]"
-    assert(e.getMessage === expected)
+    assertEquals(e.getMessage, expected)
   }
 
   test("using unstable word fails by default") {
@@ -71,50 +71,50 @@ class InterpreterSuite extends AnyFunSuite {
       interpreter.execute(List(":unstable"))
     }
     val expected = "to use :unstable enable unstable features"
-    assert(e.getMessage === expected)
+    assertEquals(e.getMessage, expected)
   }
 
   test("unknown word") {
     val e = intercept[IllegalStateException] {
       interpreter.execute(List("foo", ":unknown"))
     }
-    assert(e.getMessage === "unknown word ':unknown'")
+    assertEquals(e.getMessage, "unknown word ':unknown'")
   }
 
   test("unmatched closing paren") {
     val e = intercept[IllegalStateException] {
       interpreter.execute(List(")"))
     }
-    assert(e.getMessage === "unmatched closing parenthesis")
+    assertEquals(e.getMessage, "unmatched closing parenthesis")
   }
 
   test("unmatched closing paren 2") {
     val e = intercept[IllegalStateException] {
       interpreter.execute(List("(", ")", ")"))
     }
-    assert(e.getMessage === "unmatched closing parenthesis")
+    assertEquals(e.getMessage, "unmatched closing parenthesis")
   }
 
   test("unmatched opening paren") {
     val e = intercept[IllegalStateException] {
       interpreter.execute(List("("))
     }
-    assert(e.getMessage === "unmatched opening parenthesis")
+    assertEquals(e.getMessage, "unmatched opening parenthesis")
   }
 
   test("list") {
     val list = List("(", "1", ")")
-    assert(interpreter.execute(list) === context(List(List("1"))))
+    assertEquals(interpreter.execute(list), context(List(List("1"))))
   }
 
   test("nested list") {
     val list = List("(", "1", "(", ")", ")")
-    assert(interpreter.execute(list) === context(List(List("1", "(", ")"))))
+    assertEquals(interpreter.execute(list), context(List(List("1", "(", ")"))))
   }
 
   test("multiple lists") {
     val list = List("(", "1", ")", "(", "2", ")")
-    assert(interpreter.execute(list) === context(List(List("2"), List("1"))))
+    assertEquals(interpreter.execute(list), context(List(List("2"), List("1"))))
   }
 
   test("debug") {
@@ -124,33 +124,33 @@ class InterpreterSuite extends AnyFunSuite {
       Interpreter.Step(list.drop(3), Context(interpreter, List(List("1")), Map.empty)),
       Interpreter.Step(Nil, Context(interpreter, List(List("2"), List("1")), Map.empty))
     )
-    assert(interpreter.debug(list) === expected)
+    assertEquals(interpreter.debug(list), expected)
   }
 
   test("toString") {
-    assert(interpreter.toString === "Interpreter(9 words)")
+    assertEquals(interpreter.toString, "Interpreter(9 words)")
   }
 
   test("typeSummary: String") {
-    assert(Interpreter.typeSummary(List("foo")) === "[String]")
+    assertEquals(Interpreter.typeSummary(List("foo")), "[String]")
   }
 
   test("typeSummary: Primitive") {
     // Why do all of these get coerced to doubles?
-    assert(Interpreter.typeSummary(List(42, 42.0, 42L)) === "[Double,Double,Double]")
-    assert(Interpreter.typeSummary(42 :: 42.0 :: 42L :: Nil) === "[Long,Double,Integer]")
+    assertEquals(Interpreter.typeSummary(List(42, 42.0, 42L)), "[Double,Double,Double]")
+    assertEquals(Interpreter.typeSummary(42 :: 42.0 :: 42L :: Nil), "[Long,Double,Integer]")
   }
 
   test("typeSummary: List.empty") {
-    assert(Interpreter.typeSummary(List(List.empty)) === "[List]")
+    assertEquals(Interpreter.typeSummary(List(List.empty)), "[List]")
   }
 
   test("typeSummary: List(a, b)") {
-    assert(Interpreter.typeSummary(List(List("a", "b"))) === "[List]")
+    assertEquals(Interpreter.typeSummary(List(List("a", "b"))), "[List]")
   }
 
   test("typeSummary: a :: b :: Nil") {
-    assert(Interpreter.typeSummary(List("a" :: "b" :: Nil)) === "[List]")
+    assertEquals(Interpreter.typeSummary(List("a" :: "b" :: Nil)), "[List]")
   }
 
   //
@@ -159,17 +159,17 @@ class InterpreterSuite extends AnyFunSuite {
 
   test("splitAndTrim should split by comma") {
     val actual = Interpreter.splitAndTrim("a,b,c")
-    assert(actual === List("a", "b", "c"))
+    assertEquals(actual, List("a", "b", "c"))
   }
 
   test("splitAndTrim should trim whitespace") {
     val actual = Interpreter.splitAndTrim("  a\n,\t\nb ,c")
-    assert(actual === List("a", "b", "c"))
+    assertEquals(actual, List("a", "b", "c"))
   }
 
   test("splitAndTrim should ignore empty strings") {
     val actual = Interpreter.splitAndTrim(", ,\t,\n\n,")
-    assert(actual === Nil)
+    assertEquals(actual, Nil)
   }
 }
 

@@ -26,28 +26,28 @@ class PipelineSuite extends BaseOnlineAlgorithmSuite {
   test("n = 1") {
     val algo = ignoreMax(1)
     assert(algo.next(0.0).isNaN)
-    assert(algo.next(2.0) === 2.0)
-    assert(algo.next(1.0) === 1.0)
+    assertEquals(algo.next(2.0), 2.0)
+    assertEquals(algo.next(1.0), 1.0)
     assert(algo.next(Double.NaN).isNaN)
   }
 
   test("n = 1, reset") {
     val algo = ignoreMax(1)
     assert(algo.next(0.0).isNaN)
-    assert(algo.next(1.0) === 1.0)
+    assertEquals(algo.next(1.0), 1.0)
     algo.reset()
     assert(algo.next(2.0).isNaN)
-    assert(algo.next(3.0) === 3.0)
+    assertEquals(algo.next(3.0), 3.0)
   }
 
   test("n = 2") {
     val algo = ignoreMax(2)
     assert(algo.next(0.0).isNaN)
     assert(algo.next(1.0).isNaN)
-    assert(algo.next(2.0) === 2.0)
-    assert(algo.next(3.0) === 3.0)
-    assert(algo.next(0.0) === 3.0)
-    assert(algo.next(Double.NaN) === 0.0)
+    assertEquals(algo.next(2.0), 2.0)
+    assertEquals(algo.next(3.0), 3.0)
+    assertEquals(algo.next(0.0), 3.0)
+    assertEquals(algo.next(Double.NaN), 0.0)
     assert(algo.next(Double.NaN).isNaN)
   }
 }

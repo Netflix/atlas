@@ -17,9 +17,9 @@ package com.netflix.atlas.core.util
 
 import java.util.UUID
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ShardsSuite extends AnyFunSuite {
+class ShardsSuite extends FunSuite {
 
   private def createGroups(n: Int, sz: Int): List[Shards.Group[Int]] = {
     val groups = (0 until n).map { i =>
@@ -61,7 +61,7 @@ class ShardsSuite extends AnyFunSuite {
       }
 
       // make sure all shards are used
-      assert(counts.size === n * sz)
+      assertEquals(counts.size, n * sz)
 
       // make sure that the distribution is uniform
       val (min, max, _) = minMaxAvg(counts)
@@ -82,7 +82,7 @@ class ShardsSuite extends AnyFunSuite {
       }
 
       // make sure all shards are used
-      assert(counts.size === n * sz)
+      assertEquals(counts.size, n * sz)
 
       // make sure that the distribution is uniform
       val (min, max, avg) = minMaxAvg(counts)
@@ -109,7 +109,7 @@ class ShardsSuite extends AnyFunSuite {
     }
 
     // make sure all shards are used
-    assert(counts.size === 8)
+    assertEquals(counts.size, 8)
 
     // make sure that the distribution is uniform
     val maxAC = 20000 / 6 + 1
@@ -137,7 +137,7 @@ class ShardsSuite extends AnyFunSuite {
     )
 
     val mapper = Shards.mapper(groups)
-    assert(mapper.instanceForIndex(1) === null)
+    assertEquals(mapper.instanceForIndex(1), null)
   }
 
   test("local mapper containsIndex") {
@@ -153,8 +153,9 @@ class ShardsSuite extends AnyFunSuite {
     (0 until 20000).foreach { i =>
       val idx = mapper.instanceForIndex(i)
       val contains = localMapper.containsIndex(i)
-      assert(
-        contains === (idx == localInstance),
+      assertEquals(
+        contains,
+        (idx == localInstance),
         s"$i => instance = $localInstance; mapper.instance = $idx; local.contains = $contains"
       )
     }
@@ -174,8 +175,9 @@ class ShardsSuite extends AnyFunSuite {
       val id = Hash.sha1(UUID.randomUUID().toString)
       val idx = mapper.instanceForId(id)
       val contains = localMapper.containsId(id)
-      assert(
-        contains === (idx == localInstance),
+      assertEquals(
+        contains,
+        (idx == localInstance),
         s"$id => instance = $localInstance; mapper.instance = $idx; local.contains = $contains"
       )
     }
@@ -209,7 +211,7 @@ class ShardsSuite extends AnyFunSuite {
     }
 
     // make sure all shards are used
-    assert(counts.size === 6 + 2)
+    assertEquals(counts.size, 6 + 2)
 
     // make sure that the distribution is uniform
     val (min, max, _) = minMaxAvg(counts)
@@ -233,7 +235,7 @@ class ShardsSuite extends AnyFunSuite {
     }
 
     // make sure all shards are used
-    assert(counts.size === 6 + 4)
+    assertEquals(counts.size, 6 + 4)
 
     // make sure data is replicated to new group
     var sum = 0

@@ -42,8 +42,7 @@ import com.netflix.spectator.api.DefaultRegistry
 import com.typesafe.config.ConfigFactory
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
-import org.scalatest.BeforeAndAfter
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import java.nio.file.Path
 import scala.concurrent.Await
@@ -51,7 +50,7 @@ import scala.concurrent.Promise
 import scala.util.Success
 import scala.util.Using
 
-class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
+class EvaluatorSuite extends FunSuite {
 
   private val targetDir = Paths.get(SrcPath.forProject("atlas-eval"), "target", "EvaluatorSuite")
 
@@ -62,7 +61,7 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
   private val registry = new DefaultRegistry()
   private implicit val system = ActorSystem("test", config)
 
-  before {
+  override def beforeEach(context: BeforeEach): Unit = {
     Files.createDirectories(targetDir)
   }
 
@@ -80,8 +79,8 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
     val messages = Await.result(future, 1.minute).collect {
       case t: TimeSeriesMessage => t
     }
-    assert(messages.size === 255) // Can vary depending on num buffers for evaluation
-    assert(messages.map(_.tags("nf.asg")).toSet.size === 3)
+    assertEquals(messages.size, 255) // Can vary depending on num buffers for evaluation
+    assertEquals(messages.map(_.tags("nf.asg")).toSet.size, 3)
   }
 
   test("write to file") {
@@ -94,7 +93,7 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
 
     val expected = countMessages(resourcesDir.resolve("gc-pause.dat"))
     val actual = countMessages(path)
-    assert(expected === actual)
+    assertEquals(expected, actual)
   }
 
   private def countMessages(path: Path): Map[String, Int] = {
@@ -130,12 +129,13 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
     val uri = "resource:///gc-pause.dat/api/v1/graph"
     val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
-    assert(result.size === 1)
+    assertEquals(result.size, 1)
     result.foreach {
       case DiagnosticMessage(t, msg, None) =>
-        assert(t === "error")
-        assert(
-          msg === "IllegalArgumentException: missing required URI parameter `q`: resource:///gc-pause.dat/api/v1/graph"
+        assertEquals(t, "error")
+        assertEquals(
+          msg,
+          "IllegalArgumentException: missing required URI parameter `q`: resource:///gc-pause.dat/api/v1/graph"
         )
       case v =>
         throw new MatchError(v)
@@ -186,7 +186,7 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
       // 0: Start getting events for one only
       (one, two) => {
         if (one.getAndSet(0) > 0L) {
-          assert(two.getAndSet(0) === 0)
+          assertEquals(two.getAndSet(0), 0)
           p2.complete(Success(ds2))
           state = 1
         }
@@ -248,8 +248,8 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
     result.getMessage match {
       case DiagnosticMessage(t, msg, None) =>
-        assert(t === "error")
-        assert(msg === expectedMsg)
+        assertEquals(t, "error")
+        assertEquals(msg, expectedMsg)
       case v =>
         throw new MatchError(v)
     }
@@ -327,14 +327,14 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
     val dsOne = result
       .filter(env => env.getId == "one" && env.getMessage.isInstanceOf[TimeSeriesMessage])
       .map(_.getMessage.asInstanceOf[TimeSeriesMessage])
-    assert(dsOne.forall(_.step === 5000))
-    assert(dsOne.size === 120)
+    assert(dsOne.forall(_.step == 5000))
+    assertEquals(dsOne.size, 120)
 
     val dsTwo = result
       .filter(env => env.getId == "two" && env.getMessage.isInstanceOf[TimeSeriesMessage])
       .map(_.getMessage.asInstanceOf[TimeSeriesMessage])
-    assert(dsTwo.forall(_.step === 60000))
-    assert(dsTwo.size === 10)
+    assert(dsTwo.forall(_.step == 60000))
+    assertEquals(dsTwo.size, 10)
   }
 
   test("DataSource equals contract") {
@@ -375,7 +375,7 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
   test("DataSource encode and decode") {
     val expected = ds("id", "uri")
     val actual = Json.decode[Evaluator.DataSource](Json.encode(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("DataSources encode and decode") {
@@ -384,7 +384,7 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
       ds("id2", "uri2")
     )
     val actual = Json.decode[Evaluator.DataSources](Json.encode(expected))
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   private def newDataSource(stepParam: Option[String]): Evaluator.DataSource = {
@@ -394,17 +394,17 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
 
   test("extractStepFromUri, step param not set") {
     val ds = newDataSource(None)
-    assert(ds.getStep === Duration.ofMinutes(1))
+    assertEquals(ds.getStep, Duration.ofMinutes(1))
   }
 
   test("extractStepFromUri, 5s step") {
     val ds = newDataSource(Some("5s"))
-    assert(ds.getStep === Duration.ofSeconds(5))
+    assertEquals(ds.getStep, Duration.ofSeconds(5))
   }
 
   test("extractStepFromUri, invalid step") {
     val ds = newDataSource(Some("abc"))
-    assert(ds.getStep === Duration.ofMinutes(1))
+    assertEquals(ds.getStep, Duration.ofMinutes(1))
   }
 
   test("validate: ok") {
@@ -427,7 +427,7 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
     val e = intercept[IllegalStateException] {
       evaluator.validate(ds)
     }
-    assert(e.getMessage === "unknown word ':b'")
+    assertEquals(e.getMessage, "unknown word ':b'")
   }
 
   test("validate: unsupported operation `:offset`") {
@@ -453,7 +453,7 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
     val e = intercept[NoSuchElementException] {
       evaluator.validate(ds)
     }
-    assert(e.getMessage === "unknownhost.com")
+    assertEquals(e.getMessage, "unknownhost.com")
   }
 
   private val datapointStep = Duration.ofMillis(1)
@@ -504,12 +504,12 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
 
     val msgs = runDatapointFlow(sources, sampleData(1, 10))
 
-    assert(msgs.map(_.getId).distinct === List("test"))
-    assert(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]) === 1)
+    assertEquals(msgs.map(_.getId).distinct, List("test"))
+    assertEquals(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]), 1)
 
     val ts = timeSeriesMessages(msgs).head
-    assert(ts.tags === Map("name" -> "foo"))
-    assert(ts.data === ArrayData(Array(expected)))
+    assertEquals(ts.tags, Map("name" -> "foo"))
+    assertEquals(ts.data, ArrayData(Array(expected)))
   }
 
   test("datapoint flow: sum") {
@@ -542,12 +542,12 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
 
     val msgs = runDatapointFlow(sources, sampleData(1, 10))
 
-    assert(msgs.map(_.getId).distinct === List("test"))
-    assert(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]) === 10)
+    assertEquals(msgs.map(_.getId).distinct, List("test"))
+    assertEquals(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]), 10)
 
     timeSeriesMessages(msgs).foreach { ts =>
       val expected = ts.tags("id").toDouble
-      assert(ts.data === ArrayData(Array(expected)))
+      assertEquals(ts.data, ArrayData(Array(expected)))
     }
   }
 
@@ -566,17 +566,17 @@ class EvaluatorSuite extends AnyFunSuite with BeforeAndAfter {
 
     val msgs = runDatapointFlow(sources, sampleData(1, 10))
 
-    assert(msgs.map(_.getId).distinct === List("a", "b"))
-    assert(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]) === 2)
+    assertEquals(msgs.map(_.getId).distinct, List("a", "b"))
+    assertEquals(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]), 2)
 
     timeSeriesMessages(msgs).foreach { ts =>
-      assert(ts.data === ArrayData(Array(45.0)))
+      assertEquals(ts.data, ArrayData(Array(45.0)))
     }
   }
 
   test("DataSource serde") {
     val ds = new Evaluator.DataSource("_", Duration.ofSeconds(42L), ":true")
-    assert(Json.encode(ds) === """{"id":"_","step":42000,"uri":":true"}""")
-    assert(Json.decode[Evaluator.DataSource](Json.encode(ds)) === ds)
+    assertEquals(Json.encode(ds), """{"id":"_","step":42000,"uri":":true"}""")
+    assertEquals(Json.decode[Evaluator.DataSource](Json.encode(ds)), ds)
   }
 }

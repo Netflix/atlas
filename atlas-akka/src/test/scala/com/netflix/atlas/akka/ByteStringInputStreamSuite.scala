@@ -20,9 +20,9 @@ import java.security.MessageDigest
 import java.util.Random
 
 import akka.util.ByteString
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ByteStringInputStreamSuite extends AnyFunSuite {
+class ByteStringInputStreamSuite extends FunSuite {
 
   private def singleRead(name: String, data: ByteString): Unit = {
     test(s"$name: read() and available()") {
@@ -31,15 +31,15 @@ class ByteStringInputStreamSuite extends AnyFunSuite {
 
       data.indices.foreach { i =>
         if (data.isCompact) {
-          assert(bais.available() === data.length - i)
-          assert(bsis.available() === data.length - i)
+          assertEquals(bais.available(), data.length - i)
+          assertEquals(bsis.available(), data.length - i)
         } else {
           assert(bsis.available() > 0)
         }
-        assert(bais.read() === bsis.read())
+        assertEquals(bais.read(), bsis.read())
       }
 
-      assert(bais.read() === bsis.read())
+      assertEquals(bais.read(), bsis.read())
     }
   }
 
@@ -58,16 +58,16 @@ class ByteStringInputStreamSuite extends AnyFunSuite {
         val len1 = bais.read(b1)
         val len2 = bsis.read(b2)
         if (data.isCompact) {
-          assert(len1 === len2)
-          assert(b1 === b2)
+          assertEquals(len1, len2)
+          assertEquals(b1.toSeq, b2.toSeq)
         }
         if (len1 > 0) h1.update(b1, 0, len1)
         if (len2 > 0) h2.update(b2, 0, len2)
         i += len2
       }
 
-      assert(bais.read(b1) === bsis.read(b2))
-      assert(h1.digest() === h2.digest())
+      assertEquals(bais.read(b1), bsis.read(b2))
+      assertEquals(h1.digest().toSeq, h2.digest().toSeq)
     }
   }
 

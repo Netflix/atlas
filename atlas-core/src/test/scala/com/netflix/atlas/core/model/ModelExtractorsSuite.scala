@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ModelExtractorsSuite extends AnyFunSuite {
+class ModelExtractorsSuite extends FunSuite {
 
   private val words = StyleVocabulary.allWords
   private val interpreter = Interpreter(words)
@@ -28,7 +28,7 @@ class ModelExtractorsSuite extends AnyFunSuite {
   def completionTest(expr: String, expected: Int): Unit = {
     test(expr) {
       val result = interpreter.execute(expr)
-      assert(candidates.count(_.matches(result.stack)) === expected)
+      assertEquals(candidates.count(_.matches(result.stack)), expected)
     }
   }
 

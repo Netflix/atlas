@@ -25,9 +25,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class CaseClassDeserializerSuite extends AnyFunSuite {
+class CaseClassDeserializerSuite extends FunSuite {
 
   import CaseClassDeserializerSuite._
 
@@ -41,7 +41,7 @@ class CaseClassDeserializerSuite extends AnyFunSuite {
   test("read simple object") {
     val expected = SimpleObject(123, "abc", Some("def"))
     val actual = decode[SimpleObject]("""{"foo": 123, "bar": "abc", "baz": "def"}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read array") {
@@ -59,7 +59,7 @@ class CaseClassDeserializerSuite extends AnyFunSuite {
   test("invalid type for field (quoted number)") {
     val expected = SimpleObject(123, "abc", Some("def"))
     val actual = decode[SimpleObject]("""{"foo": "123", "bar": "abc", "baz": "def"}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("invalid type for field (invalid number)") {
@@ -71,43 +71,43 @@ class CaseClassDeserializerSuite extends AnyFunSuite {
   test("read simple object missing Option") {
     val expected = SimpleObject(42, "abc", None)
     val actual = decode[SimpleObject]("""{"foo": 42, "bar": "abc"}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read simple object missing required") {
     val expected = SimpleObject(123, null, Some("def"))
     val actual = decode[SimpleObject]("""{"foo": 123, "baz": "def"}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read simple object with defaults") {
     val expected = SimpleObjectWithDefaults()
     val actual = decode[SimpleObjectWithDefaults]("""{}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read simple object with overridden defaults") {
     val expected = SimpleObjectWithDefaults(foo = 21)
     val actual = decode[SimpleObjectWithDefaults]("""{"foo": 21}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read simple object with one default") {
     val expected = SimpleObjectWithOneDefault(21)
     val actual = decode[SimpleObjectWithOneDefault]("""{"foo": 21}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read simple object with one default missing required") {
     val expected = SimpleObjectWithOneDefault(0)
     val actual = decode[SimpleObjectWithOneDefault]("""{}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read simple object with validation") {
     val expected = SimpleObjectWithValidation("abc")
     val actual = decode[SimpleObjectWithValidation]("""{"foo": "abc"}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read simple object with error") {
@@ -119,84 +119,84 @@ class CaseClassDeserializerSuite extends AnyFunSuite {
   test("read with Option[Int] field") {
     val expected = OptionInt(Some(42))
     val actual = decode[OptionInt]("""{"v":42}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read with Option[Int] field, null") {
     val expected = OptionInt(None)
     val actual = decode[OptionInt]("""{"v":null}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read with Option[Long] field") {
     val expected = OptionLong(Some(42L))
     val actual = decode[OptionLong]("""{"v":42}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read with List[Option[Int]] field") {
     val expected = ListOptionInt(List(Some(42), Some(21)))
     val actual = decode[ListOptionInt]("""{"v":[42, 21]}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read with List[String] field") {
     val expected = ListString(List("a", "b"))
     val actual = decode[ListString]("""{"vs":["a", "b"]}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read with List[String] field, null") {
     val expected = ListString(null)
     val actual = decode[ListString]("""{"vs":null}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("read with List[String] field, with default, null") {
     val expected = ListStringDflt()
     val actual = decode[ListStringDflt]("""{"vs":null}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("generics") {
     val expected = Outer(List(List(Inner("a"), Inner("b")), List(Inner("c"))))
     val actual = decode[Outer]("""{"vs":[[{"v":"a"},{"v":"b"}],[{"v":"c"}]]}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("generics 2") {
     val expected = OuterT(List(List(Inner("a"), Inner("b")), List(Inner("c"))))
     val actual =
       decode[OuterT[List[List[Inner]]]]("""{"vs":[[{"v":"a"},{"v":"b"}],[{"v":"c"}]]}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("honors @JsonAlias annotation") {
     val expected = AliasAnno("foo")
     val actual = decode[AliasAnno]("""{"v":"foo"}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("honors @JsonProperty annotation") {
     val expected = PropAnno("foo")
     val actual = decode[PropAnno]("""{"v":"foo"}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 
   test("honors @JsonDeserialize.contentAs annotation") {
     val expected = DeserAnno(Some(42L))
     val actual = decode[DeserAnno]("""{"value":42}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
     // Line above will pass even if a java.lang.Integer is created. The
     // check below will fail with:
     // java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.Long
-    assert(actual.value.get.asInstanceOf[java.lang.Long] === 42)
+    assertEquals(actual.value.get.asInstanceOf[java.lang.Long], java.lang.Long.valueOf(42L))
   }
 
   test("honors @JsonDeserialize.using annotation") {
     val expected = DeserUsingAnno(43L)
     val actual = decode[DeserUsingAnno]("""{"value":42}""")
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 }
 

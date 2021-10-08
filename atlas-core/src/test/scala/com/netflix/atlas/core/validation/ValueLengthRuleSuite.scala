@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.validation
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ValueLengthRuleSuite extends AnyFunSuite {
+class ValueLengthRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("""
       |min-length = 2
@@ -32,9 +32,9 @@ class ValueLengthRuleSuite extends AnyFunSuite {
   }
 
   test("valid") {
-    assert(validate("def", "ab") === ValidationResult.Pass)
-    assert(validate("def", "abc") === ValidationResult.Pass)
-    assert(validate("def", "abcd") === ValidationResult.Pass)
+    assertEquals(validate("def", "ab"), ValidationResult.Pass)
+    assertEquals(validate("def", "abc"), ValidationResult.Pass)
+    assertEquals(validate("def", "abcd"), ValidationResult.Pass)
   }
 
   test("too short") {

@@ -16,21 +16,21 @@
 package com.netflix.atlas.core.stacklang
 
 import com.netflix.atlas.core.util.Features
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class FreezeSuite extends AnyFunSuite {
+class FreezeSuite extends FunSuite {
 
   def interpreter: Interpreter = Interpreter(StandardVocabulary.allWords)
 
   test("basic operation") {
     val context = interpreter.execute("a,b,c,:freeze")
-    assert(context.stack === List("c", "b", "a"))
+    assertEquals(context.stack, List("c", "b", "a"))
     assert(context.frozenStack.isEmpty)
   }
 
   test("frozen stack is isolated") {
     val context = interpreter.execute("a,b,c,:freeze,d,e,f,:clear")
-    assert(context.stack === List("c", "b", "a"))
+    assertEquals(context.stack, List("c", "b", "a"))
     assert(context.frozenStack.isEmpty)
   }
 
@@ -38,49 +38,49 @@ class FreezeSuite extends AnyFunSuite {
     val e = intercept[NoSuchElementException] {
       interpreter.execute("foo,1,:set,:freeze,foo,:get")
     }
-    assert(e.getMessage === "key not found: foo")
+    assertEquals(e.getMessage, "key not found: foo")
   }
 
   test("original variables are preserved") {
     val vars = Map("foo" -> "original", "bar" -> "2")
     val context = interpreter.execute("foo,1,:set,:freeze,foo,:get,bar,:get", vars, Features.STABLE)
-    assert(context.stack === List("2", "original"))
+    assertEquals(context.stack, List("2", "original"))
   }
 
   test("multiple freeze operations") {
     val context = interpreter.execute("a,b,c,:freeze,d,e,f,:freeze,g,h,i,:freeze,j,k,l,:clear")
-    assert(context.stack === List("i", "h", "g", "f", "e", "d", "c", "b", "a"))
+    assertEquals(context.stack, List("i", "h", "g", "f", "e", "d", "c", "b", "a"))
     assert(context.frozenStack.isEmpty)
   }
 
   test("freeze works with macros") {
     // Before macros would force unfreeze after execution
     val context = interpreter.execute("a,b,:freeze,d,e,:2over,:clear")
-    assert(context.stack === List("b", "a"))
+    assertEquals(context.stack, List("b", "a"))
     assert(context.frozenStack.isEmpty)
   }
 
   test("freeze works with :call") {
     val context = interpreter.execute("a,b,:freeze,d,(,:dup,),:call,:clear")
-    assert(context.stack === List("b", "a"))
+    assertEquals(context.stack, List("b", "a"))
     assert(context.frozenStack.isEmpty)
   }
 
   test("freeze works with :each") {
     val context = interpreter.execute("a,b,:freeze,(,d,),(,:dup,),:each,:clear")
-    assert(context.stack === List("b", "a"))
+    assertEquals(context.stack, List("b", "a"))
     assert(context.frozenStack.isEmpty)
   }
 
   test("freeze works with :map") {
     val context = interpreter.execute("a,b,:freeze,(,d,),(,:dup,),:map,:clear")
-    assert(context.stack === List("b", "a"))
+    assertEquals(context.stack, List("b", "a"))
     assert(context.frozenStack.isEmpty)
   }
 
   test("freeze works with :get/:set") {
     val context = interpreter.execute("a,b,:freeze,d,e,:set,d,:get,:clear")
-    assert(context.stack === List("b", "a"))
+    assertEquals(context.stack, List("b", "a"))
     assert(context.frozenStack.isEmpty)
   }
 }

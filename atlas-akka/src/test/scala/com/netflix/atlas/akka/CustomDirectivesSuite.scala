@@ -28,20 +28,18 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.Spectator
 import com.netflix.spectator.ipc.IpcMetric
 import com.netflix.spectator.ipc.NetflixHeader
-import org.scalatest.BeforeAndAfter
-import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.duration._
 
-class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with BeforeAndAfter {
+class CustomDirectivesSuite extends MUnitRouteSuite {
 
   import CustomDirectives._
   import CustomDirectivesSuite._
@@ -166,7 +164,7 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
 
   val endpoint = new TestService(system)
 
-  before {
+  override def beforeEach(context: BeforeEach): Unit = {
     val registry = Spectator.globalRegistry()
     registry.removeAll()
     registry.add(new DefaultRegistry())
@@ -175,14 +173,14 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
   test("text") {
     Get("/text") ~> endpoint.routes ~> check {
       val expected = """text response"""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
   test("json") {
     Get("/json") ~> endpoint.routes ~> check {
       val expected = """[1,2,3]"""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -190,7 +188,7 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     val msg = Message("foo", "bar baz")
     Post("/json", Json.encode(msg)) ~> endpoint.routes ~> check {
       val expected = Json.decode[Message](responseAs[String])
-      assert(expected === msg)
+      assertEquals(expected, msg)
     }
   }
 
@@ -199,7 +197,7 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     val entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, Json.smileEncode(msg))
     Post("/json", entity) ~> endpoint.routes ~> check {
       val expected = Json.decode[Message](responseAs[String])
-      assert(expected === msg)
+      assertEquals(expected, msg)
     }
   }
 
@@ -207,7 +205,7 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     val msg = Message("foo", "bar baz")
     Post("/json-parser", Json.encode(msg)) ~> endpoint.routes ~> check {
       val expected = Json.decode[Message](responseAs[String])
-      assert(expected === msg)
+      assertEquals(expected, msg)
     }
   }
 
@@ -216,14 +214,14 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     val entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, Json.smileEncode(msg))
     Post("/json-parser", entity) ~> endpoint.routes ~> check {
       val expected = Json.decode[Message](responseAs[String])
-      assert(expected === msg)
+      assertEquals(expected, msg)
     }
   }
 
   test("binary") {
     Get("/binary") ~> endpoint.routes ~> check {
       val expected = """text response"""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -231,7 +229,7 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     Get("/text?callback=foo") ~> endpoint.routes ~> check {
       val expected =
         """foo({"status":200,"headers":{"content-type":["text/plain"]},"body":"text response"})"""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -239,7 +237,7 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     Get("/json?callback=foo") ~> endpoint.routes ~> check {
       val expected =
         """foo({"status":200,"headers":{"content-type":["application/json"]},"body":[1,2,3]})"""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -247,7 +245,7 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     Get("/binary?callback=foo") ~> endpoint.routes ~> check {
       val expected =
         """foo({"status":200,"headers":{"content-type":["application/octet-stream"]},"body":"dGV4dCByZXNwb25zZQ=="})"""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -255,8 +253,8 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     Get("/error?callback=foo") ~> endpoint.routes ~> check {
       val expected =
         """foo({"status":400,"headers":{"content-type":["text/plain"]},"body":"error"})"""
-      assert(StatusCodes.OK === response.status)
-      assert(expected === responseAs[String])
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -264,8 +262,8 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     Get("/empty?callback=foo") ~> endpoint.routes ~> check {
       val expected =
         """foo({"status":200,"headers":{"foo":["bar"],"content-type":["text/plain"]},"body":""})"""
-      assert(StatusCodes.OK === response.status)
-      assert(expected === responseAs[String])
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -276,20 +274,20 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
       assert(response.headers.nonEmpty)
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
-          assert("http://localhost" === v.toString)
+          assertEquals("http://localhost", v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+          assertEquals("GET,PATCH,POST,PUT,DELETE", vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
         case h if h.is("netflix-zone") =>
-          assert(h.value === "us-east-1e")
+          assertEquals(h.value, "us-east-1e")
         case h if h.is("vary") =>
-          assert(h.value === "Origin")
+          assertEquals(h.value, "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
       val expected = """[1,2,3]"""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -300,24 +298,24 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
       assert(headers.nonEmpty)
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
-          assert("http://localhost" === v.toString)
+          assertEquals("http://localhost", v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+          assertEquals("GET,PATCH,POST,PUT,DELETE", vs.map(_.name()).mkString(","))
         case `Access-Control-Expose-Headers`(vs) =>
-          assert("foo" === vs.mkString(","))
+          assertEquals("foo", vs.mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
         case h if h.is("netflix-zone") =>
-          assert(h.value === "us-east-1e")
+          assertEquals(h.value, "us-east-1e")
         case h if h.is("vary") =>
-          assert(h.value === "Origin")
+          assertEquals(h.value, "Origin")
         case h if h.lowercaseName == "foo" =>
-          assert("bar" === h.value)
+          assertEquals("bar", h.value)
         case h =>
           fail(s"unexpected header: $h (${h.getClass})")
       }
       val expected = ""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -329,22 +327,22 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
       assert(headers.nonEmpty)
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
-          assert("http://localhost" === v.toString)
+          assertEquals("http://localhost", v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+          assertEquals("GET,PATCH,POST,PUT,DELETE", vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Headers`(vs) =>
-          assert("foo" === vs.mkString(","))
+          assertEquals("foo", vs.mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
         case h if h.is("netflix-zone") =>
-          assert(h.value === "us-east-1e")
+          assertEquals(h.value, "us-east-1e")
         case h if h.is("vary") =>
-          assert(h.value === "Origin")
+          assertEquals(h.value, "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
       val expected = """[1,2,3]"""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -356,20 +354,20 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
       assert(headers.nonEmpty)
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
-          assert("*" === v.toString)
+          assertEquals("*", v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+          assertEquals("GET,PATCH,POST,PUT,DELETE", vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
         case h if h.is("netflix-zone") =>
-          assert(h.value === "us-east-1e")
+          assertEquals(h.value, "us-east-1e")
         case h if h.is("vary") =>
-          assert(h.value === "Origin")
+          assertEquals(h.value, "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
       val expected = """[1,2,3]"""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -380,22 +378,22 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
       assert(headers.nonEmpty)
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
-          assert("http://localhost" === v.toString)
+          assertEquals("http://localhost", v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+          assertEquals("GET,PATCH,POST,PUT,DELETE", vs.map(_.name()).mkString(","))
         case `Access-Control-Expose-Headers`(vs) =>
-          assert("Vary" === vs.mkString(","))
+          assertEquals("Vary", vs.mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
         case h if h.is("netflix-zone") =>
-          assert(h.value === "us-east-1e")
+          assertEquals(h.value, "us-east-1e")
         case h if h.is("vary") =>
           assert(Set("Origin", "Host").contains(h.value))
         case h =>
           fail(s"unexpected header: $h (${h.getClass})")
       }
       val expected = ""
-      assert(expected === responseAs[String])
+      assertEquals(expected, responseAs[String])
     }
   }
 
@@ -406,19 +404,19 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
       assert(response.headers.nonEmpty)
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
-          assert("http://localhost" === v.toString)
+          assertEquals("http://localhost", v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+          assertEquals("GET,PATCH,POST,PUT,DELETE", vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
         case h if h.is("netflix-zone") =>
-          assert(h.value === "us-east-1e")
+          assertEquals(h.value, "us-east-1e")
         case h if h.is("vary") =>
-          assert(h.value === "Origin")
+          assertEquals(h.value, "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
-      assert("" === responseAs[String])
+      assertEquals("", responseAs[String])
     }
   }
 
@@ -429,25 +427,25 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
       assert(response.headers.nonEmpty)
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
-          assert("http://localhost" === v.toString)
+          assertEquals("http://localhost", v.toString)
         case `Access-Control-Allow-Methods`(vs) =>
-          assert("GET,PATCH,POST,PUT,DELETE" === vs.map(_.name()).mkString(","))
+          assertEquals("GET,PATCH,POST,PUT,DELETE", vs.map(_.name()).mkString(","))
         case `Access-Control-Allow-Credentials`(v) =>
           assert(v)
         case h if h.is("netflix-zone") =>
-          assert(h.value === "us-east-1e")
+          assertEquals(h.value, "us-east-1e")
         case h if h.is("vary") =>
-          assert(h.value === "Origin")
+          assertEquals(h.value, "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
-      assert("" === responseAs[String])
+      assertEquals("", responseAs[String])
     }
   }
 
   test("cors preflight") {
     Options("/json") ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assertEquals(response.status, StatusCodes.OK)
     }
   }
 
@@ -460,7 +458,7 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
       )
     )
     request ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assertEquals(response.status, StatusCodes.OK)
     }
   }
 
@@ -476,13 +474,13 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
 
   test("endpoint header, nothing unmatched") {
     Get("/endpoint") ~> endpoint.routes ~> check {
-      assert(getEndpoint(response) === "/endpoint")
+      assertEquals(getEndpoint(response), "/endpoint")
     }
   }
 
   test("endpoint header, int part") {
     Get("/endpoint/404") ~> endpoint.routes ~> check {
-      assert(getEndpoint(response) === "/endpoint")
+      assertEquals(getEndpoint(response), "/endpoint")
     }
   }
 
@@ -490,14 +488,14 @@ class CustomDirectivesSuite extends AnyFunSuite with ScalatestRouteTest with Bef
     Get("/endpoint/v1/foo/404/bar/i-1234567890") ~> endpoint.routes ~> check {
       // Ideally it wouldn't match the 404 value that was extracted, but since this sort
       // of nesting is not common for our use-cases, that is left for later refinement
-      assert(getEndpoint(response) === "/endpoint/v1/foo/404/bar")
+      assertEquals(getEndpoint(response), "/endpoint/v1/foo/404/bar")
     }
   }
 
   test("diagnostic headers are added to response") {
     Get("/text") ~> endpoint.routes ~> check {
       val zone = response.headers.find(_.is("netflix-zone"))
-      assert(zone === Some(RawHeader("Netflix-Zone", "us-east-1e")))
+      assertEquals(zone, Some(RawHeader("Netflix-Zone", "us-east-1e")))
     }
   }
 

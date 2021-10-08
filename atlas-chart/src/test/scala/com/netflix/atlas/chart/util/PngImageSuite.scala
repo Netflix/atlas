@@ -18,15 +18,17 @@ package com.netflix.atlas.chart.util
 import java.io.InputStream
 
 import com.netflix.atlas.core.util.Streams
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class PngImageSuite extends AnyFunSuite {
+class PngImageSuite extends FunSuite {
 
   // SBT working directory gets updated with fork to be the dir for the project
   private val baseDir = SrcPath.forProject("atlas-chart")
   private val goldenDir = s"$baseDir/src/test/resources/pngimage"
   private val targetDir = s"$baseDir/target/pngimage"
-  private val graphAssertions = new GraphAssertions(goldenDir, targetDir, (a, b) => assert(a === b))
+
+  private val graphAssertions =
+    new GraphAssertions(goldenDir, targetDir, (a, b) => assertEquals(a, b))
 
   private val bless = false
 
@@ -58,25 +60,25 @@ class PngImageSuite extends AnyFunSuite {
 
   test("load image") {
     val image = getImage("test.png")
-    assert(image.metadata.size === 2)
-    assert(image.metadata("identical") === "false")
-    assert(image.metadata("diff-pixel-count") === "48302")
+    assertEquals(image.metadata.size, 2)
+    assertEquals(image.metadata("identical"), "false")
+    assertEquals(image.metadata("diff-pixel-count"), "48302")
   }
 
   test("diff image, identical") {
     val i1 = PngImage.error("", 800, 100)
     val i2 = PngImage.error("", 800, 100)
     val diff = PngImage.diff(i1.data, i2.data)
-    assert(diff.metadata("identical") === "true")
-    assert(diff.metadata("diff-pixel-count") === "0")
+    assertEquals(diff.metadata("identical"), "true")
+    assertEquals(diff.metadata("diff-pixel-count"), "0")
   }
 
   test("diff image, with delta") {
     val i1 = PngImage.error("", 800, 100)
     val i2 = PngImage.error("", 801, 121)
     val diff = PngImage.diff(i1.data, i2.data)
-    assert(diff.metadata("identical") === "false")
-    assert(diff.metadata("diff-pixel-count") === "16921")
+    assertEquals(diff.metadata("identical"), "false")
+    assertEquals(diff.metadata("diff-pixel-count"), "16921")
   }
 
   test("error image, 400x300") {
@@ -111,8 +113,8 @@ class PngImageSuite extends AnyFunSuite {
     val systemErrorImage = PngImage.systemError("", 800, 100)
     val diff = PngImage.diff(userErrorImage.data, systemErrorImage.data)
 
-    assert(diff.metadata("identical") === "false")
-    assert(diff.metadata("diff-pixel-count") === "80000")
+    assertEquals(diff.metadata("identical"), "false")
+    assertEquals(diff.metadata("diff-pixel-count"), "80000")
   }
 
   test("image metadata") {
@@ -126,6 +128,6 @@ class PngImageSuite extends AnyFunSuite {
     val bytes = img.toByteArray
     val decoded = PngImage(bytes)
 
-    assert(metadata === decoded.metadata)
+    assertEquals(metadata, decoded.metadata)
   }
 }

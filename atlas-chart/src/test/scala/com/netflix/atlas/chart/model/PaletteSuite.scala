@@ -17,9 +17,9 @@ package com.netflix.atlas.chart.model
 
 import java.awt.Color
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class PaletteSuite extends AnyFunSuite {
+class PaletteSuite extends FunSuite {
 
   test("colors:") {
     intercept[IllegalArgumentException] {
@@ -35,20 +35,20 @@ class PaletteSuite extends AnyFunSuite {
 
   test("colors:f00") {
     val p = Palette.create("colors:f00")
-    assert(p.colors(0) === Color.RED)
+    assertEquals(p.colors(0), Color.RED)
   }
 
   test("colors:f00,00ff00") {
     val p = Palette.create("colors:f00,00ff00")
-    assert(p.colors(0) === Color.RED)
-    assert(p.colors(1) === Color.GREEN)
+    assertEquals(p.colors(0), Color.RED)
+    assertEquals(p.colors(1), Color.GREEN)
   }
 
   test("colors:f00,00ff00,ff0000ff") {
     val p = Palette.create("colors:f00,00ff00,ff0000ff")
-    assert(p.colors(0) === Color.RED)
-    assert(p.colors(1) === Color.GREEN)
-    assert(p.colors(2) === Color.BLUE)
+    assertEquals(p.colors(0), Color.RED)
+    assertEquals(p.colors(1), Color.GREEN)
+    assertEquals(p.colors(2), Color.BLUE)
   }
 
   test("(,)") {
@@ -65,25 +65,25 @@ class PaletteSuite extends AnyFunSuite {
 
   test("(,f00,)") {
     val p = Palette.create("(,f00,)")
-    assert(p.colors(0) === Color.RED)
+    assertEquals(p.colors(0), Color.RED)
   }
 
   test("(,f00,00ff00,)") {
     val p = Palette.create("(,f00,00ff00,)")
-    assert(p.colors(0) === Color.RED)
-    assert(p.colors(1) === Color.GREEN)
+    assertEquals(p.colors(0), Color.RED)
+    assertEquals(p.colors(1), Color.GREEN)
   }
 
   test("(,f00,00ff00,ff0000ff,)") {
     val p = Palette.create("(,f00,00ff00,ff0000ff,)")
-    assert(p.colors(0) === Color.RED)
-    assert(p.colors(1) === Color.GREEN)
-    assert(p.colors(2) === Color.BLUE)
+    assertEquals(p.colors(0), Color.RED)
+    assertEquals(p.colors(1), Color.GREEN)
+    assertEquals(p.colors(2), Color.BLUE)
   }
 
   test("armytage") {
     val p = Palette.create("armytage")
-    assert(p.colors(0) === new Color(0, 117, 220))
+    assertEquals(p.colors(0), new Color(0, 117, 220))
   }
 
   test("foo") {

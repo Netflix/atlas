@@ -17,17 +17,15 @@ package com.netflix.atlas.akka
 
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Provider
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.Service
 import com.netflix.iep.service.ServiceManager
 import com.netflix.iep.service.State
-import org.scalatest.funsuite.AnyFunSuite
 
-class HealthcheckApiSuite extends AnyFunSuite with ScalatestRouteTest {
+class HealthcheckApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
@@ -56,7 +54,7 @@ class HealthcheckApiSuite extends AnyFunSuite with ScalatestRouteTest {
   test("/healthcheck pre-start") {
     serviceHealth.set(false)
     Get("/healthcheck") ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.InternalServerError)
+      assertEquals(response.status, StatusCodes.InternalServerError)
       val data = Json.decode[Map[String, Boolean]](responseAs[String])
       assert(!data("test"))
     }
@@ -65,7 +63,7 @@ class HealthcheckApiSuite extends AnyFunSuite with ScalatestRouteTest {
   test("/healthcheck post-start") {
     serviceHealth.set(true)
     Get("/healthcheck") ~> endpoint.routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assertEquals(response.status, StatusCodes.OK)
       val data = Json.decode[Map[String, Boolean]](responseAs[String])
       assert(data("test"))
     }

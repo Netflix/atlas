@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.stacklang
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-abstract class BaseWordSuite extends AnyFunSuite {
+abstract class BaseWordSuite extends FunSuite {
 
   def interpreter: Interpreter
 
@@ -35,7 +35,7 @@ abstract class BaseWordSuite extends AnyFunSuite {
 
       test(s"execute: $prg") {
         val c = interpreter.execute(prg)
-        assert(word.execute(c).stack === after)
+        assertEquals(word.execute(c).stack, after)
       }
   }
 

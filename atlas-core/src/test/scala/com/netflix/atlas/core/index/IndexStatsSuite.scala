@@ -18,18 +18,17 @@ package com.netflix.atlas.core.index
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
 import com.netflix.spectator.api.patterns.PolledMeter
-import org.scalatest.BeforeAndAfter
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Random
 
-class IndexStatsSuite extends AnyFunSuite with BeforeAndAfter {
+class IndexStatsSuite extends FunSuite {
 
   private val clock = new ManualClock()
   private var registry = new DefaultRegistry(clock)
   private var stats = new IndexStats(registry)
 
-  before {
+  override def beforeEach(context: BeforeEach): Unit = {
     clock.setWallTime(0)
     registry = new DefaultRegistry(clock)
     stats = new IndexStats(registry)
@@ -46,31 +45,31 @@ class IndexStatsSuite extends AnyFunSuite with BeforeAndAfter {
     // Should have 44 metrics in total:
     // 43 key metrics: 1 num keys, 21 num values, 21 num items
     //  1  db metrics: 1 num metrics
-    assert(registry.gauges().count() === 44)
+    assertEquals(registry.gauges().count(), 44L)
   }
 
   test("top-N value") {
     val numValues = registry.gauge("atlas.index.numberOfValues", "key", "42").value()
-    assert(numValues === 42)
+    assertEquals(numValues, 42.0)
   }
 
   test("top-N item") {
     val numItems = registry.gauge("atlas.index.numberOfItems", "key", "42").value()
-    assert(numItems === 8)
+    assertEquals(numItems, 8.0)
   }
 
   test("aggregation of other values") {
     // Top 20 are selected, others is N * (N - 1) / 2
     val numValues = registry.gauge("atlas.index.numberOfValues", "key", "-others-").value()
-    assert(numValues === 30 * 29 / 2)
+    assertEquals(numValues, 30.0 * 29 / 2)
   }
 
   test("aggregation of other items") {
     // Top 20 by value are selected, items were given reverse counts
     val numItems = registry.gauge("atlas.index.numberOfItems", "key", "-others-").value()
-    val overall = 50 * 51 / 2
+    val overall = 50.0 * 51 / 2
     val top20 = 20 * 21 / 2
-    assert(numItems === overall - top20)
+    assertEquals(numItems, overall - top20)
   }
 
   test("cleanup") {
@@ -96,6 +95,6 @@ class IndexStatsSuite extends AnyFunSuite with BeforeAndAfter {
 
   test("db size is present") {
     val numMetrics = registry.gauge("atlas.db.size").value()
-    assert(numMetrics === 100)
+    assertEquals(numMetrics, 100.0)
   }
 }

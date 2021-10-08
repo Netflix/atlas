@@ -17,9 +17,9 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class CustomVocabularySuite extends AnyFunSuite {
+class CustomVocabularySuite extends FunSuite {
 
   private val cpuUser = "name,cpuUser,:eq"
   private val numInstances = "name,aws.numInstances,:eq"
@@ -58,7 +58,7 @@ class CustomVocabularySuite extends AnyFunSuite {
   test("custom word: square") {
     val expr = eval("2,:square")
     val expected = eval("2,2,:mul")
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("simple average") {
@@ -66,7 +66,7 @@ class CustomVocabularySuite extends AnyFunSuite {
       case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
     }
     val expected = eval(s"$cpuUser,:sum,$numInstances,:sum,:div")
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("expr with cluster") {
@@ -74,7 +74,7 @@ class CustomVocabularySuite extends AnyFunSuite {
       case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
     }
     val expected = eval(s"$cpuUser,:sum,$numInstances,:sum,:div,cluster,foo,:eq,:cq")
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("expr with cq using non-infrastructure tags") {
@@ -82,7 +82,7 @@ class CustomVocabularySuite extends AnyFunSuite {
       case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
     }
     val expected = eval(s"$cpuUser,core,1,:eq,:and,:sum,$numInstances,:sum,:div")
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("expr grouped by infrastructure tags") {
@@ -91,7 +91,7 @@ class CustomVocabularySuite extends AnyFunSuite {
     }
     val expected =
       eval(s"$cpuUser,:sum,(,zone,),:by,$numInstances,:sum,(,zone,),:by,:div,cluster,foo,:eq,:cq")
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("expr grouped by non-infrastructure tags") {
@@ -99,7 +99,7 @@ class CustomVocabularySuite extends AnyFunSuite {
       case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
     }
     val expected = eval(s"$cpuUser,:sum,(,name,),:by,$numInstances,:sum,:div,cluster,foo,:eq,:cq")
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("expr grouped by non-infrastructure tags with offset") {
@@ -110,22 +110,23 @@ class CustomVocabularySuite extends AnyFunSuite {
     val expected = eval(
       s"$cpuUser,:sum,(,name,),:by,PT1H,:offset,$numInstances,:sum,PT1H,:offset,:div,cluster,foo,:eq,:cq"
     )
-    assert(evalExpr === expected)
-    assert(
-      displayExpr.toString === s"$cpuUser,cluster,foo,:eq,:and,:node-avg,PT1H,:offset,(,name,),:by"
+    assertEquals(evalExpr, expected)
+    assertEquals(
+      displayExpr.toString,
+      s"$cpuUser,cluster,foo,:eq,:and,:node-avg,PT1H,:offset,(,name,),:by"
     )
   }
 
   test("expr with cq") {
     val e1 = eval(s"$cpuUser,cluster,api,:eq,:and,:node-avg")
     val e2 = eval(s"$cpuUser,:node-avg,:list,(,cluster,api,:eq,:cq,),:each")
-    assert(e1 === e2)
+    assertEquals(e1, e2)
   }
 
   test("expr with group by") {
     val e1 = eval("name,(,a,b,c,),:in,app,beacon,:eq,zone,1c,:eq,:and,:and,:node-avg,(,name,),:by")
     val e2 = eval("name,(,a,b,c,),:in,:node-avg,(,name,),:by,app,beacon,:eq,zone,1c,:eq,:and,:cq")
-    assert(e1 === e2)
+    assertEquals(e1, e2)
   }
 
   test("expr with not") {
@@ -134,7 +135,7 @@ class CustomVocabularySuite extends AnyFunSuite {
     }
     val expected =
       eval(s"$cpuUser,foo,bar,:eq,:not,:and,:sum,$numInstances,:sum,:div,cluster,foo,:eq,:cq")
-    assert(expr === expected)
+    assertEquals(expr, expected)
   }
 
   test("group by mixed keys") {

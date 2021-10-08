@@ -3,6 +3,7 @@ lazy val atlas = project.in(file("."))
   .configure(BuildSettings.profile)
   .aggregate(
     `atlas-akka`,
+    `atlas-akka-testkit`,
     `atlas-chart`,
     `atlas-core`,
     `atlas-eval`,
@@ -21,7 +22,7 @@ lazy val atlas = project.in(file("."))
 
 lazy val `atlas-akka` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-json`)
+  .dependsOn(`atlas-json`, `atlas-akka-testkit` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.akkaActor,
     Dependencies.akkaSlf4j,
@@ -34,6 +35,15 @@ lazy val `atlas-akka` = project
     Dependencies.akkaHttpTestkit % "test",
     Dependencies.akkaStreamTestkit % "test",
     Dependencies.akkaTestkit % "test"
+  ))
+
+lazy val `atlas-akka-testkit` = project
+  .configure(BuildSettings.profile)
+  .settings(libraryDependencies ++= Seq(
+      Dependencies.akkaHttpTestkit,
+      Dependencies.akkaStreamTestkit,
+      Dependencies.akkaTestkit,
+      Dependencies.munit
   ))
 
 lazy val `atlas-chart` = project
@@ -80,7 +90,7 @@ lazy val `atlas-json` = project
 
 lazy val `atlas-lwcapi` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-eval`, `atlas-json`)
+  .dependsOn(`atlas-akka`, `atlas-akka-testkit` % "test", `atlas-core`, `atlas-eval`, `atlas-json`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepNflxEnv,
     Dependencies.frigga,
@@ -143,6 +153,7 @@ lazy val `atlas-webapi` = project
   .configure(BuildSettings.profile)
   .dependsOn(
     `atlas-akka`,
+    `atlas-akka-testkit` % "test",
     `atlas-chart`,
     `atlas-core`,
     `atlas-eval`,

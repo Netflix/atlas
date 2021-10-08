@@ -17,9 +17,9 @@ package com.netflix.atlas.core.validation
 
 import com.netflix.spectator.api.Id
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class MaxUserTagsRuleSuite extends AnyFunSuite {
+class MaxUserTagsRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("limit = 2")
   private val rule = MaxUserTagsRule(config)
@@ -28,9 +28,9 @@ class MaxUserTagsRuleSuite extends AnyFunSuite {
     val t1 = Map("name" -> "foo")
     val t2 = t1 + ("foo"       -> "bar")
     val t3 = t2 + ("nf.region" -> "west")
-    assert(rule.validate(t1) === ValidationResult.Pass)
-    assert(rule.validate(t2) === ValidationResult.Pass)
-    assert(rule.validate(t3) === ValidationResult.Pass)
+    assertEquals(rule.validate(t1), ValidationResult.Pass)
+    assertEquals(rule.validate(t2), ValidationResult.Pass)
+    assertEquals(rule.validate(t3), ValidationResult.Pass)
   }
 
   test("too many") {
@@ -42,9 +42,9 @@ class MaxUserTagsRuleSuite extends AnyFunSuite {
     val id1 = Id.create("foo")
     val id2 = id1.withTag("foo", "bar")
     val id3 = id2.withTag("nf.region", "west")
-    assert(rule.validate(id1) === ValidationResult.Pass)
-    assert(rule.validate(id2) === ValidationResult.Pass)
-    assert(rule.validate(id3) === ValidationResult.Pass)
+    assertEquals(rule.validate(id1), ValidationResult.Pass)
+    assertEquals(rule.validate(id2), ValidationResult.Pass)
+    assertEquals(rule.validate(id3), ValidationResult.Pass)
   }
 
   test("id: too many") {

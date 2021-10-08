@@ -20,11 +20,11 @@ import akka.actor.ActorSystem
 import akka.util.Timeout
 import com.netflix.iep.service.DefaultClassFactory
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.concurrent.Await
 
-class ActorServiceSuite extends AnyFunSuite {
+class ActorServiceSuite extends FunSuite {
 
   import scala.concurrent.duration._
   implicit val timeout = Timeout(5.seconds)
@@ -45,7 +45,7 @@ class ActorServiceSuite extends AnyFunSuite {
     try {
       val ref = system.actorSelection("/user/test")
       val v = Await.result(akka.pattern.ask(ref, "ping"), Duration.Inf)
-      assert(v === "ping")
+      assertEquals(v, "ping")
     } finally {
       service.stop()
       Await.ready(system.terminate(), Duration.Inf)
@@ -75,7 +75,7 @@ class ActorServiceSuite extends AnyFunSuite {
     try {
       val ref = system.actorSelection("/user/test")
       val v = Await.result(akka.pattern.ask(ref, "ping"), Duration.Inf)
-      assert(v === "ping")
+      assertEquals(v, "ping")
     } finally {
       service.stop()
       Await.ready(system.terminate(), Duration.Inf)

@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class StreamSuite extends AnyFunSuite {
+class StreamSuite extends FunSuite {
 
   val stream = List(
     List(
@@ -50,9 +50,9 @@ class StreamSuite extends AnyFunSuite {
     val aggr = DataExpr.Sum(Query.Equal("name", "cpu"))
     val result = eval(aggr, stream)
     result.foreach { ts =>
-      assert(ts.size === 1)
+      assertEquals(ts.size, 1)
       ts.foreach { t =>
-        assert(t.tags === Map("name" -> "cpu"))
+        assertEquals(t.tags, Map("name" -> "cpu"))
       }
     }
   }
@@ -61,9 +61,9 @@ class StreamSuite extends AnyFunSuite {
     val aggr = DataExpr.Count(Query.Equal("name", "cpu"))
     val result = eval(aggr, stream)
     result.foreach { ts =>
-      assert(ts.size === 1)
+      assertEquals(ts.size, 1)
       ts.foreach { t =>
-        assert(t.tags === Map("name" -> "cpu"))
+        assertEquals(t.tags, Map("name" -> "cpu"))
       }
     }
   }
@@ -72,9 +72,9 @@ class StreamSuite extends AnyFunSuite {
     val aggr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "cpu")), List("name"))
     val result = eval(aggr, stream)
     result.foreach { ts =>
-      assert(ts.size === 1)
+      assertEquals(ts.size, 1)
       ts.foreach { t =>
-        assert(t.tags === Map("name" -> "cpu"))
+        assertEquals(t.tags, Map("name" -> "cpu"))
       }
     }
   }
@@ -90,7 +90,7 @@ class StreamSuite extends AnyFunSuite {
           case 2 => (1 to 2).map(i => Map("name" -> "cpu", "node" -> s"i-$i")).toSet
           case 3 => Set(Map("name" -> "cpu", "node" -> "i-2"))
         }
-        assert(expected === ts.map(_.tags).toSet)
+        assertEquals(expected, ts.map(_.tags).toSet)
     }
   }
 
@@ -98,9 +98,9 @@ class StreamSuite extends AnyFunSuite {
     val aggr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("name"))
     val result = eval(aggr, stream)
     result.foreach { ts =>
-      assert(ts.size === 1)
+      assertEquals(ts.size, 1)
       ts.foreach { t =>
-        assert(t.tags === Map("name" -> "cpu"))
+        assertEquals(t.tags, Map("name" -> "cpu"))
       }
     }
   }
@@ -116,7 +116,7 @@ class StreamSuite extends AnyFunSuite {
           case 2 => (1 to 2).map(i => Map("name" -> "cpu", "node" -> s"i-$i")).toSet
           case 3 => Set(Map("name" -> "cpu", "node" -> "i-2"))
         }
-        assert(expected === ts.map(_.tags).toSet)
+        assertEquals(expected, ts.map(_.tags).toSet)
     }
   }
 
@@ -127,9 +127,9 @@ class StreamSuite extends AnyFunSuite {
     val sum = DataExpr.Sum(Query.True)
     val result = eval(sum, stream)
     result.foreach { ts =>
-      assert(ts.size === 1)
+      assertEquals(ts.size, 1)
       ts.foreach { t =>
-        assert(t.tags === Map("name" -> "unknown"))
+        assertEquals(t.tags, Map("name" -> "unknown"))
       }
     }
   }

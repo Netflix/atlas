@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.stacklang
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class VocabularySuite extends AnyFunSuite {
+class VocabularySuite extends FunSuite {
   import com.netflix.atlas.core.stacklang.VocabularySuite._
 
   test("toMarkdown") {
@@ -79,7 +79,7 @@ class VocabularySuite extends AnyFunSuite {
         |IllegalStateException: no matches for word ':dup' with stack [], candidates: [a -- a a]
         |```
       """.stripMargin.trim
-    assert(TestVocabulary.toMarkdown === expected)
+    assertEquals(TestVocabulary.toMarkdown, expected)
   }
 
   test("toMarkdown standard") {

@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.validation
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ValidCharactersRuleSuite extends AnyFunSuite {
+class ValidCharactersRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("")
 
@@ -41,7 +41,7 @@ class ValidCharactersRuleSuite extends AnyFunSuite {
 
   test("valid") {
     val rule = ValidCharactersRule(config)
-    assert(validate(rule, alpha, alpha) === ValidationResult.Pass)
+    assertEquals(validate(rule, alpha, alpha), ValidationResult.Pass)
   }
 
   test("invalid key") {
@@ -70,7 +70,7 @@ class ValidCharactersRuleSuite extends AnyFunSuite {
 
   test("custom pattern valid") {
     val rule = ValidCharactersRule(customPattern)
-    assert(validate(rule, "abcdef", "fedcba") === ValidationResult.Pass)
+    assertEquals(validate(rule, "abcdef", "fedcba"), ValidationResult.Pass)
   }
 
   test("custom pattern invalid key") {
@@ -87,6 +87,6 @@ class ValidCharactersRuleSuite extends AnyFunSuite {
 
   test("custom pattern value override") {
     val rule = ValidCharactersRule(customPattern)
-    assert(validate(rule, "nf.asg", alpha + "^~") === ValidationResult.Pass)
+    assertEquals(validate(rule, "nf.asg", alpha + "^~"), ValidationResult.Pass)
   }
 }

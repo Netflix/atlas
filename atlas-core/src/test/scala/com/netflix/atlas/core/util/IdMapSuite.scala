@@ -16,31 +16,31 @@
 package com.netflix.atlas.core.util
 
 import com.netflix.spectator.api.Id
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class IdMapSuite extends AnyFunSuite {
+class IdMapSuite extends FunSuite {
 
   test("basic map") {
-    assert(IdMap(Id.create("foo")) === Map("name" -> "foo"))
+    assertEquals(Map("name" -> "foo"), IdMap(Id.create("foo")))
   }
 
   test("removed") {
     val id = Id.create("foo").withTags("a", "1", "b", "2")
-    assert(IdMap(id).removed("name") === Map("a" -> "1", "b"   -> "2"))
-    assert(IdMap(id).removed("a") === Map("name" -> "foo", "b" -> "2"))
+    assertEquals(IdMap(id).removed("name"), Map("a" -> "1", "b"   -> "2"))
+    assertEquals(IdMap(id).removed("a"), Map("name" -> "foo", "b" -> "2"))
   }
 
   test("updated") {
     val id = Id.create("foo").withTags("a", "1")
-    assert(IdMap(id).updated("b", "2") === Map("name" -> "foo", "a" -> "1", "b" -> "2"))
+    assertEquals(IdMap(id).updated("b", "2"), Map("name" -> "foo", "a" -> "1", "b" -> "2"))
   }
 
   test("get") {
     val id = Id.create("foo").withTags("a", "1", "b", "2")
-    assert(IdMap(id).get("name") === Some("foo"))
-    assert(IdMap(id).get("a") === Some("1"))
-    assert(IdMap(id).get("b") === Some("2"))
-    assert(IdMap(id).get("c") === None)
+    assertEquals(IdMap(id).get("name"), Some("foo"))
+    assertEquals(IdMap(id).get("a"), Some("1"))
+    assertEquals(IdMap(id).get("b"), Some("2"))
+    assertEquals(IdMap(id).get("c"), None)
   }
 
   test("iterator") {
@@ -50,7 +50,7 @@ class IdMapSuite extends AnyFunSuite {
       "a"    -> "1",
       "b"    -> "2"
     )
-    assert(IdMap(id).iterator.toList === expected)
+    assertEquals(IdMap(id).iterator.toList, expected)
   }
 
   test("foreachEntry") {
@@ -65,6 +65,6 @@ class IdMapSuite extends AnyFunSuite {
       "a"    -> "1",
       "b"    -> "2"
     )
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 }

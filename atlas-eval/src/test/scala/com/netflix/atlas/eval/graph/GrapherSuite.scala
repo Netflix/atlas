@@ -26,10 +26,9 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
+class GrapherSuite extends FunSuite {
 
   private val bless = false
 
@@ -37,7 +36,9 @@ class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
   private val baseDir = SrcPath.forProject("atlas-eval")
   private val goldenDir = s"$baseDir/src/test/resources/graph/${getClass.getSimpleName}"
   private val targetDir = s"$baseDir/target/${getClass.getSimpleName}"
-  private val graphAssertions = new GraphAssertions(goldenDir, targetDir, (a, b) => assert(a === b))
+
+  private val graphAssertions =
+    new GraphAssertions(goldenDir, targetDir, (a, b) => assertEquals(a, b))
 
   private val db = StaticDatabase.demo
   private val grapher = Grapher(ConfigFactory.load())
@@ -461,7 +462,7 @@ class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
     val e = intercept[IllegalArgumentException] {
       grapher.toGraphConfig(Uri(uri)).parsedQuery.get
     }
-    assert(e.getMessage === "expecting time series expr, found String 'foo'")
+    assertEquals(e.getMessage, "expecting time series expr, found String 'foo'")
   }
 
   def renderTest(name: String)(uri: => String): Unit = {
@@ -508,13 +509,13 @@ class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
   test("host rewrite: no match") {
     val request = mkRequest("foo.example.com")
     val config = grapher.toGraphConfig(request)
-    assert(config === grapher.toGraphConfig(request.uri))
+    assertEquals(config, grapher.toGraphConfig(request.uri))
   }
 
   test("host rewrite: match") {
     val request = mkRequest("foo.us-east-1.example.com")
     val config = grapher.toGraphConfig(request)
-    assert(config !== grapher.toGraphConfig(request.uri))
+    assertNotEquals(config, grapher.toGraphConfig(request.uri))
     assert(config.query.contains("region,us-east-1,:eq"))
     assert(config.parsedQuery.get.forall(_.toString.contains("region,us-east-1,:eq")))
   }
@@ -522,7 +523,7 @@ class GrapherSuite extends AnyFunSuite with BeforeAndAfterAll {
   test("host rewrite: bad query") {
     val request = mkRequest("foo.us-east-1.example.com", "a,b,:foo")
     val config = grapher.toGraphConfig(request)
-    assert(config.query === "a,b,:foo")
+    assertEquals(config.query, "a,b,:foo")
     assert(config.parsedQuery.isFailure)
   }
 }

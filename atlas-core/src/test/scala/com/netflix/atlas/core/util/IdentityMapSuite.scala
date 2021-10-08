@@ -15,29 +15,29 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class IdentityMapSuite extends AnyFunSuite {
+class IdentityMapSuite extends FunSuite {
 
   test("add") {
     val m = IdentityMap.empty[String, Int] + ("a" -> 42)
-    assert(m.get("a") === Some(42))
+    assertEquals(m.get("a"), Some(42))
   }
 
   test("remove") {
     val m = IdentityMap(Map("a" -> 42)) - "a"
-    assert(m.get("a") === None)
+    assertEquals(m.get("a"), None)
   }
 
   test("overwrite") {
     val m = IdentityMap(Map("a" -> 42)) + ("a" -> 2)
-    assert(m.get("a") === Some(2))
+    assertEquals(m.get("a"), Some(2))
   }
 
   test("iterate") {
     val m = IdentityMap(new String("a") -> 2, new String("a") -> 1, "b" -> 3)
     val values = m.iterator.map(_._2).toSet
-    assert(values === Set(1, 2, 3))
+    assertEquals(values, Set(1, 2, 3))
   }
 
   test("foreachEntry") {
@@ -63,14 +63,14 @@ class IdentityMapSuite extends AnyFunSuite {
 
   test("uses reference equality") {
     val m = IdentityMap.empty[String, Int] + ("a" -> 42)
-    assert(m.get(new String("a")) === None)
+    assertEquals(m.get(new String("a")), None)
   }
 
   test("++ preserves map type") {
     val m1 = IdentityMap(new String("a") -> 1)
     val m2 = IdentityMap(new String("a") -> 2)
     val m3 = m1 ++ m2
-    assert(m3.size === 2)
-    assert(m3.values.toSet === Set(1, 2))
+    assertEquals(m3.size, 2)
+    assertEquals(m3.values.toSet, Set(1, 2))
   }
 }

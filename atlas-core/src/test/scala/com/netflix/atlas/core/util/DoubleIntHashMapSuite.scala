@@ -17,65 +17,65 @@ package com.netflix.atlas.core.util
 
 import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.info.GraphLayout
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Random
 
-class DoubleIntHashMapSuite extends AnyFunSuite {
+class DoubleIntHashMapSuite extends FunSuite {
 
   test("put") {
     val m = new DoubleIntHashMap
-    assert(0 === m.size)
+    assertEquals(0, m.size)
     m.put(11.0, 42)
-    assert(1 === m.size)
-    assert(Map(11.0 -> 42) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(11.0 -> 42), m.toMap)
   }
 
   test("get") {
     val m = new DoubleIntHashMap
-    assert(m.get(42.0, -1) === -1)
+    assertEquals(m.get(42.0, -1), -1)
     m.put(11.0, 27)
-    assert(m.get(42.0, -1) === -1)
-    assert(m.get(11.0, -1) === 27)
+    assertEquals(m.get(42.0, -1), -1)
+    assertEquals(m.get(11.0, -1), 27)
   }
 
   test("dedup") {
     val m = new DoubleIntHashMap
     m.put(42.0, 1)
-    assert(Map(42.0 -> 1) === m.toMap)
-    assert(1 === m.size)
+    assertEquals(Map(42.0 -> 1), m.toMap)
+    assertEquals(1, m.size)
     m.put(42.0, 2)
-    assert(Map(42.0 -> 2) === m.toMap)
-    assert(1 === m.size)
+    assertEquals(Map(42.0 -> 2), m.toMap)
+    assertEquals(1, m.size)
   }
 
   test("increment") {
     val m = new DoubleIntHashMap
-    assert(0 === m.size)
+    assertEquals(0, m.size)
 
     m.increment(42.0)
-    assert(1 === m.size)
-    assert(Map(42.0 -> 1) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(42.0 -> 1), m.toMap)
 
     m.increment(42.0)
-    assert(1 === m.size)
-    assert(Map(42.0 -> 2) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(42.0 -> 2), m.toMap)
 
     m.increment(42.0, 7)
-    assert(1 === m.size)
-    assert(Map(42.0 -> 9) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(42.0 -> 9), m.toMap)
   }
 
   test("resize") {
     val m = new DoubleIntHashMap
     (0 until 10000).foreach(i => m.put(i, i))
-    assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
+    assertEquals((0 until 10000).map(i => i.toDouble -> i).toMap, m.toMap)
   }
 
   test("resize - increment") {
     val m = new DoubleIntHashMap
     (0 until 10000).foreach(i => m.increment(i, i))
-    assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
+    assertEquals((0 until 10000).map(i => i.toDouble -> i).toMap, m.toMap)
   }
 
   test("random") {
@@ -86,14 +86,14 @@ class DoubleIntHashMapSuite extends AnyFunSuite {
       imap.put(v, i)
       jmap.put(v, i)
     }
-    assert(jmap.toMap === imap.toMap)
-    assert(jmap.size === imap.size)
+    assertEquals(jmap.toMap, imap.toMap)
+    assertEquals(jmap.size, imap.size)
   }
 
   test("memory per map") {
     // Sanity check to verify if some change introduces more overhead per set
     val bytes = ClassLayout.parseClass(classOf[DoubleIntHashMap]).instanceSize()
-    assert(bytes === 16)
+    assertEquals(bytes, 16L)
   }
 
   test("memory - 5 items") {
@@ -111,7 +111,7 @@ class DoubleIntHashMapSuite extends AnyFunSuite {
     //println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself
-    assert(igraph.totalCount() === 4)
+    assertEquals(igraph.totalCount(), 4L)
 
     // Sanity check size is < 300 bytes
     assert(igraph.totalSize() <= 300)
@@ -132,7 +132,7 @@ class DoubleIntHashMapSuite extends AnyFunSuite {
     //println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself
-    assert(igraph.totalCount() === 4)
+    assertEquals(igraph.totalCount(), 4L)
 
     // Sanity check size is < 320kb
     assert(igraph.totalSize() <= 320000)
@@ -148,7 +148,7 @@ class DoubleIntHashMapSuite extends AnyFunSuite {
     // scala> math.abs(java.lang.Long.hashCode(java.lang.Double.doubleToLongBits(0.4182373879985505)))
     // res11: Int = -2147483648
     val m = new DoubleIntHashMap
-    assert(m.get(0.778945326637231, 0) === 0)
+    assertEquals(m.get(0.778945326637231, 0), 0)
   }
 
 }

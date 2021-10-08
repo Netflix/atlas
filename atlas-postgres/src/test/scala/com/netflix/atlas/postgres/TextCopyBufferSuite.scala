@@ -17,11 +17,11 @@ package com.netflix.atlas.postgres
 
 import com.netflix.atlas.core.model.ItemIdCalculator
 import com.netflix.atlas.core.util.SortedTagMap
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import java.io.Reader
 
-class TextCopyBufferSuite extends AnyFunSuite {
+class TextCopyBufferSuite extends FunSuite {
 
   test("too small") {
     intercept[IllegalArgumentException] {
@@ -42,31 +42,31 @@ class TextCopyBufferSuite extends AnyFunSuite {
     val buffer = new TextCopyBuffer(100)
     val id = ItemIdCalculator.compute(SortedTagMap("a" -> "1"))
     buffer.putId(id)
-    assert(buffer.toString === s"$id\t")
+    assertEquals(buffer.toString, s"$id\t")
   }
 
   test("putString") {
     val buffer = new TextCopyBuffer(100)
     buffer.putString("foo")
-    assert(buffer.toString === "foo\t")
+    assertEquals(buffer.toString, "foo\t")
   }
 
   test("putString null") {
     val buffer = new TextCopyBuffer(100)
     buffer.putString(null)
-    assert(buffer.toString === "\\N\t")
+    assertEquals(buffer.toString, "\\N\t")
   }
 
   test("putString escape") {
     val buffer = new TextCopyBuffer(100)
     buffer.putString("\b\f\n\r\t\u000b\"\\")
-    assert(buffer.toString === "\\b\\f\\n\\r\\t\\v\\\"\\\\\t")
+    assertEquals(buffer.toString, "\\b\\f\\n\\r\\t\\v\\\"\\\\\t")
   }
 
   test("putString escape disabled") {
     val buffer = new TextCopyBuffer(100, false)
     buffer.putString("\b\f\n\r\t\u000b\"\\")
-    assert(buffer.toString === "\b\f\n\r\t\u000b\"\\\t")
+    assertEquals(buffer.toString, "\b\f\n\r\t\u000b\"\\\t")
   }
 
   test("putString not enough space") {
@@ -85,96 +85,96 @@ class TextCopyBufferSuite extends AnyFunSuite {
     val buffer = new TextCopyBuffer(100)
     val tags = SortedTagMap("a" -> "1", "b" -> "2")
     buffer.putTagsJson(tags)
-    assert(buffer.toString === "{\"a\":\"1\",\"b\":\"2\"}\t")
+    assertEquals(buffer.toString, "{\"a\":\"1\",\"b\":\"2\"}\t")
   }
 
   test("putTagsJson empty") {
     val buffer = new TextCopyBuffer(100)
     val tags = SortedTagMap.empty
     buffer.putTagsJson(tags)
-    assert(buffer.toString === "{}\t")
+    assertEquals(buffer.toString, "{}\t")
   }
 
   test("putTagsJsonb") {
     val buffer = new TextCopyBuffer(100)
     val tags = SortedTagMap("a" -> "1", "b" -> "2")
     buffer.putTagsJsonb(tags)
-    assert(buffer.toString === "{\"a\":\"1\",\"b\":\"2\"}\t")
+    assertEquals(buffer.toString, "{\"a\":\"1\",\"b\":\"2\"}\t")
   }
 
   test("putTagsHstore") {
     val buffer = new TextCopyBuffer(100)
     val tags = SortedTagMap("a" -> "1", "b" -> "2")
     buffer.putTagsHstore(tags)
-    assert(buffer.toString === "\"a\"=>\"1\",\"b\"=>\"2\"\t")
+    assertEquals(buffer.toString, "\"a\"=>\"1\",\"b\"=>\"2\"\t")
   }
 
   test("putTagsHstore empty") {
     val buffer = new TextCopyBuffer(100)
     val tags = SortedTagMap.empty
     buffer.putTagsHstore(tags)
-    assert(buffer.toString === "\t")
+    assertEquals(buffer.toString, "\t")
   }
 
   test("putTagsText") {
     val buffer = new TextCopyBuffer(100)
     val tags = SortedTagMap("a" -> "1", "b" -> "2")
     buffer.putTagsText(tags)
-    assert(buffer.toString === "{\"a\":\"1\",\"b\":\"2\"}\t")
+    assertEquals(buffer.toString, "{\"a\":\"1\",\"b\":\"2\"}\t")
   }
 
   test("putShort") {
     val buffer = new TextCopyBuffer(100)
     buffer.putShort(42)
-    assert(buffer.toString === "42\t")
+    assertEquals(buffer.toString, "42\t")
   }
 
   test("putInt") {
     val buffer = new TextCopyBuffer(100)
     buffer.putInt(42)
-    assert(buffer.toString === "42\t")
+    assertEquals(buffer.toString, "42\t")
   }
 
   test("putLong") {
     val buffer = new TextCopyBuffer(100)
     buffer.putLong(42L)
-    assert(buffer.toString === "42\t")
+    assertEquals(buffer.toString, "42\t")
   }
 
   test("putDouble") {
     val buffer = new TextCopyBuffer(100)
     buffer.putDouble(42.0)
-    assert(buffer.toString === "42.0\t")
+    assertEquals(buffer.toString, "42.0\t")
   }
 
   test("putDouble NaN") {
     val buffer = new TextCopyBuffer(100)
     buffer.putDouble(Double.NaN)
-    assert(buffer.toString === "NaN\t")
+    assertEquals(buffer.toString, "NaN\t")
   }
 
   test("putDouble Infinity") {
     val buffer = new TextCopyBuffer(100)
     buffer.putDouble(Double.PositiveInfinity)
-    assert(buffer.toString === "Infinity\t")
+    assertEquals(buffer.toString, "Infinity\t")
   }
 
   test("putDouble -Infinity") {
     val buffer = new TextCopyBuffer(100)
     buffer.putDouble(Double.NegativeInfinity)
-    assert(buffer.toString === "-Infinity\t")
+    assertEquals(buffer.toString, "-Infinity\t")
   }
 
   test("putDoubleArray") {
     val buffer = new TextCopyBuffer(100)
     buffer.putDoubleArray(Array.empty).putDoubleArray(Array(1.0, 1.5, 2.0, 2.5))
-    assert(buffer.toString === "{}\t{1.0,1.5,2.0,2.5}\t")
+    assertEquals(buffer.toString, "{}\t{1.0,1.5,2.0,2.5}\t")
   }
 
   test("nextRow") {
     val buffer = new TextCopyBuffer(100)
     buffer.putString("foo").putString("bar").nextRow()
-    assert(buffer.toString === "foo\tbar\n")
+    assertEquals(buffer.toString, "foo\tbar\n")
   }
 
   test("nextRow on empty row") {
@@ -202,25 +202,25 @@ class TextCopyBufferSuite extends AnyFunSuite {
   test("reader") {
     val buffer = new TextCopyBuffer(100)
     buffer.putInt(0).putString("foo").nextRow()
-    assert(toString(buffer.reader()) === "0\tfoo\n")
+    assertEquals(toString(buffer.reader()), "0\tfoo\n")
   }
 
   test("reader with partial row") {
     val buffer = new TextCopyBuffer(9)
     assert(buffer.putInt(0).putString("foo").nextRow())
     assert(!buffer.putInt(1).putString("bar").nextRow())
-    assert(toString(buffer.reader()) === "0\tfoo\n")
+    assertEquals(toString(buffer.reader()), "0\tfoo\n")
   }
 
   test("remaining") {
     val buffer = new TextCopyBuffer(4)
     buffer.putInt(2)
     assert(buffer.hasRemaining)
-    assert(buffer.remaining === 2)
+    assertEquals(buffer.remaining, 2)
 
     buffer.putString("foo")
     assert(!buffer.hasRemaining)
-    assert(buffer.remaining === 0)
+    assertEquals(buffer.remaining, 0)
   }
 
   test("rows") {
@@ -228,17 +228,17 @@ class TextCopyBufferSuite extends AnyFunSuite {
     var i = 0
     while (buffer.putInt(i).nextRow()) {
       i = i + 1
-      assert(buffer.rows === i)
+      assertEquals(buffer.rows, i)
     }
-    assert(buffer.rows === i)
+    assertEquals(buffer.rows, i)
   }
 
   test("clear") {
     val buffer = new TextCopyBuffer(100)
     buffer.putInt(0).putString("foo").nextRow()
-    assert(toString(buffer.reader()) === "0\tfoo\n")
+    assertEquals(toString(buffer.reader()), "0\tfoo\n")
     buffer.clear()
     buffer.putInt(1).putString("bar").nextRow()
-    assert(toString(buffer.reader()) === "1\tbar\n")
+    assertEquals(toString(buffer.reader()), "1\tbar\n")
   }
 }

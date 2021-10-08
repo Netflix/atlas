@@ -18,9 +18,9 @@ package com.netflix.atlas.chart.model
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class GraphDefSuite extends AnyFunSuite {
+class GraphDefSuite extends FunSuite {
 
   val step = 60000
 

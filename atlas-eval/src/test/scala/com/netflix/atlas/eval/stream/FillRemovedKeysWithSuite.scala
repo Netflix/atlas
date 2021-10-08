@@ -18,12 +18,12 @@ package com.netflix.atlas.eval.stream
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class FillRemovedKeysWithSuite extends AnyFunSuite {
+class FillRemovedKeysWithSuite extends FunSuite {
 
   implicit val system = ActorSystem(getClass.getSimpleName)
 
@@ -39,9 +39,9 @@ class FillRemovedKeysWithSuite extends AnyFunSuite {
 
     val outputList = Await.result(future, Duration.Inf).toList
 
-    assert(
-      outputList ===
-        List(Map("a" -> "1"), Map("a" -> "?", "b" -> "2"), Map("b" -> "?", "c" -> "3", "d" -> "4"))
+    assertEquals(
+      outputList,
+      List(Map("a" -> "1"), Map("a" -> "?", "b" -> "2"), Map("b" -> "?", "c" -> "3", "d" -> "4"))
     )
   }
 }

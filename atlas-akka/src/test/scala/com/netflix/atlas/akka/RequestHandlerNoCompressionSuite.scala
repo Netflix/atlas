@@ -23,15 +23,14 @@ import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.DefaultClassFactory
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
 
 import java.lang.reflect.Type
 
-class RequestHandlerNoCompressionsSuite extends AnyFunSuite with ScalatestRouteTest {
+class RequestHandlerNoCompressionSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
   implicit val routeTestTimeout = RouteTestTimeout(5.second)
@@ -74,8 +73,8 @@ class RequestHandlerNoCompressionsSuite extends AnyFunSuite with ScalatestRouteT
 
   test("/jsonparse") {
     Post("/jsonparse", "\"foo\"") ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(responseAs[String] === "foo")
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(responseAs[String], "foo")
     }
   }
 
@@ -85,23 +84,23 @@ class RequestHandlerNoCompressionsSuite extends AnyFunSuite with ScalatestRouteT
       Json.smileEncode("foo")
     )
     Post("/jsonparse", content) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(responseAs[String] === "foo")
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(responseAs[String], "foo")
     }
   }
 
   test("/jsonparse with smile but wrong content-type") {
     val content = HttpEntity(Json.smileEncode("foo"))
     Post("/jsonparse", content) ~> routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
+      assertEquals(response.status, StatusCodes.BadRequest)
     }
   }
 
   test("/jsonparse with gzipped request") {
     val content = HttpEntity(gzip("\"foo\""))
     Post("/jsonparse", content).addHeader(gzipHeader) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(responseAs[String] === "foo")
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(responseAs[String], "foo")
     }
   }
 
@@ -111,8 +110,8 @@ class RequestHandlerNoCompressionsSuite extends AnyFunSuite with ScalatestRouteT
       gzip(Json.smileEncode("foo"))
     )
     Post("/jsonparse", content).addHeader(gzipHeader) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
-      assert(responseAs[String] === "foo")
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(responseAs[String], "foo")
     }
   }
 }

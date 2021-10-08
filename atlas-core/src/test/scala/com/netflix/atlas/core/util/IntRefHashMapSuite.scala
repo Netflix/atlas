@@ -17,26 +17,26 @@ package com.netflix.atlas.core.util
 
 import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.info.GraphLayout
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Random
 
-class IntRefHashMapSuite extends AnyFunSuite {
+class IntRefHashMapSuite extends FunSuite {
 
   test("put") {
     val m = new IntRefHashMap[Integer](-1)
-    assert(0 === m.size)
+    assertEquals(0, m.size)
     m.put(11, 42)
-    assert(1 === m.size)
-    assert(Map(11 -> 42) === m.toMap)
+    assertEquals(1, m.size)
+    assertEquals(Map(11 -> Integer.valueOf(42)), m.toMap)
   }
 
   test("get") {
     val m = new IntRefHashMap[Integer](-1)
-    assert(m.get(42) === null)
+    assertEquals(m.get(42), null)
     m.put(11, 27)
-    assert(m.get(42) === null)
-    assert(m.get(11) === 27)
+    assertEquals(m.get(42), null)
+    assertEquals(m.get(11), Integer.valueOf(27))
   }
 
   test("get - collisions") {
@@ -46,44 +46,44 @@ class IntRefHashMapSuite extends AnyFunSuite {
     m.put(0, 0)
     m.put(11, 1)
     m.put(22, 2)
-    assert(m.size === 3)
-    assert(m.get(0) === 0)
-    assert(m.get(11) === 1)
-    assert(m.get(22) === 2)
+    assertEquals(m.size, 3)
+    assertEquals(m.get(0), Integer.valueOf(0))
+    assertEquals(m.get(11), Integer.valueOf(1))
+    assertEquals(m.get(22), Integer.valueOf(2))
   }
 
   test("dedup") {
     val m = new IntRefHashMap[Integer](-1)
     m.put(42, 1)
-    assert(Map(42 -> 1) === m.toMap)
-    assert(1 === m.size)
+    assertEquals(Map(42 -> Integer.valueOf(1)), m.toMap)
+    assertEquals(1, m.size)
     m.put(42, 2)
-    assert(Map(42 -> 2) === m.toMap)
-    assert(1 === m.size)
+    assertEquals(Map(42 -> Integer.valueOf(2)), m.toMap)
+    assertEquals(1, m.size)
   }
 
   test("resize") {
     val m = new IntRefHashMap[Integer](-1, 10)
     (0 until 10000).foreach(i => m.put(i, i))
-    assert((0 until 10000).map(i => i -> i).toMap === m.toMap)
+    assertEquals((0 until 10000).map(i => i -> Integer.valueOf(i)).toMap, m.toMap)
   }
 
   test("random") {
-    val jmap = new scala.collection.mutable.HashMap[Int, Int]
+    val jmap = new scala.collection.mutable.HashMap[Int, Integer]
     val imap = new IntRefHashMap[Integer](-1, 10)
     (0 until 10000).foreach { i =>
       val v = Random.nextInt()
       imap.put(v, i)
       jmap.put(v, i)
     }
-    assert(jmap.toMap === imap.toMap)
-    assert(jmap.size === imap.size)
+    assertEquals(jmap.toMap, imap.toMap)
+    assertEquals(jmap.size, imap.size)
   }
 
   test("memory per map") {
     // Sanity check to verify if some change introduces more overhead per set
     val bytes = ClassLayout.parseClass(classOf[IntRefHashMap[Integer]]).instanceSize()
-    assert(bytes === 32)
+    assertEquals(bytes, 32L)
   }
 
   test("memory - 5 items") {
@@ -101,7 +101,7 @@ class IntRefHashMapSuite extends AnyFunSuite {
     //println(jgraph.toFootprint)
 
     // Integer class creates a bunch of objects
-    assert(igraph.totalCount() === 8)
+    assertEquals(igraph.totalCount(), 8L)
 
     // Sanity check size is < 340, mostly for Integer static fields
     assert(igraph.totalSize() <= 340)
@@ -122,7 +122,7 @@ class IntRefHashMapSuite extends AnyFunSuite {
     //println(jgraph.toFootprint)
 
     // Around 10 or so for the Integer class + 10k for the values
-    assert(igraph.totalCount() === 10003)
+    assertEquals(igraph.totalCount(), 10003L)
 
     // Sanity check size is < 370kb
     assert(igraph.totalSize() <= 370e3)
@@ -130,7 +130,7 @@ class IntRefHashMapSuite extends AnyFunSuite {
 
   test("negative absolute value") {
     val s = new IntRefHashMap[Integer](-1, 10)
-    assert(s.get(Integer.MIN_VALUE) === null)
+    assertEquals(s.get(Integer.MIN_VALUE), null)
   }
 
 }

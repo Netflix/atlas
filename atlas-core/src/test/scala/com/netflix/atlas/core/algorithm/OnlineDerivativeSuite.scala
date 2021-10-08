@@ -22,42 +22,42 @@ class OnlineDerivativeSuite extends BaseOnlineAlgorithmSuite {
   test("init") {
     val algo = OnlineDerivative(Double.NaN)
     assert(algo.next(1.0).isNaN)
-    assert(algo.next(1.0) === 0.0)
+    assertEquals(algo.next(1.0), 0.0)
   }
 
   test("NaN values") {
     val algo = OnlineDerivative(Double.NaN)
     assert(algo.next(1.0).isNaN)
-    assert(algo.next(1.0) === 0.0)
+    assertEquals(algo.next(1.0), 0.0)
     assert(algo.next(Double.NaN).isNaN)
     assert(algo.next(1.0).isNaN)
-    assert(algo.next(1.0) === 0.0)
+    assertEquals(algo.next(1.0), 0.0)
   }
 
   test("increase") {
     val algo = OnlineDerivative(Double.NaN)
     assert(algo.next(1.0).isNaN)
-    assert(algo.next(2.0) === 1.0)
-    assert(algo.next(3.0) === 1.0)
-    assert(algo.next(7.0) === 4.0)
+    assertEquals(algo.next(2.0), 1.0)
+    assertEquals(algo.next(3.0), 1.0)
+    assertEquals(algo.next(7.0), 4.0)
   }
 
   test("decrease") {
     val algo = OnlineDerivative(Double.NaN)
     assert(algo.next(10.0).isNaN)
-    assert(algo.next(9.0) === -1.0)
-    assert(algo.next(8.0) === -1.0)
-    assert(algo.next(4.0) === -4.0)
+    assertEquals(algo.next(9.0), -1.0)
+    assertEquals(algo.next(8.0), -1.0)
+    assertEquals(algo.next(4.0), -4.0)
   }
 
   test("reset") {
     val algo = OnlineDerivative(Double.NaN)
     assert(algo.next(1.0).isNaN)
     assert(!algo.isEmpty)
-    assert(algo.next(2.0) === 1.0)
+    assertEquals(algo.next(2.0), 1.0)
     algo.reset()
     assert(algo.isEmpty)
     assert(algo.next(3.0).isNaN)
-    assert(algo.next(7.0) === 4.0)
+    assertEquals(algo.next(7.0), 4.0)
   }
 }

@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.validation
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class KeyLengthRuleSuite extends AnyFunSuite {
+class KeyLengthRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("""
       |min-length = 2
@@ -32,9 +32,9 @@ class KeyLengthRuleSuite extends AnyFunSuite {
   }
 
   test("valid") {
-    assert(validate("ab", "def") === ValidationResult.Pass)
-    assert(validate("abc", "def") === ValidationResult.Pass)
-    assert(validate("abcd", "def") === ValidationResult.Pass)
+    assertEquals(validate("ab", "def"), ValidationResult.Pass)
+    assertEquals(validate("abc", "def"), ValidationResult.Pass)
+    assertEquals(validate("abcd", "def"), ValidationResult.Pass)
   }
 
   test("too short") {

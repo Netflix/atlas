@@ -19,12 +19,12 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class ClusterOpsSuite extends AnyFunSuite {
+class ClusterOpsSuite extends FunSuite {
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
 
@@ -72,7 +72,7 @@ class ClusterOpsSuite extends AnyFunSuite {
       .via(ClusterOps.groupBy(context))
       .runWith(Sink.seq[Int])
     val seq = Await.result(future, Duration.Inf)
-    assert(seq === Seq(1, 2, 3))
+    assertEquals(seq, Seq(1, 2, 3))
   }
 
   test("groupBy: add and remove member") {
@@ -98,7 +98,7 @@ class ClusterOpsSuite extends AnyFunSuite {
       .via(ClusterOps.groupBy(context))
       .runWith(Sink.seq[Int])
     val seq = Await.result(future, Duration.Inf)
-    assert(seq.sortWith(_ < _) === Seq(1, 2, 3, 7, 8, 9))
+    assertEquals(seq.sortWith(_ < _), Seq(1, 2, 3, 7, 8, 9))
   }
 
   test("groupBy: multiple members") {
@@ -116,8 +116,8 @@ class ClusterOpsSuite extends AnyFunSuite {
       .via(ClusterOps.groupBy(context))
       .runWith(Sink.seq[(String, Int)])
     val seq = Await.result(future, Duration.Inf)
-    assert(seq.filter(_._1 == "a").map(_._2) === Seq(1, 3, 5))
-    assert(seq.filter(_._1 == "b").map(_._2) === Seq(2, 4, 6))
+    assertEquals(seq.filter(_._1 == "a").map(_._2), Seq(1, 3, 5))
+    assertEquals(seq.filter(_._1 == "b").map(_._2), Seq(2, 4, 6))
   }
 
   test("groupBy: failed substream") {
@@ -139,7 +139,7 @@ class ClusterOpsSuite extends AnyFunSuite {
       .via(ClusterOps.groupBy(context))
       .runWith(Sink.seq[(String, Int)])
     val seq = Await.result(future, Duration.Inf)
-    assert(seq.filter(_._1 == "a").map(_._2) === Seq(1, 5))
-    assert(seq.filter(_._1 == "b").map(_._2) === Seq(2, 4, 6))
+    assertEquals(seq.filter(_._1 == "a").map(_._2), Seq(1, 5))
+    assertEquals(seq.filter(_._1 == "b").map(_._2), Seq(2, 4, 6))
   }
 }

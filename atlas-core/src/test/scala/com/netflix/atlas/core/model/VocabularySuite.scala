@@ -15,13 +15,13 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class VocabularySuite extends AnyFunSuite {
+class VocabularySuite extends FunSuite {
 
   for (vocab <- StyleVocabulary :: StyleVocabulary.dependencies; w <- vocab.words) {
     test(s"${vocab.name}: ${w.name} == self") {
-      assert(w === w)
+      assertEquals(w, w)
     }
   }
 }

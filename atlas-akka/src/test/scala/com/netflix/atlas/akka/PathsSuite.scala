@@ -17,10 +17,10 @@ package com.netflix.atlas.akka
 
 import akka.actor.ActorPath
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 /** Sanity check the default pattern for extracting an id from the path. */
-class PathsSuite extends AnyFunSuite {
+class PathsSuite extends FunSuite {
 
   private val mapper = Paths.createMapper(ConfigFactory.load().getConfig("atlas.akka"))
 
@@ -28,21 +28,21 @@ class PathsSuite extends AnyFunSuite {
 
   test("contains dashes") {
     val id = mapper(path("akka://test/system/IO-TCP/$123"))
-    assert("IO-TCP" === id)
+    assertEquals("IO-TCP", id)
   }
 
   test("path with child") {
     val id = mapper(path("akka://test/user/foo/$123"))
-    assert("foo" === id)
+    assertEquals("foo", id)
   }
 
   test("temporary actor") {
     val id = mapper(path("akka://test/user/$123"))
-    assert("uncategorized" === id)
+    assertEquals("uncategorized", id)
   }
 
   test("stream supervisor") {
     val id = mapper(path("akka://test/user/StreamSupervisor-99961"))
-    assert("StreamSupervisor-" === id)
+    assertEquals("StreamSupervisor-", id)
   }
 }

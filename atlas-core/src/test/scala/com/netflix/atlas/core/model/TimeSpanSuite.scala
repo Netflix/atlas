@@ -18,9 +18,9 @@ package com.netflix.atlas.core.model
 import java.time.zone.ZoneRulesException
 
 import com.netflix.atlas.core.stacklang.Interpreter
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class TimeSpanSuite extends AnyFunSuite {
+class TimeSpanSuite extends FunSuite {
 
   private val step = 60000L
   private val start = 0L
@@ -33,7 +33,7 @@ class TimeSpanSuite extends AnyFunSuite {
     val results = interpreter.execute(program).stack.collect {
       case ModelExtractors.TimeSeriesType(t) => t
     }
-    assert(results.size === 1)
+    assertEquals(results.size, 1)
     val span = results.head
     span.eval(context, Nil).data.head.data.bounded(start, end).data
   }
@@ -41,66 +41,66 @@ class TimeSpanSuite extends AnyFunSuite {
   test("relative start time") {
     val actual = eval(s"tz,UTC,:set,e-5m,1970-01-01T00:08,:time-span")
     val expected = Array[Double](0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0)
-    assert(actual === expected)
+    assertEquals(actual.toSeq, expected.toSeq)
   }
 
   test("relative end time") {
     val actual = eval(s"tz,UTC,:set,1970-01-01T00:02,s+1m,:time-span")
     val expected = Array[Double](0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    assert(actual === expected)
+    assertEquals(actual.toSeq, expected.toSeq)
   }
 
   test("graph relative start time") {
     val actual = eval(s"tz,UTC,:set,gs,s+1m,:time-span")
     val expected = Array[Double](1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    assert(actual === expected)
+    assertEquals(actual.toSeq, expected.toSeq)
   }
 
   test("graph relative end time") {
     val actual = eval(s"tz,UTC,:set,e-5m,ge,:time-span")
     val expected = Array[Double](0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0)
-    assert(actual === expected)
+    assertEquals(actual.toSeq, expected.toSeq)
   }
 
   test("invalid time") {
     val e = intercept[IllegalArgumentException] {
       eval(s"tz,UTC,:set,foo42,now,:time-span")
     }
-    assert(e.getMessage === "invalid date foo42")
+    assertEquals(e.getMessage, "invalid date foo42")
   }
 
   test("invalid time zone") {
     val e = intercept[ZoneRulesException] {
       eval(s"tz,foo,:set,e-5m,now,:time-span")
     }
-    assert(e.getMessage === "Unknown time-zone ID: foo")
+    assertEquals(e.getMessage, "Unknown time-zone ID: foo")
   }
 
   test("start is after end") {
     val e = intercept[IllegalArgumentException] {
       eval(s"tz,UTC,:set,42,0,:time-span")
     }
-    assert(e.getMessage === "requirement failed: start must be <= end")
+    assertEquals(e.getMessage, "requirement failed: start must be <= end")
   }
 
   test("start is relative to itself") {
     val e = intercept[IllegalArgumentException] {
       eval(s"tz,UTC,:set,s-5m,now,:time-span")
     }
-    assert(e.getMessage === "start time is relative to itself")
+    assertEquals(e.getMessage, "start time is relative to itself")
   }
 
   test("end is relative to itself") {
     val e = intercept[IllegalArgumentException] {
       eval(s"tz,UTC,:set,gs,e-5m,:time-span")
     }
-    assert(e.getMessage === "end time is relative to itself")
+    assertEquals(e.getMessage, "end time is relative to itself")
   }
 
   test("start/end are relative to each other") {
     val e = intercept[IllegalArgumentException] {
       eval(s"tz,UTC,:set,e-5m,s+5m,:time-span")
     }
-    assert(e.getMessage === "start and end time are relative to each other")
+    assertEquals(e.getMessage, "start and end time are relative to each other")
   }
 }

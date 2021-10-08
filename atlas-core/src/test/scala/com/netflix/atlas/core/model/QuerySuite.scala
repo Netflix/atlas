@@ -16,27 +16,27 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.SmallHashMap
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class QuerySuite extends AnyFunSuite {
+class QuerySuite extends FunSuite {
 
   import com.netflix.atlas.core.model.Query._
 
   def matches(q: Query, tags: Map[String, String]): Boolean = {
     val result = q.matches(tags)
-    assert(result === q.matches(SmallHashMap(tags)))
+    assertEquals(result, q.matches(SmallHashMap(tags)))
     result
   }
 
   def matchesAny(q: Query, tags: Map[String, List[String]]): Boolean = {
     val result = q.matchesAny(tags)
-    assert(result === q.matchesAny(SmallHashMap(tags)))
+    assertEquals(result, q.matchesAny(SmallHashMap(tags)))
     result
   }
 
   def couldMatch(q: Query, tags: Map[String, String]): Boolean = {
     val result = q.couldMatch(tags)
-    assert(result === q.couldMatch(SmallHashMap(tags)))
+    assertEquals(result, q.couldMatch(SmallHashMap(tags)))
     result
   }
 
@@ -371,241 +371,241 @@ class QuerySuite extends AnyFunSuite {
     val output = input.rewrite {
       case And(p, q) => Or(q, p)
     }
-    assert(output === expected)
+    assertEquals(output, expected)
   }
 
   test("exactKeys eq") {
     val q = Equal("k", "v")
-    assert(Query.exactKeys(q) === Set("k"))
+    assertEquals(Query.exactKeys(q), Set("k"))
   }
 
   test("exactKeys and") {
     val q = And(Equal("k", "v"), Equal("p", "q"))
-    assert(Query.exactKeys(q) === Set("k", "p"))
+    assertEquals(Query.exactKeys(q), Set("k", "p"))
   }
 
   test("exactKeys or") {
     val q = Or(Equal("k", "v"), Equal("p", "q"))
-    assert(Query.exactKeys(q) === Set.empty)
+    assertEquals(Query.exactKeys(q), Set.empty[String])
   }
 
   test("exactKeys or same key") {
     val q = Or(Equal("k", "v"), Equal("k", "q"))
-    assert(Query.exactKeys(q) === Set.empty)
+    assertEquals(Query.exactKeys(q), Set.empty[String])
   }
 
   test("allKeys no key") {
     val q1 = Query.False
-    assert(Query.allKeys(q1) === Set.empty)
+    assertEquals(Query.allKeys(q1), Set.empty[String])
     val q2 = Query.True
-    assert(Query.allKeys(q2) === Set.empty)
+    assertEquals(Query.allKeys(q2), Set.empty[String])
   }
 
   test("allKeys ignore not") {
     val q = Query.Not(Equal("k", "v"))
-    assert(Query.allKeys(q) === Set("k"))
+    assertEquals(Query.allKeys(q), Set("k"))
   }
 
   test("allKeys eq") {
     val q = Equal("k", "v")
-    assert(Query.allKeys(q) === Set("k"))
+    assertEquals(Query.allKeys(q), Set("k"))
   }
 
   test("allKeys and eq") {
     val q = And(Equal("k", "v"), Equal("p", "q"))
-    assert(Query.allKeys(q) === Set("k", "p"))
+    assertEquals(Query.allKeys(q), Set("k", "p"))
   }
 
   test("allKeys and hasKey") {
     val q = Query.And(a, b)
-    assert(Query.allKeys(q) === Set("A", "B"))
+    assertEquals(Query.allKeys(q), Set("A", "B"))
   }
 
   test("allKeys or") {
     val q = Or(Equal("k", "v"), Equal("p", "q"))
-    assert(Query.allKeys(q) === Set("k", "p"))
+    assertEquals(Query.allKeys(q), Set("k", "p"))
   }
 
   test("allKeys or - same key") {
     val q = Or(Equal("k", "v"), Equal("k", "q"))
-    assert(Query.allKeys(q) === Set("k"))
+    assertEquals(Query.allKeys(q), Set("k"))
   }
 
   test("allKeys or - one side no key") {
     val q = Or(Equal("k", "v"), True)
-    assert(Query.allKeys(q) === Set("k"))
+    assertEquals(Query.allKeys(q), Set("k"))
   }
 
   test("cnfList (a)") {
     val q = a
-    assert(Query.cnfList(q) === List(q))
-    assert(Query.cnf(q) === q)
+    assertEquals(Query.cnfList(q), List(q))
+    assertEquals(Query.cnf(q), q)
   }
 
   test("cnfList (a or b)") {
     val q = Or(a, b)
-    assert(Query.cnfList(q) === List(q))
-    assert(Query.cnf(q) === q)
+    assertEquals(Query.cnfList(q), List(q))
+    assertEquals(Query.cnf(q), q)
   }
 
   test("cnfList (a and b) or c)") {
     val q = Or(And(a, b), c)
-    assert(Query.cnfList(q) === List(Or(a, c), Or(b, c)))
-    assert(Query.cnf(q) === And(Or(a, c), Or(b, c)))
+    assertEquals(Query.cnfList(q), List(Or(a, c), Or(b, c)))
+    assertEquals(Query.cnf(q), And(Or(a, c), Or(b, c)))
   }
 
   test("cnfList (a and b) or (c and d))") {
     val q = Or(And(a, b), And(c, d))
-    assert(Query.cnfList(q) === List(Or(a, c), Or(a, d), Or(b, c), Or(b, d)))
-    assert(Query.cnf(q) === And(And(And(Or(a, c), Or(a, d)), Or(b, c)), Or(b, d)))
+    assertEquals(Query.cnfList(q), List(Or(a, c), Or(a, d), Or(b, c), Or(b, d)))
+    assertEquals(Query.cnf(q), And(And(And(Or(a, c), Or(a, d)), Or(b, c)), Or(b, d)))
   }
 
   test("cnfList not(a or b)") {
     val q = Not(Or(a, b))
-    assert(Query.cnfList(q) === List(Not(a), Not(b)))
-    assert(Query.cnf(q) === And(Not(a), Not(b)))
+    assertEquals(Query.cnfList(q), List(Not(a), Not(b)))
+    assertEquals(Query.cnf(q), And(Not(a), Not(b)))
   }
 
   test("cnfList not(a and b)") {
     val q = Not(And(a, b))
-    assert(Query.cnfList(q) === List(Or(Not(a), Not(b))))
-    assert(Query.cnf(q) === Or(Not(a), Not(b)))
+    assertEquals(Query.cnfList(q), List(Or(Not(a), Not(b))))
+    assertEquals(Query.cnf(q), Or(Not(a), Not(b)))
   }
 
   test("dnfList (a)") {
     val q = a
-    assert(Query.dnfList(q) === List(q))
-    assert(Query.dnf(q) === q)
+    assertEquals(Query.dnfList(q), List(q))
+    assertEquals(Query.dnf(q), q)
   }
 
   test("dnfList (a and b)") {
     val q = And(a, b)
-    assert(Query.dnfList(q) === List(q))
-    assert(Query.dnf(q) === q)
+    assertEquals(Query.dnfList(q), List(q))
+    assertEquals(Query.dnf(q), q)
   }
 
   test("dnfList (a or b) and c)") {
     val q = And(Or(a, b), c)
-    assert(Query.dnfList(q) === List(And(a, c), And(b, c)))
-    assert(Query.dnf(q) === Or(And(a, c), And(b, c)))
+    assertEquals(Query.dnfList(q), List(And(a, c), And(b, c)))
+    assertEquals(Query.dnf(q), Or(And(a, c), And(b, c)))
   }
 
   test("dnfList (a or b) and (c or d))") {
     val q = And(Or(a, b), Or(c, d))
-    assert(Query.dnfList(q) === List(And(a, c), And(a, d), And(b, c), And(b, d)))
-    assert(Query.dnf(q) === Or(Or(Or(And(a, c), And(a, d)), And(b, c)), And(b, d)))
+    assertEquals(Query.dnfList(q), List(And(a, c), And(a, d), And(b, c), And(b, d)))
+    assertEquals(Query.dnf(q), Or(Or(Or(And(a, c), And(a, d)), And(b, c)), And(b, d)))
   }
 
   test("dnfList not(a or b)") {
     val q = Not(Or(a, b))
-    assert(Query.dnfList(q) === List(And(Not(a), Not(b))))
-    assert(Query.dnf(q) === And(Not(a), Not(b)))
+    assertEquals(Query.dnfList(q), List(And(Not(a), Not(b))))
+    assertEquals(Query.dnf(q), And(Not(a), Not(b)))
   }
 
   test("dnfList not(a and b)") {
     val q = Not(And(a, b))
-    assert(Query.dnfList(q) === List(Not(a), Not(b)))
-    assert(Query.dnf(q) === Or(Not(a), Not(b)))
+    assertEquals(Query.dnfList(q), List(Not(a), Not(b)))
+    assertEquals(Query.dnf(q), Or(Not(a), Not(b)))
   }
 
   test("simplify and(true, eq)") {
     val q = And(True, Equal("a", "b"))
-    assert(Query.simplify(q) === Equal("a", "b"))
+    assertEquals(Query.simplify(q), Equal("a", "b"))
   }
 
   test("simplify and(eq, true)") {
     val q = And(Equal("a", "b"), True)
-    assert(Query.simplify(q) === Equal("a", "b"))
+    assertEquals(Query.simplify(q), Equal("a", "b"))
   }
 
   test("simplify and(false, eq)") {
     val q = And(False, Equal("a", "b"))
-    assert(Query.simplify(q) === False)
+    assertEquals(Query.simplify(q), False)
   }
 
   test("simplify and(eq, false)") {
     val q = And(Equal("a", "b"), False)
-    assert(Query.simplify(q) === False)
+    assertEquals(Query.simplify(q), False)
   }
 
   test("simplify and(eq, eq)") {
     val q = And(Equal("a", "b"), Equal("c", "d"))
-    assert(Query.simplify(q) === q)
+    assertEquals(Query.simplify(q), q)
   }
 
   test("simplify and recursive") {
     val q = And(And(True, Equal("a", "b")), And(Equal("c", "d"), False))
-    assert(Query.simplify(q) === False)
+    assertEquals(Query.simplify(q), False)
   }
 
   test("simplify or(true, eq)") {
     val q = Or(True, Equal("a", "b"))
-    assert(Query.simplify(q) === True)
+    assertEquals(Query.simplify(q), True)
   }
 
   test("simplify or(eq, true)") {
     val q = Or(Equal("a", "b"), True)
-    assert(Query.simplify(q) === True)
+    assertEquals(Query.simplify(q), True)
   }
 
   test("simplify or(false, eq)") {
     val q = Or(False, Equal("a", "b"))
-    assert(Query.simplify(q) === Equal("a", "b"))
+    assertEquals(Query.simplify(q), Equal("a", "b"))
   }
 
   test("simplify or(eq, false)") {
     val q = Or(Equal("a", "b"), False)
-    assert(Query.simplify(q) === Equal("a", "b"))
+    assertEquals(Query.simplify(q), Equal("a", "b"))
   }
 
   test("simplify or(eq, eq)") {
     val q = Or(Equal("a", "b"), Equal("c", "d"))
-    assert(Query.simplify(q) === q)
+    assertEquals(Query.simplify(q), q)
   }
 
   test("simplify or recursive") {
     val q = Or(Or(True, Equal("a", "b")), Or(Equal("c", "d"), False))
-    assert(Query.simplify(q) === True)
+    assertEquals(Query.simplify(q), True)
   }
 
   test("simplify not(true)") {
     val q = Not(True)
-    assert(Query.simplify(q) === False)
+    assertEquals(Query.simplify(q), False)
   }
 
   test("simplify not(true), ignore") {
     val q = Not(True)
-    assert(Query.simplify(q, ignore = true) === True)
+    assertEquals(Query.simplify(q, ignore = true), True)
   }
 
   test("simplify not(false)") {
     val q = Not(False)
-    assert(Query.simplify(q) === True)
+    assertEquals(Query.simplify(q), True)
   }
 
   test("simplify not recursive") {
     val q = Not(And(Not(False), Equal("a", "b")))
-    assert(Query.simplify(q) === Not(Equal("a", "b")))
+    assertEquals(Query.simplify(q), Not(Equal("a", "b")))
   }
 
   test("simplify not recursive ignore") {
     val q = Not(And(Not(True), Equal("a", "b")))
-    assert(Query.simplify(q, ignore = true) === Not(Equal("a", "b")))
+    assertEquals(Query.simplify(q, ignore = true), Not(Equal("a", "b")))
   }
 
   test("simplify not recursive ignore - Or") {
     val q = Or(And(Not(True), Equal("a", "b")), False)
-    assert(Query.simplify(q, ignore = true) === Equal("a", "b"))
+    assertEquals(Query.simplify(q, ignore = true), Equal("a", "b"))
   }
 
   test("expandInClauses, simple query") {
     val q = Equal("a", "b")
-    assert(Query.expandInClauses(q) === List(q))
+    assertEquals(Query.expandInClauses(q), List(q))
   }
 
   test("expandInClauses, in query") {
     val q = In("a", List("b", "c"))
-    assert(Query.expandInClauses(q) === List(Equal("a", "b"), Equal("a", "c")))
+    assertEquals(Query.expandInClauses(q), List(Equal("a", "b"), Equal("a", "c")))
   }
 
   test("expandInClauses, conjunction with in query") {
@@ -615,17 +615,17 @@ class QuerySuite extends AnyFunSuite {
       And(base, Equal("b", "v1")),
       And(base, Equal("b", "v2"))
     )
-    assert(Query.expandInClauses(q) === expected)
+    assertEquals(Query.expandInClauses(q), expected)
   }
 
   test("expandInClauses, number of values exceeds limit") {
     val q = In("a", List("b", "c"))
-    assert(Query.expandInClauses(q, 1) === List(q))
+    assertEquals(Query.expandInClauses(q, 1), List(q))
   }
 
   test("expandInClauses, number of values equals limit") {
     val q = In("a", List("b", "c"))
-    assert(Query.expandInClauses(q, 2) === List(Equal("a", "b"), Equal("a", "c")))
+    assertEquals(Query.expandInClauses(q, 2), List(Equal("a", "b"), Equal("a", "c")))
   }
 
   test("expandInClauses, conjunction with multiple in queries") {
@@ -633,11 +633,11 @@ class QuerySuite extends AnyFunSuite {
     val expected = for (a <- List("a1", "a2"); b <- List("b1", "b2", "b3")) yield {
       And(Equal("a", a), Equal("b", b))
     }
-    assert(Query.expandInClauses(q) === expected)
+    assertEquals(Query.expandInClauses(q), expected)
   }
 
   test("expandInClauses, disjunction") {
     val q = Or(Equal("a", "1"), In("b", List("1", "2")))
-    assert(Query.expandInClauses(q, 1) === List(q))
+    assertEquals(Query.expandInClauses(q, 1), List(q))
   }
 }

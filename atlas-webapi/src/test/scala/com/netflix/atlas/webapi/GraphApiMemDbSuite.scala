@@ -19,15 +19,14 @@ import akka.actor.Props
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.RequestHandler
+import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.core.db.MemoryDatabase
 import com.netflix.atlas.json.Json
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
 
-class GraphApiMemDbSuite extends AnyFunSuite with ScalatestRouteTest {
+class GraphApiMemDbSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
@@ -55,35 +54,35 @@ class GraphApiMemDbSuite extends AnyFunSuite with ScalatestRouteTest {
   test("sendError image if browser") {
     val agent = `User-Agent`("Mozilla/5.0 (Android; Mobile; rv:13.0) Gecko/13.0 Firefox/13.0")
     Get("/api/v1/graph?q=:foo").addHeader(agent) ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assertEquals(response.status, StatusCodes.OK)
     }
   }
 
   test("sendError json if not browser") {
     val agent = `User-Agent`("java")
     Get("/api/v1/graph?q=:foo").addHeader(agent) ~> routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
+      assertEquals(response.status, StatusCodes.BadRequest)
       val msg = Json.decode[DiagnosticMessage](responseAs[String])
-      assert(msg.typeName === "error")
-      assert(msg.message === "IllegalStateException: unknown word ':foo'")
+      assertEquals(msg.typeName, "error")
+      assertEquals(msg.message, "IllegalStateException: unknown word ':foo'")
     }
   }
 
   test("sendError txt") {
     Get("/api/v1/graph?q=:foo&format=txt") ~> routes ~> check {
-      assert(response.status === StatusCodes.BadRequest)
+      assertEquals(response.status, StatusCodes.BadRequest)
     }
   }
 
   test("image: IAE if not match for argument to binary op") {
     Get("/api/v1/graph?q=name,foo,:eq,:sum,name,bar,:eq,:sum,:add") ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assertEquals(response.status, StatusCodes.OK)
     }
   }
 
   test("txt: IAE if not match for argument to binary op") {
     Get("/api/v1/graph?q=name,bar,:eq,:sum,name,foo,:eq,:sum,:add&format=txt") ~> routes ~> check {
-      assert(response.status === StatusCodes.OK)
+      assertEquals(response.status, StatusCodes.OK)
     }
   }
 

@@ -15,11 +15,11 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.util.Using
 
-class CardinalityEstimatorSuite extends AnyFunSuite {
+class CardinalityEstimatorSuite extends FunSuite {
 
   private def check(estimator: CardinalityEstimator, values: Seq[String]): Unit = {
     var errorSum = 0.0

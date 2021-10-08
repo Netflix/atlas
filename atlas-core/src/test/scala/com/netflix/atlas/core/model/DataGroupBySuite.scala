@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.model
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class DataGroupBySuite extends AnyFunSuite {
+class DataGroupBySuite extends FunSuite {
 
   private val start = 0L
   private val step = 60000L
@@ -46,10 +46,10 @@ class DataGroupBySuite extends AnyFunSuite {
       ts(3)
     )
     val rs = groupBy(input, List("name"))
-    assert(rs.size === 1)
+    assertEquals(rs.size, 1)
 
     val expected = ts(6).withTags(Map("name" -> "test")).withLabel("(name=test)")
-    assert(rs.head === expected)
+    assertEquals(rs.head, expected)
   }
 
   test("(,not_present,),:by") {
@@ -59,7 +59,7 @@ class DataGroupBySuite extends AnyFunSuite {
       ts(3)
     )
     val rs = groupBy(input, List("not_present"))
-    assert(rs.size === 0)
+    assertEquals(rs.size, 0)
   }
 
   test("(,name,not_present,),:by") {
@@ -69,7 +69,7 @@ class DataGroupBySuite extends AnyFunSuite {
       ts(3)
     )
     val rs = groupBy(input, List("name", "not_present"))
-    assert(rs.size === 0)
+    assertEquals(rs.size, 0)
   }
 
   test("(,name,mode,),:by") {
@@ -80,7 +80,7 @@ class DataGroupBySuite extends AnyFunSuite {
       ts(3)
     )
     val rs = groupBy(input, List("name", "mode"))
-    assert(rs.size === 1)
+    assertEquals(rs.size, 1)
   }
 
   def binaryOp(ks1: List[String], ks2: List[String]): List[TimeSeries] = {
@@ -94,12 +94,12 @@ class DataGroupBySuite extends AnyFunSuite {
 
   test("binary ops: both sides match") {
     val rs = binaryOp(List("value"), List("value"))
-    assert(rs.size === 5) // only even values will be on both sides
+    assertEquals(rs.size, 5) // only even values will be on both sides
   }
 
   test("binary ops: both sides match, different orders") {
     val rs = binaryOp(List("name", "value"), List("value", "name"))
-    assert(rs.size === 5) // only even values will be on both sides
+    assertEquals(rs.size, 5) // only even values will be on both sides
   }
 
   test("binary ops: mismatch") {
@@ -113,10 +113,10 @@ class DataGroupBySuite extends AnyFunSuite {
     // LHS: sum of even values < 10 (20)
     // RHS: all values from 0 until 10
     val rs = binaryOp(List("name"), List("name", "value"))
-    assert(rs.size === 10)
+    assertEquals(rs.size, 10)
     rs.foreach { t =>
       val rhsValue = t.tags("value").toDouble
-      assert(t.datapoint(start).value === 20.0 + rhsValue)
+      assertEquals(t.datapoint(start).value, 20.0 + rhsValue)
     }
   }
 
@@ -124,10 +124,10 @@ class DataGroupBySuite extends AnyFunSuite {
     // LHS: even values 0, 2, 4, 6, and 8
     // RHS: sum of 0 to 9 (45)
     val rs = binaryOp(List("name", "value"), List("name"))
-    assert(rs.size === 5)
+    assertEquals(rs.size, 5)
     rs.foreach { t =>
       val lhsValue = t.tags("value").toDouble
-      assert(t.datapoint(start).value === 45.0 + lhsValue)
+      assertEquals(t.datapoint(start).value, 45.0 + lhsValue)
     }
   }
 }

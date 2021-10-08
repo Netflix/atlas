@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.core.util
 
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class HashSuite extends AnyFunSuite {
+class HashSuite extends FunSuite {
 
   test("md5") {
     assert(Hash.md5("42").toString(10) == "215089739385482443301854222253501995174")
@@ -30,6 +30,6 @@ class HashSuite extends AnyFunSuite {
   test("sha1bytes zeroPad") {
     val expected = Strings.zeroPad(Hash.sha1("42"), 40)
     val actual = Strings.zeroPad(Hash.sha1bytes("42"), 40)
-    assert(actual === expected)
+    assertEquals(actual, expected)
   }
 }

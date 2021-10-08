@@ -17,10 +17,9 @@ package com.netflix.atlas.core.model
 
 import java.time.Duration
 
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers._
+import munit.FunSuite
 
-class TrendSuite extends AnyFunSuite {
+class TrendSuite extends FunSuite {
 
   val step = 60000L
   val dataTags = Map("name" -> "cpu", "node" -> "i-1")
@@ -77,13 +76,13 @@ class TrendSuite extends AnyFunSuite {
 
     result.zip(expected).zipWithIndex.foreach {
       case ((ts, v), i) =>
-        assert(ts.size === 1)
+        assertEquals(ts.size, 1)
         ts.foreach { t =>
           val r = t.data(i * step)
           if (i <= 1)
             assert(r.isNaN)
           else
-            assert(v === r +- 0.00001)
+            assertEqualsDouble(v, r, 0.00001)
         }
     }
   }

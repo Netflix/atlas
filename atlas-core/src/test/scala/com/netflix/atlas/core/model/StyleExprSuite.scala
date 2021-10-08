@@ -18,9 +18,9 @@ package com.netflix.atlas.core.model
 import com.netflix.atlas.core.stacklang.Interpreter
 
 import java.time.Duration
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class StyleExprSuite extends AnyFunSuite {
+class StyleExprSuite extends FunSuite {
 
   private val interpreter = Interpreter(StyleVocabulary.allWords)
 
@@ -34,19 +34,19 @@ class StyleExprSuite extends AnyFunSuite {
       StyleExpr(DataExpr.Sum(Query.True).withOffset(oneDay), Map.empty),
       StyleExpr(DataExpr.Sum(Query.True).withOffset(oneWeek), Map.empty)
     )
-    assert(expr.perOffset === expected)
+    assertEquals(expr.perOffset, expected)
   }
 
   test("perOffset empty") {
     val expr = StyleExpr(DataExpr.Sum(Query.True), Map("offset" -> "(,)"))
     val expected = List(expr)
-    assert(expr.perOffset === expected)
+    assertEquals(expr.perOffset, expected)
   }
 
   test("perOffset not specified") {
     val expr = StyleExpr(DataExpr.Sum(Query.True), Map.empty)
     val expected = List(expr)
-    assert(expr.perOffset === expected)
+    assertEquals(expr.perOffset, expected)
   }
 
   private def newExpr(legend: String, sed: String): StyleExpr = {
@@ -61,14 +61,14 @@ class StyleExprSuite extends AnyFunSuite {
   test("decode after substitute") {
     val expr = newExpr(s"$$b", "hex,:decode")
     val ts = newTimeSeries("foo", Map("a" -> "1", "b" -> "one_21_25_26_3F"))
-    assert(expr.legend(ts) === "one!%&?")
+    assertEquals(expr.legend(ts), "one!%&?")
   }
 
   private def check(sed: String, expected: String): Unit = {
     test(sed) {
       val expr = newExpr(s"$$b", sed)
       val ts = newTimeSeries("foo", Map("a" -> "1", "b" -> "one_21_25_26_3F"))
-      assert(expr.legend(ts) === expected)
+      assertEquals(expr.legend(ts), expected)
     }
   }
 

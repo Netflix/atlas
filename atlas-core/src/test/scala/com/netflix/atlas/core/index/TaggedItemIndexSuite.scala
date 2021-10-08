@@ -17,11 +17,11 @@ package com.netflix.atlas.core.index
 
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TimeSeries
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.collection.immutable.ArraySeq
 
-class TaggedItemIndexSuite extends AnyFunSuite {
+class TaggedItemIndexSuite extends FunSuite {
 
   import TaggedItemIndexSuite._
 
@@ -38,7 +38,7 @@ class TaggedItemIndexSuite extends AnyFunSuite {
 
   test("true query") {
     val result = findItems(Query.True)
-    assert(result.size === dataset.length)
+    assertEquals(result.size, dataset.length)
   }
 
   test("false query") {
@@ -50,18 +50,18 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     val q = Query.Equal("name", "sps_9")
     val result = findItems(q)
     result.foreach { m =>
-      assert(m.tags("name") === "sps_9")
+      assertEquals(m.tags("name"), "sps_9")
     }
-    assert(result.size === 764)
+    assertEquals(result.size, 764)
   }
 
   test("equal query repeat") {
     val q = Query.Equal("name", "sps_9")
     val result = findItems(q)
     result.foreach { m =>
-      assert(m.tags("name") === "sps_9")
+      assertEquals(m.tags("name"), "sps_9")
     }
-    assert(result.size === 764)
+    assertEquals(result.size, 764)
   }
 
   test("equal query with offset") {
@@ -94,8 +94,8 @@ class TaggedItemIndexSuite extends AnyFunSuite {
       tmp = findItems(q, offset).take(pageSize)
     }
     builder ++= tmp
-    assert(result.size === builder.result().size)
-    assert(result === builder.result())
+    assertEquals(result.size, builder.result().size)
+    assertEquals(result, builder.result())
   }
 
   test("gt query") {
@@ -104,7 +104,7 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") > "sps_4")
     }
-    assert(result.size === 3820)
+    assertEquals(result.size, 3820)
   }
 
   test("ge query") {
@@ -113,7 +113,7 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") >= "sps_4")
     }
-    assert(result.size === 4584)
+    assertEquals(result.size, 4584)
   }
 
   test("lt query") {
@@ -122,7 +122,7 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") < "sps_5")
     }
-    assert(result.size === 3820)
+    assertEquals(result.size, 3820)
   }
 
   test("le query") {
@@ -131,7 +131,7 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") <= "sps_5")
     }
-    assert(result.size === 4584)
+    assertEquals(result.size, 4584)
   }
 
   test("in query") {
@@ -140,40 +140,40 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") == "sps_5" || m.tags("name") == "sps_7")
     }
-    assert(result.size === 1528)
+    assertEquals(result.size, 1528)
   }
 
   test("regex query, prefix") {
     val q = Query.Regex("nf.cluster", "^nccp-silver.*")
     val result = findItems(q)
     result.foreach { m =>
-      assert(m.tags("nf.cluster") === "nccp-silverlight")
+      assertEquals(m.tags("nf.cluster"), "nccp-silverlight")
     }
-    assert(result.size === 3000)
+    assertEquals(result.size, 3000)
   }
 
   test("regex query, index of") {
     val q = Query.Regex("nf.cluster", ".*silver.*")
     val result = findItems(q)
     result.foreach { m =>
-      assert(m.tags("nf.cluster") === "nccp-silverlight")
+      assertEquals(m.tags("nf.cluster"), "nccp-silverlight")
     }
-    assert(result.size === 3000)
+    assertEquals(result.size, 3000)
   }
 
   test("regex query, case insensitive index of") {
     val q = Query.RegexIgnoreCase("type2", ".*dea.*")
     val result = findItems(q)
     result.foreach { m =>
-      assert(m.tags("type2") === "IDEAL")
+      assertEquals(m.tags("type2"), "IDEAL")
     }
-    assert(result.size === 7640)
+    assertEquals(result.size, 7640)
   }
 
   test("haskey query") {
     val q = Query.HasKey("nf.cluster")
     val result = findItems(q)
-    assert(result.size === 7640)
+    assertEquals(result.size, 7640)
   }
 
   test("and query") {
@@ -181,10 +181,10 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     val q2 = Query.Regex("nf.cluster", "^nccp-silver.*")
     val result = findItems(Query.And(q1, q2))
     result.foreach { m =>
-      assert(m.tags("name") === "sps_9")
-      assert(m.tags("nf.cluster") === "nccp-silverlight")
+      assertEquals(m.tags("name"), "sps_9")
+      assertEquals(m.tags("nf.cluster"), "nccp-silverlight")
     }
-    assert(result.size === 300)
+    assertEquals(result.size, 300)
   }
 
   test("and query: substring") {
@@ -192,10 +192,10 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     val q2 = Query.Regex("nf.cluster", ".*silver.*")
     val result = findItems(Query.And(q1, q2))
     result.foreach { m =>
-      assert(m.tags("name") === "sps_9")
-      assert(m.tags("nf.cluster") === "nccp-silverlight")
+      assertEquals(m.tags("name"), "sps_9")
+      assertEquals(m.tags("nf.cluster"), "nccp-silverlight")
     }
-    assert(result.size === 300)
+    assertEquals(result.size, 300)
   }
 
   test("or query") {
@@ -205,7 +205,7 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("name") == "sps_9" || m.tags("nf.cluster") == "nccp-silverlight")
     }
-    assert(result.size === 3464)
+    assertEquals(result.size, 3464)
   }
 
   test("not query") {
@@ -214,7 +214,7 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("nf.cluster") != "nccp-silverlight")
     }
-    assert(result.size === 4640)
+    assertEquals(result.size, 4640)
   }
 
   test("not query: CLDMTA-863") {
@@ -223,7 +223,7 @@ class TaggedItemIndexSuite extends AnyFunSuite {
     result.foreach { m =>
       assert(m.tags("nf.cluster") != "nccp-silverlight")
     }
-    assert(result.size === 4640)
+    assertEquals(result.size, 4640)
   }
 }
 

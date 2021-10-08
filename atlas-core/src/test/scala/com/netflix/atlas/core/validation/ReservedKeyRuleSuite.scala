@@ -16,9 +16,9 @@
 package com.netflix.atlas.core.validation
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class ReservedKeyRuleSuite extends AnyFunSuite {
+class ReservedKeyRuleSuite extends FunSuite {
 
   private val config = ConfigFactory.parseString("""
       |prefix = "nf."
@@ -32,11 +32,11 @@ class ReservedKeyRuleSuite extends AnyFunSuite {
   }
 
   test("valid") {
-    assert(validate("nf.region", "def") === ValidationResult.Pass)
+    assertEquals(validate("nf.region", "def"), ValidationResult.Pass)
   }
 
   test("valid, no reserved prefix") {
-    assert(validate("foo", "def") === ValidationResult.Pass)
+    assertEquals(validate("foo", "def"), ValidationResult.Pass)
   }
 
   test("invalid") {
@@ -45,11 +45,11 @@ class ReservedKeyRuleSuite extends AnyFunSuite {
   }
 
   test("job") {
-    assert(validate("nf.job", "def") === ValidationResult.Pass)
+    assertEquals(validate("nf.job", "def"), ValidationResult.Pass)
   }
 
   test("task") {
-    assert(validate("nf.task", "def") === ValidationResult.Pass)
+    assertEquals(validate("nf.task", "def"), ValidationResult.Pass)
   }
 
 }

@@ -30,12 +30,12 @@ import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.JsonSupport
 import com.typesafe.config.ConfigFactory
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class LwcToAggrDatapointSuite extends AnyFunSuite {
+class LwcToAggrDatapointSuite extends FunSuite {
 
   implicit val system = ActorSystem(getClass.getSimpleName)
   private implicit val materializer = Materializer(system)
@@ -92,28 +92,28 @@ class LwcToAggrDatapointSuite extends AnyFunSuite {
 
   test("eval") {
     val results = eval(input)
-    assert(results.size === 8)
+    assertEquals(results.size, 8)
 
     val groups = results.groupBy(_.expr)
-    assert(groups.size === 2)
+    assertEquals(groups.size, 2)
 
     val sumData = groups(DataExpr.Sum(Query.Equal("name", "cpu")))
-    assert(sumData.map(_.value).toSet === Set(1.0, 2.0, 3.0, 4.0))
+    assertEquals(sumData.map(_.value).toSet, Set(1.0, 2.0, 3.0, 4.0))
 
     val countData = groups(DataExpr.Count(Query.Equal("name", "cpu")))
-    assert(countData.size === 4)
-    assert(countData.map(_.value).toSet === Set(4.0))
+    assertEquals(countData.size, 4)
+    assertEquals(countData.map(_.value).toSet, Set(4.0))
   }
 
   test("diagnostic messages are logged") {
     logMessages.clear()
     eval(input)
-    assert(logMessages.size() === 2)
+    assertEquals(logMessages.size(), 2)
     List("1", "2").foreach { i =>
       logMessages.poll() match {
         case (_, msg: DiagnosticMessage) =>
-          assert(msg.`type` === "error")
-          assert(msg.message === i)
+          assertEquals(msg.`type`, "error")
+          assertEquals(msg.message, i)
         case v =>
           fail(s"unexpected message: $v")
       }
@@ -125,11 +125,11 @@ class LwcToAggrDatapointSuite extends AnyFunSuite {
       """{"type":"heartbeat","timestamp":1234567890,"step":10}"""
     )
     val results = eval(data)
-    assert(results.size === 1)
+    assertEquals(results.size, 1)
 
     val d = results.head
     assert(d.isHeartbeat)
-    assert(d.timestamp === 1234567890)
-    assert(d.step === 10)
+    assertEquals(d.timestamp, 1234567890L)
+    assertEquals(d.step, 10L)
   }
 }

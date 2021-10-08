@@ -24,9 +24,9 @@ import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.util.Math
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
-import org.scalatest.funsuite.AnyFunSuite
+import munit.FunSuite
 
-class TimeSeriesBufferSuite extends AnyFunSuite {
+class TimeSeriesBufferSuite extends FunSuite {
 
   import java.lang.{Double => JDouble}
 
@@ -51,8 +51,8 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
 
     val buffer = TimeSeriesBuffer(tags, step, 1 * step, 19 * step, blocks, Block.Sum)
     val m = buffer
-    assert(m.step === step)
-    assert(m.start === step)
+    assertEquals(m.step, step)
+    assertEquals(m.start, step)
     assert(m.values.take(5).forall(_ == 1.0))
     assert(m.values.slice(5, 11).forall(_ == 2.0))
     assert(m.values.slice(11, 17).forall(v => JDouble.isNaN(v)))
@@ -73,8 +73,8 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
       buffer.add(tags, b)
     }
     val m = buffer
-    assert(m.step === step)
-    assert(m.start === step)
+    assertEquals(m.step, step)
+    assertEquals(m.start, step)
     assert(m.values.take(5).forall(_ == 1.0))
     assert(m.values.slice(5, 11).forall(_ == 2.0))
     assert(m.values.slice(11, 17).forall(v => JDouble.isNaN(v)))
@@ -95,8 +95,8 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
       buffer.aggrBlock(tags, b, Block.Sum, ConsolidationFunction.Max, 6, Math.addNaN)
     }
     val m = buffer
-    assert(m.step === 6 * step)
-    assert(m.start === 0L)
+    assertEquals(m.step, 6 * step)
+    assertEquals(m.start, 0L)
     assert(m.values.take(1).forall(_ == 1.0))
     assert(m.values.slice(1, 2).forall(_ == 2.0))
     assert(m.values.slice(2, 3).forall(v => JDouble.isNaN(v)))
@@ -117,12 +117,12 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
       buffer.aggrBlock(tags, b, Block.Sum, ConsolidationFunction.Max, multiple, Math.addNaN)
     }
     val m = buffer
-    assert(m.step === consol)
-    assert(m.start === consol)
+    assertEquals(m.step, consol)
+    assertEquals(m.start, consol)
     assert(m.values.forall(_ == 4.0))
   }
 
-  ignore("cf with start") {
+  test("cf with start".ignore) {
     val tags = emptyTags
     val step = 60000L
     val block = ArrayBlock(0L, 60)
@@ -159,7 +159,7 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
 
         val cfSecond = afFirst.consolidate(6, cf)
         (0 until cfFirst.values.length).foreach { i =>
-          assert(cfSecond.values(i) === (cfFirst.values(i) +- 1e-9), s"position $i")
+          assertEquals(cfSecond.values(i), (cfFirst.values(i) +- 1e-9), s"position $i")
         }
       }
 
@@ -178,7 +178,7 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
 
         val cfSecond = afFirst.consolidate(6, cf)
         (0 until cfFirst.values.length).foreach { i =>
-          assert(cfSecond.values(i) === (cfFirst.values(i) +- 1e-9), s"position $i")
+          assertEquals(cfSecond.values(i), (cfFirst.values(i) +- 1e-9), s"position $i")
         }
       }
   }*/
@@ -190,30 +190,30 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
     val b1 = TimeSeriesBuffer(t1, 60000, 0, Array.fill(1)(0.0))
     val b2 = TimeSeriesBuffer(t2, 60000, 0, Array.fill(1)(0.0))
     b1.add(b2)
-    assert(b1.tags === Map("a" -> "b"))
+    assertEquals(b1.tags, Map("a" -> "b"))
   }
 
   test("add buffer") {
     val b1 = newBuffer(42.0)
     val b2 = newBuffer(42.0)
     b1.add(b2)
-    b1.values.foreach(v => assert(v === 84.0))
-    b2.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 84.0))
+    b2.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("add buffer, b1=NaN") {
     val b1 = newBuffer(Double.NaN)
     val b2 = newBuffer(42.0)
     b1.add(b2)
-    b1.values.foreach(v => assert(v === 42.0))
-    b2.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
+    b2.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("add buffer, b2=NaN") {
     val b1 = newBuffer(42.0)
     val b2 = newBuffer(Double.NaN)
     b1.add(b2)
-    b1.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
     b2.values.foreach(v => assert(v.isNaN))
   }
 
@@ -228,19 +228,19 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
   test("add constant") {
     val b1 = newBuffer(42.0)
     b1.add(42.0)
-    b1.values.foreach(v => assert(v === 84.0))
+    b1.values.foreach(v => assertEquals(v, 84.0))
   }
 
   test("add constant, b1=NaN") {
     val b1 = newBuffer(Double.NaN)
     b1.add(42.0)
-    b1.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("add constant, v=NaN") {
     val b1 = newBuffer(42.0)
     b1.add(Double.NaN)
-    b1.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("add buffer, b1=v=NaN") {
@@ -253,73 +253,73 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
     val b1 = newBuffer(84.0)
     val b2 = newBuffer(42.0)
     b1.subtract(b2)
-    b1.values.foreach(v => assert(v === 42.0))
-    b2.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
+    b2.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("subtract constant") {
     val b1 = newBuffer(84.0)
     b1.subtract(42.0)
-    b1.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("multiply buffer") {
     val b1 = newBuffer(84.0)
     val b2 = newBuffer(2.0)
     b1.multiply(b2)
-    b1.values.foreach(v => assert(v === 168.0))
-    b2.values.foreach(v => assert(v === 2.0))
+    b1.values.foreach(v => assertEquals(v, 168.0))
+    b2.values.foreach(v => assertEquals(v, 2.0))
   }
 
   test("multiply constant") {
     val b1 = newBuffer(84.0)
     b1.multiply(2.0)
-    b1.values.foreach(v => assert(v === 168.0))
+    b1.values.foreach(v => assertEquals(v, 168.0))
   }
 
   test("divide buffer") {
     val b1 = newBuffer(84.0)
     val b2 = newBuffer(2.0)
     b1.divide(b2)
-    b1.values.foreach(v => assert(v === 42.0))
-    b2.values.foreach(v => assert(v === 2.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
+    b2.values.foreach(v => assertEquals(v, 2.0))
   }
 
   test("divide constant") {
     val b1 = newBuffer(84.0)
     b1.divide(2.0)
-    b1.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("max buffer, b1 > b2") {
     val b1 = newBuffer(42.0)
     val b2 = newBuffer(21.0)
     b1.max(b2)
-    b1.values.foreach(v => assert(v === 42.0))
-    b2.values.foreach(v => assert(v === 21.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
+    b2.values.foreach(v => assertEquals(v, 21.0))
   }
 
   test("max buffer, b1 < b2") {
     val b1 = newBuffer(21.0)
     val b2 = newBuffer(42.0)
     b1.max(b2)
-    b1.values.foreach(v => assert(v === 42.0))
-    b2.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
+    b2.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("max buffer, b1=NaN") {
     val b1 = newBuffer(Double.NaN)
     val b2 = newBuffer(42.0)
     b1.max(b2)
-    b1.values.foreach(v => assert(v === 42.0))
-    b2.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
+    b2.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("max buffer, b2=NaN") {
     val b1 = newBuffer(42.0)
     val b2 = newBuffer(Double.NaN)
     b1.max(b2)
-    b1.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
     b2.values.foreach(v => assert(v.isNaN))
   }
 
@@ -335,31 +335,31 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
     val b1 = newBuffer(42.0)
     val b2 = newBuffer(21.0)
     b1.min(b2)
-    b1.values.foreach(v => assert(v === 21.0))
-    b2.values.foreach(v => assert(v === 21.0))
+    b1.values.foreach(v => assertEquals(v, 21.0))
+    b2.values.foreach(v => assertEquals(v, 21.0))
   }
 
   test("min buffer, b1 < b2") {
     val b1 = newBuffer(21.0)
     val b2 = newBuffer(42.0)
     b1.min(b2)
-    b1.values.foreach(v => assert(v === 21.0))
-    b2.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 21.0))
+    b2.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("min buffer, b1=NaN") {
     val b1 = newBuffer(Double.NaN)
     val b2 = newBuffer(42.0)
     b1.min(b2)
-    b1.values.foreach(v => assert(v === 42.0))
-    b2.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
+    b2.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("min buffer, b2=NaN") {
     val b1 = newBuffer(42.0)
     val b2 = newBuffer(Double.NaN)
     b1.min(b2)
-    b1.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 42.0))
     b2.values.foreach(v => assert(v.isNaN))
   }
 
@@ -376,8 +376,8 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
     val b2 = newBuffer(42.0)
     b1.initCount()
     b1.count(b2)
-    b1.values.foreach(v => assert(v === 2.0))
-    b2.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 2.0))
+    b2.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("count buffer, b1=NaN") {
@@ -385,8 +385,8 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
     val b2 = newBuffer(42.0)
     b1.initCount()
     b1.count(b2)
-    b1.values.foreach(v => assert(v === 1.0))
-    b2.values.foreach(v => assert(v === 42.0))
+    b1.values.foreach(v => assertEquals(v, 1.0))
+    b2.values.foreach(v => assertEquals(v, 42.0))
   }
 
   test("count buffer, b2=NaN") {
@@ -394,7 +394,7 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
     val b2 = newBuffer(Double.NaN)
     b1.initCount()
     b1.count(b2)
-    b1.values.foreach(v => assert(v === 1.0))
+    b1.values.foreach(v => assertEquals(v, 1.0))
     b2.values.foreach(v => assert(v.isNaN))
   }
 
@@ -403,7 +403,7 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
     val b2 = newBuffer(Double.NaN)
     b1.initCount()
     b1.count(b2)
-    b1.values.foreach(v => assert(v === 0.0))
+    b1.values.foreach(v => assertEquals(v, 0.0))
     b2.values.foreach(v => assert(v.isNaN))
   }
 
@@ -419,43 +419,43 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
 
   test("getValue with match") {
     val b1 = newBuffer(42.0, 120000)
-    assert(b1.getValue(129000) === 42.0)
+    assertEquals(b1.getValue(129000), 42.0)
   }
 
   test("sum") {
     val buffers = List(newBuffer(1.0), newBuffer(Double.NaN), newBuffer(2.0))
-    assert(TimeSeriesBuffer.sum(buffers).get.values(0) === 3.0)
+    assertEquals(TimeSeriesBuffer.sum(buffers).get.values(0), 3.0)
   }
 
   test("sum empty") {
-    assert(TimeSeriesBuffer.sum(Nil) === None)
+    assertEquals(TimeSeriesBuffer.sum(Nil), None)
   }
 
   test("max") {
     val buffers = List(newBuffer(1.0), newBuffer(Double.NaN), newBuffer(2.0))
-    assert(TimeSeriesBuffer.max(buffers).get.values(0) === 2.0)
+    assertEquals(TimeSeriesBuffer.max(buffers).get.values(0), 2.0)
   }
 
   test("max empty") {
-    assert(TimeSeriesBuffer.max(Nil) === None)
+    assertEquals(TimeSeriesBuffer.max(Nil), None)
   }
 
   test("min") {
     val buffers = List(newBuffer(1.0), newBuffer(Double.NaN), newBuffer(2.0))
-    assert(TimeSeriesBuffer.min(buffers).get.values(0) === 1.0)
+    assertEquals(TimeSeriesBuffer.min(buffers).get.values(0), 1.0)
   }
 
   test("min empty") {
-    assert(TimeSeriesBuffer.min(Nil) === None)
+    assertEquals(TimeSeriesBuffer.min(Nil), None)
   }
 
   test("count") {
     val buffers = List(newBuffer(1.0), newBuffer(Double.NaN), newBuffer(2.0))
-    assert(TimeSeriesBuffer.count(buffers).get.values(0) === 2.0)
+    assertEquals(TimeSeriesBuffer.count(buffers).get.values(0), 2.0)
   }
 
   test("count empty") {
-    assert(TimeSeriesBuffer.count(Nil) === None)
+    assertEquals(TimeSeriesBuffer.count(Nil), None)
   }
 
   test("merge diff sizes b1.length < b2.length") {
@@ -478,29 +478,29 @@ class TimeSeriesBufferSuite extends AnyFunSuite {
     val b = TimeSeriesBuffer(emptyTags, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
 
     val b2 = TimeSeriesBuffer(emptyTags, 120000, start, Array(1.0, 5.0, 9.0))
-    assert(b.consolidate(2, ConsolidationFunction.Sum) === b2)
+    assertEquals(b.consolidate(2, ConsolidationFunction.Sum), b2)
 
     val b3 = TimeSeriesBuffer(emptyTags, 180000, start, Array(3.0, 12.0))
-    assert(b.consolidate(3, ConsolidationFunction.Sum) === b3)
+    assertEquals(b.consolidate(3, ConsolidationFunction.Sum), b3)
 
     val b4 = TimeSeriesBuffer(emptyTags, 240000, start, Array(1.0, 14.0))
-    assert(b.consolidate(4, ConsolidationFunction.Sum) === b4)
+    assertEquals(b.consolidate(4, ConsolidationFunction.Sum), b4)
 
     val b5 = TimeSeriesBuffer(emptyTags, 300000, start, Array(15.0))
-    assert(b.consolidate(5, ConsolidationFunction.Sum) === b5)
+    assertEquals(b.consolidate(5, ConsolidationFunction.Sum), b5)
   }
 
   test("normalize") {
     val start = 1366746900000L
     val b1 = TimeSeriesBuffer(emptyTags, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
     val b1e = TimeSeriesBuffer(emptyTags, 120000, start, Array(1.0, 2.5, 4.5))
-    assert(b1.normalize(60000, start, 5) === b1)
-    assert(b1.normalize(120000, start, 3) === b1e)
+    assertEquals(b1.normalize(60000, start, 5), b1)
+    assertEquals(b1.normalize(120000, start, 3), b1e)
 
     val b2 = TimeSeriesBuffer(emptyTags, 120000, start, Array(3.0, 7.0))
     val b2e =
       TimeSeriesBuffer(emptyTags, 60000, start, Array(3.0, 7.0, 7.0, Double.NaN, Double.NaN))
-    assert(b2.normalize(60000, start, 5) === b2e)
+    assertEquals(b2.normalize(60000, start, 5), b2e)
   }
 
   test("bug: consolidated aggr using incorrect block index") {
