@@ -156,7 +156,6 @@ class MemoryBlockStoreSuite extends FunSuite {
     bs.update(0, List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0))
     assert(bs.fetch(0, 1, Block.Sum).forall(_.isNaN))
     assertEquals(bs.fetch(2, 6, Block.Sum).toList, List(3.0, 4.0, 5.0, 6.0, 7.0))
-    bs.fetch(7, 10, Block.Sum).foreach(println)
     assert(bs.fetch(7, 10, Block.Sum).forall(_.isNaN))
   }
 
