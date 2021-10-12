@@ -81,6 +81,11 @@ object StatefulVocabulary extends Vocabulary {
         |window fetched with a DataExpr. Short delays can be useful for alerting to detect
         |changes in slightly shifted trend lines.
         |
+        |The window size, `n`, is the number of datapoints to consider, including the current
+        |value. Note that it is based on datapoints, not a specific amount of time. As a result,
+        |the number of occurrences will be reduced when transitioning to a larger time frame
+        |that causes consolidation.
+        |
         | Since: 1.6
       """.stripMargin.trim
 
@@ -135,10 +140,10 @@ object StatefulVocabulary extends Vocabulary {
         || 1     | 3                |
         || 0     | 2                |
         |
-        |The window size, `n`, is the number of datapoints to consider including the current
-        |value. Note that it is based on datapoints not a specific amount of time. As a result the
-        |number of occurrences will be reduced when transitioning to a larger time frame that
-        |causes consolidation.
+        |The window size, `n`, is the number of datapoints to consider, including the current
+        |value. Note that it is based on datapoints, not a specific amount of time. As a result,
+        |the number of occurrences will be reduced when transitioning to a larger time frame
+        |that causes consolidation.
         |
         |
       """.stripMargin.trim
