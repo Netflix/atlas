@@ -159,6 +159,28 @@ final class SortedTagMap private (data: Array[String], length: Int)
   def copyToArray(buffer: Array[String]): Unit = {
     System.arraycopy(data, 0, buffer, 0, length)
   }
+
+  /** Return a sorted array containing the keys for this map. */
+  def keysArray: Array[String] = {
+    val ks = new Array[String](size)
+    var i = 0
+    while (i < ks.length) {
+      ks(i) = key(i)
+      i += 1
+    }
+    ks
+  }
+
+  /** Return an array containing the values in order based on the keys. */
+  def valuesArray: Array[String] = {
+    val vs = new Array[String](size)
+    var i = 0
+    while (i < vs.length) {
+      vs(i) = value(i)
+      i += 1
+    }
+    vs
+  }
 }
 
 /** Helper functions for working with sorted tag maps. */
