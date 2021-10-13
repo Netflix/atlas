@@ -26,6 +26,8 @@ class SortedTagMapSuite extends FunSuite {
     assert(m.get("a").isEmpty)
     assert(!m.contains("a"))
     assertEquals(m.toList, List.empty)
+    assertEquals(m.keysArray.toSeq, Seq.empty)
+    assertEquals(m.valuesArray.toSeq, Seq.empty)
   }
 
   test("single pair") {
@@ -35,6 +37,8 @@ class SortedTagMapSuite extends FunSuite {
     assert(m.get("a").contains("1"))
     assert(m.contains("a"))
     assertEquals(m.toList, List("a" -> "1"))
+    assertEquals(m.keysArray.toSeq, Seq("a"))
+    assertEquals(m.valuesArray.toSeq, Seq("1"))
   }
 
   test("four pairs") {
@@ -46,6 +50,8 @@ class SortedTagMapSuite extends FunSuite {
       assert(m.get(k).contains(i.toString))
     }
     assertEquals(m.toList, List("a" -> "0", "b" -> "1", "c" -> "2", "d" -> "3"))
+    assertEquals(m.keysArray.toSeq, Seq("a", "b", "c", "d"))
+    assertEquals(m.valuesArray.toSeq, Seq("0", "1", "2", "3"))
   }
 
   private def pairs: List[(String, String)] = {
