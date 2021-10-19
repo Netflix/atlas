@@ -107,10 +107,11 @@ class SubscriptionManager[T] extends StrictLogging {
     *
     * Returns true if it is a new registration.
     */
-  def register(streamId: String, handler: T): Boolean = {
-    val registered = registrations.putIfAbsent(streamId, new StreamInfo[T](handler)) == null
+  def register(streamMeta: StreamMetadata, handler: T): Boolean = {
+    val id = streamMeta.streamId
+    val registered = registrations.putIfAbsent(id, new StreamInfo[T](streamMeta, handler)) == null
     if (registered) {
-      logger.debug(s"registered $streamId")
+      logger.debug(s"registered $id")
     }
     registered
   }
@@ -177,6 +178,28 @@ class SubscriptionManager[T] extends StrictLogging {
   }
 
   /**
+    * Return a summary of information about all current streams.
+    */
+  def streamSummaries: List[StreamSummary] = {
+    registrations
+      .values()
+      .asScala
+      .map { info =>
+        StreamSummary(info.metadata, info.subscriptions.map(_.metadata))
+      }
+      .toList
+  }
+
+  /**
+    * Return a summary of information about a particular stream.
+    */
+  def streamSummary(streamId: String): Option[StreamSummary] = {
+    Option(registrations.get(streamId)).map { info =>
+      StreamSummary(info.metadata, info.subscriptions.map(_.metadata))
+    }
+  }
+
+  /**
     * Return the set of all current subscriptions across all streams.
     */
   def subscriptions: List[Subscription] = {
@@ -231,7 +254,10 @@ class SubscriptionManager[T] extends StrictLogging {
 
 object SubscriptionManager {
 
+  case class StreamSummary(metadata: StreamMetadata, subscriptions: List[ExpressionMetadata])
+
   class StreamInfo[T](
+    val metadata: StreamMetadata,
     val handler: T,
     val subs: ConcurrentHashMap[String, Subscription] =
       new ConcurrentHashMap[String, Subscription]()
