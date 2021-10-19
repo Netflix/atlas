@@ -41,7 +41,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
 
   // Dummy queue used for handler
   private val queue = new QueueHandler(
-    "test",
+    StreamMetadata("test"),
     StreamOps
       .blockingQueue[Seq[JsonSupport]](new NoopRegistry, "test", 1)
       .toMat(Sink.ignore)(Keep.left)
@@ -92,7 +92,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
 
   test("has data") {
     val splits = splitter.split("nf.cluster,skan,:eq,:avg", 60000)
-    sm.register("a", queue)
+    sm.register(StreamMetadata("a"), queue)
     splits.foreach { s =>
       sm.subscribe("a", s)
     }
@@ -105,7 +105,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
 
   test("fetch all with data") {
     val splits = splitter.split("nf.cluster,skan,:eq,:avg,nf.app,brh,:eq,:max", 60000)
-    sm.register("a", queue)
+    sm.register(StreamMetadata("a"), queue)
     splits.foreach { s =>
       sm.subscribe("a", s)
     }

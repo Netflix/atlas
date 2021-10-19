@@ -40,8 +40,8 @@ import scala.util.control.NonFatal
   * flow in, and produce output message stream a single "Source".
   */
 private[lwcapi] class WebSocketSessionManager(
-  val streamId: String,
-  val registerFunc: String => (QueueHandler, Source[JsonSupport, Unit]),
+  val streamMeta: StreamMetadata,
+  val registerFunc: StreamMetadata => (QueueHandler, Source[JsonSupport, Unit]),
   val subscribeFunc: (String, List[ExpressionMetadata]) => List[ErrorMsg]
 ) extends GraphStage[FlowShape[AnyRef, Source[JsonSupport, Unit]]]
     with StrictLogging {
@@ -60,7 +60,7 @@ private[lwcapi] class WebSocketSessionManager(
       setHandlers(in, out, this)
 
       override def preStart(): Unit = {
-        val (_queueHandler, _dataSource) = registerFunc(streamId)
+        val (_queueHandler, _dataSource) = registerFunc(streamMeta)
         queueHandler = _queueHandler
         dataSource = _dataSource
       }
@@ -74,7 +74,7 @@ private[lwcapi] class WebSocketSessionManager(
           }
           val metadata = lwcExpressions.map(v => ExpressionMetadata(v.expression, v.step))
           // Update subscription here
-          val errors = subscribeFunc(streamId, metadata).map { error =>
+          val errors = subscribeFunc(streamMeta.streamId, metadata).map { error =>
             DiagnosticMessage.error(s"[${error.expression}] ${error.message}")
           }
           queueHandler.offer(errors)

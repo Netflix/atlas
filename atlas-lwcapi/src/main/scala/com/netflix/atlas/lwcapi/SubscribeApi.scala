@@ -69,14 +69,18 @@ class SubscribeApi @Inject() (
   private val itemsId = registry.createId("atlas.lwcapi.subscribe.itemCount")
 
   def routes: Route = {
-    endpointPathPrefix("api" / "v1" / "subscribe") {
-      path(Remaining) { streamId =>
-        handleWebSocketMessages(createHandlerFlow(streamId))
-      }
-    } ~
-    endpointPathPrefix("api" / "v2" / "subscribe") {
-      path(Remaining) { streamId =>
-        handleWebSocketMessages(createHandlerFlowV2(streamId))
+    extractClientIP { addr =>
+      endpointPathPrefix("api" / "v1" / "subscribe") {
+        path(Remaining) { streamId =>
+          val meta = StreamMetadata(streamId, addr.value)
+          handleWebSocketMessages(createHandlerFlow(meta))
+        }
+      } ~
+      endpointPathPrefix("api" / "v2" / "subscribe") {
+        path(Remaining) { streamId =>
+          val meta = StreamMetadata(streamId, addr.value)
+          handleWebSocketMessages(createHandlerFlowV2(meta))
+        }
       }
     }
   }
@@ -84,8 +88,9 @@ class SubscribeApi @Inject() (
   /**
     * Uses text messages and sends each datapoint individually.
     */
-  private def createHandlerFlow(streamId: String): Flow[Message, Message, Any] = {
+  private def createHandlerFlow(streamMeta: StreamMetadata): Flow[Message, Message, Any] = {
     // Drop any other connections that may already be using the same id
+    val streamId = streamMeta.streamId
     sm.unregister(streamId).foreach { queue =>
       val msg = DiagnosticMessage.info(s"dropped: another connection is using id: $streamId")
       queue.offer(Seq(msg))
@@ -103,7 +108,7 @@ class SubscribeApi @Inject() (
         case msg: BinaryMessage =>
           msg.dataStream.fold(ByteString.empty)(_ ++ _).map(_.decodeString(StandardCharsets.UTF_8))
       }
-      .via(new WebSocketSessionManager(streamId, register, subscribe))
+      .via(new WebSocketSessionManager(streamMeta, register, subscribe))
       .flatMapMerge(Int.MaxValue, s => s)
       .map(obj => TextMessage(obj.toJson))
   }
@@ -111,8 +116,9 @@ class SubscribeApi @Inject() (
   /**
     * Uses a binary format for the messages and batches output to achieve higher throughput.
     */
-  private def createHandlerFlowV2(streamId: String): Flow[Message, Message, Any] = {
+  private def createHandlerFlowV2(streamMeta: StreamMetadata): Flow[Message, Message, Any] = {
     // Drop any other connections that may already be using the same id
+    val streamId = streamMeta.streamId
     sm.unregister(streamId).foreach { queue =>
       val msg = DiagnosticMessage.info(s"dropped: another connection is using id: $streamId")
       queue.offer(Seq(msg))
@@ -130,7 +136,7 @@ class SubscribeApi @Inject() (
         case msg: BinaryMessage =>
           msg.dataStream.fold(ByteString.empty)(_ ++ _)
       }
-      .via(new WebSocketSessionManager(streamId, register, subscribe))
+      .via(new WebSocketSessionManager(streamMeta, register, subscribe))
       .flatMapMerge(Int.MaxValue, msg => msg)
       .groupedWithin(batchSize, 1.second)
       .statefulMapConcat { () =>
@@ -147,7 +153,9 @@ class SubscribeApi @Inject() (
     registry.clock().wallTime() / step * step
   }
 
-  private def register(streamId: String): (QueueHandler, Source[JsonSupport, Unit]) = {
+  private def register(streamMeta: StreamMetadata): (QueueHandler, Source[JsonSupport, Unit]) = {
+
+    val streamId = streamMeta.streamId
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     val (queue, queueSrc) = StreamOps
@@ -157,8 +165,8 @@ class SubscribeApi @Inject() (
 
     // Send initial setup messages
     queue.offer(Seq(DiagnosticMessage.info(s"setup stream $streamId on $instanceId")))
-    val handler = new QueueHandler(streamId, queue)
-    sm.register(streamId, handler)
+    val handler = new QueueHandler(streamMeta, queue)
+    sm.register(streamMeta, handler)
 
     // Heartbeat messages to ensure that the socket is never idle
     val heartbeatSrc = Source

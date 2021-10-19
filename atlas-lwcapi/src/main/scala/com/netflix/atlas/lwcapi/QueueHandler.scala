@@ -22,14 +22,16 @@ import com.typesafe.scalalogging.StrictLogging
 /**
   * Message handler for use with the [SubscriptionManager].
   *
-  * @param id
-  *     Stream id for this handler. Used to provide context in the log messages and easily
+  * @param streamMeta
+  *     Stream metadata for this handler. Used to provide context in the log messages and easily
   *     be able to grep for a given id.
   * @param queue
   *     Underlying queue that will receive the messsages.
   */
-class QueueHandler(id: String, queue: StreamOps.SourceQueue[Seq[JsonSupport]])
+class QueueHandler(streamMeta: StreamMetadata, queue: StreamOps.SourceQueue[Seq[JsonSupport]])
     extends StrictLogging {
+
+  private val id = streamMeta.streamId
 
   private def toJson(msgs: Seq[JsonSupport]): String = {
     msgs.map(_.toJson).mkString("[", ",", "]")
@@ -37,8 +39,12 @@ class QueueHandler(id: String, queue: StreamOps.SourceQueue[Seq[JsonSupport]])
 
   def offer(msgs: Seq[JsonSupport]): Unit = {
     logger.trace(s"enqueuing message for $id: ${toJson(msgs)}")
-    if (!queue.offer(msgs))
+    if (!queue.offer(msgs)) {
       logger.debug(s"failed to enqueue message for $id: ${toJson(msgs)}")
+      streamMeta.droppedMessages.addAndGet(msgs.size)
+    } else {
+      streamMeta.receivedMessages.addAndGet(msgs.size)
+    }
   }
 
   def complete(): Unit = {

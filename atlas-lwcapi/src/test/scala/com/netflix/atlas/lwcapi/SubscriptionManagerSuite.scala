@@ -35,7 +35,7 @@ class SubscriptionManagerSuite extends FunSuite {
 
     val sse1 = "sse1"
 
-    sm.register(sse1, 1)
+    sm.register(StreamMetadata(sse1), 1)
 
     sm.subscribe(sse1, exp1)
     assertEquals(sm.handlersForSubscription(exp1.metadata.id), List(Integer.valueOf(1)))
@@ -54,57 +54,63 @@ class SubscriptionManagerSuite extends FunSuite {
 
   test("multiple registrations") {
     val sm = new SubscriptionManager[Integer]()
-    assert(sm.register("a", 1))
-    assert(!sm.register("a", 1))
-    assertEquals(sm.unregister("a"), Some(Integer.valueOf(1)))
-    assert(sm.register("a", 1))
+    val meta = StreamMetadata("a")
+    assert(sm.register(meta, 1))
+    assert(!sm.register(meta, 1))
+    assertEquals(sm.unregister(meta.streamId), Some(Integer.valueOf(1)))
+    assert(sm.register(meta, 1))
   }
 
   test("subs are maintained on attempted re-register") {
+    val meta = StreamMetadata("a")
     val sm = new SubscriptionManager[Integer]()
-    assert(sm.register("a", 1))
+    assert(sm.register(meta, 1))
 
     val exp1 = sub("name,exp1,:eq")
-    sm.subscribe("a", exp1)
+    sm.subscribe(meta.streamId, exp1)
     assertEquals(sm.subscriptions, List(exp1))
 
-    assert(!sm.register("a", 1))
+    assert(!sm.register(meta, 1))
     assertEquals(sm.subscriptions, List(exp1))
   }
 
   test("multiple subscriptions for stream") {
+    val meta = StreamMetadata("a")
     val sm = new SubscriptionManager[Integer]()
-    sm.register("a", 1)
+    sm.register(meta, 1)
 
     val subs = List(sub("name,exp1,:eq"), sub("name,exp2,:eq"))
-    sm.subscribe("a", subs)
+    sm.subscribe(meta.streamId, subs)
 
     assertEquals(sm.subscriptions.toSet, subs.toSet)
   }
 
   test("duplicate subscriptions") {
+    val meta = StreamMetadata("a")
     val sm = new SubscriptionManager[Integer]()
-    sm.register("a", 1)
+    sm.register(meta, 1)
 
     val s = sub("name,exp1,:eq")
-    sm.subscribe("a", s)
-    sm.subscribe("a", s)
+    sm.subscribe(meta.streamId, s)
+    sm.subscribe(meta.streamId, s)
 
     assertEquals(sm.subscriptions, List(s))
   }
 
   test("same subscription for two streams") {
+    val a = StreamMetadata("a")
+    val b = StreamMetadata("b")
     val sm = new SubscriptionManager[Integer]()
-    sm.register("a", 1)
-    sm.register("b", 2)
+    sm.register(a, 1)
+    sm.register(b, 2)
 
     val s = sub("name,exp1,:eq")
-    sm.subscribe("a", s)
-    sm.subscribe("b", s)
+    sm.subscribe(a.streamId, s)
+    sm.subscribe(b.streamId, s)
 
     assertEquals(sm.subscriptions, List(s))
-    assertEquals(sm.subscriptionsForStream("a"), List(s))
-    assertEquals(sm.subscriptionsForStream("b"), List(s))
+    assertEquals(sm.subscriptionsForStream(a.streamId), List(s))
+    assertEquals(sm.subscriptionsForStream(b.streamId), List(s))
     assertEquals(
       sm.handlersForSubscription(s.metadata.id).sorted,
       List(Integer.valueOf(1), Integer.valueOf(2))
@@ -114,7 +120,7 @@ class SubscriptionManagerSuite extends FunSuite {
   private def checkSubsForCluster(expr: String, cluster: String): Unit = {
     val sm = new SubscriptionManager[Integer]()
     val s = sub(expr)
-    sm.register("a", 1)
+    sm.register(StreamMetadata("a"), 1)
     sm.subscribe("a", s)
     sm.regenerateQueryIndex()
     assertEquals(sm.subscriptionsForCluster(cluster), List(s))
@@ -156,7 +162,7 @@ class SubscriptionManagerSuite extends FunSuite {
 
   test("unsubscribe for unknown expression does not cause any exceptions") {
     val sm = new SubscriptionManager[Integer]()
-    sm.register("a", 42)
+    sm.register(StreamMetadata("a"), 42)
     sm.unsubscribe("a", "d")
   }
 
@@ -167,7 +173,7 @@ class SubscriptionManagerSuite extends FunSuite {
 
   test("unregister should remove handlers") {
     val sm = new SubscriptionManager[Integer]()
-    sm.register("a", 1)
+    sm.register(StreamMetadata("a"), 1)
 
     val s = sub("name,exp1,:eq")
     sm.subscribe("a", s)
@@ -179,8 +185,8 @@ class SubscriptionManagerSuite extends FunSuite {
 
   test("subscribe returns added expressions") {
     val sm = new SubscriptionManager[Integer]()
-    assert(sm.register("a", 1))
-    assert(sm.register("b", 2))
+    assert(sm.register(StreamMetadata("a"), 1))
+    assert(sm.register(StreamMetadata("b"), 2))
 
     val s1 = sub("name,exp1,:eq")
     val s2 = sub("name,exp2,:eq")
