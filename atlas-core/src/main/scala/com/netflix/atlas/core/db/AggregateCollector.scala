@@ -56,6 +56,9 @@ trait AggregateCollector {
     newBuffer: Map[String, String] => TimeSeriesBuffer
   ): Int
 
+  /** Combine the data with another collector. */
+  def combine(collector: AggregateCollector): Unit
+
   /** Returns the final set of aggregate buffers. */
   def result: List[TimeSeriesBuffer]
 
@@ -71,10 +74,10 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
 
   import java.util.{BitSet => JBitSet}
 
-  var buffer = null.asInstanceOf[TimeSeriesBuffer]
-  var valueMask = null.asInstanceOf[JBitSet]
-  var valueMultiple = -1
-  var valueCount = 0
+  var buffer: TimeSeriesBuffer = null.asInstanceOf[TimeSeriesBuffer]
+  var valueMask: JBitSet = null.asInstanceOf[JBitSet]
+  var valueMultiple: Int = -1
+  var valueCount: Int = 0
 
   val statBuffer = new CollectorStatsBuilder
 
@@ -131,6 +134,22 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
     buffer.values.length
   }
 
+  def combine(collector: AggregateCollector): Unit = {
+    collector match {
+      case c: SimpleAggregateCollector =>
+        if (buffer == null && c.buffer != null) {
+          add(c.buffer)
+        } else if (c.buffer != null) {
+          aggregate(buffer, c.buffer)
+          // 0 out output, since that is only based on the result of a single collector
+          val tmp = c.stats.copy(outputLines = 0, outputDatapoints = 0)
+          statBuffer.update(tmp)
+        }
+      case _ =>
+        throw new IllegalStateException("cannot combine collectors of different types")
+    }
+  }
+
   def result: List[TimeSeriesBuffer] = {
     if (valueMask != null) {
       buffer.average(valueMask, valueMultiple)
@@ -145,19 +164,19 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
 /** Collector that returns a single buffer representing the sum of all individual buffers. */
 class SumAggregateCollector extends SimpleAggregateCollector {
 
-  protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer) = b1.add(b2)
+  protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer): Unit = b1.add(b2)
 }
 
 /** Collector that returns a single buffer representing the min of all individual buffers. */
 class MinAggregateCollector extends SimpleAggregateCollector {
 
-  protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer) = b1.min(b2)
+  protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer): Unit = b1.min(b2)
 }
 
 /** Collector that returns a single buffer representing the max of all individual buffers. */
 class MaxAggregateCollector extends SimpleAggregateCollector {
 
-  protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer) = b1.max(b2)
+  protected def aggregate(b1: TimeSeriesBuffer, b2: TimeSeriesBuffer): Unit = b1.max(b2)
 }
 
 abstract class LimitedAggregateCollector extends AggregateCollector {
@@ -185,12 +204,12 @@ class GroupByAggregateCollector(ft: DataExpr.GroupBy) extends LimitedAggregateCo
     if (k == null) return
 
     // Add the data to the existing collector for the key or create a new one
-    val c = buffers.get(k).getOrElse {
+    val c = buffers.getOrElse(k, {
       checkLimits(buffers.size + 1, (buffers.size + 1) * b.values.length)
       val collector = newCollector(ft.af)
       buffers += (k -> collector)
       collector
-    }
+    })
     c.add(b)
   }
 
@@ -208,16 +227,20 @@ class GroupByAggregateCollector(ft: DataExpr.GroupBy) extends LimitedAggregateCo
     if (k == null) return 0
 
     // Add the data to the existing collector for the key or create a new one
-    val c = buffers.get(k).getOrElse {
+    val c = buffers.getOrElse(k, {
       if (bufferSize > 0) {
         checkLimits(buffers.size + 1, (buffers.size + 1) * bufferSize)
       }
       val collector = newCollector(ft.af)
       buffers += (k -> collector)
       collector
-    }
+    })
     bufferSize = c.add(tags, blocks, aggr, cf, multiple, newBuffer)
     bufferSize
+  }
+
+  def combine(collector: AggregateCollector): Unit = {
+    throw new UnsupportedOperationException("combine is only supported for simple aggregations")
   }
 
   def result: List[TimeSeriesBuffer] = buffers.values.flatMap(_.result).toList
@@ -267,6 +290,10 @@ class AllAggregateCollector extends LimitedAggregateCollector {
 
     if (valueCount > 0) add(buffer)
     buffer.values.length
+  }
+
+  def combine(collector: AggregateCollector): Unit = {
+    throw new UnsupportedOperationException("combine is only supported for simple aggregations")
   }
 
   def result: List[TimeSeriesBuffer] = builder.result()
