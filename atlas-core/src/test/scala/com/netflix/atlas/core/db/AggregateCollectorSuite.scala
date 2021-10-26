@@ -43,6 +43,34 @@ class AggregateCollectorSuite extends FunSuite {
     assertEquals(c.stats, CollectorStats(4, 4, 1, 1))
   }
 
+  test("sum collector -- combine") {
+    val c1 = new SumAggregateCollector
+    c1.add(newBuffer(1.0))
+    val c2 = new SumAggregateCollector
+    c2.add(newBuffer(2.0))
+    c1.combine(c2)
+    assertEquals(c1.result, List(newBuffer(3.0)))
+    assertEquals(c1.stats, CollectorStats(2, 2, 1, 1))
+  }
+
+  test("sum collector -- combine(null, c)") {
+    val c1 = new SumAggregateCollector
+    val c2 = new SumAggregateCollector
+    c2.add(newBuffer(2.0))
+    c1.combine(c2)
+    assertEquals(c1.result, List(newBuffer(2.0)))
+    assertEquals(c1.stats, CollectorStats(1, 1, 1, 1))
+  }
+
+  test("sum collector -- combine(c, null)") {
+    val c1 = new SumAggregateCollector
+    c1.add(newBuffer(1.0))
+    val c2 = new SumAggregateCollector
+    c1.combine(c2)
+    assertEquals(c1.result, List(newBuffer(1.0)))
+    assertEquals(c1.stats, CollectorStats(1, 1, 1, 1))
+  }
+
   test("min collector") {
     val c = new MinAggregateCollector
     assertEquals(c.result, Nil)
