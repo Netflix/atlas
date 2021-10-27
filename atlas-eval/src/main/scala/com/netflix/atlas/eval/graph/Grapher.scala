@@ -341,6 +341,7 @@ case class Grapher(settings: DefaultSettings) {
 
               LineDef(
                 data = t,
+                groupByKeys = s.expr.finalGrouping,
                 color = color,
                 lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
                 lineWidth = s.lineWidth,
