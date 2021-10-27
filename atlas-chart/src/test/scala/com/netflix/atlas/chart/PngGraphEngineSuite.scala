@@ -293,6 +293,11 @@ abstract class PngGraphEngineSuite extends FunSuite {
     v => v.copy(layout = Layout.IMAGE_WIDTH, width = 10000)
   )
 
+  singleLine(
+    "single_line_groupByKeys",
+    v => v.adjustLines(_.copy(groupByKeys = List("foo", "bar")))
+  )
+
   private val zones = List(
     ZoneId.of("US/Pacific"),
     ZoneId.of("UTC"),

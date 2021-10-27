@@ -200,6 +200,11 @@ private[chart] object JsonCodec {
     writeColor(gen, line.color)
     gen.writeStringField("lineStyle", line.lineStyle.name())
     gen.writeNumberField("lineWidth", line.lineWidth)
+    if (line.groupByKeys.nonEmpty) {
+      gen.writeArrayFieldStart("groupByKeys")
+      line.groupByKeys.foreach(gen.writeString)
+      gen.writeEndArray()
+    }
     gen.writeObjectFieldStart("tags")
     line.data.tags.foreachEntry(gen.writeStringField)
     gen.writeEndObject()
@@ -364,9 +369,23 @@ private[chart] object JsonCodec {
     */
   private def toColor(node: JsonNode): Color = Strings.parseColor(node.asText())
 
+  private def toStringList(node: JsonNode): List[String] = {
+    if (node != null && node.isArray) {
+      val builder = List.newBuilder[String]
+      val iter = node.elements()
+      while (iter.hasNext) {
+        builder += iter.next().asText()
+      }
+      builder.result()
+    } else {
+      Nil
+    }
+  }
+
   private def toLineDef(gdef: GraphDef, node: JsonNode): LineDef = {
     LineDef(
       data = toTimeSeries(gdef, node),
+      groupByKeys = toStringList(node.get("groupByKeys")),
       color = toColor(node.get("color")),
       lineStyle = LineStyle.valueOf(node.get("lineStyle").asText()),
       lineWidth = node.get("lineWidth").asDouble().toFloat

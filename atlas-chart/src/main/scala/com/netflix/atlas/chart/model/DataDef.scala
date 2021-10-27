@@ -38,6 +38,8 @@ sealed trait DataDef {
   *
   * @param data
   *     Time series with the underlying data to render.
+  * @param groupByKeys
+  *     Set of keys used in the final grouping for the time series.
   * @param color
   *     Color to use when rendering the line.
   * @param lineStyle
@@ -49,6 +51,7 @@ sealed trait DataDef {
   */
 case class LineDef(
   data: TimeSeries,
+  groupByKeys: List[String] = Nil,
   color: Color = Color.RED,
   lineStyle: LineStyle = LineStyle.LINE,
   lineWidth: Float = 1.0f,
@@ -57,7 +60,7 @@ case class LineDef(
 
   def label: String = data.label
 
-  def withColor(c: Color) = copy(color = c)
+  def withColor(c: Color): LineDef = copy(color = c)
 }
 
 /**
