@@ -183,6 +183,20 @@ class ArrayHelperSuite extends FunSuite {
     assertEquals(vs.toSeq.take(length), Seq("a" -> 3, "b" -> 2, "c" -> 1, "d" -> 1))
   }
 
+  test("sortAndDedup, partially filled array") {
+    type T = (String, Int)
+    val vs = Array("c", "a", "b", "b", "a", "d", "a", null, null)
+      .map(k => if (k == null) null else k -> 1)
+    val length = ArrayHelper.sortAndDedup(
+      (a: T, b: T) => a._1.compareTo(b._1),
+      (a: T, b: T) => a._1 -> (a._2 + b._2),
+      vs,
+      7
+    )
+    assertEquals(length, 4)
+    assertEquals(vs.toSeq.take(length), Seq("a" -> 3, "b" -> 2, "c" -> 1, "d" -> 1))
+  }
+
   test("sortPairs, empty") {
     val data = Array.empty[String]
     ArrayHelper.sortPairs(data)

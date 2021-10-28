@@ -325,7 +325,7 @@ object ArrayHelper {
       var v = data(0)
       var i = 1
       var j = 0
-      while (i < data.length) {
+      while (i < length) {
         if (comparator.compare(v, data(i)) != 0) {
           j += 1
           v = data(i)
