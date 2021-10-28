@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.util
 
+import java.util.Comparator
 import scala.reflect.ClassTag
 
 object ArrayHelper {
@@ -95,10 +96,16 @@ object ArrayHelper {
     * @return
     *     Object that can be used to merge the arrays.
     */
-  def merger[T <: Comparable[T]: ClassTag](limit: Int): Merger[T] = new Merger[T](limit)
+  def merger[T <: Comparable[T]: ClassTag](limit: Int): Merger[T] = {
+    merger(limit, new ComparableComparator[T])
+  }
+
+  def merger[T: ClassTag](limit: Int, comparator: Comparator[T]): Merger[T] = {
+    new Merger[T](limit, comparator)
+  }
 
   /** Helper for merging sorted arrays and lists. */
-  class Merger[T <: Comparable[T]: ClassTag] private[util] (limit: Int) {
+  class Merger[T: ClassTag] private[util] (limit: Int, comparator: Comparator[T]) {
     // Arrays used for storing the merged result. The `src` array will contain the
     // current merged dataset. During a merge operation, the data will be written
     // into the destination array. It is pre-allocated so it can be reused across
@@ -123,7 +130,7 @@ object ArrayHelper {
       while (sidx < size && vidx < vsize && didx < limit) {
         val v1 = src(sidx)
         val v2 = vs(vidx)
-        v1.compareTo(v2) match {
+        comparator.compare(v1, v2) match {
           case c if c < 0 =>
             dst(didx) = v1
             didx += 1
@@ -176,7 +183,7 @@ object ArrayHelper {
       while (sidx < size && data.nonEmpty && didx < limit) {
         val v1 = src(sidx)
         val v2 = data.head
-        v1.compareTo(v2) match {
+        comparator.compare(v1, v2) match {
           case c if c < 0 =>
             dst(didx) = v1
             didx += 1
