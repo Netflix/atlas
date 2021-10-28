@@ -138,7 +138,9 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
     collector match {
       case c: SimpleAggregateCollector =>
         if (buffer == null && c.buffer != null) {
-          add(c.buffer)
+          buffer = c.buffer
+          if (!buffer.isAllNaN) valueCount = 1
+          statBuffer.update(c.stats)
         } else if (c.buffer != null) {
           aggregate(buffer, c.buffer)
           // 0 out output, since that is only based on the result of a single collector
