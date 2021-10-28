@@ -68,4 +68,33 @@ class ListHelperSuite extends FunSuite {
     val v2 = List("a", "b", "f")
     assertEquals(ListHelper.merge(10, v1, v2), List("a", "b", "c", "d", "f"))
   }
+
+  test("dedup and aggregate while merging") {
+    type T = (String, Int)
+    val v1 = List("a" -> 1, "c" -> 1, "d" -> 1)
+    val v2 = List("a" -> 1, "b" -> 1, "d" -> 1, "f" -> 1)
+    val actual = ListHelper.merge(
+      10,
+      (a: T, b: T) => a._1.compareTo(b._1),
+      (a: T, b: T) => a._1 -> (a._2 + b._2),
+      v1,
+      v2
+    )
+    val expected = List("a" -> 2, "b" -> 1, "c" -> 1, "d" -> 2, "f" -> 1)
+    assertEquals(actual, expected)
+  }
+
+  test("dedup and aggregate while merging, list of lists") {
+    type T = (String, Int)
+    val v1 = List("a" -> 1, "c" -> 1, "d" -> 1)
+    val v2 = List("a" -> 1, "b" -> 1, "d" -> 1, "f" -> 1)
+    val actual = ListHelper.merge(
+      10,
+      (a: T, b: T) => a._1.compareTo(b._1),
+      (a: T, b: T) => a._1 -> (a._2 + b._2),
+      List(v1, v2)
+    )
+    val expected = List("a" -> 2, "b" -> 1, "c" -> 1, "d" -> 2, "f" -> 1)
+    assertEquals(actual, expected)
+  }
 }
