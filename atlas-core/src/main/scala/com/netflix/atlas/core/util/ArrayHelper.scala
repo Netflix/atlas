@@ -244,11 +244,9 @@ object ArrayHelper {
 
       // Only the merge list has data left, fill in the remainder
       while (data.nonEmpty && didx < limit) {
-        val iter = data.iterator
-        while (iter.hasNext && didx < limit) {
-          dst(didx) = iter.next()
-          didx += 1
-        }
+        dst(didx) = data.head
+        data = data.tail
+        didx += 1
       }
 
       size = didx
