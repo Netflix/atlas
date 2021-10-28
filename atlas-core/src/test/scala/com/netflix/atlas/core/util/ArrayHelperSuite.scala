@@ -145,6 +145,44 @@ class ArrayHelperSuite extends FunSuite {
     assertEquals(actual, List("a", "b"))
   }
 
+  test("sortAndDedup, empty") {
+    val vs = Array.empty[String]
+    val length = ArrayHelper.sortAndDedup(vs)
+    assertEquals(length, 0)
+  }
+
+  test("sortAndDedup, one item") {
+    val vs = Array("a")
+    val length = ArrayHelper.sortAndDedup(vs)
+    assertEquals(length, 1)
+  }
+
+  test("sortAndDedup, one item after dedup") {
+    val vs = Array("a", "a", "a")
+    val length = ArrayHelper.sortAndDedup(vs)
+    assertEquals(length, 1)
+  }
+
+  test("sortAndDedup, several items") {
+    val vs = Array("c", "a", "b", "a")
+    val length = ArrayHelper.sortAndDedup(vs)
+    assertEquals(length, 3)
+    assertEquals(vs.toSeq.take(length), Seq("a", "b", "c"))
+  }
+
+  test("sortAndDedup, several items aggregate") {
+    type T = (String, Int)
+    val vs = Array("c", "a", "b", "b", "a", "d", "a").map(k => k -> 1)
+    val length = ArrayHelper.sortAndDedup(
+      (a: T, b: T) => a._1.compareTo(b._1),
+      (a: T, b: T) => a._1 -> (a._2 + b._2),
+      vs,
+      vs.length
+    )
+    assertEquals(length, 4)
+    assertEquals(vs.toSeq.take(length), Seq("a" -> 3, "b" -> 2, "c" -> 1, "d" -> 1))
+  }
+
   test("sortPairs, empty") {
     val data = Array.empty[String]
     ArrayHelper.sortPairs(data)
