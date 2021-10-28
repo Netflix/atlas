@@ -279,6 +279,68 @@ object ArrayHelper {
   }
 
   /**
+    * Sort array and remove duplicate values from the array. The operations will be done in
+    * place and modify the array.
+    *
+    * @param data
+    *     Input data to sort. The array should be full.
+    * @return
+    *     Length of the valid data in the array after removing duplicates.
+    */
+  def sortAndDedup[T <: Comparable[T]](data: Array[T]): Int = {
+    sortAndDedup(new ComparableComparator[T], (v: T, _: T) => v, data, data.length)
+  }
+
+  /**
+    * Sort array and remove duplicate values from the array. The operations will be done in
+    * place and modify the array.
+    *
+    * @param comparator
+    *     Comparator to use for determining the order of elements.
+    * @param aggrF
+    *     Aggregation function to use if duplicate values are encountered. The user should
+    *     ensure that the aggregation function does not influence the order of the elements.
+    * @param data
+    *     Input data to sort.
+    * @param length
+    *     Amount of data in the array to consider for the sort.
+    * @return
+    *     Length of the valid data in the array after removing duplicates.
+    */
+  def sortAndDedup[T](
+    comparator: Comparator[T],
+    aggrF: (T, T) => T,
+    data: Array[T],
+    length: Int
+  ): Int = {
+    if (length == 0) {
+      0
+    } else {
+      java.util.Arrays.sort(
+        data.asInstanceOf[Array[AnyRef]],
+        0,
+        length,
+        comparator.asInstanceOf[Comparator[AnyRef]]
+      )
+      var v = data(0)
+      var i = 1
+      var j = 0
+      while (i < data.length) {
+        if (comparator.compare(v, data(i)) != 0) {
+          j += 1
+          v = data(i)
+          data(j) = v
+        } else {
+          v = aggrF(v, data(i))
+          data(j) = v
+        }
+        i += 1
+      }
+      j + 1
+    }
+  }
+
+  /**
     * Sort a string array that consists of tag key/value pairs by key. The array will be
     * sorted in-place. The pair arrays are supposed to be fairly small, typically less than 20
     * tags. With the small size a simple insertion sort works well.
