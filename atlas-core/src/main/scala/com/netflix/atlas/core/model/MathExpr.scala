@@ -34,6 +34,50 @@ trait MathExpr extends TimeSeriesExpr
 
 object MathExpr {
 
+  /**
+    * Map a tag key name to an alternate name.
+    *
+    * @param expr
+    *     Input expression to act on.
+    * @param original
+    *     Original tag name that should be replaced.
+    * @param replacement
+    *     Replacement tag name that should be used going forward.
+    */
+  case class As(expr: TimeSeriesExpr, original: String, replacement: String) extends TimeSeriesExpr {
+
+    def dataExprs: List[DataExpr] = expr.dataExprs
+
+    override def toString: String = s"$expr,$original,$replacement,:as"
+
+    def isGrouped: Boolean = expr.isGrouped
+
+    def groupByKey(tags: Map[String, String]): Option[String] = {
+      Option(DataExpr.keyString(finalGrouping, tags))
+    }
+
+    val finalGrouping: List[String] = {
+      expr.finalGrouping.map { k =>
+        if (k == original) replacement else k
+      }
+    }
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      val rs = expr.eval(context, data)
+      ResultSet(
+        this,
+        rs.data.map { ts =>
+          val tags = ts.tags.get(original) match {
+            case Some(v) => ts.tags - original + (replacement -> v)
+            case None    => ts.tags
+          }
+          ts.withTags(tags)
+        },
+        rs.state
+      )
+    }
+  }
+
   case class Constant(v: Double) extends TimeSeriesExpr {
 
     def dataExprs: List[DataExpr] = Nil
