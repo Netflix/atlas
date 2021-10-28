@@ -56,13 +56,42 @@ object ListHelper {
     *     Sorted list with a max size of `limit`.
     */
   def merge[T](limit: Int, comparator: Comparator[T], v1: List[T], v2: List[T]): List[T] = {
-    mergeImpl(limit, comparator, 0, Nil, v1, v2)
+    merge(limit, comparator, (v: T, _: T) => v, v1, v2)
+  }
+
+  /**
+    * Merge and dedup two sorted lists up to the specified limit. The input lists must already
+    * be sorted and should not contain duplicate values.
+    *
+    * @param limit
+    *     Maximum number of items in the resulting list.
+    * @param comparator
+    *     Comparator to use for determining the order of elements.
+    * @param aggrF
+    *     Aggregation function to use if duplicate values are encountered. The user should
+    *     ensure that the aggregation function does not influence the order of the elements.
+    * @param v1
+    *     A sorted list to merge.
+    * @param v2
+    *     A sorted list to merge.
+    * @return
+    *     Sorted list with a max size of `limit`.
+    */
+  def merge[T](
+    limit: Int,
+    comparator: Comparator[T],
+    aggrF: (T, T) => T,
+    v1: List[T],
+    v2: List[T]
+  ): List[T] = {
+    mergeImpl(limit, comparator, aggrF, 0, Nil, v1, v2)
   }
 
   @scala.annotation.tailrec
   private def mergeImpl[T](
     limit: Int,
     comparator: Comparator[T],
+    aggrF: (T, T) => T,
     size: Int,
     acc: List[T],
     v1: List[T],
@@ -77,11 +106,12 @@ object ListHelper {
     else
       comparator.compare(v1.head, v2.head) match {
         case c if c < 0 =>
-          mergeImpl(limit, comparator, size + 1, v1.head :: acc, v1.tail, v2)
+          mergeImpl(limit, comparator, aggrF, size + 1, v1.head :: acc, v1.tail, v2)
         case c if c == 0 =>
-          mergeImpl(limit, comparator, size + 1, v1.head :: acc, v1.tail, v2.tail)
+          val v = aggrF(v1.head, v2.head)
+          mergeImpl(limit, comparator, aggrF, size + 1, v :: acc, v1.tail, v2.tail)
         case _ =>
-          mergeImpl(limit, comparator, size + 1, v2.head :: acc, v1, v2.tail)
+          mergeImpl(limit, comparator, aggrF, size + 1, v2.head :: acc, v1, v2.tail)
       }
   }
 
@@ -115,6 +145,34 @@ object ListHelper {
     */
   def merge[T: ClassTag](limit: Int, comparator: Comparator[T], vs: List[List[T]]): List[T] = {
     val merged = vs.foldLeft(ArrayHelper.merger[T](limit, comparator)) { (m, vs) =>
+      m.merge(vs)
+    }
+    merged.toList
+  }
+
+  /**
+    * Merge and dedup sorted lists up to the specified limit. The input lists must already
+    * be sorted and should not contain duplicate values.
+    *
+    * @param limit
+    *     Maximum number of items in the resulting list.
+    * @param comparator
+    *     Comparator to use for determining the order of elements.
+    * @param aggrF
+    *     Aggregation function to use if duplicate values are encountered. The user should
+    *     ensure that the aggregation function does not influence the order of the elements.
+    * @param vs
+    *     A list of sorted lists to merge.
+    * @return
+    *     Sorted list with a max size of `limit`.
+    */
+  def merge[T: ClassTag](
+    limit: Int,
+    comparator: Comparator[T],
+    aggrF: (T, T) => T,
+    vs: List[List[T]]
+  ): List[T] = {
+    val merged = vs.foldLeft(ArrayHelper.merger[T](limit, comparator, aggrF)) { (m, vs) =>
       m.merge(vs)
     }
     merged.toList

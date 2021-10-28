@@ -100,12 +100,47 @@ object ArrayHelper {
     merger(limit, new ComparableComparator[T])
   }
 
+  /**
+    * Creates a merger object that can be used to efficiently merge together sorted arrays
+    * of comparable objects.
+    *
+    * @param limit
+    *     The maximum number of items allowed in the result list. The merge operations will
+    *     be stopped as soon as the limit is reached.
+    * @param comparator
+    *     Comparator to use for determining the order of elements.
+    * @return
+    *     Object that can be used to merge the arrays.
+    */
   def merger[T: ClassTag](limit: Int, comparator: Comparator[T]): Merger[T] = {
-    new Merger[T](limit, comparator)
+    merger(limit, comparator, (v, _) => v)
+  }
+
+  /**
+    * Creates a merger object that can be used to efficiently merge together sorted arrays
+    * of comparable objects.
+    *
+    * @param limit
+    *     The maximum number of items allowed in the result list. The merge operations will
+    *     be stopped as soon as the limit is reached.
+    * @param comparator
+    *     Comparator to use for determining the order of elements.
+    * @param aggrF
+    *     Aggregation function to use if duplicate values are encountered. The user should
+    *     ensure that the aggregation function does not influence the order of the elements.
+    * @return
+    *     Object that can be used to merge the arrays.
+    */
+  def merger[T: ClassTag](limit: Int, comparator: Comparator[T], aggrF: (T, T) => T): Merger[T] = {
+    new Merger[T](limit, comparator, aggrF)
   }
 
   /** Helper for merging sorted arrays and lists. */
-  class Merger[T: ClassTag] private[util] (limit: Int, comparator: Comparator[T]) {
+  class Merger[T: ClassTag] private[util] (
+    limit: Int,
+    comparator: Comparator[T],
+    aggrF: (T, T) => T
+  ) {
     // Arrays used for storing the merged result. The `src` array will contain the
     // current merged dataset. During a merge operation, the data will be written
     // into the destination array. It is pre-allocated so it can be reused across
@@ -136,7 +171,7 @@ object ArrayHelper {
             didx += 1
             sidx += 1
           case c if c == 0 =>
-            dst(didx) = v1
+            dst(didx) = aggrF(v1, v2)
             didx += 1
             sidx += 1
             vidx += 1
@@ -189,7 +224,7 @@ object ArrayHelper {
             didx += 1
             sidx += 1
           case c if c == 0 =>
-            dst(didx) = v1
+            dst(didx) = aggrF(v1, v2)
             didx += 1
             sidx += 1
             data = data.tail

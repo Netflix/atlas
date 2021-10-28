@@ -70,6 +70,18 @@ class ArrayHelperSuite extends FunSuite {
     assertEquals(actual.toSeq, Array("a", "b").toSeq)
   }
 
+  test("merge arrays, limit 2: aggregate duplicates") {
+    type T = (String, Int)
+    val v1 = Array("a" -> 1, "b" -> 1)
+    val v2 = Array("a" -> 1)
+    val actual = ArrayHelper
+      .merger[T](2, (a: T, b: T) => a._1.compareTo(b._1), (a: T, b: T) => a._1 -> (a._2 + b._2))
+      .merge(v1)
+      .merge(v2)
+      .toArray
+    assertEquals(actual.toSeq, Array("a" -> 2, "b" -> 1).toSeq)
+  }
+
   test("merge arrays, limit 2: bc, ad") {
     val v1 = Array("b", "c")
     val v2 = Array("a", "d")
