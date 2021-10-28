@@ -37,6 +37,7 @@ object MathVocabulary extends Vocabulary {
   val dependsOn: List[Vocabulary] = List(DataVocabulary)
 
   val words: List[Word] = List(
+    As,
     GroupBy,
     Const,
     Random,
@@ -231,6 +232,31 @@ object MathVocabulary extends Vocabulary {
     ),
     Macro("median", List("(", "50", ")", ":percentiles"), List("name,requestLatency,:eq"))
   )
+
+  case object As extends SimpleWord {
+
+    override def name: String = "as"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case (_: String) :: (_: String) :: TimeSeriesType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case (replacement: String) :: (original: String) :: TimeSeriesType(t) :: stack =>
+        MathExpr.As(t, original, replacement) :: stack
+    }
+
+    override def summary: String =
+      """
+        |Map a tag key name to an alternate name.
+      """.stripMargin.trim
+
+    override def signature: String = {
+      "TimeSeriesExpr original:String replacement:String -- TimeSeriesExpr"
+    }
+
+    override def examples: List[String] = List("name,sps,:eq,(,nf.cluster,),:by,nf.cluster,c")
+  }
 
   case object GroupBy extends SimpleWord {
 
