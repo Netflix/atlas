@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.util
 
+import java.util.Comparator
 import scala.reflect.ClassTag
 
 /**
@@ -36,12 +37,32 @@ object ListHelper {
     *     Sorted list with a max size of `limit`.
     */
   def merge[T <: Comparable[T]](limit: Int, v1: List[T], v2: List[T]): List[T] = {
-    merge(limit, 0, Nil, v1, v2)
+    merge(limit, new ComparableComparator[T], v1, v2)
+  }
+
+  /**
+    * Merge and dedup two sorted lists up to the specified limit. The input lists must already
+    * be sorted and should not contain duplicate values.
+    *
+    * @param limit
+    *     Maximum number of items in the resulting list.
+    * @param comparator
+    *     Comparator to use for determining the order of elements.
+    * @param v1
+    *     A sorted list to merge.
+    * @param v2
+    *     A sorted list to merge.
+    * @return
+    *     Sorted list with a max size of `limit`.
+    */
+  def merge[T](limit: Int, comparator: Comparator[T], v1: List[T], v2: List[T]): List[T] = {
+    mergeImpl(limit, comparator, 0, Nil, v1, v2)
   }
 
   @scala.annotation.tailrec
-  private def merge[T <: Comparable[T]](
+  private def mergeImpl[T](
     limit: Int,
+    comparator: Comparator[T],
     size: Int,
     acc: List[T],
     v1: List[T],
@@ -54,13 +75,13 @@ object ListHelper {
     else if (v2.isEmpty)
       acc.reverse ++ v1.take(limit - size)
     else
-      v1.head.compareTo(v2.head) match {
+      comparator.compare(v1.head, v2.head) match {
         case c if c < 0 =>
-          merge(limit, size + 1, v1.head :: acc, v1.tail, v2)
+          mergeImpl(limit, comparator, size + 1, v1.head :: acc, v1.tail, v2)
         case c if c == 0 =>
-          merge(limit, size + 1, v1.head :: acc, v1.tail, v2.tail)
-        case c =>
-          merge(limit, size + 1, v2.head :: acc, v1, v2.tail)
+          mergeImpl(limit, comparator, size + 1, v1.head :: acc, v1.tail, v2.tail)
+        case _ =>
+          mergeImpl(limit, comparator, size + 1, v2.head :: acc, v1, v2.tail)
       }
   }
 
@@ -76,7 +97,24 @@ object ListHelper {
     *     Sorted list with a max size of `limit`.
     */
   def merge[T <: Comparable[T]: ClassTag](limit: Int, vs: List[List[T]]): List[T] = {
-    val merged = vs.foldLeft(ArrayHelper.merger[T](limit)) { (m, vs) =>
+    merge(limit, new ComparableComparator[T], vs)
+  }
+
+  /**
+    * Merge and dedup sorted lists up to the specified limit. The input lists must already
+    * be sorted and should not contain duplicate values.
+    *
+    * @param limit
+    *     Maximum number of items in the resulting list.
+    * @param comparator
+    *     Comparator to use for determining the order of elements.
+    * @param vs
+    *     A list of sorted lists to merge.
+    * @return
+    *     Sorted list with a max size of `limit`.
+    */
+  def merge[T: ClassTag](limit: Int, comparator: Comparator[T], vs: List[List[T]]): List[T] = {
+    val merged = vs.foldLeft(ArrayHelper.merger[T](limit, comparator)) { (m, vs) =>
       m.merge(vs)
     }
     merged.toList
