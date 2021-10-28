@@ -44,7 +44,8 @@ object MathExpr {
     * @param replacement
     *     Replacement tag name that should be used going forward.
     */
-  case class As(expr: TimeSeriesExpr, original: String, replacement: String) extends TimeSeriesExpr {
+  case class As(expr: TimeSeriesExpr, original: String, replacement: String)
+      extends TimeSeriesExpr {
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
