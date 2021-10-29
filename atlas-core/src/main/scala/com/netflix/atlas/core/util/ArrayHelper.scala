@@ -156,47 +156,7 @@ object ArrayHelper {
 
     /** Merge a sorted array with the current data set. */
     def merge(vs: Array[T], vsize: Int): Merger[T] = {
-      // Source, merge array, and destination indices
-      var sidx = 0
-      var vidx = 0
-      var didx = 0
-
-      // While both have data, merge and dedup
-      while (sidx < size && vidx < vsize && didx < limit) {
-        val v1 = src(sidx)
-        val v2 = vs(vidx)
-        comparator.compare(v1, v2) match {
-          case c if c < 0 =>
-            dst(didx) = v1
-            didx += 1
-            sidx += 1
-          case c if c == 0 =>
-            dst(didx) = aggrF(v1, v2)
-            didx += 1
-            sidx += 1
-            vidx += 1
-          case c if c > 0 =>
-            dst(didx) = v2
-            didx += 1
-            vidx += 1
-        }
-      }
-
-      // Only source has data left, fill in the remainder
-      if (sidx < size && didx < limit) {
-        val length = math.min(limit - didx, size - sidx)
-        System.arraycopy(src, sidx, dst, didx, length)
-        didx += length
-      }
-
-      // Only the merge array has data left, fill in the remainder
-      if (vidx < vsize && didx < limit) {
-        val length = math.min(limit - didx, vsize - vidx)
-        System.arraycopy(vs, vidx, dst, didx, length)
-        didx += length
-      }
-
-      size = didx
+      size = ArrayHelper.merge(comparator, aggrF, src, size, vs, vsize, dst)
 
       // Swap the buffers
       val tmp = src
@@ -276,6 +236,82 @@ object ArrayHelper {
       }
       builder.result()
     }
+  }
+
+  /**
+    * Merge two source arrays into a specified destination array.
+    *
+    * @param comparator
+    *     Comparator to use for determining the order of elements.
+    * @param aggrF
+    *     Aggregation function to use if duplicate values are encountered. The user should
+    *     ensure that the aggregation function does not influence the order of the elements.
+    * @param vs1
+    *     First source array.
+    * @param vs1size
+    *     Number of valid elements in the first source array.
+    * @param vs2
+    *     Second source array.
+    * @param vs2size
+    *     Number of valid elements in the second source array.
+    * @param dst
+    *     Destination array that will receive the merged data.
+    * @return
+    *     Number of valid elements in the merged array.
+    */
+  private def merge[T](
+    comparator: Comparator[T],
+    aggrF: (T, T) => T,
+    vs1: Array[T],
+    vs1size: Int,
+    vs2: Array[T],
+    vs2size: Int,
+    dst: Array[T]
+  ): Int = {
+    val limit = dst.length
+
+    // Source 1, source 2, and destination indices
+    var vs1idx = 0
+    var vs2idx = 0
+    var didx = 0
+
+    // While both have data, merge and dedup
+    while (vs1idx < vs1size && vs2idx < vs2size && didx < limit) {
+      val v1 = vs1(vs1idx)
+      val v2 = vs2(vs2idx)
+      comparator.compare(v1, v2) match {
+        case c if c < 0 =>
+          dst(didx) = v1
+          didx += 1
+          vs1idx += 1
+        case c if c == 0 =>
+          dst(didx) = aggrF(v1, v2)
+          didx += 1
+          vs1idx += 1
+          vs2idx += 1
+        case c if c > 0 =>
+          dst(didx) = v2
+          didx += 1
+          vs2idx += 1
+      }
+    }
+
+    // Only source has data left, fill in the remainder
+    if (vs1idx < vs1size && didx < limit) {
+      val length = math.min(limit - didx, vs1size - vs1idx)
+      System.arraycopy(vs1, vs1idx, dst, didx, length)
+      didx += length
+    }
+
+    // Only the merge array has data left, fill in the remainder
+    if (vs2idx < vs2size && didx < limit) {
+      val length = math.min(limit - didx, vs2size - vs2idx)
+      System.arraycopy(vs2, vs2idx, dst, didx, length)
+      didx += length
+    }
+
+    // Final output size
+    didx
   }
 
   /**
