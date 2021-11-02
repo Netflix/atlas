@@ -241,7 +241,8 @@ class MathGroupBySuite extends FunSuite {
 
   test("cg with multiple group by") {
     val input = "name,foo,:eq,(,a,b,),:by,name,bar,:eq,(,b,),:by,:div,name,baz,:eq,:mul,(,c,d,),:cg"
-    val inputExplicit = "name,foo,:eq,(,a,b,c,d,),:by,name,bar,:eq,(,b,c,d,),:by,:div,name,baz,:eq,(,c,d,),:by,:mul"
+    val inputExplicit = "name,foo,:eq,(,a,b,c,d,),:by" +
+      ",name,bar,:eq,(,b,c,d,),:by,:div,name,baz,:eq,(,c,d,),:by,:mul"
 
     val expr = eval(input)
     val exprExplicit = eval(inputExplicit)
