@@ -259,7 +259,7 @@ object ArrayHelper {
     * @return
     *     Number of valid elements in the merged array.
     */
-  private def merge[T](
+  def merge[T](
     comparator: Comparator[T],
     aggrF: (T, T) => T,
     vs1: Array[T],
