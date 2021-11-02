@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import java.nio.charset.StandardCharsets
 import akka.NotUsed
 import akka.http.scaladsl.model.ws.BinaryMessage
 import akka.http.scaladsl.model.ws.Message
@@ -44,6 +43,7 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
 import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
 import javax.inject.Inject
 import scala.concurrent.duration._
 import scala.util.Failure
@@ -65,8 +65,10 @@ class SubscribeApi @Inject() (
   private val queueSize = config.getInt("atlas.lwcapi.queue-size")
   private val batchSize = config.getInt("atlas.lwcapi.batch-size")
 
-  private val evalsId = registry.createId("atlas.lwcapi.subscribe.count")
-  private val itemsId = registry.createId("atlas.lwcapi.subscribe.itemCount")
+  private val evalsCounter = registry.counter("atlas.lwcapi.subscribe.count", "action", "subscribe")
+
+  private val itemsCounter =
+    registry.counter("atlas.lwcapi.subscribe.itemCount", "action", "subscribe")
 
   def routes: Route = {
     extractClientIP { addr =>
@@ -85,17 +87,24 @@ class SubscribeApi @Inject() (
     }
   }
 
+
   /**
-    * Uses text messages and sends each datapoint individually.
+    * Drop any other connections that may already be using the same id
     */
-  private def createHandlerFlow(streamMeta: StreamMetadata): Flow[Message, Message, Any] = {
-    // Drop any other connections that may already be using the same id
+  private def dropSameIdConnections(streamMeta: StreamMetadata): Unit = {
     val streamId = streamMeta.streamId
     sm.unregister(streamId).foreach { queue =>
       val msg = DiagnosticMessage.info(s"dropped: another connection is using id: $streamId")
       queue.offer(Seq(msg))
       queue.complete()
     }
+  }
+
+  /**
+    * Uses text messages and sends each datapoint individually.
+    */
+  private def createHandlerFlow(streamMeta: StreamMetadata): Flow[Message, Message, Any] = {
+    dropSameIdConnections(streamMeta)
 
     Flow[Message]
       .flatMapConcat {
@@ -117,13 +126,7 @@ class SubscribeApi @Inject() (
     * Uses a binary format for the messages and batches output to achieve higher throughput.
     */
   private def createHandlerFlowV2(streamMeta: StreamMetadata): Flow[Message, Message, Any] = {
-    // Drop any other connections that may already be using the same id
-    val streamId = streamMeta.streamId
-    sm.unregister(streamId).foreach { queue =>
-      val msg = DiagnosticMessage.info(s"dropped: another connection is using id: $streamId")
-      queue.offer(Seq(msg))
-      queue.complete()
-    }
+    dropSameIdConnections(streamMeta)
 
     Flow[Message]
       .flatMapConcat {
@@ -203,8 +206,8 @@ class SubscribeApi @Inject() (
   }
 
   private def subscribe(streamId: String, expressions: List[ExpressionMetadata]): List[ErrorMsg] = {
-    registry.counter(evalsId.withTag("action", "subscribe")).increment()
-    registry.counter(itemsId.withTag("action", "subscribe")).increment(expressions.size)
+    evalsCounter.increment()
+    itemsCounter.increment(expressions.size)
 
     val errors = scala.collection.mutable.ListBuffer[ErrorMsg]()
     val subIdsBuilder = Set.newBuilder[String]
@@ -247,7 +250,7 @@ object SubscribeApi {
   case class SubscribeRequest(streamId: String, expressions: List[ExpressionMetadata])
       extends JsonSupport {
 
-    require(streamId != null && !streamId.isEmpty, "streamId attribute is missing or empty")
+    require(streamId != null && streamId.nonEmpty, "streamId attribute is missing or empty")
     require(
       expressions != null && expressions.nonEmpty,
       "expressions attribute is missing or empty"
