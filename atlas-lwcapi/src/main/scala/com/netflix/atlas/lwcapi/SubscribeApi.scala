@@ -87,7 +87,6 @@ class SubscribeApi @Inject() (
     }
   }
 
-
   /**
     * Drop any other connections that may already be using the same id
     */
