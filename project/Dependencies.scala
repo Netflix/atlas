@@ -58,7 +58,7 @@ object Dependencies {
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
-  val postgres          = "org.postgresql" % "postgresql" % "42.2.24"
+  val postgres          = "org.postgresql" % "postgresql" % "42.3.1"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "1.3.1"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.22"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0"
