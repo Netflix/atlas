@@ -247,11 +247,13 @@ object ArrayHelper {
     *     Aggregation function to use if duplicate values are encountered. The user should
     *     ensure that the aggregation function does not influence the order of the elements.
     * @param vs1
-    *     First source array.
+    *     First source array, may be modified. The first position will be set to null if the
+    *     contents of this array have been fully merged into the destination.
     * @param vs1size
     *     Number of valid elements in the first source array.
     * @param vs2
-    *     Second source array.
+    *     Second source array, may be modified. The first position will be set to null if the
+    *     contents of this array have been fully merged into the destination.
     * @param vs2size
     *     Number of valid elements in the second source array.
     * @param dst
@@ -300,14 +302,26 @@ object ArrayHelper {
     if (vs1idx < vs1size && didx < limit) {
       val length = math.min(limit - didx, vs1size - vs1idx)
       System.arraycopy(vs1, vs1idx, dst, didx, length)
+      vs1idx += length
       didx += length
+    }
+
+    // Update first position of source array with null if fully consumed
+    if (vs1idx >= vs1size && vs1size > 0) {
+      vs1(0) = null.asInstanceOf[T]
     }
 
     // Only the merge array has data left, fill in the remainder
     if (vs2idx < vs2size && didx < limit) {
       val length = math.min(limit - didx, vs2size - vs2idx)
       System.arraycopy(vs2, vs2idx, dst, didx, length)
+      vs2idx += length
       didx += length
+    }
+
+    // Update first position of merge array with null if fully consumed
+    if (vs2idx >= vs2size && vs2size > 0) {
+      vs2(0) = null.asInstanceOf[T]
     }
 
     // Final output size

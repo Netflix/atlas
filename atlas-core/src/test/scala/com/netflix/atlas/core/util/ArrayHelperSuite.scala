@@ -89,6 +89,58 @@ class ArrayHelperSuite extends FunSuite {
     assertEquals(actual.toSeq, Array("a", "b").toSeq)
   }
 
+  test("merge: both fully consumed") {
+    val comparator = new ComparableComparator[String]
+    val pickFirst = (v: String, _: String) => v
+    val v1 = Array("b", "c")
+    val v2 = Array("a", "d")
+    val merged = Array("", "")
+    val length = ArrayHelper.merge(comparator, pickFirst, v1, 1, v2, 1, merged)
+    assertEquals(length, 2)
+    assertEquals(merged.toSeq, Seq("a", "b"))
+    assert(v1(0) == null)
+    assert(v2(0) == null)
+  }
+
+  test("merge: v1 partially consumed") {
+    val comparator = new ComparableComparator[String]
+    val pickFirst = (v: String, _: String) => v
+    val v1 = Array("b", "c")
+    val v2 = Array("a", "d")
+    val merged = Array("", "")
+    val length = ArrayHelper.merge(comparator, pickFirst, v1, 2, v2, 1, merged)
+    assertEquals(length, 2)
+    assertEquals(merged.toSeq, Seq("a", "b"))
+    assert(v1(0) != null)
+    assert(v2(0) == null)
+  }
+
+  test("merge: v2 partially consumed") {
+    val comparator = new ComparableComparator[String]
+    val pickFirst = (v: String, _: String) => v
+    val v1 = Array("b", "c")
+    val v2 = Array("a", "d")
+    val merged = Array("", "")
+    val length = ArrayHelper.merge(comparator, pickFirst, v1, 1, v2, 2, merged)
+    assertEquals(length, 2)
+    assertEquals(merged.toSeq, Seq("a", "b"))
+    assert(v1(0) == null)
+    assert(v2(0) != null)
+  }
+
+  test("merge: both partially consumed") {
+    val comparator = new ComparableComparator[String]
+    val pickFirst = (v: String, _: String) => v
+    val v1 = Array("b", "c")
+    val v2 = Array("a", "d")
+    val merged = Array("", "")
+    val length = ArrayHelper.merge(comparator, pickFirst, v1, 2, v2, 2, merged)
+    assertEquals(length, 2)
+    assertEquals(merged.toSeq, Seq("a", "b"))
+    assert(v1(0) != null)
+    assert(v2(0) != null)
+  }
+
   test("merge list, limit 1: empty, one") {
     val v1 = List.empty[String]
     val v2 = List("a")
