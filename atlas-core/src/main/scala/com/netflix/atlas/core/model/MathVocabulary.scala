@@ -44,6 +44,7 @@ object MathVocabulary extends Vocabulary {
     SeededRandom,
     Time,
     TimeSpan,
+    CommonGroupBy,
     CommonQuery,
     NamedRewrite,
     ClampMin,
@@ -446,6 +447,47 @@ object MathVocabulary extends Vocabulary {
     override def signature: String = "s:String e:String -- TimeSeriesExpr"
 
     override def examples: List[String] = List("e-30m,ge", "2014-02-20T13:00,s%2B30m")
+  }
+
+  case object CommonGroupBy extends SimpleWord {
+
+    override def name: String = "cg"
+
+    override protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case StringListType(_) :: (t: AggrMathExpr) :: _ if t.expr.isGrouped =>
+        // Multi-level group by with an explicit aggregate specified
+        true
+      case StringListType(_) :: TimeSeriesType(t) :: _ if t.isGrouped =>
+        // Multi-level group by with an implicit aggregate of :sum
+        true
+      case StringListType(_) :: TimeSeriesType(t) :: _ =>
+        // Default data or math aggregate group by applied across math operations
+        true
+    }
+
+    override protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case StringListType(keys) :: (expr: Expr) :: stack =>
+        val newExpr = expr.rewrite {
+          case e: DataExpr.GroupBy                   => e.copy(keys = e.keys ::: keys)
+          case nr: NamedRewrite                      => nr.groupBy(keys)
+          case af: AggregateFunction                 => DataExpr.GroupBy(af, keys)
+          case af: AggrMathExpr if af.expr.isGrouped => MathExpr.GroupBy(af, keys)
+        }
+        newExpr :: stack
+    }
+
+    override def summary: String =
+      """
+        |Recursively add a list of keys to group by expressions
+      """.stripMargin.trim
+
+    override def signature: String = "Expr keys:List -- Expr"
+
+    override def examples: List[String] =
+      List(
+        "name,sps,:eq,(,nf.region,)",
+        "name,bar,:eq,(,nf.node,),:by,(,nf.region,)"
+      )
   }
 
   case object CommonQuery extends SimpleWord {

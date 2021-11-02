@@ -222,4 +222,29 @@ class MathGroupBySuite extends FunSuite {
     val expr = eval(input)
     assertEquals(expr.toString, "0.0,:const")
   }
+
+  test("cg with no group by") {
+    val input = "foo,1,:eq,(,a,),:cg"
+    val inputExplicit = "foo,1,:eq,(,a,),:by"
+    val expr = eval(input)
+    val exprExplicit = eval(inputExplicit)
+    assertEquals(expr.toString, exprExplicit.toString)
+  }
+
+  test("cg with simple group by") {
+    val input = "foo,1,:eq,(,a,),:by,(,b,c,),:cg"
+    val inputExplicit = "foo,1,:eq,(,a,b,c,),:by"
+    val expr = eval(input)
+    val exprExplicit = eval(inputExplicit)
+    assertEquals(expr.toString, exprExplicit.toString)
+  }
+
+  test("cg with multiple group by") {
+    val input = "name,foo,:eq,(,a,b,),:by,name,bar,:eq,(,b,),:by,:div,name,baz,:eq,:mul,(,c,d,),:cg"
+    val inputExplicit = "name,foo,:eq,(,a,b,c,d,),:by,name,bar,:eq,(,b,c,d,),:by,:div,name,baz,:eq,(,c,d,),:by,:mul"
+
+    val expr = eval(input)
+    val exprExplicit = eval(inputExplicit)
+    assertEquals(expr.toString, exprExplicit.toString)
+  }
 }
