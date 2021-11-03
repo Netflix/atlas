@@ -239,11 +239,52 @@ class MathGroupBySuite extends FunSuite {
     assertEquals(expr.toString, exprExplicit.toString)
   }
 
-  test("cg with multiple group by") {
+  test("cg with complex expression") {
     val input = "name,foo,:eq,(,a,b,),:by,name,bar,:eq,(,b,),:by,:div,name,baz,:eq,:mul,(,c,d,),:cg"
     val inputExplicit = "name,foo,:eq,(,a,b,c,d,),:by" +
       ",name,bar,:eq,(,b,c,d,),:by,:div,name,baz,:eq,(,c,d,),:by,:mul"
 
+    val expr = eval(input)
+    val exprExplicit = eval(inputExplicit)
+    assertEquals(expr.toString, exprExplicit.toString)
+  }
+
+  test("cg with multi-level group by") {
+    val input = "name,foo,:eq,:sum,(,a,b,),:by,:max,(,b,),:by,(,c,),:cg"
+    val inputExplicit = "name,foo,:eq,:sum,(,a,b,c,),:by,:max,(,b,c,),:by"
+
+    val expr = eval(input)
+    val exprExplicit = eval(inputExplicit)
+    assertEquals(expr.toString, exprExplicit.toString)
+  }
+
+  test("cg with key already present") {
+    val input = "foo,1,:eq,(,b,a,),:by,(,b,c,),:cg"
+    val inputExplicit = "foo,1,:eq,(,b,a,c,),:by"
+    val expr = eval(input)
+    val exprExplicit = eval(inputExplicit)
+    assertEquals(expr.toString, exprExplicit.toString)
+  }
+
+  test("cg with named rewrite not grouped") {
+    val input = "foo,1,:eq,:dist-avg,(,b,c,),:cg"
+    val inputExplicit = "foo,1,:eq,:dist-avg,(,b,c,),:by"
+    val expr = eval(input)
+    val exprExplicit = eval(inputExplicit)
+    assertEquals(expr.toString, exprExplicit.toString)
+  }
+
+  test("cg with named rewrite that has grouping") {
+    val input = "foo,1,:eq,:dist-avg,(,a,),:by,(,b,c,),:cg"
+    val inputExplicit = "foo,1,:eq,:dist-avg,(,a,b,c,),:by"
+    val expr = eval(input)
+    val exprExplicit = eval(inputExplicit)
+    assertEquals(expr.toString, exprExplicit.toString)
+  }
+
+  test("cg with percentiles") {
+    val input = "foo,1,:eq,(,a,),:by,:median,(,b,c,),:cg"
+    val inputExplicit = "foo,1,:eq,(,a,b,c,),:by,:median"
     val expr = eval(input)
     val exprExplicit = eval(inputExplicit)
     assertEquals(expr.toString, exprExplicit.toString)

@@ -460,20 +460,34 @@ object MathVocabulary extends Vocabulary {
       case StringListType(_) :: TimeSeriesType(t) :: _ if t.isGrouped =>
         // Multi-level group by with an implicit aggregate of :sum
         true
-      case StringListType(_) :: TimeSeriesType(t) :: _ =>
+      case StringListType(_) :: TimeSeriesType(_) :: _ =>
         // Default data or math aggregate group by applied across math operations
         true
     }
 
+    private def mergeKeys(ks1: List[String], ks2: List[String]): List[String] = {
+      val set = ks1.toSet
+      ks1 ::: ks2.filterNot(set.contains)
+    }
+
+    private def addCommonKeys(expr: TimeSeriesExpr, keys: List[String]): TimeSeriesExpr = {
+      val newExpr = expr.rewrite {
+        case nr: NamedRewrite =>
+          nr.copy(evalExpr = addCommonKeys(nr.evalExpr, keys))
+        case af: AggregateFunction =>
+          DataExpr.GroupBy(af, keys)
+        case e: DataExpr.GroupBy =>
+          e.copy(keys = mergeKeys(e.keys, keys))
+        case e: MathExpr.GroupBy =>
+          val af = addCommonKeys(e.expr, keys).asInstanceOf[AggrMathExpr]
+          MathExpr.GroupBy(af, mergeKeys(e.keys, keys))
+      }
+      newExpr.asInstanceOf[TimeSeriesExpr]
+    }
+
     override protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case StringListType(keys) :: (expr: Expr) :: stack =>
-        val newExpr = expr.rewrite {
-          case e: DataExpr.GroupBy                   => e.copy(keys = e.keys ::: keys)
-          case nr: NamedRewrite                      => nr.groupBy(keys)
-          case af: AggregateFunction                 => DataExpr.GroupBy(af, keys)
-          case af: AggrMathExpr if af.expr.isGrouped => MathExpr.GroupBy(af, keys)
-        }
-        newExpr :: stack
+      case StringListType(keys) :: TimeSeriesType(t) :: stack =>
+        addCommonKeys(t, keys) :: stack
     }
 
     override def summary: String =

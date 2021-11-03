@@ -35,7 +35,6 @@ object DataVocabulary extends Vocabulary {
     Min,
     Max,
     GroupBy,
-    CommonGroupBy,
     Offset,
     CfAvg,
     CfSum,
@@ -161,7 +160,9 @@ object DataVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  trait DataGroupBy extends SimpleWord {
+  case object GroupBy extends SimpleWord {
+
+    override def name: String = "by"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: List[_]) :: (_: Query) :: _             => true
@@ -189,15 +190,6 @@ object DataVocabulary extends Vocabulary {
         "name,sps,:eq,:max,(,nf.cluster,)",
         "name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,(,nf.asg,nf.zone,)"
       )
-  }
-
-  case object GroupBy extends DataGroupBy {
-    override def name: String = "by"
-  }
-
-  // In this context :cg is just an alias to :by
-  case object CommonGroupBy extends DataGroupBy {
-    override def name: String = "cg"
   }
 
   case object Offset extends SimpleWord {
