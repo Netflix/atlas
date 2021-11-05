@@ -80,6 +80,13 @@ class ItemId private (private val data: Array[Byte], private val hc: Int)
     }
     result
   }
+
+  /**
+    * Returns the byte array representing the id. This accessor is only provided to allow
+    * for serialization without additional allocations. The returned array should not be
+    * modified.
+    */
+  def byteArrayUnsafe: Array[Byte] = data
 }
 
 object ItemId {
