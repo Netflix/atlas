@@ -27,10 +27,6 @@ import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.model.Datapoint
-import com.netflix.atlas.core.model.TaggedItem
-import com.netflix.atlas.core.util.Interner
-import com.netflix.atlas.core.util.SmallHashMap
-import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.validation.Rule
 import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.atlas.json.Json
@@ -39,7 +35,6 @@ import com.netflix.iep.config.ConfigManager
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.Promise
-import scala.util.Using
 
 class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
 
@@ -107,145 +102,46 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi w
 
 object PublishApi {
 
-  import com.netflix.atlas.json.JsonParserHelper._
-
   type TagMap = Map[String, String]
 
-  private final val maxPermittedTags = ApiSettings.maxPermittedTags
-
-  private def decodeTags(parser: JsonParser, commonTags: TagMap, intern: Boolean): TagMap = {
-    val strInterner = Interner.forStrings
-    val b = new SmallHashMap.Builder[String, String](2 * maxPermittedTags)
-    if (commonTags != null) b.addAll(commonTags)
-    foreachField(parser) {
-      case key =>
-        val value = parser.nextTextValue()
-        if (value != null) {
-          if (intern)
-            b.add(strInterner.intern(key), strInterner.intern(value))
-          else
-            b.add(key, value)
-        }
-    }
-    if (intern) TaggedItem.internTagsShallow(b.compact) else b.result
-  }
-
-  private def getValue(parser: JsonParser): Double = {
-    import com.fasterxml.jackson.core.JsonToken._
-    parser.nextToken() match {
-      case START_ARRAY        => nextDouble(parser)
-      case VALUE_NUMBER_FLOAT => parser.getValueAsDouble()
-      case VALUE_STRING       => java.lang.Double.valueOf(parser.getText())
-      case t                  => fail(parser, s"expected VALUE_NUMBER_FLOAT but received $t")
-    }
-  }
-
-  private def decode(parser: JsonParser, commonTags: TagMap, intern: Boolean): Datapoint = {
-    var tags: TagMap = null
-    var timestamp: Long = -1L
-    var value: Double = Double.NaN
-    foreachField(parser) {
-      case "tags"      => tags = decodeTags(parser, commonTags, intern)
-      case "timestamp" => timestamp = nextLong(parser)
-      case "value"     => value = nextDouble(parser)
-      case "start"     => timestamp = nextLong(parser) // Legacy support
-      case "values"    => value = getValue(parser)
-      case _ => // Ignore unknown fields
-        parser.nextToken()
-        parser.skipChildren()
-    }
-    Datapoint(tags, timestamp, value)
-  }
-
   def decodeDatapoint(parser: JsonParser, intern: Boolean = false): Datapoint = {
-    decode(parser, null, intern)
+    PublishPayloads.decodeDatapoint(parser, intern)
   }
 
   def decodeDatapoint(json: String): Datapoint = {
-    val parser = Json.newJsonParser(json)
-    try decodeDatapoint(parser)
-    finally parser.close()
+    PublishPayloads.decodeDatapoint(json)
   }
 
   def decodeBatch(json: String): List[Datapoint] = {
-    val parser = Json.newJsonParser(json)
-    try decodeBatch(parser)
-    finally parser.close()
+    PublishPayloads.decodeBatch(json)
   }
 
   def decodeBatch(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
-    var tags: Map[String, String] = null
-    var metrics: List[Datapoint] = null
-    var tagsLoadedFirst = false
-    foreachField(parser) {
-      case "tags" => tags = decodeTags(parser, null, intern)
-      case "metrics" =>
-        tagsLoadedFirst = (tags != null)
-        val builder = List.newBuilder[Datapoint]
-        foreachItem(parser) { builder += decode(parser, tags, intern) }
-        metrics = builder.result()
-    }
-
-    // If the tags were loaded first they got merged with the datapoints while parsing. Otherwise
-    // they need to be merged here.
-    if (tagsLoadedFirst || tags == null) {
-      if (metrics == null) Nil else metrics
-    } else {
-      metrics.map(d => d.copy(tags = d.tags ++ tags))
-    }
+    PublishPayloads.decodeBatch(parser, intern)
   }
 
   def decodeList(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
-    val builder = List.newBuilder[Datapoint]
-    foreachItem(parser) {
-      builder += decode(parser, null, intern)
-    }
-    builder.result()
+    PublishPayloads.decodeList(parser, intern)
   }
 
   def decodeList(json: String): List[Datapoint] = {
-    val parser = Json.newJsonParser(json)
-    try decodeList(parser)
-    finally parser.close()
-  }
-
-  private def encodeTags(gen: JsonGenerator, tags: Map[String, String]): Unit = {
-    gen.writeObjectFieldStart("tags")
-    tags.foreachEntry(gen.writeStringField)
-    gen.writeEndObject()
+    PublishPayloads.decodeList(json)
   }
 
   def encodeDatapoint(gen: JsonGenerator, d: Datapoint): Unit = {
-    gen.writeStartObject()
-    encodeTags(gen, d.tags)
-    gen.writeNumberField("timestamp", d.timestamp)
-    gen.writeNumberField("value", d.value)
-    gen.writeEndObject()
+    PublishPayloads.encodeDatapoint(gen, d)
   }
 
   def encodeDatapoint(d: Datapoint): String = {
-    Streams.string { w =>
-      Using.resource(Json.newJsonGenerator(w)) { gen =>
-        encodeDatapoint(gen, d)
-      }
-    }
+    PublishPayloads.encodeDatapoint(d)
   }
 
   def encodeBatch(gen: JsonGenerator, tags: Map[String, String], values: List[Datapoint]): Unit = {
-    gen.writeStartObject()
-    encodeTags(gen, tags)
-    gen.writeArrayFieldStart("metrics")
-    values.foreach(v => encodeDatapoint(gen, v))
-    gen.writeEndArray()
-    gen.writeEndObject()
+    PublishPayloads.encodeBatch(gen, tags, values)
   }
 
   def encodeBatch(tags: Map[String, String], values: List[Datapoint]): String = {
-    Streams.string { w =>
-      Using.resource(Json.newJsonGenerator(w)) { gen =>
-        encodeBatch(gen, tags, values)
-      }
-    }
+    PublishPayloads.encodeBatch(tags, values)
   }
 
   case class PublishRequest(
