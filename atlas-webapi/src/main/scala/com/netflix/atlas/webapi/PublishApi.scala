@@ -21,12 +21,10 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParser
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.validation.Rule
 import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.atlas.json.Json
@@ -62,7 +60,7 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi w
 
   private def handleReq: Route = {
     extractRequestContext { ctx =>
-      parseEntity(customJson(p => decodeBatch(p, internWhileParsing))) { values =>
+      parseEntity(customJson(p => PublishPayloads.decodeBatch(p, internWhileParsing))) { values =>
         val (good, bad) = validate(values)
         val promise = Promise[RouteResult]()
         val req = PublishRequest(good, bad, promise, ctx)
@@ -72,8 +70,8 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi w
     }
   }
 
-  private def validate(vs: List[Datapoint]): (List[Datapoint], List[ValidationResult]) = {
-    val validDatapoints = List.newBuilder[Datapoint]
+  private def validate(vs: List[DatapointTuple]): (List[DatapointTuple], List[ValidationResult]) = {
+    val validDatapoints = List.newBuilder[DatapointTuple]
     val failures = List.newBuilder[ValidationResult]
     val now = System.currentTimeMillis()
     val limit = ApiSettings.maxDatapointAge
@@ -104,48 +102,8 @@ object PublishApi {
 
   type TagMap = Map[String, String]
 
-  def decodeDatapoint(parser: JsonParser, intern: Boolean = false): Datapoint = {
-    PublishPayloads.decodeDatapoint(parser, intern)
-  }
-
-  def decodeDatapoint(json: String): Datapoint = {
-    PublishPayloads.decodeDatapoint(json)
-  }
-
-  def decodeBatch(json: String): List[Datapoint] = {
-    PublishPayloads.decodeBatch(json)
-  }
-
-  def decodeBatch(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
-    PublishPayloads.decodeBatch(parser, intern)
-  }
-
-  def decodeList(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
-    PublishPayloads.decodeList(parser, intern)
-  }
-
-  def decodeList(json: String): List[Datapoint] = {
-    PublishPayloads.decodeList(json)
-  }
-
-  def encodeDatapoint(gen: JsonGenerator, d: Datapoint): Unit = {
-    PublishPayloads.encodeDatapoint(gen, d)
-  }
-
-  def encodeDatapoint(d: Datapoint): String = {
-    PublishPayloads.encodeDatapoint(d)
-  }
-
-  def encodeBatch(gen: JsonGenerator, tags: Map[String, String], values: List[Datapoint]): Unit = {
-    PublishPayloads.encodeBatch(gen, tags, values)
-  }
-
-  def encodeBatch(tags: Map[String, String], values: List[Datapoint]): String = {
-    PublishPayloads.encodeBatch(tags, values)
-  }
-
   case class PublishRequest(
-    values: List[Datapoint],
+    values: List[DatapointTuple],
     failures: List[ValidationResult],
     promise: Promise[RouteResult],
     ctx: RequestContext

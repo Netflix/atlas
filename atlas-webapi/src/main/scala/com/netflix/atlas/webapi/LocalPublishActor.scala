@@ -16,7 +16,6 @@
 package com.netflix.atlas.webapi
 
 import java.util.concurrent.TimeUnit
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.http.scaladsl.model.HttpEntity
@@ -27,7 +26,7 @@ import akka.http.scaladsl.model.StatusCodes
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.db.MemoryDatabase
-import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.norm.NormalizationCache
@@ -108,16 +107,16 @@ object LocalPublishActor {
 
     private val cache = new NormalizationCache(DefaultSettings.stepSize, memDb.update)
 
-    def update(vs: List[Datapoint]): Unit = {
+    def update(vs: List[DatapointTuple]): Unit = {
       val now = registry.clock().wallTime()
       vs.foreach { v =>
         numReceived.record(now - v.timestamp)
         v.tags.get(TagKey.dsType) match {
-          case Some("counter") => cache.updateCounter(v)
-          case Some("gauge")   => cache.updateGauge(v)
-          case Some("rate")    => cache.updateRate(v)
-          case Some("sum")     => cache.updateSum(v)
-          case _               => cache.updateRate(v)
+          case Some("counter") => cache.updateCounter(v.id, v.tags, v.timestamp, v.value)
+          case Some("gauge")   => cache.updateGauge(v.id, v.tags, v.timestamp, v.value)
+          case Some("rate")    => cache.updateRate(v.id, v.tags, v.timestamp, v.value)
+          case Some("sum")     => cache.updateSum(v.id, v.tags, v.timestamp, v.value)
+          case _               => cache.updateRate(v.id, v.tags, v.timestamp, v.value)
         }
       }
     }

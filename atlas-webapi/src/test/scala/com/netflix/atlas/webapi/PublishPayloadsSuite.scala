@@ -16,6 +16,7 @@
 package com.netflix.atlas.webapi
 
 import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.util.SortedTagMap
 import munit.FunSuite
 
@@ -26,7 +27,7 @@ class PublishPayloadsSuite extends FunSuite {
 
   private val timestamp = 1636116180000L
 
-  private def datapoints(n: Int): List[Datapoint] = {
+  private def datapoints(n: Int): List[DatapointTuple] = {
     (0 until n).toList.map { i =>
       val tags = SortedTagMap(
         "name" -> "test",
@@ -42,7 +43,7 @@ class PublishPayloadsSuite extends FunSuite {
         case 5 => Double.PositiveInfinity
         case _ => Random.nextDouble()
       }
-      Datapoint(tags, timestamp, value)
+      Datapoint(tags, timestamp, value).toTuple
     }
   }
 

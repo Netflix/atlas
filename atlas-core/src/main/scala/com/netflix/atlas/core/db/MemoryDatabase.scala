@@ -17,7 +17,6 @@ package com.netflix.atlas.core.db
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-
 import com.netflix.atlas.core.index.BatchUpdateTagIndex
 import com.netflix.atlas.core.index.CachingTagIndex
 import com.netflix.atlas.core.index.IndexStats
@@ -25,9 +24,10 @@ import com.netflix.atlas.core.index.RoaringTagIndex
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.DataExpr
-import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.EvalContext
+import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.spectator.api.Registry
@@ -71,7 +71,6 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   // If the last update time for the index is older than the rebuild age force an update
   private val rebuildAge = config.getDuration("rebuild-frequency", TimeUnit.MILLISECONDS)
 
-  type ItemId = Map[String, String]
   private val data = new ConcurrentHashMap[ItemId, BlockStore]
 
   private val rebuildThread = new Thread(new RebuildTask, "MemoryDatabaseRebuildIndex")
@@ -119,18 +118,22 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     data.computeIfAbsent(id, _ => new MemoryBlockStore(step, blockSize, numBlocks))
   }
 
-  def update(dp: Datapoint): Unit = {
-    val blkStore = getOrCreateBlockStore(dp.tags)
-    blkStore.update(dp.timestamp, dp.value)
-    index.update(BlockStoreItem.create(dp.tags, blkStore))
+  def update(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
+    val blkStore = getOrCreateBlockStore(id)
+    blkStore.update(timestamp, value)
+    index.update(BlockStoreItem.create(tags, blkStore))
   }
 
-  def update(ds: List[Datapoint]): Unit = {
+  def update(dp: DatapointTuple): Unit = {
+    update(dp.id, dp.tags, dp.timestamp, dp.value)
+  }
+
+  def update(ds: List[DatapointTuple]): Unit = {
     ds.foreach(update)
   }
 
-  def rollup(dp: Datapoint): Unit = {
-    val blkStore = getOrCreateBlockStore(dp.tags)
+  def rollup(dp: DatapointTuple): Unit = {
+    val blkStore = getOrCreateBlockStore(dp.id)
     blkStore.update(dp.timestamp, dp.value, rollup = true)
     index.update(BlockStoreItem.create(dp.tags, blkStore))
   }

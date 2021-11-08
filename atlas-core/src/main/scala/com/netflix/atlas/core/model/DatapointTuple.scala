@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.norm
+package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.ItemId
+/**
+  * Simple tuple representing a datapoint. Can be used in place of [[Datapoint]] when
+  * the use-case does not require a [[TimeSeries]]. The id must be pre-computed for the
+  * tuple where it cannot be passed in an will be computed on first access for [[Datapoint]].
+  */
+case class DatapointTuple(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double) {
 
-class UpdateValueFunction(id: ItemId, tags: Map[String, String], updateF: UpdateFunction)
-    extends ValueFunction {
-
-  def apply(timestamp: Long, value: Double): Unit = {
-    updateF(id, tags, timestamp, value)
+  def toDatapoint: Datapoint = {
+    Datapoint(tags, timestamp, value)
   }
 }

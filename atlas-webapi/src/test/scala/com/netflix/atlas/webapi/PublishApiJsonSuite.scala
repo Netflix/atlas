@@ -22,32 +22,35 @@ import munit.FunSuite
 class PublishApiJsonSuite extends FunSuite {
 
   test("encode and decode datapoint") {
-    val original = Datapoint(Map("name" -> "foo", "id" -> "bar"), 42L, 1024.0)
-    val decoded = PublishApi.decodeDatapoint(PublishApi.encodeDatapoint(original))
+    val original = Datapoint(Map("name" -> "foo", "id" -> "bar"), 42L, 1024.0).toTuple
+    val decoded = PublishPayloads.decodeDatapoint(PublishPayloads.encodeDatapoint(original))
     assertEquals(original, decoded)
   }
 
   test("encode and decode batch") {
     val commonTags = Map("id" -> "bar")
-    val original = List(Datapoint(Map("name" -> "foo"), 42L, 1024.0))
-    val decoded = PublishApi.decodeBatch(PublishApi.encodeBatch(commonTags, original))
-    assertEquals(original.map(d => d.copy(tags = d.tags ++ commonTags)), decoded)
+    val original = List(Datapoint(Map("name" -> "foo"), 42L, 1024.0).toTuple)
+    val decoded = PublishPayloads.decodeBatch(PublishPayloads.encodeBatch(commonTags, original))
+    val expected = List(Datapoint(Map("name" -> "foo") ++ commonTags, 42L, 1024.0).toTuple)
+    assertEquals(expected, decoded)
   }
 
   test("decode batch empty") {
-    val decoded = PublishApi.decodeBatch("{}")
+    val decoded = PublishPayloads.decodeBatch("{}")
     assertEquals(decoded.size, 0)
   }
 
   test("decode with legacy array value") {
-    val expected = Datapoint(Map("name" -> "foo"), 42L, 1024.0)
+    val expected = Datapoint(Map("name" -> "foo"), 42L, 1024.0).toTuple
     val decoded =
-      PublishApi.decodeDatapoint("""{"tags":{"name":"foo"},"timestamp":42,"values":[1024.0]}""")
+      PublishPayloads.decodeDatapoint(
+        """{"tags":{"name":"foo"},"timestamp":42,"values":[1024.0]}"""
+      )
     assertEquals(expected, decoded)
   }
 
   test("decode legacy batch empty") {
-    val decoded = PublishApi.decodeBatch("""
+    val decoded = PublishPayloads.decodeBatch("""
       {
         "tags": {},
         "metrics": []
@@ -57,7 +60,7 @@ class PublishApiJsonSuite extends FunSuite {
   }
 
   test("decode legacy batch no tags") {
-    val decoded = PublishApi.decodeBatch("""
+    val decoded = PublishPayloads.decodeBatch("""
       {
         "metrics": []
       }
@@ -66,7 +69,7 @@ class PublishApiJsonSuite extends FunSuite {
   }
 
   test("decode legacy batch with tags before") {
-    val decoded = PublishApi.decodeBatch("""
+    val decoded = PublishPayloads.decodeBatch("""
       {
         "tags": {
           "foo": "bar"
@@ -85,7 +88,7 @@ class PublishApiJsonSuite extends FunSuite {
   }
 
   test("decode legacy batch with tags after") {
-    val decoded = PublishApi.decodeBatch("""
+    val decoded = PublishPayloads.decodeBatch("""
       {
         "metrics": [
           {
@@ -104,7 +107,7 @@ class PublishApiJsonSuite extends FunSuite {
   }
 
   test("decode legacy batch no tags metric") {
-    val decoded = PublishApi.decodeBatch("""
+    val decoded = PublishPayloads.decodeBatch("""
       {
         "metrics": [
           {
@@ -119,7 +122,7 @@ class PublishApiJsonSuite extends FunSuite {
   }
 
   test("decode legacy batch with empty name") {
-    val decoded = PublishApi.decodeBatch("""
+    val decoded = PublishPayloads.decodeBatch("""
       {
         "metrics": [
           {
@@ -137,7 +140,7 @@ class PublishApiJsonSuite extends FunSuite {
   }
 
   test("decode legacy batch with null name") {
-    val decoded = PublishApi.decodeBatch("""
+    val decoded = PublishPayloads.decodeBatch("""
       {
         "metrics": [
           {
@@ -155,14 +158,14 @@ class PublishApiJsonSuite extends FunSuite {
   }
 
   test("decode list empty") {
-    val decoded = PublishApi.decodeList("""
+    val decoded = PublishPayloads.decodeList("""
       []
       """)
     assertEquals(decoded.size, 0)
   }
 
   test("decode list") {
-    val decoded = PublishApi.decodeList("""
+    val decoded = PublishPayloads.decodeList("""
       [
         {
           "tags": {"name": "test"},
@@ -175,7 +178,7 @@ class PublishApiJsonSuite extends FunSuite {
   }
 
   test("decode list with unknown key") {
-    val decoded = PublishApi.decodeList("""
+    val decoded = PublishPayloads.decodeList("""
       [
         {
           "tags": {"name": "test"},
@@ -208,19 +211,19 @@ class PublishApiJsonSuite extends FunSuite {
 
   test("decode batch bad object") {
     intercept[IllegalArgumentException] {
-      PublishApi.decodeBatch("""{"foo":"bar"}""")
+      PublishPayloads.decodeBatch("""{"foo":"bar"}""")
     }
   }
 
   test("decode list from encoded datapoint") {
     val vs = List(Datapoint(Map("a" -> "b"), 0L, 42.0))
-    val decoded = PublishApi.decodeList(Json.encode(vs))
+    val decoded = PublishPayloads.decodeList(Json.encode(vs))
     assertEquals(decoded.size, 1)
   }
 
-  test("decode list from PublishApi.encoded datapoint") {
-    val vs = "[" + PublishApi.encodeDatapoint(Datapoint(Map("a" -> "b"), 0L, 42.0)) + "]"
-    val decoded = PublishApi.decodeList(vs)
+  test("decode list from PublishPayloads.encoded datapoint") {
+    val vs = "[" + PublishPayloads.encodeDatapoint(Datapoint(Map("a" -> "b"), 0L, 42.0).toTuple) + "]"
+    val decoded = PublishPayloads.decodeList(vs)
     assertEquals(decoded.size, 1)
   }
 }

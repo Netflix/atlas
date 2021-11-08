@@ -15,13 +15,11 @@
  */
 package com.netflix.atlas.core.norm
 
-import com.netflix.atlas.core.model.BasicTaggedItem
-import com.netflix.atlas.core.model.Datapoint
-import com.netflix.atlas.core.model.TaggedItem
+import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.util.Math
 import com.netflix.spectator.api.Clock
 
-class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = Clock.SYSTEM) {
+class NormalizationCache(step: Long, updateF: UpdateFunction, clock: Clock = Clock.SYSTEM) {
 
   /**
     * For small step sizes use a fixed two minute heartbeat as reporting can be irregular, for
@@ -29,7 +27,7 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
     */
   private val heartbeat = if (step < 60000) 120000 else 2 * step
 
-  type CacheEntry = java.util.Map.Entry[TaggedItem, CacheValue]
+  type CacheEntry = java.util.Map.Entry[ItemId, CacheValue]
 
   private val counterCache = newCacheMap()
 
@@ -39,8 +37,8 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
 
   private val gaugeCache = newCacheMap()
 
-  private def newCacheMap(): java.util.LinkedHashMap[TaggedItem, CacheValue] = {
-    new java.util.LinkedHashMap[TaggedItem, CacheValue](16, 0.75f, true) {
+  private def newCacheMap(): java.util.LinkedHashMap[ItemId, CacheValue] = {
+    new java.util.LinkedHashMap[ItemId, CacheValue](16, 0.75f, true) {
 
       override def removeEldestEntry(eldest: CacheEntry): Boolean = {
         val ageMillis = clock.wallTime - eldest.getValue.lastAccessTime
@@ -54,61 +52,57 @@ class NormalizationCache(step: Long, updateF: Datapoint => Unit, clock: Clock = 
     }
   }
 
-  def updateCounter(m: Datapoint): Unit = {
-    val meta = BasicTaggedItem(m.tags)
-    var value = counterCache.get(meta)
-    if (value == null) {
-      val update = new UpdateValueFunction(meta, step, updateF)
+  def updateCounter(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
+    var cacheValue = counterCache.get(id)
+    if (cacheValue == null) {
+      val update = new UpdateValueFunction(id, tags, updateF)
       val norm = new NormalizeValueFunction(step, heartbeat, update)
       val rate = new RateValueFunction(norm)
-      value = new CacheValue(clock.wallTime, rate)
-      counterCache.put(meta, value)
+      cacheValue = new CacheValue(clock.wallTime, rate)
+      counterCache.put(id, cacheValue)
     }
-    value.lastAccessTime = clock.wallTime
-    value.f(m.timestamp, m.value)
+    cacheValue.lastAccessTime = clock.wallTime
+    cacheValue.f(timestamp, value)
   }
 
-  def updateRate(m: Datapoint): Unit = {
-    val meta = BasicTaggedItem(m.tags)
-    var value = rateCache.get(meta)
-    if (value == null) {
-      val update = new UpdateValueFunction(meta, step, updateF)
+  def updateRate(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
+    var cacheValue = rateCache.get(id)
+    if (cacheValue == null) {
+      val update = new UpdateValueFunction(id, tags, updateF)
       // If the client is already converting to a rate, then do not use a heartbeat that is
       // larger than the step size as it can cause over counting for the final result. For
       // more details see:
       // https://github.com/Netflix/atlas/issues/497
       val norm = new NormalizeValueFunction(step, step, update)
-      value = new CacheValue(clock.wallTime, norm)
-      rateCache.put(meta, value)
+      cacheValue = new CacheValue(clock.wallTime, norm)
+      rateCache.put(id, cacheValue)
     }
-    value.lastAccessTime = clock.wallTime
-    value.f(m.timestamp, m.value)
+    cacheValue.lastAccessTime = clock.wallTime
+    cacheValue.f(timestamp, value)
   }
 
-  def updateSum(m: Datapoint): Unit = {
-    val meta = BasicTaggedItem(m.tags)
-    var value = sumCache.get(meta)
-    if (value == null) {
-      val update = new UpdateValueFunction(meta, step, updateF)
+  def updateSum(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
+    var cacheValue = sumCache.get(id)
+    if (cacheValue == null) {
+      val update = new UpdateValueFunction(id, tags, updateF)
       val norm = new RollingValueFunction(step, Math.addNaN, update)
-      value = new CacheValue(clock.wallTime, norm)
-      sumCache.put(meta, value)
+      cacheValue = new CacheValue(clock.wallTime, norm)
+      sumCache.put(id, cacheValue)
     }
-    value.lastAccessTime = clock.wallTime
-    value.f(m.timestamp, m.value)
+    cacheValue.lastAccessTime = clock.wallTime
+    cacheValue.f(timestamp, value)
   }
 
-  def updateGauge(m: Datapoint): Unit = {
-    val meta = BasicTaggedItem(m.tags)
-    var value = gaugeCache.get(meta)
-    if (value == null) {
-      val update = new UpdateValueFunction(meta, step, updateF)
+  def updateGauge(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
+    var cacheValue = gaugeCache.get(id)
+    if (cacheValue == null) {
+      val update = new UpdateValueFunction(id, tags, updateF)
       val norm = new RollingValueFunction(step, Math.maxNaN, update)
-      value = new CacheValue(clock.wallTime, norm)
-      gaugeCache.put(meta, value)
+      cacheValue = new CacheValue(clock.wallTime, norm)
+      gaugeCache.put(id, cacheValue)
     }
-    value.lastAccessTime = clock.wallTime
-    value.f(m.timestamp, m.value)
+    cacheValue.lastAccessTime = clock.wallTime
+    cacheValue.f(timestamp, value)
   }
 
   class CacheValue(var lastAccessTime: Long, val f: ValueFunction)

@@ -18,7 +18,7 @@ package com.netflix.atlas.webapi
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
-import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.Interner
@@ -72,7 +72,7 @@ object PublishPayloads {
     }
   }
 
-  private def decode(parser: JsonParser, commonTags: TagMap, intern: Boolean): Datapoint = {
+  private def decode(parser: JsonParser, commonTags: TagMap, intern: Boolean): DatapointTuple = {
     var tags: TagMap = null
     var timestamp: Long = -1L
     var value: Double = Double.NaN
@@ -86,7 +86,8 @@ object PublishPayloads {
         parser.nextToken()
         parser.skipChildren()
     }
-    Datapoint(tags, timestamp, value)
+    val id = if (intern) TaggedItem.createId(tags) else TaggedItem.computeId(tags)
+    DatapointTuple(id, tags, timestamp, value)
   }
 
   /**
@@ -98,14 +99,14 @@ object PublishPayloads {
     *     If true, then strings and the final tag map will be interned as the data is being
     *     parsed.
     */
-  def decodeDatapoint(parser: JsonParser, intern: Boolean = false): Datapoint = {
+  def decodeDatapoint(parser: JsonParser, intern: Boolean = false): DatapointTuple = {
     decode(parser, null, intern)
   }
 
   /**
     * Parse a single datapoint.
     */
-  def decodeDatapoint(json: String): Datapoint = {
+  def decodeDatapoint(json: String): DatapointTuple = {
     val parser = Json.newJsonParser(json)
     try decodeDatapoint(parser)
     finally parser.close()
@@ -121,15 +122,15 @@ object PublishPayloads {
     *     If true, then strings and the final tag map will be interned as the data is being
     *     parsed.
     */
-  def decodeBatch(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
+  def decodeBatch(parser: JsonParser, intern: Boolean = false): List[DatapointTuple] = {
     var tags: Map[String, String] = null
-    var metrics: List[Datapoint] = null
+    var metrics: List[DatapointTuple] = null
     var tagsLoadedFirst = false
     foreachField(parser) {
       case "tags" => tags = decodeTags(parser, null, intern)
       case "metrics" =>
         tagsLoadedFirst = (tags != null)
-        val builder = List.newBuilder[Datapoint]
+        val builder = List.newBuilder[DatapointTuple]
         foreachItem(parser) { builder += decode(parser, tags, intern) }
         metrics = builder.result()
     }
@@ -147,7 +148,7 @@ object PublishPayloads {
     * Parse batch of datapoints encoded as an object. Common tags to all datapoints can be
     * placed at the top level to avoid repetition.
     */
-  def decodeBatch(json: String): List[Datapoint] = {
+  def decodeBatch(json: String): List[DatapointTuple] = {
     val parser = Json.newJsonParser(json)
     try decodeBatch(parser)
     finally parser.close()
@@ -209,10 +210,9 @@ object PublishPayloads {
       i += 1
     }
 
-    val numDatapoints = nextInt(parser)
+    val numDatapointTuples = nextInt(parser)
     i = 0
-    while (i < numDatapoints) {
-      //parser.nextToken()
+    while (i < numDatapointTuples) {
       val idRaw = ItemId(nextString(parser))
       val id = if (intern) TaggedItem.internId(idRaw) else idRaw
 
@@ -239,7 +239,7 @@ object PublishPayloads {
     * Batch format that is less repetitive for string data and more efficient to process
     * than the normal batch format encoded as an object.
     */
-  def decodeCompactBatch(json: String): List[Datapoint] = {
+  def decodeCompactBatch(json: String): List[DatapointTuple] = {
     val parser = Json.newJsonParser(json)
     val consumer = PublishConsumer.datapointList
     try decodeCompactBatch(parser, consumer)
@@ -256,8 +256,8 @@ object PublishPayloads {
     *     If true, then strings and the final tag map will be interned as the data is being
     *     parsed.
     */
-  def decodeList(parser: JsonParser, intern: Boolean = false): List[Datapoint] = {
-    val builder = List.newBuilder[Datapoint]
+  def decodeList(parser: JsonParser, intern: Boolean = false): List[DatapointTuple] = {
+    val builder = List.newBuilder[DatapointTuple]
     foreachItem(parser) {
       builder += decode(parser, null, intern)
     }
@@ -267,7 +267,7 @@ object PublishPayloads {
   /**
     * Parse batch of datapoints encoded as a list.
     */
-  def decodeList(json: String): List[Datapoint] = {
+  def decodeList(json: String): List[DatapointTuple] = {
     val parser = Json.newJsonParser(json)
     try decodeList(parser)
     finally parser.close()
@@ -279,7 +279,7 @@ object PublishPayloads {
     gen.writeEndObject()
   }
 
-  def encodeDatapoint(gen: JsonGenerator, d: Datapoint): Unit = {
+  def encodeDatapoint(gen: JsonGenerator, d: DatapointTuple): Unit = {
     gen.writeStartObject()
     encodeTags(gen, d.tags)
     gen.writeNumberField("timestamp", d.timestamp)
@@ -287,7 +287,7 @@ object PublishPayloads {
     gen.writeEndObject()
   }
 
-  def encodeDatapoint(d: Datapoint): String = {
+  def encodeDatapoint(d: DatapointTuple): String = {
     Streams.string { w =>
       Using.resource(Json.newJsonGenerator(w)) { gen =>
         encodeDatapoint(gen, d)
@@ -298,7 +298,7 @@ object PublishPayloads {
   /**
     * Encode batch of datapoints.
     */
-  def encodeBatch(gen: JsonGenerator, tags: TagMap, values: List[Datapoint]): Unit = {
+  def encodeBatch(gen: JsonGenerator, tags: TagMap, values: List[DatapointTuple]): Unit = {
     gen.writeStartObject()
     encodeTags(gen, tags)
     gen.writeArrayFieldStart("metrics")
@@ -310,7 +310,7 @@ object PublishPayloads {
   /**
     * Encode batch of datapoints.
     */
-  def encodeBatch(tags: TagMap, values: List[Datapoint]): String = {
+  def encodeBatch(tags: TagMap, values: List[DatapointTuple]): String = {
     Streams.string { w =>
       Using.resource(Json.newJsonGenerator(w)) { gen =>
         encodeBatch(gen, tags, values)
@@ -320,7 +320,7 @@ object PublishPayloads {
 
   private def encodeStringTable(
     gen: JsonGenerator,
-    values: List[Datapoint]
+    values: List[DatapointTuple]
   ): RefIntHashMap[String] = {
     val stringPositions = new RefIntHashMap[String](100)
     values.foreach { value =>
@@ -348,7 +348,7 @@ object PublishPayloads {
     * Encode batch of datapoints as using compact format. See decodeCompactBatch method for
     * details.
     */
-  def encodeCompactBatch(gen: JsonGenerator, values: List[Datapoint]): Unit = {
+  def encodeCompactBatch(gen: JsonGenerator, values: List[DatapointTuple]): Unit = {
     gen.writeStartArray()
 
     val table = encodeStringTable(gen, values)
@@ -379,7 +379,7 @@ object PublishPayloads {
     * Encode batch of datapoints as using compact format. See decodeCompactBatch method for
     * details.
     */
-  def encodeCompactBatch(values: List[Datapoint]): String = {
+  def encodeCompactBatch(values: List[DatapointTuple]): String = {
     Streams.string { w =>
       Using.resource(Json.newJsonGenerator(w)) { gen =>
         encodeCompactBatch(gen, values)
@@ -390,7 +390,7 @@ object PublishPayloads {
   /**
     * Encode batch of datapoints as a list.
     */
-  def encodeList(gen: JsonGenerator, values: List[Datapoint]): Unit = {
+  def encodeList(gen: JsonGenerator, values: List[DatapointTuple]): Unit = {
     gen.writeStartArray()
     values.foreach(v => encodeDatapoint(gen, v))
     gen.writeEndArray()
@@ -399,7 +399,7 @@ object PublishPayloads {
   /**
     * Encode batch of datapoints as a list.
     */
-  def encodeList(values: List[Datapoint]): String = {
+  def encodeList(values: List[DatapointTuple]): String = {
     Streams.string { w =>
       Using.resource(Json.newJsonGenerator(w)) { gen =>
         encodeList(gen, values)
