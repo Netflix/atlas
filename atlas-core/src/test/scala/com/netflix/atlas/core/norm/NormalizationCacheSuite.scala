@@ -15,17 +15,25 @@
  */
 package com.netflix.atlas.core.norm
 
-import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.DatapointTuple
+import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.spectator.api.ManualClock
 import munit.FunSuite
 
 class NormalizationCacheSuite extends FunSuite {
 
-  val clock = new ManualClock()
-  val buffer = scala.collection.mutable.Buffer.empty[Datapoint]
-  val cache = new NormalizationCache(10, buffer += _, clock)
+  private val clock = new ManualClock()
+  private val buffer = scala.collection.mutable.Buffer.empty[DatapointTuple]
 
-  def dp(t: Long, v: Double): Datapoint = Datapoint(Map.empty, t, v)
+  private val updateF: UpdateFunction = { (id, tags, ts, v) =>
+    buffer += DatapointTuple(id, tags, ts, v)
+  }
+  private val cache = new NormalizationCache(10, updateF, clock)
+
+  private val tags = Map.empty[String, String]
+  private val id = TaggedItem.computeId(tags)
+
+  def dp(t: Long, v: Double): DatapointTuple = DatapointTuple(id, tags, t, v)
 
   override def beforeEach(context: BeforeEach): Unit = {
     buffer.clear()
@@ -33,14 +41,14 @@ class NormalizationCacheSuite extends FunSuite {
 
   test("update rate on exact interval") {
     clock.setWallTime(11)
-    cache.updateRate(dp(10, 1.0))
+    cache.updateRate(id, tags, 10, 1.0)
     clock.setWallTime(21)
-    cache.updateRate(dp(20, 1.0))
+    cache.updateRate(id, tags, 20, 1.0)
 
     // skip interval, https://github.com/Netflix/atlas/issues/497
 
     clock.setWallTime(41)
-    cache.updateRate(dp(40, 1.0))
+    cache.updateRate(id, tags, 40, 1.0)
 
     val expected = List(
       dp(10, 1.0),
@@ -54,14 +62,14 @@ class NormalizationCacheSuite extends FunSuite {
 
   test("update counter on exact interval") {
     clock.setWallTime(11)
-    cache.updateCounter(dp(10, 0.0))
+    cache.updateCounter(id, tags, 10, 0.0)
     clock.setWallTime(21)
-    cache.updateCounter(dp(20, 1.0))
+    cache.updateCounter(id, tags, 20, 1.0)
 
     // skip interval
 
     clock.setWallTime(41)
-    cache.updateCounter(dp(40, 2.0))
+    cache.updateCounter(id, tags, 40, 2.0)
 
     val expected = List(
       dp(20, 100.0),
@@ -75,14 +83,14 @@ class NormalizationCacheSuite extends FunSuite {
 
   test("update gauge on exact interval") {
     clock.setWallTime(11)
-    cache.updateGauge(dp(10, 0.0))
+    cache.updateGauge(id, tags, 10, 0.0)
     clock.setWallTime(21)
-    cache.updateGauge(dp(20, 1.0))
+    cache.updateGauge(id, tags, 20, 1.0)
 
     // skip interval
 
     clock.setWallTime(41)
-    cache.updateGauge(dp(40, 2.0))
+    cache.updateGauge(id, tags, 40, 2.0)
 
     val expected = List(
       dp(10, 0.0),

@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.webapi
 
-import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.model.ItemId
 
 trait PublishConsumer {
@@ -33,13 +33,13 @@ object PublishConsumer {
   }
 
   class ListPublishConsumer extends PublishConsumer {
-    private val builder = List.newBuilder[Datapoint]
+    private val builder = List.newBuilder[DatapointTuple]
 
     def consume(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
-      builder += Datapoint(tags, timestamp, value)
+      builder += DatapointTuple(id, tags, timestamp, value)
     }
 
-    def toList: List[Datapoint] = {
+    def toList: List[DatapointTuple] = {
       builder.result()
     }
   }

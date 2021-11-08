@@ -53,10 +53,11 @@ class MemoryDatabaseSuite extends FunSuite {
 
   private def addData(name: String, values: Double*): Unit = {
     val tags = Map("name" -> name)
+    val id = TaggedItem.computeId(tags)
     val data = values.toList.zipWithIndex.map {
       case (v, i) =>
         clock.setWallTime(i * step)
-        Datapoint(tags, i * step, v)
+        DatapointTuple(id, tags, i * step, v)
     }
     db.update(data)
     db.index.rebuildIndex()
@@ -64,10 +65,11 @@ class MemoryDatabaseSuite extends FunSuite {
 
   private def addRollupData(name: String, values: Double*): Unit = {
     val tags = Map("name" -> name)
+    val id = TaggedItem.computeId(tags)
     val data = values.toList.zipWithIndex.map {
       case (v, i) =>
         clock.setWallTime(i * step)
-        Datapoint(tags, i * step, v)
+        DatapointTuple(id, tags, i * step, v)
     }
     data.foreach(db.rollup)
     db.index.rebuildIndex()

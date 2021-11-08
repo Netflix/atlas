@@ -16,6 +16,7 @@
 package com.netflix.atlas.webapi
 
 import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Streams
@@ -65,19 +66,17 @@ class PublishPayloadsBench {
   private val datapoints = {
     (0 until 10_000).toList.map { i =>
       val tags = SortedTagMap(tagMap + ("i" -> i.toString))
-      val datapoint = Datapoint(tags, 1636116180000L, Math.PI)
-      datapoint.id // lazy val, force it early
-      datapoint
+      Datapoint(tags, 1636116180000L, Math.PI).toTuple
     }
   }
 
-  private def decodeBatch(data: Array[Byte]): List[Datapoint] = {
+  private def decodeBatch(data: Array[Byte]): List[DatapointTuple] = {
     Using.resource(Json.newSmileParser(new ByteArrayInputStream(data))) { parser =>
       PublishPayloads.decodeBatch(parser)
     }
   }
 
-  private def encodeBatch(values: List[Datapoint]): Array[Byte] = {
+  private def encodeBatch(values: List[DatapointTuple]): Array[Byte] = {
     Streams.byteArray { out =>
       Using.resource(Json.newSmileGenerator(out)) { gen =>
         PublishPayloads.encodeBatch(gen, Map.empty, values)
@@ -91,7 +90,7 @@ class PublishPayloadsBench {
     }
   }
 
-  private def encodeCompactBatch(values: List[Datapoint]): Array[Byte] = {
+  private def encodeCompactBatch(values: List[DatapointTuple]): Array[Byte] = {
     Streams.byteArray { out =>
       Using.resource(Json.newSmileGenerator(out)) { gen =>
         PublishPayloads.encodeCompactBatch(gen, values)
@@ -99,13 +98,13 @@ class PublishPayloadsBench {
     }
   }
 
-  private def decodeList(data: Array[Byte]): List[Datapoint] = {
+  private def decodeList(data: Array[Byte]): List[DatapointTuple] = {
     Using.resource(Json.newSmileParser(new ByteArrayInputStream(data))) { parser =>
       PublishPayloads.decodeList(parser)
     }
   }
 
-  private def encodeList(values: List[Datapoint]): Array[Byte] = {
+  private def encodeList(values: List[DatapointTuple]): Array[Byte] = {
     Streams.byteArray { out =>
       Using.resource(Json.newSmileGenerator(out)) { gen =>
         PublishPayloads.encodeList(gen, values)

@@ -22,7 +22,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.akka.testkit.MUnitRouteSuite
-import com.netflix.atlas.core.model.Datapoint
+import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.webapi.PublishApi.FailureMessage
 import com.netflix.atlas.webapi.PublishApi.PublishRequest
 
@@ -67,7 +67,7 @@ class PublishApiSuite extends MUnitRouteSuite {
       }"""
     Post("/api/v1/publish", json) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
-      assertEquals(lastUpdate, PublishApi.decodeBatch(json))
+      assertEquals(lastUpdate, PublishPayloads.decodeBatch(json))
     }
   }
 
@@ -103,7 +103,7 @@ class PublishApiSuite extends MUnitRouteSuite {
       }"""
     Post("/api/v1/publish", json) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.Accepted)
-      assertEquals(lastUpdate, PublishApi.decodeBatch(json).tail)
+      assertEquals(lastUpdate, PublishPayloads.decodeBatch(json).tail)
     }
   }
 
@@ -200,14 +200,14 @@ class PublishApiSuite extends MUnitRouteSuite {
       }"""
     Post("/api/v1/publish-fast", json) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
-      assertEquals(lastUpdate, PublishApi.decodeBatch(json))
+      assertEquals(lastUpdate, PublishPayloads.decodeBatch(json))
     }
   }
 }
 
 object PublishApiSuite {
 
-  @volatile var lastUpdate: List[Datapoint] = Nil
+  @volatile var lastUpdate: List[DatapointTuple] = Nil
 
   class TestActor extends Actor {
 

@@ -51,6 +51,10 @@ case class Datapoint(
   def apply(t: Long): Double = {
     if (t == timestamp) value else Double.NaN
   }
+
+  def toTuple: DatapointTuple = {
+    DatapointTuple(id, tags, timestamp, value)
+  }
 }
 
 object Datapoint {

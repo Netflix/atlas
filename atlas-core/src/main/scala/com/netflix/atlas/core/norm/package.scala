@@ -13,14 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.norm
+package com.netflix.atlas.core
 
 import com.netflix.atlas.core.model.ItemId
 
-class UpdateValueFunction(id: ItemId, tags: Map[String, String], updateF: UpdateFunction)
-    extends ValueFunction {
-
-  def apply(timestamp: Long, value: Double): Unit = {
-    updateF(id, tags, timestamp, value)
-  }
+package object norm {
+  type UpdateFunction = (ItemId, Map[String, String], Long, Double) => Unit
 }
