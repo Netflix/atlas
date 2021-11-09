@@ -189,4 +189,44 @@ class SortedTagMapSuite extends FunSuite {
     assert(a.compareTo(b) < 0)
     assert(b.compareTo(a) > 0)
   }
+
+  test("equals contract") {
+    val a = SortedTagMap(Array("a", "1", "b", "2"))
+    val b = SortedTagMap(Array("a", "1", "b", "2", "c", "3"))
+    val c = SortedTagMap.createUnsafe(Array("a", "1", "b", "2", null, null), 4)
+    val d = SortedTagMap.createUnsafe(Array("a", "1", "b", "2", null, null, null, null), 4)
+
+    // reflexive
+    assertEquals(a, a)
+    assertEquals(b, b)
+    assertEquals(c, c)
+    assertEquals(d, d)
+
+    // symmetric
+    assert(a != b && b != a)
+    assert(a == c && c == a)
+    assert(a == d && c == d)
+
+    // transitive
+    assert(a == c && c == d && a == d)
+
+    // nulls
+    assert(a != null)
+  }
+
+  test("hashCode") {
+    val a = SortedTagMap(Array("a", "1", "b", "2"))
+    val b = SortedTagMap(Array("a", "1", "b", "2", "c", "3"))
+    val c = SortedTagMap.createUnsafe(Array("a", "1", "b", "2", null, null), 4)
+    val d = SortedTagMap.createUnsafe(Array("a", "1", "b", "2", null, null, null, null), 4)
+
+    assertEquals(a.hashCode, a.hashCode)
+    assertEquals(b.hashCode, b.hashCode)
+    assertEquals(c.hashCode, c.hashCode)
+    assertEquals(d.hashCode, d.hashCode)
+
+    assertNotEquals(a.hashCode, b.hashCode)
+    assertEquals(a.hashCode, c.hashCode)
+    assertEquals(a.hashCode, d.hashCode)
+  }
 }
