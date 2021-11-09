@@ -217,15 +217,17 @@ object PublishPayloads {
       val id = if (intern) TaggedItem.internId(idRaw) else idRaw
 
       val numTags = nextArraySize(parser)
+      val tagsArray = new Array[String](2 * numTags)
       var j = 0
-      val builder = SortedTagMap.builder(numTags)
       while (j < numTags) {
         val k = table(nextInt(parser))
         val v = table(nextInt(parser))
-        builder.add(k, v)
+        tagsArray(2 * j) = k
+        tagsArray(2 * j + 1) = v
         j += 1
       }
-      val tags = if (intern) TaggedItem.internTagsShallow(builder.result()) else builder.result()
+      val tagMap = SortedTagMap.createUnsafe(tagsArray, tagsArray.length)
+      val tags = if (intern) TaggedItem.internTagsShallow(tagMap) else tagMap
 
       val timestamp = nextLong(parser)
       val value = getValue(parser)
@@ -360,7 +362,7 @@ object PublishPayloads {
 
       // tags
       gen.writeNumber(value.tags.size)
-      value.tags.foreachEntry { (k, v) =>
+      SortedTagMap(value.tags).foreachEntry { (k, v) =>
         gen.writeNumber(table.get(k, -1))
         gen.writeNumber(table.get(v, -1))
       }
