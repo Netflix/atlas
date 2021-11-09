@@ -137,9 +137,33 @@ final class SortedTagMap private (private val data: Array[String], private val l
     */
   override def hashCode: Int = {
     if (cachedHashCode == 0) {
-      cachedHashCode = super.hashCode()
+      cachedHashCode = computeHashCode
     }
     cachedHashCode
+  }
+
+  /**
+    * Compute the hash code for the map. This method is based on the
+    * [[scala.util.hashing.MurmurHash3.unorderedHash()]] method. It is more efficient
+    * for our purposes because it avoids creating tons of [[scala.runtime.IntRef]]
+    * objects as well as tuples during iteration.
+    */
+  private[util] def computeHashCode: Int = {
+    var a, b = 0
+    var c = 1
+    var i = 0
+    while (i < length) {
+      val h = data(i).hashCode
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+      i += 1
+    }
+    var h = 0x3c074a61
+    h = scala.util.hashing.MurmurHash3.mix(h, a)
+    h = scala.util.hashing.MurmurHash3.mix(h, b)
+    h = scala.util.hashing.MurmurHash3.mixLast(h, c)
+    scala.util.hashing.MurmurHash3.finalizeHash(h, length)
   }
 
   /**
