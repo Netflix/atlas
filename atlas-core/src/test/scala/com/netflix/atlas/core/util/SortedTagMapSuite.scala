@@ -72,6 +72,13 @@ class SortedTagMapSuite extends FunSuite {
     assertEquals(m.toList, pairs)
   }
 
+  test("equals") {
+    val input = scala.util.Random.shuffle(pairs)
+    val actual: Map[String, String] = SortedTagMap(input)
+    val expected: Map[String, String] = Map.empty[String, String] ++ input
+    assertEquals(actual, expected)
+  }
+
   test("updates: adding new keys") {
     val input = scala.util.Random.shuffle(pairs)
     val actual = input.foldLeft[Map[String, String]](SortedTagMap.empty) { (acc, t) =>

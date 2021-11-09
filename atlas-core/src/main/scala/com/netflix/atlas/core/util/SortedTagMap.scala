@@ -18,9 +18,11 @@ package com.netflix.atlas.core.util
 /**
   * Immutable map implementation for tag maps using a sorted array as the underlying storage.
   */
-final class SortedTagMap private (data: Array[String], length: Int)
+final class SortedTagMap private (private val data: Array[String], private val length: Int)
     extends scala.collection.immutable.Map[String, String]
     with Comparable[SortedTagMap] {
+
+  private[this] var cachedHashCode: Int = 0
 
   private def find(key: String): Int = {
     if (length == 0) {
@@ -128,6 +130,42 @@ final class SortedTagMap private (data: Array[String], length: Int)
 
   override def size: Int = {
     length / 2
+  }
+
+  /**
+    * Overridden to get better performance.
+    */
+  override def hashCode: Int = {
+    if (cachedHashCode == 0) {
+      cachedHashCode = super.hashCode()
+    }
+    cachedHashCode
+  }
+
+  /**
+    * Overridden to get better performance.
+    */
+  override def equals(other: Any): Boolean = {
+    other match {
+      case m: SortedTagMap => arrayEquals(data, length, m.data, m.length)
+      case o               => super.equals(o)
+    }
+  }
+
+  private def arrayEquals(
+    a1: Array[String],
+    length1: Int,
+    a2: Array[String],
+    length2: Int
+  ): Boolean = {
+    if (length1 != length2)
+      return false
+    var i = 0
+    while (i < length1) {
+      if (a1(i) != a2(i)) return false
+      i += 1
+    }
+    true
   }
 
   override def compareTo(other: SortedTagMap): Int = {
