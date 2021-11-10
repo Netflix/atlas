@@ -121,7 +121,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   def update(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
     val blkStore = getOrCreateBlockStore(id)
     blkStore.update(timestamp, value)
-    index.update(BlockStoreItem.create(tags, blkStore))
+    index.update(BlockStoreItem.create(id, tags, blkStore))
   }
 
   def update(dp: DatapointTuple): Unit = {
@@ -135,7 +135,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   def rollup(dp: DatapointTuple): Unit = {
     val blkStore = getOrCreateBlockStore(dp.id)
     blkStore.update(dp.timestamp, dp.value, rollup = true)
-    index.update(BlockStoreItem.create(dp.tags, blkStore))
+    index.update(BlockStoreItem.create(dp.id, dp.tags, blkStore))
   }
 
   @scala.annotation.tailrec
