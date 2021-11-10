@@ -15,11 +15,12 @@
  */
 package com.netflix.atlas.core.db
 
-import com.netflix.atlas.core.model.LazyTaggedItem
+import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.model.TimeSeries
 
-case class BlockStoreItem(tags: Map[String, String], blocks: BlockStore) extends LazyTaggedItem {
+case class BlockStoreItem(id: ItemId, tags: Map[String, String], blocks: BlockStore)
+    extends TaggedItem {
 
   def label: String = TimeSeries.toLabel(tags)
 
@@ -33,7 +34,11 @@ object BlockStoreItem {
   private val metricInterner = InternMap.concurrent[BlockStoreItem](1000000)
 
   def create(tags: Map[String, String], blocks: BlockStore): BlockStoreItem = {
-    val m = new BlockStoreItem(tags, blocks)
+    create(TaggedItem.createId(tags), tags, blocks)
+  }
+
+  def create(id: ItemId, tags: Map[String, String], blocks: BlockStore): BlockStoreItem = {
+    val m = new BlockStoreItem(id, tags, blocks)
     metricInterner.intern(m)
   }
 
