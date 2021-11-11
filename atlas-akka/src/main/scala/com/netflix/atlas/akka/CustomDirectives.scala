@@ -38,12 +38,16 @@ import akka.http.scaladsl.server.PathMatcher
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.directives.LoggingMagnet
+import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
+import akka.stream.Materializer
 import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonParser
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.ipc.NetflixHeader
 
 import java.util.concurrent.ThreadLocalRandom
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 
@@ -123,6 +127,24 @@ object CustomDirectives {
       onComplete(future).flatMap {
         case Success(v) => provide[T](v)
         case Failure(t) => reject(MalformedRequestContentRejection("invalid request payload", t))
+      }
+    }
+  }
+
+  /**
+    * Used with `entity` to decode the request entity to an object of type
+    * `T` using the default ObjectMapper from `atlas-json`. If the content type
+    * is `application/x-jackson-smile`, then a smile parser will be used. Otherwise
+    * it will be treated as `application/json` regardless of the content type.
+    */
+  def jsonUnmarshaller[T: Manifest]: FromRequestUnmarshaller[T] = {
+    val parse = json[T]
+    new FromRequestUnmarshaller[T] {
+      override def apply(
+        request: HttpRequest
+      )(implicit ec: ExecutionContext, materializer: Materializer): Future[T] = {
+        val entity = request.entity
+        entity.dataBytes.runReduce(_ ++ _).map(parse(entity.contentType.mediaType))
       }
     }
   }

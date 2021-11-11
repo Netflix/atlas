@@ -71,6 +71,12 @@ class CustomDirectivesSuite extends MUnitRouteSuite {
                   val entity = HttpEntity(MediaTypes.`application/json`, Json.encode(message))
                   complete(HttpResponse(status = StatusCodes.OK, entity = entity))
                 }
+              } ~
+              put {
+                entity(CustomDirectives.jsonUnmarshaller[Message]) { message =>
+                  val entity = HttpEntity(MediaTypes.`application/json`, Json.encode(message))
+                  complete(HttpResponse(status = StatusCodes.OK, entity = entity))
+                }
               }
             } ~
             path("json-parser") {
@@ -192,10 +198,27 @@ class CustomDirectivesSuite extends MUnitRouteSuite {
     }
   }
 
+  test("json put") {
+    val msg = Message("foo", "bar baz")
+    Put("/json", Json.encode(msg)) ~> endpoint.routes ~> check {
+      val expected = Json.decode[Message](responseAs[String])
+      assertEquals(expected, msg)
+    }
+  }
+
   test("smile post") {
     val msg = Message("foo", "bar baz")
     val entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, Json.smileEncode(msg))
     Post("/json", entity) ~> endpoint.routes ~> check {
+      val expected = Json.decode[Message](responseAs[String])
+      assertEquals(expected, msg)
+    }
+  }
+
+  test("smile put") {
+    val msg = Message("foo", "bar baz")
+    val entity = HttpEntity(CustomMediaTypes.`application/x-jackson-smile`, Json.smileEncode(msg))
+    Put("/json", entity) ~> endpoint.routes ~> check {
       val expected = Json.decode[Message](responseAs[String])
       assertEquals(expected, msg)
     }
