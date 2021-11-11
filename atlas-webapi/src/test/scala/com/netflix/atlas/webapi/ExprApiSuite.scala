@@ -183,6 +183,60 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(data, List(":true", "name,:has", "name,sps,:eq"))
   }
 
+  testGet("/api/v1/expr/strip?q=name,sps,:eq") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,foo,bar,:eq,:and&k=foo") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,foo,bar,:eq,:and&k=foo") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,foo,bar,:eq,:and&k=foo&k=name") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List(":true,:sum"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,foo,bar,:eq,:and,:dist-avg&k=foo") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:dist-avg"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,foo,bar,:eq,:not,:and,:dist-avg&k=foo") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:dist-avg"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,foo,bar,:re,:and,:dist-avg&k=foo") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:dist-avg"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,foo,:has,:and,:dist-avg&k=foo") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:dist-avg"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,foo,:has,:or,:dist-avg&k=foo") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List(":true,:dist-avg"))
+  }
+
   import Query._
 
   private def normalize(expr: String): List[String] = {

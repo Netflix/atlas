@@ -52,22 +52,31 @@ class ExprApi extends WebApi {
 
   private val excludedWords = ApiSettings.excludedWords
 
-  def routes: Route = parameters("q", "vocab" ? vocabulary.name) { (q, vocab) =>
+  def routes: Route = get {
     endpointPath("api" / "v1" / "expr") {
-      get { complete(processDebugRequest(q, vocab)) }
+      parameters("q", "vocab" ? vocabulary.name) { (q, vocab) =>
+        complete(processDebugRequest(q, vocab))
+      }
     } ~
     pathPrefix("api" / "v1" / "expr") {
-      endpointPath("debug") {
-        get { complete(processDebugRequest(q, vocab)) }
+      parameters("q", "vocab" ? vocabulary.name) { (q, vocab) =>
+        endpointPath("debug") {
+          complete(processDebugRequest(q, vocab))
+        } ~
+        endpointPath("normalize") {
+          complete(processNormalizeRequest(q, vocab))
+        } ~
+        endpointPath("complete") {
+          complete(processCompleteRequest(q, vocab))
+        } ~
+        endpointPath("queries") {
+          complete(processQueriesRequest(q, vocab))
+        }
       } ~
-      endpointPath("normalize") {
-        get { complete(processNormalizeRequest(q, vocab)) }
-      } ~
-      endpointPath("complete") {
-        get { complete(processCompleteRequest(q, vocab)) }
-      } ~
-      endpointPath("queries") {
-        get { complete(processQueriesRequest(q, vocab)) }
+      endpointPath("strip") {
+        parameters("q", "k".repeated) { (q, keys) =>
+          complete(processStripRequest(q, keys.toSet))
+        }
       }
     }
   }
@@ -190,6 +199,32 @@ class ExprApi extends WebApi {
     jsonResponse(queries)
   }
 
+  /**
+    * Strip query clauses that contain a key in the set.
+    */
+  private def processStripRequest(expr: String, keys: Set[String]): HttpResponse = {
+    val interpreter = newInterpreter(vocabulary.name)
+    val result = interpreter.execute(expr)
+
+    val exprs = result.stack.collect {
+      case ModelExtractors.PresentationType(t) => t.rewrite(stripKeys(keys)).toString
+    }
+
+    jsonResponse(exprs)
+  }
+
+  private def stripKeys(keys: Set[String]): PartialFunction[Expr, Expr] = {
+    case q: Query => Query.simplify(stripKeys(q, keys), ignore = true)
+  }
+
+  private def stripKeys(query: Query, ks: Set[String]): Query = query match {
+    case Query.And(q1, q2)                     => Query.And(stripKeys(q1, ks), stripKeys(q2, ks))
+    case Query.Or(q1, q2)                      => Query.Or(stripKeys(q1, ks), stripKeys(q2, ks))
+    case Query.Not(q)                          => Query.Not(stripKeys(q, ks))
+    case q: Query.KeyQuery if ks.contains(q.k) => Query.True
+    case q                                     => q
+  }
+
   /** Encode `obj` as json and create the HttpResponse. */
   private def jsonResponse(obj: AnyRef): HttpResponse = {
     val data = Json.encode(obj)
@@ -201,10 +236,10 @@ class ExprApi extends WebApi {
 object ExprApi {
 
   def normalize(program: String, interpreter: Interpreter): List[String] = {
-    normalize(eval(interpreter, program), interpreter)
+    normalize(eval(interpreter, program))
   }
 
-  def normalize(exprs: List[StyleExpr], interpreter: Interpreter): List[String] = {
+  def normalize(exprs: List[StyleExpr]): List[String] = {
 
     // If named rewrites are used, then map the eval expression to match the display
     // expression. This avoids the complexity of the eval expression showing up in the
