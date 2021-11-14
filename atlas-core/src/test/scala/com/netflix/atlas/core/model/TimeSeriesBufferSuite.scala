@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.db
+package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.ArrayBlock
-import com.netflix.atlas.core.model.ArrayTimeSeq
-import com.netflix.atlas.core.model.Block
-import com.netflix.atlas.core.model.ConsolidationFunction
-import com.netflix.atlas.core.model.ConstantBlock
-import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.util.Math
+import munit.FunSuite
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
-import munit.FunSuite
 
 class TimeSeriesBufferSuite extends FunSuite {
 

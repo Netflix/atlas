@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.db
+package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.ArrayTimeSeq
-import com.netflix.atlas.core.model.Block
-import com.netflix.atlas.core.model.ConsolidationFunction
-import com.netflix.atlas.core.model.DsType
-import com.netflix.atlas.core.model.LazyTaggedItem
-import com.netflix.atlas.core.model.MapStepTimeSeq
-import com.netflix.atlas.core.model.TimeSeq
-import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Math
 
@@ -176,7 +168,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /** Aggregate the data from the block into this buffer. */
-  private[db] def aggrBlock(
+  private[model] def aggrBlock(
     blkTags: Map[String, String],
     block: Block,
     aggr: Int,
@@ -208,7 +200,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   /** Aggregate the data from the block into this buffer. */
-  private[db] def valueMask(mask: JBitSet, block: Block, multiple: Int): Unit = {
+  private[model] def valueMask(mask: JBitSet, block: Block, multiple: Int): Unit = {
     val blkStep = step / multiple
     val s = start / blkStep
     val e = values.length * multiple + s - 1
@@ -226,7 +218,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     }
   }
 
-  private[db] def average(mask: JBitSet, multiple: Int): Unit = {
+  private[model] def average(mask: JBitSet, multiple: Int): Unit = {
     val end = values.length * multiple
     var count = 0
     var i = 0

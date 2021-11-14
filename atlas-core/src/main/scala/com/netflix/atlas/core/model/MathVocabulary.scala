@@ -1145,8 +1145,10 @@ object MathVocabulary extends Vocabulary {
       case DoubleListType(pcts) :: DataExprType(t) :: stack =>
         // Percentile always needs sum aggregate type, if others are used convert to sum
         val expr = t match {
-          case af: AggregateFunction => DataExpr.GroupBy(toSum(af), List(TagKey.percentile))
-          case by: DataExpr.GroupBy  => DataExpr.GroupBy(toSum(by.af), TagKey.percentile :: by.keys)
+          case af: AggregateFunction =>
+            DataExpr.GroupBy(toSum(af), List(TagKey.percentile))
+          case by: DataExpr.GroupBy =>
+            DataExpr.GroupBy(toSum(by.af), by.keys.appended(TagKey.percentile))
           case _ =>
             throw new IllegalArgumentException(":percentiles can only be used with :sum and :by")
         }

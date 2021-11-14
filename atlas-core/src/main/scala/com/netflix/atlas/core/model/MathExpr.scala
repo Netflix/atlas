@@ -63,19 +63,14 @@ object MathExpr {
       }
     }
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      ResultSet(
-        this,
-        rs.data.map { ts =>
-          val tags = ts.tags.get(original) match {
-            case Some(v) => ts.tags - original + (replacement -> v)
-            case None    => ts.tags
-          }
-          ts.withTags(tags)
-        },
-        rs.state
-      )
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      expr.incrementalEvaluator(context).map { ts =>
+        val tags = ts.tags.get(original) match {
+          case Some(v) => ts.tags - original + (replacement -> v)
+          case None    => ts.tags
+        }
+        ts.withTags(tags)
+      }
     }
   }
 
@@ -91,10 +86,10 @@ object MathExpr {
 
     def finalGrouping: List[String] = Nil
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, _ => v)
       val ts = TimeSeries(Map("name" -> v.toString), v.toString, seq)
-      ResultSet(this, List(ts), context.state)
+      IncrementalEvaluator(List(ts))
     }
   }
 
@@ -115,10 +110,10 @@ object MathExpr {
 
     def finalGrouping: List[String] = Nil
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, rand)
       val ts = TimeSeries(Map("name" -> "random"), "random", seq)
-      ResultSet(this, List(ts), context.state)
+      IncrementalEvaluator(List(ts))
     }
 
     def rand(t: Long): Double = {
@@ -143,11 +138,11 @@ object MathExpr {
 
     def finalGrouping: List[String] = Nil
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, rand)
       val label = s"seeded-random($seed)"
       val ts = TimeSeries(Map("name" -> label), label, seq)
-      ResultSet(this, List(ts), context.state)
+      IncrementalEvaluator(List(ts))
     }
 
     def rand(t: Long): Double = Random.rand(t ^ seed)
@@ -204,10 +199,10 @@ object MathExpr {
 
     def finalGrouping: List[String] = Nil
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, valueFunc)
       val ts = TimeSeries(Map("name" -> mode), mode, seq)
-      ResultSet(this, List(ts), context.state)
+      IncrementalEvaluator(List(ts))
     }
   }
 
@@ -272,7 +267,7 @@ object MathExpr {
       }
     }
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
 
       val (start, end) = parseDates(context)
 
@@ -287,7 +282,7 @@ object MathExpr {
 
       val seq = new FunctionTimeSeq(DsType.Gauge, context.step, contains)
       val ts = TimeSeries(Map("name" -> s"$s to $e"), s"$s to $e", seq)
-      ResultSet(this, List(ts), context.state)
+      IncrementalEvaluator(List(ts))
     }
   }
 
@@ -305,11 +300,10 @@ object MathExpr {
 
     def finalGrouping: List[String] = expr.finalGrouping
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      ResultSet(this, rs.data.map { t =>
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      expr.incrementalEvaluator(context).map { t =>
         t.unaryOp(s"$name(%s, $min)", this)
-      }, rs.state)
+      }
     }
 
     def apply(v: Double): Double = if (v < min) min else v
@@ -329,11 +323,10 @@ object MathExpr {
 
     def finalGrouping: List[String] = expr.finalGrouping
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      ResultSet(this, rs.data.map { t =>
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      expr.incrementalEvaluator(context).map { t =>
         t.unaryOp(s"$name(%s, $max)", this)
-      }, rs.state)
+      }
     }
 
     def apply(v: Double): Double = if (v > max) max else v
@@ -355,11 +348,10 @@ object MathExpr {
 
     def finalGrouping: List[String] = expr.finalGrouping
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      ResultSet(this, rs.data.map { t =>
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      expr.incrementalEvaluator(context).map { t =>
         t.unaryOp(s"$name(%s)", this)
-      }, rs.state)
+      }
     }
   }
 
@@ -391,14 +383,12 @@ object MathExpr {
     // Not used, required by base-class
     def apply(v: Double): Double = v
 
-    override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      val newData = rs.data.map { t =>
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      expr.incrementalEvaluator(context).map { t =>
         // Assumes rate-per-second counter
         val multiple = t.data.step / 1000
         t.unaryOp(s"$name(%s)", v => v * multiple)
       }
-      ResultSet(this, newData, rs.state)
     }
   }
 
@@ -426,11 +416,6 @@ object MathExpr {
     // For the final grouping and group by key of the result expression the larger
     // set of keys should be used. This is used to determine which side is the superset.
     private[this] val useLhsGrouping = s2.subsetOf(s1)
-
-    // Based-on grouping, choose the appropriate operation
-    private[this] val binaryOp: (ResultSet, ResultSet) => List[TimeSeries] = {
-      if (useLhsGrouping) rhsSubset else lhsSubset
-    }
 
     /** Check if s1 equals s2, s1 is a subset of s2, or vice versa. */
     private def isSubsetOrEqual(s1: Set[String], s2: Set[String]): Boolean = {
@@ -462,37 +447,88 @@ object MathExpr {
       if (useLhsGrouping) expr1.finalGrouping else expr2.finalGrouping
     }
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs1 = expr1.eval(context, data)
-      val rs2 = expr2.eval(context, data)
-      val result = binaryOp(rs1, rs2)
-      ResultSet(this, result, rs1.state ++ rs2.state)
-    }
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      val self = this
+      new IncrementalEvaluator {
+        private val evaluator1 = expr1.incrementalEvaluator(context)
+        private val evaluator2 = expr2.incrementalEvaluator(context)
 
-    /** LHS grouping keys are subset of the RHS grouping keys. */
-    private def lhsSubset(rs1: ResultSet, rs2: ResultSet): List[TimeSeries] = {
-      val groupByKeyF = expr1.groupByKey _
-      val g1 = rs1.data.groupBy(t => groupByKeyF(t.tags))
-      rs2.data.flatMap { t2 =>
-        val k = groupByKeyF(t2.tags)
-        g1.get(k).map {
-          // Normally tags are kept for the lhs, in this case we want to prefer the tags from
-          // the grouped expr on the rhs
-          case t1 :: Nil => t1.binaryOp(t2, labelFmt, this).withTags(t2.tags)
-          case _         => throw new IllegalStateException("too many values for key")
+        private var pending1 = List.empty[TimeSeries]
+        private var pending2 = List.empty[TimeSeries]
+
+        override def orderBy: List[String] = {
+          if (useLhsGrouping) evaluator1.orderBy else evaluator2.orderBy
         }
-      }
-    }
 
-    /** RHS grouping keys are subset of the LHS grouping keys. */
-    private def rhsSubset(rs1: ResultSet, rs2: ResultSet): List[TimeSeries] = {
-      val groupByKeyF = expr2.groupByKey _
-      val g2 = rs2.data.groupBy(t => groupByKeyF(t.tags))
-      rs1.data.flatMap { t1 =>
-        val k = groupByKeyF(t1.tags)
-        g2.get(k).map {
-          case t2 :: Nil => t1.binaryOp(t2, labelFmt, this)
-          case _         => throw new IllegalStateException("too many values for key")
+        private def compareTo(o1: Option[String], o2: Option[String]): Int = {
+          (o1, o2) match {
+            case (None, None)         => 0
+            case (None, Some(_))      => -1
+            case (Some(_), None)      => 1
+            case (Some(v1), Some(v2)) => v1.compareTo(v2)
+          }
+        }
+
+        private def lhsMerge: List[TimeSeries] = {
+          val groupByF = expr2.groupByKey _
+          val builder = List.newBuilder[TimeSeries]
+          while (pending1.nonEmpty && pending2.nonEmpty) {
+            val k1 = groupByF(pending1.head.tags)
+            val k2 = groupByF(pending2.head.tags)
+            compareTo(k1, k2) match {
+              case c if c < 0 =>
+                pending1 = pending1.tail
+              case c if c == 0 =>
+                val t1 = pending1.head
+                val t2 = pending2.head
+                builder += t1.binaryOp(t2, labelFmt, self)
+                pending1 = pending1.tail
+              case c if c > 0 =>
+                pending2 = pending2.tail
+            }
+          }
+          builder.result()
+        }
+
+        private def rhsMerge: List[TimeSeries] = {
+          val groupByF = expr1.groupByKey _
+          val builder = List.newBuilder[TimeSeries]
+          while (pending1.nonEmpty && pending2.nonEmpty) {
+            val k1 = groupByF(pending1.head.tags)
+            val k2 = groupByF(pending2.head.tags)
+            compareTo(k1, k2) match {
+              case c if c < 0 =>
+                pending1 = pending1.tail
+              case c if c == 0 =>
+                val t1 = pending1.head
+                val t2 = pending2.head
+                // Normally tags are kept for the lhs, in this case we want to prefer the tags from
+                // the grouped expr on the rhs
+                builder += t1.binaryOp(t2, labelFmt, self).withTags(t2.tags)
+                pending2 = pending2.tail
+              case c if c > 0 =>
+                pending2 = pending2.tail
+            }
+          }
+          builder.result()
+        }
+
+        override def update(dataExpr: DataExpr, ts: TimeSeries): List[TimeSeries] = {
+          val t1 = evaluator1.update(dataExpr, ts)
+          pending1 = pending1 ::: t1
+          val t2 = evaluator2.update(dataExpr, ts)
+          pending2 = pending2 ::: t2
+          if (useLhsGrouping) lhsMerge else rhsMerge
+        }
+
+        override def flush(): List[TimeSeries] = {
+          pending1 = pending1 ::: evaluator1.flush()
+          pending2 = pending2 ::: evaluator2.flush()
+          if (useLhsGrouping) lhsMerge else rhsMerge
+        }
+
+        override def state: Map[StatefulExpr, Any] = {
+          evaluator1.state ++ evaluator2.state
         }
       }
     }
@@ -679,17 +715,36 @@ object MathExpr {
 
     def finalGrouping: List[String] = Nil
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      val ts =
-        if (rs.data.isEmpty) Nil
-        else {
-          val aggr = aggregator(context.start, context.end)
-          rs.data.foreach(aggr.update)
-          val t = aggr.result()
-          List(TimeSeries(t.tags, s"$name(${t.label})", t.data))
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      new IncrementalEvaluator {
+        private val exprEvaluator = expr.incrementalEvaluator(context)
+        private var aggr: TimeSeries.Aggregator = _
+
+        override def orderBy: List[String] = exprEvaluator.orderBy
+
+        private def update(ts: TimeSeries): Unit = {
+          if (aggr == null)
+            aggr = aggregator(context.start, context.end)
+          aggr.update(ts)
         }
-      ResultSet(this, ts, rs.state)
+
+        override def update(dataExpr: DataExpr, ts: TimeSeries): List[TimeSeries] = {
+          exprEvaluator.update(dataExpr, ts).foreach(update)
+          Nil
+        }
+
+        override def flush(): List[TimeSeries] = {
+          exprEvaluator.flush().foreach(update)
+          if (aggr == null) {
+            Nil
+          } else {
+            val ts = aggr.result()
+            List(TimeSeries(ts.tags, s"$name(${ts.label})", ts.data))
+          }
+        }
+
+        override def state: Map[StatefulExpr, Any] = exprEvaluator.state
+      }
     }
   }
 
@@ -767,7 +822,7 @@ object MathExpr {
 
     def finalGrouping: List[String] = keys
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+    override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val inner = expr.expr.eval(context, data)
 
       val ks = queryKeys ++ keys
@@ -837,7 +892,7 @@ object MathExpr {
 
     def finalGrouping: List[String] = expr.finalGrouping
 
-    override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+    /*override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val inner = expr.eval(context, data)
       if (inner.data.isEmpty) {
         inner
@@ -855,6 +910,52 @@ object MathExpr {
           }
         }
         ResultSet(this, rs, context.state)
+      }
+    }*/
+
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      new IncrementalEvaluator {
+        private val exprEvaluator = expr.incrementalEvaluator(context)
+        private var pending = List.empty[TimeSeries]
+        private var groupingKey: String = _
+
+        override def orderBy: List[String] = exprEvaluator.orderBy
+
+        private def mkLabel(tags: Map[String, String]): String = {
+          if (evalGroupKeys.isEmpty)
+            expr.af.query.labelString
+          else
+            DataExpr.keyString(evalGroupKeys, tags)
+        }
+
+        private def update(t: TimeSeries): List[TimeSeries] = {
+          val label = mkLabel(t.tags)
+          var result = List.empty[TimeSeries]
+          if (groupingKey == null || groupingKey != label) {
+            groupingKey = label
+            if (pending.nonEmpty) {
+              result = estimatePercentiles(context, mkLabel(pending.head.tags), pending.reverse)
+              pending = Nil
+            }
+          }
+          pending = t :: pending
+          result
+        }
+
+        override def update(dataExpr: DataExpr, ts: TimeSeries): List[TimeSeries] = {
+          exprEvaluator.update(dataExpr, ts).flatMap(update)
+        }
+
+        override def flush(): List[TimeSeries] = {
+          val tmp = exprEvaluator.flush().flatMap(update)
+          if (pending.nonEmpty) {
+            tmp ::: estimatePercentiles(context, mkLabel(pending.head.tags), pending.reverse)
+          } else {
+            tmp
+          }
+        }
+
+        override def state: Map[StatefulExpr, Any] = exprEvaluator.state
       }
     }
 
@@ -1025,8 +1126,12 @@ object MathExpr {
 
     def finalGrouping: List[String] = evalExpr.finalGrouping
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+    override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       evalExpr.eval(context, data).copy(expr = this)
+    }
+
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      evalExpr.incrementalEvaluator(context)
     }
 
     override def rewrite(f: PartialFunction[Expr, Expr]): Expr = {

@@ -36,14 +36,12 @@ object FilterExpr {
 
     def finalGrouping: List[String] = expr.finalGrouping
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      val newData = rs.data.map { t =>
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      expr.incrementalEvaluator(context).map { t =>
         val v = SummaryStats(t, context.start, context.end).get(stat)
         val seq = new FunctionTimeSeq(DsType.Gauge, context.step, _ => v)
         TimeSeries(t.tags, s"stat-$stat(${t.label})", seq)
       }
-      ResultSet(this, newData, rs.state)
     }
   }
 
@@ -61,8 +59,8 @@ object FilterExpr {
 
     def finalGrouping: List[String] = Nil
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      ResultSet(this, Nil, context.state)
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      IncrementalEvaluator(Nil)
     }
   }
 
@@ -118,28 +116,77 @@ object FilterExpr {
       m
     }
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs1 = expr1.eval(context, data)
-      val rs2 = expr2.eval(context, data)
-      val result = (expr1.isGrouped, expr2.isGrouped) match {
-        case (_, false) =>
-          require(rs2.data.lengthCompare(1) == 0, "empty result for filter expression")
-          if (matches(context, rs2.data.head)) rs1.data else Nil
-        case (false, _) =>
-          // Shouldn't be able to get here
-          Nil
-        case (true, true) =>
-          val g2 = rs2.data.groupBy(t => groupByKey(t.tags))
-          rs1.data.filter { t1 =>
-            val k = groupByKey(t1.tags)
-            g2.get(k).fold(false) {
-              case t2 :: Nil => matches(context, t2)
-              case _         => false
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      new IncrementalEvaluator {
+        private val evaluator1 = expr1.incrementalEvaluator(context)
+        private val evaluator2 = expr2.incrementalEvaluator(context)
+
+        private var pending1 = List.empty[TimeSeries]
+        private var pending2 = List.empty[TimeSeries]
+
+        override def orderBy: List[String] = evaluator1.orderBy
+
+        private def compareTo(o1: Option[String], o2: Option[String]): Int = {
+          (o1, o2) match {
+            case (None, None)         => 0
+            case (None, Some(_))      => -1
+            case (Some(_), None)      => 1
+            case (Some(v1), Some(v2)) => v1.compareTo(v2)
+          }
+        }
+
+        private def groupedMerge: List[TimeSeries] = {
+          val groupByF = expr1.groupByKey _
+          val builder = List.newBuilder[TimeSeries]
+          while (pending1.nonEmpty && pending2.nonEmpty) {
+            val k1 = groupByF(pending1.head.tags)
+            val k2 = groupByF(pending2.head.tags)
+            compareTo(k1, k2) match {
+              case c if c < 0 =>
+                pending1 = pending1.tail
+              case c if c == 0 =>
+                val t1 = pending1.head
+                val t2 = pending2.head
+                if (matches(context, t2))
+                  builder += t1
+                pending1 = pending1.tail
+              case c if c > 0 =>
+                pending2 = pending2.tail
             }
           }
+          builder.result()
+        }
+
+        private def nonGroupedMerge: List[TimeSeries] = {
+          val builder = List.newBuilder[TimeSeries]
+          while (pending1.nonEmpty && pending2.nonEmpty) {
+            val t1 = pending1.head
+            val t2 = pending2.head
+            if (matches(context, t2))
+              builder += t1
+            pending1 = pending1.tail
+          }
+          builder.result()
+        }
+
+        override def update(dataExpr: DataExpr, ts: TimeSeries): List[TimeSeries] = {
+          val t1 = evaluator1.update(dataExpr, ts)
+          pending1 = pending1 ::: t1
+          val t2 = evaluator2.update(dataExpr, ts)
+          pending2 = pending2 ::: t2
+          if (expr2.isGrouped) groupedMerge else nonGroupedMerge
+        }
+
+        override def flush(): List[TimeSeries] = {
+          pending1 = pending1 ::: evaluator1.flush()
+          pending2 = pending2 ::: evaluator2.flush()
+          if (expr2.isGrouped) groupedMerge else nonGroupedMerge
+        }
+
+        override def state: Map[StatefulExpr, Any] = {
+          evaluator1.state ++ evaluator2.state
+        }
       }
-      val msg = s"${result.size} of ${rs1.data.size} lines matched filter"
-      ResultSet(this, result, rs1.state ++ rs2.state, List(msg))
     }
   }
 
@@ -180,26 +227,41 @@ object FilterExpr {
 
     def finalGrouping: List[String] = expr.finalGrouping
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val buffer = new BoundedPriorityBuffer[TimeSeriesSummary](k, comparator)
-      val aggregator = othersAggregator(context.start, context.end)
-      val rs = expr.eval(context, data)
-      rs.data.foreach { t =>
-        val v = SummaryStats(t, context.start, context.end).get(stat)
-        val other = buffer.add(TimeSeriesSummary(t, v))
-        if (other != null) {
-          aggregator.update(other.timeSeries)
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      new IncrementalEvaluator {
+        private val exprEvaluator = expr.incrementalEvaluator(context)
+        private val buffer = new BoundedPriorityBuffer[TimeSeriesSummary](k, comparator)
+        private val aggregator = othersAggregator(context.start, context.end)
+
+        override def orderBy: List[String] = exprEvaluator.orderBy
+
+        private def update(t: TimeSeries): Unit = {
+          val v = SummaryStats(t, context.start, context.end).get(stat)
+          val other = buffer.add(TimeSeriesSummary(t, v))
+          if (other != null) {
+            aggregator.update(other.timeSeries)
+          }
         }
+
+        override def update(dataExpr: DataExpr, ts: TimeSeries): List[TimeSeries] = {
+          exprEvaluator.update(dataExpr, ts).foreach(update)
+          Nil
+        }
+
+        override def flush(): List[TimeSeries] = {
+          exprEvaluator.flush().foreach(update)
+          aggregator match {
+            case aggr if aggr.isEmpty =>
+              buffer.toList.map(_.timeSeries)
+            case _ =>
+              val others = aggregator.result()
+              val otherTags = others.tags ++ finalGrouping.map(k => k -> "--others--").toMap
+              others.withTags(otherTags) :: buffer.toList.map(_.timeSeries)
+          }
+        }
+
+        override def state: Map[StatefulExpr, Any] = exprEvaluator.state
       }
-      val newData = aggregator match {
-        case aggr if aggr.isEmpty =>
-          buffer.toList.map(_.timeSeries)
-        case _ =>
-          val others = aggregator.result()
-          val otherTags = others.tags ++ finalGrouping.map(k => k -> "--others--").toMap
-          others.withTags(otherTags) :: buffer.toList.map(_.timeSeries)
-      }
-      ResultSet(this, newData, rs.state)
     }
   }
 

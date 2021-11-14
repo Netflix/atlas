@@ -40,6 +40,13 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
 
   def exprString: String
 
+  override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
+    val filtered = data.filter(t => query.matches(t.tags))
+    val evaluator = incrementalEvaluator(context)
+    val rs = filtered.flatMap(t => evaluator.update(this, t)) ::: evaluator.flush()
+    ResultSet(this, rs, context.state)
+  }
+
   protected def consolidate(step: Long, ts: List[TimeSeries]): List[TimeSeries] = {
     ts.map { t =>
       val offsetStr = Strings.toString(offset)
@@ -55,10 +62,6 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
     val keys = Query.exactKeys(query)
     val result = tags.filter(t => keys.contains(t._1))
     if (result.isEmpty) DataExpr.unknown else result
-  }
-
-  def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-    ResultSet(this, data.getOrElse(this, Nil), context.state)
   }
 
   override def toString: String = {
@@ -124,9 +127,19 @@ object DataExpr {
 
     override def exprString: String = s"$query,:all"
 
-    override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
-      val rs = consolidate(context.step, data.filter(t => query.matches(t.tags)))
-      ResultSet(this, rs, context.state)
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      val self = this
+      new IncrementalEvaluator {
+        override def orderBy: List[String] = Nil
+
+        override def update(dataExpr: DataExpr, ts: TimeSeries): List[TimeSeries] = {
+          if (dataExpr == self) List(ts) else Nil
+        }
+
+        override def flush(): List[TimeSeries] = Nil
+
+        override def state: Map[StatefulExpr, Any] = context.state
+      }
     }
   }
 
@@ -138,19 +151,35 @@ object DataExpr {
 
     def aggregator(start: Long, end: Long): TimeSeries.Aggregator
 
-    override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
-      val filtered = data.filter(t => query.matches(t.tags))
-      val aggr =
-        if (filtered.isEmpty) TimeSeries.noData(query, context.step)
-        else {
-          val tags = commonTags(filtered.head.tags)
-          val aggr = aggregator(context.start, context.end)
-          filtered.foreach(aggr.update)
-          val t = aggr.result()
-          TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      val self = this
+      new IncrementalEvaluator {
+        private var aggr: TimeSeries.Aggregator = _
+
+        override def orderBy: List[String] = Nil
+
+        override def update(dataExpr: DataExpr, ts: TimeSeries): List[TimeSeries] = {
+          if (dataExpr == self) {
+            if (aggr == null)
+              aggr = aggregator(context.start, context.end)
+            aggr.update(ts)
+          }
+          Nil
         }
-      val rs = consolidate(context.step, List(aggr))
-      ResultSet(this, rs, context.state)
+
+        override def flush(): List[TimeSeries] = {
+          if (aggr == null) {
+            List(TimeSeries.noData(query, context.step))
+          } else {
+            val ts = aggr.result()
+            val tags = commonTags(ts.tags)
+            val tmp = TimeSeries(tags, TimeSeries.toLabel(tags), ts.data)
+            consolidate(context.step, List(tmp))
+          }
+        }
+
+        override def state: Map[StatefulExpr, Any] = context.state
+      }
     }
   }
 
@@ -291,24 +320,56 @@ object DataExpr {
     override def exprString: String = s"$af,(,${keys.mkString(",")},),:by"
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
-      val ks = Query.exactKeys(query) ++ keys
-      val groups = data
+      val filtered = data
         .filter(t => query.matches(t.tags))
         .groupBy(t => keyString(t.tags))
         .filter(_._1 != null)
         .toList
-      val sorted = groups.sortWith(_._1 < _._1)
-      val newData = sorted.flatMap {
-        case (null, _) => Nil
-        case (k, Nil)  => List(TimeSeries.noData(query, context.step))
-        case (k, ts) =>
-          val tags = ts.head.tags.filter(e => ks.contains(e._1))
-          af.eval(context, ts).data.map { t =>
-            TimeSeries(tags, k, t.data)
-          }
-      }
-      val rs = consolidate(context.step, newData)
+        .sortWith(_._1 < _._1)
+        .flatMap(_._2)
+      val evaluator = incrementalEvaluator(context)
+      val rs = filtered.flatMap(t => evaluator.update(this, t)) ::: evaluator.flush()
       ResultSet(this, rs, context.state)
+    }
+
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      val self = this
+      new IncrementalEvaluator {
+        private val ks = Query.exactKeys(query) ++ keys
+        private var currentKey: String = _
+        private var aggr: TimeSeries.Aggregator = _
+
+        override def orderBy: List[String] = keys
+
+        override def update(dataExpr: DataExpr, ts: TimeSeries): List[TimeSeries] = {
+          if (dataExpr != self) return Nil
+          var result = List.empty[TimeSeries]
+          val groupingKey = keyString(ts.tags)
+          if (groupingKey == null) {
+            result
+          } else {
+            if (currentKey != groupingKey) {
+              result = flush()
+              currentKey = groupingKey
+              aggr = af.aggregator(context.start, context.end)
+            }
+            aggr.update(ts)
+            result
+          }
+        }
+
+        override def flush(): List[TimeSeries] = {
+          if (currentKey != null) {
+            val tmp = aggr.result()
+            val tags = tmp.tags.filter(t => ks.contains(t._1))
+            consolidate(context.step, List(TimeSeries(tags, currentKey, tmp.data)))
+          } else {
+            Nil
+          }
+        }
+
+        override def state: Map[StatefulExpr, Any] = context.state
+      }
     }
   }
 }

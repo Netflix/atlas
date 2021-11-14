@@ -66,7 +66,7 @@ class FinalGroupingSuite extends FunSuite {
 
   test("data group by with percentiles") {
     val expr = "name,sps,:eq,(,app,),:by,(,50,),:percentiles"
-    val expected = List("percentile", "app")
+    val expected = List("app", "percentile")
     assertEquals(eval(expr), expected)
   }
 }

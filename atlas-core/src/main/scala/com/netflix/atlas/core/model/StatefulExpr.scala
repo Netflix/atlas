@@ -240,43 +240,62 @@ object StatefulExpr {
 
     def finalGrouping: List[String] = expr.finalGrouping
 
-    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val rs = expr.eval(context, data)
-      val state = rs.state.getOrElse(this, new StateMap).asInstanceOf[StateMap]
+    override def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+      val self = this
+      new IncrementalEvaluator {
+        private val exprEvaluator = expr.incrementalEvaluator(context)
+        private val stateMap = context.state.getOrElse(self, new StateMap).asInstanceOf[StateMap]
+        private val idsWithData = scala.collection.mutable.Set.empty[ItemId]
 
-      // Update expressions with data
-      val newData = rs.data.map { t =>
-        val bounded = t.data.bounded(context.start, context.end)
-        val length = bounded.data.length
-        val algo = state.get(t.id).fold(newAlgorithmInstance(context)) { s =>
-          OnlineAlgorithm(s)
+        override def orderBy: List[String] = exprEvaluator.orderBy
+
+        private def process(t: TimeSeries): TimeSeries = {
+          val bounded = t.data.bounded(context.start, context.end)
+          val length = bounded.data.length
+          val algo = stateMap.get(t.id).fold(newAlgorithmInstance(context)) { s =>
+            OnlineAlgorithm(s)
+          }
+          var i = 0
+          while (i < length) {
+            bounded.data(i) = algo.next(bounded.data(i))
+            i += 1
+          }
+          if (algo.isEmpty) {
+            stateMap -= t.id
+          } else {
+            stateMap(t.id) = algo.state
+            idsWithData += t.id
+          }
+          TimeSeries(t.tags, s"$name(${t.label})", bounded)
         }
-        var i = 0
-        while (i < length) {
-          bounded.data(i) = algo.next(bounded.data(i))
-          i += 1
+
+        override def update(dataExpr: DataExpr, ts: TimeSeries): List[TimeSeries] = {
+          exprEvaluator.update(dataExpr, ts).map(process)
         }
-        if (algo.isEmpty)
-          state -= t.id
-        else
-          state(t.id) = algo.state
-        TimeSeries(t.tags, s"$name(${t.label})", bounded)
-      }
 
-      // Update the stateful buffers for expressions that do not have an explicit value for
-      // this interval. For streaming contexts only data that is reported for that interval
-      // will be present, but the state needs to be moved for all entries.
-      val noDataIds = state.keySet.diff(rs.data.map(_.id).toSet)
-      noDataIds.foreach { id =>
-        val algo = OnlineAlgorithm(state(id))
-        algo.next(Double.NaN)
-        if (algo.isEmpty)
-          state -= id
-        else
-          state(id) = algo.state
-      }
+        override def flush(): List[TimeSeries] = {
+          val tmp = exprEvaluator.flush().map(process)
 
-      ResultSet(this, newData, rs.state + (this -> state))
+          // Update the stateful buffers for expressions that do not have an explicit value for
+          // this interval. For streaming contexts only data that is reported for that interval
+          // will be present, but the state needs to be moved for all entries.
+          val noDataIds = stateMap.keySet.diff(idsWithData)
+          noDataIds.foreach { id =>
+            val algo = OnlineAlgorithm(stateMap(id))
+            algo.next(Double.NaN)
+            if (algo.isEmpty)
+              stateMap -= id
+            else
+              stateMap(id) = algo.state
+          }
+
+          tmp
+        }
+
+        override def state: Map[StatefulExpr, Any] = {
+          exprEvaluator.state + (self -> stateMap)
+        }
+      }
     }
   }
 }

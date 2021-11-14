@@ -13,13 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.db
+package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.Block
-import com.netflix.atlas.core.model.CollectorStats
-import com.netflix.atlas.core.model.CollectorStatsBuilder
-import com.netflix.atlas.core.model.ConsolidationFunction
-import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.db.Limits
 import com.netflix.atlas.core.util.Math
 
 object AggregateCollector {

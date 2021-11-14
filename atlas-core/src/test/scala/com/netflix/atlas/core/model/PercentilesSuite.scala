@@ -347,8 +347,6 @@ class PercentilesSuite extends FunSuite {
     val expr = MathExpr.Percentiles(by, List(50.0))
     val input = Map[DataExpr, List[TimeSeries]](by -> List(TimeSeries.noData(step)))
     val ts = expr.eval(context, input).data
-    assertEquals(ts.size, 1)
-    assertEquals(ts.head.tags, Map("name" -> "NO_DATA"))
-    assertEquals(ts.head.label, "NO DATA")
+    assertEquals(ts.size, 0)
   }
 }

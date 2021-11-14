@@ -22,6 +22,7 @@ import com.netflix.atlas.core.index.CachingTagIndex
 import com.netflix.atlas.core.index.IndexStats
 import com.netflix.atlas.core.index.RoaringTagIndex
 import com.netflix.atlas.core.index.TagQuery
+import com.netflix.atlas.core.model.AggregateCollector
 import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DatapointTuple
@@ -30,6 +31,7 @@ import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.model.TimeSeriesBuffer
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Spectator
 import com.typesafe.config.Config

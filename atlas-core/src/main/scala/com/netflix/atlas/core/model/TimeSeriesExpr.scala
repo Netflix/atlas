@@ -58,10 +58,37 @@ trait TimeSeriesExpr extends Expr {
 
   def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
     val rs = dataExprs.map { expr =>
-      expr -> expr.eval(context, data).data
+      expr -> data.filter(t => expr.query.matches(t.tags))
     }
     eval(context, rs.toMap)
   }
 
-  def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet
+  private def keyString(keys: List[String], tags: Map[String, String]): String = {
+    val s = DataExpr.keyString(keys, tags)
+    if (s == null) "" else s
+  }
+
+  private def sort(ts: List[TimeSeries], keys: List[String]): List[TimeSeries] = {
+    if (keys.isEmpty) {
+      ts
+    } else {
+      ts.sortWith { (a, b) =>
+        keyString(keys, a.tags) < keyString(keys, b.tags)
+      }
+    }
+  }
+
+  def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+    val builder = List.newBuilder[TimeSeries]
+    val evaluator = incrementalEvaluator(context)
+    data.foreachEntry { (expr, ts) =>
+      builder ++= sort(ts, evaluator.orderBy).flatMap(t => evaluator.update(expr, t))
+    }
+    builder ++= evaluator.flush()
+    ResultSet(this, builder.result(), evaluator.state)
+  }
+
+  def incrementalEvaluator(context: EvalContext): IncrementalEvaluator = {
+    IncrementalEvaluator(Nil)
+  }
 }

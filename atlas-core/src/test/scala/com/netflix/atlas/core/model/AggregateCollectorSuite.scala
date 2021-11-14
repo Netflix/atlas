@@ -13,13 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.db
+package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.ArrayTimeSeq
-import com.netflix.atlas.core.model.CollectorStats
-import com.netflix.atlas.core.model.DataExpr
-import com.netflix.atlas.core.model.DsType
-import com.netflix.atlas.core.model.Query
 import munit.FunSuite
 
 class AggregateCollectorSuite extends FunSuite {
