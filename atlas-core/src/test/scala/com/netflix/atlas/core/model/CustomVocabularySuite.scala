@@ -143,4 +143,21 @@ class CustomVocabularySuite extends FunSuite {
       eval("name,(,a,b,c,),:in,app,beacon,:eq,:and,:node-avg,(,name,asg,),:by")
     }
   }
+
+  test("cg after style") {
+    val context = interpreter.execute("foo,1,:eq,$foo,:legend,(,bar,),:cg")
+    val context2 = interpreter.execute("foo,1,:eq,(,bar,),:by,$foo,:legend")
+    assertEquals(context.stack, context2.stack)
+  }
+
+  test("cg after complex expression including style") {
+    val complexExpr = "name,cpu,:eq,(,node,),:by,80,:gt,15,:rolling-count,10,:gt" +
+      ",$node,:legend,region,east,:eq,:cq,(,region,),:cg"
+    val context = interpreter.execute(complexExpr)
+
+    val complexExprExplicit = "name,cpu,:eq,region,east,:eq,:and,(,node,region,),:by," +
+      "80,:gt,15,:rolling-count,10,:gt,$node,:legend"
+    val context2 = interpreter.execute(complexExprExplicit)
+    assertEquals(context.stack, context2.stack)
+  }
 }
