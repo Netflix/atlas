@@ -463,6 +463,9 @@ object MathVocabulary extends Vocabulary {
       case StringListType(_) :: TimeSeriesType(_) :: _ =>
         // Default data or math aggregate group by applied across math operations
         true
+      case StringListType(_) :: PresentationType(_) :: _ =>
+        // Handle :cg after presentation operators
+        true
     }
 
     private def mergeKeys(ks1: List[String], ks2: List[String]): List[String] = {
@@ -488,6 +491,8 @@ object MathVocabulary extends Vocabulary {
     override protected def executor: PartialFunction[List[Any], List[Any]] = {
       case StringListType(keys) :: TimeSeriesType(t) :: stack =>
         addCommonKeys(t, keys) :: stack
+      case StringListType(keys) :: PresentationType(e) :: stack =>
+        StyleExpr(addCommonKeys(e.expr, keys), e.settings) :: stack
     }
 
     override def summary: String =
