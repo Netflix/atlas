@@ -7,13 +7,13 @@ object Dependencies {
   object Versions {
     val akka       = "2.6.17"
     val akkaHttpV  = "10.2.7"
-    val iep        = "3.0.7"
+    val iep        = "3.0.9"
     val guice      = "5.0.1"
     val jackson    = "2.13.0"
     val log4j      = "2.14.1"
     val scala      = "2.13.7"
     val slf4j      = "1.7.32"
-    val spectator  = "1.0.4"
+    val spectator  = "1.0.7"
 
     val crossScala = Seq(scala)
   }
@@ -28,9 +28,9 @@ object Dependencies {
   val akkaStream        = "com.typesafe.akka" %% "akka-stream" % akka
   val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
-  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.2"
+  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.3"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.0.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.7.2"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.8"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.25.0"
   val guiceCoreBase     = "com.google.inject" % "guice"
   val guiceMultiBase    = "com.google.inject.extensions" % "guice-multibindings"
@@ -60,8 +60,8 @@ object Dependencies {
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
   val postgres          = "org.postgresql" % "postgresql" % "42.3.1"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "1.3.1"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.22"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.23"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
