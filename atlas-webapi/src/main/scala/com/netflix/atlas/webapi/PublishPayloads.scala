@@ -18,6 +18,7 @@ package com.netflix.atlas.webapi
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
+import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.TaggedItem
@@ -151,6 +152,63 @@ object PublishPayloads {
   def decodeBatch(json: String): List[DatapointTuple] = {
     val parser = Json.newJsonParser(json)
     try decodeBatch(parser)
+    finally parser.close()
+  }
+
+  private def decodeDatapoints(parser: JsonParser, commonTags: TagMap): Datapoint = {
+    var tags: TagMap = null
+    var timestamp: Long = -1L
+    var value: Double = Double.NaN
+    foreachField(parser) {
+      case "tags"      => tags = decodeTags(parser, commonTags, intern = false)
+      case "timestamp" => timestamp = nextLong(parser)
+      case "value"     => value = nextDouble(parser)
+      case "start"     => timestamp = nextLong(parser) // Legacy support
+      case "values"    => value = getValue(parser)
+      case _ => // Ignore unknown fields
+        parser.nextToken()
+        parser.skipChildren()
+    }
+    Datapoint(tags, timestamp, value)
+  }
+
+  /**
+    * Parse batch of datapoints encoded as an object. Common tags to all datapoints can be
+    * placed at the top level to avoid repetition. This variant will emit `Datapoint` instances
+    * to avoid computation of the ids.
+    *
+    * @param parser
+    *     Parser for JSON input.
+    */
+  def decodeBatchDatapoints(parser: JsonParser): List[Datapoint] = {
+    var tags: Map[String, String] = null
+    var metrics: List[Datapoint] = null
+    var tagsLoadedFirst = false
+    foreachField(parser) {
+      case "tags" => tags = decodeTags(parser, null, intern = false)
+      case "metrics" =>
+        tagsLoadedFirst = (tags != null)
+        val builder = List.newBuilder[Datapoint]
+        foreachItem(parser) { builder += decodeDatapoints(parser, tags) }
+        metrics = builder.result()
+    }
+
+    // If the tags were loaded first they got merged with the datapoints while parsing. Otherwise
+    // they need to be merged here.
+    if (tagsLoadedFirst || tags == null) {
+      if (metrics == null) Nil else metrics
+    } else {
+      metrics.map(d => d.copy(tags = d.tags ++ tags))
+    }
+  }
+
+  /**
+    * Parse batch of datapoints encoded as an object. Common tags to all datapoints can be
+    * placed at the top level to avoid repetition.
+    */
+  def decodeBatchDatapoints(json: String): List[Datapoint] = {
+    val parser = Json.newJsonParser(json)
+    try decodeBatchDatapoints(parser)
     finally parser.close()
   }
 

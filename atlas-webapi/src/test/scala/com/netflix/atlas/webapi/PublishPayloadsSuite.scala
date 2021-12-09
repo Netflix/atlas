@@ -94,4 +94,13 @@ class PublishPayloadsSuite extends FunSuite {
     assertEquals(decoded.head.tags, input.head.tags)
     assertEquals(decoded.tail, input.tail)
   }
+
+  test("datapoints: encode and decode batch") {
+    val input = datapoints(10)
+    val encoded = PublishPayloads.encodeBatch(Map.empty, input)
+    val decoded = PublishPayloads.decodeBatchDatapoints(encoded)
+    assert(decoded.head.value.isNaN)
+    assertEquals(decoded.head.tags, input.head.tags)
+    assertEquals(decoded.tail, input.tail.map(_.toDatapoint))
+  }
 }
