@@ -123,18 +123,12 @@ class ConcurrentInternMap[K <: AnyRef](newMap: => InternMap[K], concurrencyLevel
     if (i < 0) -1 * i else i
   }
 
-  private def lock[R](key: K)(f: InternMap[K] => R): R = {
-    val i = index(key)
+  def intern(k: K): K = {
+    val i = index(k)
     locks(i).lock()
-    try f(segments(i))
+    try segments(i).intern(k)
     finally {
       locks(i).unlock()
-    }
-  }
-
-  def intern(k: K): K = {
-    lock(k) { m =>
-      m.intern(k)
     }
   }
 
