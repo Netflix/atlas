@@ -21,6 +21,7 @@ target
 *.iml
 *.ipr
 *.iws
+project
 
 # anything in .idea dirs
 .idea
