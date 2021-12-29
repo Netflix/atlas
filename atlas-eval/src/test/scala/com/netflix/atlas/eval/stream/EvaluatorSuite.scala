@@ -39,7 +39,7 @@ import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.DefaultRegistry
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
 import munit.FunSuite
@@ -65,10 +65,11 @@ class EvaluatorSuite extends FunSuite {
     Files.createDirectories(targetDir)
   }
 
-  def testPublisher(baseUri: String): Unit = {
+  def testPublisher(baseUri: String, bufferSize: Option[Int] = None): Unit = {
     import scala.concurrent.duration._
 
-    val evaluator = new Evaluator(config, registry, system)
+    val buffers = bufferSize.getOrElse(config.getInt("atlas.eval.stream.num-buffers"))
+    val evaluator = new Evaluator( config.withValue("atlas.eval.stream.num-buffers", ConfigValueFactory.fromAnyRef(buffers)), registry, system)
 
     val uri = s"$baseUri?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
     val future = Source
@@ -76,10 +77,11 @@ class EvaluatorSuite extends FunSuite {
       .toMat(Sink.seq[JsonSupport])(Keep.right)
       .run()
 
-    val messages = Await.result(future, 1.minute).collect {
+    val messages = Await.result(future, 100.minute).collect {
       case t: TimeSeriesMessage => t
     }
-    assertEquals(messages.size, 255) // Can vary depending on num buffers for evaluation
+    val expectedMessages = if(buffers > 1)  256 else 255
+    assertEquals(messages.size, expectedMessages) // Can vary depending on num buffers for evaluation
     assertEquals(messages.map(_.tags("nf.asg")).toSet.size, 3)
   }
 
@@ -123,6 +125,11 @@ class EvaluatorSuite extends FunSuite {
     testPublisher("resource:///gc-pause.dat")
   }
 
+  test("create publisher from resource uri with higher number of time buffers") {
+    //has enough buffers to retain an AggrDatapoint with an older timestamp than an earlier AggrDatapoint processed.
+    testPublisher("resource:///gc-pause.dat", Some(2))
+  }
+
   test("create publish, missing q parameter") {
     val evaluator = new Evaluator(config, registry, system)
 
@@ -139,6 +146,22 @@ class EvaluatorSuite extends FunSuite {
         )
       case v =>
         throw new MatchError(v)
+    }
+  }
+
+
+  test("create publish, for an expression with incoming data points exceeding the limit") {
+    val evaluator = new Evaluator(config.withValue("atlas.eval.stream.expression-limit", ConfigValueFactory.fromAnyRef(10)), registry, system)
+    val uri = "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
+    val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
+    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+    result.foreach {
+      case DiagnosticMessage(t, msg, None) =>
+        assertEquals(t, "error")
+        assert(msg.startsWith("expression exceeded the configured limit '10' for timestamp"))
+      case timeSeriesMessage: TimeSeriesMessage =>
+        assertEquals(timeSeriesMessage.label, "NO DATA")
+      case _ =>
     }
   }
 

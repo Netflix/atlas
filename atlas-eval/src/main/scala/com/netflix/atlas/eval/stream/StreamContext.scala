@@ -78,6 +78,9 @@ private[stream] class StreamContext(
 
   def numBuffers: Int = config.getInt("num-buffers")
 
+  // Limit configured for expressions. Evaluation will be stopped if limit exceeds.
+  def expressionLimit: Int = Try(config.getInt("expression-limit")).getOrElse(Integer.MAX_VALUE)
+
   val interpreter = new ExprInterpreter(rootConfig)
 
   def findBackendForUri(uri: Uri): Backend = {

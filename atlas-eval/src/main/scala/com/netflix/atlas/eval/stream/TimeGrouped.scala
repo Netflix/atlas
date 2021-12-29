@@ -23,6 +23,7 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
+import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.AggrValuesInfo
@@ -51,6 +52,8 @@ private[stream] class TimeGrouped(
     * for a new time that would evict the buffer with the minimum time.
     */
   private val numBuffers = context.numBuffers
+
+  private val expressionLimit = context.expressionLimit
 
   private val in = Inlet[AggrDatapoint]("TimeGrouped.in")
   private val out = Outlet[TimeGroup]("TimeGrouped.out")
@@ -97,7 +100,15 @@ private[stream] class TimeGrouped(
       private def aggregate(i: Int, v: AggrDatapoint): Unit = {
         if (!v.isHeartbeat) {
           buf(i).get(v.expr) match {
-            case Some(aggr) => aggr.aggregate(v)
+            case Some(aggr) => {
+              // drop the data points if an expression exceeds the configured limit within the time buffer and stop any final evaluation of this expression.
+              // emit an error to all data sources that use this particular data expression.
+              if(aggr.numRawDatapoints > expressionLimit) {
+                // emit an error to the source
+                val diagnosticMessage = DiagnosticMessage.error(s"expression exceeded the configured limit '$expressionLimit' for timestamp '${timestamps(i)}")
+                context.log(v.expr, diagnosticMessage)
+              } else aggr.aggregate(v)
+            }
             case None       => buf(i).put(v.expr, AggrDatapoint.newAggregator(v))
           }
         }
@@ -115,10 +126,11 @@ private[stream] class TimeGrouped(
       }
 
       private def toTimeGroup(ts: Long, aggrMap: AggrMap): TimeGroup = {
+        val aggregateMapWithExpressionLimits = aggrMap.filter(t => t._2.numRawDatapoints < expressionLimit).toMap
         TimeGroup(
           ts,
           step,
-          aggrMap.map(t => t._1 -> AggrValuesInfo(t._2.datapoints, t._2.numRawDatapoints)).toMap
+          aggregateMapWithExpressionLimits.map(t => t._1 -> AggrValuesInfo(t._2.datapoints, t._2.numRawDatapoints)).toMap
         )
       }
 

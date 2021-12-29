@@ -124,6 +124,16 @@ class TimeGroupedSuite extends FunSuite {
     count("buffered") -> (count("dropped-old") + count("dropped-future"))
   }
 
+  test("drop events for an expression that exceed the limit") {
+    val n = 60000
+    val expr = DataExpr.Max(Query.True)
+    val data = (0 until n).toList.map { i =>
+      AggrDatapoint(10, 10, expr, "test", Map.empty, i)
+    }
+    val groups = run(data)
+    assertEquals(groups, List(timeGroup(10, Nil)))
+  }
+
   test("late events dropped") {
     val data = List(
       datapoint(20, 1),
@@ -330,6 +340,29 @@ class TimeGroupedSuite extends FunSuite {
           AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd"), n * n)
         ),
         2 * n
+      )
+    )
+
+    val groups = run(data)
+    assertEquals(groups, List(TimeGroup(10, step, expected)))
+  }
+
+  test("group by aggregate with additional tags: count") {
+    val expr: DataExpr = DataExpr.GroupBy(DataExpr.Count(Query.True), List("category"))
+    val data =   List(
+      AggrDatapoint(10, 10, expr, "test", Map("category" -> "even", "blah" -> "a"), 0),
+      AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd", "blah" -> "b"), 1),
+      AggrDatapoint(10, 10, expr, "test", Map("category" -> "even", "blah" -> "c"), 2),
+      AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd", "blah" -> "d"), 3))
+
+    val expected = Map(
+      expr -> AggrValuesInfo(
+        List(
+          AggrDatapoint(10, 10, expr, "test", Map("category" -> "even", "blah" -> "a"), 0),
+          AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd", "blah" -> "b"), 1),
+          AggrDatapoint(10, 10, expr, "test", Map("category" -> "even", "blah" -> "c"), 2),
+          AggrDatapoint(10, 10, expr, "test", Map("category" -> "odd", "blah" -> "d"), 3)
+        ), 4
       )
     )
 

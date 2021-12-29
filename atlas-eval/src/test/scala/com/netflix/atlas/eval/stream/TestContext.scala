@@ -53,6 +53,8 @@ object TestContext {
       |
       |  num-buffers = 2
       |
+      |  expression-limit = 50000
+      |
       |  ignored-tag-keys = []
       |}
       |
