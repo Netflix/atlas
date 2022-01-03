@@ -130,8 +130,14 @@ class TimeGroupedSuite extends FunSuite {
     val data = (0 until n).toList.map { i =>
       AggrDatapoint(10, 10, expr, "test", Map.empty, i)
     }
+
+    val before = count("dropped-limit-exceeded")
     val groups = run(data)
+    val after = count("dropped-limit-exceeded")
+
     assertEquals(groups, List(timeGroup(10, Nil)))
+    assertEquals(before, 0L)
+    assertEquals(after, 10000L)
   }
 
   test("late events dropped") {

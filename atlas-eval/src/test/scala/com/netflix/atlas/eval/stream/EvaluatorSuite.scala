@@ -164,14 +164,25 @@ class EvaluatorSuite extends FunSuite {
     val uri = "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
     val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+    var numberOfDiagnosticMessages = 0
+    var numberOfTimeSeriesMessages = 0
     result.foreach {
       case DiagnosticMessage(t, msg, None) =>
         assertEquals(t, "error")
-        assert(msg.startsWith("expression exceeded the configured limit '10' for timestamp"))
+        assert(
+          msg.startsWith(
+            "expression: statistic,max,:eq,name,jvm.gc.pause,:eq,:and,:max,(,nf.asg,nf.node,),:by exceeded the configured limit '10' for timestamp"
+          )
+        )
+        numberOfDiagnosticMessages += 1
       case timeSeriesMessage: TimeSeriesMessage =>
         assertEquals(timeSeriesMessage.label, "NO DATA")
+        numberOfTimeSeriesMessages += 1
       case _ =>
     }
+
+    assertEquals(numberOfDiagnosticMessages, 9) // 1 diagnostic message per unique timestamp and expression.
+    assertEquals(numberOfTimeSeriesMessages, 9) // 1 time series messages with "NO DATA".
   }
 
   private def ds(id: String, uri: String, step: Long = 60): Evaluator.DataSource = {
