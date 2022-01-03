@@ -195,6 +195,9 @@ object StreamOps extends StrictLogging {
 
     /** Check if the queue is open to take more data. */
     def isOpen: Boolean = !completed
+
+    /** The approximate number of entries in the queue. */
+    def size: Int = queue.size()
   }
 
   /**
