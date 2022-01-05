@@ -355,6 +355,14 @@ object PublishPayloads {
     }
   }
 
+  private def encodeBatchDatapoint(gen: JsonGenerator, d: Datapoint): Unit = {
+    gen.writeStartObject()
+    encodeTags(gen, d.tags)
+    gen.writeNumberField("timestamp", d.timestamp)
+    gen.writeNumberField("value", d.value)
+    gen.writeEndObject()
+  }
+
   /**
     * Encode batch of datapoints.
     */
@@ -374,6 +382,23 @@ object PublishPayloads {
     Streams.string { w =>
       Using.resource(Json.newJsonGenerator(w)) { gen =>
         encodeBatch(gen, tags, values)
+      }
+    }
+  }
+
+  def encodeBatchDatapoints(gen: JsonGenerator, tags: TagMap, values: List[Datapoint]): Unit = {
+    gen.writeStartObject()
+    encodeTags(gen, tags)
+    gen.writeArrayFieldStart("metrics")
+    values.foreach(v => encodeBatchDatapoint(gen, v))
+    gen.writeEndArray()
+    gen.writeEndObject()
+  }
+
+  def encodeBatchDatapoints(tags: TagMap, values: List[Datapoint]): String = {
+    Streams.string { w =>
+      Using.resource(Json.newJsonGenerator(w)) { gen =>
+        encodeBatchDatapoints(gen, tags, values)
       }
     }
   }

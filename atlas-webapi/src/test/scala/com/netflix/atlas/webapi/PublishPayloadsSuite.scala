@@ -27,7 +27,11 @@ class PublishPayloadsSuite extends FunSuite {
 
   private val timestamp = 1636116180000L
 
-  private def datapoints(n: Int): List[DatapointTuple] = {
+  private def datapointTuples(n: Int): List[DatapointTuple] = {
+    datapoints(n).map(_.toTuple)
+  }
+
+  private def datapoints(n: Int): List[Datapoint] = {
     (0 until n).toList.map { i =>
       val tags = SortedTagMap(
         "name" -> "test",
@@ -43,35 +47,51 @@ class PublishPayloadsSuite extends FunSuite {
         case 5 => Double.PositiveInfinity
         case _ => Random.nextDouble()
       }
-      Datapoint(tags, timestamp, value).toTuple
+      Datapoint(tags, timestamp, value)
     }
+  }
+
+  test("encode and decode empty batch tuples") {
+    val input = datapointTuples(0)
+    val encoded = PublishPayloads.encodeBatch(Map.empty, input)
+    val decoded = PublishPayloads.decodeBatch(encoded)
+    assertEquals(decoded, input)
   }
 
   test("encode and decode empty batch") {
     val input = datapoints(0)
+    val encoded = PublishPayloads.encodeBatchDatapoints(Map.empty, input)
+    val decoded = PublishPayloads.decodeBatchDatapoints(encoded)
+    assertEquals(decoded, input)
+  }
+
+  test("encode and decode batch tuples") {
+    val input = datapointTuples(10)
     val encoded = PublishPayloads.encodeBatch(Map.empty, input)
     val decoded = PublishPayloads.decodeBatch(encoded)
-    assertEquals(decoded, input)
+    assert(decoded.head.value.isNaN)
+    assertEquals(decoded.head.tags, input.head.tags)
+    assertEquals(decoded.tail, input.tail)
   }
 
   test("encode and decode batch") {
     val input = datapoints(10)
-    val encoded = PublishPayloads.encodeBatch(Map.empty, input)
-    val decoded = PublishPayloads.decodeBatch(encoded)
+    val encoded = PublishPayloads.encodeBatchDatapoints(Map.empty, input)
+    val decoded = PublishPayloads.decodeBatchDatapoints(encoded)
     assert(decoded.head.value.isNaN)
     assertEquals(decoded.head.tags, input.head.tags)
     assertEquals(decoded.tail, input.tail)
   }
 
-  test("encode and decode empty compact batch") {
-    val input = datapoints(0)
+  test("encode and decode empty compact batch tuples") {
+    val input = datapointTuples(0)
     val encoded = PublishPayloads.encodeCompactBatch(input)
     val decoded = PublishPayloads.decodeCompactBatch(encoded)
     assertEquals(decoded, input)
   }
 
-  test("encode and decode compact batch") {
-    val input = datapoints(10)
+  test("encode and decode compact batch tuples") {
+    val input = datapointTuples(10)
     val encoded = PublishPayloads.encodeCompactBatch(input)
     val decoded = PublishPayloads.decodeCompactBatch(encoded)
     assert(decoded.head.value.isNaN)
@@ -79,15 +99,15 @@ class PublishPayloadsSuite extends FunSuite {
     assertEquals(decoded.tail, input.tail)
   }
 
-  test("encode and decode empty list") {
-    val input = datapoints(0)
+  test("encode and decode empty tuples list") {
+    val input = datapointTuples(0)
     val encoded = PublishPayloads.encodeList(input)
     val decoded = PublishPayloads.decodeList(encoded)
     assertEquals(decoded, input)
   }
 
-  test("encode and decode list") {
-    val input = datapoints(10)
+  test("encode and decode tuples list") {
+    val input = datapointTuples(10)
     val encoded = PublishPayloads.encodeList(input)
     val decoded = PublishPayloads.decodeList(encoded)
     assert(decoded.head.value.isNaN)
@@ -95,8 +115,8 @@ class PublishPayloadsSuite extends FunSuite {
     assertEquals(decoded.tail, input.tail)
   }
 
-  test("datapoints: encode and decode batch") {
-    val input = datapoints(10)
+  test("datapoints: encode and decode batch tuples") {
+    val input = datapointTuples(10)
     val encoded = PublishPayloads.encodeBatch(Map.empty, input)
     val decoded = PublishPayloads.decodeBatchDatapoints(encoded)
     assert(decoded.head.value.isNaN)
