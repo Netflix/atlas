@@ -100,14 +100,14 @@ object PublishPayloads {
     *     If true, then strings and the final tag map will be interned as the data is being
     *     parsed.
     */
-  def decodeDatapoint(parser: JsonParser, intern: Boolean = false): DatapointTuple = {
+  private def decodeDatapoint(parser: JsonParser, intern: Boolean = false): DatapointTuple = {
     decode(parser, null, intern)
   }
 
   /**
     * Parse a single datapoint.
     */
-  def decodeDatapoint(json: String): DatapointTuple = {
+  private[webapi] def decodeDatapoint(json: String): DatapointTuple = {
     val parser = Json.newJsonParser(json)
     try decodeDatapoint(parser)
     finally parser.close()
@@ -339,7 +339,7 @@ object PublishPayloads {
     gen.writeEndObject()
   }
 
-  def encodeDatapoint(gen: JsonGenerator, d: DatapointTuple): Unit = {
+  private def encodeDatapoint(gen: JsonGenerator, d: DatapointTuple): Unit = {
     gen.writeStartObject()
     encodeTags(gen, d.tags)
     gen.writeNumberField("timestamp", d.timestamp)
@@ -347,7 +347,7 @@ object PublishPayloads {
     gen.writeEndObject()
   }
 
-  def encodeDatapoint(d: DatapointTuple): String = {
+  private[webapi] def encodeDatapoint(d: DatapointTuple): String = {
     Streams.string { w =>
       Using.resource(Json.newJsonGenerator(w)) { gen =>
         encodeDatapoint(gen, d)
