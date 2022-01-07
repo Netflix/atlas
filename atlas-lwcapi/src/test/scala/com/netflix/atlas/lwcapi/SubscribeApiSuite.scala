@@ -37,7 +37,7 @@ class SubscribeApiSuite extends MUnitRouteSuite {
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
   private val config = ConfigFactory.load()
-  private val sm = new StreamSubscriptionManager
+  private val sm = new StreamSubscriptionManager(new NoopRegistry)
   private val splitter = new ExpressionSplitter(config)
 
   private val api = new SubscribeApi(config, new NoopRegistry, sm, splitter, materializer)

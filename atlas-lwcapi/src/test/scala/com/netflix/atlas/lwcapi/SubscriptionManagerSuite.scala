@@ -15,6 +15,11 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.Id
+import com.netflix.spectator.api.ManualClock
+import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spectator.impl.StepLong
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
@@ -28,7 +33,7 @@ class SubscriptionManagerSuite extends FunSuite {
   }
 
   test("subscribe, unsubscribe, and get work") {
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
 
     val exp1 = sub("name,exp1,:eq")
     val exp2 = sub("name,exp2,:eq")
@@ -53,7 +58,7 @@ class SubscriptionManagerSuite extends FunSuite {
   }
 
   test("multiple registrations") {
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     val meta = StreamMetadata("a")
     assert(sm.register(meta, 1))
     assert(!sm.register(meta, 1))
@@ -63,7 +68,7 @@ class SubscriptionManagerSuite extends FunSuite {
 
   test("subs are maintained on attempted re-register") {
     val meta = StreamMetadata("a")
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     assert(sm.register(meta, 1))
 
     val exp1 = sub("name,exp1,:eq")
@@ -76,7 +81,7 @@ class SubscriptionManagerSuite extends FunSuite {
 
   test("multiple subscriptions for stream") {
     val meta = StreamMetadata("a")
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     sm.register(meta, 1)
 
     val subs = List(sub("name,exp1,:eq"), sub("name,exp2,:eq"))
@@ -87,7 +92,7 @@ class SubscriptionManagerSuite extends FunSuite {
 
   test("duplicate subscriptions") {
     val meta = StreamMetadata("a")
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     sm.register(meta, 1)
 
     val s = sub("name,exp1,:eq")
@@ -100,7 +105,7 @@ class SubscriptionManagerSuite extends FunSuite {
   test("same subscription for two streams") {
     val a = StreamMetadata("a")
     val b = StreamMetadata("b")
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     sm.register(a, 1)
     sm.register(b, 2)
 
@@ -118,7 +123,7 @@ class SubscriptionManagerSuite extends FunSuite {
   }
 
   private def checkSubsForCluster(expr: String, cluster: String): Unit = {
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     val s = sub(expr)
     sm.register(StreamMetadata("a"), 1)
     sm.subscribe("a", s)
@@ -147,32 +152,32 @@ class SubscriptionManagerSuite extends FunSuite {
   }
 
   test("subscribe to unknown stream") {
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     intercept[IllegalStateException] {
       sm.subscribe("a", sub("name,foo,:eq"))
     }
   }
 
   test("unsubscribe from unknown stream") {
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     intercept[IllegalStateException] {
       sm.unsubscribe("a", "d")
     }
   }
 
   test("unsubscribe for unknown expression does not cause any exceptions") {
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     sm.register(StreamMetadata("a"), 42)
     sm.unsubscribe("a", "d")
   }
 
   test("unregister for unknown stream does not cause any exceptions") {
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     assertEquals(sm.unregister("a"), None)
   }
 
   test("unregister should remove handlers") {
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     sm.register(StreamMetadata("a"), 1)
 
     val s = sub("name,exp1,:eq")
@@ -184,7 +189,7 @@ class SubscriptionManagerSuite extends FunSuite {
   }
 
   test("subscribe returns added expressions") {
-    val sm = new SubscriptionManager[Integer]()
+    val sm = new SubscriptionManager[Integer](new NoopRegistry)
     assert(sm.register(StreamMetadata("a"), 1))
     assert(sm.register(StreamMetadata("b"), 2))
 
@@ -197,5 +202,30 @@ class SubscriptionManagerSuite extends FunSuite {
     assertEquals(sm.subscribe("b", List(s1, s2)), Integer.valueOf(2)     -> List(s1, s2))
     assertEquals(sm.subscribe("b", List(s1, s2, s3)), Integer.valueOf(2) -> List(s3))
     assertEquals(sm.subscribe("a", List(s1, s3)), Integer.valueOf(1)     -> List(s3))
+  }
+
+  test("update gauges") {
+    val clock = new ManualClock()
+    val step = 60_000L
+    val registry = new DefaultRegistry(clock)
+
+    val sm = new SubscriptionManager[Integer](registry)
+    val meta =
+      StreamMetadata("a", "test", new StepLong(0, clock, step), new StepLong(0, clock, step))
+    assert(sm.register(meta, 1))
+
+    val ok = Id.create("atlas.lwcapi.currentStreams").withTag("state", "ok")
+    val dropping = Id.create("atlas.lwcapi.currentStreams").withTag("state", "dropping")
+
+    sm.updateGauges()
+    assertEquals(1.0, registry.gauge(ok).value())
+    assertEquals(0.0, registry.gauge(dropping).value())
+
+    meta.updateReceived(42)
+    meta.updateDropped(7)
+    clock.setWallTime(step)
+    sm.updateGauges()
+    assertEquals(0.0, registry.gauge(ok).value())
+    assertEquals(1.0, registry.gauge(dropping).value())
   }
 }

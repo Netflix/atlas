@@ -48,7 +48,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
       .run()
   )
 
-  private val sm = new StreamSubscriptionManager
+  private val sm = new StreamSubscriptionManager(new NoopRegistry)
   private val endpoint = ExpressionApi(sm, new NoopRegistry, system)
 
   private def unzip(bytes: Array[Byte]): String = {

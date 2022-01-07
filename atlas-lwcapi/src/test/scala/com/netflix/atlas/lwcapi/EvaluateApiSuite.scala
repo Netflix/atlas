@@ -28,7 +28,7 @@ class EvaluateApiSuite extends MUnitRouteSuite {
 
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)
 
-  private val sm = new StreamSubscriptionManager
+  private val sm = new StreamSubscriptionManager(new NoopRegistry)
   private val endpoint = new EvaluateApi(new NoopRegistry, sm)
 
   test("post empty payload") {

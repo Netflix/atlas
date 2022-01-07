@@ -15,10 +15,15 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.netflix.spectator.api.Registry
+
+import javax.inject.Inject
+
 /**
   * Subclass of [[SubscriptionManager]] that uses a source queue for the handler. In some cases
   * with dependency injection erasure can cause problems with generic types. This class
   * is just to avoid those issues for the main use-cases where we need to inject a version
   * that needs a source queue.
   */
-class StreamSubscriptionManager extends SubscriptionManager[QueueHandler]
+class StreamSubscriptionManager @Inject() (registry: Registry)
+    extends SubscriptionManager[QueueHandler](registry)
