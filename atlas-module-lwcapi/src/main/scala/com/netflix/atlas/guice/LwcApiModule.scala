@@ -25,6 +25,7 @@ import com.netflix.atlas.lwcapi.ExpressionSplitter
 import com.netflix.atlas.lwcapi.StartupDelayService
 import com.netflix.iep.guice.LifecycleModule
 import com.netflix.iep.service.Service
+import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 
 final class LwcApiModule extends AbstractModule {
@@ -45,8 +46,8 @@ final class LwcApiModule extends AbstractModule {
 
   @Provides
   @Singleton
-  protected def providesSubscriptionManager(): StreamSubscriptionManager = {
-    new StreamSubscriptionManager()
+  protected def providesSubscriptionManager(registry: Registry): StreamSubscriptionManager = {
+    new StreamSubscriptionManager(registry)
   }
 
   override def equals(obj: Any): Boolean = {

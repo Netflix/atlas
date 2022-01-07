@@ -15,7 +15,10 @@
  */
 package com.netflix.atlas.lwcapi
 
-import java.util.concurrent.atomic.AtomicLong
+import com.fasterxml.jackson.core.JsonGenerator
+import com.netflix.atlas.json.JsonSupport
+import com.netflix.spectator.api.Clock
+import com.netflix.spectator.impl.StepLong
 
 /**
   * Metadata for a stream.
@@ -26,13 +29,33 @@ import java.util.concurrent.atomic.AtomicLong
   * @param remoteAddress
   *     IP address of the remote consumer. Only used to help with debugging.
   * @param receivedMessages
-  *     Number of messages that were successfully received.
+  *     Number of messages that were successfully received. Currently this is step based
+  *     and will track messages received in the last minute.
   * @param droppedMessages
-  *     Number of messages that were dropped because the queue was full.
+  *     Number of messages that were dropped because the queue was full. Currently this is step
+  *     based and will track messages dropped in the last minute.
   */
 case class StreamMetadata(
   streamId: String,
   remoteAddress: String = "unknown",
-  receivedMessages: AtomicLong = new AtomicLong(),
-  droppedMessages: AtomicLong = new AtomicLong()
-)
+  receivedMessages: StepLong = new StepLong(0, Clock.SYSTEM, 60_000),
+  droppedMessages: StepLong = new StepLong(0, Clock.SYSTEM, 60_000)
+) extends JsonSupport {
+
+  def updateReceived(n: Int): Unit = {
+    receivedMessages.getCurrent.addAndGet(n)
+  }
+
+  def updateDropped(n: Int): Unit = {
+    droppedMessages.getCurrent.addAndGet(n)
+  }
+
+  override def encode(gen: JsonGenerator): Unit = {
+    gen.writeStartObject()
+    gen.writeStringField("streamId", streamId)
+    gen.writeStringField("remoteAddress", remoteAddress)
+    gen.writeNumberField("receivedMessages", receivedMessages.poll())
+    gen.writeNumberField("droppedMessages", droppedMessages.poll())
+    gen.writeEndObject()
+  }
+}

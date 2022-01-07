@@ -18,9 +18,10 @@ package com.netflix.atlas.lwcapi
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-
 import com.netflix.atlas.core.index.QueryIndex
 import com.netflix.frigga.Names
+import com.netflix.spectator.api.Id
+import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.jdk.CollectionConverters._
@@ -35,7 +36,7 @@ import scala.jdk.CollectionConverters._
   * - subscribe/unsubscribe: informs the manager that a given stream should receive or stop
   *   receiving data for a given expression.
   */
-class SubscriptionManager[T] extends StrictLogging {
+class SubscriptionManager[T](registry: Registry) extends StrictLogging {
 
   import SubscriptionManager._
 
@@ -50,6 +51,7 @@ class SubscriptionManager[T] extends StrictLogging {
   // the index can be computationally expensive.
   private val ex = new ScheduledThreadPoolExecutor(1, new NamedThreadFactory("ExpressionDatabase"))
   ex.scheduleWithFixedDelay(() => regenerateQueryIndex(), 1, 1, TimeUnit.SECONDS)
+  ex.scheduleAtFixedRate(() => updateGauges(), 1, 1, TimeUnit.MINUTES)
 
   /** Rebuild the query index if there have been changes since it was last created. */
   private[lwcapi] def regenerateQueryIndex(): Unit = {
@@ -60,6 +62,20 @@ class SubscriptionManager[T] extends StrictLogging {
       }
       queryIndex = QueryIndex.create(entries)
     }
+  }
+
+  /**
+    * Update basic stats to allow tracking number and percentage of streams that are
+    * dropping data.
+    */
+  private[lwcapi] def updateGauges(): Unit = {
+    val summaries = streamSummaries
+    val numOverall = summaries.size
+    val numDropping = summaries.count(_.metadata.droppedMessages.poll() > 0)
+
+    val baseId = Id.create("atlas.lwcapi.currentStreams")
+    registry.gauge(baseId.withTag("state", "ok")).set(numOverall - numDropping)
+    registry.gauge(baseId.withTag("state", "dropping")).set(numDropping)
   }
 
   /**

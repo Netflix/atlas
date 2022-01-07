@@ -41,9 +41,9 @@ class QueueHandler(streamMeta: StreamMetadata, queue: StreamOps.SourceQueue[Seq[
     logger.trace(s"enqueuing message for $id: ${toJson(msgs)}")
     if (!queue.offer(msgs)) {
       logger.debug(s"failed to enqueue message for $id: ${toJson(msgs)}")
-      streamMeta.droppedMessages.addAndGet(msgs.size)
+      streamMeta.updateDropped(msgs.size)
     } else {
-      streamMeta.receivedMessages.addAndGet(msgs.size)
+      streamMeta.updateReceived(msgs.size)
     }
   }
 
