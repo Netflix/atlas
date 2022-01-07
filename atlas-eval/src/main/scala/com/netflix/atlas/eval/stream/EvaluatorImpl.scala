@@ -266,7 +266,7 @@ private[stream] abstract class EvaluatorImpl(
       .via(g)
       .flatMapConcat(s => Source(splitByStep(s)))
       .groupBy(Int.MaxValue, stepSize, allowClosedSubstreamRecreation = true)
-      .via(new FinalExprEval(context))
+      .via(new FinalExprEval(context.interpreter))
       .flatMapConcat(s => s)
       .mergeSubstreams
       .via(context.monitorFlow("13_OutputMessages"))
@@ -295,10 +295,11 @@ private[stream] abstract class EvaluatorImpl(
     val context = newStreamContext(dsLogger)
     context.validate(sources)
     context.setDataSources(sources)
+    val interpreter = context.interpreter
 
     // Extract data expressions to reuse for creating time groups
     val exprs = sources.getSources.asScala
-      .flatMap(ds => context.interpreter.eval(Uri(ds.getUri)))
+      .flatMap(ds => interpreter.eval(Uri(ds.getUri)))
       .flatMap(_.expr.dataExprs)
       .toList
       .distinct
@@ -306,7 +307,7 @@ private[stream] abstract class EvaluatorImpl(
     Flow[DatapointGroup]
       .map(g => toTimeGroup(stepSize, exprs, g, context))
       .merge(Source.single(sources), eagerComplete = false)
-      .via(new FinalExprEval(context))
+      .via(new FinalExprEval(interpreter))
       .flatMapConcat(s => s)
       .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
       .merge(logSrc, eagerComplete = false)

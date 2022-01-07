@@ -33,8 +33,6 @@ import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.IdentityMap
-import com.netflix.atlas.eval.model.AggrDatapoint
-import com.netflix.atlas.eval.model.AggrDatapoint.Aggregator
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
@@ -47,20 +45,15 @@ import scala.collection.mutable
   * Takes the set of data sources and time grouped partial aggregates as input and performs
   * the final evaluation step.
   *
-  * @param context
+  * @param interpreter
   *     Used for evaluating the expressions.
   */
-private[stream] class FinalExprEval(context: StreamContext)
+private[stream] class FinalExprEval(interpreter: ExprInterpreter)
     extends GraphStage[FlowShape[AnyRef, Source[MessageEnvelope, NotUsed]]]
     with StrictLogging {
 
   private val in = Inlet[AnyRef]("FinalExprEval.in")
   private val out = Outlet[Source[MessageEnvelope, NotUsed]]("FinalExprEval.out")
-  private val interpreter = context.interpreter
-  private val maxInputDatapointsPerExpression = context.maxInputDatapointsPerExpression
-
-  private val maxIntermediateDatapointsPerExpression =
-    context.maxIntermediateDatapointsPerExpression
 
   override val shape: FlowShape[AnyRef, Source[MessageEnvelope, NotUsed]] = FlowShape(in, out)
 
@@ -176,24 +169,7 @@ private[stream] class FinalExprEval(context: StreamContext)
 
         val dataExprToDatapoints = noData ++ groupedDatapoints.map {
             case (k, vs) =>
-              val aggregator = AggrDatapoint.aggregate(
-                vs.values,
-                maxInputDatapointsPerExpression,
-                maxIntermediateDatapointsPerExpression,
-                context.registry
-              )
-              val timeSeries: List[TimeSeries] = aggregator match {
-                case aggr: Some[Aggregator] =>
-                  val maxInputOrIntermediateDatapointsExceeded =
-                    aggr.get.maxInputOrIntermediateDatapointsExceeded
-                  if (maxInputOrIntermediateDatapointsExceeded) {
-                    context.logDatapointsExceeded(timestamp, k)
-                    List()
-                  } else aggr.get.datapoints.map(_.toTimeSeries)
-                case _ => List()
-              }
-
-              k -> timeSeries
+              k -> vs.values.map(_.toTimeSeries)
           }
 
         // Collect input and intermediate data size per DataSource
