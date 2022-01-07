@@ -24,6 +24,8 @@ import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Math
+import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spectator.api.Registry
 
 /**
   * Datapoint for an aggregate data expression. This type is used for the intermediate
@@ -91,7 +93,26 @@ object AggrDatapoint {
     */
   trait Aggregator {
     protected[this] var rawDatapointCounter = 0
+    protected[this] var exceedsMaxInputOrIntermediateDatapoints = false
+    protected[this] var inputDatapointsLimit = Integer.MAX_VALUE
+    protected[this] var intermediateDatapointsLimit = Integer.MAX_VALUE
+
+    protected[this] var counter =
+      new NoopRegistry().counter("atlas.eval.datapoints", "id", "dropped-datapoints-limit-exceeded")
+    def maxInputOrIntermediateDatapointsExceeded: Boolean = exceedsMaxInputOrIntermediateDatapoints
+
+    protected[this] def inputOrIntermediateDatapointsAtLimitOrExceeded: Boolean = {
+      val datapointsLimitExceeded =
+        numRawDatapoints >= inputDatapointsLimit || datapoints.size >= intermediateDatapointsLimit
+      if (datapointsLimitExceeded) {
+        counter.increment()
+        exceedsMaxInputOrIntermediateDatapoints = true
+      }
+      datapointsLimitExceeded
+    }
     def numRawDatapoints: Int = rawDatapointCounter
+    // drop the data points if the number of input/intermediate datapoints exceed the configured
+    // limit for an aggregator
     def aggregate(datapoint: AggrDatapoint): Aggregator
     def datapoints: List[AggrDatapoint]
   }
@@ -101,15 +122,24 @@ object AggrDatapoint {
     * the values need to be transformed to NaN or 1 prior to using the default operation
     * on DataExpr.Count of sum.
     */
-  private class SimpleAggregator(init: AggrDatapoint, op: (Double, Double) => Double)
-      extends Aggregator {
-
+  private class SimpleAggregator(
+    init: AggrDatapoint,
+    op: (Double, Double) => Double,
+    maxInputDatapoints: Int,
+    maxIntermediateDatapoints: Int,
+    registry: Registry
+  ) extends Aggregator {
     private var value = init.value
     rawDatapointCounter += 1
+    inputDatapointsLimit = maxInputDatapoints
+    intermediateDatapointsLimit = maxIntermediateDatapoints
+    counter = registry.counter("atlas.eval.datapoints", "id", "dropped-datapoints-limit-exceeded")
 
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {
-      value = op(value, datapoint.value)
-      rawDatapointCounter += 1
+      if (!inputOrIntermediateDatapointsAtLimitOrExceeded) {
+        value = op(value, datapoint.value)
+        rawDatapointCounter += 1
+      }
       this
     }
 
@@ -122,27 +152,43 @@ object AggrDatapoint {
     * Group the datapoints by the tags and maintain a simple aggregator per distinct tag
     * set.
     */
-  private class GroupByAggregator extends Aggregator {
+  private class GroupByAggregator(
+    maxInputDatapoints: Int,
+    maxIntermediateDatapoints: Int,
+    registry: Registry
+  ) extends Aggregator {
 
     private val aggregators =
       scala.collection.mutable.AnyRefMap.empty[Map[String, String], SimpleAggregator]
+    inputDatapointsLimit = maxInputDatapoints
+    intermediateDatapointsLimit = maxIntermediateDatapoints
+    counter = registry.counter("atlas.eval.datapoints", "id", "dropped-datapoints-limit-exceeded")
 
     private def newAggregator(datapoint: AggrDatapoint): SimpleAggregator = {
       datapoint.expr match {
         case GroupBy(af: AggregateFunction, _) =>
+          val aggregator = new SimpleAggregator(
+            datapoint,
+            aggrOp(af),
+            maxInputDatapoints,
+            maxIntermediateDatapoints,
+            registry
+          )
           rawDatapointCounter += 1
-          new SimpleAggregator(datapoint, aggrOp(af))
+          aggregator
         case _ =>
           throw new IllegalArgumentException("datapoint is not for a grouped expression")
       }
     }
 
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {
-      aggregators.get(datapoint.tags) match {
-        case Some(aggr) =>
-          rawDatapointCounter += 1
-          aggr.aggregate(datapoint)
-        case None => aggregators.put(datapoint.tags, newAggregator(datapoint))
+      if (!inputOrIntermediateDatapointsAtLimitOrExceeded) {
+        aggregators.get(datapoint.tags) match {
+          case Some(aggr) =>
+            rawDatapointCounter += 1
+            aggr.aggregate(datapoint)
+          case None => aggregators.put(datapoint.tags, newAggregator(datapoint))
+        }
       }
       this
     }
@@ -155,12 +201,21 @@ object AggrDatapoint {
   /**
     * Do not perform aggregation. Keep track of all datapoints that have been received.
     */
-  private class AllAggregator extends Aggregator {
+  private class AllAggregator(
+    maxInputDatapoints: Int,
+    maxIntermediateDatapoints: Int,
+    registry: Registry
+  ) extends Aggregator {
     private var values = List.empty[AggrDatapoint]
+    inputDatapointsLimit = maxInputDatapoints
+    intermediateDatapointsLimit = maxIntermediateDatapoints
+    counter = registry.counter("atlas.eval.datapoints", "id", "dropped-datapoints-limit-exceeded")
 
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {
-      values = datapoint :: values
-      rawDatapointCounter += 1
+      if (!inputOrIntermediateDatapointsAtLimitOrExceeded) {
+        values = datapoint :: values
+        rawDatapointCounter += 1
+      }
       this
     }
 
@@ -171,11 +226,27 @@ object AggrDatapoint {
     * Create a new aggregator instance initialized with the specified datapoint. The
     * datapoint will already be applied and should not get re-added to the aggregation.
     */
-  def newAggregator(datapoint: AggrDatapoint): Aggregator = {
+  def newAggregator(
+    datapoint: AggrDatapoint,
+    maxInputDatapoints: Int,
+    maxIntermediateDatapoints: Int,
+    registry: Registry
+  ): Aggregator = {
     datapoint.expr match {
-      case af: AggregateFunction => new SimpleAggregator(datapoint, aggrOp(af))
-      case _: GroupBy            => (new GroupByAggregator).aggregate(datapoint)
-      case _: All                => (new AllAggregator).aggregate(datapoint)
+      case af: AggregateFunction =>
+        new SimpleAggregator(
+          datapoint,
+          aggrOp(af),
+          maxInputDatapoints,
+          maxIntermediateDatapoints,
+          registry
+        )
+      case _: GroupBy =>
+        new GroupByAggregator(maxInputDatapoints, maxIntermediateDatapoints, registry)
+          .aggregate(datapoint)
+      case _: All =>
+        new AllAggregator(maxInputDatapoints, maxIntermediateDatapoints, registry)
+          .aggregate(datapoint)
     }
   }
 
@@ -193,16 +264,21 @@ object AggrDatapoint {
     * Aggregate intermediate aggregates from each source to get the final aggregate for
     * a given expression. All values are expected to be for the same data expression.
     */
-  def aggregate(values: List[AggrDatapoint]): List[AggrDatapoint] = {
-    if (values.isEmpty) Nil
+  def aggregate(
+    values: List[AggrDatapoint],
+    maxInputDatapoints: Int,
+    maxIntermediateDatapoints: Int,
+    registry: Registry
+  ): Option[Aggregator] = {
+    if (values.isEmpty) Option.empty
     else {
       val vs = dedup(values)
-      val aggr = newAggregator(vs.head)
-      vs.tail
+      val aggr = newAggregator(vs.head, maxInputDatapoints, maxIntermediateDatapoints, registry)
+      val aggregator = vs.tail
         .foldLeft(aggr) { (acc, d) =>
           acc.aggregate(d)
         }
-        .datapoints
+      Some(aggregator)
     }
   }
 

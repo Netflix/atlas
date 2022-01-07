@@ -48,6 +48,7 @@ import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.model.AggrDatapoint.Aggregator
 import com.netflix.atlas.eval.model.AggrValuesInfo
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
@@ -265,7 +266,7 @@ private[stream] abstract class EvaluatorImpl(
       .via(g)
       .flatMapConcat(s => Source(splitByStep(s)))
       .groupBy(Int.MaxValue, stepSize, allowClosedSubstreamRecreation = true)
-      .via(new FinalExprEval(context.interpreter))
+      .via(new FinalExprEval(context))
       .flatMapConcat(s => s)
       .mergeSubstreams
       .via(context.monitorFlow("13_OutputMessages"))
@@ -303,9 +304,9 @@ private[stream] abstract class EvaluatorImpl(
       .distinct
 
     Flow[DatapointGroup]
-      .map(g => toTimeGroup(stepSize, exprs, g))
+      .map(g => toTimeGroup(stepSize, exprs, g, context))
       .merge(Source.single(sources), eagerComplete = false)
-      .via(new FinalExprEval(context.interpreter))
+      .via(new FinalExprEval(context))
       .flatMapConcat(s => s)
       .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
       .merge(logSrc, eagerComplete = false)
@@ -313,7 +314,12 @@ private[stream] abstract class EvaluatorImpl(
       .run()
   }
 
-  private def toTimeGroup(step: Long, exprs: List[DataExpr], group: DatapointGroup): TimeGroup = {
+  private def toTimeGroup(
+    step: Long,
+    exprs: List[DataExpr],
+    group: DatapointGroup,
+    context: StreamContext
+  ): TimeGroup = {
     val valuesInfo = group.getDatapoints.asScala.zipWithIndex
       .flatMap {
         case (d, i) =>
@@ -332,7 +338,28 @@ private[stream] abstract class EvaluatorImpl(
           }
       }
       .groupBy(_.expr)
-      .map(t => t._1 -> AggrValuesInfo(AggrDatapoint.aggregate(t._2.toList), t._2.size))
+      .map(t =>
+        t._1 -> {
+          val aggregator = AggrDatapoint.aggregate(
+            t._2.toList,
+            context.maxInputDatapointsPerExpression,
+            context.maxIntermediateDatapointsPerExpression,
+            context.registry
+          )
+
+          aggregator match {
+            case aggr: Some[Aggregator] =>
+              val maxInputOrIntermediateDatapointsExceeded =
+                aggr.get.maxInputOrIntermediateDatapointsExceeded
+
+              if (maxInputOrIntermediateDatapointsExceeded) {
+                context.logDatapointsExceeded(group.getTimestamp, t._1)
+                AggrValuesInfo(List(), t._2.size)
+              } else AggrValuesInfo(aggr.get.datapoints, t._2.size)
+            case _ => AggrValuesInfo(List(), t._2.size)
+          }
+        }
+      )
     TimeGroup(group.getTimestamp, step, valuesInfo)
   }
 

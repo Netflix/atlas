@@ -17,11 +17,13 @@ package com.netflix.atlas.eval.model
 
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
+import com.netflix.spectator.api.DefaultRegistry
 import munit.FunSuite
 
 class AggrDatapointSuite extends FunSuite {
 
   private val step = 60000
+  private val registry = new DefaultRegistry()
 
   private def createDatapoints(expr: DataExpr, t: Long, nodes: Int): List[AggrDatapoint] = {
     (0 until nodes).toList.map { i =>
@@ -35,23 +37,41 @@ class AggrDatapointSuite extends FunSuite {
   }
 
   test("aggregate empty") {
-    assertEquals(AggrDatapoint.aggregate(Nil), Nil)
+    assertEquals(
+      AggrDatapoint.aggregate(Nil, Integer.MAX_VALUE, Integer.MAX_VALUE, registry),
+      Option.empty
+    )
   }
 
   test("aggregate simple") {
     val expr = DataExpr.Sum(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
-    val result = AggrDatapoint.aggregate(dataset)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, Integer.MAX_VALUE, Integer.MAX_VALUE, registry)
+    val result = aggregator.get.datapoints
+
     assertEquals(result.size, 1)
     assertEquals(result.head.timestamp, 0L)
     assertEquals(result.head.tags, Map("name" -> "cpu"))
     assertEquals(result.head.value, 45.0)
   }
 
+  test("aggregate simple exceeds input data points limit") {
+    val expr = DataExpr.Sum(Query.True)
+    val dataset = createDatapoints(expr, 0, 10)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, 5, Integer.MAX_VALUE, registry)
+
+    assert(aggregator.get.maxInputOrIntermediateDatapointsExceeded)
+  }
+
   test("aggregate dedups using source") {
     val expr = DataExpr.Sum(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
-    val result = AggrDatapoint.aggregate(dataset ::: dataset)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset ::: dataset, Integer.MAX_VALUE, Integer.MAX_VALUE, registry)
+    val result = aggregator.get.datapoints
+
     assertEquals(result.size, 1)
     assertEquals(result.head.timestamp, 0L)
     assertEquals(result.head.tags, Map("name" -> "cpu"))
@@ -61,7 +81,10 @@ class AggrDatapointSuite extends FunSuite {
   test("aggregate group by") {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createDatapoints(expr, 0, 10)
-    val result = AggrDatapoint.aggregate(dataset)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, Integer.MAX_VALUE, Integer.MAX_VALUE, registry)
+    val result = aggregator.get.datapoints
+
     assertEquals(result.size, 10)
     result.foreach { d =>
       val v = d.tags("node").substring(2).toDouble
@@ -69,10 +92,31 @@ class AggrDatapointSuite extends FunSuite {
     }
   }
 
+  test("aggregate group by exceeds input data points") {
+    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
+    val dataset = createDatapoints(expr, 0, 10)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, 5, Integer.MAX_VALUE, registry)
+
+    assert(aggregator.get.maxInputOrIntermediateDatapointsExceeded)
+  }
+
+  test("aggregate group by exceeds intermediate data points") {
+    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
+    val dataset = createDatapoints(expr, 0, 10)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, Integer.MAX_VALUE, 5, registry)
+
+    assert(aggregator.get.maxInputOrIntermediateDatapointsExceeded)
+  }
+
   test("aggregate, dedup and group by") {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createDatapoints(expr, 0, 10)
-    val result = AggrDatapoint.aggregate(dataset ::: dataset)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset ::: dataset, Integer.MAX_VALUE, Integer.MAX_VALUE, registry)
+    val result = aggregator.get.datapoints
+
     assertEquals(result.size, 10)
     result.foreach { d =>
       val v = d.tags("node").substring(2).toDouble
@@ -83,11 +127,23 @@ class AggrDatapointSuite extends FunSuite {
   test("aggregate all") {
     val expr = DataExpr.All(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
-    val result = AggrDatapoint.aggregate(dataset)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, Integer.MAX_VALUE, Integer.MAX_VALUE, registry)
+    val result = aggregator.get.datapoints
+
     assertEquals(result.size, 10)
     result.foreach { d =>
       val v = d.tags("node").substring(2).toDouble
       assertEquals(d.value, v)
     }
+  }
+
+  test("aggregate all exceeds input data points") {
+    val expr = DataExpr.All(Query.True)
+    val dataset = createDatapoints(expr, 0, 10)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, 5, Integer.MAX_VALUE, registry)
+
+    assert(aggregator.get.maxInputOrIntermediateDatapointsExceeded)
   }
 }

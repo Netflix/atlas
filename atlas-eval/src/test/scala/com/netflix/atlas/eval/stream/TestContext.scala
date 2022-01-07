@@ -53,6 +53,11 @@ object TestContext {
       |
       |  num-buffers = 2
       |
+      |  limits {
+      |    max-input-datapoints = 50000
+      |    max-intermediate-datapoints = 10000000
+      |  }
+      |
       |  expression-limit = 50000
       |
       |  ignored-tag-keys = []

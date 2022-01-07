@@ -16,6 +16,7 @@
 package com.netflix.atlas.eval.stream
 
 import akka.actor.ActorSystem
+import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.netflix.atlas.core.model.DataExpr
@@ -32,7 +33,7 @@ import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
-import com.typesafe.config.ConfigFactory
+import com.netflix.spectator.api.DefaultRegistry
 import munit.FunSuite
 
 import scala.concurrent.Await
@@ -43,12 +44,14 @@ class FinalExprEvalSuite extends FunSuite {
   private val step = 60000L
 
   private implicit val system = ActorSystem(getClass.getSimpleName)
+  private implicit val materializer = Materializer(system)
 
-  private val interpreter = new ExprInterpreter(ConfigFactory.load())
+  private val registry = new DefaultRegistry()
+  private val context = TestContext.createContext(materializer, registry = registry)
 
   private def run(input: List[AnyRef]): List[MessageEnvelope] = {
     val future = Source(input)
-      .via(new FinalExprEval(interpreter))
+      .via(new FinalExprEval(context))
       .flatMapConcat(s => s)
       .runWith(Sink.seq)
     Await.result(future, Duration.Inf).toList

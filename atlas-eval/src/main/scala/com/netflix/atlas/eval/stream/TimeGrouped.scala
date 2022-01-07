@@ -23,7 +23,6 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.AggrValuesInfo
@@ -44,7 +43,7 @@ private[stream] class TimeGrouped(
   max: Int
 ) extends GraphStage[FlowShape[AggrDatapoint, TimeGroup]] {
 
-  type AggrMap = scala.collection.mutable.AnyRefMap[DataExpr, (AggrDatapoint.Aggregator, Boolean)]
+  type AggrMap = scala.collection.mutable.AnyRefMap[DataExpr, AggrDatapoint.Aggregator]
 
   /**
     * Number of time buffers to maintain. The buffers are stored in a rolling array
@@ -52,7 +51,10 @@ private[stream] class TimeGrouped(
     * for a new time that would evict the buffer with the minimum time.
     */
   private val numBuffers = context.numBuffers
-  private val expressionLimit = context.expressionLimit
+  private val maxInputDatapointsPerExpression = context.maxInputDatapointsPerExpression
+
+  private val maxIntermediateDatapointsPerExpression =
+    context.maxIntermediateDatapointsPerExpression
 
   private val in = Inlet[AggrDatapoint]("TimeGrouped.in")
   private val out = Outlet[TimeGroup]("TimeGrouped.out")
@@ -60,15 +62,12 @@ private[stream] class TimeGrouped(
   override val shape: FlowShape[AggrDatapoint, TimeGroup] = FlowShape(in, out)
 
   private val metricName = "atlas.eval.datapoints"
-  private val droppedOld = context.registry.counter(metricName, "id", "dropped-old")
-  private val droppedFuture = context.registry.counter(metricName, "id", "dropped-future")
+  private val registry = context.registry
+  private val droppedOld = registry.counter(metricName, "id", "dropped-old")
+  private val droppedFuture = registry.counter(metricName, "id", "dropped-future")
 
-  private val droppedLimitExceeded =
-    context.registry.counter(metricName, "id", "dropped-limit-exceeded")
-
-  private val buffered = context.registry.counter(metricName, "id", "buffered")
-
-  private val clock = context.registry.clock()
+  private val buffered = registry.counter(metricName, "id", "buffered")
+  private val clock = registry.clock()
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -103,21 +102,17 @@ private[stream] class TimeGrouped(
       private def aggregate(i: Int, v: AggrDatapoint): Unit = {
         if (!v.isHeartbeat) {
           buf(i).get(v.expr) match {
-            case Some((aggr, limitExceeded)) => {
-              // drop the data points if an expression exceeds the configured limit within the time buffer and stop any final evaluation of this expression.
-              // emit an error to all data sources that use this particular data expression.
-              if (!limitExceeded && aggr.numRawDatapoints >= expressionLimit) {
-                // emit an error to the source
-                val diagnosticMessage = DiagnosticMessage.error(
-                  s"expression: ${v.expr} exceeded the configured limit '$expressionLimit' for timestamp '${timestamps(i)}"
+            case Some(aggr) => aggr.aggregate(v)
+            case None =>
+              buf(i).put(
+                v.expr,
+                AggrDatapoint.newAggregator(
+                  v,
+                  maxInputDatapointsPerExpression,
+                  maxIntermediateDatapointsPerExpression,
+                  registry
                 )
-                context.log(v.expr, diagnosticMessage)
-                buf(i).put(v.expr, (aggr, true))
-                droppedLimitExceeded.increment()
-              } else if (!limitExceeded) aggr.aggregate(v)
-              else droppedLimitExceeded.increment()
-            }
-            case None => buf(i).put(v.expr, (AggrDatapoint.newAggregator(v), false))
+              )
           }
         }
       }
@@ -134,13 +129,22 @@ private[stream] class TimeGrouped(
       }
 
       private def toTimeGroup(ts: Long, aggrMap: AggrMap): TimeGroup = {
-        val aggregateMapWithExpressionLimits =
-          aggrMap.filter(t => !t._2._2).toMap
+        val aggregateMapForExpWithinLimits =
+          aggrMap
+            .filter(t => {
+              val expr = t._1
+              val maxInputOrIntermediateDatapointsExceeded =
+                t._2.maxInputOrIntermediateDatapointsExceeded
+              if (maxInputOrIntermediateDatapointsExceeded) context.logDatapointsExceeded(ts, expr)
+              !maxInputOrIntermediateDatapointsExceeded
+            })
+            .toMap
+
         TimeGroup(
           ts,
           step,
-          aggregateMapWithExpressionLimits
-            .map(t => t._1 -> AggrValuesInfo(t._2._1.datapoints, t._2._1.numRawDatapoints))
+          aggregateMapForExpWithinLimits
+            .map(t => t._1 -> AggrValuesInfo(t._2.datapoints, t._2.numRawDatapoints))
         )
       }
 

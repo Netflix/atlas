@@ -157,7 +157,10 @@ class EvaluatorSuite extends FunSuite {
 
   test("create publish, for an expression with incoming data points exceeding the limit") {
     val evaluator = new Evaluator(
-      config.withValue("atlas.eval.stream.expression-limit", ConfigValueFactory.fromAnyRef(10)),
+      config.withValue(
+        "atlas.eval.stream.limits.max-input-datapoints",
+        ConfigValueFactory.fromAnyRef(10)
+      ),
       registry,
       system
     )
@@ -171,7 +174,9 @@ class EvaluatorSuite extends FunSuite {
         assertEquals(t, "error")
         assert(
           msg.startsWith(
-            "expression: statistic,max,:eq,name,jvm.gc.pause,:eq,:and,:max,(,nf.asg,nf.node,),:by exceeded the configured limit '10' for timestamp"
+            "expression: statistic,max,:eq,name,jvm.gc.pause,:eq,:and,:max,(,nf.asg,nf.node,),:by" +
+            " exceeded the configured max input datapoints limit '10' or max intermediate" +
+            " datapoints limit '2147483647' for timestamp"
           )
         )
         numberOfDiagnosticMessages += 1

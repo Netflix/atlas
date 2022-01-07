@@ -78,8 +78,12 @@ private[stream] class StreamContext(
 
   def numBuffers: Int = config.getInt("num-buffers")
 
-  // Limit configured for expressions. Evaluation will be stopped if limit exceeds.
-  def expressionLimit: Int = Try(config.getInt("expression-limit")).getOrElse(Integer.MAX_VALUE)
+  // Maximum number of raw input data points for a data expr.
+  def maxInputDatapointsPerExpression: Int = config.getInt("limits.max-input-datapoints")
+
+  // Maximum number of datapoints resulting from a group by for a data expr.
+  def maxIntermediateDatapointsPerExpression: Int =
+    config.getInt("limits.max-intermediate-datapoints")
 
   val interpreter = new ExprInterpreter(rootConfig)
 
@@ -173,6 +177,20 @@ private[stream] class StreamContext(
       val msg = s"rejected expensive query [$query], narrow the scope to a specific app or name"
       throw new IllegalArgumentException(msg)
     }
+  }
+
+  /**
+    * Emit an error to the sources where the number of input
+    * or intermediate datapoints exceed for an expression.
+    */
+  def logDatapointsExceeded(timestamp: Long, dataExpr: DataExpr) = {
+    val diagnosticMessage = DiagnosticMessage.error(
+      s"expression: $dataExpr exceeded the configured max input datapoints limit" +
+      s" '$maxInputDatapointsPerExpression' or max intermediate" +
+      s" datapoints limit '$maxIntermediateDatapointsPerExpression'" +
+      s" for timestamp '$timestamp}"
+    )
+    log(dataExpr, diagnosticMessage)
   }
 
   /**
