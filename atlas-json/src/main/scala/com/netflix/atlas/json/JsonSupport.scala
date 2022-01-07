@@ -16,8 +16,9 @@
 package com.netflix.atlas.json
 
 import java.io.StringWriter
-
 import com.fasterxml.jackson.core.JsonGenerator
+
+import scala.util.Using
 
 trait JsonSupport {
 
@@ -25,11 +26,12 @@ trait JsonSupport {
     Json.encode(gen, this)
   }
 
-  def toJson: String = {
-    val w = new StringWriter
-    val gen = Json.newJsonGenerator(w)
-    encode(gen)
-    gen.close()
-    w.toString
+  final def toJson: String = {
+    Using.resource(new StringWriter) { w =>
+      Using.resource(Json.newJsonGenerator(w)) { gen =>
+        encode(gen)
+      }
+      w.toString
+    }
   }
 }
