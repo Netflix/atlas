@@ -87,6 +87,23 @@ class MathGroupBySuite extends FunSuite {
     assertEquals(rs, expected)
   }
 
+  test("(,name,mode,value,),:by,(,name,value,),:by") {
+    val input = List(
+      ts(1),
+      ts(2),
+      ts(3)
+    )
+    val rs = groupBy(input, List("name", "mode", "value"), List("name", "value"), MathExpr.Sum)
+    assertEquals(rs.size, 3)
+
+    val expected = List(
+      ts(1).withTags(Map("name" -> "test", "value" -> "1")).withLabel("(name=test value=1)"),
+      ts(2).withTags(Map("name" -> "test", "value" -> "2")).withLabel("(name=test value=2)"),
+      ts(3).withTags(Map("name" -> "test", "value" -> "3")).withLabel("(name=test value=3)")
+    )
+    assertEquals(rs, expected)
+  }
+
   test("(,name,mode,value,),:by,(,name,mode,),:by,(,name,),:by") {
     val input = List(
       ts(1),
