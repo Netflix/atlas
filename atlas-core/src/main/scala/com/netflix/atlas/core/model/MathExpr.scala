@@ -739,7 +739,7 @@ object MathExpr {
     private val dataGroups = expr.dataExprs.collect { case e: DataExpr.GroupBy => e }
     dataGroups.foreach { grp =>
       require(
-        grp.keys.containsSlice(keys),
+        keys.forall(key => grp.keys.contains(key)),
         s"(,${keys.mkString(",")},) is not a subset of (,${grp.keys.mkString(",")},)"
       )
     }
