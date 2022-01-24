@@ -51,6 +51,10 @@ private[stream] class TimeGrouped(
     * for a new time that would evict the buffer with the minimum time.
     */
   private val numBuffers = context.numBuffers
+  private val maxInputDatapointsPerExpression = context.maxInputDatapointsPerExpression
+
+  private val maxIntermediateDatapointsPerExpression =
+    context.maxIntermediateDatapointsPerExpression
 
   private val in = Inlet[AggrDatapoint]("TimeGrouped.in")
   private val out = Outlet[TimeGroup]("TimeGrouped.out")
@@ -58,11 +62,12 @@ private[stream] class TimeGrouped(
   override val shape: FlowShape[AggrDatapoint, TimeGroup] = FlowShape(in, out)
 
   private val metricName = "atlas.eval.datapoints"
-  private val droppedOld = context.registry.counter(metricName, "id", "dropped-old")
-  private val droppedFuture = context.registry.counter(metricName, "id", "dropped-future")
-  private val buffered = context.registry.counter(metricName, "id", "buffered")
+  private val registry = context.registry
+  private val droppedOld = registry.counter(metricName, "id", "dropped-old")
+  private val droppedFuture = registry.counter(metricName, "id", "dropped-future")
 
-  private val clock = context.registry.clock()
+  private val buffered = registry.counter(metricName, "id", "buffered")
+  private val clock = registry.clock()
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -98,7 +103,16 @@ private[stream] class TimeGrouped(
         if (!v.isHeartbeat) {
           buf(i).get(v.expr) match {
             case Some(aggr) => aggr.aggregate(v)
-            case None       => buf(i).put(v.expr, AggrDatapoint.newAggregator(v))
+            case None =>
+              buf(i).put(
+                v.expr,
+                AggrDatapoint.newAggregator(
+                  v,
+                  maxInputDatapointsPerExpression,
+                  maxIntermediateDatapointsPerExpression,
+                  registry
+                )
+              )
           }
         }
       }
@@ -115,10 +129,22 @@ private[stream] class TimeGrouped(
       }
 
       private def toTimeGroup(ts: Long, aggrMap: AggrMap): TimeGroup = {
+        val aggregateMapForExpWithinLimits =
+          aggrMap
+            .filter(t => {
+              val expr = t._1
+              val maxInputOrIntermediateDatapointsExceeded =
+                t._2.maxInputOrIntermediateDatapointsExceeded
+              if (maxInputOrIntermediateDatapointsExceeded) context.logDatapointsExceeded(ts, expr)
+              !maxInputOrIntermediateDatapointsExceeded
+            })
+            .toMap
+
         TimeGroup(
           ts,
           step,
-          aggrMap.map(t => t._1 -> AggrValuesInfo(t._2.datapoints, t._2.numRawDatapoints)).toMap
+          aggregateMapForExpWithinLimits
+            .map(t => t._1 -> AggrValuesInfo(t._2.datapoints, t._2.numRawDatapoints))
         )
       }
 

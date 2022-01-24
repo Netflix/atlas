@@ -33,7 +33,6 @@ import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.IdentityMap
-import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
@@ -170,7 +169,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
 
         val dataExprToDatapoints = noData ++ groupedDatapoints.map {
             case (k, vs) =>
-              k -> AggrDatapoint.aggregate(vs.values).map(_.toTimeSeries)
+              k -> vs.values.map(_.toTimeSeries)
           }
 
         // Collect input and intermediate data size per DataSource

@@ -32,6 +32,7 @@ import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
+import com.netflix.spectator.api.DefaultRegistry
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
@@ -45,6 +46,8 @@ class FinalExprEvalSuite extends FunSuite {
   private implicit val system = ActorSystem(getClass.getSimpleName)
 
   private val interpreter = new ExprInterpreter(ConfigFactory.load())
+
+  private val registry = new DefaultRegistry()
 
   private def run(input: List[AnyRef]): List[MessageEnvelope] = {
     val future = Source(input)
@@ -67,7 +70,11 @@ class FinalExprEvalSuite extends FunSuite {
     val values = vs
       .map(_.copy(timestamp = timestamp))
       .groupBy(_.expr)
-      .map(t => t._1 -> AggrValuesInfo(t._2.toList, t._2.size))
+      .map(t => {
+        val aggr =
+          AggrDatapoint.aggregate(t._2.toList, Integer.MAX_VALUE, Integer.MAX_VALUE, registry).get
+        t._1 -> AggrValuesInfo(aggr.datapoints, aggr.numRawDatapoints)
+      })
     TimeGroup(timestamp, step, values)
   }
 
@@ -253,12 +260,12 @@ class FinalExprEvalSuite extends FunSuite {
       ),
       Array(
         EvalDataSize(3, Map(expr.toString -> 3)),
-        EvalDataSize(3, Map(expr.toString -> 3)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
         EvalDataSize(1)
       ),
       Array(
         EvalDataSize(2, Map(expr.toString -> 2)),
-        EvalDataSize(2, Map(expr.toString -> 2)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
         EvalDataSize(1)
       )
     )
@@ -325,7 +332,7 @@ class FinalExprEvalSuite extends FunSuite {
       ),
       Array(
         EvalDataSize(2, Map(expr1.toString -> 2)),
-        EvalDataSize(2, Map(expr1.toString -> 2)),
+        EvalDataSize(1, Map(expr1.toString -> 1)),
         EvalDataSize(1)
       ),
       Array(
@@ -357,7 +364,7 @@ class FinalExprEvalSuite extends FunSuite {
       ),
       Array(
         EvalDataSize(2, Map(expr2.toString -> 2)),
-        EvalDataSize(2, Map(expr2.toString -> 2)),
+        EvalDataSize(1, Map(expr2.toString -> 1)),
         EvalDataSize(1)
       )
     )

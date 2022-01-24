@@ -124,6 +124,22 @@ class TimeGroupedSuite extends FunSuite {
     count("buffered") -> (count("dropped-old") + count("dropped-future"))
   }
 
+  test("drop events for an expression that exceed the number of input datapoints limit") {
+    val n = 60000
+    val expr = DataExpr.Max(Query.True)
+    val data = (0 until n).toList.map { i =>
+      AggrDatapoint(10, 10, expr, "test", Map.empty, i)
+    }
+
+    val before = count("dropped-datapoints-limit-exceeded")
+    val groups = run(data)
+    val after = count("dropped-datapoints-limit-exceeded")
+
+    assertEquals(groups, List(timeGroup(10, Nil)))
+    assertEquals(before, 0L)
+    assertEquals(after, 10000L)
+  }
+
   test("late events dropped") {
     val data = List(
       datapoint(20, 1),
