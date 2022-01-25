@@ -16,8 +16,7 @@ lazy val atlas = project.in(file("."))
     `atlas-module-webapi`,
     `atlas-postgres`,
     `atlas-standalone`,
-    `atlas-webapi`,
-    `atlas-wiki`)
+    `atlas-webapi`)
   .settings(publish / skip := true)
 
 lazy val `atlas-akka` = project
@@ -164,9 +163,3 @@ lazy val `atlas-webapi` = project
     Dependencies.akkaStreamTestkit % "test"
   ))
 
-lazy val `atlas-wiki` = project
-  .configure(BuildSettings.profile)
-  .dependsOn(`atlas-core`, `atlas-eval`)
-  .settings(libraryDependencies ++= Seq(
-    Dependencies.scalaCompiler % scalaVersion.value
-  ))
