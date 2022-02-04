@@ -26,4 +26,15 @@ import javax.inject.Inject
   * that needs a source queue.
   */
 class StreamSubscriptionManager @Inject() (registry: Registry)
-    extends SubscriptionManager[QueueHandler](registry)
+    extends SubscriptionManager[QueueHandler](registry) {
+
+  /**
+    * Overwritten to ensure that when using a queue it will be completed and resources
+    * for the stream will get cleaned up.
+    */
+  override def unregister(streamId: String): Option[QueueHandler] = {
+    val tmp = super.unregister(streamId)
+    tmp.foreach(_.complete())
+    tmp
+  }
+}
