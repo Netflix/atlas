@@ -144,7 +144,7 @@ private[stream] class TimeGrouped(
           ts,
           step,
           aggregateMapForExpWithinLimits
-            .map(t => t._1 -> AggrValuesInfo(t._2.datapoints, t._2.numRawDatapoints))
+            .map(t => t._1 -> AggrValuesInfo(t._2.datapoints, t._2.numInputDatapoints))
         )
       }
 
