@@ -92,7 +92,7 @@ object AggrDatapoint {
     * instance have the same data expression.
     */
   trait Aggregator {
-    protected[this] var rawDatapointCounter = 0
+    protected[this] var inputDatapointCounter = 0
     protected[this] var exceedsMaxInputOrIntermediateDatapoints = false
     protected[this] var inputDatapointsLimit = Integer.MAX_VALUE
     protected[this] var intermediateDatapointsLimit = Integer.MAX_VALUE
@@ -103,17 +103,22 @@ object AggrDatapoint {
 
     protected[this] def inputOrIntermediateDatapointsAtLimitOrExceeded: Boolean = {
       val datapointsLimitExceeded =
-        numRawDatapoints >= inputDatapointsLimit || datapoints.size >= intermediateDatapointsLimit
+        numInputDatapoints >= inputDatapointsLimit || numIntermediateDatapoints >= intermediateDatapointsLimit
       if (datapointsLimitExceeded) {
         counter.increment()
         exceedsMaxInputOrIntermediateDatapoints = true
       }
       datapointsLimitExceeded
     }
-    def numRawDatapoints: Int = rawDatapointCounter
+
+    def numInputDatapoints: Int = inputDatapointCounter
+
+    def numIntermediateDatapoints: Int = 1
+
     // drop the data points if the number of input/intermediate datapoints exceed the configured
     // limit for an aggregator
     def aggregate(datapoint: AggrDatapoint): Aggregator
+
     def datapoints: List[AggrDatapoint]
   }
 
@@ -130,7 +135,7 @@ object AggrDatapoint {
     registry: Registry
   ) extends Aggregator {
     private var value = init.value
-    rawDatapointCounter += 1
+    inputDatapointCounter += 1
     inputDatapointsLimit = maxInputDatapoints
     intermediateDatapointsLimit = maxIntermediateDatapoints
     counter = registry.counter("atlas.eval.datapoints", "id", "dropped-datapoints-limit-exceeded")
@@ -138,7 +143,7 @@ object AggrDatapoint {
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {
       if (!inputOrIntermediateDatapointsAtLimitOrExceeded) {
         value = op(value, datapoint.value)
-        rawDatapointCounter += 1
+        inputDatapointCounter += 1
       }
       this
     }
@@ -174,20 +179,25 @@ object AggrDatapoint {
             maxIntermediateDatapoints,
             registry
           )
-          rawDatapointCounter += 1
+          inputDatapointCounter += 1
           aggregator
         case _ =>
           throw new IllegalArgumentException("datapoint is not for a grouped expression")
       }
     }
 
+    // This should be a constant time operation as it will be used to check the limit
+    // for incoming datapoints.
+    override def numIntermediateDatapoints: Int = aggregators.size
+
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {
       if (!inputOrIntermediateDatapointsAtLimitOrExceeded) {
         aggregators.get(datapoint.tags) match {
           case Some(aggr) =>
-            rawDatapointCounter += 1
+            inputDatapointCounter += 1
             aggr.aggregate(datapoint)
-          case None => aggregators.put(datapoint.tags, newAggregator(datapoint))
+          case None =>
+            aggregators.put(datapoint.tags, newAggregator(datapoint))
         }
       }
       this
@@ -211,10 +221,13 @@ object AggrDatapoint {
     intermediateDatapointsLimit = maxIntermediateDatapoints
     counter = registry.counter("atlas.eval.datapoints", "id", "dropped-datapoints-limit-exceeded")
 
+    // For this operator all inputs will be outputs.
+    override def numIntermediateDatapoints: Int = inputDatapointCounter
+
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {
       if (!inputOrIntermediateDatapointsAtLimitOrExceeded) {
         values = datapoint :: values
-        rawDatapointCounter += 1
+        inputDatapointCounter += 1
       }
       this
     }

@@ -73,7 +73,7 @@ class FinalExprEvalSuite extends FunSuite {
       .map(t => {
         val aggr =
           AggrDatapoint.aggregate(t._2.toList, Integer.MAX_VALUE, Integer.MAX_VALUE, registry).get
-        t._1 -> AggrValuesInfo(aggr.datapoints, aggr.numRawDatapoints)
+        t._1 -> AggrValuesInfo(aggr.datapoints, aggr.numInputDatapoints)
       })
     TimeGroup(timestamp, step, values)
   }
