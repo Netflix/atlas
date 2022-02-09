@@ -7,13 +7,13 @@ object Dependencies {
   object Versions {
     val akka       = "2.6.18"
     val akkaHttpV  = "10.2.7"
-    val iep        = "3.0.10"
-    val guice      = "5.0.1"
+    val iep        = "3.0.13"
+    val guice      = "5.1.0"
     val jackson    = "2.13.1"
     val log4j      = "2.17.1"
-    val scala      = "2.13.7"
-    val slf4j      = "1.7.32"
-    val spectator  = "1.0.13"
+    val scala      = "2.13.8"
+    val slf4j      = "1.7.36"
+    val spectator  = "1.1.1"
 
     val crossScala = Seq(scala)
   }
@@ -29,8 +29,8 @@ object Dependencies {
   val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.3"
-  val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.0.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.8.1"
+  val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.1.0"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.9"
   val frigga            = "com.netflix.frigga" % "frigga" % "0.25.0"
   val guiceCoreBase     = "com.google.inject" % "guice"
   val guiceMultiBase    = "com.google.inject.extensions" % "guice-multibindings"
@@ -58,7 +58,7 @@ object Dependencies {
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
-  val postgres          = "org.postgresql" % "postgresql" % "42.3.1"
+  val postgres          = "org.postgresql" % "postgresql" % "42.3.2"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "1.3.1"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.23"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
@@ -74,7 +74,7 @@ object Dependencies {
   val spectatorIpc      = "com.netflix.spectator" % "spectator-ext-ipc" % spectator
   val spectatorLog4j    = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2       = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
-  val typesafeConfig    = "com.typesafe" % "config" % "1.4.1"
+  val typesafeConfig    = "com.typesafe" % "config" % "1.4.2"
 
   def isBeforeJava16: Boolean = {
     System.getProperty("java.specification.version").toDouble < 16
