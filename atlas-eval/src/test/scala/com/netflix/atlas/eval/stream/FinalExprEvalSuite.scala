@@ -65,6 +65,10 @@ class FinalExprEvalSuite extends FunSuite {
     new DataSource(id, java.time.Duration.ofMillis(step), uri)
   }
 
+  private def settings(maxInput: Int, maxIntermediate: Int): AggrDatapoint.AggregatorSettings = {
+    AggrDatapoint.AggregatorSettings(maxInput, maxIntermediate, registry)
+  }
+
   private def group(i: Long, vs: AggrDatapoint*): TimeGroup = {
     val timestamp = i * step
     val values = vs
@@ -72,7 +76,7 @@ class FinalExprEvalSuite extends FunSuite {
       .groupBy(_.expr)
       .map(t => {
         val aggr =
-          AggrDatapoint.aggregate(t._2.toList, Integer.MAX_VALUE, Integer.MAX_VALUE, registry).get
+          AggrDatapoint.aggregate(t._2.toList, settings(Integer.MAX_VALUE, Integer.MAX_VALUE)).get
         t._1 -> AggrValuesInfo(aggr.datapoints, aggr.numInputDatapoints)
       })
     TimeGroup(timestamp, step, values)
