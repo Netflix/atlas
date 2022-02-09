@@ -48,7 +48,6 @@ import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
-import com.netflix.atlas.eval.model.AggrDatapoint.Aggregator
 import com.netflix.atlas.eval.model.AggrValuesInfo
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
@@ -321,6 +320,11 @@ private[stream] abstract class EvaluatorImpl(
     group: DatapointGroup,
     context: StreamContext
   ): TimeGroup = {
+    val aggrSettings = AggrDatapoint.AggregatorSettings(
+      context.maxInputDatapointsPerExpression,
+      context.maxIntermediateDatapointsPerExpression,
+      context.registry
+    )
     val valuesInfo = group.getDatapoints.asScala.zipWithIndex
       .flatMap {
         case (d, i) =>
@@ -341,23 +345,16 @@ private[stream] abstract class EvaluatorImpl(
       .groupBy(_.expr)
       .map(t =>
         t._1 -> {
-          val aggregator = AggrDatapoint.aggregate(
-            t._2.toList,
-            context.maxInputDatapointsPerExpression,
-            context.maxIntermediateDatapointsPerExpression,
-            context.registry
-          )
+          val aggregator = AggrDatapoint.aggregate(t._2.toList, aggrSettings)
 
           aggregator match {
-            case aggr: Some[Aggregator] =>
-              val maxInputOrIntermediateDatapointsExceeded =
-                aggr.get.maxInputOrIntermediateDatapointsExceeded
-
-              if (maxInputOrIntermediateDatapointsExceeded) {
-                context.logDatapointsExceeded(group.getTimestamp, t._1)
-                AggrValuesInfo(List(), t._2.size)
-              } else AggrValuesInfo(aggr.get.datapoints, t._2.size)
-            case _ => AggrValuesInfo(List(), t._2.size)
+            case Some(aggr) if aggr.limitExceeded =>
+              context.logDatapointsExceeded(group.getTimestamp, t._1)
+              AggrValuesInfo(Nil, t._2.size)
+            case Some(aggr) =>
+              AggrValuesInfo(aggr.datapoints, t._2.size)
+            case _ =>
+              AggrValuesInfo(Nil, t._2.size)
           }
         }
       )

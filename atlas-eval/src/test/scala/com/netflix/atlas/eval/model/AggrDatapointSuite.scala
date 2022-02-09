@@ -25,6 +25,10 @@ class AggrDatapointSuite extends FunSuite {
   private val step = 60000
   private val registry = new DefaultRegistry()
 
+  private def settings(maxInput: Int, maxIntermediate: Int): AggrDatapoint.AggregatorSettings = {
+    AggrDatapoint.AggregatorSettings(maxInput, maxIntermediate, registry)
+  }
+
   private def createDatapoints(expr: DataExpr, t: Long, nodes: Int): List[AggrDatapoint] = {
     (0 until nodes).toList.map { i =>
       val node = f"i-$i%08d"
@@ -38,7 +42,7 @@ class AggrDatapointSuite extends FunSuite {
 
   test("aggregate empty") {
     assertEquals(
-      AggrDatapoint.aggregate(Nil, Integer.MAX_VALUE, Integer.MAX_VALUE, registry),
+      AggrDatapoint.aggregate(Nil, settings(Integer.MAX_VALUE, Integer.MAX_VALUE)),
       Option.empty
     )
   }
@@ -47,7 +51,7 @@ class AggrDatapointSuite extends FunSuite {
     val expr = DataExpr.Sum(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
     val aggregator =
-      AggrDatapoint.aggregate(dataset, Integer.MAX_VALUE, Integer.MAX_VALUE, registry)
+      AggrDatapoint.aggregate(dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
     val result = aggregator.get.datapoints
 
     assertEquals(result.size, 1)
@@ -60,16 +64,16 @@ class AggrDatapointSuite extends FunSuite {
     val expr = DataExpr.Sum(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
     val aggregator =
-      AggrDatapoint.aggregate(dataset, 5, Integer.MAX_VALUE, registry)
+      AggrDatapoint.aggregate(dataset, settings(5, Integer.MAX_VALUE))
 
-    assert(aggregator.get.maxInputOrIntermediateDatapointsExceeded)
+    assert(aggregator.get.limitExceeded)
   }
 
   test("aggregate dedups using source") {
     val expr = DataExpr.Sum(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
     val aggregator =
-      AggrDatapoint.aggregate(dataset ::: dataset, Integer.MAX_VALUE, Integer.MAX_VALUE, registry)
+      AggrDatapoint.aggregate(dataset ::: dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
     val result = aggregator.get.datapoints
 
     assertEquals(result.size, 1)
@@ -82,7 +86,7 @@ class AggrDatapointSuite extends FunSuite {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createDatapoints(expr, 0, 10)
     val aggregator =
-      AggrDatapoint.aggregate(dataset, Integer.MAX_VALUE, Integer.MAX_VALUE, registry)
+      AggrDatapoint.aggregate(dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
     val result = aggregator.get.datapoints
 
     assertEquals(result.size, 10)
@@ -96,25 +100,25 @@ class AggrDatapointSuite extends FunSuite {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createDatapoints(expr, 0, 10)
     val aggregator =
-      AggrDatapoint.aggregate(dataset, 5, Integer.MAX_VALUE, registry)
+      AggrDatapoint.aggregate(dataset, settings(5, Integer.MAX_VALUE))
 
-    assert(aggregator.get.maxInputOrIntermediateDatapointsExceeded)
+    assert(aggregator.get.limitExceeded)
   }
 
   test("aggregate group by exceeds intermediate data points") {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createDatapoints(expr, 0, 10)
     val aggregator =
-      AggrDatapoint.aggregate(dataset, Integer.MAX_VALUE, 5, registry)
+      AggrDatapoint.aggregate(dataset, settings(Integer.MAX_VALUE, 5))
 
-    assert(aggregator.get.maxInputOrIntermediateDatapointsExceeded)
+    assert(aggregator.get.limitExceeded)
   }
 
   test("aggregate, dedup and group by") {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createDatapoints(expr, 0, 10)
     val aggregator =
-      AggrDatapoint.aggregate(dataset ::: dataset, Integer.MAX_VALUE, Integer.MAX_VALUE, registry)
+      AggrDatapoint.aggregate(dataset ::: dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
     val result = aggregator.get.datapoints
 
     assertEquals(result.size, 10)
@@ -128,7 +132,7 @@ class AggrDatapointSuite extends FunSuite {
     val expr = DataExpr.All(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
     val aggregator =
-      AggrDatapoint.aggregate(dataset, Integer.MAX_VALUE, Integer.MAX_VALUE, registry)
+      AggrDatapoint.aggregate(dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
     val result = aggregator.get.datapoints
 
     assertEquals(result.size, 10)
@@ -142,8 +146,8 @@ class AggrDatapointSuite extends FunSuite {
     val expr = DataExpr.All(Query.True)
     val dataset = createDatapoints(expr, 0, 10)
     val aggregator =
-      AggrDatapoint.aggregate(dataset, 5, Integer.MAX_VALUE, registry)
+      AggrDatapoint.aggregate(dataset, settings(5, Integer.MAX_VALUE))
 
-    assert(aggregator.get.maxInputOrIntermediateDatapointsExceeded)
+    assert(aggregator.get.limitExceeded)
   }
 }

@@ -51,10 +51,15 @@ private[stream] class TimeGrouped(
     * for a new time that would evict the buffer with the minimum time.
     */
   private val numBuffers = context.numBuffers
-  private val maxInputDatapointsPerExpression = context.maxInputDatapointsPerExpression
 
+  private val maxInputDatapointsPerExpression = context.maxInputDatapointsPerExpression
   private val maxIntermediateDatapointsPerExpression =
     context.maxIntermediateDatapointsPerExpression
+  private val aggrSettings = AggrDatapoint.AggregatorSettings(
+    maxInputDatapointsPerExpression,
+    maxIntermediateDatapointsPerExpression,
+    context.registry
+  )
 
   private val in = Inlet[AggrDatapoint]("TimeGrouped.in")
   private val out = Outlet[TimeGroup]("TimeGrouped.out")
@@ -103,16 +108,7 @@ private[stream] class TimeGrouped(
         if (!v.isHeartbeat) {
           buf(i).get(v.expr) match {
             case Some(aggr) => aggr.aggregate(v)
-            case None =>
-              buf(i).put(
-                v.expr,
-                AggrDatapoint.newAggregator(
-                  v,
-                  maxInputDatapointsPerExpression,
-                  maxIntermediateDatapointsPerExpression,
-                  registry
-                )
-              )
+            case None       => buf(i).put(v.expr, AggrDatapoint.newAggregator(v, aggrSettings))
           }
         }
       }
@@ -129,23 +125,20 @@ private[stream] class TimeGrouped(
       }
 
       private def toTimeGroup(ts: Long, aggrMap: AggrMap): TimeGroup = {
-        val aggregateMapForExpWithinLimits =
-          aggrMap
-            .filter(t => {
-              val expr = t._1
-              val maxInputOrIntermediateDatapointsExceeded =
-                t._2.maxInputOrIntermediateDatapointsExceeded
-              if (maxInputOrIntermediateDatapointsExceeded) context.logDatapointsExceeded(ts, expr)
-              !maxInputOrIntermediateDatapointsExceeded
-            })
-            .toMap
+        val aggregateMapForExpWithinLimits = aggrMap
+          .filter {
+            case (expr, aggr) if aggr.limitExceeded =>
+              context.logDatapointsExceeded(ts, expr)
+              false
+            case _ =>
+              true
+          }
+          .map {
+            case (expr, aggr) => expr -> AggrValuesInfo(aggr.datapoints, aggr.numInputDatapoints)
+          }
+          .toMap
 
-        TimeGroup(
-          ts,
-          step,
-          aggregateMapForExpWithinLimits
-            .map(t => t._1 -> AggrValuesInfo(t._2.datapoints, t._2.numInputDatapoints))
-        )
+        TimeGroup(ts, step, aggregateMapForExpWithinLimits)
       }
 
       override def onPush(): Unit = {
