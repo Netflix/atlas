@@ -53,8 +53,10 @@ private[stream] class TimeGrouped(
   private val numBuffers = context.numBuffers
 
   private val maxInputDatapointsPerExpression = context.maxInputDatapointsPerExpression
+
   private val maxIntermediateDatapointsPerExpression =
     context.maxIntermediateDatapointsPerExpression
+
   private val aggrSettings = AggrDatapoint.AggregatorSettings(
     maxInputDatapointsPerExpression,
     maxIntermediateDatapointsPerExpression,

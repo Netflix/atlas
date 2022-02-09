@@ -105,8 +105,8 @@ object AggrDatapoint {
       * Counter for tracking number of datapoints that are dropped due to exceeding the
       * configured limits.
       */
-    val droppedCounter: Counter = registry.counter(
-      "atlas.eval.datapoints", "id", "dropped-datapoints-limit-exceeded")
+    val droppedCounter: Counter =
+      registry.counter("atlas.eval.datapoints", "id", "dropped-datapoints-limit-exceeded")
   }
 
   /**
@@ -130,7 +130,7 @@ object AggrDatapoint {
     /** Returns true if any of the configured limits have been exceeded. */
     def limitExceeded: Boolean = {
       numInputDatapoints >= settings.maxInputDatapoints ||
-        numIntermediateDatapoints >= settings.maxIntermediateDatapoints
+      numIntermediateDatapoints >= settings.maxIntermediateDatapoints
     }
 
     /**
