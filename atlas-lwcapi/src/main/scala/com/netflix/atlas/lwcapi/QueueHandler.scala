@@ -48,8 +48,10 @@ class QueueHandler(streamMeta: StreamMetadata, queue: StreamOps.SourceQueue[Seq[
   }
 
   def complete(): Unit = {
-    logger.debug(s"queue complete for $id")
-    queue.complete()
+    if (queue.isOpen) {
+      logger.debug(s"queue complete for $id")
+      queue.complete()
+    }
   }
 
   override def toString: String = s"QueueHandler($id)"
