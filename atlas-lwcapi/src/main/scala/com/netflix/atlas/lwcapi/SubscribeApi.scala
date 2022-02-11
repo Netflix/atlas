@@ -22,7 +22,6 @@ import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
-import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -160,9 +159,9 @@ class SubscribeApi @Inject() (
     val streamId = streamMeta.streamId
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
-    val (queue, queueSrc) = StreamOps
+    val (queue, pub) = StreamOps
       .blockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", queueSize)
-      .toMat(BroadcastHub.sink(1))(Keep.both)
+      .toMat(Sink.asPublisher(false))(Keep.both)
       .run()
 
     // Send initial setup messages
@@ -186,7 +185,8 @@ class SubscribeApi @Inject() (
         Source(steps)
       }
 
-    val source = queueSrc
+    val source = Source
+      .fromPublisher(pub)
       .flatMapConcat(Source.apply)
       .merge(heartbeatSrc)
       .via(StreamOps.monitorFlow(registry, "StreamApi"))
