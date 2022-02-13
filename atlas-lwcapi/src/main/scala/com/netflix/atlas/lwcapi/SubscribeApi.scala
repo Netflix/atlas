@@ -161,7 +161,7 @@ class SubscribeApi @Inject() (
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     val (queue, pub) = StreamOps
       .blockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", queueSize)
-      .toMat(Sink.asPublisher(false))(Keep.both)
+      .toMat(Sink.asPublisher(true))(Keep.both)
       .run()
 
     // Send initial setup messages
