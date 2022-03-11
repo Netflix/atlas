@@ -237,6 +237,48 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(data, List(":true,:dist-avg"))
   }
 
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,:stat-max,5,:gt,:filter&r=filter") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,:stat-max,5,:gt,:filter&r=style") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum,name,sps,:eq,:sum,max,:stat,5.0,:const,:gt,:filter"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,:stat-max,5,:gt,:filter,foo,:legend&r=filter&r=style") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,max,5,:topk&r=filter") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,max,:stat&r=filter") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,max,:stat&r=math") {
+    assertEquals(response.status, StatusCodes.BadRequest)
+    val data = responseAs[String]
+    assert(data.contains("IllegalArgumentException: vocabulary 'math' not supported"))
+  }
+
+  testGet("/api/v1/expr/strip?q=name,sps,:eq,:stack,foo,:legend,fff,:color&r=style") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
   import Query._
 
   private def normalize(expr: String): List[String] = {
