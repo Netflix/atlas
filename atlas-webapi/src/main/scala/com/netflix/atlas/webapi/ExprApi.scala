@@ -25,6 +25,7 @@ import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Expr
+import com.netflix.atlas.core.model.FilterExpr
 import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
@@ -74,8 +75,8 @@ class ExprApi extends WebApi {
         }
       } ~
       endpointPath("strip") {
-        parameters("q", "k".repeated) { (q, keys) =>
-          complete(processStripRequest(q, keys.toSet))
+        parameters("q", "k".repeated, "r".repeated) { (q, keys, vocabsToRemove) =>
+          complete(processStripRequest(q, keys.toSet, vocabsToRemove.toSet))
         }
       }
     }
@@ -202,12 +203,17 @@ class ExprApi extends WebApi {
   /**
     * Strip query clauses that contain a key in the set.
     */
-  private def processStripRequest(expr: String, keys: Set[String]): HttpResponse = {
+  private def processStripRequest(
+    expr: String,
+    keys: Set[String],
+    vocabsToRemove: Set[String]
+  ): HttpResponse = {
     val interpreter = newInterpreter(vocabulary.name)
     val result = interpreter.execute(expr)
 
     val exprs = result.stack.collect {
-      case ModelExtractors.PresentationType(t) => t.rewrite(stripKeys(keys)).toString
+      case ModelExtractors.PresentationType(t) =>
+        stripVocabulary(t.rewrite(stripKeys(keys)), vocabsToRemove.toList).toString
     }
 
     jsonResponse(exprs)
@@ -223,6 +229,31 @@ class ExprApi extends WebApi {
     case Query.Not(q)                          => Query.Not(stripKeys(q, ks))
     case q: Query.KeyQuery if ks.contains(q.k) => Query.True
     case q                                     => q
+  }
+
+  @scala.annotation.tailrec
+  private def stripVocabulary(expr: Expr, vocabsToRemove: List[String]): Expr = {
+    vocabsToRemove match {
+      case "filter" :: vs => stripVocabulary(stripFilter(expr), vs)
+      case "style" :: vs  => stripVocabulary(stripStyle(expr), vs)
+      case v :: _         => throw new IllegalArgumentException(s"vocabulary '$v' not supported")
+      case Nil            => expr
+    }
+  }
+
+  private def stripFilter(expr: Expr): Expr = {
+    expr.rewrite {
+      case FilterExpr.Stat(e, _)            => e
+      case FilterExpr.Filter(e, _)          => e
+      case e: FilterExpr.PriorityFilterExpr => e.expr
+    }
+  }
+
+  private def stripStyle(expr: Expr): Expr = {
+    expr match {
+      case e: StyleExpr => e.expr
+      case e            => e
+    }
   }
 
   /** Encode `obj` as json and create the HttpResponse. */
