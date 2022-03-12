@@ -46,6 +46,10 @@ object PublishPayloads {
   // processing tag data.
   private final val maxPermittedTags = ApiSettings.maxPermittedTags
 
+  // Used to store string tables used when decoding a batch. Allows the string table
+  // arrays to be reused to reduce allocations.
+  private final val stringArrays = new ThreadLocal[Array[String]]
+
   private def decodeTags(parser: JsonParser, commonTags: TagMap, intern: Boolean): TagMap = {
     val strInterner = Interner.forStrings
     val b = new SmallHashMap.Builder[String, String](2 * maxPermittedTags)
@@ -222,6 +226,15 @@ object PublishPayloads {
     size
   }
 
+  private def getOrCreateStringArray(size: Int): Array[String] = {
+    var array = stringArrays.get()
+    if (array == null || array.length < size) {
+      array = new Array[String](size)
+      stringArrays.set(array)
+    }
+    array
+  }
+
   /**
     * Batch format that is less repetitive for string data and more efficient to process
     * than the normal batch format encoded as an object. Data is encoded as a flattened
@@ -260,9 +273,10 @@ object PublishPayloads {
     val strInterner = Interner.forStrings
 
     requireNextToken(parser, JsonToken.START_ARRAY)
-    val table = new Array[String](nextArraySize(parser))
+    val size = nextArraySize(parser)
+    val table = getOrCreateStringArray(size)
     var i = 0
-    while (i < table.length) {
+    while (i < size) {
       val s = nextString(parser)
       table(i) = if (intern) strInterner.intern(s) else s
       i += 1
