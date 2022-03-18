@@ -6,14 +6,14 @@ import sbt.librarymanagement.DependencyBuilders.OrganizationArtifactName
 object Dependencies {
   object Versions {
     val akka       = "2.6.18"
-    val akkaHttpV  = "10.2.7"
-    val iep        = "3.0.13"
+    val akkaHttpV  = "10.2.9"
+    val iep        = "3.0.14"
     val guice      = "5.1.0"
-    val jackson    = "2.13.1"
-    val log4j      = "2.17.1"
+    val jackson    = "2.13.2"
+    val log4j      = "2.17.2"
     val scala      = "2.13.8"
     val slf4j      = "1.7.36"
-    val spectator  = "1.1.1"
+    val spectator  = "1.1.2"
 
     val crossScala = Seq(scala)
   }
@@ -58,9 +58,9 @@ object Dependencies {
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
-  val postgres          = "org.postgresql" % "postgresql" % "42.3.2"
+  val postgres          = "org.postgresql" % "postgresql" % "42.3.3"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "1.3.1"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.23"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.25"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
