@@ -46,7 +46,7 @@ object Dependencies {
   val jacksonCore       = "com.fasterxml.jackson.core" % "jackson-core" % jackson
   val jacksonJava8      = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jackson
   val jacksonJsr310     = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jackson
-  val jacksonMapper     = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
+  val jacksonMapper     = "com.fasterxml.jackson.core" % "jackson-databind" % (jackson + ".2")
   val jacksonScala      = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile      = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jol               = "org.openjdk.jol" % "jol-core" % "0.16"
