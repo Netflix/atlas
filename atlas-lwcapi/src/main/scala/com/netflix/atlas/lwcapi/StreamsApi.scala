@@ -34,14 +34,14 @@ class StreamsApi @Inject() (sm: StreamSubscriptionManager) extends WebApi {
 
   def routes: Route = {
     endpointPathPrefix("api" / "v1" / "streams") {
+      pathEndOrSingleSlash {
+        complete(Json.encode(sm.streamSummaries.map(_.metadata)))
+      } ~
       path(Remaining) { streamId =>
         sm.streamSummary(streamId) match {
           case Some(summary) => complete(Json.encode(summary))
           case None          => complete(notFound(streamId))
         }
-      } ~
-      pathEnd {
-        complete(Json.encode(sm.streamSummaries.map(_.metadata)))
       }
     }
   }
