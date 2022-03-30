@@ -50,7 +50,8 @@ object BuildSettings {
       "Build-Number" -> sys.env.getOrElse("GITHUB_RUN_ID", "unknown"),
       "Commit"       -> sys.env.getOrElse("GITHUB_SHA", "unknown")
     ),
-    testFrameworks += new TestFramework("munit.Framework")
+    testFrameworks += new TestFramework("munit.Framework"),
+    Test / parallelExecution := false
   )
 
   val commonDeps = Seq(
