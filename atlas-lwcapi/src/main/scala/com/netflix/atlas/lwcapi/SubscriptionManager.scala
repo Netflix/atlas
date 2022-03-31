@@ -19,9 +19,9 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import com.netflix.atlas.core.index.QueryIndex
-import com.netflix.frigga.Names
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.ipc.ServerGroup
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.jdk.CollectionConverters._
@@ -233,13 +233,13 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
     * that are checked locally on the node.
     */
   def subscriptionsForCluster(cluster: String): List[Subscription] = {
-    val name = Names.parseName(cluster)
+    val group = ServerGroup.parse(cluster)
     val tags = Map.newBuilder[String, String]
-    tags += ("nf.cluster" -> name.getCluster)
-    if (name.getApp != null)
-      tags += ("nf.app" -> name.getApp)
-    if (name.getStack != null)
-      tags += ("nf.stack" -> name.getStack)
+    tags += ("nf.cluster" -> group.cluster)
+    if (group.app != null)
+      tags += ("nf.app" -> group.app)
+    if (group.stack != null)
+      tags += ("nf.stack" -> group.stack)
     queryIndex.matchingEntries(tags.result())
   }
 
