@@ -8,7 +8,8 @@ object BuildSettings {
     "-unchecked",
     "-Xlint:_,-infer-any",
     "-Xfatal-warnings",
-    "-feature"
+    "-feature",
+    "-release", "8"
   )
 
   private val isRecentJdk = System.getProperty("java.specification.version").toDouble >= 11.0
@@ -21,14 +22,7 @@ object BuildSettings {
   lazy val buildSettings = baseSettings ++ Seq(
     organization := "com.netflix.atlas_v1",
     scalaVersion := Dependencies.Versions.scala,
-    scalacOptions ++= {
-      // -release option is not supported in scala 2.11
-      val v = scalaVersion.value
-      CrossVersion.partialVersion(v).map(_._2.toInt) match {
-        case Some(v) if v > 11 && isRecentJdk => compilerFlags ++ Seq("-release", "8")
-        case _                                => compilerFlags ++ Seq("-target:jvm-1.8")
-      }
-    },
+    scalacOptions := compilerFlags,
     javacOptions ++= {
       if (isRecentJdk)
         Seq("--release", "8")
