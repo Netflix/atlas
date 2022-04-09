@@ -19,7 +19,6 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.Reader
 import java.io.Writer
-
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.core._
 import com.fasterxml.jackson.core.json.JsonReadFeature
@@ -29,10 +28,11 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.module.scala.JavaTypeable
 
 object Json {
 
-  final class Decoder[T: Manifest](reader: ObjectReader, factory: JsonFactory) {
+  final class Decoder[T: JavaTypeable](reader: ObjectReader, factory: JsonFactory) {
 
     def decode(json: Array[Byte]): T = decode(factory.createParser(json))
 
@@ -139,23 +139,23 @@ object Json {
     smileFactory.createParser(bytes, 0, bytes.length)
   }
 
-  def encode[T: Manifest](obj: T): String = {
+  def encode[T: JavaTypeable](obj: T): String = {
     jsonMapper.writeValueAsString(obj)
   }
 
-  def encode[T: Manifest](writer: Writer, obj: T): Unit = {
+  def encode[T: JavaTypeable](writer: Writer, obj: T): Unit = {
     jsonMapper.writeValue(writer, obj)
   }
 
-  def encode[T: Manifest](stream: OutputStream, obj: T): Unit = {
+  def encode[T: JavaTypeable](stream: OutputStream, obj: T): Unit = {
     jsonMapper.writeValue(stream, obj)
   }
 
-  def encode[T: Manifest](gen: JsonGenerator, obj: T): Unit = {
+  def encode[T: JavaTypeable](gen: JsonGenerator, obj: T): Unit = {
     jsonMapper.writeValue(gen, obj)
   }
 
-  def decodeResource[T: Manifest](name: String): T = {
+  def decodeResource[T: JavaTypeable](name: String): T = {
     val url = getClass.getClassLoader.getResource(name)
     require(url != null, s"could not find resource: $name")
     val input = url.openStream()
@@ -163,57 +163,49 @@ object Json {
     finally input.close()
   }
 
-  def decode[T: Manifest](json: Array[Byte]): T = decoder[T].decode(json)
+  def decode[T: JavaTypeable](json: Array[Byte]): T = decoder[T].decode(json)
 
-  def decode[T: Manifest](json: Array[Byte], offset: Int, length: Int): T =
+  def decode[T: JavaTypeable](json: Array[Byte], offset: Int, length: Int): T =
     decoder[T].decode(json, offset, length)
 
-  def decode[T: Manifest](json: String): T = decoder[T].decode(json)
+  def decode[T: JavaTypeable](json: String): T = decoder[T].decode(json)
 
-  def decode[T: Manifest](reader: Reader): T = decoder[T].decode(reader)
+  def decode[T: JavaTypeable](reader: Reader): T = decoder[T].decode(reader)
 
-  def decode[T: Manifest](stream: InputStream): T = decoder[T].decode(stream)
+  def decode[T: JavaTypeable](stream: InputStream): T = decoder[T].decode(stream)
 
-  def decode[T: Manifest](node: JsonNode): T = decoder[T].decode(node)
+  def decode[T: JavaTypeable](node: JsonNode): T = decoder[T].decode(node)
 
-  def decode[T: Manifest](parser: JsonParser): T = {
-    val reader: ObjectReader =
-      if (manifest.runtimeClass.isArray)
-        jsonMapper.readerFor(manifest.runtimeClass.asInstanceOf[Class[T]])
-      else
-        jsonMapper.readerFor(Reflection.typeReference[T])
+  def decode[T: JavaTypeable](parser: JsonParser): T = {
+    val reader = jsonMapper.readerFor(constructType[T](jsonMapper))
     val value = reader.readValue[T](parser)
     require(parser.nextToken() == null, "invalid json, additional content after value")
     value
   }
 
-  def decoder[T: Manifest]: Decoder[T] = {
-    val reader: ObjectReader =
-      if (manifest.runtimeClass.isArray)
-        jsonMapper.readerFor(manifest.runtimeClass.asInstanceOf[Class[T]])
-      else
-        jsonMapper.readerFor(Reflection.typeReference[T])
+  def decoder[T: JavaTypeable]: Decoder[T] = {
+    val reader = jsonMapper.readerFor(constructType[T](jsonMapper))
     new Decoder[T](reader, jsonFactory)
   }
 
-  def smileEncode[T: Manifest](obj: T): Array[Byte] = {
+  def smileEncode[T: JavaTypeable](obj: T): Array[Byte] = {
     smileMapper.writeValueAsBytes(obj)
   }
 
-  def smileEncode[T: Manifest](stream: OutputStream, obj: T): Unit = {
+  def smileEncode[T: JavaTypeable](stream: OutputStream, obj: T): Unit = {
     smileMapper.writeValue(stream, obj)
   }
 
-  def smileDecode[T: Manifest](stream: InputStream): T = smileDecoder[T].decode(stream)
+  def smileDecode[T: JavaTypeable](stream: InputStream): T = smileDecoder[T].decode(stream)
 
-  def smileDecode[T: Manifest](json: Array[Byte]): T = smileDecoder[T].decode(json)
+  def smileDecode[T: JavaTypeable](json: Array[Byte]): T = smileDecoder[T].decode(json)
 
-  def smileDecoder[T: Manifest]: Decoder[T] = {
-    val reader: ObjectReader =
-      if (manifest.runtimeClass.isArray)
-        jsonMapper.readerFor(manifest.runtimeClass.asInstanceOf[Class[T]])
-      else
-        jsonMapper.readerFor(Reflection.typeReference[T])
+  def smileDecoder[T: JavaTypeable]: Decoder[T] = {
+    val reader = smileMapper.readerFor(constructType[T](smileMapper))
     new Decoder[T](reader, smileFactory)
+  }
+
+  private def constructType[T: JavaTypeable](mapper: ObjectMapper): JavaType = {
+    implicitly[JavaTypeable[T]].asJavaType(mapper.getTypeFactory)
   }
 }
