@@ -147,7 +147,7 @@ class RefIntHashMapSuite extends FunSuite {
     (0 until 10000).foreach { i =>
       val v = Random.nextInt()
       imap.put(v.toLong, i)
-      jmap.put(v, i)
+      jmap.put(v.toLong, i)
     }
     assertEquals(jmap.toMap, imap.toMap)
     assertEquals(jmap.size, imap.size)

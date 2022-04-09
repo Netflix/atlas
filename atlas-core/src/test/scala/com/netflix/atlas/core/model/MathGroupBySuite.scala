@@ -51,7 +51,7 @@ class MathGroupBySuite extends FunSuite {
       ts(2),
       ts(3)
     )
-    val rs = groupBy(input, List("name"), List("name"), MathExpr.Sum)
+    val rs = groupBy(input, List("name"), List("name"), MathExpr.Sum.apply)
     assertEquals(rs.size, 1)
 
     val expected = ts(6).withTags(Map("name" -> "test")).withLabel("(name=test)")
@@ -66,7 +66,7 @@ class MathGroupBySuite extends FunSuite {
     )
 
     val e = intercept[IllegalArgumentException] {
-      groupBy(input, List("name"), List("foo"), MathExpr.Sum)
+      groupBy(input, List("name"), List("foo"), MathExpr.Sum.apply)
     }
     assertEquals(e.getMessage, "requirement failed: (,foo,) is not a subset of (,name,)")
   }
@@ -77,7 +77,7 @@ class MathGroupBySuite extends FunSuite {
       ts(2),
       ts(3)
     )
-    val rs = groupBy(input, List("name", "mode"), List("mode"), MathExpr.Sum)
+    val rs = groupBy(input, List("name", "mode"), List("mode"), MathExpr.Sum.apply)
     assertEquals(rs.size, 2)
 
     val expected = List(
@@ -93,7 +93,8 @@ class MathGroupBySuite extends FunSuite {
       ts(2),
       ts(3)
     )
-    val rs = groupBy(input, List("name", "mode", "value"), List("name", "value"), MathExpr.Sum)
+    val rs =
+      groupBy(input, List("name", "mode", "value"), List("name", "value"), MathExpr.Sum.apply)
     assertEquals(rs.size, 3)
 
     val expected = List(
@@ -149,7 +150,7 @@ class MathGroupBySuite extends FunSuite {
       ts(2),
       ts(3)
     )
-    val rs = groupBy(input, List("value", "mode"), List("mode"), MathExpr.Count)
+    val rs = groupBy(input, List("value", "mode"), List("mode"), MathExpr.Count.apply)
     assertEquals(rs.size, 2)
 
     val expected = List(

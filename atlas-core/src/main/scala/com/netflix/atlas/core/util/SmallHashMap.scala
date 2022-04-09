@@ -70,7 +70,7 @@ object SmallHashMap {
 
     def addAll(m: Map[K, V]): Builder[K, V] = {
       m match {
-        case sm: SmallHashMap[K, V] =>
+        case sm: SmallHashMap[_, _] =>
           var i = 0
           while (i < sm.data.length) {
             val k = sm.data(i).asInstanceOf[K]
