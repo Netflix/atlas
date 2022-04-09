@@ -20,9 +20,6 @@ import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.api.Id
 import com.typesafe.config.Config
 
-import scala.reflect.runtime.universe
-import scala.util.control.NonFatal
-
 /**
   * Base type for validation rules.
   */
@@ -72,39 +69,8 @@ object Rule {
   }
 
   def load(ruleConfigs: List[_ <: Config], useComposite: Boolean): List[Rule] = {
-    val configClass = classOf[Config]
     val rules = ruleConfigs.map { cfg =>
-      val cls = Class.forName(cfg.getString("class"))
-
-      try {
-        cls.getConstructor(configClass).newInstance(cfg).asInstanceOf[Rule]
-      } catch {
-        case NonFatal(th) =>
-          val runtimeMirror = universe.runtimeMirror(cls.getClassLoader)
-          val moduleSymbol = runtimeMirror.moduleSymbol(cls)
-
-          val targetMethod = moduleSymbol.typeSignature.members
-            .collect {
-              case x if x.isMethod && x.name.toString == "apply" => x.asMethod
-            }
-            .find(_.paramLists match {
-              case List(List(param)) if param.info.toString == configClass.getName => true
-              case _                                                               => false
-            })
-            .getOrElse {
-              val err = new RuntimeException(
-                s"""Could not find a constructor for class ${cls.getName} which takes a single parameter
-                 |of type ${configClass.getName}, or an apply method with the same signature""".stripMargin
-              )
-              err.addSuppressed(th)
-              throw err
-            }
-
-          runtimeMirror
-            .reflect(runtimeMirror.reflectModule(moduleSymbol).instance)
-            .reflectMethod(targetMethod)(cfg)
-            .asInstanceOf[Rule]
-      }
+      newInstance(cfg.getString("class"), cfg)
     }
 
     if (useComposite) {
@@ -115,6 +81,34 @@ object Rule {
         CompositeTagRule(tagRules.map(_.asInstanceOf[TagRule])) :: others
     } else {
       rules
+    }
+  }
+
+  private def newInstance(className: String, config: Config): Rule = {
+    // First look for a constructor directly on the class. If no such constructor
+    // is available, then fallback to using an apply method from the companion
+    // object.
+    try {
+      val cls = Class.forName(className)
+      cls.getConstructor(classOf[Config]).newInstance(config).asInstanceOf[Rule]
+    } catch {
+      case _: NoSuchMethodException => newInstanceUsingApply(className, config)
+    }
+  }
+
+  private def newInstanceUsingApply(className: String, config: Config): Rule = {
+    try {
+      val cls = Class.forName(s"$className$$")
+      val companion = cls.getField("MODULE$").get(null)
+      val method = companion.getClass.getMethod("apply", classOf[Config])
+      method.invoke(companion, config).asInstanceOf[Rule]
+    } catch {
+      case _: Throwable =>
+        throw new RuntimeException(
+          s"""Could not find a constructor for class $className which takes a single
+           |parameter of type ${classOf[Config].getName}, or an apply method with
+           |the same signature""".stripMargin
+        )
     }
   }
 
