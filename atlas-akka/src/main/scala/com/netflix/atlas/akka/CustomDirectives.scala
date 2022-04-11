@@ -42,6 +42,7 @@ import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import akka.stream.Materializer
 import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.module.scala.JavaTypeable
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.ipc.NetflixHeader
 
@@ -86,7 +87,7 @@ object CustomDirectives {
     * directly on the directive. It also makes it possible to reuse `parseEntity`
     * with a custom function.
     */
-  def json[T: Manifest]: MediaType => ByteString => T = { mediaType => bs =>
+  def json[T: JavaTypeable]: MediaType => ByteString => T = { mediaType => bs =>
     {
       if (isSmile(mediaType))
         Json.smileDecode[T](inputStream(bs))
@@ -101,7 +102,7 @@ object CustomDirectives {
     * `application/x-jackson-smile`, then a smile parser will be used. Otherwise
     * it will be treated as `application/json` regardless of the content type.
     */
-  def customJson[T: Manifest](decoder: JsonParser => T): MediaType => ByteString => T = {
+  def customJson[T: JavaTypeable](decoder: JsonParser => T): MediaType => ByteString => T = {
     mediaType => bs =>
       {
         val p =
@@ -137,7 +138,7 @@ object CustomDirectives {
     * is `application/x-jackson-smile`, then a smile parser will be used. Otherwise
     * it will be treated as `application/json` regardless of the content type.
     */
-  def jsonUnmarshaller[T: Manifest]: FromRequestUnmarshaller[T] = {
+  def jsonUnmarshaller[T: JavaTypeable]: FromRequestUnmarshaller[T] = {
     val parse = json[T]
     new FromRequestUnmarshaller[T] {
       override def apply(

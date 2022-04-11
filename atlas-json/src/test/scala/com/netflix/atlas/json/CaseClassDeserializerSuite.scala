@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.module.scala.JavaTypeable
 import munit.FunSuite
 
 class CaseClassDeserializerSuite extends FunSuite {
@@ -34,8 +35,9 @@ class CaseClassDeserializerSuite extends FunSuite {
   private val mapper = new ObjectMapper()
     .registerModule(DefaultScalaModule)
 
-  def decode[T: Manifest](json: String): T = {
-    mapper.readValue[T](json, Reflection.typeReference[T])
+  def decode[T: JavaTypeable](json: String): T = {
+    val javaType = implicitly[JavaTypeable[T]].asJavaType(mapper.getTypeFactory)
+    mapper.readValue[T](json, javaType)
   }
 
   test("read simple object") {
@@ -238,7 +240,7 @@ object CaseClassDeserializerSuite {
 
   case class DeserAnno(@JsonDeserialize(contentAs = classOf[java.lang.Long]) value: Option[Long])
 
-  case class DeserUsingAnno(@JsonDeserialize(using = classOf[AddOneDeserializer]) value: Long)
+  case class DeserUsingAnno(@JsonDeserialize(`using` = classOf[AddOneDeserializer]) value: Long)
 
   class AddOneDeserializer extends JsonDeserializer[java.lang.Long] {
 
