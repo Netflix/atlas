@@ -136,8 +136,11 @@ class InterpreterSuite extends FunSuite {
   }
 
   test("typeSummary: Primitive") {
-    // Why do all of these get coerced to doubles?
-    assertEquals(Interpreter.typeSummary(List(42, 42.0, 42L)), "[Double,Double,Double]")
+    // scala 2.x: List(42, 4.0, 42L) will coerce all the values to Double. explicit Any
+    // annotation needed to get expected values.
+    //
+    // scala 3.x: List(42, 4.0, 42L) works as expected with no type annotation
+    assertEquals(Interpreter.typeSummary(List[Any](42, 42.0, 42L)), "[Long,Double,Integer]")
     assertEquals(Interpreter.typeSummary(42 :: 42.0 :: 42L :: Nil), "[Long,Double,Integer]")
   }
 

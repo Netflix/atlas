@@ -71,7 +71,7 @@ object StyleVocabulary extends Vocabulary {
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (v: String) :: PresentationType(t) :: s =>
-        t.copy(settings = t.settings + (name -> v)) :: s
+        t.copy(settings = t.settings + (this.name -> v)) :: s
     }
 
     override def signature: String = "TimeSeriesExpr String -- StyleExpr"

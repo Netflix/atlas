@@ -228,7 +228,7 @@ class TimeSeriesExprSuite extends FunSuite {
       test(s"eval global: $prg") {
         val c = interpreter.execute(prg)
         assertEquals(c.stack.size, 1)
-        val expr = c.stack.collect { case ModelExtractors.TimeSeriesType(t) => t } head
+        val expr = c.stack.collect { case ModelExtractors.TimeSeriesType(t) => t }.head
         val rs = expr.eval(p.ctxt, p.input)
         assertEquals(rs.expr, expr)
         assertEquals(bounded(rs.data, p.ctxt), bounded(p.output, p.ctxt))
@@ -239,7 +239,7 @@ class TimeSeriesExprSuite extends FunSuite {
           test(s"eval incremental $label: $prg") {
             val c = interpreter.execute(prg)
             assertEquals(c.stack.size, 1)
-            val expr = c.stack.collect { case ModelExtractors.TimeSeriesType(t) => t } head
+            val expr = c.stack.collect { case ModelExtractors.TimeSeriesType(t) => t }.head
             val rs = expr.eval(p.ctxt, p.input)
             val ctxts = p.ctxt.partition(step, ChronoUnit.MINUTES)
             var state = Map.empty[StatefulExpr, Any]
@@ -273,7 +273,7 @@ class TimeSeriesExprSuite extends FunSuite {
       test(s"eval global: $prg") {
         val c = interpreter.execute(prg)
         assertEquals(c.stack.size, 1)
-        val expr = c.stack.collect { case ModelExtractors.PresentationType(t) => t } head
+        val expr = c.stack.collect { case ModelExtractors.PresentationType(t) => t }.head
         val rs = expr.expr.eval(p.ctxt, p.input)
         assertEquals(rs.expr, expr.expr)
         assertEquals(bounded(rs.data, p.ctxt), bounded(p.output, p.ctxt))
