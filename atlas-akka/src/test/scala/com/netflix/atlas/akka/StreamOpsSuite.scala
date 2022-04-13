@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -55,32 +54,6 @@ class StreamOpsSuite extends FunSuite {
         val result = Utils.getTagValue(m.id(), "result")
         assertEquals(m.value(), expected.getOrElse(result, 0.0), result)
       }
-  }
-
-  test("source queue, enqueued") {
-    val registry = new DefaultRegistry()
-    val source = StreamOps.queue[Int](registry, "test", 10, OverflowStrategy.dropNew)
-    val queue = source.toMat(Sink.ignore)(Keep.left).run()
-    Await.result(Future.sequence(Seq(1, 2, 3, 4).map(queue.offer)), Duration.Inf)
-    queue.complete()
-    Await.result(queue.watchCompletion(), Duration.Inf)
-    checkOfferedCounts(registry, Map("enqueued" -> 4.0))
-  }
-
-  test("source queue, droppedQueueFull") {
-    val registry = new DefaultRegistry()
-    val source = StreamOps.queue[Future[Int]](registry, "test", 1, OverflowStrategy.dropNew)
-    val queue = source
-      .flatMapConcat(Source.future)
-      .toMat(Sink.ignore)(Keep.left)
-      .run()
-    val promise = Promise[Int]()
-    queue.offer(promise.future)
-    Await.result(Future.sequence(Seq(2, 3, 4, 5).map(i => queue.offer(Future(i)))), Duration.Inf)
-    promise.complete(Success(1))
-    queue.complete()
-    Await.result(queue.watchCompletion(), Duration.Inf)
-    checkOfferedCounts(registry, Map("enqueued" -> 2.0, "droppedQueueFull" -> 3.0))
   }
 
   test("blocking queue, enqueued") {
