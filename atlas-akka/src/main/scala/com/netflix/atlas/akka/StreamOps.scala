@@ -17,7 +17,6 @@ package com.netflix.atlas.akka
 
 import java.util.concurrent.TimeUnit
 
-import akka.Done
 import akka.NotUsed
 import akka.stream.ActorAttributes
 import akka.stream.Attributes
@@ -27,13 +26,11 @@ import akka.stream.Graph
 import akka.stream.Inlet
 import akka.stream.Materializer
 import akka.stream.Outlet
-import akka.stream.OverflowStrategy
 import akka.stream.QueueOfferResult
 import akka.stream.SourceShape
 import akka.stream.Supervision
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
@@ -42,10 +39,6 @@ import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Timer
 import com.typesafe.scalalogging.StrictLogging
-
-import scala.concurrent.Future
-import scala.util.Failure
-import scala.util.Success
 
 /**
   * Utility functions for commonly used operations on Akka streams. Most of these are for
@@ -67,66 +60,6 @@ object StreamOps extends StrictLogging {
         .increment()
       logger.warn(s"exception from stream stage", t)
       Supervision.Stop
-    }
-  }
-
-  /**
-    * Wraps a source queue and adds monitoring for the results of items offered to the queue.
-    * This can be used to detect if items are being dropped or offered after the associated
-    * stream has been closed.
-    *
-    * **Warning:** can have high memory use if the incoming data rate for the queue is not
-    * limited based on the future returned from `SourceQueueWithComplete.offer`.
-    *
-    * @param registry
-    *     Spectator registry to manage metrics for this queue.
-    * @param id
-    *     Dimension used to distinguish a particular queue usage.
-    * @param size
-    *     Number of enqueued items to allow before triggering the overflow strategy.
-    * @param strategy
-    *     How to handle items that come in while the queue is full.
-    */
-  def queue[T](
-    registry: Registry,
-    id: String,
-    size: Int,
-    strategy: OverflowStrategy
-  ): Source[T, SourceQueueWithComplete[T]] = {
-    Source
-      .queue[T](size, strategy)
-      .mapMaterializedValue(q => new WrappedSourceQueueWithComplete[T](registry, id, q))
-  }
-
-  private final class WrappedSourceQueueWithComplete[T](
-    registry: Registry,
-    id: String,
-    queue: SourceQueueWithComplete[T]
-  ) extends SourceQueueWithComplete[T] {
-
-    import OpportunisticEC._
-
-    private val baseId = registry.createId("akka.stream.offeredToQueue", "id", id)
-    private val enqueued = registry.counter(baseId.withTag("result", "enqueued"))
-    private val dropped = registry.counter(baseId.withTag("result", "droppedQueueFull"))
-    private val closed = registry.counter(baseId.withTag("result", "droppedQueueClosed"))
-    private val failed = registry.counter(baseId.withTag("result", "droppedQueueFailure"))
-    private val completed = registry.counter(baseId.withTag("result", "droppedStreamCompleted"))
-
-    override def complete(): Unit = queue.complete()
-
-    override def fail(ex: Throwable): Unit = queue.fail(ex)
-
-    override def watchCompletion(): Future[Done] = queue.watchCompletion()
-
-    override def offer(elem: T): Future[QueueOfferResult] = {
-      queue.offer(elem).andThen {
-        case Success(QueueOfferResult.Enqueued)    => enqueued.increment()
-        case Success(QueueOfferResult.Dropped)     => dropped.increment()
-        case Success(QueueOfferResult.QueueClosed) => closed.increment()
-        case Success(QueueOfferResult.Failure(_))  => failed.increment()
-        case Failure(t)                            => completed.increment()
-      }
     }
   }
 

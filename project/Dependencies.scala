@@ -5,15 +5,15 @@ import sbt.librarymanagement.DependencyBuilders.OrganizationArtifactName
 
 object Dependencies {
   object Versions {
-    val akka       = "2.6.18"
+    val akka       = "2.6.19"
     val akkaHttpV  = "10.2.9"
-    val iep        = "3.0.14"
+    val iep        = "3.0.16"
     val guice      = "5.1.0"
     val jackson    = "2.13.2"
     val log4j      = "2.17.2"
     val scala      = "2.13.8"
     val slf4j      = "1.7.36"
-    val spectator  = "1.1.2"
+    val spectator  = "1.3.0"
 
     val crossScala = Seq(scala)
   }
@@ -30,7 +30,7 @@ object Dependencies {
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.3"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.1.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.9"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.10"
   val guiceCoreBase     = "com.google.inject" % "guice"
   val guiceMultiBase    = "com.google.inject.extensions" % "guice-multibindings"
   val iepGuice          = "com.netflix.iep" % "iep-guice" % iep
@@ -59,8 +59,8 @@ object Dependencies {
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
   val postgres          = "org.postgresql" % "postgresql" % "42.3.3"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "1.3.1"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.25"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.26"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
