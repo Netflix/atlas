@@ -16,7 +16,6 @@
 package com.netflix.atlas.lwcapi
 
 import java.util.concurrent.TimeUnit
-
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.model.DataExpr
@@ -24,6 +23,7 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Query.KeyQuery
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.spectator.ipc.ServerGroup
 import com.typesafe.config.Config
 
 import scala.util.Failure
@@ -184,8 +184,20 @@ class ExpressionSplitter(config: Config) {
   }
 
   private[lwcapi] def compress(expr: Query): Query = {
-    val tmp = expr.rewrite { case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True }
-    simplify(tmp.asInstanceOf[Query])
+    val query = expr
+      .rewrite {
+        // Rewrite exact match for nf.asg to an exact match for the nf.cluster. When
+        // fetching expressions for a cluster, this will allow expressions with only
+        // a check for the asg to get filtered appropriately.
+        case q @ Query.Equal("nf.asg", asg) =>
+          val cluster = ServerGroup.parse(asg).cluster()
+          if (cluster == null) q else Query.Equal("nf.cluster", cluster)
+      }
+      .rewrite {
+        case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True
+      }
+      .asInstanceOf[Query]
+    simplify(query)
   }
 }
 
