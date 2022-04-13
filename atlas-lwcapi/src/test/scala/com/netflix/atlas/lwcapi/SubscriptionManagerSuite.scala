@@ -122,33 +122,45 @@ class SubscriptionManagerSuite extends FunSuite {
     )
   }
 
-  private def checkSubsForCluster(expr: String, cluster: String): Unit = {
+  private def subsForCluster(expr: String, cluster: String): List[String] = {
     val sm = new SubscriptionManager[Integer](new NoopRegistry)
     val s = sub(expr)
     sm.register(StreamMetadata("a"), 1)
     sm.subscribe("a", s)
     sm.regenerateQueryIndex()
-    assertEquals(sm.subscriptionsForCluster(cluster), List(s))
+    sm.subscriptionsForCluster(cluster).map(_.metadata.expression)
+  }
+
+  private def checkSubsForCluster(expr: String, cluster: String): Unit = {
+    assertEquals(subsForCluster(expr, cluster), List(expr))
   }
 
   test("subscriptions for cluster, just name") {
-    checkSubsForCluster("name,exp1,:eq", "www-dev")
+    checkSubsForCluster("name,exp1,:eq,:sum", "www-dev")
   }
 
   test("subscriptions for cluster, app") {
-    checkSubsForCluster("name,exp1,:eq,nf.app,www,:eq,:and", "www-dev")
+    checkSubsForCluster("name,exp1,:eq,nf.app,www,:eq,:and,:sum", "www-dev")
   }
 
   test("subscriptions for cluster, cluster") {
-    checkSubsForCluster("name,exp1,:eq,nf.cluster,www-dev,:eq,:and", "www-dev")
+    checkSubsForCluster("name,exp1,:eq,nf.cluster,www-dev,:eq,:and,:sum", "www-dev")
+  }
+
+  test("subscriptions for cluster, cluster no match") {
+    assertEquals(subsForCluster("name,exp1,:eq,nf.cluster,www-dev,:eq,:and,:sum", "foo-dev"), Nil)
   }
 
   test("subscriptions for cluster, asg") {
-    checkSubsForCluster("name,exp1,:eq,nf.asg,www-dev-v001,:eq,:and", "www-dev")
+    checkSubsForCluster("name,exp1,:eq,nf.asg,www-dev-v001,:eq,:and,:sum", "www-dev")
+  }
+
+  test("subscriptions for cluster, asg no match") {
+    assertEquals(subsForCluster("name,exp1,:eq,nf.asg,www-dev-v001,:eq,:and,:sum", "foo"), Nil)
   }
 
   test("subscriptions for cluster, stack") {
-    checkSubsForCluster("name,exp1,:eq,nf.stack,dev,:eq,:and", "www-dev")
+    checkSubsForCluster("name,exp1,:eq,nf.stack,dev,:eq,:and,:sum", "www-dev")
   }
 
   test("subscribe to unknown stream") {

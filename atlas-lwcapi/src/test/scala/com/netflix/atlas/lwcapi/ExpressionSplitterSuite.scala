@@ -96,6 +96,11 @@ class ExpressionSplitterSuite extends FunSuite {
     assertEquals(ret, Query.Equal("nf.cluster", "skan"))
   }
 
+  test("compress adds cluster condition based on nf.asg") {
+    val ret = splitter.compress(Query.Equal("nf.asg", "skan-v001"))
+    assertEquals(ret, Query.Equal("nf.cluster", "skan"))
+  }
+
   test("compress removes arbitrary other equal comparisons") {
     val ret = splitter.compress(Query.Equal("xxx", "skan"))
     assertEquals(ret, Query.True)
