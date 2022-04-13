@@ -189,9 +189,9 @@ class ExpressionSplitter(config: Config) {
         // Rewrite exact match for nf.asg to an exact match for the nf.cluster. When
         // fetching expressions for a cluster, this will allow expressions with only
         // a check for the asg to get filtered appropriately.
-        case Query.Equal("nf.asg", asg) =>
+        case q @ Query.Equal("nf.asg", asg) =>
           val cluster = ServerGroup.parse(asg).cluster()
-          Query.Equal("nf.cluster", cluster)
+          if (cluster == null) q else Query.Equal("nf.cluster", cluster)
       }
       .rewrite {
         case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True
