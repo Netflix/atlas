@@ -183,7 +183,7 @@ private[stream] class StreamContext(
     * Emit an error to the sources where the number of input
     * or intermediate datapoints exceed for an expression.
     */
-  def logDatapointsExceeded(timestamp: Long, dataExpr: DataExpr) = {
+  def logDatapointsExceeded(timestamp: Long, dataExpr: DataExpr): Unit = {
     val diagnosticMessage = DiagnosticMessage.error(
       s"expression: $dataExpr exceeded the configured max input datapoints limit" +
       s" '$maxInputDatapointsPerExpression' or max intermediate" +
