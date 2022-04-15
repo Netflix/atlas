@@ -18,7 +18,10 @@ package com.netflix.atlas.eval.stream
 import akka.http.scaladsl.model.Uri
 import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.Expr
+import com.netflix.atlas.core.model.FilterExpr
 import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
@@ -45,21 +48,32 @@ private[stream] class ExprInterpreter(config: Config) {
     }
 
     // Check that data expressions are supported. The streaming path doesn't support
-    // time shifts.
+    // time shifts, filters, and integral. The filters and integral are excluded because
+    // they can be confusing as the time window for evaluation is not bounded.
     val results = eval(expr).flatMap(_.perOffset)
     results.foreach { result =>
-      result.expr.dataExprs.foreach { dataExpr =>
-        if (!dataExpr.offset.isZero) {
-          throw new IllegalArgumentException(
-            s":offset not supported for streaming evaluation [[$dataExpr]]"
-          )
-        }
+      // Use rewrite as a helper for searching the expression for invalid operations
+      result.expr.rewrite {
+        case op: StatefulExpr.Integral         => invalidOperator(op); op
+        case op: FilterExpr                    => invalidOperator(op); op
+        case op: DataExpr if !op.offset.isZero => invalidOperator(op); op
       }
     }
 
     // Perform host rewrites based on the Atlas hostname
     val host = uri.authority.host.toString()
     hostRewriter.rewrite(host, results)
+  }
+
+  private def invalidOperator(expr: Expr): Unit = {
+    // The invalid operation should be at the end of the expression string so it
+    // can be easily extracted.
+    val s = expr.toString
+    val i = s.lastIndexOf(':'.toInt)
+    val op = if (i >= 0) s.substring(i) else "unknown"
+    throw new IllegalArgumentException(
+      s"$op not supported for streaming evaluation [[$expr]]"
+    )
   }
 
   def dataExprMap(ds: DataSources): Map[DataExpr, List[DataSource]] = {

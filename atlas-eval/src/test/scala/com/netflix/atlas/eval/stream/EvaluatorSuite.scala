@@ -478,17 +478,34 @@ class EvaluatorSuite extends FunSuite {
     assertEquals(e.getMessage, "unknown word ':b'")
   }
 
-  test("validate: unsupported operation `:offset`") {
+  private def invalidOperator(op: String, expr: String): Unit = {
     val evaluator = new Evaluator(config, registry, system)
     val ds = new Evaluator.DataSource(
       "test",
       Duration.ofMinutes(1),
-      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:sum,1w,:offset"
+      s"resource:///gc-pause.dat?q=$expr"
     )
     val e = intercept[IllegalArgumentException] {
       evaluator.validate(ds)
     }
-    assert(e.getMessage.startsWith(":offset not supported for streaming evaluation "))
+    assert(e.getMessage.startsWith(s":$op not supported for streaming evaluation "))
+
+  }
+
+  test("validate: unsupported operation `:offset`") {
+    invalidOperator("offset", "name,jvm.gc.pause,:eq,:sum,1w,:offset")
+  }
+
+  test("validate: unsupported operation `:integral`") {
+    invalidOperator("integral", "name,jvm.gc.pause,:eq,:sum,:integral")
+  }
+
+  test("validate: unsupported operation `:filter`") {
+    invalidOperator("filter", "name,jvm.gc.pause,:eq,:sum,:stat-max,5,:gt,:filter")
+  }
+
+  test("validate: unsupported operation `:topk`") {
+    invalidOperator("topk", "name,jvm.gc.pause,:eq,:sum,max,5,:topk")
   }
 
   test("validate: unknown backend") {
