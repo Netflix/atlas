@@ -165,17 +165,13 @@ object CustomVocabulary {
       val nq = extractCommonQuery(q)
       val numerator = DataExpr.Sum(q)
       val denominator = DataExpr.Sum(baseQuery.and(nq))
-      if (ks.forall(keys.contains)) {
-        // All keys in group by are shared by both sides
-        MathExpr.Divide(DataExpr.GroupBy(numerator, ks), DataExpr.GroupBy(denominator, ks))
-      } else if (ks.forall(k => !keys.contains(k))) {
-        // All keys in group by are only valid for the numerator
+      val denominatorKeys = ks.filter(keys.contains)
+      if (denominatorKeys.isEmpty) {
         MathExpr.Divide(DataExpr.GroupBy(numerator, ks), denominator)
       } else {
-        // Mix of keys that are common to both sides and keys that can only be
-        // applied to the numerator
-        throw new IllegalArgumentException(
-          s"invalid key list for grouping $name, mixes shared and non-shared tag keys"
+        MathExpr.Divide(
+          DataExpr.GroupBy(numerator, ks),
+          DataExpr.GroupBy(denominator, denominatorKeys)
         )
       }
     }
