@@ -139,9 +139,13 @@ class CustomVocabularySuite extends FunSuite {
   }
 
   test("group by mixed keys") {
-    intercept[IllegalArgumentException] {
-      eval("name,(,a,b,c,),:in,app,beacon,:eq,:and,:node-avg,(,name,asg,),:by")
+    val expr = eval("name,(,a,b,c,),:in,app,beacon,:eq,:and,:node-avg,(,name,asg,),:by").rewrite {
+      case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
     }
+    val expected = eval(
+      s"name,(,a,b,c,),:in,:sum,(,name,asg,),:by,$numInstances,:sum,(,asg,),:by,:div,app,beacon,:eq,:cq"
+    )
+    assertEquals(expr, expected)
   }
 
   test("cg after style") {
