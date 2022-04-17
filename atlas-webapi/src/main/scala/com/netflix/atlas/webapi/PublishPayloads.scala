@@ -24,7 +24,6 @@ import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.RefIntHashMap
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
@@ -52,7 +51,7 @@ object PublishPayloads {
 
   private def decodeTags(parser: JsonParser, commonTags: TagMap, intern: Boolean): TagMap = {
     val strInterner = Interner.forStrings
-    val b = new SmallHashMap.Builder[String, String](2 * maxPermittedTags)
+    val b = SortedTagMap.builder(maxPermittedTags)
     if (commonTags != null) b.addAll(commonTags)
     foreachField(parser) {
       case key =>
@@ -64,7 +63,7 @@ object PublishPayloads {
             b.add(key, value)
         }
     }
-    if (intern) TaggedItem.internTagsShallow(b.compact) else b.result
+    if (intern) TaggedItem.internTagsShallow(b.compact()) else b.result()
   }
 
   private def getValue(parser: JsonParser): Double = {
@@ -159,7 +158,7 @@ object PublishPayloads {
     finally parser.close()
   }
 
-  private def decodeDatapoints(parser: JsonParser, commonTags: TagMap): Datapoint = {
+  private def decodeDatapoint(parser: JsonParser, commonTags: TagMap): Datapoint = {
     var tags: TagMap = null
     var timestamp: Long = -1L
     var value: Double = Double.NaN
@@ -193,7 +192,7 @@ object PublishPayloads {
       case "metrics" =>
         tagsLoadedFirst = (tags != null)
         val builder = List.newBuilder[Datapoint]
-        foreachItem(parser) { builder += decodeDatapoints(parser, tags) }
+        foreachItem(parser) { builder += decodeDatapoint(parser, tags) }
         metrics = builder.result()
     }
 

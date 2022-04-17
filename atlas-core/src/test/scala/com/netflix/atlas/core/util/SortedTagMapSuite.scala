@@ -190,6 +190,32 @@ class SortedTagMapSuite extends FunSuite {
     assert(b.compareTo(a) > 0)
   }
 
+  test("builder: compact result") {
+    val expected = SortedTagMap
+      .builder(50)
+      .add("a", "1")
+      .add("b", "2")
+      .result()
+    val actual = SortedTagMap
+      .builder(50)
+      .add("a", "1")
+      .add("b", "2")
+      .compact()
+    assertEquals(actual, expected)
+    assertEquals(actual.backingArraySize, 4)
+  }
+
+  test("builder: compact result, no change") {
+    val expected = SortedTagMap("a" -> "1", "b" -> "2")
+    val actual = SortedTagMap
+      .builder(2)
+      .add("a", "1")
+      .add("b", "2")
+      .compact()
+    assertEquals(actual, expected)
+    assertEquals(actual.backingArraySize, 4)
+  }
+
   test("equals contract") {
     val a = SortedTagMap(Array("a", "1", "b", "2"))
     val b = SortedTagMap(Array("a", "1", "b", "2", "c", "3"))
