@@ -4,7 +4,7 @@ Backend for managing dimensional time series data.
 
 ## Links
 
-* [Documentation](https://github.com/Netflix/atlas/wiki)
+* [Documentation](https://netflix.github.io/atlas-docs/)
 * [Mailing List](https://groups.google.com/forum/#!forum/netflix-atlas)
 * [Issues](https://github.com/Netflix/atlas/issues)
 * [Releases](https://github.com/Netflix/atlas/releases)
