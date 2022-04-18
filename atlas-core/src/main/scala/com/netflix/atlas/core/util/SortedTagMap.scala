@@ -133,6 +133,14 @@ final class SortedTagMap private (private val data: Array[String], private val l
   }
 
   /**
+    * Returns the size of the backing array. Since the array has keys and values, the array
+    * size will be twice the number of tuples it can hold.
+    */
+  private[util] def backingArraySize: Int = {
+    data.length
+  }
+
+  /**
     * Overridden to get better performance.
     */
   override def hashCode: Int = {
@@ -355,6 +363,19 @@ object SortedTagMap {
       val map = createUnsafe(buf, pos)
       buf = null
       map
+    }
+
+    /**
+      * Same as result except that it will ensure the backing array is sized to exactly
+      * fit the data.
+      */
+    def compact(): SortedTagMap = {
+      if (pos < buf.length) {
+        val tmp = new Array[String](pos)
+        System.arraycopy(buf, 0, tmp, 0, pos)
+        buf = tmp
+      }
+      result()
     }
   }
 }
