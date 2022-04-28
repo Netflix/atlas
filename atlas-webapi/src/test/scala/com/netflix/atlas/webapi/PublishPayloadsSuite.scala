@@ -152,6 +152,26 @@ class PublishPayloadsSuite extends FunSuite {
     assertEquals(decodedBefore, decodedAfter)
   }
 
+  test("decode batch datapoints with common tags before and after data") {
+    val metrics =
+      """
+        |"metrics": [
+        |  {
+        |    "tags": {"name": "test", "a": "1", "b": "2"},
+        |    "timestamp": 1651170761000,
+        |    "value": 1.0
+        |  }
+        |]
+        |""".stripMargin
+    val inputBefore = s"""{"tags": {"common": "v", "b": "3"}, $metrics}"""
+    val inputAfter = s"""{$metrics, "tags": {"common": "v", "b": "3"}}"""
+
+    val decodedBefore = PublishPayloads.decodeBatchDatapoints(inputBefore)
+    val decodedAfter = PublishPayloads.decodeBatchDatapoints(inputAfter)
+
+    assertEquals(decodedBefore, decodedAfter)
+  }
+
   test("encode and decode batch") {
     val input = datapoints(10)
     val encoded = PublishPayloads.encodeBatchDatapoints(Map.empty, input)

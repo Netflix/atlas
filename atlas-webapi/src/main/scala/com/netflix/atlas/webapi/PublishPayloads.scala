@@ -205,7 +205,7 @@ object PublishPayloads {
     if (tagsLoadedFirst || tags == null) {
       if (metrics == null) Nil else metrics
     } else {
-      metrics.map(d => d.copy(tags = d.tags ++ tags))
+      metrics.map(d => d.copy(tags = tags ++ d.tags))
     }
   }
 
