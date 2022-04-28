@@ -144,7 +144,11 @@ object PublishPayloads {
     if (tagsLoadedFirst || tags == null) {
       if (metrics == null) Nil else metrics
     } else {
-      metrics.map(d => d.copy(tags = d.tags ++ tags))
+      metrics.map { d =>
+        val metricTags = tags ++ d.tags
+        val id = if (intern) TaggedItem.createId(metricTags) else TaggedItem.computeId(metricTags)
+        d.copy(id = id, tags = metricTags)
+      }
     }
   }
 
@@ -201,7 +205,7 @@ object PublishPayloads {
     if (tagsLoadedFirst || tags == null) {
       if (metrics == null) Nil else metrics
     } else {
-      metrics.map(d => d.copy(tags = d.tags ++ tags))
+      metrics.map(d => d.copy(tags = tags ++ d.tags))
     }
   }
 

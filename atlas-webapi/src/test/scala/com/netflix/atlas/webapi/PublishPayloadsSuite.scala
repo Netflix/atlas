@@ -17,6 +17,7 @@ package com.netflix.atlas.webapi
 
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.DatapointTuple
+import com.netflix.atlas.core.model.ItemIdCalculator
 import com.netflix.atlas.core.util.SortedTagMap
 import munit.FunSuite
 
@@ -72,6 +73,103 @@ class PublishPayloadsSuite extends FunSuite {
     assert(decoded.head.value.isNaN)
     assertEquals(decoded.head.tags, input.head.tags)
     assertEquals(decoded.tail, input.tail)
+  }
+
+  test("encode and decode batch tuples with common tags") {
+    val input = datapointTuples(10)
+    val encoded = PublishPayloads.encodeBatch(Map("common" -> "v"), input)
+    val decoded = PublishPayloads.decodeBatch(encoded)
+
+    val expected = input.map { d =>
+      val tags = d.tags + ("common" -> "v")
+      val id = ItemIdCalculator.compute(tags)
+      d.copy(id = id, tags = tags)
+    }
+
+    assert(decoded.head.value.isNaN)
+    assertEquals(decoded.head.tags, expected.head.tags)
+    assertEquals(decoded.tail, expected.tail)
+  }
+
+  test("encode and decode batch tuples with common tags conflict") {
+    val input = datapointTuples(10)
+    // value from metric should override
+    val encoded = PublishPayloads.encodeBatch(Map("i" -> "c"), input)
+    val decoded = PublishPayloads.decodeBatch(encoded)
+
+    assert(decoded.head.value.isNaN)
+    assertEquals(decoded.head.tags, input.head.tags)
+    assertEquals(decoded.tail, input.tail)
+  }
+
+  test("decode batch tuples with common tags after data") {
+    val input =
+      """
+        |{
+        |  "metrics": [
+        |    {
+        |      "tags": {"name": "test", "a": "1", "b": "2"},
+        |      "timestamp": 1651170761000,
+        |      "value": 1.0
+        |    }
+        |  ],
+        |  "tags": {"common": "v", "b": "3"}
+        |}
+        |""".stripMargin
+    val decoded = PublishPayloads.decodeBatch(input)
+
+    val tags = Map("name" -> "test", "a" -> "1", "b" -> "2", "common" -> "v")
+    val id = ItemIdCalculator.compute(tags)
+    val expected = List(
+      DatapointTuple(
+        id = id,
+        tags = tags,
+        timestamp = 1651170761000L,
+        value = 1.0
+      )
+    )
+
+    assertEquals(decoded, expected)
+  }
+
+  test("decode batch tuples with common tags before and after data") {
+    val metrics =
+      """
+        |"metrics": [
+        |  {
+        |    "tags": {"name": "test", "a": "1", "b": "2"},
+        |    "timestamp": 1651170761000,
+        |    "value": 1.0
+        |  }
+        |]
+        |""".stripMargin
+    val inputBefore = s"""{"tags": {"common": "v", "b": "3"}, $metrics}"""
+    val inputAfter = s"""{$metrics, "tags": {"common": "v", "b": "3"}}"""
+
+    val decodedBefore = PublishPayloads.decodeBatch(inputBefore)
+    val decodedAfter = PublishPayloads.decodeBatch(inputAfter)
+
+    assertEquals(decodedBefore, decodedAfter)
+  }
+
+  test("decode batch datapoints with common tags before and after data") {
+    val metrics =
+      """
+        |"metrics": [
+        |  {
+        |    "tags": {"name": "test", "a": "1", "b": "2"},
+        |    "timestamp": 1651170761000,
+        |    "value": 1.0
+        |  }
+        |]
+        |""".stripMargin
+    val inputBefore = s"""{"tags": {"common": "v", "b": "3"}, $metrics}"""
+    val inputAfter = s"""{$metrics, "tags": {"common": "v", "b": "3"}}"""
+
+    val decodedBefore = PublishPayloads.decodeBatchDatapoints(inputBefore)
+    val decodedAfter = PublishPayloads.decodeBatchDatapoints(inputAfter)
+
+    assertEquals(decodedBefore, decodedAfter)
   }
 
   test("encode and decode batch") {
