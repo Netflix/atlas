@@ -266,7 +266,8 @@ object SortedTagMap {
   def apply(data: Array[String]): SortedTagMap = {
     val array = java.util.Arrays.copyOf(data, data.length)
     ArrayHelper.sortPairs(array)
-    new SortedTagMap(array, array.length)
+    val length = dedup(array, array.length)
+    new SortedTagMap(array, length)
   }
 
   /**
@@ -292,11 +293,41 @@ object SortedTagMap {
   }
 
   /**
-    * Create a new instance from an already sorted array. The array will be reused and should
-    * not be modified.
+    * Create a new instance from an already sorted and deduped array. The array will be used
+    * internally to the map and should not be modified.
     */
   def createUnsafe(data: Array[String], length: Int): SortedTagMap = {
     new SortedTagMap(data, length)
+  }
+
+  /**
+    * Dedup any entries in the array that have the same key. The last entry with a given
+    * key will get selected. Input data must already be sorted by the tag key. Returns the
+    * length of the overall deduped array.
+    */
+  private def dedup(data: Array[String], len: Int): Int = {
+    if (len == 0) {
+      0
+    } else {
+      var k = data(0)
+      var i = 2
+      var j = 0
+      while (i < len) {
+        if (k == data(i)) {
+          data(j) = data(i)
+          data(j + 1) = data(i + 1)
+        } else {
+          j += 2 // Not deduping, skip over previous entry
+          k = data(i)
+          if (i > j) {
+            data(j) = k
+            data(j + 1) = data(i + 1)
+          }
+        }
+        i += 2
+      }
+      j + 2
+    }
   }
 
   /**
@@ -360,7 +391,8 @@ object SortedTagMap {
       */
     def result(): SortedTagMap = {
       ArrayHelper.sortPairs(buf, pos)
-      val map = createUnsafe(buf, pos)
+      val length = dedup(buf, pos)
+      val map = createUnsafe(buf, length)
       buf = null
       map
     }
@@ -370,12 +402,19 @@ object SortedTagMap {
       * fit the data.
       */
     def compact(): SortedTagMap = {
-      if (pos < buf.length) {
-        val tmp = new Array[String](pos)
-        System.arraycopy(buf, 0, tmp, 0, pos)
-        buf = tmp
+      ArrayHelper.sortPairs(buf, pos)
+      val length = dedup(buf, pos)
+      if (length < buf.length) {
+        val tmp = new Array[String](length)
+        System.arraycopy(buf, 0, tmp, 0, length)
+        val map = createUnsafe(tmp, length)
+        buf = null
+        map
+      } else {
+        val map = createUnsafe(buf, length)
+        buf = null
+        map
       }
-      result()
     }
   }
 }
