@@ -72,6 +72,24 @@ class SortedTagMapSuite extends FunSuite {
     assertEquals(m.toList, pairs)
   }
 
+  test("apply: array with duplicates") {
+    val actual = SortedTagMap(Array("a", "1", "b", "2", "a", "3"))
+    val expected = SortedTagMap("a" -> "3", "b" -> "2")
+    assertEquals(actual, expected)
+  }
+
+  test("apply: varargs tuples with duplicates") {
+    val actual = SortedTagMap("a"   -> "1", "b" -> "2", "a" -> "3")
+    val expected = SortedTagMap("a" -> "3", "b" -> "2")
+    assertEquals(actual, expected)
+  }
+
+  test("apply: varargs tuples with duplicates") {
+    val actual = SortedTagMap(List("a" -> "1", "b" -> "2", "a" -> "3"))
+    val expected = SortedTagMap("a" -> "3", "b" -> "2")
+    assertEquals(actual, expected)
+  }
+
   test("equals") {
     val input = scala.util.Random.shuffle(pairs)
     val actual: Map[String, String] = SortedTagMap(input)
@@ -98,6 +116,13 @@ class SortedTagMapSuite extends FunSuite {
     val expected = SortedTagMap(input)
     assertEquals(actual, expected)
     assert(actual.isInstanceOf[SortedTagMap])
+  }
+
+  test("updates: combining maps") {
+    val m1 = SortedTagMap("a"       -> "1", "b" -> "2", "c" -> "3")
+    val m2 = SortedTagMap("a"       -> "4", "b" -> "5", "d" -> "6")
+    val expected = SortedTagMap("a" -> "4", "b" -> "5", "c" -> "3", "d" -> "6")
+    assertEquals(m1 ++ m2, expected)
   }
 
   @scala.annotation.tailrec
@@ -188,6 +213,30 @@ class SortedTagMapSuite extends FunSuite {
     val b = SortedTagMap(Array("a", "1", "b", "2", "c", "3"))
     assert(a.compareTo(b) < 0)
     assert(b.compareTo(a) > 0)
+  }
+
+  test("builder: duplicates result") {
+    val m1 = SortedTagMap("a" -> "1", "b" -> "2", "c" -> "3")
+    val m2 = SortedTagMap("a" -> "4", "b" -> "5", "d" -> "6")
+    val actual = SortedTagMap
+      .builder()
+      .addAll(m1)
+      .addAll(m2)
+      .result()
+    val expected = SortedTagMap("a" -> "4", "b" -> "5", "c" -> "3", "d" -> "6")
+    assertEquals(actual, expected)
+  }
+
+  test("builder: duplicates compact") {
+    val m1 = SortedTagMap("a" -> "1", "b" -> "2", "c" -> "3")
+    val m2 = SortedTagMap("a" -> "4", "b" -> "5", "d" -> "6")
+    val actual = SortedTagMap
+      .builder()
+      .addAll(m1)
+      .addAll(m2)
+      .result()
+    val expected = SortedTagMap("a" -> "4", "b" -> "5", "c" -> "3", "d" -> "6")
+    assertEquals(actual, expected)
   }
 
   test("builder: compact result") {
