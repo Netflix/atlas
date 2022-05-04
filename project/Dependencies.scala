@@ -7,13 +7,13 @@ object Dependencies {
   object Versions {
     val akka       = "2.6.19"
     val akkaHttpV  = "10.2.9"
-    val iep        = "3.0.16"
+    val iep        = "3.0.18"
     val guice      = "5.1.0"
     val jackson    = "2.13.2"
     val log4j      = "2.17.2"
     val scala      = "2.13.8"
     val slf4j      = "1.7.36"
-    val spectator  = "1.3.0"
+    val spectator  = "1.3.2"
 
     val crossScala = Seq(scala)
   }
@@ -29,7 +29,7 @@ object Dependencies {
   val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.3"
-  val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.1.0"
+  val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.2.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.10"
   val guiceCoreBase     = "com.google.inject" % "guice"
   val guiceMultiBase    = "com.google.inject.extensions" % "guice-multibindings"
@@ -57,7 +57,7 @@ object Dependencies {
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
-  val postgres          = "org.postgresql" % "postgresql" % "42.3.3"
+  val postgres          = "org.postgresql" % "postgresql" % "42.3.5"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "1.3.1"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.26"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0"

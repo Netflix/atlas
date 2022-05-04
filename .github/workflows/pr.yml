@@ -7,7 +7,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        java: [11, 17]
+        java: [17, 18]
         scala: [2.13.8]
     steps:
       - uses: actions/checkout@v3
