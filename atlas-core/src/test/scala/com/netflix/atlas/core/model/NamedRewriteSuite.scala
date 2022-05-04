@@ -46,7 +46,9 @@ class NamedRewriteSuite extends FunSuite {
   }
 
   private def eval(program: String): List[StyleExpr] = {
-    interpreter.execute(program).stack.flatMap {
+    // Eval and re-encode to make sure display expression is consistent with the
+    // original expression.
+    interpreter.execute(rawEval(program).mkString(",")).stack.flatMap {
       case ModelExtractors.PresentationType(t) =>
         val expanded = t.rewrite {
           case nr: MathExpr.NamedRewrite => nr.evalExpr
@@ -187,6 +189,12 @@ class NamedRewriteSuite extends FunSuite {
     assertEquals(actual, expected)
   }
 
+  test("freeze works with named rewrite, cg") {
+    val actual = eval("name,a,:eq,:freeze,name,b,:eq,:avg,:list,(,(,b,),:cg,),:each")
+    val expected = eval("name,a,:eq,name,b,:eq,:avg,(,b,),:by")
+    assertEquals(actual, expected)
+  }
+
   test("freeze works with named rewrite, add") {
     val actual = eval("name,a,:eq,:freeze,name,b,:eq,:avg,:list,(,42,:add,),:each")
     val expected = eval("name,a,:eq,name,b,:eq,:avg,42,:add")
@@ -205,8 +213,20 @@ class NamedRewriteSuite extends FunSuite {
     assertEquals(actual, expected)
   }
 
+  test("pct rewrite with cg") {
+    val actual = eval("name,a,:eq,(,b,),:by,:pct,c,:has,(,c,),:cg")
+    val expected = eval("name,a,:eq,(,b,),:by,:dup,:sum,:div,100,:mul,c,:has,(,c,),:cg")
+    assertEquals(actual, expected)
+  }
+
   test("pct after binary op") {
     val actual = eval("name,a,:eq,(,b,),:by,10,:mul,:pct")
+    val expected = eval("name,a,:eq,(,b,),:by,10,:mul,:dup,:sum,:div,100,:mul")
+    assertEquals(actual, expected)
+  }
+
+  test("pct after binary op with cg") {
+    val actual = eval("name,a,:eq,10,:mul,:pct,(,b,),:cg")
     val expected = eval("name,a,:eq,(,b,),:by,10,:mul,:dup,:sum,:div,100,:mul")
     assertEquals(actual, expected)
   }
@@ -234,5 +254,21 @@ class NamedRewriteSuite extends FunSuite {
     val actual = eval("name,a,:eq,:sum,:des-fast,1w,:offset,foo,bar,:eq,:cq")
     val expected = eval("name,a,:eq,foo,bar,:eq,:and,:sum,:des-fast,1w,:offset")
     assertEquals(actual, expected)
+  }
+
+  test("named rewrite, avg with grouping and cg") {
+    val exprs = rawEval("name,a,:eq,:sum,(,b,),:by,:avg,:list,(,(,c,),:cg,),:each")
+    val exprs2 = rawEval(exprs.mkString(","))
+    val expected = rawEval("name,a,:eq,:sum,(,b,c,),:by,:avg")
+    assertEquals(exprs, expected)
+    assertEquals(exprs2, expected)
+  }
+
+  test("named rewrite, avg and cg") {
+    val exprs = rawEval("name,a,:eq,:avg,:list,(,(,c,),:cg,),:each")
+    val exprs2 = rawEval(exprs.mkString(","))
+    val expected = rawEval("name,a,:eq,:avg,(,c,),:by")
+    assertEquals(exprs, expected)
+    assertEquals(exprs2, expected)
   }
 }
