@@ -17,12 +17,7 @@ jobs:
         with:
           java-version: 17
           distribution: 'zulu'
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/.sbt
-            ~/.ivy2
-          key: ${{ runner.os }}-${{ hashFiles('**/*.sbt') }}
+          cache: 'sbt'
       - name: SetupPGP
         run: echo $ORG_SIGNING_KEY | sed -r 's/-----[^-]+-----//g;s/\n//g;s/ //g' | base64 --decode | gpg --batch --import
         env:
