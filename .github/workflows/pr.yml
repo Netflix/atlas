@@ -16,12 +16,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'zulu'
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/.sbt
-            ~/.ivy2
-          key: ${{ runner.os }}-${{ hashFiles('**/*.sbt') }}
+          cache: 'sbt'
       - name: Build
         run: cat /dev/null | project/sbt ++${{ matrix.scala }} clean test doc
   check:
@@ -33,11 +28,6 @@ jobs:
         with:
           java-version: 11
           distribution: 'zulu'
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/.sbt
-            ~/.ivy2
-          key: ${{ runner.os }}-${{ hashFiles('**/*.sbt') }}
+          cache: 'sbt'
       - name: Build
         run: cat /dev/null | project/sbt checkLicenseHeaders scalafmtCheckAll
