@@ -735,14 +735,13 @@ object MathExpr {
     // level. See DataExpr.GroupBy for the first level based on the raw data.
     require(expr.expr.isGrouped, "input expression must already be grouped with DataExpr.GroupBy")
 
-    // We can only group using a subset of the previous group by results.
-    private val dataGroups = expr.dataExprs.collect { case e: DataExpr.GroupBy => e }
-    dataGroups.foreach { grp =>
-      require(
-        keys.forall(key => grp.keys.contains(key)),
-        s"(,${keys.mkString(",")},) is not a subset of (,${grp.keys.mkString(",")},)"
-      )
-    }
+    // We can only group using a subset of the previous group by results based on the final
+    // grouping before the preceding aggregate.
+    private val preAggrGrouping = expr.expr.finalGrouping
+    require(
+      keys.forall(preAggrGrouping.contains),
+      s"(,${keys.mkString(",")},) is not a subset of (,${preAggrGrouping.mkString(",")},)"
+    )
 
     // Extract the common keys from queries so we can retain those tags in in the final output
     // to the user.
@@ -1006,7 +1005,11 @@ object MathExpr {
           }
 
           buffer.toString()
-        case t: TimeSeriesExpr if t.finalGrouping == evalExpr.finalGrouping =>
+        case t: TimeSeriesExpr if groupingMatches =>
+          // The passed in expression maybe the result of a rewrite to the display expression
+          // that was not applied to the eval expression. If it changes the grouping, then it
+          // would alter the toString behavior. So the grouping match check is based on the
+          // original display expression.
           val evalOffset = getOffset(evalExpr)
           evalOffset.fold(s"$t,:$name") { d =>
             val displayOffset = getOffset(t).getOrElse(Duration.ZERO)
@@ -1016,6 +1019,13 @@ object MathExpr {
           val grouping = evalExpr.finalGrouping
           val by = if (grouping.nonEmpty) grouping.mkString(",(,", ",", ",),:by") else ""
           s"$expr,:$name$by"
+      }
+    }
+
+    private def groupingMatches: Boolean = {
+      displayExpr match {
+        case t: TimeSeriesExpr => t.finalGrouping == evalExpr.finalGrouping
+        case _                 => false
       }
     }
 
