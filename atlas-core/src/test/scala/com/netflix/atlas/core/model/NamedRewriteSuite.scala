@@ -16,7 +16,6 @@
 package com.netflix.atlas.core.model
 
 import java.time.Duration
-
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
@@ -268,6 +267,24 @@ class NamedRewriteSuite extends FunSuite {
     val exprs = rawEval("name,a,:eq,:avg,:list,(,(,c,),:cg,),:each")
     val exprs2 = rawEval(exprs.mkString(","))
     val expected = rawEval("name,a,:eq,:avg,(,c,),:by")
+    assertEquals(exprs, expected)
+    assertEquals(exprs2, expected)
+  }
+
+  test("named rewrite, custom avg and cg") {
+    val q = "name,foo,:eq"
+    val exprs = rawEval(s"$q,(,a,b,),:by,$q,:node-avg,:lt,:sum,(,a,),:by,(,c,),:cg")
+    val exprs2 = rawEval(exprs.mkString(","))
+    val expected = rawEval(s"$q,(,a,b,c,),:by,$q,:node-avg,(,c,),:by,:lt,(,a,c,),:by")
+    assertEquals(exprs, expected)
+    assertEquals(exprs2, expected)
+  }
+
+  test("named rewrite, des and cg") {
+    val q = "name,foo,:eq"
+    val exprs = rawEval(s"$q,(,a,),:by,:des-fast,(,b,),:cg")
+    val exprs2 = rawEval(exprs.mkString(","))
+    val expected = rawEval(s"$q,(,a,b,),:by,:des-fast")
     assertEquals(exprs, expected)
     assertEquals(exprs2, expected)
   }

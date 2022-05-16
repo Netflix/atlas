@@ -475,8 +475,10 @@ object MathVocabulary extends Vocabulary {
 
     private def addCommonKeys(expr: TimeSeriesExpr, keys: List[String]): TimeSeriesExpr = {
       val newExpr = expr.rewrite {
+        case nr @ MathExpr.NamedRewrite(_, _: Query, e, _, _) if e.isGrouped =>
+          nr.copy(evalExpr = addCommonKeys(e, keys))
         case nr @ MathExpr.NamedRewrite(_, _: Query, _, _, _) =>
-          nr.copy(evalExpr = addCommonKeys(nr.evalExpr, keys))
+          nr.groupBy(keys)
         case af: AggregateFunction =>
           DataExpr.GroupBy(af, keys)
         case e: DataExpr.GroupBy =>
