@@ -661,7 +661,7 @@ object MathExpr {
     }
   }
 
-  trait AggrMathExpr extends TimeSeriesExpr {
+  sealed trait AggrMathExpr extends TimeSeriesExpr {
 
     def name: String
 
