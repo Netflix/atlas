@@ -307,4 +307,13 @@ class MathGroupBySuite extends FunSuite {
     val exprExplicit = eval(inputExplicit)
     assertEquals(expr.toString, exprExplicit.toString)
   }
+
+  test("cg with non-grouped math aggr") {
+    val input = "name,foo,:eq,:sum,(,a,),:by,5,:mul,:sum,(,b,),:cg"
+    val inputExplicit = "name,foo,:eq,:sum,(,a,b,),:by,5,:mul,:sum,(,b,),:by"
+
+    val expr = eval(input)
+    val exprExplicit = eval(inputExplicit)
+    assertEquals(expr.toString, exprExplicit.toString)
+  }
 }

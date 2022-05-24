@@ -481,13 +481,25 @@ object MathVocabulary extends Vocabulary {
           nr.groupBy(keys)
         case af: AggregateFunction =>
           DataExpr.GroupBy(af, keys)
+        case af: MathExpr.AggrMathExpr =>
+          val e = addCommonKeys(af.expr, keys)
+          MathExpr.GroupBy(copy(af, e), keys)
         case e: DataExpr.GroupBy =>
           e.copy(keys = mergeKeys(e.keys, keys))
         case e: MathExpr.GroupBy =>
-          val af = addCommonKeys(e.expr, keys).asInstanceOf[AggrMathExpr]
+          val af = copy(e.expr, addCommonKeys(e.expr.expr, keys))
           MathExpr.GroupBy(af, mergeKeys(e.keys, keys))
       }
       newExpr.asInstanceOf[TimeSeriesExpr]
+    }
+
+    private def copy(aggr: AggrMathExpr, expr: TimeSeriesExpr): AggrMathExpr = {
+      aggr match {
+        case af @ MathExpr.Count(_) => af.copy(expr = expr)
+        case af @ MathExpr.Max(_)   => af.copy(expr = expr)
+        case af @ MathExpr.Min(_)   => af.copy(expr = expr)
+        case af @ MathExpr.Sum(_)   => af.copy(expr = expr)
+      }
     }
 
     override protected def executor: PartialFunction[List[Any], List[Any]] = {
