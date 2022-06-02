@@ -9,7 +9,7 @@ object Dependencies {
     val akkaHttpV  = "10.2.9"
     val iep        = "3.0.18"
     val guice      = "5.1.0"
-    val jackson    = "2.13.2"
+    val jackson    = "2.13.3"
     val log4j      = "2.17.2"
     val scala      = "2.13.8"
     val slf4j      = "1.7.36"
@@ -45,7 +45,7 @@ object Dependencies {
   val jacksonCore       = "com.fasterxml.jackson.core" % "jackson-core" % jackson
   val jacksonJava8      = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jackson
   val jacksonJsr310     = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jackson
-  val jacksonMapper     = "com.fasterxml.jackson.core" % "jackson-databind" % (jackson + ".2")
+  val jacksonMapper     = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
   val jacksonScala      = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile      = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jol               = "org.openjdk.jol" % "jol-core" % "0.16"
