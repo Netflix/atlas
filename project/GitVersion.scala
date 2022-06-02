@@ -1,7 +1,7 @@
 import sbt._
 import sbt.Keys._
 import sbtrelease.Version
-import com.typesafe.sbt.SbtGit._
+import com.github.sbt.git.SbtGit._
 
 object GitVersion {
 
