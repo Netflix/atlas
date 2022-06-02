@@ -7,13 +7,13 @@ object Dependencies {
   object Versions {
     val akka       = "2.6.19"
     val akkaHttpV  = "10.2.9"
-    val iep        = "3.0.18"
+    val iep        = "3.0.19"
     val guice      = "5.1.0"
-    val jackson    = "2.13.2"
+    val jackson    = "2.13.3"
     val log4j      = "2.17.2"
     val scala      = "2.13.8"
     val slf4j      = "1.7.36"
-    val spectator  = "1.3.2"
+    val spectator  = "1.3.5"
 
     val crossScala = Seq(scala)
   }
@@ -45,7 +45,7 @@ object Dependencies {
   val jacksonCore       = "com.fasterxml.jackson.core" % "jackson-core" % jackson
   val jacksonJava8      = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jackson
   val jacksonJsr310     = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jackson
-  val jacksonMapper     = "com.fasterxml.jackson.core" % "jackson-databind" % (jackson + ".2")
+  val jacksonMapper     = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
   val jacksonScala      = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile      = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jol               = "org.openjdk.jol" % "jol-core" % "0.16"
@@ -57,14 +57,14 @@ object Dependencies {
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
-  val postgres          = "org.postgresql" % "postgresql" % "42.3.5"
-  val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "1.3.1"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.26"
+  val postgres          = "org.postgresql" % "postgresql" % "42.3.6"
+  val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.0"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.28"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
-  val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4"
+  val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5"
   val slf4jApi          = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j        = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple       = "org.slf4j" % "slf4j-simple" % slf4j
