@@ -71,7 +71,7 @@ object JsonParserHelper {
     parser.nextToken() match {
       case VALUE_FALSE  => parser.getValueAsBoolean
       case VALUE_TRUE   => parser.getValueAsBoolean
-      case VALUE_STRING => java.lang.Boolean.valueOf(parser.getText)
+      case VALUE_STRING => java.lang.Boolean.parseBoolean(parser.getText)
       case t            => fail(parser, s"expected VALUE_FALSE or VALUE_TRUE but received $t")
     }
   }
@@ -93,7 +93,7 @@ object JsonParserHelper {
     parser.nextToken() match {
       case VALUE_NUMBER_INT   => parser.getValueAsLong.toDouble
       case VALUE_NUMBER_FLOAT => parser.getValueAsDouble
-      case VALUE_STRING       => java.lang.Double.valueOf(parser.getText)
+      case VALUE_STRING       => java.lang.Double.parseDouble(parser.getText)
       case t                  => fail(parser, s"expected VALUE_NUMBER_FLOAT but received $t")
     }
   }
