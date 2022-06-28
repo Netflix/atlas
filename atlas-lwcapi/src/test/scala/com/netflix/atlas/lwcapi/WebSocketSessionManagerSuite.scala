@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -72,7 +73,7 @@ class WebSocketSessionManagerSuite extends FunSuite {
 
   private def run(
     data: List[String],
-    registerFunc: StreamMetadata => (QueueHandler, Source[JsonSupport, Unit]),
+    registerFunc: StreamMetadata => (QueueHandler, Source[JsonSupport, NotUsed]),
     subscribeFunc: (String, List[ExpressionMetadata]) => List[ErrorMsg]
   ): List[String] = {
     val future = Source(data)
@@ -95,12 +96,12 @@ class WebSocketSessionManagerSuite extends FunSuite {
   }
 
   private def createNoopRegisterFunc()
-    : StreamMetadata => (QueueHandler, Source[JsonSupport, Unit]) = {
+    : StreamMetadata => (QueueHandler, Source[JsonSupport, NotUsed]) = {
     val noopQueueHandler = new QueueHandler(StreamMetadata(""), null) {
       override def offer(msgs: Seq[JsonSupport]): Unit = ()
       override def complete(): Unit = ()
     }
-    val noopSource = Source.empty[JsonSupport].mapMaterializedValue(_ => ())
+    val noopSource = Source.empty[JsonSupport].mapMaterializedValue(_ => (NotUsed))
     val noopRegisterFunc = (_: StreamMetadata) => (noopQueueHandler, noopSource)
 
     noopRegisterFunc

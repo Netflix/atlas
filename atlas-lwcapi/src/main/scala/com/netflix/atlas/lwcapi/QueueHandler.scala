@@ -50,7 +50,13 @@ class QueueHandler(streamMeta: StreamMetadata, queue: StreamOps.SourceQueue[Seq[
   def complete(): Unit = {
     if (queue.isOpen) {
       logger.debug(s"queue complete for $id")
-      queue.complete()
+      try {
+        queue.complete()
+      } catch {
+        // Thrown if the queue is already closed. Can happen when a websocket
+        // connects but doesn't send a message. See SubscribeApi#register
+        case _: IllegalStateException => // no-op
+      }
     }
   }
 
