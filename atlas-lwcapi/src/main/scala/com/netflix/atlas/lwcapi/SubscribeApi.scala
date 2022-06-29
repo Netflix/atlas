@@ -118,6 +118,16 @@ class SubscribeApi @Inject() (
       .via(new WebSocketSessionManager(streamMeta, register, subscribe))
       .flatMapMerge(Int.MaxValue, s => s)
       .map(obj => TextMessage(obj.toJson))
+      .watchTermination() { (_, f) =>
+        f.onComplete {
+          case Success(_) =>
+            logger.debug(s"lost client for $streamMeta.streamId")
+            sm.unregister(streamMeta.streamId)
+          case Failure(t) =>
+            logger.debug(s"lost client for $streamMeta.streamId", t)
+            sm.unregister(streamMeta.streamId)
+        }
+      }
   }
 
   /**
@@ -148,17 +158,38 @@ class SubscribeApi @Inject() (
           List(BinaryMessage(LwcMessages.encodeBatch(seq, baos)))
         }
       }
+      .watchTermination() { (_, f) =>
+        f.onComplete {
+          case Success(_) =>
+            logger.debug(s"lost client for $streamMeta.streamId")
+            sm.unregister(streamMeta.streamId)
+          case Failure(t) =>
+            logger.debug(s"lost client for $streamMeta.streamId", t)
+            sm.unregister(streamMeta.streamId)
+        }
+      }
   }
 
   private def stepAlignedTime(step: Long): Long = {
     registry.clock().wallTime() / step * step
   }
 
-  private def register(streamMeta: StreamMetadata): (QueueHandler, Source[JsonSupport, Unit]) = {
+  private def register(streamMeta: StreamMetadata): (QueueHandler, Source[JsonSupport, NotUsed]) = {
 
     val streamId = streamMeta.streamId
 
     // Create queue to allow messages coming into /evaluate to be passed to this stream
+    // TODO - A client can connect but not send a message. When that happens, the
+    // publisher sink from this queue will shutdown and complete the queue. See
+    // akka.http.client.stream-cancellation-delay. Unfortunately
+    // the websocket flow is not notified of the shutdown. If the client sends a message
+    // after shutdown, the client flow will be terminated. (that's fine).
+    // There is likely another way to wire this up. Alternatively we could hold a
+    // kill switch on the createHandlerFlow...()s but some state flags are needed and
+    // it gets messy.
+    // For now, the queue will close and if no messages are sent from the client, the
+    // akka.http.server.idle-timeout will kill the client connection and we'll try to
+    // close a closed queue.
     val (queue, pub) = StreamOps
       .blockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", queueSize)
       .toMat(Sink.asPublisher(true))(Keep.both)
@@ -189,17 +220,7 @@ class SubscribeApi @Inject() (
       .fromPublisher(pub)
       .flatMapConcat(Source.apply)
       .merge(heartbeatSrc)
-      .via(StreamOps.monitorFlow(registry, "StreamApi"))
-      .watchTermination() { (_, f) =>
-        f.onComplete {
-          case Success(_) =>
-            logger.debug(s"lost client for $streamId")
-            sm.unregister(streamId)
-          case Failure(t) =>
-            logger.debug(s"lost client for $streamId", t)
-            sm.unregister(streamId)
-        }
-      }
+      .viaMat(StreamOps.monitorFlow(registry, "StreamApi"))(Keep.left)
 
     handler -> source
   }

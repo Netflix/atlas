@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
+import akka.NotUsed
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
@@ -41,21 +42,21 @@ import scala.util.control.NonFatal
   */
 private[lwcapi] class WebSocketSessionManager(
   val streamMeta: StreamMetadata,
-  val registerFunc: StreamMetadata => (QueueHandler, Source[JsonSupport, Unit]),
+  val registerFunc: StreamMetadata => (QueueHandler, Source[JsonSupport, NotUsed]),
   val subscribeFunc: (String, List[ExpressionMetadata]) => List[ErrorMsg]
-) extends GraphStage[FlowShape[AnyRef, Source[JsonSupport, Unit]]]
+) extends GraphStage[FlowShape[AnyRef, Source[JsonSupport, NotUsed]]]
     with StrictLogging {
   private val in = Inlet[AnyRef]("WebSocketSessionManager.in")
-  private val out = Outlet[Source[JsonSupport, Unit]]("WebSocketSessionManager.out")
+  private val out = Outlet[Source[JsonSupport, NotUsed]]("WebSocketSessionManager.out")
 
-  override val shape: FlowShape[AnyRef, Source[JsonSupport, Unit]] = FlowShape(in, out)
+  override val shape: FlowShape[AnyRef, Source[JsonSupport, NotUsed]] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
       var dataSourcePushed = false
       var queueHandler: QueueHandler = _
-      var dataSource: Source[JsonSupport, Unit] = _
+      var dataSource: Source[JsonSupport, NotUsed] = _
 
       setHandlers(in, out, this)
 
