@@ -496,35 +496,18 @@ private[stream] abstract class EvaluatorImpl(
     Flow[Set[LwcExpression]]
       .via(StreamOps.unique(uniqueTimeout)) // Updating subscriptions only if there's a change
       .map { exprs =>
-        if (lwcapiVersion == 1)
-          TextMessage(Json.encode(exprs))
-        else
-          BinaryMessage(LwcMessages.encodeBatch(exprs.toSeq))
+        BinaryMessage(LwcMessages.encodeBatch(exprs.toSeq))
       }
       .via(webSocketFlowOrigin)
       .flatMapConcat {
-        case TextMessage.Strict(str) =>
-          parseMessage(str)
-        case msg: TextMessage =>
-          msg.textStream.fold("")(_ + _).flatMapConcat(parseMessage)
+        case _: TextMessage =>
+          throw new MatchError("text messages are not supported")
         case BinaryMessage.Strict(str) =>
           parseBatch(str)
         case msg: BinaryMessage =>
           msg.dataStream.fold(ByteString.empty)(_ ++ _).flatMapConcat(parseBatch)
       }
       .mapMaterializedValue(_ => NotUsed)
-  }
-
-  private def parseMessage(message: String): Source[AnyRef, NotUsed] = {
-    try {
-      ReplayLogging.log(message)
-      Source.single(LwcMessages.parse(message))
-    } catch {
-      case e: Exception =>
-        logger.warn(s"failed to process message [$message]", e)
-        badMessages.increment()
-        Source.empty
-    }
   }
 
   private def parseBatch(message: ByteString): Source[AnyRef, NotUsed] = {

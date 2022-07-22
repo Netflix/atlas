@@ -42,7 +42,6 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
 import java.io.ByteArrayOutputStream
-import java.nio.charset.StandardCharsets
 import javax.inject.Inject
 import scala.concurrent.duration._
 import scala.util.Failure
@@ -71,12 +70,6 @@ class SubscribeApi @Inject() (
 
   def routes: Route = {
     extractClientIP { addr =>
-      endpointPathPrefix("api" / "v1" / "subscribe") {
-        path(Remaining) { streamId =>
-          val meta = StreamMetadata(streamId, addr.value)
-          handleWebSocketMessages(createHandlerFlow(meta))
-        }
-      } ~
       endpointPathPrefix("api" / "v2" / "subscribe") {
         path(Remaining) { streamId =>
           val meta = StreamMetadata(streamId, addr.value)
@@ -96,38 +89,6 @@ class SubscribeApi @Inject() (
       queue.offer(Seq(msg))
       queue.complete()
     }
-  }
-
-  /**
-    * Uses text messages and sends each datapoint individually.
-    */
-  private def createHandlerFlow(streamMeta: StreamMetadata): Flow[Message, Message, Any] = {
-    dropSameIdConnections(streamMeta)
-
-    Flow[Message]
-      .flatMapConcat {
-        case TextMessage.Strict(str) =>
-          Source.single(str)
-        case msg: TextMessage =>
-          msg.textStream.fold("")(_ + _)
-        case BinaryMessage.Strict(str) =>
-          Source.single(str.decodeString(StandardCharsets.UTF_8))
-        case msg: BinaryMessage =>
-          msg.dataStream.fold(ByteString.empty)(_ ++ _).map(_.decodeString(StandardCharsets.UTF_8))
-      }
-      .via(new WebSocketSessionManager(streamMeta, register, subscribe))
-      .flatMapMerge(Int.MaxValue, s => s)
-      .map(obj => TextMessage(obj.toJson))
-      .watchTermination() { (_, f) =>
-        f.onComplete {
-          case Success(_) =>
-            logger.debug(s"lost client for $streamMeta.streamId")
-            sm.unregister(streamMeta.streamId)
-          case Failure(t) =>
-            logger.debug(s"lost client for $streamMeta.streamId", t)
-            sm.unregister(streamMeta.streamId)
-        }
-      }
   }
 
   /**
