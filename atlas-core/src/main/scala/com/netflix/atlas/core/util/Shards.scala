@@ -144,7 +144,7 @@ object Shards {
 
     /** Return the instance that should receive the data associated with `id`. */
     def instanceForId(id: BigInteger): T = {
-      val i = math.abs(id.intValue())
+      val i = nonNegative(id.intValue())
       instanceForIndex(i)
     }
 
@@ -164,7 +164,7 @@ object Shards {
 
     /** Return true if this instance should include data for `id`. */
     def containsId(id: BigInteger): Boolean = {
-      val i = math.abs(id.intValue())
+      val i = nonNegative(id.intValue())
       containsIndex(i)
     }
 
@@ -184,7 +184,7 @@ object Shards {
 
     /** Return the instances that should receive the data associated with `id`. */
     def instancesForId(id: BigInteger): List[T] = {
-      val i = math.abs(id.intValue())
+      val i = nonNegative(id.intValue())
       instancesForIndex(i)
     }
 
@@ -196,5 +196,13 @@ object Shards {
         group.instances((i / groups.length) % group.size)
       }
     }
+  }
+
+  /**
+    * Returns the absolute value for the number unless it is Integer.MIN_VALUE, in which case
+    * it will return 0.
+    */
+  private[util] def nonNegative(v: Int): Int = {
+    math.abs(v) & 0x7fffffff
   }
 }
