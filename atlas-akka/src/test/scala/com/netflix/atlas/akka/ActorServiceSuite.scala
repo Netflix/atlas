@@ -19,6 +19,7 @@ import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import com.netflix.iep.service.DefaultClassFactory
+import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
@@ -39,7 +40,7 @@ class ActorServiceSuite extends FunSuite {
         |]
       """.stripMargin)
     val system = ActorSystem("test", config)
-    val service = new ActorService(system, config, new DefaultClassFactory())
+    val service = new ActorService(system, config, new NoopRegistry, new DefaultClassFactory())
     service.start()
 
     try {
@@ -69,7 +70,7 @@ class ActorServiceSuite extends FunSuite {
          |}
       """.stripMargin)
     val system = ActorSystem("test", config)
-    val service = new ActorService(system, config, new DefaultClassFactory())
+    val service = new ActorService(system, config, new NoopRegistry, new DefaultClassFactory())
     service.start()
 
     try {

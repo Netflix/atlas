@@ -13,14 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.standalone
+package com.netflix.atlas.lwcapi
 
+import com.netflix.atlas.akka.ActorService
 import munit.FunSuite
+import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
-class MainSuite extends FunSuite {
+import scala.util.Using
 
-  test("start/shutdown") {
-    Main.main(Array.empty)
-    Main.shutdown()
+class LwcApiConfigurationSuite extends FunSuite {
+
+  test("load module") {
+    Using.resource(new AnnotationConfigApplicationContext()) { context =>
+      context.scan("com.netflix")
+      context.refresh()
+      context.start()
+      assert(context.getBean(classOf[ActorService]).isHealthy)
+    }
   }
 }

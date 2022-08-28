@@ -10,11 +10,11 @@ lazy val atlas = project.in(file("."))
     `atlas-jmh`,
     `atlas-json`,
     `atlas-lwcapi`,
-    `atlas-module-akka`,
-    `atlas-module-eval`,
-    `atlas-module-lwcapi`,
-    `atlas-module-webapi`,
     `atlas-postgres`,
+    `atlas-spring-akka`,
+    `atlas-spring-eval`,
+    `atlas-spring-lwcapi`,
+    `atlas-spring-webapi`,
     `atlas-standalone`,
     `atlas-webapi`)
   .settings(publish / skip := true)
@@ -97,49 +97,49 @@ lazy val `atlas-lwcapi` = project
     Dependencies.akkaStreamTestkit % "test"
   ))
 
-lazy val `atlas-module-akka` = project
-  .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`)
-  .settings(libraryDependencies ++= Dependencies.guiceCoreAndMulti ++ Seq(
-    Dependencies.iepGuice
-  ))
-
-lazy val `atlas-module-eval` = project
-  .configure(BuildSettings.profile)
-  .dependsOn(`atlas-eval`)
-  .settings(libraryDependencies ++= Seq(
-    Dependencies.guiceCore
-  ))
-
-lazy val `atlas-module-lwcapi` = project
-  .configure(BuildSettings.profile)
-  .dependsOn(`atlas-module-akka`, `atlas-lwcapi`)
-  .settings(libraryDependencies ++= Seq(
-    Dependencies.guiceCore,
-    Dependencies.iepGuice
-  ))
-
-lazy val `atlas-module-webapi` = project
-  .configure(BuildSettings.profile)
-  .dependsOn(`atlas-webapi`)
-  .settings(libraryDependencies ++= Seq(
-    Dependencies.guiceCore,
-    Dependencies.iepGuice
-  ))
-
 lazy val `atlas-postgres` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-core`)
   .settings(libraryDependencies ++= Seq(
-      Dependencies.postgres,
-      Dependencies.postgresEmbedded % "test"
+    Dependencies.postgres,
+    Dependencies.postgresEmbedded % "test"
+  ))
+
+lazy val `atlas-spring-akka` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-akka`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.iepSpring
+  ))
+
+lazy val `atlas-spring-eval` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-eval`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.springContext
+  ))
+
+lazy val `atlas-spring-lwcapi` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-spring-akka`, `atlas-lwcapi`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.iepSpring,
+    Dependencies.springContext
+  ))
+
+lazy val `atlas-spring-webapi` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-webapi`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.iepSpring,
+    Dependencies.springContext
   ))
 
 lazy val `atlas-standalone` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-module-akka`, `atlas-module-lwcapi`, `atlas-module-webapi`)
-  .settings(libraryDependencies ++= Dependencies.guiceCoreAndMulti ++ Seq(
-    Dependencies.iepGuice,
+  .dependsOn(`atlas-spring-akka`, `atlas-spring-lwcapi`, `atlas-spring-webapi`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.iepSpring,
     Dependencies.iepModuleAtlas,
     Dependencies.log4jApi,
     Dependencies.log4jCore,

@@ -7,13 +7,13 @@ object Dependencies {
   object Versions {
     val akka       = "2.6.19"
     val akkaHttpV  = "10.2.9"
-    val iep        = "3.0.21"
-    val guice      = "5.1.0"
+    val iep        = "4.0.0-SNAPSHOT"
     val jackson    = "2.13.3"
     val log4j      = "2.18.0"
     val scala      = "2.13.8"
     val slf4j      = "1.7.36"
     val spectator  = "1.3.6"
+    val spring     = "5.3.22"
 
     val crossScala = Seq(scala)
   }
@@ -31,9 +31,6 @@ object Dependencies {
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.3"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.3.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.10.1"
-  val guiceCoreBase     = "com.google.inject" % "guice"
-  val guiceMultiBase    = "com.google.inject.extensions" % "guice-multibindings"
-  val iepGuice          = "com.netflix.iep" % "iep-guice" % iep
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
   val iepModuleAtlas    = "com.netflix.iep" % "iep-module-atlas" % iep
@@ -41,6 +38,7 @@ object Dependencies {
   val iepModuleLeader   = "com.netflix.iep" % "iep-module-leader" % iep
   val iepNflxEnv        = "com.netflix.iep" % "iep-nflxenv" % iep
   val iepService        = "com.netflix.iep" % "iep-service" % iep
+  val iepSpring         = "com.netflix.iep" % "iep-spring" % iep
   val jacksonAnno       = "com.fasterxml.jackson.core" % "jackson-annotations" % jackson
   val jacksonCore       = "com.fasterxml.jackson.core" % "jackson-core" % jackson
   val jacksonJava8      = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jackson
@@ -72,24 +70,8 @@ object Dependencies {
   val spectatorIpc      = "com.netflix.spectator" % "spectator-ext-ipc" % spectator
   val spectatorLog4j    = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2       = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
+  val springContext     = "org.springframework" % "spring-context" % spring
   val typesafeConfig    = "com.typesafe" % "config" % "1.4.2"
-
-  def isBeforeJava16: Boolean = {
-    System.getProperty("java.specification.version").toDouble < 16
-  }
-
-  private def guiceDep(base: OrganizationArtifactName): ModuleID = {
-    base % (if (isBeforeJava16) "4.1.0" else guice)
-  }
-
-  def guiceCore: ModuleID = guiceDep(guiceCoreBase)
-
-  def guiceCoreAndMulti: Seq[ModuleID] = {
-    if (isBeforeJava16)
-      Seq(guiceDep(guiceCoreBase), guiceDep(guiceMultiBase))
-    else
-      Seq(guiceDep(guiceCoreBase))
-  }
 }
 
 // format: on

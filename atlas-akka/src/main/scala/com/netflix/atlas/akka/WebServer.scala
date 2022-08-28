@@ -65,7 +65,7 @@ class WebServer @Inject() (
   private var bindingFutures: List[Future[ServerBinding]] = Nil
 
   protected def startImpl(): Unit = {
-    val handler = new RequestHandler(config, classFactory)
+    val handler = new RequestHandler(config, registry, classFactory)
     val routes = Route.toFlow(handler.routes)
     bindingFutures = portConfigs.map { portConfig =>
       var builder = Http().newServerAt("0.0.0.0", portConfig.port)

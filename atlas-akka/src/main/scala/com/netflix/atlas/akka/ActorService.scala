@@ -17,23 +17,29 @@ package com.netflix.atlas.akka
 
 import javax.inject.Inject
 import javax.inject.Singleton
-
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.routing.FromConfig
 import com.netflix.iep.service.AbstractService
 import com.netflix.iep.service.ClassFactory
+import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
+
+import java.lang.reflect.Type
 
 /**
   * Exposes actor system as service for healthcheck and proper shutdown. Additional
   * actors to start up can be specified using the `atlas.akka.actors` property.
   */
 @Singleton
-class ActorService @Inject() (system: ActorSystem, config: Config, classFactory: ClassFactory)
-    extends AbstractService
+class ActorService @Inject() (
+  system: ActorSystem,
+  config: Config,
+  registry: Registry,
+  classFactory: ClassFactory
+) extends AbstractService
     with StrictLogging {
 
   override def startImpl(): Unit = {
@@ -47,7 +53,12 @@ class ActorService @Inject() (system: ActorSystem, config: Config, classFactory:
   }
 
   private def newActor(name: String, cls: Class[_]): Props = {
-    val props = Props(classFactory.newInstance[Actor](cls))
+    import scala.compat.java8.FunctionConverters._
+    val bindings = Map[Type, AnyRef](
+      classOf[Config]   -> config,
+      classOf[Registry] -> registry
+    ).withDefaultValue(null)
+    val props = Props(classFactory.newInstance[Actor](cls, bindings.asJava))
     val routerCfgPath = s"akka.actor.deployment./$name.router"
     if (config.hasPath(routerCfgPath)) FromConfig.props(props) else props
   }
