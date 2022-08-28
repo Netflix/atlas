@@ -13,14 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.standalone
+package com.netflix.atlas.akka
 
-import munit.FunSuite
+import akka.actor.ActorSystem
+import com.netflix.iep.service.AbstractService
+import com.typesafe.config.Config
 
-class MainSuite extends FunSuite {
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
-  test("start/shutdown") {
-    Main.main(Array.empty)
-    Main.shutdown()
+class ActorSystemService(config: Config) extends AbstractService {
+
+  val system: ActorSystem = ActorSystem(config.getString("atlas.akka.name"), config)
+
+  override def startImpl(): Unit = {}
+
+  override def stopImpl(): Unit = {
+    Await.ready(system.terminate(), Duration.Inf)
   }
 }

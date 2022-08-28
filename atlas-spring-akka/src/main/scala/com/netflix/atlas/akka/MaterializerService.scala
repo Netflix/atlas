@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.standalone
+package com.netflix.atlas.akka
 
-import munit.FunSuite
+import akka.actor.ActorSystem
+import akka.stream.Materializer
+import com.netflix.iep.service.AbstractService
 
-class MainSuite extends FunSuite {
+class MaterializerService(system: ActorSystem) extends AbstractService {
 
-  test("start/shutdown") {
-    Main.main(Array.empty)
-    Main.shutdown()
+  val materializer: Materializer = Materializer(system)
+
+  override def startImpl(): Unit = {}
+
+  override def stopImpl(): Unit = {
+    materializer.shutdown()
   }
 }

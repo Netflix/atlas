@@ -36,11 +36,13 @@ import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreakerOpenException
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.netflix.iep.service.ClassFactory
+import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
-class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictLogging {
+class RequestHandler(config: Config, registry: Registry, classFactory: ClassFactory)
+    extends StrictLogging {
 
   def routes: Route = {
     val endpoints = loadRoutesFromConfig()
@@ -69,7 +71,10 @@ class RequestHandler(config: Config, classFactory: ClassFactory) extends StrictL
     try {
       import scala.compat.java8.FunctionConverters._
       val routeClasses = endpoints
-      val bindings = Map.empty[Type, AnyRef].withDefaultValue(null)
+      val bindings = Map[Type, AnyRef](
+        classOf[Config]   -> config,
+        classOf[Registry] -> registry
+      ).withDefaultValue(null)
       routeClasses.map { cls =>
         logger.info(s"loading webapi class: $cls")
         classFactory.newInstance[WebApi](cls, bindings.asJava)

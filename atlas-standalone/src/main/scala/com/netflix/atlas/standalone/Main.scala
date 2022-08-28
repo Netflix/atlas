@@ -16,13 +16,11 @@
 package com.netflix.atlas.standalone
 
 import java.io.File
-
-import com.google.inject.AbstractModule
 import com.netflix.iep.config.ConfigManager
-import com.netflix.iep.guice.GuiceHelper
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
+import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 /**
   * Provides a simple way to start up a standalone server. Usage:
@@ -33,7 +31,7 @@ import com.typesafe.scalalogging.StrictLogging
   */
 object Main extends StrictLogging {
 
-  private var guice: GuiceHelper = _
+  private var app: com.netflix.iep.spring.Main = _
 
   private def loadAdditionalConfigFiles(files: Array[String]): Unit = {
     files.foreach { f =>
@@ -51,8 +49,10 @@ object Main extends StrictLogging {
   def main(args: Array[String]): Unit = {
     try {
       loadAdditionalConfigFiles(if (args.nonEmpty) args else Array("static.conf"))
-      start()
-      guice.addShutdownHook()
+      val context = new AnnotationConfigApplicationContext()
+      context.scan("com.netflix")
+      context.registerBean(classOf[Config], () => ConfigManager.dynamicConfig())
+      app = com.netflix.iep.spring.Main.run(args, context)
     } catch {
       case t: Throwable =>
         logger.error("server failed to start, shutting down", t)
@@ -60,21 +60,7 @@ object Main extends StrictLogging {
     }
   }
 
-  def start(): Unit = {
-
-    val configModule = new AbstractModule {
-
-      override def configure(): Unit = {
-        bind(classOf[Config]).toInstance(ConfigManager.dynamicConfig())
-      }
-    }
-
-    val modules = GuiceHelper.getModulesUsingServiceLoader
-    modules.add(configModule)
-
-    guice = new GuiceHelper
-    guice.start(modules)
+  def shutdown(): Unit = {
+    app.close()
   }
-
-  def shutdown(): Unit = guice.shutdown()
 }

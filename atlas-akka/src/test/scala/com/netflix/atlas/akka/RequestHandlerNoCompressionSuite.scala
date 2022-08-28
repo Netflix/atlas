@@ -26,6 +26,7 @@ import akka.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.DefaultClassFactory
+import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 
 import java.lang.reflect.Type
@@ -56,7 +57,9 @@ class RequestHandlerNoCompressionSuite extends MUnitRouteSuite {
     case _ =>
       null.asInstanceOf[AnyRef]
   }
-  private val handler = new RequestHandler(config, new DefaultClassFactory(bindings))
+
+  private val handler =
+    new RequestHandler(config, new NoopRegistry, new DefaultClassFactory(bindings))
   private val routes = handler.routes
 
   private def gzip(data: Array[Byte]): Array[Byte] = {
