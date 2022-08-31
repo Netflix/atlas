@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import javax.inject.Inject
   * used to allow clients that will stream data time to connect before marking the instance
   * as UP so that clients publishing data will send to the instance.
   */
-class StartupDelayService @Inject()(registry: Registry, config: Config)
+class StartupDelayService @Inject() (registry: Registry, config: Config)
     extends AbstractService
     with StrictLogging {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ class LwcToAggrDatapointSuite extends FunSuite {
   private val step = 10000
 
   private val sumMetric = s"""{"id":"sum","expression":"name,cpu,:eq,:sum","frequency":$step}"""
+
   private val countMetric =
     s"""{"id":"count","expression":"name,cpu,:eq,:count","frequency":$step}"""
 

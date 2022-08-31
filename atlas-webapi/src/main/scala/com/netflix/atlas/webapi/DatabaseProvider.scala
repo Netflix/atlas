@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import com.typesafe.config.Config
   * Created by brharrington on 7/20/16.
   */
 @Singleton
-class DatabaseProvider @Inject()(config: Config, classFactory: ClassFactory)
+class DatabaseProvider @Inject() (config: Config, classFactory: ClassFactory)
     extends Provider[Database] {
 
   private val db = {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
-case class ExpressionApi @Inject()(
+case class ExpressionApi @Inject() (
   sm: StreamSubscriptionManager,
   registry: Registry,
   implicit val actorRefFactory: ActorRefFactory

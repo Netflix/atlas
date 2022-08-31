@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,9 +152,9 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
         val groupedDatapoints = group.values
 
         val expressionDatapoints = noData ++ groupedDatapoints.map {
-          case (k, vs) =>
-            k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries)
-        }
+            case (k, vs) =>
+              k -> AggrDatapoint.aggregate(vs).map(_.toTimeSeries)
+          }
         val expressionDiagnostics = groupedDatapoints.map {
           case (k, vs) =>
             val t = Instant.ofEpochMilli(timestamp)

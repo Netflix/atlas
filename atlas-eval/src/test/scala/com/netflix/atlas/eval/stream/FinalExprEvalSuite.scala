@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ class FinalExprEvalSuite extends FunSuite {
       assert(env.getId === "a")
 
       val msg = "invalid expression [[http://atlas/graph?q=foo,:time]]: " +
-      "IllegalArgumentException: No enum constant java.time.temporal.ChronoField.foo"
+        "IllegalArgumentException: No enum constant java.time.temporal.ChronoField.foo"
       assert(env.getMessage.toJson.contains(msg))
     }
   }
@@ -410,7 +410,7 @@ class FinalExprEvalSuite extends FunSuite {
     }
     assert(
       e.getMessage === "inconsistent step sizes, expected 60000, found 10000 " +
-      "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
+        "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
     )
   }
 

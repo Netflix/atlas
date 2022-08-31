@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,7 @@ class ItemId private (private val data: Array[Byte], private val hc: Int)
 }
 
 object ItemId {
+
   private val hexValueForByte = (0 until 256).toArray.map { i =>
     Strings.zeroPad(i, 2)
   }

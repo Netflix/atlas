@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,9 +62,9 @@ class BlockSuite extends FunSuite {
 
   test("SparseBlock.get") {
     val data =
-    (0 until 5).map(i => 0) ++
-    (5 until 37).map(i => SparseBlock.NaN) ++
-    (37 until 60).map(i => 1)
+      (0 until 5).map(i => 0) ++
+      (5 until 37).map(i => SparseBlock.NaN) ++
+      (37 until 60).map(i => 1)
     val indexes = data.map(_.asInstanceOf[Byte]).toArray
     val values = Array(42.0, 21.0)
     val b = SparseBlock(0L, indexes, values)
@@ -74,9 +74,9 @@ class BlockSuite extends FunSuite {
 
   test("SparseBlock.get, size > 120") {
     val data =
-    (0 until 5).map(i => 0) ++
-    (5 until 37).map(i => SparseBlock.NaN) ++
-    (37 until 360).map(i => 1)
+      (0 until 5).map(i => 0) ++
+      (5 until 37).map(i => SparseBlock.NaN) ++
+      (37 until 360).map(i => 1)
     val indexes = data.map(_.asInstanceOf[Byte]).toArray
     val values = Array(42.0, 21.0)
     val b = SparseBlock(0L, indexes, values)

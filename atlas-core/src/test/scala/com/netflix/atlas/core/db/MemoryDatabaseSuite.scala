@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,8 +122,8 @@ class MemoryDatabaseSuite extends FunSuite {
   test(":offset expr") {
     assert(
       exec(":true,:sum,1m,:offset") === List(
-        ts("sum(true) (offset=1m)", 1, Double.NaN, 19.0, 22.0)
-      )
+          ts("sum(true) (offset=1m)", 1, Double.NaN, 19.0, 22.0)
+        )
     )
   }
 

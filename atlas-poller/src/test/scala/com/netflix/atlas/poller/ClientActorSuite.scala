@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,8 +122,8 @@ class ClientActorSuite
   test("publish datapoints, partial failure, cannot parse response") {
     ref ! Success(HttpResponse(StatusCodes.Accepted))
     val datapoints = Datapoint(Map("name" -> s"invalid name!!"), 0L, 1.0) :: (0 until 10)
-      .map(i => Datapoint(Map("name" -> s"foo_$i"), 0L, i.toDouble))
-      .toList
+        .map(i => Datapoint(Map("name" -> s"foo_$i"), 0L, i.toDouble))
+        .toList
     testSend(datapoints, 11, 11)
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.netflix.atlas.eval.model
 import org.scalatest.FunSuite
 
 class TimeSeriesMessageSuite extends FunSuite {
+
   private val baseMessage = TimeSeriesMessage(
     id = "12345",
     query = "name,sps,:eq,(,cluster,),:by",

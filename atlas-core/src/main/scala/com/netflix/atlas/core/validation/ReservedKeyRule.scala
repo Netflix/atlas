@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.typesafe.config.Config
   * This config would only allow "nf.app" and "nf.cluster" with a prefix of "nf.".
   */
 case class ReservedKeyRule(prefix: String, allowedKeys: Set[String]) extends TagRule {
+
   override def validate(k: String, v: String): ValidationResult = {
     if (k.startsWith(prefix) && !allowedKeys.contains(k))
       failure(s"invalid key for reserved prefix '$prefix': $k")

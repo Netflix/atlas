@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -248,11 +248,9 @@ case class Grapher(settings: DefaultSettings) {
 
         val statFormatter = axisCfg.tickLabelMode match {
           case TickLabelMode.BINARY =>
-            (v: Double) =>
-              UnitPrefix.binary(v).format(v)
+            (v: Double) => UnitPrefix.binary(v).format(v)
           case _ =>
-            (v: Double) =>
-              UnitPrefix.decimal(v).format(v)
+            (v: Double) => UnitPrefix.decimal(v).format(v)
         }
 
         val axisPalette = axisCfg.palette.fold(palette) { v =>
@@ -289,8 +287,7 @@ case class Grapher(settings: DefaultSettings) {
             s.color
               .map { c =>
                 val p = Palette.singleColor(c).iterator
-                (_: String) =>
-                  p.next()
+                (_: String) => p.next()
               }
               .getOrElse {
                 if (s.offset > 0L) shiftPalette else axisPalette
@@ -348,12 +345,10 @@ case class Grapher(settings: DefaultSettings) {
     if (mode.startsWith(prefix)) {
       val pname = mode.substring(prefix.length)
       val p = Palette.create(pname)
-      v =>
-        p.colors(v.hashCode)
+      v => p.colors(v.hashCode)
     } else {
       val p = Palette.create(mode).iterator
-      _ =>
-        p.next()
+      _ => p.next()
     }
   }
 
@@ -373,30 +368,22 @@ case class Grapher(settings: DefaultSettings) {
     by.fold(lines) { mode =>
       val cmp: Function2[LineDef, LineDef, Boolean] = mode match {
         case "legend" =>
-          (a, b) =>
-            compare(useDescending, a.data.label, b.data.label)
+          (a, b) => compare(useDescending, a.data.label, b.data.label)
         case "min" =>
-          (a, b) =>
-            compare(useDescending, a.legendStats.min, b.legendStats.min)
+          (a, b) => compare(useDescending, a.legendStats.min, b.legendStats.min)
         case "max" =>
-          (a, b) =>
-            compare(useDescending, a.legendStats.max, b.legendStats.max)
+          (a, b) => compare(useDescending, a.legendStats.max, b.legendStats.max)
         case "avg" =>
-          (a, b) =>
-            compare(useDescending, a.legendStats.avg, b.legendStats.avg)
+          (a, b) => compare(useDescending, a.legendStats.avg, b.legendStats.avg)
         case "count" =>
-          (a, b) =>
-            compare(useDescending, a.legendStats.count, b.legendStats.count)
+          (a, b) => compare(useDescending, a.legendStats.count, b.legendStats.count)
         case "total" =>
-          (a, b) =>
-            compare(useDescending, a.legendStats.total, b.legendStats.total)
+          (a, b) => compare(useDescending, a.legendStats.total, b.legendStats.total)
         case "last" =>
-          (a, b) =>
-            compare(useDescending, a.legendStats.last, b.legendStats.last)
+          (a, b) => compare(useDescending, a.legendStats.last, b.legendStats.last)
         case order =>
           warnings += s"Invalid sort mode '$order'. Using default of 'legend'."
-          (a, b) =>
-            compare(useDescending, a.data.label, b.data.label)
+          (a, b) => compare(useDescending, a.data.label, b.data.label)
       }
       lines.sortWith(cmp)
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,10 +112,11 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
     if (!Fonts.shouldRunTests) return
 
     if (bless) blessImage(i1, f)
-    val i2 = try getImage(f)
-    catch {
-      case e: FileNotFoundException => PngImage.error(e.getMessage, 400, 300)
-    }
+    val i2 =
+      try getImage(f)
+      catch {
+        case e: FileNotFoundException => PngImage.error(e.getMessage, 400, 300)
+      }
     val diff = PngImage.diff(i1.data, i2.data)
     writeImage(i1, targetDir, f)
 

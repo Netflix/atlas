@@ -16,9 +16,6 @@ object BuildSettings {
   lazy val checkLicenseHeaders = taskKey[Unit]("Check the license headers for all source files.")
   lazy val formatLicenseHeaders = taskKey[Unit]("Fix the license headers for all source files.")
 
-  lazy val storeBintrayCredentials = taskKey[Unit]("Store bintray credentials.")
-  lazy val credentialsFile = Path.userHome / ".bintray" / ".credentials"
-
   lazy val baseSettings = GitVersion.settings
 
   lazy val buildSettings = baseSettings ++ Seq(
@@ -43,20 +40,15 @@ object BuildSettings {
     sourcesInBase := false,
     exportJars := true, // Needed for one-jar, with multi-project
     externalResolvers := BuildSettings.resolvers,
-    // https://github.com/sbt/sbt/issues/1636
-    evictionWarningOptions in update := EvictionWarningOptions.empty,
+    // Evictions: https://github.com/sbt/sbt/issues/1636
+    // Linting: https://github.com/sbt/sbt/pull/5153
+    (update / evictionWarningOptions).withRank(KeyRanks.Invisible) := EvictionWarningOptions.empty,
     checkLicenseHeaders := License.checkLicenseHeaders(streams.value.log, sourceDirectory.value),
     formatLicenseHeaders := License.formatLicenseHeaders(streams.value.log, sourceDirectory.value),
-    storeBintrayCredentials := {
-      IO.write(
-        credentialsFile,
-        bintray.BintrayCredentials.api.template(Bintray.user, Bintray.pass)
-      )
-    },
-    packageOptions in (Compile, packageBin) += Package.ManifestAttributes(
+    packageBin / packageOptions += Package.ManifestAttributes(
       "Build-Date"   -> java.time.Instant.now().toString,
-      "Build-Number" -> sys.env.getOrElse("TRAVIS_BUILD_NUMBER", "unknown"),
-      "Commit"       -> sys.env.getOrElse("TRAVIS_COMMIT", "unknown")
+      "Build-Number" -> sys.env.getOrElse("GITHUB_RUN_ID", "unknown"),
+      "Commit"       -> sys.env.getOrElse("GITHUB_SHA", "unknown")
     ),
     // scaladoc crashes on jdk11 using `-release 8` with assertion failure:
     // type AnyRef in java.lang
@@ -82,29 +74,11 @@ object BuildSettings {
     Dependencies.scalatest % "test"
   )
 
-  val resolvers = Seq(
-    Resolver.mavenLocal,
-    Resolver.mavenCentral,
-    Resolver.jcenterRepo,
-    "jfrog".at("http://oss.jfrog.org/oss-snapshot-local")
-  )
+  val resolvers = Seq(Resolver.mavenLocal, Resolver.mavenCentral) ++ Resolver.sonatypeOssRepos("snapshots")
 
   def profile: Project => Project = p => {
-    bintrayProfile(p)
+    p.settings(SonatypeSettings.settings)
       .settings(buildSettings: _*)
       .settings(libraryDependencies ++= commonDeps)
-  }
-
-  // Disable bintray plugin when not running under CI. Avoids a bunch of warnings like:
-  //
-  // ```
-  // Missing bintray credentials /Users/brharrington/.bintray/.credentials. Some bintray features depend on this.
-  // [warn] Credentials file /Users/brharrington/.bintray/.credentials does not exist
-  // ```
-  def bintrayProfile(p: Project): Project = {
-    if (credentialsFile.exists)
-      p.settings(Bintray.settings)
-    else
-      p.disablePlugins(bintray.BintrayPlugin)
   }
 }
