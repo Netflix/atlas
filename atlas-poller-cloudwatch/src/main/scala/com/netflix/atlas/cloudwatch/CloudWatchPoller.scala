@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,6 +148,7 @@ class CloudWatchPoller(config: Config, registry: Registry, client: AmazonCloudWa
 
   // Cache of the last values received for a given metric
   private val cacheTTL = config.getDuration("atlas.cloudwatch.cache-ttl")
+
   private val metricCache = Caffeine
     .newBuilder()
     .expireAfterWrite(cacheTTL.toMillis, TimeUnit.MILLISECONDS)

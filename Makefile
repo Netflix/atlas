@@ -12,10 +12,10 @@ WIKI_OUTPUT_DIR := $(shell pwd)/target/atlas.wiki
 
 LAUNCHER_JAR_URL := https://jcenter.bintray.com/com/netflix/iep/iep-launcher/2.1.9/iep-launcher-2.1.9.jar
 
-.PHONY: build snapshot release clean coverage format update-wiki publish-wiki
+.PHONY: build snapshot release clean format update-wiki publish-wiki
 
 build:
-	$(SBT) clean test checkLicenseHeaders scalafmt::test test:scalafmt::test
+	$(SBT) clean test checkLicenseHeaders scalafmtCheckAll
 
 snapshot:
 	# Travis uses a depth when fetching git data so the tags needed for versioning may not
@@ -40,12 +40,8 @@ release:
 clean:
 	$(SBT) clean
 
-coverage:
-	$(SBT) clean coverage test coverageReport
-	$(SBT) coverageAggregate
-
 format:
-	$(SBT) formatLicenseHeaders scalafmt test:scalafmt
+	$(SBT) formatLicenseHeaders scalafmtAll
 
 $(WIKI_OUTPUT_DIR):
 	mkdir -p target

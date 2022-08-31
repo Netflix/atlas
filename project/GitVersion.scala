@@ -1,7 +1,7 @@
 import sbt._
 import sbt.Keys._
 import sbtrelease.Version
-import com.typesafe.sbt.SbtGit._
+import com.github.sbt.git.SbtGit._
 
 object GitVersion {
 
@@ -26,7 +26,7 @@ object GitVersion {
     * Needs to check for "false", don't assume it will ever be set to "true".
     * http://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables
     */
-  private def isPullRequest: Boolean = sys.env.getOrElse("TRAVIS_PULL_REQUEST", "false") != "false"
+  private def isPullRequest: Boolean = sys.env.getOrElse("GITHUB_EVENT_NAME", "unknown") == "pull_request"
 
   /**
     * Bump the last git described version to use for the current snapshot. If it is a version branch
@@ -44,10 +44,19 @@ object GitVersion {
     }
   }
 
+  private def extractBranchName(dflt: String): String = {
+    val ref = sys.env.getOrElse("GITHUB_REF", dflt)
+    // Return last part if there is a '/', e.g. refs/heads/feature-branch-1. For
+    // this use-case we only care about master and version branches so it is ok
+    // if something like 'feature/branch/1' exacts just the '1'.
+    val parts = ref.split("/")
+    parts(parts.length - 1)
+  }
+
   lazy val settings: Seq[Def.Setting[_]] = Seq(
-    version in ThisBuild := {
-      val branch = sys.env.getOrElse("TRAVIS_BRANCH", git.gitCurrentBranch.value)
-      val branchVersion = if (branch == "master") baseVersion else branch
+    ThisBuild / version := {
+      val branch = extractBranchName(git.gitCurrentBranch.value)
+      val branchVersion = if (branch == "main" || branch == "master") baseVersion else branch
       git.gitDescribedVersion.value.getOrElse("0.1-SNAPSHOT") match {
         case _ if isPullRequest  => s"0.0.0-PULLREQUEST"
         case snapshotVersion(v)  => toSnapshotVersion(branchVersion, v)

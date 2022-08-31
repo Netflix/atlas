@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -338,7 +338,7 @@ class TicksSuite extends FunSuite {
     sanityCheck(ticks)
     assert(ticks.size === 21)
     assert(ticks.count(_.major) === 5)
-    assert(ticks.head.offset === 9.991234563E9)
+    assert(ticks.head.offset === 9.991234563e9)
     assert(ticks.head.label === "0")
     assert(ticks.last.label === "4")
   }
@@ -348,7 +348,7 @@ class TicksSuite extends FunSuite {
     sanityCheck(ticks)
     assert(ticks.size === 11)
     assert(ticks.count(_.major) === 3)
-    assert(ticks.head.offset === 9.9910418432E10)
+    assert(ticks.head.offset === 9.9910418432e10)
     assert(ticks.head.label === "2048Ki")
     assert(ticks.last.label === "7168Ki")
   }
@@ -368,7 +368,7 @@ class TicksSuite extends FunSuite {
     sanityCheck(ticks)
     assert(ticks.size === 19)
     assert(ticks.count(_.major) === 5)
-    assert(ticks.head.offset === 9.99999668224E11)
+    assert(ticks.head.offset === 9.99999668224e11)
     assert(ticks.head.label === "512Ki")
     assert(ticks.last.label === "5120Ki")
   }

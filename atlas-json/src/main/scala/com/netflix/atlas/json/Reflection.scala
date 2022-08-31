@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,9 @@ private[json] object Reflection {
 
   // Taken from com.fasterxml.jackson.module.scala.deser.DeserializerTest.scala
   def typeFromManifest(m: Manifest[_]): java.lang.reflect.Type = {
-    if (m.typeArguments.isEmpty) { m.runtimeClass } else
+    if (m.typeArguments.isEmpty) {
+      m.runtimeClass
+    } else
       new ParameterizedType {
 
         def getRawType: Class[_] = m.runtimeClass

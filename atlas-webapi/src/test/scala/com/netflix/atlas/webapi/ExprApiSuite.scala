@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,9 +202,9 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
     val add = StyleExpr(MathExpr.Add(e1, e1), Map.empty)
     assert(
       normalize(add.toString) === List(
-        ":true,:sum,:true,:sum,:add",
-        ":list,(,app,foo,:eq,name,cpuUser,:eq,:and,:cq,),:each"
-      )
+          ":true,:sum,:true,:sum,:add",
+          ":list,(,app,foo,:eq,name,cpuUser,:eq,:and,:cq,),:each"
+        )
     )
   }
 
@@ -214,9 +214,9 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
     val add = StyleExpr(MathExpr.Add(e1, e2), Map.empty)
     assert(
       normalize(add.toString) === List(
-        "name,cpuUser,:eq,:sum,name,cpuSystem,:eq,:sum,:add",
-        ":list,(,app,foo,:eq,:cq,),:each"
-      )
+          "name,cpuUser,:eq,:sum,name,cpuSystem,:eq,:sum,:add",
+          ":list,(,app,foo,:eq,:cq,),:each"
+        )
     )
   }
 
@@ -250,10 +250,10 @@ class ExprApiSuite extends FunSuite with ScalatestRouteTest {
       "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg,app,foo,:eq,name,cpuSystem,:eq,:and,:max"
     assert(
       normalize(avg) === List(
-        "name,cpuUser,:eq,:dist-avg",
-        "name,cpuSystem,:eq,:max",
-        ":list,(,app,foo,:eq,:cq,),:each"
-      )
+          "name,cpuUser,:eq,:dist-avg",
+          "name,cpuSystem,:eq,:max",
+          ":list,(,app,foo,:eq,:cq,),:each"
+        )
     )
   }
 

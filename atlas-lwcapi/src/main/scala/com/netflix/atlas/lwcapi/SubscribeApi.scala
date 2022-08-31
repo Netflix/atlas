@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NonFatal
 
-class SubscribeApi @Inject()(
+class SubscribeApi @Inject() (
   config: Config,
   registry: Registry,
   sm: StreamSubscriptionManager,

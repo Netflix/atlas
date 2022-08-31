@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import scala.concurrent.duration.Duration
   *     Instance of the actor system.
   */
 @Singleton
-class WebServer @Inject()(
+class WebServer @Inject() (
   config: Config,
   classFactory: ClassFactory,
   registry: Registry,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,10 +81,10 @@ class TimeGroupedSuite extends FunSuite {
     val groups = run(data)
     assert(
       groups === List(
-        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-        timeGroup(20, List(datapoint(20, 1))),
-        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
-      )
+          timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+          timeGroup(20, List(datapoint(20, 1))),
+          timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+        )
     )
   }
 
@@ -102,10 +102,10 @@ class TimeGroupedSuite extends FunSuite {
     val groups = run(data)
     assert(
       groups === List(
-        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-        timeGroup(20, List(datapoint(20, 1))),
-        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
-      )
+          timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+          timeGroup(20, List(datapoint(20, 1))),
+          timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+        )
     )
   }
 
@@ -134,10 +134,10 @@ class TimeGroupedSuite extends FunSuite {
 
     assert(
       groups === List(
-        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-        timeGroup(20, List(datapoint(20, 1))),
-        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
-      )
+          timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+          timeGroup(20, List(datapoint(20, 1))),
+          timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+        )
     )
 
     assert(before._1 + 6 === after._1) // 6 buffered messages
@@ -162,10 +162,10 @@ class TimeGroupedSuite extends FunSuite {
 
     assert(
       groups === List(
-        timeGroup(10, List(datapoint(10, 2), datapoint(10, 3))),
-        timeGroup(20, List(datapoint(20, 1))),
-        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
-      )
+          timeGroup(10, List(datapoint(10, 2), datapoint(10, 3))),
+          timeGroup(20, List(datapoint(20, 1))),
+          timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+        )
     )
 
     assert(before._1 + 5 === after._1) // 5 buffered messages
@@ -188,10 +188,10 @@ class TimeGroupedSuite extends FunSuite {
     val groups = run(data)
     assert(
       groups === List(
-        timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
-        timeGroup(20, Nil),
-        timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
-      )
+          timeGroup(10, List(datapoint(10, 1), datapoint(10, 2), datapoint(10, 3))),
+          timeGroup(20, Nil),
+          timeGroup(30, List(datapoint(30, 1), datapoint(30, 2)))
+        )
     )
   }
 

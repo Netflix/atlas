@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ class MapStepTimeSeqSuite extends FunSuite {
     val mStart = start / s2 * s2
     val multiple = s2 / s1
     val boundaries =
-    (if (start != mStart) 1 else 0) +
-    (if (multiple > 0 && values.length % multiple != 0) 1 else 0)
+      (if (start != mStart) 1 else 0) +
+      (if (multiple > 0 && values.length % multiple != 0) 1 else 0)
     val timeRange =
       if (multiple <= 0) s1 * values.length
       else {

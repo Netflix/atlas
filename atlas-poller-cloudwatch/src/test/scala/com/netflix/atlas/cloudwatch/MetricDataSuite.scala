@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ class MetricDataSuite extends FunSuite {
 
   private val definition =
     MetricDefinition("test", "alias", Conversions.fromName("sum"), false, Map.empty)
+
   private val category =
     MetricCategory("namespace", 60, 1, 5, None, List("dimension"), List(definition), Query.True)
   private val metadata = MetricMetadata(category, definition, Nil)

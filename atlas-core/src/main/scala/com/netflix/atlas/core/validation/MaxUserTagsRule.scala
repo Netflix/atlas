@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.typesafe.config.Config
   * ```
   */
 case class MaxUserTagsRule(limit: Int) extends Rule {
+
   override def validate(tags: SmallHashMap[String, String]): ValidationResult = {
     var count = 0
     val iter = tags.entriesIterator

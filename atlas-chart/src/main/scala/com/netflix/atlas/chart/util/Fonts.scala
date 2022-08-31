@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.netflix.atlas.core.util.Streams
   * Helper functions for working with fonts.
   */
 object Fonts {
+
   private def loadTrueTypeFont(resource: String): Font = {
     Streams.scope(getClass.getClassLoader.getResourceAsStream(resource)) { in =>
       Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(12.0f)

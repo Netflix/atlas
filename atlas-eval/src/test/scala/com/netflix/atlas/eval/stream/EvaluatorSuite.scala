@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import scala.util.Success
 class EvaluatorSuite extends FunSuite with BeforeAndAfter {
 
   private val targetDir = Paths.get(SrcPath.forProject("atlas-eval"), "target", "EvaluatorSuite")
+
   private val resourcesDir =
     Paths.get(SrcPath.forProject("atlas-eval"), "src", "test", "resources")
 
@@ -257,7 +258,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val expr = "name,(,1,2,3,4,5,6,),:in,:sum"
     val uri = s"http://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: rejected expensive query [name,(,1,2,3,4,5,6,),:in], " +
-    "narrow the scope to a specific app or name"
+      "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     testError(ds1, msg)
   }
@@ -266,7 +267,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val expr = "name,foo,:re,:sum"
     val uri = s"http://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: rejected expensive query [name,foo,:re], " +
-    "narrow the scope to a specific app or name"
+      "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     testError(ds1, msg)
   }
@@ -276,7 +277,7 @@ class EvaluatorSuite extends FunSuite with BeforeAndAfter {
     val expr = s"$query,:sum"
     val uri = s"http://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: rejected expensive query [$query], " +
-    "narrow the scope to a specific app or name"
+      "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     testError(ds1, msg)
   }

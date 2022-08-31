@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2020 Netflix, Inc.
+ * Copyright 2014-2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ object Strings {
     */
   private val IsoDate = """^(\d{4}-\d{2}-\d{2}(?:[-+Z].*)?)$""".r
   private val IsoDateTime = """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?Z?)$""".r
+
   private val IsoOffsetDateTime =
     """^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?[-+].*)$""".r
 
