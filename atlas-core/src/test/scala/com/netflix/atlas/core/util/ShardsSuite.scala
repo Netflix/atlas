@@ -15,9 +15,12 @@
  */
 package com.netflix.atlas.core.util
 
-import java.util.UUID
+import com.netflix.atlas.core.model.ItemId
 
 import org.scalatest.FunSuite
+
+import java.util.UUID
+import java.util.Random
 
 class ShardsSuite extends FunSuite {
 
@@ -93,6 +96,15 @@ class ShardsSuite extends FunSuite {
       assert(max - avg <= threshold)
       assert(avg - min <= threshold)
     }
+  }
+
+  test("intValue of bigint is Integer.MIN_VALUE") {
+    // Verify it doesn't fail with:
+    // java.lang.IllegalArgumentException: requirement failed: index cannot be negative
+    val id = ItemId("016adce025b0485b9f581d071961de1480000000").toBigInteger
+    val groups = createGroups(10, 10)
+    val mapper = Shards.mapper(groups)
+    mapper.instanceForId(id)
   }
 
   test("uneven groups") {
@@ -228,5 +240,24 @@ class ShardsSuite extends FunSuite {
     var sum = 0
     counts.foreach((_, v) => sum += v)
     assert(sum >= 20000 + 20000 / 3)
+  }
+
+  test("nonNegative max") {
+    assert(Shards.nonNegative(Integer.MAX_VALUE) === Integer.MAX_VALUE)
+  }
+
+  test("nonNegative min") {
+    assert(Shards.nonNegative(Integer.MIN_VALUE) === 0)
+  }
+
+  test("nonNegative random") {
+    val r = new Random()
+    (0 until 10000).foreach { i =>
+      val v = r.nextInt()
+      assert(Shards.nonNegative(v) >= 0)
+      if (v != Integer.MIN_VALUE) {
+        assert(Shards.nonNegative(v) === math.abs(v))
+      }
+    }
   }
 }
