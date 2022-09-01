@@ -29,7 +29,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 
 /**
-  * Configures a binding for an [[Evaluator]] instance.
+  * Configures a binding for an `Evaluator` instance.
   */
 final class EvalModule extends AbstractModule {
 

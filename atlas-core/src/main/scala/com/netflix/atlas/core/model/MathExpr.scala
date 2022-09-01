@@ -901,7 +901,7 @@ object MathExpr {
     * @param context
     *     Evaluation context for the initial creation time. This context is used to
     *     re-evaluate the rewrite using the original context if the overall expression
-    *     is rewritten ([[Expr.rewrite()]]) later.
+    *     is rewritten (`Expr.rewrite()`) later.
     */
   case class NamedRewrite(
     name: String,

@@ -48,7 +48,7 @@ import com.typesafe.config.Config
   *     The supported fields are:
   *
   *     - `name`: operation name, when the user calls the operation they will use
-  *       `:$name`.
+  *       `:\$name`.
   *     - `body`: expression that is executed for this operation.
   *     - `examples`: set of example stacks that can be used as input to the operator
   *       to show how it works.
@@ -75,7 +75,7 @@ import com.typesafe.config.Config
   *     The supported fields are:
   *
   *     - `name`: operation name, when the user calls the operation they will use
-  *       `:$name`.
+  *       `:\$name`.
   *     - `base-query`: query for the denominator.
   *     - `keys`: tag keys that are available for use on the denominator.
   */

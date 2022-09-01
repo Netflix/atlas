@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.netflix.atlas.core.util.SmallHashMap
 
 /**
-  * Custom deserializer for tag maps to go directly to [[SmallHashMap]] type. It is assumed
+  * Custom deserializer for tag maps to go directly to `SmallHashMap` type. It is assumed
   * that each tag map should have a relatively small number of entries.
   */
 class SmallHashMapDeserializer extends JsonDeserializer[SmallHashMap[String, String]] {
