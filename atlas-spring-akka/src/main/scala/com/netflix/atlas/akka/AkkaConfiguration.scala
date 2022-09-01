@@ -35,7 +35,7 @@ import java.util.Optional
 class AkkaConfiguration {
 
   @Bean
-  def actorySystemService(config: Optional[Config]): ActorSystemService = {
+  def actorSystemService(config: Optional[Config]): ActorSystemService = {
     val c = config.orElseGet(() => loadConfig())
     new ActorSystemService(c)
   }
