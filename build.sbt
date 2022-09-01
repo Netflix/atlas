@@ -140,7 +140,7 @@ lazy val `atlas-standalone` = project
   .dependsOn(`atlas-spring-akka`, `atlas-spring-lwcapi`, `atlas-spring-webapi`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepSpring,
-    Dependencies.iepModuleAtlas,
+    Dependencies.iepSpringAtlas,
     Dependencies.log4jApi,
     Dependencies.log4jCore,
     Dependencies.log4jSlf4j,

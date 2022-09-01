@@ -7,12 +7,12 @@ object Dependencies {
   object Versions {
     val akka       = "2.6.19"
     val akkaHttpV  = "10.2.9"
-    val iep        = "4.0.0-SNAPSHOT"
+    val iep        = "4.0.0"
     val jackson    = "2.13.3"
     val log4j      = "2.18.0"
     val scala      = "2.13.8"
     val slf4j      = "1.7.36"
-    val spectator  = "1.3.6"
+    val spectator  = "1.3.7"
     val spring     = "5.3.22"
 
     val crossScala = Seq(scala)
@@ -33,12 +33,10 @@ object Dependencies {
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.10.1"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
-  val iepModuleAtlas    = "com.netflix.iep" % "iep-module-atlas" % iep
-  val iepModuleAws      = "com.netflix.iep" % "iep-module-aws2" % iep
-  val iepModuleLeader   = "com.netflix.iep" % "iep-module-leader" % iep
   val iepNflxEnv        = "com.netflix.iep" % "iep-nflxenv" % iep
   val iepService        = "com.netflix.iep" % "iep-service" % iep
   val iepSpring         = "com.netflix.iep" % "iep-spring" % iep
+  val iepSpringAtlas    = "com.netflix.iep" % "iep-spring-atlas" % iep
   val jacksonAnno       = "com.fasterxml.jackson.core" % "jackson-annotations" % jackson
   val jacksonCore       = "com.fasterxml.jackson.core" % "jackson-core" % jackson
   val jacksonJava8      = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jackson
@@ -55,8 +53,8 @@ object Dependencies {
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
-  val postgres          = "org.postgresql" % "postgresql" % "42.4.1"
-  val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.0"
+  val postgres          = "org.postgresql" % "postgresql" % "42.5.0"
+  val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.1"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.31"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
