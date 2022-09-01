@@ -1,0 +1,37 @@
+name: Snapshot
+
+on:
+  push:
+    branches:
+      - v1.6.x
+
+jobs:
+  build:
+    if: ${{ github.repository == 'Netflix/atlas' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [11]
+        scala: [2.11.12, 2.12.16, 2.13.8]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'zulu'
+          cache: 'sbt'
+      - name: SetupPGP
+        run: echo $ORG_SIGNING_KEY | sed -r 's/-----[^-]+-----//g;s/\n//g;s/ //g' | base64 --decode | gpg --batch --import
+        env:
+          ORG_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
+      - name: Build
+        env:
+          NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
+          NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
+          NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
+          NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
+          PGP_PASSPHRASE: ${{ secrets.ORG_SIGNING_PASSWORD }}
+        run: |
+          git fetch --unshallow --tags
+          cat /dev/null | project/sbt ++${{ matrix.scala }} clean test +publishSigned
