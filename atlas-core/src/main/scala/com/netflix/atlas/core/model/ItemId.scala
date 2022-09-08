@@ -56,14 +56,14 @@ class ItemId private (private val data: Array[Byte], private val hc: Int)
   }
 
   override def toString: String = {
-    val buffer = new StringBuilder
+    val buffer = new java.lang.StringBuilder(data.length * 2)
     var i = 0
     while (i < data.length) {
       val unsigned = java.lang.Byte.toUnsignedInt(data(i))
       buffer.append(ItemId.hexValueForByte(unsigned))
       i += 1
     }
-    buffer.toString()
+    buffer.toString
   }
 
   def toBigInteger: BigInteger = new BigInteger(1, data)
