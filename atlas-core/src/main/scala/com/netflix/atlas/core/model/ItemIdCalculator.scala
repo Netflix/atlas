@@ -70,6 +70,7 @@ class ItemIdCalculator {
           iter.nextEntry()
           pos += 2
         }
+        ArrayHelper.sortPairs(pairs, length)
       case _ =>
         var pos = 0
         tags.foreachEntry { (k, v) =>
@@ -77,9 +78,9 @@ class ItemIdCalculator {
           pairs(pos + 1) = v
           pos += 2
         }
+        ArrayHelper.sortPairs(pairs, length)
     }
 
-    ArrayHelper.sortPairs(pairs, length)
     pairs
   }
 
