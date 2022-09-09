@@ -1,12 +1,18 @@
 import sbt._
-import sbt.librarymanagement.DependencyBuilders.OrganizationArtifactName
 
 // format: off
 
 object Dependencies {
   object Versions {
-    val akka       = "2.6.19"
-    val akkaHttpV  = "10.2.9"
+    // Do not upgrade Akka or Akka-HTTP versions, license has changed for newer
+    // versions:
+    //
+    // - https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka
+    // - https://github.com/akka/akka/pull/31561
+    // - https://github.com/akka/akka-http/pull/4155
+    val akka       = "2.6.20"
+    val akkaHttpV  = "10.2.10"
+
     val iep        = "4.0.0"
     val jackson    = "2.13.3"
     val log4j      = "2.18.0"
