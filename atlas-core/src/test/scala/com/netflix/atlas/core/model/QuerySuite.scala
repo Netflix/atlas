@@ -352,11 +352,21 @@ class QuerySuite extends FunSuite {
 
   test("couldMatch !true") {
     val q = Not(True)
-    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
+    assert(!couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
   test("couldMatch !false") {
     val q = Not(False)
+    assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
+  }
+
+  test("couldMatch not key query") {
+    val q = Not(Equal("foo", "bar"))
+    assert(!couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
+  }
+
+  test("couldMatch not key query, possibly matches") {
+    val q = Not(Equal("a", "b"))
     assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 

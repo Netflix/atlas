@@ -67,10 +67,10 @@ object Query {
   def exactKeys(query: Query): Set[String] = {
     query match {
       case And(q1, q2) => exactKeys(q1).union(exactKeys(q2))
-      case Or(q1, q2)  => Set.empty
-      case Not(q)      => Set.empty
+      case Or(_, _)    => Set.empty
+      case Not(_)      => Set.empty
       case Equal(k, _) => Set(k)
-      case q: KeyQuery => Set.empty
+      case _: KeyQuery => Set.empty
       case _           => Set.empty
     }
   }
@@ -94,10 +94,10 @@ object Query {
   def tags(query: Query): Map[String, String] = {
     query match {
       case And(q1, q2) => tags(q1) ++ tags(q2)
-      case Or(q1, q2)  => Map.empty
-      case Not(q)      => Map.empty
+      case Or(_, _)    => Map.empty
+      case Not(_)      => Map.empty
       case Equal(k, v) => Map(k -> v)
-      case q: KeyQuery => Map.empty
+      case _: KeyQuery => Map.empty
       case _           => Map.empty
     }
   }
@@ -377,7 +377,7 @@ object Query {
   }
 
   case class Regex(k: String, v: String) extends PatternQuery {
-    val pattern = PatternMatcher.compile(s"^$v")
+    val pattern: PatternMatcher = PatternMatcher.compile(s"^$v")
 
     def check(s: String): Boolean = pattern.matches(s)
 
@@ -387,7 +387,7 @@ object Query {
   }
 
   case class RegexIgnoreCase(k: String, v: String) extends PatternQuery {
-    val pattern = PatternMatcher.compile(s"^$v").ignoreCase()
+    val pattern: PatternMatcher = PatternMatcher.compile(s"^$v").ignoreCase()
 
     def check(s: String): Boolean = pattern.matches(s)
 
@@ -448,7 +448,7 @@ object Query {
 
     def matchesAny(tags: Map[String, List[String]]): Boolean = !q.matchesAny(tags)
 
-    def couldMatch(tags: Map[String, String]): Boolean = true
+    def couldMatch(tags: Map[String, String]): Boolean = !q.matches(tags)
 
     def labelString: String = s"not(${q.labelString})"
 
