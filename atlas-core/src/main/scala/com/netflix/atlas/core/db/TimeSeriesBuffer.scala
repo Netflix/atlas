@@ -21,7 +21,6 @@ import com.netflix.atlas.core.model.ConsolidationFunction
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.LazyTaggedItem
 import com.netflix.atlas.core.model.MapStepTimeSeq
-import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.ArrayHelper
@@ -504,7 +503,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
         buffer(i) = buf.getValue(start + i * step)
         i += 1
       }
-      new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType.Gauge, start / step * step, step, buffer))
+      new TimeSeriesBuffer(tags, new ArrayTimeSeq(dsType, start / step * step, step, buffer))
     }
   }
 

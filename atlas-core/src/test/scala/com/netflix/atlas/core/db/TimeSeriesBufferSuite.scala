@@ -509,16 +509,30 @@ class TimeSeriesBufferSuite extends FunSuite {
     assertEquals(b.consolidate(5, ConsolidationFunction.Avg), b5)
   }
 
-  test("normalize") {
+  test("normalize rate") {
     val start = 1366746900000L
     val b1 = TimeSeriesBuffer(emptyTags, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
-    val b1e = TimeSeriesBuffer(emptyTags, 120000, start, Array(1.0, 2.5, 4.5))
+    val b1e = TimeSeriesBuffer(emptyTags, 120000, start, Array(0.5, 2.5, 4.5))
     assertEquals(b1.normalize(60000, start, 5), b1)
     assertEquals(b1.normalize(120000, start, 3), b1e)
 
     val b2 = TimeSeriesBuffer(emptyTags, 120000, start, Array(3.0, 7.0))
     val b2e =
       TimeSeriesBuffer(emptyTags, 60000, start, Array(3.0, 7.0, 7.0, Double.NaN, Double.NaN))
+    assertEquals(b2.normalize(60000, start, 5), b2e)
+  }
+
+  test("normalize gauge") {
+    val start = 1366746900000L
+    val tags = Map(TagKey.dsType -> "gauge")
+    val b1 = TimeSeriesBuffer(tags, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
+    val b1e = TimeSeriesBuffer(tags, 120000, start, Array(1.0, 2.5, 4.5))
+    assertEquals(b1.normalize(60000, start, 5), b1)
+    assertEquals(b1.normalize(120000, start, 3), b1e)
+
+    val b2 = TimeSeriesBuffer(tags, 120000, start, Array(3.0, 7.0))
+    val b2e =
+      TimeSeriesBuffer(tags, 60000, start, Array(3.0, 7.0, 7.0, Double.NaN, Double.NaN))
     assertEquals(b2.normalize(60000, start, 5), b2e)
   }
 

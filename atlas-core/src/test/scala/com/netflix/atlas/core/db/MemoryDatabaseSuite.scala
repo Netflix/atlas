@@ -90,11 +90,11 @@ class MemoryDatabaseSuite extends FunSuite {
   }
 
   private def ts(label: String, mul: Int, values: Double*): TimeSeries = {
-    TimeSeries(Map.empty, label, new ArrayTimeSeq(DsType.Gauge, 0L, mul * step, values.toArray))
+    TimeSeries(Map.empty, label, new ArrayTimeSeq(DsType.Rate, 0L, mul * step, values.toArray))
   }
 
   private def ts(name: String, label: String, mul: Int, values: Double*): TimeSeries = {
-    val seq = new ArrayTimeSeq(DsType.Gauge, 0L, mul * step, values.toArray)
+    val seq = new ArrayTimeSeq(DsType.Rate, 0L, mul * step, values.toArray)
     TimeSeries(Map("name" -> name, "foo" -> "bar"), label, seq)
   }
 
