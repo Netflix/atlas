@@ -16,7 +16,7 @@
 package com.netflix.atlas.core.model
 
 object CollectorStats {
-  val unknown = CollectorStats(-1L, -1L, -1L, -1L)
+  val unknown: CollectorStats = CollectorStats(-1L, -1L, -1L, -1L)
 
   def apply(vs: Iterable[CollectorStats]): CollectorStats = {
     val builder = new CollectorStatsBuilder
@@ -47,32 +47,36 @@ class CollectorStatsBuilder {
   private var outputLines: Long = 0L
   private var outputDatapoints: Long = 0L
 
-  def updateInput(datapoints: Int): Unit = {
+  def updateInput(datapoints: Int): CollectorStatsBuilder = {
     inputLines += 1
     inputDatapoints += datapoints
+    this
   }
 
-  def updateInput(blocks: List[Block]): Unit = {
+  def updateInput(blocks: List[Block]): CollectorStatsBuilder = {
     val size = blocks.size
     if (size > 0) {
       val b = blocks.head
       inputLines += 1
       inputDatapoints += b.size * size
     }
+    this
   }
 
-  def updateOutput(datapoints: Int): Unit = {
+  def updateOutput(datapoints: Int): CollectorStatsBuilder = {
     outputLines += 1
     outputDatapoints += datapoints
+    this
   }
 
-  def update(s: CollectorStats): Unit = {
+  def update(s: CollectorStats): CollectorStatsBuilder = {
     if (s.inputLines >= 0) {
       inputLines += s.inputLines
       inputDatapoints += s.inputDatapoints
       outputLines += s.outputLines
       outputDatapoints += s.outputDatapoints
     }
+    this
   }
 
   def result: CollectorStats = {
