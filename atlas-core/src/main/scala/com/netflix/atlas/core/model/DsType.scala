@@ -21,8 +21,8 @@ object DsType {
 
   def apply(key: String): DsType = {
     key match {
-      case "gauge"   => Gauge
-      case _         => Rate  // counter, rate, sum
+      case "gauge" => Gauge
+      case _       => Rate // counter, rate, sum
     }
   }
 
