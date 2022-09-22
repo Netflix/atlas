@@ -21,6 +21,7 @@ import com.netflix.atlas.core.model.Block
 import com.netflix.atlas.core.model.ConsolidationFunction
 import com.netflix.atlas.core.model.ConstantBlock
 import com.netflix.atlas.core.model.DsType
+import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.util.Math
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
@@ -488,6 +489,24 @@ class TimeSeriesBufferSuite extends FunSuite {
 
     val b5 = TimeSeriesBuffer(emptyTags, 300000, start, Array(15.0))
     assertEquals(b.consolidate(5, ConsolidationFunction.Sum), b5)
+  }
+
+  test("consolidate NaN, avg with a rate") {
+    val start = 1366746900000L
+    val tags = Map(TagKey.dsType -> "rate")
+    val b = TimeSeriesBuffer(tags, 60000, start, Array(1.0, 2.0, Double.NaN, 4.0, 5.0))
+
+    val b5 = TimeSeriesBuffer(tags, 300000, start, Array(12.0 / 5.0))
+    assertEquals(b.consolidate(5, ConsolidationFunction.Avg), b5)
+  }
+
+  test("consolidate NaN, avg with gauge") {
+    val start = 1366746900000L
+    val tags = Map(TagKey.dsType -> "gauge")
+    val b = TimeSeriesBuffer(tags, 60000, start, Array(1.0, 2.0, Double.NaN, 4.0, 5.0))
+
+    val b5 = TimeSeriesBuffer(tags, 300000, start, Array(12.0 / 4.0))
+    assertEquals(b.consolidate(5, ConsolidationFunction.Avg), b5)
   }
 
   test("normalize") {

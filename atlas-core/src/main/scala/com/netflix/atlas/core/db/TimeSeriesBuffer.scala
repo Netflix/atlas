@@ -21,6 +21,7 @@ import com.netflix.atlas.core.model.ConsolidationFunction
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.LazyTaggedItem
 import com.netflix.atlas.core.model.MapStepTimeSeq
+import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.ArrayHelper
@@ -34,7 +35,7 @@ object TimeSeriesBuffer {
     start: Long,
     vs: Array[Double]
   ): TimeSeriesBuffer = {
-    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType.Gauge, start / step * step, step, vs))
+    new TimeSeriesBuffer(tags, new ArrayTimeSeq(dsType(tags), start / step * step, step, vs))
   }
 
   def apply(tags: Map[String, String], step: Long, start: Long, end: Long): TimeSeriesBuffer = {
@@ -43,7 +44,7 @@ object TimeSeriesBuffer {
 
     val size = (e - s).toInt + 1
     val buffer = ArrayHelper.fill(size, Double.NaN)
-    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType.Gauge, s * step, step, buffer))
+    new TimeSeriesBuffer(tags, new ArrayTimeSeq(dsType(tags), s * step, step, buffer))
   }
 
   def apply(
@@ -64,7 +65,11 @@ object TimeSeriesBuffer {
       fill(block, buffer, step, s, e, aggr)
     }
 
-    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType.Gauge, start, step, buffer))
+    new TimeSeriesBuffer(tags, new ArrayTimeSeq(dsType(tags), start, step, buffer))
+  }
+
+  private def dsType(tags: Map[String, String]): DsType = {
+    DsType(tags.getOrElse(TagKey.dsType, "gauge"))
   }
 
   private def fill(
@@ -227,18 +232,33 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   }
 
   private[db] def average(mask: JBitSet, multiple: Int): Unit = {
-    val end = values.length * multiple
-    var count = 0
-    var i = 0
-    while (i < end) {
-      if (mask.get(i)) count += 1
-      i += 1
-      if (i % multiple == 0) {
-        if (count > 0)
-          values(i / multiple - 1) /= count
-        else
-          values(i / multiple - 1) = Double.NaN
-        count = 0
+    if (data.dsType == DsType.Gauge) {
+      // For gauges, only count values and ignore NaN when computing the denominator
+      // of the average. Treating NaN as zero can lead to values that do not match
+      // possible values for the gauge.
+      val end = values.length * multiple
+      var count = 0
+      var i = 0
+      while (i < end) {
+        if (mask.get(i)) count += 1
+        i += 1
+        if (i % multiple == 0) {
+          if (count > 0)
+            values(i / multiple - 1) /= count
+          else
+            values(i / multiple - 1) = Double.NaN
+          count = 0
+        }
+      }
+    } else {
+      // For rates, any ds type other than counter, treat NaN values as 0 for the
+      // purposes of the consolidated average. This is consistent with a counter that
+      // had no activity for a portion of the consolidated interval.
+      val end = values.length
+      var i = 0
+      while (i < end) {
+        values(i) /= multiple
+        i += 1
       }
     }
   }
