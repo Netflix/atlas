@@ -21,7 +21,6 @@ import com.netflix.atlas.core.model.ConsolidationFunction
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.LazyTaggedItem
 import com.netflix.atlas.core.model.MapStepTimeSeq
-import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.ArrayHelper
@@ -35,7 +34,7 @@ object TimeSeriesBuffer {
     start: Long,
     vs: Array[Double]
   ): TimeSeriesBuffer = {
-    new TimeSeriesBuffer(tags, new ArrayTimeSeq(dsType(tags), start / step * step, step, vs))
+    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType(tags), start / step * step, step, vs))
   }
 
   def apply(tags: Map[String, String], step: Long, start: Long, end: Long): TimeSeriesBuffer = {
@@ -44,7 +43,7 @@ object TimeSeriesBuffer {
 
     val size = (e - s).toInt + 1
     val buffer = ArrayHelper.fill(size, Double.NaN)
-    new TimeSeriesBuffer(tags, new ArrayTimeSeq(dsType(tags), s * step, step, buffer))
+    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType(tags), s * step, step, buffer))
   }
 
   def apply(
@@ -65,11 +64,7 @@ object TimeSeriesBuffer {
       fill(block, buffer, step, s, e, aggr)
     }
 
-    new TimeSeriesBuffer(tags, new ArrayTimeSeq(dsType(tags), start, step, buffer))
-  }
-
-  private def dsType(tags: Map[String, String]): DsType = {
-    DsType(tags.getOrElse(TagKey.dsType, "gauge"))
+    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType(tags), start, step, buffer))
   }
 
   private def fill(
@@ -508,7 +503,7 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
         buffer(i) = buf.getValue(start + i * step)
         i += 1
       }
-      new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType.Gauge, start / step * step, step, buffer))
+      new TimeSeriesBuffer(tags, new ArrayTimeSeq(dsType, start / step * step, step, buffer))
     }
   }
 
