@@ -129,7 +129,7 @@ object TimeSeriesBuffer {
 /**
   * Mutable buffer for efficiently manipulating metric data.
   */
-final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeSeq)
+final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeSeq)
     extends TimeSeries
     with TimeSeq
     with LazyTaggedItem {
@@ -167,24 +167,14 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     new TimeSeriesBuffer(tags, new ArrayTimeSeq(data.dsType, start, step, values.clone))
   }
 
-  /**
-    * Compute the new tags for the aggregate buffer. The tags are the
-    * intersection of tag values.
-    */
-  private def aggrTags(t: Map[String, String]): Map[String, String] = {
-    tags.toSet.intersect(t.toSet).toMap
-  }
-
   /** Aggregate the data from the block into this buffer. */
   private[db] def aggrBlock(
-    blkTags: Map[String, String],
     block: Block,
     aggr: Int,
     cf: ConsolidationFunction,
     multiple: Int,
     op: (Double, Double) => Double
   ): Int = {
-    tags = aggrTags(blkTags)
     val s = start / step
     val e = values.length + s - 1
     val bs = block.start / step
@@ -260,11 +250,10 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
 
   /**
     * Add the corresponding positions of the two buffers. The buffers must have
-    * the same settings. The tags for the new buffer will be the intersection.
+    * the same settings.
     */
   def add(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
-    tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
     var pos = 0
     while (pos < length) {
@@ -273,8 +262,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     }
   }
 
-  def add(tags: Map[String, String], block: Block): Int = {
-    aggrBlock(tags, block, Block.Sum, ConsolidationFunction.Sum, 1, Math.addNaN)
+  def add(block: Block): Int = {
+    aggrBlock(block, Block.Sum, ConsolidationFunction.Sum, 1, Math.addNaN)
   }
 
   /**
@@ -295,7 +284,6 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     */
   def subtract(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
-    tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
     var pos = 0
     while (pos < length) {
@@ -322,7 +310,6 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     */
   def multiply(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
-    tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
     var pos = 0
     while (pos < length) {
@@ -349,7 +336,6 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     */
   def divide(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
-    tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
     var pos = 0
     while (pos < length) {
@@ -376,7 +362,6 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     */
   def max(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
-    tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
     var pos = 0
     while (pos < length) {
@@ -387,8 +372,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     }
   }
 
-  def max(tags: Map[String, String], block: Block): Int = {
-    aggrBlock(tags, block, Block.Max, ConsolidationFunction.Sum, 1, Math.maxNaN)
+  def max(block: Block): Int = {
+    aggrBlock(block, Block.Max, ConsolidationFunction.Sum, 1, Math.maxNaN)
   }
 
   /**
@@ -398,7 +383,6 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     */
   def min(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
-    tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
     var pos = 0
     while (pos < length) {
@@ -409,8 +393,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     }
   }
 
-  def min(tags: Map[String, String], block: Block): Int = {
-    aggrBlock(tags, block, Block.Min, ConsolidationFunction.Sum, 1, Math.minNaN)
+  def min(block: Block): Int = {
+    aggrBlock(block, Block.Min, ConsolidationFunction.Sum, 1, Math.minNaN)
   }
 
   /**
@@ -431,7 +415,6 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     */
   def count(ts: TimeSeriesBuffer): Unit = {
     val nts = ts.normalize(step, start, values.length)
-    tags = aggrTags(nts.tags)
     val length = scala.math.min(values.length, nts.values.length)
     var pos = 0
     while (pos < length) {
@@ -442,8 +425,8 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
     }
   }
 
-  def count(tags: Map[String, String], block: Block): Int = {
-    aggrBlock(tags, block, Block.Count, ConsolidationFunction.Sum, 1, Math.addNaN)
+  def count(block: Block): Int = {
+    aggrBlock(block, Block.Count, ConsolidationFunction.Sum, 1, Math.addNaN)
   }
 
   /**
@@ -452,7 +435,6 @@ final class TimeSeriesBuffer(var tags: Map[String, String], val data: ArrayTimeS
   def merge(ts: TimeSeriesBuffer): Unit = {
     require(step == ts.step, "step sizes must be the same")
     require(start == ts.start, "start times must be the same")
-    tags = aggrTags(ts.tags)
     val length = math.min(values.length, ts.values.length)
     var i = 0
     while (i < length) {

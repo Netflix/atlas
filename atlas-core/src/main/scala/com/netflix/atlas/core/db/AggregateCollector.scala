@@ -123,11 +123,11 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
 
     blocks.foreach { b =>
       if (valueMask != null) {
-        val v = buffer.aggrBlock(tags, b, aggr, ConsolidationFunction.Sum, multiple, op)
+        val v = buffer.aggrBlock(b, aggr, ConsolidationFunction.Sum, multiple, op)
         buffer.valueMask(valueMask, b, multiple)
         valueCount += v
       } else {
-        val v = buffer.aggrBlock(tags, b, aggr, cf, multiple, op)
+        val v = buffer.aggrBlock(b, aggr, cf, multiple, op)
         valueCount += v
       }
     }
@@ -286,7 +286,7 @@ class AllAggregateCollector extends LimitedAggregateCollector {
     }
 
     blocks.foreach { b =>
-      val v = buffer.aggrBlock(tags, b, aggr, cf, multiple, op)
+      val v = buffer.aggrBlock(b, aggr, cf, multiple, op)
       valueCount += v
     }
 
