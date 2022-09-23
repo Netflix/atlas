@@ -71,7 +71,7 @@ class TimeSeriesBufferSuite extends FunSuite {
 
     val buffer = TimeSeriesBuffer(tags, step, 1 * step, 19 * step)
     blocks.foreach { b =>
-      buffer.add(tags, b)
+      buffer.add(b)
     }
     val m = buffer
     assertEquals(m.step, step)
@@ -93,7 +93,7 @@ class TimeSeriesBufferSuite extends FunSuite {
 
     val buffer = TimeSeriesBuffer(tags, 6 * step, step, 18 * step)
     blocks.foreach { b =>
-      buffer.aggrBlock(tags, b, Block.Sum, ConsolidationFunction.Max, 6, Math.addNaN)
+      buffer.aggrBlock(b, Block.Sum, ConsolidationFunction.Max, 6, Math.addNaN)
     }
     val m = buffer
     assertEquals(m.step, 6 * step)
@@ -115,7 +115,7 @@ class TimeSeriesBufferSuite extends FunSuite {
     val consol = multiple * step
     val buffer = TimeSeriesBuffer(tags, consol, consol, 20 * consol)
     blocks.foreach { b =>
-      buffer.aggrBlock(tags, b, Block.Sum, ConsolidationFunction.Max, multiple, Math.addNaN)
+      buffer.aggrBlock(b, Block.Sum, ConsolidationFunction.Max, multiple, Math.addNaN)
     }
     val m = buffer
     assertEquals(m.step, consol)
@@ -123,75 +123,15 @@ class TimeSeriesBufferSuite extends FunSuite {
     assert(m.values.forall(_ == 4.0))
   }
 
-  test("cf with start".ignore) {
-    val tags = emptyTags
-    val step = 60000L
-    val block = ArrayBlock(0L, 60)
-    (8 until 60).foreach { i =>
-      block.buffer(i) = 1.0
-    }
-
-    val buffer = TimeSeriesBuffer(tags, 6 * step, step, 60 * step)
-    buffer.aggrBlock(tags, block, Block.Sum, ConsolidationFunction.Avg, 6, Math.addNaN)
-    val m = buffer
-    println(m)
-  }
-
-  val pairs = List(
-    (ConsolidationFunction.Avg -> Math.addNaN _),
-    (ConsolidationFunction.Max -> Math.maxNaN _),
-    (ConsolidationFunction.Min -> Math.minNaN _)
-  )
-
-  /*pairs.foreach {
-    case (name, af) =>
-      test(s"$name: consolidate then aggregate === aggregate then consolidate") {
-        val cf = name
-        val tags = emptyTags[String, String]
-        val step = 60000L
-        val blocks = (0 until 1000).map(_ => newBlock(0, 60))
-
-        val afFirst = TimeSeriesBuffer(tags, step, 0L, 60 * step)
-        val cfFirst = TimeSeriesBuffer(tags, 6 * step, 0L, 60 * step - 1)
-        blocks.foreach { b =>
-          afFirst.aggrBlock(tags, b, Block.Sum, cf, 1, af)
-          cfFirst.aggrBlock(tags, b, Block.Sum, cf, 6, af)
-        }
-
-        val cfSecond = afFirst.consolidate(6, cf)
-        (0 until cfFirst.values.length).foreach { i =>
-          assertEquals(cfSecond.values(i), (cfFirst.values(i) +- 1e-9), s"position $i")
-        }
-      }
-
-      test(s"$name with NaN: consolidate then aggregate === aggregate then consolidate") {
-        val cf = name
-        val tags = emptyTags[String, String]
-        val step = 60000L
-        val blocks = (0 until 1000).map(_ => newBlockWithNaN(0, 60))
-
-        val afFirst = TimeSeriesBuffer(tags, step, 0L, 60 * step)
-        val cfFirst = TimeSeriesBuffer(tags, 6 * step, 0L, 60 * step - 1)
-        blocks.foreach { b =>
-          afFirst.aggrBlock(tags, b, Block.Sum, cf, 1, af)
-          cfFirst.aggrBlock(tags, b, Block.Sum, cf, 6, af)
-        }
-
-        val cfSecond = afFirst.consolidate(6, cf)
-        (0 until cfFirst.values.length).foreach { i =>
-          assertEquals(cfSecond.values(i), (cfFirst.values(i) +- 1e-9), s"position $i")
-        }
-      }
-  }*/
-
   test("aggregate tags") {
+    // No longer done, it will always use the tags from the initial buffer
     val common = Map("a" -> "b", "c" -> "d")
     val t1 = common + ("c" -> "e")
     val t2 = common + ("z" -> "y")
     val b1 = TimeSeriesBuffer(t1, 60000, 0, Array.fill(1)(0.0))
     val b2 = TimeSeriesBuffer(t2, 60000, 0, Array.fill(1)(0.0))
     b1.add(b2)
-    assertEquals(b1.tags, Map("a" -> "b"))
+    assertEquals(b1.tags, t1)
   }
 
   test("add buffer") {
@@ -548,7 +488,7 @@ class TimeSeriesBufferSuite extends FunSuite {
     val end = bufStart + step * 12
     val buffer = TimeSeriesBuffer(emptyTags, step, bufStart, end)
 
-    buffer.aggrBlock(emptyTags, block, Block.Sum, ConsolidationFunction.Avg, 5, Math.addNaN)
+    buffer.aggrBlock(block, Block.Sum, ConsolidationFunction.Avg, 5, Math.addNaN)
     buffer.values.foreach { v =>
       assert(v.isNaN || v <= 0.0)
     }

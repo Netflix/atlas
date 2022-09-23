@@ -172,13 +172,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     val bufEnd = bufStart + cfStepLength * cfStep - cfStep
 
     def newBuffer(tags: Map[String, String]): TimeSeriesBuffer = {
-      val resultTags = expr match {
-        case _: DataExpr.All => tags
-        case _ =>
-          val resultKeys = Query.exactKeys(expr.query) ++ expr.finalGrouping
-          tags.filter(t => resultKeys.contains(t._1))
-      }
-      TimeSeriesBuffer(resultTags, cfStep, bufStart, bufEnd)
+      TimeSeriesBuffer(tags, cfStep, bufStart, bufEnd)
     }
 
     index.findItems(query).foreach { item =>
@@ -199,9 +193,14 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     queryInputDatapoints.increment(stats.inputDatapoints)
     queryOutputDatapoints.increment(stats.outputDatapoints)
 
+    val resultKeys = Query.exactKeys(expr.query) ++ expr.finalGrouping
     val vs = collector.result
       .map { t =>
-        DataExpr.withDefaultLabel(expr, t)
+        val resultTags = expr match {
+          case _: DataExpr.All => t.tags
+          case _               => t.tags.filter(t => resultKeys.contains(t._1))
+        }
+        DataExpr.withDefaultLabel(expr, t.withTags(resultTags))
       }
       .sortWith { _.label < _.label }
     finalValues(context, expr, vs)

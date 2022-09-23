@@ -149,7 +149,7 @@ class AggregateCollectorSuite extends FunSuite {
       newTaggedBuffer(Map("a" -> "4", "b" -> "2", "c" -> "7"), 5.0)
     )
     val expected = List(
-      newTaggedBuffer(Map("b" -> "2"), 9.0),
+      newTaggedBuffer(Map("a" -> "1", "b" -> "2"), 9.0),
       newTaggedBuffer(Map("a" -> "3", "b" -> "3"), 2.0)
     )
     val by = DataExpr.GroupBy(DataExpr.Sum(Query.False), List("b"))
