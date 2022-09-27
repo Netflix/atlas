@@ -19,6 +19,7 @@ import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
+import com.netflix.spectator.impl.matcher.PatternUtils
 
 object QueryVocabulary extends Vocabulary {
 
@@ -39,6 +40,7 @@ object QueryVocabulary extends Vocabulary {
     GreaterThanEqual,
     Regex,
     RegexIgnoreCase,
+    Contains,
     In,
     And,
     Or,
@@ -327,6 +329,38 @@ object QueryVocabulary extends Vocabulary {
 
     override def examples: List[String] =
       List("name,DiscoveryStatus_(UP|DOWN)", "name,discoverystatus_(Up|Down)", "ERROR:name")
+  }
+
+  case object Contains extends KeyValueWord {
+
+    override def name: String = "contains"
+
+    def newInstance(k: String, v: String): Query = Query.Regex(k, s".*${PatternUtils.escape(v)}")
+
+    override def summary: String =
+      """
+        |Query expression that matches time series with a value that contains the given
+        |sequence of characters. This version is case sensitive.
+        |
+        |> :warning: This operation always requires a full scan and should be avoided if at all
+        |possible. Queries using this operation may be de-priortized.
+        |
+        |Suppose you have four time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=foo`
+        |* `name=sys.cpu, type=user, nf.app=bar`
+        |* `name=sys.cpu, type=user, nf.app=foobar`
+        |
+        |The query `nf.app,bar,:contains` would match series with "bar" anywhere in
+        |the string:
+        |
+        |* `name=sys.cpu, type=user, nf.app=bar`
+        |* `name=sys.cpu, type=user, nf.app=foobar`
+      """.stripMargin.trim
+
+    override def examples: List[String] =
+      List("name,request", "result,error")
   }
 
   case object In extends SimpleWord {

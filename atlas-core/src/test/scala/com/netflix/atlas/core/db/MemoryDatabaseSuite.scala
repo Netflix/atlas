@@ -117,6 +117,10 @@ class MemoryDatabaseSuite extends FunSuite {
     assertEquals(exec("name,[ab]$,:re"), List(ts("sum(name~/^[ab]$/)", 1, 4.0, 4.0, 4.0)))
   }
 
+  test(":contains query") {
+    assertEquals(exec("name,a,:contains"), List(ts("sum(name~/^.*a/)", 1, 1.0, 2.0, 3.0)))
+  }
+
   test(":has query") {
     assertEquals(exec("name,:has"), List(ts("sum(has(name))", 1, 19.0, 22.0, 25.0)))
   }

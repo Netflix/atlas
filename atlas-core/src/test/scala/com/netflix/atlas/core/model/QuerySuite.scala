@@ -233,7 +233,7 @@ class QuerySuite extends FunSuite {
   }
 
   test("matchesAny re with key match") {
-    val q = GreaterThan("foo", "b")
+    val q = Regex("foo", "b")
     assert(matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
     assert(matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
     assert(matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
@@ -650,4 +650,5 @@ class QuerySuite extends FunSuite {
     val q = Or(Equal("a", "1"), In("b", List("1", "2")))
     assertEquals(Query.expandInClauses(q, 1), List(q))
   }
+
 }

@@ -52,6 +52,7 @@ class TimeSeriesExprSuite extends FunSuite {
     "name,1,:eq"                 -> const(ts(Map("name" -> "1"), 1)),
     "name,1,:re"                 -> const(ts(unknownTag, 11)),
     "name,2,:re"                 -> const(ts(unknownTag, 2)),
+    "name,2,:contains"           -> const(ts(unknownTag, 2)),
     "name,(,1,10,),:in"          -> const(ts(unknownTag, 11)),
     "name,1,:eq,name,10,:eq,:or" -> const(ts(unknownTag, 11)),
     ":true,:abs"                 -> const(ts(unknownTag, "abs(name=unknown)", 55.0)),
