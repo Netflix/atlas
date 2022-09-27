@@ -46,4 +46,35 @@ class QueryVocabularySuite extends FunSuite {
     assert(!q.matches(Map("foo" -> "my $var. [work-in progress]")))
   }
 
+  test("starts, prefix and escape") {
+    val exp = interpreter.execute("a,[foo],:starts").stack(0)
+    assertEquals(exp.asInstanceOf[Regex].pattern.prefix(), "[foo]")
+    assertEquals(exp.asInstanceOf[Regex].pattern.toString, "^\\[foo\\]")
+  }
+
+  test("starts, matches escaped") {
+    val q = interpreter
+      .execute("foo,my $var.,:starts")
+      .stack(0)
+      .asInstanceOf[Regex]
+    assert(q.matches(Map("foo" -> "my $var.")))
+    assert(!q.matches(Map("foo" -> "initialize my $var. [work-in-progress], not a range")))
+    assert(q.matches(Map("foo" -> "my $var. [work-in progress]")))
+  }
+
+  test("ends, suffix and escape") {
+    val exp = interpreter.execute("a,[foo],:ends").stack(0)
+    assertEquals(exp.asInstanceOf[Regex].pattern.prefix(), null)
+    assertEquals(exp.asInstanceOf[Regex].pattern.toString, ".*\\[foo\\]$")
+  }
+
+  test("ends, matches escaped") {
+    val q = interpreter
+      .execute("foo,my $var.,:ends")
+      .stack(0)
+      .asInstanceOf[Regex]
+    assert(q.matches(Map("foo" -> "my $var.")))
+    assert(!q.matches(Map("foo" -> "initialize my $var. [work-in-progress], not a range")))
+    assert(!q.matches(Map("foo" -> "my $var. [work-in progress]")))
+  }
 }

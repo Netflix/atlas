@@ -41,6 +41,8 @@ object QueryVocabulary extends Vocabulary {
     Regex,
     RegexIgnoreCase,
     Contains,
+    Starts,
+    Ends,
     In,
     And,
     Or,
@@ -361,6 +363,63 @@ object QueryVocabulary extends Vocabulary {
 
     override def examples: List[String] =
       List("name,request", "result,error")
+  }
+
+  case object Starts extends KeyValueWord {
+
+    override def name: String = "starts"
+
+    def newInstance(k: String, v: String): Query = Query.Regex(k, PatternUtils.escape(v))
+
+    override def summary: String =
+      """
+        |Query expression that matches time series with a value that starts with the given
+        |sequence of characters. This version is case sensitive.
+        |
+        |Suppose you have four time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=foo`
+        |* `name=sys.cpu, type=user, nf.app=bar`
+        |* `name=sys.cpu, type=user, nf.app=foobar`
+        |
+        |The query `nf.app,bar,:starts` would match series with "bar" at the beginning of
+        |the string:
+        |
+        |* `name=sys.cpu, type=user, nf.app=bar`
+      """.stripMargin.trim
+
+    override def examples: List[String] =
+      List("name,req", "result,err")
+  }
+
+  case object Ends extends KeyValueWord {
+
+    override def name: String = "ends"
+
+    def newInstance(k: String, v: String): Query = Query.Regex(k, s".*${PatternUtils.escape(v)}$$")
+
+    override def summary: String =
+      """
+        |Query expression that matches time series with a value that ends with the given
+        |sequence of characters. This version is case sensitive.
+        |
+        |Suppose you have four time series:
+        |
+        |* `name=http.requests, status=200, nf.app=server`
+        |* `name=sys.cpu, type=user, nf.app=foo`
+        |* `name=sys.cpu, type=user, nf.app=bar`
+        |* `name=sys.cpu, type=user, nf.app=foobar`
+        |
+        |The query `nf.app,bar,:ends` would match series with "bar" at the end of
+        |the string:
+        |
+        |* `name=sys.cpu, type=user, nf.app=bar`
+        |* `name=sys.cpu, type=user, nf.app=foobar`
+      """.stripMargin.trim
+
+    override def examples: List[String] =
+      List("name,error", "result,failed")
   }
 
   case object In extends SimpleWord {
