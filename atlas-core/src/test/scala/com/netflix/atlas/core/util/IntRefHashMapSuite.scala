@@ -95,10 +95,10 @@ class IntRefHashMapSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(imap)
-    //val jgraph = GraphLayout.parseInstance(jmap)
+    // val jgraph = GraphLayout.parseInstance(jmap)
 
-    //println(igraph.toFootprint)
-    //println(jgraph.toFootprint)
+    // println(igraph.toFootprint)
+    // println(jgraph.toFootprint)
 
     // Integer class creates a bunch of objects
     assertEquals(igraph.totalCount(), 8L)
@@ -116,10 +116,10 @@ class IntRefHashMapSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(imap)
-    //val jgraph = GraphLayout.parseInstance(jmap)
+    // val jgraph = GraphLayout.parseInstance(jmap)
 
-    //println(igraph.toFootprint)
-    //println(jgraph.toFootprint)
+    // println(igraph.toFootprint)
+    // println(jgraph.toFootprint)
 
     // Around 10 or so for the Integer class + 10k for the values
     assertEquals(igraph.totalCount(), 10003L)

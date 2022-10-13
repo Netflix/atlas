@@ -158,7 +158,8 @@ object ClusterOps extends StrictLogging {
               }
             }
             .recoverWithRetries(
-              -1, {
+              -1,
+              {
                 // Ignore non-fatal failure that may happen when a member is removed from cluster
                 case e: Exception => {
                   logger.debug(s"suppressing failure for: $m", e)

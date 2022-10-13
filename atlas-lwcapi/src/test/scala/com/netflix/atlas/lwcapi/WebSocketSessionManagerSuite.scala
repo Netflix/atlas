@@ -101,7 +101,7 @@ class WebSocketSessionManagerSuite extends FunSuite {
       override def offer(msgs: Seq[JsonSupport]): Unit = ()
       override def complete(): Unit = ()
     }
-    val noopSource = Source.empty[JsonSupport].mapMaterializedValue(_ => (NotUsed))
+    val noopSource = Source.empty[JsonSupport].mapMaterializedValue(_ => NotUsed)
     val noopRegisterFunc = (_: StreamMetadata) => (noopQueueHandler, noopSource)
 
     noopRegisterFunc

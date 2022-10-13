@@ -42,6 +42,7 @@ trait InternMap[K <: AnyRef] extends Interner[K] {
 
 class OpenHashInternMap[K <: AnyRef](initialCapacity: Int, clock: Clock = Clock.SYSTEM)
     extends InternMap[K] {
+
   private val primeCapacity = nextCapacity(initialCapacity)
   private var data = ArrayHelper.newInstance[K](primeCapacity)
   private var timestamps = new Array[Long](primeCapacity)

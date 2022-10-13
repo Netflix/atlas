@@ -36,7 +36,7 @@ class MapStepTimeSeqSuite extends FunSuite {
     val multiple = s2 / s1
     val boundaries =
       (if (start != mStart) 1 else 0) +
-      (if (multiple > 0 && values.length % multiple != 0) 1 else 0)
+        (if (multiple > 0 && values.length % multiple != 0) 1 else 0)
     val timeRange =
       if (multiple <= 0) s1 * values.length
       else {

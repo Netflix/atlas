@@ -67,8 +67,8 @@ class BlockSuite extends FunSuite {
   test("SparseBlock.get") {
     val data =
       (0 until 5).map(i => 0) ++
-      (5 until 37).map(i => SparseBlock.NaN) ++
-      (37 until 60).map(i => 1)
+        (5 until 37).map(i => SparseBlock.NaN) ++
+        (37 until 60).map(i => 1)
     val indexes = data.map(_.asInstanceOf[Byte]).toArray
     val values = Array(42.0, 21.0)
     val b = SparseBlock(0L, indexes, values)
@@ -79,8 +79,8 @@ class BlockSuite extends FunSuite {
   test("SparseBlock.get, size > 120") {
     val data =
       (0 until 5).map(i => 0) ++
-      (5 until 37).map(i => SparseBlock.NaN) ++
-      (37 until 360).map(i => 1)
+        (5 until 37).map(i => SparseBlock.NaN) ++
+        (37 until 360).map(i => 1)
     val indexes = data.map(_.asInstanceOf[Byte]).toArray
     val values = Array(42.0, 21.0)
     val b = SparseBlock(0L, indexes, values)
@@ -113,7 +113,7 @@ class BlockSuite extends FunSuite {
     val data = List(5 -> 42.0, 37 -> Double.NaN, 59 -> 21.0)
     val b = rleBlock(0L, data)
     val nb = Block.compress(b.toArrayBlock).asInstanceOf[SparseBlock]
-    //assertEquals(nb.byteCount, 84)
+    // assertEquals(nb.byteCount, 84)
     assertEquals(nb.values.length, 2)
     (0 until 60).foreach { i =>
       assertEquals(java.lang.Double.compare(b.get(i), nb.get(i)), 0)
@@ -168,9 +168,9 @@ class BlockSuite extends FunSuite {
   }
 
   test("merge") {
-    val data1 = List(5    -> 42.0, 37 -> Double.NaN, 59 -> 21.0)
-    val data2 = List(9    -> 41.0, 45 -> Double.NaN, 59 -> 22.0)
-    val expected = List(5 -> 42.0, 9  -> 41.0, 37       -> Double.NaN, 45 -> 21.0, 59 -> 22.0)
+    val data1 = List(5 -> 42.0, 37 -> Double.NaN, 59 -> 21.0)
+    val data2 = List(9 -> 41.0, 45 -> Double.NaN, 59 -> 22.0)
+    val expected = List(5 -> 42.0, 9 -> 41.0, 37 -> Double.NaN, 45 -> 21.0, 59 -> 22.0)
     val b1 = rleBlock(0L, data1)
     val b2 = rleBlock(0L, data2)
     val b3 = Block.merge(b1, b2)
@@ -265,9 +265,9 @@ class BlockSuite extends FunSuite {
       assertEquals(set2(0L, i, 3), 3L << (2 * i))
 
       (0 until 32).foreach { j =>
-        assertEquals(get2(set2(-1L, i, 0), j), (if (i == j) 0 else 3))
-        assertEquals(get2(set2(-1L, i, 1), j), (if (i == j) 1 else 3))
-        assertEquals(get2(set2(-1L, i, 2), j), (if (i == j) 2 else 3))
+        assertEquals(get2(set2(-1L, i, 0), j), if (i == j) 0 else 3)
+        assertEquals(get2(set2(-1L, i, 1), j), if (i == j) 1 else 3)
+        assertEquals(get2(set2(-1L, i, 2), j), if (i == j) 2 else 3)
         assertEquals(get2(set2(-1L, i, 3), j), 3)
       }
     }
@@ -283,7 +283,7 @@ class BlockSuite extends FunSuite {
 
       (0 until 16).foreach { j =>
         (0 until 16).foreach { v =>
-          assertEquals(get4(set4(-1L, i, v), j), (if (i == j) v else 0xF))
+          assertEquals(get4(set4(-1L, i, v), j), if (i == j) v else 0xF)
         }
       }
     }

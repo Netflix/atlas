@@ -80,6 +80,7 @@ import com.typesafe.config.Config
   *     - `keys`: tag keys that are available for use on the denominator.
   */
 class CustomVocabulary(config: Config) extends Vocabulary {
+
   import CustomVocabulary._
   import scala.jdk.CollectionConverters._
 

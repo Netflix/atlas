@@ -18,6 +18,7 @@ package com.netflix.atlas.core.model
 import com.netflix.atlas.core.util.Math
 
 object TimeSeries {
+
   private val noDataTags = Map("name" -> "NO_DATA")
   private val noDataId = TaggedItem.computeId(noDataTags)
 
@@ -97,6 +98,7 @@ object TimeSeries {
 
   /** No-operation aggregator that can be used when aggregation is optional. */
   case object NoopAggregator extends Aggregator {
+
     def start: Long = 0L
     def end: Long = 0L
 
@@ -114,6 +116,7 @@ object TimeSeries {
     * function.
     */
   class SimpleAggregator(val start: Long, val end: Long, f: BinaryOp) extends Aggregator {
+
     private[this] var aggrBuffer: ArrayTimeSeq = _
     private[this] var aggrTags: Map[String, String] = _
 
@@ -142,6 +145,7 @@ object TimeSeries {
     * a given interval.
     */
   class CountAggregator(val start: Long, val end: Long) extends Aggregator {
+
     private[this] var aggrBuffer: ArrayTimeSeq = _
     private[this] var aggrTags: Map[String, String] = _
 
@@ -175,6 +179,7 @@ object TimeSeries {
     * Aggregator that computes the average for the input time series.
     */
   class AvgAggregator(val start: Long, val end: Long) extends Aggregator {
+
     private[this] val sumAggregator = new SimpleAggregator(start, end, Math.addNaN)
     private[this] val countAggregator = new CountAggregator(start, end)
 

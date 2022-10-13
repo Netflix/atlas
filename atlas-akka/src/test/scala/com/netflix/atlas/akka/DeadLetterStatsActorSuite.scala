@@ -46,12 +46,15 @@ class DeadLetterStatsActorSuite extends FunSuite with TestKitBase with ImplicitS
   private val recipient = newRef("to")
 
   private def newRef(name: String): ActorRef = {
-    val r = system.actorOf(Props(new Actor {
+    val r = system.actorOf(
+      Props(new Actor {
 
-      override def receive: Receive = {
-        case _ =>
-      }
-    }), name)
+        override def receive: Receive = {
+          case _ =>
+        }
+      }),
+      name
+    )
     system.stop(r)
     r
   }

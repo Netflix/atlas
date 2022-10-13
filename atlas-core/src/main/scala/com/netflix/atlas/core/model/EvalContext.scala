@@ -27,6 +27,7 @@ case class EvalContext(
   step: Long,
   state: Map[StatefulExpr, Any] = IdentityMap.empty
 ) {
+
   require(start < end, s"start time must be less than end time ($start >= $end)")
 
   val noData: TimeSeries = TimeSeries.noData(step)

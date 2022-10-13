@@ -136,8 +136,8 @@ class DesSuite extends FunSuite {
     val expected = sdes.eval(context, List(unalignedInputTS)).data.head.data.bounded(s, e).data
 
     val result = eval(sdes, unalignedStream)
-    //println(expected.mkString(", "))
-    //println(result.map { case v => v(0).data.asInstanceOf[ArrayTimeSeq].data(0) }.mkString(", "))
+    // println(expected.mkString(", "))
+    // println(result.map { case v => v(0).data.asInstanceOf[ArrayTimeSeq].data(0) }.mkString(", "))
     result.zip(expected).zipWithIndex.foreach {
       case ((ts, v), i) =>
         assertEquals(ts.size, 1)

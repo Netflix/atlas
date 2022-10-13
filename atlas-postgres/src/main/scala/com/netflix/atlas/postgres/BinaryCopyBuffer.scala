@@ -287,7 +287,7 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
       if (b >= ' ' && b <= '~') {
         builder.append(b.asInstanceOf[Char])
       } else {
-        val ub = b & 0xff
+        val ub = b & 0xFF
         builder.append("\\x").append(Strings.zeroPad(ub, 2))
       }
       i += 1

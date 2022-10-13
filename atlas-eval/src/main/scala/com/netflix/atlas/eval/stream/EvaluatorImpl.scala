@@ -189,7 +189,7 @@ private[stream] abstract class EvaluatorImpl(
       .via(new FillRemovedKeysWith[String, DataSources](_ => DataSources.empty()))
       .flatMapMerge(Int.MaxValue, dssMap => Source(dssMap.toList))
       .groupBy(Int.MaxValue, _._1, true) // groupBy host
-      .map(_._2) //keep only DataSources
+      .map(_._2) // keep only DataSources
       .via(createProcessorFlow)
       .mergeSubstreams
   }

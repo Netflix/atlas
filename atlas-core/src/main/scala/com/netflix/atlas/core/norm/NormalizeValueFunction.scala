@@ -18,6 +18,7 @@ package com.netflix.atlas.core.norm
 import com.netflix.spectator.api.Spectator
 
 object NormalizeValueFunction {
+
   private final val NO_PREVIOUS_UPDATE = -1L
 
   private val heartbeatExpireCount =

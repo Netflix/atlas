@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 /** Helper functions for interners. */
 object Interner {
+
   private val stringInternerRef = new AtomicReference[Interner[String]](StringInterner)
 
   /** Set the default interner to use for strings. */

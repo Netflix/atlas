@@ -7,8 +7,8 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        java: [17, 18]
-        scala: [2.13.8]
+        java: [17, 19]
+        scala: [2.13.10]
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK ${{ matrix.java }}

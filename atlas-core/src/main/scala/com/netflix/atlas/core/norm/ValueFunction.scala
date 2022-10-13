@@ -27,6 +27,7 @@ trait ValueFunction extends AutoCloseable {
   * a list so it is easy to examine.
   */
 class ListValueFunction extends ValueFunction {
+
   private var builder = List.newBuilder[(Long, Double)]
 
   var f: ValueFunction = this

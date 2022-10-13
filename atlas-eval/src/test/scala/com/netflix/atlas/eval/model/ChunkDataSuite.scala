@@ -20,6 +20,7 @@ import nl.jqno.equalsverifier.Warning
 import munit.FunSuite
 
 class ChunkDataSuite extends FunSuite {
+
   test("ArrayData equals") {
     EqualsVerifier
       .forClass(classOf[ArrayData])

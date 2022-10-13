@@ -44,10 +44,10 @@ case class Legend(
   private val numEntries = plot.data.size
 
   private val header = HorizontalPadding(5) :: label.toList.map { str =>
-      val bold = ChartSettings.normalFont.deriveFont(Font.BOLD)
-      val headerColor = plot.getAxisColor(styles.text.color)
-      Text(str, font = bold, alignment = TextAlignment.LEFT, style = Style(headerColor))
-    }
+    val bold = ChartSettings.normalFont.deriveFont(Font.BOLD)
+    val headerColor = plot.getAxisColor(styles.text.color)
+    Text(str, font = bold, alignment = TextAlignment.LEFT, style = Style(headerColor))
+  }
 
   private val entries = plot.data.take(maxEntries).flatMap { data =>
     List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))

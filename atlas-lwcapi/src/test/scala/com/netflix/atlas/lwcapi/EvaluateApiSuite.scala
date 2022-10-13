@@ -24,6 +24,7 @@ import com.netflix.atlas.lwcapi.EvaluateApi._
 import com.netflix.spectator.api.NoopRegistry
 
 class EvaluateApiSuite extends MUnitRouteSuite {
+
   import scala.concurrent.duration._
 
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)

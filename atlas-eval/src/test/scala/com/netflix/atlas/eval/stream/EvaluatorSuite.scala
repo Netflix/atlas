@@ -87,7 +87,10 @@ class EvaluatorSuite extends FunSuite {
     }
 
     val expectedMessages = if (buffers > 1) 256 else 255
-    assertEquals(messages.size, expectedMessages) // Can vary depending on num buffers for evaluation
+    assertEquals(
+      messages.size,
+      expectedMessages
+    ) // Can vary depending on num buffers for evaluation
     assertEquals(messages.map(_.tags("nf.asg")).toSet.size, 3)
   }
 
@@ -132,7 +135,7 @@ class EvaluatorSuite extends FunSuite {
   }
 
   test("create publisher from resource uri with higher number of time buffers") {
-    //has enough buffers to retain an AggrDatapoint with an older timestamp than an earlier AggrDatapoint processed.
+    // has enough buffers to retain an AggrDatapoint with an older timestamp than an earlier AggrDatapoint processed.
     testPublisher("resource:///gc-pause.dat", Some(2))
   }
 
@@ -175,8 +178,8 @@ class EvaluatorSuite extends FunSuite {
         assert(
           msg.startsWith(
             "expression: statistic,max,:eq,name,jvm.gc.pause,:eq,:and,:max,(,nf.asg,nf.node,),:by" +
-            " exceeded the configured max input datapoints limit '10' or max intermediate" +
-            " datapoints limit '2147483647' for timestamp"
+              " exceeded the configured max input datapoints limit '10' or max intermediate" +
+              " datapoints limit '2147483647' for timestamp"
           )
         )
         numberOfDiagnosticMessages += 1
@@ -186,7 +189,10 @@ class EvaluatorSuite extends FunSuite {
       case _ =>
     }
 
-    assertEquals(numberOfDiagnosticMessages, 9) // 1 diagnostic message per unique timestamp and expression.
+    assertEquals(
+      numberOfDiagnosticMessages,
+      9
+    ) // 1 diagnostic message per unique timestamp and expression.
     assertEquals(numberOfTimeSeriesMessages, 9) // 1 time series messages with "NO DATA".
   }
 

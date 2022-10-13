@@ -34,6 +34,7 @@ import com.netflix.atlas.json.JsonSupport
   */
 case class LwcDatapoint(timestamp: Long, id: String, tags: Map[String, String], value: Double)
     extends JsonSupport {
+
   val `type`: String = "datapoint"
 
   override def encode(gen: JsonGenerator): Unit = {

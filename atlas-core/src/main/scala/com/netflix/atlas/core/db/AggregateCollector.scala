@@ -206,12 +206,14 @@ class GroupByAggregateCollector(ft: DataExpr.GroupBy) extends LimitedAggregateCo
     if (k == null) return
 
     // Add the data to the existing collector for the key or create a new one
-    val c = buffers.getOrElse(k, {
-      checkLimits(buffers.size + 1, (buffers.size + 1) * b.values.length)
-      val collector = newCollector(ft.af)
-      buffers += (k -> collector)
-      collector
-    })
+    val c = buffers.getOrElse(
+      k, {
+        checkLimits(buffers.size + 1, (buffers.size + 1) * b.values.length)
+        val collector = newCollector(ft.af)
+        buffers += (k -> collector)
+        collector
+      }
+    )
     c.add(b)
   }
 
@@ -229,14 +231,16 @@ class GroupByAggregateCollector(ft: DataExpr.GroupBy) extends LimitedAggregateCo
     if (k == null) return 0
 
     // Add the data to the existing collector for the key or create a new one
-    val c = buffers.getOrElse(k, {
-      if (bufferSize > 0) {
-        checkLimits(buffers.size + 1, (buffers.size + 1) * bufferSize)
+    val c = buffers.getOrElse(
+      k, {
+        if (bufferSize > 0) {
+          checkLimits(buffers.size + 1, (buffers.size + 1) * bufferSize)
+        }
+        val collector = newCollector(ft.af)
+        buffers += (k -> collector)
+        collector
       }
-      val collector = newCollector(ft.af)
-      buffers += (k -> collector)
-      collector
-    })
+    )
     bufferSize = c.add(tags, blocks, aggr, cf, multiple, newBuffer)
     bufferSize
   }
@@ -255,6 +259,7 @@ class GroupByAggregateCollector(ft: DataExpr.GroupBy) extends LimitedAggregateCo
 }
 
 class AllAggregateCollector extends LimitedAggregateCollector {
+
   private val builder = List.newBuilder[TimeSeriesBuffer]
   private var numLines = 0
   val statBuffer = new CollectorStatsBuilder

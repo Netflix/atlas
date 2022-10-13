@@ -187,7 +187,7 @@ class CardinalityLimiterSuite extends FunSuite {
       if (i == 2) {
         assert(result == null, "should drop -  number of names reaches 2")
         assert(limiter.canServe(queryName1))
-        assert(!limiter.canServe(queryName3)) //name3 dropped
+        assert(!limiter.canServe(queryName3)) // name3 dropped
       }
 
       if (i == 3) {

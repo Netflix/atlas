@@ -28,18 +28,18 @@ class NormalizeValueFunctionSuite extends FunSuite {
 
   test("basic") {
     val n = newFunction(10, 20)
-    assertEquals(n.update(5, 1.0), List(0L     -> 0.5))
-    assertEquals(n.update(15, 2.0), List(10L   -> 1.5))
-    assertEquals(n.update(25, 2.0), List(20L   -> 2.0))
-    assertEquals(n.update(35, 1.0), List(30L   -> 1.5))
-    assertEquals(n.update(85, 1.0), List(80L   -> 0.5))
-    assertEquals(n.update(95, 2.0), List(90L   -> 1.5))
+    assertEquals(n.update(5, 1.0), List(0L -> 0.5))
+    assertEquals(n.update(15, 2.0), List(10L -> 1.5))
+    assertEquals(n.update(25, 2.0), List(20L -> 2.0))
+    assertEquals(n.update(35, 1.0), List(30L -> 1.5))
+    assertEquals(n.update(85, 1.0), List(80L -> 0.5))
+    assertEquals(n.update(95, 2.0), List(90L -> 1.5))
     assertEquals(n.update(105, 2.0), List(100L -> 2.0))
   }
 
   test("already normalized updates") {
     val n = newFunction(10, 20)
-    assertEquals(n.update(0, 1.0), List(0L   -> 1.0))
+    assertEquals(n.update(0, 1.0), List(0L -> 1.0))
     assertEquals(n.update(10, 2.0), List(10L -> 2.0))
     assertEquals(n.update(20, 3.0), List(20L -> 3.0))
     assertEquals(n.update(30, 1.0), List(30L -> 1.0))
@@ -47,14 +47,14 @@ class NormalizeValueFunctionSuite extends FunSuite {
 
   test("already normalized updates, skip 1") {
     val n = newFunction(10, 20)
-    assertEquals(n.update(0, 1.0), List(0L   -> 1.0))
+    assertEquals(n.update(0, 1.0), List(0L -> 1.0))
     assertEquals(n.update(10, 1.0), List(10L -> 1.0))
     assertEquals(n.update(30, 1.0), List(20L -> 1.0, 30L -> 1.0))
   }
 
   test("already normalized updates, miss heartbeat") {
     val n = newFunction(10, 20)
-    assertEquals(n.update(0, 1.0), List(0L   -> 1.0))
+    assertEquals(n.update(0, 1.0), List(0L -> 1.0))
     assertEquals(n.update(10, 2.0), List(10L -> 2.0))
     assertEquals(n.update(30, 1.0), List(20L -> 1.0, 30L -> 1.0))
     assertEquals(n.update(60, 4.0), List(60L -> 4.0))
@@ -97,7 +97,7 @@ class NormalizeValueFunctionSuite extends FunSuite {
     assertEquals(n.update(t(1, 13), 1.0), List(t(1, 0) -> 47.0 / 60.0))
     assertEquals(n.update(t(2, 13), 1.0), List(t(2, 0) -> 1.0))
     assertEquals(n.update(t(3, 13), 1.0), List(t(3, 0) -> 1.0))
-    assertEquals(n.update(t(6, 5), 1.0), List(t(6, 0)  -> 55.0 / 60.0))
+    assertEquals(n.update(t(6, 5), 1.0), List(t(6, 0) -> 55.0 / 60.0))
   }
 
   test("random offset, out of order") {
@@ -132,8 +132,8 @@ class NormalizeValueFunctionSuite extends FunSuite {
     val wv1 = v * (43.0 / 60.0)
     val wv2 = v * (17.0 / 60.0)
     assertEquals(n.update(t(8, 17), 1.0 / 60.0), List(t(8, 0) -> wv1))
-    assertEquals(n.update(t(9, 17), 0.0), List(t(9, 0)        -> wv2))
-    assertEquals(n.update(t(10, 17), 0.0), List(t(10, 0)      -> 0.0))
+    assertEquals(n.update(t(9, 17), 0.0), List(t(9, 0) -> wv2))
+    assertEquals(n.update(t(10, 17), 0.0), List(t(10, 0) -> 0.0))
   }
 
   test("frequent updates") {

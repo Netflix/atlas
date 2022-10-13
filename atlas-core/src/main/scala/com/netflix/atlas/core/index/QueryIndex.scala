@@ -256,7 +256,7 @@ object QueryIndex {
     */
   private def annotate[T](entry: Entry[T]): AnnotatedEntry[T] = {
     val distinct = conjunctionList(entry.query).distinct
-    val filters = distinct.collect { case q: Query.Equal                      => q }
+    val filters = distinct.collect { case q: Query.Equal => q }
     val remainder = distinct.collect { case q if !q.isInstanceOf[Query.Equal] => q }
     val remainderQ =
       if (remainder.isEmpty) Query.True

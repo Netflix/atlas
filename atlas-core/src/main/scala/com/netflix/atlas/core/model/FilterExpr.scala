@@ -204,12 +204,14 @@ object FilterExpr {
   }
 
   case class TopK(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+
     override def opName: String = "topk"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
   }
 
   case class TopKOthersMin(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+
     override def opName: String = "topk-others-min"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
@@ -220,6 +222,7 @@ object FilterExpr {
   }
 
   case class TopKOthersMax(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+
     override def opName: String = "topk-others-max"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
@@ -230,6 +233,7 @@ object FilterExpr {
   }
 
   case class TopKOthersSum(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+
     override def opName: String = "topk-others-sum"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
@@ -240,6 +244,7 @@ object FilterExpr {
   }
 
   case class TopKOthersAvg(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+
     override def opName: String = "topk-others-avg"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator.reversed()
@@ -250,6 +255,7 @@ object FilterExpr {
   }
 
   case class BottomK(expr: TimeSeriesExpr, stat: String, k: Int) extends PriorityFilterExpr {
+
     override def opName: String = "bottomk"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator
@@ -257,6 +263,7 @@ object FilterExpr {
 
   case class BottomKOthersMin(expr: TimeSeriesExpr, stat: String, k: Int)
       extends PriorityFilterExpr {
+
     override def opName: String = "bottomk-others-min"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator
@@ -268,6 +275,7 @@ object FilterExpr {
 
   case class BottomKOthersMax(expr: TimeSeriesExpr, stat: String, k: Int)
       extends PriorityFilterExpr {
+
     override def opName: String = "bottomk-others-max"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator
@@ -279,6 +287,7 @@ object FilterExpr {
 
   case class BottomKOthersSum(expr: TimeSeriesExpr, stat: String, k: Int)
       extends PriorityFilterExpr {
+
     override def opName: String = "bottomk-others-sum"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator
@@ -290,6 +299,7 @@ object FilterExpr {
 
   case class BottomKOthersAvg(expr: TimeSeriesExpr, stat: String, k: Int)
       extends PriorityFilterExpr {
+
     override def opName: String = "bottomk-others-avg"
 
     override def comparator: Comparator[TimeSeriesSummary] = StatComparator

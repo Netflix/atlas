@@ -27,7 +27,7 @@ class LwcDataExprSuite extends FunSuite {
     val interpreter = new Interpreter(StyleVocabulary.allWords)
     interpreter.execute(str).stack match {
       case ModelExtractors.PresentationType(v) :: Nil => v
-      case _                                          => throw new IllegalArgumentException(s"invalid expr: $str")
+      case _ => throw new IllegalArgumentException(s"invalid expr: $str")
     }
   }
 

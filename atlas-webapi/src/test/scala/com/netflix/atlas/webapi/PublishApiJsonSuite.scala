@@ -222,7 +222,8 @@ class PublishApiJsonSuite extends FunSuite {
   }
 
   test("decode list from PublishPayloads.encoded datapoint") {
-    val vs = "[" + PublishPayloads.encodeDatapoint(Datapoint(Map("a" -> "b"), 0L, 42.0).toTuple) + "]"
+    val vs =
+      "[" + PublishPayloads.encodeDatapoint(Datapoint(Map("a" -> "b"), 0L, 42.0).toTuple) + "]"
     val decoded = PublishPayloads.decodeList(vs)
     assertEquals(decoded.size, 1)
   }

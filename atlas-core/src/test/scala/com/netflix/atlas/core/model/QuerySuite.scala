@@ -42,22 +42,22 @@ class QuerySuite extends FunSuite {
 
   test("matches true") {
     val q = True
-    assert(matches(q, Map("foo"  -> "bar")))
-    assert(matches(q, Map("foo"  -> "bar2")))
+    assert(matches(q, Map("foo" -> "bar")))
+    assert(matches(q, Map("foo" -> "bar2")))
     assert(matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches false") {
     val q = False
-    assert(!matches(q, Map("foo"  -> "bar")))
-    assert(!matches(q, Map("foo"  -> "bar2")))
+    assert(!matches(q, Map("foo" -> "bar")))
+    assert(!matches(q, Map("foo" -> "bar2")))
     assert(!matches(q, Map("foo2" -> "bar")))
   }
 
   test("matches eq") {
     val q = Equal("foo", "bar")
     assert(matches(q, Map("foo" -> "bar")))
-    assert(!matches(q, Map("foo"  -> "bar2")))
+    assert(!matches(q, Map("foo" -> "bar2")))
     assert(!matches(q, Map("foo2" -> "bar")))
   }
 
@@ -93,7 +93,7 @@ class QuerySuite extends FunSuite {
     val q = Regex("foo", "^b.*")
     assert(matches(q, Map("foo" -> "bar")))
     assert(matches(q, Map("foo" -> "bar2")))
-    assert(!matches(q, Map("foo"  -> "fubar2")))
+    assert(!matches(q, Map("foo" -> "fubar2")))
     assert(!matches(q, Map("foo2" -> "bar")))
   }
 
@@ -101,7 +101,7 @@ class QuerySuite extends FunSuite {
     val q = Regex("foo", "b.*")
     assert(matches(q, Map("foo" -> "bar")))
     assert(matches(q, Map("foo" -> "bar2")))
-    assert(!matches(q, Map("foo"  -> "fubar2")))
+    assert(!matches(q, Map("foo" -> "fubar2")))
     assert(!matches(q, Map("foo2" -> "bar")))
   }
 
@@ -109,7 +109,7 @@ class QuerySuite extends FunSuite {
     val q = RegexIgnoreCase("foo", "^B.*")
     assert(matches(q, Map("foo" -> "bar")))
     assert(matches(q, Map("foo" -> "Bar2")))
-    assert(!matches(q, Map("foo"  -> "fubar2")))
+    assert(!matches(q, Map("foo" -> "fubar2")))
     assert(!matches(q, Map("foo2" -> "bar")))
   }
 
@@ -117,7 +117,7 @@ class QuerySuite extends FunSuite {
     val q = RegexIgnoreCase("foo", "B.*")
     assert(matches(q, Map("foo" -> "bar")))
     assert(matches(q, Map("foo" -> "Bar2")))
-    assert(!matches(q, Map("foo"  -> "fubar2")))
+    assert(!matches(q, Map("foo" -> "fubar2")))
     assert(!matches(q, Map("foo2" -> "bar")))
   }
 
@@ -125,7 +125,7 @@ class QuerySuite extends FunSuite {
     val q = In("foo", List("bar", "baz"))
     assert(matches(q, Map("foo" -> "bar")))
     assert(matches(q, Map("foo" -> "baz")))
-    assert(!matches(q, Map("foo"  -> "bbb")))
+    assert(!matches(q, Map("foo" -> "bbb")))
     assert(!matches(q, Map("foo2" -> "bar")))
   }
 
@@ -168,14 +168,14 @@ class QuerySuite extends FunSuite {
 
   test("matchesAny eq with key match") {
     val q = Equal("foo", "bar")
-    assert(matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
     assert(matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
     assert(matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
   }
 
   test("matchesAny eq with key no match") {
     val q = Equal("foo", "baz")
-    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
     assert(!matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
   }
 
@@ -198,7 +198,7 @@ class QuerySuite extends FunSuite {
 
   test("matchesAny ge with key") {
     val q = GreaterThanEqual("foo", "bar")
-    assert(matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
     assert(matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
     assert(matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
   }
@@ -222,7 +222,7 @@ class QuerySuite extends FunSuite {
 
   test("matchesAny le with key") {
     val q = LessThanEqual("foo", "bar")
-    assert(matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
     assert(matchesAny(q, Map("foo" -> List("bah", "bar"), "bar" -> List("foo"))))
     assert(matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
   }
@@ -234,14 +234,14 @@ class QuerySuite extends FunSuite {
 
   test("matchesAny re with key match") {
     val q = Regex("foo", "b")
-    assert(matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
     assert(matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
     assert(matchesAny(q, Map("foo" -> List("bar", "baz"), "bar" -> List("foo"))))
   }
 
   test("matchesAny re with key no match") {
     val q = Regex("foo", "z")
-    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar"        -> List("foo"))))
+    assert(!matchesAny(q, Map("foo" -> List("bar"), "bar" -> List("foo"))))
     assert(!matchesAny(q, Map("foo" -> List("foo", "bar"), "bar" -> List("foo"))))
   }
 

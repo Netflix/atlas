@@ -168,10 +168,10 @@ class RefIntHashMapSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(imap)
-    //val jgraph = GraphLayout.parseInstance(jmap)
+    // val jgraph = GraphLayout.parseInstance(jmap)
 
-    //println(igraph.toFootprint)
-    //println(jgraph.toFootprint)
+    // println(igraph.toFootprint)
+    // println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself + 5 key objects
     assertEquals(igraph.totalCount(), 8L)
@@ -189,10 +189,10 @@ class RefIntHashMapSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(imap)
-    //val jgraph = GraphLayout.parseInstance(jmap)
+    // val jgraph = GraphLayout.parseInstance(jmap)
 
-    //println(igraph.toFootprint)
-    //println(jgraph.toFootprint)
+    // println(igraph.toFootprint)
+    // println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself + 10000 key objects
     assertEquals(igraph.totalCount(), 3L + 10000)

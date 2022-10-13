@@ -176,7 +176,7 @@ class ShardsSuite extends FunSuite {
       val contains = localMapper.containsIndex(i)
       assertEquals(
         contains,
-        (idx == localInstance),
+        idx == localInstance,
         s"$i => instance = $localInstance; mapper.instance = $idx; local.contains = $contains"
       )
     }
@@ -198,7 +198,7 @@ class ShardsSuite extends FunSuite {
       val contains = localMapper.containsId(id)
       assertEquals(
         contains,
-        (idx == localInstance),
+        idx == localInstance,
         s"$id => instance = $localInstance; mapper.instance = $idx; local.contains = $contains"
       )
     }

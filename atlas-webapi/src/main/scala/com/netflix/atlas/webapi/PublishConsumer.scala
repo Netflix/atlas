@@ -33,6 +33,7 @@ object PublishConsumer {
   }
 
   class ListPublishConsumer extends PublishConsumer {
+
     private val builder = List.newBuilder[DatapointTuple]
 
     def consume(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {

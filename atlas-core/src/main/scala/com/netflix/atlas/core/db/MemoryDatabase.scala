@@ -65,9 +65,12 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   private val stats = new IndexStats(registry)
 
   val index: BatchUpdateTagIndex[BlockStoreItem] =
-    new BatchUpdateTagIndex[BlockStoreItem](registry, { items =>
-      new CachingTagIndex(new RoaringTagIndex(items, stats))
-    })
+    new BatchUpdateTagIndex[BlockStoreItem](
+      registry,
+      { items =>
+        new CachingTagIndex(new RoaringTagIndex(items, stats))
+      }
+    )
 
   // If the last update time for the index is older than the rebuild age force an update
   private val rebuildAge = config.getDuration("rebuild-frequency", TimeUnit.MILLISECONDS)

@@ -167,9 +167,10 @@ class OffsetTimeSeq(seq: TimeSeq, offset: Long) extends TimeSeq {
 }
 
 class MapStepTimeSeq(ts: TimeSeq, val step: Long, cf: ConsolidationFunction) extends TimeSeq {
+
   import com.netflix.atlas.core.model.ConsolidationFunction._
 
-  private val isConsolidation = (step > ts.step)
+  private val isConsolidation = step > ts.step
 
   require(
     if (isConsolidation) step % ts.step == 0 else ts.step % step == 0,
@@ -223,6 +224,7 @@ class UnaryOpTimeSeq(ts: TimeSeq, f: UnaryOp) extends TimeSeq {
 }
 
 class BinaryOpTimeSeq(ts1: TimeSeq, ts2: TimeSeq, op: BinaryOp) extends TimeSeq {
+
   require(ts1.step == ts2.step, "time series must have the same step size")
 
   def dsType: DsType = ts1.dsType

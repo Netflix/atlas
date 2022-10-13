@@ -93,6 +93,7 @@ private[limiter] class CardinalityLimiterInner(
   override val limiterConfig: LimiterConfig,
   val level: Int
 ) extends CardinalityLimiter(limiterConfig) {
+
   private val children = new ConcurrentHashMap[String, CardinalityLimiter]
   // Note: For now a dropped value should not be added even if a slot gets freed up, because data
   // may be incomplete.
@@ -305,6 +306,7 @@ object CardinalityLimiter {
 }
 
 case class QueryInfo(query: Query, limiterConfig: LimiterConfig) {
+
   val prefixValues: Array[String] = genSearchPath()
   // Not needed if dropped early in search path
   lazy val queryKeys = Query.allKeys(query) -- limiterConfig.prefixKeys

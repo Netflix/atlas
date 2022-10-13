@@ -19,6 +19,7 @@ package com.netflix.atlas.core.norm
   * Converts values into a rate per second. The input values should be a monotonically increasing.
   */
 class RateValueFunction(next: ValueFunction) extends ValueFunction {
+
   private var lastUpdateTime: Long = -1L
   private var lastValue: Double = 0.0
 

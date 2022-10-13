@@ -141,6 +141,7 @@ object ArrayHelper {
     comparator: Comparator[T],
     aggrF: (T, T) => T
   ) {
+
     // Arrays used for storing the merged result. The `src` array will contain the
     // current merged dataset. During a merge operation, the data will be written
     // into the destination array. It is pre-allocated so it can be reused across

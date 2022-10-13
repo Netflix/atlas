@@ -57,8 +57,8 @@ object Math {
     if (JDouble.isNaN(v1))
       v2
     else if (JDouble.isNaN(v2)) v1
-    else (if (v1 > v2) v1
-          else v2)
+    else if (v1 > v2) v1
+    else v2
   }
 
   /** Find the min of two double values treating NaN as smaller if one side is a number. */
@@ -66,8 +66,8 @@ object Math {
     if (JDouble.isNaN(v1))
       v2
     else if (JDouble.isNaN(v2)) v1
-    else (if (v1 < v2) v1
-          else v2)
+    else if (v1 < v2) v1
+    else v2
   }
 
   /** Boolean greater than of two doubles treating NaN as smaller if one side is a number. */

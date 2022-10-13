@@ -56,7 +56,7 @@ object CustomDirectives {
 
   // Magic header to recognize GZIP compressed data
   // http://www.zlib.org/rfc-gzip.html#file-format
-  private val gzipMagicHeader = ByteString(Array(0x1f.toByte, 0x8b.toByte))
+  private val gzipMagicHeader = ByteString(Array(0x1F.toByte, 0x8B.toByte))
 
   /**
     * Create an InputStream for reading the content of the ByteString. If the data is

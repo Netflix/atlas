@@ -556,7 +556,7 @@ class FinalExprEvalSuite extends FunSuite {
     assertEquals(
       e.getMessage,
       "inconsistent step sizes, expected 60000, found 10000 " +
-      "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
+        "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
     )
   }
 

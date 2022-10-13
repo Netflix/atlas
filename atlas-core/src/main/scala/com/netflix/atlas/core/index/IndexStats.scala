@@ -120,6 +120,7 @@ class IndexStats(registry: Registry = new NoopRegistry) {
 }
 
 object IndexStats {
+
   case class KeyStat(key: String, numItems: Long, numValues: Long)
   private case class ValueEntry(timestamp: AtomicLong, count: AtomicLong)
 }

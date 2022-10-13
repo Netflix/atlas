@@ -110,16 +110,19 @@ private[stream] object EurekaSource extends StrictLogging {
   case class Groups(groups: List[GroupResponse])
 
   sealed trait GroupResponse {
+
     def uri: String
     def instances: List[Instance]
   }
 
   case class VipResponse(uri: String, applications: Apps) extends GroupResponse {
+
     require(applications != null, "applications cannot be null")
     def instances: List[Instance] = applications.application.flatMap(_.instance)
   }
 
   case class AppResponse(uri: String, application: App) extends GroupResponse {
+
     require(application != null, "application cannot be null")
     def instances: List[Instance] = application.instance
   }
@@ -132,9 +135,10 @@ private[stream] object EurekaSource extends StrictLogging {
     require(instance != null, "instance cannot be null")
   }
 
-  //the json field name "instances" conflicts with method name, need to explicitly map it with annotation
+  // the json field name "instances" conflicts with method name, need to explicitly map it with annotation
   case class EddaResponse(uri: String, @JsonProperty("instances") eddaInstances: List[EddaInstance])
       extends GroupResponse {
+
     require(eddaInstances != null, "eddaInstances cannot be null")
 
     def instances: List[Instance] =
@@ -149,6 +153,7 @@ private[stream] object EurekaSource extends StrictLogging {
   }
 
   case class EddaInstance(instanceId: String, privateIpAddress: String) {
+
     require(instanceId != null, "instanceId cannot be null")
     require(privateIpAddress != null, "privateIpAddress cannot be null")
   }
@@ -159,6 +164,7 @@ private[stream] object EurekaSource extends StrictLogging {
     dataCenterInfo: DataCenterInfo,
     port: PortInfo
   ) {
+
     require(instanceId != null, "instanceId cannot be null")
     require(status != null, "status cannot be null")
     require(dataCenterInfo != null, "dataCenterInfo cannot be null")

@@ -46,8 +46,9 @@ class TimeGroupedSuite extends FunSuite {
       .result(future, Duration.Inf)
       .reverse
       .map(g =>
-        g.copy(dataExprValues = g.dataExprValues
-          .map(t => t._1 -> t._2.copy(values = t._2.values.sortWith(_.value < _.value)))
+        g.copy(dataExprValues =
+          g.dataExprValues
+            .map(t => t._1 -> t._2.copy(values = t._2.values.sortWith(_.value < _.value)))
         )
       )
   }

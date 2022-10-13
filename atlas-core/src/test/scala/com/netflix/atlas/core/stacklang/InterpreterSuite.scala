@@ -18,6 +18,7 @@ package com.netflix.atlas.core.stacklang
 import munit.FunSuite
 
 class InterpreterSuite extends FunSuite {
+
   import com.netflix.atlas.core.stacklang.InterpreterSuite._
 
   val interpreter = new Interpreter(

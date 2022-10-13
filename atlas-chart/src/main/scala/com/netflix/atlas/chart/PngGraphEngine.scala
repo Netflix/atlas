@@ -22,6 +22,7 @@ import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.util.PngImage
 
 trait PngGraphEngine extends GraphEngine {
+
   val contentType: String = "image/png"
 
   def write(config: GraphDef, output: OutputStream): Unit = {

@@ -87,7 +87,7 @@ object Streams {
     new Iterator[String] {
       var value = reader.readLine()
 
-      def hasNext: Boolean = (value != null)
+      def hasNext: Boolean = value != null
 
       def next(): String = {
         val tmp = value

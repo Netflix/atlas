@@ -50,7 +50,7 @@ case class GraphConfig(
 
   import GraphConfig._
 
-  def shouldOutputImage: Boolean = (format == "png")
+  def shouldOutputImage: Boolean = format == "png"
 
   val timezoneIds: List[ZoneId] = getTimeZoneIds(settings, timezones)
 

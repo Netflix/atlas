@@ -167,7 +167,7 @@ final class SortedTagMap private (private val data: Array[String], private val l
       if (h != 0) c *= h
       i += 1
     }
-    var h = 0x3c074a61
+    var h = 0x3C074A61
     h = scala.util.hashing.MurmurHash3.mix(h, a)
     h = scala.util.hashing.MurmurHash3.mix(h, b)
     h = scala.util.hashing.MurmurHash3.mixLast(h, c)

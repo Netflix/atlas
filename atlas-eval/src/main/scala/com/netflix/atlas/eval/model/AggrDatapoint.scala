@@ -116,6 +116,7 @@ object AggrDatapoint {
     * instance have the same data expression.
     */
   abstract class Aggregator(settings: AggregatorSettings) {
+
     var numInputDatapoints = 0
     var numIntermediateDatapoints = 0
 
@@ -213,6 +214,7 @@ object AggrDatapoint {
     * Do not perform aggregation. Keep track of all datapoints that have been received.
     */
   private class AllAggregator(settings: AggregatorSettings) extends Aggregator(settings) {
+
     private var values = List.empty[AggrDatapoint]
 
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {

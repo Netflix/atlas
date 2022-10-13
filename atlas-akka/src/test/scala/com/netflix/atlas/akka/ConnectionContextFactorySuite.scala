@@ -56,6 +56,7 @@ class ConnectionContextFactorySuite extends FunSuite {
 object ConnectionContextFactorySuite {
 
   class EmptyConstructorFactory extends ConnectionContextFactory {
+
     override def sslContext: SSLContext = null
 
     override def sslEngine: SSLEngine = null
@@ -64,6 +65,7 @@ object ConnectionContextFactorySuite {
   }
 
   class ConfigConstructorFactory(config: Config) extends ConnectionContextFactory {
+
     require(config.getBoolean("correct-subconfig"))
 
     override def sslContext: SSLContext = null

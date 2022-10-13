@@ -22,6 +22,7 @@ import com.netflix.atlas.lwcapi.SubscribeApi._
 import munit.FunSuite
 
 class SubscribeApiJsonSuite extends FunSuite {
+
   test("encode and decode loop") {
     val expressions: List[ExpressionMetadata] = List(
       ExpressionMetadata("this", 1234, "idGoesHere"),

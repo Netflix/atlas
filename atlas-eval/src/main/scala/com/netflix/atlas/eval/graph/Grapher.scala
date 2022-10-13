@@ -460,6 +460,7 @@ case class Grapher(settings: DefaultSettings) {
 }
 
 object Grapher {
+
   def apply(root: Config): Grapher = Grapher(DefaultSettings(root))
 
   /**

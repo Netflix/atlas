@@ -261,7 +261,7 @@ class StringsSuite extends FunSuite {
   }
 
   test("parseDuration, iso") {
-    //assertEquals(parseDuration("P42Y"), Period.years(42))
+    // assertEquals(parseDuration("P42Y"), Period.years(42))
     assertEquals(parseDuration("PT42M"), Duration.ofMinutes(42))
   }
 

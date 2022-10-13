@@ -193,7 +193,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   private def tagKey(t: Long): Int = (t >> 32).toInt
 
   /** Extract the value for an encoded tag. */
-  private def tagValue(t: Long): Int = (t & 0X00000000FFFFFFFFL).toInt
+  private def tagValue(t: Long): Int = (t & 0x00000000FFFFFFFFL).toInt
 
   private[index] def findImpl(query: Query, offset: Int): RoaringBitmap = {
     import com.netflix.atlas.core.model.Query._
@@ -304,9 +304,11 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         val vp = findOffset(values, prefix, 0)
         val t = tag(kp, vp)
         var i = tagOffset(t)
-        while (i < tagIndex.length
-               && tagKey(tagIndex(i)) == kp
-               && values(tagValue(tagIndex(i))).startsWith(prefix)) {
+        while (
+          i < tagIndex.length
+          && tagKey(tagIndex(i)) == kp
+          && values(tagValue(tagIndex(i))).startsWith(prefix)
+        ) {
           val v = tagValue(tagIndex(i))
           if (q.check(values(v))) {
             set.or(vidx.get(v))
@@ -501,6 +503,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
 }
 
 object RoaringTagIndex {
+
   private val logger = LoggerFactory.getLogger(getClass)
 
   def empty[T <: TaggedItem: ClassTag]: RoaringTagIndex[T] = {
