@@ -54,6 +54,7 @@ object CardinalityEstimator {
 
   // It's expected to be updated by a single thread, while reading cardinality is thread-safe.
   private class CpcEstimator(val lgK: Int) extends CardinalityEstimator {
+
     private val sketch = new CpcSketch(lgK)
     private val _cardinality = new AtomicLong()
 

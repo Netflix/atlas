@@ -112,8 +112,8 @@ object Strings {
         case None =>
           throw new IllegalArgumentException(
             "unsupported property type " +
-            c.getName + ", must be one of " +
-            conversions.keys.mkString(", ")
+              c.getName + ", must be one of " +
+              conversions.keys.mkString(", ")
           )
       }
     }

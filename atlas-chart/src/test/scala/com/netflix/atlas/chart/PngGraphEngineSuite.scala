@@ -182,9 +182,9 @@ abstract class PngGraphEngineSuite extends FunSuite {
 
     val graphDef = load(s"$dataDir/$dataFileName")
       .copy(width = 700)
-    //atlas generated sample is 780 wide less 64 origin less 16 r side padding == 700
-    //expect to see width of spikes vary as x values repeat due to rounding
-    //RrdGraph calculates x values based on number of pixels/second
+    // atlas generated sample is 780 wide less 64 origin less 16 r side padding == 700
+    // expect to see width of spikes vary as x values repeat due to rounding
+    // RrdGraph calculates x values based on number of pixels/second
     check(name, graphDef)
   }
 
@@ -199,15 +199,15 @@ abstract class PngGraphEngineSuite extends FunSuite {
 
     values(0) = 0.005553
 
-    //examples of spike values skipped with step 288 calculated by RrdGraph
-    //based on pixel count of 600
+    // examples of spike values skipped with step 288 calculated by RrdGraph
+    // based on pixel count of 600
     values(10) = 0.005553
 
-    //roughly at the location of the spike reported missing in jira CLDMTA-1449
+    // roughly at the location of the spike reported missing in jira CLDMTA-1449
     values(690) = 0.005553
 
-    //last data point spike drawn high to end of graph axis,
-    //(e.g. one pixel wide trailing bar)
+    // last data point spike drawn high to end of graph axis,
+    // (e.g. one pixel wide trailing bar)
     values(sampleCnt - 1) = 0.005553
 
     val start = ZonedDateTime.of(2013, 6, 9, 18, 0, 0, 0, ZoneOffset.UTC).toInstant
@@ -255,6 +255,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
   }
 
   singleLine("single_line", v => v)
+
   singleLine(
     "single_line_with_stats",
     v => v.copy(stats = CollectorStats(1, 2, 3, 4), loadTime = 5123L)
@@ -276,6 +277,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
   singleLine("single_line_sqrt", v => v.adjustPlots(_.copy(scale = Scale.SQRT)))
   singleLine("single_line_zoom_2.0", v => v.copy(zoom = 2.0))
   singleLine("single_line_zoom_4.0", v => v.copy(zoom = 4.0))
+
   singleLine(
     "single_line_no_tick_labels",
     v => v.adjustPlots(_.copy(tickLabelMode = TickLabelMode.OFF))
@@ -288,6 +290,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
   singleLine("single_line_layout_iw_50", v => v.copy(layout = Layout.IMAGE_WIDTH, width = 50))
   singleLine("single_line_layout_iw_100", v => v.copy(layout = Layout.IMAGE_WIDTH, width = 100))
   singleLine("single_line_layout_iw_1000", v => v.copy(layout = Layout.IMAGE_WIDTH, width = 1000))
+
   singleLine(
     "single_line_layout_iw_10000",
     v => v.copy(layout = Layout.IMAGE_WIDTH, width = 10000)
@@ -321,6 +324,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
     Seq(-400),
     v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC))
   )
+
   lines(
     "single_line_log_large",
     Seq(4.123e9),
@@ -364,6 +368,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
   constantLine("lower_bound_4", Seq(4), v => v.adjustPlots(_.copy(lower = Explicit(4))))
   constantLine("stack", Seq(0), v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
   constantLine("area", Seq(0), v => v.adjustLines(_.copy(lineStyle = LineStyle.AREA)))
+
   constantLine(
     "stack_auto",
     Seq(200, 100),
@@ -443,6 +448,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
   doubleLine("double_line", v => v)
   doubleLine("axis_per_line", v => v.axisPerLine)
   doubleLine("double_line_stack", v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
+
   doubleLine(
     "double_line_auto",
     v => v.adjustPlots(_.copy(lower = AutoData)).adjustLines(_.copy(lineStyle = LineStyle.STACK))
@@ -453,27 +459,32 @@ abstract class PngGraphEngineSuite extends FunSuite {
     Seq(Double.NaN, 150),
     v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK))
   )
+
   lines(
     "double_line_stack_middle_NaN",
     Seq(150, Double.NaN, 300),
     v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK))
   )
+
   lines(
     "double_line_stack_negative",
     Seq(-400, 150),
     v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK))
   )
+
   lines(
     "double_line_log_pos_neg",
     Seq(-400, 15),
     v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC))
   )
+
   lines(
     "double_line_log_pos_neg_large",
-    Seq(-500000000, 10000), //(-500M,10k) top tick should be exactly 10k
+    Seq(-500000000, 10000), // (-500M,10k) top tick should be exactly 10k
     v => v.adjustPlots(_.copy(scale = Scale.LOGARITHMIC))
   )
   lines("double_line_sqrt_pos_neg", Seq(-400, 15), v => v.adjustPlots(_.copy(scale = Scale.SQRT)))
+
   lines(
     "double_line_pow2_pos_neg",
     Seq(-400, 15),
@@ -486,7 +497,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
     // refactoring the model.
     val plotDef1 = PlotDef(
       label(0, Palette.default, simpleSeriesDef(40000), simpleSeriesDef(42)) ++
-      label(2, Palette.default, simpleSeriesDef(400), simpleSeriesDef(150))
+        label(2, Palette.default, simpleSeriesDef(400), simpleSeriesDef(150))
     )
 
     val graphDef = GraphDef(

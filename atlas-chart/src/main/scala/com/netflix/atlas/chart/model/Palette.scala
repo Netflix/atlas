@@ -57,6 +57,7 @@ case class Palette(name: String, colors: Int => Color) {
   }
 
   def iterator: Iterator[Color] = new Iterator[Color] {
+
     private var pos = -1
 
     override def hasNext: Boolean = true

@@ -23,6 +23,7 @@ import com.netflix.atlas.core.util.Math
   * occurrences before triggering an alert.
   */
 case class OnlineRollingCount(buf: RollingBuffer) extends OnlineAlgorithm {
+
   private var count = buf.count
 
   override def next(v: Double): Double = {

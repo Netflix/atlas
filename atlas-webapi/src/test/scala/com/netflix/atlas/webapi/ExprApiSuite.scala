@@ -249,7 +249,9 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(data, List("name,sps,:eq,:sum,name,sps,:eq,:sum,max,:stat,5.0,:const,:gt,:filter"))
   }
 
-  testGet("/api/v1/expr/strip?q=name,sps,:eq,:stat-max,5,:gt,:filter,foo,:legend&r=filter&r=style") {
+  testGet(
+    "/api/v1/expr/strip?q=name,sps,:eq,:stat-max,5,:gt,:filter,foo,:legend&r=filter&r=style"
+  ) {
     assertEquals(response.status, StatusCodes.OK)
     val data = Json.decode[List[String]](responseAs[String])
     assertEquals(data, List("name,sps,:eq,:sum"))

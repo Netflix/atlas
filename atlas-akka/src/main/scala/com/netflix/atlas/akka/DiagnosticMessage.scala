@@ -22,6 +22,7 @@ import akka.http.scaladsl.model.StatusCode
 import com.netflix.atlas.json.JsonSupport
 
 object DiagnosticMessage {
+
   final val Info: String = "info"
   final val Warning: String = "warn"
   final val Error: String = "error"

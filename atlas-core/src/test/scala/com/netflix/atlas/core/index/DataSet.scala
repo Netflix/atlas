@@ -133,7 +133,7 @@ object DataSet {
     val ds1 = interval(noisyWaveSeries, bad, start1.toEpochMilli, end1.toEpochMilli)
     val ds2 = interval(ds1, bad, start2.toEpochMilli, end2.toEpochMilli)
 
-    val name = ("name" -> "requestsPerSecond")
+    val name = "name" -> "requestsPerSecond"
     val tags = mkTags("alerttest", "alert1", None, Some(42)) + name
     ds2.withTags(tags)
   }
@@ -149,7 +149,7 @@ object DataSet {
     val ds1 = interval(normal, bad, start1.toEpochMilli, end2.toEpochMilli)
     val ds2 = interval(ds1, bad, start2.toEpochMilli, end2.toEpochMilli)
 
-    val name = ("name" -> "ssCpuUser")
+    val name = "name" -> "ssCpuUser"
     val tags = mkTags("alerttest", "alert1", None, Some(42)) + name
     ds2.withTags(tags)
   }
@@ -162,7 +162,7 @@ object DataSet {
     val bad = constant(0)
     val ds = interval(normal, bad, start1.toEpochMilli, end1.toEpochMilli)
 
-    val name = ("name" -> "DiscoveryStatus_UP")
+    val name = "name" -> "DiscoveryStatus_UP"
     val tags = mkTags("alerttest", "alert1", None, Some(42)) + name
     ds.withTags(tags)
   }
@@ -175,7 +175,7 @@ object DataSet {
     val bad = constant(1)
     val ds = interval(normal, bad, start1.toEpochMilli, end1.toEpochMilli)
 
-    val name = ("name" -> "DiscoveryStatus_DOWN")
+    val name = "name" -> "DiscoveryStatus_DOWN"
     val tags = mkTags("alerttest", "alert1", None, Some(42)) + name
     ds.withTags(tags)
   }

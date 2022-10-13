@@ -118,7 +118,7 @@ class ExpressionSplitter(config: Config) {
     val context = interpreter.execute(expression)
     val dataExprs = context.stack.flatMap {
       case ModelExtractors.PresentationType(t) => t.perOffset.flatMap(_.expr.dataExprs)
-      case _                                   => throw new IllegalArgumentException("expression is invalid")
+      case _ => throw new IllegalArgumentException("expression is invalid")
     }
 
     // Offsets are not supported

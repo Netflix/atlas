@@ -131,10 +131,10 @@ class LongIntHashMapSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(imap)
-    //val jgraph = GraphLayout.parseInstance(jmap)
+    // val jgraph = GraphLayout.parseInstance(jmap)
 
-    //println(igraph.toFootprint)
-    //println(jgraph.toFootprint)
+    // println(igraph.toFootprint)
+    // println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself
     assertEquals(igraph.totalCount(), 3L)
@@ -152,10 +152,10 @@ class LongIntHashMapSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(imap)
-    //val jgraph = GraphLayout.parseInstance(jmap)
+    // val jgraph = GraphLayout.parseInstance(jmap)
 
-    //println(igraph.toFootprint)
-    //println(jgraph.toFootprint)
+    // println(igraph.toFootprint)
+    // println(jgraph.toFootprint)
 
     // Only objects should be the key/value arrays and the map itself
     assertEquals(igraph.totalCount(), 3L)

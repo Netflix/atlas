@@ -31,6 +31,7 @@ import com.netflix.atlas.json.JsonSupport
   *     foreach step size used in a subscription.
   */
 case class LwcHeartbeat(timestamp: Long, step: Long) extends JsonSupport {
+
   val `type`: String = "heartbeat"
 
   require(timestamp % step == 0, s"timestamp ($timestamp) must be on boundary of step ($step)")

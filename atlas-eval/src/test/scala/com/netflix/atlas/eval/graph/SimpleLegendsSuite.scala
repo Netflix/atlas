@@ -127,9 +127,9 @@ class SimpleLegendsSuite extends FunSuite {
   test("multi: same name further restricted") {
     val vs = legends(
       "name,cpu,:eq,:sum," +
-      "name,cpu,:eq,id,user,:eq,:and,:sum," +
-      "name,cpu,:eq,id,system,:eq,:and,:sum," +
-      "name,cpu,:eq,id,idle,:eq,:and,:sum,"
+        "name,cpu,:eq,id,user,:eq,:and,:sum," +
+        "name,cpu,:eq,id,system,:eq,:and,:sum," +
+        "name,cpu,:eq,id,idle,:eq,:and,:sum,"
     )
     assertEquals(vs, List("cpu", "user", "system", "idle"))
   }

@@ -36,9 +36,9 @@ object Hash {
   def lowbias32(v: Int): Int = {
     var h = v
     h ^= h >>> 16
-    h *= 0x7feb352d
+    h *= 0x7FEB352D
     h ^= h >>> 15
-    h *= 0x846ca68b
+    h *= 0x846CA68B
     h ^= h >>> 16
     h
   }

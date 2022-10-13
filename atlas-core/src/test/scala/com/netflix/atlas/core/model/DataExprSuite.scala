@@ -18,6 +18,7 @@ package com.netflix.atlas.core.model
 import munit.FunSuite
 
 class DataExprSuite extends FunSuite {
+
   test("groupByKey") {
     val expr = DataExpr.Sum(Query.True)
     val tags = Map("name" -> "foo")

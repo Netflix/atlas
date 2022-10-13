@@ -133,7 +133,7 @@ object PublishPayloads {
     foreachField(parser) {
       case "tags" => tags = decodeTags(parser, null, intern)
       case "metrics" =>
-        tagsLoadedFirst = (tags != null)
+        tagsLoadedFirst = tags != null
         val builder = List.newBuilder[DatapointTuple]
         foreachItem(parser) { builder += decode(parser, tags, intern) }
         metrics = builder.result()
@@ -194,7 +194,7 @@ object PublishPayloads {
     foreachField(parser) {
       case "tags" => tags = decodeTags(parser, null, intern = false)
       case "metrics" =>
-        tagsLoadedFirst = (tags != null)
+        tagsLoadedFirst = tags != null
         val builder = List.newBuilder[Datapoint]
         foreachItem(parser) { builder += decodeDatapoint(parser, tags) }
         metrics = builder.result()

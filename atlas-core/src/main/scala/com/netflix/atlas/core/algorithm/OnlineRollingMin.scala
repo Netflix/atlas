@@ -20,6 +20,7 @@ package com.netflix.atlas.core.algorithm
   * way to get a smooth lower bound line that closely tracks a noisy input.
   */
 case class OnlineRollingMin(buf: RollingBuffer) extends OnlineAlgorithm {
+
   private var min = buf.min
 
   override def next(v: Double): Double = {

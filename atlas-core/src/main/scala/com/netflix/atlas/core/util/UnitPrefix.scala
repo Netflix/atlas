@@ -137,8 +137,8 @@ object UnitPrefix {
       case v if !JDouble.isFinite(v) => one
       case v if withinRange(one, v)  => one
       case v if v >= kibi.factor / f => binaryPrefixes.find(withinRange(_, v)).getOrElse(yobi)
-      case v if v < 1.0 / f          => decimalSmallPrefixes.find(withinRange(_, v)).getOrElse(yocto)
-      case _                         => one
+      case v if v < 1.0 / f => decimalSmallPrefixes.find(withinRange(_, v)).getOrElse(yocto)
+      case _                => one
     }
   }
 

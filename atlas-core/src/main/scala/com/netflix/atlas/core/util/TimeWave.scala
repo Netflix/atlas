@@ -19,6 +19,7 @@ import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 object TimeWave {
+
   private val cache = new ConcurrentHashMap[(Long, Long), TimeWave]
 
   /**

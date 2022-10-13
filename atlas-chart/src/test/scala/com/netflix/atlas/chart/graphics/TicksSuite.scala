@@ -94,7 +94,7 @@ class TicksSuite extends FunSuite {
     assertEquals(ticks.size, 23)
     assertEquals(ticks.count(_.major), 5)
     assertEquals(ticks.head.offset, 0.0)
-    //assertEquals(ticks.filter(_.major).head.label, "0.85k")
+    // assertEquals(ticks.filter(_.major).head.label, "0.85k")
     assertEquals(ticks.filter(_.major).last.label, "1.05k")
   }
 

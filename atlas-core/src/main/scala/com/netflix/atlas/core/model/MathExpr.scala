@@ -307,9 +307,13 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
-      ResultSet(this, rs.data.map { t =>
-        t.unaryOp(s"$name(%s, $min)", this)
-      }, rs.state)
+      ResultSet(
+        this,
+        rs.data.map { t =>
+          t.unaryOp(s"$name(%s, $min)", this)
+        },
+        rs.state
+      )
     }
 
     def apply(v: Double): Double = if (v < min) min else v
@@ -331,9 +335,13 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
-      ResultSet(this, rs.data.map { t =>
-        t.unaryOp(s"$name(%s, $max)", this)
-      }, rs.state)
+      ResultSet(
+        this,
+        rs.data.map { t =>
+          t.unaryOp(s"$name(%s, $max)", this)
+        },
+        rs.state
+      )
     }
 
     def apply(v: Double): Double = if (v > max) max else v
@@ -357,9 +365,13 @@ object MathExpr {
 
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
-      ResultSet(this, rs.data.map { t =>
-        t.unaryOp(s"$name(%s)", this)
-      }, rs.state)
+      ResultSet(
+        this,
+        rs.data.map { t =>
+          t.unaryOp(s"$name(%s)", this)
+        },
+        rs.state
+      )
     }
   }
 
@@ -418,7 +430,7 @@ object MathExpr {
         val detail = s"${g1.mkString("(,", ",", ",)")} ⊈ ${g2.mkString("(,", ",", ",)")}"
         throw new IllegalArgumentException(
           "both sides of binary operation must have the same grouping or one side" +
-          s" must be a subset of the other [$detail]"
+            s" must be a subset of the other [$detail]"
         )
       }
     }
@@ -738,6 +750,7 @@ object MathExpr {
     // We can only group using a subset of the previous group by results based on the final
     // grouping before the preceding aggregate.
     private val preAggrGrouping = expr.expr.finalGrouping
+
     require(
       keys.forall(preAggrGrouping.contains),
       s"(,${keys.mkString(",")},) is not a subset of (,${preAggrGrouping.mkString(",")},)"
@@ -804,6 +817,7 @@ object MathExpr {
     *     List of percentiles to compute. Each value should be in the range [0.0, 100.0].
     */
   case class Percentiles(expr: DataExpr.GroupBy, percentiles: List[Double]) extends TimeSeriesExpr {
+
     require(
       expr.keys.contains(TagKey.percentile),
       s"key list for group by must contain '${TagKey.percentile}'"
@@ -1049,7 +1063,7 @@ object MathExpr {
         val ctxt = context.interpreter.execute(toString(newDisplayExpr))
         ctxt.stack match {
           case (r: NamedRewrite) :: Nil => r
-          case _                        => throw new IllegalStateException(s"invalid stack for :$name")
+          case _ => throw new IllegalStateException(s"invalid stack for :$name")
         }
       }
     }

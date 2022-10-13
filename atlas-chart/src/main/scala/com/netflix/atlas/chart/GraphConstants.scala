@@ -18,6 +18,7 @@ package com.netflix.atlas.chart
 import com.netflix.iep.config.ConfigManager
 
 object GraphConstants {
+
   private final val config = ConfigManager.dynamicConfig().getConfig("atlas.chart.limits")
   final val MaxYAxis = config.getInt("max-yaxes")
   final val MaxLinesInLegend = config.getInt("max-lines-in-legend")

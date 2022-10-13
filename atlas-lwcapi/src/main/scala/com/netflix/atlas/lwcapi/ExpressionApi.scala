@@ -85,7 +85,7 @@ case class ExpressionApi @Inject() (
           pathEndOrSingleSlash {
             complete(Future(handleList(etags)))
           } ~
-          path(Segment) { (cluster) =>
+          path(Segment) { cluster =>
             complete(Future(handleGet(etags, cluster)))
           }
         }

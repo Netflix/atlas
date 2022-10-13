@@ -56,33 +56,35 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
     val report = s"""<html>
       <head><title>${clazz.getSimpleName}</title></head>
       <body><h1>${clazz.getSimpleName}</h1><hr/> ${
-      val dir = new File(targetDir)
-      dir.mkdirs()
-      dir.listFiles
-        .filter(_.getName.endsWith(".png"))
-        .filterNot(_.getName.startsWith("diff_"))
-        .map { f =>
-          val diffImg = new File(s"$targetDir/diff_${f.getName}")
-          if (diffsOnly && !diffImg.isFile) ""
-          else {
-            s"""<div>
+        val dir = new File(targetDir)
+        dir.mkdirs()
+        dir.listFiles
+          .filter(_.getName.endsWith(".png"))
+          .filterNot(_.getName.startsWith("diff_"))
+          .map { f =>
+            val diffImg = new File(s"$targetDir/diff_${f.getName}")
+            if (diffsOnly && !diffImg.isFile) ""
+            else {
+              s"""<div>
                 <h2>${f.getName}</h2>
                 <table border="1">
                   <tr><th>Golden</th><th>Test</th><th>Diff</th></tr>
                   <tr valign="top">
                     <td><img src="${absoluteGoldenDir + '/' + f.getName}"/></td>
                     <td><img src="${f.getName}"/></td>
-                    ${if (diffImg.isFile)
-              s"""<td><img src="${s"diff_${f.getName}"}"/></td>"""
-            else
-              """<td></td>"""}
+                    ${
+                  if (diffImg.isFile)
+                    s"""<td><img src="${s"diff_${f.getName}"}"/></td>"""
+                  else
+                    """<td></td>"""
+                }
                   </tr>
                 </table>
               </div>"""
+            }
           }
-        }
-        .mkString("")
-    } </body>
+          .mkString("")
+      } </body>
     </html>"""
 
     Using.resource(Streams.fileOut(new File(s"$targetDir/report.html"))) { out =>

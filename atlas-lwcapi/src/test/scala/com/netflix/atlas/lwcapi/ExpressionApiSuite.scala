@@ -33,6 +33,7 @@ import java.util.zip.GZIPInputStream
 import scala.util.Using
 
 class ExpressionApiSuite extends MUnitRouteSuite {
+
   import scala.concurrent.duration._
 
   private implicit val routeTestTimeout = RouteTestTimeout(5.second)

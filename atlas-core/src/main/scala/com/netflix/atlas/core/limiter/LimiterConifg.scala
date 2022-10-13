@@ -24,6 +24,7 @@ import scala.collection.immutable.ArraySeq
   * @param tagValueLimit max number of values per non prefix key
   */
 case class LimiterConfig(prefixConfigs: ArraySeq[PrefixConfig], tagValueLimit: Int) {
+
   require(prefixConfigs.length > 0)
 
   /**

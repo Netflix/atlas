@@ -92,10 +92,10 @@ class IntHashSetSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(iset)
-    //val jgraph = GraphLayout.parseInstance(jset)
+    // val jgraph = GraphLayout.parseInstance(jset)
 
-    //println(igraph.toFootprint)
-    //println(jgraph.toFootprint)
+    // println(igraph.toFootprint)
+    // println(jgraph.toFootprint)
 
     // Only objects should be the array and the set itself
     assertEquals(igraph.totalCount(), 2L)
@@ -113,10 +113,10 @@ class IntHashSetSuite extends FunSuite {
     }
 
     val igraph = GraphLayout.parseInstance(iset)
-    //val jgraph = GraphLayout.parseInstance(jset)
+    // val jgraph = GraphLayout.parseInstance(jset)
 
-    //println(igraph.toFootprint)
-    //println(jgraph.toFootprint)
+    // println(igraph.toFootprint)
+    // println(jgraph.toFootprint)
 
     // Only objects should be the array and the set itself
     assertEquals(igraph.totalCount(), 2L)

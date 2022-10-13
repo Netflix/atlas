@@ -36,10 +36,13 @@ object ChartSettings {
     if (!config.hasPath(s"theme.$name")) {
       throw new IllegalArgumentException(s"invalid theme name: '$name'")
     } else {
-      themes.computeIfAbsent(name, n => {
-        val c = config.getConfig(s"theme.$n")
-        Theme(c)
-      })
+      themes.computeIfAbsent(
+        name,
+        n => {
+          val c = config.getConfig(s"theme.$n")
+          Theme(c)
+        }
+      )
     }
   }
 

@@ -175,9 +175,11 @@ class TaggedItemIndex private (
         val vp = findOffset(values, prefix, 0)
         val t = tag(kp, vp)
         var i = tagOffset(t)
-        while (i < tagPositions.length
-               && tagKey(tagPositions(i)) == kp
-               && values(tagValue(tagPositions(i))).startsWith(prefix)) {
+        while (
+          i < tagPositions.length
+          && tagKey(tagPositions(i)) == kp
+          && values(tagValue(tagPositions(i))).startsWith(prefix)
+        ) {
           val v = tagValue(tagPositions(i))
           if (q.check(values(v))) {
             set.or(vidx.get(v))
@@ -231,7 +233,7 @@ class TaggedItemIndex private (
   private def tagKey(t: Long): Int = (t >> 32).toInt
 
   /** Extract the value for an encoded tag. */
-  private def tagValue(t: Long): Int = (t & 0X00000000FFFFFFFFL).toInt
+  private def tagValue(t: Long): Int = (t & 0x00000000FFFFFFFFL).toInt
 }
 
 object TaggedItemIndex {

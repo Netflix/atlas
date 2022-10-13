@@ -79,7 +79,7 @@ class SortedTagMapSuite extends FunSuite {
   }
 
   test("apply: varargs tuples with duplicates") {
-    val actual = SortedTagMap("a"   -> "1", "b" -> "2", "a" -> "3")
+    val actual = SortedTagMap("a" -> "1", "b" -> "2", "a" -> "3")
     val expected = SortedTagMap("a" -> "3", "b" -> "2")
     assertEquals(actual, expected)
   }
@@ -119,8 +119,8 @@ class SortedTagMapSuite extends FunSuite {
   }
 
   test("updates: combining maps") {
-    val m1 = SortedTagMap("a"       -> "1", "b" -> "2", "c" -> "3")
-    val m2 = SortedTagMap("a"       -> "4", "b" -> "5", "d" -> "6")
+    val m1 = SortedTagMap("a" -> "1", "b" -> "2", "c" -> "3")
+    val m2 = SortedTagMap("a" -> "4", "b" -> "5", "d" -> "6")
     val expected = SortedTagMap("a" -> "4", "b" -> "5", "c" -> "3", "d" -> "6")
     assertEquals(m1 ++ m2, expected)
   }

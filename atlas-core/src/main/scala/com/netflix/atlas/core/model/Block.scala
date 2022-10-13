@@ -47,7 +47,7 @@ object Block {
     } else {
       // Keeps track of values we have already seen and maps them to an index. NaN doesn't equal
       // anything so it cannot be found in the map. We special case it to always have index -1.
-      //val idxMap = new TDoubleIntHashMap(10, 0.5f, Double.NaN, SparseBlock.NOT_FOUND)
+      // val idxMap = new TDoubleIntHashMap(10, 0.5f, Double.NaN, SparseBlock.NOT_FOUND)
       val idxMap = new DoubleIntHashMap
       var nextIdx = 0
 
@@ -723,6 +723,7 @@ case class ConstantBlock(start: Long, size: Int, value: Double) extends Block {
   * further reduce storage. In particular the values for NaN, 0, and 1 are not stored.
   */
 object SparseBlock {
+
   final val NOT_FOUND = -4
   final val NaN = -3
   final val ZERO = -2
@@ -758,6 +759,7 @@ object SparseBlock {
   * @param values   set of distinct values
   */
 case class SparseBlock(start: Long, indexes: Array[Byte], values: Array[Double]) extends Block {
+
   require(indexes.length > 0, "indexes cannot be empty")
 
   def size: Int = indexes.length
@@ -821,6 +823,7 @@ object RollupBlock {
 case class RollupBlock(sum: Block, count: Block, min: Block, max: Block) extends MutableBlock {
 
   require(List(count, min, max).forall(_.size == sum.size), "all blocks must have the same size")
+
   require(
     List(count, min, max).forall(_.start == sum.start),
     "all blocks must have the same start"

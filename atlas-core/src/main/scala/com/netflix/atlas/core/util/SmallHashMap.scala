@@ -38,6 +38,7 @@ object SmallHashMap {
   }
 
   class Builder[K <: Any, V <: Any](size: Int) {
+
     private val buf = new Array[Any](size * 2)
     private var actualSize = 0
 
@@ -105,6 +106,7 @@ object SmallHashMap {
   }
 
   class EntryIterator[K <: Any, V <: Any](map: SmallHashMap[K, V]) extends Iterator[(K, V)] {
+
     private final val len = map.data.length
     var pos = 0
     skipEmptyEntries()
@@ -239,6 +241,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
   def iterator: Iterator[(K, V)] = entriesIterator
 
   override def keysIterator: Iterator[K] = new Iterator[K] {
+
     val iter = entriesIterator
 
     def hasNext: Boolean = iter.hasNext
@@ -251,6 +254,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
   }
 
   override def valuesIterator: Iterator[V] = new Iterator[V] {
+
     val iter = entriesIterator
 
     def hasNext: Boolean = iter.hasNext
@@ -368,7 +372,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
       }
       i += 1
     }
-    var h = 0x3c074a61
+    var h = 0x3C074A61
     h = scala.util.hashing.MurmurHash3.mix(h, a)
     h = scala.util.hashing.MurmurHash3.mix(h, b)
     h = scala.util.hashing.MurmurHash3.mixLast(h, c)

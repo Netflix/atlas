@@ -186,9 +186,9 @@ private[stream] class StreamContext(
   def logDatapointsExceeded(timestamp: Long, dataExpr: DataExpr): Unit = {
     val diagnosticMessage = DiagnosticMessage.error(
       s"expression: $dataExpr exceeded the configured max input datapoints limit" +
-      s" '$maxInputDatapointsPerExpression' or max intermediate" +
-      s" datapoints limit '$maxIntermediateDatapointsPerExpression'" +
-      s" for timestamp '$timestamp}"
+        s" '$maxInputDatapointsPerExpression' or max intermediate" +
+        s" datapoints limit '$maxIntermediateDatapointsPerExpression'" +
+        s" for timestamp '$timestamp}"
     )
     log(dataExpr, diagnosticMessage)
   }

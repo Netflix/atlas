@@ -41,6 +41,7 @@ object UnboundedMeteredMailbox {
     private val registry = Spectator.globalRegistry()
     private val insertCounter = registry.counter("akka.queue.insert", "path", path)
     private val waitTimer = registry.timer("akka.queue.wait", "path", path)
+
     PolledMeter
       .using(registry)
       .withName("akka.queue.size")

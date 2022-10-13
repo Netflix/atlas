@@ -31,6 +31,7 @@ import com.typesafe.scalalogging.StrictLogging
 class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
     extends WebApi
     with StrictLogging {
+
   import EvaluateApi._
 
   private val payloadSize = registry.distributionSummary("atlas.lwcapi.evalPayloadSize")
@@ -75,6 +76,7 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
 }
 
 object EvaluateApi {
+
   type TagMap = Map[String, String]
 
   case class Item(id: String, tags: TagMap, value: Double)

@@ -25,6 +25,7 @@ import com.netflix.atlas.core.util.Features
   *     with the current stack will get used.
   */
 case class Interpreter(vocabulary: List[Word]) {
+
   import com.netflix.atlas.core.stacklang.Interpreter._
 
   // Map of name to word

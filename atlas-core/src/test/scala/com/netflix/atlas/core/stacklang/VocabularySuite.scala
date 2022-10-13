@@ -18,6 +18,7 @@ package com.netflix.atlas.core.stacklang
 import munit.FunSuite
 
 class VocabularySuite extends FunSuite {
+
   import com.netflix.atlas.core.stacklang.VocabularySuite._
 
   test("toMarkdown") {

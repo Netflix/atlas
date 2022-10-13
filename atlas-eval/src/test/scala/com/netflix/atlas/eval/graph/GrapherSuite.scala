@@ -90,11 +90,11 @@ class GrapherSuite extends FunSuite {
 
   imageTest("legend text using atlas.offset") {
     "/api/v1/graph?e=2012-01-01T00:00&q=" +
-    "(,0h,1d,1w,),(," +
-    "name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum," +
-    ":swap,:offset," +
-    "$(name)+(offset%3D$(atlas.offset)),:legend," +
-    "),:each"
+      "(,0h,1d,1w,),(," +
+      "name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum," +
+      ":swap,:offset," +
+      "$(name)+(offset%3D$(atlas.offset)),:legend," +
+      "),:each"
   }
 
   imageTest("group by and stack") {
@@ -103,14 +103,14 @@ class GrapherSuite extends FunSuite {
 
   imageTest("group by, pct, and stack") {
     "/api/v1/graph?e=2012-01-01T00:00&q=" +
-    "name,sps,:eq,(,nf.cluster,),:by,:pct,$nf.cluster,:legend" +
-    "&stack=1"
+      "name,sps,:eq,(,nf.cluster,),:by,:pct,$nf.cluster,:legend" +
+      "&stack=1"
   }
 
   imageTest("upper and lower bounds") {
     "/api/v1/graph?e=2012-01-01T00:00&q=" +
-    "name,sps,:eq,nf.cluster,nccp-.*,:re,:and,:sum,(,nf.cluster,),:by,$nf.cluster,:legend" +
-    "&stack=1&l=0&u=50e3"
+      "name,sps,:eq,nf.cluster,nccp-.*,:re,:and,:sum,(,nf.cluster,),:by,$nf.cluster,:legend" +
+      "&stack=1&l=0&u=50e3"
   }
 
   private val baseAxisScaleQuery = "/api/v1/graph?e=2012-01-01T00:00" +
@@ -166,112 +166,112 @@ class GrapherSuite extends FunSuite {
 
   imageTest("average") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:avg," +
-    "avg+sps+for+silverlight,:legend"
+      "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:avg," +
+      "avg+sps+for+silverlight,:legend"
   }
 
   imageTest("title and legends") {
     "/api/v1/graph?s=e-1w&e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:avg,avg+sps+for+silverlight,:legend" +
-    "&no_legend=1&title=Silverlight+SPS&ylabel=Starts+per+second"
+      "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:avg,avg+sps+for+silverlight,:legend" +
+      "&no_legend=1&title=Silverlight+SPS&ylabel=Starts+per+second"
   }
 
   imageTest("line on area") {
     // Area must be drawn first or line will be covered up
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum,:dup,10000,:add,:area,:swap"
+      "&q=nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum,:dup,10000,:add,:area,:swap"
   }
 
   imageTest("stack, areas, and lines") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,:area," +
-    "name,sps,:eq,nf.cluster,nccp-ps3,:eq,:and,:sum,:stack," +
-    "name,sps,:eq,:avg,100,:mul"
+      "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,:sum,:area," +
+      "name,sps,:eq,nf.cluster,nccp-ps3,:eq,:and,:sum,:stack," +
+      "name,sps,:eq,:avg,100,:mul"
   }
 
   imageTest("transparency as part of color") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum," +
-    ":dup,10000,:add,:area,400000ff,:color"
+      "&q=nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum," +
+      ":dup,10000,:add,:area,400000ff,:color"
   }
 
   imageTest("transparency using alpha") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum," +
-    ":dup,10000,:add,:area,40,:alpha"
+      "&q=nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum," +
+      ":dup,10000,:add,:area,40,:alpha"
   }
 
   imageTest("DES: delta as area") {
     "/api/v1/graph?tz=UTC&e=2012-01-01T12:00&s=e-12h&w=750&h=150&l=0" +
-    "&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum," +
-    ":dup,:des-simple,0.9,:mul," +
-    ":2over,:sub,:abs,:area,40,:alpha," +
-    ":rot,$name,:legend," +
-    ":rot,prediction,:legend," +
-    ":rot,delta,:legend"
+      "&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum," +
+      ":dup,:des-simple,0.9,:mul," +
+      ":2over,:sub,:abs,:area,40,:alpha," +
+      ":rot,$name,:legend," +
+      ":rot,prediction,:legend," +
+      ":rot,delta,:legend"
   }
 
   imageTest("DES: vspan showing trigger") {
     "/api/v1/graph?tz=UTC&e=2012-01-01T12:00&s=e-12h&w=750&h=150&l=0" +
-    "&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum" +
-    ",:dup,:des-simple,0.9,:mul," +
-    ":2over,:lt," +
-    ":rot,$name,:legend," +
-    ":rot,prediction,:legend," +
-    ":rot,:vspan,60,:alpha,alert+triggered,:legend"
+      "&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum" +
+      ",:dup,:des-simple,0.9,:mul," +
+      ":2over,:lt," +
+      ":rot,$name,:legend," +
+      ":rot,prediction,:legend," +
+      ":rot,:vspan,60,:alpha,alert+triggered,:legend"
   }
 
   imageTest("smoothing using DES") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,type,high-noise,:eq,:and,:sum," +
-    "10,0.145,0.01,:des" +
-    "&w=750&h=100&no_legend=1&s=e-12h"
+      "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,type,high-noise,:eq,:and,:sum," +
+      "10,0.145,0.01,:des" +
+      "&w=750&h=100&no_legend=1&s=e-12h"
   }
 
   imageTest("smoothing using trend") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,nf.cluster,nccp-ps3,:eq,:and,:avg," +
-    ":dup,:dup,:dup,5m,:trend,100,:add,5m+trend,:legend," +
-    ":rot,10m,:trend,200,:add,10m+trend,:legend," +
-    ":rot,20m,:trend,300,:add,20m+trend,:legend," +
-    ":rot,original+line,:legend,:-rot" +
-    "&w=750&h=300&s=e-12h"
+      "&q=name,sps,:eq,nf.cluster,nccp-ps3,:eq,:and,:avg," +
+      ":dup,:dup,:dup,5m,:trend,100,:add,5m+trend,:legend," +
+      ":rot,10m,:trend,200,:add,10m+trend,:legend," +
+      ":rot,20m,:trend,300,:add,20m+trend,:legend," +
+      ":rot,original+line,:legend,:-rot" +
+      "&w=750&h=300&s=e-12h"
   }
 
   imageTest("smoothing using step 5m") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,type,high-noise,:eq,:and,:sum" +
-    "&step=PT5M&w=750&h=100&no_legend=1&s=e-12h"
+      "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,type,high-noise,:eq,:and,:sum" +
+      "&step=PT5M&w=750&h=100&no_legend=1&s=e-12h"
   }
 
   imageTest("smoothing using step 20m") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,type,high-noise,:eq,:and,:sum" +
-    "&step=PT20M&w=750&h=100&no_legend=1&s=e-12h"
+      "&q=name,sps,:eq,nf.cluster,nccp-silverlight,:eq,:and,type,high-noise,:eq,:and,:sum" +
+      "&step=PT20M&w=750&h=100&no_legend=1&s=e-12h"
   }
 
   imageTest("math with time shifts") {
     "/api/v1/graph?e=2012-01-01T12:00&s=e-12h&tz=UTC" +
-    "&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum," +
-    ":dup,1w,:offset,:sub,:area,delta+week+over+week,:legend" +
-    "&h=150&w=750"
+      "&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum," +
+      ":dup,1w,:offset,:sub,:area,delta+week+over+week,:legend" +
+      "&h=150&w=750"
   }
 
   imageTest("average over last 3w") {
     "/api/v1/graph?e=2012-01-01T12:00&s=e-12h&tz=UTC" +
-    "&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum," +
-    ":dup,1w,:offset,:over,2w,:offset,:add,:over,3w,:offset,:add,3,:div," +
-    ":2over,:swap,:over,:sub,:abs,:swap,:div,100,:mul," +
-    ":rot,requestsPerSecond,:legend," +
-    ":rot,average+for+previous+3+weeks,:legend," +
-    ":rot,:area,40,:alpha,percent+delta,:legend" +
-    "&h=150&w=750"
+      "&q=nf.cluster,alerttest,:eq,name,requestsPerSecond,:eq,:and,:sum," +
+      ":dup,1w,:offset,:over,2w,:offset,:add,:over,3w,:offset,:add,3,:div," +
+      ":2over,:swap,:over,:sub,:abs,:swap,:div,100,:mul," +
+      ":rot,requestsPerSecond,:legend," +
+      ":rot,average+for+previous+3+weeks,:legend," +
+      ":rot,:area,40,:alpha,percent+delta,:legend" +
+      "&h=150&w=750"
   }
 
   imageTest("multi-Y") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=nf.node,alert1,:eq,:sum,nf.node,alert1,:eq,:count,1,:axis" +
-    "&ylabel.0=Axis%200&ylabel.1=Axis%201"
+      "&q=nf.node,alert1,:eq,:sum,nf.node,alert1,:eq,:count,1,:axis" +
+      "&ylabel.0=Axis%200&ylabel.1=Axis%201"
   }
 
   imageTest("significant time boundaries and tz=US/Pacific") {
@@ -296,19 +296,19 @@ class GrapherSuite extends FunSuite {
 
   imageTest("daylight savings time transition, UTC, Pacific, and Eastern") {
     "/api/v1/graph?q=name,sps,:eq,:sum&s=e-4d&e=2015-03-10T13:13&no_legend=1" +
-    "&tz=UTC&tz=US/Pacific&tz=US/Eastern&step=1d"
+      "&tz=UTC&tz=US/Pacific&tz=US/Eastern&step=1d"
   }
 
   imageTest("vision flag") {
     "/api/v1/graph?s=e-1d&e=2015-03-10T13:13" +
-    "&q=(,1,2,3,4,5,6,7,8,9,),(,nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum,:swap,:legend,),:each" +
-    "&vision=protanopia&no_legend=1&stack=1"
+      "&q=(,1,2,3,4,5,6,7,8,9,),(,nf.cluster,nccp-silverlight,:eq,name,sps,:eq,:and,:sum,:swap,:legend,),:each" +
+      "&vision=protanopia&no_legend=1&stack=1"
   }
 
   imageTest("z-order of stacked lines") {
     "/api/v1/graph" +
-    "?q=t,name,sps,:eq,:sum,:set,t,:get,:stack,t,:get,1.1,:mul,6h,:offset,t,:get,4,:div,:stack" +
-    "&s=e-2d&e=2015-03-10T13:13"
+      "?q=t,name,sps,:eq,:sum,:set,t,:get,:stack,t,:get,1.1,:mul,6h,:offset,t,:get,4,:div,:stack" +
+      "&s=e-2d&e=2015-03-10T13:13"
   }
 
   imageTest("issue-1146") {
@@ -317,52 +317,52 @@ class GrapherSuite extends FunSuite {
 
   imageTest("expr scoped palette") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack,name,sps,:eq,2,:lw,50e3,45e3"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack,name,sps,:eq,2,:lw,50e3,45e3"
   }
 
   imageTest("expr scoped palette in the middle") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,4,:lw,name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack,50e3,45e3"
+      "&q=name,sps,:eq,4,:lw,name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack,50e3,45e3"
   }
 
   imageTest("multiple expressions with scoped palettes") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,:dup,reds,:palette,:stack,:swap,greens,:palette,:stack"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,:dup,reds,:palette,:stack,:swap,greens,:palette,:stack"
   }
 
   imageTest("expr palette overrides axis param") {
     "/api/v1/graph?e=2012-01-01T00:00&palette=greens" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,:stack"
   }
 
   imageTest("expr palette then color") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,00f,:color,:stack"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,reds,:palette,00f,:color,:stack"
   }
 
   imageTest("color then expr palette") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,00f,:color,reds,:palette,:stack"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,00f,:color,reds,:palette,:stack"
   }
 
   imageTest("expr palette with alpha") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=50e3,4,:lw,name,sps,:eq,(,nf.cluster,),:by,reds,:palette,40,:alpha,:stack"
+      "&q=50e3,4,:lw,name,sps,:eq,(,nf.cluster,),:by,reds,:palette,40,:alpha,:stack"
   }
 
   imageTest("expr scoped hashed palette") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,hash:reds,:palette,:stack"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,hash:reds,:palette,:stack"
   }
 
   imageTest("substitute max stat in legend") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,$atlas.max+is+max,:legend"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,$atlas.max+is+max,:legend"
   }
 
   imageTest("substitute max stat in legend honors label mode") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,$atlas.max+is+max,:legend&tick_labels=binary"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,$atlas.max+is+max,:legend&tick_labels=binary"
   }
 
   imageTest("empty legend string") {
@@ -371,50 +371,50 @@ class GrapherSuite extends FunSuite {
 
   imageTest("substitutions for ylabel, name present, cluster missing") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,nf.cluster,nccp-silver,:lt,:and,(,nf.cluster,),:by" +
-    "&ylabel=$name+$nf.cluster"
+      "&q=name,sps,:eq,nf.cluster,nccp-silver,:lt,:and,(,nf.cluster,),:by" +
+      "&ylabel=$name+$nf.cluster"
   }
 
   imageTest("substitutions for ylabel, name present, cluster present") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,nf.cluster,nccp-silver,:lt,:and,(,nf.cluster,),:by" +
-    "&ylabel=$name+$nf.cluster&axis_per_line=1"
+      "&q=name,sps,:eq,nf.cluster,nccp-silver,:lt,:and,(,nf.cluster,),:by" +
+      "&ylabel=$name+$nf.cluster&axis_per_line=1"
   }
 
   imageTest("substitutions for title, name present, cluster missing") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,nf.cluster,nccp-silver,:lt,:and,(,nf.cluster,),:by" +
-    "&title=$name+$nf.cluster&axis_per_line=1"
+      "&q=name,sps,:eq,nf.cluster,nccp-silver,:lt,:and,(,nf.cluster,),:by" +
+      "&title=$name+$nf.cluster&axis_per_line=1"
   }
 
   imageTest("using dark24 palette") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend" +
-    "&palette=dark24"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend" +
+      "&palette=dark24"
   }
 
   imageTest("using light24 palette") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend" +
-    "&palette=light24"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend" +
+      "&palette=light24"
   }
 
   imageTest("using dark theme") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend" +
-    "&theme=dark"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend" +
+      "&theme=dark"
   }
 
   imageTest("using dark theme with multi-Y") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend,42,1,:axis" +
-    "&theme=dark"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend,42,1,:axis" +
+      "&theme=dark"
   }
 
   imageTest("using dark theme with offset") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,:dup,1w,:offset" +
-    "&theme=dark"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,:dup,1w,:offset" +
+      "&theme=dark"
   }
 
   imageTest("topk") {
@@ -483,12 +483,12 @@ class GrapherSuite extends FunSuite {
 
   renderTest("rendering with pre-evaluated data set, legends") {
     "/api/v1/graph?e=2012-01-01T00:00" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend,10e3,threshold,:legend,3,:lw"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend,10e3,threshold,:legend,3,:lw"
   }
 
   renderTest("rendering with pre-evaluated data set, multi-y") {
     "/api/v1/graph?e=2012-01-01T00:00&u.1=56e3" +
-    "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend,:stack,20e3,1,:axis,:area,50,:alpha"
+      "&q=name,sps,:eq,(,nf.cluster,),:by,$nf.cluster,:legend,:stack,20e3,1,:axis,:area,50,:alpha"
   }
 
   test("stat vars are not included in tag map") {

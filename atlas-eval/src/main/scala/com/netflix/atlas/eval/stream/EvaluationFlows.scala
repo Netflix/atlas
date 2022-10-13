@@ -39,8 +39,8 @@ private[stream] object EvaluationFlows {
   /**
     * Run a stream connecting the source to the sink.
     */
-  def run[T, M1, M2](source: Source[T, M1], sink: Sink[T, M2])(
-    implicit materializer: Materializer
+  def run[T, M1, M2](source: Source[T, M1], sink: Sink[T, M2])(implicit
+    materializer: Materializer
   ): StreamRef[M2] = {
 
     val (killSwitch, value) = source

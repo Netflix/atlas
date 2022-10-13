@@ -67,7 +67,7 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
         end,
         graphDef.step,
         tz,
-        if (i == 0) 40 else 0xff
+        if (i == 0) 40 else 0xFF
       )
   }
 

@@ -30,6 +30,7 @@ import com.netflix.atlas.core.util.Math
   *     state captured from another buffer.
   */
 class RollingBuffer(val values: Array[Double], start: Int = 0) {
+
   require(values.length > 0, "values array cannot be empty")
   require(start >= 0, s"starting position is out of bounds: $start < 0")
   require(start < values.length, s"starting position is out of bounds: $start >= ${values.length}")

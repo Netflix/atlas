@@ -20,6 +20,7 @@ package com.netflix.atlas.core.algorithm
   * way to get a smooth upper bound line that closely tracks a noisy input.
   */
 case class OnlineRollingMax(buf: RollingBuffer) extends OnlineAlgorithm {
+
   private var max = buf.max
 
   override def next(v: Double): Double = {

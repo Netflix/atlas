@@ -168,9 +168,9 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
         val groupedDatapoints = group.dataExprValues
 
         val dataExprToDatapoints = noData ++ groupedDatapoints.map {
-            case (k, vs) =>
-              k -> vs.values.map(_.toTimeSeries)
-          }
+          case (k, vs) =>
+            k -> vs.values.map(_.toTimeSeries)
+        }
 
         // Collect input and intermediate data size per DataSource
         val rateCollector = new EvalDataRateCollector(timestamp, step)

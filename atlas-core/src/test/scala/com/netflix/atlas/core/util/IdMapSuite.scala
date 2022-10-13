@@ -26,7 +26,7 @@ class IdMapSuite extends FunSuite {
 
   test("removed") {
     val id = Id.create("foo").withTags("a", "1", "b", "2")
-    assertEquals(IdMap(id).removed("name"), Map("a" -> "1", "b"   -> "2"))
+    assertEquals(IdMap(id).removed("name"), Map("a" -> "1", "b" -> "2"))
     assertEquals(IdMap(id).removed("a"), Map("name" -> "foo", "b" -> "2"))
   }
 

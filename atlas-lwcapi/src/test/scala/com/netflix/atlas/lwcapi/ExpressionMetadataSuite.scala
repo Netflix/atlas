@@ -21,6 +21,7 @@ import com.netflix.atlas.json.Json
 import munit.FunSuite
 
 class ExpressionMetadataSuite extends FunSuite {
+
   test("default frequency is applied") {
     val ret1 = ExpressionMetadata("this")
     val ret2 = ExpressionMetadata("this", ApiSettings.defaultStep)

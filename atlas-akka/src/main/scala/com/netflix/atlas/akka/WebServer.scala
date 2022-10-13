@@ -93,6 +93,7 @@ object WebServer {
     secure: Boolean,
     contextFactory: ConnectionContextFactory = null
   ) {
+
     require(!secure || contextFactory != null, s"context is not set for secure port $port")
 
     def createConnectionContext: HttpsConnectionContext = {

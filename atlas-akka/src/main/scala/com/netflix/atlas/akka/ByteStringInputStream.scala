@@ -24,6 +24,7 @@ import akka.util.ByteString
   * can be used to avoid allocating a temporary array and using `ByteArrayInputStream`.
   */
 class ByteStringInputStream(data: ByteString) extends InputStream {
+
   private val buffers = data.asByteBuffers.iterator
   private var current = buffers.next()
 

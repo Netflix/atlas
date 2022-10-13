@@ -34,6 +34,7 @@ class HealthcheckApiSuite extends MUnitRouteSuite {
   private val serviceHealth = new AtomicBoolean(false)
 
   val services = new java.util.HashSet[Service]
+
   services.add(new Service {
 
     override def state(): State = State.RUNNING

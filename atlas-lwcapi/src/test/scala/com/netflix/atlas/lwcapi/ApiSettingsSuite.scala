@@ -18,6 +18,7 @@ package com.netflix.atlas.lwcapi
 import munit.FunSuite
 
 class ApiSettingsSuite extends FunSuite {
+
   test("loads") {
     assert(ApiSettings.defaultStep > 0)
   }

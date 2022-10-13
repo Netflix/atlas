@@ -377,6 +377,7 @@ object Query {
   }
 
   case class Regex(k: String, v: String) extends PatternQuery {
+
     val pattern: PatternMatcher = PatternMatcher.compile(s"^$v")
 
     def check(s: String): Boolean = pattern.matches(s)
@@ -387,6 +388,7 @@ object Query {
   }
 
   case class RegexIgnoreCase(k: String, v: String) extends PatternQuery {
+
     val pattern: PatternMatcher = PatternMatcher.compile(s"^$v").ignoreCase()
 
     def check(s: String): Boolean = pattern.matches(s)
@@ -397,6 +399,7 @@ object Query {
   }
 
   case class In(k: String, vs: List[String]) extends KeyValueQuery {
+
     private val values = vs.toSet
 
     def check(s: String): Boolean = values.contains(s)

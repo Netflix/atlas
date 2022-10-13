@@ -46,6 +46,7 @@ private[lwcapi] class WebSocketSessionManager(
   val subscribeFunc: (String, List[ExpressionMetadata]) => List[ErrorMsg]
 ) extends GraphStage[FlowShape[AnyRef, Source[JsonSupport, NotUsed]]]
     with StrictLogging {
+
   private val in = Inlet[AnyRef]("WebSocketSessionManager.in")
   private val out = Outlet[Source[JsonSupport, NotUsed]]("WebSocketSessionManager.out")
 

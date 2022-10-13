@@ -285,6 +285,7 @@ object SubscriptionManager {
   }
 
   class ConcurrentSet[T] {
+
     private val data = new ConcurrentHashMap[T, T]()
 
     def add(value: T): Boolean = {

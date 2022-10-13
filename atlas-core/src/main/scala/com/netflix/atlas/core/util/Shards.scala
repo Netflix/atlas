@@ -143,6 +143,7 @@ object Shards {
 
   /** Mapper for finding the instance that should receive data for an id or index of a file. */
   class Mapper[T](groups: Array[Group[T]]) {
+
     require(groups.length > 0, "set of groups cannot be empty")
 
     /** Return the instance that should receive the data associated with `id`. */
@@ -215,6 +216,6 @@ object Shards {
     * it will return 0.
     */
   private[util] def nonNegative(v: Int): Int = {
-    math.abs(v) & 0x7fffffff
+    math.abs(v) & 0x7FFFFFFF
   }
 }

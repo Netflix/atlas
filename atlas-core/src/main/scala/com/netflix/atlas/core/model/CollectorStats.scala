@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 object CollectorStats {
+
   val unknown: CollectorStats = CollectorStats(-1L, -1L, -1L, -1L)
 
   def apply(vs: Iterable[CollectorStats]): CollectorStats = {
@@ -42,6 +43,7 @@ case class CollectorStats(
 
 /** Helper for accumulating stats for a collector. */
 class CollectorStatsBuilder {
+
   private var inputLines: Long = 0L
   private var inputDatapoints: Long = 0L
   private var outputLines: Long = 0L

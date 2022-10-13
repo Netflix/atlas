@@ -232,6 +232,7 @@ object SubscribeApi {
       extends JsonSupport {
 
     require(streamId != null && streamId.nonEmpty, "streamId attribute is missing or empty")
+
     require(
       expressions != null && expressions.nonEmpty,
       "expressions attribute is missing or empty"

@@ -60,7 +60,7 @@ case class PlotDef(
   def bounds(start: Long, end: Long): (Double, Double) = {
 
     val dataLines = lines
-    if (dataLines.isEmpty) (0.0 -> 1.0)
+    if (dataLines.isEmpty) 0.0 -> 1.0
     else {
       val step = dataLines.head.data.data.step
       val (regular, stacked) = dataLines

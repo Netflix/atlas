@@ -27,6 +27,7 @@ import java.util.PriorityQueue
   *     Comparator used for checking the relative priority of entries.
   */
 class BoundedPriorityBuffer[T <: AnyRef](maxSize: Int, comparator: Comparator[T]) {
+
   require(maxSize > 0, "maxSize must be > 0")
 
   private val queue = new PriorityQueue[T](comparator.reversed())

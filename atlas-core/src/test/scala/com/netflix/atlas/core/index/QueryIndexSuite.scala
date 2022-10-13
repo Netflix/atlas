@@ -165,12 +165,12 @@ class QueryIndexSuite extends FunSuite {
     assert(!matches(index, Map("a" -> "1")))
 
     // matches
-    assert(matches(index, Map("name" -> "cpuUsage", "nf.node"  -> "unknown")))
-    assert(matches(index, Map("name" -> "cpuUsage", "nf.node"  -> "i-00099")))
+    assert(matches(index, Map("name" -> "cpuUsage", "nf.node" -> "unknown")))
+    assert(matches(index, Map("name" -> "cpuUsage", "nf.node" -> "i-00099")))
     assert(matches(index, Map("name" -> "diskUsage", "nf.node" -> "i-00099")))
 
     // shouldn't match
-    assert(!matches(index, Map("name" -> "diskUsage", "nf.node"   -> "unknown")))
+    assert(!matches(index, Map("name" -> "diskUsage", "nf.node" -> "unknown")))
     assert(!matches(index, Map("name" -> "memoryUsage", "nf.node" -> "i-00099")))
   }
 

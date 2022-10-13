@@ -28,12 +28,12 @@ class MaxValueFunctionSuite extends FunSuite {
 
   test("basic") {
     val n = newFunction(10)
-    assertEquals(n.update(5, 1.0), List(10L    -> 1.0))
-    assertEquals(n.update(15, 2.0), List(20L   -> 2.0))
-    assertEquals(n.update(25, 2.0), List(30L   -> 2.0))
-    assertEquals(n.update(35, 1.0), List(40L   -> 1.0))
-    assertEquals(n.update(85, 1.0), List(90L   -> 1.0))
-    assertEquals(n.update(95, 2.0), List(100L  -> 2.0))
+    assertEquals(n.update(5, 1.0), List(10L -> 1.0))
+    assertEquals(n.update(15, 2.0), List(20L -> 2.0))
+    assertEquals(n.update(25, 2.0), List(30L -> 2.0))
+    assertEquals(n.update(35, 1.0), List(40L -> 1.0))
+    assertEquals(n.update(85, 1.0), List(90L -> 1.0))
+    assertEquals(n.update(95, 2.0), List(100L -> 2.0))
     assertEquals(n.update(105, 2.0), List(110L -> 2.0))
     n.close()
     assertEquals(n.result(), Nil)
@@ -41,7 +41,7 @@ class MaxValueFunctionSuite extends FunSuite {
 
   test("already normalized updates") {
     val n = newFunction(10)
-    assertEquals(n.update(0, 1.0), List(0L   -> 1.0))
+    assertEquals(n.update(0, 1.0), List(0L -> 1.0))
     assertEquals(n.update(10, 2.0), List(10L -> 2.0))
     assertEquals(n.update(20, 3.0), List(20L -> 3.0))
     assertEquals(n.update(30, 1.0), List(30L -> 1.0))
@@ -51,7 +51,7 @@ class MaxValueFunctionSuite extends FunSuite {
 
   test("already normalized updates, skip 1") {
     val n = newFunction(10)
-    assertEquals(n.update(0, 1.0), List(0L   -> 1.0))
+    assertEquals(n.update(0, 1.0), List(0L -> 1.0))
     assertEquals(n.update(10, 1.0), List(10L -> 1.0))
     assertEquals(n.update(30, 1.0), List(30L -> 1.0))
     n.close()
@@ -60,7 +60,7 @@ class MaxValueFunctionSuite extends FunSuite {
 
   test("already normalized updates, miss heartbeat") {
     val n = newFunction(10)
-    assertEquals(n.update(0, 1.0), List(0L   -> 1.0))
+    assertEquals(n.update(0, 1.0), List(0L -> 1.0))
     assertEquals(n.update(10, 2.0), List(10L -> 2.0))
     assertEquals(n.update(30, 1.0), List(30L -> 1.0))
     assertEquals(n.update(60, 4.0), List(60L -> 4.0))
@@ -111,7 +111,7 @@ class MaxValueFunctionSuite extends FunSuite {
     assertEquals(n.update(t(1, 13), 1.0), List(t(2, 0) -> 1.0))
     assertEquals(n.update(t(2, 13), 1.0), List(t(3, 0) -> 1.0))
     assertEquals(n.update(t(3, 13), 1.0), List(t(4, 0) -> 1.0))
-    assertEquals(n.update(t(6, 5), 1.0), List(t(7, 0)  -> 1.0))
+    assertEquals(n.update(t(6, 5), 1.0), List(t(7, 0) -> 1.0))
     n.close()
     assertEquals(n.result(), Nil)
   }
@@ -149,8 +149,8 @@ class MaxValueFunctionSuite extends FunSuite {
     def t(m: Int, s: Int) = (m * 60 + s) * 1000L
     val n = newFunction(60000)
     val v = 1.0 / 60.0
-    assertEquals(n.update(t(8, 17), v), List(t(9, 0)     -> v))
-    assertEquals(n.update(t(9, 17), 0.0), List(t(10, 0)  -> 0.0))
+    assertEquals(n.update(t(8, 17), v), List(t(9, 0) -> v))
+    assertEquals(n.update(t(9, 17), 0.0), List(t(10, 0) -> 0.0))
     assertEquals(n.update(t(10, 17), 0.0), List(t(11, 0) -> 0.0))
     n.close()
     assertEquals(n.result(), Nil)
@@ -158,10 +158,10 @@ class MaxValueFunctionSuite extends FunSuite {
 
   test("frequent updates") {
     val n = newFunction(10)
-    assertEquals(n.update(0, 1.0), List(0L   -> 1.0))
-    assertEquals(n.update(2, 2.0), List(10L  -> 2.0))
-    assertEquals(n.update(4, 4.0), List(10L  -> 4.0))
-    assertEquals(n.update(8, 8.0), List(10L  -> 8.0))
+    assertEquals(n.update(0, 1.0), List(0L -> 1.0))
+    assertEquals(n.update(2, 2.0), List(10L -> 2.0))
+    assertEquals(n.update(4, 4.0), List(10L -> 4.0))
+    assertEquals(n.update(8, 8.0), List(10L -> 8.0))
     assertEquals(n.update(12, 2.0), List(20L -> 2.0))
     assertEquals(n.update(40, 3.0), List(40L -> 3.0))
     n.close()
@@ -172,7 +172,7 @@ class MaxValueFunctionSuite extends FunSuite {
     val n = newFunction(10)
 
     // Node 1: if shutting down it can flush an interval early
-    assertEquals(n.update(0, 1.0), List(0L   -> 1.0))
+    assertEquals(n.update(0, 1.0), List(0L -> 1.0))
     assertEquals(n.update(10, 2.0), List(10L -> 2.0))
 
     // Other nodes: report around the same time. Need to ensure that the flush

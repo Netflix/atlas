@@ -109,7 +109,7 @@ class AlgoStateSuite extends FunSuite {
 
   test("sub-state") {
     val expected = AlgoState("bar", "test" -> 42)
-    val s = AlgoState("foo", "test"        -> expected)
+    val s = AlgoState("foo", "test" -> expected)
     check(s, _.getState("test"), expected)
   }
 
