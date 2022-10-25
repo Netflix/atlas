@@ -32,7 +32,7 @@ class ExprApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   val endpoint = new ExprApi
 
@@ -118,8 +118,10 @@ class ExprApiSuite extends MUnitRouteSuite {
   ) {
     assertEquals(response.status, StatusCodes.OK)
     val data = Json.decode[List[String]](responseAs[String])
-    val expected =
-      List("name,cpu,:eq,:sum", "name,disk,:eq,:sum", ":list,(,nf.cluster,foo,:eq,:cq,),:each")
+    val expected = List(
+      "name,cpu,:eq,nf.cluster,foo,:eq,:and,:sum",
+      "name,disk,:eq,nf.cluster,foo,:eq,:and,:sum"
+    )
     assertEquals(data, expected)
   }
 
@@ -246,7 +248,7 @@ class ExprApiSuite extends MUnitRouteSuite {
   testGet("/api/v1/expr/strip?q=name,sps,:eq,:stat-max,5,:gt,:filter&r=style") {
     assertEquals(response.status, StatusCodes.OK)
     val data = Json.decode[List[String]](responseAs[String])
-    assertEquals(data, List("name,sps,:eq,:sum,name,sps,:eq,:sum,max,:stat,5.0,:const,:gt,:filter"))
+    assertEquals(data, List("name,sps,:eq,:sum,:stat-max,5.0,:const,:gt,:filter"))
   }
 
   testGet(
@@ -300,21 +302,21 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(
       normalize(add.toString),
       List(
-        ":true,:sum,:true,:sum,:add",
-        ":list,(,app,foo,:eq,name,cpuUser,:eq,:and,:cq,),:each"
+        "app,foo,:eq,name,cpuUser,:eq,:and,:sum,app,foo,:eq,name,cpuUser,:eq,:and,:sum,:add"
       )
     )
   }
 
   test("normalize common query") {
+    // No longer performed, UI team prefers not having the cq in the
+    // normalized query
     val e1 = DataExpr.Sum(And(Equal("app", "foo"), Equal("name", "cpuUser")))
     val e2 = DataExpr.Sum(And(Equal("app", "foo"), Equal("name", "cpuSystem")))
     val add = StyleExpr(MathExpr.Add(e1, e2), Map.empty)
     assertEquals(
       normalize(add.toString),
       List(
-        "name,cpuUser,:eq,:sum,name,cpuSystem,:eq,:sum,:add",
-        ":list,(,app,foo,:eq,:cq,),:each"
+        "app,foo,:eq,name,cpuUser,:eq,:and,:sum,app,foo,:eq,name,cpuSystem,:eq,:and,:sum,:add"
       )
     )
   }
@@ -350,9 +352,8 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(
       normalize(avg),
       List(
-        "name,cpuUser,:eq,:dist-avg",
-        "name,cpuSystem,:eq,:max",
-        ":list,(,app,foo,:eq,:cq,),:each"
+        "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg",
+        "app,foo,:eq,name,cpuSystem,:eq,:and,:max"
       )
     )
   }
@@ -360,6 +361,29 @@ class ExprApiSuite extends MUnitRouteSuite {
   test("normalize :avg,(,nf.cluster,),:by,:pct") {
     val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:avg,(,nf.cluster,),:by,:pct"
     assertEquals(normalize(avg), List(avg))
+  }
+
+  test("normalize :stat-aggr filters") {
+    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,nf.cluster,),:by,:stat-max,5.0,:gt,:filter"
+    assertEquals(normalize(avg), List(avg))
+  }
+
+  test("normalize simplify query") {
+    val input = "app,foo,:eq,name,cpuUser,:eq,:and,:true,:and,:sum"
+    val expected = "app,foo,:eq,name,cpuUser,:eq,:and,:sum"
+    assertEquals(normalize(input), List(expected))
+  }
+
+  test("normalize sort query") {
+    val input = "name,cpuUser,:eq,app,foo,:eq,:and,:sum"
+    val expected = "app,foo,:eq,name,cpuUser,:eq,:and,:sum"
+    assertEquals(normalize(input), List(expected))
+  }
+
+  test("normalize sensible OR handling") {
+    val input = "name,cpuUser,:eq,app,foo,:eq,:and,name,cpuUser2,:eq,app,bar,:eq,:and,:or,:sum"
+    val expected = "app,bar,:eq,name,cpuUser2,:eq,:and,app,foo,:eq,name,cpuUser,:eq,:and,:or,:sum"
+    assertEquals(normalize(input), List(expected))
   }
 
   test("normalize :des-fast") {
