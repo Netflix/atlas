@@ -220,7 +220,7 @@ object FilterVocabulary extends Vocabulary {
 
     private def rewriteStatExprs(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
       val r = t2.rewrite {
-        case s: FilterExpr.StatExpr => FilterExpr.Stat(t1, s.name)
+        case s: FilterExpr.StatExpr => FilterExpr.Stat(t1, s.name, Some(s.toString))
       }
       r.asInstanceOf[TimeSeriesExpr]
     }

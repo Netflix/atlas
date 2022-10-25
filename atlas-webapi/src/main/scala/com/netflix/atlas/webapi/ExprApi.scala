@@ -23,14 +23,11 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
-import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Expr
 import com.netflix.atlas.core.model.FilterExpr
-import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StyleExpr
-import com.netflix.atlas.core.model.TimeSeriesExpr
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.Word
@@ -94,8 +91,8 @@ class ExprApi extends WebApi {
       case "query" =>
         // Expectation is that there would be a single query on the stack
         stack match {
-          case v :: Nil =>
-          case v :: vs =>
+          case _ :: Nil =>
+          case _ :: _ =>
             val summary = Interpreter.typeSummary(stack)
             throw new IllegalArgumentException(s"expected a single query, found $summary")
           case Nil =>
@@ -243,7 +240,7 @@ class ExprApi extends WebApi {
 
   private def stripFilter(expr: Expr): Expr = {
     expr.rewrite {
-      case FilterExpr.Stat(e, _)            => e
+      case FilterExpr.Stat(e, _, _)         => e
       case FilterExpr.Filter(e, _)          => e
       case e: FilterExpr.PriorityFilterExpr => e.expr
     }
@@ -271,53 +268,14 @@ object ExprApi {
   }
 
   def normalize(exprs: List[StyleExpr]): List[String] = {
-
-    // If named rewrites are used, then map the eval expression to match the display
-    // expression. This avoids the complexity of the eval expression showing up in the
-    // extracted data expressions.
-    import MathExpr.NamedRewrite
-    val cleaned = exprs.map { e =>
-      val clean = e.rewrite {
-        case r @ NamedRewrite(_, orig: Query, _, _, _) =>
-          r.copy(evalExpr = DataExpr.Sum(orig))
-        case r @ NamedRewrite(_, orig: TimeSeriesExpr, _, _, _) =>
-          r.copy(evalExpr = orig)
-      }
-      clean.asInstanceOf[StyleExpr]
-    }
-
-    // Extract the distinct queries from all data expressions
-    val queries = cleaned.flatMap(_.expr.dataExprs.map(_.query)).distinct
-
-    // Map from original query to CNF form. This is used to find the common clauses that
-    // can be extracted and applied to the overall query using :cq.
-    val cnfQueries = queries.map(q => q -> Query.cnfList(q).toSet).toMap
-
-    // Find the set of common query clauses
-    val commonQueries =
-      if (cnfQueries.isEmpty) Set.empty[Query]
-      else
-        cnfQueries.values.reduceLeft { (s1, s2) =>
-          s1.intersect(s2)
-        }
-
     // Normalize the legend vars
     val styleExprs = exprs.map(normalizeLegendVars)
 
-    // Normalize without extracting common queries
-    val normalized = exprStrings(styleExprs, cnfQueries, Set.empty)
-    val fullExpr = normalized.mkString(",")
-
-    // Normalize with extracting common queries
-    val cq = s":list,(,${sort(commonQueries, Set.empty)},:cq,),:each"
-    val normalizedCQ = cq :: exprStrings(styleExprs, cnfQueries, commonQueries)
-    val fullExprCQ = normalizedCQ.mkString(",")
-
-    // If needed, then prepend a common query conversion to the list
-    val finalList = if (fullExpr.length < fullExprCQ.length) normalized else normalizedCQ
+    // Normalized expression strings
+    val normalized = exprStrings(styleExprs)
 
     // Reverse the list to match the order the user would expect
-    finalList.reverse
+    normalized.reverse
   }
 
   // For use-cases such as performing automated rewrites of expressions to move off of legacy
@@ -337,19 +295,11 @@ object ExprApi {
     }
   }
 
-  private def exprStrings(
-    exprs: List[StyleExpr],
-    cnf: Map[Query, Set[Query]],
-    cq: Set[Query]
-  ): List[String] = {
-
-    // Map from original query to sorted query without the common clauses excluded
-    val sortedQueries = cnf.map { case (q, qs) => q -> sort(qs, cq) }
-
+  private def exprStrings(exprs: List[StyleExpr]): List[String] = {
     // Rewrite the expressions and convert to a normalized strings
     exprs.map { expr =>
       val rewritten = expr.rewrite {
-        case q: Query => sortedQueries.getOrElse(q, q)
+        case q: Query => sort(q)
       }
       // Remove explicit :const, it can be determined from implicit conversion
       // and adds visual clutter
@@ -364,13 +314,18 @@ object ExprApi {
     * will have an equal result query even if they were in different orders in the input
     * expression string.
     */
-  private def sort(qs: Set[Query], exclude: Set[Query]): Query = {
-    val matches = qs.toList.filter(q => !exclude.contains(q))
-    if (matches.isEmpty)
-      Query.True
-    else
-      matches.sortWith(_.toString < _.toString).reduce { (q1, q2) =>
-        Query.And(q1, q2)
+  private def sort(query: Query): Query = {
+    val simplified = Query.simplify(query)
+    Query
+      .dnfList(simplified)
+      .map { q =>
+        Query.cnfList(q).sortWith(_.toString < _.toString).reduce { (q1, q2) =>
+          Query.And(q1, q2)
+        }
+      }
+      .sortWith(_.toString < _.toString) // order OR clauses
+      .reduce { (q1, q2) =>
+        Query.Or(q1, q2)
       }
   }
 }

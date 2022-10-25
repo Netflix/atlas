@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.stacklang.Interpreter
 import munit.FunSuite
 
 class FilterSuite extends FunSuite {
@@ -56,5 +57,31 @@ class FilterSuite extends FunSuite {
     )
     val expr = MathExpr.Add(filteredExpr, filteredExpr)
     assert(expr.eval(context, Nil).data.isEmpty)
+  }
+
+  private val interpreter = Interpreter(FilterVocabulary.allWords)
+
+  private def parse(str: String): TimeSeriesExpr = {
+    interpreter.execute(str).stack match {
+      case ModelExtractors.TimeSeriesType(t) :: Nil => t
+      case _                                        => throw new MatchError(str)
+    }
+  }
+
+  test("toString for max,:stat") {
+    val expr =
+      "name,sps,:eq,:sum,(,app,),:by,name,sps,:eq,:sum,(,app,),:by,max,:stat,5.0,:const,:gt,:filter"
+    assertEquals(parse(expr).toString, expr)
+  }
+
+  test("toString for stat-max") {
+    val expr = "name,sps,:eq,:sum,(,app,),:by,:stat-max,5.0,:const,:gt,:filter"
+    assertEquals(parse(expr).toString, expr)
+  }
+
+  test("toString for several stat-aggr uses") {
+    val filter = ":stat-max,:stat-avg,5.0,:const,:add,:div,:stat-min,:gt"
+    val expr = s"name,sps,:eq,:sum,(,app,),:by,$filter,:filter"
+    assertEquals(parse(expr).toString, expr)
   }
 }

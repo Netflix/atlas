@@ -24,9 +24,21 @@ trait FilterExpr extends TimeSeriesExpr
 
 object FilterExpr {
 
-  case class Stat(expr: TimeSeriesExpr, stat: String) extends FilterExpr {
+  /**
+    * Represents a basic summary stat for an input time series.
+    *
+    * @param expr
+    *     Input expression to compute the stat over.
+    * @param stat
+    *     Which summary stat to compute.
+    * @param str
+    *     Optional string representation of the expression. Used for common-cases of helper
+    *     functions to avoid duplication of the original expression.
+    */
+  case class Stat(expr: TimeSeriesExpr, stat: String, str: Option[String] = None)
+      extends FilterExpr {
 
-    override def toString: String = s"$expr,$stat,:stat"
+    override def toString: String = str.getOrElse(s"$expr,$stat,:stat")
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
