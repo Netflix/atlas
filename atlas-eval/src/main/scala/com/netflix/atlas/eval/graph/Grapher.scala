@@ -78,6 +78,18 @@ case class Grapher(settings: DefaultSettings) {
   }
 
   /**
+    * Hints parameter is a comma separated set of strings that will be passed on to the
+    * rendering engine to optionally tune behavior.
+    */
+  private def processHints(hints: Option[String]): Set[String] = {
+    hints.toSeq
+      .flatMap(_.split(','))
+      .map(_.trim)
+      .filterNot(_.isEmpty)
+      .toSet
+  }
+
+  /**
     * Create a graph config from an Atlas URI.
     */
   def toGraphConfig(uri: Uri): GraphConfig = {
@@ -110,7 +122,8 @@ case class Grapher(settings: DefaultSettings) {
       vision = vision.getOrElse(VisionType.normal),
       palette = palette,
       theme = theme,
-      layout = Layout.create(params.get("layout").getOrElse("canvas"))
+      layout = Layout.create(params.get("layout").getOrElse("canvas")),
+      hints = processHints(params.get("hints"))
     )
 
     val q = params.get("q")

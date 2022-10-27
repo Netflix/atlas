@@ -68,6 +68,10 @@ import com.netflix.atlas.core.model.TimeSeries
   * @param source
   *     Used to provide metadata for how the graph definition was created. For example the uri
   *     input by the user.
+  * @param themeName
+  *     Which theme to use for the chart, typically light or dark mode.
+  * @param renderingHints
+  *     Arbitrary hints passed to the rendering engine to adjust behavior.
   */
 case class GraphDef(
   plots: List[PlotDef],
@@ -87,11 +91,12 @@ case class GraphDef(
   stats: CollectorStats = CollectorStats.unknown,
   warnings: List[String] = Nil,
   source: Option[String] = None,
-  themeName: String = ChartSettings.defaultTheme
+  themeName: String = ChartSettings.defaultTheme,
+  renderingHints: Set[String] = Set.empty
 ) {
 
   /** Total number of lines for all plots. */
-  val numLines = plots.foldLeft(0) { (acc, p) =>
+  val numLines: Int = plots.foldLeft(0) { (acc, p) =>
     acc + p.data.size
   }
 

@@ -85,4 +85,34 @@ class GraphUriSuite extends FunSuite {
     val cfg = parseUri("/api/v1/graph?q=name,foo,:eq,:sum")
     assertEquals(cfg.flags.axes(0).newPlotDef().lower, PlotBound.AutoStyle)
   }
+
+  test("lower bound default") {
+    val cfg = parseUri("/api/v1/graph?q=name,foo,:eq,:sum")
+    assertEquals(cfg.flags.axes(0).newPlotDef().lower, PlotBound.AutoStyle)
+  }
+
+  test("hints: none") {
+    val cfg = parseUri("/api/v1/graph?q=name,foo,:eq,:sum")
+    assertEquals(cfg.flags.hints, Set.empty[String])
+  }
+
+  test("hints: empty") {
+    val cfg = parseUri("/api/v1/graph?q=name,foo,:eq,:sum&hints=")
+    assertEquals(cfg.flags.hints, Set.empty[String])
+  }
+
+  test("hints: single") {
+    val cfg = parseUri("/api/v1/graph?q=name,foo,:eq,:sum&hints=a")
+    assertEquals(cfg.flags.hints, Set("a"))
+  }
+
+  test("hints: multiple") {
+    val cfg = parseUri("/api/v1/graph?q=name,foo,:eq,:sum&hints=a,b,c")
+    assertEquals(cfg.flags.hints, Set("a", "b", "c"))
+  }
+
+  test("hints: multiple messy") {
+    val cfg = parseUri("/api/v1/graph?q=name,foo,:eq,:sum&hints=a,b,%20a%20%20,b,b,b,c")
+    assertEquals(cfg.flags.hints, Set("a", "b", "c"))
+  }
 }

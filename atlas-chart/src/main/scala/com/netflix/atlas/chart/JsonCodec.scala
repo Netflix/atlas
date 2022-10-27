@@ -95,10 +95,12 @@ private[chart] object JsonCodec {
   // Writes out a pre-rendered image for the chart. This can be used
   // for partially dynamic views.
   private def writeGraphImage(gen: JsonGenerator, config: GraphDef): Unit = {
-    gen.writeStartObject()
-    gen.writeStringField("type", "graph-image")
-    gen.writeStringField("data", toDataUri(config))
-    gen.writeEndObject()
+    if (!config.renderingHints.contains("no-image")) {
+      gen.writeStartObject()
+      gen.writeStringField("type", "graph-image")
+      gen.writeStringField("data", toDataUri(config))
+      gen.writeEndObject()
+    }
   }
 
   private def toDataUri(config: GraphDef): String = {
