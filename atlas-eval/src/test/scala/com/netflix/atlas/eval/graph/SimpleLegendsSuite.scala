@@ -102,6 +102,15 @@ class SimpleLegendsSuite extends FunSuite {
     assertEquals(legends("name,cpu,:eq,:node-avg"), List("cpu"))
   }
 
+  test("name with node avg and grouping") {
+    assertEquals(legends("name,cpu,:eq,:node-avg,(,app,),:by"), List("$app"))
+  }
+
+  test("name with node avg and nested grouping") {
+    val expr = "name,cpu,:eq,:node-avg,(,app,region,),:by,:max,(,region,),:by"
+    assertEquals(legends(expr), List("$region"))
+  }
+
   test("group by with offsets") {
     val expr = "name,cpu,:eq,:sum,(,id,),:by,(,0h,1w,),:offset"
     assertEquals(legends(expr), List("$id", "$id (offset=$atlas.offset)"))
