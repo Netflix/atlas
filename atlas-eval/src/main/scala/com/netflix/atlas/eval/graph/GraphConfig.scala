@@ -136,7 +136,8 @@ case class GraphConfig(
       themeName = flags.theme,
       plots = plots,
       source = if (settings.metadataEnabled) Some(uri) else None,
-      warnings = warnings
+      warnings = warnings,
+      renderingHints = flags.hints
     )
 
     gdef = gdef.withVisionType(flags.vision)

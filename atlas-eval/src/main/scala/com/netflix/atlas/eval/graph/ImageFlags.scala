@@ -31,5 +31,6 @@ case class ImageFlags(
   vision: VisionType,
   palette: String,
   theme: String,
-  layout: Layout
+  layout: Layout,
+  hints: Set[String]
 )
