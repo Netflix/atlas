@@ -20,12 +20,27 @@ import com.fasterxml.jackson.core.JsonGenerator
 
 import scala.util.Using
 
+/**
+  * Trait that adds methods to easily encode the object to JSON. Can be used to indicate
+  * a type that has a known mapping to JSON format.
+  */
 trait JsonSupport {
 
+  /** Returns true if a custom encoding is used that does not rely on `Json.encode`. */
+  def hasCustomEncoding: Boolean = false
+
+  /**
+    * Encode this object as JSON. By default it will just use `Json.encode`. This method
+    * can be overridden to customize the format or to provide a more performance implementation.
+    * When using a custom format, the subclass should also override `hasCustomEncoding` to
+    * return true. This will cause `Json.encode` to use the custom implementation rather than
+    * the default serializer for the type.
+    */
   def encode(gen: JsonGenerator): Unit = {
     Json.encode(gen, this)
   }
 
+  /** Returns a JSON string representing this object. */
   final def toJson: String = {
     Using.resource(new StringWriter) { w =>
       Using.resource(Json.newJsonGenerator(w)) { gen =>

@@ -62,6 +62,8 @@ case class TimeSeriesMessage(
   data: ChunkData
 ) extends JsonSupport {
 
+  override def hasCustomEncoding: Boolean = true
+
   override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "timeseries")

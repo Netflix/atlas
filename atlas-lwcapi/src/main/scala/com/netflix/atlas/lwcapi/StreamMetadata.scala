@@ -50,6 +50,8 @@ case class StreamMetadata(
     droppedMessages.getCurrent.addAndGet(n)
   }
 
+  override def hasCustomEncoding: Boolean = true
+
   override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
     gen.writeStringField("streamId", streamId)
