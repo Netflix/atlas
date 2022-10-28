@@ -460,8 +460,18 @@ class JsonSuite extends FunSuite {
   }
 
   test("JsonSupport NaN encoding") {
-    val obj = JsonObjectWithSupport(Double.NaN)
+    val obj = JsonObjectWithDefaultSupport(Double.NaN)
     assertEquals(obj.toJson, """{"v":"NaN"}""")
+  }
+
+  test("JsonSupport default encoding") {
+    val obj = JsonObjectWithDefaultSupport(42.0)
+    assertEquals(Json.encode(List(obj)), """[{"v":42.0}]""")
+  }
+
+  test("JsonSupport custom encoding") {
+    val obj = JsonObjectWithSupport(42.0)
+    assertEquals(Json.encode(List(obj)), """[{"custom":42.0}]""")
   }
 }
 
@@ -499,11 +509,15 @@ case class JsonSuiteObjectWithDefaults(
   values: List[String] = Nil
 )
 
+case class JsonObjectWithDefaultSupport(v: Double) extends JsonSupport
+
 case class JsonObjectWithSupport(v: Double) extends JsonSupport {
+
+  override def hasCustomEncoding: Boolean = true
 
   override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
-    gen.writeNumberField("v", v)
+    gen.writeNumberField("custom", v)
     gen.writeEndObject()
   }
 }

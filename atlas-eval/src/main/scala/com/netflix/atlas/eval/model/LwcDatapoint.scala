@@ -37,6 +37,8 @@ case class LwcDatapoint(timestamp: Long, id: String, tags: Map[String, String], 
 
   val `type`: String = "datapoint"
 
+  override def hasCustomEncoding: Boolean = true
+
   override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", `type`)

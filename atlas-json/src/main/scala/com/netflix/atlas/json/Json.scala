@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core._
 import com.fasterxml.jackson.core.json.JsonReadFeature
 import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.databind._
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -87,6 +88,9 @@ object Json {
     mapper.registerModule(DefaultScalaModule)
     mapper.registerModule(new JavaTimeModule)
     mapper.registerModule(new Jdk8Module)
+    mapper.registerModule(
+      new SimpleModule().setSerializerModifier(new JsonSupportSerializerModifier)
+    )
     mapper
   }
 
