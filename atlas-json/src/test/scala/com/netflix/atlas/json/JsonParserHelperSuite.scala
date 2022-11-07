@@ -97,7 +97,7 @@ class JsonParserHelperSuite extends FunSuite {
 
   test("nextDouble: big integer") {
     val parser = Json.newJsonParser("""18446744073709552000""")
-    assertEquals(nextDouble(parser), 1.8446744073709552E19)
+    assertEquals(nextDouble(parser), 1.8446744073709552e19)
   }
 
   test("nextDouble: float") {
