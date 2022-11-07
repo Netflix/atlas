@@ -91,7 +91,7 @@ object JsonParserHelper {
   def nextDouble(parser: JsonParser): Double = {
     import com.fasterxml.jackson.core.JsonToken._
     parser.nextToken() match {
-      case VALUE_NUMBER_INT   => parser.getValueAsLong.toDouble
+      case VALUE_NUMBER_INT   => parser.getValueAsDouble
       case VALUE_NUMBER_FLOAT => parser.getValueAsDouble
       case VALUE_STRING       => java.lang.Double.parseDouble(parser.getText)
       case t                  => fail(parser, s"expected VALUE_NUMBER_FLOAT but received $t")
