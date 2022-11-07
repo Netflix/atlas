@@ -90,6 +90,26 @@ class JsonParserHelperSuite extends FunSuite {
     }
   }
 
+  test("nextDouble: integer") {
+    val parser = Json.newJsonParser("""42""")
+    assertEquals(nextDouble(parser), 42.0)
+  }
+
+  test("nextDouble: big integer") {
+    val parser = Json.newJsonParser("""18446744073709552000""")
+    assertEquals(nextDouble(parser), 1.8446744073709552e19)
+  }
+
+  test("nextDouble: float") {
+    val parser = Json.newJsonParser("""42.0""")
+    assertEquals(nextDouble(parser), 42.0)
+  }
+
+  test("nextDouble: string") {
+    val parser = Json.newJsonParser(""""42"""")
+    assertEquals(nextDouble(parser), 42.0)
+  }
+
   test("skipNext: empty object") {
     val parser = Json.newJsonParser("""[{}]""")
     assertEquals(parser.nextToken(), JsonToken.START_ARRAY)
