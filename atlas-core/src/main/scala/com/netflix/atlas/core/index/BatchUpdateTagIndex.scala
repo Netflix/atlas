@@ -18,14 +18,15 @@ package com.netflix.atlas.core.index
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
-
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
+import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.patterns.LongTaskTimer
 import com.netflix.spectator.api.patterns.PolledMeter
 
+import java.util.Comparator
 import scala.reflect.ClassTag
 
 object BatchUpdateTagIndex {
@@ -78,14 +79,12 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
   def rebuildIndex(): Unit = {
     val timerId = rebuildTimer.start()
     try {
-      import scala.jdk.CollectionConverters._
-
       // Drain the update queue and create map of items for deduping, we put new items in the
       // map first so that an older item, if present, will be preferred
       val size = pendingUpdates.size
       val updates = new java.util.ArrayList[T](size)
       pendingUpdates.drainTo(updates, size)
-      val items = new java.util.HashMap[ItemId, T]
+      val items = new java.util.HashMap[ItemId, T](size)
       updates.forEach { i =>
         items.put(i.id, i)
       }
@@ -93,19 +92,39 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
       // Get set of all items in the current index that are not expired
       val matches = currentIndex.get.findItems(TagQuery(None)).filter(!_.isExpired)
       matches.foreach { i =>
-        items.put(i.id, i)
+        items.remove(i.id)
       }
 
+      // Merge previous with new updates. Previous matches are coming from index and
+      // will already be sorted by the id.
+      val a1 = matches.toArray
+      val a2 = items.values.toArray(new Array[T](0))
+      java.util.Arrays.sort(a2, RoaringTagIndex.IdComparator)
+      val dst = new Array[T](a1.length + a2.length)
+      ArrayHelper.merge[T](
+        RoaringTagIndex.IdComparator.asInstanceOf[Comparator[T]],
+        (a, _) => a,
+        a1,
+        a1.length,
+        a2,
+        a2.length,
+        dst
+      )
+
       // Create array of items and build the index
-      rebuildIndex(items.values.asScala.toList)
+      rebuildIndex(dst)
     } finally {
       rebuildTimer.stop(timerId)
     }
   }
 
-  def rebuildIndex(items: List[T]): Unit = {
-    currentIndex.set(newIndex(items.toArray))
+  def rebuildIndex(items: Array[T]): Unit = {
+    currentIndex.set(newIndex(items))
     lastRebuildTime.set(System.currentTimeMillis)
+  }
+
+  def rebuildIndex(items: List[T]): Unit = {
+    rebuildIndex(items.toArray)
   }
 
   def update(item: T): Unit = {

@@ -29,7 +29,7 @@ class SimpleStaticDatabase(data: List[TimeSeries], config: Config) extends Datab
   private val maxLines = config.getInt("max-lines")
   private val maxDatapoints = config.getInt("max-datapoints")
 
-  val index: TagIndex[TimeSeries] = new RoaringTagIndex(data.toArray, new IndexStats())
+  val index: TagIndex[TimeSeries] = RoaringTagIndex(data.toArray, new IndexStats())
 
   def execute(context: EvalContext, expr: DataExpr): List[TimeSeries] = {
     val q = TagQuery(Some(expr.query))

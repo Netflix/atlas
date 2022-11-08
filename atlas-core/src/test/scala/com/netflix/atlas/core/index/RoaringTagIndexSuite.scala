@@ -22,7 +22,7 @@ import org.roaringbitmap.RoaringBitmap
 class RoaringTagIndexSuite extends TagIndexSuite {
 
   val index: TagIndex[TimeSeries] = {
-    new RoaringTagIndex(TagIndexSuite.dataset.toArray, new IndexStats())
+    RoaringTagIndex(TagIndexSuite.dataset.toArray, new IndexStats())
   }
 
   test("empty") {
