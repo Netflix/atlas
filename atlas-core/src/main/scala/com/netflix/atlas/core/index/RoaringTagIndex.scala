@@ -35,7 +35,10 @@ import scala.reflect.ClassTag
   * https://github.com/RoaringBitmap/RoaringBitmap
   *
   * @param items
-  *     Items to include in the index.
+  *     Items to include in the index. The array must already be sorted by id and should not
+  *     be used or modified outside of the index.
+  * @param stats
+  *     Used to track stats related to the index.
   */
 class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) extends TagIndex[T] {
 
@@ -43,12 +46,6 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
 
   type RoaringValueMap = IntRefHashMap[RoaringBitmap]
   type RoaringKeyMap = IntRefHashMap[RoaringValueMap]
-
-  // Comparator for ordering tagged items using the id
-  private val idComparator = new Comparator[T] {
-
-    def compare(t1: T, t2: T): Int = t1.id.compareTo(t2.id)
-  }
 
   // Precomputed set of all items
   private val all = {
@@ -128,7 +125,6 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     // Sort items array based on the id, allows for efficient paging of requests using the id
     // as the offset
     logger.debug(s"building index with ${items.length} items, starting sort")
-    util.Arrays.sort(items, idComparator)
     val itemIds = new Array[ItemId](items.length)
 
     // Build the main index
@@ -504,7 +500,26 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
 
 object RoaringTagIndex {
 
+  /** Comparator for ordering tagged items using the id. */
+  val IdComparator: Comparator[TaggedItem] = { (t1: TaggedItem, t2: TaggedItem) =>
+    t1.id.compareTo(t2.id)
+  }
+
   private val logger = LoggerFactory.getLogger(getClass)
+
+  /**
+    * Create a new tag index.
+    *
+    * @param items
+    *     Items to index. The array will be sorted and should not be used or modified
+    *     outside of the index.
+    * @param stats
+    *     Used to track stats related to the index.
+    */
+  def apply[T <: TaggedItem](items: Array[T], stats: IndexStats): RoaringTagIndex[T] = {
+    util.Arrays.sort(items, IdComparator)
+    new RoaringTagIndex[T](items, stats)
+  }
 
   def empty[T <: TaggedItem: ClassTag]: RoaringTagIndex[T] = {
     new RoaringTagIndex(new Array[T](0), new IndexStats())

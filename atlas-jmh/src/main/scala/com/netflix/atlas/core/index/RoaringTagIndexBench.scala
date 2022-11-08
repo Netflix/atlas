@@ -71,11 +71,11 @@ class RoaringTagIndexBench {
     BasicTaggedItem(SmallHashMap(baseId ++ Map("nf.node" -> id))) // , i.toString -> id))
   }
 
-  private val index = new RoaringTagIndex[BasicTaggedItem](items.toArray, new IndexStats())
+  private val index = RoaringTagIndex[BasicTaggedItem](items.toArray, new IndexStats())
 
   @Benchmark
   def create(bh: Blackhole): Unit = {
-    bh.consume(new RoaringTagIndex[BasicTaggedItem](items.toArray, new IndexStats()))
+    bh.consume(RoaringTagIndex[BasicTaggedItem](items.toArray, new IndexStats()))
   }
 
   @Benchmark
