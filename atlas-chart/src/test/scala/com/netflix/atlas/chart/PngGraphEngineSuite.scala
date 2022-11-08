@@ -103,7 +103,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
   }
 
   def simpleSeriesDef(min: Double, max: Double): LineDef = {
-    LineDef(simpleWave(min, max))
+    LineDef(simpleWave(min, max), query = Some(s"$min,$max"))
   }
 
   def simpleSeriesDef(max: Double): LineDef = {
