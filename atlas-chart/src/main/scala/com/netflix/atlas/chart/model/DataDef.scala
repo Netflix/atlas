@@ -38,6 +38,10 @@ sealed trait DataDef {
   *
   * @param data
   *     Time series with the underlying data to render.
+  * @param query
+  *     Expression for the time series. Note, the same expression can result in many time
+  *     series when using group by. For matching the data for a particular time series the
+  *     id field should be used.
   * @param groupByKeys
   *     Set of keys used in the final grouping for the time series.
   * @param color
@@ -51,6 +55,7 @@ sealed trait DataDef {
   */
 case class LineDef(
   data: TimeSeries,
+  query: Option[String] = None,
   groupByKeys: List[String] = Nil,
   color: Color = Color.RED,
   lineStyle: LineStyle = LineStyle.LINE,
@@ -80,7 +85,7 @@ case class HSpanDef(v1: Double, v2: Double, color: Color, labelOpt: Option[Strin
 
   def label: String = labelOpt.getOrElse(s"span from $v1 to $v2")
 
-  def withColor(c: Color) = copy(color = c)
+  def withColor(c: Color): HSpanDef = copy(color = c)
 }
 
 /**
@@ -100,7 +105,7 @@ case class VSpanDef(t1: Instant, t2: Instant, color: Color, labelOpt: Option[Str
 
   def label: String = labelOpt.getOrElse(s"span from $t1 to $t2")
 
-  def withColor(c: Color) = copy(color = c)
+  def withColor(c: Color): VSpanDef = copy(color = c)
 }
 
 /**
@@ -113,5 +118,5 @@ case class VSpanDef(t1: Instant, t2: Instant, color: Color, labelOpt: Option[Str
   */
 case class MessageDef(label: String, color: Color = Color.BLACK) extends DataDef {
 
-  def withColor(c: Color) = copy(color = c)
+  def withColor(c: Color): MessageDef = copy(color = c)
 }
