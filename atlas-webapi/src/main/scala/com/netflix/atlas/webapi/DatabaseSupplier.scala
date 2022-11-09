@@ -22,8 +22,7 @@ import com.typesafe.config.Config
 
 import java.util.function.Supplier
 
-class DatabaseSupplier(config: Config, classFactory: ClassFactory)
-    extends Supplier[Database] {
+class DatabaseSupplier(config: Config, classFactory: ClassFactory) extends Supplier[Database] {
 
   private val db = {
     import scala.compat.java8.FunctionConverters._
