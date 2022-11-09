@@ -24,13 +24,11 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.json.Json
 
-import javax.inject.Inject
-
 /**
   * Provides a summary of the current streams. This is to aide in debugging and can be
   * disabled without impacting the service.
   */
-class StreamsApi @Inject() (sm: StreamSubscriptionManager) extends WebApi {
+class StreamsApi(sm: StreamSubscriptionManager) extends WebApi {
 
   def routes: Route = {
     endpointPathPrefix("api" / "v1" / "streams") {

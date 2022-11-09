@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.akka
 
-import javax.inject.Inject
-import javax.inject.Singleton
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
@@ -48,8 +46,7 @@ import scala.concurrent.duration.Duration
   * @param system
   *     Instance of the actor system.
   */
-@Singleton
-class WebServer @Inject() (
+class WebServer(
   config: Config,
   classFactory: ClassFactory,
   registry: Registry,

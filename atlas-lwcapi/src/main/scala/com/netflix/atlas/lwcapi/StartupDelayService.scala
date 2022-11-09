@@ -19,14 +19,13 @@ import com.netflix.iep.service.AbstractService
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import javax.inject.Inject
 
 /**
   * Service that will report as unhealthy for a configured window after startup. This is
   * used to allow clients that will stream data time to connect before marking the instance
   * as UP so that clients publishing data will send to the instance.
   */
-class StartupDelayService @Inject() (registry: Registry, config: Config)
+class StartupDelayService(registry: Registry, config: Config)
     extends AbstractService
     with StrictLogging {
 
