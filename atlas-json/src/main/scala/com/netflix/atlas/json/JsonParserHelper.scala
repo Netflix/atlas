@@ -17,6 +17,7 @@ package com.netflix.atlas.json
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
+import com.fasterxml.jackson.core.io.doubleparser.FastDoubleParser
 
 object JsonParserHelper {
 
@@ -93,7 +94,7 @@ object JsonParserHelper {
     parser.nextToken() match {
       case VALUE_NUMBER_INT   => parser.getValueAsDouble
       case VALUE_NUMBER_FLOAT => parser.getValueAsDouble
-      case VALUE_STRING       => java.lang.Double.parseDouble(parser.getText)
+      case VALUE_STRING       => FastDoubleParser.parseDouble(parser.getText)
       case t                  => fail(parser, s"expected VALUE_NUMBER_FLOAT but received $t")
     }
   }

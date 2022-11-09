@@ -66,6 +66,8 @@ object Json {
     .enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS)
     .enable(StreamReadFeature.AUTO_CLOSE_SOURCE)
     .enable(StreamWriteFeature.AUTO_CLOSE_TARGET)
+    .enable(StreamReadFeature.USE_FAST_DOUBLE_PARSER)
+    .enable(StreamWriteFeature.USE_FAST_DOUBLE_WRITER)
     .enable(JsonWriteFeature.WRITE_NAN_AS_STRINGS)
     .build()
 
