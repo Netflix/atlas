@@ -70,6 +70,7 @@ object Dependencies {
   val slf4jLog4j        = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple       = "org.slf4j" % "slf4j-simple" % slf4j
   val spectatorApi      = "com.netflix.spectator" % "spectator-api" % spectator
+  val spectatorAtlas    = "com.netflix.spectator" % "spectator-reg-atlas" % spectator
   val spectatorIpc      = "com.netflix.spectator" % "spectator-ext-ipc" % spectator
   val spectatorLog4j    = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2       = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
