@@ -72,12 +72,16 @@ private[stream] class TimeGrouped(
   private val registry = context.registry
   private val droppedOld = registry.counter(metricName, "id", "dropped-old")
   private val droppedFuture = registry.counter(metricName, "id", "dropped-future")
-
   private val buffered = registry.counter(metricName, "id", "buffered")
   private val clock = registry.clock()
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
+
+      private var droppedOldCount = 0
+      private var droppedFutureCount = 0
+      private var bufferedCount = 0
+
       private val buf = new Array[AggrMap](numBuffers)
       buf.indices.foreach { i =>
         buf(i) = new AggrMap
@@ -149,13 +153,13 @@ private[stream] class TimeGrouped(
         val now = clock.wallTime()
         step = v.step
         if (t > now) {
-          droppedFuture.increment()
+          droppedFutureCount += 1
           pull(in)
         } else if (t <= cutoffTime) {
-          droppedOld.increment()
+          droppedOldCount += 1
           pull(in)
         } else {
-          buffered.increment()
+          bufferedCount += 1
           val i = findBuffer(t)
           if (i >= 0) {
             aggregate(i, v)
@@ -166,6 +170,11 @@ private[stream] class TimeGrouped(
             aggregate(pos, v)
             timestamps(pos) = t
           }
+        }
+
+        // Batch updates to the counter to reduce the overhead
+        if (droppedFutureCount + droppedOldCount + bufferedCount > 10_000) {
+          updateMeters()
         }
       }
 
@@ -182,6 +191,7 @@ private[stream] class TimeGrouped(
         }.toList
         pending = groups.filter(_.timestamp > 0).sortWith(_.timestamp < _.timestamp)
         flushPending()
+        updateMeters()
       }
 
       private def flushPending(): Unit = {
@@ -192,6 +202,12 @@ private[stream] class TimeGrouped(
         if (pending.isEmpty) {
           completeStage()
         }
+      }
+
+      private def updateMeters(): Unit = {
+        droppedFuture.increment(droppedFutureCount)
+        droppedOld.increment(droppedOldCount)
+        buffered.increment(bufferedCount)
       }
 
       setHandlers(in, out, this)
