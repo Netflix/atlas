@@ -118,14 +118,19 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     }
   }
 
-  private def getOrCreateBlockStore(id: ItemId): BlockStore = {
-    data.computeIfAbsent(id, _ => new MemoryBlockStore(step, blockSize, numBlocks))
+  private def getOrCreateBlockStore(id: ItemId, tags: Map[String, String]): BlockStore = {
+    var blkStore = data.get(id)
+    if (blkStore == null) {
+      // Create a new block store and update the index
+      blkStore = data.computeIfAbsent(id, _ => new MemoryBlockStore(step, blockSize, numBlocks))
+      index.update(BlockStoreItem.create(id, tags, blkStore))
+    }
+    blkStore
   }
 
   def update(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
-    val blkStore = getOrCreateBlockStore(id)
+    val blkStore = getOrCreateBlockStore(id, tags)
     blkStore.update(timestamp, value)
-    index.update(BlockStoreItem.create(id, tags, blkStore))
   }
 
   def update(dp: DatapointTuple): Unit = {
@@ -137,9 +142,8 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   }
 
   def rollup(dp: DatapointTuple): Unit = {
-    val blkStore = getOrCreateBlockStore(dp.id)
+    val blkStore = getOrCreateBlockStore(dp.id, dp.tags)
     blkStore.update(dp.timestamp, dp.value, rollup = true)
-    index.update(BlockStoreItem.create(dp.id, dp.tags, blkStore))
   }
 
   @scala.annotation.tailrec
