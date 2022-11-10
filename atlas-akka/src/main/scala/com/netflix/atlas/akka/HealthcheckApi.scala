@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.akka
 
-import javax.inject.Provider
-
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
@@ -28,10 +26,12 @@ import com.netflix.atlas.json.Json
 import com.netflix.iep.service.ServiceManager
 import com.typesafe.scalalogging.StrictLogging
 
+import java.util.function.Supplier
+
 /**
   * Healthcheck endpoint based on health status of the ServiceManager.
   */
-class HealthcheckApi(serviceManagerProvider: Provider[ServiceManager])
+class HealthcheckApi(serviceManagerSupplier: Supplier[ServiceManager])
     extends WebApi
     with StrictLogging {
 
@@ -46,7 +46,7 @@ class HealthcheckApi(serviceManagerProvider: Provider[ServiceManager])
     }
   }
 
-  private def serviceManager: ServiceManager = serviceManagerProvider.get
+  private def serviceManager: ServiceManager = serviceManagerSupplier.get
 
   private def summary: String = {
     import scala.jdk.CollectionConverters._

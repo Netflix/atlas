@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import javax.inject.Inject
 import akka.actor.ActorRefFactory
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpHeader
@@ -44,7 +43,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.Using
 
-case class ExpressionApi @Inject() (
+case class ExpressionApi(
   sm: StreamSubscriptionManager,
   registry: Registry,
   implicit val actorRefFactory: ActorRefFactory

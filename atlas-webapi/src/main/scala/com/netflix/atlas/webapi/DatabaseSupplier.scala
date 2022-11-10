@@ -16,20 +16,13 @@
 package com.netflix.atlas.webapi
 
 import java.lang.reflect.Type
-import javax.inject.Inject
-import javax.inject.Provider
-import javax.inject.Singleton
-
 import com.netflix.atlas.core.db.Database
 import com.netflix.iep.service.ClassFactory
 import com.typesafe.config.Config
 
-/**
-  * Created by brharrington on 7/20/16.
-  */
-@Singleton
-class DatabaseProvider @Inject() (config: Config, classFactory: ClassFactory)
-    extends Provider[Database] {
+import java.util.function.Supplier
+
+class DatabaseSupplier(config: Config, classFactory: ClassFactory) extends Supplier[Database] {
 
   private val db = {
     import scala.compat.java8.FunctionConverters._

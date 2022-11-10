@@ -16,7 +16,6 @@
 package com.netflix.atlas.webapi
 
 import com.netflix.atlas.core.db.Database
-import com.netflix.atlas.webapi.DatabaseProvider
 import com.netflix.iep.service.ClassFactory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -32,13 +31,13 @@ import java.util.Optional
 class WebApiConfiguration {
 
   @Bean
-  def databaseProvider(config: Optional[Config], factory: ClassFactory): DatabaseProvider = {
+  def databaseSupplier(config: Optional[Config], factory: ClassFactory): DatabaseSupplier = {
     val c = config.orElseGet(() => ConfigFactory.load())
-    new DatabaseProvider(c, factory)
+    new DatabaseSupplier(c, factory)
   }
 
   @Bean
-  def database(provider: DatabaseProvider): Database = {
+  def database(provider: DatabaseSupplier): Database = {
     provider.get()
   }
 }

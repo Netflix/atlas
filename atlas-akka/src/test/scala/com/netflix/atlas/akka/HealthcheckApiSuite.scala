@@ -16,7 +16,6 @@
 package com.netflix.atlas.akka
 
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.inject.Provider
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.akka.testkit.MUnitRouteSuite
@@ -25,15 +24,17 @@ import com.netflix.iep.service.Service
 import com.netflix.iep.service.ServiceManager
 import com.netflix.iep.service.State
 
+import java.util.function.Supplier
+
 class HealthcheckApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val serviceHealth = new AtomicBoolean(false)
 
-  val services = new java.util.HashSet[Service]
+  private val services = new java.util.HashSet[Service]
 
   services.add(new Service {
 
@@ -44,13 +45,13 @@ class HealthcheckApiSuite extends MUnitRouteSuite {
     override def isHealthy: Boolean = serviceHealth.get()
   })
 
-  val serviceManager = new ServiceManager(services)
+  private val serviceManager = new ServiceManager(services)
 
-  val provider = new Provider[ServiceManager] {
+  private val supplier = new Supplier[ServiceManager] {
 
     override def get(): ServiceManager = serviceManager
   }
-  val endpoint = new HealthcheckApi(provider)
+  private val endpoint = new HealthcheckApi(supplier)
 
   test("/healthcheck pre-start") {
     serviceHealth.set(false)

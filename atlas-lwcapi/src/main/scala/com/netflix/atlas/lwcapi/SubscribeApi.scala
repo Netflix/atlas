@@ -42,13 +42,12 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
 import java.io.ByteArrayOutputStream
-import javax.inject.Inject
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NonFatal
 
-class SubscribeApi @Inject() (
+class SubscribeApi(
   config: Config,
   registry: Registry,
   sm: StreamSubscriptionManager,
