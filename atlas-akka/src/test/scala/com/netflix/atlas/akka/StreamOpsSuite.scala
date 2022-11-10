@@ -165,11 +165,11 @@ class StreamOpsSuite extends FunSuite {
   }
 
   test("monitor flow: downstream delay") {
-    testMonitorFlow("downstreamDelay", Map("count" -> 8.0, "totalTime" -> 24.0))
+    testMonitorFlow("downstreamDelay", Map("count" -> 10.0, "totalTime" -> 27.0))
   }
 
   test("monitor flow: upstream delay") {
-    testMonitorFlow("upstreamDelay", Map("count" -> 8.0, "totalTime" -> 0.0))
+    testMonitorFlow("upstreamDelay", Map("count" -> 10.0, "totalTime" -> 0.0))
   }
 
   private class Message(latch: CountDownLatch, val data: Source[Int, NotUsed]) {

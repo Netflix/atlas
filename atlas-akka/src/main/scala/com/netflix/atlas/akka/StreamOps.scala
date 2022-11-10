@@ -37,7 +37,6 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.Registry
-import com.netflix.spectator.api.Timer
 import com.typesafe.scalalogging.StrictLogging
 
 /**
@@ -148,6 +147,9 @@ object StreamOps extends StrictLogging {
     * - `akka.stream.upstreamDelay`: a timer measuring the delay for the upstream to push
     *   a new element after one has been requested.
     *
+    * Updates to meters will be batched so the updates may be delayed if used for a low
+    * throughput stream.
+    *
     * @param registry
     *     Spectator registry to manage metrics.
     * @param id
@@ -173,33 +175,68 @@ object StreamOps extends StrictLogging {
 
       new GraphStageLogic(shape) with InHandler with OutHandler {
 
-        private var upstreamStart: Long = -1L
-        private var downstreamStart: Long = -1L
+        import MonitorFlow._
+
+        private var lastUpdate = registry.clock().monotonicTime()
+        private var upstreamIdx = 0
+        private val upstreamTimes = new Array[Long](MeterBatchSize)
+        private var downstreamIdx = 0
+        private val downstreamTimes = new Array[Long](MeterBatchSize)
+
+        private var upstreamStart = -1L
+        private var downstreamStart = -1L
 
         override def onPush(): Unit = {
-          upstreamStart = record(upstreamTimer, upstreamStart)
+          val now = registry.clock().monotonicTime()
+          if (upstreamStart != -1L) {
+            upstreamTimes(upstreamIdx) = now - upstreamStart
+            upstreamIdx += 1
+            upstreamStart = -1L
+          }
           push(out, grab(in))
-          numEvents.increment()
-          downstreamStart = registry.clock().monotonicTime()
+          downstreamStart = now
+          if (upstreamIdx == MeterBatchSize || now - lastUpdate > MeterUpdateInterval) {
+            updateMeters(now)
+          }
         }
 
         override def onPull(): Unit = {
-          downstreamStart = record(downstreamTimer, downstreamStart)
+          val now = registry.clock().monotonicTime()
+          if (downstreamStart != -1L) {
+            downstreamTimes(downstreamIdx) = now - downstreamStart
+            downstreamIdx += 1
+            downstreamStart = -1L
+          }
           pull(in)
-          upstreamStart = registry.clock().monotonicTime()
+          upstreamStart = now
+          if (downstreamIdx == MeterBatchSize) {
+            updateMeters(now)
+          }
         }
 
-        private def record(timer: Timer, start: Long): Long = {
-          if (start > 0L) {
-            val delay = registry.clock().monotonicTime() - start
-            timer.record(delay, TimeUnit.NANOSECONDS)
-          }
-          -1L
+        override def onUpstreamFinish(): Unit = {
+          updateMeters(registry.clock().monotonicTime())
+          super.onUpstreamFinish()
+        }
+
+        private def updateMeters(now: Long): Unit = {
+          numEvents.increment(upstreamIdx)
+          upstreamTimer.record(upstreamTimes, upstreamIdx, TimeUnit.NANOSECONDS)
+          upstreamIdx = 0
+          downstreamTimer.record(downstreamTimes, downstreamIdx, TimeUnit.NANOSECONDS)
+          downstreamIdx = 0
+          lastUpdate = now
         }
 
         setHandlers(in, out, this)
       }
     }
+  }
+
+  private object MonitorFlow {
+
+    private val MeterBatchSize = 10000
+    private val MeterUpdateInterval = TimeUnit.SECONDS.toNanos(1L)
   }
 
   /**
@@ -278,13 +315,13 @@ object StreamOps extends StrictLogging {
         private var previous: V = _
         private var lastPushedAt: Long = 0
 
-        private def isExpired(): Boolean = {
+        private def isExpired: Boolean = {
           lastPushedAt == 0 || clock.wallTime() - lastPushedAt > timeout
         }
 
         override def onPush(): Unit = {
           val v = grab(in)
-          if (v == previous && !isExpired()) {
+          if (v == previous && !isExpired) {
             pull(in)
           } else {
             previous = v

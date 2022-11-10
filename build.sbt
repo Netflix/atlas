@@ -74,6 +74,9 @@ lazy val `atlas-eval` = project
 lazy val `atlas-jmh` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-chart`, `atlas-core`, `atlas-eval`, `atlas-json`, `atlas-webapi`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.spectatorAtlas
+  ))
   .enablePlugins(pl.project13.scala.sbt.SbtJmh)
 
 lazy val `atlas-json` = project
