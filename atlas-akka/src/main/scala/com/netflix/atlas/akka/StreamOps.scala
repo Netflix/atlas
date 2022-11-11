@@ -178,24 +178,23 @@ object StreamOps extends StrictLogging {
         import MonitorFlow._
 
         private var lastUpdate = registry.clock().monotonicTime()
-        private var upstreamIdx = 0
-        private val upstreamTimes = new Array[Long](MeterBatchSize)
-        private var downstreamIdx = 0
-        private val downstreamTimes = new Array[Long](MeterBatchSize)
+        private val numEventsUpdater = numEvents.batchUpdater(MeterBatchSize)
+        private val upstreamUpdater = upstreamTimer.batchUpdater(MeterBatchSize)
+        private val downstreamUpdater = downstreamTimer.batchUpdater(MeterBatchSize)
 
         private var upstreamStart = -1L
         private var downstreamStart = -1L
 
         override def onPush(): Unit = {
           val now = registry.clock().monotonicTime()
+          numEventsUpdater.increment()
           if (upstreamStart != -1L) {
-            upstreamTimes(upstreamIdx) = now - upstreamStart
-            upstreamIdx += 1
+            upstreamUpdater.record(now - upstreamStart, TimeUnit.NANOSECONDS)
             upstreamStart = -1L
           }
           push(out, grab(in))
           downstreamStart = now
-          if (upstreamIdx == MeterBatchSize || now - lastUpdate > MeterUpdateInterval) {
+          if (now - lastUpdate > MeterUpdateInterval) {
             updateMeters(now)
           }
         }
@@ -203,28 +202,25 @@ object StreamOps extends StrictLogging {
         override def onPull(): Unit = {
           val now = registry.clock().monotonicTime()
           if (downstreamStart != -1L) {
-            downstreamTimes(downstreamIdx) = now - downstreamStart
-            downstreamIdx += 1
+            downstreamUpdater.record(now - downstreamStart, TimeUnit.NANOSECONDS)
             downstreamStart = -1L
           }
           pull(in)
           upstreamStart = now
-          if (downstreamIdx == MeterBatchSize) {
-            updateMeters(now)
-          }
         }
 
         override def onUpstreamFinish(): Unit = {
           updateMeters(registry.clock().monotonicTime())
+          numEventsUpdater.close()
+          upstreamUpdater.close()
+          downstreamUpdater.close()
           super.onUpstreamFinish()
         }
 
         private def updateMeters(now: Long): Unit = {
-          numEvents.increment(upstreamIdx)
-          upstreamTimer.record(upstreamTimes, upstreamIdx, TimeUnit.NANOSECONDS)
-          upstreamIdx = 0
-          downstreamTimer.record(downstreamTimes, downstreamIdx, TimeUnit.NANOSECONDS)
-          downstreamIdx = 0
+          numEventsUpdater.flush()
+          upstreamUpdater.flush()
+          downstreamUpdater.flush()
           lastUpdate = now
         }
 
@@ -235,7 +231,7 @@ object StreamOps extends StrictLogging {
 
   private object MonitorFlow {
 
-    private val MeterBatchSize = 10000
+    private val MeterBatchSize = 1_000_000
     private val MeterUpdateInterval = TimeUnit.SECONDS.toNanos(1L)
   }
 

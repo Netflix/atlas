@@ -78,9 +78,9 @@ private[stream] class TimeGrouped(
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      private var droppedOldCount = 0
-      private var droppedFutureCount = 0
-      private var bufferedCount = 0
+      private val droppedOldUpdater = droppedOld.batchUpdater(10_000)
+      private val droppedFutureUpdater = droppedFuture.batchUpdater(10_000)
+      private val bufferedUpdater = buffered.batchUpdater(10_000)
 
       private val buf = new Array[AggrMap](numBuffers)
       buf.indices.foreach { i =>
@@ -153,13 +153,13 @@ private[stream] class TimeGrouped(
         val now = clock.wallTime()
         step = v.step
         if (t > now) {
-          droppedFutureCount += 1
+          droppedFutureUpdater.increment()
           pull(in)
         } else if (t <= cutoffTime) {
-          droppedOldCount += 1
+          droppedOldUpdater.increment()
           pull(in)
         } else {
-          bufferedCount += 1
+          bufferedUpdater.increment()
           val i = findBuffer(t)
           if (i >= 0) {
             aggregate(i, v)
@@ -170,11 +170,6 @@ private[stream] class TimeGrouped(
             aggregate(pos, v)
             timestamps(pos) = t
           }
-        }
-
-        // Batch updates to the counter to reduce the overhead
-        if (droppedFutureCount + droppedOldCount + bufferedCount > 10_000) {
-          updateMeters()
         }
       }
 
@@ -191,7 +186,9 @@ private[stream] class TimeGrouped(
         }.toList
         pending = groups.filter(_.timestamp > 0).sortWith(_.timestamp < _.timestamp)
         flushPending()
-        updateMeters()
+        droppedOldUpdater.close()
+        droppedFutureUpdater.close()
+        bufferedUpdater.close()
       }
 
       private def flushPending(): Unit = {
@@ -202,12 +199,6 @@ private[stream] class TimeGrouped(
         if (pending.isEmpty) {
           completeStage()
         }
-      }
-
-      private def updateMeters(): Unit = {
-        droppedFuture.increment(droppedFutureCount)
-        droppedOld.increment(droppedOldCount)
-        buffered.increment(bufferedCount)
       }
 
       setHandlers(in, out, this)
