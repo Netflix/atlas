@@ -235,11 +235,10 @@ private[stream] abstract class EvaluatorImpl(
       val intermediateEval = createInputFlow(context)
         .via(context.monitorFlow("10_InputLines"))
         .via(new LwcToAggrDatapoint(context))
-        .via(context.monitorFlow("11_LwcDatapoints"))
         .groupBy(Int.MaxValue, _.step, allowClosedSubstreamRecreation = true)
-        .via(new TimeGrouped(context, 50))
+        .via(new TimeGrouped(context))
         .mergeSubstreams
-        .via(context.monitorFlow("12_GroupedDatapoints"))
+        .via(context.monitorFlow("11_GroupedDatapoints"))
 
       // Use "buffer + dropTail" to avoid back pressure of DataSources broadcast, so that the 2
       // sub streams will not block each other
@@ -268,7 +267,7 @@ private[stream] abstract class EvaluatorImpl(
       .via(new FinalExprEval(context.interpreter))
       .flatMapConcat(s => s)
       .mergeSubstreams
-      .via(context.monitorFlow("13_OutputMessages"))
+      .via(context.monitorFlow("12_OutputMessages"))
       .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
       .merge(logSrc, eagerComplete = false)
   }
@@ -452,6 +451,7 @@ private[stream] abstract class EvaluatorImpl(
     context: StreamContext
   ): Flow[SourcesAndGroups, AnyRef, NotUsed] = {
     Flow[SourcesAndGroups]
+      .via(StreamOps.unique())
       .flatMapConcat { sourcesAndGroups =>
         // Cluster message first: need to connect before subscribe
         val instances = sourcesAndGroups._2.groups.flatMap(_.instances).toSet
@@ -465,7 +465,6 @@ private[stream] abstract class EvaluatorImpl(
         )
       }
       .via(ClusterOps.groupBy(createGroupByContext(context)))
-      .via(context.monitorFlow("02_ConnectionSources"))
   }
 
   private def createGroupByContext(
