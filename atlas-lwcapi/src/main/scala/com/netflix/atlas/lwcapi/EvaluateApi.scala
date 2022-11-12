@@ -20,10 +20,13 @@ import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.netflix.atlas.akka.CustomDirectives._
 import com.netflix.atlas.akka.WebApi
+import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
+import com.netflix.atlas.eval.util.SortedTagMapDeserializer
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
@@ -77,9 +80,11 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
 
 object EvaluateApi {
 
-  type TagMap = Map[String, String]
-
-  case class Item(id: String, tags: TagMap, value: Double)
+  case class Item(
+    id: String,
+    @JsonDeserialize(`using` = classOf[SortedTagMapDeserializer]) tags: SortedTagMap,
+    value: Double
+  )
 
   case class EvaluateRequest(
     timestamp: Long,

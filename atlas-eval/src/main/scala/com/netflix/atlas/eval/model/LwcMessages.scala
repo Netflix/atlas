@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.JsonToken
 import com.netflix.atlas.akka.ByteStringInputStream
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonParserHelper._
 import com.netflix.atlas.json.JsonSupport
@@ -198,8 +199,11 @@ object LwcMessages {
           gen.writeNumber(Datapoint)
           gen.writeNumber(msg.timestamp)
           gen.writeString(msg.id)
-          gen.writeNumber(msg.tags.size)
-          msg.tags.foreachEntry { (k, v) =>
+          // Should already be sorted, but convert if needed to ensure we can rely on
+          // the order. It will be a noop if already a SortedTagMap.
+          val tags = SortedTagMap(msg.tags)
+          gen.writeNumber(tags.size)
+          tags.foreachEntry { (k, v) =>
             gen.writeString(k)
             gen.writeString(v)
           }
@@ -283,17 +287,16 @@ object LwcMessages {
 
   private def parseTags(parser: JsonParser, n: Int): Map[String, String] = {
     if (n == 0) {
-      SmallHashMap.empty[String, String]
+      SortedTagMap.empty
     } else {
-      val builder = new SmallHashMap.Builder[String, String](2 * n)
+      val data = new Array[String](2 * n)
       var i = 0
-      while (i < n) {
-        val k = parser.nextTextValue()
-        val v = parser.nextTextValue()
-        builder.add(k, v)
-        i += 1
+      while (i < data.length) {
+        data(i) = parser.nextTextValue()
+        data(i + 1) = parser.nextTextValue()
+        i += 2
       }
-      builder.result
+      SortedTagMap.createUnsafe(data, data.length)
     }
   }
 
