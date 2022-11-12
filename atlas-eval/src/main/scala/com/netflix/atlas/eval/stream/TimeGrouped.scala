@@ -35,12 +35,9 @@ import com.netflix.atlas.eval.model.TimeGroup
   *
   * @param context
   *     Shared context for the evaluation stream.
-  * @param max
-  *     Maximum number of items that can be accumulated for a given time.
   */
 private[stream] class TimeGrouped(
-  context: StreamContext,
-  max: Int
+  context: StreamContext
 ) extends GraphStage[FlowShape[AggrDatapoint, TimeGroup]] {
 
   type AggrMap = scala.collection.mutable.AnyRefMap[DataExpr, AggrDatapoint.Aggregator]
