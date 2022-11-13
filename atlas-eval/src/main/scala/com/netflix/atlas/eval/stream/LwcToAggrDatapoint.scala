@@ -66,7 +66,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
           push(out, datapoints)
       }
 
-      private def updateState(sub: LwcSubscription): Unit  = {
+      private def updateState(sub: LwcSubscription): Unit = {
         sub.metrics.foreach { m =>
           if (!state.contains(m.id)) {
             state.put(m.id, m)
