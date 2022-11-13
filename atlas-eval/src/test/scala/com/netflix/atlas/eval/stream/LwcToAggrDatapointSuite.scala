@@ -85,7 +85,9 @@ class LwcToAggrDatapointSuite extends FunSuite {
     val future = Source(data)
       .map(ByteString.apply)
       .map(LwcMessages.parse)
+      .map(msg => List(msg))
       .via(new LwcToAggrDatapoint(context))
+      .flatMapConcat(Source.apply)
       .runWith(Sink.seq[AggrDatapoint])
     Await.result(future, Duration.Inf).toList
   }

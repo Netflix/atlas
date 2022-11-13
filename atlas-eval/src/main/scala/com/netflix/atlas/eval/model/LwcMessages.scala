@@ -296,7 +296,12 @@ object LwcMessages {
         data(i + 1) = parser.nextTextValue()
         i += 2
       }
-      SortedTagMap.createUnsafe(data, data.length)
+      // The map should be sorted from the server side, so we can avoid resorting
+      // here. Force the hash to be computed and cached as soon as possible so it
+      // can be done on the compute pool for parsing.
+      val tags = SortedTagMap.createUnsafe(data, data.length)
+      tags.hashCode
+      tags
     }
   }
 

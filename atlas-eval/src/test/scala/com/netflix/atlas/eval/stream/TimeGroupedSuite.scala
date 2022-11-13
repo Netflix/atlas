@@ -54,8 +54,9 @@ class TimeGroupedSuite extends FunSuite {
   }
 
   private def run(data: List[AggrDatapoint]): List[TimeGroup] = {
-    val future = Source(data)
+    val future = Source.single(data)
       .via(new TimeGrouped(context))
+      .flatMapConcat(Source.apply)
       .runFold(List.empty[TimeGroup])((acc, g) => g :: acc)
     result(future)
   }
