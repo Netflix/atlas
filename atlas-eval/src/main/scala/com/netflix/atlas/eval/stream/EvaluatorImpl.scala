@@ -65,7 +65,12 @@ import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
 
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
@@ -93,6 +98,24 @@ private[stream] abstract class EvaluatorImpl(
 
   // Counter for message that cannot be parsed
   private val badMessages = registry.counter("atlas.eval.badMessages")
+
+  // Number of threads to use for parsing payloads
+  private val parsingNumThreads = math.max(Runtime.getRuntime.availableProcessors() / 2, 2)
+
+  // Execution context to use for parsing payloads coming back from lwcapi service
+  private val parsingEC = {
+    val threadCount = new AtomicInteger()
+    val factory = new ThreadFactory {
+      override def newThread(r: Runnable): Thread = {
+        val name = s"AtlasEvalParsing-${threadCount.getAndIncrement()}"
+        val thread = new Thread(r, name)
+        thread.setDaemon(true)
+        thread
+      }
+    }
+    val executor = Executors.newFixedThreadPool(parsingNumThreads, factory)
+    ExecutionContext.fromExecutor(executor)
+  }
 
   private def newStreamContext(dsLogger: DataSourceLogger = (_, _) => ()): StreamContext = {
     new StreamContext(
@@ -233,10 +256,14 @@ private[stream] abstract class EvaluatorImpl(
       val finalEvalInput = builder.add(Merge[AnyRef](2))
 
       val intermediateEval = createInputFlow(context)
-        .via(context.monitorFlow("10_InputLines"))
+        .via(context.monitorFlow("10_InputBatches"))
         .via(new LwcToAggrDatapoint(context))
-        .groupBy(Int.MaxValue, _.step, allowClosedSubstreamRecreation = true)
+        .flatMapConcat { vs =>
+          Source(vs.groupBy(_.step).map(_._2.toList))
+        }
+        .groupBy(Int.MaxValue, _.head.step, allowClosedSubstreamRecreation = true)
         .via(new TimeGrouped(context))
+        .flatMapConcat(Source.apply)
         .mergeSubstreams
         .via(context.monitorFlow("11_GroupedDatapoints"))
 
@@ -400,7 +427,7 @@ private[stream] abstract class EvaluatorImpl(
 
   private[stream] def createInputFlow(
     context: StreamContext
-  ): Flow[DataSources, AnyRef, NotUsed] = {
+  ): Flow[DataSources, List[AnyRef], NotUsed] = {
 
     val g = GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
@@ -410,7 +437,7 @@ private[stream] abstract class EvaluatorImpl(
 
       // Merge the data coming from remote and local before performing
       // the time grouping and aggregation
-      val inputMerge = builder.add(Merge[AnyRef](2))
+      val inputMerge = builder.add(Merge[List[AnyRef]](2))
 
       // Streams for remote (lwc-api cluster)
       val remoteFlow =
@@ -420,7 +447,7 @@ private[stream] abstract class EvaluatorImpl(
       val localFlow = Flow[DataSources]
         .flatMapMerge(Int.MaxValue, s => Source(s.getSources.asScala.toList))
         .flatMapMerge(Int.MaxValue, s => context.localSource(Uri(s.getUri)))
-        .flatMapConcat(parseMessage)
+        .map(parseMessage)
 
       // Broadcast to remote/local flow, process and merge
       dataSourcesBroadcast.out(0).map(_.remoteOnly()) ~> remoteFlow ~> inputMerge.in(0)
@@ -449,7 +476,7 @@ private[stream] abstract class EvaluatorImpl(
   // Streams via WebSocket API `/api/v1/subscribe`, from each instance of lwc-api cluster
   private def createClusterStreamFlow(
     context: StreamContext
-  ): Flow[SourcesAndGroups, AnyRef, NotUsed] = {
+  ): Flow[SourcesAndGroups, List[AnyRef], NotUsed] = {
     Flow[SourcesAndGroups]
       .via(StreamOps.unique())
       .flatMapConcat { sourcesAndGroups =>
@@ -469,7 +496,7 @@ private[stream] abstract class EvaluatorImpl(
 
   private def createGroupByContext(
     context: StreamContext
-  ): ClusterOps.GroupByContext[Instance, Set[LwcExpression], AnyRef] = {
+  ): ClusterOps.GroupByContext[Instance, Set[LwcExpression], List[AnyRef]] = {
     ClusterOps.GroupByContext(
       instance => createWebSocketFlow(instance),
       registry,
@@ -487,7 +514,7 @@ private[stream] abstract class EvaluatorImpl(
 
   private def createWebSocketFlow(
     instance: EurekaSource.Instance
-  ): Flow[Set[LwcExpression], AnyRef, NotUsed] = {
+  ): Flow[Set[LwcExpression], List[AnyRef], NotUsed] = {
     val base = instance.substitute("ws://{local-ipv4}:{port}")
     val id = UUID.randomUUID().toString
     val uri = s"$base/api/v$lwcapiVersion/subscribe/$id"
@@ -502,35 +529,38 @@ private[stream] abstract class EvaluatorImpl(
         case _: TextMessage =>
           throw new MatchError("text messages are not supported")
         case BinaryMessage.Strict(str) =>
-          parseBatch(str)
+          Source.single(str)
         case msg: BinaryMessage =>
-          msg.dataStream.fold(ByteString.empty)(_ ++ _).flatMapConcat(parseBatch)
+          msg.dataStream.fold(ByteString.empty)(_ ++ _)
+      }
+      .mapAsyncUnordered(parsingNumThreads) { msg =>
+        Future(parseBatch(msg))(parsingEC)
       }
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  private def parseBatch(message: ByteString): Source[AnyRef, NotUsed] = {
+  private def parseBatch(message: ByteString): List[AnyRef] = {
     try {
       ReplayLogging.log(message)
-      Source(LwcMessages.parseBatch(message))
+      LwcMessages.parseBatch(message)
     } catch {
       case e: Exception =>
         logger.warn(s"failed to process message [$message]", e)
         badMessages.increment()
-        Source.empty
+        List.empty
     }
   }
 
-  private def parseMessage(message: ByteString): Source[AnyRef, NotUsed] = {
+  private def parseMessage(message: ByteString): List[AnyRef] = {
     try {
       ReplayLogging.log(message)
-      Source.single(LwcMessages.parse(message))
+      List(LwcMessages.parse(message))
     } catch {
       case e: Exception =>
         val messageString = toString(message)
         logger.warn(s"failed to process message [$messageString]", e)
         badMessages.increment()
-        Source.empty
+        List.empty
     }
   }
 

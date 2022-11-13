@@ -38,9 +38,9 @@ import com.netflix.atlas.eval.model.TimeGroup
   */
 private[stream] class TimeGrouped(
   context: StreamContext
-) extends GraphStage[FlowShape[AggrDatapoint, TimeGroup]] {
+) extends GraphStage[FlowShape[List[AggrDatapoint], List[TimeGroup]]] {
 
-  type AggrMap = scala.collection.mutable.AnyRefMap[DataExpr, AggrDatapoint.Aggregator]
+  type AggrMap = java.util.HashMap[DataExpr, AggrDatapoint.Aggregator]
 
   /**
     * Number of time buffers to maintain. The buffers are stored in a rolling array
@@ -60,10 +60,10 @@ private[stream] class TimeGrouped(
     context.registry
   )
 
-  private val in = Inlet[AggrDatapoint]("TimeGrouped.in")
-  private val out = Outlet[TimeGroup]("TimeGrouped.out")
+  private val in = Inlet[List[AggrDatapoint]]("TimeGrouped.in")
+  private val out = Outlet[List[TimeGroup]]("TimeGrouped.out")
 
-  override val shape: FlowShape[AggrDatapoint, TimeGroup] = FlowShape(in, out)
+  override val shape: FlowShape[List[AggrDatapoint], List[TimeGroup]] = FlowShape(in, out)
 
   private val metricName = "atlas.eval.datapoints"
   private val registry = context.registry
@@ -109,9 +109,11 @@ private[stream] class TimeGrouped(
         */
       private def aggregate(i: Int, v: AggrDatapoint): Unit = {
         if (!v.isHeartbeat) {
-          buf(i).get(v.expr) match {
-            case Some(aggr) => aggr.aggregate(v)
-            case None       => buf(i).put(v.expr, AggrDatapoint.newAggregator(v, aggrSettings))
+          val aggr = buf(i).get(v.expr)
+          if (aggr == null) {
+            buf(i).put(v.expr, AggrDatapoint.newAggregator(v, aggrSettings))
+          } else {
+            aggr.aggregate(v)
           }
         }
       }
@@ -120,15 +122,17 @@ private[stream] class TimeGrouped(
         * Push the most recently completed time group to the next stage and reset the buffer
         * so it can be used for a new time window.
         */
-      private def flush(i: Int): Unit = {
+      private def flush(i: Int): Option[TimeGroup] = {
         val t = timestamps(i)
-        if (t > 0) push(out, toTimeGroup(t, buf(i))) else pull(in)
+        val group = if (t > 0) Some(toTimeGroup(t, buf(i))) else None
         cutoffTime = t
         buf(i) = new AggrMap
+        group
       }
 
       private def toTimeGroup(ts: Long, aggrMap: AggrMap): TimeGroup = {
-        val aggregateMapForExpWithinLimits = aggrMap
+        import scala.jdk.CollectionConverters._
+        val aggregateMapForExpWithinLimits = aggrMap.asScala
           .filter {
             case (expr, aggr) if aggr.limitExceeded =>
               context.logDatapointsExceeded(ts, expr)
@@ -145,29 +149,33 @@ private[stream] class TimeGrouped(
       }
 
       override def onPush(): Unit = {
-        val v = grab(in)
-        val t = v.timestamp
-        val now = clock.wallTime()
-        step = v.step
-        if (t > now) {
-          droppedFutureUpdater.increment()
-          pull(in)
-        } else if (t <= cutoffTime) {
-          droppedOldUpdater.increment()
-          pull(in)
-        } else {
-          bufferedUpdater.increment()
-          val i = findBuffer(t)
-          if (i >= 0) {
-            aggregate(i, v)
-            pull(in)
+        val builder = List.newBuilder[TimeGroup]
+        grab(in).foreach { v =>
+          val t = v.timestamp
+          val now = clock.wallTime()
+          step = v.step
+          if (t > now) {
+            droppedFutureUpdater.increment()
+          } else if (t <= cutoffTime) {
+            droppedOldUpdater.increment()
           } else {
-            val pos = -i - 1
-            flush(pos)
-            aggregate(pos, v)
-            timestamps(pos) = t
+            bufferedUpdater.increment()
+            val i = findBuffer(t)
+            if (i >= 0) {
+              aggregate(i, v)
+            } else {
+              val pos = -i - 1
+              builder ++= flush(pos)
+              aggregate(pos, v)
+              timestamps(pos) = t
+            }
           }
         }
+        val groups = builder.result()
+        if (groups.isEmpty)
+          pull(in)
+        else
+          push(out, groups)
       }
 
       override def onPull(): Unit = {
@@ -190,8 +198,8 @@ private[stream] class TimeGrouped(
 
       private def flushPending(): Unit = {
         if (pending.nonEmpty && isAvailable(out)) {
-          push(out, pending.head)
-          pending = pending.tail
+          push(out, pending)
+          pending = Nil
         }
         if (pending.isEmpty) {
           completeStage()

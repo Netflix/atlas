@@ -35,12 +35,12 @@ import com.netflix.atlas.eval.model.LwcSubscription
   * [[AggrDatapoint]]s that can be used for evaluation.
   */
 private[stream] class LwcToAggrDatapoint(context: StreamContext)
-    extends GraphStage[FlowShape[AnyRef, AggrDatapoint]] {
+    extends GraphStage[FlowShape[List[AnyRef], List[AggrDatapoint]]] {
 
-  private val in = Inlet[AnyRef]("LwcToAggrDatapoint.in")
-  private val out = Outlet[AggrDatapoint]("LwcToAggrDatapoint.out")
+  private val in = Inlet[List[AnyRef]]("LwcToAggrDatapoint.in")
+  private val out = Outlet[List[AggrDatapoint]]("LwcToAggrDatapoint.out")
 
-  override val shape: FlowShape[AnyRef, AggrDatapoint] = FlowShape(in, out)
+  override val shape: FlowShape[List[AnyRef], List[AggrDatapoint]] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -51,13 +51,19 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       private var nextSource: Int = 0
 
       override def onPush(): Unit = {
-        grab(in) match {
+        val builder = List.newBuilder[AggrDatapoint]
+        grab(in).foreach {
           case sb: LwcSubscription      => updateState(sb)
-          case dp: LwcDatapoint         => pushDatapoint(dp)
+          case dp: LwcDatapoint         => builder ++= pushDatapoint(dp)
           case dg: LwcDiagnosticMessage => pushDiagnosticMessage(dg)
-          case hb: LwcHeartbeat         => pushHeartbeat(hb)
-          case _                        => pull(in)
+          case hb: LwcHeartbeat         => builder += pushHeartbeat(hb)
+          case _                        =>
         }
+        val datapoints = builder.result()
+        if (datapoints.isEmpty)
+          pull(in)
+        else
+          push(out, datapoints)
       }
 
       private def updateState(sub: LwcSubscription): Unit = {
@@ -66,22 +72,15 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
             state.put(m.id, m)
           }
         }
-        pull(in)
       }
 
-      private def pushDatapoint(dp: LwcDatapoint): Unit = {
-        state.get(dp.id) match {
-          case Some(sub) =>
-            // TODO, put in source, for now make it random to avoid dedup
-            nextSource += 1
-            val expr = sub.expr
-            val step = sub.step
-            push(
-              out,
-              AggrDatapoint(dp.timestamp, step, expr, nextSource.toString, dp.tags, dp.value)
-            )
-          case None =>
-            pull(in)
+      private def pushDatapoint(dp: LwcDatapoint): Option[AggrDatapoint] = {
+        state.get(dp.id).map { sub =>
+          // TODO, put in source, for now make it random to avoid dedup
+          nextSource += 1
+          val expr = sub.expr
+          val step = sub.step
+          AggrDatapoint(dp.timestamp, step, expr, nextSource.toString, dp.tags, dp.value)
         }
       }
 
@@ -89,11 +88,10 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
         state.get(diagMsg.id).foreach { sub =>
           context.log(sub.expr, diagMsg.message)
         }
-        pull(in)
       }
 
-      private def pushHeartbeat(hb: LwcHeartbeat): Unit = {
-        push(out, AggrDatapoint.heartbeat(hb.timestamp, hb.step))
+      private def pushHeartbeat(hb: LwcHeartbeat): AggrDatapoint = {
+        AggrDatapoint.heartbeat(hb.timestamp, hb.step)
       }
 
       override def onPull(): Unit = {
