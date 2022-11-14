@@ -44,6 +44,7 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
 
   private val subHandlers = new ConcurrentHashMap[String, ConcurrentSet[T]]()
 
+  @volatile private var subscriptionsList = List.empty[Subscription]
   @volatile private var queryIndex = QueryIndex.create[Subscription](Nil)
   @volatile private var queryListChanged = false
 
@@ -57,7 +58,13 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
   private[lwcapi] def regenerateQueryIndex(): Unit = {
     if (queryListChanged) {
       queryListChanged = false
-      val entries = subscriptions.map { sub =>
+      subscriptionsList = registrations
+        .values()
+        .asScala
+        .flatMap(_.subscriptions)
+        .toList
+        .distinct
+      val entries = subscriptionsList.map { sub =>
         QueryIndex.Entry(sub.query, sub)
       }
       queryIndex = QueryIndex.create(entries)
@@ -219,12 +226,7 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
     * Return the set of all current subscriptions across all streams.
     */
   def subscriptions: List[Subscription] = {
-    registrations
-      .values()
-      .asScala
-      .flatMap(_.subscriptions)
-      .toList
-      .distinct
+    subscriptionsList
   }
 
   /**
