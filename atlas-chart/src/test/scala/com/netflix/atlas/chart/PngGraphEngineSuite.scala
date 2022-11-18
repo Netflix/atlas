@@ -445,8 +445,14 @@ abstract class PngGraphEngineSuite extends FunSuite {
     lines(name, Seq(400, 150), f)
   }
 
-  doubleLine("double_line", v => v)
   doubleLine("axis_per_line", v => v.axisPerLine)
+
+  doubleLine(
+    "axis_per_line_ambiguous",
+    v => v.copy(renderingHints = Set("ambiguous-multi-y")).axisPerLine
+  )
+
+  doubleLine("double_line", v => v)
   doubleLine("double_line_stack", v => v.adjustLines(_.copy(lineStyle = LineStyle.STACK)))
 
   doubleLine(

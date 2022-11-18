@@ -147,10 +147,15 @@ private[chart] object JsonCodec {
     }
 
     gen.writeArrayFieldStart("warnings")
-    config.warnings.foreach { w =>
-      gen.writeString(w)
-    }
+    config.warnings.foreach(gen.writeString)
     gen.writeEndArray()
+
+    if (config.renderingHints.nonEmpty) {
+      gen.writeArrayFieldStart("renderingHints")
+      config.renderingHints.foreach(gen.writeString)
+      gen.writeEndArray()
+    }
+
     gen.writeEndObject()
   }
 
@@ -314,21 +319,22 @@ private[chart] object JsonCodec {
     import scala.jdk.CollectionConverters._
     GraphDef(
       Nil,
-      startTime  = Instant.ofEpochMilli(node.get("startTime").asLong()),
-      endTime    = Instant.ofEpochMilli(node.get("endTime").asLong()),
-      timezones  = node.get("timezones").elements.asScala.map(n => ZoneId.of(n.asText())).toList,
-      step       = node.get("step").asLong(),
-      width      = node.get("width").asInt(),
-      height     = node.get("height").asInt(),
-      layout     = Layout.valueOf(node.get("layout").asText()),
-      zoom       = node.get("zoom").asDouble(),
-      title      = Option(node.get("title")).map(_.asText()),
-      legendType = LegendType.valueOf(node.get("legendType").asText()),
-      onlyGraph  = node.get("onlyGraph").asBoolean(),
-      loadTime   = Option(node.get("loadTime")).fold(-1L)(_.asLong()),
-      stats      = Option(node.get("stats")).fold(CollectorStats.unknown)(toCollectorStats),
-      warnings   = node.get("warnings").elements.asScala.map(_.asText()).toList,
-      themeName  = node.get("theme").asText()
+      startTime      = Instant.ofEpochMilli(node.get("startTime").asLong()),
+      endTime        = Instant.ofEpochMilli(node.get("endTime").asLong()),
+      timezones      = node.get("timezones").elements.asScala.map(n => ZoneId.of(n.asText())).toList,
+      step           = node.get("step").asLong(),
+      width          = node.get("width").asInt(),
+      height         = node.get("height").asInt(),
+      layout         = Layout.valueOf(node.get("layout").asText()),
+      zoom           = node.get("zoom").asDouble(),
+      title          = Option(node.get("title")).map(_.asText()),
+      legendType     = LegendType.valueOf(node.get("legendType").asText()),
+      onlyGraph      = node.get("onlyGraph").asBoolean(),
+      loadTime       = Option(node.get("loadTime")).fold(-1L)(_.asLong()),
+      stats          = Option(node.get("stats")).fold(CollectorStats.unknown)(toCollectorStats),
+      warnings       = node.get("warnings").elements.asScala.map(_.asText()).toList,
+      themeName      = node.get("theme").asText(),
+      renderingHints = processRenderingHints(node.get("renderingHints"))
     )
     // format: on
   }
@@ -343,6 +349,14 @@ private[chart] object JsonCodec {
       outputDatapoints = node.get("outputDatapoints").asLong()
     )
     // format: on
+  }
+
+  private def processRenderingHints(node: JsonNode): Set[String] = {
+    import scala.jdk.CollectionConverters._
+    if (node == null)
+      Set.empty
+    else
+      node.elements.asScala.map(_.asText()).toSet
   }
 
   private def toPlotDef(node: JsonNode): PlotDef = {

@@ -282,7 +282,7 @@ case class Grapher(settings: DefaultSettings) {
     val warnings = List.newBuilder[String]
 
     val plotExprs = config.exprs.groupBy(_.axis.getOrElse(0))
-    val multiY = plotExprs.size > 1
+    val multiY = plotExprs.size > 1 && !GraphDef.ambiguousMultiY(config.flags.hints)
 
     val palette = newPalette(config.flags.palette)
     val shiftPalette = newPalette(settings.offsetPalette(config.flags.theme))

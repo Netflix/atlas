@@ -123,6 +123,17 @@ case class GraphDef(
     !onlyGraph && legendTypeForLayout == LegendType.LABELS_WITH_STATS
   }
 
+  /**
+    * Returns true if multi-Y axis should use the color from the first line on the
+    * axis. This is done for static images to provide a visual cue for what axis is
+    * associated with a given line. That behavior can be disabled by setting the
+    * rendering hint `ambiguous-multi-y` to indicate that the axis should determine the
+    * color from the graph theme instead.
+    */
+  def useLineColorForMultiY: Boolean = {
+    plots.lengthCompare(1) > 0 && !GraphDef.ambiguousMultiY(renderingHints)
+  }
+
   def legendTypeForLayout: LegendType = {
     if (layout.isFixedHeight) LegendType.OFF else legendType
   }
@@ -139,8 +150,10 @@ case class GraphDef(
         val msg = s"Too many Y-axes, $size > ${GraphConstants.MaxYAxis}, axis per line disabled."
         copy(warnings = msg :: warnings)
       } else {
+        val useLineColor = !GraphDef.ambiguousMultiY(renderingHints)
         val newPlots = plot.data.map { d =>
-          plot.copy(data = List(d), axisColor = Some(d.color))
+          val axisColor = if (useLineColor) Some(d.color) else None
+          plot.copy(data = List(d), axisColor = axisColor)
         }
         copy(plots = newPlots)
       }
@@ -197,7 +210,7 @@ case class GraphDef(
 
   /** Normalize the definition so it can be reliably compared. Mostly used for test cases. */
   def normalize: GraphDef = {
-    if (plots.lengthCompare(1) > 0) {
+    if (useLineColorForMultiY) {
       // Default behavior for multi-Y is to make the axis color match the data for the plots
       val ps = plots.map { plot =>
         if (plot.axisColor.isEmpty) {
@@ -213,5 +226,13 @@ case class GraphDef(
     } else {
       copy(plots = plots.map(_.normalize(theme))).bounded
     }
+  }
+}
+
+object GraphDef {
+
+  /** Returns true if the hints indicate that the ambiguous multi-Y mode should be used. */
+  def ambiguousMultiY(hints: Set[String]): Boolean = {
+    hints.contains("ambiguous-multi-y")
   }
 }
