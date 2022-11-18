@@ -417,6 +417,18 @@ class GrapherSuite extends FunSuite {
       "&theme=dark"
   }
 
+  imageTest("ambiguous-multi-y with axis per line") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+      "&q=name,sps,:eq,nf.cluster,nccp-p,:re,:and,(,nf.cluster,),:by" +
+      "&axis_per_line=1&hints=ambiguous-multi-y"
+  }
+
+  imageTest("ambiguous-multi-y explicit") {
+    "/api/v1/graph?e=2012-01-01T00:00" +
+      "&q=name,sps,:eq,:sum,:dup,2,:div,1,:axis" +
+      "&hints=ambiguous-multi-y"
+  }
+
   imageTest("topk") {
     "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:topk&features=unstable"
   }

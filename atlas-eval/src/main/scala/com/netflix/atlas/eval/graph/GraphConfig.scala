@@ -146,7 +146,7 @@ case class GraphConfig(
 
   private def useAxisPerLine(gdef: GraphDef): GraphDef = {
     val graphDef = gdef.axisPerLine
-    val multiY = graphDef.plots.size > 1
+    val multiY = graphDef.useLineColorForMultiY
     val plots = graphDef.plots.zipWithIndex.map {
       case (p, i) =>
         flags.axes(i).newPlotDef(p.data, multiY)
