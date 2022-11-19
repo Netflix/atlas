@@ -292,9 +292,10 @@ private[stream] abstract class EvaluatorImpl(
       .flatMapConcat(s => Source(splitByStep(s)))
       .groupBy(Int.MaxValue, stepSize, allowClosedSubstreamRecreation = true)
       .via(new FinalExprEval(context.interpreter))
-      .flatMapConcat(s => s)
       .mergeSubstreams
-      .via(context.monitorFlow("12_OutputMessages"))
+      .via(context.monitorFlow("12_OutputSources"))
+      .flatMapConcat(s => s)
+      .via(context.monitorFlow("13_OutputMessages"))
       .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
       .merge(logSrc, eagerComplete = false)
   }
