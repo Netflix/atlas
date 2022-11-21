@@ -60,6 +60,7 @@ import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.patterns.ThreadPoolMonitor
 import com.typesafe.config.Config
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
@@ -67,6 +68,7 @@ import org.slf4j.LoggerFactory
 
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
@@ -114,6 +116,11 @@ private[stream] abstract class EvaluatorImpl(
       }
     }
     val executor = Executors.newFixedThreadPool(parsingNumThreads, factory)
+    ThreadPoolMonitor.attach(
+      registry,
+      executor.asInstanceOf[ThreadPoolExecutor],
+      "AtlasEvalParsing"
+    )
     ExecutionContext.fromExecutor(executor)
   }
 
@@ -493,11 +500,18 @@ private[stream] abstract class EvaluatorImpl(
         )
       }
       .via(ClusterOps.groupBy(createGroupByContext(context)))
+      .mapAsync(parsingNumThreads) { msg =>
+        // This step is placed after merge of streams so there is a single
+        // use of the pool and it is easier to track the concurrent usage.
+        // Order is preserved to avoid potentially re-ordering messages in
+        // a way that could push out data with a newer timestamp first.
+        Future(parseBatch(msg))(parsingEC)
+      }
   }
 
   private def createGroupByContext(
     context: StreamContext
-  ): ClusterOps.GroupByContext[Instance, Set[LwcExpression], List[AnyRef]] = {
+  ): ClusterOps.GroupByContext[Instance, Set[LwcExpression], ByteString] = {
     ClusterOps.GroupByContext(
       instance => createWebSocketFlow(instance),
       registry,
@@ -515,7 +529,7 @@ private[stream] abstract class EvaluatorImpl(
 
   private def createWebSocketFlow(
     instance: EurekaSource.Instance
-  ): Flow[Set[LwcExpression], List[AnyRef], NotUsed] = {
+  ): Flow[Set[LwcExpression], ByteString, NotUsed] = {
     val base = instance.substitute("ws://{local-ipv4}:{port}")
     val id = UUID.randomUUID().toString
     val uri = s"$base/api/v$lwcapiVersion/subscribe/$id"
@@ -533,9 +547,6 @@ private[stream] abstract class EvaluatorImpl(
           Source.single(str)
         case msg: BinaryMessage =>
           msg.dataStream.fold(ByteString.empty)(_ ++ _)
-      }
-      .mapAsyncUnordered(parsingNumThreads) { msg =>
-        Future(parseBatch(msg))(parsingEC)
       }
       .mapMaterializedValue(_ => NotUsed)
   }
