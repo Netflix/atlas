@@ -80,7 +80,8 @@ case class LegendEntry(styles: Styles, plot: PlotDef, data: DataDef, showStats: 
           val avg = format(stats.avg)
           val last = format(stats.last)
           val total = format(stats.total)
-          val count = format(stats.count)
+          val count = format(stats.count, false)
+
           val rows = List(
             "    Max : %s    Min  : %s".format(max, min),
             "    Avg : %s    Last : %s".format(avg, last),
@@ -103,10 +104,15 @@ case class LegendEntry(styles: Styles, plot: PlotDef, data: DataDef, showStats: 
     }
   }
 
-  private def format(v: Double): String = {
+  private def format(v: Double, specialPrefix: Boolean = true): String = {
     plot.tickLabelMode match {
-      case TickLabelMode.BINARY => UnitPrefix.binary(v).format(v, "%9.2f%1s", "%8.1e ")
-      case _                    => UnitPrefix.decimal(v).format(v, "%9.3f%1s", "%8.1e ")
+      case TickLabelMode.BINARY =>
+        if (specialPrefix) UnitPrefix.binary(v).format(v, "%9.2f%1s", "%8.1e ")
+        else UnitPrefix.decimal(v).format(v, "%9.2f%1s", "%8.1e ")
+      case TickLabelMode.DURATION =>
+        if (specialPrefix) UnitPrefix.duration(v).format(v, "%9.2f%1s", "%8.1e ")
+        else UnitPrefix.decimal(v).format(v, "%9.2f%1s", "%8.1e ")
+      case _ => UnitPrefix.decimal(v).format(v, "%9.3f%1s", "%8.1e ")
     }
   }
 }

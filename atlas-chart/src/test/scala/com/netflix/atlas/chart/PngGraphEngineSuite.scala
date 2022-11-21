@@ -608,6 +608,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
   multiy("power", v => v.copy(scale = Scale.POWER_2))
   multiy("sqrt", v => v.copy(scale = Scale.SQRT))
   multiy("binary", v => v.copy(tickLabelMode = TickLabelMode.BINARY))
+  multiy("duration", v => v.copy(tickLabelMode = TickLabelMode.DURATION))
 
   // https://github.com/Netflix/atlas/issues/119
   // TODO: fix to show label

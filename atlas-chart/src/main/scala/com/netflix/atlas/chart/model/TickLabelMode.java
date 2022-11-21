@@ -40,7 +40,12 @@ public enum TickLabelMode {
    *
    * https://en.wikipedia.org/wiki/Binary_prefix
    */
-  BINARY;
+  BINARY,
+
+  /**
+   * Use SI for durations less than a second and 's', 'min', 'hr', 'day', 'mon', 'yr' over that.
+   */
+  DURATION;
 
   /**
    * Case insensitive conversion of a string name to an enum value.
