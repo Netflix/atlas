@@ -157,7 +157,9 @@ private[stream] class TimeGrouped(
           if (t > now) {
             droppedFutureUpdater.increment()
           } else if (t <= cutoffTime) {
-            droppedOldUpdater.increment()
+            if (!v.isHeartbeat) {
+              droppedOldUpdater.increment()
+            }
           } else {
             bufferedUpdater.increment()
             val i = findBuffer(t)
