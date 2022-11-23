@@ -44,6 +44,7 @@ class RequestHandlerNoCompressionSuite extends MUnitRouteSuite {
       |atlas.akka.cors-host-patterns = []
       |atlas.akka.diagnostic-headers = []
       |atlas.akka.request-handler {
+      |  cors = false
       |  compression = false
       |  access-log = false
       |  close-probability = 0.0
@@ -115,6 +116,13 @@ class RequestHandlerNoCompressionSuite extends MUnitRouteSuite {
     Post("/jsonparse", content).addHeader(gzipHeader) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
       assertEquals(responseAs[String], "foo")
+    }
+  }
+
+  test("cors preflight") {
+    // With CORS disabled there shouldn't be a route to handle the OPTIONS request
+    Options("/api/v2/ip") ~> routes ~> check {
+      assertEquals(response.status, StatusCodes.NotFound)
     }
   }
 }

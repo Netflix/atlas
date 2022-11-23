@@ -49,6 +49,7 @@ class RequestHandlerSuite extends MUnitRouteSuite {
       |  }
       |]
       |atlas.akka.request-handler {
+      |  cors = true
       |  compression = true
       |  access-log = true
       |  close-probability = 0.0

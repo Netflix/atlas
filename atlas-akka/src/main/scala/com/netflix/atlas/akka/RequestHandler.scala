@@ -112,6 +112,10 @@ object RequestHandler extends StrictLogging {
         .distinct
     }
 
+    val corsEnabled: Boolean = {
+      config.getBoolean("atlas.akka.request-handler.cors")
+    }
+
     val handleCompression: Boolean = {
       config.getBoolean("atlas.akka.request-handler.compression")
     }
@@ -181,7 +185,10 @@ object RequestHandler extends StrictLogging {
         accessLog(settings.diagnosticHeaders) { close }
 
     // Add CORS headers to all responses
-    cors(settings.corsHostPatterns) { log }
+    if (settings.corsEnabled)
+      cors(settings.corsHostPatterns) { log }
+    else
+      log
   }
 
   /**
