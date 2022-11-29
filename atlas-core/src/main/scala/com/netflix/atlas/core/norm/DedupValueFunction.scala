@@ -40,13 +40,13 @@ class DedupValueFunction(step: Long, size: Int, next: ValueFunction) extends Val
     if (timestamp == times(i)) {
       values(i) = value
     } else {
-      flushBefore(times(i))
+      flushTo(times(i))
       times(i) = timestamp
       values(i) = value
     }
   }
 
-  private def flushBefore(cutoff: Long): Unit = {
+  private def flushTo(cutoff: Long): Unit = {
     var i = 0
     while (i < size) {
       if (times(i) >= 0L && times(i) <= cutoff) {
