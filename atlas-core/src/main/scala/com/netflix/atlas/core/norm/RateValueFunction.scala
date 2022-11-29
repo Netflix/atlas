@@ -33,4 +33,8 @@ class RateValueFunction(next: ValueFunction) extends ValueFunction {
     lastUpdateTime = timestamp
     lastValue = value
   }
+
+  override def close(): Unit = {
+    next.close()
+  }
 }
