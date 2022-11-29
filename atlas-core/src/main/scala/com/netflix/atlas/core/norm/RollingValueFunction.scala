@@ -72,6 +72,7 @@ class RollingValueFunction(
 
   override def close(): Unit = {
     lastUpdateTime = -1L
+    next.close()
   }
 
   private def writeValue(timestamp: Long, value: Double): Unit = {

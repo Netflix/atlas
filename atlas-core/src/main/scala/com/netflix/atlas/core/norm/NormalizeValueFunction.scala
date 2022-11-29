@@ -96,6 +96,10 @@ class NormalizeValueFunction(step: Long, heartbeat: Long, next: ValueFunction)
     }
   }
 
+  override def close(): Unit = {
+    next.close()
+  }
+
   private def weightedValue(offset: Long, value: Double): Double = {
     val weight = offset.asInstanceOf[Double] / step
     value * weight

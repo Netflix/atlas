@@ -41,7 +41,9 @@ class ListValueFunction extends ValueFunction {
     builder += timestamp -> value
   }
 
-  override def close(): Unit = {
+  // Does not override close() because it would create a cycle since the ListValueFunction
+  // is typically used in tests as the final recipient of the data.
+  def doClose(): Unit = {
     f.close()
   }
 
