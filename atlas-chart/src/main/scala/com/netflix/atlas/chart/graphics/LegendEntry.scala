@@ -83,9 +83,27 @@ case class LegendEntry(styles: Styles, plot: PlotDef, data: DataDef, showStats: 
           val count = format(stats.count, false)
 
           val rows = List(
-            "    Max : %s    Min  : %s".format(max, min),
-            "    Avg : %s    Last : %s".format(avg, last),
-            "    Tot : %s    Cnt  : %s".format(total, count)
+            new StringBuilder(38)
+              .append("    Max : ")
+              .append(max)
+              .append(if (prefixChars(max) > 1) "   " else "    ")
+              .append("Min  : ")
+              .append(min)
+              .toString(),
+            new StringBuilder(38)
+              .append("    Avg : ")
+              .append(avg)
+              .append(if (prefixChars(avg) > 1) "   " else "    ")
+              .append("Last : ")
+              .append(last)
+              .toString(),
+            new StringBuilder(38)
+              .append("    Tot : ")
+              .append(total)
+              .append(if (prefixChars(total) > 1) "   " else "    ")
+              .append("Cnt  : ")
+              .append(count)
+              .toString()
           )
           val offset = y1 + ChartSettings.normalFontDims.height
           val rowHeight = ChartSettings.smallFontDims.height
@@ -114,5 +132,9 @@ case class LegendEntry(styles: Styles, plot: PlotDef, data: DataDef, showStats: 
         else UnitPrefix.decimal(v).format(v, "%9.2f%1s", "%8.1e ")
       case _ => UnitPrefix.decimal(v).format(v, "%9.3f%1s", "%8.1e ")
     }
+  }
+
+  private def prefixChars(str: String): Int = {
+    str.reverse.takeWhile(_.isLetter).count(_ => true)
   }
 }

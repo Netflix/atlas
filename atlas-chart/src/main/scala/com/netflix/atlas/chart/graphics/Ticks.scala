@@ -19,9 +19,12 @@ import java.time._
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
-
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.core.util.UnitPrefix
+import com.netflix.atlas.core.util.UnitPrefix.durationBigPrefixes
+import com.netflix.atlas.core.util.UnitPrefix.durationSmallPrefixes
+import com.netflix.atlas.core.util.UnitPrefix.sec
+import com.netflix.atlas.core.util.UnitPrefix.year
 
 /**
   * Utility for computing the major tick marks to use for a range of values.
@@ -116,7 +119,7 @@ object Ticks {
   }
 
   private val durationValueTickSizes = {
-    var ticks = (-25 to -1).toList.flatMap { i =>
+    var ticks = (-25 to -2).toList.flatMap { i =>
       val f = math.pow(10, i)
       baseValueTickSizes.map {
         case (major, minor) =>
@@ -127,7 +130,7 @@ object Ticks {
 
     val majorMultiples = List(
       List(1, 2, 3, 4, 5, 6, 10, 15, 30, 60),
-      List(1, 2, 3, 4, 5, 6, 10, 15, 30, 3600),
+      List(4, 5, 6, 10, 15, 30, 3600),
       List(1, 2, 3, 4, 6, 12, 3600 * 24),
       List(1, 2, 4, 6, 12, 24, 86400 * 7),
       List(1, 2, 3, 4, 6, 86400 * 365)
@@ -146,7 +149,14 @@ object Ticks {
       ticks = ticks ::: subList
     }
 
-    ticks = ticks ::: (8 to 25).toList.flatMap { i =>
+    val mm = List(1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500)
+    val n = 4
+    val majorF = year.factor
+    val minorF = year.factor / 4.0
+    ticks = ticks ::: mm.map { m =>
+      (majorF * m, minorF * m, n)
+    }
+    ticks = ticks ::: (10 to 25).toList.flatMap { i =>
       val f = math.pow(10, i)
       baseValueTickSizes.map {
         case (major, minor) =>
@@ -218,16 +228,18 @@ object Ticks {
   }
 
   private def getDurationPrefix(v: Double, major: Double): UnitPrefix = {
-    val m = UnitPrefix.durationRange(major, 3)
-    if (v <= m.factor) m else UnitPrefix.durationRange(v, 3)
+    val m = UnitPrefix.durationRange(major)
+    if (v <= m.factor) m else UnitPrefix.durationRange(v)
   }
 
-  private def durationLabelFormat(v: Double): String = {
-    (v * 1000.0).toInt match {
-      case _ if v > 3.1536e8  => "%.1e%s" // 10+ years switch to exponent
-      case i if (i % 10) > 0  => "%.3f%s" // 1.234
-      case i if (i % 100) > 0 => "%.2f%s" // 12.34
-      case _                  => "%.1f%s" // 123.4
+  private def durationLabelFormat(prefix: UnitPrefix, v: Double): String = {
+    val f = if (v < 1) v / prefix.factor else v
+    (f * 1000.0).toInt match {
+      case _ if v >= 3.1536e10 => "%.1e%s" // 100+ years switch to exponent
+      case _ if v >= 60        => "%.0f%s"
+      case i if (i % 10) > 0   => "%.3f%s" // 1.234
+      case i if (i % 100) > 0  => "%.2f%s" // 12.34
+      case _                   => "%.1f%s" // 123.4
     }
   }
 
@@ -435,9 +447,16 @@ object Ticks {
     }
   }
 
-  private def durationTicks(v1: Double, v2: Double, t: (Double, Double, Int)): List[ValueTick] = {
+  private def durationTicks(
+    v1: Double,
+    v2: Double,
+    t: (Double, Double, Int),
+    prevPrefix: UnitPrefix = null
+  ): List[ValueTick] = {
     val (major, minor, minorPerMajor) = t
     val ticks = List.newBuilder[ValueTick]
+    val prefix = if (prevPrefix == null) getDurationPrefix(math.abs(v2), major) else prevPrefix
+    val labelFmt = durationLabelFormat(prefix, v2)
 
     val base = round(v1, major)
     val end = ((v2 - base) / minor).toInt + 1
@@ -445,8 +464,6 @@ object Ticks {
     while (pos <= end) {
       val v = base + pos * minor
       if (v >= v1 && v <= v2) {
-        val prefix = getDurationPrefix(math.abs(v), major)
-        val labelFmt = durationLabelFormat(v)
         val label = prefix.format(v, labelFmt)
         ticks += ValueTick(v, 0.0, pos % minorPerMajor == 0, Some(label))
       }
@@ -456,14 +473,26 @@ object Ticks {
 
     val useOffset = majorLabelDuplication(ts)
     if (useOffset) {
+      if (prevPrefix == null && v2 < (year.factor * 2) && v2 > 1e-3) {
+        val previousPrefix = prevDurationPrefix(prefix)
+        return durationTicks(v1, v2, t, previousPrefix)
+      }
       val range = v2 - v1
       val offsetPrefix = getDurationPrefix(range, major)
-      val newFormat = durationLabelFormat(major)
+      val newFormat = durationLabelFormat(prefix, major)
 
       ts.map(t =>
         t.copy(offset = base, labelOpt = Some(offsetPrefix.format(t.v - base, newFormat)))
       )
     } else ts
+  }
+
+  def prevDurationPrefix(prefix: UnitPrefix): UnitPrefix = {
+    if (prefix == sec) {
+      durationSmallPrefixes.find(_.factor < prefix.factor).getOrElse(prefix)
+    } else {
+      durationBigPrefixes.find(_.factor < prefix.factor).getOrElse(prefix)
+    }
   }
 
   /**

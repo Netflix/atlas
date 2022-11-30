@@ -63,7 +63,7 @@ object UnitPrefix {
   val hour   = UnitPrefix("h",       "hour",   3600.0)
   val day    = UnitPrefix("d",       "day",    hour.factor * 24)
   val week   = UnitPrefix("w",       "week",   day.factor * 7)
-  val year   = UnitPrefix("yr",      "year",   day.factor * 365)
+  val year   = UnitPrefix("y",       "year",   day.factor * 365)
 
   // format: on
 
@@ -171,7 +171,7 @@ object UnitPrefix {
     }
   }
 
-  def durationRange(value: Double, digits: Double): UnitPrefix = {
+  def durationRange(value: Double): UnitPrefix = {
     math.abs(value) match {
       case v if isNearlyZero(v)          => sec
       case v if !JDouble.isFinite(v)     => sec
