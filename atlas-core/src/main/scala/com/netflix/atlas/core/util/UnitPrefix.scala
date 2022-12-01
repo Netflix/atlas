@@ -54,9 +54,23 @@ object UnitPrefix {
   val zebi  = UnitPrefix("Zi",  "zebi",  exbi.factor * 1024.0)
   val yobi  = UnitPrefix("Yi",  "yobi",  zebi.factor * 1024.0)
 
+  val picos  = UnitPrefix("ps",      "picos",  1.0e-12)
+  val nanos  = UnitPrefix("ns",      "nanos",  1.0e-9)
+  val micros = UnitPrefix("\u03BCs", "micros", 1.0e-6)
+  val millis = UnitPrefix("ms",      "millis", 1.0e-3)
+  val sec    = UnitPrefix("s",       "sec",    1.0)
+  val min    = UnitPrefix("m",       "min",    60.0)
+  val hour   = UnitPrefix("h",       "hour",   3600.0)
+  val day    = UnitPrefix("d",       "day",    hour.factor * 24)
+  val week   = UnitPrefix("w",       "week",   day.factor * 7)
+  val year   = UnitPrefix("y",       "year",   day.factor * 365)
+
   // format: on
 
   val binaryPrefixes: List[UnitPrefix] = List(kibi, mebi, gibi, tebi, pebi, exbi, zebi, yobi)
+
+  val durationSmallPrefixes: List[UnitPrefix] = List(millis, micros, nanos, picos)
+  val durationBigPrefixes: List[UnitPrefix] = List(year, week, day, hour, min, sec)
 
   private val maxValue = 1e27
   private val minValue = 1e-27
@@ -105,6 +119,21 @@ object UnitPrefix {
     }
   }
 
+  /**
+    * Returns an appropriate duration prefix for `value`.
+    */
+  def duration(value: Double): UnitPrefix = {
+    math.abs(value) match {
+      case v if isNearlyZero(v)      => sec
+      case v if !JDouble.isFinite(v) => sec
+      case v if v >= sec.factor =>
+        durationBigPrefixes.find(_.factor <= v).getOrElse(year)
+      case v if v < 1.0 =>
+        durationSmallPrefixes.find(_.factor <= v).getOrElse(picos)
+      case _ => sec
+    }
+  }
+
   /** Returns an appropriate decimal prefix for `value`. */
   def forRange(value: Double, digits: Double): UnitPrefix = {
     val f = math.pow(10.0, digits)
@@ -139,6 +168,28 @@ object UnitPrefix {
       case v if v >= kibi.factor / f => binaryPrefixes.find(withinRange(_, v)).getOrElse(yobi)
       case v if v < 1.0 / f => decimalSmallPrefixes.find(withinRange(_, v)).getOrElse(yocto)
       case _                => one
+    }
+  }
+
+  def durationRange(value: Double): UnitPrefix = {
+    math.abs(value) match {
+      case v if isNearlyZero(v)          => sec
+      case v if !JDouble.isFinite(v)     => sec
+      case v if v < sec.factor && v >= 1 => sec
+      case v if v >= sec.factor =>
+        var last = sec
+        var found: UnitPrefix = null
+        durationBigPrefixes.reverse.foreach { prefix =>
+          if (prefix != last) {
+            if (found == null && v >= last.factor && v < prefix.factor) {
+              found = last
+            }
+            last = prefix
+          }
+        }
+        if (found == null) year else found
+      case v if v < 1.0 => durationSmallPrefixes.find(v > _.factor).getOrElse(nanos)
+      case _            => sec
     }
   }
 

@@ -145,6 +145,22 @@ class GrapherSuite extends FunSuite {
     baseAxisScaleQuery + "&scale=linear&o=1"
   }
 
+  imageTest("axis using binary tick labels") {
+    baseAxisScaleQuery + "&tick_labels=binary"
+  }
+
+  imageTest("axis using duration tick labels") {
+    baseAxisScaleQuery + "&tick_labels=duration"
+  }
+
+  imageTest("axis using duration tick labels small values") {
+    "/api/v1/graph?e=2012-01-01T00:00&q=1.0e-12,1.0e-9&tick_labels=duration"
+  }
+
+  imageTest("axis with offset ticks") {
+    "/api/v1/graph?e=2012-01-01T00:00&q=1.0e9,1.0e9,1,:add"
+  }
+
   private val baseStatAxisScaleQuery = "/api/v1/graph?e=2012-01-01T00:00&s=e-2d" +
     "&q=name,sps,:eq,:sum,:dup,:dup,min,:stat,:sub,:swap,max,:stat,0.5,:mul,:sub"
 

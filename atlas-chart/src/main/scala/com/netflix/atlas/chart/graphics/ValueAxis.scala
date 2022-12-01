@@ -51,8 +51,9 @@ sealed trait ValueAxis extends Element with FixedWidth {
   def ticks(y1: Int, y2: Int): List[ValueTick] = {
     val numTicks = (y2 - y1) / minTickLabelHeight
     plotDef.tickLabelMode match {
-      case TickLabelMode.BINARY => Ticks.binary(min, max, numTicks)
-      case _                    => Ticks.value(min, max, numTicks, plotDef.scale)
+      case TickLabelMode.BINARY   => Ticks.binary(min, max, numTicks)
+      case TickLabelMode.DURATION => Ticks.duration(min, max, numTicks)
+      case _                      => Ticks.value(min, max, numTicks, plotDef.scale)
     }
   }
 
@@ -79,17 +80,19 @@ sealed trait ValueAxis extends Element with FixedWidth {
 
   protected def tickPrefix(v: Double): UnitPrefix = {
     plotDef.tickLabelMode match {
-      case TickLabelMode.OFF     => UnitPrefix.one
-      case TickLabelMode.DECIMAL => UnitPrefix.decimal(v)
-      case TickLabelMode.BINARY  => UnitPrefix.binary(v)
+      case TickLabelMode.OFF      => UnitPrefix.one
+      case TickLabelMode.DECIMAL  => UnitPrefix.decimal(v)
+      case TickLabelMode.BINARY   => UnitPrefix.binary(v)
+      case TickLabelMode.DURATION => UnitPrefix.duration(v)
     }
   }
 
   protected def tickLabelFmt: String = {
     plotDef.tickLabelMode match {
-      case TickLabelMode.OFF     => ""
-      case TickLabelMode.DECIMAL => "%.1f%s"
-      case TickLabelMode.BINARY  => "%.0f%s"
+      case TickLabelMode.OFF      => ""
+      case TickLabelMode.DECIMAL  => "%.1f%s"
+      case TickLabelMode.BINARY   => "%.0f%s"
+      case TickLabelMode.DURATION => "%.1f%s"
     }
   }
 }

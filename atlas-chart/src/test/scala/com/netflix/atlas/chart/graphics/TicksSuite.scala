@@ -400,6 +400,301 @@ class TicksSuite extends FunSuite {
     }
   }
 
+  test("duration [0, 59]") {
+    val ticks = Ticks.duration(0.0, 59, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 20)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0.0s")
+    assertEquals(ticks.last.label, "57.0s")
+  }
+
+  test("duration [0, 60]") {
+    val ticks = Ticks.duration(0.0, 60, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 21)
+    assertEquals(ticks.count(_.major), 6)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0s")
+    assertEquals(ticks.last.label, "60s")
+  }
+
+  test("duration [0, 3659]") {
+    val ticks = Ticks.duration(0.0, 3659, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 21)
+    assertEquals(ticks.count(_.major), 6)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0m")
+    assertEquals(ticks.last.label, "60m")
+  }
+
+  test("duration [0, 3600]") {
+    val ticks = Ticks.duration(0.0, 3659, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 21)
+    assertEquals(ticks.count(_.major), 6)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0m")
+    assertEquals(ticks.last.label, "60m")
+  }
+
+  test("duration [0, 86400]") {
+    val ticks = Ticks.duration(0.0, 86400, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 25)
+    assertEquals(ticks.count(_.major), 7)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0h")
+    assertEquals(ticks.last.label, "24h")
+  }
+
+  test("duration [86400, 86500]") {
+    val ticks = Ticks.duration(0.0, 86400, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 25)
+    assertEquals(ticks.count(_.major), 7)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0h")
+    assertEquals(ticks.last.label, "24h")
+  }
+
+  test("duration [86400, 87500]") {
+    val ticks = Ticks.duration(0.0, 86400, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 25)
+    assertEquals(ticks.count(_.major), 7)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0h")
+    assertEquals(ticks.last.label, "24h")
+  }
+
+  test("duration [0, 2592000]") {
+    val ticks = Ticks.duration(0.0, 2592000, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 18)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0w")
+    assertEquals(ticks.last.label, "4w")
+  }
+
+  test("duration [0, 31536000]") {
+    val ticks = Ticks.duration(0.0, 31536000, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 17)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0w")
+    assertEquals(ticks.last.label, "52w")
+  }
+
+  test("duration [1.0, 2.0], 7 ticks") {
+    val ticks = Ticks.duration(1.0, 2.0, 7)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 21)
+    assertEquals(ticks.count(_.major), 6)
+  }
+
+  test("duration [339.86152734763687, 339.87716933873867]") {
+    val ticks = Ticks.duration(339.86152734763687, 339.87716933873867, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 16)
+    assertEquals(ticks.count(_.major), 4)
+    assertEquals(ticks.head.offset, 339.86)
+    assertEquals(ticks.head.label, "2.000ms")
+    assertEquals(ticks.last.label, "17.000ms")
+  }
+
+  test("duration [59, 61]") {
+    val ticks = Ticks.duration(59, 61, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 20)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 58.800000000000004)
+    assertEquals(ticks.head.label, "0.2s")
+    assertEquals(ticks.last.label, "2.1s")
+  }
+
+  test("duration [59, 3605]") {
+    val ticks = Ticks.duration(59, 3605, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 20)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "3m")
+    assertEquals(ticks.last.label, "60m")
+  }
+
+  test("duration [0, 3153600000]") {
+    val ticks = Ticks.duration(0.0, 3153600000L, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 21)
+    assertEquals(ticks.count(_.major), 6)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0y")
+    assertEquals(ticks.last.label, "100y")
+  }
+
+  test("duration [3153600000, 3153600005]") {
+    val ticks = Ticks.duration(3153600000L, 3153600005L, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 21)
+    assertEquals(ticks.count(_.major), 6)
+    assertEquals(ticks.head.offset, 3.1536e9)
+    assertEquals(ticks.head.label, "0.0s")
+    assertEquals(ticks.last.label, "5.0s")
+  }
+
+  test("duration [0.01, 1]") {
+    val ticks = Ticks.duration(0.01, 1, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 20)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0.1s")
+    assertEquals(ticks.last.label, "1.0s")
+  }
+
+  test("duration [0.01, 0.1]") {
+    val ticks = Ticks.duration(0.01, 0.1, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 19)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "10.0ms")
+    assertEquals(ticks.last.label, "100.0ms")
+  }
+
+  test("duration [0.0001, 0.1]") {
+    val ticks = Ticks.duration(0.0001, 0.1, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 20)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "5.0ms")
+    assertEquals(ticks.last.label, "100.0ms")
+  }
+
+  test("duration [0.0001, 0.001]") {
+    val ticks = Ticks.duration(0.0001, 0.001, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 19)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "100.0μs")
+    assertEquals(ticks.last.label, "1000.0μs")
+  }
+
+  test("duration [0.0000001, 0.001]") {
+    val ticks = Ticks.duration(0.0000001, 0.001, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 20)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "50.0μs")
+    assertEquals(ticks.last.label, "1000.0μs")
+  }
+
+  test("duration [45, 300]") {
+    val ticks = Ticks.duration(45, 300, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 18)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "1m")
+    assertEquals(ticks.last.label, "5m")
+  }
+
+  test("duration [45, 300e3]") {
+    val ticks = Ticks.duration(45, 300e3, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 13)
+    assertEquals(ticks.count(_.major), 3)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "0d")
+    assertEquals(ticks.last.label, "3d")
+  }
+
+  test("duration [45, 300e5]") {
+    val ticks = Ticks.duration(45, 300e5, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 15)
+    assertEquals(ticks.count(_.major), 3)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "3w")
+    assertEquals(ticks.last.label, "49w")
+  }
+
+  test("duration [45, 300e8]") {
+    val ticks = Ticks.duration(45, 300e8, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 19)
+    assertEquals(ticks.count(_.major), 4)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "50y")
+    assertEquals(ticks.last.label, "950y")
+  }
+
+  // TODO goofy edge case due to ieee 754 causes 3 decimals. Fix it some day if
+  // we want.
+  test("duration [0.0000001, 0.000001]") {
+    val ticks = Ticks.duration(0.0000001, 0.000001, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 19)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "100.000ns")
+    assertEquals(ticks.last.label, "1000.000ns")
+  }
+
+  test("duration [1.0e-10, 1.0e-9]") {
+    val ticks = Ticks.duration(1.0e-10, 1.0e-9, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 18)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "150.0ps")
+    assertEquals(ticks.last.label, "1000.0ps")
+  }
+
+  test("duration [1.0e-13, 1.0e-12]") {
+    val ticks = Ticks.duration(1.0e-13, 1.0e-12, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 0)
+  }
+
+  test("duration [1.0e-12, 1.0e-9]") {
+    val ticks = Ticks.duration(1.0e-12, 1.0e-9, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 20)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "50.0ps")
+    assertEquals(ticks.last.label, "1000.0ps")
+  }
+
+  test("duration [1.0e-12, 1.0e12]") {
+    val ticks = Ticks.duration(1.0e-12, 1.0e12, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 20)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "1.6e+03y")
+    assertEquals(ticks.last.label, "3.2e+04y")
+  }
+
+  test("duration [-15, -1]") {
+    val ticks = Ticks.duration(-15, -1, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 15)
+    assertEquals(ticks.count(_.major), 3)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "-15.0s")
+    assertEquals(ticks.last.label, "-1.0s")
+  }
+
   test("time: since 1970") {
     val s = 0L
     val e = 1498751868000L
@@ -436,4 +731,17 @@ class TicksSuite extends FunSuite {
     assertEquals(ticks.head.label, "99.90")
     assertEquals(ticks.last.label, "100.00")
   }
+
+  // Debug helper.
+  /*private def tickPrint(ticks: List[ValueTick]): Unit = {
+    System.out.println("------------------")
+    ticks.reverse.foreach(t =>
+      if (t.major) {
+        System.out.println(s"${t.label} *  [${t.offset}] off")
+      } else {
+        System.out.println(s"${t.label} -  [${t.offset}] off")
+      }
+    )
+    System.out.println("-------------------")
+  }*/
 }
