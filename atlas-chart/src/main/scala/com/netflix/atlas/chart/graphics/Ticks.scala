@@ -235,7 +235,7 @@ object Ticks {
   private def durationLabelFormat(prefix: UnitPrefix, v: Double): String = {
     val f = if (v < 1) v / prefix.factor else v
     (f * 1000.0).toInt match {
-      case _ if v >= 3.1536e10 => "%.1e%s" // 100+ years switch to exponent
+      case _ if v >= 3.1536e10 => "%.1e%s" // 1000+ years switch to exponent
       case _ if v >= 60        => "%.0f%s"
       case i if (i % 10) > 0   => "%.3f%s" // 1.234
       case i if (i % 100) > 0  => "%.2f%s" // 12.34
