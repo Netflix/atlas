@@ -83,9 +83,9 @@ case class LegendEntry(styles: Styles, plot: PlotDef, data: DataDef, showStats: 
           val count = format(stats.count, false)
 
           val rows = List(
-            "    Max : %-8s    Min  : %-8s".format(max, min),
-            "    Avg : %-8s    Last : %-8s".format(avg, last),
-            "    Tot : %-8s    Cnt  : %-8s".format(total, count)
+            "    Max : %-11s   Min  : %-11s".format(max, min),
+            "    Avg : %-11s   Last : %-11s".format(avg, last),
+            "    Tot : %-11s   Cnt  : %-11s".format(total, count)
           )
           val offset = y1 + ChartSettings.normalFontDims.height
           val rowHeight = ChartSettings.smallFontDims.height
