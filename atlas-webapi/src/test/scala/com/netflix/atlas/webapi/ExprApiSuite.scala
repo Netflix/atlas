@@ -113,6 +113,30 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(data, List("name,sps,:eq,:sum,2.0,:mul", "name,sps,:eq,:sum"))
   }
 
+  testGet("/api/v1/expr/normalize?q=name,sps,:eq,:dup,:and") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
+  testGet("/api/v1/expr/normalize?q=name,sps,:eq,name,(,sps,),:in,:and") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
+  testGet("/api/v1/expr/normalize?q=name,sps,:eq,name,(,sps,sps,),:in,:and") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,sps,:eq,:sum"))
+  }
+
+  testGet("/api/v1/expr/normalize?q=name,(,sps1,sps2,),:in,name,(,sps2,sps1,),:in,:and") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,(,sps1,sps2,),:in,:sum"))
+  }
+
   testGet(
     "/api/v1/expr/normalize?q=(,name,:swap,:eq,nf.cluster,foo,:eq,:and,:sum,),foo,:sset,cpu,foo,:fcall,disk,foo,:fcall"
   ) {
