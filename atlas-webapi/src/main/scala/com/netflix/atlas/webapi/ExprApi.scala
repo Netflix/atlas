@@ -340,6 +340,24 @@ object ExprApi {
   }
 
   /**
+    * For conjunctions that are combined with OR, if a given conjunction is a superset
+    * of every other conjunction, then it can be removed because an entry would be matched
+    * based on the other branches of the OR, so the additional conditions do not change the
+    * outcome.
+    */
+  private def removeRedundantClauses(queries: List[List[Query]]): List[List[Query]] = {
+    queries match {
+      case Nil      => queries
+      case _ :: Nil => queries
+      case _ =>
+        val sets = queries.map(_.toSet)
+        queries.filterNot { q =>
+          sets.forall(_.subsetOf(q.toSet))
+        }
+    }
+  }
+
+  /**
     * Combines a set of query clauses together using AND. Common query clauses that can
     * be applied later using :cq can be added to the exclude set so they will get ignored
     * here. The clauses will be sorted so any queries with the exact same set of clauses
@@ -348,7 +366,7 @@ object ExprApi {
     */
   private def sort(query: Query): Query = {
     val simplified = Query.simplify(query)
-    Query
+    val normalized = Query
       .dnfList(simplified)
       .map { q =>
         Query
@@ -356,11 +374,14 @@ object ExprApi {
           .map(normalizeClauses)
           .distinct
           .sortWith(_.toString < _.toString)
-          .reduce { (q1, q2) =>
-            Query.And(q1, q2)
-          }
       }
       .distinct
+    removeRedundantClauses(normalized)
+      .map { qs =>
+        qs.reduce { (q1, q2) =>
+          Query.And(q1, q2)
+        }
+      }
       .sortWith(_.toString < _.toString) // order OR clauses
       .reduce { (q1, q2) =>
         Query.Or(q1, q2)
