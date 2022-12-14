@@ -410,6 +410,12 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(normalize(expr), List(expected))
   }
 
+  test("normalize duplicate or clauses") {
+    val expr = "name,a,:eq,name,b,:eq,:or,name,a,:eq,:or"
+    val expected = "name,a,:eq,name,b,:eq,:or,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
   test("normalize simplify query") {
     val input = "app,foo,:eq,name,cpuUser,:eq,:and,:true,:and,:sum"
     val expected = "app,foo,:eq,name,cpuUser,:eq,:and,:sum"

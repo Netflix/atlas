@@ -360,6 +360,7 @@ object ExprApi {
             Query.And(q1, q2)
           }
       }
+      .distinct
       .sortWith(_.toString < _.toString) // order OR clauses
       .reduce { (q1, q2) =>
         Query.Or(q1, q2)
