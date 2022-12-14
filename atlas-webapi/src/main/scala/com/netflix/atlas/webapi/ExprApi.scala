@@ -307,6 +307,16 @@ object ExprApi {
     }
   }
 
+  private def normalizeClauses(query: Query): Query = query match {
+    case Query.In(k, vs) =>
+      val values = vs.sorted.distinct
+      if (values.lengthCompare(1) == 0)
+        Query.Equal(k, values.head)
+      else
+        Query.In(k, values)
+    case q => q
+  }
+
   /**
     * Combines a set of query clauses together using AND. Common query clauses that can
     * be applied later using :cq can be added to the exclude set so they will get ignored
@@ -319,9 +329,14 @@ object ExprApi {
     Query
       .dnfList(simplified)
       .map { q =>
-        Query.cnfList(q).sortWith(_.toString < _.toString).reduce { (q1, q2) =>
-          Query.And(q1, q2)
-        }
+        Query
+          .cnfList(q)
+          .map(normalizeClauses)
+          .distinct
+          .sortWith(_.toString < _.toString)
+          .reduce { (q1, q2) =>
+            Query.And(q1, q2)
+          }
       }
       .sortWith(_.toString < _.toString) // order OR clauses
       .reduce { (q1, q2) =>
