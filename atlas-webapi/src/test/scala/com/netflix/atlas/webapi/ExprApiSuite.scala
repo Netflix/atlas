@@ -392,6 +392,24 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(normalize(avg), List(avg))
   }
 
+  test("normalize :stat-aggr with no condition filters") {
+    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,nf.cluster,),:by,:stat-max,:filter"
+    assertEquals(normalize(expr), List(expr))
+  }
+
+  test("normalize :stat to :stat-aggr if possible") {
+    val expr = "name,sps,:eq,(,nf.cluster,),:by,:dup,max,:stat,5,:gt,:filter"
+    val expected = "name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,5.0,:gt,:filter"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("normalize :stat to :stat-aggr nested") {
+    val expr =
+      "name,sps,:eq,(,nf.cluster,),:by,:dup,:dup,max,:stat,:swap,avg,:stat,:sub,5,:gt,:filter"
+    val expected = "name,sps,:eq,:sum,(,nf.cluster,),:by,:stat-max,:stat-avg,:sub,5.0,:gt,:filter"
+    assertEquals(normalize(expr), List(expected))
+  }
+
   test("normalize simplify query") {
     val input = "app,foo,:eq,name,cpuUser,:eq,:and,:true,:and,:sum"
     val expected = "app,foo,:eq,name,cpuUser,:eq,:and,:sum"
