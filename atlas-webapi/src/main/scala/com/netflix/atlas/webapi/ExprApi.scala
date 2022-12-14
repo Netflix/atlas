@@ -28,6 +28,7 @@ import com.netflix.atlas.core.model.FilterExpr
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StyleExpr
+import com.netflix.atlas.core.model.TimeSeriesExpr
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.Word
@@ -295,10 +296,31 @@ object ExprApi {
     }
   }
 
+  private def normalizeStat(expr: StyleExpr): StyleExpr = {
+    expr
+      .rewrite {
+        case FilterExpr.Filter(ts1, ts2) =>
+          val updated = ts2.rewrite {
+            case FilterExpr.Stat(ts, s, None) if ts == ts1 =>
+              s match {
+                case "avg"   => FilterExpr.StatAvg
+                case "min"   => FilterExpr.StatMin
+                case "max"   => FilterExpr.StatMax
+                case "last"  => FilterExpr.StatLast
+                case "total" => FilterExpr.StatTotal
+                case "count" => FilterExpr.StatCount
+                case _       => FilterExpr.Stat(ts, s, None)
+              }
+          }
+          FilterExpr.Filter(ts1, updated.asInstanceOf[TimeSeriesExpr])
+      }
+      .asInstanceOf[StyleExpr]
+  }
+
   private def exprStrings(exprs: List[StyleExpr]): List[String] = {
     // Rewrite the expressions and convert to a normalized strings
     exprs.map { expr =>
-      val rewritten = expr.rewrite {
+      val rewritten = normalizeStat(expr).rewrite {
         case q: Query => sort(q)
       }
       // Remove explicit :const, it can be determined from implicit conversion
