@@ -36,12 +36,14 @@ class PaletteSuite extends FunSuite {
   test("colors:f00") {
     val p = Palette.create("colors:f00")
     assertEquals(p.colors(0), Color.RED)
+    assertEquals(1, p.colorArray.size)
   }
 
   test("colors:f00,00ff00") {
     val p = Palette.create("colors:f00,00ff00")
     assertEquals(p.colors(0), Color.RED)
     assertEquals(p.colors(1), Color.GREEN)
+    assertEquals(2, p.colorArray.size)
   }
 
   test("colors:f00,00ff00,ff0000ff") {
@@ -49,6 +51,7 @@ class PaletteSuite extends FunSuite {
     assertEquals(p.colors(0), Color.RED)
     assertEquals(p.colors(1), Color.GREEN)
     assertEquals(p.colors(2), Color.BLUE)
+    assertEquals(3, p.colorArray.size)
   }
 
   test("(,)") {
@@ -66,12 +69,14 @@ class PaletteSuite extends FunSuite {
   test("(,f00,)") {
     val p = Palette.create("(,f00,)")
     assertEquals(p.colors(0), Color.RED)
+    assertEquals(1, p.colorArray.size)
   }
 
   test("(,f00,00ff00,)") {
     val p = Palette.create("(,f00,00ff00,)")
     assertEquals(p.colors(0), Color.RED)
     assertEquals(p.colors(1), Color.GREEN)
+    assertEquals(2, p.colorArray.size)
   }
 
   test("(,f00,00ff00,ff0000ff,)") {
@@ -79,11 +84,13 @@ class PaletteSuite extends FunSuite {
     assertEquals(p.colors(0), Color.RED)
     assertEquals(p.colors(1), Color.GREEN)
     assertEquals(p.colors(2), Color.BLUE)
+    assertEquals(3, p.colorArray.size)
   }
 
   test("armytage") {
     val p = Palette.create("armytage")
     assertEquals(p.colors(0), new Color(0, 117, 220))
+    assertEquals(24, p.colorArray.size)
   }
 
   test("foo") {
