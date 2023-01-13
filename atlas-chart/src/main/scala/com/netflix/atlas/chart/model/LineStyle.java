@@ -19,5 +19,5 @@ package com.netflix.atlas.chart.model;
  * Line styles for how to render an time series.
  */
 public enum LineStyle {
-  LINE, AREA, STACK, VSPAN
+  LINE, AREA, STACK, VSPAN, HEATMAP
 }

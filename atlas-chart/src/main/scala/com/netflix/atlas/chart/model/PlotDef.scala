@@ -38,6 +38,8 @@ import com.netflix.atlas.chart.model.PlotBound.Explicit
   *     Lower limit for the axis.
   * @param tickLabelMode
   *     Mode to use for displaying tick labels.
+  * @param heatmapDef
+  *     Optional heatmap settings for the plot.
   */
 case class PlotDef(
   data: List[DataDef],
@@ -46,7 +48,8 @@ case class PlotDef(
   scale: Scale = Scale.LINEAR,
   upper: PlotBound = AutoStyle,
   lower: PlotBound = AutoStyle,
-  tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL
+  tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL,
+  heatmapDef: Option[HeatmapDef] = None
 ) {
 
   import java.lang.{Double => JDouble}

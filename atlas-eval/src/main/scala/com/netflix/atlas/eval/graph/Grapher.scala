@@ -295,6 +295,19 @@ case class Grapher(settings: DefaultSettings) {
         val axisCfg = config.flags.axes(yaxis)
         val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
 
+        if (
+          (dfltStyle == LineStyle.STACK || exprs.exists(
+            _.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)) == LineStyle.STACK
+          )) && exprs.exists(
+            _.lineStyle
+              .fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)) == LineStyle.HEATMAP
+          )
+        ) {
+          throw new IllegalArgumentException(
+            "Mixing STACK and HEATMAP line styles on the same axis is not allowed."
+          )
+        }
+
         val statFormatter = axisCfg.tickLabelMode match {
           case TickLabelMode.BINARY =>
             (v: Double) => UnitPrefix.binary(v).format(v)
@@ -307,6 +320,7 @@ case class Grapher(settings: DefaultSettings) {
         }
 
         var messages = List.empty[String]
+        var heatmapColor: Color = null
         val lines = exprs.flatMap { s =>
           val result = eval(s)
 
@@ -332,7 +346,7 @@ case class Grapher(settings: DefaultSettings) {
             newT.withLabel(s.legend(newT.label, legendTags)) -> stats
           }
 
-          val linePalette = s.palette.map(newPalette).getOrElse {
+          val palette = s.palette.map(newPalette).getOrElse {
             s.color
               .map { c =>
                 val p = Palette.singleColor(c).iterator
@@ -342,14 +356,53 @@ case class Grapher(settings: DefaultSettings) {
                 if (s.offset > 0L) shiftPalette else axisPalette
               }
           }
+
           val lineDefs = labelledTS.sortWith(_._1.label < _._1.label).map {
             case (t, stats) =>
+              val lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase))
               val color = s.color.getOrElse {
-                val c = linePalette(t.label)
+                val c = lineStyle match {
+                  case LineStyle.HEATMAP =>
+                    if (axisCfg.heatmapPalette.nonEmpty) {
+                      // don't consume a color if the the global heatmap palette is configured.
+                      // Just set it to something.
+                      if (heatmapColor == null) heatmapColor = Color.BLACK
+                    } else {
+                      if (heatmapColor == null) heatmapColor = palette(s"heatmap${yaxis}")
+                    }
+                    heatmapColor
+                  case _ => palette(t.label)
+                }
                 // Alpha setting if present will set the alpha value for the color automatically
                 // assigned by the palette. If using an explicit color it will have no effect as the
                 // alpha can be set directly using an ARGB hex format for the color.
                 s.alpha.fold(c)(a => Colors.withAlpha(c, a))
+              }
+
+              // determine a palette to assign to the line. This is primarily used
+              // by heatmaps and imposes an order of precedence starting with an
+              // overarching heatmap palette.
+              val linePalette: Option[Palette] = {
+                if (lineStyle == LineStyle.HEATMAP && axisCfg.heatmapPalette.nonEmpty) {
+                  val p = axisCfg.heatmapPalette.get
+                  if (p.contains("colors:") || p.contains("("))
+                    Some(
+                      Palette.fromArray("HeatMap", Palette.create(p).colorArray.reverse.toArray)
+                    )
+                  else
+                    Some(Palette.create(p))
+                } else if (s.color.nonEmpty) {
+                  None
+                } else if (s.palette.nonEmpty) {
+                  Some(newPaletteRef(s.palette.get))
+                } else if (axisCfg.palette.nonEmpty) {
+                  Some(newPaletteRef(axisCfg.palette.get))
+                } else {
+                  lineStyle match {
+                    case LineStyle.HEATMAP => None
+                    case _                 => Some(newPaletteRef(config.flags.palette))
+                  }
+                }
               }
 
               LineDef(
@@ -359,7 +412,8 @@ case class Grapher(settings: DefaultSettings) {
                 color = color,
                 lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
                 lineWidth = s.lineWidth,
-                legendStats = stats
+                legendStats = stats,
+                palette = linePalette
               )
           }
 
@@ -400,6 +454,16 @@ case class Grapher(settings: DefaultSettings) {
     } else {
       val p = Palette.create(mode).iterator
       _ => p.next()
+    }
+  }
+
+  private def newPaletteRef(mode: String): Palette = {
+    val prefix = "hash:"
+    if (mode.startsWith(prefix)) {
+      val pname = mode.substring(prefix.length)
+      Palette.create(pname)
+    } else {
+      Palette.create(mode)
     }
   }
 

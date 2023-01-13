@@ -17,7 +17,6 @@ package com.netflix.atlas.chart.graphics
 
 import java.awt.BasicStroke
 import java.awt.Graphics2D
-
 import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineStyle
@@ -119,6 +118,9 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
             case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
             case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
             case LineStyle.STACK => TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
+            case LineStyle.HEATMAP =>
+              // no-op for now.
+              new Element { def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int) = () }
           }
 
           lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)

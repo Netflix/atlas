@@ -52,6 +52,8 @@ sealed trait DataDef {
   *     Width of the stroke when rendering the line. Has no effect for styles other than LINE.
   * @param legendStats
   *     Summary stats for the data in the line.
+  * @param palette
+  *     An optional link to a palette override for this line..
   */
 case class LineDef(
   data: TimeSeries,
@@ -60,7 +62,8 @@ case class LineDef(
   color: Color = Color.RED,
   lineStyle: LineStyle = LineStyle.LINE,
   lineWidth: Float = 1.0f,
-  legendStats: SummaryStats = SummaryStats.empty
+  legendStats: SummaryStats = SummaryStats.empty,
+  palette: Option[Palette] = None
 ) extends DataDef {
 
   def label: String = data.label

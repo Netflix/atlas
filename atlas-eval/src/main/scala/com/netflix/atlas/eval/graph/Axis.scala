@@ -16,12 +16,14 @@
 package com.netflix.atlas.eval.graph
 
 import com.netflix.atlas.chart.model.DataDef
+import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineDef
+import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.chart.model.PlotBound
-import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.chart.model.Scale
 import com.netflix.atlas.chart.model.TickLabelMode
+import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.core.util.Strings
 
 case class Axis(
@@ -33,7 +35,12 @@ case class Axis(
   tickLabels: Option[String] = None,
   palette: Option[String] = None,
   sort: Option[String] = None,
-  order: Option[String] = None
+  order: Option[String] = None,
+  heatmapScale: Option[String] = None,
+  heatmapUpper: Option[String] = None,
+  heatmapLower: Option[String] = None,
+  heatmapPalette: Option[String] = None,
+  heatmapLegend: Option[String] = None
 ) {
 
   val tickLabelMode: TickLabelMode = {
@@ -59,7 +66,16 @@ case class Axis(
       ylabel = label,
       scale = Scale.fromName(scale.getOrElse("linear")),
       axisColor = if (multiY) data.headOption.map(_.color) else None,
-      tickLabelMode = tickLabelMode
+      tickLabelMode = tickLabelMode,
+      heatmapDef = Some(
+        HeatmapDef(
+          heatmapScale.fold[Scale](Scale.LINEAR)(Scale.fromName(_)),
+          heatmapUpper.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
+          heatmapLower.fold[PlotBound](AutoStyle)(v => PlotBound(v)),
+          heatmapPalette.fold[Option[Palette]](None)(p => Some(Palette.create(p))),
+          heatmapLegend
+        )
+      )
     )
   }
 }

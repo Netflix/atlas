@@ -554,6 +554,13 @@ class GrapherSuite extends FunSuite {
     assertEquals(config.query, "a,b,:foo")
     assert(config.parsedQuery.isFailure)
   }
+
+  test("heatmap and stack not allowed") {
+    val uri = "/api/v1/graph?q=a,b,:eq,heatmap,:ls,a,b,:eq,stack,:ls"
+    intercept[IllegalArgumentException] {
+      grapher.evalAndRender(Uri(uri), db)
+    }
+  }
 }
 
 object GrapherSuite {
