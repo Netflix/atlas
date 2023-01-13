@@ -75,7 +75,7 @@ case class Palette(name: String, colorArray: ArraySeq[Color]) {
     *   A deterministic color in the palette.
     */
   def colors(i: Int): Color = {
-    val index = Math.abs(i - ((i / colorArray.length) * colorArray.length))
+    val index = math.abs(i) % colorArray.length
     colorArray(index)
   }
 }
