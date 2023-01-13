@@ -18,67 +18,39 @@ package com.netflix.atlas.chart.model
 import java.awt.Color
 import java.io.FileNotFoundException
 import java.util.concurrent.ConcurrentHashMap
-
 import com.netflix.atlas.chart.Colors
 import com.netflix.atlas.core.util.Strings
 
-case class Palette(name: String, colors: Int => Color) {
+import scala.collection.immutable.ArraySeq
 
-  /**
-    * The list of unique colors for the palette. Cached for re-use. Used by heatmaps.
-    */
-  lazy val uniqueColors: List[Color] = {
-    val it = iterator
-    val colors = List.newBuilder[Color]
-    val init = it.next()
-    colors += init
-    var next = it.next()
-    while (it.hasNext && !init.equals(next)) {
-      colors += next
-      next = it.next()
-    }
-    colors.result()
-  }
+case class Palette(name: String, colorArray: ArraySeq[Color]) {
 
   override def equals(obj: Any): Boolean = {
     if (obj == null) return false
     if (!obj.isInstanceOf[Palette]) return false
     val other = obj.asInstanceOf[Palette]
     if (!name.equals(other.name)) return false
-    uniqueColors.equals(other.uniqueColors)
+    colorArray.equals(other.colorArray)
   }
 
-  def withAlpha(alpha: Int): Palette = {
+  def withAlpha(alpha: Int): Palette =
+    Palette(name, colorArray.map(c => new Color(c.getRed, c.getGreen, c.getBlue, alpha)))
 
-    def f(i: Int): Color = {
-      val c = colors(i)
-      new Color(c.getRed, c.getGreen, c.getBlue, alpha)
-    }
-    Palette(name, f)
-  }
-
-  def withVisionType(vision: VisionType): Palette = {
-
-    def f(i: Int): Color = {
-      val c = colors(i)
-      vision.convert(c)
-    }
-    Palette(s"${vision.name}_$name", f)
-  }
+  def withVisionType(vision: VisionType): Palette =
+    Palette(s"${vision.name}_$name", colorArray.map(vision.convert(_)))
 
   /**
     * Convert colors from another palette into grayscale. For information about the conversion
     * see: http://www.johndcook.com/blog/2009/08/24/algorithms-convert-color-grayscale/.
     */
-  def asGrayscale: Palette = {
-
-    def f(i: Int): Color = {
-      val c = colors(i)
-      val v = (0.21 * c.getRed + 0.72 * c.getGreen + 0.07 * c.getBlue).toInt
-      new Color(v, v, v, c.getAlpha)
-    }
-    Palette(s"grayscale_$name", f)
-  }
+  def asGrayscale: Palette =
+    Palette(
+      s"grayscale_$name",
+      colorArray.map { c =>
+        val v = (0.21 * c.getRed + 0.72 * c.getGreen + 0.07 * c.getBlue).toInt
+        new Color(v, v, v, c.getAlpha)
+      }
+    )
 
   def iterator: Iterator[Color] = new Iterator[Color] {
 
@@ -88,8 +60,23 @@ case class Palette(name: String, colors: Int => Color) {
 
     override def next(): Color = {
       pos += 1
-      colors(pos)
+      if (pos >= colorArray.length) pos = 0
+      colorArray(pos)
     }
+  }
+
+  /**
+    * Rotates through the colors in the palette based on the index, returning a
+    * deterministic color.
+    *
+    * @param i
+    *   A positive integer value.
+    * @return
+    *   A deterministic color in the palette.
+    */
+  def colors(i: Int): Color = {
+    val index = Math.abs(i - ((i / colorArray.length) * colorArray.length))
+    colorArray(index)
   }
 }
 
@@ -145,7 +132,7 @@ object Palette {
 
   def fromArray(name: String, colors: Array[Color]): Palette = {
     require(colors.nonEmpty, "palette must contain at least one color")
-    Palette(name, i => colors(math.abs(i) % colors.length))
+    Palette(name, ArraySeq.from(colors))
   }
 
   /**
@@ -167,7 +154,7 @@ object Palette {
   }
 
   def singleColor(c: Color): Palette = {
-    Palette("%08X".format(c.getRGB), _ => c)
+    Palette("%08X".format(c.getRGB), ArraySeq(c))
   }
 
   def brighter(c: Color, n: Int): Palette = {
