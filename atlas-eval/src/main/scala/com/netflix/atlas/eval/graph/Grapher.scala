@@ -292,7 +292,7 @@ case class Grapher(settings: DefaultSettings) {
 
     val plots = plotExprs.toList.sortWith(_._1 < _._1).map {
       case (yaxis, exprs) =>
-        val axisCfg = config.flags.axes(yaxis)
+        var axisCfg = config.flags.axes(yaxis)
         val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
 
         if (
@@ -382,26 +382,15 @@ case class Grapher(settings: DefaultSettings) {
               // determine a palette to assign to the line. This is primarily used
               // by heatmaps and imposes an order of precedence starting with an
               // overarching heatmap palette.
-              val linePalette: Option[Palette] = {
-                if (lineStyle == LineStyle.HEATMAP && axisCfg.heatmapPalette.nonEmpty) {
-                  val p = axisCfg.heatmapPalette.get
-                  if (p.contains("colors:") || p.contains("("))
-                    Some(
-                      Palette.fromArray("HeatMap", Palette.create(p).colorArray.reverse.toArray)
-                    )
-                  else
-                    Some(Palette.create(p))
-                } else if (s.color.nonEmpty) {
-                  None
-                } else if (s.palette.nonEmpty) {
-                  Some(newPaletteRef(s.palette.get))
+              if (lineStyle == LineStyle.HEATMAP && axisCfg.palette.isEmpty) {
+                if (s.palette.nonEmpty) {
+                  axisCfg = axisCfg.copy(
+                    heatmapPalette = s.palette
+                  )
                 } else if (axisCfg.palette.nonEmpty) {
-                  Some(newPaletteRef(axisCfg.palette.get))
-                } else {
-                  lineStyle match {
-                    case LineStyle.HEATMAP => None
-                    case _                 => Some(newPaletteRef(config.flags.palette))
-                  }
+                  axisCfg = axisCfg.copy(
+                    heatmapPalette = axisCfg.palette
+                  )
                 }
               }
 
@@ -412,8 +401,7 @@ case class Grapher(settings: DefaultSettings) {
                 color = color,
                 lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
                 lineWidth = s.lineWidth,
-                legendStats = stats,
-                palette = linePalette
+                legendStats = stats
               )
           }
 
@@ -454,16 +442,6 @@ case class Grapher(settings: DefaultSettings) {
     } else {
       val p = Palette.create(mode).iterator
       _ => p.next()
-    }
-  }
-
-  private def newPaletteRef(mode: String): Palette = {
-    val prefix = "hash:"
-    if (mode.startsWith(prefix)) {
-      val pname = mode.substring(prefix.length)
-      Palette.create(pname)
-    } else {
-      Palette.create(mode)
     }
   }
 
