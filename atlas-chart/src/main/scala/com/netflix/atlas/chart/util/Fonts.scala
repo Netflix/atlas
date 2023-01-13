@@ -56,6 +56,7 @@ object Fonts {
     // at this point
     val isAtLeastJdk15 = System.getProperty("java.specification.version").toDouble >= 15.0
     val isMacOS = System.getProperty("os.name") == "Mac OS X"
-    isAtLeastJdk15 && isMacOS
+    val isArm = System.getProperty("os.arch") == "aarch64"
+    isAtLeastJdk15 && isMacOS && !isArm
   }
 }
