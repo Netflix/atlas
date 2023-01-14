@@ -57,14 +57,18 @@ class GraphApi(config: Config, implicit val actorRefFactory: ActorRefFactory) ex
 
 object GraphApi {
 
-  case class DataRequest(context: EvalContext, exprs: List[DataExpr])
+  case class DataRequest(
+    context: EvalContext,
+    exprs: List[DataExpr],
+    config: Option[GraphConfig] = None
+  )
 
   object DataRequest {
 
     def apply(config: GraphConfig): DataRequest = {
       val dataExprs = config.exprs.flatMap(_.expr.dataExprs)
       val deduped = dataExprs.distinct
-      DataRequest(config.evalContext, deduped)
+      DataRequest(config.evalContext, deduped, Option(config))
     }
   }
 
