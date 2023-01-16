@@ -94,7 +94,7 @@ case class Grapher(settings: DefaultSettings) {
     */
   def toGraphConfig(uri: Uri): GraphConfig = {
     val params = uri.query()
-    val id = "default"
+    val id = params.get("id").getOrElse("default")
 
     val features = params
       .get("features")
