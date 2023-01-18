@@ -36,7 +36,7 @@ import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.iep.NetflixEnvironment
+import com.netflix.iep.config.NetflixEnvironment
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging

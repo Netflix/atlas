@@ -13,7 +13,7 @@ object Dependencies {
     val akka       = "2.6.20"
     val akkaHttpV  = "10.2.10"
 
-    val iep        = "4.0.4"
+    val iep        = "4.1.0"
     val jackson    = "2.14.1"
     val log4j      = "2.19.0"
     val scala      = "2.13.10"
@@ -39,7 +39,7 @@ object Dependencies {
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.12.2"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
-  val iepNflxEnv        = "com.netflix.iep" % "iep-nflxenv" % iep
+  val iepDynConfig      = "com.netflix.iep" % "iep-dynconfig" % iep
   val iepService        = "com.netflix.iep" % "iep-service" % iep
   val iepSpring         = "com.netflix.iep" % "iep-spring" % iep
   val iepSpringAtlas    = "com.netflix.iep" % "iep-spring-atlas" % iep
