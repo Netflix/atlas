@@ -22,9 +22,7 @@ import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.RestartSettings
 import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.RestartFlow
-import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
@@ -133,14 +131,13 @@ object ClusterOps extends StrictLogging {
           }
           val sources = added.toList
             .map { m =>
-              val (queue, publisher) = StreamOps
-                .blockingQueue(registry, "ClusterGroupBy", context.queueSize)
-                .toMat(Sink.asPublisher[D](false))(Keep.both)
-                .run()(materializer)
-              membersSources += m -> queue
-              Source
-                .fromPublisher(publisher)
+              val (queue, source) = StreamOps
+                .blockingQueue(registry, context.id, context.queueSize)
                 .via(newSubFlow(m))
+                .preMaterialize()(materializer)
+
+              membersSources += m -> queue
+              source
             }
 
           push(out, sources)
