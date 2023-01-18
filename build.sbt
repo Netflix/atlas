@@ -54,7 +54,7 @@ lazy val `atlas-core` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.caffeine,
     Dependencies.datasketches,
-    Dependencies.iepNflxEnv,
+    Dependencies.iepDynConfig,
     Dependencies.roaringBitmap,
     Dependencies.equalsVerifier % "test",
     Dependencies.jol % "test"
@@ -93,7 +93,7 @@ lazy val `atlas-lwcapi` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-akka`, `atlas-akka-testkit` % "test", `atlas-core`, `atlas-eval`, `atlas-json`)
   .settings(libraryDependencies ++= Seq(
-    Dependencies.iepNflxEnv,
+    Dependencies.iepDynConfig,
     Dependencies.akkaTestkit % "test",
     Dependencies.akkaHttpTestkit % "test",
     Dependencies.akkaStreamTestkit % "test"
