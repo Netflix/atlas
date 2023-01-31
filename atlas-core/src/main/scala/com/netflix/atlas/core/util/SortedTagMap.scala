@@ -15,6 +15,11 @@
  */
 package com.netflix.atlas.core.util
 
+import com.netflix.spectator.api.Id
+import com.netflix.spectator.api.Tag
+
+import java.lang
+
 /**
   * Immutable map implementation for tag maps using a sorted array as the underlying storage.
   */
@@ -251,6 +256,15 @@ final class SortedTagMap private (private val data: Array[String], private val l
     }
     vs
   }
+
+  /**
+    * Returns a view of this map as a Spectator Id. The map must have a `name` dimension. For
+    * read only use-cases, such as using with the Spectator QueryIndex, this can be more efficient
+    * than converting to the default implementations of Id.
+    */
+  def toSpectatorId: Id = {
+    new SortedTagMap.IdView(this)
+  }
 }
 
 /** Helper functions for working with sorted tag maps. */
@@ -415,6 +429,66 @@ object SortedTagMap {
         buf = null
         map
       }
+    }
+  }
+
+  /** Wraps a SortedTagMap to conform to the Spectator Id interface. */
+  private class IdView(map: SortedTagMap) extends Id {
+
+    private val namePos = {
+      val pos = map.find("name")
+      if (pos < 0) {
+        throw new IllegalArgumentException(s"`name` key is not present: $map")
+      }
+      pos / 2
+    }
+
+    override def name(): String = {
+      map.value(namePos)
+    }
+
+    override def tags(): lang.Iterable[Tag] = {
+      import scala.jdk.CollectionConverters._
+      map.toSeq.filter(_._1 != "name").map(t => Tag.of(t._1, t._2)).asJava
+    }
+
+    /**
+      * For an Id, the first element is the name and then the rest of the tag list is
+      * sorted. The SortedTagMap has everything sorted by the key. The method adjusts the
+      * index used for an Id based on the position of the name key to that used by the
+      * SortedTagMap.
+      */
+    private def computeIndex(i: Int): Int = {
+      if (i == 0)
+        namePos
+      else if (i <= namePos)
+        i - 1
+      else
+        i
+    }
+
+    override def getKey(i: Int): String = {
+      map.key(computeIndex(i))
+    }
+
+    override def getValue(i: Int): String = {
+      map.value(computeIndex(i))
+    }
+
+    override def size(): Int = {
+      map.size
+    }
+
+    override def withTag(k: String, v: String): Id = {
+      toDefaultId.withTag(k, v)
+    }
+
+    override def withTag(t: Tag): Id = {
+      toDefaultId.withTag(t)
+    }
+
+    private def toDefaultId: Id = {
+      Id.create(name()).withTags(tags())
     }
   }
 }
