@@ -258,12 +258,25 @@ final class SortedTagMap private (private val data: Array[String], private val l
   }
 
   /**
-    * Returns a view of this map as a Spectator Id. The map must have a `name` dimension. For
-    * read only use-cases, such as using with the Spectator QueryIndex, this can be more efficient
-    * than converting to the default implementations of Id.
+    * Returns a view of this map as a Spectator Id. For read only use-cases, such as using with
+    * the Spectator QueryIndex, this can be more efficient than converting to the default
+    * implementations of Id.
+    *
+    * @param defaultName
+    *     Default value to use for the required name dimension on the id if that key is not
+    *     present in the map. If set to `None`, then it will fail if there is no `name` key in
+    *     the map.
     */
-  def toSpectatorId: Id = {
-    new SortedTagMap.IdView(this)
+  def toSpectatorId(defaultName: Option[String] = None): Id = {
+    val pos = find("name")
+    if (pos < 0) {
+      defaultName match {
+        case Some(name) => Id.unsafeCreate(name, data, length)
+        case None       => throw new IllegalArgumentException(s"`name` key is not present: $this")
+      }
+    } else {
+      new SortedTagMap.IdView(this, pos / 2)
+    }
   }
 }
 
@@ -433,15 +446,7 @@ object SortedTagMap {
   }
 
   /** Wraps a SortedTagMap to conform to the Spectator Id interface. */
-  private class IdView(map: SortedTagMap) extends Id {
-
-    private val namePos = {
-      val pos = map.find("name")
-      if (pos < 0) {
-        throw new IllegalArgumentException(s"`name` key is not present: $map")
-      }
-      pos / 2
-    }
+  private class IdView(map: SortedTagMap, namePos: Int) extends Id {
 
     override def name(): String = {
       map.value(namePos)

@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.util
 
+import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Tag
 import munit.FunSuite
 
@@ -308,18 +309,33 @@ class SortedTagMapSuite extends FunSuite {
 
   test("toSpectatorId: empty") {
     intercept[IllegalArgumentException] {
-      SortedTagMap.empty.toSpectatorId
+      SortedTagMap.empty.toSpectatorId()
     }
   }
 
   test("toSpectatorId: missing name") {
     intercept[IllegalArgumentException] {
-      SortedTagMap("a" -> "1", "b" -> "2").toSpectatorId
+      SortedTagMap("a" -> "1", "b" -> "2").toSpectatorId()
     }
   }
 
+  test("toSpectatorId: missing name and default") {
+    val id = SortedTagMap("a" -> "1", "b" -> "2").toSpectatorId(Option("dflt"))
+    val expected = Id.create("dflt").withTags("a", "1", "b", "2")
+    assertEquals(id, expected)
+  }
+
   test("toSpectatorId: name only") {
-    val id = SortedTagMap("name" -> "foo").toSpectatorId
+    val id = SortedTagMap("name" -> "foo").toSpectatorId()
+    assertEquals(id.name(), "foo")
+    assertEquals(id.size(), id.size())
+    assertEquals(id.getKey(0), "name")
+    assertEquals(id.getValue(0), "foo")
+    assert(!id.tags().iterator().hasNext)
+  }
+
+  test("toSpectatorId: explicit name and default") {
+    val id = SortedTagMap("name" -> "foo").toSpectatorId(Option("dflt"))
     assertEquals(id.name(), "foo")
     assertEquals(id.size(), id.size())
     assertEquals(id.getKey(0), "name")
@@ -329,7 +345,7 @@ class SortedTagMapSuite extends FunSuite {
 
   test("toSpectatorId: name and tags") {
     val map = SortedTagMap("name" -> "foo", "a" -> "1", "b" -> "2", "p" -> "3", "q" -> "4")
-    val id = map.toSpectatorId
+    val id = map.toSpectatorId()
     assertEquals(id.name(), "foo")
     assertEquals(id.size(), id.size())
     assertEquals(id.getKey(0), "name")
@@ -353,7 +369,7 @@ class SortedTagMapSuite extends FunSuite {
 
   test("toSpectatorId: withTag") {
     val map = SortedTagMap("name" -> "foo", "a" -> "1", "b" -> "2", "p" -> "3", "q" -> "4")
-    val id = map.toSpectatorId.withTag("r", "5").withTag(Tag.of("s", "6"))
+    val id = map.toSpectatorId().withTag("r", "5").withTag(Tag.of("s", "6"))
     assertEquals(id.name(), "foo")
     assertEquals(id.size(), id.size())
     assertEquals(id.getKey(0), "name")
