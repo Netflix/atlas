@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream
 import java.time.Duration
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri
+import com.netflix.atlas.akka.Cors
 import com.netflix.atlas.chart.Colors
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.Layout
@@ -56,12 +57,24 @@ case class Grapher(settings: DefaultSettings) {
     */
   def toGraphConfig(request: HttpRequest): GraphConfig = {
     val config = rewriteBasedOnHost(request, toGraphConfig(request.uri))
+
+    // Check if the request is coming from a browser
     val agent = request.headers
       .find(_.is("user-agent"))
       .map(_.value())
       .getOrElse("unknown")
     val isBrowser = settings.browserAgentPattern.matcher(agent).find()
-    config.copy(isBrowser = isBrowser)
+
+    // Only look at headers if the id is not explicitly set on the URI
+    if (config.id == "default") {
+      val origin = request.headers
+        .find(_.is("origin"))
+        .flatMap(h => Cors.normalizedOrigin(h.value()))
+        .getOrElse("default")
+      config.copy(isBrowser = isBrowser, id = origin)
+    } else {
+      config.copy(isBrowser = isBrowser)
+    }
   }
 
   private def rewriteBasedOnHost(request: HttpRequest, config: GraphConfig): GraphConfig = {
