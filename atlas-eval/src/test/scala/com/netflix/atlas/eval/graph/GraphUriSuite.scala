@@ -15,7 +15,9 @@
  */
 package com.netflix.atlas.eval.graph
 
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers.Origin
 import com.netflix.atlas.chart.model.PlotBound
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
@@ -114,5 +116,20 @@ class GraphUriSuite extends FunSuite {
   test("hints: multiple messy") {
     val cfg = parseUri("/api/v1/graph?q=name,foo,:eq,:sum&hints=a,b,%20a%20%20,b,b,b,c")
     assertEquals(cfg.flags.hints, Set("a", "b", "c"))
+  }
+
+  private def parseRequest(uri: String, origin: String): GraphConfig = {
+    val request = HttpRequest(uri = Uri(uri), headers = List(Origin(origin)))
+    grapher.toGraphConfig(request)
+  }
+
+  test("use CORS origin as default id") {
+    val cfg = parseRequest("/api/v1/graph?q=name,foo,:eq,:sum", "http://foo.netflix.com")
+    assertEquals(cfg.id, "foo.netflix.com")
+  }
+
+  test("explicit id parameter takes precedence over CORS origin") {
+    val cfg = parseRequest("/api/v1/graph?q=name,foo,:eq,:sum&id=bar", "http://foo.netflix.com")
+    assertEquals(cfg.id, "bar")
   }
 }
