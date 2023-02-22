@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.netflix.atlas.akka.ThreadPools
+
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -50,7 +52,8 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
 
   // Background process for updating the query index. It is not done inline because rebuilding
   // the index can be computationally expensive.
-  private val ex = new ScheduledThreadPoolExecutor(1, new NamedThreadFactory("ExpressionDatabase"))
+  private val ex =
+    new ScheduledThreadPoolExecutor(1, ThreadPools.threadFactory("ExpressionDatabase"))
   ex.scheduleWithFixedDelay(() => regenerateQueryIndex(), 1, 1, TimeUnit.SECONDS)
   ex.scheduleAtFixedRate(() => updateGauges(), 1, 1, TimeUnit.MINUTES)
 
