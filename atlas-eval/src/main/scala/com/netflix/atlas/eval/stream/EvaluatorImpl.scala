@@ -45,6 +45,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.netflix.atlas.akka.ClusterOps
 import com.netflix.atlas.akka.StreamOps
+import com.netflix.atlas.akka.ThreadPools
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
@@ -60,18 +61,12 @@ import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Registry
-import com.netflix.spectator.api.patterns.ThreadPoolMonitor
 import com.typesafe.config.Config
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
 
-import java.util.concurrent.Executors
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
@@ -105,24 +100,7 @@ private[stream] abstract class EvaluatorImpl(
   private val parsingNumThreads = math.max(Runtime.getRuntime.availableProcessors() / 2, 2)
 
   // Execution context to use for parsing payloads coming back from lwcapi service
-  private val parsingEC = {
-    val threadCount = new AtomicInteger()
-    val factory = new ThreadFactory {
-      override def newThread(r: Runnable): Thread = {
-        val name = s"AtlasEvalParsing-${threadCount.getAndIncrement()}"
-        val thread = new Thread(r, name)
-        thread.setDaemon(true)
-        thread
-      }
-    }
-    val executor = Executors.newFixedThreadPool(parsingNumThreads, factory)
-    ThreadPoolMonitor.attach(
-      registry,
-      executor.asInstanceOf[ThreadPoolExecutor],
-      "AtlasEvalParsing"
-    )
-    ExecutionContext.fromExecutor(executor)
-  }
+  private val parsingEC = ThreadPools.fixedSize(registry, "AtlasEvalParsing", parsingNumThreads)
 
   private def newStreamContext(dsLogger: DataSourceLogger = (_, _) => ()): StreamContext = {
     new StreamContext(
