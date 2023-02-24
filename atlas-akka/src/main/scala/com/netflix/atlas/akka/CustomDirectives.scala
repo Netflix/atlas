@@ -55,7 +55,7 @@ object CustomDirectives {
 
   // Magic header to recognize GZIP compressed data
   // http://www.zlib.org/rfc-gzip.html#file-format
-  private val gzipMagicHeader = ByteString(Array(0x1F.toByte, 0x8B.toByte))
+  val gzipMagicHeader = ByteString(Array(0x1F.toByte, 0x8B.toByte))
 
   /**
     * Create an InputStream for reading the content of the ByteString. If the data is
@@ -64,14 +64,22 @@ object CustomDirectives {
     * be preferable to decompress while parsing into the final object model to reduce
     * the need to allocate an intermediate ByteString of the uncompressed data.
     */
-  private def inputStream(bytes: ByteString): InputStream = {
+  def inputStream(bytes: ByteString): InputStream = {
     if (bytes.startsWith(gzipMagicHeader))
       new GZIPInputStream(new ByteStringInputStream(bytes))
     else
       new ByteStringInputStream(bytes)
   }
 
-  private def isSmile(mediaType: MediaType): Boolean = {
+  /**
+    * Determines if the media type matches `application/x-jackson-smile`
+    *
+    * @param mediaType
+    *   A non-null media type object.
+    * @return
+    *   True if the media type matches the Smile type, false if not.
+    */
+  def isSmile(mediaType: MediaType): Boolean = {
     mediaType == CustomMediaTypes.`application/x-jackson-smile`
   }
 
