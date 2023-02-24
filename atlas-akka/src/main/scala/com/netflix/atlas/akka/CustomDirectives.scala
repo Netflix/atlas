@@ -75,9 +75,9 @@ object CustomDirectives {
     * Determines if the media type matches `application/x-jackson-smile`
     *
     * @param mediaType
-    *   A non-null media type object.
+    *     A non-null media type object.
     * @return
-    *   True if the media type matches the Smile type, false if not.
+    *     True if the media type matches the Smile type, false if not.
     */
   def isSmile(mediaType: MediaType): Boolean = {
     mediaType == CustomMediaTypes.`application/x-jackson-smile`
