@@ -22,7 +22,7 @@ import akka.http.scaladsl.model.HttpResponse
 import scala.concurrent.Future
 
 /**
-  * A wrapper use for simple unit testing of Akka HTTP calls.
+  * A wrapper used for simple unit testing of Akka HTTP calls.
   */
 trait AkkaHttpClient {
 
