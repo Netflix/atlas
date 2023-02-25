@@ -17,6 +17,8 @@ package com.netflix.atlas.core.util
 
 import java.util.Comparator
 import scala.reflect.ClassTag
+import scala.util.control.Breaks.break
+import scala.util.control.Breaks.breakable
 
 object ArrayHelper {
 
@@ -439,5 +441,130 @@ object ArrayHelper {
         i += 2
       }
     }
+  }
+
+  /**
+    * Determines if the content of the arrays are identical. If both arrays are null,
+    * the result is true.
+    *
+    * @param a
+    *     First byte array to compare.
+    * @param b
+    *     Second byte array to compare
+    * @return
+    *     True if both arrays are null or have identical content and length. Otherwise
+    *     false.
+    */
+  def byteArraysEquals(a: Array[Byte], b: Array[Byte]): Boolean = memcmpMaybeNull(a, b) == 0
+
+  /**
+    * Equivalent of memcmp in Java, checking the content of two arrays to make sure
+    * the values are the same, returning 0 if so. Can be used for sorting deterministically.
+    * Note that if both arrays are null, the result is 0.
+    *
+    * @param a
+    *     First byte array to compare.
+    * @param b
+    *     Second byte array to compare
+    * @return
+    *     0 if the two arrays are identical (or null), otherwise the difference between the
+    *     first two different bytes, otherwise the different between their lengths.
+    */
+  private def memcmpMaybeNull(a: Array[Byte], b: Array[Byte]): Int = {
+    // Private for now since we aren't using it for sorting.
+    if (a == null) {
+      if (b == null) return 0
+      return -1
+    } else if (b == null) return 1
+    memcmp(a, b)
+  }
+
+  /**
+    * Equivalent of memcmp in Java, checking the content of two arrays to make sure
+    * the values are the same, returning 0 if so. Can be used for sorting deterministically.
+    *
+    * @param a
+    *     First non-{@code null} byte array to compare.
+    * @param b
+    *     Second non-(@code null} byte array to compare
+    * @return
+    *     0 if the two arrays are identical, otherwise the difference between the
+    *     first two different bytes, otherwise the different between their lengths.
+    */
+  private def memcmp(a: Array[Byte], b: Array[Byte]): Int = {
+    // Private for now since we aren't using it for sorting.
+    val length = java.lang.Math.min(a.length, b.length)
+    if (a eq b) { // Do this after accessing a.length and b.length
+      return 0 // in order to NPE if either a or b is null.
+    }
+    var diff = 0
+    breakable {
+      for (i <- 0 until length) {
+        if (a(i) != b(i)) {
+          diff = (a(i) & 0xFF) - (b(i) & 0xFF) // "promote" to unsigned.
+          break()
+        }
+      }
+    }
+    if (diff != 0) return diff
+    a.length - b.length
+  }
+
+  /**
+    * Encodes the signed 64 bit integer in big endian order in the array at the
+    * offset provided.
+    *
+    * @param b
+    *     A non-null byte array to write to with at least 8 bytes at the given
+    *     offset to store the long.
+    * @param n
+    *     The value to encode into the array.
+    * @param offset
+    *     An offset into the byte array.
+    */
+  def setLong(b: Array[Byte], n: Long, offset: Int): Unit = {
+    require(b != null, "Array cannot be null.")
+    require(offset >= 0, "Offset must be greater or equal to 0")
+    require(
+      offset + 8 <= b.length,
+      s"Writing to offset ${offset + 8} would overrun the array of length ${b.length}"
+    )
+    b(offset + 0) = (n >>> 56).toByte
+    b(offset + 1) = (n >>> 48).toByte
+    b(offset + 2) = (n >>> 40).toByte
+    b(offset + 3) = (n >>> 32).toByte
+    b(offset + 4) = (n >>> 24).toByte
+    b(offset + 5) = (n >>> 16).toByte
+    b(offset + 6) = (n >>> 8).toByte
+    b(offset + 7) = (n >>> 0).toByte
+  }
+
+  /**
+    * Decodes a big endian signed 64 bit integer from the given byte array at the
+    * given offset.
+    *
+    * @param b
+    *     A non-null byte array to read from with at least 8 bytes at the given
+    *     offset to read the long.
+    * @param offset
+    *     An offset into the byte array.
+    * @return
+    *     The signed long read from the array.
+    */
+  def getLong(b: Array[Byte], offset: Int): Long = {
+    require(b != null, "Array cannot be null.")
+    require(offset >= 0, "Offset must be greater or equal to 0")
+    require(
+      offset + 8 <= b.length,
+      s"Reading from offset ${offset + 8} would overrun the array of length ${b.length}"
+    )
+    (b(offset + 0) & 0xFFL) << 56 |
+      (b(offset + 1) & 0xFFL) << 48 |
+      (b(offset + 2) & 0xFFL) << 40 |
+      (b(offset + 3) & 0xFFL) << 32 |
+      (b(offset + 4) & 0xFFL) << 24 |
+      (b(offset + 5) & 0xFFL) << 16 |
+      (b(offset + 6) & 0xFFL) << 8 |
+      (b(offset + 7) & 0xFFL) << 0
   }
 }

@@ -15,7 +15,11 @@
  */
 package com.netflix.atlas.core.util
 
+import com.netflix.atlas.core.util.ArrayHelper.byteArraysEquals
+import com.netflix.atlas.core.util.ArrayHelper.getLong
+import com.netflix.atlas.core.util.ArrayHelper.setLong
 import munit.FunSuite
+import org.junit.Assert.assertFalse
 
 import java.util.UUID
 
@@ -274,5 +278,104 @@ class ArrayHelperSuite extends FunSuite {
     ArrayHelper.sortPairs(data)
     val expected = input.toList.sortWith(_._1 < _._1).flatMap(t => List(t._1, t._2))
     assertEquals(expected, data.toList)
+  }
+
+  test("get and set long @0") {
+    val b = new Array[Byte](16)
+    val long = Long.MaxValue
+    setLong(b, long, 0)
+    assertEquals(getLong(b, 0), long)
+  }
+
+  test("get and set long @8") {
+    val b = new Array[Byte](16)
+    val long = Long.MaxValue
+    setLong(b, long, 8)
+    assertEquals(getLong(b, 8), long)
+  }
+
+  test("set long overflow") {
+    val b = new Array[Byte](16)
+    val long = Long.MaxValue
+    intercept[IllegalArgumentException] {
+      setLong(b, long, 9)
+    }
+  }
+
+  test("get long overflow") {
+    val b = new Array[Byte](16)
+    intercept[IllegalArgumentException] {
+      getLong(b, 9)
+    }
+  }
+
+  test("set long underflow") {
+    val b = new Array[Byte](16)
+    val long = Long.MaxValue
+    intercept[IllegalArgumentException] {
+      setLong(b, long, -1)
+    }
+  }
+
+  test("get long underflow") {
+    val b = new Array[Byte](16)
+    intercept[IllegalArgumentException] {
+      getLong(b, -1)
+    }
+  }
+
+  test("set long empty array") {
+    val b = new Array[Byte](0)
+    val long = Long.MaxValue
+    intercept[IllegalArgumentException] {
+      setLong(b, long, 0)
+    }
+  }
+
+  test("get long empty array") {
+    val b = new Array[Byte](0)
+    intercept[IllegalArgumentException] {
+      getLong(b, 0)
+    }
+  }
+
+  test("byte arrays equals, same content") {
+    val a = new Array[Byte](16)
+    val b = new Array[Byte](16)
+    for (i <- 0 until 16) {
+      a(i) = i.toByte
+      b(i) = i.toByte
+    }
+    assert(byteArraysEquals(a, b))
+  }
+
+  test("byte arrays equals, different content") {
+    val a = new Array[Byte](16)
+    val b = new Array[Byte](16)
+    for (i <- 0 until 16) {
+      a(i) = i.toByte
+      b(i) = i.toByte
+    }
+    b(15) = 0 // doh
+    assertFalse(byteArraysEquals(a, b))
+  }
+
+  test("byte arrays equals, different length") {
+    val a = new Array[Byte](16)
+    val b = new Array[Byte](15)
+    for (i <- 0 until 16) {
+      a(i) = i.toByte
+      if (i < 15) b(i) = i.toByte
+    }
+    assertFalse(byteArraysEquals(a, b))
+  }
+
+  test("byte arrays equals, both null") {
+    assert(byteArraysEquals(null, null))
+  }
+
+  test("byte arrays equals, one null") {
+    val a = new Array[Byte](16)
+    assertFalse(byteArraysEquals(a, null))
   }
 }
