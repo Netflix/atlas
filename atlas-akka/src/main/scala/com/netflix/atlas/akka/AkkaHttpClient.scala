@@ -19,9 +19,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
-
-import javax.inject.Inject
-import javax.inject.Singleton
 import scala.concurrent.Future
 
 /**
@@ -30,16 +27,26 @@ import scala.concurrent.Future
 trait AkkaHttpClient {
 
   /**
-    * See [[akka.http.scaladsl.Http]]
+    * See akka.http.scaladsl.Http
     */
   def singleRequest(request: HttpRequest): Future[HttpResponse]
 
 }
 
-@Singleton
-class DefaultAkkaHttpClient @Inject() (implicit val system: ActorSystem) extends AkkaHttpClient {
+/**
+  * Default HTTP client wrapper that includes access logging.
+  *
+  * @param name
+  *     The name to use for access logging and metrics.
+  * @param system
+  *     The Akka system.
+  */
+class DefaultAkkaHttpClient(name: String)(implicit val system: ActorSystem) extends AkkaHttpClient {
+
+  private implicit val ec = system.dispatcher
 
   override def singleRequest(request: HttpRequest): Future[HttpResponse] = {
-    Http().singleRequest(request)
+    val accessLogger = AccessLogger.newClientLogger(name, request)
+    Http()(system).singleRequest(request).andThen { case t => accessLogger.complete(t) }
   }
 }
