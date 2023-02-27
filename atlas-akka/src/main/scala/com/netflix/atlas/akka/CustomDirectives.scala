@@ -431,9 +431,9 @@ object CustomDirectives {
       mapResponseHeaders { headers =>
         val random = ThreadLocalRandom.current()
         if (random.nextDouble() < probability)
-          headers
-        else
           headers.prepended(closeHeader)
+        else
+          headers
       }
     }
   }
