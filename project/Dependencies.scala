@@ -50,7 +50,7 @@ object Dependencies {
   val jacksonMapper     = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
   val jacksonScala      = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile      = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
-  val jol               = "org.openjdk.jol" % "jol-core" % "0.16"
+  val jol               = "org.openjdk.jol" % "jol-core" % "0.17"
   val jsr305            = "com.google.code.findbugs" % "jsr305" % "3.0.2"
   val log4jApi          = "org.apache.logging.log4j" % "log4j-api" % log4j
   val log4jCore         = "org.apache.logging.log4j" % "log4j-core" % log4j
