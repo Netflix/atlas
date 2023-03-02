@@ -21,10 +21,10 @@ import munit.FunSuite
 
 class TrendSuite extends FunSuite {
 
-  val step = 60000L
-  val dataTags = Map("name" -> "cpu", "node" -> "i-1")
+  private val step = 60000L
+  private val dataTags = Map("name" -> "cpu", "node" -> "i-1")
 
-  val alignedStream = List(
+  private val alignedStream = List(
     List(Datapoint(dataTags, 0L * step, 1.0)),
     List(Datapoint(dataTags, 1L * step, 1.5)),
     List(Datapoint(dataTags, 2L * step, 1.6)),
@@ -41,7 +41,7 @@ class TrendSuite extends FunSuite {
     List(Datapoint(dataTags, 13L * step, 1.2))
   )
 
-  val alignedInputTS = TimeSeries(
+  private val alignedInputTS = TimeSeries(
     dataTags,
     new ArrayTimeSeq(
       DsType.Gauge,
@@ -51,7 +51,7 @@ class TrendSuite extends FunSuite {
     )
   )
 
-  val trend = StatefulExpr.Trend(
+  private val trend = StatefulExpr.Trend(
     DataExpr.Sum(Query.Equal("name", "cpu")),
     Duration.ofMillis(step * 3)
   )

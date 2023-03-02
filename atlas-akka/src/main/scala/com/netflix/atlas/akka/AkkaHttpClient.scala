@@ -19,6 +19,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
+
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 /**
@@ -43,7 +45,7 @@ trait AkkaHttpClient {
   */
 class DefaultAkkaHttpClient(name: String)(implicit val system: ActorSystem) extends AkkaHttpClient {
 
-  private implicit val ec = system.dispatcher
+  private implicit val ec: ExecutionContext = system.dispatcher
 
   override def singleRequest(request: HttpRequest): Future[HttpResponse] = {
     val accessLogger = AccessLogger.newClientLogger(name, request)

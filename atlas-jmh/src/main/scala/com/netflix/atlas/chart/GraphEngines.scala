@@ -53,9 +53,9 @@ class GraphEngines {
 
   def constantSeriesDef(value: Double): LineDef = LineDef(constant(value))
 
-  val data = PlotDef(List(constantSeriesDef(42), constantSeriesDef(1.0 / 3.0)))
+  private val data = PlotDef(List(constantSeriesDef(42), constantSeriesDef(1.0 / 3.0)))
 
-  val graphDef = GraphDef(
+  private val graphDef = GraphDef(
     plots = List(data),
     startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
     endTime = ZonedDateTime.of(2012, 1, 1, 0, 12, 0, 0, ZoneOffset.UTC).toInstant

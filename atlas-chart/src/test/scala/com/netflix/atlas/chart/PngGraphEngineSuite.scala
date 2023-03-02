@@ -312,7 +312,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
   singleLine("single_line_timezones_ba", v => v.copy(timezones = zones.take(2).reverse))
   singleLine("single_line_timezones_many", v => v.copy(timezones = zones))
 
-  val longLabel =
+  private val longLabel =
     """
       |A long ylabel that should cause it to wrap when displayed on the chart. Some more text to
       | ensure that it will wrap when showing in the legend.

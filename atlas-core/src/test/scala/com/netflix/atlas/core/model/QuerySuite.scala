@@ -370,10 +370,10 @@ class QuerySuite extends FunSuite {
     assert(couldMatch(q, Map("foo" -> "bar", "bar" -> "foo")))
   }
 
-  val a = HasKey("A")
-  val b = HasKey("B")
-  val c = HasKey("C")
-  val d = HasKey("D")
+  private val a = HasKey("A")
+  private val b = HasKey("B")
+  private val c = HasKey("C")
+  private val d = HasKey("D")
 
   test("expr rewrite") {
     val input = Or(a, And(b, c))

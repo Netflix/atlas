@@ -466,7 +466,7 @@ object QueryVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q2: Query) :: (q1: Query) :: s => (q1.and(q2)) :: s
+      case (q2: Query) :: (q1: Query) :: s => q1.and(q2) :: s
     }
 
     override def summary: String =
@@ -498,7 +498,7 @@ object QueryVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q2: Query) :: (q1: Query) :: s => (q1.or(q2)) :: s
+      case (q2: Query) :: (q1: Query) :: s => q1.or(q2) :: s
     }
 
     override def summary: String =

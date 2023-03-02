@@ -43,7 +43,7 @@ class FinalExprEvalSuite extends FunSuite {
 
   private val step = 60000L
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   private val interpreter = new ExprInterpreter(ConfigFactory.load())
 

@@ -208,7 +208,7 @@ class BinaryCopyBufferSuite extends FunSuite {
   }
 
   private def toString(in: InputStream): String = {
-    val builder = new StringBuilder
+    val builder = new java.lang.StringBuilder
     val buf = new Array[Byte](128)
     var length = in.read(buf)
     while (length > 0) {

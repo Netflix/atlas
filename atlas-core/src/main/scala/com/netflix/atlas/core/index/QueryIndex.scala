@@ -138,12 +138,12 @@ case class QueryIndex[T](
     * are indexed.
     */
   override def toString: String = {
-    val buf = new StringBuilder
+    val buf = new java.lang.StringBuilder
     append(buf, 0)
-    buf.toString()
+    buf.toString
   }
 
-  private def append(buf: StringBuilder, indent: Int): Unit = {
+  private def append(buf: java.lang.StringBuilder, indent: Int): Unit = {
     val pad1 = "    " * indent
     val pad2 = "    " * (indent + 1)
     buf.append(pad1).append("children\n")

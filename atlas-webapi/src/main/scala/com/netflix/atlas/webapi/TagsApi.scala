@@ -36,13 +36,14 @@ import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Failure
 
 class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   import com.netflix.atlas.webapi.TagsApi._
-  implicit val ec = actorRefFactory.dispatcher
+  private implicit val ec: ExecutionContext = actorRefFactory.dispatcher
 
   private val dbRef = actorRefFactory.actorSelection("/user/db")
 

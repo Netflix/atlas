@@ -5,6 +5,8 @@ import java.time.ZoneOffset
 import scala.io.Source
 import sbt._
 
+import scala.util.Using
+
 /**
   * Loosely based on: https://github.com/Banno/sbt-license-plugin
   *
@@ -53,7 +55,7 @@ object License {
   }
 
   def checkLicenseHeader(file: File): Boolean = {
-    val lines = Source.fromFile(file, "UTF-8").getLines().toList
+    val lines = Using.resource(Source.fromFile(file, "UTF-8"))(_.getLines().toList)
     checkLicenseHeader(lines)
   }
 

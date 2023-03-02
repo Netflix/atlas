@@ -204,7 +204,7 @@ private[stream] abstract class EvaluatorImpl(
 
   protected def groupByHost(dataSources: DataSources): scala.collection.Map[String, DataSources] = {
     dataSources.getSources.asScala
-      .groupBy(getHost(_))
+      .groupBy(getHost)
       .map { case (host, dsSet) => host -> new DataSources(dsSet.asJava) }
   }
 
