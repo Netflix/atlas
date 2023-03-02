@@ -9,10 +9,8 @@ object BuildSettings {
     "-Xlint:_,-infer-any",
     "-Xfatal-warnings",
     "-feature",
-    "-release", "8"
+    "-release", "17"
   )
-
-  private val isRecentJdk = System.getProperty("java.specification.version").toDouble >= 11.0
 
   lazy val checkLicenseHeaders = taskKey[Unit]("Check the license headers for all source files.")
   lazy val formatLicenseHeaders = taskKey[Unit]("Fix the license headers for all source files.")
@@ -23,12 +21,7 @@ object BuildSettings {
     organization := "com.netflix.atlas_v1",
     scalaVersion := Dependencies.Versions.scala,
     scalacOptions := compilerFlags,
-    javacOptions ++= {
-      if (isRecentJdk)
-        Seq("--release", "8")
-      else
-        Seq("-source", "1.8", "-target", "1.8")
-    },
+    javacOptions ++= Seq("--release", "17"),
     crossPaths := true,
     crossScalaVersions := Dependencies.Versions.crossScala,
     sourcesInBase := false,
