@@ -19,7 +19,7 @@ import munit.FunSuite
 
 class StreamSuite extends FunSuite {
 
-  val stream = List(
+  private val stream = List(
     List(
       Datapoint(Map("name" -> "cpu", "node" -> "i-1"), 0L, 42.0)
     ),

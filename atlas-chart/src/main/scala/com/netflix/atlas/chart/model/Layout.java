@@ -61,12 +61,12 @@ public enum Layout {
   }
 
   public static Layout create(String name) {
-    switch (name) {
-      case "canvas": return Layout.CANVAS;
-      case "image":  return Layout.IMAGE;
-      case "iw":     return Layout.IMAGE_WIDTH;
-      case "ih":     return Layout.IMAGE_HEIGHT;
-      default:       throw new IllegalArgumentException("unknown layout: " + name);
-    }
+    return switch (name) {
+      case "canvas" -> Layout.CANVAS;
+      case "image"  -> Layout.IMAGE;
+      case "iw"     -> Layout.IMAGE_WIDTH;
+      case "ih"     -> Layout.IMAGE_HEIGHT;
+      default       -> throw new IllegalArgumentException("unknown layout: " + name);
+    };
   }
 }

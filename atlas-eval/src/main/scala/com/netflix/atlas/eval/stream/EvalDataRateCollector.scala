@@ -82,5 +82,5 @@ class EvalDataRateCollector(timestamp: Long, step: Long) {
 }
 
 object EvalDataRateCollector {
-  val EmptyRate = EvalDataSize(0)
+  val EmptyRate: EvalDataSize = EvalDataSize(0)
 }

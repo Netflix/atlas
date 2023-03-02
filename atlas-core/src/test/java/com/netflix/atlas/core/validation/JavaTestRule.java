@@ -18,7 +18,7 @@ package com.netflix.atlas.core.validation;
 import com.typesafe.config.Config;
 
 public class JavaTestRule extends TagRuleWrapper {
-    private Config config;
+    private final Config config;
 
     public JavaTestRule(Config conf) {
         config = conf;

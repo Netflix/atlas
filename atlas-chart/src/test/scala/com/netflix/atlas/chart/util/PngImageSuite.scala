@@ -33,7 +33,7 @@ class PngImageSuite extends FunSuite {
   private val bless = false
 
   // From: http://en.wikipedia.org/wiki/Atlas_(mythology)
-  val sampleText = """
+  private val sampleText = """
     |In Greek mythology, Atlas (English pronunciation: /ˈætləs/)
     | was the primordial Titan who supported the heavens. Although associated
     | with various places, he became commonly identified with the Atlas
