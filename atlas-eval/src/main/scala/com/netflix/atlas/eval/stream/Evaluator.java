@@ -38,7 +38,6 @@ import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -61,7 +60,6 @@ public final class Evaluator extends EvaluatorImpl {
    * Create a new instance. It is assumed this is created via the injector and the
    * signature may change over time.
    */
-  @Inject
   public Evaluator(Config config, Registry registry, ActorSystem system) {
     super(config, registry, system, Materializer.createMaterializer(system));
   }
