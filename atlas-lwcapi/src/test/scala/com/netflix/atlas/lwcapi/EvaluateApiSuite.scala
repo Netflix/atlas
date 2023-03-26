@@ -15,13 +15,13 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.testkit.RouteTestTimeout
-import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.akka.testkit.MUnitRouteSuite
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.lwcapi.EvaluateApi._
+import com.netflix.atlas.pekko.DiagnosticMessage
+import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.spectator.api.NoopRegistry
 
 class EvaluateApiSuite extends MUnitRouteSuite {

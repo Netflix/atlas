@@ -16,12 +16,11 @@
 package com.netflix.atlas.eval.stream
 
 import java.util.concurrent.ArrayBlockingQueue
-import akka.actor.ActorSystem
-import akka.stream.Materializer
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import com.netflix.atlas.akka.DiagnosticMessage
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Sink
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
@@ -29,6 +28,7 @@ import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.pekko.DiagnosticMessage
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 

@@ -15,16 +15,16 @@
  */
 package com.netflix.atlas.eval.model
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
-import com.netflix.atlas.akka.ByteStringInputStream
-import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonParserHelper._
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.pekko.ByteStringInputStream
+import com.netflix.atlas.pekko.DiagnosticMessage
 
 import java.io.ByteArrayOutputStream
 

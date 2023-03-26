@@ -15,26 +15,26 @@
  */
 package com.netflix.atlas.webapi
 
-import akka.actor.ActorRefFactory
-import akka.http.scaladsl.model.ContentTypes
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.MediaTypes
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.pattern.ask
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.RequestContext
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.RouteResult
-import com.netflix.atlas.akka.CustomDirectives._
-import com.netflix.atlas.akka.WebApi
+import org.apache.pekko.actor.ActorRefFactory
+import org.apache.pekko.http.scaladsl.model.ContentTypes
+import org.apache.pekko.http.scaladsl.model.HttpEntity
+import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.model.MediaTypes
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.model.headers.RawHeader
+import org.apache.pekko.pattern.ask
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.RequestContext
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.http.scaladsl.server.RouteResult
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
+import com.netflix.atlas.pekko.CustomDirectives._
+import com.netflix.atlas.pekko.WebApi
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._

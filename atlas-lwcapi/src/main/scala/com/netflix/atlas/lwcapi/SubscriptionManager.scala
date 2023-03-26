@@ -15,12 +15,11 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.akka.ThreadPools
-
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import com.netflix.atlas.core.index.QueryIndex
+import com.netflix.atlas.pekko.ThreadPools
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.ipc.ServerGroup

@@ -17,27 +17,25 @@ package com.netflix.atlas.webapi
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-
-import akka.NotUsed
-import akka.actor.ActorRefFactory
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.MediaTypes
-import akka.http.scaladsl.model.StatusCodes
-import akka.stream.Attributes
-import akka.stream.FlowShape
-import akka.stream.Inlet
-import akka.stream.Outlet
-import akka.stream.ThrottleMode
-import akka.stream.scaladsl.Source
-import akka.stream.stage.GraphStage
-import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.InHandler
-import akka.stream.stage.OutHandler
-import akka.util.ByteString
-import akka.util.Timeout
-import com.netflix.atlas.akka.DiagnosticMessage
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.ActorRefFactory
+import org.apache.pekko.http.scaladsl.model.HttpEntity
+import org.apache.pekko.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.model.MediaTypes
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.stream.Attributes
+import org.apache.pekko.stream.FlowShape
+import org.apache.pekko.stream.Inlet
+import org.apache.pekko.stream.Outlet
+import org.apache.pekko.stream.ThrottleMode
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.stream.stage.GraphStage
+import org.apache.pekko.stream.stage.GraphStageLogic
+import org.apache.pekko.stream.stage.InHandler
+import org.apache.pekko.stream.stage.OutHandler
+import org.apache.pekko.util.ByteString
+import org.apache.pekko.util.Timeout
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StatefulExpr
@@ -45,6 +43,7 @@ import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.webapi.GraphApi.DataRequest
 import com.netflix.atlas.webapi.GraphApi.DataResponse
 
@@ -61,7 +60,7 @@ object FetchRequestSource {
     * Create an SSE source that can be used as the entity for the HttpResponse.
     */
   def apply(system: ActorRefFactory, graphCfg: GraphConfig): Source[ChunkStreamPart, NotUsed] = {
-    import akka.pattern._
+    import org.apache.pekko.pattern._
     import scala.concurrent.duration._
 
     val dbRef = system.actorSelection("/user/db")

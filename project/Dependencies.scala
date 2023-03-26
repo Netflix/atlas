@@ -4,14 +4,8 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    // Do not upgrade Akka or Akka-HTTP versions, license has changed for newer
-    // versions:
-    //
-    // - https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka
-    // - https://github.com/akka/akka/pull/31561
-    // - https://github.com/akka/akka-http/pull/4155
-    val akka       = "2.6.20"
-    val akkaHttpV  = "10.2.10"
+    val pekko       = "0.0.0+26628-198d0eb0-SNAPSHOT"
+    val pekkoHttpV  = "0.0.0+4335-81a9800e-SNAPSHOT"
 
     val iep        = "5.0.0"
     val jackson    = "2.14.2"
@@ -26,14 +20,14 @@ object Dependencies {
 
   import Versions._
 
-  val akkaActor         = "com.typesafe.akka" %% "akka-actor" % akka
-  val akkaHttp          = "com.typesafe.akka" %% "akka-http" % akkaHttpV
-  val akkaHttpCore      = "com.typesafe.akka" %% "akka-http-core" % akkaHttpV
-  val akkaHttpTestkit   = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV
-  val akkaSlf4j         = "com.typesafe.akka" %% "akka-slf4j" % akka
-  val akkaStream        = "com.typesafe.akka" %% "akka-stream" % akka
-  val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
-  val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
+  val pekkoActor        = "org.apache.pekko" %% "pekko-actor" % pekko
+  val pekkoHttp         = "org.apache.pekko" %% "pekko-http" % pekkoHttpV
+  val pekkoHttpCore     = "org.apache.pekko" %% "pekko-http-core" % pekkoHttpV
+  val pekkoHttpTestkit  = "org.apache.pekko" %% "pekko-http-testkit" % pekkoHttpV
+  val pekkoSlf4j        = "org.apache.pekko" %% "pekko-slf4j" % pekko
+  val pekkoStream       = "org.apache.pekko" %% "pekko-stream" % pekko
+  val pekkoStreamTestkit= "org.apache.pekko" %% "pekko-stream-testkit" % pekko
+  val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.4"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.3.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.14"

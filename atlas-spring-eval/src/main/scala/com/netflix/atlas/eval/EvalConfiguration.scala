@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.eval
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import com.netflix.atlas.eval.stream.Evaluator
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry

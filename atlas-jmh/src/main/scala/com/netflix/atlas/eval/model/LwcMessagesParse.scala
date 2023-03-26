@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.eval.model
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import com.netflix.atlas.json.Json
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope

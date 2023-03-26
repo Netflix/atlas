@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.eval.stream
 
-import akka.stream.KillSwitch
+import org.apache.pekko.stream.KillSwitch
 
 /**
   * Reference to a running stream. Has handle to terminate the stream as

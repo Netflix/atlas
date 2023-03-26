@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.eval.stream
 
-import akka.http.scaladsl.model.Uri
+import org.apache.pekko.http.scaladsl.model.Uri
 import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Expr

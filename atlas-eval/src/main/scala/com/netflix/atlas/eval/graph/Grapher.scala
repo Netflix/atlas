@@ -18,9 +18,8 @@ package com.netflix.atlas.eval.graph
 import java.awt.Color
 import java.io.ByteArrayOutputStream
 import java.time.Duration
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.Uri
-import com.netflix.atlas.akka.Cors
+import org.apache.pekko.http.scaladsl.model.HttpRequest
+import org.apache.pekko.http.scaladsl.model.Uri
 import com.netflix.atlas.chart.Colors
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.Layout
@@ -42,6 +41,7 @@ import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
+import com.netflix.atlas.pekko.Cors
 import com.typesafe.config.Config
 
 import java.util.Locale

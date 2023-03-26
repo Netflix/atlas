@@ -17,7 +17,7 @@ package com.netflix.atlas.eval.graph
 
 import java.time.Instant
 import java.time.ZoneId
-import akka.http.scaladsl.model.ContentType
+import org.apache.pekko.http.scaladsl.model.ContentType
 import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LegendType

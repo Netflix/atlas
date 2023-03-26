@@ -15,15 +15,15 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
-import com.netflix.atlas.akka.StreamOps
-import com.netflix.atlas.akka.testkit.MUnitRouteSuite
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.model.headers.RawHeader
+import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
+import org.apache.pekko.stream.scaladsl.Keep
+import org.apache.pekko.stream.scaladsl.Sink
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.pekko.StreamOps
+import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 

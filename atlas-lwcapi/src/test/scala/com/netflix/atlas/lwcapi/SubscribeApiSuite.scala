@@ -15,17 +15,17 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.http.scaladsl.model.ws.Message
-import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.http.scaladsl.testkit.WSProbe
-import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.akka.RequestHandler
-import com.netflix.atlas.akka.testkit.MUnitRouteSuite
+import org.apache.pekko.http.scaladsl.model.ws.Message
+import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
+import org.apache.pekko.http.scaladsl.testkit.WSProbe
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscription
+import com.netflix.atlas.pekko.DiagnosticMessage
+import com.netflix.atlas.pekko.RequestHandler
+import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 

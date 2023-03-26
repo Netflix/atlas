@@ -15,27 +15,27 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.NotUsed
-import akka.http.scaladsl.model.ws.BinaryMessage
-import akka.http.scaladsl.model.ws.Message
-import akka.http.scaladsl.model.ws.TextMessage
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
-import akka.stream.Materializer
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import com.netflix.atlas.akka.CustomDirectives._
-import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.akka.StreamOps
-import com.netflix.atlas.akka.WebApi
+import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.model.ws.BinaryMessage
+import org.apache.pekko.http.scaladsl.model.ws.Message
+import org.apache.pekko.http.scaladsl.model.ws.TextMessage
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Flow
+import org.apache.pekko.stream.scaladsl.Keep
+import org.apache.pekko.stream.scaladsl.Sink
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.pekko.CustomDirectives._
+import com.netflix.atlas.pekko.DiagnosticMessage
+import com.netflix.atlas.pekko.StreamOps
+import com.netflix.atlas.pekko.WebApi
 import com.netflix.iep.config.NetflixEnvironment
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
@@ -57,7 +57,7 @@ class SubscribeApi(
     with StrictLogging {
 
   import SubscribeApi._
-  import com.netflix.atlas.akka.OpportunisticEC._
+  import com.netflix.atlas.pekko.OpportunisticEC._
 
   private val queueSize = config.getInt("atlas.lwcapi.queue-size")
   private val batchSize = config.getInt("atlas.lwcapi.batch-size")
@@ -141,14 +141,14 @@ class SubscribeApi(
     // Create queue to allow messages coming into /evaluate to be passed to this stream
     // TODO - A client can connect but not send a message. When that happens, the
     // publisher sink from this queue will shutdown and complete the queue. See
-    // akka.http.client.stream-cancellation-delay. Unfortunately
+    // pekko.http.client.stream-cancellation-delay. Unfortunately
     // the websocket flow is not notified of the shutdown. If the client sends a message
     // after shutdown, the client flow will be terminated. (that's fine).
     // There is likely another way to wire this up. Alternatively we could hold a
     // kill switch on the createHandlerFlow...()s but some state flags are needed and
     // it gets messy.
     // For now, the queue will close and if no messages are sent from the client, the
-    // akka.http.server.idle-timeout will kill the client connection and we'll try to
+    // pekko.http.server.idle-timeout will kill the client connection and we'll try to
     // close a closed queue.
     val (queue, pub) = StreamOps
       .blockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", queueSize)

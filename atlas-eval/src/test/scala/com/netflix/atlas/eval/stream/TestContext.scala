@@ -15,12 +15,12 @@
  */
 package com.netflix.atlas.eval.stream
 
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.StatusCodes
-import akka.stream.Materializer
-import akka.stream.scaladsl.Flow
-import com.netflix.atlas.akka.AccessLogger
+import com.netflix.atlas.pekko.AccessLogger
+import org.apache.pekko.http.scaladsl.model.HttpRequest
+import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Flow
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.ConfigFactory

@@ -51,7 +51,11 @@ object BuildSettings {
     Dependencies.munit % "test"
   )
 
-  val resolvers = Seq(Resolver.mavenLocal, Resolver.mavenCentral) ++ Resolver.sonatypeOssRepos("snapshots")
+  val resolvers = Seq(
+    Resolver.mavenLocal,
+    Resolver.mavenCentral,
+    "Apache" at "https://repository.apache.org/content/groups/snapshots/"
+  ) ++ Resolver.sonatypeOssRepos("snapshots")
 
   def profile: Project => Project = p => {
     p.settings(SonatypeSettings.settings)
