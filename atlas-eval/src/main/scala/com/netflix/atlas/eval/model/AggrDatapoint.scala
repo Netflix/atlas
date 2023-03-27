@@ -24,6 +24,7 @@ import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Math
+import com.netflix.atlas.core.util.RefDoubleHashMap
 import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Registry
 
@@ -73,6 +74,8 @@ case class AggrDatapoint(
 }
 
 object AggrDatapoint {
+
+  private val aggrTagKey = "atlas.aggr"
 
   /**
     * Creates a dummy datapoint passed along when a heartbeat message is received from the
@@ -173,19 +176,57 @@ object AggrDatapoint {
   }
 
   /**
+    * Aggregator for the sum or count when used with gauges. In cases where data is going
+    * to the aggregator service, there can be duplicates of the gauge values. To get a
+    * correct sum as if it was from a single aggregator service instance, this will compute
+    * the max for a given `atlas.aggr` key and then sum the final results.
+    */
+  private class GaugeSumAggregator(
+    init: AggrDatapoint,
+    op: (Double, Double) => Double,
+    settings: AggregatorSettings
+  ) extends Aggregator(settings) {
+
+    private val maxValues = new RefDoubleHashMap[String]
+    numIntermediateDatapoints = 1
+    aggregate(init)
+
+    override def aggregate(datapoint: AggrDatapoint): Aggregator = {
+      if (!checkLimits) {
+        val aggrKey = datapoint.tags.getOrElse(aggrTagKey, "unknown")
+        maxValues.max(aggrKey, datapoint.value)
+        numInputDatapoints += 1
+      }
+      this
+    }
+
+    override def datapoints: List[AggrDatapoint] = List(datapoint)
+
+    def datapoint: AggrDatapoint = {
+      val tags = init.tags - aggrTagKey
+      var sum = 0.0
+      maxValues.foreach { (_, v) => sum = op(sum, v) }
+      init.copy(tags = tags, value = sum)
+    }
+  }
+
+  /**
     * Group the datapoints by the tags and maintain a simple aggregator per distinct tag
     * set.
     */
   private class GroupByAggregator(settings: AggregatorSettings) extends Aggregator(settings) {
 
     private val aggregators =
-      scala.collection.mutable.AnyRefMap.empty[Map[String, String], SimpleAggregator]
+      scala.collection.mutable.AnyRefMap.empty[Map[String, String], Aggregator]
 
-    private def newAggregator(datapoint: AggrDatapoint): SimpleAggregator = {
+    private def newAggregator(datapoint: AggrDatapoint): Aggregator = {
       datapoint.expr match {
+        case GroupBy(af: DataExpr.Sum, _) if datapoint.tags.contains(aggrTagKey) =>
+          new GaugeSumAggregator(datapoint, aggrOp(af), settings)
+        case GroupBy(af: DataExpr.Count, _) if datapoint.tags.contains(aggrTagKey) =>
+          new GaugeSumAggregator(datapoint, aggrOp(af), settings)
         case GroupBy(af: AggregateFunction, _) =>
-          val aggregator = new SimpleAggregator(datapoint, aggrOp(af), settings)
-          aggregator
+          new SimpleAggregator(datapoint, aggrOp(af), settings)
         case _ =>
           throw new IllegalArgumentException("datapoint is not for a grouped expression")
       }
@@ -206,7 +247,7 @@ object AggrDatapoint {
     }
 
     override def datapoints: List[AggrDatapoint] = {
-      aggregators.values.map(_.datapoint).toList
+      aggregators.values.flatMap(_.datapoints).toList
     }
   }
 
@@ -235,6 +276,10 @@ object AggrDatapoint {
     */
   def newAggregator(datapoint: AggrDatapoint, settings: AggregatorSettings): Aggregator = {
     datapoint.expr match {
+      case af: DataExpr.Sum if datapoint.tags.contains(aggrTagKey) =>
+        new GaugeSumAggregator(datapoint, aggrOp(af), settings)
+      case af: DataExpr.Count if datapoint.tags.contains(aggrTagKey) =>
+        new GaugeSumAggregator(datapoint, aggrOp(af), settings)
       case af: AggregateFunction =>
         new SimpleAggregator(datapoint, aggrOp(af), settings)
       case _: GroupBy =>
