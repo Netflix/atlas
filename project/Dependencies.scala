@@ -13,13 +13,13 @@ object Dependencies {
     val akka       = "2.6.20"
     val akkaHttpV  = "10.2.10"
 
-    val iep        = "5.0.0"
+    val iep        = "5.0.2"
     val jackson    = "2.14.2"
     val log4j      = "2.20.0"
     val scala      = "2.13.10"
     val slf4j      = "1.7.36"
-    val spectator  = "1.5.4"
-    val spring     = "6.0.5"
+    val spectator  = "1.6.1"
+    val spring     = "6.0.7"
 
     val crossScala = Seq(scala)
   }
@@ -34,9 +34,9 @@ object Dependencies {
   val akkaStream        = "com.typesafe.akka" %% "akka-stream" % akka
   val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
-  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.4"
+  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.6"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.3.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.14"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.14.1"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
   val iepDynConfig      = "com.netflix.iep" % "iep-dynconfig" % iep
@@ -58,7 +58,7 @@ object Dependencies {
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
-  val postgres          = "org.postgresql" % "postgresql" % "42.5.4"
+  val postgres          = "org.postgresql" % "postgresql" % "42.6.0"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.3"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.39"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0"
