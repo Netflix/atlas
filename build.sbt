@@ -10,6 +10,7 @@ lazy val atlas = project.in(file("."))
     `atlas-jmh`,
     `atlas-json`,
     `atlas-lwcapi`,
+    `atlas-lwc-events`,
     `atlas-postgres`,
     `atlas-spring-akka`,
     `atlas-spring-eval`,
@@ -98,6 +99,13 @@ lazy val `atlas-lwcapi` = project
     Dependencies.akkaTestkit % "test",
     Dependencies.akkaHttpTestkit % "test",
     Dependencies.akkaStreamTestkit % "test"
+  ))
+
+lazy val `atlas-lwc-events` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-json`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.iepDynConfig
   ))
 
 lazy val `atlas-postgres` = project
