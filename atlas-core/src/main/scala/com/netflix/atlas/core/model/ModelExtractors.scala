@@ -85,4 +85,13 @@ object ModelExtractors {
       case _                 => None
     }
   }
+
+  case object TraceQueryType {
+
+    def unapply(value: Any): Option[TraceQuery] = value match {
+      case q: TraceQuery => Some(q)
+      case q: Query      => Some(TraceQuery.Simple(q))
+      case _             => None
+    }
+  }
 }
