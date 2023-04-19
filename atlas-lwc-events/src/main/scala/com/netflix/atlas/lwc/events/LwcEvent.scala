@@ -31,6 +31,12 @@ trait LwcEvent {
   def rawEvent: Any
 
   /**
+    * Timestamp for the event. If it is an event such as a span that has a start and end,
+    * the timestamp should be for the end of the event.
+    */
+  def timestamp: Long
+
+  /**
     * Extract a tag value for a given key. Returns `null` if there is no value for
     * the key or the value is not a string. By default it will delegate to `extractValue`
     * to ensure the two are consistent.
@@ -86,7 +92,8 @@ trait LwcEvent {
 object LwcEvent {
 
   /**
-    * Wrap an object as an LWC event.
+    * Wrap an object as an LWC event. The timestamp will be the time when the event is
+    * wrapped.
     *
     * @param rawEvent
     *     Raw event object to wrap.
@@ -101,6 +108,8 @@ object LwcEvent {
   }
 
   private case class BasicLwcEvent(rawEvent: Any, extractor: String => Any) extends LwcEvent {
+
+    override val timestamp: Long = System.currentTimeMillis()
 
     override def extractValue(key: String): Any = extractor(key)
 
