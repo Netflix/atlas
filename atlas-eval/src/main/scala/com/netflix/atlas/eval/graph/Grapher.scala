@@ -348,7 +348,8 @@ case class Grapher(settings: DefaultSettings) {
           val linePalette = s.palette.map(newPalette).getOrElse {
             s.color
               .map { c =>
-                val p = Palette.singleColor(c).iterator
+                val color = settings.resolveColor(config.flags.theme, c)
+                val p = Palette.singleColor(color).iterator
                 (_: String) => p.next()
               }
               .getOrElse {
@@ -357,12 +358,14 @@ case class Grapher(settings: DefaultSettings) {
           }
           val lineDefs = labelledTS.sortWith(_._1.label < _._1.label).map {
             case (t, stats) =>
-              val color = s.color.getOrElse {
+              val color = s.color.fold {
                 val c = linePalette(t.label)
                 // Alpha setting if present will set the alpha value for the color automatically
                 // assigned by the palette. If using an explicit color it will have no effect as the
                 // alpha can be set directly using an ARGB hex format for the color.
                 s.alpha.fold(c)(a => Colors.withAlpha(c, a))
+              } { c =>
+                settings.resolveColor(config.flags.theme, c)
               }
 
               LineDef(

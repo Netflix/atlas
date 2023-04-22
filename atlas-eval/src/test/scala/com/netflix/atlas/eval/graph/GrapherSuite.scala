@@ -485,6 +485,54 @@ class GrapherSuite extends FunSuite {
     "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-avg&features=unstable"
   }
 
+  imageTest("named colors: blue with light theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,blue1,:color,1,blue2,:color,1,blue3,:color&stack=1&theme=light"
+  }
+
+  imageTest("named colors: blue with dark theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,blue1,:color,1,blue2,:color,1,blue3,:color&stack=1&theme=dark"
+  }
+
+  imageTest("named colors: gray with light theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,gray1,:color,1,gray2,:color,1,gray3,:color&stack=1&theme=light"
+  }
+
+  imageTest("named colors: gray with dark theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,gray1,:color,1,gray2,:color,1,gray3,:color&stack=1&theme=dark"
+  }
+
+  imageTest("named colors: green with light theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,green1,:color,1,green2,:color,1,green3,:color&stack=1&theme=light"
+  }
+
+  imageTest("named colors: green with dark theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,green1,:color,1,green2,:color,1,green3,:color&stack=1&theme=dark"
+  }
+
+  imageTest("named colors: orange with light theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,orange1,:color,1,orange2,:color,1,orange3,:color&stack=1&theme=light"
+  }
+
+  imageTest("named colors: orange with dark theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,orange1,:color,1,orange2,:color,1,orange3,:color&stack=1&theme=dark"
+  }
+
+  imageTest("named colors: purple with light theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,purple1,:color,1,purple2,:color,1,purple3,:color&stack=1&theme=light"
+  }
+
+  imageTest("named colors: purple with dark theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,purple1,:color,1,purple2,:color,1,purple3,:color&stack=1&theme=dark"
+  }
+
+  imageTest("named colors: red with light theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,red1,:color,1,red2,:color,1,red3,:color&stack=1&theme=light"
+  }
+
+  imageTest("named colors: red with dark theme") {
+    "/api/v1/graph?e=2012-01-01&q=1,red1,:color,1,red2,:color,1,red3,:color&stack=1&theme=dark"
+  }
+
   test("invalid stuff on stack") {
     val uri = "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,foo"
     val e = intercept[IllegalArgumentException] {
