@@ -32,8 +32,8 @@ import scala.concurrent.duration.Duration
 
 class TimeGroupedSuite extends FunSuite {
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val materializer = Materializer(system)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  private implicit val materializer: Materializer = Materializer(system)
 
   private val registry = new DefaultRegistry()
 

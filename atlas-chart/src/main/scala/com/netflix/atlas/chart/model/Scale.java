@@ -27,14 +27,13 @@ public enum Scale {
 
   /** Returns the scale constant associated with a given name. */
   public static Scale fromName(String s) {
-    switch (s) {
-      case "linear": return LINEAR;
-      case "log":    return LOGARITHMIC;
-      case "pow2":   return POWER_2;
-      case "sqrt":   return SQRT;
-      default:
-        throw new IllegalArgumentException("unknown scale type '" + s
-            + "', should be linear, log, pow2, or sqrt");
-    }
+    return switch (s) {
+      case "linear" -> LINEAR;
+      case "log"    -> LOGARITHMIC;
+      case "pow2"   -> POWER_2;
+      case "sqrt"   -> SQRT;
+      default       -> throw new IllegalArgumentException("unknown scale type '" + s
+          + "', should be linear, log, pow2, or sqrt");
+    };
   }
 }

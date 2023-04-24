@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.util
 
+import com.netflix.spectator.api.Id
+import com.netflix.spectator.api.Tag
 import munit.FunSuite
 
 class SortedTagMapSuite extends FunSuite {
@@ -303,5 +305,90 @@ class SortedTagMapSuite extends FunSuite {
     assertNotEquals(a.hashCode, b.hashCode)
     assertEquals(a.hashCode, c.hashCode)
     assertEquals(a.hashCode, d.hashCode)
+  }
+
+  test("toSpectatorId: empty") {
+    intercept[IllegalArgumentException] {
+      SortedTagMap.empty.toSpectatorId()
+    }
+  }
+
+  test("toSpectatorId: missing name") {
+    intercept[IllegalArgumentException] {
+      SortedTagMap("a" -> "1", "b" -> "2").toSpectatorId()
+    }
+  }
+
+  test("toSpectatorId: missing name and default") {
+    val id = SortedTagMap("a" -> "1", "b" -> "2").toSpectatorId(Option("dflt"))
+    val expected = Id.create("dflt").withTags("a", "1", "b", "2")
+    assertEquals(id, expected)
+  }
+
+  test("toSpectatorId: name only") {
+    val id = SortedTagMap("name" -> "foo").toSpectatorId()
+    assertEquals(id.name(), "foo")
+    assertEquals(id.size(), id.size())
+    assertEquals(id.getKey(0), "name")
+    assertEquals(id.getValue(0), "foo")
+    assert(!id.tags().iterator().hasNext)
+  }
+
+  test("toSpectatorId: explicit name and default") {
+    val id = SortedTagMap("name" -> "foo").toSpectatorId(Option("dflt"))
+    assertEquals(id.name(), "foo")
+    assertEquals(id.size(), id.size())
+    assertEquals(id.getKey(0), "name")
+    assertEquals(id.getValue(0), "foo")
+    assert(!id.tags().iterator().hasNext)
+  }
+
+  test("toSpectatorId: name and tags") {
+    val map = SortedTagMap("name" -> "foo", "a" -> "1", "b" -> "2", "p" -> "3", "q" -> "4")
+    val id = map.toSpectatorId()
+    assertEquals(id.name(), "foo")
+    assertEquals(id.size(), id.size())
+    assertEquals(id.getKey(0), "name")
+    assertEquals(id.getValue(0), "foo")
+
+    var expectedTuples = List("a" -> "1", "b" -> "2", "p" -> "3", "q" -> "4")
+    var i = 1
+    val it = id.tags().iterator()
+    while (it.hasNext) {
+      val t = it.next()
+      val expected = expectedTuples.head
+      expectedTuples = expectedTuples.tail
+      assert("name" != t.key())
+      assertEquals(expected._1, t.key())
+      assertEquals(expected._2, t.value())
+      assertEquals(expected._1, id.getKey(i))
+      assertEquals(expected._2, id.getValue(i))
+      i += 1
+    }
+  }
+
+  test("toSpectatorId: withTag") {
+    val map = SortedTagMap("name" -> "foo", "a" -> "1", "b" -> "2", "p" -> "3", "q" -> "4")
+    val id = map.toSpectatorId().withTag("r", "5").withTag(Tag.of("s", "6"))
+    assertEquals(id.name(), "foo")
+    assertEquals(id.size(), id.size())
+    assertEquals(id.getKey(0), "name")
+    assertEquals(id.getValue(0), "foo")
+
+    var expectedTuples =
+      List("a" -> "1", "b" -> "2", "p" -> "3", "q" -> "4", "r" -> "5", "s" -> "6")
+    var i = 1
+    val it = id.tags().iterator()
+    while (it.hasNext) {
+      val t = it.next()
+      val expected = expectedTuples.head
+      expectedTuples = expectedTuples.tail
+      assert("name" != t.key())
+      assertEquals(expected._1, t.key())
+      assertEquals(expected._2, t.value())
+      assertEquals(expected._1, id.getKey(i))
+      assertEquals(expected._2, id.getValue(i))
+      i += 1
+    }
   }
 }

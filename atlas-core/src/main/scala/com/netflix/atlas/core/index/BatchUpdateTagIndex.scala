@@ -48,7 +48,7 @@ object BatchUpdateTagIndex {
   */
 class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
   registry: Registry,
-  newIndex: (Array[T]) => TagIndex[T]
+  newIndex: Array[T] => TagIndex[T]
 ) extends MutableTagIndex[T] {
 
   // Current index used for all query operations

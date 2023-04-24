@@ -39,7 +39,7 @@ object SummaryStats {
     if (count == 0) SummaryStats.empty else SummaryStats(count, min, max, last, total)
   }
 
-  val empty = SummaryStats(0, Double.NaN, Double.NaN, Double.NaN, Double.NaN)
+  val empty: SummaryStats = SummaryStats(0, Double.NaN, Double.NaN, Double.NaN, Double.NaN)
 }
 
 case class SummaryStats(count: Int, min: Double, max: Double, last: Double, total: Double) {

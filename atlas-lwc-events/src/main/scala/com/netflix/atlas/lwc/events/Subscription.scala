@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.lwcapi
+package com.netflix.atlas.lwc.events
 
-import java.util.concurrent.ThreadFactory
-
-class NamedThreadFactory(name: String) extends ThreadFactory {
-
-  def newThread(r: Runnable): Thread = {
-    val thread = new Thread(r, name)
-    thread.setDaemon(true)
-    thread
-  }
-}
+/**
+  * Subscription to receive data.
+  *
+  * @param id
+  *     Id used to pair the received data with a given consumer.
+  * @param step
+  *     Step size for the subscription when mapped into a time series.
+  * @param expression
+  *     Expression for matching events and mapping into the expected output.
+  */
+case class Subscription(id: String, step: Long, expression: String)

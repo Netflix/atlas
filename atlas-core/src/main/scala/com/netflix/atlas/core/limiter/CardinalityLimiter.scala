@@ -309,7 +309,7 @@ case class QueryInfo(query: Query, limiterConfig: LimiterConfig) {
 
   val prefixValues: Array[String] = genSearchPath()
   // Not needed if dropped early in search path
-  lazy val queryKeys = Query.allKeys(query) -- limiterConfig.prefixKeys
+  lazy val queryKeys: Set[String] = Query.allKeys(query) -- limiterConfig.prefixKeys
 
   // Find the values of prefix keys to search through the tree, use default value if missing.
   private[limiter] def genSearchPath(): Array[String] = {

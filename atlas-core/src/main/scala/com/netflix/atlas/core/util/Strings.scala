@@ -65,7 +65,7 @@ object Strings {
     * class.
     */
   private[util] val conversions = {
-    Map[Class[_], (String) => Any](
+    Map[Class[_], String => Any](
       classOf[String]            -> (v => v),
       classOf[Boolean]           -> (v => java.lang.Boolean.valueOf(v)),
       classOf[Byte]              -> (v => java.lang.Byte.valueOf(v)),
@@ -157,7 +157,7 @@ object Strings {
     * the only escaping necessary for '%', '&amp;', '+', '?', '=', and ' '.
     */
   def urlEncode(s: String): String = {
-    val buf = new StringBuilder
+    val buf = new java.lang.StringBuilder
     val size = s.length
     var pos = 0
     while (pos < size) {
@@ -188,7 +188,7 @@ object Strings {
     *     Decoded string.
     */
   def hexDecode(input: String, escapeChar: Char = '%'): String = {
-    val buf = new StringBuilder
+    val buf = new java.lang.StringBuilder
     val size = input.length
     var pos = 0
     while (pos < size) {
@@ -267,7 +267,7 @@ object Strings {
     alphabet
   }
 
-  private def simpleVar(str: String, i: Int, key: StringBuilder): Int = {
+  private def simpleVar(str: String, i: Int, key: java.lang.StringBuilder): Int = {
     var j = i
     while (j < str.length) {
       val c = str.charAt(j)
@@ -280,7 +280,7 @@ object Strings {
     j
   }
 
-  private def parenVar(str: String, i: Int, key: StringBuilder): Int = {
+  private def parenVar(str: String, i: Int, key: java.lang.StringBuilder): Int = {
     var j = i
     while (j < str.length) {
       val c = str.charAt(j)
@@ -290,11 +290,11 @@ object Strings {
         return j + 1
       j += 1
     }
-    key.clear()
+    key.setLength(0)
     i
   }
 
-  private def getKey(str: String, i: Int, key: StringBuilder): Int = {
+  private def getKey(str: String, i: Int, key: java.lang.StringBuilder): Int = {
     val c = str.charAt(i + 1)
     if (c == '(') parenVar(str, i + 2, key) else simpleVar(str, i + 1, key)
   }
@@ -311,8 +311,8 @@ object Strings {
     * Substitute variables into a string.
     */
   def substitute(str: String, vars: String => String): String = {
-    val key = new StringBuilder(str.length)
-    val buf = new StringBuilder(str.length * 2)
+    val key = new java.lang.StringBuilder(str.length)
+    val buf = new java.lang.StringBuilder(str.length * 2)
     var i = 0
     while (i < str.length) {
       val c = str.charAt(i)
@@ -321,16 +321,16 @@ object Strings {
         i += 1
       } else {
         i = getKey(str, i, key)
-        val k = key.toString()
+        val k = key.toString
         // Empty keys are treated as '$' literals
         if (k.isEmpty)
           buf.append('$')
         else
           buf.append(vars(k))
-        key.clear()
+        key.setLength(0)
       }
     }
-    buf.toString()
+    buf.toString
   }
 
   /**
@@ -529,14 +529,14 @@ object Strings {
     val n = width - s.length
     if (n <= 0) s
     else {
-      val builder = new StringBuilder(width)
+      val builder = new java.lang.StringBuilder(width)
       var i = 0
       while (i < n) {
         builder.append('0')
         i += 1
       }
       builder.append(s)
-      builder.toString()
+      builder.toString
     }
   }
 
@@ -567,7 +567,7 @@ object Strings {
     */
   def zeroPad(v: Array[Byte], width: Int): String = {
     val n = width - 2 * v.length
-    val builder = new StringBuilder(math.max(width, 2 * v.length))
+    val builder = new java.lang.StringBuilder(math.max(width, 2 * v.length))
     var i = 0
     while (i < n) {
       builder.append('0')
@@ -579,6 +579,6 @@ object Strings {
       builder.append(byteHexStrings(idx))
       i += 1
     }
-    builder.toString()
+    builder.toString
   }
 }

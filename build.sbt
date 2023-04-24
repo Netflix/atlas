@@ -10,6 +10,7 @@ lazy val atlas = project.in(file("."))
     `atlas-jmh`,
     `atlas-json`,
     `atlas-lwcapi`,
+    `atlas-lwc-events`,
     `atlas-postgres`,
     `atlas-spring-akka`,
     `atlas-spring-eval`,
@@ -26,6 +27,7 @@ lazy val `atlas-akka` = project
     Dependencies.akkaActor,
     Dependencies.akkaSlf4j,
     Dependencies.akkaStream,
+    Dependencies.iepDynConfig,
     Dependencies.iepService,
     Dependencies.spectatorIpc,
     Dependencies.akkaHttp,
@@ -54,7 +56,7 @@ lazy val `atlas-core` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.caffeine,
     Dependencies.datasketches,
-    Dependencies.iepNflxEnv,
+    Dependencies.iepDynConfig,
     Dependencies.roaringBitmap,
     Dependencies.equalsVerifier % "test",
     Dependencies.jol % "test"
@@ -93,10 +95,18 @@ lazy val `atlas-lwcapi` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-akka`, `atlas-akka-testkit` % "test", `atlas-core`, `atlas-eval`, `atlas-json`)
   .settings(libraryDependencies ++= Seq(
-    Dependencies.iepNflxEnv,
+    Dependencies.iepDynConfig,
     Dependencies.akkaTestkit % "test",
     Dependencies.akkaHttpTestkit % "test",
     Dependencies.akkaStreamTestkit % "test"
+  ))
+
+lazy val `atlas-lwc-events` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-json`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.iepDynConfig,
+    Dependencies.spectatorAtlas
   ))
 
 lazy val `atlas-postgres` = project
@@ -124,6 +134,14 @@ lazy val `atlas-spring-eval` = project
 lazy val `atlas-spring-lwcapi` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-spring-akka`, `atlas-lwcapi`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.iepSpring,
+    Dependencies.springContext
+  ))
+
+lazy val `atlas-spring-lwc-events` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-lwc-events`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepSpring,
     Dependencies.springContext

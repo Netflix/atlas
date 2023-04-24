@@ -99,7 +99,7 @@ object DataExpr {
   def keyString(keys: List[String], tags: Map[String, String]): String = {
 
     // 32 is typically big enough to prevent a resize with a single key
-    val builder = new StringBuilder(32 * keys.size)
+    val builder = new java.lang.StringBuilder(32 * keys.size)
     builder.append('(')
     val it = keys.iterator
     while (it.hasNext) {
@@ -108,7 +108,7 @@ object DataExpr {
       if (v.isEmpty) return null
       builder.append(k).append('=').append(v.get).append(' ')
     }
-    builder(builder.length - 1) = ')'
+    builder.setCharAt(builder.length - 1, ')')
     builder.toString
   }
 

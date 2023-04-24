@@ -561,6 +561,18 @@ class GrapherSuite extends FunSuite {
       grapher.evalAndRender(Uri(uri), db)
     }
   }
+
+  test("recognize id parameter") {
+    val uri = Uri("/api/v1/graph?q=a,b,:eq&id=foo")
+    val config = grapher.toGraphConfig(uri)
+    assertEquals(config.id, "foo")
+  }
+
+  test("default id if parameter is not present") {
+    val uri = Uri("/api/v1/graph?q=a,b,:eq")
+    val config = grapher.toGraphConfig(uri)
+    assertEquals(config.id, "default")
+  }
 }
 
 object GrapherSuite {

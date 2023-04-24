@@ -27,7 +27,6 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directive
 import akka.http.scaladsl.server.Directive0
@@ -174,9 +173,9 @@ object CustomDirectives {
     // Add the cors headers to anything with an origin, browser behavior seems to be mixed as to
     // which request headers we can expect to receive
     optionalHeaderValueByName("Origin").flatMap {
-      case None                                            => pass
-      case Some(origin) if !isOriginAllowed(hosts, origin) => pass
-      case Some(origin)                                    =>
+      case None                                                 => pass
+      case Some(origin) if !Cors.isOriginAllowed(hosts, origin) => pass
+      case Some(origin)                                         =>
         // '*' doesn't seem to work reliably so use requested origin if provided. If running from
         // a local file we typically see 'null'.
         val allow =
@@ -210,33 +209,6 @@ object CustomDirectives {
             respondWithHeaders(finalHeaders) & exposeHeaders
         }
     }
-  }
-
-  private def isOriginAllowed(hosts: List[String], origin: String): Boolean = {
-    try {
-      val originHostname =
-        if (origin.startsWith("http:") || origin.startsWith("https:"))
-          Uri(origin).authority.host.address()
-        else
-          origin
-      checkOrigin(hosts, originHostname)
-    } catch {
-      case e: Exception =>
-        // If there is a failure processing the origin uri, then do not add CORS headers.
-        false
-    }
-  }
-
-  @scala.annotation.tailrec
-  private def checkOrigin(hosts: List[String], origin: String): Boolean = {
-    hosts match {
-      case h :: hs => checkOrigin(h, origin) || checkOrigin(hs, origin)
-      case Nil     => false
-    }
-  }
-
-  private def checkOrigin(host: String, origin: String): Boolean = {
-    (host == "*") || (host.startsWith(".") && origin.endsWith(host)) || (host == origin)
   }
 
   /** Route for CORS handling pre-flight checks. */
@@ -459,9 +431,9 @@ object CustomDirectives {
       mapResponseHeaders { headers =>
         val random = ThreadLocalRandom.current()
         if (random.nextDouble() < probability)
-          headers
-        else
           headers.prepended(closeHeader)
+        else
+          headers
       }
     }
   }
