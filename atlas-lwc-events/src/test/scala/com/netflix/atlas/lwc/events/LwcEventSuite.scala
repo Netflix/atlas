@@ -22,8 +22,8 @@ class LwcEventSuite extends FunSuite {
 
   import LwcEventSuite._
 
-  private val sampleSpan: Span = {
-    Span(SortedTagMap("app" -> "www", "node" -> "i-123"), 42L)
+  private val sampleSpan: TestEvent = {
+    TestEvent(SortedTagMap("app" -> "www", "node" -> "i-123"), 42L)
   }
 
   private val sampleLwcEvent: LwcEvent = LwcEvent(sampleSpan, extractSpanValue(sampleSpan))
@@ -74,9 +74,9 @@ class LwcEventSuite extends FunSuite {
 
 object LwcEventSuite {
 
-  case class Span(tags: Map[String, String], duration: Long)
+  case class TestEvent(tags: Map[String, String], duration: Long)
 
-  def extractSpanValue(span: Span)(key: String): Any = {
+  def extractSpanValue(span: TestEvent)(key: String): Any = {
     key match {
       case "tags"     => span.tags
       case "duration" => span.duration

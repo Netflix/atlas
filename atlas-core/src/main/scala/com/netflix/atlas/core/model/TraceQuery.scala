@@ -36,8 +36,8 @@ object TraceQuery {
     * Matches if the trace has a span that matches `q1` with a direct child span that
     * matches `q2`.
     */
-  case class Child(q1: TraceQuery, q2: TraceQuery) extends TraceQuery
+  case class Child(q1: Query, q2: Query) extends TraceQuery
 
   /** Filter to select the set of spans from a trace to forward as events. */
-  case class SpanFilter(q: TraceQuery, f: Query) extends Expr
+  case class SpanFilter(q: TraceQuery, f: DataExpr) extends Expr
 }
