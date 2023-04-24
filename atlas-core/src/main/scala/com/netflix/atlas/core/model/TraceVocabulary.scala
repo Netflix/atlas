@@ -25,7 +25,7 @@ object TraceVocabulary extends Vocabulary {
 
   val name: String = "trace"
 
-  val dependsOn: List[Vocabulary] = List(QueryVocabulary)
+  val dependsOn: List[Vocabulary] = List(DataVocabulary)
 
   override def words: List[Word] = List(
     SpanAndWord,
@@ -85,11 +85,11 @@ object TraceVocabulary extends Vocabulary {
     override def name: String = "child"
 
     override protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case TraceQueryType(_) :: TraceQueryType(_) :: _ => true
+      case (_: Query) :: (_: Query) :: _ => true
     }
 
     override protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case TraceQueryType(q2) :: TraceQueryType(q1) :: stack =>
+      case (q2: Query) :: (q1: Query) :: stack =>
         TraceQuery.Child(q1, q2) :: stack
     }
 
@@ -109,11 +109,14 @@ object TraceVocabulary extends Vocabulary {
     override def name: String = "span-filter"
 
     override protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: TraceQueryType(_) :: _ => true
+      case (_: Query) :: TraceQueryType(_) :: _    => true
+      case (_: DataExpr) :: TraceQueryType(_) :: _ => true
     }
 
     override protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (f: Query) :: TraceQueryType(q) :: stack =>
+        TraceQuery.SpanFilter(q, DataExpr.All(f)) :: stack
+      case (f: DataExpr) :: TraceQueryType(q) :: stack =>
         TraceQuery.SpanFilter(q, f) :: stack
     }
 

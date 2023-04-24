@@ -105,7 +105,8 @@ lazy val `atlas-lwc-events` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-akka`, `atlas-core`, `atlas-json`)
   .settings(libraryDependencies ++= Seq(
-    Dependencies.iepDynConfig
+    Dependencies.iepDynConfig,
+    Dependencies.spectatorAtlas
   ))
 
 lazy val `atlas-postgres` = project
@@ -133,6 +134,14 @@ lazy val `atlas-spring-eval` = project
 lazy val `atlas-spring-lwcapi` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-spring-akka`, `atlas-lwcapi`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.iepSpring,
+    Dependencies.springContext
+  ))
+
+lazy val `atlas-spring-lwc-events` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-lwc-events`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepSpring,
     Dependencies.springContext

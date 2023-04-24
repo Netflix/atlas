@@ -16,9 +16,21 @@
 package com.netflix.atlas.core.model
 
 /** Base type for event expressions. */
-sealed trait EventExpr extends Expr
+sealed trait EventExpr extends Expr {
+
+  /** Query to determine if an event should be matched. */
+  def query: Query
+}
 
 object EventExpr {
+
+  /**
+    * Specifies to just pass through the raw event if they match the query.
+    *
+    * @param query
+    *     Query to determine if an event should be matched.
+    */
+  case class Raw(query: Query) extends EventExpr
 
   /**
     * Expression that specifies how to map an event to a simple row with the specified columns.

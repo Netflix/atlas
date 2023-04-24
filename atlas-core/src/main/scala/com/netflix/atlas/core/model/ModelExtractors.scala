@@ -86,6 +86,15 @@ object ModelExtractors {
     }
   }
 
+  case object EventExprType {
+
+    def unapply(value: Any): Option[EventExpr] = value match {
+      case e: EventExpr => Some(e)
+      case q: Query     => Some(EventExpr.Raw(q))
+      case _            => None
+    }
+  }
+
   case object TraceQueryType {
 
     def unapply(value: Any): Option[TraceQuery] = value match {

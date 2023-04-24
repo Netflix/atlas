@@ -63,8 +63,8 @@ class TraceVocabularySuite extends FunSuite {
   test("child") {
     val q = parseTraceQuery("app,foo,:eq,app,bar,:eq,:child")
     val expected = TraceQuery.Child(
-      TraceQuery.Simple(Query.Equal("app", "foo")),
-      TraceQuery.Simple(Query.Equal("app", "bar"))
+      Query.Equal("app", "foo"),
+      Query.Equal("app", "bar")
     )
     assertEquals(q, expected)
   }
@@ -73,10 +73,10 @@ class TraceVocabularySuite extends FunSuite {
     val q = parseFilter("app,foo,:eq,app,bar,:eq,:child,app,foo,:eq,:span-filter")
     val expected = TraceQuery.SpanFilter(
       TraceQuery.Child(
-        TraceQuery.Simple(Query.Equal("app", "foo")),
-        TraceQuery.Simple(Query.Equal("app", "bar"))
+        Query.Equal("app", "foo"),
+        Query.Equal("app", "bar")
       ),
-      Query.Equal("app", "foo")
+      DataExpr.All(Query.Equal("app", "foo"))
     )
     assertEquals(q, expected)
   }

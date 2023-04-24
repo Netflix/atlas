@@ -131,4 +131,65 @@ object LwcEvent {
       }
     }
   }
+
+  /**
+    * Wraps an event and converts it to a row.
+    *
+    * @param event
+    *     Event to wrap.
+    * @param columns
+    *     Columsn to project into the rwo.
+    */
+  case class Row(event: LwcEvent, columns: List[String]) extends LwcEvent {
+
+    override def rawEvent: Any = event.rawEvent
+
+    override def timestamp: Long = event.timestamp
+
+    override def tagValue(key: String): String = event.tagValue(key)
+
+    override def extractValue(key: String): Any = event.extractValue(key)
+
+    override def encode(gen: JsonGenerator): Unit = {
+      event.encodeAsRow(columns, gen)
+    }
+
+    override def encodeAsRow(columns: List[String], gen: JsonGenerator): Unit = {
+      event.encodeAsRow(columns, gen)
+    }
+  }
+
+  /** Wraps a sequence of events into an event that can be submitted. */
+  case class Events(seq: Seq[LwcEvent]) extends LwcEvent {
+
+    require(seq.nonEmpty, "event sequence cannot be empty")
+
+    override def rawEvent: Any = seq
+
+    override def timestamp: Long = seq.head.timestamp
+
+    override def tagValue(key: String): String = null
+
+    override def extractValue(key: String): Any = null
+
+    override def encode(gen: JsonGenerator): Unit = {
+      gen.writeStartArray()
+      seq.foreach(_.encode(gen))
+      gen.writeEndArray()
+    }
+
+    override def encodeAsRow(columns: List[String], gen: JsonGenerator): Unit = {
+      throw new UnsupportedOperationException()
+    }
+  }
+
+  /** Represents a span event that makes up a trace. */
+  trait Span extends LwcEvent {
+
+    /** Return the id for this span. */
+    def spanId: String
+
+    /** Returns the id for the parent or `null` if it is the root span. */
+    def parentId: String
+  }
 }
