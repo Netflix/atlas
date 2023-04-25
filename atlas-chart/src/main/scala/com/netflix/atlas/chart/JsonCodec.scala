@@ -20,7 +20,6 @@ import java.io.OutputStream
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Base64
-
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
@@ -34,6 +33,9 @@ import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
+
+import java.io.InputStream
+import scala.util.Using
 
 /**
   * Helper for converting a graph definition to and from json. The format is still being tested
@@ -58,21 +60,28 @@ private[chart] object JsonCodec {
 
   def encode(config: GraphDef): String = {
     Streams.string { w =>
-      val gen = factory.createGenerator(w)
-      writeGraphDef(gen, config)
-      gen.close()
+      Using.resource(factory.createGenerator(w)) { gen =>
+        writeGraphDef(gen, config)
+      }
     }
   }
 
   def encode(output: OutputStream, config: GraphDef): Unit = {
-    val gen = factory.createGenerator(output)
-    writeGraphDef(gen, config)
-    gen.close()
+    Using.resource(factory.createGenerator(output)) { gen =>
+      writeGraphDef(gen, config)
+    }
   }
 
   def decode(json: String): GraphDef = {
-    val parser = factory.createParser(json)
-    readGraphDef(parser)
+    Using.resource(factory.createParser(json)) { parser =>
+      readGraphDef(parser)
+    }
+  }
+
+  def decode(json: InputStream): GraphDef = {
+    Using.resource(factory.createParser(json)) { parser =>
+      readGraphDef(parser)
+    }
   }
 
   private def writeGraphDef(gen: JsonGenerator, config: GraphDef): Unit = {
