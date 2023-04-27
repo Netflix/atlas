@@ -366,7 +366,7 @@ case class Grapher(settings: DefaultSettings) {
           val lineDefs = labelledTS.sortWith(_._1.label < _._1.label).map {
             case (t, stats) =>
               val lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase))
-              val color = s.color.getOrElse {
+              val color = s.color.fold {
                 val c = lineStyle match {
                   case LineStyle.HEATMAP =>
                     if (axisCfg.heatmapPalette.nonEmpty) {

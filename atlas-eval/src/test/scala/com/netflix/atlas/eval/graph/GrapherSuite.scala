@@ -492,7 +492,7 @@ class GrapherSuite extends FunSuite {
   imageTest("heatmap params") {
     "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:heatmap&heatmap_palette=greens&heatmap_scale=sqrt&heatmap_u=5&heatmap_label=foo"
   }
-  
+
   imageTest("named colors: blue with light theme") {
     "/api/v1/graph?e=2012-01-01&q=1,blue1,:color,1,blue2,:color,1,blue3,:color&stack=1&theme=light"
   }
