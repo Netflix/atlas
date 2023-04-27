@@ -354,7 +354,8 @@ case class Grapher(settings: DefaultSettings) {
           val palette = s.palette.map(newPalette).getOrElse {
             s.color
               .map { c =>
-                val p = Palette.singleColor(c).iterator
+                val color = settings.resolveColor(config.flags.theme, c)
+                val p = Palette.singleColor(color).iterator
                 (_: String) => p.next()
               }
               .getOrElse {
@@ -382,6 +383,8 @@ case class Grapher(settings: DefaultSettings) {
                 // assigned by the palette. If using an explicit color it will have no effect as the
                 // alpha can be set directly using an ARGB hex format for the color.
                 s.alpha.fold(c)(a => Colors.withAlpha(c, a))
+              } { c =>
+                settings.resolveColor(config.flags.theme, c)
               }
 
               LineDef(

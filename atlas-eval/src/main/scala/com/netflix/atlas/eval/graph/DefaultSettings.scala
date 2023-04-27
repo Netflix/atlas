@@ -17,14 +17,16 @@ package com.netflix.atlas.eval.graph
 
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
-
 import akka.http.scaladsl.model.ContentType
 import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.Vocabulary
+import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.eval.util.HostRewriter
 import com.typesafe.config.Config
+
+import java.awt.Color
 
 /**
   * Default settings to use when rendering a graph image.
@@ -70,6 +72,12 @@ case class DefaultSettings(root: Config, config: Config) {
 
   /** Default palette name to use for lines with an offset. */
   def offsetPalette(theme: String): String = config.getString(s"$theme.palette.offset")
+
+  /** Resolve color for a given theme. */
+  def resolveColor(theme: String, color: String): Color = {
+    val k = s"$theme.named-colors.$color"
+    Strings.parseColor(if (config.hasPath(k)) config.getString(k) else color)
+  }
 
   /** Should the uri and other graph metadata be encoded as text fields in the image? */
   val metadataEnabled: Boolean = config.getBoolean("png-metadata-enabled")
