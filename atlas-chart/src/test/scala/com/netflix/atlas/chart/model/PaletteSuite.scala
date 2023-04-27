@@ -16,7 +16,6 @@
 package com.netflix.atlas.chart.model
 
 import java.awt.Color
-
 import munit.FunSuite
 
 class PaletteSuite extends FunSuite {

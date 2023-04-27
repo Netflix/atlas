@@ -15,8 +15,9 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import java.time.ZoneOffset
+import com.netflix.atlas.chart.model.Scale
 
+import java.time.ZoneOffset
 import munit.FunSuite
 
 import scala.util.Random
@@ -700,6 +701,16 @@ class TicksSuite extends FunSuite {
     assertEquals(ticks.head.offset, 0.0)
     assertEquals(ticks.head.label, "-15.0s")
     assertEquals(ticks.last.label, "-1.0s")
+  }
+
+  test("roundToOneSignificantDigit") {
+    assertEquals(Ticks.roundToOneSignificantDigit(0.00123456322), 0.002)
+    assertEquals(Ticks.roundToOneSignificantDigit(773617.6284857575), 800000.0)
+  }
+
+  test("simple") {
+    val ticks = Ticks.simple(0.00123456322, 5, Scale.LINEAR)
+    assertEquals(ticks.size, 6)
   }
 
   test("time: since 1970") {

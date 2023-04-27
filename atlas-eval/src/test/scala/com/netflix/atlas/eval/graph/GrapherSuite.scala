@@ -485,6 +485,14 @@ class GrapherSuite extends FunSuite {
     "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-avg&features=unstable"
   }
 
+  imageTest("heatmap and stack") {
+    "/api/v1/graph?e=2012-01-01&q=name,requestLatency,:eq,:percentiles-heatmap,name,sps,:eq,:sum,:stack,50,:div,40,:alpha"
+  }
+
+  imageTest("heatmap params") {
+    "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,:sum,(,nf.cluster,),:by,:heatmap&heatmap_palette=greens&heatmap_scale=sqrt&heatmap_u=5&heatmap_label=foo"
+  }
+
   test("invalid stuff on stack") {
     val uri = "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,foo"
     val e = intercept[IllegalArgumentException] {
