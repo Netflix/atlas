@@ -25,19 +25,11 @@ import scala.collection.immutable.ArraySeq
 
 case class Palette(name: String, colorArray: ArraySeq[Color]) {
 
-  override def equals(obj: Any): Boolean = {
-    if (obj == null) return false
-    if (!obj.isInstanceOf[Palette]) return false
-    val other = obj.asInstanceOf[Palette]
-    if (!name.equals(other.name)) return false
-    colorArray.equals(other.colorArray)
-  }
-
   def withAlpha(alpha: Int): Palette =
     Palette(name, colorArray.map(c => new Color(c.getRed, c.getGreen, c.getBlue, alpha)))
 
   def withVisionType(vision: VisionType): Palette =
-    Palette(s"${vision.name}_$name", colorArray.map(vision.convert(_)))
+    Palette(s"${vision.name}_$name", colorArray.map(vision.convert))
 
   /**
     * Convert colors from another palette into grayscale. For information about the conversion
@@ -82,7 +74,7 @@ case class Palette(name: String, colorArray: ArraySeq[Color]) {
 
 object Palette {
 
-  val default = fromArray(
+  val default: Palette = fromArray(
     "default",
     Array[Color](
       Color.RED,
@@ -155,6 +147,20 @@ object Palette {
 
   def singleColor(c: Color): Palette = {
     Palette("%08X".format(c.getRGB), ArraySeq(c))
+  }
+
+  def gradient(color: Color): Palette = {
+    var alpha = color.getAlpha
+    val delta = if (alpha == 0 || alpha >= 255) 255 / 5 else alpha
+    val colors = new Array[Color](255 / delta)
+    alpha = 255
+    var i = colors.length - 1
+    while (i >= 0) {
+      colors(i) = new Color(color.getRed, color.getGreen, color.getBlue, alpha)
+      alpha -= delta
+      i -= 1
+    }
+    Palette("gradient", ArraySeq.unsafeWrapArray(colors))
   }
 
   def brighter(c: Color, n: Int): Palette = {

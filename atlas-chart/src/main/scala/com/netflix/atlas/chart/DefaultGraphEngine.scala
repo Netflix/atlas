@@ -94,11 +94,25 @@ class DefaultGraphEngine extends PngGraphEngine {
         config.plots.zipWithIndex.foreach {
           case (plot, i) =>
             val label = plot.ylabel.map(s => s"Axis $i: $s").getOrElse(s"Axis $i")
-            belowCanvas += Legend(config.theme.legend, plot, Some(label), showStats, entriesPerPlot)
+            belowCanvas += Legend(
+              config.theme.legend,
+              plot,
+              graph.heatmaps.get(i),
+              Some(label),
+              showStats,
+              entriesPerPlot
+            )
         }
       } else {
         config.plots.foreach { plot =>
-          belowCanvas += Legend(config.theme.legend, plot, None, showStats, entriesPerPlot)
+          belowCanvas += Legend(
+            config.theme.legend,
+            plot,
+            graph.heatmaps.get(0),
+            None,
+            showStats,
+            entriesPerPlot
+          )
         }
       }
 

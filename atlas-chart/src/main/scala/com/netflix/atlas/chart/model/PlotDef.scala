@@ -15,11 +15,16 @@
  */
 package com.netflix.atlas.chart.model
 
-import java.awt.Color
+import com.netflix.atlas.chart.graphics.Heatmap
+import com.netflix.atlas.chart.graphics.LeftValueAxis
+import com.netflix.atlas.chart.graphics.Style
 
+import java.awt.Color
 import com.netflix.atlas.chart.graphics.Theme
+import com.netflix.atlas.chart.graphics.TimeAxis
 import com.netflix.atlas.chart.model.PlotBound.AutoStyle
 import com.netflix.atlas.chart.model.PlotBound.Explicit
+import com.netflix.atlas.core.model.TimeSeq
 
 /**
   * Definition for a plot, i.e., a y-axis and associated data elements.
@@ -38,6 +43,8 @@ import com.netflix.atlas.chart.model.PlotBound.Explicit
   *     Lower limit for the axis.
   * @param tickLabelMode
   *     Mode to use for displaying tick labels.
+  * @param heatmap
+  *     Optional heatmap settings for the plot.
   */
 case class PlotDef(
   data: List[DataDef],
@@ -46,7 +53,8 @@ case class PlotDef(
   scale: Scale = Scale.LINEAR,
   upper: PlotBound = AutoStyle,
   lower: PlotBound = AutoStyle,
-  tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL
+  tickLabelMode: TickLabelMode = TickLabelMode.DECIMAL,
+  heatmap: Option[HeatmapDef] = None
 ) {
 
   import java.lang.{Double => JDouble}
@@ -64,13 +72,23 @@ case class PlotDef(
     else {
       val step = dataLines.head.data.data.step
       val (regular, stacked) = dataLines
-        .filter(_.lineStyle != LineStyle.VSPAN)
+        .filter(line => line.lineStyle != LineStyle.VSPAN && !Heatmap.isPercentileHeatmap(line))
         .partition(_.lineStyle != LineStyle.STACK)
 
       var max = -JDouble.MAX_VALUE
       var min = JDouble.MAX_VALUE
       var posSum = 0.0
       var negSum = 0.0
+
+      dataLines
+        .filter(Heatmap.isPercentileHeatmap)
+        .filter(line => hasNonZeroData(start, end, step, line.data.data))
+        .flatMap(line => Heatmap.percentileBucketRange(line.data.tags))
+        .foreach {
+          case (mn, mx) =>
+            min = math.min(min, mn)
+            max = math.max(max, mx)
+        }
 
       var t = start
       while (t < end) {
@@ -116,6 +134,17 @@ case class PlotDef(
     }
   }
 
+  private def hasNonZeroData(start: Long, end: Long, step: Long, ts: TimeSeq): Boolean = {
+    var t = start
+    while (t < end) {
+      val v = ts(t)
+      if (!v.isNaN && v != 0.0)
+        return true
+      t += step
+    }
+    false
+  }
+
   private[model] def finalBounds(hasArea: Boolean, min: Double, max: Double): (Double, Double) = {
 
     // Try to figure out bounds following the guidelines:
@@ -151,7 +180,50 @@ case class PlotDef(
 
   def lines: List[LineDef] = data.collect { case v: LineDef => v }
 
+  def renderedLines: List[LineDef] = data.collect {
+    case v: LineDef if v.lineStyle != LineStyle.HEATMAP => v
+  }
+
+  def heatmapLines: List[LineDef] = data.collect {
+    case v: LineDef if v.lineStyle == LineStyle.HEATMAP => v
+  }
+
+  def legendData: List[DataDef] = data.filter {
+    case v: LineDef if v.lineStyle == LineStyle.HEATMAP => false
+    case _                                              => true
+  }
+
   def normalize(theme: Theme): PlotDef = {
-    copy(axisColor = Some(getAxisColor(theme.legend.text.color)))
+    copy(axisColor = Some(getAxisColor(theme.legend.text.color)), heatmap = heatmapSettings)
+  }
+
+  def heatmapSettings: Option[HeatmapDef] = {
+    if (heatmapLines.nonEmpty) {
+      val settings = heatmap.getOrElse(HeatmapDef())
+      val palette = settings.palette
+        .getOrElse {
+          Palette.gradient(heatmapLines.head.color)
+        }
+        .copy(name = "heatmap")
+      Some(settings.copy(palette = Some(palette)))
+    } else {
+      None
+    }
+  }
+
+  def heatmapData(gdef: GraphDef): Option[Heatmap] = {
+    if (heatmapLines.nonEmpty) {
+      val settings = heatmap.getOrElse(HeatmapDef())
+      val start = gdef.startTime.toEpochMilli
+      val end = gdef.endTime.toEpochMilli
+      val xaxis = TimeAxis(Style.default, start, end, gdef.step)
+
+      val (min, max) = bounds(start, end)
+      val yaxis = LeftValueAxis(this, gdef.theme.axis, min, max)
+
+      Some(Heatmap(settings, heatmapLines, xaxis, yaxis, gdef.height))
+    } else {
+      None
+    }
   }
 }

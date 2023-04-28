@@ -274,6 +274,38 @@ object Ticks {
       .fold(sciTicks(v1, v2, n))(t => durationTicks(v1, v2, t))
   }
 
+  /**
+    * Round up to have a single significant digit. This will typically work well for
+    * having reasonable tick boundaries with linear scales.
+    */
+  def roundToOneSignificantDigit(v: Double): Double = {
+    if (v == 0.0) {
+      0.0
+    } else {
+      val exp = Math.floor(Math.log10(Math.abs(v)))
+      val div = Math.pow(10, exp)
+      Math.ceil(v / div) * div
+    }
+  }
+
+  /**
+    * Simple tick selection with a fixed number of values. This can be useful for cases
+    * where there is a discrete set of values such as colors with a heatmap.
+    */
+  def simple(max: Double, n: Int, scale: Scale): List[ValueTick] = {
+    require(max >= 0.0)
+    require(n > 0)
+    val f = Scales.inverted(scale)(0.0, max, 0, n)
+    val ticks = List.newBuilder[ValueTick]
+    ticks += ValueTick(0.0, 0.0)
+    var i = 1
+    while (i <= n) {
+      ticks += ValueTick(f(i), 0.0)
+      i += 1
+    }
+    ticks.result()
+  }
+
   private def validateAndGetRange(v1: Double, v2: Double): Double = {
     require(JDouble.isFinite(v1), "lower bound must be finite")
     require(JDouble.isFinite(v2), "upper bound must be finite")

@@ -29,11 +29,16 @@ object Scales {
     */
   type DoubleFactory = (Double, Double, Int, Int) => DoubleScale
 
+  type InvertedFactory = (Double, Double, Int, Int) => InvertedScale
+
   /** Maps a double value to a pixel location. Typically used for the value scales. */
   type DoubleScale = Double => Int
 
   /** Maps a long value to a pixel location. Typically used for time scales. */
   type LongScale = Long => Int
+
+  /** Maps a pixel location to the max value covered by that pixel. */
+  type InvertedScale = Int => Double
 
   /** Returns the appropriate Y-value scale factory for the scale enum type. */
   def factory(s: Scale): DoubleFactory = s match {
@@ -101,5 +106,53 @@ object Scales {
     val dr = (d2 - d1) / step
     val pixelsPerStep = (r2 - r1) / dr
     v => ((v - d1) / step * pixelsPerStep).toInt + r1
+  }
+
+  /** Returns the appropriate inverted scale factory for the scale enum type. */
+  def inverted(s: Scale): InvertedFactory = s match {
+    case Scale.LINEAR      => invertedScale(invertedLinear)
+    case Scale.LOGARITHMIC => invertedScale(invertedLogarithmic)
+    case Scale.POWER_2     => invertedScale(invertedPower(2.0))
+    case Scale.SQRT        => invertedScale(invertedPower(0.5))
+  }
+
+  /** Factory for an inverted linear mapping. */
+  def invertedLinear(d1: Double, d2: Double, r1: Int, r2: Int): InvertedScale = {
+    val pixelSpan = (d2 - d1) / (r2 - r1)
+    v => (v - r1) * pixelSpan + d1
+  }
+
+  /** Invert the log10 operation. */
+  private def pow10(value: Double): Double = {
+    value match {
+      case v if v > 0.0 => math.pow(10, v) + 1.0
+      case v if v < 0.0 => -math.pow(10, -v) - 1.0
+      case _            => 0.0
+    }
+  }
+
+  /** Factory for an inverted logarithmic mapping. */
+  def invertedLogarithmic(d1: Double, d2: Double, r1: Int, r2: Int): InvertedScale = {
+    val lg1 = log10(d1)
+    val lg2 = log10(d2)
+    val scale = invertedLinear(lg1, lg2, r1, r2)
+    v => pow10(scale(v))
+  }
+
+  /** Factory for an inverted power mapping. */
+  def invertedPower(exp: Double)(d1: Double, d2: Double, r1: Int, r2: Int): InvertedScale = {
+    val p1 = pow(d1, exp)
+    val p2 = pow(d2, exp)
+    val scale = invertedLinear(p1, p2, r1, r2)
+    v => pow(scale(v), 1.0 / exp)
+  }
+
+  /**
+    * Inverts the logic of the normal scales to map from a pixel location to a position on
+    * the value range. This is typically used for finding ticks based on a discrete set like
+    * a set of colors.
+    */
+  def invertedScale(s: InvertedFactory)(d1: Double, d2: Double, r1: Int, r2: Int): InvertedScale = {
+    s(d1, d2, r1, r2)
   }
 }

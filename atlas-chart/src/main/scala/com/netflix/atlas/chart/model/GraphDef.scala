@@ -216,7 +216,7 @@ case class GraphDef(
         if (plot.axisColor.isEmpty) {
           val axisColor = plot.data.headOption.map(_.color)
           axisColor.fold(plot.normalize(theme)) { c =>
-            plot.copy(axisColor = Some(c))
+            plot.normalize(theme).copy(axisColor = Some(c))
           }
         } else {
           plot

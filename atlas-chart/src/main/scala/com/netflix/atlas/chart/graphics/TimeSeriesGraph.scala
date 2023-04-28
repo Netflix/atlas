@@ -17,9 +17,9 @@ package com.netflix.atlas.chart.graphics
 
 import java.awt.BasicStroke
 import java.awt.Graphics2D
-
 import com.netflix.atlas.chart.GraphConstants
 import com.netflix.atlas.chart.model.GraphDef
+import com.netflix.atlas.chart.model.HeatmapDef
 import com.netflix.atlas.chart.model.LineStyle
 
 /**
@@ -82,6 +82,24 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
         RightValueAxis(plot, graphDef.theme.axis, bounds._1, bounds._2)
   }
 
+  val heatmaps: Map[Int, Heatmap] = {
+    graphDef.plots
+      .zip(yaxes)
+      .zipWithIndex
+      .flatMap {
+        case ((plot, axis), i) =>
+          val heatmapData = plot.heatmapLines
+          if (heatmapData.nonEmpty) {
+            val settings = plot.heatmap.getOrElse(HeatmapDef())
+            val heatmap = Heatmap(settings, heatmapData, timeAxis, axis, graphDef.height)
+            Some(i -> heatmap)
+          } else {
+            None
+          }
+      }
+      .toMap
+  }
+
   private def clip(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     g.setClip(x1, y1, x2 - x1, y2 - y1)
     g.setColor(graphDef.theme.canvas.background.color)
@@ -109,16 +127,22 @@ case class TimeSeriesGraph(graphDef: GraphDef) extends Element with FixedHeight 
 
     val prevClip = g.getClip
     clip(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd + 1)
-    graphDef.plots.zip(yaxes).foreach {
-      case (plot, axis) =>
+    graphDef.plots.zip(yaxes).zipWithIndex.foreach {
+      case ((plot, axis), i) =>
+        heatmaps.get(i).foreach { heatmap =>
+          val element = TimeSeriesHeatmap(heatmap)
+          element.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)
+        }
+
         val offsets = TimeSeriesStack.Offsets(timeAxis)
-        plot.lines.foreach { line =>
+        plot.renderedLines.foreach { line =>
           val style = Style(color = line.color, stroke = new BasicStroke(line.lineWidth))
           val lineElement = line.lineStyle match {
             case LineStyle.LINE  => TimeSeriesLine(style, line.data.data, timeAxis, axis)
             case LineStyle.AREA  => TimeSeriesArea(style, line.data.data, timeAxis, axis)
             case LineStyle.VSPAN => TimeSeriesSpan(style, line.data.data, timeAxis)
             case LineStyle.STACK => TimeSeriesStack(style, line.data.data, timeAxis, axis, offsets)
+            case LineStyle.HEATMAP => throw new IllegalStateException()
           }
 
           lineElement.draw(g, x1 + leftOffset, y1, x2 - rightOffset, chartEnd)

@@ -58,6 +58,12 @@ object StyleVocabulary extends Vocabulary {
     Macro("area", List("area", ":ls"), List("name,sps,:eq,:sum")),
     Macro("line", List("line", ":ls"), List("name,sps,:eq,:sum")),
     Macro("stack", List("stack", ":ls"), List("name,sps,:eq,(,nf.cluster,),:by")),
+    Macro("heatmap", List("heatmap", ":ls"), List("name,sps,:eq,(,nf.cluster,),:by")),
+    Macro(
+      "percentiles-heatmap",
+      List("(", "percentile", ")", ":cg", "heatmap", ":ls"),
+      List("name,requestLatency,:eq")
+    ),
     Macro("vspan", List("vspan", ":ls"), List("name,sps,:eq,:sum,:dup,200e3,:gt")),
     // Legacy macro for visualizing epic expressions
     Macro("des-epic-viz", desEpicViz, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
@@ -218,6 +224,7 @@ object StyleVocabulary extends Vocabulary {
         "name,sps,:eq,:sum,(,name,),:by,line",
         "name,sps,:eq,:sum,(,name,),:by,area",
         "name,sps,:eq,:sum,(,name,),:by,stack",
+        "name,sps,:eq,:sum,(,name,),:by,heatmap",
         "name,sps,:eq,:sum,(,name,),:by,200e3,:gt,vspan"
       )
   }
