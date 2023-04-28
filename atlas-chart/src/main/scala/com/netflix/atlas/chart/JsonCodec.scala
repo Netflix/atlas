@@ -228,7 +228,7 @@ private[chart] object JsonCodec {
         writeColor(gen, heatmap.palette.colors(i - 1))
         gen.writeNumberField("min", min)
         gen.writeNumberField("max", max)
-        gen.writeStringField("label", heatmap.yTicks(i).label)
+        gen.writeStringField("label", colorTicks(i).label)
         gen.writeEndObject()
         min = max
         i += 1
