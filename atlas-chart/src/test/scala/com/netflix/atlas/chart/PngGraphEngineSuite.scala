@@ -764,6 +764,13 @@ abstract class PngGraphEngineSuite extends FunSuite {
     check("heatmap_basic_log.png", graphDef)
   }
 
+  test("heatmap_basic_log_linear") {
+    val graphDef = loadV2(s"$dataDir/heatmap_basic.json.gz").adjustPlots(
+      _.copy(scale = Scale.LOG_LINEAR)
+    )
+    check("heatmap_basic_log_linear.png", graphDef)
+  }
+
   test("heatmap_basic_reds") {
     val graphDef = loadV2(s"$dataDir/heatmap_basic.json.gz").adjustPlots(
       _.copy(heatmap = Some(HeatmapDef(palette = Some(Palette.fromResource("reds")))))
@@ -785,6 +792,13 @@ abstract class PngGraphEngineSuite extends FunSuite {
     check("heatmap_basic_color_log.png", graphDef)
   }
 
+  test("heatmap_basic_color_log_linear") {
+    val graphDef = loadV2(s"$dataDir/heatmap_basic.json.gz").adjustPlots(
+      _.copy(heatmap = Some(HeatmapDef(colorScale = Scale.LOG_LINEAR)))
+    )
+    check("heatmap_basic_color_log_linear.png", graphDef)
+  }
+
   test("heatmap_basic_color_power2") {
     val graphDef = loadV2(s"$dataDir/heatmap_basic.json.gz").adjustPlots(
       _.copy(heatmap = Some(HeatmapDef(colorScale = Scale.POWER_2)))
@@ -804,9 +818,23 @@ abstract class PngGraphEngineSuite extends FunSuite {
     check("heatmap_timer.png", graphDef)
   }
 
+  test("heatmap_timer_log_linear") {
+    val graphDef = loadV2(s"$dataDir/heatmap_timer.json.gz").adjustPlots(
+      _.copy(scale = Scale.LOG_LINEAR)
+    )
+    check("heatmap_timer_log_linear.png", graphDef)
+  }
+
   test("heatmap_timer2") {
     val graphDef = loadV2(s"$dataDir/heatmap_timer2.json.gz")
     check("heatmap_timer2.png", graphDef)
+  }
+
+  test("heatmap_timer2_log_linear") {
+    val graphDef = loadV2(s"$dataDir/heatmap_timer2.json.gz").adjustPlots(
+      _.copy(scale = Scale.LOG_LINEAR)
+    )
+    check("heatmap_timer2_log_linear.png", graphDef)
   }
 
   test("heatmap_timer3") {
@@ -883,6 +911,13 @@ abstract class PngGraphEngineSuite extends FunSuite {
   test("heatmap_dist") {
     val graphDef = loadV2(s"$dataDir/heatmap_dist.json.gz")
     check("heatmap_dist.png", graphDef)
+  }
+
+  test("heatmap_dist_log_linear") {
+    val graphDef = loadV2(s"$dataDir/heatmap_dist.json.gz").adjustPlots {
+      _.copy(scale = Scale.LOG_LINEAR)
+    }
+    check("heatmap_dist_log_linear.png", graphDef)
   }
 }
 
