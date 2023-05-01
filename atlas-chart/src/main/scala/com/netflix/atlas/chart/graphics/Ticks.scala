@@ -250,9 +250,49 @@ object Ticks {
   def value(v1: Double, v2: Double, n: Int, scale: Scale = Scale.LINEAR): List[ValueTick] = {
     val r = validateAndGetRange(v1, v2)
 
-    valueTickSizes
-      .find(t => r / t._1 <= n)
-      .fold(sciTicks(v1, v2, n))(t => decimalTicks(v1, v2, n, t, scale))
+    if (scale == Scale.LOG_LINEAR) {
+      logLinear(v1, v2, n)
+    } else {
+      valueTickSizes
+        .find(t => r / t._1 <= n)
+        .fold(sciTicks(v1, v2, n))(t => decimalTicks(v1, v2, n, t, scale))
+    }
+  }
+
+  def logLinear(v1: Double, v2: Double, n: Int): List[ValueTick] = {
+    val s = LogLinear.bucketIndex(v1)
+    val e = LogLinear.bucketIndex(v2)
+    val posAndNeg = s < 0 && e > 0
+    val numBuckets = e - s
+    val majorMod = math.max(1, ((numBuckets / 9) + n - 1) / n * 9)
+    def idx(i: Int) = if (i < 0) -i - 1 else i
+    def isMajor(i: Int) = {
+      if (numBuckets <= n)
+        true
+      else
+        idx(i) % majorMod == 0
+    }
+    (s to e).toList
+      .flatMap { i =>
+        // Rules
+        // - The associated value is outside the range
+        // - If the range includes both positive and negative values, then ignore the first
+        //   bucket for both sides and add a tick at zero.
+        // - Use all buckets if the number is less than requested number of ticks.
+        // - Otherwise, just include ticks at powers of 10. Major ticks should roughly match
+        //   the requested number.
+        val b = LogLinear.bucket(i)
+        if (b < v1 || b > v2)
+          None
+        else if (posAndNeg && i == -1)
+          None
+        else if (posAndNeg && i == 0)
+          Some(ValueTick(0.0, 0.0))
+        else if (numBuckets < n * 10 || idx(i) % 9 == 0)
+          Some(ValueTick(LogLinear.bucket(i), 0.0, major = isMajor(i)))
+        else
+          None
+      }
   }
 
   /**

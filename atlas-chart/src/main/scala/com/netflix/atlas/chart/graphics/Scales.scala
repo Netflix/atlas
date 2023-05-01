@@ -44,6 +44,7 @@ object Scales {
   def factory(s: Scale): DoubleFactory = s match {
     case Scale.LINEAR      => yscale(linear)
     case Scale.LOGARITHMIC => yscale(logarithmic)
+    case Scale.LOG_LINEAR  => yscale(logLinear)
     case Scale.POWER_2     => yscale(power(2.0))
     case Scale.SQRT        => yscale(power(0.5))
   }
@@ -71,6 +72,26 @@ object Scales {
     val lg2 = log10(d2)
     val scale = linear(lg1, lg2, r1, r2)
     v => scale(log10(v))
+  }
+
+  /**
+    * Factory for a log linear mapping. It does a logarithmic behavior for powers of 10 and
+    * is linear in between them. This helps spread out smaller values if there is a big range
+    * on the data set.
+    */
+  def logLinear(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
+    val b1 =
+      if (d1 >= 0.0)
+        math.max(0, LogLinear.bucketIndex(d1) - 1)
+      else
+        LogLinear.bucketIndex(d1) - 1
+    val b2 = LogLinear.bucketIndex(d2)
+    if (b1 == b2) {
+      linear(d1, d2, r1, r2)
+    } else {
+      val pixelsPerBucket = (r2 - r1).toDouble / math.abs(b2 - b1).toDouble
+      v => LogLinear.position(v, b1, pixelsPerBucket).toInt + r1
+    }
   }
 
   private def pow(value: Double, exp: Double): Double = {
@@ -112,6 +133,7 @@ object Scales {
   def inverted(s: Scale): InvertedFactory = s match {
     case Scale.LINEAR      => invertedScale(invertedLinear)
     case Scale.LOGARITHMIC => invertedScale(invertedLogarithmic)
+    case Scale.LOG_LINEAR  => invertedScale(invertedLogLinear)
     case Scale.POWER_2     => invertedScale(invertedPower(2.0))
     case Scale.SQRT        => invertedScale(invertedPower(0.5))
   }
@@ -137,6 +159,22 @@ object Scales {
     val lg2 = log10(d2)
     val scale = invertedLinear(lg1, lg2, r1, r2)
     v => pow10(scale(v))
+  }
+
+  /** Factory for an inverted log-linear mapping. */
+  def invertedLogLinear(d1: Double, d2: Double, r1: Int, r2: Int): InvertedScale = {
+    val b1 =
+      if (d1 >= 0.0)
+        math.max(0, LogLinear.bucketIndex(d1) - 1)
+      else
+        LogLinear.bucketIndex(d1) - 1
+    val b2 = LogLinear.bucketIndex(d2)
+    if (b1 == b2) {
+      invertedLinear(d1, d2, r1, r2)
+    } else {
+      val pixelsPerBucket = (r2 - r1).toDouble / math.abs(b2 - b1).toDouble
+      v => LogLinear.bucket(((v - r1) / pixelsPerBucket).toInt - b1)
+    }
   }
 
   /** Factory for an inverted power mapping. */

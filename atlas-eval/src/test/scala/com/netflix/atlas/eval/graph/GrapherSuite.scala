@@ -485,6 +485,26 @@ class GrapherSuite extends FunSuite {
     "/api/v1/graph?e=2012-01-01&q=name,sps,:eq,(,nf.cluster,),:by,max,2,:bottomk-others-avg&features=unstable"
   }
 
+  imageTest("log-linear positive") {
+    "/api/v1/graph?e=2012-01-01&s=e-2d&q=name,sps,:eq,:sum,:dup,1,:axis&scale.0=log-linear"
+  }
+
+  imageTest("log-linear positive, lower 0") {
+    "/api/v1/graph?e=2012-01-01&s=e-2d&q=name,sps,:eq,:sum,:dup,1,:axis&scale.0=log-linear&l=0"
+  }
+
+  imageTest("log-linear negative") {
+    "/api/v1/graph?e=2012-01-01&s=e-2d&q=name,sps,:eq,:sum,:neg,:dup,1,:axis&scale.0=log-linear"
+  }
+
+  imageTest("log-linear positive and negative") {
+    "/api/v1/graph?e=2012-01-01&s=e-2d&q=name,sps,:eq,:sum,40e3,:sub,:dup,1,:axis&scale.0=log-linear"
+  }
+
+  imageTest("log-linear positive and negative, large") {
+    "/api/v1/graph?e=2012-01-01&s=e-2d&q=name,sps,:eq,:sum,100,:mul,4e6,:sub,:dup,1,:axis&scale.0=log-linear"
+  }
+
   imageTest("heatmap and stack") {
     "/api/v1/graph?e=2012-01-01&q=name,requestLatency,:eq,:percentiles-heatmap,name,sps,:eq,:sum,:stack,50,:div,40,:alpha"
   }
