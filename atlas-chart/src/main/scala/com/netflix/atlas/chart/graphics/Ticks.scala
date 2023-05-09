@@ -272,6 +272,16 @@ object Ticks {
       else
         idx(i) % majorMod == 0
     }
+    def includeTick(i: Int) = {
+      val maxTicks = n * 9
+      val includeAll = numBuckets < maxTicks
+      // One third of overall ticks. This will include the powers of 10 and for the linear
+      // spacing between the 4 and 7 marks.
+      val includeThird = numBuckets / 3 < maxTicks && idx(i) % 3 == 0
+      // Only include the powers of 10
+      val includePow10 = idx(i) % 9 == 0
+      includeAll || includeThird || includePow10
+    }
     (s to e).toList
       .flatMap { i =>
         // Rules
@@ -288,7 +298,7 @@ object Ticks {
           None
         else if (posAndNeg && i == 0)
           Some(ValueTick(0.0, 0.0))
-        else if (numBuckets < n * 10 || idx(i) % 9 == 0)
+        else if (includeTick(i))
           Some(ValueTick(LogLinear.bucket(i), 0.0, major = isMajor(i)))
         else
           None

@@ -703,6 +703,21 @@ class TicksSuite extends FunSuite {
     assertEquals(ticks.last.label, "-1.0s")
   }
 
+  test("log-linear [0, 1e12], include all") {
+    val ticks = Ticks.logLinear(0.0, 1e12, 30)
+    assertEquals(ticks.size, 190)
+  }
+
+  test("log-linear [0, 1e12], include one-third") {
+    val ticks = Ticks.logLinear(0.0, 1e12, 10)
+    assertEquals(ticks.size, 64)
+  }
+
+  test("log-linear [0, 1e12], include major-only") {
+    val ticks = Ticks.logLinear(0.0, 1e12, 5)
+    assertEquals(ticks.size, 22)
+  }
+
   test("roundToOneSignificantDigit") {
     assertEquals(Ticks.roundToOneSignificantDigit(0.00123456322), 0.002)
     assertEquals(Ticks.roundToOneSignificantDigit(773617.6284857575), 800000.0)
