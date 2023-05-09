@@ -724,7 +724,7 @@ class TicksSuite extends FunSuite {
   }
 
   test("simple") {
-    val ticks = Ticks.simple(0.00123456322, 5, Scale.LINEAR)
+    val ticks = Ticks.simple(0.0, 0.00123456322, 5, Scale.LINEAR)
     assertEquals(ticks.size, 6)
   }
 
