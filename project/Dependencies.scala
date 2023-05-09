@@ -13,13 +13,13 @@ object Dependencies {
     val akka       = "2.6.20"
     val akkaHttpV  = "10.2.10"
 
-    val iep        = "5.0.2"
-    val jackson    = "2.14.2"
+    val iep        = "5.0.3"
+    val jackson    = "2.15.0"
     val log4j      = "2.20.0"
     val scala      = "2.13.10"
     val slf4j      = "1.7.36"
-    val spectator  = "1.6.2"
-    val spring     = "6.0.7"
+    val spectator  = "1.6.4"
+    val spring     = "6.0.8"
 
     val crossScala = Seq(scala)
   }
@@ -60,8 +60,8 @@ object Dependencies {
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
   val postgres          = "org.postgresql" % "postgresql" % "42.6.0"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.3"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.39"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.44"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.10.0"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
