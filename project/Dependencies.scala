@@ -61,7 +61,7 @@ object Dependencies {
   val postgres          = "org.postgresql" % "postgresql" % "42.6.0"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.3"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.39"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.10.0"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
