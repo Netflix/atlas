@@ -173,7 +173,7 @@ object Scales {
       invertedLinear(d1, d2, r1, r2)
     } else {
       val pixelsPerBucket = (r2 - r1).toDouble / math.abs(b2 - b1).toDouble
-      v => LogLinear.bucket(((v - r1) / pixelsPerBucket).toInt - b1)
+      v => LogLinear.bucket(((v - r1) / pixelsPerBucket).toInt + b1)
     }
   }
 

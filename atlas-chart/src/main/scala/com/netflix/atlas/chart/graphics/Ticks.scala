@@ -342,12 +342,12 @@ object Ticks {
     * Simple tick selection with a fixed number of values. This can be useful for cases
     * where there is a discrete set of values such as colors with a heatmap.
     */
-  def simple(max: Double, n: Int, scale: Scale): List[ValueTick] = {
+  def simple(min: Double, max: Double, n: Int, scale: Scale): List[ValueTick] = {
     require(max >= 0.0)
     require(n > 0)
-    val f = Scales.inverted(scale)(0.0, max, 0, n)
+    val f = Scales.inverted(scale)(min, max, 0, n)
     val ticks = List.newBuilder[ValueTick]
-    ticks += ValueTick(0.0, 0.0)
+    ticks += ValueTick(min, 0.0)
     var i = 1
     while (i <= n) {
       ticks += ValueTick(f(i), 0.0)

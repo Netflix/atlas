@@ -75,18 +75,22 @@ case class Heatmap(
     * even if the upper bound for presentation is different.
     */
   val (minCount: Double, maxCount: Double) = {
+    var min = Double.MaxValue
     var max = Double.MinValue
     var i = 0
     while (i < counts.length) {
       var j = 0
       while (j < counts(i).length) {
         val v = counts(i)(j)
+        min = if (v > 0.0 && v < min) v else min
         max = math.max(max, v)
         j += 1
       }
       i += 1
     }
-    0.0 -> Ticks.roundToOneSignificantDigit(max)
+    // If there is no data on the heatmap, then min will be MaxValue so
+    // check against max.
+    math.min(min, max) -> max
   }
 
   private val colorScale = Scales.factory(settings.colorScale)(
@@ -99,8 +103,9 @@ case class Heatmap(
   /** Set of ticks for the color scale used in legends. */
   val colorTicks: ArraySeq[ValueTick] = {
     val numTicks = palette.colorArray.size
+    val min = settings.lower.lower(hasArea = false, minCount)
     val max = settings.upper.upper(hasArea = false, maxCount)
-    val ticks = Ticks.simple(max, numTicks, settings.colorScale)
+    val ticks = Ticks.simple(min, max, numTicks, settings.colorScale)
     ArraySeq.from(ticks)
   }
 
