@@ -96,6 +96,13 @@ class ScalesSuite extends FunSuite {
     assertEquals(scale(100.0), 100)
   }
 
+  test("logLinear [1e-9, 57.266230611]") {
+    val scale = Scales.logLinear(1e-9, 57.266230611, 22, 522)
+    assertEquals(scale(1e-9), 27)
+    assertEquals(scale(2e-9), 32)
+    assertEquals(scale(3e-9), 37)
+  }
+
   test("invertedLogLinear [1, 110]") {
     val scale = Scales.invertedLogLinear(1.0, 110.0, 0, 5)
     assertEquals(scale(0), 0.9)

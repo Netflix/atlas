@@ -80,11 +80,7 @@ object Scales {
     * on the data set.
     */
   def logLinear(d1: Double, d2: Double, r1: Int, r2: Int): DoubleScale = {
-    val b1 =
-      if (d1 >= 0.0)
-        math.max(0, LogLinear.bucketIndex(d1) - 1)
-      else
-        LogLinear.bucketIndex(d1) - 1
+    val b1 = LogLinear.bucketIndex(d1) - 1
     val b2 = LogLinear.bucketIndex(d2)
     if (b1 == b2) {
       linear(d1, d2, r1, r2)
