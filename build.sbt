@@ -14,6 +14,7 @@ lazy val atlas = project.in(file("."))
     `atlas-postgres`,
     `atlas-spring-akka`,
     `atlas-spring-eval`,
+    `atlas-spring-lwc-events`,
     `atlas-spring-lwcapi`,
     `atlas-spring-webapi`,
     `atlas-standalone`,
