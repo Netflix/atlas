@@ -235,12 +235,13 @@ object AggrDatapoint {
     override def aggregate(datapoint: AggrDatapoint): Aggregator = {
       if (!checkLimits) {
         numInputDatapoints += 1
-        aggregators.get(datapoint.tags) match {
+        val tags = datapoint.tags - aggrTagKey
+        aggregators.get(tags) match {
           case Some(aggr) =>
             aggr.aggregate(datapoint)
           case None =>
             numIntermediateDatapoints += 1
-            aggregators.put(datapoint.tags, newAggregator(datapoint))
+            aggregators.put(tags, newAggregator(datapoint))
         }
       }
       this
