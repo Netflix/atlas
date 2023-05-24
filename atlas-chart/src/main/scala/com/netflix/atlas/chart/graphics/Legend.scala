@@ -17,14 +17,18 @@ package com.netflix.atlas.chart.graphics
 
 import java.awt.Font
 import java.awt.Graphics2D
-
 import com.netflix.atlas.chart.model.PlotDef
 
 /**
   * Draws a legend for a given plot.
   *
+  * @param styles
+  *     Styles for elements on the legend.
   * @param plot
   *     Plot definition corresponding to the legend.
+  * @param heatmap
+  *     Heatmap entry to show on the legend. There is at most one heatmap for a given
+  *     legend.
   * @param label
   *     Overall label to show for this legend.
   * @param showStats
@@ -35,13 +39,14 @@ import com.netflix.atlas.chart.model.PlotDef
 case class Legend(
   styles: Styles,
   plot: PlotDef,
+  heatmap: Option[Heatmap],
   label: Option[String],
   showStats: Boolean,
   maxEntries: Int
 ) extends Element
     with VariableHeight {
 
-  private val numEntries = plot.data.size
+  private val numEntries = plot.legendData.size
 
   private val header = HorizontalPadding(5) :: label.toList.map { str =>
     val bold = ChartSettings.normalFont.deriveFont(Font.BOLD)
@@ -49,9 +54,16 @@ case class Legend(
     Text(str, font = bold, alignment = TextAlignment.LEFT, style = Style(headerColor))
   }
 
-  private val entries = plot.data.take(maxEntries).flatMap { data =>
-    List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))
-  }
+  private val heatmapEntry = heatmap.toList
+    .flatMap { h =>
+      List(HorizontalPadding(2), HeatmapLegendEntry(styles, plot, h, showStats))
+    }
+
+  private val entries = plot.legendData
+    .take(maxEntries)
+    .flatMap { data =>
+      List(HorizontalPadding(2), LegendEntry(styles, plot, data, showStats))
+    }
 
   private val footer =
     if (numEntries <= maxEntries) Nil
@@ -62,7 +74,7 @@ case class Legend(
       List(HorizontalPadding(2), txt)
     }
 
-  private val block = Block(header ::: entries ::: footer)
+  private val block = Block(header ::: heatmapEntry ::: entries ::: footer)
 
   override def minHeight: Int = block.minHeight
 

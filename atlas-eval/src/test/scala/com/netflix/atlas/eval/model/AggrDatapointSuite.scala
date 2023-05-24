@@ -40,6 +40,18 @@ class AggrDatapointSuite extends FunSuite {
     }
   }
 
+  private def createGaugeDatapoints(expr: DataExpr, t: Long, nodes: Int): List[AggrDatapoint] = {
+    (0 until nodes).toList.map { i =>
+      val k = i % 2
+      val node = f"i-$k%08d"
+      val tags = Map("name" -> "cpu", "atlas.aggr" -> k.toString)
+      if (!expr.isInstanceOf[DataExpr.AggregateFunction])
+        AggrDatapoint(t, step, expr, i.toString, tags + ("node" -> node), i)
+      else
+        AggrDatapoint(t, step, expr, i.toString, tags, i)
+    }
+  }
+
   test("aggregate empty") {
     assertEquals(
       AggrDatapoint.aggregate(Nil, settings(Integer.MAX_VALUE, Integer.MAX_VALUE)),
@@ -82,6 +94,32 @@ class AggrDatapointSuite extends FunSuite {
     assertEquals(result.head.value, 45.0)
   }
 
+  test("aggregate gauges sum") {
+    val expr = DataExpr.Sum(Query.True)
+    val dataset = createGaugeDatapoints(expr, 0, 10)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
+    val result = aggregator.get.datapoints
+
+    assertEquals(result.size, 1)
+    assertEquals(result.head.timestamp, 0L)
+    assertEquals(result.head.tags, Map("name" -> "cpu"))
+    assertEquals(result.head.value, 17.0)
+  }
+
+  test("aggregate gauges count") {
+    val expr = DataExpr.Count(Query.True)
+    val dataset = createGaugeDatapoints(expr, 0, 10)
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
+    val result = aggregator.get.datapoints
+
+    assertEquals(result.size, 1)
+    assertEquals(result.head.timestamp, 0L)
+    assertEquals(result.head.tags, Map("name" -> "cpu"))
+    assertEquals(result.head.value, 17.0)
+  }
+
   test("aggregate group by") {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createDatapoints(expr, 0, 10)
@@ -93,6 +131,30 @@ class AggrDatapointSuite extends FunSuite {
     result.foreach { d =>
       val v = d.tags("node").substring(2).toDouble
       assertEquals(d.value, v)
+    }
+  }
+
+  test("aggregate gauges group by") {
+    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
+    val dataset = createGaugeDatapoints(expr, 0, 10)
+
+    // Copy of a datapoint with a different atlas.aggr value, ensure that it gets
+    // added to the others and doesn't result in a duplicate value for the key
+    val d = dataset.head
+    val d2 = d.copy(
+      source = "test",
+      tags = d.tags + ("atlas.aggr" -> "test"),
+      value = 10.0
+    )
+
+    val aggregator =
+      AggrDatapoint.aggregate(d2 :: dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
+    val result = aggregator.get.datapoints
+
+    assertEquals(result.size, 2)
+    result.foreach { d =>
+      val v = d.tags("node").substring(2).toInt
+      assertEquals(d.value, if (v % 2 == 0) 18.0 else 9.0)
     }
   }
 

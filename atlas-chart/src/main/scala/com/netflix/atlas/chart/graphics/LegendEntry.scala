@@ -27,6 +27,8 @@ import com.netflix.atlas.core.util.UnitPrefix
 /**
   * Draws a legend entry for a line.
   *
+  * @param styles
+  *     Styles for elements on the legend entry.
   * @param plot
   *     Definition for the plot containing the line.
   * @param data

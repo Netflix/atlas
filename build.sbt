@@ -10,9 +10,11 @@ lazy val atlas = project.in(file("."))
     `atlas-jmh`,
     `atlas-json`,
     `atlas-lwcapi`,
+    `atlas-lwc-events`,
     `atlas-postgres`,
     `atlas-spring-pekko`,
     `atlas-spring-eval`,
+    `atlas-spring-lwc-events`,
     `atlas-spring-lwcapi`,
     `atlas-spring-webapi`,
     `atlas-standalone`,
@@ -100,6 +102,14 @@ lazy val `atlas-lwcapi` = project
     Dependencies.pekkoStreamTestkit % "test"
   ))
 
+lazy val `atlas-lwc-events` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-json`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.iepDynConfig,
+    Dependencies.spectatorAtlas
+  ))
+
 lazy val `atlas-postgres` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-core`)
@@ -125,6 +135,14 @@ lazy val `atlas-spring-eval` = project
 lazy val `atlas-spring-lwcapi` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-spring-pekko`, `atlas-lwcapi`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.iepSpring,
+    Dependencies.springContext
+  ))
+
+lazy val `atlas-spring-lwc-events` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-lwc-events`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepSpring,
     Dependencies.springContext

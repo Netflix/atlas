@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.model
 
-import java.awt.Color
 import java.time.Duration
 import java.util.regex.Matcher
 import java.util.regex.Pattern
@@ -106,7 +105,7 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
 
   def axis: Option[Int] = settings.get("axis").map(_.toInt)
 
-  def color: Option[Color] = settings.get("color").map(Strings.parseColor)
+  def color: Option[String] = settings.get("color")
 
   def alpha: Option[Int] = settings.get("alpha").map { s =>
     require(s.length == 2, "value should be 2 digit hex string")

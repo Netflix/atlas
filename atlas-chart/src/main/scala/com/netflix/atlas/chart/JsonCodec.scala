@@ -20,7 +20,6 @@ import java.io.OutputStream
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Base64
-
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
@@ -34,6 +33,9 @@ import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
+
+import java.io.InputStream
+import scala.util.Using
 
 /**
   * Helper for converting a graph definition to and from json. The format is still being tested
@@ -58,21 +60,28 @@ private[chart] object JsonCodec {
 
   def encode(config: GraphDef): String = {
     Streams.string { w =>
-      val gen = factory.createGenerator(w)
-      writeGraphDef(gen, config)
-      gen.close()
+      Using.resource(factory.createGenerator(w)) { gen =>
+        writeGraphDef(gen, config)
+      }
     }
   }
 
   def encode(output: OutputStream, config: GraphDef): Unit = {
-    val gen = factory.createGenerator(output)
-    writeGraphDef(gen, config)
-    gen.close()
+    Using.resource(factory.createGenerator(output)) { gen =>
+      writeGraphDef(gen, config)
+    }
   }
 
   def decode(json: String): GraphDef = {
-    val parser = factory.createParser(json)
-    readGraphDef(parser)
+    Using.resource(factory.createParser(json)) { parser =>
+      readGraphDef(parser)
+    }
+  }
+
+  def decode(json: InputStream): GraphDef = {
+    Using.resource(factory.createParser(json)) { parser =>
+      readGraphDef(parser)
+    }
   }
 
   private def writeGraphDef(gen: JsonGenerator, config: GraphDef): Unit = {
@@ -82,6 +91,7 @@ private[chart] object JsonCodec {
     config.plots.zipWithIndex.foreach {
       case (plot, i) =>
         writePlotDefMetadata(gen, plot, i)
+        writeHeatmapDef(gen, config, plot, i)
     }
     config.plots.zipWithIndex.foreach {
       case (plot, i) =>
@@ -175,6 +185,76 @@ private[chart] object JsonCodec {
     gen.writeStringField("lower", plot.lower.toString)
     gen.writeStringField("tickLabelMode", plot.tickLabelMode.name())
     gen.writeEndObject()
+  }
+
+  private def writeHeatmapDef(gen: JsonGenerator, graph: GraphDef, plot: PlotDef, id: Int): Unit = {
+    plot.heatmapData(graph).foreach { heatmap =>
+      gen.writeStartObject()
+      gen.writeStringField("type", "heatmap")
+      gen.writeNumberField("plot", id)
+      gen.writeStringField("colorScale", heatmap.settings.colorScale.name())
+      gen.writeStringField("upper", heatmap.settings.upper.toString)
+      gen.writeStringField("lower", heatmap.settings.lower.toString)
+      heatmap.settings.label.foreach { label =>
+        gen.writeStringField("label", label)
+      }
+
+      // Y-tick information, used to define the vertical buckets for heatmap counts. Included
+      // so the result can be reproduced in a dynamic rendering.
+      gen.writeArrayFieldStart("yTicks")
+      var min = heatmap.yaxis.min
+      var i = 0
+      while (i < heatmap.yTicks.size) {
+        val max = heatmap.yTicks(i).v
+        gen.writeStartObject()
+        gen.writeNumberField("min", min)
+        gen.writeNumberField("max", max)
+        gen.writeStringField("label", heatmap.yTicks(i).label)
+        gen.writeEndObject()
+        min = max
+        i += 1
+      }
+      gen.writeEndArray()
+
+      // Color ticks used to map counts to a color
+      gen.writeArrayFieldStart("colorTicks")
+      val colorTicks = heatmap.colorTicks
+      min = heatmap.minCount
+      i = 1
+      while (i < colorTicks.size) {
+        val max = colorTicks(i).v
+        gen.writeStartObject()
+        gen.writeFieldName("color")
+        writeColor(gen, heatmap.palette.colors(i - 1))
+        gen.writeNumberField("min", min)
+        gen.writeNumberField("max", max)
+        gen.writeStringField("label", colorTicks(i).label)
+        gen.writeEndObject()
+        min = max
+        i += 1
+      }
+      gen.writeEndArray()
+
+      // Output the counts associated with each cell
+      gen.writeObjectFieldStart("data")
+      gen.writeStringField("type", "heatmap")
+      gen.writeArrayFieldStart("values")
+      var t = heatmap.xaxis.start
+      while (t < heatmap.xaxis.end) {
+        gen.writeStartArray()
+        var y = 0
+        while (y < heatmap.numberOfValueBuckets) {
+          gen.writeNumber(heatmap.count(t, y))
+          y += 1
+        }
+        gen.writeEndArray()
+        t += graph.step
+      }
+      gen.writeEndArray()
+      gen.writeEndObject()
+
+      gen.writeEndObject()
+    }
   }
 
   private def writeDataDef(
@@ -274,6 +354,7 @@ private[chart] object JsonCodec {
   private def readGraphDef(parser: JsonParser): GraphDef = {
     var gdef: GraphDef = null
     val plots = Map.newBuilder[Int, PlotDef]
+    val heatmaps = Map.newBuilder[Int, HeatmapDef]
     val data = List.newBuilder[(Int, DataDef)]
     foreachItem(parser) {
       val node = mapper.readTree[JsonNode](parser)
@@ -286,6 +367,9 @@ private[chart] object JsonCodec {
           gdef = toGraphDef(node)
         case "plot-metadata" =>
           plots += node.get("id").asInt(0) -> toPlotDef(node)
+        case "heatmap" =>
+          val plot = node.get("plot").asInt(0)
+          heatmaps += plot -> toHeatmapDef(node)
         case "timeseries" =>
           val plot = node.get("plot").asInt(0)
           data += plot -> toLineDef(gdef, node)
@@ -301,13 +385,14 @@ private[chart] object JsonCodec {
       }
     }
 
+    val heatmapData = heatmaps.result()
     val groupedData = data.result().groupBy(_._1)
 
     val sortedPlots = plots.result().toList.sortWith(_._1 < _._1)
     val plotList = sortedPlots.map {
       case (id, plot) =>
         val plotLines = groupedData.get(id).map(_.map(_._2)).getOrElse(Nil)
-        plot.copy(data = plotLines)
+        plot.copy(data = plotLines, heatmap = heatmapData.get(id))
     }
 
     gdef.copy(plots = plotList)
@@ -399,6 +484,25 @@ private[chart] object JsonCodec {
     } else {
       Nil
     }
+  }
+
+  private def toHeatmapDef(node: JsonNode): HeatmapDef = {
+    import scala.jdk.CollectionConverters._
+    val colors = node
+      .get("colorTicks")
+      .elements()
+      .asScala
+      .map { node =>
+        toColor(node.get("color"))
+      }
+      .toArray
+    HeatmapDef(
+      colorScale = Scale.valueOf(node.get("colorScale").asText()),
+      upper = PlotBound(node.get("upper").asText()),
+      lower = PlotBound(node.get("lower").asText()),
+      palette = Some(Palette.fromArray("heatmap", colors)),
+      label = Option(node.get("label")).map(_.asText())
+    )
   }
 
   private def toLineDef(gdef: GraphDef, node: JsonNode): LineDef = {

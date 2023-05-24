@@ -22,18 +22,20 @@ public enum Scale {
 
   LINEAR,
   LOGARITHMIC,
+  LOG_LINEAR,
   POWER_2,
   SQRT;
 
   /** Returns the scale constant associated with a given name. */
   public static Scale fromName(String s) {
     return switch (s) {
-      case "linear" -> LINEAR;
-      case "log"    -> LOGARITHMIC;
-      case "pow2"   -> POWER_2;
-      case "sqrt"   -> SQRT;
-      default       -> throw new IllegalArgumentException("unknown scale type '" + s
-          + "', should be linear, log, pow2, or sqrt");
+      case "linear"     -> LINEAR;
+      case "log"        -> LOGARITHMIC;
+      case "log-linear" -> LOG_LINEAR;
+      case "pow2"       -> POWER_2;
+      case "sqrt"       -> SQRT;
+      default           -> throw new IllegalArgumentException("unknown scale type '" + s
+          + "', should be linear, log, log-linear, pow2, or sqrt");
     };
   }
 }

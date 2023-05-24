@@ -250,9 +250,59 @@ object Ticks {
   def value(v1: Double, v2: Double, n: Int, scale: Scale = Scale.LINEAR): List[ValueTick] = {
     val r = validateAndGetRange(v1, v2)
 
-    valueTickSizes
-      .find(t => r / t._1 <= n)
-      .fold(sciTicks(v1, v2, n))(t => decimalTicks(v1, v2, n, t, scale))
+    if (scale == Scale.LOG_LINEAR) {
+      logLinear(v1, v2, n)
+    } else {
+      valueTickSizes
+        .find(t => r / t._1 <= n)
+        .fold(sciTicks(v1, v2, n))(t => decimalTicks(v1, v2, n, t, scale))
+    }
+  }
+
+  def logLinear(v1: Double, v2: Double, n: Int): List[ValueTick] = {
+    val s = LogLinear.bucketIndex(v1)
+    val e = LogLinear.bucketIndex(v2)
+    val posAndNeg = s < 0 && e > 0
+    val numBuckets = e - s
+    val majorMod = math.max(1, ((numBuckets / 9) + n - 1) / n * 9)
+    def idx(i: Int) = if (i < 0) -i - 1 else i
+    def isMajor(i: Int) = {
+      if (numBuckets <= n)
+        true
+      else
+        idx(i) % majorMod == 0
+    }
+    def includeTick(i: Int) = {
+      val maxTicks = n * 9
+      val includeAll = numBuckets < maxTicks
+      // One third of overall ticks. This will include the powers of 10 and for the linear
+      // spacing between the 4 and 7 marks.
+      val includeThird = numBuckets / 3 < maxTicks && idx(i) % 3 == 0
+      // Only include the powers of 10
+      val includePow10 = idx(i) % 9 == 0
+      includeAll || includeThird || includePow10
+    }
+    (s to e).toList
+      .flatMap { i =>
+        // Rules
+        // - The associated value is outside the range
+        // - If the range includes both positive and negative values, then ignore the first
+        //   bucket for both sides and add a tick at zero.
+        // - Use all buckets if the number is less than requested number of ticks.
+        // - Otherwise, just include ticks at powers of 10. Major ticks should roughly match
+        //   the requested number.
+        val b = LogLinear.bucket(i)
+        if (b < v1 || b > v2)
+          None
+        else if (posAndNeg && i == -1)
+          None
+        else if (posAndNeg && i == 0)
+          Some(ValueTick(0.0, 0.0))
+        else if (includeTick(i))
+          Some(ValueTick(LogLinear.bucket(i), 0.0, major = isMajor(i)))
+        else
+          None
+      }
   }
 
   /**
@@ -272,6 +322,38 @@ object Ticks {
     durationValueTickSizes
       .find(t => r / t._1 <= n)
       .fold(sciTicks(v1, v2, n))(t => durationTicks(v1, v2, t))
+  }
+
+  /**
+    * Round up to have a single significant digit. This will typically work well for
+    * having reasonable tick boundaries with linear scales.
+    */
+  def roundToOneSignificantDigit(v: Double): Double = {
+    if (v == 0.0) {
+      0.0
+    } else {
+      val exp = Math.floor(Math.log10(Math.abs(v)))
+      val div = Math.pow(10, exp)
+      Math.ceil(v / div) * div
+    }
+  }
+
+  /**
+    * Simple tick selection with a fixed number of values. This can be useful for cases
+    * where there is a discrete set of values such as colors with a heatmap.
+    */
+  def simple(min: Double, max: Double, n: Int, scale: Scale): List[ValueTick] = {
+    require(max >= 0.0)
+    require(n > 0)
+    val f = Scales.inverted(scale)(min, max, 0, n)
+    val ticks = List.newBuilder[ValueTick]
+    ticks += ValueTick(min, 0.0)
+    var i = 1
+    while (i <= n) {
+      ticks += ValueTick(f(i), 0.0)
+      i += 1
+    }
+    ticks.result()
   }
 
   private def validateAndGetRange(v1: Double, v2: Double): Double = {

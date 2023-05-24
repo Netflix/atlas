@@ -202,7 +202,12 @@ case class Grapher(settings: DefaultSettings) {
       tickLabels = getAxisParam(params, "tick_labels", id),
       palette = params.get(s"palette.$id"),
       sort = getAxisParam(params, "sort", id),
-      order = getAxisParam(params, "order", id)
+      order = getAxisParam(params, "order", id),
+      heatmapScale = getAxisParam(params, "heatmap_scale", id),
+      heatmapUpper = getAxisParam(params, "heatmap_u", id),
+      heatmapLower = getAxisParam(params, "heatmap_l", id),
+      heatmapPalette = getAxisParam(params, "heatmap_palette", id),
+      heatmapLabel = getAxisParam(params, "heatmap_label", id)
     )
   }
 
@@ -320,6 +325,7 @@ case class Grapher(settings: DefaultSettings) {
         }
 
         var messages = List.empty[String]
+        var heatmapColor: Color = null
         val lines = exprs.flatMap { s =>
           val result = eval(s)
 
@@ -345,24 +351,40 @@ case class Grapher(settings: DefaultSettings) {
             newT.withLabel(s.legend(newT.label, legendTags)) -> stats
           }
 
-          val linePalette = s.palette.map(newPalette).getOrElse {
+          val palette = s.palette.map(newPalette).getOrElse {
             s.color
               .map { c =>
-                val p = Palette.singleColor(c).iterator
+                val color = settings.resolveColor(config.flags.theme, c)
+                val p = Palette.singleColor(color).iterator
                 (_: String) => p.next()
               }
               .getOrElse {
                 if (s.offset > 0L) shiftPalette else axisPalette
               }
           }
+
           val lineDefs = labelledTS.sortWith(_._1.label < _._1.label).map {
             case (t, stats) =>
-              val color = s.color.getOrElse {
-                val c = linePalette(t.label)
+              val lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase))
+              val color = s.color.fold {
+                val c = lineStyle match {
+                  case LineStyle.HEATMAP =>
+                    if (axisCfg.heatmapPalette.nonEmpty) {
+                      // Don't consume a color if the the global heatmap palette is configured.
+                      // Just set it to something.
+                      if (heatmapColor == null) heatmapColor = Color.BLACK
+                    } else {
+                      if (heatmapColor == null) heatmapColor = palette(s"heatmap$yaxis")
+                    }
+                    heatmapColor
+                  case _ => palette(t.label)
+                }
                 // Alpha setting if present will set the alpha value for the color automatically
                 // assigned by the palette. If using an explicit color it will have no effect as the
                 // alpha can be set directly using an ARGB hex format for the color.
                 s.alpha.fold(c)(a => Colors.withAlpha(c, a))
+              } { c =>
+                settings.resolveColor(config.flags.theme, c)
               }
 
               LineDef(
