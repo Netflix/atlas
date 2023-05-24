@@ -137,14 +137,24 @@ class AggrDatapointSuite extends FunSuite {
   test("aggregate gauges group by") {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
     val dataset = createGaugeDatapoints(expr, 0, 10)
+
+    // Copy of a datapoint with a different atlas.aggr value, ensure that it gets
+    // added to the others and doesn't result in a duplicate value for the key
+    val d = dataset.head
+    val d2 = d.copy(
+      source = "test",
+      tags = d.tags + ("atlas.aggr" -> "test"),
+      value = 10.0
+    )
+
     val aggregator =
-      AggrDatapoint.aggregate(dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
+      AggrDatapoint.aggregate(d2 :: dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
     val result = aggregator.get.datapoints
 
     assertEquals(result.size, 2)
     result.foreach { d =>
       val v = d.tags("node").substring(2).toInt
-      assertEquals(d.value, if (v % 2 == 0) 8.0 else 9.0)
+      assertEquals(d.value, if (v % 2 == 0) 18.0 else 9.0)
     }
   }
 
