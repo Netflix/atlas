@@ -4,8 +4,8 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val pekko       = "0.0.0+26628-198d0eb0-SNAPSHOT"
-    val pekkoHttpV  = "0.0.0+4335-81a9800e-SNAPSHOT"
+    val pekko       = "0.0.0+26669-ec5b6764-SNAPSHOT"
+    val pekkoHttpV  = "0.0.0+4347-54c9b20c-SNAPSHOT"
 
     val iep        = "5.0.3"
     val jackson    = "2.15.0"
@@ -56,6 +56,7 @@ object Dependencies {
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.3"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.44"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.10.0"
+  val scalaCompatJdk8   = "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"

@@ -30,6 +30,7 @@ lazy val `atlas-pekko` = project
     Dependencies.pekkoStream,
     Dependencies.iepDynConfig,
     Dependencies.iepService,
+    Dependencies.scalaCompatJdk8,
     Dependencies.spectatorIpc,
     Dependencies.pekkoHttp,
     Dependencies.typesafeConfig,
@@ -104,7 +105,7 @@ lazy val `atlas-lwcapi` = project
 
 lazy val `atlas-lwc-events` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-json`)
+  .dependsOn(`atlas-pekko`, `atlas-core`, `atlas-json`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepDynConfig,
     Dependencies.spectatorAtlas
