@@ -477,6 +477,12 @@ private[stream] abstract class EvaluatorImpl(
           )
         )
       }
+      // Repeat the last received element which will be the data map with the set
+      // expressions to subscribe to. In the event of a connection failure the cluster
+      // group by step will automatically reconnect, but the data message needs to be
+      // resent. This ensures the most recent set of subscriptions will go out at a
+      // regular cadence.
+      .via(StreamOps.repeatLastReceived(5.seconds))
       .via(ClusterOps.groupBy(createGroupByContext(context)))
       .mapAsync(parsingNumThreads) { msg =>
         // This step is placed after merge of streams so there is a single
