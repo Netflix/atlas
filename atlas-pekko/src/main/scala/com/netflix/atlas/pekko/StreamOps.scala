@@ -35,9 +35,12 @@ import org.apache.pekko.stream.stage.GraphStage
 import org.apache.pekko.stream.stage.GraphStageLogic
 import org.apache.pekko.stream.stage.InHandler
 import org.apache.pekko.stream.stage.OutHandler
+import org.apache.pekko.stream.stage.TimerGraphStageLogic
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * Utility functions for commonly used operations on Akka streams. Most of these are for
@@ -328,6 +331,57 @@ object StreamOps extends StrictLogging {
 
         override def onPull(): Unit = {
           pull(in)
+        }
+
+        setHandlers(in, out, this)
+      }
+    }
+  }
+
+  /**
+    * Repeat the last element that has been received. If a new element arrives, then it will be
+    * pushed immediately if the outlet is ready to receive it. Otherwise it will get pushed the
+    * next time the timer fires.
+    *
+    * @param frequency
+    *     How often to push the last value when there isn't an upstream update.
+    */
+  def repeatLastReceived[V](frequency: FiniteDuration): Flow[V, V, NotUsed] = {
+    Flow[V].via(new RepeatLastReceivedFlow[V](frequency))
+  }
+
+  private final class RepeatLastReceivedFlow[V](frequency: FiniteDuration)
+      extends GraphStage[FlowShape[V, V]] {
+
+    private val in = Inlet[V]("RepeatLastReceivedFlow.in")
+    private val out = Outlet[V]("RepeatLastReceivedFlow.out")
+
+    override val shape: FlowShape[V, V] = FlowShape(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): TimerGraphStageLogic = {
+
+      new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+        private var lastElement: V = _
+
+        override def preStart(): Unit = {
+          scheduleWithFixedDelay(NotUsed, frequency, frequency)
+        }
+
+        override def onTimer(timerKey: Any): Unit = {
+          if (isAvailable(out) && lastElement != null)
+            push(out, lastElement)
+        }
+
+        override def onPush(): Unit = {
+          val v = grab(in)
+          lastElement = v
+          if (isAvailable(out))
+            push(out, lastElement)
+        }
+
+        override def onPull(): Unit = {
+          if (!hasBeenPulled(in))
+            pull(in)
         }
 
         setHandlers(in, out, this)

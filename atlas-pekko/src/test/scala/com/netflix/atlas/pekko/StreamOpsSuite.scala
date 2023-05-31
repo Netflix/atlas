@@ -252,4 +252,24 @@ class StreamOpsSuite extends FunSuite {
     val vs = Await.result(future, Duration.Inf)
     assertEquals(vs, List(1, 1, 2, 2))
   }
+
+  test("repeatLastReceived, steady updates") {
+    val input = List(1, 1, 2, 3, 3, 3, 4, 5, 6, 6, 7, 1)
+    val future = Source(input)
+      .via(StreamOps.repeatLastReceived(30.seconds))
+      .runWith(Sink.seq[Int])
+    val vs = Await.result(future, Duration.Inf)
+    assertEquals(vs, input)
+  }
+
+  test("repeatLastReceived") {
+    val future = Source
+      .repeat(1)
+      .via(StreamOps.unique())
+      .via(StreamOps.repeatLastReceived(1.millis))
+      .take(10)
+      .runWith(Sink.seq[Int])
+    val vs = Await.result(future, Duration.Inf)
+    assertEquals(vs, (0 until 10).map(_ => 1).toList)
+  }
 }
