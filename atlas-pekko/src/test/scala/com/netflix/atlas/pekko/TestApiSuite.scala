@@ -22,10 +22,10 @@ class TestApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
-  val endpoint = new TestApi(system)
-  val routes = RequestHandler.standardOptions(endpoint.routes)
+  private val endpoint = new TestApi(system)
+  private val routes = RequestHandler.standardOptions(endpoint.routes)
 
   test("/query-parsing-directive") {
     Get("/query-parsing-directive?regex=a|b|c") ~> routes ~> check {

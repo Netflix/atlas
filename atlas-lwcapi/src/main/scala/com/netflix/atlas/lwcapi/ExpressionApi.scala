@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import org.apache.pekko.actor.ActorRefFactory
 import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.model.HttpHeader
 import org.apache.pekko.http.scaladsl.model.HttpResponse
@@ -45,8 +44,7 @@ import scala.util.Using
 
 case class ExpressionApi(
   sm: StreamSubscriptionManager,
-  registry: Registry,
-  implicit val actorRefFactory: ActorRefFactory
+  registry: Registry
 ) extends WebApi
     with StrictLogging {
 

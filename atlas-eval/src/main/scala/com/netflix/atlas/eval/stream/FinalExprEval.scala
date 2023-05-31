@@ -45,10 +45,10 @@ import scala.collection.mutable
   * Takes the set of data sources and time grouped partial aggregates as input and performs
   * the final evaluation step.
   *
-  * @param interpreter
+  * @param exprInterpreter
   *     Used for evaluating the expressions.
   */
-private[stream] class FinalExprEval(interpreter: ExprInterpreter)
+private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
     extends GraphStage[FlowShape[AnyRef, Source[MessageEnvelope, NotUsed]]]
     with StrictLogging {
 
@@ -100,7 +100,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
         recipients = sources
           .flatMap { s =>
             try {
-              val exprs = interpreter.eval(Uri(s.getUri))
+              val exprs = exprInterpreter.eval(Uri(s.getUri))
               // Reuse the previous evaluated expression if available. States for the stateful
               // expressions are maintained in an IdentityHashMap so if the instances change
               // the state will be reset.

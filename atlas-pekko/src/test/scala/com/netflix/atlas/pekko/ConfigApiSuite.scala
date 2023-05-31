@@ -28,10 +28,10 @@ class ConfigApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
-  val sysConfig = ConfigFactory.load()
-  val endpoint = new ConfigApi(sysConfig, system)
+  private val sysConfig = ConfigFactory.load()
+  private val endpoint = new ConfigApi(sysConfig, system)
 
   test("/config") {
     Get("/api/v2/config") ~> endpoint.routes ~> check {

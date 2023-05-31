@@ -47,7 +47,7 @@ class HostSourceSuite extends FunSuite {
 
   import scala.concurrent.duration._
 
-  implicit val system = ActorSystem(getClass.getSimpleName)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   def source(response: => Try[HttpResponse]): Source[ByteString, NotUsed] = {
     val client = Flow[HttpRequest].map(_ => response)

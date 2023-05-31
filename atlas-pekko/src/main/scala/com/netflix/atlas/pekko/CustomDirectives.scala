@@ -188,7 +188,7 @@ object CustomDirectives {
 
         // Just allow all methods
         val headers = List(
-          `Access-Control-Allow-Origin`(allow),
+          `Access-Control-Allow-Origin`.forRange(allow),
           `Access-Control-Allow-Methods`(
             HttpMethods.GET,
             HttpMethods.PATCH,

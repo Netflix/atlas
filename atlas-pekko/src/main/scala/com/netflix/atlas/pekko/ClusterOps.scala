@@ -106,8 +106,8 @@ object ClusterOps extends StrictLogging {
         override def onPush(): Unit = {
           val msg = grab(in)
           msg match {
-            case Cluster(members) => updateMembers(members)
-            case Data(data)       => pushData(data)
+            case Cluster(members: Set[M]) => updateMembers(members)
+            case Data(data: Map[M, D])    => pushData(data)
           }
         }
 

@@ -20,13 +20,13 @@ import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.AccessLogger
 import munit.FunSuite
+import org.apache.pekko.stream.Materializer
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -37,8 +37,8 @@ class EurekaGroupsLookupSuite extends FunSuite {
   import EurekaSource._
   import Evaluator._
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val mat = Materializer(system)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  private implicit val mat: Materializer = Materializer(system)
 
   private val eurekaGroup = EurekaSource.VipResponse(
     uri = "http://eureka/v2/vips/atlas-lwcapi:7001",

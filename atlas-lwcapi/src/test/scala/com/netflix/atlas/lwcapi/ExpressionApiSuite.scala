@@ -36,7 +36,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
-  private implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
 
@@ -50,7 +50,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
   )
 
   private val sm = new StreamSubscriptionManager(new NoopRegistry)
-  private val endpoint = ExpressionApi(sm, new NoopRegistry, system)
+  private val endpoint = ExpressionApi(sm, new NoopRegistry)
 
   private def unzip(bytes: Array[Byte]): String = {
     Using.resource(new GZIPInputStream(new ByteArrayInputStream(bytes))) { in =>
