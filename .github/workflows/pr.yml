@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         java: [17, 20]
-        scala: [2.13.10]
+        scala: [2.13.11]
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK ${{ matrix.java }}
