@@ -23,11 +23,11 @@ import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.pattern.ask
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult
-import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.CustomDirectives.*
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.Query
@@ -37,12 +37,12 @@ import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Failure
 
 class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
-  import com.netflix.atlas.webapi.TagsApi._
+  import com.netflix.atlas.webapi.TagsApi.*
   private implicit val ec: ExecutionContext = actorRefFactory.dispatcher
 
   private val dbRef = actorRefFactory.actorSelection("/user/db")

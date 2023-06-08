@@ -19,7 +19,7 @@ import akka.NotUsed
 import akka.http.scaladsl.model.ws.BinaryMessage
 import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.model.ws.TextMessage
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
@@ -27,7 +27,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.CustomDirectives.*
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.WebApi
@@ -42,7 +42,7 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
 import java.io.ByteArrayOutputStream
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NonFatal
@@ -56,8 +56,8 @@ class SubscribeApi(
 ) extends WebApi
     with StrictLogging {
 
-  import SubscribeApi._
-  import com.netflix.atlas.akka.OpportunisticEC._
+  import SubscribeApi.*
+  import com.netflix.atlas.akka.OpportunisticEC.*
 
   private val queueSize = config.getInt("atlas.lwcapi.queue-size")
   private val batchSize = config.getInt("atlas.lwcapi.batch-size")

@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.limiter
 
-import com.netflix.atlas.core.limiter.CardinalityLimiter._
+import com.netflix.atlas.core.limiter.CardinalityLimiter.*
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.BoundedPriorityBuffer
@@ -24,7 +24,7 @@ import com.typesafe.config.Config
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.compat.immutable.ArraySeq
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 /**
   * A structure that tracks cardinality based on tag keys, and drop or rollup tags based on given

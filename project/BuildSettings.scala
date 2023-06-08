@@ -9,7 +9,8 @@ object BuildSettings {
     "-Xlint:_,-infer-any",
     "-Xfatal-warnings",
     "-feature",
-    "-release", "17"
+    "-release", "17",
+    "-Xsource:3"
   )
 
   lazy val checkLicenseHeaders = taskKey[Unit]("Check the license headers for all source files.")

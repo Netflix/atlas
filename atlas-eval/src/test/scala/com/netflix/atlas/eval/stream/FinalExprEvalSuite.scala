@@ -58,7 +58,7 @@ class FinalExprEvalSuite extends FunSuite {
   }
 
   private def sources(vs: DataSource*): DataSources = {
-    DataSources.of(vs: _*)
+    DataSources.of(vs*)
   }
 
   private def ds(id: String, uri: String, step: Long = 60000L): DataSource = {

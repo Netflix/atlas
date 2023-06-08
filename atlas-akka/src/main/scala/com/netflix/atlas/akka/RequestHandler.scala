@@ -27,7 +27,7 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.AuthenticationFailedRejection
 import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.server.CircuitBreakerOpenRejection
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.MalformedRequestContentRejection
 import akka.http.scaladsl.server.MethodRejection
 import akka.http.scaladsl.server.Rejection
@@ -58,7 +58,7 @@ class RequestHandler(config: Config, registry: Registry, classFactory: ClassFact
   }
 
   private def endpoints: List[String] = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     config.getStringList("atlas.akka.api-endpoints").asScala.toList.distinct
   }
 
@@ -69,7 +69,7 @@ class RequestHandler(config: Config, registry: Registry, classFactory: ClassFact
     */
   private def loadRoutesFromConfig(): List[WebApi] = {
     try {
-      import scala.compat.java8.FunctionConverters._
+      import scala.compat.java8.FunctionConverters.*
       val routeClasses = endpoints
       val bindings = Map[Type, AnyRef](
         classOf[Config]   -> config,
@@ -89,19 +89,19 @@ class RequestHandler(config: Config, registry: Registry, classFactory: ClassFact
 
 object RequestHandler extends StrictLogging {
 
-  import com.netflix.atlas.akka.CustomDirectives._
+  import com.netflix.atlas.akka.CustomDirectives.*
 
   private val defaultSettings = Settings(ConfigFactory.load())
 
   case class Settings(config: Config) {
 
     val corsHostPatterns: List[String] = {
-      import scala.jdk.CollectionConverters._
+      import scala.jdk.CollectionConverters.*
       config.getStringList("atlas.akka.cors-host-patterns").asScala.toList.distinct
     }
 
     val diagnosticHeaders: List[HttpHeader] = {
-      import scala.jdk.CollectionConverters._
+      import scala.jdk.CollectionConverters.*
       config
         .getConfigList("atlas.akka.diagnostic-headers")
         .asScala
@@ -164,7 +164,7 @@ object RequestHandler extends StrictLogging {
     val gzip =
       if (!settings.handleCompression) finalRoutes
       else
-        encodeResponseWith(Coders.NoCoding, CompressedResponseEncoders: _*) {
+        encodeResponseWith(Coders.NoCoding, CompressedResponseEncoders*) {
           decodeRequest { finalRoutes }
         }
 

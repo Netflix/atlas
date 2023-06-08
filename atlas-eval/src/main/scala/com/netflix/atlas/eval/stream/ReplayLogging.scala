@@ -41,7 +41,7 @@ private[stream] object ReplayLogging extends StrictLogging {
 
   def log(msg: String): String = {
     val trimmed = msg.trim
-    if (!trimmed.isEmpty) {
+    if (trimmed.nonEmpty) {
       logger.trace(trimmed)
     }
     trimmed

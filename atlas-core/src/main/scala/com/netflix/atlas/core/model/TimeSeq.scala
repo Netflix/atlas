@@ -131,7 +131,7 @@ final class ArrayTimeSeq(
   }
 
   override def hashCode: Int = {
-    import java.lang.{Long => JLong}
+    import java.lang.{Long as JLong}
     val prime = 31
     var hc = prime
     hc = hc * prime + dsType.hashCode()
@@ -168,7 +168,7 @@ class OffsetTimeSeq(seq: TimeSeq, offset: Long) extends TimeSeq {
 
 class MapStepTimeSeq(ts: TimeSeq, val step: Long, cf: ConsolidationFunction) extends TimeSeq {
 
-  import com.netflix.atlas.core.model.ConsolidationFunction._
+  import com.netflix.atlas.core.model.ConsolidationFunction.*
 
   private val isConsolidation = step > ts.step
 

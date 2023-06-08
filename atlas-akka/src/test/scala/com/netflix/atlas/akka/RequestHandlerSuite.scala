@@ -21,7 +21,7 @@ import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPOutputStream
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.json.Json
@@ -33,8 +33,9 @@ import java.lang.reflect.Type
 
 class RequestHandlerSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  import scala.concurrent.duration.*
+
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val config = ConfigFactory.parseString(
     """
@@ -58,7 +59,7 @@ class RequestHandlerSuite extends MUnitRouteSuite {
   )
 
   private val bindings: java.util.function.Function[Type, AnyRef] = {
-    case c: Class[_] if c.isAssignableFrom(classOf[ActorSystem]) =>
+    case c: Class[?] if c.isAssignableFrom(classOf[ActorSystem]) =>
       system
     case _ =>
       null.asInstanceOf[AnyRef]

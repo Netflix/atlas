@@ -71,7 +71,7 @@ object SmallHashMap {
 
     def addAll(m: Map[K, V]): Builder[K, V] = {
       m match {
-        case sm: SmallHashMap[_, _] =>
+        case sm: SmallHashMap[?, ?] =>
           var i = 0
           while (i < sm.data.length) {
             val k = sm.data(i).asInstanceOf[K]
@@ -386,12 +386,12 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
   override def equals(obj: Any): Boolean = {
     if (obj == null) return false
     obj match {
-      case m: SmallHashMap[_, _] =>
+      case m: SmallHashMap[?, ?] =>
         // The hashCode is cached for this class and will often be a cheaper way to
         // exclude equality.
         if (this eq m) return true
         size == m.size && hashCode == m.hashCode && dataEquals(m.asInstanceOf[SmallHashMap[K, V]])
-      case m: Map[_, _] =>
+      case m: Map[?, ?] =>
         super.equals(obj)
       case _ =>
         false

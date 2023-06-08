@@ -29,7 +29,7 @@ import munit.FunSuite
 
 class TimeSeriesBufferSuite extends FunSuite {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
   private val emptyTags = Map.empty[String, String]
 
@@ -516,9 +516,9 @@ class TimeSeriesBufferSuite extends FunSuite {
 
     EqualsVerifier
       .forClass(classOf[TimeSeriesBuffer])
-      .withPrefabValues(classOf[Map[_, _]], t1, t2)
+      .withPrefabValues(classOf[Map[?, ?]], t1, t2)
       .withPrefabValues(classOf[ArrayTimeSeq], s1, s2)
-      .withIgnoredFields(lazyIdFields: _*)
+      .withIgnoredFields(lazyIdFields*)
       .suppress(Warning.NULL_FIELDS)
       .suppress(Warning.NONFINAL_FIELDS)
       .verify()

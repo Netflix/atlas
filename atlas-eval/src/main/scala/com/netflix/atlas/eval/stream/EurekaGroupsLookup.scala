@@ -53,7 +53,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
       private var lookupTickSwitch: Option[SourceRef[NotUsed, NotUsed]] = None
 
       override def onPush(): Unit = {
-        import scala.jdk.CollectionConverters._
+        import scala.jdk.CollectionConverters.*
 
         // If there is an existing source polling Eureka, then tell it to stop. Create a
         // new instance of the flag for the next source
@@ -112,7 +112,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
         super.onUpstreamFailure(ex)
-        lookupTickSwitch.map(_.stop())
+        lookupTickSwitch.foreach(_.stop())
       }
 
       setHandlers(in, out, this)

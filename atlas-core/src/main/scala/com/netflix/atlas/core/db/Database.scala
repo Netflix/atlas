@@ -23,7 +23,7 @@ import com.netflix.atlas.core.model.TimeSeries
 
 trait Database {
 
-  def index: TagIndex[_ <: TaggedItem]
+  def index: TagIndex[? <: TaggedItem]
 
   def execute(eval: EvalContext, expr: DataExpr): List[TimeSeries]
 }

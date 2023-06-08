@@ -40,7 +40,7 @@ trait Expr extends Product {
             case v       => v.asInstanceOf[AnyRef]
           }
           val ctors = getClass.getConstructors
-          ctors(0).newInstance(params.toArray: _*).asInstanceOf[Expr]
+          ctors(0).newInstance(params.toArray*).asInstanceOf[Expr]
         case v => v
       }
     }

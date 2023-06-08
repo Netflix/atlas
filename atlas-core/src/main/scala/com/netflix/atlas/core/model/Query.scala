@@ -294,7 +294,7 @@ object Query {
 
     def matchesAny(tags: Map[String, List[String]]): Boolean = {
       tags match {
-        case ts: SmallHashMap[String, _] =>
+        case ts: SmallHashMap[String, ?] =>
           val vs = ts.getOrNull(k).asInstanceOf[List[String]]
           vs != null && vs.exists(check)
         case _ =>

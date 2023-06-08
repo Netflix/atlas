@@ -23,7 +23,7 @@ import scala.util.Random
 
 class RefDoubleHashMapSuite extends FunSuite {
 
-  import java.lang.{Long => JLong}
+  import java.lang.Long as JLong
 
   test("put") {
     val m = new RefDoubleHashMap[JLong]

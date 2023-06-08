@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.db
 
-import com.netflix.atlas.core.model._
+import com.netflix.atlas.core.model.*
 import com.netflix.atlas.core.util.ArrayHelper
 
 trait BlockStore {
@@ -61,7 +61,7 @@ object MemoryBlockStore {
 
 class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends BlockStore {
 
-  import com.netflix.atlas.core.db.MemoryBlockStore._
+  import com.netflix.atlas.core.db.MemoryBlockStore.*
 
   private val blockStep = step * blockSize
 

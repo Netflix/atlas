@@ -27,11 +27,11 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.server.Directive
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.MalformedRequestContentRejection
 import akka.http.scaladsl.server.PathMatcher
 import akka.http.scaladsl.server.Route

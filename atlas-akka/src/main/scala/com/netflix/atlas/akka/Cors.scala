@@ -22,7 +22,7 @@ import com.netflix.iep.config.ConfigManager
 object Cors {
 
   private val allowedHostPatterns = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     ConfigManager.get().getStringList("atlas.akka.cors-host-patterns").asScala.toList
   }
 

@@ -49,7 +49,7 @@ object StandardVocabulary extends Vocabulary {
     Macro("sset", List(":swap", ":set"), List("a,b"))
   )
 
-  import Extractors._
+  import Extractors.*
 
   /** A word defined as a sequence of other commands. */
   case class Macro(name: String, body: List[Any], examples: List[String] = Nil) extends Word {
@@ -74,13 +74,13 @@ object StandardVocabulary extends Vocabulary {
     override def name: String = "call"
 
     override def matches(stack: List[Any]): Boolean = stack match {
-      case (_: List[_]) :: _ => true
+      case (_: List[?]) :: _ => true
       case _                 => false
     }
 
     override def execute(context: Context): Context = {
       context.stack match {
-        case (vs: List[_]) :: stack =>
+        case (vs: List[?]) :: stack =>
           context.interpreter.execute(vs, context.copy(stack = stack), unfreeze = false)
         case _ => invalidStack
       }
@@ -190,13 +190,13 @@ object StandardVocabulary extends Vocabulary {
     override def name: String = "each"
 
     override def matches(stack: List[Any]): Boolean = stack match {
-      case (_: List[_]) :: (_: List[_]) :: _ => true
+      case (_: List[?]) :: (_: List[?]) :: _ => true
       case _                                 => false
     }
 
     override def execute(context: Context): Context = {
       context.stack match {
-        case (f: List[_]) :: (vs: List[_]) :: stack =>
+        case (f: List[?]) :: (vs: List[?]) :: stack =>
           vs.reverse.foldLeft(context.copy(stack = stack)) { (c, v) =>
             c.interpreter.execute(f, c.copy(stack = v :: c.stack), unfreeze = false)
           }
@@ -220,11 +220,11 @@ object StandardVocabulary extends Vocabulary {
     override def name: String = "format"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: List[_]) :: (_: String) :: _ => true
+      case (_: List[?]) :: (_: String) :: _ => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (vs: List[_]) :: (s: String) :: stack => s.format(vs: _*) :: stack
+      case (vs: List[?]) :: (s: String) :: stack => s.format(vs*) :: stack
     }
 
     override def summary: String =
@@ -352,13 +352,13 @@ object StandardVocabulary extends Vocabulary {
     override def name: String = "map"
 
     override def matches(stack: List[Any]): Boolean = stack match {
-      case (_: List[_]) :: (_: List[_]) :: _ => true
+      case (_: List[?]) :: (_: List[?]) :: _ => true
       case _                                 => false
     }
 
     override def execute(context: Context): Context = {
       context.stack match {
-        case (f: List[_]) :: (vs: List[_]) :: stack =>
+        case (f: List[?]) :: (vs: List[?]) :: stack =>
           val init = context.copy(stack = stack)
           val res = vs.foldLeft(List.empty[Any] -> init) {
             case ((rs, c), v) =>

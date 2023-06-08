@@ -18,7 +18,7 @@ package com.netflix.atlas.lwcapi
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.lwcapi.SubscribeApi._
+import com.netflix.atlas.lwcapi.SubscribeApi.*
 import munit.FunSuite
 
 class SubscribeApiJsonSuite extends FunSuite {

@@ -32,7 +32,7 @@ import scala.util.Using
 
 object PublishPayloads {
 
-  import com.netflix.atlas.json.JsonParserHelper._
+  import com.netflix.atlas.json.JsonParserHelper.*
 
   type TagMap = Map[String, String]
 
@@ -67,7 +67,7 @@ object PublishPayloads {
   }
 
   private def getValue(parser: JsonParser): Double = {
-    import com.fasterxml.jackson.core.JsonToken._
+    import com.fasterxml.jackson.core.JsonToken.*
     parser.nextToken() match {
       case START_ARRAY        => nextDouble(parser)
       case VALUE_NUMBER_FLOAT => parser.getValueAsDouble()

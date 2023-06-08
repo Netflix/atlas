@@ -17,7 +17,7 @@ package com.netflix.atlas.core.util
 
 object UnitPrefix {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
   // format: off
 
@@ -147,7 +147,7 @@ object UnitPrefix {
       case v if !JDouble.isFinite(v) => one
       case v if withinRange(one, v)  => one
       case v if v >= kilo.factor / f =>
-        decimalBigPrefixes.reverse.find(withinRange(_, v)).getOrElse(yotta)
+        decimalBigPrefixes.findLast(withinRange(_, v)).getOrElse(yotta)
       case v if v < 1.0 / f => decimalSmallPrefixes.find(withinRange(_, v)).getOrElse(yocto)
       case _                => one
     }
@@ -221,8 +221,8 @@ case class UnitPrefix(symbol: String, text: String, factor: Double) {
   }
 
   def next: UnitPrefix = {
-    UnitPrefix.decimalSmallPrefixes.reverse.find(_.factor > factor).getOrElse {
-      UnitPrefix.decimalBigPrefixes.reverse.find(_.factor > factor).getOrElse(UnitPrefix.yotta)
+    UnitPrefix.decimalSmallPrefixes.findLast(_.factor > factor).getOrElse {
+      UnitPrefix.decimalBigPrefixes.findLast(_.factor > factor).getOrElse(UnitPrefix.yotta)
     }
   }
 }

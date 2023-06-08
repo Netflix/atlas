@@ -50,7 +50,7 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
   }
 
   private def findImpl(query: Query): Set[Int] = {
-    import com.netflix.atlas.core.model.Query._
+    import com.netflix.atlas.core.model.Query.*
     query match {
       case And(q1, q2) =>
         findImpl(q1).intersect(findImpl(q2))

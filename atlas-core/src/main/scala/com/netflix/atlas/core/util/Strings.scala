@@ -65,7 +65,7 @@ object Strings {
     * class.
     */
   private[util] val conversions = {
-    Map[Class[_], String => Any](
+    Map[Class[?], String => Any](
       classOf[String]            -> (v => v),
       classOf[Boolean]           -> (v => java.lang.Boolean.valueOf(v)),
       classOf[Byte]              -> (v => java.lang.Byte.valueOf(v)),
@@ -93,18 +93,18 @@ object Strings {
   /**
     * Returns true if a conversion exists for the specified class.
     */
-  def conversionExists(c: Class[_]): Boolean = {
+  def conversionExists(c: Class[?]): Boolean = {
     conversions.contains(c)
   }
 
-  private def enumValueOf[T <: Enum[T]](c: Class[_], v: String): T = {
+  private def enumValueOf[T <: Enum[T]](c: Class[?], v: String): T = {
     Enum.valueOf(c.asInstanceOf[Class[T]], v)
   }
 
   /**
     * Cast a string value to an internal type.
     */
-  def cast[T](c: Class[_], v: String): T = {
+  def cast[T](c: Class[?], v: String): T = {
     if (c.isEnum) enumValueOf(c, v)
     else {
       conversions.get(c) match {

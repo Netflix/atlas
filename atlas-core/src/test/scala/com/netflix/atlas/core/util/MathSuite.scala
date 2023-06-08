@@ -19,9 +19,9 @@ import munit.FunSuite
 
 class MathSuite extends FunSuite {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
-  import com.netflix.atlas.core.util.Math._
+  import com.netflix.atlas.core.util.Math.*
 
   test("isNearlyZero") {
     assertEquals(isNearlyZero(1.0), false)

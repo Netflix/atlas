@@ -33,7 +33,7 @@ import java.util.Optional
 @Configuration
 class EvalConfiguration {
 
-  import EvalConfiguration._
+  import EvalConfiguration.*
 
   @Bean
   def evaluator(

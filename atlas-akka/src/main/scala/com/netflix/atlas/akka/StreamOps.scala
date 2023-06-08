@@ -177,7 +177,7 @@ object StreamOps extends StrictLogging {
 
       new GraphStageLogic(shape) with InHandler with OutHandler {
 
-        import MonitorFlow._
+        import MonitorFlow.*
 
         private var lastUpdate = registry.clock().monotonicTime()
         private val numEventsUpdater = numEvents.batchUpdater(MeterBatchSize)

@@ -29,7 +29,7 @@ import com.netflix.atlas.core.util.Math
   */
 case class OnlineRollingMean(buf: RollingBuffer, minNumValues: Int) extends OnlineAlgorithm {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
   require(minNumValues > 0, "minimum number of values must be >= 1")
   require(buf.values.length >= minNumValues, "minimum number of values must be <= window size")

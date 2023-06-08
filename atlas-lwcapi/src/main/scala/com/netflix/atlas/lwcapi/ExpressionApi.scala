@@ -21,13 +21,13 @@ import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.model.headers.*
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.CustomDirectives.*
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.util.FastGzipOutputStream
 import com.netflix.atlas.core.util.Strings
@@ -50,7 +50,7 @@ case class ExpressionApi(
 ) extends WebApi
     with StrictLogging {
 
-  import ExpressionApi._
+  import ExpressionApi.*
 
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 

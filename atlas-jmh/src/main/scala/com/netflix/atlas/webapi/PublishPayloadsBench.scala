@@ -45,7 +45,7 @@ import scala.util.Using
 @State(Scope.Thread)
 class PublishPayloadsBench {
 
-  import PublishPayloadsBench._
+  import PublishPayloadsBench.*
 
   private val tagMap = SortedTagMap(
     "nf.app"     -> "atlas_backend",

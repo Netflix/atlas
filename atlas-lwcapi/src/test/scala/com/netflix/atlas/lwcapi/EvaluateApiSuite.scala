@@ -21,14 +21,14 @@ import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
-import com.netflix.atlas.lwcapi.EvaluateApi._
+import com.netflix.atlas.lwcapi.EvaluateApi.*
 import com.netflix.spectator.api.NoopRegistry
 
 class EvaluateApiSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
-  private implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val sm = new StreamSubscriptionManager(new NoopRegistry)
   private val endpoint = new EvaluateApi(new NoopRegistry, sm)

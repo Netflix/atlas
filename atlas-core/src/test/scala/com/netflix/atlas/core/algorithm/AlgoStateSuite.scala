@@ -28,7 +28,7 @@ class AlgoStateSuite extends FunSuite {
     // Map array to Seq
     // https://github.com/scalameta/munit/issues/339
     def f(v: Any): Any = v match {
-      case a: Array[_] => a.toSeq
+      case a: Array[?] => a.toSeq
       case _           => v
     }
     assertEquals(f(get(state)), f(expected))

@@ -18,7 +18,7 @@ package com.netflix.atlas.webapi
 import akka.actor.Props
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.headers.*
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.akka.testkit.MUnitRouteSuite
@@ -35,7 +35,7 @@ import scala.util.Using
 
 class GraphApiSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   // Set to high value to avoid spurious failures with code coverage. Typically 5s shows no
   // issues outside of running with code coverage.

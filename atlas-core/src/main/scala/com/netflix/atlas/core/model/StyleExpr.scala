@@ -148,7 +148,7 @@ object StyleExpr {
   private val interpreter = new Interpreter(StandardVocabulary.allWords)
 
   private def parseDurationList(s: String): List[Duration] = {
-    import ModelExtractors._
+    import ModelExtractors.*
     val ctxt = interpreter.execute(s)
     ctxt.stack match {
       case StringListType(vs) :: Nil =>

@@ -33,17 +33,17 @@ import munit.FunSuite
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Success
 
 class StreamOpsSuite extends FunSuite {
 
-  import OpportunisticEC._
+  import OpportunisticEC.*
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   private def checkOfferedCounts(registry: Registry, expected: Map[String, Double]): Unit = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     registry
       .stream()
       .iterator()
@@ -135,7 +135,7 @@ class StreamOpsSuite extends FunSuite {
   }
 
   private def checkCounts(registry: Registry, name: String, expected: Map[String, Double]): Unit = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     registry
       .stream()
       .iterator()

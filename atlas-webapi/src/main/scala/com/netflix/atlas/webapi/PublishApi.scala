@@ -17,11 +17,11 @@ package com.netflix.atlas.webapi
 
 import akka.actor.ActorRefFactory
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult
-import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.CustomDirectives.*
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.model.DatapointTuple
@@ -37,7 +37,7 @@ import scala.concurrent.Promise
 
 class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
 
-  import com.netflix.atlas.webapi.PublishApi._
+  import com.netflix.atlas.webapi.PublishApi.*
 
   private val publishRef = actorRefFactory.actorSelection("/user/publish")
 

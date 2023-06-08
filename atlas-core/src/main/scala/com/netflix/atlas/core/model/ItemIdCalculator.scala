@@ -30,7 +30,7 @@ import java.nio.charset.StandardCharsets
   */
 class ItemIdCalculator {
 
-  import ItemIdCalculator._
+  import ItemIdCalculator.*
 
   private val md = Hash.get("SHA1")
   private val enc = StandardCharsets.UTF_8.newEncoder

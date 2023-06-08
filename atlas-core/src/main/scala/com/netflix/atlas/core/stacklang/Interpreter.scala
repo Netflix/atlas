@@ -26,7 +26,7 @@ import com.netflix.atlas.core.util.Features
   */
 case class Interpreter(vocabulary: List[Word]) {
 
-  import com.netflix.atlas.core.stacklang.Interpreter._
+  import com.netflix.atlas.core.stacklang.Interpreter.*
 
   // Map of name to word
   private val words = vocabulary.groupBy(_.name)
@@ -178,7 +178,7 @@ object Interpreter {
     * looking at the output. This tries to detect the list and use the simple name "List".
     */
   private def getTypeName(v: Any): String = v match {
-    case _: List[_] => "List"
+    case _: List[?] => "List"
     case _          => v.getClass.getSimpleName
   }
 
@@ -190,7 +190,7 @@ object Interpreter {
 
   private def toStringImpl(items: List[Any]): String = {
     val parts = items.map {
-      case vs: List[_] => s"(,${toStringImpl(vs)},)"
+      case vs: List[?] => s"(,${toStringImpl(vs)},)"
       case v           => v.toString
     }
     parts.mkString(",")
@@ -208,7 +208,7 @@ object Interpreter {
     var i = 0
     while (i < parts.length) {
       val tmp = parts(i).trim
-      if (!tmp.isEmpty)
+      if (tmp.nonEmpty)
         builder += tmp
       i += 1
     }

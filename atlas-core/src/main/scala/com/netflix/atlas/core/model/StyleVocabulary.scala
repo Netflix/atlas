@@ -27,7 +27,7 @@ import com.netflix.atlas.core.util.Strings
 
 object StyleVocabulary extends Vocabulary {
 
-  import com.netflix.atlas.core.model.ModelExtractors._
+  import com.netflix.atlas.core.model.ModelExtractors.*
 
   val name: String = "style"
 

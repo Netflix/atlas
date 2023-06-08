@@ -17,7 +17,7 @@ package com.netflix.atlas.core.util
 
 object Math {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
   /**
     * Check if a double value is nearly zero, i.e., within a small amount from 0. For our purposes

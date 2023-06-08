@@ -20,7 +20,7 @@ import munit.FunSuite
 
 class LwcEventClientSuite extends FunSuite {
 
-  import LwcEventSuite._
+  import LwcEventSuite.*
 
   private val sampleSpan: TestEvent = {
     TestEvent(SortedTagMap("app" -> "www", "node" -> "i-123"), 42L)

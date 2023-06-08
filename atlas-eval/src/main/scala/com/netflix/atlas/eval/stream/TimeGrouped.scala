@@ -134,7 +134,7 @@ private[stream] class TimeGrouped(
       }
 
       private def toTimeGroup(ts: Long, aggrMap: AggrMap): TimeGroup = {
-        import scala.jdk.CollectionConverters._
+        import scala.jdk.CollectionConverters.*
         val aggregateMapForExpWithinLimits = aggrMap.asScala
           .filter {
             case (expr, aggr) if aggr.limitExceeded =>

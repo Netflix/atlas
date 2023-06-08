@@ -54,14 +54,14 @@ private[stream] class StreamContext(
   val dsLogger: DataSourceLogger = (_, _) => ()
 ) {
 
-  import StreamContext._
+  import StreamContext.*
 
   val id: String = UUID.randomUUID().toString
 
   private val config = rootConfig.getConfig("atlas.eval.stream")
 
   private val backends = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     config.getConfigList("backends").asScala.toList.map { cfg =>
       EurekaBackend(
         cfg.getString("host"),
@@ -72,7 +72,7 @@ private[stream] class StreamContext(
   }
 
   private val ignoredTagKeys = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     config.getStringList("ignored-tag-keys").asScala.toSet
   }
 
@@ -132,7 +132,7 @@ private[stream] class StreamContext(
     * message will be written to the `dsLogger` for any failures.
     */
   def validate(input: DataSources): DataSources = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     val valid = new java.util.HashSet[DataSource]()
     input.getSources.asScala.foreach { ds =>
       validateDataSource(ds) match {

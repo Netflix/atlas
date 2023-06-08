@@ -23,7 +23,7 @@ import com.netflix.atlas.core.stacklang.Word
 
 object DataVocabulary extends Vocabulary {
 
-  import com.netflix.atlas.core.model.ModelExtractors._
+  import com.netflix.atlas.core.model.ModelExtractors.*
 
   val name: String = "data"
 
@@ -166,15 +166,15 @@ object DataVocabulary extends Vocabulary {
     override def name: String = "by"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: List[_]) :: (_: Query) :: _             => true
-      case (_: List[_]) :: (_: AggregateFunction) :: _ => true
+      case (_: List[?]) :: (_: Query) :: _             => true
+      case (_: List[?]) :: (_: AggregateFunction) :: _ => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (ks: List[_]) :: (q: Query) :: stack =>
+      case (ks: List[?]) :: (q: Query) :: stack =>
         val f = DataExpr.Sum(q)
         DataExpr.GroupBy(f, ks.asInstanceOf[List[String]]) :: stack
-      case (ks: List[_]) :: (f: AggregateFunction) :: stack =>
+      case (ks: List[?]) :: (f: AggregateFunction) :: stack =>
         DataExpr.GroupBy(f, ks.asInstanceOf[List[String]]) :: stack
     }
 

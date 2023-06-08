@@ -81,8 +81,8 @@ import com.typesafe.config.Config
   */
 class CustomVocabulary(config: Config) extends Vocabulary {
 
-  import CustomVocabulary._
-  import scala.jdk.CollectionConverters._
+  import CustomVocabulary.*
+  import scala.jdk.CollectionConverters.*
 
   val name: String = "custom"
 

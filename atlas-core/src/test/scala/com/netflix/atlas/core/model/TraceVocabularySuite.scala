@@ -23,7 +23,7 @@ class TraceVocabularySuite extends FunSuite {
   private val interpreter = new Interpreter(TraceVocabulary.allWords)
 
   private def parseTraceQuery(str: String): TraceQuery = {
-    import ModelExtractors._
+    import ModelExtractors.*
     interpreter.execute(str).stack match {
       case TraceQueryType(t) :: Nil => t
       case _                        => throw new IllegalArgumentException(str)

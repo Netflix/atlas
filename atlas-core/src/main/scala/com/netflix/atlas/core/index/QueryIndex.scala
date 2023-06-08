@@ -40,7 +40,7 @@ case class QueryIndex[T](
   entries: Array[QueryIndex.Entry[T]]
 ) {
 
-  import QueryIndex._
+  import QueryIndex.*
 
   private def createQueryArray(tags: Map[String, String]): Array[Query.Equal] = {
     val n = tags.size

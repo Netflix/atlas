@@ -19,7 +19,7 @@ import munit.FunSuite
 
 class MapStepTimeSeqSuite extends FunSuite {
 
-  import ConsolidationFunction._
+  import ConsolidationFunction.*
 
   private val start = 60L
 
@@ -43,7 +43,7 @@ class MapStepTimeSeqSuite extends FunSuite {
         s2 * (values.length / multiple + boundaries)
       }
     val mEnd = mStart + timeRange
-    val seq = if (ds == DsType.Rate) rate(start, s1, values: _*) else gauge(start, s1, values: _*)
+    val seq = if (ds == DsType.Rate) rate(start, s1, values*) else gauge(start, s1, values*)
     new MapStepTimeSeq(seq, s2, cf).bounded(mStart, mEnd)
   }
 

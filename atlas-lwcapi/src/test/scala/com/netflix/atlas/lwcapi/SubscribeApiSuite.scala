@@ -31,9 +31,9 @@ import com.typesafe.config.ConfigFactory
 
 class SubscribeApiSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
-  private implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val config = ConfigFactory.load()
   private val sm = new StreamSubscriptionManager(new NoopRegistry)

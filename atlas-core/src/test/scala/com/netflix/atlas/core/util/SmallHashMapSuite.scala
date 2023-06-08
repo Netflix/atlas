@@ -231,20 +231,20 @@ class SmallHashMapSuite extends FunSuite {
     val m1 = SmallHashMap("k1" -> "v1")
     val m2 = SmallHashMap("k1" -> "v1", "k2" -> "v2")
     assertEquals(m2 - "k2", m1)
-    assert((m2 - "k2").isInstanceOf[SmallHashMap[_, _]])
+    assert((m2 - "k2").isInstanceOf[SmallHashMap[?, ?]])
   }
 
   test("remove key not in map") {
     val m1 = SmallHashMap("k1" -> "v1", "k2" -> "v2")
     assertEquals(m1 - "k3", m1)
-    assert((m1 - "k3").isInstanceOf[SmallHashMap[_, _]])
+    assert((m1 - "k3").isInstanceOf[SmallHashMap[?, ?]])
   }
 
   test("retains type after adding pair") {
     val m1 = SmallHashMap("k1" -> "v1")
     val m2 = SmallHashMap("k1" -> "v1", "k2" -> "v2")
     assertEquals(m1 + ("k2" -> "v2"), m2)
-    assert((m1 + ("k2" -> "v2")).isInstanceOf[SmallHashMap[_, _]])
+    assert((m1 + ("k2" -> "v2")).isInstanceOf[SmallHashMap[?, ?]])
   }
 
   test("empty map") {
@@ -313,7 +313,7 @@ class SmallHashMapSuite extends FunSuite {
 
   test("numCollisions 25") {
     val rkeys = Random.shuffle(keys)
-    val m = SmallHashMap(rkeys.take(25).map(v => v -> v): _*)
+    val m = SmallHashMap(rkeys.take(25).map(v => v -> v)*)
     testNumCollisions(m)
     rkeys.take(25).foreach { k =>
       assertEquals(m.get(k), Some(k))
@@ -322,7 +322,7 @@ class SmallHashMapSuite extends FunSuite {
 
   test("numCollisions 50") {
     val rkeys = Random.shuffle(keys)
-    val m = SmallHashMap(rkeys.take(50).map(v => v -> v): _*)
+    val m = SmallHashMap(rkeys.take(50).map(v => v -> v)*)
     testNumCollisions(m)
     rkeys.take(50).foreach { k =>
       assertEquals(m.get(k), Some(k))
@@ -331,7 +331,7 @@ class SmallHashMapSuite extends FunSuite {
 
   test("numCollisions all") {
     val rkeys = Random.shuffle(keys)
-    val m = SmallHashMap(rkeys.map(v => v -> v): _*)
+    val m = SmallHashMap(rkeys.map(v => v -> v)*)
     testNumCollisions(m)
     rkeys.foreach { k =>
       assertEquals(m.get(k), Some(k))

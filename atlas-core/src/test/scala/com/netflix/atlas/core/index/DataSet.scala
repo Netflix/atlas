@@ -20,7 +20,7 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.util.UUID
 
-import com.netflix.atlas.core.model._
+import com.netflix.atlas.core.model.*
 
 object DataSet {
 

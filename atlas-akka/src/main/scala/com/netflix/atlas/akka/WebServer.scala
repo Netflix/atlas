@@ -99,7 +99,7 @@ object WebServer {
   }
 
   private def getPortConfigs(config: Config, path: String): List[PortConfig] = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     config
       .getConfigList(path)
       .asScala

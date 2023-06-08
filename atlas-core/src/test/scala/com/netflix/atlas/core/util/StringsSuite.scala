@@ -29,7 +29,7 @@ import munit.FunSuite
 
 class StringsSuite extends FunSuite {
 
-  import com.netflix.atlas.core.util.Strings._
+  import com.netflix.atlas.core.util.Strings.*
 
   test("conversionsString") {
     assert(conversions(classOf[String])("42") == "42")
