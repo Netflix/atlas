@@ -219,7 +219,7 @@ case class PngImage(data: RenderedImage, metadata: Map[String, String] = Map.emp
   }
 
   def write(output: OutputStream): Unit = {
-    import PngImage._
+    import PngImage.*
     val iterator = ImageIO.getImageWritersBySuffix("png")
     require(iterator.hasNext, "no image writers for png")
 

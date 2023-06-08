@@ -25,7 +25,7 @@ import com.netflix.atlas.core.util.Math
   */
 case class OnlineRollingSum(buf: RollingBuffer) extends OnlineAlgorithm {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
   private[this] var sum = Math.addNaN(0.0, buf.sum)
   private[this] var count = buf.values.count(v => !JDouble.isNaN(v))

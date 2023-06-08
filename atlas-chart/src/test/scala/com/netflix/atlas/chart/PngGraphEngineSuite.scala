@@ -25,7 +25,7 @@ import java.time.temporal.ChronoUnit
 
 import com.netflix.atlas.chart.model.PlotBound.AutoData
 import com.netflix.atlas.chart.model.PlotBound.Explicit
-import com.netflix.atlas.chart.model._
+import com.netflix.atlas.chart.model.*
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
@@ -134,7 +134,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
     graphAssertions.generateReport(getClass)
   }
 
-  def label(vs: LineDef*): List[LineDef] = label(0, Palette.default, vs: _*)
+  def label(vs: LineDef*): List[LineDef] = label(0, Palette.default, vs*)
 
   def label(offset: Int, p: Palette, vs: LineDef*): List[LineDef] = {
     vs.toList.zipWithIndex.map {
@@ -243,7 +243,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
       val series = vs.map { v =>
         if (v.isNaN) constantSeriesDef(v) else simpleSeriesDef(v.toInt)
       }
-      val plotDef = PlotDef(label(series: _*))
+      val plotDef = PlotDef(label(series*))
 
       val graphDef = GraphDef(
         startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
@@ -357,7 +357,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
       val series = vs.map { v =>
         constantSeriesDef(v)
       }
-      val plotDef = PlotDef(label(series: _*))
+      val plotDef = PlotDef(label(series*))
 
       val graphDef = GraphDef(
         startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
@@ -692,7 +692,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
     check(name, graphDef)
   }
 
-  lines("too_many_lines", (0 until 1024).map(_.toDouble).toSeq, v => v)
+  lines("too_many_lines", (0 until 1024).map(_.toDouble), v => v)
 
   lines("excessive_height", Seq(100), v => v.copy(height = 2048))
   lines("excessive_width", Seq(100), v => v.copy(width = 2048))
@@ -723,7 +723,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
     def f(gdef: GraphDef): GraphDef = {
       gdef.adjustLines(_.copy(lineStyle = LineStyle.STACK)).withVisionType(vt)
     }
-    lines(s"vision_${vt.name}", (0 until 9).map(_ => 100.0).toSeq, f)
+    lines(s"vision_${vt.name}", (0 until 9).map(_ => 100.0), f)
   }
 
   test("heatmap_basic") {

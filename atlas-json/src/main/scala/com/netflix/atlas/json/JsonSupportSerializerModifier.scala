@@ -25,8 +25,8 @@ private[json] class JsonSupportSerializerModifier extends BeanSerializerModifier
   override def modifySerializer(
     config: SerializationConfig,
     beanDesc: BeanDescription,
-    serializer: JsonSerializer[_]
-  ): JsonSerializer[_] = {
+    serializer: JsonSerializer[?]
+  ): JsonSerializer[?] = {
 
     if (classOf[JsonSupport].isAssignableFrom(beanDesc.getBeanClass))
       new JsonSupportSerializer(serializer.asInstanceOf[JsonSerializer[AnyRef]])

@@ -26,7 +26,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.headers.*
 import akka.stream.ConnectionException
 import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
@@ -95,8 +95,8 @@ class EurekaSourceSuite extends FunSuite {
 
   private val vipJson = s"""{"applications": {"application": [$innerAppJson]}}"""
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val mat = Materializer(system)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  private implicit val mat: Materializer = Materializer(system)
 
   private def run(uri: String, response: Try[HttpResponse]): GroupResponse = {
     val client = Flow[(HttpRequest, AccessLogger)].map {

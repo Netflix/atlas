@@ -20,7 +20,7 @@ import scala.reflect.ClassTag
 
 object ArrayHelper {
 
-  import java.util.{Arrays => JArrays}
+  import java.util.Arrays as JArrays
 
   def fill(size: Int, value: Double): Array[Double] = {
     val array = new Array[Double](size)

@@ -25,7 +25,7 @@ import java.util.function.Supplier
 class DatabaseSupplier(config: Config, classFactory: ClassFactory) extends Supplier[Database] {
 
   private val db = {
-    import scala.compat.java8.FunctionConverters._
+    import scala.compat.java8.FunctionConverters.*
     val cfg = config.getConfig("atlas.core.db")
     val cls = cfg.getString("class")
     val overrides = Map[Type, AnyRef](classOf[Config] -> cfg).withDefaultValue(null)

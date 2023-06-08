@@ -27,7 +27,7 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.headers.*
 import akka.stream.KillSwitches
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
@@ -45,9 +45,9 @@ import scala.util.Using
 
 class HostSourceSuite extends FunSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
-  implicit val system = ActorSystem(getClass.getSimpleName)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   def source(response: => Try[HttpResponse]): Source[ByteString, NotUsed] = {
     val client = Flow[HttpRequest].map(_ => response)
@@ -55,7 +55,7 @@ class HostSourceSuite extends FunSuite {
   }
 
   def compress(str: String): Array[Byte] = {
-    import com.netflix.atlas.core.util.Streams._
+    import com.netflix.atlas.core.util.Streams.*
     byteArray { out =>
       Using.resource(gzip(out))(_.write(str.getBytes(StandardCharsets.UTF_8)))
     }

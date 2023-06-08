@@ -42,7 +42,7 @@ import com.netflix.spectator.api.patterns.PolledMeter
   */
 class IndexStats(registry: Registry = new NoopRegistry) {
 
-  import IndexStats._
+  import IndexStats.*
 
   private val numberOfValues = new ConcurrentHashMap[Id, ValueEntry]()
   private val numberOfMetrics = createGauge("atlas.db.size")

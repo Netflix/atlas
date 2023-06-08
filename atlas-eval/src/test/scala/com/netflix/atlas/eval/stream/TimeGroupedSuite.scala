@@ -230,7 +230,7 @@ class TimeGroupedSuite extends FunSuite {
     val data = (0 until n).toList.map { i =>
       AggrDatapoint(10, 10, expr, "test", Map.empty, i)
     }
-    val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n * (n - 1) / 2)
+    val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n.toDouble * (n - 1) / 2)
 
     val groups = run(data)
     assertEquals(groups, List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))
@@ -266,7 +266,7 @@ class TimeGroupedSuite extends FunSuite {
     val data = (0 until n).toList.map { i =>
       AggrDatapoint(10, 10, expr, "test", Map.empty, i)
     }
-    val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n * (n - 1) / 2)
+    val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n.toDouble * (n - 1) / 2)
 
     val groups = run(data)
     assertEquals(groups, List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))

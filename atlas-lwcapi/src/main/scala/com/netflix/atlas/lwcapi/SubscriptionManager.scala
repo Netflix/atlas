@@ -26,7 +26,7 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spectator.ipc.ServerGroup
 import com.typesafe.scalalogging.StrictLogging
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 /**
   * Manages the set of streams and associated subscriptions. There are two basic concepts:
@@ -40,7 +40,7 @@ import scala.jdk.CollectionConverters._
   */
 class SubscriptionManager[T](registry: Registry) extends StrictLogging {
 
-  import SubscriptionManager._
+  import SubscriptionManager.*
 
   private val registrations = new ConcurrentHashMap[String, StreamInfo[T]]()
 
@@ -306,7 +306,7 @@ object SubscriptionManager {
     }
 
     def values: List[T] = {
-      import scala.jdk.CollectionConverters._
+      import scala.jdk.CollectionConverters.*
       data.values().asScala.toList
     }
   }

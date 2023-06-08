@@ -36,7 +36,7 @@ object ModelExtractors {
   case object StringListType {
 
     def unapply(value: Any): Option[List[String]] = value match {
-      case vs: List[_] if vs.forall(_.isInstanceOf[String]) => Some(vs.asInstanceOf[List[String]])
+      case vs: List[?] if vs.forall(_.isInstanceOf[String]) => Some(vs.asInstanceOf[List[String]])
       case _                                                => None
     }
   }

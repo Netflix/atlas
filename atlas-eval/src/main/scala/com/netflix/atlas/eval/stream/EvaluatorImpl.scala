@@ -68,8 +68,8 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
 import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.jdk.CollectionConverters._
+import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
 
 /**
   * Internal implementation details for [[Evaluator]]. Anything needing a stable API should
@@ -231,7 +231,7 @@ private[stream] abstract class EvaluatorImpl(
     val context = newStreamContext(dsLogger)
 
     val g = GraphDSL.create() { implicit builder =>
-      import GraphDSL.Implicits._
+      import GraphDSL.Implicits.*
 
       // Split to 2 destinations: Input flow, Final Eval Step
       val datasources = builder.add(Broadcast[DataSources](2))
@@ -416,7 +416,7 @@ private[stream] abstract class EvaluatorImpl(
   ): Flow[DataSources, List[AnyRef], NotUsed] = {
 
     val g = GraphDSL.create() { implicit builder =>
-      import GraphDSL.Implicits._
+      import GraphDSL.Implicits.*
 
       // Split to 2 destinations: remote and local(File/Resources)
       val dataSourcesBroadcast = builder.add(Broadcast[DataSources](2))

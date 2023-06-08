@@ -19,7 +19,7 @@ import munit.FunSuite
 
 class VocabularySuite extends FunSuite {
 
-  import com.netflix.atlas.core.stacklang.VocabularySuite._
+  import com.netflix.atlas.core.stacklang.VocabularySuite.*
 
   test("toMarkdown") {
     val expected =

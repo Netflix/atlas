@@ -16,7 +16,7 @@
 package com.netflix.atlas.akka
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import com.typesafe.config.Config
 
@@ -43,7 +43,7 @@ class StaticPages(config: Config) extends WebApi {
       getFromResourceDirectory("www")
     }
 
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     val singlePagePrefixes = config.getConfigList("atlas.akka.static.single-page-prefixes")
     singlePagePrefixes.asScala.foldLeft(staticFiles) { (acc, cfg) =>
       val prefix = cfg.getString("prefix")

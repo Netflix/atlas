@@ -17,7 +17,7 @@ package com.netflix.atlas.core.index
 
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
-import com.netflix.atlas.core.model._
+import com.netflix.atlas.core.model.*
 import munit.FunSuite
 
 object TagIndexSuite {

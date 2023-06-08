@@ -19,9 +19,9 @@ import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
-import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.CustomDirectives.*
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.ServiceManager
 import com.typesafe.scalalogging.StrictLogging
@@ -49,7 +49,7 @@ class HealthcheckApi(serviceManagerSupplier: Supplier[ServiceManager])
   private def serviceManager: ServiceManager = serviceManagerSupplier.get
 
   private def summary: String = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     val states = serviceManager.services().asScala.map(s => s.name -> s.isHealthy).toMap
     Json.encode(states)
   }

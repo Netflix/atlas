@@ -29,16 +29,16 @@ import com.netflix.atlas.json.Json
 import munit.FunSuite
 
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Success
 
 class EurekaGroupsLookupSuite extends FunSuite {
 
-  import EurekaSource._
-  import Evaluator._
+  import EurekaSource.*
+  import Evaluator.*
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val mat = Materializer(system)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  private implicit val mat: Materializer = Materializer(system)
 
   private val eurekaGroup = EurekaSource.VipResponse(
     uri = "http://eureka/v2/vips/atlas-lwcapi:7001",
@@ -62,7 +62,7 @@ class EurekaGroupsLookupSuite extends FunSuite {
   }
 
   private def sources(vs: DataSource*): DataSources = {
-    DataSources.of(vs: _*)
+    DataSources.of(vs*)
   }
 
   private def ds(id: String, uri: String): DataSource = {

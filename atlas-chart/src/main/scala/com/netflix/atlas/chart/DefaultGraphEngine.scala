@@ -32,7 +32,7 @@ import com.netflix.iep.config.ConfigManager
 class DefaultGraphEngine extends PngGraphEngine {
 
   private val renderingHints = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     val config = ConfigManager.dynamicConfig().getConfig("atlas.chart.rendering-hints")
     config.entrySet.asScala.toList.map { entry =>
       val k = getField(entry.getKey).asInstanceOf[RenderingHints.Key]
@@ -48,7 +48,7 @@ class DefaultGraphEngine extends PngGraphEngine {
   override def name: String = "png"
 
   override def createImage(gdef: GraphDef): RenderedImage = {
-    import com.netflix.atlas.chart.graphics._
+    import com.netflix.atlas.chart.graphics.*
 
     val config = gdef.computeStats
 

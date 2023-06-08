@@ -32,9 +32,9 @@ import munit.FunSuite
   */
 class JsonSuite extends FunSuite {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
-  import com.netflix.atlas.json.Json._
+  import com.netflix.atlas.json.Json.*
 
   test("garbage") {
     intercept[JsonParseException] { decode[Boolean]("true dklfjal;k;hfnklanf'") }
@@ -395,7 +395,7 @@ class JsonSuite extends FunSuite {
 
   // CLDMTA-2174
   test("case class defined in object") {
-    import com.netflix.atlas.json.JsonSuiteObjectWithClass._
+    import com.netflix.atlas.json.JsonSuiteObjectWithClass.*
     val v = ClassInObject("a", 42)
     assertEquals(encode(v), """{"s":"a","v":42}""")
     assertEquals(decode[ClassInObject](encode(v)), v)
@@ -403,7 +403,7 @@ class JsonSuite extends FunSuite {
 
   // CLDMTA-2174
   test("list of case class defined in object") {
-    import com.netflix.atlas.json.JsonSuiteObjectWithClass._
+    import com.netflix.atlas.json.JsonSuiteObjectWithClass.*
     val v = List(ClassInObject("a", 42))
     assertEquals(encode(v), """[{"s":"a","v":42}]""")
     assertEquals(decode[List[ClassInObject]](encode(v)), v)

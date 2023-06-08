@@ -31,7 +31,7 @@ import com.netflix.spectator.atlas.impl.Parser
   */
 private[events] object ExprUtils {
 
-  import ModelExtractors._
+  import ModelExtractors.*
 
   private val dataInterpreter = Interpreter(DataVocabulary.allWords)
 

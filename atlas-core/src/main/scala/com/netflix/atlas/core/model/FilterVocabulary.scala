@@ -22,8 +22,8 @@ import com.netflix.atlas.core.stacklang.Word
 
 object FilterVocabulary extends Vocabulary {
 
-  import com.netflix.atlas.core.model.ModelExtractors._
-  import com.netflix.atlas.core.stacklang.Extractors._
+  import com.netflix.atlas.core.model.ModelExtractors.*
+  import com.netflix.atlas.core.stacklang.Extractors.*
 
   val name: String = "filter"
 

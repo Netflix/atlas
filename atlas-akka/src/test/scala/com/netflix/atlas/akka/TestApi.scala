@@ -21,7 +21,7 @@ import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
 import akka.stream.scaladsl.Source
@@ -33,8 +33,8 @@ import scala.util.Success
 
 class TestApi(val system: ActorSystem) extends WebApi {
 
-  import CustomDirectives._
-  import scala.concurrent.duration._
+  import CustomDirectives.*
+  import scala.concurrent.duration.*
 
   private implicit val ec: ExecutionContext = OpportunisticEC.ec
 

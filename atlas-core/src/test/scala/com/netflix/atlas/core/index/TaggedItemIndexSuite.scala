@@ -23,7 +23,7 @@ import scala.collection.immutable.ArraySeq
 
 class TaggedItemIndexSuite extends FunSuite {
 
-  import TaggedItemIndexSuite._
+  import TaggedItemIndexSuite.*
 
   private val index = TaggedItemIndex(ArraySeq.unsafeWrapArray(dataset))
 

@@ -20,7 +20,7 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
-import com.netflix.atlas.core.model._
+import com.netflix.atlas.core.model.*
 import com.netflix.atlas.core.util.TimeWave
 import com.netflix.spectator.api.histogram.PercentileBuckets
 

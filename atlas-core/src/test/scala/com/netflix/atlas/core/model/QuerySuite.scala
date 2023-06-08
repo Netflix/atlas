@@ -20,7 +20,7 @@ import munit.FunSuite
 
 class QuerySuite extends FunSuite {
 
-  import com.netflix.atlas.core.model.Query._
+  import com.netflix.atlas.core.model.Query.*
 
   def matches(q: Query, tags: Map[String, String]): Boolean = {
     val result = q.matches(tags)

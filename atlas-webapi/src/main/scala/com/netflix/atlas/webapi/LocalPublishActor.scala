@@ -37,7 +37,7 @@ import com.netflix.spectator.api.histogram.BucketFunctions
 
 class LocalPublishActor(registry: Registry, db: Database) extends Actor with ActorLogging {
 
-  import com.netflix.atlas.webapi.PublishApi._
+  import com.netflix.atlas.webapi.PublishApi.*
 
   // TODO: This actor is only intended to work with MemoryDatabase, but the binding is
   // setup for the Database interface.

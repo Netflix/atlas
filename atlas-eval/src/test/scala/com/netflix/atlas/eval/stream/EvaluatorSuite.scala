@@ -60,14 +60,14 @@ class EvaluatorSuite extends FunSuite {
 
   private val config = ConfigFactory.load()
   private val registry = new DefaultRegistry()
-  private implicit val system = ActorSystem("test", config)
+  private implicit val system: ActorSystem = ActorSystem("test", config)
 
   override def beforeEach(context: BeforeEach): Unit = {
     Files.createDirectories(targetDir)
   }
 
   def testPublisher(baseUri: String, bufferSize: Option[Int] = None): Unit = {
-    import scala.concurrent.duration._
+    import scala.concurrent.duration.*
 
     val buffers = bufferSize.getOrElse(config.getInt("atlas.eval.stream.num-buffers"))
     val evaluator = new Evaluator(
@@ -108,7 +108,7 @@ class EvaluatorSuite extends FunSuite {
   }
 
   private def countMessages(path: Path): Map[String, Int] = {
-    import scala.jdk.StreamConverters._
+    import scala.jdk.StreamConverters.*
     Using.resource(Files.lines(path)) { lines =>
       lines
         .toScala(List)
@@ -201,7 +201,7 @@ class EvaluatorSuite extends FunSuite {
   }
 
   def testProcessor(baseUri: String): Unit = {
-    import scala.concurrent.duration._
+    import scala.concurrent.duration.*
 
     val evaluator = new Evaluator(config, registry, system)
 
@@ -530,7 +530,7 @@ class EvaluatorSuite extends FunSuite {
   private val datapointStep = Duration.ofMillis(1)
 
   private def sampleData(numGroups: Int, numDatapoints: Int): List[Evaluator.DatapointGroup] = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     (0 until numGroups).map { i =>
       val ds = (0 until numDatapoints)
         .map { j =>

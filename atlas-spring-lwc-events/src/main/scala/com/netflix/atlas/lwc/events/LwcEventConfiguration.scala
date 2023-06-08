@@ -26,7 +26,7 @@ import java.util.Optional
 @Configuration
 class LwcEventConfiguration {
 
-  import scala.jdk.CollectionConverters._
+  import scala.jdk.CollectionConverters.*
 
   @Bean
   def lwcEventClient(config: Optional[Config]): LwcEventClient = {
@@ -46,7 +46,7 @@ class LwcEventConfiguration {
     )
   }
 
-  private def toSubscriptions(configs: java.util.List[_ <: Config]): List[Subscription] = {
+  private def toSubscriptions(configs: java.util.List[? <: Config]): List[Subscription] = {
     configs.asScala.toList.map { c =>
       val step = if (c.hasPath("step")) c.getDuration("step").toMillis else 60_000L
       Subscription(c.getString("id"), step, c.getString("expression"))

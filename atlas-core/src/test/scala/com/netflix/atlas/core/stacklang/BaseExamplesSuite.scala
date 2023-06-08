@@ -62,7 +62,7 @@ abstract class BaseExamplesSuite extends FunSuite {
         val stack = execute(s"$ex,:${w.name}").stack
         stack.foreach { item =>
           val prg = item match {
-            case vs: List[_] => vs
+            case vs: List[?] => vs
             case v           => List(v)
           }
           val stack2 = execute(Interpreter.toString(prg)).stack

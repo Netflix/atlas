@@ -68,7 +68,7 @@ object JsonParserHelper {
   }
 
   def nextBoolean(parser: JsonParser): Boolean = {
-    import com.fasterxml.jackson.core.JsonToken._
+    import com.fasterxml.jackson.core.JsonToken.*
     parser.nextToken() match {
       case VALUE_FALSE  => parser.getValueAsBoolean
       case VALUE_TRUE   => parser.getValueAsBoolean
@@ -90,7 +90,7 @@ object JsonParserHelper {
   def nextFloat(parser: JsonParser): Double = nextDouble(parser).toFloat
 
   def nextDouble(parser: JsonParser): Double = {
-    import com.fasterxml.jackson.core.JsonToken._
+    import com.fasterxml.jackson.core.JsonToken.*
     parser.nextToken() match {
       case VALUE_NUMBER_INT   => parser.getValueAsDouble
       case VALUE_NUMBER_FLOAT => parser.getValueAsDouble

@@ -27,7 +27,7 @@ sealed trait PlotBound {
 
 object PlotBound {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
   /**
     * Create a bound from a string representation. Acceptable values are: `auto-style`,

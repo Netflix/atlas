@@ -24,7 +24,7 @@ import scala.concurrent.duration.Duration
 class OpportunisticECSuite extends FunSuite {
 
   test("implicit ec available") {
-    import OpportunisticEC._
+    import OpportunisticEC.*
     val future = Future(1).map(_ + 1)
     val result = Await.result(future, Duration.Inf)
     assertEquals(result, 2)

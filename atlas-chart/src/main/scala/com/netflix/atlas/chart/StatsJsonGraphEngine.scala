@@ -18,7 +18,7 @@ package com.netflix.atlas.chart
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 
-import com.netflix.atlas.chart.model._
+import com.netflix.atlas.chart.model.*
 import com.netflix.atlas.core.model.SummaryStats
 
 /**
@@ -26,7 +26,7 @@ import com.netflix.atlas.core.model.SummaryStats
   */
 class StatsJsonGraphEngine extends GraphEngine {
 
-  import com.netflix.atlas.chart.GraphEngine._
+  import com.netflix.atlas.chart.GraphEngine.*
 
   def name: String = "stats.json"
 

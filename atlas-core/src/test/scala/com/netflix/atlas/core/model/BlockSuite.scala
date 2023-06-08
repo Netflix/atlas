@@ -89,7 +89,7 @@ class BlockSuite extends FunSuite {
   }
 
   test("Block.get(pos, aggr)") {
-    import java.lang.{Double => JDouble}
+    import java.lang.{Double as JDouble}
     val b = ArrayBlock(0L, 2)
     b.buffer(0) = 0.0
     b.buffer(1) = Double.NaN
@@ -218,7 +218,7 @@ class BlockSuite extends FunSuite {
   }
 
   test("rollup") {
-    import java.lang.{Double => JDouble}
+    import java.lang.{Double as JDouble}
 
     val n = 5
 
@@ -256,7 +256,7 @@ class BlockSuite extends FunSuite {
   }
 
   test("compressed array: get/set 2") {
-    import CompressedArrayBlock._
+    import CompressedArrayBlock.*
 
     (0 until 32).foreach { i =>
       assertEquals(set2(0L, i, 0), 0L)
@@ -274,7 +274,7 @@ class BlockSuite extends FunSuite {
   }
 
   test("compressed array: get/set 4") {
-    import CompressedArrayBlock._
+    import CompressedArrayBlock.*
 
     (0 until 16).foreach { i =>
       (0 until 16).foreach { v =>
@@ -290,7 +290,7 @@ class BlockSuite extends FunSuite {
   }
 
   test("compressed array: ceiling division") {
-    import CompressedArrayBlock._
+    import CompressedArrayBlock.*
     assertEquals(ceilingDivide(8, 2), 4)
     assertEquals(ceilingDivide(9, 2), 5)
   }

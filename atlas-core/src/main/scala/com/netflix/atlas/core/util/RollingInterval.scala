@@ -36,7 +36,7 @@ import java.time.temporal.ChronoUnit
   */
 case class RollingInterval(offset: Duration, duration: Duration, unit: ChronoUnit) {
 
-  import RollingInterval._
+  import RollingInterval.*
 
   checkParams(offset, duration, unit)
 

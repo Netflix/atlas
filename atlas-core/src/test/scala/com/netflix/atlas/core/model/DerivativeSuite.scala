@@ -78,6 +78,6 @@ class DerivativeSuite extends FunSuite {
     val context = EvalContext(start, start + step * 4, step)
     val rs = expr.eval(context, List(ts(1.0, 2.0, 3.0, Double.NaN)))
 
-    assert(rs.state(expr).asInstanceOf[scala.collection.mutable.Map[_, _]].isEmpty)
+    assert(rs.state(expr).asInstanceOf[scala.collection.mutable.Map[?, ?]].isEmpty)
   }
 }

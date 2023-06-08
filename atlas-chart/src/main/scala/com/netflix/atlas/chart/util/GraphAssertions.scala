@@ -52,7 +52,7 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
     }
   }
 
-  def generateReport(clazz: Class[_], diffsOnly: Boolean = true): Unit = {
+  def generateReport(clazz: Class[?], diffsOnly: Boolean = true): Unit = {
     val report = s"""<html>
       <head><title>${clazz.getSimpleName}</title></head>
       <body><h1>${clazz.getSimpleName}</h1><hr/> ${

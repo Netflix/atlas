@@ -18,10 +18,10 @@ package com.netflix.atlas.lwcapi
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.Route
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.netflix.atlas.akka.CustomDirectives._
+import com.netflix.atlas.akka.CustomDirectives.*
 import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.eval.model.LwcDatapoint
@@ -35,7 +35,7 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
     extends WebApi
     with StrictLogging {
 
-  import EvaluateApi._
+  import EvaluateApi.*
 
   private val payloadSize = registry.distributionSummary("atlas.lwcapi.evalPayloadSize")
   private val ignoredCounter = registry.counter("atlas.lwcapi.ignoredItems")

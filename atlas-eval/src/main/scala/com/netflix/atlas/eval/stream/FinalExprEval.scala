@@ -86,7 +86,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
 
       // Updates the recipients list
       private def handleDataSources(ds: DataSources): Unit = {
-        import scala.jdk.CollectionConverters._
+        import scala.jdk.CollectionConverters.*
         val sources = ds.getSources.asScala.toList
         step = ds.stepSize()
 

@@ -21,7 +21,7 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.headers.*
 import akka.stream.scaladsl.Compression
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -36,7 +36,7 @@ import scala.util.Success
 private[stream] object HostSource extends StrictLogging {
 
   import scala.concurrent.ExecutionContext.Implicits.global
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   /**
     * Create a new stream source for the response of `uri`. The URI should be a streaming

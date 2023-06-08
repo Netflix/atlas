@@ -95,7 +95,7 @@ case class DefaultSettings(root: Config, config: Config) {
 
   /** Available engines for rendering a chart. */
   val engines: Map[String, GraphEngine] = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     config
       .getStringList("engines")
       .asScala

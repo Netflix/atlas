@@ -23,7 +23,7 @@ import munit.FunSuite
 
 class TimeSeriesExprSuite extends FunSuite {
 
-  import com.netflix.atlas.core.model.TimeSeriesExprSuite._
+  import com.netflix.atlas.core.model.TimeSeriesExprSuite.*
 
   private val interpreter = Interpreter(StyleVocabulary.allWords)
 
