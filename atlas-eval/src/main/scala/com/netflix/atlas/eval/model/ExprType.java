@@ -27,5 +27,5 @@ public enum ExprType {
   EVENTS,
 
   /** Expression to select a set of traces to be passed through. */
-  TRACES;
+  TRACES
 }

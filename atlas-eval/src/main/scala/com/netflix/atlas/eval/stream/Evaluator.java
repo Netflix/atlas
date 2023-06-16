@@ -143,8 +143,7 @@ public final class Evaluator extends EvaluatorImpl {
   /**
    * Immutable set of data sources that should be consumed.
    */
-  public final static class DataSources {
-    private final Set<DataSource> sources;
+  public record DataSources(Set<DataSource> sources) {
 
     /** Create a new instance that is empty. */
     public static DataSources empty() {
@@ -158,20 +157,14 @@ public final class Evaluator extends EvaluatorImpl {
     }
 
     /** Create a new instance. */
-    @JsonCreator
-    public DataSources(@JsonProperty("sources") Set<DataSource> sources) {
-      this.sources = Collections.unmodifiableSet(new HashSet<>(sources));
-    }
-
-    /** Return the data sources in this set. */
-    public Set<DataSource> getSources() {
-      return sources;
+    public DataSources {
+      sources = Collections.unmodifiableSet(new HashSet<>(sources));
     }
 
     /** Compares with another set and returns the new data sources that have been added. */
     public Set<DataSource> addedSources(DataSources other) {
       Set<DataSource> copy = new HashSet<>(sources);
-      copy.removeAll(other.getSources());
+      copy.removeAll(other.sources());
       return copy;
     }
 
@@ -203,7 +196,7 @@ public final class Evaluator extends EvaluatorImpl {
     long stepSize() {
       long step = -1L;
       for (DataSource source : sources) {
-        long sourceStep = source.getStep().toMillis();
+        long sourceStep = source.step().toMillis();
         if (step != -1L && step != sourceStep) {
           throw new IllegalStateException("inconsistent step sizes, expected "
               + step + ", found " + sourceStep + " on " + source);
@@ -212,34 +205,32 @@ public final class Evaluator extends EvaluatorImpl {
       }
       return step;
     }
-
-    @Override public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      DataSources that = (DataSources) o;
-      return sources.equals(that.sources);
-    }
-
-    @Override public int hashCode() {
-      return sources.hashCode();
-    }
-
-    @Override public String toString() {
-      return sources.stream()
-          .map(DataSource::toString)
-          .collect(Collectors.joining(",", "DataSources(", ")"));
-    }
   }
 
   /**
    * Triple mapping an id to a step size and a URI that should be consumed. The
    * id can be used to find the messages in the output that correspond to this
    * data source.
+   *
+   * @param id
+   *     An identifier for this {@code DataSource}. It will be added to
+   *     corresponding MessageEnvelope objects in the output, facilitating
+   *     matching output messages with the data source.
+   * @param step
+   *     The requested step size for this {@code DataSource}. <em>NOTE:</em>
+   *     This may result in rejection of this {@code DataSource} if the
+   *     backing metrics producers do not support the requested step size.
+   * @param uri
+   *     The URI for this {@code DataSource} (in atlas backend form).
    */
-  public final static class DataSource {
-    private final String id;
-    private final Duration step;
-    private final String uri;
+  public record DataSource(String id, Duration step, String uri) {
+
+    /**
+     * Create a new instance.
+     */
+    public DataSource {
+      step = step == null ? extractStepFromUri(uri) : step;
+    }
 
     /**
      * Create a new instance with the step size being derived from the URI or falling
@@ -256,45 +247,6 @@ public final class Evaluator extends EvaluatorImpl {
       this(id, null, uri);
     }
 
-    /**
-     * Create a new instance.
-     *
-     * @param id
-     *     An identifier for this {@code DataSource}. It will be added to
-     *     corresponding MessageEnvelope objects in the output, facilitating
-     *     matching output messages with the data source.
-     * @param step
-     *     The requested step size for this {@code DataSource}. <em>NOTE:</em>
-     *     This may result in rejection of this {@code DataSource} if the
-     *     backing metrics producers do not support the requested step size.
-     * @param uri
-     *     The URI for this {@code DataSource} (in atlas backend form).
-     */
-    @JsonCreator
-    public DataSource(
-            @JsonProperty("id") String id,
-            @JsonProperty("step") Duration step,
-            @JsonProperty("uri") String uri) {
-      this.id = id;
-      this.step = step == null ? extractStepFromUri(uri) : step;
-      this.uri = uri;
-    }
-
-    /** Returns the id for this data source. */
-    public String getId() {
-      return id;
-    }
-
-    /** Returns the step size for this data source. */
-    public Duration getStep() {
-      return step;
-    }
-
-    /** Returns the URI for this data source. */
-    public String getUri() {
-      return uri;
-    }
-
     /** Returns true if the URI is for a local file or classpath resource. */
     @JsonIgnore
     public boolean isLocal() {
@@ -303,104 +255,19 @@ public final class Evaluator extends EvaluatorImpl {
           || uri.startsWith("resource:")
           || uri.startsWith("synthetic:");
     }
-
-    @Override public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      DataSource that = (DataSource) o;
-      return id.equals(that.id) && step.equals(that.step) && uri.equals(that.uri);
-    }
-
-    @Override public int hashCode() {
-      int result = id.hashCode();
-      result = 31 * result + step.hashCode() + uri.hashCode();
-      return result;
-    }
-
-    @Override public String toString() {
-      return "DataSource(" + id + "," + step + "," + uri + ")";
-    }
   }
 
   /**
    * Wraps the output messages from the evaluation with the id of the data source. This
    * can be used to route the message back to the appropriate consumer.
    */
-  public final static class MessageEnvelope {
-    private final String id;
-    private final JsonSupport message;
-
-    /** Create a new instance. */
-    public MessageEnvelope(String id, JsonSupport message) {
-      this.id = id;
-      this.message = message;
-    }
-
-    /** Returns the id for the data source. */
-    public String getId() {
-      return id;
-    }
-
-    /** Returns the message. */
-    public JsonSupport getMessage() {
-      return message;
-    }
-
-    @Override public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      MessageEnvelope that = (MessageEnvelope) o;
-      return id.equals(that.id) && message.equals(that.message);
-    }
-
-    @Override public int hashCode() {
-      int result = id.hashCode();
-      result = 31 * result + message.hashCode();
-      return result;
-    }
-
-    @Override public String toString() {
-      return "MessageEnvelope(" + id + "," + message + ")";
-    }
+  public record MessageEnvelope(String id, JsonSupport message) {
   }
 
   /**
    * Group of datapoints for the same time.
    */
-  public final static class DatapointGroup {
-    private final long timestamp;
-    private final List<Datapoint> datapoints;
-
-    /** Create a new instance. */
-    public DatapointGroup(long timestamp, List<Datapoint> datapoints) {
-      this.timestamp = timestamp;
-      this.datapoints = datapoints;
-    }
-
-    /** Returns the timestamp (in milliseconds) for datapoints within this group. */
-    public long getTimestamp() {
-      return timestamp;
-    }
-
-    /** Returns the set of datapoints for this group. */
-    public List<Datapoint> getDatapoints() {
-      return datapoints;
-    }
-
-    @Override public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      DatapointGroup that = (DatapointGroup) o;
-      return timestamp == that.timestamp && Objects.equals(datapoints, that.datapoints);
-    }
-
-    @Override public int hashCode() {
-      return Objects.hash(timestamp, datapoints);
-    }
-
-    @Override public String toString() {
-      return "DatapointGroup(" + timestamp + "," + datapoints + ")";
-    }
+  public record DatapointGroup(long timestamp, List<Datapoint> datapoints) {
   }
 
   /**
@@ -408,40 +275,7 @@ public final class Evaluator extends EvaluatorImpl {
    * This can be used for synthetic data or if there is an alternative data source such as a
    * stream of events that are being mapped into streaming time series.
    */
-  public final static class Datapoint {
-    private final Map<String, String> tags;
-    private final double value;
-
-    /** Create a new instance. */
-    public Datapoint(Map<String, String> tags, double value) {
-      this.tags = tags;
-      this.value = value;
-    }
-
-    /** Returns the tags for this datapoint. */
-    public Map<String, String> getTags() {
-      return tags;
-    }
-
-    /** Returns the value for this datapoint. */
-    public double getValue() {
-      return value;
-    }
-
-    @Override public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      Datapoint datapoint = (Datapoint) o;
-      return Double.compare(datapoint.value, value) == 0 && Objects.equals(tags, datapoint.tags);
-    }
-
-    @Override public int hashCode() {
-      return Objects.hash(tags, value);
-    }
-
-    @Override public String toString() {
-      return "Datapoint(" + tags + "," + value + ")";
-    }
+  public record Datapoint(Map<String, String> tags, double value) {
   }
 
   /** The default step size. */
@@ -505,7 +339,7 @@ public final class Evaluator extends EvaluatorImpl {
         )
         .via(Flow.fromProcessor(evaluator::createStreamsProcessor))
         .runForeach(
-            msg -> System.out.printf("%10s: %s%n", msg.getId(), msg.getMessage().toJson()),
+            msg -> System.out.printf("%10s: %s%n", msg.id(), msg.message().toJson()),
             mat
         )
         .toCompletableFuture()
