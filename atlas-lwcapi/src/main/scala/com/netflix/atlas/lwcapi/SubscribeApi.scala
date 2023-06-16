@@ -194,7 +194,7 @@ class SubscribeApi(
 
     expressions.foreach { expr =>
       try {
-        val splits = splitter.split(expr.expression, expr.frequency)
+        val splits = splitter.split(expr.expression, expr.exprType, expr.frequency)
 
         // Add any new expressions
         val (queue, addedSubs) = sm.subscribe(streamId, splits)

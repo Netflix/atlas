@@ -24,7 +24,6 @@ import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonParserHelper.*
-import com.netflix.atlas.json.JsonSupport
 
 import java.io.ByteArrayOutputStream
 
@@ -57,6 +56,7 @@ object LwcMessages {
 
       // LwcExpression
       var expression: String = null
+      var exprType: ExprType = ExprType.TIME_SERIES
       var step: Long = -1L
 
       // LwcSubscription
@@ -87,6 +87,7 @@ object LwcMessages {
         case "type" => typeDesc = nextString(parser)
 
         case "expression" => expression = nextString(parser)
+        case "exprType"   => exprType = ExprType.valueOf(nextString(parser))
         case "step"       => step = nextLong(parser)
         case "metrics"    => metrics = parseDataExprs(parser)
 
@@ -106,7 +107,7 @@ object LwcMessages {
       }
 
       typeDesc match {
-        case "expression"   => LwcExpression(expression, step)
+        case "expression"   => LwcExpression(expression, exprType, step)
         case "subscription" => LwcSubscription(expression, metrics)
         case "datapoint"    => LwcDatapoint(timestamp, id, tags, value)
         case "diagnostic"   => LwcDiagnosticMessage(id, diagnosticMessage)
@@ -184,6 +185,8 @@ object LwcMessages {
         case msg: LwcExpression =>
           gen.writeNumber(Expression)
           gen.writeString(msg.expression)
+          if (msg.exprType != ExprType.TIME_SERIES)
+            gen.writeString(msg.exprType.name())
           gen.writeNumber(msg.step)
         case msg: LwcSubscription =>
           gen.writeNumber(Subscription)
@@ -244,7 +247,15 @@ object LwcMessages {
       foreachItem(parser) {
         parser.getIntValue match {
           case Expression =>
-            builder += LwcExpression(parser.nextTextValue(), parser.nextLongValue(-1L))
+            val expression = parser.nextTextValue()
+            if (parser.nextToken() == JsonToken.VALUE_STRING) {
+              val exprType = ExprType.valueOf(parser.getText)
+              val step = parser.nextLongValue(-1L)
+              builder += LwcExpression(expression, exprType, step)
+            } else {
+              val step = parser.getLongValue
+              builder += LwcExpression(expression, ExprType.TIME_SERIES, step)
+            }
           case Subscription =>
             val expression = parser.nextTextValue()
             val dataExprs = List.newBuilder[LwcDataExpr]
@@ -304,23 +315,4 @@ object LwcMessages {
       tags
     }
   }
-
-  def toSSE(msg: JsonSupport): ByteString = {
-    val prefix = msg match {
-      case _: LwcSubscription      => subscribePrefix
-      case _: LwcDatapoint         => metricDataPrefix
-      case _: LwcDiagnosticMessage => diagnosticPrefix
-      case _: LwcHeartbeat         => heartbeatPrefix
-      case _                       => defaultPrefix
-    }
-    prefix ++ ByteString(msg.toJson) ++ suffix
-  }
-
-  private val subscribePrefix = ByteString("info: subscribe ")
-  private val metricDataPrefix = ByteString("data: metric ")
-  private val diagnosticPrefix = ByteString("data: diagnostic ")
-  private val heartbeatPrefix = ByteString("data: heartbeat ")
-  private val defaultPrefix = ByteString("data: ")
-
-  private val suffix = ByteString("\r\n\r\n")
 }

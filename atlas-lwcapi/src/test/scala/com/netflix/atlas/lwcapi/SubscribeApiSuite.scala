@@ -21,6 +21,7 @@ import akka.http.scaladsl.testkit.WSProbe
 import com.netflix.atlas.akka.DiagnosticMessage
 import com.netflix.atlas.akka.RequestHandler
 import com.netflix.atlas.akka.testkit.MUnitRouteSuite
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcHeartbeat
@@ -61,7 +62,7 @@ class SubscribeApiSuite extends MUnitRouteSuite {
       assert(isWebSocketUpgrade)
 
       // Send list of expressions to subscribe to
-      val exprs = List(LwcExpression("name,disk,:eq,:avg", 60000))
+      val exprs = List(LwcExpression("name,disk,:eq,:avg", ExprType.TIME_SERIES, 60000))
       client.sendMessage(LwcMessages.encodeBatch(exprs))
 
       // Look for subscription messages, one for sum and one for count

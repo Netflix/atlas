@@ -50,6 +50,7 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.AggrValuesInfo
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.TimeGroup
@@ -506,7 +507,7 @@ private[stream] abstract class EvaluatorImpl(
   private def toExprSet(dss: DataSources, interpreter: ExprInterpreter): Set[LwcExpression] = {
     dss.getSources.asScala.flatMap { dataSource =>
       interpreter.eval(Uri(dataSource.getUri)).map { expr =>
-        LwcExpression(expr.toString, dataSource.getStep.toMillis)
+        LwcExpression(expr.toString, ExprType.TIME_SERIES, dataSource.getStep.toMillis)
       }
     }.toSet
   }
