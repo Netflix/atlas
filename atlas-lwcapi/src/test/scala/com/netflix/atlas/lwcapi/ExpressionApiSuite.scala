@@ -23,6 +23,7 @@ import akka.stream.scaladsl.Sink
 import com.netflix.atlas.akka.StreamOps
 import com.netflix.atlas.akka.testkit.MUnitRouteSuite
 import com.netflix.atlas.core.util.Streams
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
@@ -92,7 +93,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
   }
 
   test("has data") {
-    val splits = splitter.split("nf.cluster,skan,:eq,:avg", 60000)
+    val splits = splitter.split("nf.cluster,skan,:eq,:avg", ExprType.TIME_SERIES, 60000)
     sm.register(StreamMetadata("a"), queue)
     splits.foreach { s =>
       sm.subscribe("a", s)
@@ -105,7 +106,8 @@ class ExpressionApiSuite extends MUnitRouteSuite {
   }
 
   test("fetch all with data") {
-    val splits = splitter.split("nf.cluster,skan,:eq,:avg,nf.app,brh,:eq,:max", 60000)
+    val splits =
+      splitter.split("nf.cluster,skan,:eq,:avg,nf.app,brh,:eq,:max", ExprType.TIME_SERIES, 60000)
     sm.register(StreamMetadata("a"), queue)
     splits.foreach { s =>
       sm.subscribe("a", s)
@@ -136,8 +138,11 @@ class ExpressionApiSuite extends MUnitRouteSuite {
   }
 
   test("etags match for different orderings") {
-    val unordered =
-      List(ExpressionMetadata("a", 2), ExpressionMetadata("z", 1), ExpressionMetadata("c", 3))
+    val unordered = List(
+      ExpressionMetadata("a", ExprType.TIME_SERIES, 2),
+      ExpressionMetadata("z", ExprType.TIME_SERIES, 1),
+      ExpressionMetadata("c", ExprType.TIME_SERIES, 3)
+    )
     val ordered = unordered.sorted
     val tagUnordered = ExpressionApi.encode(unordered).etag
     val tagOrdered = ExpressionApi.encode(ordered).etag
@@ -151,8 +156,8 @@ class ExpressionApiSuite extends MUnitRouteSuite {
   }
 
   test("etags don't match for different content") {
-    val e1 = List(ExpressionMetadata("a", 2))
-    val e2 = List(ExpressionMetadata("b", 2))
+    val e1 = List(ExpressionMetadata("a", ExprType.TIME_SERIES, 2))
+    val e2 = List(ExpressionMetadata("b", ExprType.TIME_SERIES, 2))
     val tag_e1 = ExpressionApi.encode(e1).etag
     val tag_e2 = ExpressionApi.encode(e2).etag
     assert(tag_e1 != tag_e2)
@@ -160,18 +165,18 @@ class ExpressionApiSuite extends MUnitRouteSuite {
 
   test("etags don't match for empty and non-empty lists") {
     val e1 = List()
-    val e2 = List(ExpressionMetadata("b", 2))
+    val e2 = List(ExpressionMetadata("b", ExprType.TIME_SERIES, 2))
     val tag_e1 = ExpressionApi.encode(e1).etag
     val tag_e2 = ExpressionApi.encode(e2).etag
     assert(tag_e1 != tag_e2)
   }
 
   private val skanCount =
-    """{"expression":"nf.cluster,skan,:eq,:count","frequency":60000,"id":"6278fa6047c07316d7e265a1004882ab9e1007af"}"""
+    """{"expression":"nf.cluster,skan,:eq,:count","exprType":"TIME_SERIES","frequency":60000,"id":"6278fa6047c07316d7e265a1004882ab9e1007af"}"""
 
   private val skanSum =
-    """{"expression":"nf.cluster,skan,:eq,:sum","frequency":60000,"id":"36e0a2c61b48e062bba5361d059afd313c82c674"}"""
+    """{"expression":"nf.cluster,skan,:eq,:sum","exprType":"TIME_SERIES","frequency":60000,"id":"36e0a2c61b48e062bba5361d059afd313c82c674"}"""
 
   private val brhMax =
-    """{"expression":"nf.app,brh,:eq,:max","frequency":60000,"id":"16f1b0930c0eeae0225374ea88c01e161e589aff"}"""
+    """{"expression":"nf.app,brh,:eq,:max","exprType":"TIME_SERIES","frequency":60000,"id":"16f1b0930c0eeae0225374ea88c01e161e589aff"}"""
 }

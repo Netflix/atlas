@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.ManualClock
@@ -29,7 +30,7 @@ class SubscriptionManagerSuite extends FunSuite {
 
   private def sub(expr: String): Subscription = {
     val splitter = new ExpressionSplitter(config)
-    splitter.split(expr, 60).head
+    splitter.split(expr, ExprType.TIME_SERIES, 60).head
   }
 
   test("subscribe, unsubscribe, and get work") {

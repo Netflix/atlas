@@ -89,7 +89,15 @@ class LwcMessagesSuite extends FunSuite {
 
   test("batch: expression") {
     val expected = (0 until 10).map { i =>
-      LwcExpression("name,cpu,:eq,:max", i)
+      LwcExpression("name,cpu,:eq,:max", ExprType.TIME_SERIES, i)
+    }
+    val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
+    assertEquals(actual, expected.toList)
+  }
+
+  test("batch: events expression") {
+    val expected = (0 until 10).map { i =>
+      LwcExpression("name,cpu,:eq", ExprType.EVENTS, i)
     }
     val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
     assertEquals(actual, expected.toList)
@@ -152,7 +160,7 @@ class LwcMessagesSuite extends FunSuite {
     // compatibility with existing versions. To check for that this test loads a file
     // that has been pre-encoded.
     val expected = List(
-      LwcExpression("name,cpu,:eq,:max", 60_000),
+      LwcExpression("name,cpu,:eq,:max", ExprType.TIME_SERIES, 60_000),
       LwcSubscription(
         "name,cpu,:eq,:avg",
         List(
@@ -195,7 +203,7 @@ class LwcMessagesSuite extends FunSuite {
   private def randomObject(random: Random): AnyRef = {
     random.nextInt(6) match {
       case 0 =>
-        LwcExpression(randomString, randomStep(random))
+        LwcExpression(randomString, ExprType.TIME_SERIES, randomStep(random))
       case 1 =>
         val n = random.nextInt(10) + 1
         LwcSubscription(

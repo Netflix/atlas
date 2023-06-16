@@ -16,6 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.eval.model.ExprType
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
@@ -31,27 +32,27 @@ class ExpressionSplitterSuite extends FunSuite {
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
 
   test("splits single expression into data expressions") {
-    val actual = splitter.split(query1, frequency1)
+    val actual = splitter.split(query1, ExprType.TIME_SERIES, frequency1)
     val expected = List(
-      Subscription(matchList1, ExpressionMetadata(ds1a, frequency1)),
-      Subscription(matchList1, ExpressionMetadata(ds1b, frequency1))
+      Subscription(matchList1, ExpressionMetadata(ds1a, ExprType.TIME_SERIES, frequency1)),
+      Subscription(matchList1, ExpressionMetadata(ds1b, ExprType.TIME_SERIES, frequency1))
     ).reverse
     assertEquals(actual, expected)
   }
 
   test("splits compound expression into data expressions") {
     val expr = query1 + "," + query1
-    val actual = splitter.split(expr, frequency1)
+    val actual = splitter.split(expr, ExprType.TIME_SERIES, frequency1)
     val expected = List(
-      Subscription(matchList1, ExpressionMetadata(ds1a, frequency1)),
-      Subscription(matchList1, ExpressionMetadata(ds1b, frequency1))
+      Subscription(matchList1, ExpressionMetadata(ds1a, ExprType.TIME_SERIES, frequency1)),
+      Subscription(matchList1, ExpressionMetadata(ds1b, ExprType.TIME_SERIES, frequency1))
     ).reverse
     assertEquals(actual, expected)
   }
 
   test("throws IAE for invalid expressions") {
     val msg = intercept[IllegalArgumentException] {
-      splitter.split("foo", frequency1)
+      splitter.split("foo", ExprType.TIME_SERIES, frequency1)
     }
     assertEquals(msg.getMessage, "expression is invalid")
   }
@@ -59,7 +60,7 @@ class ExpressionSplitterSuite extends FunSuite {
   test("throws IAE for expressions with offset") {
     val expr = "name,foo,:eq,:sum,PT168H,:offset"
     val msg = intercept[IllegalArgumentException] {
-      splitter.split(expr, frequency1)
+      splitter.split(expr, ExprType.TIME_SERIES, frequency1)
     }
     assertEquals(msg.getMessage, s":offset not supported for streaming evaluation [[$expr]]")
   }
@@ -67,7 +68,7 @@ class ExpressionSplitterSuite extends FunSuite {
   test("throws IAE for expressions with style offset") {
     val expr = "name,foo,:eq,:sum,(,0h,1w,),:offset"
     val msg = intercept[IllegalArgumentException] {
-      splitter.split(expr, frequency1)
+      splitter.split(expr, ExprType.TIME_SERIES, frequency1)
     }
     val badExpr = "name,foo,:eq,:sum,PT168H,:offset"
     assertEquals(msg.getMessage, s":offset not supported for streaming evaluation [[$badExpr]]")

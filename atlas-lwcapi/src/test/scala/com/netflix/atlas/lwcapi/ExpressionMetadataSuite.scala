@@ -17,6 +17,7 @@ package com.netflix.atlas.lwcapi
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.json.Json
 import munit.FunSuite
 
@@ -24,17 +25,17 @@ class ExpressionMetadataSuite extends FunSuite {
 
   test("default frequency is applied") {
     val ret1 = ExpressionMetadata("this")
-    val ret2 = ExpressionMetadata("this", ApiSettings.defaultStep)
+    val ret2 = ExpressionMetadata("this", ExprType.TIME_SERIES, ApiSettings.defaultStep)
     assertEquals(ret1, ret2)
   }
 
   test("default id is applied") {
-    val ret1 = ExpressionMetadata("this", 5)
+    val ret1 = ExpressionMetadata("this", ExprType.TIME_SERIES, 5)
     assert(ret1.id.nonEmpty)
   }
 
   test("full params") {
-    val expr = ExpressionMetadata("test", 60000, "idHere")
+    val expr = ExpressionMetadata("test", ExprType.TIME_SERIES, 60000, "idHere")
     assertEquals(expr.expression, "test")
     assertEquals(expr.frequency, 60000L)
     assertEquals(expr.id, "idHere")
@@ -51,8 +52,8 @@ class ExpressionMetadataSuite extends FunSuite {
   }
 
   test("id computation considers frequency") {
-    val exp1 = ExpressionMetadata("test", 10000)
-    val exp2 = ExpressionMetadata("test", 20000)
+    val exp1 = ExpressionMetadata("test", ExprType.TIME_SERIES, 10000)
+    val exp2 = ExpressionMetadata("test", ExprType.TIME_SERIES, 20000)
     assert(exp1.id != exp2.id)
   }
 
@@ -106,22 +107,22 @@ class ExpressionMetadataSuite extends FunSuite {
   }
 
   test("renders as json") {
-    val expected = """{"expression":"this","frequency":99000,"id":"foo"}"""
-    val json = ExpressionMetadata("this", 99000, "foo").toJson
+    val expected = """{"expression":"this","exprType":"TIME_SERIES","frequency":99000,"id":"foo"}"""
+    val json = ExpressionMetadata("this", ExprType.TIME_SERIES, 99000, "foo").toJson
     assertEquals(expected, json)
   }
 
   test("renders as json with default frequency") {
     val expected =
-      "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
+      "{\"expression\":\"this\",\"exprType\":\"TIME_SERIES\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
     val json = ExpressionMetadata("this").toJson
     assertEquals(expected, json)
   }
 
   test("renders as json with frequency of 0") {
     val expected =
-      "{\"expression\":\"this\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
-    val json = ExpressionMetadata("this", 0).toJson
+      "{\"expression\":\"this\",\"exprType\":\"TIME_SERIES\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
+    val json = ExpressionMetadata("this", ExprType.TIME_SERIES, 0).toJson
     assertEquals(expected, json)
   }
 
@@ -132,10 +133,16 @@ class ExpressionMetadataSuite extends FunSuite {
   }
 
   test("sorts") {
-    val source =
-      List(ExpressionMetadata("a", 2), ExpressionMetadata("z", 1), ExpressionMetadata("c", 3))
-    val expected =
-      List(ExpressionMetadata("a", 2), ExpressionMetadata("c", 3), ExpressionMetadata("z", 1))
+    val source = List(
+      ExpressionMetadata("a", ExprType.TIME_SERIES, 2),
+      ExpressionMetadata("z", ExprType.TIME_SERIES, 1),
+      ExpressionMetadata("c", ExprType.TIME_SERIES, 3)
+    )
+    val expected = List(
+      ExpressionMetadata("a", ExprType.TIME_SERIES, 2),
+      ExpressionMetadata("c", ExprType.TIME_SERIES, 3),
+      ExpressionMetadata("z", ExprType.TIME_SERIES, 1)
+    )
     assertEquals(expected, source.sorted)
   }
 }

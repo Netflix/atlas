@@ -24,9 +24,12 @@ import com.netflix.atlas.json.JsonSupport
   *
   * @param expression
   *     Expression to subscribe to from LWCAPI.
+  * @param exprType
+  *     Indicates the type of expression for the subscription. This is typically determined
+  *     based on the endpoint used on the URI.
   * @param step
   *     The step size used for this stream of data.
   */
-case class LwcExpression(expression: String, step: Long) extends JsonSupport {
+case class LwcExpression(expression: String, exprType: ExprType, step: Long) extends JsonSupport {
   val `type`: String = "expression"
 }
