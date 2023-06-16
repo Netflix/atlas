@@ -178,7 +178,7 @@ private[stream] abstract class EvaluatorImpl(
 
     source
       .via(createProcessorFlow)
-      .map(_.getMessage)
+      .map(_.message)
       .toMat(Sink.asPublisher(true))(Keep.right)
       .run()
   }
@@ -204,7 +204,7 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   protected def groupByHost(dataSources: DataSources): scala.collection.Map[String, DataSources] = {
-    dataSources.getSources.asScala
+    dataSources.sources.asScala
       .groupBy(getHost)
       .map { case (host, dsSet) => host -> new DataSources(dsSet.asJava) }
   }
@@ -213,7 +213,7 @@ private[stream] abstract class EvaluatorImpl(
     if (dataSource.isLocal)
       "_"
     else
-      Uri(dataSource.getUri).authority.host.address
+      Uri(dataSource.uri).authority.host.address
   }
 
   private[stream] def createProcessorFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
@@ -224,7 +224,7 @@ private[stream] abstract class EvaluatorImpl(
       .toMat(BroadcastHub.sink(1))(Keep.both)
       .run()
     val dsLogger: DataSourceLogger = { (ds, msg) =>
-      val env = new MessageEnvelope(ds.getId, msg)
+      val env = new MessageEnvelope(ds.id, msg)
       queue.offer(env)
     }
 
@@ -299,7 +299,7 @@ private[stream] abstract class EvaluatorImpl(
       .toMat(BroadcastHub.sink(1))(Keep.both)
       .run()
     val dsLogger: DataSourceLogger = { (ds, msg) =>
-      val env = new MessageEnvelope(ds.getId, msg)
+      val env = new MessageEnvelope(ds.id, msg)
       queue.offer(env)
     }
 
@@ -310,8 +310,8 @@ private[stream] abstract class EvaluatorImpl(
     val interpreter = context.interpreter
 
     // Extract data expressions to reuse for creating time groups
-    val exprs = sources.getSources.asScala
-      .flatMap(ds => interpreter.eval(Uri(ds.getUri)))
+    val exprs = sources.sources.asScala
+      .flatMap(ds => interpreter.eval(Uri(ds.uri)))
       .flatMap(_.expr.dataExprs)
       .toList
       .distinct
@@ -338,21 +338,21 @@ private[stream] abstract class EvaluatorImpl(
       context.maxIntermediateDatapointsPerExpression,
       context.registry
     )
-    val valuesInfo = group.getDatapoints.asScala.zipWithIndex
+    val valuesInfo = group.datapoints.asScala.zipWithIndex
       .flatMap {
         case (d, i) =>
-          val tags = d.getTags.asScala.toMap
+          val tags = d.tags.asScala.toMap
           exprs.filter(_.query.matches(tags)).map { expr =>
             // Restrict the tags to the common set for all matches to the data expression
             val keys = Query.exactKeys(expr.query) ++ expr.finalGrouping
             val exprTags = tags.filter(t => keys.contains(t._1))
 
             // Need to do the init for count aggregate
-            val v = d.getValue
+            val v = d.value
             val value = if (isCount(expr) && !v.isNaN) 1.0 else v
 
             // Position is used as source to avoid dedup of datapoints
-            AggrDatapoint(group.getTimestamp, step, expr, i.toString, exprTags, value)
+            AggrDatapoint(group.timestamp, step, expr, i.toString, exprTags, value)
           }
       }
       .groupBy(_.expr)
@@ -362,7 +362,7 @@ private[stream] abstract class EvaluatorImpl(
 
           aggregator match {
             case Some(aggr) if aggr.limitExceeded =>
-              context.logDatapointsExceeded(group.getTimestamp, t._1)
+              context.logDatapointsExceeded(group.timestamp, t._1)
               AggrValuesInfo(Nil, t._2.size)
             case Some(aggr) =>
               AggrValuesInfo(aggr.datapoints, t._2.size)
@@ -371,7 +371,7 @@ private[stream] abstract class EvaluatorImpl(
           }
         }
       )
-    TimeGroup(group.getTimestamp, step, valuesInfo)
+    TimeGroup(group.timestamp, step, valuesInfo)
   }
 
   @scala.annotation.tailrec
@@ -401,8 +401,8 @@ private[stream] abstract class EvaluatorImpl(
     */
   private def splitByStep(value: AnyRef): List[AnyRef] = value match {
     case ds: DataSources =>
-      ds.getSources.asScala
-        .groupBy(_.getStep.toMillis)
+      ds.sources.asScala
+        .groupBy(_.step.toMillis)
         .map {
           case (_, sources) =>
             new DataSources(sources.asJava)
@@ -432,8 +432,8 @@ private[stream] abstract class EvaluatorImpl(
 
       // Streams for local
       val localFlow = Flow[DataSources]
-        .flatMapMerge(Int.MaxValue, s => Source(s.getSources.asScala.toList))
-        .flatMapMerge(Int.MaxValue, s => context.localSource(Uri(s.getUri)))
+        .flatMapMerge(Int.MaxValue, s => Source(s.sources.asScala.toList))
+        .flatMapMerge(Int.MaxValue, s => context.localSource(Uri(s.uri)))
         .map(parseMessage)
 
       // Broadcast to remote/local flow, process and merge
@@ -505,9 +505,9 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   private def toExprSet(dss: DataSources, interpreter: ExprInterpreter): Set[LwcExpression] = {
-    dss.getSources.asScala.flatMap { dataSource =>
-      interpreter.eval(Uri(dataSource.getUri)).map { expr =>
-        LwcExpression(expr.toString, ExprType.TIME_SERIES, dataSource.getStep.toMillis)
+    dss.sources.asScala.flatMap { dataSource =>
+      interpreter.eval(Uri(dataSource.uri)).map { expr =>
+        LwcExpression(expr.toString, ExprType.TIME_SERIES, dataSource.step.toMillis)
       }
     }.toSet
   }

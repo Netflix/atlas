@@ -87,7 +87,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
       // Updates the recipients list
       private def handleDataSources(ds: DataSources): Unit = {
         import scala.jdk.CollectionConverters.*
-        val sources = ds.getSources.asScala.toList
+        val sources = ds.sources.asScala.toList
         step = ds.stepSize()
 
         // Get set of expressions before we update the list
@@ -100,14 +100,14 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
         recipients = sources
           .flatMap { s =>
             try {
-              val exprs = interpreter.eval(Uri(s.getUri))
+              val exprs = interpreter.eval(Uri(s.uri))
               // Reuse the previous evaluated expression if available. States for the stateful
               // expressions are maintained in an IdentityHashMap so if the instances change
               // the state will be reset.
-              exprs.map(e => previous.getOrElse(e, e) -> s.getId)
+              exprs.map(e => previous.getOrElse(e, e) -> s.id)
             } catch {
               case e: Exception =>
-                errors += new MessageEnvelope(s.getId, error(s.getUri, "invalid expression", e))
+                errors += new MessageEnvelope(s.id, error(s.uri, "invalid expression", e))
                 Nil
             }
           }

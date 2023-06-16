@@ -134,7 +134,7 @@ private[stream] class StreamContext(
   def validate(input: DataSources): DataSources = {
     import scala.jdk.CollectionConverters.*
     val valid = new java.util.HashSet[DataSource]()
-    input.getSources.asScala.foreach { ds =>
+    input.sources.asScala.foreach { ds =>
       validateDataSource(ds) match {
         case Success(v) => valid.add(v)
         case Failure(e) => dsLogger(ds, DiagnosticMessage.error(e))
@@ -149,7 +149,7 @@ private[stream] class StreamContext(
     */
   def validateDataSource(ds: DataSource): Try[DataSource] = {
     Try {
-      val uri = Uri(ds.getUri)
+      val uri = Uri(ds.uri)
 
       // Check that expression is parseable and perform basic static analysis of DataExprs to
       // weed out expensive queries up front
