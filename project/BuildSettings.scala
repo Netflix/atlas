@@ -59,7 +59,8 @@ object BuildSettings {
   val resolvers = Seq(
     Resolver.mavenLocal,
     Resolver.mavenCentral,
-    "Apache" at "https://repository.apache.org/content/groups/snapshots/"
+    "Apache Snapshots" at "https://repository.apache.org/content/groups/snapshots/",
+    "Apache Staging" at "https://repository.apache.org/content/groups/staging/",
   ) ++ Resolver.sonatypeOssRepos("snapshots")
 
   def profile: Project => Project = p => {
