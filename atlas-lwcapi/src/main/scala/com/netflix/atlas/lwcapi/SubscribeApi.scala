@@ -19,7 +19,7 @@ import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.model.ws.BinaryMessage
 import org.apache.pekko.http.scaladsl.model.ws.Message
 import org.apache.pekko.http.scaladsl.model.ws.TextMessage
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Flow
@@ -32,7 +32,7 @@ import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.pekko.CustomDirectives._
+import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.StreamOps
 import com.netflix.atlas.pekko.WebApi
@@ -42,7 +42,7 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
 import java.io.ByteArrayOutputStream
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NonFatal
@@ -56,8 +56,8 @@ class SubscribeApi(
 ) extends WebApi
     with StrictLogging {
 
-  import SubscribeApi._
-  import com.netflix.atlas.pekko.OpportunisticEC._
+  import SubscribeApi.*
+  import com.netflix.atlas.pekko.OpportunisticEC.*
 
   private val queueSize = config.getInt("atlas.lwcapi.queue-size")
   private val batchSize = config.getInt("atlas.lwcapi.batch-size")
@@ -194,7 +194,7 @@ class SubscribeApi(
 
     expressions.foreach { expr =>
       try {
-        val splits = splitter.split(expr.expression, expr.frequency)
+        val splits = splitter.split(expr.expression, expr.exprType, expr.frequency)
 
         // Add any new expressions
         val (queue, addedSubs) = sm.subscribe(streamId, splits)

@@ -25,7 +25,7 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.atlas.chart.model._
+import com.netflix.atlas.chart.model.*
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.CollectorStats
@@ -52,7 +52,7 @@ import scala.util.Using
   */
 private[chart] object JsonCodec {
 
-  import com.netflix.atlas.json.JsonParserHelper._
+  import com.netflix.atlas.json.JsonParserHelper.*
   private val factory = new JsonFactory()
   private val mapper = new ObjectMapper(factory)
 
@@ -401,7 +401,7 @@ private[chart] object JsonCodec {
   private def toGraphDef(node: JsonNode): GraphDef = {
 
     // format: off
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     GraphDef(
       Nil,
       startTime      = Instant.ofEpochMilli(node.get("startTime").asLong()),
@@ -437,7 +437,7 @@ private[chart] object JsonCodec {
   }
 
   private def processRenderingHints(node: JsonNode): Set[String] = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     if (node == null)
       Set.empty
     else
@@ -487,7 +487,7 @@ private[chart] object JsonCodec {
   }
 
   private def toHeatmapDef(node: JsonNode): HeatmapDef = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     val colors = node
       .get("colorTicks")
       .elements()
@@ -542,7 +542,7 @@ private[chart] object JsonCodec {
   }
 
   private def toTimeSeries(gdef: GraphDef, node: JsonNode): TimeSeries = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     val tags = node.get("tags").fields.asScala.map(e => e.getKey -> e.getValue.asText()).toMap
     val values = node.get("data").get("values").elements.asScala.map(_.asDouble()).toArray
     val seq = new ArrayTimeSeq(DsType.Gauge, gdef.startTime.toEpochMilli, gdef.step, values)

@@ -63,12 +63,12 @@ trait Rule {
 
 object Rule {
 
-  def load(ruleConfigs: java.util.List[_ <: Config], useComposite: Boolean = false): List[Rule] = {
-    import scala.jdk.CollectionConverters._
+  def load(ruleConfigs: java.util.List[? <: Config], useComposite: Boolean = false): List[Rule] = {
+    import scala.jdk.CollectionConverters.*
     load(ruleConfigs.asScala.toList, useComposite)
   }
 
-  def load(ruleConfigs: List[_ <: Config], useComposite: Boolean): List[Rule] = {
+  def load(ruleConfigs: List[? <: Config], useComposite: Boolean): List[Rule] = {
     val rules = ruleConfigs.map { cfg =>
       newInstance(cfg.getString("class"), cfg)
     }

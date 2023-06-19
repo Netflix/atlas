@@ -25,7 +25,7 @@ import com.netflix.spectator.atlas.impl.QueryIndex
 
 abstract class AbstractLwcEventClient extends LwcEventClient {
 
-  import AbstractLwcEventClient._
+  import AbstractLwcEventClient.*
 
   @volatile private var index: QueryIndex[EventHandler] = QueryIndex.newInstance(new NoopRegistry)
 

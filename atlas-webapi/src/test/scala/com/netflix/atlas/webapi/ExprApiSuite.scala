@@ -30,7 +30,7 @@ import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 
 class ExprApiSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
@@ -307,7 +307,7 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(data, List("name,sps,:eq,:sum"))
   }
 
-  import Query._
+  import Query.*
 
   private def normalize(expr: String): List[String] = {
     val interpreter = Interpreter(StyleVocabulary.allWords)

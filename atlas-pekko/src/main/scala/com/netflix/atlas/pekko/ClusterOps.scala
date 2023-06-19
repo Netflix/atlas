@@ -34,7 +34,7 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.collection.mutable
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
 
@@ -144,7 +144,7 @@ object ClusterOps extends StrictLogging {
         }
 
         private def newSubFlow(m: M): Flow[D, O, NotUsed] = {
-          import OpportunisticEC._
+          import OpportunisticEC.*
           RestartFlow
             .withBackoff(RestartSettings(100.millis, 1.second, 0.0)) { () =>
               context.client(m).watchTermination() { (_, f) =>

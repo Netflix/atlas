@@ -77,7 +77,7 @@ class UnboundedMeteredMailbox(settings: ActorSystem.Settings, config: Config)
     extends MailboxType
     with ProducesMessageQueue[UnboundedMeteredMailbox.MeteredMessageQueue] {
 
-  import UnboundedMeteredMailbox._
+  import UnboundedMeteredMailbox.*
 
   private val Path = config.getString("path-pattern").r
 

@@ -72,7 +72,7 @@ trait AggregateCollector {
 
 abstract class SimpleAggregateCollector extends AggregateCollector {
 
-  import java.util.{BitSet => JBitSet}
+  import java.util.BitSet as JBitSet
 
   var buffer: TimeSeriesBuffer = null.asInstanceOf[TimeSeriesBuffer]
   var valueMask: JBitSet = null.asInstanceOf[JBitSet]

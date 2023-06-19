@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.db
 
-import com.netflix.atlas.core.model._
+import com.netflix.atlas.core.model.*
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
@@ -99,7 +99,7 @@ class MemoryDatabaseSuite extends FunSuite {
   }
 
   private def expTS(name: String, label: String, mul: Int, values: Double*): TimeSeries = {
-    val tmp = ts(name, label, mul, values: _*)
+    val tmp = ts(name, label, mul, values*)
     tmp.withTags(tmp.tags - "foo")
   }
 

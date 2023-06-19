@@ -77,10 +77,10 @@ private[stream] class ExprInterpreter(config: Config) {
   }
 
   def dataExprMap(ds: DataSources): Map[DataExpr, List[DataSource]] = {
-    import scala.jdk.CollectionConverters._
-    ds.getSources.asScala.toList
+    import scala.jdk.CollectionConverters.*
+    ds.sources.asScala.toList
       .flatMap { s =>
-        val exprs = eval(Uri(s.getUri)).flatMap(_.expr.dataExprs).distinct
+        val exprs = eval(Uri(s.uri)).flatMap(_.expr.dataExprs).distinct
         exprs.map(_ -> s)
       }
       .groupBy(_._1)

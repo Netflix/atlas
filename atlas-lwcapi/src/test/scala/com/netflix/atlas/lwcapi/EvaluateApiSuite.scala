@@ -19,14 +19,14 @@ import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
-import com.netflix.atlas.lwcapi.EvaluateApi._
+import com.netflix.atlas.lwcapi.EvaluateApi.*
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.spectator.api.NoopRegistry
 
 class EvaluateApiSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 

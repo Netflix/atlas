@@ -55,7 +55,9 @@ trait LwcEvent {
   def extractValue(key: String): Any
 
   /** Encode the raw event as JSON. */
-  def encode(gen: JsonGenerator): Unit
+  def encode(gen: JsonGenerator): Unit = {
+    Json.encode(gen, rawEvent)
+  }
 
   /**
     * Encode the raw event as an array representing a row in a table.
@@ -66,7 +68,13 @@ trait LwcEvent {
     * @param gen
     *     Generator for the JSON output.
     */
-  def encodeAsRow(columns: List[String], gen: JsonGenerator): Unit
+  def encodeAsRow(columns: List[String], gen: JsonGenerator): Unit = {
+    gen.writeStartArray()
+    columns.foreach { key =>
+      Json.encode(gen, extractValue(key))
+    }
+    gen.writeEndArray()
+  }
 
   /** Return a JSON representation of the raw event. */
   def toJson: String = {
@@ -112,24 +120,6 @@ object LwcEvent {
     override val timestamp: Long = System.currentTimeMillis()
 
     override def extractValue(key: String): Any = extractor(key)
-
-    override def encode(gen: JsonGenerator): Unit = {
-      Json.encode(gen, rawEvent)
-    }
-
-    override def encodeAsRow(columns: List[String], gen: JsonGenerator): Unit = {
-      gen.writeStartArray()
-      encodeColumns(columns, gen)
-      gen.writeEndArray()
-    }
-
-    @scala.annotation.tailrec
-    private def encodeColumns(columns: List[String], gen: JsonGenerator): Unit = {
-      if (columns.nonEmpty) {
-        Json.encode(gen, extractValue(columns.head))
-        encodeColumns(columns.tail, gen)
-      }
-    }
   }
 
   /**

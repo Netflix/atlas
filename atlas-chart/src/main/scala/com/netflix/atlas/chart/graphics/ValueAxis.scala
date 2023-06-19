@@ -23,7 +23,7 @@ import com.netflix.atlas.core.util.UnitPrefix
 
 sealed trait ValueAxis extends Element with FixedWidth {
 
-  import ValueAxis._
+  import ValueAxis.*
 
   override def width: Int = labelHeight + tickLabelWidth + tickMarkLength + 1
 
@@ -100,7 +100,7 @@ sealed trait ValueAxis extends Element with FixedWidth {
 case class LeftValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Double)
     extends ValueAxis {
 
-  import ValueAxis._
+  import ValueAxis.*
 
   protected def angle: Double = -Math.PI / 2.0
 
@@ -196,7 +196,7 @@ case class LeftValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Dou
 case class RightValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Double)
     extends ValueAxis {
 
-  import ValueAxis._
+  import ValueAxis.*
 
   protected def angle: Double = Math.PI / 2.0
 

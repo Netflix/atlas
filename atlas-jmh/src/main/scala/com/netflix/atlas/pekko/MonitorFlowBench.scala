@@ -44,7 +44,7 @@ import scala.concurrent.duration.Duration
 @State(Scope.Thread)
 class MonitorFlowBench {
 
-  import MonitorFlowBench._
+  import MonitorFlowBench.*
 
   private implicit var system: ActorSystem = _
   private var registry: Registry = _

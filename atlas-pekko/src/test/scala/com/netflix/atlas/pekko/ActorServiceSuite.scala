@@ -27,8 +27,9 @@ import scala.concurrent.Await
 
 class ActorServiceSuite extends FunSuite {
 
-  import scala.concurrent.duration._
-  implicit val timeout: Timeout = Timeout(5.seconds)
+  import scala.concurrent.duration.*
+
+  private implicit val timeout: Timeout = Timeout(5.seconds)
 
   test("simple actor") {
     val config = ConfigFactory.parseString(s"""

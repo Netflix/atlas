@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.db
+package com.netflix.atlas.eval.model;
 
-import com.netflix.atlas.core.index.TagIndex
-import com.netflix.atlas.core.model.DataExpr
-import com.netflix.atlas.core.model.EvalContext
-import com.netflix.atlas.core.model.TaggedItem
-import com.netflix.atlas.core.model.TimeSeries
+/** Indicates the type of expression for a subscription. */
+public enum ExprType {
+  /**
+   * Time series expression such as used with Atlas Graph API. Can also be used for analytics
+   * queries on top of event data.
+   */
+  TIME_SERIES,
 
-trait Database {
+  /** Expression to select a set of events to be passed through. */
+  EVENTS,
 
-  def index: TagIndex[? <: TaggedItem]
-
-  def execute(eval: EvalContext, expr: DataExpr): List[TimeSeries]
+  /** Expression to select a set of traces to be passed through. */
+  TRACES
 }

@@ -27,7 +27,7 @@ import munit.FunSuite
 
 class JsonParserHelperSuite extends FunSuite {
 
-  import JsonParserHelper._
+  import JsonParserHelper.*
 
   test("foreachField") {
     val fields = Set.newBuilder[String]

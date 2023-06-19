@@ -23,7 +23,7 @@ import com.netflix.spectator.impl.matcher.PatternUtils
 
 object QueryVocabulary extends Vocabulary {
 
-  import com.netflix.atlas.core.model.ModelExtractors._
+  import com.netflix.atlas.core.model.ModelExtractors.*
 
   val name: String = "query"
 
@@ -427,7 +427,7 @@ object QueryVocabulary extends Vocabulary {
     override def name: String = "in"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: List[_]) :: (_: String) :: _ => true
+      case (_: List[?]) :: (_: String) :: _ => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {

@@ -9,7 +9,7 @@ object BuildSettings {
     //"-Xlint:_,-infer-any",
     "-Xfatal-warnings",
     "-feature",
-    "-release", "17"
+    "-release", "17",
   )
 
   lazy val checkLicenseHeaders = taskKey[Unit]("Check the license headers for all source files.")
@@ -20,7 +20,12 @@ object BuildSettings {
   lazy val buildSettings = baseSettings ++ Seq(
     organization := "com.netflix.atlas_v1",
     scalaVersion := Dependencies.Versions.scala,
-    scalacOptions := compilerFlags,
+    scalacOptions := {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, _)) => compilerFlags ++ Seq("-Xsource:3")
+        case _            => compilerFlags
+      }
+    },
     javacOptions ++= Seq("--release", "17"),
     crossPaths := true,
     crossScalaVersions := Dependencies.Versions.crossScala,

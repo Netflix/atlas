@@ -42,7 +42,7 @@ import scala.reflect.ClassTag
   */
 class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) extends TagIndex[T] {
 
-  import com.netflix.atlas.core.index.RoaringTagIndex._
+  import com.netflix.atlas.core.index.RoaringTagIndex.*
 
   type RoaringValueMap = IntRefHashMap[RoaringBitmap]
   type RoaringKeyMap = IntRefHashMap[RoaringValueMap]
@@ -192,7 +192,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   private def tagValue(t: Long): Int = (t & 0x00000000FFFFFFFFL).toInt
 
   private[index] def findImpl(query: Query, offset: Int): RoaringBitmap = {
-    import com.netflix.atlas.core.model.Query._
+    import com.netflix.atlas.core.model.Query.*
     query match {
       case And(q1, q2)            => and(q1, q2, offset)
       case Or(q1, q2)             => or(q1, q2, offset)

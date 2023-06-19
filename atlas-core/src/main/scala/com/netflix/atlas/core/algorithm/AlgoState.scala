@@ -66,7 +66,7 @@ case class AlgoState(algorithm: String, settings: Map[String, Any]) {
     // When the state is from a de-serialized source the type may have changed to
     // a Seq type such as List.
     settings(key) match {
-      case vs: Seq[_]        => vs.map(v => toNumber(key, v).doubleValue()).toArray
+      case vs: Seq[?]        => vs.map(v => toNumber(key, v).doubleValue()).toArray
       case vs: Array[Double] => vs
       case v                 => throw new MatchError(v)
     }
@@ -87,7 +87,7 @@ object AlgoState {
     apply(algorithm, settings.toMap)
   }
 
-  private def apply(map: Map[_, _]): AlgoState = {
+  private def apply(map: Map[?, ?]): AlgoState = {
     val m = map.asInstanceOf[Map[String, Any]]
     apply(m("algorithm").asInstanceOf[String], m("settings").asInstanceOf[Map[String, Any]])
   }
@@ -95,7 +95,7 @@ object AlgoState {
   private def apply(value: Any): AlgoState = {
     value match {
       case s: AlgoState => s
-      case m: Map[_, _] => apply(m)
+      case m: Map[?, ?] => apply(m)
       case v            => throw new MatchError(v)
     }
   }

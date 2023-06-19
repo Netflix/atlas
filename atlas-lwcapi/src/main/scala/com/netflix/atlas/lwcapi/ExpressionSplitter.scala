@@ -23,6 +23,7 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Query.KeyQuery
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.spectator.ipc.ServerGroup
 import com.typesafe.config.Config
 
@@ -37,7 +38,7 @@ import scala.util.Try
   */
 class ExpressionSplitter(config: Config) {
 
-  import ExpressionSplitter._
+  import ExpressionSplitter.*
 
   private val keepKeys = Set("nf.app", "nf.stack", "nf.cluster")
 
@@ -152,15 +153,19 @@ class ExpressionSplitter(config: Config) {
     }
   }
 
-  def split(expression: String, frequency: Long): List[Subscription] = {
+  def split(expression: String, exprType: ExprType, frequency: Long): List[Subscription] = {
     getFromCache(expression) match {
-      case Success(exprs: List[_]) => exprs.map(e => toSubscription(e, frequency))
+      case Success(exprs: List[?]) => exprs.map(e => toSubscription(e, exprType, frequency))
       case Failure(t)              => throw t
     }
   }
 
-  private def toSubscription(meta: DataExprMeta, frequency: Long): Subscription = {
-    Subscription(meta.compressedQuery, ExpressionMetadata(meta.exprString, frequency))
+  private def toSubscription(
+    meta: DataExprMeta,
+    exprType: ExprType,
+    frequency: Long
+  ): Subscription = {
+    Subscription(meta.compressedQuery, ExpressionMetadata(meta.exprString, exprType, frequency))
   }
 
   private def simplify(query: Query): Query = {

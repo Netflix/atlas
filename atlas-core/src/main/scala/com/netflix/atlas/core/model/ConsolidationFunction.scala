@@ -26,7 +26,7 @@ sealed trait ConsolidationFunction {
 
 object ConsolidationFunction {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
   sealed trait SumOrAvgCf extends ConsolidationFunction
 

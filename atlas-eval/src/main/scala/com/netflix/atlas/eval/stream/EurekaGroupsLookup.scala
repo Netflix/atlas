@@ -53,7 +53,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
       private var lookupTickSwitch: Option[SourceRef[NotUsed, NotUsed]] = None
 
       override def onPush(): Unit = {
-        import scala.jdk.CollectionConverters._
+        import scala.jdk.CollectionConverters.*
 
         // If there is an existing source polling Eureka, then tell it to stop. Create a
         // new instance of the flag for the next source
@@ -63,16 +63,16 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
 
         // Create a list of sources, one for each distinct Eureka group that is needed
         // by one of the data sources
-        if (next.getSources.isEmpty) {
+        if (next.sources.isEmpty) {
           // If the Eureka based sources are empty, then just use an empty source to avoid
           // potential delays to shutting down when the upstream completes.
           lookupTickSwitch = None // No need to stop Source.single
           push(out, Source.single[SourcesAndGroups](DataSources.empty() -> Groups(List.empty)))
         } else {
-          val eurekaSources = next.getSources.asScala
+          val eurekaSources = next.sources.asScala
             .flatMap { s =>
               try {
-                Option(context.findEurekaBackendForUri(Uri(s.getUri)).eurekaUri)
+                Option(context.findEurekaBackendForUri(Uri(s.uri)).eurekaUri)
               } catch {
                 case e: Exception =>
                   val msg = DiagnosticMessage.error(e)
@@ -112,7 +112,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
         super.onUpstreamFailure(ex)
-        lookupTickSwitch.map(_.stop())
+        lookupTickSwitch.foreach(_.stop())
       }
 
       setHandlers(in, out, this)

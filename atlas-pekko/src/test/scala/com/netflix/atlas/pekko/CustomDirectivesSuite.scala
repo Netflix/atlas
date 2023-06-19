@@ -24,8 +24,8 @@ import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.Uri
-import org.apache.pekko.http.scaladsl.model.headers._
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.model.headers.*
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import org.apache.pekko.stream.scaladsl.Source
@@ -37,15 +37,15 @@ import com.netflix.spectator.api.Spectator
 import com.netflix.spectator.ipc.IpcMetric
 import com.netflix.spectator.ipc.NetflixHeader
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class CustomDirectivesSuite extends MUnitRouteSuite {
 
-  import CustomDirectives._
-  import CustomDirectivesSuite._
+  import CustomDirectives.*
+  import CustomDirectivesSuite.*
 
   // Some of the tests were a bit flakey with default of 1 second on slower machines
-  implicit val timeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
+  private implicit val timeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   class TestService(val actorRefFactory: ActorRefFactory) {
 

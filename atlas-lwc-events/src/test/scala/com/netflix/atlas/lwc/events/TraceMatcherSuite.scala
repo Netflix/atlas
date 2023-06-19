@@ -24,7 +24,7 @@ import scala.util.Random
 
 class TraceMatcherSuite extends FunSuite {
 
-  import TraceMatcherSuite._
+  import TraceMatcherSuite.*
 
   private def mkSpan(
     app: String,

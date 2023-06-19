@@ -25,7 +25,7 @@ import javax.net.ssl.SSLEngine
 
 class ConnectionContextFactorySuite extends FunSuite {
 
-  import ConnectionContextFactorySuite._
+  import ConnectionContextFactorySuite.*
 
   test("factory not set") {
     val config = ConfigFactory.load()

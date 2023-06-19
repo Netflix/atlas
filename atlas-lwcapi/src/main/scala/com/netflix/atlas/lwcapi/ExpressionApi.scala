@@ -20,8 +20,8 @@ import org.apache.pekko.http.scaladsl.model.HttpHeader
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.model.headers._
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.model.headers.*
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.util.ByteString
 import com.github.benmanes.caffeine.cache.CacheLoader
@@ -30,7 +30,7 @@ import com.netflix.atlas.core.util.FastGzipOutputStream
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.pekko.CustomDirectives._
+import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.WebApi
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
@@ -48,7 +48,7 @@ case class ExpressionApi(
 ) extends WebApi
     with StrictLogging {
 
-  import ExpressionApi._
+  import ExpressionApi.*
 
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 

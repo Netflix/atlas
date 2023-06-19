@@ -20,7 +20,7 @@ import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 
 class TestApiSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 

@@ -23,7 +23,7 @@ import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.headers.RawHeader
 import org.apache.pekko.pattern.ask
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.RequestContext
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.http.scaladsl.server.RouteResult
@@ -33,16 +33,16 @@ import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.pekko.CustomDirectives._
+import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.WebApi
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Failure
 
 class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
-  import com.netflix.atlas.webapi.TagsApi._
+  import com.netflix.atlas.webapi.TagsApi.*
   private implicit val ec: ExecutionContext = actorRefFactory.dispatcher
 
   private val dbRef = actorRefFactory.actorSelection("/user/db")

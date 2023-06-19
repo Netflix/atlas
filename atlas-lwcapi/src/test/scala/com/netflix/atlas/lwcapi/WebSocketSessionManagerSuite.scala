@@ -19,9 +19,13 @@ import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
+import com.netflix.atlas.eval.model.ExprType
+import com.netflix.atlas.eval.model.LwcExpression
+import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.SubscribeApi.ErrorMsg
 import munit.FunSuite
+import org.apache.pekko.util.ByteString
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Await
@@ -33,8 +37,8 @@ class WebSocketSessionManagerSuite extends FunSuite {
 
   test("subscribe - one by one") {
     val subscriptionList = List(
-      """[{"expression": "name,a,:eq,:sum", "step": 10000}]""",
-      """[{"expression": "name,b,:eq", "step": 5000}]"""
+      LwcMessages.encodeBatch(List(LwcExpression("name,a,:eq,:sum", ExprType.TIME_SERIES, 10000))),
+      LwcMessages.encodeBatch(List(LwcExpression("name,b,:eq", ExprType.TIME_SERIES, 5000)))
     )
 
     val subsCollector = ArrayBuffer[List[ExpressionMetadata]]()
@@ -46,16 +50,16 @@ class WebSocketSessionManagerSuite extends FunSuite {
     assertEquals(
       subsCollector.toList,
       List(
-        List(ExpressionMetadata("name,a,:eq,:sum", 10000)),
-        List(ExpressionMetadata("name,b,:eq", 5000))
+        List(ExpressionMetadata("name,a,:eq,:sum", ExprType.TIME_SERIES, 10000)),
+        List(ExpressionMetadata("name,b,:eq", ExprType.TIME_SERIES, 5000))
       )
     )
   }
 
   test("subscribe - ignore bad subscription") {
     val subscriptionList = List(
-      """Bad Expression""",
-      """[{"expression": "name,b,:eq", "step": 5000}]"""
+      ByteString("""Bad Expression"""),
+      LwcMessages.encodeBatch(List(LwcExpression("name,b,:eq", ExprType.TIME_SERIES, 5000)))
     )
     val subsCollector = ArrayBuffer[List[ExpressionMetadata]]()
     val subFunc = createSubscribeFunc(subsCollector)
@@ -66,13 +70,13 @@ class WebSocketSessionManagerSuite extends FunSuite {
     assertEquals(
       subsCollector.toList,
       List(
-        List(ExpressionMetadata("name,b,:eq", 5000))
+        List(ExpressionMetadata("name,b,:eq", ExprType.TIME_SERIES, 5000))
       )
     )
   }
 
   private def run(
-    data: List[String],
+    data: List[ByteString],
     registerFunc: StreamMetadata => (QueueHandler, Source[JsonSupport, NotUsed]),
     subscribeFunc: (String, List[ExpressionMetadata]) => List[ErrorMsg]
   ): List[String] = {

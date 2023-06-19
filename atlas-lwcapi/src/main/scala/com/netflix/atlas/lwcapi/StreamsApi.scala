@@ -17,10 +17,10 @@ package com.netflix.atlas.lwcapi
 
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.Route
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.pekko.CustomDirectives._
+import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.WebApi
 

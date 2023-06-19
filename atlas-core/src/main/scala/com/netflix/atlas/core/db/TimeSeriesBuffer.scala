@@ -146,8 +146,8 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
 
   def apply(t: Long): Double = data(t)
 
-  import java.lang.{Double => JDouble}
-  import java.util.{BitSet => JBitSet}
+  import java.lang.Double as JDouble
+  import java.util.BitSet as JBitSet
 
   /** Returns true if the buffer is all NaN values. */
   def isAllNaN: Boolean = {

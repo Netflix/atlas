@@ -26,7 +26,7 @@ import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCode
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.model.headers._
+import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.stream.ConnectionException
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Flow

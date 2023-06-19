@@ -21,7 +21,7 @@ import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.pattern.CircuitBreaker
 import org.apache.pekko.stream.scaladsl.Source
@@ -33,8 +33,8 @@ import scala.util.Success
 
 class TestApi(val system: ActorSystem) extends WebApi {
 
-  import CustomDirectives._
-  import scala.concurrent.duration._
+  import CustomDirectives.*
+  import scala.concurrent.duration.*
 
   private implicit val ec: ExecutionContext = OpportunisticEC.ec
 

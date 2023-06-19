@@ -453,7 +453,7 @@ object SortedTagMap {
     }
 
     override def tags(): lang.Iterable[Tag] = {
-      import scala.jdk.CollectionConverters._
+      import scala.jdk.CollectionConverters.*
       map.toSeq.filter(_._1 != "name").map(t => Tag.of(t._1, t._2)).asJava
     }
 

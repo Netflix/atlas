@@ -40,7 +40,7 @@ class ActorService(
     with StrictLogging {
 
   override def startImpl(): Unit = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     config.getConfigList("atlas.pekko.actors").asScala.foreach { cfg =>
       val name = cfg.getString("name")
       val cls = Class.forName(cfg.getString("class"))
@@ -49,8 +49,8 @@ class ActorService(
     }
   }
 
-  private def newActor(name: String, cls: Class[_]): Props = {
-    import scala.compat.java8.FunctionConverters._
+  private def newActor(name: String, cls: Class[?]): Props = {
+    import scala.compat.java8.FunctionConverters.*
     val bindings = Map[Type, AnyRef](
       classOf[Config]   -> config,
       classOf[Registry] -> registry

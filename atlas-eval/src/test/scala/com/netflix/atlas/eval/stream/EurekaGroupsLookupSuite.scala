@@ -29,13 +29,13 @@ import munit.FunSuite
 import org.apache.pekko.stream.Materializer
 
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Success
 
 class EurekaGroupsLookupSuite extends FunSuite {
 
-  import EurekaSource._
-  import Evaluator._
+  import EurekaSource.*
+  import Evaluator.*
 
   private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
   private implicit val mat: Materializer = Materializer(system)
@@ -62,7 +62,7 @@ class EurekaGroupsLookupSuite extends FunSuite {
   }
 
   private def sources(vs: DataSource*): DataSources = {
-    DataSources.of(vs: _*)
+    DataSources.of(vs*)
   }
 
   private def ds(id: String, uri: String): DataSource = {
@@ -99,7 +99,7 @@ class EurekaGroupsLookupSuite extends FunSuite {
     )
     val output = run(input)
     assertEquals(output.size, 1)
-    assertEquals(output.head._1.getSources.size(), 0)
+    assertEquals(output.head._1.sources.size(), 0)
     assertEquals(output.head._2.groups.size, 0)
   }
 

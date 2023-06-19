@@ -16,7 +16,7 @@
 package com.netflix.atlas.pekko
 
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.Route
 import com.typesafe.config.Config
 
@@ -43,7 +43,7 @@ class StaticPages(config: Config) extends WebApi {
       getFromResourceDirectory("www")
     }
 
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     val singlePagePrefixes = config.getConfigList("atlas.pekko.static.single-page-prefixes")
     singlePagePrefixes.asScala.foldLeft(staticFiles) { (acc, cfg) =>
       val prefix = cfg.getString("prefix")

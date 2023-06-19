@@ -28,9 +28,9 @@ import com.netflix.atlas.webapi.PublishApi.PublishRequest
 
 class PublishApiSuite extends MUnitRouteSuite {
 
-  import PublishApiSuite._
+  import PublishApiSuite.*
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 

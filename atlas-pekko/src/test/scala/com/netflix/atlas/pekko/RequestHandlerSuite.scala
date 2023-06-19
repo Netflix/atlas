@@ -21,7 +21,7 @@ import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPOutputStream
 import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.model.headers._
+import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
@@ -33,9 +33,9 @@ import java.lang.reflect.Type
 
 class RequestHandlerSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
-  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val config = ConfigFactory.parseString(
     """
@@ -59,7 +59,7 @@ class RequestHandlerSuite extends MUnitRouteSuite {
   )
 
   private val bindings: java.util.function.Function[Type, AnyRef] = {
-    case c: Class[_] if c.isAssignableFrom(classOf[ActorSystem]) =>
+    case c: Class[?] if c.isAssignableFrom(classOf[ActorSystem]) =>
       system
     case _ =>
       null.asInstanceOf[AnyRef]

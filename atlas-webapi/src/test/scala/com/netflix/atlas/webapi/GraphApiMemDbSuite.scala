@@ -17,7 +17,7 @@ package com.netflix.atlas.webapi
 
 import org.apache.pekko.actor.Props
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.model.headers._
+import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.core.db.MemoryDatabase
 import com.netflix.atlas.json.Json
@@ -28,7 +28,7 @@ import com.typesafe.config.ConfigFactory
 
 class GraphApiMemDbSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   // Set to high value to avoid spurious failures with code coverage. Typically 5s shows no
   // issues outside of running with code coverage.

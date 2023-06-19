@@ -180,7 +180,7 @@ sealed trait Block {
     * @param aggr  the aggregate value to read from the block
     */
   def get(pos: Int, aggr: Int = Block.Sum): Double = {
-    import java.lang.{Double => JDouble}
+    import java.lang.{Double as JDouble}
     val v = get(pos)
     (aggr: @scala.annotation.switch) match {
       case Block.Sum   => v
@@ -312,7 +312,7 @@ case class ArrayBlock(var start: Long, size: Int) extends MutableBlock {
     * @return  number of values that were changed as a result of the merge operation
     */
   def merge(b: Block): Int = {
-    import java.lang.{Double => JDouble}
+    import java.lang.{Double as JDouble}
     var changed = 0
     var i = 0
     while (i < size) {
@@ -435,7 +435,7 @@ case class FloatArrayBlock(start: Long, size: Int) extends Block {
   */
 final case class CompressedArrayBlock(start: Long, size: Int) extends MutableBlock {
 
-  import CompressedArrayBlock._
+  import CompressedArrayBlock.*
 
   private var buffer = {
     if (size < 16)

@@ -30,7 +30,7 @@ import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 
 class TagsApiSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
@@ -40,7 +40,7 @@ class TagsApiSuite extends MUnitRouteSuite {
 
   private val db = new Database {
 
-    override def index: TagIndex[_ <: TaggedItem] = {
+    override def index: TagIndex[? <: TaggedItem] = {
       if (exception != null) throw exception
       staticDb.index
     }

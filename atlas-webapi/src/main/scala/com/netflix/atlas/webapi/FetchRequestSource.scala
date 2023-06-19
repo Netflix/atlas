@@ -60,8 +60,8 @@ object FetchRequestSource {
     * Create an SSE source that can be used as the entity for the HttpResponse.
     */
   def apply(system: ActorRefFactory, graphCfg: GraphConfig): Source[ChunkStreamPart, NotUsed] = {
-    import org.apache.pekko.pattern._
-    import scala.concurrent.duration._
+    import org.apache.pekko.pattern.*
+    import scala.concurrent.duration.*
 
     val dbRef = system.actorSelection("/user/db")
     val chunks = {

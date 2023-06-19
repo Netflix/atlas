@@ -19,9 +19,9 @@ import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.Route
-import CustomDirectives._
+import CustomDirectives.*
 import com.netflix.atlas.json.Json
 import com.netflix.iep.service.ServiceManager
 import com.typesafe.scalalogging.StrictLogging
@@ -49,7 +49,7 @@ class HealthcheckApi(serviceManagerSupplier: Supplier[ServiceManager])
   private def serviceManager: ServiceManager = serviceManagerSupplier.get
 
   private def summary: String = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     val states = serviceManager.services().asScala.map(s => s.name -> s.isHealthy).toMap
     Json.encode(states)
   }

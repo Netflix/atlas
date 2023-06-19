@@ -29,7 +29,7 @@ object EventVocabulary extends Vocabulary {
 
   case object TableWord extends SimpleWord {
 
-    import ModelExtractors._
+    import ModelExtractors.*
 
     override def name: String = "table"
 

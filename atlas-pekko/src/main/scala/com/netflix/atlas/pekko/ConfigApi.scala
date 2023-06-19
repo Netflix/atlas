@@ -25,10 +25,10 @@ import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.Uri
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.RequestContext
 import org.apache.pekko.http.scaladsl.server.Route
-import CustomDirectives._
+import CustomDirectives.*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
@@ -84,7 +84,7 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
   }
 
   private def getPathValue(config: Config, p: String): Config = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     try config.getConfig(p)
     catch {
       case e: ConfigException.WrongType =>
@@ -107,7 +107,7 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
   }
 
   private def formatProperties(config: Config): HttpResponse = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     val props = new Properties
     config.entrySet.asScala.foreach { t =>
       props.setProperty(t.getKey, s"${t.getValue.unwrapped}")

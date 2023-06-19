@@ -26,7 +26,7 @@ import munit.FunSuite
   */
 class MathAcrossStyleSuite extends FunSuite {
 
-  import ModelExtractors._
+  import ModelExtractors.*
 
   private val interpreter = Interpreter(StyleVocabulary.allWords)
 

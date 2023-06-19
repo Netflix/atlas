@@ -27,7 +27,7 @@ import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.model.headers._
+import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.stream.KillSwitches
 import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.Keep
@@ -45,7 +45,7 @@ import scala.util.Using
 
 class HostSourceSuite extends FunSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
@@ -55,7 +55,7 @@ class HostSourceSuite extends FunSuite {
   }
 
   def compress(str: String): Array[Byte] = {
-    import com.netflix.atlas.core.util.Streams._
+    import com.netflix.atlas.core.util.Streams.*
     byteArray { out =>
       Using.resource(gzip(out))(_.write(str.getBytes(StandardCharsets.UTF_8)))
     }

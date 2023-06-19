@@ -24,7 +24,7 @@ import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.util.ByteString
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.netflix.atlas.chart.util.PngImage
-import com.netflix.atlas.core.model._
+import com.netflix.atlas.core.model.*
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.graph.Grapher
 import com.netflix.atlas.pekko.ImperativeRequestContext
@@ -34,7 +34,7 @@ import scala.util.Failure
 
 class GraphRequestActor(grapher: Grapher, registry: Registry) extends Actor with ActorLogging {
 
-  import com.netflix.atlas.webapi.GraphApi._
+  import com.netflix.atlas.webapi.GraphApi.*
 
   private val errorId = registry.createId("atlas.graph.errorImages")
 

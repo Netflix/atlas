@@ -17,16 +17,17 @@ package com.netflix.atlas.lwcapi
 
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.lwcapi.SubscribeApi._
+import com.netflix.atlas.lwcapi.SubscribeApi.*
 import munit.FunSuite
 
 class SubscribeApiJsonSuite extends FunSuite {
 
   test("encode and decode loop") {
     val expressions: List[ExpressionMetadata] = List(
-      ExpressionMetadata("this", 1234, "idGoesHere"),
-      ExpressionMetadata("that", 4321, "idGoesHereToo")
+      ExpressionMetadata("this", ExprType.TIME_SERIES, 1234, "idGoesHere"),
+      ExpressionMetadata("that", ExprType.TIME_SERIES, 4321, "idGoesHereToo")
     )
     val original = SubscribeRequest("sid", expressions)
     val json = original.toJson

@@ -57,7 +57,7 @@ case class PlotDef(
   heatmap: Option[HeatmapDef] = None
 ) {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
   (lower, upper) match {
     case (Explicit(l), Explicit(u)) =>

@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import java.time._
+import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
@@ -31,7 +31,7 @@ import com.netflix.atlas.core.util.UnitPrefix.year
   */
 object Ticks {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
   val defaultTimeFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMdd")
   private val monthTimeFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM")
@@ -477,7 +477,7 @@ object Ticks {
     if (logDistance <= n) {
       1
     } else {
-      math.ceil(logDistance / n).toInt
+      math.ceil(logDistance.toDouble / n).toInt
     }
   }
 
@@ -675,7 +675,7 @@ case class TimeTick(
 
   private val datetime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
 
-  import Ticks._
+  import Ticks.*
 
   def label: String = {
     val fmt = formatter.getOrElse {

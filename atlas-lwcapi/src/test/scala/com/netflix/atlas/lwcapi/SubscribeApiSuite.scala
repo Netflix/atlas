@@ -18,6 +18,7 @@ package com.netflix.atlas.lwcapi
 import org.apache.pekko.http.scaladsl.model.ws.Message
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import org.apache.pekko.http.scaladsl.testkit.WSProbe
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcHeartbeat
@@ -31,7 +32,7 @@ import com.typesafe.config.ConfigFactory
 
 class SubscribeApiSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
@@ -61,7 +62,7 @@ class SubscribeApiSuite extends MUnitRouteSuite {
       assert(isWebSocketUpgrade)
 
       // Send list of expressions to subscribe to
-      val exprs = List(LwcExpression("name,disk,:eq,:avg", 60000))
+      val exprs = List(LwcExpression("name,disk,:eq,:avg", ExprType.TIME_SERIES, 60000))
       client.sendMessage(LwcMessages.encodeBatch(exprs))
 
       // Look for subscription messages, one for sum and one for count

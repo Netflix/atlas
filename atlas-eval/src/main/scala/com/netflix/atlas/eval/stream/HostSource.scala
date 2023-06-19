@@ -21,7 +21,7 @@ import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.model.headers._
+import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.stream.scaladsl.Compression
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
@@ -36,7 +36,7 @@ import scala.util.Success
 private[stream] object HostSource extends StrictLogging {
 
   import scala.concurrent.ExecutionContext.Implicits.global
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
   /**
     * Create a new stream source for the response of `uri`. The URI should be a streaming

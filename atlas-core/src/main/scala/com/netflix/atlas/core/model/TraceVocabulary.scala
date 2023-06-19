@@ -21,7 +21,7 @@ import com.netflix.atlas.core.stacklang.Word
 
 object TraceVocabulary extends Vocabulary {
 
-  import ModelExtractors._
+  import ModelExtractors.*
 
   val name: String = "trace"
 

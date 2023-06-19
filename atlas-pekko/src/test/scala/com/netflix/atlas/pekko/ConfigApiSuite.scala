@@ -19,16 +19,16 @@ import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 
 import java.io.StringReader
 import java.util.Properties
-import org.apache.pekko.http.scaladsl.model.StatusCodes._
+import org.apache.pekko.http.scaladsl.model.StatusCodes.*
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
 class ConfigApiSuite extends MUnitRouteSuite {
 
-  import scala.concurrent.duration._
+  import scala.concurrent.duration.*
 
-  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val sysConfig = ConfigFactory.load()
   private val endpoint = new ConfigApi(sysConfig, system)
@@ -55,7 +55,7 @@ class ConfigApiSuite extends MUnitRouteSuite {
   }
 
   test("/config/os.arch") {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     Get("/api/v2/config/os.arch") ~> endpoint.routes ~> check {
       val config = ConfigFactory.parseString(responseAs[String])
       val v = sysConfig.getString("os.arch")
@@ -80,7 +80,7 @@ class ConfigApiSuite extends MUnitRouteSuite {
 
   test("/config format properties") {
     Get("/api/v2/config?format=properties") ~> endpoint.routes ~> check {
-      import scala.jdk.CollectionConverters._
+      import scala.jdk.CollectionConverters.*
       val props = new Properties
       props.load(new StringReader(responseAs[String]))
       val config = ConfigFactory.parseProperties(props)

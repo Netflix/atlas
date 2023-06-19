@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.core.util
 
-import java.io._
+import java.io.*
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.zip._
+import java.util.zip.*
 
 import scala.util.Using
 

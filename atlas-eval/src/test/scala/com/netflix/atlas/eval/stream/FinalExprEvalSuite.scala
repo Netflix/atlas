@@ -58,7 +58,7 @@ class FinalExprEvalSuite extends FunSuite {
   }
 
   private def sources(vs: DataSource*): DataSources = {
-    DataSources.of(vs: _*)
+    DataSources.of(vs*)
   }
 
   private def ds(id: String, uri: String, step: Long = 60000L): DataSource = {
@@ -89,11 +89,11 @@ class FinalExprEvalSuite extends FunSuite {
     val output = run(input)
     assertEquals(output.size, 1)
     output.foreach { env =>
-      assertEquals(env.getId, "a")
+      assertEquals(env.id, "a")
 
       val msg = "invalid expression [[http://atlas/graph?q=foo,:time]]: " +
         "IllegalArgumentException: No enum constant java.time.temporal.ChronoField.foo"
-      assert(env.getMessage.toJson.contains(msg))
+      assert(env.message.toJson.contains(msg))
     }
   }
 
@@ -107,21 +107,21 @@ class FinalExprEvalSuite extends FunSuite {
 
     val tsMsgs = output.filter(isTimeSeries)
     assertEquals(tsMsgs.size, 1)
-    val (tsId, tsMsg) = tsMsgs.head.getId -> tsMsgs.head.getMessage.asInstanceOf[TimeSeriesMessage]
+    val (tsId, tsMsg) = tsMsgs.head.id -> tsMsgs.head.message.asInstanceOf[TimeSeriesMessage]
     assert(tsId == "a")
     assertEquals(tsMsg.label, "(NO DATA / NO DATA)")
 
   }
 
   private def isTimeSeries(messageEnvelope: MessageEnvelope): Boolean = {
-    messageEnvelope.getMessage match {
+    messageEnvelope.message match {
       case _: TimeSeriesMessage => true
       case _                    => false
     }
   }
 
   private def isEvalDataRate(messageEnvelope: MessageEnvelope): Boolean = {
-    messageEnvelope.getMessage match {
+    messageEnvelope.message match {
       case _: EvalDataRate => true
       case _               => false
     }
@@ -130,7 +130,7 @@ class FinalExprEvalSuite extends FunSuite {
   private def getAsEvalDataRate(
     env: MessageEnvelope
   ): EvalDataRate = {
-    env.getMessage.asInstanceOf[EvalDataRate]
+    env.message.asInstanceOf[EvalDataRate]
   }
 
   private def checkRate(
@@ -184,12 +184,12 @@ class FinalExprEvalSuite extends FunSuite {
     val expectedTimeseries = List(Double.NaN, 42.0, 43.0, 44.0)
     timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
-        assertEquals(env.getId, "a")
-        val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+        assertEquals(env.id, "a")
+        val ts = env.message.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
 
-    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.id == "a")
     assert(dataRateMsgs.size == 3)
     val expectedSizes = Array(
       Array(
@@ -249,12 +249,12 @@ class FinalExprEvalSuite extends FunSuite {
     val expectedTimeseries = List(Double.NaN, 42.0, 129.0, 87.0)
     timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
-        assertEquals(env.getId, "a")
-        val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+        assertEquals(env.id, "a")
+        val ts = env.message.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
 
-    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.id == "a")
     assert(dataRateMsgs.size == 3)
     val expectedSizes = Array(
       Array(
@@ -319,14 +319,14 @@ class FinalExprEvalSuite extends FunSuite {
     val expectedTimeseries1 = scala.collection.mutable.Queue(42.0, 84.0, 44.0)
     val expectedTimeseries2 = scala.collection.mutable.Queue(Double.NaN, 45.0, 49.0)
     timeseries.foreach { env =>
-      val actual = env.getMessage.asInstanceOf[TimeSeriesMessage]
-      if (env.getId == "a")
+      val actual = env.message.asInstanceOf[TimeSeriesMessage]
+      if (env.id == "a")
         checkValue(actual, expectedTimeseries1.dequeue())
       else
         checkValue(actual, expectedTimeseries2.dequeue())
     }
 
-    val expr1DataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    val expr1DataRateMsgs = output.filter(isEvalDataRate).filter(_.id == "a")
     assert(expr1DataRateMsgs.size == 3)
     val expr1ExpectedSizes = Array(
       Array(
@@ -358,7 +358,7 @@ class FinalExprEvalSuite extends FunSuite {
       )
     })
 
-    val expr2DataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "b")
+    val expr2DataRateMsgs = output.filter(isEvalDataRate).filter(_.id == "b")
     assert(expr2DataRateMsgs.size == 2)
     val expr2ExpectedSizes = Array(
       Array(
@@ -418,7 +418,7 @@ class FinalExprEvalSuite extends FunSuite {
     val timeseries = output.filter(isTimeSeries)
     assertEquals(timeseries.size, 4)
     timeseries.foreach { env =>
-      val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+      val ts = env.message.asInstanceOf[TimeSeriesMessage]
       if (ts.tags("node") == "i-1") {
         assert(ts.start < 120000)
         checkValue(ts, 42.0)
@@ -428,7 +428,7 @@ class FinalExprEvalSuite extends FunSuite {
       }
     }
 
-    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.getId == "a")
+    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.id == "a")
     assert(dataRateMsgs.size == 3)
     val expectedSizes = Array(
       Array(
@@ -475,11 +475,11 @@ class FinalExprEvalSuite extends FunSuite {
 
     val output = run(input)
 
-    val timeseries = output.filter(_.getMessage.isInstanceOf[TimeSeriesMessage])
+    val timeseries = output.filter(_.message.isInstanceOf[TimeSeriesMessage])
     assertEquals(timeseries.size, 4)
     // tail to ignore initial no data entry
     timeseries.tail.foreach { env =>
-      val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+      val ts = env.message.asInstanceOf[TimeSeriesMessage]
       assertEquals(ts.label, "legend for rps")
     }
   }
@@ -506,8 +506,8 @@ class FinalExprEvalSuite extends FunSuite {
     val expectedTimeseries = List(0.0, 0.0, 0.0, 0.0)
     timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
-        assertEquals(env.getId, "a")
-        val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+        assertEquals(env.id, "a")
+        val ts = env.message.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
   }
@@ -536,8 +536,8 @@ class FinalExprEvalSuite extends FunSuite {
     val expectedTimeseries = List(Double.NaN, Double.NaN, -2.0, 0.0, -4.0)
     timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
-        assertEquals(env.getId, "a")
-        val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+        assertEquals(env.id, "a")
+        val ts = env.message.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
   }
@@ -556,7 +556,7 @@ class FinalExprEvalSuite extends FunSuite {
     assertEquals(
       e.getMessage,
       "inconsistent step sizes, expected 60000, found 10000 " +
-        "on DataSource(b,PT10S,http://atlas/graph?q=name,rps,:eq,:sum)"
+        "on DataSource[id=b, step=PT10S, uri=http://atlas/graph?q=name,rps,:eq,:sum]"
     )
   }
 
@@ -583,8 +583,8 @@ class FinalExprEvalSuite extends FunSuite {
     val expectedTimeseries = List(0.0, 1.0, 1.0, 2.0, 1.0, 1.0, 0.0, 1.0)
     timeseries.zip(expectedTimeseries).foreach {
       case (env, expectedValue) =>
-        assertEquals(env.getId, "a")
-        val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+        assertEquals(env.id, "a")
+        val ts = env.message.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
   }
@@ -619,7 +619,7 @@ class FinalExprEvalSuite extends FunSuite {
     val timeseries = output.filter(isTimeSeries)
     assertEquals(timeseries.size, 8)
     timeseries.foreach { env =>
-      val ts = env.getMessage.asInstanceOf[TimeSeriesMessage]
+      val ts = env.message.asInstanceOf[TimeSeriesMessage]
       val v = getValue(ts)
       if (ts.label == "NO DATA")
         assert(v.isNaN)

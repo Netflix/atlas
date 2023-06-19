@@ -17,12 +17,12 @@ package com.netflix.atlas.webapi
 
 import org.apache.pekko.actor.ActorRefFactory
 import org.apache.pekko.actor.Props
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.Route
-import com.netflix.atlas.core.model._
+import com.netflix.atlas.core.model.*
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.graph.Grapher
-import com.netflix.atlas.pekko.CustomDirectives._
+import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.ImperativeRequestContext
 import com.netflix.atlas.pekko.WebApi
 import com.netflix.spectator.api.Spectator

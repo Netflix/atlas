@@ -20,9 +20,6 @@ import com.netflix.atlas.json.Json
 import java.io.StringWriter
 import scala.util.Using
 
-// TODO
-// - spring based configuration
-
 /**
   * Client for processing events to make available via LWC stream.
   */

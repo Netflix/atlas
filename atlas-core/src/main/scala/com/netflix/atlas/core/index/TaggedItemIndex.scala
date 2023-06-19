@@ -67,7 +67,7 @@ class TaggedItemIndex private (
     *     Bit set indicating the positions of the matching items.
     */
   def find(query: Query, offset: Int = 0): RoaringBitmap = {
-    import com.netflix.atlas.core.model.Query._
+    import com.netflix.atlas.core.model.Query.*
     query match {
       case And(q1, q2)            => and(q1, q2, offset)
       case Or(q1, q2)             => or(q1, q2, offset)
@@ -242,7 +242,7 @@ object TaggedItemIndex {
     * Create an index from the provided sequence. The items should already be in the desired
     * order for receiving results.
     */
-  def apply(items: Seq[_ <: TaggedItem]): TaggedItemIndex = {
+  def apply(items: Seq[? <: TaggedItem]): TaggedItemIndex = {
     val builder = new Builder(items.size)
     items.foreach { item =>
       item.foreach(builder.addStrings)

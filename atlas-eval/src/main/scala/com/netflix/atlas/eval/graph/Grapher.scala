@@ -49,7 +49,7 @@ import scala.util.Try
 
 case class Grapher(settings: DefaultSettings) {
 
-  import Grapher._
+  import Grapher.*
 
   /**
     * Create a graph config from a request object. This will look at the URI and try to
@@ -114,7 +114,7 @@ case class Grapher(settings: DefaultSettings) {
       .map(v => Features.valueOf(v.toUpperCase(Locale.US)))
       .getOrElse(Features.STABLE)
 
-    import com.netflix.atlas.chart.GraphConstants._
+    import com.netflix.atlas.chart.GraphConstants.*
     val axes = (0 to MaxYAxis).map(i => i -> newAxis(params, i)).toMap
 
     val vision = params.get("vision").map(v => VisionType.valueOf(v))

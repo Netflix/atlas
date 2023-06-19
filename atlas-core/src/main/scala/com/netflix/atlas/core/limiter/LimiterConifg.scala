@@ -25,7 +25,7 @@ import scala.collection.immutable.ArraySeq
   */
 case class LimiterConfig(prefixConfigs: ArraySeq[PrefixConfig], tagValueLimit: Int) {
 
-  require(prefixConfigs.length > 0)
+  require(prefixConfigs.nonEmpty)
 
   /**
     * All the prefix keys.

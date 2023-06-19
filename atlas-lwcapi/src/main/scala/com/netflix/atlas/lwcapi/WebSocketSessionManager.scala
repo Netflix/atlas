@@ -28,7 +28,6 @@ import org.apache.pekko.stream.stage.OutHandler
 import org.apache.pekko.util.ByteString
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
-import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.SubscribeApi.ErrorMsg
 import com.netflix.atlas.pekko.DiagnosticMessage
@@ -70,11 +69,11 @@ private[lwcapi] class WebSocketSessionManager(
       override def onPush(): Unit = {
         try {
           val lwcExpressions = grab(in) match {
-            case str: String     => Json.decode[List[LwcExpression]](str)
             case str: ByteString => LwcMessages.parseBatch(str).asInstanceOf[List[LwcExpression]]
             case v               => throw new MatchError(s"invalid type: ${v.getClass.getName}")
           }
-          val metadata = lwcExpressions.map(v => ExpressionMetadata(v.expression, v.step))
+          val metadata =
+            lwcExpressions.map(v => ExpressionMetadata(v.expression, v.exprType, v.step))
           // Update subscription here
           val errors = subscribeFunc(streamMeta.streamId, metadata).map { error =>
             DiagnosticMessage.error(s"[${error.expression}] ${error.message}")

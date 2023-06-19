@@ -23,8 +23,8 @@ import scala.util.Failure
 
 class LocalDatabaseActor(db: Database) extends Actor with ActorLogging {
 
-  import com.netflix.atlas.webapi.GraphApi._
-  import com.netflix.atlas.webapi.TagsApi._
+  import com.netflix.atlas.webapi.GraphApi.*
+  import com.netflix.atlas.webapi.TagsApi.*
 
   def receive: Receive = {
     case v =>

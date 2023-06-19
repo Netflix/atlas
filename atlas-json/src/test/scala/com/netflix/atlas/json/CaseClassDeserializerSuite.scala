@@ -30,7 +30,7 @@ import munit.FunSuite
 
 class CaseClassDeserializerSuite extends FunSuite {
 
-  import CaseClassDeserializerSuite._
+  import CaseClassDeserializerSuite.*
 
   private val mapper = new ObjectMapper()
     .registerModule(DefaultScalaModule)

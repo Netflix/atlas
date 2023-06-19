@@ -38,7 +38,7 @@ import javax.net.ssl.SSLEngine
   */
 class ConfigConnectionContextFactory(config: Config) extends ConnectionContextFactory {
 
-  import ConfigConnectionContextFactory._
+  import ConfigConnectionContextFactory.*
 
   private val sslConfig = SSLConfigFactory.parse(config)
 
@@ -75,7 +75,7 @@ object ConfigConnectionContextFactory {
     */
   private object SslLoggerFactory extends LoggerFactory {
 
-    override def apply(clazz: Class[_]): NoDepsLogger = {
+    override def apply(clazz: Class[?]): NoDepsLogger = {
       apply(clazz.getName)
     }
 

@@ -48,7 +48,7 @@ case class GraphConfig(
   uri: String
 ) {
 
-  import GraphConfig._
+  import GraphConfig.*
 
   def shouldOutputImage: Boolean = format == "png"
 

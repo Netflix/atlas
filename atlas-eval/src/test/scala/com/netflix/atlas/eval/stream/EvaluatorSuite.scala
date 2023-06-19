@@ -67,7 +67,7 @@ class EvaluatorSuite extends FunSuite {
   }
 
   def testPublisher(baseUri: String, bufferSize: Option[Int] = None): Unit = {
-    import scala.concurrent.duration._
+    import scala.concurrent.duration.*
 
     val buffers = bufferSize.getOrElse(config.getInt("atlas.eval.stream.num-buffers"))
     val evaluator = new Evaluator(
@@ -108,7 +108,7 @@ class EvaluatorSuite extends FunSuite {
   }
 
   private def countMessages(path: Path): Map[String, Int] = {
-    import scala.jdk.StreamConverters._
+    import scala.jdk.StreamConverters.*
     Using.resource(Files.lines(path)) { lines =>
       lines
         .toScala(List)
@@ -201,7 +201,7 @@ class EvaluatorSuite extends FunSuite {
   }
 
   def testProcessor(baseUri: String): Unit = {
-    import scala.concurrent.duration._
+    import scala.concurrent.duration.*
 
     val evaluator = new Evaluator(config, registry, system)
 
@@ -272,7 +272,7 @@ class EvaluatorSuite extends FunSuite {
     val oneCount = new AtomicInteger()
     val twoCount = new AtomicInteger()
     val sink = Sink.foreach[Evaluator.MessageEnvelope] { msg =>
-      msg.getId match {
+      msg.id match {
         case "one" => oneCount.incrementAndGet()
         case "two" => twoCount.incrementAndGet()
       }
@@ -300,7 +300,7 @@ class EvaluatorSuite extends FunSuite {
       .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
       .runWith(Sink.head)
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
-    result.getMessage match {
+    result.message match {
       case DiagnosticMessage(t, msg, None) =>
         assertEquals(t, "error")
         assertEquals(msg, expectedMsg)
@@ -379,14 +379,14 @@ class EvaluatorSuite extends FunSuite {
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
 
     val dsOne = result
-      .filter(env => env.getId == "one" && env.getMessage.isInstanceOf[TimeSeriesMessage])
-      .map(_.getMessage.asInstanceOf[TimeSeriesMessage])
+      .filter(env => env.id == "one" && env.message.isInstanceOf[TimeSeriesMessage])
+      .map(_.message.asInstanceOf[TimeSeriesMessage])
     assert(dsOne.forall(_.step == 5000))
     assertEquals(dsOne.size, 120)
 
     val dsTwo = result
-      .filter(env => env.getId == "two" && env.getMessage.isInstanceOf[TimeSeriesMessage])
-      .map(_.getMessage.asInstanceOf[TimeSeriesMessage])
+      .filter(env => env.id == "two" && env.message.isInstanceOf[TimeSeriesMessage])
+      .map(_.message.asInstanceOf[TimeSeriesMessage])
     assert(dsTwo.forall(_.step == 60000))
     assertEquals(dsTwo.size, 10)
   }
@@ -448,17 +448,17 @@ class EvaluatorSuite extends FunSuite {
 
   test("extractStepFromUri, step param not set") {
     val ds = newDataSource(None)
-    assertEquals(ds.getStep, Duration.ofMinutes(1))
+    assertEquals(ds.step, Duration.ofMinutes(1))
   }
 
   test("extractStepFromUri, 5s step") {
     val ds = newDataSource(Some("5s"))
-    assertEquals(ds.getStep, Duration.ofSeconds(5))
+    assertEquals(ds.step, Duration.ofSeconds(5))
   }
 
   test("extractStepFromUri, invalid step") {
     val ds = newDataSource(Some("abc"))
-    assertEquals(ds.getStep, Duration.ofMinutes(1))
+    assertEquals(ds.step, Duration.ofMinutes(1))
   }
 
   test("validate: ok") {
@@ -530,7 +530,7 @@ class EvaluatorSuite extends FunSuite {
   private val datapointStep = Duration.ofMillis(1)
 
   private def sampleData(numGroups: Int, numDatapoints: Int): List[Evaluator.DatapointGroup] = {
-    import scala.jdk.CollectionConverters._
+    import scala.jdk.CollectionConverters.*
     (0 until numGroups).map { i =>
       val ds = (0 until numDatapoints)
         .map { j =>
@@ -545,7 +545,7 @@ class EvaluatorSuite extends FunSuite {
 
   private def timeSeriesMessages(msgs: Seq[Evaluator.MessageEnvelope]): List[TimeSeriesMessage] = {
     msgs
-      .map(_.getMessage)
+      .map(_.message)
       .collect {
         case ts: TimeSeriesMessage => ts
       }
@@ -575,8 +575,8 @@ class EvaluatorSuite extends FunSuite {
 
     val msgs = runDatapointFlow(sources, sampleData(1, 10))
 
-    assertEquals(msgs.map(_.getId).distinct, List("test"))
-    assertEquals(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]), 1)
+    assertEquals(msgs.map(_.id).distinct, List("test"))
+    assertEquals(msgs.count(_.message.isInstanceOf[TimeSeriesMessage]), 1)
 
     val ts = timeSeriesMessages(msgs).head
     assertEquals(ts.tags, Map("name" -> "foo"))
@@ -613,8 +613,8 @@ class EvaluatorSuite extends FunSuite {
 
     val msgs = runDatapointFlow(sources, sampleData(1, 10))
 
-    assertEquals(msgs.map(_.getId).distinct, List("test"))
-    assertEquals(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]), 10)
+    assertEquals(msgs.map(_.id).distinct, List("test"))
+    assertEquals(msgs.count(_.message.isInstanceOf[TimeSeriesMessage]), 10)
 
     timeSeriesMessages(msgs).foreach { ts =>
       val expected = ts.tags("id").toDouble
@@ -637,8 +637,8 @@ class EvaluatorSuite extends FunSuite {
 
     val msgs = runDatapointFlow(sources, sampleData(1, 10))
 
-    assertEquals(msgs.map(_.getId).distinct, List("a", "b"))
-    assertEquals(msgs.count(_.getMessage.isInstanceOf[TimeSeriesMessage]), 2)
+    assertEquals(msgs.map(_.id).distinct.sorted, List("a", "b"))
+    assertEquals(msgs.count(_.message.isInstanceOf[TimeSeriesMessage]), 2)
 
     timeSeriesMessages(msgs).foreach { ts =>
       assertEquals(ts.data, ArrayData(Array(45.0)))
@@ -649,5 +649,11 @@ class EvaluatorSuite extends FunSuite {
     val ds = new Evaluator.DataSource("_", Duration.ofSeconds(42L), ":true")
     assertEquals(Json.encode(ds), """{"id":"_","step":42000,"uri":":true"}""")
     assertEquals(Json.decode[Evaluator.DataSource](Json.encode(ds)), ds)
+  }
+
+  test("DataSource serde, default step") {
+    val ds = new Evaluator.DataSource("_", Duration.ofSeconds(60L), ":true")
+    val json = """{"id":"_","uri":":true"}"""
+    assertEquals(Json.decode[Evaluator.DataSource](json), ds)
   }
 }

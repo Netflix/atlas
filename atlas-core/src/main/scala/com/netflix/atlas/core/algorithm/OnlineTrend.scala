@@ -24,7 +24,7 @@ import com.netflix.atlas.core.util.Math
   */
 case class OnlineTrend(buf: RollingBuffer) extends OnlineAlgorithm {
 
-  import java.lang.{Double => JDouble}
+  import java.lang.Double as JDouble
 
   private[this] val n = buf.values.length
 

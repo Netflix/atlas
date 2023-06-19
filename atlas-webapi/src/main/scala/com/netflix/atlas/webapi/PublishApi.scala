@@ -17,7 +17,7 @@ package com.netflix.atlas.webapi
 
 import org.apache.pekko.actor.ActorRefFactory
 import org.apache.pekko.http.scaladsl.model.HttpResponse
-import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.RequestContext
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.http.scaladsl.server.RouteResult
@@ -26,7 +26,7 @@ import com.netflix.atlas.core.validation.Rule
 import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.pekko.CustomDirectives._
+import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.WebApi
 import com.netflix.iep.config.ConfigManager
@@ -37,7 +37,7 @@ import scala.concurrent.Promise
 
 class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
 
-  import com.netflix.atlas.webapi.PublishApi._
+  import com.netflix.atlas.webapi.PublishApi.*
 
   private val publishRef = actorRefFactory.actorSelection("/user/publish")
 

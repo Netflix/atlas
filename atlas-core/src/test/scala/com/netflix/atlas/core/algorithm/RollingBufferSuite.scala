@@ -141,7 +141,7 @@ class RollingBufferSuite extends FunSuite {
     assertEquals(cfg.getInt("pos"), 1)
     val actual = cfg.getDoubleArray("values")
     val expected = List(0.0, Double.NaN)
-    assertEquals(actual.size, 2)
+    assertEquals(actual.length, 2)
     actual.zip(expected).foreach {
       // Used Double.compare to handle NaN properly
       case (v1, v2) => assertEquals(java.lang.Double.compare(v1, v2), 0, s"$v1 != $v2")
