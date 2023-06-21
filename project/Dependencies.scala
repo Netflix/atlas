@@ -10,7 +10,7 @@ object Dependencies {
     // - https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka
     // - https://github.com/akka/akka/pull/31561
     // - https://github.com/akka/akka-http/pull/4155
-    val akka       = "2.6.20"
+    val akka       = "2.6.21"
     val akkaHttpV  = "10.2.10"
 
     val iep        = "4.2.0"
