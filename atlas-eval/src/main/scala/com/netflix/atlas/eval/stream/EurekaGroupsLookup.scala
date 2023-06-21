@@ -69,7 +69,9 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
           lookupTickSwitch = None // No need to stop Source.single
           push(out, Source.single[SourcesAndGroups](DataSources.empty() -> Groups(List.empty)))
         } else {
-          val eurekaSources = next.sources().asScala
+          val eurekaSources = next
+            .sources()
+            .asScala
             .flatMap { s =>
               try {
                 Option(context.findEurekaBackendForUri(Uri(s.uri)).eurekaUri)
