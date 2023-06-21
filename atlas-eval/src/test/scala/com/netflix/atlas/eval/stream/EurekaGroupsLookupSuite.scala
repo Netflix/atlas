@@ -99,7 +99,7 @@ class EurekaGroupsLookupSuite extends FunSuite {
     )
     val output = run(input)
     assertEquals(output.size, 1)
-    assertEquals(output.head._1.sources.size(), 0)
+    assertEquals(output.head._1.sources().size(), 0)
     assertEquals(output.head._2.groups.size, 0)
   }
 

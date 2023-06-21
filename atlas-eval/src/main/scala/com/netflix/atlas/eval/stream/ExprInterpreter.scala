@@ -78,7 +78,7 @@ private[stream] class ExprInterpreter(config: Config) {
 
   def dataExprMap(ds: DataSources): Map[DataExpr, List[DataSource]] = {
     import scala.jdk.CollectionConverters.*
-    ds.sources.asScala.toList
+    ds.sources().asScala.toList
       .flatMap { s =>
         val exprs = eval(Uri(s.uri)).flatMap(_.expr.dataExprs).distinct
         exprs.map(_ -> s)

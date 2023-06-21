@@ -204,7 +204,7 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   protected def groupByHost(dataSources: DataSources): scala.collection.Map[String, DataSources] = {
-    dataSources.sources.asScala
+    dataSources.sources().asScala
       .groupBy(getHost)
       .map { case (host, dsSet) => host -> new DataSources(dsSet.asJava) }
   }
@@ -310,7 +310,7 @@ private[stream] abstract class EvaluatorImpl(
     val interpreter = context.interpreter
 
     // Extract data expressions to reuse for creating time groups
-    val exprs = sources.sources.asScala
+    val exprs = sources.sources().asScala
       .flatMap(ds => interpreter.eval(Uri(ds.uri)))
       .flatMap(_.expr.dataExprs)
       .toList
@@ -401,7 +401,7 @@ private[stream] abstract class EvaluatorImpl(
     */
   private def splitByStep(value: AnyRef): List[AnyRef] = value match {
     case ds: DataSources =>
-      ds.sources.asScala
+      ds.sources().asScala
         .groupBy(_.step.toMillis)
         .map {
           case (_, sources) =>
@@ -432,7 +432,7 @@ private[stream] abstract class EvaluatorImpl(
 
       // Streams for local
       val localFlow = Flow[DataSources]
-        .flatMapMerge(Int.MaxValue, s => Source(s.sources.asScala.toList))
+        .flatMapMerge(Int.MaxValue, s => Source(s.sources().asScala.toList))
         .flatMapMerge(Int.MaxValue, s => context.localSource(Uri(s.uri)))
         .map(parseMessage)
 
@@ -505,7 +505,7 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   private def toExprSet(dss: DataSources, interpreter: ExprInterpreter): Set[LwcExpression] = {
-    dss.sources.asScala.flatMap { dataSource =>
+    dss.sources().asScala.flatMap { dataSource =>
       interpreter.eval(Uri(dataSource.uri)).map { expr =>
         LwcExpression(expr.toString, ExprType.TIME_SERIES, dataSource.step.toMillis)
       }
