@@ -70,12 +70,13 @@ class PostgresCopyBufferSuite extends FunSuite {
   }
 
   private def getData[T](stmt: Statement, f: ResultSet => T): List[T] = {
-    val builder = List.newBuilder[T]
-    val rs = stmt.executeQuery(s"select value from $tableName")
-    while (rs.next()) {
-      builder += f(rs)
+    Using.resource(stmt.executeQuery(s"select value from $tableName")) { rs =>
+      val builder = List.newBuilder[T]
+      while (rs.next()) {
+        builder += f(rs)
+      }
+      builder.result()
     }
-    builder.result()
   }
 
   private def stringTest(buffer: CopyBuffer, dataType: String): Unit = {
