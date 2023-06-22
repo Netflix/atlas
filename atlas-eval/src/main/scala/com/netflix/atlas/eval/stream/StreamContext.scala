@@ -133,7 +133,7 @@ private[stream] class StreamContext(
   def validate(input: DataSources): DataSources = {
     import scala.jdk.CollectionConverters.*
     val valid = new java.util.HashSet[DataSource]()
-    input.sources().asScala.foreach { ds =>
+    input.sources.asScala.foreach { ds =>
       validateDataSource(ds) match {
         case Success(v) => valid.add(v)
         case Failure(e) => dsLogger(ds, DiagnosticMessage.error(e))
