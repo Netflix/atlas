@@ -4,17 +4,17 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val pekko       = "1.0.0-RC2"
+    val pekko       = "1.0.0-RC3"
     val pekkoHttpV  = "0.0.0+4411-6fe04045-SNAPSHOT"
     val iep        = "5.0.3"
     val jackson    = "2.15.0"
     val log4j      = "2.20.0"
-    val scala      = "3.3.1-RC1"
+    val scala      = "2.13.11"
     val slf4j      = "1.7.36"
     val spectator  = "1.6.4"
     val spring     = "6.0.8"
 
-    val crossScala = Seq(scala, "2.13.11")
+    val crossScala = Seq(scala)
   }
 
   import Versions._

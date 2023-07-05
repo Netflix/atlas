@@ -32,4 +32,3 @@ jobs:
         run: |
           git fetch --unshallow --tags
           cat /dev/null | project/sbt ++2.13.11 clean test +publishSigned
-          cat /dev/null | project/sbt ++3.3.1-RC1 clean test +publishSigned
