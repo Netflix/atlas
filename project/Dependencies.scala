@@ -13,7 +13,7 @@ object Dependencies {
     val akka       = "2.6.21"
     val akkaHttpV  = "10.2.10"
 
-    val iep        = "5.0.3"
+    val iep        = "5.0.4"
     val jackson    = "2.15.2"
     val log4j      = "2.20.0"
     val scala      = "2.13.11"
