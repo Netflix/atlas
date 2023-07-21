@@ -42,6 +42,7 @@ import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
+import com.netflix.atlas.eval.util.IdParamSanitizer
 import com.typesafe.config.Config
 
 import java.util.Locale
@@ -71,7 +72,7 @@ case class Grapher(settings: DefaultSettings) {
         .find(_.is("origin"))
         .flatMap(h => Cors.normalizedOrigin(h.value()))
         .getOrElse("default")
-      config.copy(isBrowser = isBrowser, id = origin)
+      config.copy(isBrowser = isBrowser, id = IdParamSanitizer.sanitize(origin))
     } else {
       config.copy(isBrowser = isBrowser)
     }
@@ -107,7 +108,7 @@ case class Grapher(settings: DefaultSettings) {
     */
   def toGraphConfig(uri: Uri): GraphConfig = {
     val params = uri.query()
-    val id = params.get("id").getOrElse("default")
+    val id = IdParamSanitizer.sanitize(params.get("id").getOrElse("default"))
 
     val features = params
       .get("features")
