@@ -25,6 +25,8 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
+import java.util.UUID
+
 class GraphUriSuite extends FunSuite {
 
   private val grapher = Grapher(ConfigFactory.load())
@@ -118,6 +120,11 @@ class GraphUriSuite extends FunSuite {
     assertEquals(cfg.flags.hints, Set("a", "b", "c"))
   }
 
+  test("sanitize id") {
+    val cfg = parseUri(s"/api/v1/graph?q=name,foo,:eq,:sum&id=${UUID.randomUUID()}")
+    assertEquals(cfg.id, "default")
+  }
+
   private def parseRequest(uri: String, origin: String): GraphConfig = {
     val request = HttpRequest(uri = Uri(uri), headers = List(Origin(origin)))
     grapher.toGraphConfig(request)
@@ -131,5 +138,10 @@ class GraphUriSuite extends FunSuite {
   test("explicit id parameter takes precedence over CORS origin") {
     val cfg = parseRequest("/api/v1/graph?q=name,foo,:eq,:sum&id=bar", "http://foo.netflix.com")
     assertEquals(cfg.id, "bar")
+  }
+
+  test("sanitize id from CORS origin") {
+    val cfg = parseRequest(s"/api/v1/graph?q=name,foo,:eq,:sum", "http://[::1]:80")
+    assertEquals(cfg.id, "default")
   }
 }
