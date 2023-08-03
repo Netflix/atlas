@@ -36,7 +36,7 @@ object Dependencies {
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.7"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "4.1.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.14.3"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.15.1"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
   val iepDynConfig      = "com.netflix.iep" % "iep-dynconfig" % iep
