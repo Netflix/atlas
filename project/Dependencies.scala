@@ -13,13 +13,13 @@ object Dependencies {
     val akka       = "2.6.21"
     val akkaHttpV  = "10.2.10"
 
-    val iep        = "5.0.4"
+    val iep        = "5.0.5"
     val jackson    = "2.15.2"
     val log4j      = "2.20.0"
     val scala      = "2.13.11"
     val slf4j      = "1.7.36"
-    val spectator  = "1.6.6"
-    val spring     = "6.0.10"
+    val spectator  = "1.6.7"
+    val spring     = "6.0.11"
 
     val crossScala = Seq(scala)
   }
@@ -34,9 +34,9 @@ object Dependencies {
   val akkaStream        = "com.typesafe.akka" %% "akka-stream" % akka
   val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
   val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
-  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.6"
+  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.7"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "4.1.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.14.3"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.15.1"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
   val iepDynConfig      = "com.netflix.iep" % "iep-dynconfig" % iep
@@ -60,7 +60,7 @@ object Dependencies {
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
   val postgres          = "org.postgresql" % "postgresql" % "42.6.0"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.4"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.45"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.47"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
