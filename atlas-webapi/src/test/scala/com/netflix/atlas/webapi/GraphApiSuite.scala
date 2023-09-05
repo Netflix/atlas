@@ -15,13 +15,11 @@
  */
 package com.netflix.atlas.webapi
 
-import akka.actor.Props
-import akka.http.scaladsl.model.MediaTypes
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.*
-import akka.http.scaladsl.testkit.RouteTestTimeout
-import com.netflix.atlas.akka.RequestHandler
-import com.netflix.atlas.akka.testkit.MUnitRouteSuite
+import org.apache.pekko.actor.Props
+import org.apache.pekko.http.scaladsl.model.MediaTypes
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.model.headers.*
+import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
@@ -29,6 +27,8 @@ import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
+import com.netflix.atlas.pekko.RequestHandler
+import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.typesafe.config.ConfigFactory
 
 import scala.util.Using

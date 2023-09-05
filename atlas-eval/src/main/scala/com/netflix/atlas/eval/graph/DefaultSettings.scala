@@ -17,7 +17,8 @@ package com.netflix.atlas.eval.graph
 
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
-import akka.http.scaladsl.model.ContentType
+
+import org.apache.pekko.http.scaladsl.model.ContentType
 import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter

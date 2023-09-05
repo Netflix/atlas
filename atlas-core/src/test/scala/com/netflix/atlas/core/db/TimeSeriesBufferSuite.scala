@@ -505,11 +505,11 @@ class TimeSeriesBufferSuite extends FunSuite {
     val s2 = new ArrayTimeSeq(DsType.Gauge, 5 * step, step, Array(1.0, 2.0))
 
     // Lazy val for id under 2.13.x will have two fields in the class file, `id`
-    // and `bitmap$0`. Under 3.x the fields changed to `id$lzy1` and `0bitmap$1`.
+    // and `bitmap$0`. Under 3.3.x the field changed to `id$lzy1`.
     val lazyIdFields =
       try {
-        classOf[TimeSeriesBuffer].getField("id$lzy1")
-        Array("id$lzy1", "0bitmap$1")
+        classOf[TimeSeriesBuffer].getDeclaredField("id$lzy1")
+        Array("id$lzy1")
       } catch {
         case _: Exception => Array("id", "bitmap$0")
       }

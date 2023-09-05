@@ -6,11 +6,10 @@ object BuildSettings {
   val compilerFlags = Seq(
     "-deprecation",
     "-unchecked",
-    "-Xlint:_,-infer-any",
+    //"-Xlint:_,-infer-any",
     "-Xfatal-warnings",
     "-feature",
     "-release", "17",
-    "-Xsource:3"
   )
 
   lazy val checkLicenseHeaders = taskKey[Unit]("Check the license headers for all source files.")
@@ -21,7 +20,12 @@ object BuildSettings {
   lazy val buildSettings = baseSettings ++ Seq(
     organization := "com.netflix.atlas_v1",
     scalaVersion := Dependencies.Versions.scala,
-    scalacOptions := compilerFlags,
+    scalacOptions := {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, _)) => compilerFlags ++ Seq("-Xsource:3")
+        case _            => compilerFlags
+      }
+    },
     javacOptions ++= Seq("--release", "17"),
     crossPaths := true,
     crossScalaVersions := Dependencies.Versions.crossScala,
@@ -52,7 +56,10 @@ object BuildSettings {
     Dependencies.munit % "test"
   )
 
-  val resolvers = Seq(Resolver.mavenLocal, Resolver.mavenCentral) ++ Resolver.sonatypeOssRepos("snapshots")
+  val resolvers = Seq(
+    Resolver.mavenLocal,
+    Resolver.mavenCentral,
+  ) ++ Resolver.sonatypeOssRepos("snapshots")
 
   def profile: Project => Project = p => {
     p.settings(SonatypeSettings.settings)

@@ -15,19 +15,19 @@
  */
 package com.netflix.atlas.webapi
 
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.MediaTypes
-import akka.http.scaladsl.model.StatusCodes
-import akka.util.ByteString
+import org.apache.pekko.actor.Actor
+import org.apache.pekko.actor.ActorLogging
+import org.apache.pekko.http.scaladsl.model.HttpEntity
+import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.model.MediaTypes
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.util.ByteString
 import com.fasterxml.jackson.core.JsonProcessingException
-import com.netflix.atlas.akka.ImperativeRequestContext
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.core.model.*
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.graph.Grapher
+import com.netflix.atlas.pekko.ImperativeRequestContext
 import com.netflix.spectator.api.Registry
 
 import scala.util.Failure

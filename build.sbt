@@ -2,8 +2,8 @@
 lazy val atlas = project.in(file("."))
   .configure(BuildSettings.profile)
   .aggregate(
-    `atlas-akka`,
-    `atlas-akka-testkit`,
+    `atlas-pekko`,
+    `atlas-pekko-testkit`,
     `atlas-chart`,
     `atlas-core`,
     `atlas-eval`,
@@ -12,7 +12,7 @@ lazy val atlas = project.in(file("."))
     `atlas-lwcapi`,
     `atlas-lwc-events`,
     `atlas-postgres`,
-    `atlas-spring-akka`,
+    `atlas-spring-pekko`,
     `atlas-spring-eval`,
     `atlas-spring-lwc-events`,
     `atlas-spring-lwcapi`,
@@ -21,29 +21,30 @@ lazy val atlas = project.in(file("."))
     `atlas-webapi`)
   .settings(publish / skip := true)
 
-lazy val `atlas-akka` = project
+lazy val `atlas-pekko` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-json`, `atlas-akka-testkit` % "test")
+  .dependsOn(`atlas-json`, `atlas-pekko-testkit` % "test")
   .settings(libraryDependencies ++= Seq(
-    Dependencies.akkaActor,
-    Dependencies.akkaSlf4j,
-    Dependencies.akkaStream,
+    Dependencies.pekkoActor,
+    Dependencies.pekkoSlf4j,
+    Dependencies.pekkoStream,
     Dependencies.iepDynConfig,
     Dependencies.iepService,
+    Dependencies.scalaCompatJdk8,
     Dependencies.spectatorIpc,
-    Dependencies.akkaHttp,
+    Dependencies.pekkoHttp,
     Dependencies.typesafeConfig,
-    Dependencies.akkaHttpTestkit % "test",
-    Dependencies.akkaStreamTestkit % "test",
-    Dependencies.akkaTestkit % "test"
+    Dependencies.pekkoHttpTestkit % "test",
+    Dependencies.pekkoStreamTestkit % "test",
+    Dependencies.pekkoTestkit % "test"
   ))
 
-lazy val `atlas-akka-testkit` = project
+lazy val `atlas-pekko-testkit` = project
   .configure(BuildSettings.profile)
   .settings(libraryDependencies ++= Seq(
-      Dependencies.akkaHttpTestkit,
-      Dependencies.akkaStreamTestkit,
-      Dependencies.akkaTestkit,
+      Dependencies.pekkoHttpTestkit,
+      Dependencies.pekkoStreamTestkit,
+      Dependencies.pekkoTestkit,
       Dependencies.munit
   ))
 
@@ -65,11 +66,11 @@ lazy val `atlas-core` = project
 
 lazy val `atlas-eval` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`, `atlas-chart`, `atlas-core`)
+  .dependsOn(`atlas-pekko`, `atlas-chart`, `atlas-core`)
   .settings(libraryDependencies ++= Seq(
-    Dependencies.akkaHttpTestkit % "test",
-    Dependencies.akkaStreamTestkit % "test",
-    Dependencies.akkaTestkit % "test",
+    Dependencies.pekkoHttpTestkit % "test",
+    Dependencies.pekkoStreamTestkit % "test",
+    Dependencies.pekkoTestkit % "test",
     Dependencies.equalsVerifier % "test"
   ))
 
@@ -94,17 +95,17 @@ lazy val `atlas-json` = project
 
 lazy val `atlas-lwcapi` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`, `atlas-akka-testkit` % "test", `atlas-core`, `atlas-eval`, `atlas-json`)
+  .dependsOn(`atlas-pekko`, `atlas-pekko-testkit` % "test", `atlas-core`, `atlas-eval`, `atlas-json`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepDynConfig,
-    Dependencies.akkaTestkit % "test",
-    Dependencies.akkaHttpTestkit % "test",
-    Dependencies.akkaStreamTestkit % "test"
+    Dependencies.pekkoTestkit % "test",
+    Dependencies.pekkoHttpTestkit % "test",
+    Dependencies.pekkoStreamTestkit % "test"
   ))
 
 lazy val `atlas-lwc-events` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`, `atlas-core`, `atlas-json`)
+  .dependsOn(`atlas-pekko`, `atlas-core`, `atlas-json`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepDynConfig,
     Dependencies.spectatorAtlas
@@ -118,9 +119,9 @@ lazy val `atlas-postgres` = project
     Dependencies.postgresEmbedded % "test"
   ))
 
-lazy val `atlas-spring-akka` = project
+lazy val `atlas-spring-pekko` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-akka`)
+  .dependsOn(`atlas-pekko`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepSpring
   ))
@@ -134,7 +135,7 @@ lazy val `atlas-spring-eval` = project
 
 lazy val `atlas-spring-lwcapi` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-spring-akka`, `atlas-lwcapi`)
+  .dependsOn(`atlas-spring-pekko`, `atlas-lwcapi`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepSpring,
     Dependencies.springContext
@@ -158,7 +159,7 @@ lazy val `atlas-spring-webapi` = project
 
 lazy val `atlas-standalone` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-spring-akka`, `atlas-spring-lwcapi`, `atlas-spring-webapi`)
+  .dependsOn(`atlas-spring-pekko`, `atlas-spring-lwcapi`, `atlas-spring-webapi`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepSpring,
     Dependencies.iepSpringAtlas,
@@ -171,15 +172,15 @@ lazy val `atlas-standalone` = project
 lazy val `atlas-webapi` = project
   .configure(BuildSettings.profile)
   .dependsOn(
-    `atlas-akka`,
-    `atlas-akka-testkit` % "test",
+    `atlas-pekko`,
+    `atlas-pekko-testkit` % "test",
     `atlas-chart`,
     `atlas-core`,
     `atlas-eval`,
     `atlas-json`)
   .settings(libraryDependencies ++= Seq(
-    Dependencies.akkaTestkit % "test",
-    Dependencies.akkaHttpTestkit % "test",
-    Dependencies.akkaStreamTestkit % "test"
+    Dependencies.pekkoTestkit % "test",
+    Dependencies.pekkoHttpTestkit % "test",
+    Dependencies.pekkoStreamTestkit % "test"
   ))
 

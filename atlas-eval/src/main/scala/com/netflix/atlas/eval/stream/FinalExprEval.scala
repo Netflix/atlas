@@ -15,18 +15,17 @@
  */
 package com.netflix.atlas.eval.stream
 
-import akka.NotUsed
-import akka.http.scaladsl.model.Uri
-import akka.stream.Attributes
-import akka.stream.FlowShape
-import akka.stream.Inlet
-import akka.stream.Outlet
-import akka.stream.scaladsl.Source
-import akka.stream.stage.GraphStage
-import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.InHandler
-import akka.stream.stage.OutHandler
-import com.netflix.atlas.akka.DiagnosticMessage
+import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.model.Uri
+import org.apache.pekko.stream.Attributes
+import org.apache.pekko.stream.FlowShape
+import org.apache.pekko.stream.Inlet
+import org.apache.pekko.stream.Outlet
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.stream.stage.GraphStage
+import org.apache.pekko.stream.stage.GraphStageLogic
+import org.apache.pekko.stream.stage.InHandler
+import org.apache.pekko.stream.stage.OutHandler
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StatefulExpr
@@ -37,6 +36,7 @@ import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
+import com.netflix.atlas.pekko.DiagnosticMessage
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.collection.mutable
@@ -45,10 +45,10 @@ import scala.collection.mutable
   * Takes the set of data sources and time grouped partial aggregates as input and performs
   * the final evaluation step.
   *
-  * @param interpreter
+  * @param exprInterpreter
   *     Used for evaluating the expressions.
   */
-private[stream] class FinalExprEval(interpreter: ExprInterpreter)
+private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
     extends GraphStage[FlowShape[AnyRef, Source[MessageEnvelope, NotUsed]]]
     with StrictLogging {
 
@@ -100,7 +100,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
         recipients = sources
           .flatMap { s =>
             try {
-              val exprs = interpreter.eval(Uri(s.uri))
+              val exprs = exprInterpreter.eval(Uri(s.uri))
               // Reuse the previous evaluated expression if available. States for the stateful
               // expressions are maintained in an IdentityHashMap so if the instances change
               // the state will be reset.

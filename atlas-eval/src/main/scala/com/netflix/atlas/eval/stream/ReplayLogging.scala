@@ -17,7 +17,7 @@ package com.netflix.atlas.eval.stream
 
 import java.nio.charset.StandardCharsets
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.Json
 import com.typesafe.scalalogging.StrictLogging

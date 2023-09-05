@@ -15,20 +15,20 @@
  */
 package com.netflix.atlas.webapi
 
-import akka.actor.ActorRefFactory
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.server.Directives.*
-import akka.http.scaladsl.server.RequestContext
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.RouteResult
-import com.netflix.atlas.akka.CustomDirectives.*
-import com.netflix.atlas.akka.DiagnosticMessage
-import com.netflix.atlas.akka.WebApi
+import org.apache.pekko.actor.ActorRefFactory
+import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.server.Directives.*
+import org.apache.pekko.http.scaladsl.server.RequestContext
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.http.scaladsl.server.RouteResult
 import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.validation.Rule
 import com.netflix.atlas.core.validation.ValidationResult
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.pekko.CustomDirectives.*
+import com.netflix.atlas.pekko.DiagnosticMessage
+import com.netflix.atlas.pekko.WebApi
 import com.netflix.iep.config.ConfigManager
 import com.typesafe.scalalogging.StrictLogging
 

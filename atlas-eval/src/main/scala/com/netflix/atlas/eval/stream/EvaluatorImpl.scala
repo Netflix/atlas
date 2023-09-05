@@ -22,30 +22,27 @@ import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.ws.BinaryMessage
-import akka.http.scaladsl.model.ws.TextMessage
-import akka.http.scaladsl.model.ws.WebSocketRequest
-import akka.stream.FlowShape
-import akka.stream.Materializer
-import akka.stream.OverflowStrategy
-import akka.stream.ThrottleMode
-import akka.stream.scaladsl.Broadcast
-import akka.stream.scaladsl.BroadcastHub
-import akka.stream.scaladsl.FileIO
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.GraphDSL
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Merge
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import com.netflix.atlas.akka.ClusterOps
-import com.netflix.atlas.akka.StreamOps
-import com.netflix.atlas.akka.ThreadPools
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.model.Uri
+import org.apache.pekko.http.scaladsl.model.ws.BinaryMessage
+import org.apache.pekko.http.scaladsl.model.ws.TextMessage
+import org.apache.pekko.http.scaladsl.model.ws.WebSocketRequest
+import org.apache.pekko.stream.FlowShape
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.OverflowStrategy
+import org.apache.pekko.stream.ThrottleMode
+import org.apache.pekko.stream.scaladsl.Broadcast
+import org.apache.pekko.stream.scaladsl.BroadcastHub
+import org.apache.pekko.stream.scaladsl.FileIO
+import org.apache.pekko.stream.scaladsl.Flow
+import org.apache.pekko.stream.scaladsl.GraphDSL
+import org.apache.pekko.stream.scaladsl.Keep
+import org.apache.pekko.stream.scaladsl.Merge
+import org.apache.pekko.stream.scaladsl.Sink
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
@@ -61,6 +58,9 @@ import com.netflix.atlas.eval.stream.Evaluator.DatapointGroup
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.pekko.ClusterOps
+import com.netflix.atlas.pekko.StreamOps
+import com.netflix.atlas.pekko.ThreadPools
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import org.reactivestreams.Processor
@@ -124,7 +124,7 @@ private[stream] abstract class EvaluatorImpl(
 
   protected def writeInputToFileImpl(uri: Uri, file: Path, duration: FiniteDuration): Unit = {
     // Explicit type needed in 2.5.2, but not 2.5.0. Likely related to:
-    // https://github.com/akka/akka/issues/22666
+    // https://github.com/pekko/pekko/issues/22666
     val options = Set[OpenOption](
       StandardOpenOption.WRITE,
       StandardOpenOption.CREATE,

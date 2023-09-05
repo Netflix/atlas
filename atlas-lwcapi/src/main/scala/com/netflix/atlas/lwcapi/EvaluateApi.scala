@@ -15,19 +15,19 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.RemoteAddress
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives.*
-import akka.http.scaladsl.server.Route
+import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.model.RemoteAddress
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.server.Directives.*
+import org.apache.pekko.http.scaladsl.server.Route
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.netflix.atlas.akka.CustomDirectives.*
-import com.netflix.atlas.akka.WebApi
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.eval.util.SortedTagMapDeserializer
 import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.pekko.CustomDirectives.*
+import com.netflix.atlas.pekko.WebApi
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
 

@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.webapi
 
-import akka.actor.Actor
-import akka.actor.ActorLogging
+import org.apache.pekko.actor.Actor
+import org.apache.pekko.actor.ActorLogging
 import com.netflix.atlas.core.db.Database
 
 import scala.util.Failure

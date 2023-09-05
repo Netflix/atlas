@@ -15,11 +15,9 @@
  */
 package com.netflix.atlas.webapi
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.RouteTestTimeout
-import com.netflix.atlas.akka.RequestHandler
-import com.netflix.atlas.akka.testkit.MUnitRouteSuite
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.Query
@@ -27,6 +25,8 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
+import com.netflix.atlas.pekko.RequestHandler
+import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 
 class ExprApiSuite extends MUnitRouteSuite {
 

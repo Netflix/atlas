@@ -15,17 +15,17 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.Sink
+import org.apache.pekko.stream.scaladsl.Source
 import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.lwcapi.SubscribeApi.ErrorMsg
 import munit.FunSuite
+import org.apache.pekko.util.ByteString
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Await
