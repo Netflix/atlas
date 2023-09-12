@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.eval.stream
 
-import akka.Done
-import akka.stream.scaladsl.Source
+import org.apache.pekko.Done
+import org.apache.pekko.stream.scaladsl.Source
 
 import scala.concurrent.Promise
 import scala.util.Success

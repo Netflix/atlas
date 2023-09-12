@@ -15,11 +15,11 @@
  */
 package com.netflix.atlas.eval.stream
 
-import akka.NotUsed
-import akka.http.scaladsl.model.Uri
-import akka.stream.IOResult
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.model.Uri
+import org.apache.pekko.stream.IOResult
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StyleExpr

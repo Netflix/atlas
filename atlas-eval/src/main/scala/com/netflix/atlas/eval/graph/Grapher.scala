@@ -18,9 +18,9 @@ package com.netflix.atlas.eval.graph
 import java.awt.Color
 import java.io.ByteArrayOutputStream
 import java.time.Duration
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.Uri
-import com.netflix.atlas.akka.Cors
+import org.apache.pekko.http.scaladsl.model.HttpRequest
+import org.apache.pekko.http.scaladsl.model.Uri
+import com.netflix.atlas.pekko.Cors
 import com.netflix.atlas.chart.Colors
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.Layout

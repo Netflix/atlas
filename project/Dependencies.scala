@@ -4,14 +4,8 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    // Do not upgrade Akka or Akka-HTTP versions, license has changed for newer
-    // versions:
-    //
-    // - https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka
-    // - https://github.com/akka/akka/pull/31561
-    // - https://github.com/akka/akka-http/pull/4155
-    val akka       = "2.6.21"
-    val akkaHttpV  = "10.2.10"
+    val pekko       = "1.0.1"
+    val pekkoHttpV  = "1.0.0"
 
     val iep        = "4.2.0"
     val jackson    = "2.15.0"
@@ -26,14 +20,14 @@ object Dependencies {
 
   import Versions._
 
-  val akkaActor         = "com.typesafe.akka" %% "akka-actor" % akka
-  val akkaHttp          = "com.typesafe.akka" %% "akka-http" % akkaHttpV
-  val akkaHttpCore      = "com.typesafe.akka" %% "akka-http-core" % akkaHttpV
-  val akkaHttpTestkit   = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV
-  val akkaSlf4j         = "com.typesafe.akka" %% "akka-slf4j" % akka
-  val akkaStream        = "com.typesafe.akka" %% "akka-stream" % akka
-  val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akka
-  val akkaTestkit       = "com.typesafe.akka" %% "akka-testkit" % akka
+  val pekkoActor         = "org.apache.pekko" %% "pekko-actor" % pekko
+  val pekkoHttp          = "org.apache.pekko" %% "pekko-http" % pekkoHttpV
+  val pekkoHttpCore      = "org.apache.pekko" %% "pekko-http-core" % pekkoHttpV
+  val pekkoHttpTestkit   = "org.apache.pekko" %% "pekko-http-testkit" % pekkoHttpV
+  val pekkoSlf4j         = "org.apache.pekko" %% "pekko-slf4j" % pekko
+  val pekkoStream        = "org.apache.pekko" %% "pekko-stream" % pekko
+  val pekkoStreamTestkit = "org.apache.pekko" %% "pekko-stream-testkit" % pekko
+  val pekkoTestkit       = "org.apache.pekko" %% "pekko-testkit" % pekko
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.3"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.3.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.14"
@@ -62,6 +56,7 @@ object Dependencies {
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.3"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "0.9.39"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0"
+  val scalaCompatJdk8   = "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"

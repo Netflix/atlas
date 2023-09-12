@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.akka.StreamOps
+import com.netflix.atlas.pekko.StreamOps
 import com.netflix.atlas.json.JsonSupport
 import com.typesafe.scalalogging.StrictLogging
 
