@@ -25,7 +25,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 import scala.util.Using
 
-class AkkaConfigurationSuite extends FunSuite {
+class PekkoConfigurationSuite extends FunSuite {
 
   private val testCfg = ConfigFactory.parseString("""
       |atlas.pekko.name = test
