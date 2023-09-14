@@ -41,7 +41,8 @@ trait PekkoHttpClient {
   * @param system
   *     The Pekko system.
   */
-class DefaultPekkoHttpClient(name: String)(implicit val system: ActorSystem) extends PekkoHttpClient {
+class DefaultPekkoHttpClient(name: String)(implicit val system: ActorSystem)
+    extends PekkoHttpClient {
 
   private implicit val ec = system.dispatcher
 
