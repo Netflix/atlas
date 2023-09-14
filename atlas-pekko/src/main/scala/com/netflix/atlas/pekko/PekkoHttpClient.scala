@@ -22,9 +22,9 @@ import org.apache.pekko.http.scaladsl.model.HttpResponse
 import scala.concurrent.Future
 
 /**
-  * A wrapper used for simple unit testing of Akka HTTP calls.
+  * A wrapper used for simple unit testing of Pekko HTTP calls.
   */
-trait AkkaHttpClient {
+trait PekkoHttpClient {
 
   /**
     * See pekko.http.scaladsl.Http
@@ -39,9 +39,9 @@ trait AkkaHttpClient {
   * @param name
   *     The name to use for access logging and metrics.
   * @param system
-  *     The Akka system.
+  *     The Pekko system.
   */
-class DefaultAkkaHttpClient(name: String)(implicit val system: ActorSystem) extends AkkaHttpClient {
+class DefaultPekkoHttpClient(name: String)(implicit val system: ActorSystem) extends PekkoHttpClient {
 
   private implicit val ec = system.dispatcher
 

@@ -42,7 +42,7 @@ import com.typesafe.scalalogging.StrictLogging
 import scala.concurrent.duration.FiniteDuration
 
 /**
-  * Utility functions for commonly used operations on Akka streams. Most of these are for
+  * Utility functions for commonly used operations on Pekko streams. Most of these are for
   * the purpose of getting additional instrumentation into the behavior of the stream.
   */
 object StreamOps extends StrictLogging {

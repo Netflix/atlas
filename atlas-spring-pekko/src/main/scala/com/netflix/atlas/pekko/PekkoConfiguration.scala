@@ -32,7 +32,7 @@ import java.util.Optional
   * are available for `com.typesafe.config.Config` and `com.netflix.spectator.api.Registry`.
   */
 @Configuration
-class AkkaConfiguration {
+class PekkoConfiguration {
 
   @Bean
   def actorSystemService(config: Optional[Config]): ActorSystemService = {
