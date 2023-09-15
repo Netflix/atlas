@@ -15,20 +15,20 @@
  */
 package com.netflix.atlas.lwcapi
 
-import akka.actor.ActorRefFactory
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.HttpHeader
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.MediaTypes
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
-import akka.util.ByteString
+import org.apache.pekko.actor.ActorRefFactory
+import org.apache.pekko.http.scaladsl.model.HttpEntity
+import org.apache.pekko.http.scaladsl.model.HttpHeader
+import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.model.MediaTypes
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.model.headers._
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.util.ByteString
 import com.github.benmanes.caffeine.cache.CacheLoader
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.netflix.atlas.akka.CustomDirectives._
-import com.netflix.atlas.akka.WebApi
+import com.netflix.atlas.pekko.CustomDirectives._
+import com.netflix.atlas.pekko.WebApi
 import com.netflix.atlas.core.util.FastGzipOutputStream
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json

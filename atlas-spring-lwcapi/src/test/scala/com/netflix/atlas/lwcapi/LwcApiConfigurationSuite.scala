@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.akka.ActorService
+import com.netflix.atlas.pekko.ActorService
 import munit.FunSuite
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 

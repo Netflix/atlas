@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.akka.ThreadPools
+import com.netflix.atlas.pekko.ThreadPools
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor

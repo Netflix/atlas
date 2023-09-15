@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.eval.model
 
-import akka.util.ByteString
-import com.netflix.atlas.akka.DiagnosticMessage
+import org.apache.pekko.util.ByteString
+import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
 import munit.FunSuite

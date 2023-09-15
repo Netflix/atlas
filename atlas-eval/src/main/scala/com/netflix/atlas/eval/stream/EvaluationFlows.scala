@@ -15,17 +15,17 @@
  */
 package com.netflix.atlas.eval.stream
 
-import akka.Done
-import akka.NotUsed
-import akka.stream.KillSwitches
-import akka.stream.Materializer
-import akka.stream.ThrottleMode
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Framing
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import org.apache.pekko.Done
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.KillSwitches
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.ThrottleMode
+import org.apache.pekko.stream.scaladsl.Flow
+import org.apache.pekko.stream.scaladsl.Framing
+import org.apache.pekko.stream.scaladsl.Keep
+import org.apache.pekko.stream.scaladsl.Sink
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import com.netflix.spectator.api.Counter
 
 import scala.concurrent.Promise

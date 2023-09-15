@@ -16,14 +16,14 @@
 package com.netflix.atlas.webapi
 
 import java.util.concurrent.TimeUnit
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.MediaTypes
-import akka.http.scaladsl.model.StatusCode
-import akka.http.scaladsl.model.StatusCodes
-import com.netflix.atlas.akka.DiagnosticMessage
+import org.apache.pekko.actor.Actor
+import org.apache.pekko.actor.ActorLogging
+import org.apache.pekko.http.scaladsl.model.HttpEntity
+import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.model.MediaTypes
+import org.apache.pekko.http.scaladsl.model.StatusCode
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.db.MemoryDatabase
 import com.netflix.atlas.core.model.DatapointTuple

@@ -15,15 +15,15 @@
  */
 package com.netflix.atlas.eval.stream;
 
-import akka.actor.ActorSystem;
-import akka.http.javadsl.model.Uri;
-import akka.stream.Materializer;
-import akka.stream.ThrottleMode;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Framing;
-import akka.stream.javadsl.Source;
-import akka.stream.javadsl.StreamConverters;
-import akka.util.ByteString;
+import org.apache.pekko.actor.ActorSystem;
+import org.apache.pekko.http.javadsl.model.Uri;
+import org.apache.pekko.stream.Materializer;
+import org.apache.pekko.stream.ThrottleMode;
+import org.apache.pekko.stream.javadsl.Flow;
+import org.apache.pekko.stream.javadsl.Framing;
+import org.apache.pekko.stream.javadsl.Source;
+import org.apache.pekko.stream.javadsl.StreamConverters;
+import org.apache.pekko.util.ByteString;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;

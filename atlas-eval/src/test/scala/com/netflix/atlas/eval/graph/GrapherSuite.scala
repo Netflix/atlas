@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.eval.graph
 
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers.Host
+import org.apache.pekko.http.scaladsl.model.HttpRequest
+import org.apache.pekko.http.scaladsl.model.Uri
+import org.apache.pekko.http.scaladsl.model.headers.Host
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
