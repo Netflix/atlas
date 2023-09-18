@@ -207,7 +207,7 @@ class JsonParserHelperSuite extends FunSuite {
 
   private def randomArray(r: Random): ArrayNode = {
     val arr = JsonNodeFactory.instance.arrayNode()
-    (0 until r.nextInt(5)).foreach { i =>
+    (0 until r.nextInt(5)).foreach { _ =>
       arr.add(randomJson(r))
     }
     arr

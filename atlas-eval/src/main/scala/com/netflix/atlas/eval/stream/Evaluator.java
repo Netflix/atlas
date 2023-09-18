@@ -24,9 +24,7 @@ import org.apache.pekko.stream.javadsl.Framing;
 import org.apache.pekko.stream.javadsl.Source;
 import org.apache.pekko.stream.javadsl.StreamConverters;
 import org.apache.pekko.util.ByteString;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.atlas.core.util.Strings$;
 import com.netflix.atlas.json.JsonSupport;
 import com.netflix.spectator.api.NoopRegistry;
@@ -47,7 +45,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -98,7 +95,7 @@ public final class Evaluator extends EvaluatorImpl {
    * help reduce the overhead in terms of number of connections and duplicate work on
    * the backend producing the data.
    *
-   * It takes a stream of data sources as an input and returns the output of evaluating
+   * <p>It takes a stream of data sources as an input and returns the output of evaluating
    * those streams. Each {@code DataSources} object should be the complete set of
    * sources that should be evaluated at a given time. The output messages can be
    * correlated with a particular data source using the id on the {@code MessageEnvelope}.
@@ -158,7 +155,7 @@ public final class Evaluator extends EvaluatorImpl {
 
     /** Create a new instance. */
     public DataSources {
-      sources = Collections.unmodifiableSet(new HashSet<>(sources));
+      sources = Set.copyOf(sources);
     }
 
     /** Compares with another set and returns the new data sources that have been added. */

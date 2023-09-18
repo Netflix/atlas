@@ -123,7 +123,7 @@ case class DefaultSettings(root: Config, config: Config) {
   }
 
   /** Interpreter for the graph expressions. */
-  val interpreter = Interpreter(graphVocabulary.allWords)
+  val interpreter: Interpreter = Interpreter(graphVocabulary.allWords)
 
   private def newInstance[T](cls: String): T = {
     Class.forName(cls).getDeclaredConstructor().newInstance().asInstanceOf[T]

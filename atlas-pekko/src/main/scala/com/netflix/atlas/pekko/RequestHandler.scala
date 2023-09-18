@@ -191,15 +191,6 @@ object RequestHandler extends StrictLogging {
       log
   }
 
-  /**
-    * Wraps a route with error handling to format error messages in a consistent way.
-    */
-  def errorOptions(route: Route): Route = {
-    handleExceptions(exceptionHandler) {
-      handleRejections(rejectionHandler) { route }
-    }
-  }
-
   def errorResponse(t: Throwable): HttpResponse = {
     // Log exception to make it easier to access the full stack trace. This could be
     // high volume if there are a lot of failed requests, so it could have a performance

@@ -66,7 +66,7 @@ class RoaringTagIndexBench {
     "statistic"  -> "totalTime"
   )
 
-  private val items = (0 until 10000).map { i =>
+  private val items = (0 until 10000).map { _ =>
     val id = UUID.randomUUID().toString
     BasicTaggedItem(SmallHashMap(baseId ++ Map("nf.node" -> id))) // , i.toString -> id))
   }

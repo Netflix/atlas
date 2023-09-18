@@ -87,7 +87,7 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
     import scala.jdk.CollectionConverters.*
     try config.getConfig(p)
     catch {
-      case e: ConfigException.WrongType =>
+      case _: ConfigException.WrongType =>
         ConfigFactory.parseMap(Map("value" -> config.getString(p)).asJava)
     }
   }

@@ -54,7 +54,7 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
 
   private var incompleteWrite = false
 
-  private val stringBuilder = new StringBuilder
+  private val stringBuilder = new java.lang.StringBuilder
   private val encoder = StandardCharsets.UTF_8.newEncoder()
 
   private def hasSpace(n: Int): Boolean = {
@@ -278,7 +278,7 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
   }
 
   override def toString: String = {
-    val builder = new StringBuilder
+    val builder = new java.lang.StringBuilder
     val bytes = data.array()
     val n = data.position()
     var i = 19 // ignore header
@@ -292,7 +292,7 @@ class BinaryCopyBuffer(size: Int, numFields: Short) extends CopyBuffer {
       }
       i += 1
     }
-    builder.toString()
+    builder.toString
   }
 }
 

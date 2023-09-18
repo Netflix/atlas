@@ -216,7 +216,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
   }
 
   override def toString: String = {
-    val buf = new StringBuilder
+    val buf = new java.lang.StringBuilder
     (0 until numBlocks).foreach { i =>
       buf.append(i.toString).append(" => ").append(blocks(i))
       if (i == currentPos) buf.append(" (current)")

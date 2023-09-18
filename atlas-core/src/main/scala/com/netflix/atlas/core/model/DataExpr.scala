@@ -300,7 +300,7 @@ object DataExpr {
       val sorted = groups.sortWith(_._1 < _._1)
       val newData = sorted.flatMap {
         case (null, _) => Nil
-        case (k, Nil)  => List(TimeSeries.noData(query, context.step))
+        case (_, Nil)  => List(TimeSeries.noData(query, context.step))
         case (k, ts) =>
           val tags = ts.head.tags.filter(e => ks.contains(e._1))
           af.eval(context, ts).data.map { t =>

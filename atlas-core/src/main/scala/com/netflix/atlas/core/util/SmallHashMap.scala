@@ -242,7 +242,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
 
   override def keysIterator: Iterator[K] = new Iterator[K] {
 
-    val iter = entriesIterator
+    private val iter = entriesIterator
 
     def hasNext: Boolean = iter.hasNext
 
@@ -255,7 +255,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
 
   override def valuesIterator: Iterator[V] = new Iterator[V] {
 
-    val iter = entriesIterator
+    private val iter = entriesIterator
 
     def hasNext: Boolean = iter.hasNext
 
@@ -391,7 +391,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
         // exclude equality.
         if (this eq m) return true
         size == m.size && hashCode == m.hashCode && dataEquals(m.asInstanceOf[SmallHashMap[K, V]])
-      case m: Map[?, ?] =>
+      case _: Map[?, ?] =>
         super.equals(obj)
       case _ =>
         false

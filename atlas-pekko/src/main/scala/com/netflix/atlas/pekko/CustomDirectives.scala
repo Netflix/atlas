@@ -44,6 +44,7 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.ipc.NetflixHeader
+import org.apache.pekko.http.scaladsl.server.util.Tuple
 
 import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.ExecutionContext
@@ -391,7 +392,7 @@ object CustomDirectives {
     * ```
     */
   def endpointPath[L](prefix: PathMatcher[Unit], remaining: PathMatcher[L]): Directive[L] = {
-    implicit val evidence = remaining.ev
+    implicit val evidence: Tuple[L] = remaining.ev
     endpointPathPrefix(prefix).tflatMap { _ =>
       path(remaining)
     }

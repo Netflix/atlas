@@ -49,7 +49,7 @@ class GraphApiMemDbSuite extends MUnitRouteSuite {
   private val db = MemoryDatabase(dbConfig)
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")
 
-  private val routes = RequestHandler.standardOptions((new GraphApi(config, system)).routes)
+  private val routes = RequestHandler.standardOptions(new GraphApi(config, system).routes)
 
   test("sendError image if browser") {
     val agent = `User-Agent`("Mozilla/5.0 (Android; Mobile; rv:13.0) Gecko/13.0 Firefox/13.0")

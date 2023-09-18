@@ -287,7 +287,7 @@ object DataSet {
     * Returns static list with legacy metrics, only have a cluster and large names.
     */
   def largeLegacySet(n: Int): List[TimeSeries] = {
-    val metrics = (0 until n).map { i =>
+    val metrics = (0 until n).map { _ =>
       val name = UUID.randomUUID.toString
       val tags = Map("nf.cluster" -> "silverlight", "name" -> name)
       val idealF = wave(50.0, 300.0, Duration.ofDays(1))

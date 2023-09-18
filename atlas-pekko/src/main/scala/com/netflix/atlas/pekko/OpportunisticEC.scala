@@ -30,7 +30,7 @@ object OpportunisticEC {
         .invoke(ExecutionContext)
         .asInstanceOf[ExecutionContext]
     } catch {
-      case e: NoSuchMethodException => ExecutionContext.global
+      case _: NoSuchMethodException => ExecutionContext.global
     }
   }
 }

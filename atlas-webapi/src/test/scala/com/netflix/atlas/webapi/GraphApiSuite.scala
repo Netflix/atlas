@@ -46,7 +46,7 @@ class GraphApiSuite extends MUnitRouteSuite {
 
   private val config = ConfigFactory.load()
 
-  private val routes = RequestHandler.standardOptions((new GraphApi(config, system)).routes)
+  private val routes = RequestHandler.standardOptions(new GraphApi(config, system).routes)
 
   private val others = Using.resource(Streams.resource("others.md")) { in =>
     Streams.lines(in).toList

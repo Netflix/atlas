@@ -185,7 +185,7 @@ class PercentilesSuite extends FunSuite {
 
     assertEquals(data.size, 1)
     List(v).zip(data).foreach {
-      case (p, t) =>
+      case (_, t) =>
         assertEquals(t.tags, Map("name" -> "test", "percentile" -> s))
         assertEquals(t.label, f"percentile(name=test, $s)")
     }

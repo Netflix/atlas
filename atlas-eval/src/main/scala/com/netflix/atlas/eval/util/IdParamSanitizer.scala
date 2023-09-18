@@ -21,7 +21,7 @@ import java.util.regex.Pattern
 /** Helper to sanitize the id parameter value. */
 object IdParamSanitizer {
 
-  private val pattern = Pattern.compile("[0-9a-f]{8}|[0-9]{3}|[0-9][.][0-9]|:");
+  private val pattern = Pattern.compile("[0-9a-f]{8}|[0-9]{3}|[0-9][.][0-9]|:")
 
   /**
     * Sanitize id parameter value.

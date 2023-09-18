@@ -42,7 +42,7 @@ class EvalDataRateCollector(timestamp: Long, step: Long) {
 
   def getAll: Map[String, EvalDataRate] = {
     inputCounts.map {
-      case (id, _) => {
+      case (id, _) =>
         id -> EvalDataRate(
           timestamp,
           step,
@@ -50,7 +50,6 @@ class EvalDataRateCollector(timestamp: Long, step: Long) {
           getDataRate(intermediateCounts, id),
           EvalDataSize(outputCounts.get(id, 0))
         )
-      }
     }.toMap
   }
 

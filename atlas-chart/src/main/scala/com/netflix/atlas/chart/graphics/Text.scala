@@ -42,7 +42,7 @@ case class Text(
 ) extends Element
     with VariableHeight {
 
-  lazy val dims = ChartSettings.dimensions(font)
+  lazy val dims: ChartSettings.Dimensions = ChartSettings.dimensions(font)
 
   def truncate(width: Int): Text = {
     val maxChars = (width - Text.rightPadding) / dims.width

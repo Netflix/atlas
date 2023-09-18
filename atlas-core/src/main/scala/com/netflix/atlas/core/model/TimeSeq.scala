@@ -53,7 +53,7 @@ trait TimeSeq {
     val length = ((end - start) / step).toInt
     val data = new Array[Double](length)
     var i = 0
-    foreach(start, end) { (t, v) =>
+    foreach(start, end) { (_, v) =>
       data(i) = v
       i += 1
     }
@@ -102,7 +102,7 @@ final class ArrayTimeSeq(
   def update(ts: TimeSeq)(op: BinaryOp): Unit = {
     require(step == ts.step, "step sizes must be the same")
     var i = 0
-    ts.foreach(start, end) { (t, v) =>
+    ts.foreach(start, end) { (_, v) =>
       data(i) = op(data(i), v)
       i += 1
     }
@@ -131,7 +131,7 @@ final class ArrayTimeSeq(
   }
 
   override def hashCode: Int = {
-    import java.lang.{Long as JLong}
+    import java.lang.Long as JLong
     val prime = 31
     var hc = prime
     hc = hc * prime + dsType.hashCode()

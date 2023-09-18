@@ -180,6 +180,65 @@ class EurekaSourceSuite extends FunSuite {
     }
   }
 
+  private val eddaResponseSingleGroup: String =
+    """[
+      |  {
+      |    "instances": [
+      |      {
+      |        "privateIpAddress": "1.2.3.4",
+      |        "instanceId": "id1"
+      |      },
+      |      {
+      |        "privateIpAddress": "1.2.3.5",
+      |        "instanceId": "id2"
+      |      }
+      |    ]
+      |  }
+      |]""".stripMargin
+
+  private val eddaResponse2Groups: String =
+    """[
+      |  {
+      |    "instances": [
+      |      {
+      |        "privateIpAddress": "1.2.3.4",
+      |        "instanceId": "id1"
+      |      },
+      |      {
+      |        "privateIpAddress": "1.2.3.5",
+      |        "instanceId": "id2"
+      |      }
+      |    ]
+      |  },
+      |  {
+      |    "instances": [
+      |      {
+      |        "privateIpAddress": "1.2.3.6",
+      |        "instanceId": "id3"
+      |      }
+      |    ]
+      |  }
+      |]""".stripMargin
+
+  private val eddaResponseOneEmptyGroup: String =
+    """[
+      |  {
+      |    "instances": [
+      |      {
+      |        "privateIpAddress": "1.2.3.4",
+      |        "instanceId": "id1"
+      |      },
+      |      {
+      |        "privateIpAddress": "1.2.3.5",
+      |        "instanceId": "id2"
+      |      }
+      |    ]
+      |  },
+      |  {
+      |    "instances": []
+      |  }
+      |]""".stripMargin
+
   test("handles edda uri, 1 group") {
     val uri = "http://edda/api/v2/group/autoScalingGroups;cluster=atlas_lwcapi-main;_expand"
     val res = run(uri, Success(mkResponse(eddaResponseSingleGroup)))
@@ -210,63 +269,4 @@ class EurekaSourceSuite extends FunSuite {
     assertEquals("http://1.2.3.4:7101", res.instances(0).substitute("http://{local-ipv4}:{port}"))
     assertEquals("http://1.2.3.5:7101", res.instances(1).substitute("http://{local-ipv4}:{port}"))
   }
-
-  val eddaResponseSingleGroup =
-    """[
-      |  {
-      |    "instances": [
-      |      {
-      |        "privateIpAddress": "1.2.3.4",
-      |        "instanceId": "id1"
-      |      },
-      |      {
-      |        "privateIpAddress": "1.2.3.5",
-      |        "instanceId": "id2"
-      |      }
-      |    ]
-      |  }
-      |]""".stripMargin
-
-  val eddaResponse2Groups =
-    """[
-      |  {
-      |    "instances": [
-      |      {
-      |        "privateIpAddress": "1.2.3.4",
-      |        "instanceId": "id1"
-      |      },
-      |      {
-      |        "privateIpAddress": "1.2.3.5",
-      |        "instanceId": "id2"
-      |      }
-      |    ]
-      |  },
-      |  {
-      |    "instances": [
-      |      {
-      |        "privateIpAddress": "1.2.3.6",
-      |        "instanceId": "id3"
-      |      }
-      |    ]
-      |  }
-      |]""".stripMargin
-
-  val eddaResponseOneEmptyGroup =
-    """[
-      |  {
-      |    "instances": [
-      |      {
-      |        "privateIpAddress": "1.2.3.4",
-      |        "instanceId": "id1"
-      |      },
-      |      {
-      |        "privateIpAddress": "1.2.3.5",
-      |        "instanceId": "id2"
-      |      }
-      |    ]
-      |  },
-      |  {
-      |    "instances": []
-      |  }
-      |]""".stripMargin
 }

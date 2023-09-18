@@ -25,7 +25,7 @@ class SmallHashMapSuite extends FunSuite {
 
   // Set of keys taken from prod.us-east-1. This tends to be our biggest region and these are the
   // actual keys we see in the data.
-  val keys = List(
+  private val keys = List(
     "action",
     "app",
     "asn",
@@ -339,7 +339,7 @@ class SmallHashMapSuite extends FunSuite {
   }
 
   test("equals and hashCode, different orders with gaps") {
-    (0 until 1000).foreach { i =>
+    (0 until 1000).foreach { _ =>
       val n = Random.nextInt(50)
       val data = (0 until n).map { _ =>
         val v = Random.nextInt()
@@ -353,7 +353,7 @@ class SmallHashMapSuite extends FunSuite {
   }
 
   test("equals and hashCode, different orders") {
-    (0 until 1000).foreach { i =>
+    (0 until 1000).foreach { _ =>
       val n = Random.nextInt(50)
       val data = (0 until n).map { _ =>
         val v = Random.nextInt()
@@ -370,7 +370,7 @@ class SmallHashMapSuite extends FunSuite {
     val size = 10000
     val naive = new IntHashSet(0)
     val ref = new IntHashSet(0)
-    (0 until size).foreach { i =>
+    (0 until size).foreach { _ =>
       val n = Random.nextInt(50)
       val data = (0 until n).map { _ =>
         val v = Random.nextInt()

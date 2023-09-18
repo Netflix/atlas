@@ -1,9 +1,10 @@
+import sbt.Def
 import sbt._
 import sbt.Keys._
 
 object BuildSettings {
 
-  val compilerFlags = Seq(
+  val compilerFlags: Seq[String] = Seq(
     "-deprecation",
     "-unchecked",
     //"-Xlint:_,-infer-any",
@@ -15,9 +16,9 @@ object BuildSettings {
   lazy val checkLicenseHeaders = taskKey[Unit]("Check the license headers for all source files.")
   lazy val formatLicenseHeaders = taskKey[Unit]("Fix the license headers for all source files.")
 
-  lazy val baseSettings = GitVersion.settings
+  lazy val baseSettings: Seq[Def.Setting[_]] = GitVersion.settings
 
-  lazy val buildSettings = baseSettings ++ Seq(
+  lazy val buildSettings: Seq[Def.Setting[_]] = baseSettings ++ Seq(
     organization := "com.netflix.atlas_v1",
     scalaVersion := Dependencies.Versions.scala,
     scalacOptions := {
@@ -46,7 +47,7 @@ object BuildSettings {
     Test / parallelExecution := false
   )
 
-  val commonDeps = Seq(
+  val commonDeps: Seq[ModuleID] = Seq(
     Dependencies.jsr305,
     Dependencies.scalaCompat,
     Dependencies.scalaLogging,
@@ -56,7 +57,7 @@ object BuildSettings {
     Dependencies.munit % "test"
   )
 
-  val resolvers = Seq(
+  val resolvers: Seq[Resolver] = Seq(
     Resolver.mavenLocal,
     Resolver.mavenCentral,
   ) ++ Resolver.sonatypeOssRepos("snapshots")

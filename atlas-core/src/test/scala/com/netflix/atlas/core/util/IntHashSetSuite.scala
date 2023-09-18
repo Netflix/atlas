@@ -50,7 +50,7 @@ class IntHashSetSuite extends FunSuite {
   test("random") {
     val jset = new scala.collection.mutable.HashSet[Int]
     val iset = new IntHashSet(-1, 10)
-    (0 until 10000).foreach { i =>
+    (0 until 10000).foreach { _ =>
       val v = Random.nextInt()
       iset.add(v)
       jset.add(v)
@@ -69,7 +69,7 @@ class IntHashSetSuite extends FunSuite {
   test("toArray") {
     val jset = new scala.collection.mutable.HashSet[Int]
     val iset = new IntHashSet(-1, 10)
-    (0 until 10000).foreach { i =>
+    (0 until 10000).foreach { _ =>
       val v = Random.nextInt()
       iset.add(v)
       jset.add(v)

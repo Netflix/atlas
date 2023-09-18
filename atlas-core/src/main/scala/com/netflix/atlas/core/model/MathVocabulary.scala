@@ -270,7 +270,7 @@ object MathVocabulary extends Vocabulary {
       case StringListType(_) :: TimeSeriesType(t) :: _ if t.isGrouped =>
         // Multi-level group by with an implicit aggregate of :sum
         true
-      case StringListType(_) :: TimeSeriesType(t) :: _ =>
+      case StringListType(_) :: TimeSeriesType(_) :: _ =>
         // Default data or math aggregate group by applied across math operations
         true
     }

@@ -38,7 +38,7 @@ class ShardsSuite extends FunSuite {
     var min = Integer.MAX_VALUE
     var max = 0
     var sum = 0
-    counts.foreach { (k, v) =>
+    counts.foreach { (_, v) =>
       min = math.min(min, v)
       max = math.max(max, v)
       sum += v
@@ -274,7 +274,7 @@ class ShardsSuite extends FunSuite {
 
   test("nonNegative random") {
     val r = new Random()
-    (0 until 10_000).foreach { i =>
+    (0 until 10_000).foreach { _ =>
       val v = r.nextInt()
       assert(Shards.nonNegative(v) >= 0)
       if (v != Integer.MIN_VALUE) {
