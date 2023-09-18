@@ -158,10 +158,9 @@ object ClusterOps extends StrictLogging {
               -1,
               {
                 // Ignore non-fatal failure that may happen when a member is removed from cluster
-                case e: Exception => {
+                case e: Exception =>
                   logger.debug(s"suppressing failure for: $m", e)
                   Source.empty[O]
-                }
               }
             )
         }

@@ -19,7 +19,7 @@ import java.awt.Color;
 
 /**
  * Convert a color to simulate a type of color blindness for those with normal vision. Based on:
- * http://web.archive.org/web/20081014161121/http://www.colorjack.com/labs/colormatrix/
+ * <a href="http://web.archive.org/web/20081014161121/http://www.colorjack.com/labs/colormatrix/">colormatrix</a>.
  */
 public enum VisionType {
   normal(new double[] {

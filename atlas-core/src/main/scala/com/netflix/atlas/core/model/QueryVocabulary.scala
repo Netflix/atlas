@@ -431,7 +431,7 @@ object QueryVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case Nil :: (k: String) :: s                  => Query.False :: s
+      case Nil :: (_: String) :: s                  => Query.False :: s
       case ((v: String) :: Nil) :: (k: String) :: s => Query.Equal(k, v) :: s
       case StringListType(vs) :: (k: String) :: s   => Query.In(k, vs) :: s
     }

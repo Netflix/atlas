@@ -29,7 +29,7 @@ import scala.concurrent.duration.Duration
 class StreamSubscriptionManagerSuite extends FunSuite {
 
   test("queue is completed when unregistered") {
-    implicit val system = ActorSystem(getClass.getSimpleName)
+    implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
     val registry = new NoopRegistry
     val sm = new StreamSubscriptionManager(registry)

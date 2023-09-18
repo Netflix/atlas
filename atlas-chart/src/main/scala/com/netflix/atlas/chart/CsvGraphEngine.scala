@@ -32,7 +32,7 @@ class CsvGraphEngine(val name: String, val contentType: String, sep: String) ext
     val numberFmt = config.numberFormat
     writer.append("\"timestamp\"")
     (0 until count).zip(seriesList).map {
-      case (i, series) =>
+      case (_, series) =>
         val label = "\"%s\"".format(series.data.label)
         writer.append(sep).append(label)
     }

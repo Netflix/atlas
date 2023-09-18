@@ -19,10 +19,10 @@ import munit.FunSuite
 
 class DesSuite extends FunSuite {
 
-  val step = 60000L
-  val dataTags = Map("name" -> "cpu", "node" -> "i-1")
+  private val step = 60000L
+  private val dataTags = Map("name" -> "cpu", "node" -> "i-1")
 
-  val alignedStream = List(
+  private val alignedStream = List(
     List(Datapoint(dataTags, 0L * step, 1.0)),
     List(Datapoint(dataTags, 1L * step, 1.5)),
     List(Datapoint(dataTags, 2L * step, 1.6)),
@@ -39,7 +39,7 @@ class DesSuite extends FunSuite {
     List(Datapoint(dataTags, 13L * step, 1.2))
   )
 
-  val alignedInputTS = TimeSeries(
+  private val alignedInputTS = TimeSeries(
     dataTags,
     new ArrayTimeSeq(
       DsType.Gauge,
@@ -49,7 +49,7 @@ class DesSuite extends FunSuite {
     )
   )
 
-  val unalignedStream = List(
+  private val unalignedStream = List(
     List(Datapoint(dataTags, 1L * step, 1.5)),
     List(Datapoint(dataTags, 2L * step, 1.6)),
     List(Datapoint(dataTags, 3L * step, 1.7)),
@@ -65,7 +65,7 @@ class DesSuite extends FunSuite {
     List(Datapoint(dataTags, 13L * step, 1.2))
   )
 
-  val unalignedInputTS = TimeSeries(
+  private val unalignedInputTS = TimeSeries(
     dataTags,
     new ArrayTimeSeq(
       DsType.Gauge,
@@ -75,8 +75,8 @@ class DesSuite extends FunSuite {
     )
   )
 
-  val des = StatefulExpr.Des(DataExpr.Sum(Query.Equal("name", "cpu")), 2, 0.1, 0.02)
-  val sdes = StatefulExpr.SlidingDes(DataExpr.Sum(Query.Equal("name", "cpu")), 2, 0.1, 0.02)
+  private val des = StatefulExpr.Des(DataExpr.Sum(Query.Equal("name", "cpu")), 2, 0.1, 0.02)
+  private val sdes = StatefulExpr.SlidingDes(DataExpr.Sum(Query.Equal("name", "cpu")), 2, 0.1, 0.02)
 
   def eval(expr: TimeSeriesExpr, data: List[List[Datapoint]]): List[List[TimeSeries]] = {
     var state = Map.empty[StatefulExpr, Any]

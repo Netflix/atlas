@@ -45,7 +45,7 @@ class BlockSuite extends FunSuite {
 
   test("ConstantBlock.get") {
     val b = ConstantBlock(0L, 60, 42.0)
-    checkValues(b, (0 until 60).map(i => 42.0).toList)
+    checkValues(b, (0 until 60).map(_ => 42.0).toList)
   }
 
   test("ArrayBlock.get") {
@@ -66,9 +66,9 @@ class BlockSuite extends FunSuite {
 
   test("SparseBlock.get") {
     val data =
-      (0 until 5).map(i => 0) ++
-        (5 until 37).map(i => SparseBlock.NaN) ++
-        (37 until 60).map(i => 1)
+      (0 until 5).map(_ => 0) ++
+        (5 until 37).map(_ => SparseBlock.NaN) ++
+        (37 until 60).map(_ => 1)
     val indexes = data.map(_.asInstanceOf[Byte]).toArray
     val values = Array(42.0, 21.0)
     val b = SparseBlock(0L, indexes, values)
@@ -78,9 +78,9 @@ class BlockSuite extends FunSuite {
 
   test("SparseBlock.get, size > 120") {
     val data =
-      (0 until 5).map(i => 0) ++
-        (5 until 37).map(i => SparseBlock.NaN) ++
-        (37 until 360).map(i => 1)
+      (0 until 5).map(_ => 0) ++
+        (5 until 37).map(_ => SparseBlock.NaN) ++
+        (37 until 360).map(_ => 1)
     val indexes = data.map(_.asInstanceOf[Byte]).toArray
     val values = Array(42.0, 21.0)
     val b = SparseBlock(0L, indexes, values)
@@ -89,7 +89,7 @@ class BlockSuite extends FunSuite {
   }
 
   test("Block.get(pos, aggr)") {
-    import java.lang.{Double as JDouble}
+    import java.lang.Double as JDouble
     val b = ArrayBlock(0L, 2)
     b.buffer(0) = 0.0
     b.buffer(1) = Double.NaN
@@ -218,7 +218,7 @@ class BlockSuite extends FunSuite {
   }
 
   test("rollup") {
-    import java.lang.{Double as JDouble}
+    import java.lang.Double as JDouble
 
     val n = 5
 

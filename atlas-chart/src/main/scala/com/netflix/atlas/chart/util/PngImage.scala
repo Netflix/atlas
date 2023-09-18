@@ -210,8 +210,6 @@ object PngImage {
 
 case class PngImage(data: RenderedImage, metadata: Map[String, String] = Map.empty) {
 
-  type JList = java.util.List[String]
-
   def toByteArray: Array[Byte] = {
     val buffer = new ByteArrayOutputStream
     write(buffer)

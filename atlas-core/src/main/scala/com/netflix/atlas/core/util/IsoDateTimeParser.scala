@@ -57,12 +57,12 @@ object IsoDateTimeParser {
     str match {
       case IsoDate(d)                  => s"${d}T00:00:00"
       case IsoDateZ(d, z)              => s"${d}T00:00:00${normalizeZone(z)}"
-      case IsoDateTimeHHMM(d)          => s"${d}:00"
-      case IsoDateTimeHHMMZ(d, z)      => s"${d}:00${normalizeZone(z)}"
-      case IsoDateTimeHHMMSS(d)        => s"${d}"
-      case IsoDateTimeHHMMSSZ(d, z)    => s"${d}${normalizeZone(z)}"
-      case IsoDateTimeHHMMSSmmm(d)     => s"${d}"
-      case IsoDateTimeHHMMSSmmmZ(d, z) => s"${d}${normalizeZone(z)}"
+      case IsoDateTimeHHMM(d)          => s"$d:00"
+      case IsoDateTimeHHMMZ(d, z)      => s"$d:00${normalizeZone(z)}"
+      case IsoDateTimeHHMMSS(d)        => d
+      case IsoDateTimeHHMMSSZ(d, z)    => s"$d${normalizeZone(z)}"
+      case IsoDateTimeHHMMSSmmm(d)     => d
+      case IsoDateTimeHHMMSSmmmZ(d, z) => s"$d${normalizeZone(z)}"
       case _                           => str
     }
   }

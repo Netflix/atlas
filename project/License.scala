@@ -18,9 +18,9 @@ import scala.util.Using
 object License {
   private val lineSeparator = System.getProperty("line.separator")
 
-  def year = ZonedDateTime.now(ZoneOffset.UTC).getYear
+  def year: Int = ZonedDateTime.now(ZoneOffset.UTC).getYear
 
-  val apache2 = s"""
+  val apache2: String = s"""
    |/*
    | * Copyright 2014-$year Netflix, Inc.
    | *
@@ -71,7 +71,7 @@ object License {
   }
 
   def formatLicenseHeader(log: Logger, file: File): Unit = {
-    val lines = Source.fromFile(file, "UTF-8").getLines().toList
+    val lines = Using.resource(Source.fromFile(file, "UTF-8"))(_.getLines().toList)
     if (!checkLicenseHeader(lines)) {
       log.info(s"fixing license header: $file")
       writeLines(file, apache2 :: removeExistingHeader(lines))

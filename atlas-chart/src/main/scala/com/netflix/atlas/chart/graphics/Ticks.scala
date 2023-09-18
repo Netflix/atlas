@@ -37,7 +37,7 @@ object Ticks {
   private val monthTimeFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM")
   private val yearTimeFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy")
 
-  val timeBoundaries = List(
+  val timeBoundaries: List[(ChronoField, DateTimeFormatter)] = List(
     ChronoField.SECOND_OF_MINUTE -> DateTimeFormatter.ofPattern(":ss"),
     ChronoField.MINUTE_OF_HOUR   -> DateTimeFormatter.ofPattern("HH:mm"),
     ChronoField.HOUR_OF_DAY      -> DateTimeFormatter.ofPattern("HH:mm")

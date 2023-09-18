@@ -43,5 +43,5 @@ case class Style(color: Color = Color.BLACK, stroke: Stroke = new BasicStroke(1.
 }
 
 object Style {
-  val default = Style()
+  val default: Style = Style()
 }

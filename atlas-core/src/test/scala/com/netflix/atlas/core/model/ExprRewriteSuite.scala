@@ -24,7 +24,7 @@ class ExprRewriteSuite extends FunSuite {
     val avgHashCode = System.identityHashCode(ConsolidationFunction.Avg)
     val expr = DataExpr.Sum(Query.True)
     val result = expr.rewrite {
-      case q: Query => Query.False
+      case _: Query => Query.False
     }
     assertEquals(result, DataExpr.Sum(Query.False))
     assertEquals(System.identityHashCode(result.asInstanceOf[AggregateFunction].cf), avgHashCode)
@@ -37,7 +37,7 @@ class ExprRewriteSuite extends FunSuite {
     val trueHashCode = System.identityHashCode(Query.True)
     val expr = Query.And(Query.True, Query.False)
     val result = expr.rewrite {
-      case Query.Not(q) => Query.False
+      case Query.Not(_) => Query.False
     }
     assertEquals(result, Query.And(Query.True, Query.False))
     assertEquals(System.identityHashCode(result.asInstanceOf[Query.And].q1), trueHashCode)

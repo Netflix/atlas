@@ -20,9 +20,10 @@ import java.awt.Font
 import java.awt.Stroke
 import java.awt.image.BufferedImage
 import java.util.concurrent.ConcurrentHashMap
-
 import com.netflix.atlas.chart.util.Fonts
 import com.netflix.iep.config.ConfigManager
+
+import java.awt.Graphics2D
 
 object ChartSettings {
 
@@ -52,7 +53,7 @@ object ChartSettings {
     * is created.
     */
   val refImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB)
-  val refGraphics = refImage.createGraphics()
+  val refGraphics: Graphics2D = refImage.createGraphics()
 
   /** Dashed stroke typically used for grid lines. */
   val dashedStroke: Stroke = {
@@ -69,38 +70,38 @@ object ChartSettings {
   /**
     * Base monospaced font used for graphics. Monospace is used to make the layout easier.
     */
-  val monospaceFont = Fonts.loadFont(config.getString("fonts.monospace"))
+  val monospaceFont: Font = Fonts.loadFont(config.getString("fonts.monospace"))
 
   /** Small sized monospaced font. */
-  val smallFont = monospaceFont.deriveFont(10.0f)
+  val smallFont: Font = monospaceFont.deriveFont(10.0f)
 
   /** Normal sized monospaced font. */
-  val normalFont = monospaceFont
+  val normalFont: Font = monospaceFont
 
   /** Large sized monospaced font. */
-  val largeFont = monospaceFont.deriveFont(14.0f)
+  val largeFont: Font = monospaceFont.deriveFont(14.0f)
 
   /** Dimensions for a character using the small font. */
-  val smallFontDims = dimensions(smallFont)
+  val smallFontDims: Dimensions = dimensions(smallFont)
 
   /** Dimensions for a character using the normal font. */
-  val normalFontDims = dimensions(normalFont)
+  val normalFontDims: Dimensions = dimensions(normalFont)
 
   /** Dimensions for a character using the large font. */
-  val largeFontDims = dimensions(largeFont)
+  val largeFontDims: Dimensions = dimensions(largeFont)
 
   /**
     * Minimum width required for text elements. Value was chosen to allow typical messages to
     * display with a reasonable level of wrapping.
     */
-  val minWidthForText = smallFontDims.width * "Warnings: abcdef".length
+  val minWidthForText: Int = smallFontDims.width * "Warnings: abcdef".length
 
   /**
     * Minimum width required for text elements. Value was chosen to allow the typical legend with
     * stats to show cleanly. It also keeps the cutoff below the level of sizes that are frequently
     * used in practice.
     */
-  val minWidthForStats = smallFontDims.width * 45
+  val minWidthForStats: Int = smallFontDims.width * 45
 
   /**
     * Determine the dimensions for a single character using `font`. It is assumed that the font

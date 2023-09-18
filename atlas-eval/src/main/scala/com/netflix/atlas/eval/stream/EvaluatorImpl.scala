@@ -562,7 +562,7 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   private def toString(bytes: ByteString): String = {
-    val builder = new StringBuilder()
+    val builder = new java.lang.StringBuilder()
     bytes.foreach { b =>
       val c = b & 0xFF
       if (isPrintable(c))
@@ -572,7 +572,7 @@ private[stream] abstract class EvaluatorImpl(
       else
         builder.append("\\x").append(Integer.toHexString(c))
     }
-    builder.toString()
+    builder.toString
   }
 
   private def isPrintable(c: Int): Boolean = {

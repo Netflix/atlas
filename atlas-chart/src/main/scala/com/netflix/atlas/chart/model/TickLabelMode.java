@@ -28,17 +28,14 @@ public enum TickLabelMode {
   OFF,
 
   /**
-   * Use decimal metric prefixes for tick labels.
-   *
-   * https://en.wikipedia.org/wiki/Metric_prefix
+   * Use decimal <a href="https://en.wikipedia.org/wiki/Metric_prefix">metric prefixes</a> for
+   * tick labels.
    */
   DECIMAL,
 
   /**
-   * Use binary prefixes for tick labels. Typically only used for data in bytes such as disk
-   * sizes.
-   *
-   * https://en.wikipedia.org/wiki/Binary_prefix
+   * Use <a href="https://en.wikipedia.org/wiki/Binary_prefix">binary prefixes</a> for tick
+   * labels. Typically only used for data in bytes such as disk sizes.
    */
   BINARY,
 

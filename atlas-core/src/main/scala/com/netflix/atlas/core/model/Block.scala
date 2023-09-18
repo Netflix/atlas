@@ -180,7 +180,7 @@ sealed trait Block {
     * @param aggr  the aggregate value to read from the block
     */
   def get(pos: Int, aggr: Int = Block.Sum): Double = {
-    import java.lang.{Double as JDouble}
+    import java.lang.Double as JDouble
     val v = get(pos)
     (aggr: @scala.annotation.switch) match {
       case Block.Sum   => v
@@ -312,7 +312,7 @@ case class ArrayBlock(var start: Long, size: Int) extends MutableBlock {
     * @return  number of values that were changed as a result of the merge operation
     */
   def merge(b: Block): Int = {
-    import java.lang.{Double as JDouble}
+    import java.lang.Double as JDouble
     var changed = 0
     var i = 0
     while (i < size) {
@@ -353,7 +353,7 @@ case class ArrayBlock(var start: Long, size: Int) extends MutableBlock {
   }
 
   override def toString: String = {
-    val buf = new StringBuilder
+    val buf = new java.lang.StringBuilder
     buf.append("ArrayBlock(").append(start).append(",").append(size).append(",")
     buf.append("Array(").append(buffer.mkString(",")).append(")")
     buf.append(")")
@@ -383,7 +383,7 @@ object FloatArrayBlock {
   */
 case class FloatArrayBlock(start: Long, size: Int) extends Block {
 
-  val buffer = ArrayHelper.fill(size, Float.NaN)
+  val buffer: Array[Float] = ArrayHelper.fill(size, Float.NaN)
 
   def get(pos: Int): Double = buffer(pos).asInstanceOf[Double]
   val byteCount: Int = 2 + sizeOf(buffer)
@@ -411,7 +411,7 @@ case class FloatArrayBlock(start: Long, size: Int) extends Block {
   }
 
   override def toString: String = {
-    val buf = new StringBuilder
+    val buf = new java.lang.StringBuilder
     buf.append("FloatArrayBlock(").append(start).append(",").append(size).append(",")
     buf.append("Array(").append(buffer.mkString(",")).append(")")
     buf.append(")")
@@ -736,7 +736,7 @@ object SparseBlock {
       case v if v != v   => NaN
       case v if v == 0.0 => ZERO
       case v if v == 1.0 => ONE
-      case v             => UNDEFINED
+      case _             => UNDEFINED
     }
   }
 
@@ -797,7 +797,7 @@ case class SparseBlock(start: Long, indexes: Array[Byte], values: Array[Double])
   }
 
   override def toString: String = {
-    val buf = new StringBuilder
+    val buf = new java.lang.StringBuilder
     buf.append("SparseBlock(").append(start).append(",")
     buf.append("Array(").append(indexes.mkString(",")).append("),")
     buf.append("Array(").append(values.mkString(",")).append(")")

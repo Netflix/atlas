@@ -121,11 +121,10 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
           )
           // Fold to mutable map to avoid creating new Map on every update
           .foldLeft(mutable.Map.empty[String, Set[DataExpr]]) {
-            case (map, (id, dataExprs)) => {
+            case (map, (id, dataExprs)) =>
               map += map.get(id).fold(id -> dataExprs) { vs =>
                 id -> (dataExprs ++ vs)
               }
-            }
           }
           .toMap
 

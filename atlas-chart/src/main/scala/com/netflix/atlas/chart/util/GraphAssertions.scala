@@ -88,7 +88,7 @@ class GraphAssertions(goldenDir: String, targetDir: String, assert: (Any, Any) =
     </html>"""
 
     Using.resource(Streams.fileOut(new File(s"$targetDir/report.html"))) { out =>
-      out.write(report.toString.getBytes("UTF-8"))
+      out.write(report.getBytes("UTF-8"))
     }
   }
 

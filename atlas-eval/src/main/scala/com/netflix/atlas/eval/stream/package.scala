@@ -19,8 +19,6 @@ import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.stream.scaladsl.Flow
-import org.apache.pekko.stream.scaladsl.Source
-import org.apache.pekko.util.ByteString
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.JsonSupport
@@ -36,8 +34,4 @@ package object stream {
   type SourcesAndGroups = (DataSources, EurekaSource.Groups)
 
   type DataSourceLogger = (DataSource, JsonSupport) => Unit
-
-  type InstanceSource = Source[ByteString, NotUsed]
-  type InstanceSources = List[InstanceSource]
-  type InstanceSourceRef = SourceRef[ByteString, NotUsed]
 }

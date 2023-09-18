@@ -133,8 +133,8 @@ class MemoryBlockStoreSuite extends FunSuite {
   test("update, bulk update") {
     val n = 100
     val twoWeeks = 60 * 24 * 14
-    val data = (0 until twoWeeks).map(v => 0.0).toList
-    (0 until n).foreach(i => {
+    val data = (0 until twoWeeks).map(_ => 0.0).toList
+    (0 until n).foreach(_ => {
       val bs = new MemoryBlockStore(1, 60, 24 * 14)
       bs.update(0, data)
     })

@@ -26,7 +26,7 @@ object SummaryStats {
     var min = Double.PositiveInfinity
     var last = Double.NaN
 
-    ts.foreach(start, end) { (t, v) =>
+    ts.foreach(start, end) { (_, v) =>
       if (!v.isNaN) {
         total += v
         count += 1

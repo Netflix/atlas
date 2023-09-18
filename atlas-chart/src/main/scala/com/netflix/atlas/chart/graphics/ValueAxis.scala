@@ -291,7 +291,7 @@ case class RightValueAxis(plotDef: PlotDef, styles: Styles, min: Double, max: Do
 
 object ValueAxis {
 
-  val labelHeight = ChartSettings.normalFontDims.height
+  val labelHeight: Int = ChartSettings.normalFontDims.height
 
   /**
     * Width of value tick labels. The assumption is a monospace font with 7 characters. The 7 is
@@ -300,9 +300,9 @@ object ValueAxis {
     * - `[sign][3digits][decimal point][1digit][suffix]`: e.g., `-102.3K`
     * - `-1.0e-5`
     */
-  val tickLabelWidth = ChartSettings.smallFontDims.width * 7
+  val tickLabelWidth: Int = ChartSettings.smallFontDims.width * 7
 
   val tickMarkLength = 4
 
-  val minTickLabelHeight = ChartSettings.smallFontDims.height * 3
+  val minTickLabelHeight: Int = ChartSettings.smallFontDims.height * 3
 }

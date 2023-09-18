@@ -189,14 +189,14 @@ class TextCopyBufferSuite extends FunSuite {
   }
 
   private def toString(reader: Reader): String = {
-    val builder = new StringBuilder
+    val builder = new java.lang.StringBuilder
     val buf = new Array[Char](128)
     var length = reader.read(buf)
     while (length > 0) {
-      builder.appendAll(buf, 0, length)
+      builder.append(buf, 0, length)
       length = reader.read(buf)
     }
-    builder.toString()
+    builder.toString
   }
 
   test("reader") {

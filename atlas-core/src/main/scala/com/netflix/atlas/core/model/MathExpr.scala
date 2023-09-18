@@ -1009,7 +1009,7 @@ object MathExpr {
           // aggregate function. Modifications to the aggregate need to be represented
           // after the operation as part of the expression string. There are two
           // categories: offsets applied to the data function and group by.
-          val buffer = new StringBuilder
+          val buffer = new java.lang.StringBuilder
           buffer.append(s"$q,:$name")
           getOffset(evalExpr).foreach(d => buffer.append(s",$d,:offset"))
 
@@ -1018,7 +1018,7 @@ object MathExpr {
             buffer.append(grouping.mkString(",(,", ",", ",),:by"))
           }
 
-          buffer.toString()
+          buffer.toString
         case t: TimeSeriesExpr if groupingMatches =>
           // The passed in expression maybe the result of a rewrite to the display expression
           // that was not applied to the eval expression. If it changes the grouping, then it

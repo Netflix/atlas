@@ -23,7 +23,6 @@ import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.stream.scaladsl.Compression
-import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -35,8 +34,6 @@ import scala.util.Failure
 import scala.util.Success
 
 private[stream] object EurekaSource extends StrictLogging {
-
-  type ResponseFlow = Flow[NotUsed, GroupResponse, NotUsed]
 
   /**
     * Subscribes to all instances that are available for an app or a vip in eureka.

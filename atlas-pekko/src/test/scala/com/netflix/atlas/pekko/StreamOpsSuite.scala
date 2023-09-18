@@ -187,7 +187,7 @@ class StreamOpsSuite extends FunSuite {
   test("map") {
     val latch = new CountDownLatch(100)
     val future = Source(0 until 10)
-      .map { v =>
+      .map { _ =>
         new Message(latch, Source(0 until 10))
       }
       .via(StreamOps.map { (msg, mat) =>
@@ -201,7 +201,7 @@ class StreamOpsSuite extends FunSuite {
   test("flatMapConcat") {
     val latch = new CountDownLatch(100)
     val future = Source(0 until 10)
-      .map { v =>
+      .map { _ =>
         new Message(latch, Source(0 until 10))
       }
       .via(StreamOps.flatMapConcat { (msg, mat) =>
