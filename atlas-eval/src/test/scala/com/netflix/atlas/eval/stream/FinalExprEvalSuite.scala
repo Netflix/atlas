@@ -504,7 +504,7 @@ class FinalExprEvalSuite extends FunSuite {
     assertEquals(timeseries.size, 6)
     timeseries.zip(expected).foreach {
       case (envelope, expectedValue) =>
-        val ts = envelope.message.asInstanceOf[TimeSeriesMessage]
+        val ts = envelope.getMessage.asInstanceOf[TimeSeriesMessage]
         checkValue(ts, expectedValue)
     }
   }
