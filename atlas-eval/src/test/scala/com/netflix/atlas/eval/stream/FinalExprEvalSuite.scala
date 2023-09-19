@@ -461,6 +461,54 @@ class FinalExprEvalSuite extends FunSuite {
     })
   }
 
+  test("multi-level group by with stateful operation") {
+    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "rps")), List("node", "app"))
+    val input = List(
+      sources(ds("a", s"http://atlas/graph?q=$expr,2,:rolling-max,:max,(,app,),:by")),
+      group(
+        0,
+        AggrDatapoint(0, step, expr, "i-1", Map("app" -> "foo", "node" -> "i-1"), 42.0),
+        AggrDatapoint(0, step, expr, "i-2", Map("app" -> "foo", "node" -> "i-2"), 1.0)
+      ),
+      group(
+        1,
+        AggrDatapoint(0, step, expr, "i-1", Map("app" -> "foo", "node" -> "i-1"), 42.0),
+        AggrDatapoint(0, step, expr, "i-2", Map("app" -> "foo", "node" -> "i-2"), 21.0)
+      ),
+      group(
+        2,
+        AggrDatapoint(0, step, expr, "i-1", Map("app" -> "foo", "node" -> "i-1"), 42.0),
+        AggrDatapoint(0, step, expr, "i-2", Map("app" -> "foo", "node" -> "i-2"), 84.0)
+      ),
+      group(
+        3,
+        AggrDatapoint(0, step, expr, "i-1", Map("app" -> "foo", "node" -> "i-1"), 42.0),
+        AggrDatapoint(0, step, expr, "i-2", Map("app" -> "foo", "node" -> "i-2"), 21.0)
+      ),
+      group(
+        4,
+        AggrDatapoint(0, step, expr, "i-1", Map("app" -> "foo", "node" -> "i-1"), 21.0),
+        AggrDatapoint(0, step, expr, "i-2", Map("app" -> "foo", "node" -> "i-2"), 21.0)
+      ),
+      group(
+        5,
+        AggrDatapoint(0, step, expr, "i-1", Map("app" -> "foo", "node" -> "i-1"), 21.0),
+        AggrDatapoint(0, step, expr, "i-2", Map("app" -> "foo", "node" -> "i-2"), 21.0)
+      )
+    )
+
+    val output = run(input)
+
+    val expected = Array(42.0, 42.0, 84.0, 84.0, 42.0, 21.0)
+    val timeseries = output.filter(isTimeSeries)
+    assertEquals(timeseries.size, 6)
+    timeseries.zip(expected).foreach {
+      case (envelope, expectedValue) =>
+        val ts = envelope.getMessage.asInstanceOf[TimeSeriesMessage]
+        checkValue(ts, expectedValue)
+    }
+  }
+
   // https://github.com/Netflix/atlas/issues/762
   test(":legend is honored") {
     val expr = DataExpr.Sum(Query.Equal("name", "rps"))
