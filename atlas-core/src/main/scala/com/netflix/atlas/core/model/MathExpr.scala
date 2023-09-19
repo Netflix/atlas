@@ -798,7 +798,7 @@ object MathExpr {
           List(TimeSeries(tags, k, t.data))
       }
 
-      ResultSet(this, newData, context.state)
+      ResultSet(this, newData, inner.state)
     }
   }
 
