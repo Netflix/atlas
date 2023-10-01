@@ -1,3 +1,3 @@
 # 
 
-This library adds some helpers to query the state of akka for monitoring purposes.
+This library adds some helpers to query the state of pekko for monitoring purposes.
