@@ -4,7 +4,7 @@ on: [pull_request]
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-latest-xlarge
     strategy:
       matrix:
         java: [17, 20]
