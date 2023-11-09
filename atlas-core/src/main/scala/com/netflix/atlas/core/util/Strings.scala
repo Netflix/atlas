@@ -218,7 +218,7 @@ object Strings {
       }
       pos += 1
     }
-    buf.toString()
+    buf.toString
   }
 
   /** Converts a hex character into an integer value. Returns -1 if the input is not a
@@ -359,62 +359,51 @@ object Strings {
   }
 
   /**
-    * Return the time associated with a given string. The time will be relative
-    * to `now`.
+    * Return the time associated with a given string. Times can be relative to a reference
+    * point using syntax `<ref><+/-><duration>`. Supported references points are `s`, `e`, `now`,
+    * and `epoch`. See `parseDuration` for more details about durations.
     */
-  def parseDate(str: String, tz: ZoneId = ZoneOffset.UTC): ZonedDateTime = {
-    parseDate(ZonedDateTime.now(tz), str, tz)
-  }
-
-  /**
-    * Return the time associated with a given string.
-    *
-    * - now, n:
-    * - start, s:
-    * - end, e:
-    * - epoch:
-    *
-    * - seconds, s:
-    * - minutes, m:
-    * - hours, h:
-    * - days, d:
-    * - weeks, w:
-    * - months
-    * - years, y:
-    */
-  def parseDate(ref: ZonedDateTime, str: String, tz: ZoneId): ZonedDateTime = str match {
-    case RelativeDate(r, op, p) =>
-      op match {
-        case "-" => parseRefVar(ref, r).minus(parseDuration(p))
-        case "+" => parseRefVar(ref, r).plus(parseDuration(p))
-        case _   => throw new IllegalArgumentException("invalid operation " + op)
-      }
-    case NamedDate(r) =>
-      parseRefVar(ref, r)
-    case UnixDate(d) =>
-      // If the value is too big assume it is a milliseconds unit like java uses. The overlap is
-      // fairly small and not in the range we typically use:
-      // scala> Instant.ofEpochMilli(Integer.MAX_VALUE)
-      // res1: java.time.Instant = 1970-01-25T20:31:23.647Z
-      val v = d.toLong
-      val t = if (v > Integer.MAX_VALUE) v else v * 1000L
-      ZonedDateTime.ofInstant(Instant.ofEpochMilli(t), tz)
-    case str =>
-      try IsoDateTimeParser.parse(str, tz)
-      catch {
-        case e: Exception => throw new IllegalArgumentException(s"invalid date $str", e)
-      }
+  def parseDate(
+    str: String,
+    tz: ZoneId = ZoneOffset.UTC,
+    refs: Map[String, ZonedDateTime] = Map.empty
+  ): ZonedDateTime = {
+    str match {
+      case RelativeDate(r, op, p) =>
+        op match {
+          case "-" => parseRefVar(refs, r).minus(parseDuration(p))
+          case "+" => parseRefVar(refs, r).plus(parseDuration(p))
+          case _   => throw new IllegalArgumentException("invalid operation " + op)
+        }
+      case NamedDate(r) =>
+        parseRefVar(refs, r)
+      case UnixDate(d) =>
+        // If the value is too big assume it is a milliseconds unit like java uses. The overlap is
+        // fairly small and not in the range we typically use:
+        // scala> Instant.ofEpochMilli(Integer.MAX_VALUE)
+        // res1: java.time.Instant = 1970-01-25T20:31:23.647Z
+        val v = d.toLong
+        val t = if (v > Integer.MAX_VALUE) v else v * 1000L
+        ZonedDateTime.ofInstant(Instant.ofEpochMilli(t), tz)
+      case str =>
+        try IsoDateTimeParser.parse(str, tz)
+        catch {
+          case e: Exception => throw new IllegalArgumentException(s"invalid date $str", e)
+        }
+    }
   }
 
   /**
     * Returns the datetime object associated with a given reference point.
     */
-  private def parseRefVar(ref: ZonedDateTime, v: String): ZonedDateTime = {
-    v match {
-      case "now"   => ZonedDateTime.now(ZoneOffset.UTC)
-      case "epoch" => ZonedDateTime.ofInstant(Instant.EPOCH, ZoneOffset.UTC)
-      case _       => ref
-    }
+  private def parseRefVar(refs: Map[String, ZonedDateTime], v: String): ZonedDateTime = {
+    refs.getOrElse(
+      v,
+      v match {
+        case "epoch" => ZonedDateTime.ofInstant(Instant.EPOCH, ZoneOffset.UTC)
+        case _       => ZonedDateTime.now(ZoneOffset.UTC)
+      }
+    )
   }
 
   /**
@@ -461,15 +450,20 @@ object Strings {
     * @return
     *     Tuple `start -> end`.
     */
-  def timeRange(s: String, e: String, tz: ZoneId = ZoneOffset.UTC): (Instant, Instant) = {
+  def timeRange(
+    s: String,
+    e: String,
+    tz: ZoneId = ZoneOffset.UTC,
+    refs: Map[String, ZonedDateTime] = Map.empty
+  ): (Instant, Instant) = {
     val range = if (Strings.isRelativeDate(s, true) || s == "e") {
       require(!Strings.isRelativeDate(e, true), "start and end are both relative")
-      val end = Strings.parseDate(e, tz)
-      val start = Strings.parseDate(end, s, tz)
+      val end = Strings.parseDate(e, tz, refs)
+      val start = Strings.parseDate(s, tz, refs + ("e" -> end))
       start.toInstant -> end.toInstant
     } else {
-      val start = Strings.parseDate(s, tz)
-      val end = Strings.parseDate(start, e, tz)
+      val start = Strings.parseDate(s, tz, refs)
+      val end = Strings.parseDate(e, tz, refs + ("s" -> start))
       start.toInstant -> end.toInstant
     }
     require(isBeforeOrEqual(range._1, range._2), "end time is before start time")

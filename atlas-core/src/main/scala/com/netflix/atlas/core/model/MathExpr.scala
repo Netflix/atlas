@@ -223,19 +223,6 @@ object MathExpr {
 
     def finalGrouping: List[String] = Nil
 
-    private def parseDate(
-      gs: ZonedDateTime,
-      ge: ZonedDateTime,
-      ref: Option[String],
-      d: String
-    ): ZonedDateTime = {
-      ref match {
-        case Some("gs") => Strings.parseDate(gs, d, zone)
-        case Some("ge") => Strings.parseDate(ge, d, zone)
-        case _          => Strings.parseDate(d, zone)
-      }
-    }
-
     private def parseDates(context: EvalContext): (ZonedDateTime, ZonedDateTime) = {
       val gs = Instant.ofEpochMilli(context.start).atZone(zone)
       val ge = Instant.ofEpochMilli(context.end).atZone(zone)
@@ -254,20 +241,22 @@ object MathExpr {
         throw new IllegalArgumentException("end time is relative to itself")
       }
 
+      val refs = Map("gs" -> gs, "ge" -> ge)
+
       // If one is relative to the other, the absolute date must be computed first
       if (sref.contains("e")) {
         // start time is relative to end time
-        val end = parseDate(gs, ge, eref, e)
-        val start = Strings.parseDate(end, s, zone)
+        val end = Strings.parseDate(e, zone, refs)
+        val start = Strings.parseDate(s, zone, refs + ("e" -> end))
         start -> end
       } else if (eref.contains("s")) {
         // end time is relative to start time
-        val start = parseDate(gs, ge, sref, s)
-        val end = Strings.parseDate(start, e, zone)
+        val start = Strings.parseDate(s, zone, refs)
+        val end = Strings.parseDate(e, zone, refs + ("s" -> start))
         start -> end
       } else {
-        val start = parseDate(gs, ge, sref, s)
-        val end = parseDate(gs, ge, eref, e)
+        val start = Strings.parseDate(s, zone, refs)
+        val end = Strings.parseDate(e, zone, refs)
         start -> end
       }
     }
