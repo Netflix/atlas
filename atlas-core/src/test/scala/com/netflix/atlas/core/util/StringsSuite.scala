@@ -400,25 +400,25 @@ class StringsSuite extends FunSuite {
   test("parseDate, relative minus") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 0, 0, 0, 0, ZoneOffset.UTC)
-    assertEquals(parseDate(ref, "e-3h", ZoneOffset.UTC), expected)
+    assertEquals(parseDate("e-3h", ZoneOffset.UTC, Map("e" -> ref)), expected)
   }
 
   test("parseDate, relative plus") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 3, 0, 42, 0, ZoneOffset.UTC)
-    assertEquals(parseDate(ref, "start+42s", ZoneOffset.UTC), expected)
+    assertEquals(parseDate("start+42s", ZoneOffset.UTC, Map("start" -> ref)), expected)
   }
 
   test("parseDate, relative iso") {
     val ref = ZonedDateTime.of(2012, 2, 2, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 2, 54, 18, 0, ZoneOffset.UTC)
-    assertEquals(parseDate(ref, "start-P1DT5M42S", ZoneOffset.UTC), expected)
+    assertEquals(parseDate("start-P1DT5M42S", ZoneOffset.UTC, Map("start" -> ref)), expected)
   }
 
   test("parseDate, epoch + 4h") {
     val ref = ZonedDateTime.of(2012, 2, 2, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(1970, 1, 1, 4, 0, 0, 0, ZoneOffset.UTC)
-    assertEquals(parseDate(ref, "epoch+4h", ZoneOffset.UTC), expected)
+    assertEquals(parseDate("epoch+4h", ZoneOffset.UTC), expected)
   }
 
   test("parseDate, relative invalid op") {
@@ -456,13 +456,13 @@ class StringsSuite extends FunSuite {
   test("parseDate, s=e-0h") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
-    assertEquals(parseDate(ref, "e-0h", ZoneOffset.UTC), expected)
+    assertEquals(parseDate("e-0h", ZoneOffset.UTC, Map("e" -> ref)), expected)
   }
 
   test("parseDate, s=e") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
-    assertEquals(parseDate(ref, "e", ZoneOffset.UTC), expected)
+    assertEquals(parseDate("e", ZoneOffset.UTC, Map("e" -> ref)), expected)
   }
 
   test("parseColor") {
@@ -635,5 +635,12 @@ class StringsSuite extends FunSuite {
     val (s, e) = timeRange("2018-07-24", "s+5m")
     assertEquals(s, parseDate("2018-07-24").toInstant)
     assertEquals(e, parseDate("2018-07-24T00:05").toInstant)
+  }
+
+  test("range: explicit now") {
+    val now = ZonedDateTime.parse("2018-07-24T12:00:00.000Z")
+    val (s, e) = timeRange("2018-07-24", "now-3h", refs = Map("now" -> now))
+    assertEquals(s, parseDate("2018-07-24T00:00:00.000Z").toInstant)
+    assertEquals(e, parseDate("2018-07-24T09:00:00.000Z").toInstant)
   }
 }
