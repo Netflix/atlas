@@ -6,13 +6,13 @@ object Dependencies {
   object Versions {
     val pekko       = "1.0.1"
     val pekkoHttpV  = "1.0.0"
-    val iep        = "5.0.12"
-    val jackson    = "2.15.2"
-    val log4j      = "2.20.0"
+    val iep        = "5.0.14"
+    val jackson    = "2.15.3"
+    val log4j      = "2.21.1"
     val scala      = "2.13.12"
     val slf4j      = "1.7.36"
-    val spectator  = "1.6.11"
-    val spring     = "6.0.12"
+    val spectator  = "1.7.2"
+    val spring     = "6.0.13"
 
     val crossScala = Seq(scala)
   }
@@ -29,7 +29,7 @@ object Dependencies {
   val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.8"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "4.2.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.15.2"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.15.3"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
   val iepDynConfig      = "com.netflix.iep" % "iep-dynconfig" % iep
@@ -69,7 +69,7 @@ object Dependencies {
   val spectatorLog4j    = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2       = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
   val springContext     = "org.springframework" % "spring-context" % spring
-  val typesafeConfig    = "com.typesafe" % "config" % "1.4.2"
+  val typesafeConfig    = "com.typesafe" % "config" % "1.4.3"
 }
 
 // format: on
