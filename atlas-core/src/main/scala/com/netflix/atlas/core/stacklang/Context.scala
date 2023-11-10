@@ -43,8 +43,11 @@ case class Context(
   variables: Map[String, Any],
   initialVariables: Map[String, Any] = Map.empty,
   frozenStack: List[Any] = Nil,
-  features: Features = Features.STABLE
+  features: Features = Features.STABLE,
+  callDepth: Int = 0
 ) {
+
+  require(callDepth >= 0, "call depth cannot be negative")
 
   /**
     * Remove the contents of the stack and push them onto the frozen stack. The variable
@@ -60,5 +63,15 @@ case class Context(
     */
   def unfreeze: Context = {
     copy(stack = stack ::: frozenStack, frozenStack = Nil)
+  }
+
+  /** Increase the call depth for detecting deeply nested calls. */
+  def incrementCallDepth: Context = {
+    copy(callDepth = callDepth + 1)
+  }
+
+  /** Decrease the call depth for detecting deeply nested calls. */
+  def decrementCallDepth: Context = {
+    copy(callDepth = callDepth - 1)
   }
 }
