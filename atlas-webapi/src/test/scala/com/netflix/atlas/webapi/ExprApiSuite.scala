@@ -163,7 +163,7 @@ class ExprApiSuite extends MUnitRouteSuite {
   testGet("/api/v1/expr/complete?q=name,sps,:eq,(,nf.cluster,)") {
     assertEquals(response.status, StatusCodes.OK)
     val data = Json.decode[List[ExprApiSuite.Candidate]](responseAs[String]).map(_.name)
-    assertEquals(data, List("by", "by", "cg", "offset", "palette"))
+    assertEquals(data, List("by", "by", "pi", "cg", "offset", "palette"))
   }
 
   // TODO: Right now these fail. As a future improvement suggestions should be possible within
