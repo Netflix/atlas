@@ -40,6 +40,7 @@ object MathVocabulary extends Vocabulary {
     As,
     GroupBy,
     Const,
+    Pi,
     Random,
     SeededRandom,
     Time,
@@ -51,6 +52,7 @@ object MathVocabulary extends Vocabulary {
     ClampMax,
     Abs,
     Negate,
+    Sine,
     Sqrt,
     PerStep,
     Add,
@@ -231,7 +233,12 @@ object MathVocabulary extends Vocabulary {
       ),
       List("name,playback.startLatency,:eq")
     ),
-    Macro("median", List("(", "50", ")", ":percentiles"), List("name,requestLatency,:eq"))
+    Macro("median", List("(", "50", ")", ":percentiles"), List("name,requestLatency,:eq")),
+    Macro("cos", List(":pi", "2", ":div", ":swap", ":sub", ":sin")),
+    Macro("tan", List(":dup", ":sin", ":swap", ":cos", ":div")),
+    Macro("cot", List(":dup", ":cos", ":swap", ":sin", ":div")),
+    Macro("sec", List("1", ":swap", ":cos", ":div")),
+    Macro("csc", List("1", ":swap", ":sin", ":div"))
   )
 
   case object As extends SimpleWord {
@@ -322,6 +329,28 @@ object MathVocabulary extends Vocabulary {
     override def signature: String = "Double -- TimeSeriesExpr"
 
     override def examples: List[String] = List("42")
+  }
+
+  case object Pi extends SimpleWord {
+
+    override def name: String = "pi"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case stack => MathExpr.Constant(Math.PI) :: stack
+    }
+
+    override def summary: String =
+      """
+        |Generates a line where each datapoint has the value of the mathematical constant π.
+      """.stripMargin.trim
+
+    override def signature: String = " -- TimeSeriesExpr"
+
+    override def examples: List[String] = Nil
   }
 
   case object Random extends SimpleWord {
@@ -724,6 +753,19 @@ object MathVocabulary extends Vocabulary {
       """
         |Compute a new time series where each interval has the negated value of the input time
         |series.
+      """.stripMargin.trim
+  }
+
+  case object Sine extends UnaryWord {
+
+    override def name: String = "sin"
+
+    def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Sine(t)
+
+    override def summary: String =
+      """
+        |Compute a new time series where each interval has the sine of the value from the
+        |input time series.
       """.stripMargin.trim
   }
 
@@ -1197,4 +1239,5 @@ object MathVocabulary extends Vocabulary {
       "name,requestLatency,:eq,(,25,50,90,)"
     )
   }
+
 }

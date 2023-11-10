@@ -378,6 +378,13 @@ object MathExpr {
     def apply(v: Double): Double = -v
   }
 
+  case class Sine(expr: TimeSeriesExpr) extends UnaryMathExpr {
+
+    def name: String = "sin"
+
+    def apply(v: Double): Double = math.sin(v)
+  }
+
   case class Sqrt(expr: TimeSeriesExpr) extends UnaryMathExpr {
 
     def name: String = "sqrt"
