@@ -103,11 +103,18 @@ case class Interpreter(vocabulary: List[Word]) {
 
   @scala.annotation.tailrec
   private def execute(s: Step): Context = {
+    if (s.context.callDepth > 10) {
+      // Prevent infinite loops. Operations like `:each` and `:map` to traverse a list are
+      // finite and will increase the depth by 1. The max call depth of 10 is arbitrary, but
+      // should be more than enough for legitimate use-cases. Testing 1M actual expressions, 3
+      // was the highest depth seen.
+      throw new IllegalStateException(s"looping detected")
+    }
     if (s.program.isEmpty) s.context else execute(nextStep(s))
   }
 
   final def execute(program: List[Any], context: Context, unfreeze: Boolean = true): Context = {
-    val result = execute(Step(program, context))
+    val result = execute(Step(program, context.incrementCallDepth)).decrementCallDepth
     if (unfreeze) result.unfreeze else result
   }
 
