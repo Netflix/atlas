@@ -110,14 +110,11 @@ class SubscribeApi(
       .via(new WebSocketSessionManager(streamMeta, register, subscribe))
       .flatMapMerge(Int.MaxValue, msg => msg)
       .groupedWithin(batchSize, 1.second)
-      .statefulMapConcat { () =>
-        // Re-use the stream to reduce allocations
-        val baos = new ByteArrayOutputStream()
-
-        { seq =>
-          List(BinaryMessage(LwcMessages.encodeBatch(seq, baos)))
-        }
-      }
+      .statefulMap(() => new ByteArrayOutputStream())(
+        (baos, seq) => baos -> List(BinaryMessage(LwcMessages.encodeBatch(seq, baos))),
+        _ => None
+      )
+      .mapConcat(identity)
       .watchTermination() { (_, f) =>
         f.onComplete {
           case Success(_) =>
