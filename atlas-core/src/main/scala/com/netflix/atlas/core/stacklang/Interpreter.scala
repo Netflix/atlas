@@ -113,21 +113,25 @@ case class Interpreter(vocabulary: List[Word]) {
     if (s.program.isEmpty) s.context else execute(nextStep(s))
   }
 
-  final def execute(program: List[Any], context: Context, unfreeze: Boolean = true): Context = {
+  final def executeProgram(
+    program: List[Any],
+    context: Context,
+    unfreeze: Boolean = true
+  ): Context = {
     val result = execute(Step(program, context.incrementCallDepth)).decrementCallDepth
     if (unfreeze) result.unfreeze else result
   }
 
-  final def execute(program: List[Any]): Context = {
-    execute(program, Context(this, Nil, Map.empty))
+  final def executeProgram(program: List[Any]): Context = {
+    executeProgram(program, Context(this, Nil, Map.empty))
   }
 
-  final def execute(program: String): Context = {
-    execute(splitAndTrim(program))
-  }
-
-  final def execute(program: String, vars: Map[String, Any], features: Features): Context = {
-    execute(splitAndTrim(program), Context(this, Nil, vars, vars, features = features))
+  final def execute(
+    program: String,
+    vars: Map[String, Any] = Map.empty,
+    features: Features = Features.STABLE
+  ): Context = {
+    executeProgram(splitAndTrim(program), Context(this, Nil, vars, vars, features = features))
   }
 
   @scala.annotation.tailrec
@@ -145,7 +149,7 @@ case class Interpreter(vocabulary: List[Word]) {
   }
 
   final def debug(program: List[Any]): List[Step] = {
-    debug(program, Context(this, Nil, Map.empty))
+    debug(program, Context(this, Nil, Map.empty, features = Features.UNSTABLE))
   }
 
   final def debug(program: String): List[Step] = {
