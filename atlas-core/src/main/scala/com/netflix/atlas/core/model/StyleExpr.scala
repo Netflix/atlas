@@ -33,6 +33,7 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     // updates to the object.
     val vs = settings.toList.sortWith(_._1 > _._1).map {
       case ("sed", v) => v
+      case ("ls", v)  => s":$v"
       case (k, v)     => s"$v,:$k"
     }
     if (vs.isEmpty) expr.toString else s"$expr,${vs.mkString(",")}"

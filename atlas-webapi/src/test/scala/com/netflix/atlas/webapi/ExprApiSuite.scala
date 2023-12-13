@@ -461,6 +461,27 @@ class ExprApiSuite extends MUnitRouteSuite {
     val expected = "name,cpuUser,:eq,:sum,foo$(name)$(abc) bar$(def)baz,:legend"
     assertEquals(normalize(expr), List(expected))
   }
+
+  test("normalize :line") {
+    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,stack,),:by"
+    assertEquals(normalize(expr), List(expr))
+    assertEquals(normalize(s"$expr,:line"), List(expr))
+  }
+
+  test("normalize :stack") {
+    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,stack,),:by,:stack"
+    assertEquals(normalize(expr), List(expr))
+  }
+
+  test("normalize :area") {
+    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,stack,),:by,:area"
+    assertEquals(normalize(expr), List(expr))
+  }
+
+  test("normalize :vspan") {
+    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,stack,),:by,:vspan"
+    assertEquals(normalize(expr), List(expr))
+  }
 }
 
 object ExprApiSuite {
