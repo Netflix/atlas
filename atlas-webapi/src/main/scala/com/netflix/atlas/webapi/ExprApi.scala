@@ -325,8 +325,7 @@ object ExprApi {
       }
       // Remove explicit :const and :line, it can be determined from implicit conversion
       // and add visual clutter
-      rewritten
-        .toString
+      rewritten.toString
         .replace(",:const", "")
         .replace(",:line", "")
     }
