@@ -30,6 +30,7 @@ import com.netflix.atlas.core.model.TimeSeriesExpr
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.Word
+import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.CustomDirectives.*
@@ -154,7 +155,7 @@ class ExprApi extends WebApi {
   // macros it alwasy returns true. This ensures the operation will actually be successful before
   // returning to a user.
   private def execWorks(interpreter: Interpreter, w: Word, ctxt: Context): Boolean = {
-    Try(interpreter.execute(List(s":${w.name}"), ctxt)).isSuccess
+    Try(interpreter.executeProgram(List(s":${w.name}"), ctxt)).isSuccess
   }
 
   private def matches(interpreter: Interpreter, w: Word, ctxt: Context): Boolean = {
@@ -163,7 +164,7 @@ class ExprApi extends WebApi {
 
   private def processCompleteRequest(query: String, vocabName: String): HttpResponse = {
     val interpreter = newInterpreter(vocabName)
-    val result = interpreter.execute(query)
+    val result = interpreter.execute(query, features = Features.UNSTABLE)
 
     val candidates = interpreter.vocabulary.filter { w =>
       matches(interpreter, w, result)
@@ -185,7 +186,7 @@ class ExprApi extends WebApi {
     */
   private def processQueriesRequest(expr: String, vocabName: String): HttpResponse = {
     val interpreter = newInterpreter(vocabName)
-    val result = interpreter.execute(expr)
+    val result = interpreter.execute(expr, features = Features.UNSTABLE)
 
     val exprs = result.stack.collect {
       case ModelExtractors.PresentationType(t) => t
@@ -291,7 +292,7 @@ object ExprApi {
   }
 
   private def eval(interpreter: Interpreter, expr: String): List[StyleExpr] = {
-    interpreter.execute(expr).stack.collect {
+    interpreter.execute(expr, features = Features.UNSTABLE).stack.collect {
       case ModelExtractors.PresentationType(t) => t
     }
   }
