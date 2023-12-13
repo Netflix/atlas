@@ -17,7 +17,6 @@ package com.netflix.atlas.core.model
 
 import java.time.ZoneId
 import java.time.ZoneOffset
-
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.model.MathExpr.AggrMathExpr
 import com.netflix.atlas.core.model.MathExpr.NamedRewrite
@@ -26,6 +25,7 @@ import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
+import com.netflix.spectator.api.histogram.PercentileBuckets
 
 object MathVocabulary extends Vocabulary {
 
@@ -75,6 +75,7 @@ object MathVocabulary extends Vocabulary {
     Min,
     Max,
     Percentiles,
+    SampleCount,
     Macro(
       "avg",
       List(
@@ -1240,4 +1241,65 @@ object MathVocabulary extends Vocabulary {
     )
   }
 
+  /**
+    * Compute the estimated number of samples within a range of the distribution for a
+    * percentile approximation.
+    */
+  case object SampleCount extends Word {
+
+    override def name: String = "sample-count"
+
+    override def isStable: Boolean = false
+
+    override def matches(stack: List[Any]): Boolean = {
+      stack match {
+        case DoubleType(_) :: DoubleType(_) :: (_: Query) :: _ => true
+        case _                                                 => false
+      }
+    }
+
+    private def bucketLabel(prefix: String, v: Double): String = {
+      val idx = PercentileBuckets.indexOf(v.toLong)
+      f"$prefix$idx%04X"
+    }
+
+    private def bucketQuery(prefix: String, min: Double, max: Double): Query = {
+      val ge = Query.GreaterThanEqual(TagKey.percentile, bucketLabel(prefix, min))
+      val le = Query.LessThanEqual(TagKey.percentile, bucketLabel(prefix, max))
+      ge.and(le)
+    }
+
+    private def bucketQuery(min: Double, max: Double): Query = {
+      // Verify values are reasonable
+      require(min < max, s"min >= max (min=$min, max=$max)")
+      require(min >= 0.0, s"min < 0 (min=$min)")
+
+      // Query for the ranges of both distribution summaries and timers. This allows it
+      // to work for either type.
+      val distQuery = bucketQuery("D", min, max)
+      val timerQuery = bucketQuery("T", min * 1e9, max * 1e9)
+      distQuery.or(timerQuery)
+    }
+
+    override def execute(context: Context): Context = {
+      context.stack match {
+        case DoubleType(max) :: DoubleType(min) :: (q: Query) :: stack =>
+          val rangeQuery = q.and(bucketQuery(min, max))
+          val expr = DataExpr.Sum(rangeQuery)
+          context.copy(stack = expr :: stack)
+        case _ =>
+          invalidStack
+      }
+    }
+
+    override def signature: String = "Query Double Double -- DataExpr"
+
+    override def summary: String =
+      """
+        |Estimate the number of samples for a percentile approximation within a range of
+        |the distribution.
+        |""".stripMargin
+
+    override def examples: List[String] = Nil
+  }
 }
