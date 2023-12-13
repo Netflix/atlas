@@ -323,9 +323,12 @@ object ExprApi {
       val rewritten = normalizeStat(expr).rewrite {
         case q: Query => sort(q)
       }
-      // Remove explicit :const, it can be determined from implicit conversion
-      // and adds visual clutter
-      rewritten.toString.replace(",:const", "")
+      // Remove explicit :const and :line, it can be determined from implicit conversion
+      // and add visual clutter
+      rewritten
+        .toString
+        .replace(",:const", "")
+        .replace(",:line", "")
     }
   }
 
