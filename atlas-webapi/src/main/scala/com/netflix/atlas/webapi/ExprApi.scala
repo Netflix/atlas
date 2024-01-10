@@ -154,7 +154,7 @@ class ExprApi extends WebApi {
   // macros it alwasy returns true. This ensures the operation will actually be successful before
   // returning to a user.
   private def execWorks(interpreter: Interpreter, w: Word, ctxt: Context): Boolean = {
-    Try(interpreter.execute(List(s":${w.name}"), ctxt)).isSuccess
+    Try(interpreter.executeProgram(List(s":${w.name}"), ctxt)).isSuccess
   }
 
   private def matches(interpreter: Interpreter, w: Word, ctxt: Context): Boolean = {

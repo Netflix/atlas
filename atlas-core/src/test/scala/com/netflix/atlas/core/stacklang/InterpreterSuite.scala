@@ -40,28 +40,28 @@ class InterpreterSuite extends FunSuite {
   }
 
   test("empty") {
-    assertEquals(interpreter.execute(Nil), context(Nil))
+    assertEquals(interpreter.executeProgram(Nil), context(Nil))
   }
 
   test("push items") {
-    assertEquals(interpreter.execute(List("foo", "bar")), context(List("bar", "foo")))
+    assertEquals(interpreter.executeProgram(List("foo", "bar")), context(List("bar", "foo")))
   }
 
   test("execute word") {
-    assertEquals(interpreter.execute(List(":push-foo")), context(List("foo")))
+    assertEquals(interpreter.executeProgram(List(":push-foo")), context(List("foo")))
   }
 
   test("overloaded word") {
-    assertEquals(interpreter.execute(List(":overloaded")), context(List("one")))
+    assertEquals(interpreter.executeProgram(List(":overloaded")), context(List("one")))
   }
 
   test("overloaded word and some don't match") {
-    assertEquals(interpreter.execute(List(":overloaded2")), context(List("two")))
+    assertEquals(interpreter.executeProgram(List(":overloaded2")), context(List("two")))
   }
 
   test("word with no matches") {
     val e = intercept[IllegalStateException] {
-      interpreter.execute(List(":no-match"))
+      interpreter.executeProgram(List(":no-match"))
     }
     val expected = "no matches for word ':no-match' with stack [], candidates: [exception]"
     assertEquals(e.getMessage, expected)
@@ -69,7 +69,7 @@ class InterpreterSuite extends FunSuite {
 
   test("using unstable word fails by default") {
     val e = intercept[IllegalStateException] {
-      interpreter.execute(List(":unstable"))
+      interpreter.executeProgram(List(":unstable"))
     }
     val expected = "to use :unstable enable unstable features"
     assertEquals(e.getMessage, expected)
@@ -77,45 +77,45 @@ class InterpreterSuite extends FunSuite {
 
   test("unknown word") {
     val e = intercept[IllegalStateException] {
-      interpreter.execute(List("foo", ":unknown"))
+      interpreter.executeProgram(List("foo", ":unknown"))
     }
     assertEquals(e.getMessage, "unknown word ':unknown'")
   }
 
   test("unmatched closing paren") {
     val e = intercept[IllegalStateException] {
-      interpreter.execute(List(")"))
+      interpreter.executeProgram(List(")"))
     }
     assertEquals(e.getMessage, "unmatched closing parenthesis")
   }
 
   test("unmatched closing paren 2") {
     val e = intercept[IllegalStateException] {
-      interpreter.execute(List("(", ")", ")"))
+      interpreter.executeProgram(List("(", ")", ")"))
     }
     assertEquals(e.getMessage, "unmatched closing parenthesis")
   }
 
   test("unmatched opening paren") {
     val e = intercept[IllegalStateException] {
-      interpreter.execute(List("("))
+      interpreter.executeProgram(List("("))
     }
     assertEquals(e.getMessage, "unmatched opening parenthesis")
   }
 
   test("list") {
     val list = List("(", "1", ")")
-    assertEquals(interpreter.execute(list), context(List(List("1"))))
+    assertEquals(interpreter.executeProgram(list), context(List(List("1"))))
   }
 
   test("nested list") {
     val list = List("(", "1", "(", ")", ")")
-    assertEquals(interpreter.execute(list), context(List(List("1", "(", ")"))))
+    assertEquals(interpreter.executeProgram(list), context(List(List("1", "(", ")"))))
   }
 
   test("multiple lists") {
     val list = List("(", "1", ")", "(", "2", ")")
-    assertEquals(interpreter.execute(list), context(List(List("2"), List("1"))))
+    assertEquals(interpreter.executeProgram(list), context(List(List("2"), List("1"))))
   }
 
   test("debug") {
