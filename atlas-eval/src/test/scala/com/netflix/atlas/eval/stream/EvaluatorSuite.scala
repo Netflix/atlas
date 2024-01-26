@@ -502,6 +502,14 @@ class EvaluatorSuite extends FunSuite {
     invalidOperator("offset", "name,jvm.gc.pause,:eq,:sum,1w,:offset")
   }
 
+  test("validate: unsupported operation `:offset` with math") {
+    invalidOperator("offset", "name,a,:eq,:sum,:dup,1w,:offset,:div")
+  }
+
+  test("validate: unsupported operation `:offset` with named rewrite and math") {
+    invalidOperator("offset", "name,a,:eq,:sum,:sdes-slower,:dup,1w,:offset,:div")
+  }
+
   test("validate: unsupported operation `:integral`") {
     invalidOperator("integral", "name,jvm.gc.pause,:eq,:sum,:integral")
   }
