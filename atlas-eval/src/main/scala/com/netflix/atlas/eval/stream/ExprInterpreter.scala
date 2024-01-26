@@ -58,6 +58,10 @@ private[stream] class ExprInterpreter(config: Config) {
         case op: FilterExpr                    => invalidOperator(op); op
         case op: DataExpr if !op.offset.isZero => invalidOperator(op); op
       }
+
+      // Double check all data expressions do not have an offset. In some cases for named rewrites
+      // the check above may not detect the offset.
+      result.expr.dataExprs.filterNot(_.offset.isZero).foreach(invalidOperator)
     }
 
     // Perform host rewrites based on the Atlas hostname
