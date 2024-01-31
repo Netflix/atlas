@@ -95,6 +95,13 @@ class GraphUriSuite extends FunSuite {
     assertEquals(cfg.flags.axes(0).newPlotDef().lower, PlotBound.AutoStyle)
   }
 
+  test("invalid theme") {
+    val e = intercept[IllegalArgumentException] {
+      parseUri("/api/v1/graph?q=name,foo,:eq,:sum&theme=foo")
+    }
+    assertEquals(e.getMessage, "invalid theme: foo")
+  }
+
   test("hints: none") {
     val cfg = parseUri("/api/v1/graph?q=name,foo,:eq,:sum")
     assertEquals(cfg.flags.hints, Set.empty[String])
