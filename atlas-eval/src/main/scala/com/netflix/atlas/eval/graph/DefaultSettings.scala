@@ -68,11 +68,18 @@ case class DefaultSettings(root: Config, config: Config) {
   /** Default theme to use for the chart. */
   val theme: String = config.getString("theme")
 
+  private def themeConfig(theme: String): Config = {
+    if (config.hasPath(theme))
+      config.getConfig(theme)
+    else
+      throw new IllegalArgumentException(s"invalid theme: $theme")
+  }
+
   /** Default palette name to use. */
-  def primaryPalette(theme: String): String = config.getString(s"$theme.palette.primary")
+  def primaryPalette(theme: String): String = themeConfig(theme).getString("palette.primary")
 
   /** Default palette name to use for lines with an offset. */
-  def offsetPalette(theme: String): String = config.getString(s"$theme.palette.offset")
+  def offsetPalette(theme: String): String = themeConfig(theme).getString(s"palette.offset")
 
   /** Resolve color for a given theme. */
   def resolveColor(theme: String, color: String): Color = {
