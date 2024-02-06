@@ -115,6 +115,8 @@ lazy val `atlas-postgres` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-core`)
   .settings(libraryDependencies ++= Seq(
+    Dependencies.hikariCP,
+    Dependencies.iepService,
     Dependencies.postgres,
     Dependencies.postgresEmbedded % "test"
   ))
