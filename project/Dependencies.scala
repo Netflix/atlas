@@ -29,7 +29,7 @@ object Dependencies {
   val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.8"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "4.2.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.15.5"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.15.6"
   val hikariCP          = "com.zaxxer" % "HikariCP" % "5.1.0"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
@@ -54,7 +54,7 @@ object Dependencies {
   val munit             = "org.scalameta" %% "munit" % "0.7.29"
   val postgres          = "org.postgresql" % "postgresql" % "42.7.1"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.6"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.0.0"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.0.1"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0"
   val scalaCompatJdk8   = "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
