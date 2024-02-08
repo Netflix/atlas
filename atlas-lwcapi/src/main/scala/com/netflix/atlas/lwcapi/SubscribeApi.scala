@@ -195,11 +195,12 @@ class SubscribeApi(
 
         // Add any new expressions
         val (queue, addedSubs) = sm.subscribe(streamId, splits)
-        addedSubs.foreach { sub =>
+        val subMessages = addedSubs.map { sub =>
           val meta = sub.metadata
           val exprInfo = LwcDataExpr(meta.id, meta.expression, meta.frequency)
-          queue.offer(Seq(LwcSubscription(expr.expression, List(exprInfo))))
+          LwcSubscription(expr.expression, List(exprInfo))
         }
+        queue.offer(subMessages)
 
         // Add expression ids in use by this split
         subIdsBuilder ++= splits.map(_.metadata.id)
