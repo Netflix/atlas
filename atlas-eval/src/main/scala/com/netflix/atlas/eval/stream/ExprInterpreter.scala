@@ -24,6 +24,7 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.eval.graph.SimpleLegends
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.util.HostRewriter
@@ -35,11 +36,15 @@ private[stream] class ExprInterpreter(config: Config) {
 
   private val hostRewriter = new HostRewriter(config.getConfig("atlas.eval.host-rewrite"))
 
+  // Use simple legends for expressions
+  private val simpleLegendsEnabled: Boolean = config.getBoolean("atlas.eval.stream.simple-legends-enabled")
+
   def eval(expr: String): List[StyleExpr] = {
-    interpreter.execute(expr).stack.map {
+    val exprs = interpreter.execute(expr).stack.map {
       case ModelExtractors.PresentationType(t) => t
       case v                                   => throw new MatchError(v)
     }
+    if (simpleLegendsEnabled) SimpleLegends.generate(exprs) else exprs
   }
 
   def eval(uri: Uri): List[StyleExpr] = {
