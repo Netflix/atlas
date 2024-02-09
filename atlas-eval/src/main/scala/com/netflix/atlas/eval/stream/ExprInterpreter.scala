@@ -37,7 +37,8 @@ private[stream] class ExprInterpreter(config: Config) {
   private val hostRewriter = new HostRewriter(config.getConfig("atlas.eval.host-rewrite"))
 
   // Use simple legends for expressions
-  private val simpleLegendsEnabled: Boolean = config.getBoolean("atlas.eval.stream.simple-legends-enabled")
+  private val simpleLegendsEnabled: Boolean =
+    config.getBoolean("atlas.eval.stream.simple-legends-enabled")
 
   def eval(expr: String): List[StyleExpr] = {
     val exprs = interpreter.execute(expr).stack.map {
