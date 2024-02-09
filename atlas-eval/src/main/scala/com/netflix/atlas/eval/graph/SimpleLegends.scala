@@ -26,7 +26,7 @@ import com.typesafe.scalalogging.StrictLogging
   * Helper to analyze a set of expressions and try to automatically set a reasonable
   * human readable legend.
   */
-private[graph] object SimpleLegends extends StrictLogging {
+object SimpleLegends extends StrictLogging {
 
   def generate(exprs: List[StyleExpr]): List[StyleExpr] = {
     try {

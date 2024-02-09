@@ -61,6 +61,8 @@ object TestContext {
       |  expression-limit = 50000
       |
       |  ignored-tag-keys = []
+      |
+      |  simple-legends-enabled = false
       |}
       |
       |atlas.eval.host-rewrite {
