@@ -17,7 +17,10 @@ package com.netflix.atlas.eval.model
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.core.model.*
+import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.JsonSupport
+
+import java.time.Duration
 
 /**
   * Message type use for emitting time series data in LWC and fetch responses.
@@ -110,7 +113,9 @@ object TimeSeriesMessage {
     */
   def apply(expr: StyleExpr, context: EvalContext, ts: TimeSeries): TimeSeriesMessage = {
     val query = expr.toString
-    val id = TaggedItem.computeId(ts.tags + ("atlas.query" -> query)).toString
+    val offset = Strings.toString(Duration.ofMillis(expr.offset))
+    val outputTags = ts.tags ++ Map(TagKey.offset -> offset, "atlas.query" -> query)
+    val id = TaggedItem.computeId(outputTags).toString
     val data = ts.data.bounded(context.start, context.end)
     TimeSeriesMessage(
       id,
@@ -120,7 +125,7 @@ object TimeSeriesMessage {
       context.end,
       context.step,
       ts.label,
-      ts.tags,
+      outputTags,
       ArrayData(data.data)
     )
   }
