@@ -114,8 +114,8 @@ object TimeSeriesMessage {
   def apply(expr: StyleExpr, context: EvalContext, ts: TimeSeries): TimeSeriesMessage = {
     val query = expr.toString
     val offset = Strings.toString(Duration.ofMillis(expr.offset))
-    val outputTags = ts.tags ++ Map(TagKey.offset -> offset, "atlas.query" -> query)
-    val id = TaggedItem.computeId(outputTags).toString
+    val outputTags = ts.tags + (TagKey.offset -> offset)
+    val id = TaggedItem.computeId(outputTags + ("atlas.query" -> query)).toString
     val data = ts.data.bounded(context.start, context.end)
     TimeSeriesMessage(
       id,
