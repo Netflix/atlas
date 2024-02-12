@@ -587,7 +587,7 @@ class EvaluatorSuite extends FunSuite {
     assertEquals(msgs.count(_.message.isInstanceOf[TimeSeriesMessage]), 1)
 
     val ts = timeSeriesMessages(msgs).head
-    assertEquals(ts.tags, Map("name" -> "foo"))
+    assertEquals(ts.tags, Map("atlas.offset" -> "0w", "name" -> "foo"))
     assertEquals(ts.data, ArrayData(Array(expected)))
   }
 

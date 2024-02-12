@@ -390,7 +390,7 @@ case class Grapher(settings: DefaultSettings) {
 
               LineDef(
                 data = t,
-                query = Some(s.expr.toString),
+                query = Some(s.toString),
                 groupByKeys = s.expr.finalGrouping,
                 color = color,
                 lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),

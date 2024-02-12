@@ -30,6 +30,7 @@ import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.core.model.ArrayTimeSeq
 import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.DsType
+import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
@@ -281,6 +282,10 @@ private[chart] object JsonCodec {
   ): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "timeseries")
+    line.query.foreach { q =>
+      val id = TaggedItem.computeId(line.data.tags + ("atlas.query" -> q)).toString
+      gen.writeStringField("id", id)
+    }
     gen.writeNumberField("plot", plot)
     gen.writeStringField("label", line.data.label)
     gen.writeFieldName("color")
