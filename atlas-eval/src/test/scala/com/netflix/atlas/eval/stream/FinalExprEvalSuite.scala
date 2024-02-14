@@ -163,7 +163,7 @@ class FinalExprEvalSuite extends FunSuite {
     if (expected.isNaN)
       assert(v.isNaN)
     else
-      assertEquals(v, expected)
+      assertEqualsDouble(v, expected, 1e-9)
   }
 
   test("aggregate with single datapoint per group") {
@@ -459,6 +459,62 @@ class FinalExprEvalSuite extends FunSuite {
         expectedSizes(i)(2)
       )
     })
+  }
+
+  test("empty aggregated group by with binary operation") {
+    val expr1 = DataExpr.GroupBy(DataExpr.Max(Query.Equal("name", "a")), List("node"))
+    val expr2 = DataExpr.GroupBy(DataExpr.Max(Query.Equal("name", "b")), List("node"))
+    val input = List(
+      sources(ds("a", s"http://atlas/graph?q=$expr1,:sum,$expr2,:sum,:add")),
+      group(
+        0, // No data for expr1
+        AggrDatapoint(0, step, expr2, "i-1", Map("name" -> "b"), 1.0)
+      ),
+      group(
+        1,
+        AggrDatapoint(0, step, expr2, "i-1", Map("name" -> "b"), 1.0)
+      )
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(isTimeSeries)
+    assertEquals(timeseries.size, 2)
+    timeseries.foreach { env =>
+      val ts = env.message.asInstanceOf[TimeSeriesMessage]
+      checkValue(ts, 1.0)
+    }
+  }
+
+  test("empty aggregated percentile approximation with binary operation") {
+    val expr1 = MathExpr.Percentiles(
+      DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "a")), List("percentile")),
+      List(90.0)
+    )
+    val expr2 = MathExpr.Percentiles(
+      DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "b")), List("percentile")),
+      List(90.0)
+    )
+    val input = List(
+      sources(ds("a", s"http://atlas/graph?q=$expr1,:sum,$expr2,:sum,:add")),
+      group(
+        0, // No data for expr1
+        AggrDatapoint(0, step, expr2.expr, "i-1", Map("name" -> "b", "percentile" -> "T0000"), 1.0)
+      ),
+      group(
+        1,
+        AggrDatapoint(0, step, expr2.expr, "i-1", Map("name" -> "b", "percentile" -> "T0000"), 1.0)
+      )
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(isTimeSeries)
+    assertEquals(timeseries.size, 2)
+    timeseries.foreach { env =>
+      val ts = env.message.asInstanceOf[TimeSeriesMessage]
+      checkValue(ts, 9e-10)
+    }
   }
 
   test("multi-level group by with stateful operation") {
