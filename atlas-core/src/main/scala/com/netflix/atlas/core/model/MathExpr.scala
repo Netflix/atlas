@@ -690,8 +690,9 @@ object MathExpr {
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
       val ts =
-        if (rs.data.isEmpty) Nil
-        else {
+        if (rs.data.isEmpty) {
+          List(TimeSeries.noData(context.step))
+        } else {
           val aggr = aggregator(context.start, context.end)
           rs.data.foreach(aggr.update)
           val t = aggr.result()

@@ -120,7 +120,7 @@ class TimeSeriesExprSuite extends FunSuite {
     ":true,(,name,),:by,:avg"      -> const(ts(unknownTag, "(name=unknown / count(NO TAGS))", 5)),
     ":true,(,foo,),:by"            -> const(Nil),
     ":false,(,name,),:by"          -> const(Nil),
-    "n,:has,(,n,),:by,4,:div,:sum" -> const(Nil),
+    "n,:has,(,n,),:by,4,:div,:sum" -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
     "NaN,NaN,:add"                 -> const(ts(Map("name" -> "NaN"), "(NaN + NaN)", Double.NaN)),
     "NaN,1.0,:add"                 -> const(ts(Map("name" -> "NaN"), "(NaN + 1.0)", 1.0)),
     "1.0,NaN,:add"                 -> const(ts(Map("name" -> "1.0"), "(1.0 + NaN)", 1.0)),
@@ -184,7 +184,7 @@ class TimeSeriesExprSuite extends FunSuite {
     ":true,1w,:offset"   -> const(ts(unknownTag, "name=unknown (offset=1w)", 55)),
     ":true,5,:add,1w,:offset"    -> const(ts(unknownTag, "(name=unknown (offset=1w) + 5.0)", 60)),
     "issue,283,:eq"              -> const(ts(Map("issue" -> "283"), "NO DATA", Double.NaN)),
-    ":false,(,name,),:by,:count" -> const(Nil),
+    ":false,(,name,),:by,:count" -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
     ":true,(,name,),:by,:stddev" -> const(
       ts(Map.empty[String, String], stddevLegend("NO TAGS"), 3.1622776601683795)
     ),
