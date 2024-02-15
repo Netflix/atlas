@@ -35,6 +35,7 @@ import scala.util.Using
   * ```
   * Benchmark                         Mode  Cnt         Score         Error   Units
   * decodeBatch                      thrpt    5        23.787 ±       1.148   ops/s
+  * decodeBatchDatapoints            thrpt    5       129.900 ±       3.767   ops/s
   * decodeCompactBatch               thrpt    5       173.148 ±       1.835   ops/s
   * decodeList                       thrpt    5        25.277 ±       0.254   ops/s
   * encodeBatch                      thrpt    5       179.382 ±      39.696   ops/s
@@ -73,6 +74,13 @@ class PublishPayloadsBench {
   private def decodeBatch(data: Array[Byte]): List[DatapointTuple] = {
     Using.resource(Json.newSmileParser(new ByteArrayInputStream(data))) { parser =>
       PublishPayloads.decodeBatch(parser)
+    }
+  }
+
+  // Skips the ID calculation.
+  private def decodeBatchDatapoints(data: Array[Byte]): List[Datapoint] = {
+    Using.resource(Json.newSmileParser(new ByteArrayInputStream(data))) { parser =>
+      PublishPayloads.decodeBatchDatapoints(parser)
     }
   }
 
@@ -123,6 +131,14 @@ class PublishPayloadsBench {
     val consumer = new BlackholePublishConsumer(bh)
     decodeBatch(encodedBatch).foreach { d =>
       consumer.consume(d.id, d.tags, d.timestamp, d.value)
+    }
+  }
+
+  @Benchmark
+  def decodeBatchDatapoints(bh: Blackhole): Unit = {
+    val consumer = new BlackholePublishConsumer(bh)
+    decodeBatchDatapoints(encodedBatch).foreach { d =>
+      consumer.consume(null, d.tags, d.timestamp, d.value)
     }
   }
 
