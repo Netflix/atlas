@@ -51,7 +51,7 @@ import scala.util.Using
   * `plot-metadata` that corresponds to all lines on a given axis. The plot has an id that
   * will be referenced when the line data is emitted.
   */
-private[chart] object JsonCodec {
+object JsonCodec {
 
   import com.netflix.atlas.json.JsonParserHelper.*
   private val factory = new JsonFactory()
@@ -120,7 +120,7 @@ private[chart] object JsonCodec {
     s"data:image/png;base64,$encoded"
   }
 
-  private def writeGraphDefMetadata(gen: JsonGenerator, config: GraphDef): Unit = {
+  def writeGraphDefMetadata(gen: JsonGenerator, config: GraphDef): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "graph-metadata")
     gen.writeNumberField("startTime", config.startTime.toEpochMilli)
@@ -170,7 +170,7 @@ private[chart] object JsonCodec {
     gen.writeEndObject()
   }
 
-  private def writePlotDefMetadata(gen: JsonGenerator, plot: PlotDef, id: Int): Unit = {
+  def writePlotDefMetadata(gen: JsonGenerator, plot: PlotDef, id: Int): Unit = {
     gen.writeStartObject()
     gen.writeStringField("type", "plot-metadata")
     gen.writeNumberField("id", id)

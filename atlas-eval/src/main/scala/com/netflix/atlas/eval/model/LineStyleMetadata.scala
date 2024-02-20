@@ -13,17 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.chart.model;
+package com.netflix.atlas.eval.model
 
-import java.util.Locale;
+import com.netflix.atlas.chart.model.LineStyle
+
+import java.awt.Color
 
 /**
- * Line styles for how to render a time series.
- */
-public enum LineStyle {
-  LINE, AREA, STACK, VSPAN, HEATMAP;
-
-  public static LineStyle parse(String lineStyle) {
-    return valueOf(lineStyle.toUpperCase(Locale.US));
-  }
-}
+  * Metadata for presentation details related to how to render the line.
+  *
+  * @param plot
+  *     Identifies which axis the line should be associated with.
+  * @param color
+  *     Color to use for rendering the line.
+  * @param lineStyle
+  *     How to render the line (line, stack, area, etc).
+  * @param lineWidth
+  *     Width of the stroke when rendering the line.
+  */
+case class LineStyleMetadata(plot: Int, color: Color, lineStyle: LineStyle, lineWidth: Float)

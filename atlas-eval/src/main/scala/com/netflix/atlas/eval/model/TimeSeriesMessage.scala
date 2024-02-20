@@ -16,10 +16,14 @@
 package com.netflix.atlas.eval.model
 
 import com.fasterxml.jackson.core.JsonGenerator
+import com.netflix.atlas.chart.model.LineStyle
+import com.netflix.atlas.chart.model.Palette
+import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.core.model.*
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.JsonSupport
 
+import java.awt.Color
 import java.time.Duration
 
 /**
@@ -52,6 +56,8 @@ import java.time.Duration
   *     from the query plus any keys used in the group by clause.
   * @param data
   *     Data for the time series.
+  * @param styleMetadata
+  *     Metadata for presentation details related to how to render the line.
   */
 case class TimeSeriesMessage(
   id: String,
@@ -62,7 +68,8 @@ case class TimeSeriesMessage(
   step: Long,
   label: String,
   tags: Map[String, String],
-  data: ChunkData
+  data: ChunkData,
+  styleMetadata: Option[LineStyleMetadata]
 ) extends JsonSupport {
 
   override def hasCustomEncoding: Boolean = true
@@ -79,6 +86,12 @@ case class TimeSeriesMessage(
     }
     gen.writeStringField("label", label)
     encodeTags(gen, tags)
+    styleMetadata.foreach { metadata =>
+      gen.writeNumberField("plot", metadata.plot)
+      gen.writeStringField("color", Strings.zeroPad(metadata.color.getRGB, 8))
+      gen.writeStringField("lineStyle", metadata.lineStyle.name())
+      gen.writeNumberField("lineWidth", metadata.lineWidth)
+    }
     gen.writeNumberField("start", start)
     gen.writeNumberField("end", end)
     gen.writeNumberField("step", step)
@@ -110,8 +123,15 @@ object TimeSeriesMessage {
     *     for the message.
     * @param ts
     *     Time series to use for the message.
+    * @param palette
+    *     If defined then include presentation metadata.
     */
-  def apply(expr: StyleExpr, context: EvalContext, ts: TimeSeries): TimeSeriesMessage = {
+  def apply(
+    expr: StyleExpr,
+    context: EvalContext,
+    ts: TimeSeries,
+    palette: Option[String] = None
+  ): TimeSeriesMessage = {
     val query = expr.toString
     val offset = Strings.toString(Duration.ofMillis(expr.offset))
     val outputTags = ts.tags + (TagKey.offset -> offset)
@@ -126,7 +146,27 @@ object TimeSeriesMessage {
       context.step,
       ts.label,
       outputTags,
-      ArrayData(data.data)
+      ArrayData(data.data),
+      palette.map(p => createStyleMetadata(expr, ts.label, p))
     )
+  }
+
+  private def createStyleMetadata(
+    expr: StyleExpr,
+    label: String,
+    dfltPalette: String
+  ): LineStyleMetadata = {
+    val color = expr.color.fold(colorFromPalette(expr, label, dfltPalette))(Strings.parseColor)
+    LineStyleMetadata(
+      plot = expr.axis.getOrElse(0),
+      color = color,
+      lineStyle = expr.lineStyle.fold(LineStyle.LINE)(LineStyle.parse),
+      lineWidth = expr.lineWidth
+    )
+  }
+
+  private def colorFromPalette(expr: StyleExpr, label: String, dfltPalette: String): Color = {
+    val palette = expr.palette.getOrElse(dfltPalette)
+    Palette.create(palette).colors(label.hashCode)
   }
 }

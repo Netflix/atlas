@@ -15,6 +15,10 @@
  */
 package com.netflix.atlas.webapi
 
+import com.fasterxml.jackson.core.JsonGenerator
+import com.netflix.atlas.chart.JsonCodec
+import com.netflix.atlas.chart.model.PlotDef
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.apache.pekko.NotUsed
@@ -43,9 +47,14 @@ import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.json.Json
+import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.webapi.GraphApi.DataRequest
 import com.netflix.atlas.webapi.GraphApi.DataResponse
+
+import java.io.StringWriter
+import scala.util.Using
 
 /**
   * Provides the SSE data stream payload for a fetch response. Fetch is an alternative
@@ -75,6 +84,8 @@ object FetchRequestSource {
       .repeat(DiagnosticMessage.info("heartbeat"))
       .throttle(1, 10.seconds, 1, ThrottleMode.Shaping)
 
+    val metadataSrc = createMetadataSource(graphCfg)
+
     val dataSrc = Source(chunks)
       .flatMapConcat { chunk =>
         val req = DataRequest(graphCfg).copy(context = chunk)
@@ -91,15 +102,38 @@ object FetchRequestSource {
         case t: Throwable => DiagnosticMessage.error(t)
       }
       .merge(heartbeatSrc, eagerComplete = true)
+      .map(_.toJson)
 
-    val closeSrc = Source.single(DiagnosticMessage.close)
+    val closeSrc = Source.single(DiagnosticMessage.close).map(_.toJson)
 
-    Source(List(dataSrc, closeSrc))
-      .flatMapConcat(s => s)
+    metadataSrc
+      .concat(dataSrc.concat(closeSrc))
       .map { msg =>
-        val bytes = ByteString(s"$prefix${msg.toJson}$suffix")
+        val bytes = ByteString(s"$prefix$msg$suffix")
         ChunkStreamPart(bytes)
       }
+  }
+
+  private def createMetadataSource(graphCfg: GraphConfig): Source[String, NotUsed] = {
+    val usedAxes = graphCfg.exprs.map(_.axis.getOrElse(0)).toSet
+    if (graphCfg.flags.presentationMetadataEnabled) {
+      val graphDef = toJson(gen => JsonCodec.writeGraphDefMetadata(gen, graphCfg.newGraphDef(Nil)))
+      val plots = graphCfg.flags.axes.filter(t => usedAxes.contains(t._1)).map {
+        case (i, axis) => toJson(gen => JsonCodec.writePlotDefMetadata(gen, axis.newPlotDef(), i))
+      }
+      Source(graphDef :: plots.toList)
+    } else {
+      Source.empty
+    }
+  }
+
+  private def toJson(encode: JsonGenerator => Unit): String = {
+    Using.resource(new StringWriter()) { writer =>
+      Using.resource(Json.newJsonGenerator(writer)) { gen =>
+        encode(gen)
+      }
+      writer.toString
+    }
   }
 
   /**
@@ -156,18 +190,24 @@ object FetchRequestSource {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
       new GraphStageLogic(shape) with InHandler with OutHandler {
 
+        private val metadata = graphCfg.flags.presentationMetadataEnabled
+
         private var state = Map.empty[StatefulExpr, Any]
 
         override def onPush(): Unit = {
           val chunk = grab(in)
           val ts = graphCfg.exprs
             .flatMap { s =>
+              val palette =
+                if (metadata)
+                  Some(graphCfg.flags.axisPalette(graphCfg.settings, s.axis.getOrElse(0)))
+                else None
               val context = chunk.context.copy(state = state)
               val result = s.expr.eval(context, chunk.data)
               state = result.state
               result.data
                 .filterNot(ts => isAllNaN(ts.data, context.start, context.end, context.step))
-                .map(ts => TimeSeriesMessage(s, context, ts.withLabel(s.legend(ts))))
+                .map(ts => TimeSeriesMessage(s, context, ts.withLabel(s.legend(ts)), palette))
             }
           push(out, ts)
         }
