@@ -33,4 +33,16 @@ case class ImageFlags(
   theme: String,
   layout: Layout,
   hints: Set[String]
-)
+) {
+
+  def presentationMetadataEnabled: Boolean = {
+    hints.contains("presentation-metadata")
+  }
+
+  def axisPalette(settings: DefaultSettings, index: Int): String = {
+    axes.get(index) match {
+      case Some(axis) => axis.palette.getOrElse(settings.primaryPalette(theme))
+      case None       => settings.primaryPalette(theme)
+    }
+  }
+}

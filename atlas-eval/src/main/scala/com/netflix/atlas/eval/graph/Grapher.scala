@@ -366,7 +366,7 @@ case class Grapher(settings: DefaultSettings) {
 
           val lineDefs = labelledTS.sortWith(_._1.label < _._1.label).map {
             case (t, stats) =>
-              val lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase))
+              val lineStyle = s.lineStyle.fold(dfltStyle)(LineStyle.parse)
               val color = s.color.fold {
                 val c = lineStyle match {
                   case LineStyle.HEATMAP =>
@@ -393,7 +393,7 @@ case class Grapher(settings: DefaultSettings) {
                 query = Some(s.toString),
                 groupByKeys = s.expr.finalGrouping,
                 color = color,
-                lineStyle = s.lineStyle.fold(dfltStyle)(s => LineStyle.valueOf(s.toUpperCase)),
+                lineStyle = s.lineStyle.fold(dfltStyle)(LineStyle.parse),
                 lineWidth = s.lineWidth,
                 legendStats = stats
               )

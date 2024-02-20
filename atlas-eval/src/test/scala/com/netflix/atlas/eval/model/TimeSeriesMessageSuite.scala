@@ -28,7 +28,8 @@ class TimeSeriesMessageSuite extends FunSuite {
     step = 60000L,
     label = "test",
     tags = Map("name" -> "sps", "cluster" -> "www"),
-    data = ArrayData(Array(42.0))
+    data = ArrayData(Array(42.0)),
+    None
   )
 
   test("json encoding with empty group by") {
