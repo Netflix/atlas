@@ -82,7 +82,8 @@ import com.typesafe.config.Config
   * @param dependencies
   *     Other vocabularies to depend on, defaults to the `StyleVocabulary`.
   */
-class CustomVocabulary(config: Config, dependencies: List[Vocabulary] = List(StyleVocabulary)) extends Vocabulary {
+class CustomVocabulary(config: Config, dependencies: List[Vocabulary] = List(StyleVocabulary))
+    extends Vocabulary {
 
   import CustomVocabulary.*
   import scala.jdk.CollectionConverters.*
