@@ -21,6 +21,7 @@ import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.EventVocabulary
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TraceQuery
 import com.netflix.atlas.core.model.TraceVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
@@ -56,15 +57,28 @@ private[events] object ExprUtils {
   private val traceInterpreter = Interpreter(TraceVocabulary.allWords)
 
   private def matchAllSpans(q: TraceQuery): TraceQuery.SpanFilter = {
-    TraceQuery.SpanFilter(q, DataExpr.All(Query.True))
+    TraceQuery.SpanFilter(q, Query.True)
   }
 
-  /** Parse a single trace query expression. */
-  def parseTraceQuery(str: String): TraceQuery.SpanFilter = {
+  /** Parse a single trace events query expression. */
+  def parseTraceEventsQuery(str: String): TraceQuery.SpanFilter = {
     traceInterpreter.execute(str).stack match {
       case TraceQueryType(q) :: Nil          => matchAllSpans(q)
       case (f: TraceQuery.SpanFilter) :: Nil => f
       case _                                 => throw new IllegalArgumentException(str)
+    }
+  }
+
+  private def sumAllSpans(q: TraceQuery): TraceQuery.SpanTimeSeries = {
+    TraceQuery.SpanTimeSeries(q, StyleExpr(DataExpr.Sum(Query.True), Map.empty))
+  }
+
+  /** Parse a single trace time series query expression. */
+  def parseTraceTimeSeriesQuery(str: String): TraceQuery.SpanTimeSeries = {
+    traceInterpreter.execute(str).stack match {
+      case TraceQueryType(q) :: Nil              => sumAllSpans(q)
+      case (f: TraceQuery.SpanTimeSeries) :: Nil => f
+      case _                                     => throw new IllegalArgumentException(str)
     }
   }
 

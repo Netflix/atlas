@@ -66,7 +66,7 @@ abstract class AbstractLwcEventClient extends LwcEventClient {
 
     // Trace pass-through
     traceHandlers = subscriptions.tracePassThrough.map { sub =>
-      sub -> ExprUtils.parseTraceQuery(sub.expression)
+      sub -> ExprUtils.parseTraceEventsQuery(sub.expression)
     }.toMap
 
     index = idx
@@ -125,7 +125,7 @@ abstract class AbstractLwcEventClient extends LwcEventClient {
   override def processTrace(trace: Seq[LwcEvent.Span]): Unit = {
     traceHandlers.foreachEntry { (sub, filter) =>
       if (TraceMatcher.matches(filter.q, trace)) {
-        val filtered = trace.filter(event => ExprUtils.matches(filter.f.query, event.tagValue))
+        val filtered = trace.filter(event => ExprUtils.matches(filter.f, event.tagValue))
         if (filtered.nonEmpty) {
           submit(sub.id, LwcEvent.Events(filtered))
         }
