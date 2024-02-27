@@ -37,6 +37,13 @@ class TraceVocabularySuite extends FunSuite {
     }
   }
 
+  private def parseTimeSeries(str: String): TraceQuery.SpanTimeSeries = {
+    interpreter.execute(str).stack match {
+      case (t: TraceQuery.SpanTimeSeries) :: Nil => t
+      case _                                     => throw new IllegalArgumentException(str)
+    }
+  }
+
   test("simple Query coerced to TraceQuery") {
     val q = parseTraceQuery("app,foo,:eq")
     assertEquals(q, TraceQuery.Simple(Query.Equal("app", "foo")))
@@ -76,7 +83,19 @@ class TraceVocabularySuite extends FunSuite {
         Query.Equal("app", "foo"),
         Query.Equal("app", "bar")
       ),
-      DataExpr.All(Query.Equal("app", "foo"))
+      Query.Equal("app", "foo")
+    )
+    assertEquals(q, expected)
+  }
+
+  test("span-time-series") {
+    val q = parseTimeSeries("app,foo,:eq,app,bar,:eq,:child,app,foo,:eq,:span-time-series")
+    val expected = TraceQuery.SpanTimeSeries(
+      TraceQuery.Child(
+        Query.Equal("app", "foo"),
+        Query.Equal("app", "bar")
+      ),
+      StyleExpr(DataExpr.Sum(Query.Equal("app", "foo")), Map.empty)
     )
     assertEquals(q, expected)
   }
