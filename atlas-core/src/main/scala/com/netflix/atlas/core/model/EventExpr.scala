@@ -30,7 +30,10 @@ object EventExpr {
     * @param query
     *     Query to determine if an event should be matched.
     */
-  case class Raw(query: Query) extends EventExpr
+  case class Raw(query: Query) extends EventExpr {
+
+    override def toString: String = query.toString
+  }
 
   /**
     * Expression that specifies how to map an event to a simple row with the specified columns.
@@ -42,5 +45,7 @@ object EventExpr {
     */
   case class Table(query: Query, columns: List[String]) extends EventExpr {
     require(columns.nonEmpty, "set of columns cannot be empty")
+
+    override def toString: String = s"$query,(,${columns.mkString(",")},),:table"
   }
 }

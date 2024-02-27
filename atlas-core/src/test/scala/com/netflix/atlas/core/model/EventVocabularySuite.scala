@@ -23,10 +23,12 @@ class EventVocabularySuite extends FunSuite {
   private val interpreter = new Interpreter(EventVocabulary.allWords)
 
   private def parse(str: String): EventExpr.Table = {
-    interpreter.execute(str).stack match {
+    val expr = interpreter.execute(str).stack match {
       case (t: EventExpr.Table) :: Nil => t
       case _                           => throw new IllegalArgumentException(str)
     }
+    assertEquals(expr.toString, str)
+    expr
   }
 
   test("table, empty set of columns") {
