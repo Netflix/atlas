@@ -24,23 +24,41 @@ object TraceQuery {
     * Wraps a Query type to be a TraceQuery. This will typically happen via an implicit
     * conversion when using as a parameter to a another operator that expects a TraceQuery.
     */
-  case class Simple(query: Query) extends TraceQuery
+  case class Simple(query: Query) extends TraceQuery {
+
+    override def toString: String = query.toString
+  }
 
   /** Matches if the trace has a span that matches `q1` and a span that matches `q2`. */
-  case class SpanAnd(q1: TraceQuery, q2: TraceQuery) extends TraceQuery
+  case class SpanAnd(q1: TraceQuery, q2: TraceQuery) extends TraceQuery {
+
+    override def toString: String = s"$q1,$q2,:span-and"
+  }
 
   /** Matches if the trace has a span that matches `q1` or a span that matches `q2`. */
-  case class SpanOr(q1: TraceQuery, q2: TraceQuery) extends TraceQuery
+  case class SpanOr(q1: TraceQuery, q2: TraceQuery) extends TraceQuery {
+
+    override def toString: String = s"$q1,$q2,:span-or"
+  }
 
   /**
     * Matches if the trace has a span that matches `q1` with a direct child span that
     * matches `q2`.
     */
-  case class Child(q1: Query, q2: Query) extends TraceQuery
+  case class Child(q1: Query, q2: Query) extends TraceQuery {
+
+    override def toString: String = s"$q1,$q2,:child"
+  }
 
   /** Filter to select the set of spans from a trace to forward as events. */
-  case class SpanFilter(q: TraceQuery, f: Query) extends Expr
+  case class SpanFilter(q: TraceQuery, f: Query) extends Expr {
+
+    override def toString: String = s"$q,$f,:span-filter"
+  }
 
   /** Time series based on data from a set of matching traces. */
-  case class SpanTimeSeries(q: TraceQuery, expr: StyleExpr) extends Expr
+  case class SpanTimeSeries(q: TraceQuery, expr: StyleExpr) extends Expr {
+
+    override def toString: String = s"$q,$expr,:span-time-series"
+  }
 }

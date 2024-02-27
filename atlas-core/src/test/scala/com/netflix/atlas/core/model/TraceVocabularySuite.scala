@@ -24,24 +24,30 @@ class TraceVocabularySuite extends FunSuite {
 
   private def parseTraceQuery(str: String): TraceQuery = {
     import ModelExtractors.*
-    interpreter.execute(str).stack match {
+    val expr = interpreter.execute(str).stack match {
       case TraceQueryType(t) :: Nil => t
       case _                        => throw new IllegalArgumentException(str)
     }
+    assertEquals(expr.toString, str)
+    expr
   }
 
   private def parseFilter(str: String): TraceQuery.SpanFilter = {
-    interpreter.execute(str).stack match {
+    val expr = interpreter.execute(str).stack match {
       case (t: TraceQuery.SpanFilter) :: Nil => t
       case _                                 => throw new IllegalArgumentException(str)
     }
+    assertEquals(expr.toString, str)
+    expr
   }
 
   private def parseTimeSeries(str: String): TraceQuery.SpanTimeSeries = {
-    interpreter.execute(str).stack match {
+    val expr = interpreter.execute(str).stack match {
       case (t: TraceQuery.SpanTimeSeries) :: Nil => t
       case _                                     => throw new IllegalArgumentException(str)
     }
+    assertEquals(expr.toString, str)
+    expr
   }
 
   test("simple Query coerced to TraceQuery") {
@@ -89,7 +95,7 @@ class TraceVocabularySuite extends FunSuite {
   }
 
   test("span-time-series") {
-    val q = parseTimeSeries("app,foo,:eq,app,bar,:eq,:child,app,foo,:eq,:span-time-series")
+    val q = parseTimeSeries("app,foo,:eq,app,bar,:eq,:child,app,foo,:eq,:sum,:span-time-series")
     val expected = TraceQuery.SpanTimeSeries(
       TraceQuery.Child(
         Query.Equal("app", "foo"),
