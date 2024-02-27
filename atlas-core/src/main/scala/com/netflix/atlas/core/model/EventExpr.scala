@@ -44,6 +44,7 @@ object EventExpr {
     *     Set of columns to export into a row.
     */
   case class Table(query: Query, columns: List[String]) extends EventExpr {
+
     require(columns.nonEmpty, "set of columns cannot be empty")
 
     override def toString: String = s"$query,(,${columns.mkString(",")},),:table"
