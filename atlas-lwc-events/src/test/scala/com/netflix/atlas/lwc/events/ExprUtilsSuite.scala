@@ -18,6 +18,7 @@ package com.netflix.atlas.lwc.events
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TraceQuery
 import munit.FunSuite
 
@@ -53,9 +54,9 @@ class ExprUtilsSuite extends FunSuite {
   test("trace: simple query") {
     val expected = TraceQuery.SpanFilter(
       TraceQuery.Simple(Query.Equal("app", "foo")),
-      DataExpr.All(Query.True)
+      Query.True
     )
-    assertEquals(ExprUtils.parseTraceQuery("app,foo,:eq"), expected)
+    assertEquals(ExprUtils.parseTraceEventsQuery("app,foo,:eq"), expected)
   }
 
   test("trace: complex") {
@@ -64,21 +65,21 @@ class ExprUtilsSuite extends FunSuite {
         Query.Equal("app", "foo"),
         Query.Equal("app", "bar")
       ),
-      DataExpr.All(Query.Equal("app", "foo"))
+      Query.Equal("app", "foo")
     )
     val expr = "app,foo,:eq,app,bar,:eq,:child,app,foo,:eq,:span-filter"
-    assertEquals(ExprUtils.parseTraceQuery(expr), expected)
+    assertEquals(ExprUtils.parseTraceEventsQuery(expr), expected)
   }
 
   test("trace: analytics") {
-    val expected = TraceQuery.SpanFilter(
+    val expected = TraceQuery.SpanTimeSeries(
       TraceQuery.Child(
         Query.Equal("app", "foo"),
         Query.Equal("app", "bar")
       ),
-      DataExpr.Sum(Query.Equal("app", "foo"))
+      StyleExpr(DataExpr.Sum(Query.Equal("app", "foo")), Map.empty)
     )
-    val expr = "app,foo,:eq,app,bar,:eq,:child,app,foo,:eq,:sum,:span-filter"
-    assertEquals(ExprUtils.parseTraceQuery(expr), expected)
+    val expr = "app,foo,:eq,app,bar,:eq,:child,app,foo,:eq,:sum,:span-time-series"
+    assertEquals(ExprUtils.parseTraceTimeSeriesQuery(expr), expected)
   }
 }

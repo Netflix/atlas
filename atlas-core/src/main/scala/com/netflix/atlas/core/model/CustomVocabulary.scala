@@ -78,15 +78,19 @@ import com.typesafe.config.Config
   *       `:\$name`.
   *     - `base-query`: query for the denominator.
   *     - `keys`: tag keys that are available for use on the denominator.
+  *
+  * @param dependencies
+  *     Other vocabularies to depend on, defaults to the `StyleVocabulary`.
   */
-class CustomVocabulary(config: Config) extends Vocabulary {
+class CustomVocabulary(config: Config, dependencies: List[Vocabulary] = List(StyleVocabulary))
+    extends Vocabulary {
 
   import CustomVocabulary.*
   import scala.jdk.CollectionConverters.*
 
   val name: String = "custom"
 
-  val dependsOn: List[Vocabulary] = List(StyleVocabulary)
+  val dependsOn: List[Vocabulary] = dependencies
 
   val words: List[Word] = {
     val vocab = config.getConfig("atlas.core.vocabulary")

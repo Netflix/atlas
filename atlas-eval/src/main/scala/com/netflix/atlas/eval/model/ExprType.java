@@ -17,15 +17,19 @@ package com.netflix.atlas.eval.model;
 
 /** Indicates the type of expression for a subscription. */
 public enum ExprType {
+
+  /** Expression to select a set of events to be passed through. */
+  EVENTS,
+
   /**
    * Time series expression such as used with Atlas Graph API. Can also be used for analytics
    * queries on top of event data.
    */
   TIME_SERIES,
 
-  /** Expression to select a set of events to be passed through. */
-  EVENTS,
-
   /** Expression to select a set of traces to be passed through. */
-  TRACES
+  TRACE_EVENTS,
+
+  /** Time series expression based on data extraced from traces. */
+  TRACE_TIME_SERIES
 }

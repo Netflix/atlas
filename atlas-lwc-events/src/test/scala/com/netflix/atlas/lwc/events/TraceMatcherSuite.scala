@@ -58,37 +58,37 @@ class TraceMatcherSuite extends FunSuite {
   }
 
   test("simple") {
-    checkMatch(ExprUtils.parseTraceQuery("app,a,:eq").q, true)
-    checkMatch(ExprUtils.parseTraceQuery("app,z,:eq").q, false)
+    checkMatch(ExprUtils.parseTraceEventsQuery("app,a,:eq").q, true)
+    checkMatch(ExprUtils.parseTraceEventsQuery("app,z,:eq").q, false)
   }
 
   test("span-and") {
-    val q1 = ExprUtils.parseTraceQuery("app,a,:eq,app,e,:eq,:span-and").q
+    val q1 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,e,:eq,:span-and").q
     checkMatch(q1, true)
 
-    val q2 = ExprUtils.parseTraceQuery("app,a,:eq,app,z,:eq,:span-and").q
+    val q2 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,z,:eq,:span-and").q
     checkMatch(q2, false)
   }
 
   test("span-or") {
-    val q1 = ExprUtils.parseTraceQuery("app,a,:eq,app,e,:eq,:span-or").q
+    val q1 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,e,:eq,:span-or").q
     checkMatch(q1, true)
 
-    val q2 = ExprUtils.parseTraceQuery("app,a,:eq,app,z,:eq,:span-or").q
+    val q2 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,z,:eq,:span-or").q
     checkMatch(q2, true)
 
-    val q3 = ExprUtils.parseTraceQuery("app,y,:eq,app,z,:eq,:span-or").q
+    val q3 = ExprUtils.parseTraceEventsQuery("app,y,:eq,app,z,:eq,:span-or").q
     checkMatch(q3, false)
   }
 
   test("child") {
-    val q1 = ExprUtils.parseTraceQuery("app,a,:eq,app,c,:eq,:child").q
+    val q1 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,c,:eq,:child").q
     checkMatch(q1, true)
 
-    val q2 = ExprUtils.parseTraceQuery("app,c,:eq,app,e,:eq,:child").q
+    val q2 = ExprUtils.parseTraceEventsQuery("app,c,:eq,app,e,:eq,:child").q
     checkMatch(q2, true)
 
-    val q3 = ExprUtils.parseTraceQuery("app,a,:eq,app,e,:eq,:child").q
+    val q3 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,e,:eq,:child").q
     checkMatch(q3, false)
   }
 }

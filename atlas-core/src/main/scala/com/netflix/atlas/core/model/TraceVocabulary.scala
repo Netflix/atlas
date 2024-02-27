@@ -25,12 +25,13 @@ object TraceVocabulary extends Vocabulary {
 
   val name: String = "trace"
 
-  val dependsOn: List[Vocabulary] = List(DataVocabulary)
+  val dependsOn: List[Vocabulary] = List(StyleVocabulary)
 
   override def words: List[Word] = List(
     SpanAndWord,
     SpanOrWord,
     SpanFilterWord,
+    SpanTimeSeriesWord,
     ChildWord
   )
 
@@ -109,14 +110,11 @@ object TraceVocabulary extends Vocabulary {
     override def name: String = "span-filter"
 
     override protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: TraceQueryType(_) :: _    => true
-      case (_: DataExpr) :: TraceQueryType(_) :: _ => true
+      case (_: Query) :: TraceQueryType(_) :: _ => true
     }
 
     override protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (f: Query) :: TraceQueryType(q) :: stack =>
-        TraceQuery.SpanFilter(q, DataExpr.All(f)) :: stack
-      case (f: DataExpr) :: TraceQueryType(q) :: stack =>
         TraceQuery.SpanFilter(q, f) :: stack
     }
 
@@ -128,5 +126,28 @@ object TraceVocabulary extends Vocabulary {
         |""".stripMargin
 
     override def examples: List[String] = List("app,foo,:eq,app,bar,:eq")
+  }
+
+  case object SpanTimeSeriesWord extends SimpleWord {
+
+    override def name: String = "span-time-series"
+
+    override protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case PresentationType(_) :: TraceQueryType(_) :: _ => true
+    }
+
+    override protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case PresentationType(f: StyleExpr) :: TraceQueryType(q) :: stack =>
+        TraceQuery.SpanTimeSeries(q, f) :: stack
+    }
+
+    override def signature: String = "q:TraceQuery f:Query -- SpanFilter"
+
+    override def summary: String =
+      """
+        |Time series based on data from a set of matching traces.
+        |""".stripMargin
+
+    override def examples: List[String] = List("app,foo,:eq,app,bar,:eq,:sum,ts,:legend")
   }
 }

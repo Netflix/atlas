@@ -39,5 +39,8 @@ object TraceQuery {
   case class Child(q1: Query, q2: Query) extends TraceQuery
 
   /** Filter to select the set of spans from a trace to forward as events. */
-  case class SpanFilter(q: TraceQuery, f: DataExpr) extends Expr
+  case class SpanFilter(q: TraceQuery, f: Query) extends Expr
+
+  /** Time series based on data from a set of matching traces. */
+  case class SpanTimeSeries(q: TraceQuery, expr: StyleExpr) extends Expr
 }
