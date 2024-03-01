@@ -24,10 +24,11 @@ object BuildSettings {
     scalacOptions := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, _)) => compilerFlags ++ Seq("-Xsource:3")
-        case _            => compilerFlags
+        case _            => compilerFlags ++ Seq("-source", "3.3")
       }
     },
     javacOptions ++= Seq("--release", "17"),
+    Compile / doc / sources := (Compile / doc / sources).value.filterNot(skipForDocs),
     crossPaths := true,
     crossScalaVersions := Dependencies.Versions.crossScala,
     sourcesInBase := false,
@@ -66,5 +67,14 @@ object BuildSettings {
     p.settings(SonatypeSettings.settings)
       .settings(buildSettings: _*)
       .settings(libraryDependencies ++= commonDeps)
+  }
+
+  /** Ignoring all scala files will cause it to use javadoc instead. This is done to workaround
+    * an issue with scaladoc on 3.x:
+    *
+    * https://github.com/Netflix/atlas/issues/1568
+    */
+  def skipForDocs(f: File): Boolean = {
+    f.getName.endsWith(".scala") || f.getName == "Evaluator.java"
   }
 }

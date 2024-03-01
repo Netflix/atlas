@@ -18,7 +18,6 @@ package com.netflix.atlas.eval.model
 import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.Palette
-import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.core.model.*
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.JsonSupport
