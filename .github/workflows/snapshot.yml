@@ -31,4 +31,5 @@ jobs:
           PGP_PASSPHRASE: ${{ secrets.ORG_SIGNING_PASSWORD }}
         run: |
           git fetch --unshallow --tags
-          cat /dev/null | project/sbt ++2.13.11 clean test +publishSigned
+          cat /dev/null | project/sbt ++2.13.13 clean test +publishSigned
+          cat /dev/null | project/sbt ++3.4.0 clean test +publishSigned

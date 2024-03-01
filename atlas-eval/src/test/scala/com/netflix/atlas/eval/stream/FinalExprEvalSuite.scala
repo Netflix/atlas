@@ -149,12 +149,15 @@ class FinalExprEvalSuite extends FunSuite {
   }
 
   private def getValue(ts: TimeSeriesMessage): Double = {
+    // https://github.com/lampepfl/dotty/issues/15661 ?
+    // On 3.4.0 there is an error if using `v` instead of `null` for the case
+    // where it is not ArrayData.
     ts.data match {
       case ArrayData(vs) =>
         assertEquals(vs.length, 1)
         vs(0)
-      case v =>
-        fail(s"unexpected data value: $v")
+      case null =>
+        fail(s"unexpected data value: null")
     }
   }
 
