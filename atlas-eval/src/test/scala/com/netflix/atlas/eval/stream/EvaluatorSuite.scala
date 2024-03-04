@@ -151,7 +151,7 @@ class EvaluatorSuite extends FunSuite {
         assertEquals(t, "error")
         assertEquals(
           msg,
-          "IllegalArgumentException: missing required URI parameter `q`: resource:///gc-pause.dat/api/v1/graph"
+          "IllegalArgumentException: missing required parameter 'q'"
         )
       case v =>
         throw new MatchError(v)
@@ -313,7 +313,7 @@ class EvaluatorSuite extends FunSuite {
     val uri = "http://test/api/v1/graph"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     val msg =
-      "IllegalArgumentException: missing required URI parameter `q`: http://test/api/v1/graph"
+      "IllegalArgumentException: missing required parameter 'q'"
     testError(ds1, msg)
   }
 

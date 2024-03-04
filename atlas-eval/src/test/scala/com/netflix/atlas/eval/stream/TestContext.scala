@@ -65,6 +65,32 @@ object TestContext {
       |  simple-legends-enabled = false
       |}
       |
+      |atlas.eval.graph {
+      |  step = 60s
+      |  start-time = e-3h
+      |  end-time = now
+      |  timezone = US/Pacific
+      |  width = 700
+      |  height = 300
+      |  theme = "light"
+      |
+      |  light {
+      |    palette {
+      |      primary = "armytage"
+      |      offset = "bw"
+      |    }
+      |    named-colors = {
+      |    }
+      |  }
+      |
+      |  max-datapoints = 1440
+      |  png-metadata-enabled = false
+      |  browser-agent-pattern = "mozilla|msie|gecko|chrome|opera|webkit"
+      |  simple-legends-enabled = false
+      |  engines = []
+      |  vocabulary = "default"
+      |}
+      |
       |atlas.eval.host-rewrite {
       |  pattern = "$^"
       |  key = ""

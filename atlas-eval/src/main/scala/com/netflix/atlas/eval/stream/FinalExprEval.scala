@@ -52,6 +52,8 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
     extends GraphStage[FlowShape[AnyRef, Source[MessageEnvelope, NotUsed]]]
     with StrictLogging {
 
+  import FinalExprEval.*
+
   private val in = Inlet[AnyRef]("FinalExprEval.in")
   private val out = Outlet[Source[MessageEnvelope, NotUsed]]("FinalExprEval.out")
 
@@ -70,7 +72,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
 
       // Each expression matched with a list of data source ids that should receive
       // the data for it
-      private var recipients = List.empty[(StyleExpr, List[String])]
+      private var recipients = List.empty[(StyleExpr, List[ExprInfo])]
 
       // Track the set of DataExprs per DataSource
       private var dataSourceIdToDataExprs = Map.empty[String, Set[DataExpr]]
@@ -100,11 +102,21 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
         recipients = sources
           .flatMap { s =>
             try {
-              val exprs = exprInterpreter.eval(Uri(s.uri))
+              val graphCfg = exprInterpreter.eval(Uri(s.uri))
+              val exprs = graphCfg.exprs
               // Reuse the previous evaluated expression if available. States for the stateful
               // expressions are maintained in an IdentityHashMap so if the instances change
               // the state will be reset.
-              exprs.map(e => previous.getOrElse(e, e) -> s.id)
+              exprs.map { e =>
+                val paletteName =
+                  if (graphCfg.flags.presentationMetadataEnabled) {
+                    val axis = e.axis.getOrElse(0)
+                    Some(graphCfg.flags.axisPalette(graphCfg.settings, axis))
+                  } else {
+                    None
+                  }
+                previous.getOrElse(e, e) -> ExprInfo(s.id, paletteName)
+              }
             } catch {
               case e: Exception =>
                 errors += new MessageEnvelope(s.id, error(s.uri, "invalid expression", e))
@@ -121,9 +133,9 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
           )
           // Fold to mutable map to avoid creating new Map on every update
           .foldLeft(mutable.Map.empty[String, Set[DataExpr]]) {
-            case (map, (id, dataExprs)) =>
-              map += map.get(id).fold(id -> dataExprs) { vs =>
-                id -> (dataExprs ++ vs)
+            case (map, (info, dataExprs)) =>
+              map += map.get(info.id).fold(info.id -> dataExprs) { vs =>
+                info.id -> (dataExprs ++ vs)
               }
           }
           .toMap
@@ -185,7 +197,8 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
 
         // Generate the time series and diagnostic output
         val output = recipients.flatMap {
-          case (styleExpr, ids) =>
+          case (styleExpr, infos) =>
+            val ids = infos.map(_.id)
             // Use an identity map for the state to ensure that multiple equivalent stateful
             // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
             val state = states.getOrElse(styleExpr, IdentityMap.empty[StatefulExpr, Any])
@@ -194,16 +207,20 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
               val result = styleExpr.expr.eval(context, dataExprToDatapoints)
               states(styleExpr) = result.state
               val data = if (result.data.isEmpty) List(noData(styleExpr)) else result.data
-              val msgs = data.map { t =>
-                TimeSeriesMessage(styleExpr, context, t.withLabel(styleExpr.legend(t)))
-              }
 
               // Collect final data size per DataSource
               ids.foreach(rateCollector.incrementOutput(_, data.size))
 
-              ids.flatMap { id =>
-                msgs.map { msg =>
-                  new MessageEnvelope(id, msg)
+              // Create time series messages
+              infos.flatMap { info =>
+                data.map { t =>
+                  val ts = TimeSeriesMessage(
+                    styleExpr,
+                    context,
+                    t.withLabel(styleExpr.legend(t)),
+                    info.palette
+                  )
+                  new MessageEnvelope(info.id, ts)
                 }
               }
             } catch {
@@ -241,4 +258,9 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
       setHandlers(in, out, this)
     }
   }
+}
+
+object FinalExprEval {
+
+  case class ExprInfo(id: String, palette: Option[String])
 }

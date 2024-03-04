@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.eval.stream
 
+import com.netflix.atlas.chart.model.LineStyle
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
@@ -36,6 +37,7 @@ import com.netflix.spectator.api.DefaultRegistry
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
+import java.awt.Color
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -734,5 +736,22 @@ class FinalExprEvalSuite extends FunSuite {
       else
         assertEquals(v, 0.0)
     }
+  }
+
+  test("presentation metadata, explicit color") {
+    val expr = DataExpr.Sum(Query.Equal("name", "rps"))
+    val tags = Map("name" -> "rps")
+    val input = List(
+      sources(ds("a", s"http://atlas/graph?q=$expr,f00,:color,:stack&hints=presentation-metadata")),
+      group(1, AggrDatapoint(0, step, expr, "i-1", tags, 42.0))
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(isTimeSeries)
+    assertEquals(timeseries.size, 1)
+    val ts = timeseries.head.message().asInstanceOf[TimeSeriesMessage]
+    assertEquals(ts.styleMetadata.get.color, Color.RED)
+    assertEquals(ts.styleMetadata.get.lineStyle, LineStyle.STACK)
   }
 }

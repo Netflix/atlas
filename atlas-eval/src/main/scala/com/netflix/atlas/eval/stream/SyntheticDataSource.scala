@@ -57,7 +57,7 @@ object SyntheticDataSource {
 
   def apply(interpreter: ExprInterpreter, uri: Uri): Source[ByteString, Future[IOResult]] = {
     val settings = getSettings(uri)
-    val exprs = interpreter.eval(uri)
+    val exprs = interpreter.eval(uri).exprs
     val promise = Promise[IOResult]()
     Source(exprs)
       .flatMapMerge(Int.MaxValue, expr => source(settings, expr))
