@@ -24,15 +24,21 @@ import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.eval.graph.GraphConfig
+import com.netflix.atlas.eval.graph.Grapher
 import com.netflix.atlas.eval.graph.SimpleLegends
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.util.HostRewriter
 import com.typesafe.config.Config
 
+import scala.util.Success
+
 private[stream] class ExprInterpreter(config: Config) {
 
   private val interpreter = Interpreter(new CustomVocabulary(config).allWords)
+
+  private val grapher = Grapher(config)
 
   private val hostRewriter = new HostRewriter(config.getConfig("atlas.eval.host-rewrite"))
 
@@ -48,15 +54,13 @@ private[stream] class ExprInterpreter(config: Config) {
     if (simpleLegendsEnabled) SimpleLegends.generate(exprs) else exprs
   }
 
-  def eval(uri: Uri): List[StyleExpr] = {
-    val expr = uri.query().get("q").getOrElse {
-      throw new IllegalArgumentException(s"missing required URI parameter `q`: $uri")
-    }
+  def eval(uri: Uri): GraphConfig = {
+    val graphCfg = grapher.toGraphConfig(uri)
 
     // Check that data expressions are supported. The streaming path doesn't support
     // time shifts, filters, and integral. The filters and integral are excluded because
     // they can be confusing as the time window for evaluation is not bounded.
-    val results = eval(expr).flatMap(_.perOffset)
+    val results = graphCfg.exprs.flatMap(_.perOffset)
     results.foreach { result =>
       // Use rewrite as a helper for searching the expression for invalid operations
       result.expr.rewrite {
@@ -72,7 +76,8 @@ private[stream] class ExprInterpreter(config: Config) {
 
     // Perform host rewrites based on the Atlas hostname
     val host = uri.authority.host.toString()
-    hostRewriter.rewrite(host, results)
+    val rewritten = hostRewriter.rewrite(host, results)
+    graphCfg.copy(query = rewritten.mkString(","), parsedQuery = Success(rewritten))
   }
 
   private def invalidOperator(expr: Expr): Unit = {
@@ -90,7 +95,7 @@ private[stream] class ExprInterpreter(config: Config) {
     import scala.jdk.CollectionConverters.*
     ds.sources.asScala.toList
       .flatMap { s =>
-        val exprs = eval(Uri(s.uri)).flatMap(_.expr.dataExprs).distinct
+        val exprs = eval(Uri(s.uri)).exprs.flatMap(_.expr.dataExprs).distinct
         exprs.map(_ -> s)
       }
       .groupBy(_._1)

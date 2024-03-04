@@ -152,7 +152,7 @@ private[stream] class StreamContext(
 
       // Check that expression is parseable and perform basic static analysis of DataExprs to
       // weed out expensive queries up front
-      val results = interpreter.eval(uri)
+      val results = interpreter.eval(uri).exprs
       results.foreach(_.expr.dataExprs.foreach(validateDataExpr))
 
       // Check that there is a backend available for it

@@ -311,7 +311,7 @@ private[stream] abstract class EvaluatorImpl(
 
     // Extract data expressions to reuse for creating time groups
     val exprs = sources.sources.asScala
-      .flatMap(ds => interpreter.eval(Uri(ds.uri)))
+      .flatMap(ds => interpreter.eval(Uri(ds.uri)).exprs)
       .flatMap(_.expr.dataExprs)
       .toList
       .distinct
@@ -506,7 +506,7 @@ private[stream] abstract class EvaluatorImpl(
 
   private def toExprSet(dss: DataSources, interpreter: ExprInterpreter): Set[LwcExpression] = {
     dss.sources.asScala.flatMap { dataSource =>
-      interpreter.eval(Uri(dataSource.uri)).map { expr =>
+      interpreter.eval(Uri(dataSource.uri)).exprs.map { expr =>
         LwcExpression(expr.toString, ExprType.TIME_SERIES, dataSource.step.toMillis)
       }
     }.toSet
