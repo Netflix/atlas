@@ -6,7 +6,7 @@ object Dependencies {
   object Versions {
     val pekko       = "1.0.2"
     val pekkoHttpV  = "1.0.1"
-    val iep        = "5.0.17"
+    val iep        = "5.0.18"
     val jackson    = "2.16.1"
     val log4j      = "2.22.1"
     val scala      = "2.13.13"
