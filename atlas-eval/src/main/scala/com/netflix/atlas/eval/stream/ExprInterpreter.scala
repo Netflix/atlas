@@ -44,7 +44,7 @@ private[stream] class ExprInterpreter(config: Config) {
 
   // Use simple legends for expressions
   private val simpleLegendsEnabled: Boolean =
-    config.getBoolean("atlas.eval.stream.simple-legends-enabled")
+    config.getBoolean("atlas.eval.graph.simple-legends-enabled")
 
   def eval(expr: String): List[StyleExpr] = {
     val exprs = interpreter.execute(expr).stack.map {
