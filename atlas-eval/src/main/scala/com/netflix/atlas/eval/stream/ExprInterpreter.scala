@@ -16,17 +16,12 @@
 package com.netflix.atlas.eval.stream
 
 import org.apache.pekko.http.scaladsl.model.Uri
-import com.netflix.atlas.core.model.CustomVocabulary
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Expr
 import com.netflix.atlas.core.model.FilterExpr
-import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StatefulExpr
-import com.netflix.atlas.core.model.StyleExpr
-import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.graph.Grapher
-import com.netflix.atlas.eval.graph.SimpleLegends
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.util.HostRewriter
@@ -37,25 +32,11 @@ import scala.util.Success
 
 private[stream] class ExprInterpreter(config: Config) {
 
-  private val interpreter = Interpreter(new CustomVocabulary(config).allWords)
-
   private val grapher = Grapher(config)
 
   private val hostRewriter = new HostRewriter(config.getConfig("atlas.eval.host-rewrite"))
 
   private val maxStep = config.getDuration("atlas.eval.stream.limits.max-step")
-
-  // Use simple legends for expressions
-  private val simpleLegendsEnabled: Boolean =
-    config.getBoolean("atlas.eval.graph.simple-legends-enabled")
-
-  def eval(expr: String): List[StyleExpr] = {
-    val exprs = interpreter.execute(expr).stack.map {
-      case ModelExtractors.PresentationType(t) => t
-      case v                                   => throw new MatchError(v)
-    }
-    if (simpleLegendsEnabled) SimpleLegends.generate(exprs) else exprs
-  }
 
   def eval(uri: Uri): GraphConfig = {
     val graphCfg = grapher.toGraphConfig(uri)
