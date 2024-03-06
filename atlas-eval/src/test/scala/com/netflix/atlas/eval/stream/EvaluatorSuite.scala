@@ -26,8 +26,6 @@ import org.apache.pekko.stream.scaladsl.Keep
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
 import com.netflix.atlas.chart.util.SrcPath
-import com.netflix.atlas.core.util.Hash
-import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
