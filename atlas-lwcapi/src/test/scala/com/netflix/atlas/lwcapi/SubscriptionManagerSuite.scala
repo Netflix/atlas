@@ -186,7 +186,10 @@ class SubscriptionManagerSuite extends FunSuite {
   }
 
   test("subscriptions for cluster, shard2 no match") {
-    assertEquals(subsForCluster("name,exp1,:eq,nf.shard2,bar2,:eq,:and,:sum", "www-dev-x1foo-x2bar"), Nil)
+    assertEquals(
+      subsForCluster("name,exp1,:eq,nf.shard2,bar2,:eq,:and,:sum", "www-dev-x1foo-x2bar"),
+      Nil
+    )
   }
 
   test("subscribe to unknown stream") {
