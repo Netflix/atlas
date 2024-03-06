@@ -40,7 +40,6 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 
-import java.time.Duration
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
