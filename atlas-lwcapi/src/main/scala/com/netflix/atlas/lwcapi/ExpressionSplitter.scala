@@ -40,7 +40,7 @@ class ExpressionSplitter(config: Config) {
 
   import ExpressionSplitter.*
 
-  private val keepKeys = Set("nf.app", "nf.stack", "nf.cluster")
+  private val keepKeys = Set("nf.app", "nf.cluster", "nf.shard1", "nf.shard2", "nf.stack")
 
   private val interpreter = Interpreter(new CustomVocabulary(config).allWords)
 

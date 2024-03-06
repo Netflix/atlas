@@ -169,6 +169,26 @@ class SubscriptionManagerSuite extends FunSuite {
     checkSubsForCluster("name,exp1,:eq,nf.stack,dev,:eq,:and,:sum", "www-dev")
   }
 
+  test("subscriptions for cluster, stack no match") {
+    assertEquals(subsForCluster("name,exp1,:eq,nf.stack,dev2,:eq,:and,:sum", "www-dev"), Nil)
+  }
+
+  test("subscriptions for cluster, shard1") {
+    checkSubsForCluster("name,exp1,:eq,nf.shard1,foo,:eq,:and,:sum", "www-dev-x1foo")
+  }
+
+  test("subscriptions for cluster, shard1 no match") {
+    assertEquals(subsForCluster("name,exp1,:eq,nf.shard1,foo2,:eq,:and,:sum", "www-dev-x1foo"), Nil)
+  }
+
+  test("subscriptions for cluster, shard2") {
+    checkSubsForCluster("name,exp1,:eq,nf.shard2,bar,:eq,:and,:sum", "www-dev-x1foo-x2bar")
+  }
+
+  test("subscriptions for cluster, shard2 no match") {
+    assertEquals(subsForCluster("name,exp1,:eq,nf.shard2,bar2,:eq,:and,:sum", "www-dev-x1foo-x2bar"), Nil)
+  }
+
   test("subscribe to unknown stream") {
     val sm = new SubscriptionManager[Integer](new NoopRegistry)
     intercept[IllegalStateException] {
