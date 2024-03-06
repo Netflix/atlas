@@ -40,6 +40,7 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 
+import java.time.Duration
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
@@ -83,6 +84,9 @@ private[stream] class StreamContext(
   // Maximum number of datapoints resulting from a group by for a data expr.
   def maxIntermediateDatapointsPerExpression: Int =
     config.getInt("limits.max-intermediate-datapoints")
+
+  // Maximum allowed step size for a stream
+  private val maxStep = config.getDuration("limits.max-step")
 
   val interpreter = new ExprInterpreter(rootConfig)
 
@@ -150,10 +154,24 @@ private[stream] class StreamContext(
     Try {
       val uri = Uri(ds.uri)
 
+      // Check step size is within bounds
+      if (ds.step().toMillis > maxStep.toMillis) {
+        throw new IllegalArgumentException(
+          s"max allowed step size exceeded (${ds.step()} > $maxStep)"
+        )
+      }
+
       // Check that expression is parseable and perform basic static analysis of DataExprs to
       // weed out expensive queries up front
       val results = interpreter.eval(uri).exprs
       results.foreach(_.expr.dataExprs.foreach(validateDataExpr))
+
+      // For hi-res streams, require more precise scoping that allows us to more efficiently
+      // match the data and run it only where needed. This would ideally be applied everywhere,
+      // but for backwards compatiblity the 1m step is opted out for now.
+      if (ds.step().toMillis < 60_000) {
+        results.foreach(_.expr.dataExprs.foreach(expr => restrictsNameAndApp(expr.query)))
+      }
 
       // Check that there is a backend available for it
       findBackendForUri(uri)
@@ -176,6 +194,27 @@ private[stream] class StreamContext(
       val msg = s"rejected expensive query [$query], narrow the scope to a specific app or name"
       throw new IllegalArgumentException(msg)
     }
+  }
+
+  private def restrictsNameAndApp(query: Query): Unit = {
+    val dnf = Query.dnfList(query)
+    if (!dnf.forall(isRestricted)) {
+      throw new IllegalArgumentException(
+        s"rejected expensive query [$query], hi-res streams " +
+          "must restrict name and nf.app with :eq or :in"
+      )
+    }
+  }
+
+  private def isRestricted(query: Query): Boolean = {
+    isRestricted(query, Set("nf.app", "nf.cluster", "nf.asg")) && isRestricted(query, Set("name"))
+  }
+
+  private def isRestricted(query: Query, keys: Set[String]): Boolean = query match {
+    case Query.And(q1, q2) => isRestricted(q1, keys) || isRestricted(q2, keys)
+    case Query.Equal(k, _) => keys.contains(k)
+    case Query.In(k, _)    => keys.contains(k)
+    case _                 => false
   }
 
   /**

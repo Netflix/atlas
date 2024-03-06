@@ -27,7 +27,6 @@ import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.util.HostRewriter
 import com.typesafe.config.Config
 
-import java.time.Duration
 import scala.util.Success
 
 private[stream] class ExprInterpreter(config: Config) {
@@ -36,16 +35,8 @@ private[stream] class ExprInterpreter(config: Config) {
 
   private val hostRewriter = new HostRewriter(config.getConfig("atlas.eval.host-rewrite"))
 
-  private val maxStep = config.getDuration("atlas.eval.stream.limits.max-step")
-
   def eval(uri: Uri): GraphConfig = {
     val graphCfg = grapher.toGraphConfig(uri)
-
-    // Check step size is within bounds
-    if (graphCfg.stepSize > maxStep.toMillis) {
-      val step = Duration.ofMillis(graphCfg.stepSize)
-      throw new IllegalArgumentException(s"max allowed step size exceeded ($step > $maxStep)")
-    }
 
     // Check that data expressions are supported. The streaming path doesn't support
     // time shifts, filters, and integral. The filters and integral are excluded because
