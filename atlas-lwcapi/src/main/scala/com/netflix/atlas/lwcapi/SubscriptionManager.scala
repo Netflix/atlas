@@ -239,12 +239,21 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
   def subscriptionsForCluster(cluster: String): List[Subscription] = {
     val group = ServerGroup.parse(cluster)
     val tags = Map.newBuilder[String, String]
-    tags += ("nf.cluster" -> group.cluster)
-    if (group.app != null)
-      tags += ("nf.app" -> group.app)
-    if (group.stack != null)
-      tags += ("nf.stack" -> group.stack)
+    addIfNotNull(tags, "nf.cluster", group.cluster)
+    addIfNotNull(tags, "nf.app", group.app)
+    addIfNotNull(tags, "nf.stack", group.stack)
+    addIfNotNull(tags, "nf.shard1", group.shard1)
+    addIfNotNull(tags, "nf.shard2", group.shard2)
     queryIndex.matchingEntries(tags.result())
+  }
+
+  private def addIfNotNull(
+    builder: scala.collection.mutable.Builder[(String, String), Map[String, String]],
+    key: String,
+    value: String
+  ): Unit = {
+    if (value != null)
+      builder += (key -> value)
   }
 
   /**
