@@ -363,6 +363,14 @@ class EvaluatorSuite extends FunSuite {
     testError(ds1, msg)
   }
 
+  test("create processor, reject large step size") {
+    val expr = "name,foo,:eq,:sum"
+    val uri = s"http://test/api/v1/graph?q=$expr&step=5m"
+    val msg = s"IllegalArgumentException: max allowed step size exceeded (PT5M > PT1M)"
+    val ds1 = Evaluator.DataSources.of(ds("one", uri))
+    testError(ds1, msg)
+  }
+
   test("processor handles multiple steps") {
     val evaluator = new Evaluator(config, registry, system)
 
