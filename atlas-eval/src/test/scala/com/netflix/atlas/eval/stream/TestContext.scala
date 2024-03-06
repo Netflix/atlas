@@ -56,6 +56,7 @@ object TestContext {
       |  limits {
       |    max-input-datapoints = 50000
       |    max-intermediate-datapoints = 10000000
+      |    max-step = 60s
       |  }
       |
       |  expression-limit = 50000
