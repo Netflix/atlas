@@ -26,6 +26,8 @@ import org.apache.pekko.stream.scaladsl.Keep
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
 import com.netflix.atlas.chart.util.SrcPath
+import com.netflix.atlas.core.util.Hash
+import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
@@ -367,8 +369,8 @@ class EvaluatorSuite extends FunSuite {
     val evaluator = new Evaluator(config, registry, system)
 
     val ds1 = Evaluator.DataSources.of(
-      ds("one", "resource:///05s.dat?q=name,jvm.gc.allocationRate,:eq,:sum", 5),
-      ds("two", "resource:///60s.dat?q=name,jvm.gc.allocationRate,:eq,:sum", 60)
+      ds("one", "resource:///05s.dat?q=name,jvm.gc.allocationRate,:eq,nf.app,foo,:eq,:and,:sum", 5),
+      ds("two", "resource:///60s.dat?q=name,jvm.gc.allocationRate,:eq,nf.app,foo,:eq,:and,:sum", 60)
     )
 
     val future = Source
