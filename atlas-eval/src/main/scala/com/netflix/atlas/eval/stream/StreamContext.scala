@@ -154,9 +154,9 @@ private[stream] class StreamContext(
       val uri = Uri(ds.uri)
 
       // Check step size is within bounds
-      if (ds.step().toMillis > maxStep.toMillis) {
+      if (ds.step.toMillis > maxStep.toMillis) {
         throw new IllegalArgumentException(
-          s"max allowed step size exceeded (${ds.step()} > $maxStep)"
+          s"max allowed step size exceeded (${ds.step} > $maxStep)"
         )
       }
 
@@ -168,7 +168,7 @@ private[stream] class StreamContext(
       // For hi-res streams, require more precise scoping that allows us to more efficiently
       // match the data and run it only where needed. This would ideally be applied everywhere,
       // but for backwards compatiblity the 1m step is opted out for now.
-      if (ds.step().toMillis < 60_000) {
+      if (ds.step.toMillis < 60_000) {
         results.foreach(_.expr.dataExprs.foreach(expr => restrictsNameAndApp(expr.query)))
       }
 
