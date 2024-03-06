@@ -363,20 +363,12 @@ class EvaluatorSuite extends FunSuite {
     testError(ds1, msg)
   }
 
-  test("create processor, reject large step size") {
-    val expr = "name,foo,:eq,:sum"
-    val uri = s"http://test/api/v1/graph?q=$expr&step=5m"
-    val msg = s"IllegalArgumentException: max allowed step size exceeded (PT5M > PT1M)"
-    val ds1 = Evaluator.DataSources.of(ds("one", uri))
-    testError(ds1, msg)
-  }
-
   test("processor handles multiple steps") {
     val evaluator = new Evaluator(config, registry, system)
 
     val ds1 = Evaluator.DataSources.of(
-      ds("one", "resource:///05s.dat?q=name,jvm.gc.allocationRate,:eq,:sum", 5),
-      ds("two", "resource:///60s.dat?q=name,jvm.gc.allocationRate,:eq,:sum", 60)
+      ds("one", "resource:///05s.dat?q=name,jvm.gc.allocationRate,:eq,nf.app,foo,:eq,:and,:sum", 5),
+      ds("two", "resource:///60s.dat?q=name,jvm.gc.allocationRate,:eq,nf.app,foo,:eq,:and,:sum", 60)
     )
 
     val future = Source
@@ -469,14 +461,17 @@ class EvaluatorSuite extends FunSuite {
     assertEquals(ds.step, Duration.ofMinutes(1))
   }
 
-  test("validate: ok") {
+  private def validateOk(params: String): Unit = {
     val evaluator = new Evaluator(config, registry, system)
     val ds = new Evaluator.DataSource(
       "test",
-      Duration.ofMinutes(1),
-      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
+      s"resource:///gc-pause.dat?$params"
     )
     evaluator.validate(ds)
+  }
+
+  test("validate: ok") {
+    validateOk("q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by")
   }
 
   test("validate: bad expression") {
@@ -503,7 +498,6 @@ class EvaluatorSuite extends FunSuite {
       evaluator.validate(ds)
     }
     assert(e.getMessage.startsWith(s":$op not supported for streaming evaluation "))
-
   }
 
   test("validate: unsupported operation `:offset`") {
@@ -530,6 +524,18 @@ class EvaluatorSuite extends FunSuite {
     invalidOperator("topk", "name,jvm.gc.pause,:eq,:sum,max,5,:topk")
   }
 
+  test("validate: reject large step sizes") {
+    val evaluator = new Evaluator(config, registry, system)
+    val ds = new Evaluator.DataSource(
+      "test",
+      "resource:///gc-pause.dat?q=name,jvm.gc.pause,:eq,:sum&step=5m"
+    )
+    val e = intercept[IllegalArgumentException] {
+      evaluator.validate(ds)
+    }
+    assertEquals(e.getMessage, "max allowed step size exceeded (PT5M > PT1M)")
+  }
+
   test("validate: unknown backend") {
     val evaluator = new Evaluator(config, registry, system)
     val ds = new Evaluator.DataSource(
@@ -541,6 +547,67 @@ class EvaluatorSuite extends FunSuite {
       evaluator.validate(ds)
     }
     assertEquals(e.getMessage, "unknownhost.com")
+  }
+
+  test("validate: hi-res with eq for name and app") {
+    validateOk("q=name,foo,:eq,nf.app,www,:eq,:and,:sum&step=5s")
+  }
+
+  test("validate: hi-res with eq for name and cluster") {
+    validateOk("q=name,foo,:eq,nf.cluster,www-dev,:eq,:and,:sum&step=5s")
+  }
+
+  test("validate: hi-res with eq for name and asg") {
+    validateOk("q=name,foo,:eq,nf.asg,www-dev-v000,:eq,:and,:sum&step=5s")
+  }
+
+  test("validate: hi-res with in for name") {
+    validateOk("q=name,(,foo,bar,),:in,nf.app,www,:eq,:and,:sum&step=5s")
+  }
+
+  test("validate: hi-res with in for app") {
+    validateOk("q=name,foo,:eq,nf.app,(,www,www2,),:in,:and,:sum&step=5s")
+  }
+
+  test("validate: hi-res with in for cluster") {
+    validateOk("q=name,foo,:eq,nf.cluster,(,www-dev,www-prod,),:in,:and,:sum&step=5s")
+  }
+
+  test("validate: hi-res with in for asg") {
+    validateOk("q=name,foo,:eq,nf.asg,(,www-dev-v001,www-dev-v002,),:in,:and,:sum&step=5s")
+  }
+
+  test("validate: hi-res with or for cluster") {
+    validateOk(
+      "q=name,foo,:eq,nf.cluster,www-dev,:eq,nf.cluster,www-prod,:eq,:or,:and,:sum&step=5s"
+    )
+  }
+
+  private def invalidHiResQuery(expr: String): Unit = {
+    val evaluator = new Evaluator(config, registry, system)
+    val ds = new Evaluator.DataSource(
+      "test",
+      s"resource:///gc-pause.dat?q=$expr&step=5s"
+    )
+    val e = intercept[IllegalArgumentException] {
+      evaluator.validate(ds)
+    }
+    assertEquals(
+      e.getMessage,
+      s"rejected expensive query [$expr], hi-res streams must restrict name and nf.app with :eq or :in"
+    )
+  }
+
+  test("validate: hi-res with regex for name") {
+    invalidHiResQuery("name,foo,:re,nf.app,www,:eq,:and")
+  }
+
+  test("validate: hi-res with not name") {
+    invalidHiResQuery("name,foo,:eq,:not,nf.app,www,:eq,:and")
+  }
+
+  test("validate: hi-res with regex for app") {
+    invalidHiResQuery("name,foo,:eq,nf.app,www,:re,:and")
   }
 
   private val datapointStep = Duration.ofMillis(1)
