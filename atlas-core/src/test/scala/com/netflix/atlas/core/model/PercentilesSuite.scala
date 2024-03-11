@@ -18,7 +18,6 @@ package com.netflix.atlas.core.model
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.atlas.core.util.Features
 import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.histogram.PercentileBuckets
@@ -44,14 +43,6 @@ class PercentilesSuite extends FunSuite {
 
   def eval(str: String, input: List[TimeSeries]): List[TimeSeries] = {
     val expr = interpreter.execute(str).stack match {
-      case (v: TimeSeriesExpr) :: _ => v
-      case _                        => throw new IllegalArgumentException("invalid expr")
-    }
-    expr.eval(context, input).data
-  }
-
-  def evalUnstable(str: String, input: List[TimeSeries]): List[TimeSeries] = {
-    val expr = interpreter.execute(str, Map.empty[String, Any], Features.UNSTABLE).stack match {
       case (v: TimeSeriesExpr) :: _ => v
       case _                        => throw new IllegalArgumentException("invalid expr")
     }
@@ -361,21 +352,21 @@ class PercentilesSuite extends FunSuite {
   }
 
   test("sample-count: distribution summary, range") {
-    val data = evalUnstable("name,test,:eq,50,100,:sample-count", input100)
+    val data = eval("name,test,:eq,50,100,:sample-count", input100)
     assertEquals(data.size, 1)
     val t = data.head
     assertEqualsDouble(t.data(0L), 0.9, 1e-6)
   }
 
   test("sample-count: distribution summary, 0 - N") {
-    val data = evalUnstable("name,test,:eq,0,50,:sample-count", input100)
+    val data = eval("name,test,:eq,0,50,:sample-count", input100)
     assertEquals(data.size, 1)
     val t = data.head
     assertEqualsDouble(t.data(0L), 0.85, 1e-6)
   }
 
   test("sample-count: distribution summary, N - Max") {
-    val data = evalUnstable("name,test,:eq,50,Infinity,:sample-count", input100)
+    val data = eval("name,test,:eq,50,Infinity,:sample-count", input100)
     assertEquals(data.size, 1)
     val t = data.head
     assertEqualsDouble(t.data(0L), 0.9, 1e-6)
@@ -383,42 +374,42 @@ class PercentilesSuite extends FunSuite {
 
   test("sample-count: distribution summary, Min >= Max") {
     val e = intercept[IllegalArgumentException] {
-      evalUnstable("name,test,:eq,5,5,:sample-count", input100)
+      eval("name,test,:eq,5,5,:sample-count", input100)
     }
     assertEquals(e.getMessage, "requirement failed: min >= max (min=5.0, max=5.0)")
   }
 
   test("sample-count: distribution summary, Min < 0") {
     val e = intercept[IllegalArgumentException] {
-      evalUnstable("name,test,:eq,-5,5,:sample-count", input100)
+      eval("name,test,:eq,-5,5,:sample-count", input100)
     }
     assertEquals(e.getMessage, "requirement failed: min < 0 (min=-5.0)")
   }
 
   test("sample-count: distribution summary, NaN - 100") {
     val e = intercept[IllegalArgumentException] {
-      evalUnstable("name,test,:eq,NaN,100,:sample-count", input100)
+      eval("name,test,:eq,NaN,100,:sample-count", input100)
     }
     assertEquals(e.getMessage, "requirement failed: min >= max (min=NaN, max=100.0)")
   }
 
   test("sample-count: distribution summary, 0 - NaN") {
     val e = intercept[IllegalArgumentException] {
-      evalUnstable("name,test,:eq,0,NaN,:sample-count", input100)
+      eval("name,test,:eq,0,NaN,:sample-count", input100)
     }
     assertEquals(e.getMessage, "requirement failed: min >= max (min=0.0, max=NaN)")
   }
 
   test("sample-count: distribution summary, NaN - NaN") {
     val e = intercept[IllegalArgumentException] {
-      evalUnstable("name,test,:eq,NaN,NaN,:sample-count", input100)
+      eval("name,test,:eq,NaN,NaN,:sample-count", input100)
     }
     assertEquals(e.getMessage, "requirement failed: min >= max (min=NaN, max=NaN)")
   }
 
   test("sample-count: timer, range too high") {
     // Timer range is in seconds, sample data is 0-100 ns
-    val data = evalUnstable("name,test,:eq,50,100,:sample-count", inputTimer100)
+    val data = eval("name,test,:eq,50,100,:sample-count", inputTimer100)
     assertEquals(data.size, 1)
     val t = data.head
     assert(t.data(0L).isNaN)
@@ -426,7 +417,7 @@ class PercentilesSuite extends FunSuite {
 
   test("sample-count: timer, range") {
     // Timer range is in seconds, sample data is 0-100 ns
-    val data = evalUnstable("name,test,:eq,50e-9,100e-9,:sample-count", inputTimer100)
+    val data = eval("name,test,:eq,50e-9,100e-9,:sample-count", inputTimer100)
     assertEquals(data.size, 1)
     val t = data.head
     assertEqualsDouble(t.data(0L), 0.9, 1e-6)
