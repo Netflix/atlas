@@ -1249,8 +1249,6 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "sample-count"
 
-    override def isStable: Boolean = false
-
     override def matches(stack: List[Any]): Boolean = {
       stack match {
         case DoubleType(_) :: DoubleType(_) :: (_: Query) :: _ => true
