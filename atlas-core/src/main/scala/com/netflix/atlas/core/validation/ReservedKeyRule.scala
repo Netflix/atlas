@@ -17,6 +17,8 @@ package com.netflix.atlas.core.validation
 
 import com.typesafe.config.Config
 
+import java.util
+
 /**
   * Verifies that only allowed keys are used for reserved prefixes. Reserved prefixes are used
   * to prevent user defined tags from overlapping with common infrastructure tagging that should
@@ -31,8 +33,13 @@ import com.typesafe.config.Config
   */
 case class ReservedKeyRule(prefix: String, allowedKeys: Set[String]) extends TagRule {
 
+  import scala.jdk.CollectionConverters.*
+
+  // Used for contains check as it testing shows it to have better performance
+  private val hashSet = new util.HashSet[String](allowedKeys.asJava)
+
   override def validate(k: String, v: String): String = {
-    if (k.startsWith(prefix) && !allowedKeys.contains(k))
+    if (k.startsWith(prefix) && !hashSet.contains(k))
       s"invalid key for reserved prefix '$prefix': $k"
     else
       TagRule.Pass
