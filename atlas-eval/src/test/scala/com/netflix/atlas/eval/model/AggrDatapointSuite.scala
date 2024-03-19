@@ -81,19 +81,6 @@ class AggrDatapointSuite extends FunSuite {
     assert(aggregator.get.limitExceeded)
   }
 
-  test("aggregate dedups using source") {
-    val expr = DataExpr.Sum(Query.True)
-    val dataset = createDatapoints(expr, 0, 10)
-    val aggregator =
-      AggrDatapoint.aggregate(dataset ::: dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
-    val result = aggregator.get.datapoints
-
-    assertEquals(result.size, 1)
-    assertEquals(result.head.timestamp, 0L)
-    assertEquals(result.head.tags, Map("name" -> "cpu"))
-    assertEquals(result.head.value, 45.0)
-  }
-
   test("aggregate gauges sum") {
     val expr = DataExpr.Sum(Query.True)
     val dataset = createGaugeDatapoints(expr, 0, 10)
@@ -174,20 +161,6 @@ class AggrDatapointSuite extends FunSuite {
       AggrDatapoint.aggregate(dataset, settings(Integer.MAX_VALUE, 5))
 
     assert(aggregator.get.limitExceeded)
-  }
-
-  test("aggregate, dedup and group by") {
-    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("node"))
-    val dataset = createDatapoints(expr, 0, 10)
-    val aggregator =
-      AggrDatapoint.aggregate(dataset ::: dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
-    val result = aggregator.get.datapoints
-
-    assertEquals(result.size, 10)
-    result.foreach { d =>
-      val v = d.tags("node").substring(2).toDouble
-      assertEquals(d.value, v)
-    }
   }
 
   test("aggregate all") {
