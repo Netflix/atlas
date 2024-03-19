@@ -49,9 +49,6 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
 
       private[this] val state = scala.collection.mutable.AnyRefMap.empty[String, LwcDataExpr]
 
-      // HACK: needed until we can plumb the actual source through the system
-      private var nextSource: Int = 0
-
       override def onPush(): Unit = {
         val builder = List.newBuilder[AggrDatapoint]
         grab(in).foreach {
@@ -79,11 +76,9 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       private def pushDatapoint(dp: LwcDatapoint): Option[AggrDatapoint] = {
         state.get(dp.id) match {
           case Some(sub) =>
-            // TODO, put in source, for now make it random to avoid dedup
-            nextSource += 1
             val expr = sub.expr
             val step = sub.step
-            Some(AggrDatapoint(dp.timestamp, step, expr, nextSource.toString, dp.tags, dp.value))
+            Some(AggrDatapoint(dp.timestamp, step, expr, "datapoint", dp.tags, dp.value))
           case None =>
             unknown.increment()
             None

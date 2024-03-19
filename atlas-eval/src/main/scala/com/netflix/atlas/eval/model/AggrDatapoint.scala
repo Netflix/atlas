@@ -43,9 +43,8 @@ import com.netflix.spectator.api.Registry
   *     Data expression associated with the value. This is needed if further aggregation
   *     is necessary and later for matching in the final evaluation phase.
   * @param source
-  *     The source combined with the expression are used for deduping the intermediate
-  *     aggregates. This can be ignored at the risk of some values being included in the
-  *     final result multiple times.
+  *     Indicates whether it is an actual data point or a synthetic data point generated
+  *     from a heartbeat.
   * @param tags
   *     Tags associated with the datapoint.
   * @param value
@@ -59,9 +58,6 @@ case class AggrDatapoint(
   tags: Map[String, String],
   value: Double
 ) {
-
-  /** Identifier used for deduping intermediate aggregates. */
-  def id: String = s"$source:$expr"
 
   /**
     * Converts this value to a time series type that can be used for the final evaluation
@@ -307,22 +303,12 @@ object AggrDatapoint {
   def aggregate(values: List[AggrDatapoint], settings: AggregatorSettings): Option[Aggregator] = {
     if (values.isEmpty) Option.empty
     else {
-      val vs = dedup(values)
-      val aggr = newAggregator(vs.head, settings)
-      val aggregator = vs.tail
+      val aggr = newAggregator(values.head, settings)
+      val aggregator = values.tail
         .foldLeft(aggr) { (acc, d) =>
           acc.aggregate(d)
         }
       Some(aggregator)
     }
-  }
-
-  /**
-    * Dedup the values using the ids for each value. This will take into account the
-    * group by keys such that values with different grouping keys will not be considered
-    * as duplicates.
-    */
-  private def dedup(values: List[AggrDatapoint]): List[AggrDatapoint] = {
-    values.groupBy(_.id).map(_._2.head).toList
   }
 }
