@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.eval.model
 
+import com.fasterxml.jackson.databind.JsonNode
 import org.apache.pekko.util.ByteString
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
@@ -60,6 +61,13 @@ class LwcMessagesSuite extends FunSuite {
   test("datapoint, custom encode") {
     val expected = LwcDatapoint(step, "a", Map("foo" -> "bar"), 42.0)
     val actual = LwcMessages.parse(expected.toJson)
+    assertEquals(actual, expected)
+  }
+
+  test("event") {
+    val payload = Json.decode[JsonNode]("""{"foo":"bar"}""")
+    val expected = LwcEvent("123", payload)
+    val actual = LwcMessages.parse(Json.encode(expected))
     assertEquals(actual, expected)
   }
 
@@ -125,6 +133,16 @@ class LwcMessagesSuite extends FunSuite {
         if (i % 2 == 0) Map.empty else Map("name" -> "cpu", "node" -> s"i-$i"),
         i
       )
+    }
+    val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
+    assertEquals(actual, expected.toList)
+  }
+
+  test("batch: event") {
+    val expected = (0 until 10).map { i =>
+      val tags = Map("name" -> "cpu", "node" -> s"i-$i")
+      val payload = Json.decode[JsonNode](Json.encode(tags))
+      LwcEvent(s"$i", payload)
     }
     val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
     assertEquals(actual, expected.toList)
