@@ -42,13 +42,20 @@ class TraceMatcherSuite extends FunSuite {
     )
   }
 
+  /**
+    *  a - b
+    *    - c - e - g
+    *        - f
+    *    - d
+    */
   private val sampleTrace = List(
     mkSpan("a", "1", null, 0L, 100L),
     mkSpan("b", "2", "1", 1L, 25L),
     mkSpan("c", "3", "1", 5L, 90L),
     mkSpan("d", "4", "1", 15L, 50L),
     mkSpan("e", "5", "3", 8L, 50L),
-    mkSpan("f", "6", "3", 55L, 20L)
+    mkSpan("f", "6", "3", 55L, 20L),
+    mkSpan("g", "7", "5", 4L, 5L)
   )
 
   private def checkMatch(query: TraceQuery, shouldMatch: Boolean): Unit = {
@@ -90,6 +97,17 @@ class TraceMatcherSuite extends FunSuite {
 
     val q3 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,e,:eq,:child").q
     checkMatch(q3, false)
+  }
+
+  test("transitive child") {
+    val q1 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,c,:eq,:child,app,e,:eq,:child").q
+    checkMatch(q1, true)
+
+    val q2 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,b,:eq,:child,app,e,:eq,:child").q
+    checkMatch(q2, false)
+
+    val q3 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,c,:eq,:child,app,e,:eq,:child,app,g,:eq,:child").q
+    checkMatch(q1, true)
   }
 }
 

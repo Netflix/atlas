@@ -86,12 +86,18 @@ object TraceVocabulary extends Vocabulary {
     override def name: String = "child"
 
     override protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: (_: Query) :: _ => true
+      case (_: Query) :: (_: Query) :: _                                 => true
+      case (_: Query) :: (_: TraceQuery.Child) :: _                      => true
+      case (_: Query) :: TraceQuery.SpanAnd(_, _: TraceQuery.Child) :: _ => true
     }
 
     override protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (q2: Query) :: (q1: Query) :: stack =>
         TraceQuery.Child(q1, q2) :: stack
+      case (q2: Query) :: (tq: TraceQuery.Child) :: stack =>
+        TraceQuery.SpanAnd(tq, TraceQuery.Child(tq.q2, q2)) :: stack
+      case (q2: Query) :: (s @ TraceQuery.SpanAnd(_, tq: TraceQuery.Child)) :: stack =>
+        TraceQuery.SpanAnd(s, TraceQuery.Child(tq.q2, q2)) :: stack
     }
 
     override def signature: String = "q1:TraceQuery q2:TraceQuery -- TraceQuery"
