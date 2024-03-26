@@ -33,6 +33,7 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
+import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.AccessLogger
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.StreamOps
@@ -233,7 +234,7 @@ private[stream] class StreamContext(
   /**
     * Send a diagnostic message to all data sources that use a particular data expression.
     */
-  def log(expr: DataExpr, msg: DiagnosticMessage): Unit = {
+  def log(expr: DataExpr, msg: JsonSupport): Unit = {
     dataExprMap.get(expr).foreach { ds =>
       ds.foreach(s => dsLogger(s, msg))
     }

@@ -29,6 +29,7 @@ import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
+import com.netflix.atlas.eval.model.LwcEvent
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
@@ -117,6 +118,7 @@ class EvaluatorSuite extends FunSuite {
           case m: LwcExpression        => Option(m.`type`)
           case m: LwcSubscription      => Option(m.`type`)
           case m: LwcDatapoint         => Option(m.`type`)
+          case m: LwcEvent             => Option(m.`type`)
           case m: LwcDiagnosticMessage => Option(m.`type`)
           case m: LwcHeartbeat         => Option(m.`type`)
           case _                       => None

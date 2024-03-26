@@ -18,6 +18,8 @@ package com.netflix.atlas.eval.model
 import org.apache.pekko.util.ByteString
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.NullNode
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.json.Json
@@ -31,6 +33,9 @@ import java.io.ByteArrayOutputStream
   * Helpers for working with messages coming back from the LWCAPI service.
   */
 object LwcMessages {
+
+  // For reading arbitrary json structures for events
+  private val mapper = Json.newMapper
 
   /**
     * Parse the message string into an internal model object based on the type.
@@ -69,6 +74,9 @@ object LwcMessages {
       var tags: Map[String, String] = Map.empty
       var value: Double = Double.NaN
 
+      // LwcEvent
+      var payload: JsonNode = NullNode.instance
+
       // LwcDiagnosticMessage
       // - id
       // - message: DiagnosticMessage
@@ -96,6 +104,8 @@ object LwcMessages {
         case "tags"      => tags = parseTags(parser)
         case "value"     => value = nextDouble(parser)
 
+        case "payload" => payload = nextTree(parser)
+
         case "message" =>
           val t = parser.nextToken()
           if (t == JsonToken.VALUE_STRING)
@@ -110,6 +120,7 @@ object LwcMessages {
         case "expression"   => LwcExpression(expression, exprType, step)
         case "subscription" => LwcSubscription(expression, metrics)
         case "datapoint"    => LwcDatapoint(timestamp, id, tags, value)
+        case "event"        => LwcEvent(id, payload)
         case "diagnostic"   => LwcDiagnosticMessage(id, diagnosticMessage)
         case "heartbeat"    => LwcHeartbeat(timestamp, step)
         case _              => DiagnosticMessage(typeDesc, message, None)
@@ -117,6 +128,11 @@ object LwcMessages {
     } finally {
       parser.close()
     }
+  }
+
+  private def nextTree(parser: JsonParser): JsonNode = {
+    parser.nextToken()
+    mapper.readTree[JsonNode](parser)
   }
 
   private[model] def parseDataExprs(parser: JsonParser): List[LwcDataExpr] = {
@@ -163,6 +179,7 @@ object LwcMessages {
   private val LwcDiagnostic = 3
   private val Diagnostic = 4
   private val Heartbeat = 5
+  private val Event = 6
 
   /**
     * Encode messages using Jackson's smile format into a ByteString.
@@ -224,8 +241,12 @@ object LwcMessages {
           gen.writeNumber(Heartbeat)
           gen.writeNumber(msg.timestamp)
           gen.writeNumber(msg.step)
-        case _ =>
-          throw new MatchError("foo")
+        case msg: LwcEvent =>
+          gen.writeNumber(Event)
+          gen.writeString(msg.id)
+          mapper.writeTree(gen, msg.payload)
+        case msg =>
+          throw new MatchError(s"$msg")
       }
       gen.writeEndArray()
     } finally {
@@ -286,6 +307,9 @@ object LwcMessages {
             val timestamp = parser.nextLongValue(-1L)
             val step = parser.nextLongValue(-1L)
             builder += LwcHeartbeat(timestamp, step)
+          case Event =>
+            val id = parser.nextTextValue()
+            builder += LwcEvent(id, nextTree(parser))
           case v =>
             throw new MatchError(s"invalid type id: $v")
         }

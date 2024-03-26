@@ -24,9 +24,11 @@ import org.apache.pekko.stream.stage.GraphStageLogic
 import org.apache.pekko.stream.stage.InHandler
 import org.apache.pekko.stream.stage.OutHandler
 import com.netflix.atlas.eval.model.AggrDatapoint
+import com.netflix.atlas.eval.model.EventMessage
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
+import com.netflix.atlas.eval.model.LwcEvent
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcSubscription
 
@@ -54,6 +56,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
         grab(in).foreach {
           case sb: LwcSubscription      => updateState(sb)
           case dp: LwcDatapoint         => builder ++= pushDatapoint(dp)
+          case ev: LwcEvent             => pushEvent(ev)
           case dg: LwcDiagnosticMessage => pushDiagnosticMessage(dg)
           case hb: LwcHeartbeat         => builder += pushHeartbeat(hb)
           case _                        =>
@@ -82,6 +85,13 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
           case None =>
             unknown.increment()
             None
+        }
+      }
+
+      private def pushEvent(event: LwcEvent): Unit = {
+        state.get(event.id) match {
+          case Some(sub) => context.log(sub.expr, EventMessage(event.payload))
+          case None      => unknown.increment()
         }
       }
 
