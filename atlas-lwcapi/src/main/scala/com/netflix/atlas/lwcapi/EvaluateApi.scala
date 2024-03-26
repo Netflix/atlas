@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
+import com.netflix.atlas.eval.model.LwcEvent
 import com.netflix.atlas.eval.util.SortedTagMapDeserializer
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.CustomDirectives.*
@@ -53,6 +54,9 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
                   LwcDatapoint(timestamp, m.id, m.tags, m.value)
                 }
                 evaluate(addr, id, datapoints)
+            }
+            req.events.groupBy(_.id).foreach {
+              case (id, events) => evaluate(addr, id, events)
             }
             req.messages.groupBy(_.id).foreach {
               case (id, ms) => evaluate(addr, id, ms)
@@ -89,6 +93,7 @@ object EvaluateApi {
   case class EvaluateRequest(
     timestamp: Long,
     metrics: List[Item] = Nil,
+    events: List[LwcEvent] = Nil,
     messages: List[LwcDiagnosticMessage] = Nil
   ) extends JsonSupport
 }
