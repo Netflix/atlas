@@ -106,7 +106,9 @@ class TraceMatcherSuite extends FunSuite {
     val q2 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,b,:eq,:child,app,e,:eq,:child").q
     checkMatch(q2, false)
 
-    val q3 = ExprUtils.parseTraceEventsQuery("app,a,:eq,app,c,:eq,:child,app,e,:eq,:child,app,g,:eq,:child").q
+    val q3 = ExprUtils
+      .parseTraceEventsQuery("app,a,:eq,app,c,:eq,:child,app,e,:eq,:child,app,g,:eq,:child")
+      .q
     checkMatch(q1, true)
   }
 }
