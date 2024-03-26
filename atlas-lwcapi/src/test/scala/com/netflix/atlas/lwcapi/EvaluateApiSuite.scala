@@ -15,10 +15,13 @@
  */
 package com.netflix.atlas.lwcapi
 
+import com.fasterxml.jackson.databind.JsonNode
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
+import com.netflix.atlas.eval.model.LwcEvent
+import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.EvaluateApi.*
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
@@ -42,7 +45,15 @@ class EvaluateApiSuite extends MUnitRouteSuite {
 
   test("post metrics") {
     val metrics = List(Item("abc", SortedTagMap("a" -> "1"), 42.0))
-    val json = EvaluateRequest(1234L, metrics, Nil).toJson
+    val json = EvaluateRequest(1234L, metrics, Nil, Nil).toJson
+    Post("/lwc/api/v1/evaluate", json) ~> endpoint.routes ~> check {
+      assertEquals(response.status, StatusCodes.OK)
+    }
+  }
+
+  test("post events") {
+    val events = List(LwcEvent("abc", Json.decode[JsonNode]("42.0")))
+    val json = EvaluateRequest(1234L, Nil, events, Nil).toJson
     Post("/lwc/api/v1/evaluate", json) ~> endpoint.routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
     }
@@ -50,7 +61,7 @@ class EvaluateApiSuite extends MUnitRouteSuite {
 
   test("post diagnostic message") {
     val msgs = List(LwcDiagnosticMessage("abc", DiagnosticMessage.error("bad expression")))
-    val json = EvaluateRequest(1234L, Nil, msgs).toJson
+    val json = EvaluateRequest(1234L, Nil, Nil, msgs).toJson
     Post("/lwc/api/v1/evaluate", json) ~> endpoint.routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
     }
