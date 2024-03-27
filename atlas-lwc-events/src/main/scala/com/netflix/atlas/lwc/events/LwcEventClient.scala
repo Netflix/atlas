@@ -16,6 +16,7 @@
 package com.netflix.atlas.lwc.events
 
 import com.netflix.atlas.json.Json
+import com.netflix.spectator.api.Clock
 
 import java.io.StringWriter
 import scala.util.Using
@@ -58,15 +59,24 @@ object LwcEventClient {
     *     Set of subscriptions to match with the events.
     * @param consumer
     *     Function that will receive the output.
+    * @param clock
+    *     Clock to use for timing events.
     * @return
     *     Client instance.
     */
-  def apply(subscriptions: Subscriptions, consumer: String => Unit): LwcEventClient = {
-    new LocalLwcEventClient(subscriptions, consumer)
+  def apply(
+    subscriptions: Subscriptions,
+    consumer: String => Unit,
+    clock: Clock = Clock.SYSTEM
+  ): LwcEventClient = {
+    new LocalLwcEventClient(subscriptions, consumer, clock)
   }
 
-  private class LocalLwcEventClient(subscriptions: Subscriptions, consumer: String => Unit)
-      extends AbstractLwcEventClient {
+  private class LocalLwcEventClient(
+    subscriptions: Subscriptions,
+    consumer: String => Unit,
+    clock: Clock
+  ) extends AbstractLwcEventClient(clock) {
 
     sync(subscriptions)
 

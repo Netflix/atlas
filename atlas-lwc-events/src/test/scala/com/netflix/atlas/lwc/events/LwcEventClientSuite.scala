@@ -16,11 +16,20 @@
 package com.netflix.atlas.lwc.events
 
 import com.netflix.atlas.core.util.SortedTagMap
+import com.netflix.spectator.api.ManualClock
 import munit.FunSuite
 
 class LwcEventClientSuite extends FunSuite {
 
   import LwcEventSuite.*
+
+  private val clock = new ManualClock()
+  private val step = 5_000L
+
+  override def beforeEach(context: BeforeEach): Unit = {
+    clock.setWallTime(0L)
+    clock.setMonotonicTime(0L)
+  }
 
   private val sampleSpan: TestEvent = {
     TestEvent(SortedTagMap("app" -> "www", "node" -> "i-123"), 42L)
@@ -47,48 +56,52 @@ class LwcEventClientSuite extends FunSuite {
   test("analytics, basic aggregate") {
     val subs = Subscriptions(analytics =
       List(
-        Subscription("1", 60000, "app,foo,:eq,:sum"),
-        Subscription("2", 60000, "app,www,:eq,:sum")
+        Subscription("1", step, "app,foo,:eq,:sum"),
+        Subscription("2", step, "app,www,:eq,:sum")
       )
     )
     val output = List.newBuilder[String]
-    val client = LwcEventClient(subs, output.addOne)
+    val client = LwcEventClient(subs, output.addOne, clock)
     client.process(sampleLwcEvent)
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
     val vs = output.result()
-    assertEquals(1, vs.size)
-    assert(vs.forall(_.contains(""""tags":{"app":"www"}""")))
-    assert(vs.forall(_.contains(""""value":1.0""")))
+    assertEquals(vs.size, 2)
   }
 
   test("analytics, basic aggregate extract value") {
     val subs = Subscriptions(analytics =
       List(
-        Subscription("1", 60000, "app,www,:eq,value,duration,:eq,:and,:sum")
+        Subscription("1", step, "app,www,:eq,value,duration,:eq,:and,:sum")
       )
     )
     val output = List.newBuilder[String]
-    val client = LwcEventClient(subs, output.addOne)
+    val client = LwcEventClient(subs, output.addOne, clock)
     client.process(sampleLwcEvent)
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
     val vs = output.result()
-    assertEquals(1, vs.size)
+    assertEquals(vs.size, 1)
     assert(vs.forall(_.contains(""""tags":{"app":"www","value":"duration"}""")))
-    assert(vs.forall(_.contains(""""value":42.0""")))
+    assert(vs.forall(_.contains(""""value":8.4""")))
   }
 
   test("analytics, group by") {
     val subs = Subscriptions(analytics =
       List(
-        Subscription("1", 60000, "app,foo,:eq,:sum,(,node,),:by"),
-        Subscription("2", 60000, "app,www,:eq,:sum,(,node,),:by")
+        Subscription("1", step, "app,foo,:eq,:sum,(,node,),:by"),
+        Subscription("2", step, "app,www,:eq,:sum,(,node,),:by")
       )
     )
     val output = List.newBuilder[String]
-    val client = LwcEventClient(subs, output.addOne)
+    val client = LwcEventClient(subs, output.addOne, clock)
     client.process(sampleLwcEvent)
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
     val vs = output.result()
-    assertEquals(1, vs.size)
+    assertEquals(vs.size, 1)
     assert(vs.forall(_.contains(""""tags":{"app":"www","node":"i-123"}""")))
-    assert(vs.forall(_.contains(""""value":1.0""")))
+    assert(vs.forall(_.contains(""""value":0.2""")))
   }
 
   test("analytics, group by missing key") {

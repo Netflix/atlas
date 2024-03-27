@@ -100,6 +100,14 @@ trait LwcEvent {
 object LwcEvent {
 
   /**
+    * Wrap a Map as an LWC event. The timestamp will be the time when the event is
+    * wrapped.
+    */
+  def apply(event: Map[String, Any]): LwcEvent = {
+    apply(event, k => event.getOrElse(k, null))
+  }
+
+  /**
     * Wrap an object as an LWC event. The timestamp will be the time when the event is
     * wrapped.
     *
@@ -113,6 +121,23 @@ object LwcEvent {
     */
   def apply(rawEvent: Any, extractor: String => Any): LwcEvent = {
     BasicLwcEvent(rawEvent, extractor)
+  }
+
+  /**
+    * Event used to indicate a heartbeat. It just consists of a timestamp and can be used to
+    * ensure regular traffic. Some activity such as flushing analytic data points or cleanup
+    * may be triggered by the heartbeat.
+    */
+  case class HeartbeatLwcEvent(timestamp: Long) extends LwcEvent {
+
+    /** Raw event object that is being considered. */
+    override def rawEvent: Any = timestamp
+
+    /**
+      * Extract a value from the raw event for a given key. This method should be consistent
+      * with the `tagValue` method for keys that can be considered tags.
+      */
+    override def extractValue(key: String): Any = null
   }
 
   private case class BasicLwcEvent(rawEvent: Any, extractor: String => Any) extends LwcEvent {
