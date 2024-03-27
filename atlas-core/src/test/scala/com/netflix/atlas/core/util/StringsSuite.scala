@@ -208,6 +208,19 @@ class StringsSuite extends FunSuite {
     assertEquals(parseQueryString(query), expected)
   }
 
+  test("parseDuration, at nanoseconds") {
+    assertEquals(parseDuration("42ns"), Duration.ofNanos(42L))
+  }
+
+  test("parseDuration, at microseconds") {
+    assertEquals(parseDuration("42us"), Duration.ofNanos(42_000L))
+    assertEquals(parseDuration("42μs"), Duration.ofNanos(42_000L))
+  }
+
+  test("parseDuration, at milliseconds") {
+    assertEquals(parseDuration("42ms"), Duration.ofMillis(42))
+  }
+
   test("parseDuration, at seconds") {
     assertEquals(parseDuration("42seconds"), Duration.ofSeconds(42))
     assertEquals(parseDuration("42second"), Duration.ofSeconds(42))
