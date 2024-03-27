@@ -19,19 +19,24 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TraceQuery
-import com.netflix.atlas.core.util.SortedTagMap
+import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.atlas.impl.QueryIndex
 
-abstract class AbstractLwcEventClient extends LwcEventClient {
+import java.util.concurrent.atomic.AtomicLong
+
+abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
 
   import AbstractLwcEventClient.*
+
+  @volatile private var handlers: List[EventHandler] = _
 
   @volatile private var index: QueryIndex[EventHandler] = QueryIndex.newInstance(new NoopRegistry)
 
   @volatile private var traceHandlers: Map[Subscription, TraceQuery.SpanFilter] = Map.empty
 
   protected def sync(subscriptions: Subscriptions): Unit = {
+    val flushableHandlers = List.newBuilder[EventHandler]
     val idx = QueryIndex.newInstance[EventHandler](new NoopRegistry)
 
     // Pass-through events
@@ -48,20 +53,18 @@ abstract class AbstractLwcEventClient extends LwcEventClient {
     // Analytics based on events
     subscriptions.analytics.foreach { sub =>
       val expr = ExprUtils.parseDataExpr(sub.expression)
+      val converter = DatapointConverter(sub.id, expr, clock, sub.step, submit)
       val q = removeValueClause(expr.query)
-      val queryTags = Query.tags(expr.query)
       val handler = EventHandler(
         sub,
         event => {
-          val tags = groupTags(expr, event)
-          tags.fold(List.empty[LwcEvent]) { ts =>
-            val tags = ts ++ queryTags
-            val v = dataValue(tags, event)
-            List(DatapointEvent(sub.id, SortedTagMap(tags), event.timestamp, v))
-          }
-        }
+          converter.update(event)
+          Nil
+        },
+        Some(converter)
       )
       idx.add(q, handler)
+      flushableHandlers += handler
     }
 
     // Trace pass-through
@@ -70,6 +73,7 @@ abstract class AbstractLwcEventClient extends LwcEventClient {
     }.toMap
 
     index = idx
+    handlers = flushableHandlers.result()
   }
 
   private def removeValueClause(query: Query): SpectatorQuery = {
@@ -81,39 +85,13 @@ abstract class AbstractLwcEventClient extends LwcEventClient {
     ExprUtils.toSpectatorQuery(Query.simplify(q, ignore = true))
   }
 
-  private def groupTags(expr: DataExpr, event: LwcEvent): Option[Map[String, String]] = {
-    val tags = Map.newBuilder[String, String]
-    val it = expr.finalGrouping.iterator
-    while (it.hasNext) {
-      val k = it.next()
-      val v = event.tagValue(k)
-      if (v == null)
-        return None
-      else
-        tags += k -> v
-    }
-    Some(tags.result())
-  }
-
-  private def dataValue(tags: Map[String, String], event: LwcEvent): Double = {
-    tags.get("value").fold(1.0) { v =>
-      event.extractValue(v) match {
-        case b: Boolean if b => 1.0
-        case _: Boolean      => 0.0
-        case n: Byte         => n.toDouble
-        case n: Short        => n.toDouble
-        case n: Int          => n.toDouble
-        case n: Long         => n.toDouble
-        case n: Float        => n.toDouble
-        case n: Double       => n
-        case n: Number       => n.doubleValue()
-        case _               => 1.0
-      }
-    }
-  }
-
   override def process(event: LwcEvent): Unit = {
-    index.forEachMatch(k => event.tagValue(k), h => handleMatch(event, h))
+    event match {
+      case LwcEvent.HeartbeatLwcEvent(timestamp) =>
+        handlers.foreach(_.flush(timestamp))
+      case _ =>
+        index.forEachMatch(k => event.tagValue(k), h => handleMatch(event, h))
+    }
   }
 
   private def handleMatch(event: LwcEvent, handler: EventHandler): Unit = {
@@ -136,5 +114,20 @@ abstract class AbstractLwcEventClient extends LwcEventClient {
 
 object AbstractLwcEventClient {
 
-  private case class EventHandler(subscription: Subscription, mapper: LwcEvent => List[LwcEvent])
+  private case class EventHandler(
+    subscription: Subscription,
+    mapper: LwcEvent => List[LwcEvent],
+    converter: Option[DatapointConverter] = None
+  ) {
+
+    private val lastFlushTimestamp = new AtomicLong(0L)
+
+    def flush(timestamp: Long): Unit = {
+      val stepTime = timestamp / subscription.step
+      if (stepTime > lastFlushTimestamp.get()) {
+        converter.foreach(_.flush(timestamp))
+        lastFlushTimestamp.set(stepTime)
+      }
+    }
+  }
 }
