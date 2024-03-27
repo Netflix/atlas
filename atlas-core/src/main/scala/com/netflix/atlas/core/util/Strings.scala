@@ -38,7 +38,7 @@ object Strings {
   /**
     * Period following conventions of unix `at` command.
     */
-  private val AtPeriod = """^(\d+)([a-z]+)$""".r
+  private val AtPeriod = """^(\d+)([a-zμ]+)$""".r
 
   /**
     * Period following the ISO8601 conventions.
@@ -420,10 +420,13 @@ object Strings {
     * Convert an `at` command time range into a joda period object.
     */
   private def parseAtDuration(amount: String, unit: String): Duration = {
-    val v = amount.toInt
+    val v = amount.toLong
 
     // format: off
     unit match {
+      case "ns"                               => Duration.ofNanos(v)
+      case "us" | "μs"                        => Duration.ofNanos(v * 1000L)
+      case "ms"                               => Duration.ofMillis(v)
       case "seconds" | "second" | "s"         => Duration.ofSeconds(v)
       case "minutes" | "minute" | "min" | "m" => Duration.ofMinutes(v)
       case "hours"   | "hour"   | "h"         => Duration.ofHours(v)
