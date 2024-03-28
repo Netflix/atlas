@@ -115,6 +115,8 @@ class LwcToAggrDatapointSuite extends FunSuite {
     eval(input)
     assertEquals(logMessages.size(), 2)
     List("1", "2").foreach { i =>
+      // https://github.com/lampepfl/dotty/issues/15661 ?
+      // On 3.4.0 there is an error if using `v` instead of `null`
       logMessages.poll() match {
         case env: Evaluator.MessageEnvelope =>
           env.message match {
@@ -124,8 +126,8 @@ class LwcToAggrDatapointSuite extends FunSuite {
             case v =>
               fail(s"unexpected message: $v")
           }
-        case v =>
-          fail(s"unexpected type: $v")
+        case null =>
+          fail(s"unexpected type: null")
       }
     }
   }
