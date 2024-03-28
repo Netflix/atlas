@@ -52,6 +52,46 @@ class LwcMessagesSuite extends FunSuite {
     assertEquals(actual, expected)
   }
 
+  test("subscription-v2 time series") {
+    val expr = "name,cpu,:eq,:avg"
+    val sum = "name,cpu,:eq,:sum"
+    val count = "name,cpu,:eq,:count"
+    val dataExprs = List(LwcDataExpr("a", sum, step), LwcDataExpr("b", count, step))
+    val expected = LwcSubscriptionV2(expr, ExprType.TIME_SERIES, dataExprs)
+    val actual = LwcMessages.parse(Json.encode(expected))
+    assertEquals(actual, expected)
+  }
+
+  test("subscription-v2 events") {
+    val raw = "name,cpu,:eq"
+    val table = "name,cpu,:eq,(,name,value,),:table"
+    val expr = s"$raw,$table"
+    val dataExprs = List(LwcDataExpr("a", raw, 0L), LwcDataExpr("b", table, 0L))
+    val expected = LwcSubscriptionV2(expr, ExprType.EVENTS, dataExprs)
+    val actual = LwcMessages.parse(Json.encode(expected))
+    assertEquals(actual, expected)
+  }
+
+  test("subscription-v2 trace events") {
+    val q1 = "app,www,:eq,app,db,:eq,:child"
+    val q2 = "app,www,:eq,app,foo,:eq,:span-and"
+    val expr = s"$q1,$q2"
+    val dataExprs = List(LwcDataExpr("a", q1, 0L), LwcDataExpr("b", q2, 0L))
+    val expected = LwcSubscriptionV2(expr, ExprType.TRACE_EVENTS, dataExprs)
+    val actual = LwcMessages.parse(Json.encode(expected))
+    assertEquals(actual, expected)
+  }
+
+  test("subscription-v2 trace time series") {
+    val q1 = "app,www,:eq,app,db,:eq,:child"
+    val q2 = "app,www,:eq,app,foo,:eq,:span-and"
+    val expr = s"$q1,$q2"
+    val dataExprs = List(LwcDataExpr("a", q1, 0L), LwcDataExpr("b", q2, 0L))
+    val expected = LwcSubscriptionV2(expr, ExprType.TRACE_TIME_SERIES, dataExprs)
+    val actual = LwcMessages.parse(Json.encode(expected))
+    assertEquals(actual, expected)
+  }
+
   test("datapoint") {
     val expected = LwcDatapoint(step, "a", Map("foo" -> "bar"), 42.0)
     val actual = LwcMessages.parse(Json.encode(expected))
@@ -115,6 +155,21 @@ class LwcMessagesSuite extends FunSuite {
     val expected = (0 until 10).map { i =>
       LwcSubscription(
         "name,cpu,:eq,:avg",
+        List(
+          LwcDataExpr(s"$i", "name,cpu,:eq,:sum", i),
+          LwcDataExpr(s"$i", "name,cpu,:eq,:count", i)
+        )
+      )
+    }
+    val actual = LwcMessages.parseBatch(LwcMessages.encodeBatch(expected))
+    assertEquals(actual, expected.toList)
+  }
+
+  test("batch: subscription-v2") {
+    val expected = (0 until 10).map { i =>
+      LwcSubscriptionV2(
+        "name,cpu,:eq,:avg",
+        ExprType.TIME_SERIES,
         List(
           LwcDataExpr(s"$i", "name,cpu,:eq,:sum", i),
           LwcDataExpr(s"$i", "name,cpu,:eq,:count", i)

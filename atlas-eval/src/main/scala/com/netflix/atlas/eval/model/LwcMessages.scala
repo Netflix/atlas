@@ -66,7 +66,12 @@ object LwcMessages {
 
       // LwcSubscription
       // - expression
-      var metrics: List[LwcDataExpr] = Nil
+      // - metrics
+      // LwcSubscriptionV2
+      // - expression
+      // - exprType
+      // - subExprs
+      var subExprs: List[LwcDataExpr] = Nil
 
       // LwcDatapoint
       var timestamp: Long = -1L
@@ -97,7 +102,8 @@ object LwcMessages {
         case "expression" => expression = nextString(parser)
         case "exprType"   => exprType = ExprType.valueOf(nextString(parser))
         case "step"       => step = nextLong(parser)
-        case "metrics"    => metrics = parseDataExprs(parser)
+        case "metrics"    => subExprs = parseDataExprs(parser)
+        case "subExprs"   => subExprs = parseDataExprs(parser)
 
         case "timestamp" => timestamp = nextLong(parser)
         case "id"        => id = nextString(parser)
@@ -117,13 +123,14 @@ object LwcMessages {
       }
 
       typeDesc match {
-        case "expression"   => LwcExpression(expression, exprType, step)
-        case "subscription" => LwcSubscription(expression, metrics)
-        case "datapoint"    => LwcDatapoint(timestamp, id, tags, value)
-        case "event"        => LwcEvent(id, payload)
-        case "diagnostic"   => LwcDiagnosticMessage(id, diagnosticMessage)
-        case "heartbeat"    => LwcHeartbeat(timestamp, step)
-        case _              => DiagnosticMessage(typeDesc, message, None)
+        case "expression"      => LwcExpression(expression, exprType, step)
+        case "subscription"    => LwcSubscription(expression, subExprs)
+        case "subscription-v2" => LwcSubscriptionV2(expression, exprType, subExprs)
+        case "datapoint"       => LwcDatapoint(timestamp, id, tags, value)
+        case "event"           => LwcEvent(id, payload)
+        case "diagnostic"      => LwcDiagnosticMessage(id, diagnosticMessage)
+        case "heartbeat"       => LwcHeartbeat(timestamp, step)
+        case _                 => DiagnosticMessage(typeDesc, message, None)
       }
     } finally {
       parser.close()
@@ -180,6 +187,7 @@ object LwcMessages {
   private val Diagnostic = 4
   private val Heartbeat = 5
   private val Event = 6
+  private val SubscriptionV2 = 7
 
   /**
     * Encode messages using Jackson's smile format into a ByteString.
@@ -213,6 +221,17 @@ object LwcMessages {
             gen.writeString(m.id)
             gen.writeString(m.expression)
             gen.writeNumber(m.step)
+          }
+          gen.writeEndArray()
+        case msg: LwcSubscriptionV2 =>
+          gen.writeNumber(SubscriptionV2)
+          gen.writeString(msg.expression)
+          gen.writeString(msg.exprType.name())
+          gen.writeStartArray()
+          msg.subExprs.foreach { s =>
+            gen.writeString(s.id)
+            gen.writeString(s.expression)
+            gen.writeNumber(s.step)
           }
           gen.writeEndArray()
         case msg: LwcDatapoint =>
@@ -288,6 +307,18 @@ object LwcMessages {
               )
             }
             builder += LwcSubscription(expression, dataExprs.result())
+          case SubscriptionV2 =>
+            val expression = parser.nextTextValue()
+            val exprType = ExprType.valueOf(parser.nextTextValue())
+            val subExprs = List.newBuilder[LwcDataExpr]
+            foreachItem(parser) {
+              subExprs += LwcDataExpr(
+                parser.getText,
+                parser.nextTextValue(),
+                parser.nextLongValue(-1L)
+              )
+            }
+            builder += LwcSubscriptionV2(expression, exprType, subExprs.result())
           case Datapoint =>
             val timestamp = parser.nextLongValue(-1L)
             val id = parser.nextTextValue()

@@ -15,6 +15,9 @@
  */
 package com.netflix.atlas.eval.stream
 
+import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.DataVocabulary
+import com.netflix.atlas.core.stacklang.Interpreter
 import org.apache.pekko.stream.Attributes
 import org.apache.pekko.stream.FlowShape
 import org.apache.pekko.stream.Inlet
@@ -25,7 +28,6 @@ import org.apache.pekko.stream.stage.InHandler
 import org.apache.pekko.stream.stage.OutHandler
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.EventMessage
-import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.eval.model.LwcEvent
@@ -39,6 +41,8 @@ import com.netflix.atlas.eval.model.LwcSubscription
 private[stream] class LwcToAggrDatapoint(context: StreamContext)
     extends GraphStage[FlowShape[List[AnyRef], List[AggrDatapoint]]] {
 
+  import LwcToAggrDatapoint.*
+
   private val unknown = context.registry.counter("atlas.eval.unknownMessages")
 
   private val in = Inlet[List[AnyRef]]("LwcToAggrDatapoint.in")
@@ -49,7 +53,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      private[this] val state = scala.collection.mutable.AnyRefMap.empty[String, LwcDataExpr]
+      private[this] val state = scala.collection.mutable.AnyRefMap.empty[String, DatapointMetadata]
 
       override def onPush(): Unit = {
         val builder = List.newBuilder[AggrDatapoint]
@@ -71,7 +75,8 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       private def updateState(sub: LwcSubscription): Unit = {
         sub.metrics.foreach { m =>
           if (!state.contains(m.id)) {
-            state.put(m.id, m)
+            val expr = parseExpr(m.expression)
+            state.put(m.id, DatapointMetadata(m.expression, expr, m.step))
           }
         }
       }
@@ -79,7 +84,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       private def pushDatapoint(dp: LwcDatapoint): Option[AggrDatapoint] = {
         state.get(dp.id) match {
           case Some(sub) =>
-            val expr = sub.expr
+            val expr = sub.dataExpr
             val step = sub.step
             Some(AggrDatapoint(dp.timestamp, step, expr, "datapoint", dp.tags, dp.value))
           case None =>
@@ -90,14 +95,14 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
 
       private def pushEvent(event: LwcEvent): Unit = {
         state.get(event.id) match {
-          case Some(sub) => context.log(sub.expr, EventMessage(event.payload))
+          case Some(sub) => context.log(sub.dataExpr, EventMessage(event.payload))
           case None      => unknown.increment()
         }
       }
 
       private def pushDiagnosticMessage(diagMsg: LwcDiagnosticMessage): Unit = {
         state.get(diagMsg.id) match {
-          case Some(sub) => context.log(sub.expr, diagMsg.message)
+          case Some(sub) => context.log(sub.dataExpr, diagMsg.message)
           case None      => unknown.increment()
         }
       }
@@ -115,6 +120,20 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       }
 
       setHandlers(in, out, this)
+    }
+  }
+}
+
+private[stream] object LwcToAggrDatapoint {
+
+  case class DatapointMetadata(dataExprStr: String, dataExpr: DataExpr, step: Long)
+
+  private val interpreter = Interpreter(DataVocabulary.allWords)
+
+  private def parseExpr(input: String): DataExpr = {
+    interpreter.execute(input).stack match {
+      case (expr: DataExpr) :: Nil => expr
+      case _                       => throw new IllegalArgumentException(s"invalid expr: $input")
     }
   }
 }
