@@ -17,13 +17,12 @@ package com.netflix.atlas.lwcapi
 
 import java.util.concurrent.TimeUnit
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.netflix.atlas.core.model.CustomVocabulary
-import com.netflix.atlas.core.model.DataExpr
-import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Query.KeyQuery
-import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.eval.model.ExprType
+import com.netflix.atlas.eval.stream.ExprInterpreter
 import com.netflix.spectator.ipc.ServerGroup
 import com.typesafe.config.Config
 
@@ -42,7 +41,7 @@ class ExpressionSplitter(config: Config) {
 
   private val keepKeys = Set("nf.app", "nf.cluster", "nf.shard1", "nf.shard2", "nf.stack")
 
-  private val interpreter = Interpreter(new CustomVocabulary(config).allWords)
+  private val interpreter = new ExprInterpreter(config)
 
   /**
     * Processing the expressions can be quite expensive. In particular compiling regular
@@ -115,25 +114,31 @@ class ExpressionSplitter(config: Config) {
     }
   }
 
-  private def parse(expression: String): Try[List[DataExprMeta]] = Try {
-    val context = interpreter.execute(expression)
-    val dataExprs = context.stack.flatMap {
-      case ModelExtractors.PresentationType(t) => t.perOffset.flatMap(_.expr.dataExprs)
-      case _ => throw new IllegalArgumentException("expression is invalid")
-    }
-
-    // Offsets are not supported
-    dataExprs.foreach { dataExpr =>
-      if (!dataExpr.offset.isZero) {
-        throw new IllegalArgumentException(
-          s":offset not supported for streaming evaluation [[$dataExpr]]"
-        )
-      }
-    }
-
-    dataExprs.distinct.map { e =>
-      val q = intern(compress(e.query))
-      DataExprMeta(e, e.toString, q)
+  private def parse(expression: String, exprType: ExprType): Try[List[DataExprMeta]] = Try {
+    val parsedExpressions = interpreter.parseQuery(expression, exprType)
+    exprType match {
+      case ExprType.EVENTS =>
+        parsedExpressions.collect {
+          case e: EventExpr =>
+            val q = intern(compress(e.query))
+            DataExprMeta(e.toString, q)
+        }
+      case ExprType.TIME_SERIES =>
+        parsedExpressions
+          .collect {
+            case se: StyleExpr => se.expr.dataExprs
+          }
+          .flatten
+          .distinct
+          .map { e =>
+            val q = intern(compress(e.query))
+            DataExprMeta(e.toString, q)
+          }
+      case ExprType.TRACE_EVENTS | ExprType.TRACE_TIME_SERIES =>
+        parsedExpressions.map { e =>
+          // Tracing cannot be scoped to specific infrastructure, always use True
+          DataExprMeta(e.toString, Query.True)
+        }
     }
   }
 
@@ -142,11 +147,12 @@ class ExpressionSplitter(config: Config) {
     * contention and most threads are blocked. This just does and get/put which potentially
     * recomputes some values, but for this case that is preferable.
     */
-  private def getFromCache(k: String): Try[List[DataExprMeta]] = {
-    val value = exprCache.getIfPresent(k)
+  private def getFromCache(k: String, exprType: ExprType): Try[List[DataExprMeta]] = {
+    val key = s"$k:$exprType"
+    val value = exprCache.getIfPresent(key)
     if (value == null) {
-      val tmp = parse(k)
-      exprCache.put(k, tmp)
+      val tmp = parse(k, exprType)
+      exprCache.put(key, tmp)
       tmp
     } else {
       value
@@ -154,7 +160,7 @@ class ExpressionSplitter(config: Config) {
   }
 
   def split(expression: String, exprType: ExprType, frequency: Long): List[Subscription] = {
-    getFromCache(expression) match {
+    getFromCache(expression, exprType) match {
       case Success(exprs: List[?]) => exprs.map(e => toSubscription(e, exprType, frequency))
       case Failure(t)              => throw t
     }
@@ -207,5 +213,5 @@ class ExpressionSplitter(config: Config) {
 }
 
 object ExpressionSplitter {
-  private case class DataExprMeta(expr: DataExpr, exprString: String, compressedQuery: Query)
+  private case class DataExprMeta(exprString: String, compressedQuery: Query)
 }

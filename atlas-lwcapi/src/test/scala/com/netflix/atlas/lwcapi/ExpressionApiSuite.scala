@@ -172,11 +172,11 @@ class ExpressionApiSuite extends MUnitRouteSuite {
   }
 
   private val skanCount =
-    """{"expression":"nf.cluster,skan,:eq,:count","exprType":"TIME_SERIES","frequency":60000,"id":"6278fa6047c07316d7e265a1004882ab9e1007af"}"""
+    """{"expression":"nf.cluster,skan,:eq,:count","exprType":"TIME_SERIES","frequency":60000,"id":"039722fefa66c2cdd0147595fb9b9a50351f90f0"}"""
 
   private val skanSum =
-    """{"expression":"nf.cluster,skan,:eq,:sum","exprType":"TIME_SERIES","frequency":60000,"id":"36e0a2c61b48e062bba5361d059afd313c82c674"}"""
+    """{"expression":"nf.cluster,skan,:eq,:sum","exprType":"TIME_SERIES","frequency":60000,"id":"17e0dc5b1224c825c81cf033c46d0f0490c1ca7f"}"""
 
   private val brhMax =
-    """{"expression":"nf.app,brh,:eq,:max","exprType":"TIME_SERIES","frequency":60000,"id":"16f1b0930c0eeae0225374ea88c01e161e589aff"}"""
+    """{"expression":"nf.app,brh,:eq,:max","exprType":"TIME_SERIES","frequency":60000,"id":"b19b2aa2c802c29216d4aa36024f71a3c92f84db"}"""
 }
