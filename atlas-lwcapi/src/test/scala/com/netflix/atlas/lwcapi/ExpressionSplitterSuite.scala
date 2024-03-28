@@ -54,7 +54,7 @@ class ExpressionSplitterSuite extends FunSuite {
     val msg = intercept[IllegalArgumentException] {
       splitter.split("foo", ExprType.TIME_SERIES, frequency1)
     }
-    assertEquals(msg.getMessage, "expression is invalid")
+    assertEquals(msg.getMessage, "invalid value on stack: foo")
   }
 
   test("throws IAE for expressions with offset") {

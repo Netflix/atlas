@@ -48,7 +48,7 @@ class ExpressionMetadataSuite extends FunSuite {
 
   test("computes id") {
     val expr = ExpressionMetadata("test")
-    assertEquals(expr.id, "2684d3c5cb245bd2fd6ee4ea30a500e97ace8141")
+    assertEquals(expr.id, "59ec3895749cc3fb279d41dabc1d4943361de999")
   }
 
   test("id computation considers frequency") {
@@ -114,14 +114,14 @@ class ExpressionMetadataSuite extends FunSuite {
 
   test("renders as json with default frequency") {
     val expected =
-      "{\"expression\":\"this\",\"exprType\":\"TIME_SERIES\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
+      "{\"expression\":\"this\",\"exprType\":\"TIME_SERIES\",\"frequency\":60000,\"id\":\"8189ff24a1e801c924689aeb0490d5d840f23582\"}"
     val json = ExpressionMetadata("this").toJson
     assertEquals(expected, json)
   }
 
   test("renders as json with frequency of 0") {
     val expected =
-      "{\"expression\":\"this\",\"exprType\":\"TIME_SERIES\",\"frequency\":60000,\"id\":\"fc3a081088771e05bdc3aa99ffd8770157dfe6ce\"}"
+      "{\"expression\":\"this\",\"exprType\":\"TIME_SERIES\",\"frequency\":60000,\"id\":\"8189ff24a1e801c924689aeb0490d5d840f23582\"}"
     val json = ExpressionMetadata("this", ExprType.TIME_SERIES, 0).toJson
     assertEquals(expected, json)
   }

@@ -24,6 +24,7 @@ import com.netflix.atlas.core.model.Expr
 import com.netflix.atlas.core.model.FilterExpr
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StatefulExpr
+import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TraceQuery
 import com.netflix.atlas.core.model.TraceVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
@@ -37,9 +38,11 @@ import com.typesafe.config.Config
 
 import scala.util.Success
 
-private[stream] class ExprInterpreter(config: Config) {
+class ExprInterpreter(config: Config) {
 
   import ExprInterpreter.*
+
+  private val tsInterpreter = Interpreter(new CustomVocabulary(config).allWords)
 
   private val eventInterpreter = Interpreter(
     new CustomVocabulary(config, List(EventVocabulary)).allWords
@@ -60,9 +63,23 @@ private[stream] class ExprInterpreter(config: Config) {
     // time shifts, filters, and integral. The filters and integral are excluded because
     // they can be confusing as the time window for evaluation is not bounded.
     val results = graphCfg.exprs.flatMap(_.perOffset)
-    results.foreach { result =>
+    results.foreach(validate)
+
+    // Perform host rewrites based on the Atlas hostname
+    val host = uri.authority.host.toString()
+    val rewritten = hostRewriter.rewrite(host, results)
+    graphCfg.copy(query = rewritten.mkString(","), parsedQuery = Success(rewritten))
+  }
+
+  /**
+    * Check that data expressions are supported. The streaming path doesn't support
+    * time shifts, filters, and integral. The filters and integral are excluded because
+    * they can be confusing as the time window for evaluation is not bounded.
+    */
+  private def validate(styleExpr: StyleExpr): Unit = {
+    styleExpr.perOffset.foreach { s =>
       // Use rewrite as a helper for searching the expression for invalid operations
-      result.expr.rewrite {
+      s.expr.rewrite {
         case op: StatefulExpr.Integral         => invalidOperator(op); op
         case op: FilterExpr                    => invalidOperator(op); op
         case op: DataExpr if !op.offset.isZero => invalidOperator(op); op
@@ -70,13 +87,8 @@ private[stream] class ExprInterpreter(config: Config) {
 
       // Double check all data expressions do not have an offset. In some cases for named rewrites
       // the check above may not detect the offset.
-      result.expr.dataExprs.filterNot(_.offset.isZero).foreach(invalidOperator)
+      s.expr.dataExprs.filterNot(_.offset.isZero).foreach(invalidOperator)
     }
-
-    // Perform host rewrites based on the Atlas hostname
-    val host = uri.authority.host.toString()
-    val rewritten = hostRewriter.rewrite(host, results)
-    graphCfg.copy(query = rewritten.mkString(","), parsedQuery = Success(rewritten))
   }
 
   private def invalidOperator(expr: Expr): Unit = {
@@ -103,45 +115,80 @@ private[stream] class ExprInterpreter(config: Config) {
   }
 
   private def invalidValue(value: Any): IllegalArgumentException = {
-    new IllegalArgumentException(s"invalid value on stack; $value")
+    new IllegalArgumentException(s"invalid value on stack: $value")
+  }
+
+  private def parseTimeSeries(query: String): List[StyleExpr] = {
+    val exprs = tsInterpreter.execute(query).stack.map {
+      case ModelExtractors.PresentationType(t) => t
+      case value                               => throw invalidValue(value)
+    }
+    exprs.foreach(validate)
+    exprs
+  }
+
+  private def parseEvents(query: String): List[EventExpr] = {
+    eventInterpreter.execute(query).stack.map {
+      case ModelExtractors.EventExprType(t) => t
+      case value                            => throw invalidValue(value)
+    }
   }
 
   private def evalEvents(uri: Uri): List[EventExpr] = {
     uri.query().get("q") match {
       case Some(query) =>
-        eventInterpreter.execute(query).stack.map {
-          case ModelExtractors.EventExprType(t) => t
-          case value                            => throw invalidValue(value)
-        }
+        parseEvents(query)
       case None =>
         throw new IllegalArgumentException(s"missing required parameter: q ($uri)")
+    }
+  }
+
+  private def parseTraceEvents(query: String): List[TraceQuery.SpanFilter] = {
+    traceInterpreter.execute(query).stack.map {
+      case ModelExtractors.TraceFilterType(t) => t
+      case value                              => throw invalidValue(value)
     }
   }
 
   private def evalTraceEvents(uri: Uri): List[TraceQuery.SpanFilter] = {
     uri.query().get("q") match {
       case Some(query) =>
-        traceInterpreter.execute(query).stack.map {
-          case ModelExtractors.TraceFilterType(t) => t
-          case value                              => throw invalidValue(value)
-        }
+        parseTraceEvents(query)
       case None =>
         throw new IllegalArgumentException(s"missing required parameter: q ($uri)")
     }
+  }
+
+  private def parseTraceTimeSeries(query: String): List[TraceQuery.SpanTimeSeries] = {
+    val exprs = traceInterpreter.execute(query).stack.map {
+      case ModelExtractors.TraceTimeSeriesType(t) => t
+      case value                                  => throw invalidValue(value)
+    }
+    exprs.foreach(t => validate(t.expr))
+    exprs
   }
 
   private def evalTraceTimeSeries(uri: Uri): List[TraceQuery.SpanTimeSeries] = {
     uri.query().get("q") match {
       case Some(query) =>
-        traceInterpreter.execute(query).stack.map {
-          case ModelExtractors.TraceTimeSeriesType(t) => t
-          case value                                  => throw invalidValue(value)
-        }
+        parseTraceTimeSeries(query)
       case None =>
         throw new IllegalArgumentException(s"missing required parameter: q ($uri)")
     }
   }
 
+  /** Parse an expression based on the type. */
+  def parseQuery(expr: String, exprType: ExprType): List[Expr] = {
+    val exprs = exprType match {
+      case ExprType.TIME_SERIES       => parseTimeSeries(expr)
+      case ExprType.EVENTS            => parseEvents(expr)
+      case ExprType.TRACE_EVENTS      => parseTraceEvents(expr)
+      case ExprType.TRACE_TIME_SERIES => parseTraceTimeSeries(expr)
+    }
+    exprs.distinct
+  }
+
+  /** Parse an expression that is part of a URI. */
   def parseQuery(uri: Uri): (ExprType, List[Expr]) = {
     val exprType = determineExprType(uri)
     val exprs = exprType match {

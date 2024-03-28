@@ -40,15 +40,16 @@ case class ExpressionMetadata(
 object ExpressionMetadata {
 
   def apply(expression: String, exprType: ExprType, step: Long): ExpressionMetadata = {
-    val f = if (step > 0) step else ApiSettings.defaultStep
-    new ExpressionMetadata(expression, exprType, f, computeId(expression, f))
+    val dfltStep = if (exprType.isTimeSeriesType) ApiSettings.defaultStep else 0L
+    val f = if (step > 0) step else dfltStep
+    new ExpressionMetadata(expression, exprType, f, computeId(expression, exprType, f))
   }
 
   def apply(expression: String): ExpressionMetadata = {
     apply(expression, ExprType.TIME_SERIES, ApiSettings.defaultStep)
   }
 
-  def computeId(e: String, f: Long): String = {
-    Strings.zeroPad(Hash.sha1bytes(s"$f~$e"), 40)
+  def computeId(e: String, t: ExprType, f: Long): String = {
+    Strings.zeroPad(Hash.sha1bytes(s"$f~$t~$e"), 40)
   }
 }
