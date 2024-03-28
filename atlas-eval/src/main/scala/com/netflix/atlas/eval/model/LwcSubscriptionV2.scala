@@ -28,6 +28,7 @@ import com.netflix.atlas.json.JsonSupport
   * @param subExprs
   *     Data expressions that result from the root expression.
   */
-case class LwcSubscriptionV2(expression: String, exprType: ExprType, subExprs: List[LwcDataExpr]) extends JsonSupport {
+case class LwcSubscriptionV2(expression: String, exprType: ExprType, subExprs: List[LwcDataExpr])
+    extends JsonSupport {
   val `type`: String = "subscription-v2"
 }

@@ -31,5 +31,4 @@ import com.fasterxml.jackson.annotation.JsonAlias
   * @param step
   *     The step size used for this stream of data.
   */
-case class LwcDataExpr(id: String, expression: String, @JsonAlias(Array("frequency")) step: Long) {
-}
+case class LwcDataExpr(id: String, expression: String, @JsonAlias(Array("frequency")) step: Long) {}
