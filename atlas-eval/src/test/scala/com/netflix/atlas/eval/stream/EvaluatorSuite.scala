@@ -741,4 +741,35 @@ class EvaluatorSuite extends FunSuite {
     val json = """{"id":"_","uri":":true"}"""
     assertEquals(Json.decode[Evaluator.DataSource](json), ds)
   }
+
+  test("publisher, time series") {
+    val evaluator = new Evaluator(config, registry, system)
+
+    val uri =
+      "synthetic://test/graph?q=name,cpu,:eq,nf.app,foo,:eq,:and,:max&step=1ms&numStepIntervals=5"
+    val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
+    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+    // 5 data points and 5 messages indicating data volumes
+    assertEquals(result.size, 10)
+  }
+
+  test("publisher, events") {
+    val evaluator = new Evaluator(config, registry, system)
+
+    val uri =
+      "synthetic://test/events?q=name,cpu,:eq,nf.app,foo,:eq,:and&step=1ms&numStepIntervals=5"
+    val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
+    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+    assertEquals(result.size, 5000)
+  }
+
+  test("publisher, trace time series") {
+    val evaluator = new Evaluator(config, registry, system)
+
+    val uri =
+      "synthetic://test/traces/graph?q=name,cpu,:eq,nf.app,foo,:eq,:and&step=1ms&numStepIntervals=5"
+    val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
+    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+    assertEquals(result.size, 10)
+  }
 }

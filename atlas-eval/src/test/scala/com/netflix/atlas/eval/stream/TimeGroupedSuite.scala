@@ -22,6 +22,7 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.AggrValuesInfo
+import com.netflix.atlas.eval.model.DatapointsTuple
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.spectator.api.DefaultRegistry
 import munit.FunSuite
@@ -55,9 +56,9 @@ class TimeGroupedSuite extends FunSuite {
 
   private def run(data: List[AggrDatapoint]): List[TimeGroup] = {
     val future = Source
-      .single(data)
+      .single(DatapointsTuple(data))
       .via(new TimeGrouped(context))
-      .flatMapConcat(Source.apply)
+      .flatMapConcat(t => Source(t.groups))
       .runFold(List.empty[TimeGroup])((acc, g) => g :: acc)
     result(future)
   }

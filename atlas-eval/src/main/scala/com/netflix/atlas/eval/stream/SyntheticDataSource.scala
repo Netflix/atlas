@@ -15,19 +15,27 @@
  */
 package com.netflix.atlas.eval.stream
 
+import com.fasterxml.jackson.databind.JsonNode
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.model.Uri
 import org.apache.pekko.stream.IOResult
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.EventExpr
+import com.netflix.atlas.core.model.Expr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StyleExpr
+import com.netflix.atlas.core.model.TraceQuery
 import com.netflix.atlas.core.util.Strings
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcDatapoint
+import com.netflix.atlas.eval.model.LwcEvent
 import com.netflix.atlas.eval.model.LwcSubscription
+import com.netflix.atlas.eval.model.LwcSubscriptionV2
 import com.netflix.atlas.json.Json
+import com.netflix.spectator.impl.Hash64
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -57,10 +65,10 @@ object SyntheticDataSource {
 
   def apply(interpreter: ExprInterpreter, uri: Uri): Source[ByteString, Future[IOResult]] = {
     val settings = getSettings(uri)
-    val exprs = interpreter.eval(uri).exprs
+    val (exprType, exprs) = interpreter.parseQuery(uri)
     val promise = Promise[IOResult]()
     Source(exprs)
-      .flatMapMerge(Int.MaxValue, expr => source(settings, expr))
+      .flatMapMerge(Int.MaxValue, expr => source(settings, exprType, expr))
       .via(new OnUpstreamFinish[ByteString](promise.success(IOResult.createSuccessful(0L))))
       .mapMaterializedValue(_ => promise.future)
   }
@@ -73,6 +81,23 @@ object SyntheticDataSource {
       inputDataSize = query.get("inputDataSize").fold(1000)(_.toInt),
       outputDataSize = query.get("outputDataSize").fold(10)(_.toInt)
     )
+  }
+
+  private def source(
+    settings: Settings,
+    exprType: ExprType,
+    expr: Expr
+  ): Source[ByteString, NotUsed] = {
+    exprType match {
+      case ExprType.EVENTS =>
+        source(settings, expr.asInstanceOf[EventExpr])
+      case ExprType.TIME_SERIES =>
+        source(settings, expr.asInstanceOf[StyleExpr])
+      case ExprType.TRACE_EVENTS =>
+        Source.empty
+      case ExprType.TRACE_TIME_SERIES =>
+        source(settings, expr.asInstanceOf[TraceQuery.SpanTimeSeries].expr)
+    }
   }
 
   private def source(settings: Settings, styleExpr: StyleExpr): Source[ByteString, NotUsed] = {
@@ -128,6 +153,37 @@ object SyntheticDataSource {
             }
         }
       }
+  }
+
+  private def source(settings: Settings, expr: EventExpr): Source[ByteString, NotUsed] = {
+    val id = computeId(ExprType.EVENTS, expr, 0L)
+    val dataExpr = LwcDataExpr(id, expr.toString, 0L)
+    val subMessage = LwcSubscriptionV2(expr.toString, ExprType.EVENTS, List(dataExpr))
+
+    val exprSource = Source(0 until settings.numStepIntervals)
+      .throttle(1, FiniteDuration(settings.step, TimeUnit.MILLISECONDS))
+      .flatMapConcat { i =>
+        Source(0 until settings.inputDataSize)
+          .map { j =>
+            val data = Map(
+              "tags" -> Query.tags(expr.query),
+              "i"    -> i,
+              "j"    -> j
+            )
+            val json = Json.decode[JsonNode](Json.encode(data))
+            LwcEvent(id, json)
+          }
+      }
+
+    Source
+      .single(subMessage)
+      .concat(exprSource)
+      .map(msg => ByteString(Json.encode(msg)))
+  }
+
+  private def computeId(exprType: ExprType, expr: Expr, step: Long): String = {
+    val key = s"$exprType:$expr:$step"
+    java.lang.Long.toString(new Hash64().updateString(key).compute(), 16)
   }
 
   case class Settings(step: Long, numStepIntervals: Int, inputDataSize: Int, outputDataSize: Int)

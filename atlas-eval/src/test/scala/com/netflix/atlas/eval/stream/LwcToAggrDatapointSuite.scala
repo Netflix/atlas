@@ -66,13 +66,13 @@ class LwcToAggrDatapointSuite extends FunSuite {
     """{"type":"diagnostic","id":"sum","message":{"type":"error","message":"2"}}"""
   )
 
-  private val logMessages = new ArrayBlockingQueue[(DataSource, JsonSupport)](10)
+  private val logMessages = new ArrayBlockingQueue[Evaluator.MessageEnvelope](10)
 
   private val context = new StreamContext(
     ConfigFactory.load(),
     null,
     materializer,
-    dsLogger = (ds, msg) => logMessages.add(ds -> msg)
+    dsLogger = (_, _) => ()
   )
 
   context.setDataSources(
@@ -87,7 +87,10 @@ class LwcToAggrDatapointSuite extends FunSuite {
       .map(LwcMessages.parse)
       .map(msg => List(msg))
       .via(new LwcToAggrDatapoint(context))
-      .flatMapConcat(Source.apply)
+      .flatMapConcat { t =>
+        t.messages.foreach(m => logMessages.add(m))
+        Source(t.data)
+      }
       .runWith(Sink.seq[AggrDatapoint])
     Await.result(future, Duration.Inf).toList
   }
@@ -113,11 +116,16 @@ class LwcToAggrDatapointSuite extends FunSuite {
     assertEquals(logMessages.size(), 2)
     List("1", "2").foreach { i =>
       logMessages.poll() match {
-        case (_, msg: DiagnosticMessage) =>
-          assertEquals(msg.`type`, "error")
-          assertEquals(msg.message, i)
+        case env: Evaluator.MessageEnvelope =>
+          env.message match {
+            case msg: DiagnosticMessage =>
+              assertEquals(msg.`type`, "error")
+              assertEquals(msg.message, i)
+            case v =>
+              fail(s"unexpected message: $v")
+          }
         case v =>
-          fail(s"unexpected message: $v")
+          fail(s"unexpected type: $v")
       }
     }
   }

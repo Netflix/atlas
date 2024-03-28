@@ -33,6 +33,7 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.IdentityMap
 import com.netflix.atlas.eval.model.TimeGroup
+import com.netflix.atlas.eval.model.TimeGroupsTuple
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
@@ -173,7 +174,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
 
       // Perform the final evaluation and create a source with the TimeSeriesMessages
       // addressed to each recipient
-      private def handleData(group: TimeGroup): Unit = {
+      private def handleData(group: TimeGroup): List[MessageEnvelope] = {
         // Finalize the DataExprs, needed as input for further evaluation
         val timestamp = group.timestamp
         val groupedDatapoints = group.dataExprValues
@@ -236,14 +237,26 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
           case (id, rate) => new MessageEnvelope(id, rate)
         }.toList
 
-        push(out, Source(output ++ rateMessages))
+        output ++ rateMessages
+      }
+
+      private def handleSingleGroup(g: TimeGroup): Unit = {
+        push(out, Source(handleData(g)))
+      }
+
+      private def handleGroups(t: TimeGroupsTuple): Unit = {
+        val msgs = List.newBuilder[MessageEnvelope]
+        msgs ++= t.messages
+        msgs ++= t.groups.flatMap(handleData)
+        push(out, Source(msgs.result()))
       }
 
       override def onPush(): Unit = {
         grab(in) match {
-          case ds: DataSources => handleDataSources(ds)
-          case data: TimeGroup => handleData(data)
-          case v               => throw new MatchError(v)
+          case ds: DataSources    => handleDataSources(ds)
+          case data: TimeGroup    => handleSingleGroup(data)
+          case t: TimeGroupsTuple => handleGroups(t)
+          case v                  => throw new MatchError(v)
         }
       }
 

@@ -51,6 +51,7 @@ import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.TimeGroup
+import com.netflix.atlas.eval.model.TimeGroupsTuple
 import com.netflix.atlas.eval.stream.EurekaSource.Instance
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
@@ -244,12 +245,11 @@ private[stream] abstract class EvaluatorImpl(
       val intermediateEval = createInputFlow(context)
         .via(context.monitorFlow("10_InputBatches"))
         .via(new LwcToAggrDatapoint(context))
-        .flatMapConcat { vs =>
-          Source(vs.groupBy(_.step).map(_._2.toList))
+        .flatMapConcat { t =>
+          Source(t.groupByStep)
         }
-        .groupBy(Int.MaxValue, _.head.step, allowClosedSubstreamRecreation = true)
+        .groupBy(Int.MaxValue, _.step, allowClosedSubstreamRecreation = true)
         .via(new TimeGrouped(context))
-        .flatMapConcat(Source.apply)
         .mergeSubstreams
         .via(context.monitorFlow("11_GroupedDatapoints"))
 
@@ -362,7 +362,7 @@ private[stream] abstract class EvaluatorImpl(
 
           aggregator match {
             case Some(aggr) if aggr.limitExceeded =>
-              context.logDatapointsExceeded(group.timestamp, t._1)
+              context.logDatapointsExceeded(group.timestamp, t._1.toString)
               AggrValuesInfo(Nil, t._2.size)
             case Some(aggr) =>
               AggrValuesInfo(aggr.datapoints, t._2.size)
@@ -389,9 +389,9 @@ private[stream] abstract class EvaluatorImpl(
     * the objects so the FinalExprEval stage will only see a single step.
     */
   private def stepSize: PartialFunction[AnyRef, Long] = {
-    case ds: DataSources => ds.stepSize()
-    case grp: TimeGroup  => grp.step
-    case v               => throw new IllegalArgumentException(s"unexpected value in stream: $v")
+    case ds: DataSources    => ds.stepSize()
+    case t: TimeGroupsTuple => t.step
+    case v                  => throw new IllegalArgumentException(s"unexpected value in stream: $v")
   }
 
   /**
@@ -408,6 +408,8 @@ private[stream] abstract class EvaluatorImpl(
             new DataSources(sources.asJava)
         }
         .toList
+    case t: TimeGroupsTuple =>
+      t.groupByStep
     case _ =>
       List(value)
   }
@@ -506,8 +508,10 @@ private[stream] abstract class EvaluatorImpl(
 
   private def toExprSet(dss: DataSources, interpreter: ExprInterpreter): Set[LwcExpression] = {
     dss.sources.asScala.flatMap { dataSource =>
-      interpreter.eval(Uri(dataSource.uri)).exprs.map { expr =>
-        LwcExpression(expr.toString, ExprType.TIME_SERIES, dataSource.step.toMillis)
+      val (exprType, exprs) = interpreter.parseQuery(Uri(dataSource.uri))
+      exprs.map { expr =>
+        val step = if (exprType.isTimeSeriesType) dataSource.step.toMillis else 0L
+        LwcExpression(expr.toString, exprType, step)
       }
     }.toSet
   }
