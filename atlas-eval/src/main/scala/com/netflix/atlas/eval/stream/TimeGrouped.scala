@@ -26,7 +26,9 @@ import org.apache.pekko.stream.stage.OutHandler
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.AggrValuesInfo
+import com.netflix.atlas.eval.model.DatapointsTuple
 import com.netflix.atlas.eval.model.TimeGroup
+import com.netflix.atlas.eval.model.TimeGroupsTuple
 
 /**
   * Operator for grouping data into buckets by time. The expectation is that the data
@@ -38,7 +40,7 @@ import com.netflix.atlas.eval.model.TimeGroup
   */
 private[stream] class TimeGrouped(
   context: StreamContext
-) extends GraphStage[FlowShape[List[AggrDatapoint], List[TimeGroup]]] {
+) extends GraphStage[FlowShape[DatapointsTuple, TimeGroupsTuple]] {
 
   type AggrMap = java.util.HashMap[DataExpr, AggrDatapoint.Aggregator]
 
@@ -60,10 +62,10 @@ private[stream] class TimeGrouped(
     context.registry
   )
 
-  private val in = Inlet[List[AggrDatapoint]]("TimeGrouped.in")
-  private val out = Outlet[List[TimeGroup]]("TimeGrouped.out")
+  private val in = Inlet[DatapointsTuple]("TimeGrouped.in")
+  private val out = Outlet[TimeGroupsTuple]("TimeGrouped.out")
 
-  override val shape: FlowShape[List[AggrDatapoint], List[TimeGroup]] = FlowShape(in, out)
+  override val shape: FlowShape[DatapointsTuple, TimeGroupsTuple] = FlowShape(in, out)
 
   private val metricName = "atlas.eval.datapoints"
   private val registry = context.registry
@@ -138,7 +140,7 @@ private[stream] class TimeGrouped(
         val aggregateMapForExpWithinLimits = aggrMap.asScala
           .filter {
             case (expr, aggr) if aggr.limitExceeded =>
-              context.logDatapointsExceeded(ts, expr)
+              context.logDatapointsExceeded(ts, expr.toString)
               false
             case _ =>
               true
@@ -153,7 +155,8 @@ private[stream] class TimeGrouped(
 
       override def onPush(): Unit = {
         val builder = List.newBuilder[TimeGroup]
-        grab(in).foreach { v =>
+        val tuple = grab(in)
+        tuple.data.foreach { v =>
           val t = v.timestamp
           val now = clock.wallTime()
           step = v.step
@@ -177,10 +180,10 @@ private[stream] class TimeGrouped(
           }
         }
         val groups = builder.result()
-        if (groups.isEmpty)
+        if (groups.isEmpty && tuple.messages.isEmpty)
           pull(in)
         else
-          push(out, groups)
+          push(out, TimeGroupsTuple(groups, tuple.messages))
       }
 
       override def onPull(): Unit = {
@@ -203,7 +206,7 @@ private[stream] class TimeGrouped(
 
       private def flushPending(): Unit = {
         if (pending.nonEmpty && isAvailable(out)) {
-          push(out, pending)
+          push(out, TimeGroupsTuple(pending))
           pending = Nil
         }
         if (pending.isEmpty) {

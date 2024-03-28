@@ -19,17 +19,31 @@ package com.netflix.atlas.eval.model;
 public enum ExprType {
 
   /** Expression to select a set of events to be passed through. */
-  EVENTS,
+  EVENTS(false),
 
   /**
    * Time series expression such as used with Atlas Graph API. Can also be used for analytics
    * queries on top of event data.
    */
-  TIME_SERIES,
+  TIME_SERIES(true),
 
   /** Expression to select a set of traces to be passed through. */
-  TRACE_EVENTS,
+  TRACE_EVENTS(false),
 
   /** Time series expression based on data extraced from traces. */
-  TRACE_TIME_SERIES
+  TRACE_TIME_SERIES(true);
+
+  private final boolean timeSeries;
+
+  ExprType(boolean timeSeries) {
+    this.timeSeries = timeSeries;
+  }
+
+  public boolean isEventType() {
+    return !timeSeries;
+  }
+
+  public boolean isTimeSeriesType() {
+    return timeSeries;
+  }
 }

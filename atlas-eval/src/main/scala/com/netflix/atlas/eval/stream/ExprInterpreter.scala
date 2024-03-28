@@ -15,13 +15,21 @@
  */
 package com.netflix.atlas.eval.stream
 
+import com.netflix.atlas.core.model.CustomVocabulary
 import org.apache.pekko.http.scaladsl.model.Uri
 import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.EventExpr
+import com.netflix.atlas.core.model.EventVocabulary
 import com.netflix.atlas.core.model.Expr
 import com.netflix.atlas.core.model.FilterExpr
+import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.StatefulExpr
+import com.netflix.atlas.core.model.TraceQuery
+import com.netflix.atlas.core.model.TraceVocabulary
+import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.graph.Grapher
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.util.HostRewriter
@@ -30,6 +38,16 @@ import com.typesafe.config.Config
 import scala.util.Success
 
 private[stream] class ExprInterpreter(config: Config) {
+
+  import ExprInterpreter.*
+
+  private val eventInterpreter = Interpreter(
+    new CustomVocabulary(config, List(EventVocabulary)).allWords
+  )
+
+  private val traceInterpreter = Interpreter(
+    new CustomVocabulary(config, List(TraceVocabulary)).allWords
+  )
 
   private val grapher = Grapher(config)
 
@@ -72,16 +90,103 @@ private[stream] class ExprInterpreter(config: Config) {
     )
   }
 
-  def dataExprMap(ds: DataSources): Map[DataExpr, List[DataSource]] = {
+  def dataExprMap(ds: DataSources): Map[String, List[DataSource]] = {
     import scala.jdk.CollectionConverters.*
     ds.sources.asScala.toList
       .flatMap { s =>
-        val exprs = eval(Uri(s.uri)).exprs.flatMap(_.expr.dataExprs).distinct
-        exprs.map(_ -> s)
+        dataExprs(Uri(s.uri)).map(_ -> s)
       }
       .groupBy(_._1)
       .map {
         case (expr, vs) => expr -> vs.map(_._2)
       }
   }
+
+  private def invalidValue(value: Any): IllegalArgumentException = {
+    new IllegalArgumentException(s"invalid value on stack; $value")
+  }
+
+  private def evalEvents(uri: Uri): List[EventExpr] = {
+    uri.query().get("q") match {
+      case Some(query) =>
+        eventInterpreter.execute(query).stack.map {
+          case ModelExtractors.EventExprType(t) => t
+          case value                            => throw invalidValue(value)
+        }
+      case None =>
+        throw new IllegalArgumentException(s"missing required parameter: q ($uri)")
+    }
+  }
+
+  private def evalTraceEvents(uri: Uri): List[TraceQuery.SpanFilter] = {
+    uri.query().get("q") match {
+      case Some(query) =>
+        traceInterpreter.execute(query).stack.map {
+          case ModelExtractors.TraceFilterType(t) => t
+          case value                              => throw invalidValue(value)
+        }
+      case None =>
+        throw new IllegalArgumentException(s"missing required parameter: q ($uri)")
+    }
+  }
+
+  private def evalTraceTimeSeries(uri: Uri): List[TraceQuery.SpanTimeSeries] = {
+    uri.query().get("q") match {
+      case Some(query) =>
+        traceInterpreter.execute(query).stack.map {
+          case ModelExtractors.TraceTimeSeriesType(t) => t
+          case value                                  => throw invalidValue(value)
+        }
+      case None =>
+        throw new IllegalArgumentException(s"missing required parameter: q ($uri)")
+    }
+  }
+
+  def parseQuery(uri: Uri): (ExprType, List[Expr]) = {
+    val exprType = determineExprType(uri)
+    val exprs = exprType match {
+      case ExprType.TIME_SERIES       => eval(uri).exprs
+      case ExprType.EVENTS            => evalEvents(uri)
+      case ExprType.TRACE_EVENTS      => evalTraceEvents(uri)
+      case ExprType.TRACE_TIME_SERIES => evalTraceTimeSeries(uri)
+    }
+    exprType -> exprs.distinct
+  }
+
+  def dataExprs(uri: Uri): List[String] = {
+    val exprs = determineExprType(uri) match {
+      case ExprType.TIME_SERIES       => eval(uri).exprs.flatMap(_.expr.dataExprs)
+      case ExprType.EVENTS            => evalEvents(uri)
+      case ExprType.TRACE_EVENTS      => evalTraceEvents(uri)
+      case ExprType.TRACE_TIME_SERIES => evalTraceTimeSeries(uri)
+    }
+    exprs.map(_.toString).distinct
+  }
+
+  def determineExprType(uri: Uri): ExprType = {
+    val reversed = reversedPath(uri.path)
+    if (reversed.startsWith(eventsPrefix))
+      ExprType.EVENTS
+    else if (reversed.startsWith(traceEventsPrefix))
+      ExprType.TRACE_EVENTS
+    else if (reversed.startsWith(traceTimeSeriesPrefix))
+      ExprType.TRACE_TIME_SERIES
+    else
+      ExprType.TIME_SERIES
+  }
+
+  private def reversedPath(path: Uri.Path): Uri.Path = {
+    val reversed = path.reverse
+    if (reversed.startsWithSlash)
+      reversed.tail
+    else
+      reversed
+  }
+}
+
+private[stream] object ExprInterpreter {
+
+  private val eventsPrefix = Uri.Path("events")
+  private val traceEventsPrefix = Uri.Path("traces")
+  private val traceTimeSeriesPrefix = Uri.Path("graph") / "traces"
 }

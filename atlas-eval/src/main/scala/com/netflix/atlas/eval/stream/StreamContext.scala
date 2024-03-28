@@ -121,7 +121,7 @@ private[stream] class StreamContext(
   @volatile private var dataSources: DataSources = DataSources.empty()
 
   /** Map of DataExpr to data sources for being able to quickly log information. */
-  @volatile private var dataExprMap: Map[DataExpr, List[DataSource]] = Map.empty
+  @volatile private var dataExprMap: Map[String, List[DataSource]] = Map.empty
 
   def setDataSources(ds: DataSources): Unit = {
     if (dataSources != ds) {
@@ -221,7 +221,7 @@ private[stream] class StreamContext(
     * Emit an error to the sources where the number of input
     * or intermediate datapoints exceed for an expression.
     */
-  def logDatapointsExceeded(timestamp: Long, dataExpr: DataExpr): Unit = {
+  def logDatapointsExceeded(timestamp: Long, dataExpr: String): Unit = {
     val diagnosticMessage = DiagnosticMessage.error(
       s"expression: $dataExpr exceeded the configured max input datapoints limit" +
         s" '$maxInputDatapointsPerExpression' or max intermediate" +
@@ -234,9 +234,18 @@ private[stream] class StreamContext(
   /**
     * Send a diagnostic message to all data sources that use a particular data expression.
     */
-  def log(expr: DataExpr, msg: JsonSupport): Unit = {
+  def log(expr: String, msg: JsonSupport): Unit = {
     dataExprMap.get(expr).foreach { ds =>
       ds.foreach(s => dsLogger(s, msg))
+    }
+  }
+
+  /**
+    * Creates a set of messages for each data source that uses a given expression.
+    */
+  def messagesForDataSource(expr: String, msg: JsonSupport): List[Evaluator.MessageEnvelope] = {
+    dataExprMap.get(expr).toList.flatMap { ds =>
+      ds.map(s => new Evaluator.MessageEnvelope(s.id, msg))
     }
   }
 

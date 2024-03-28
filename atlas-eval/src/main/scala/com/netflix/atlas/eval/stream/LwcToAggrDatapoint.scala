@@ -33,56 +33,74 @@ import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.eval.model.LwcEvent
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcSubscription
+import com.netflix.atlas.eval.model.LwcSubscriptionV2
+import com.netflix.atlas.eval.model.DatapointsTuple
 
 /**
   * Process the SSE output from an LWC service and convert it into a stream of
   * [[AggrDatapoint]]s that can be used for evaluation.
   */
 private[stream] class LwcToAggrDatapoint(context: StreamContext)
-    extends GraphStage[FlowShape[List[AnyRef], List[AggrDatapoint]]] {
+    extends GraphStage[FlowShape[List[AnyRef], DatapointsTuple]] {
 
   import LwcToAggrDatapoint.*
 
   private val unknown = context.registry.counter("atlas.eval.unknownMessages")
 
   private val in = Inlet[List[AnyRef]]("LwcToAggrDatapoint.in")
-  private val out = Outlet[List[AggrDatapoint]]("LwcToAggrDatapoint.out")
+  private val out = Outlet[DatapointsTuple]("LwcToAggrDatapoint.out")
 
-  override val shape: FlowShape[List[AnyRef], List[AggrDatapoint]] = FlowShape(in, out)
+  override val shape: FlowShape[List[AnyRef], DatapointsTuple] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      private[this] val state = scala.collection.mutable.AnyRefMap.empty[String, DatapointMetadata]
+      private val tsState = scala.collection.mutable.AnyRefMap.empty[String, DatapointMetadata]
+      private val eventState = scala.collection.mutable.AnyRefMap.empty[String, String]
 
       override def onPush(): Unit = {
-        val builder = List.newBuilder[AggrDatapoint]
+        val dpBuilder = List.newBuilder[AggrDatapoint]
+        val msgBuilder = List.newBuilder[Evaluator.MessageEnvelope]
         grab(in).foreach {
           case sb: LwcSubscription      => updateState(sb)
-          case dp: LwcDatapoint         => builder ++= pushDatapoint(dp)
-          case ev: LwcEvent             => pushEvent(ev)
-          case dg: LwcDiagnosticMessage => pushDiagnosticMessage(dg)
-          case hb: LwcHeartbeat         => builder += pushHeartbeat(hb)
+          case sb: LwcSubscriptionV2    => updateStateV2(sb)
+          case dp: LwcDatapoint         => dpBuilder ++= pushDatapoint(dp)
+          case ev: LwcEvent             => msgBuilder ++= pushEvent(ev)
+          case dg: LwcDiagnosticMessage => msgBuilder ++= pushDiagnosticMessage(dg)
+          case hb: LwcHeartbeat         => dpBuilder += pushHeartbeat(hb)
           case _                        =>
         }
-        val datapoints = builder.result()
-        if (datapoints.isEmpty)
+        val datapoints = dpBuilder.result()
+        val messages = msgBuilder.result()
+        if (datapoints.isEmpty && messages.isEmpty)
           pull(in)
         else
-          push(out, datapoints)
+          push(out, DatapointsTuple(datapoints, messages))
       }
 
       private def updateState(sub: LwcSubscription): Unit = {
         sub.metrics.foreach { m =>
-          if (!state.contains(m.id)) {
+          if (!tsState.contains(m.id)) {
             val expr = parseExpr(m.expression)
-            state.put(m.id, DatapointMetadata(m.expression, expr, m.step))
+            tsState.put(m.id, DatapointMetadata(m.expression, expr, m.step))
+          }
+        }
+      }
+
+      private def updateStateV2(sub: LwcSubscriptionV2): Unit = {
+        sub.subExprs.foreach { s =>
+          if (sub.exprType.isTimeSeriesType && !tsState.contains(s.id)) {
+            val expr = parseExpr(s.expression)
+            tsState.put(s.id, DatapointMetadata(s.expression, expr, s.step))
+          }
+          if (sub.exprType.isEventType && !eventState.contains(s.id)) {
+            eventState.put(s.id, s.expression)
           }
         }
       }
 
       private def pushDatapoint(dp: LwcDatapoint): Option[AggrDatapoint] = {
-        state.get(dp.id) match {
+        tsState.get(dp.id) match {
           case Some(sub) =>
             val expr = sub.dataExpr
             val step = sub.step
@@ -93,17 +111,24 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
         }
       }
 
-      private def pushEvent(event: LwcEvent): Unit = {
-        state.get(event.id) match {
-          case Some(sub) => context.log(sub.dataExpr, EventMessage(event.payload))
-          case None      => unknown.increment()
+      private def pushEvent(event: LwcEvent): List[Evaluator.MessageEnvelope] = {
+        eventState.get(event.id) match {
+          case Some(sub) => context.messagesForDataSource(sub, EventMessage(event.payload))
+          case None      => unknown.increment(); Nil
         }
       }
 
-      private def pushDiagnosticMessage(diagMsg: LwcDiagnosticMessage): Unit = {
-        state.get(diagMsg.id) match {
-          case Some(sub) => context.log(sub.dataExpr, diagMsg.message)
-          case None      => unknown.increment()
+      private def pushDiagnosticMessage(
+        diagMsg: LwcDiagnosticMessage
+      ): List[Evaluator.MessageEnvelope] = {
+        tsState.get(diagMsg.id) match {
+          case Some(sub) =>
+            context.messagesForDataSource(sub.dataExprStr, diagMsg.message)
+          case None =>
+            eventState.get(diagMsg.id) match {
+              case Some(sub) => context.messagesForDataSource(sub, diagMsg.message)
+              case None      => unknown.increment(); Nil
+            }
         }
       }
 
