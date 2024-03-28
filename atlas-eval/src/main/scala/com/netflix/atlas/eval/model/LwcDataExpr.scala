@@ -16,10 +16,6 @@
 package com.netflix.atlas.eval.model
 
 import com.fasterxml.jackson.annotation.JsonAlias
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.netflix.atlas.core.model.DataExpr
-import com.netflix.atlas.core.model.DataVocabulary
-import com.netflix.atlas.core.stacklang.Interpreter
 
 /**
   * Triple representing the id, data expression, and frequency for a given data
@@ -36,19 +32,4 @@ import com.netflix.atlas.core.stacklang.Interpreter
   *     The step size used for this stream of data.
   */
 case class LwcDataExpr(id: String, expression: String, @JsonAlias(Array("frequency")) step: Long) {
-
-  @JsonIgnore
-  lazy val expr: DataExpr = LwcDataExpr.parseExpr(expression)
-}
-
-object LwcDataExpr {
-
-  private val interpreter = Interpreter(DataVocabulary.allWords)
-
-  private def parseExpr(input: String): DataExpr = {
-    interpreter.execute(input).stack match {
-      case (expr: DataExpr) :: Nil => expr
-      case _                       => throw new IllegalArgumentException(s"invalid expr: $input")
-    }
-  }
 }
