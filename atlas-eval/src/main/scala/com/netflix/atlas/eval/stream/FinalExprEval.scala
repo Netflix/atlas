@@ -103,7 +103,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
         // Compute the new set of expressions
         recipients = sources
           .filter { s =>
-            exprInterpreter.determineExprType(Uri(s.uri)) == ExprType.TIME_SERIES
+            exprInterpreter.determineExprType(Uri(s.uri)).isTimeSeriesType
           }
           .flatMap { s =>
             try {
