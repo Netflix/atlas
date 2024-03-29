@@ -20,11 +20,14 @@ package com.netflix.atlas.lwc.events
   *
   * @param id
   *     Id used to pair the received data with a given consumer.
-  * @param step
+  * @param frequency
   *     Step size for the subscription when mapped into a time series.
   * @param expression
   *     Expression for matching events and mapping into the expected output.
   * @param exprType
   *     Type for the expression.
   */
-case class Subscription(id: String, step: Long, expression: String, exprType: String)
+case class Subscription(id: String, frequency: Long, expression: String, exprType: String) {
+
+  def step: Long = frequency
+}
