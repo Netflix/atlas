@@ -114,7 +114,7 @@ class LwcToAggrDatapointSuite extends FunSuite {
     val styleExpr = "name,cpu,:eq,:avg"
     val tsExpr = s"app,foo,:eq,$styleExpr,:span-time-series"
     def subExpr(n: String, e: String): String = {
-      s"""{"id":"$n","expression":"$e","frequency":$step}"""
+      s"""{"id":"$n","expression":"app,foo,:eq,$e,:span-time-series","frequency":$step}"""
     }
     val expr1 = subExpr("sum", "name,cpu,:eq,:sum")
     val expr2 = subExpr("count", "name,cpu,:eq,:count")
