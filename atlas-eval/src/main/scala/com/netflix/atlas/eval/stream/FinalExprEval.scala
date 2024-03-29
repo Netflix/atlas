@@ -32,6 +32,7 @@ import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.IdentityMap
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeGroupsTuple
 import com.netflix.atlas.eval.model.TimeSeriesMessage
@@ -101,6 +102,9 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
 
         // Compute the new set of expressions
         recipients = sources
+          .filter { s =>
+            exprInterpreter.determineExprType(Uri(s.uri)) == ExprType.TIME_SERIES
+          }
           .flatMap { s =>
             try {
               val graphCfg = exprInterpreter.eval(Uri(s.uri))

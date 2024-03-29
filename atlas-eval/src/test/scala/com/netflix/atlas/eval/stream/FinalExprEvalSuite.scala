@@ -99,6 +99,14 @@ class FinalExprEvalSuite extends FunSuite {
     }
   }
 
+  test("ignore event exprs") {
+    val input = List(
+      sources(ds("a", "http://atlas/events?q=app,foo,:eq,(,message,),:table"))
+    )
+    val output = run(input)
+    assert(output.isEmpty)
+  }
+
   test("division with no data should result in no data line") {
     val input = List(
       sources(ds("a", "http://atlas/graph?q=name,latency,:eq,:dist-avg")),
