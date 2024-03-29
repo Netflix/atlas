@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.lwc.events
 
-import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TraceQuery
@@ -36,7 +35,7 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
 
   @volatile private var currentSubs: Subscriptions = Subscriptions()
 
-  @volatile private var handlers: List[EventHandler] = _
+  @volatile private var handlers: List[EventHandler] = Nil
 
   @volatile private var traceHandlers: Map[Subscription, TraceQuery.SpanFilter] = Map.empty
 

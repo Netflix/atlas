@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.lwc.events
 
+import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
@@ -29,11 +31,18 @@ class LwcEventConfiguration {
   import scala.jdk.CollectionConverters.*
 
   @Bean
-  def lwcEventClient(config: Optional[Config]): LwcEventClient = {
+  def lwcEventClient(registry: Optional[Registry], config: Optional[Config]): LwcEventClient = {
+    val r = registry.orElseGet(() => new NoopRegistry)
     val c = config.orElseGet(() => ConfigFactory.load())
-    val logger = LoggerFactory.getLogger(classOf[LwcEventClient])
-    val subs = toSubscriptions(c)
-    LwcEventClient(subs, logger.info)
+    if (c.getBoolean("atlas.lwc.events.enabled")) {
+      val client = new RemoteLwcEventClient(r, c)
+      client.start()
+      client
+    } else {
+      val logger = LoggerFactory.getLogger(classOf[LwcEventClient])
+      val subs = toSubscriptions(c)
+      LwcEventClient(subs, logger.info)
+    }
   }
 
   private def toSubscriptions(config: Config): Subscriptions = {
