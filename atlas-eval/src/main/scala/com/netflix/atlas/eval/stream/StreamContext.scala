@@ -30,7 +30,9 @@ import org.apache.pekko.stream.scaladsl.StreamConverters
 import org.apache.pekko.util.ByteString
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.util.Streams
+import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.JsonSupport
@@ -163,14 +165,11 @@ private[stream] class StreamContext(
 
       // Check that expression is parseable and perform basic static analysis of DataExprs to
       // weed out expensive queries up front
-      val results = interpreter.eval(uri).exprs
-      results.foreach(_.expr.dataExprs.foreach(validateDataExpr))
-
-      // For hi-res streams, require more precise scoping that allows us to more efficiently
-      // match the data and run it only where needed. This would ideally be applied everywhere,
-      // but for backwards compatiblity the 1m step is opted out for now.
-      if (ds.step.toMillis < 60_000) {
-        results.foreach(_.expr.dataExprs.foreach(expr => restrictsNameAndApp(expr.query)))
+      val (exprType, exprs) = interpreter.parseQuery(uri)
+      if (exprType == ExprType.TIME_SERIES) {
+        exprs.foreach {
+          case e: StyleExpr => validateStyleExpr(e, ds)
+        }
       }
 
       // Check that there is a backend available for it
@@ -178,6 +177,17 @@ private[stream] class StreamContext(
 
       // Everything is ok
       ds
+    }
+  }
+
+  private def validateStyleExpr(styleExpr: StyleExpr, ds: DataSource): Unit = {
+    styleExpr.expr.dataExprs.foreach(validateDataExpr)
+
+    // For hi-res streams, require more precise scoping that allows us to more efficiently
+    // match the data and run it only where needed. This would ideally be applied everywhere,
+    // but for backwards compatiblity the 1m step is opted out for now.
+    if (ds.step.toMillis < 60_000) {
+      styleExpr.expr.dataExprs.foreach(expr => restrictsNameAndApp(expr.query))
     }
   }
 
