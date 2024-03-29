@@ -789,6 +789,6 @@ class EvaluatorSuite extends FunSuite {
       "synthetic://test/traces/graph?q=name,cpu,:eq,nf.app,foo,:eq,:and&step=1ms&numStepIntervals=5"
     val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
-    assertEquals(result.size, 5)
+    assertEquals(result.size, 10)
   }
 }

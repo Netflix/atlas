@@ -102,25 +102,23 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
 
         // Compute the new set of expressions
         recipients = sources
-          .filter { s =>
-            exprInterpreter.determineExprType(Uri(s.uri)).isTimeSeriesType
-          }
           .flatMap { s =>
             try {
-              val graphCfg = exprInterpreter.eval(Uri(s.uri))
-              val exprs = graphCfg.exprs
-              // Reuse the previous evaluated expression if available. States for the stateful
-              // expressions are maintained in an IdentityHashMap so if the instances change
-              // the state will be reset.
-              exprs.map { e =>
-                val paletteName =
-                  if (graphCfg.flags.presentationMetadataEnabled) {
-                    val axis = e.axis.getOrElse(0)
-                    Some(graphCfg.flags.axisPalette(graphCfg.settings, axis))
-                  } else {
-                    None
-                  }
-                previous.getOrElse(e, e) -> ExprInfo(s.id, paletteName)
+              exprInterpreter.evalTimeSeries(Uri(s.uri)).toList.flatMap { graphCfg =>
+                val exprs = graphCfg.exprs
+                // Reuse the previous evaluated expression if available. States for the stateful
+                // expressions are maintained in an IdentityHashMap so if the instances change
+                // the state will be reset.
+                exprs.map { e =>
+                  val paletteName =
+                    if (graphCfg.flags.presentationMetadataEnabled) {
+                      val axis = e.axis.getOrElse(0)
+                      Some(graphCfg.flags.axisPalette(graphCfg.settings, axis))
+                    } else {
+                      None
+                    }
+                  previous.getOrElse(e, e) -> ExprInfo(s.id, paletteName)
+                }
               }
             } catch {
               case e: Exception =>
