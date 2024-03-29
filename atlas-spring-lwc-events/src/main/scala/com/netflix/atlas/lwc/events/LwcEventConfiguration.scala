@@ -39,17 +39,21 @@ class LwcEventConfiguration {
   private def toSubscriptions(config: Config): Subscriptions = {
     val cfg = config.getConfig("atlas.lwc.events.subscriptions")
     Subscriptions(
-      passThrough = toSubscriptions(cfg.getConfigList("pass-through")),
-      analytics = toSubscriptions(cfg.getConfigList("analytics")),
-      tracePassThrough = toSubscriptions(cfg.getConfigList("trace-pass-through")),
-      traceAnalytics = toSubscriptions(cfg.getConfigList("trace-analytics"))
+      events = toSubscriptions(cfg.getConfigList("events"), Subscriptions.Events),
+      timeSeries = toSubscriptions(cfg.getConfigList("time-series"), Subscriptions.TimeSeries),
+      traceEvents = toSubscriptions(cfg.getConfigList("trace-events"), Subscriptions.TraceEvents),
+      traceTimeSeries =
+        toSubscriptions(cfg.getConfigList("trace-time-series"), Subscriptions.TraceTimeSeries)
     )
   }
 
-  private def toSubscriptions(configs: java.util.List[? <: Config]): List[Subscription] = {
+  private def toSubscriptions(
+    configs: java.util.List[? <: Config],
+    exprType: String
+  ): List[Subscription] = {
     configs.asScala.toList.map { c =>
       val step = if (c.hasPath("step")) c.getDuration("step").toMillis else 60_000L
-      Subscription(c.getString("id"), step, c.getString("expression"))
+      Subscription(c.getString("id"), step, c.getString("expression"), exprType)
     }
   }
 }

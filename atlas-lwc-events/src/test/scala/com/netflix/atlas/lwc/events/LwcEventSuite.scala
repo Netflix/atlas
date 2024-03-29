@@ -83,4 +83,19 @@ object LwcEventSuite {
       case k          => span.tags.getOrElse(k, null)
     }
   }
+
+  class TestSpan(event: TestEvent) extends LwcEvent.Span {
+
+    override def spanId: String = "test"
+
+    override def parentId: String = "parent"
+
+    override def rawEvent: Any = event
+
+    override def timestamp: Long = 0L
+
+    override def extractValue(key: String): Any = {
+      extractSpanValue(event)(key)
+    }
+  }
 }
