@@ -24,5 +24,7 @@ package com.netflix.atlas.lwc.events
   *     Step size for the subscription when mapped into a time series.
   * @param expression
   *     Expression for matching events and mapping into the expected output.
+  * @param exprType
+  *     Type for the expression.
   */
-case class Subscription(id: String, step: Long, expression: String)
+case class Subscription(id: String, step: Long, expression: String, exprType: String)

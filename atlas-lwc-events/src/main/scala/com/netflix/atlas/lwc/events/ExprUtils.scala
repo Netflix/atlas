@@ -56,29 +56,19 @@ private[events] object ExprUtils {
 
   private val traceInterpreter = Interpreter(TraceVocabulary.allWords)
 
-  private def matchAllSpans(q: TraceQuery): TraceQuery.SpanFilter = {
-    TraceQuery.SpanFilter(q, Query.True)
-  }
-
   /** Parse a single trace events query expression. */
   def parseTraceEventsQuery(str: String): TraceQuery.SpanFilter = {
     traceInterpreter.execute(str).stack match {
-      case TraceQueryType(q) :: Nil          => matchAllSpans(q)
-      case (f: TraceQuery.SpanFilter) :: Nil => f
-      case _                                 => throw new IllegalArgumentException(str)
+      case TraceFilterType(tq) :: Nil => tq
+      case _                          => throw new IllegalArgumentException(str)
     }
-  }
-
-  private def sumAllSpans(q: TraceQuery): TraceQuery.SpanTimeSeries = {
-    TraceQuery.SpanTimeSeries(q, StyleExpr(DataExpr.Sum(Query.True), Map.empty))
   }
 
   /** Parse a single trace time series query expression. */
   def parseTraceTimeSeriesQuery(str: String): TraceQuery.SpanTimeSeries = {
     traceInterpreter.execute(str).stack match {
-      case TraceQueryType(q) :: Nil              => sumAllSpans(q)
-      case (f: TraceQuery.SpanTimeSeries) :: Nil => f
-      case _                                     => throw new IllegalArgumentException(str)
+      case TraceTimeSeriesType(tq) :: Nil => tq
+      case _                              => throw new IllegalArgumentException(str)
     }
   }
 

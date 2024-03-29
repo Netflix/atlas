@@ -23,35 +23,46 @@ import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.atlas.impl.QueryIndex
 
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
 
   import AbstractLwcEventClient.*
 
-  @volatile private var handlers: List[EventHandler] = _
+  private val subHandlers = new ConcurrentHashMap[Subscription, (SpectatorQuery, EventHandler)]()
 
-  @volatile private var index: QueryIndex[EventHandler] = QueryIndex.newInstance(new NoopRegistry)
+  private val index: QueryIndex[EventHandler] = QueryIndex.newInstance(new NoopRegistry)
+
+  @volatile private var currentSubs: Subscriptions = Subscriptions()
+
+  @volatile private var handlers: List[EventHandler] = _
 
   @volatile private var traceHandlers: Map[Subscription, TraceQuery.SpanFilter] = Map.empty
 
+  @volatile private var traceHandlersTS: Map[Subscription, TraceQuery.SpanTimeSeries] = Map.empty
+
   protected def sync(subscriptions: Subscriptions): Unit = {
+    val diff = Subscriptions.diff(currentSubs, subscriptions)
+    currentSubs = subscriptions
+
     val flushableHandlers = List.newBuilder[EventHandler]
-    val idx = QueryIndex.newInstance[EventHandler](new NoopRegistry)
 
     // Pass-through events
-    subscriptions.passThrough.foreach { sub =>
+    diff.added.events.foreach { sub =>
       val expr = ExprUtils.parseEventExpr(sub.expression)
       val q = removeValueClause(expr.query)
       val handler = expr match {
         case EventExpr.Raw(_)       => EventHandler(sub, e => List(e))
         case EventExpr.Table(_, cs) => EventHandler(sub, e => List(LwcEvent.Row(e, cs)))
       }
-      idx.add(q, handler)
+      index.add(q, handler)
+      subHandlers.put(sub, q -> handler)
     }
+    diff.removed.events.foreach(removeSubscription)
 
     // Analytics based on events
-    subscriptions.analytics.foreach { sub =>
+    diff.added.timeSeries.foreach { sub =>
       val expr = ExprUtils.parseDataExpr(sub.expression)
       val converter = DatapointConverter(sub.id, expr, clock, sub.step, submit)
       val q = removeValueClause(expr.query)
@@ -63,17 +74,53 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
         },
         Some(converter)
       )
-      idx.add(q, handler)
+      index.add(q, handler)
+      subHandlers.put(sub, q -> handler)
       flushableHandlers += handler
     }
+    diff.removed.timeSeries.foreach(removeSubscription)
 
     // Trace pass-through
-    traceHandlers = subscriptions.tracePassThrough.map { sub =>
+    traceHandlers = subscriptions.traceEvents.map { sub =>
       sub -> ExprUtils.parseTraceEventsQuery(sub.expression)
     }.toMap
 
-    index = idx
+    // Analytics based on traces
+    diff.added.traceTimeSeries.foreach { sub =>
+      val tq = ExprUtils.parseTraceTimeSeriesQuery(sub.expression)
+      val dataExpr = tq.expr.expr.dataExprs.head
+      val converter = DatapointConverter(sub.id, dataExpr, clock, sub.step, submit)
+      val q = removeValueClause(dataExpr.query)
+      val handler = EventHandler(
+        sub,
+        event => {
+          converter.update(event)
+          Nil
+        },
+        Some(converter)
+      )
+      subHandlers.put(sub, q -> handler)
+      flushableHandlers += handler
+    }
+    diff.unchanged.traceTimeSeries.foreach { sub =>
+      val handlerMeta = subHandlers.get(sub)
+      if (handlerMeta != null)
+        flushableHandlers += handlerMeta._2
+    }
+    diff.removed.traceTimeSeries.foreach(sub => subHandlers.remove(sub))
+    traceHandlersTS = subscriptions.traceTimeSeries.map { sub =>
+      sub -> ExprUtils.parseTraceTimeSeriesQuery(sub.expression)
+    }.toMap
+
     handlers = flushableHandlers.result()
+  }
+
+  private def removeSubscription(sub: Subscription): Unit = {
+    val handlerMeta = subHandlers.remove(sub)
+    if (handlerMeta != null) {
+      val (q, handler) = handlerMeta
+      index.remove(q, handler)
+    }
   }
 
   private def removeValueClause(query: Query): SpectatorQuery = {
@@ -106,6 +153,18 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
         val filtered = trace.filter(event => ExprUtils.matches(filter.f, event.tagValue))
         if (filtered.nonEmpty) {
           submit(sub.id, LwcEvent.Events(filtered))
+        }
+      }
+    }
+    traceHandlersTS.foreachEntry { (sub, tq) =>
+      if (TraceMatcher.matches(tq.q, trace)) {
+        val f = tq.expr.expr.dataExprs.head.query
+        val filtered = trace.filter(event => ExprUtils.matches(f, event.tagValue))
+        if (filtered.nonEmpty) {
+          val handlerMeta = subHandlers.get(sub)
+          if (handlerMeta != null) {
+            filtered.foreach(handlerMeta._2.mapper)
+          }
         }
       }
     }

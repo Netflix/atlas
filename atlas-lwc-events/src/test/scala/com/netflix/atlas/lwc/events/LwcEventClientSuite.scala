@@ -38,10 +38,10 @@ class LwcEventClientSuite extends FunSuite {
   private val sampleLwcEvent: LwcEvent = LwcEvent(sampleSpan, extractSpanValue(sampleSpan))
 
   test("pass-through") {
-    val subs = Subscriptions(passThrough =
+    val subs = Subscriptions.fromTypedList(
       List(
-        Subscription("1", 60000, "app,foo,:eq"),
-        Subscription("2", 60000, "app,www,:eq")
+        Subscription("1", 60000, "app,foo,:eq", Subscriptions.Events),
+        Subscription("2", 60000, "app,www,:eq", Subscriptions.Events)
       )
     )
     val output = List.newBuilder[String]
@@ -54,10 +54,10 @@ class LwcEventClientSuite extends FunSuite {
   }
 
   test("analytics, basic aggregate") {
-    val subs = Subscriptions(analytics =
+    val subs = Subscriptions.fromTypedList(
       List(
-        Subscription("1", step, "app,foo,:eq,:sum"),
-        Subscription("2", step, "app,www,:eq,:sum")
+        Subscription("1", step, "app,foo,:eq,:sum", Subscriptions.TimeSeries),
+        Subscription("2", step, "app,www,:eq,:sum", Subscriptions.TimeSeries)
       )
     )
     val output = List.newBuilder[String]
@@ -70,9 +70,14 @@ class LwcEventClientSuite extends FunSuite {
   }
 
   test("analytics, basic aggregate extract value") {
-    val subs = Subscriptions(analytics =
+    val subs = Subscriptions.fromTypedList(
       List(
-        Subscription("1", step, "app,www,:eq,value,duration,:eq,:and,:sum")
+        Subscription(
+          "1",
+          step,
+          "app,www,:eq,value,duration,:eq,:and,:sum",
+          Subscriptions.TimeSeries
+        )
       )
     )
     val output = List.newBuilder[String]
@@ -87,10 +92,10 @@ class LwcEventClientSuite extends FunSuite {
   }
 
   test("analytics, group by") {
-    val subs = Subscriptions(analytics =
+    val subs = Subscriptions.fromTypedList(
       List(
-        Subscription("1", step, "app,foo,:eq,:sum,(,node,),:by"),
-        Subscription("2", step, "app,www,:eq,:sum,(,node,),:by")
+        Subscription("1", step, "app,foo,:eq,:sum,(,node,),:by", Subscriptions.TimeSeries),
+        Subscription("2", step, "app,www,:eq,:sum,(,node,),:by", Subscriptions.TimeSeries)
       )
     )
     val output = List.newBuilder[String]
@@ -105,14 +110,29 @@ class LwcEventClientSuite extends FunSuite {
   }
 
   test("analytics, group by missing key") {
-    val subs = Subscriptions(analytics =
+    val subs = Subscriptions.fromTypedList(
       List(
-        Subscription("1", 60000, "app,www,:eq,:sum,(,foo,),:by")
+        Subscription("1", 60000, "app,www,:eq,:sum,(,foo,),:by", Subscriptions.TimeSeries)
       )
     )
     val output = List.newBuilder[String]
     val client = LwcEventClient(subs, output.addOne)
     client.process(sampleLwcEvent)
     assert(output.result().isEmpty)
+  }
+
+  test("trace analytics, basic aggregate") {
+    val subs = Subscriptions.fromTypedList(
+      List(
+        Subscription("1", step, "app,www,:eq", Subscriptions.TraceTimeSeries)
+      )
+    )
+    val output = List.newBuilder[String]
+    val client = LwcEventClient(subs, output.addOne, clock)
+    client.processTrace(Seq(new TestSpan(sampleSpan)))
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
+    val vs = output.result()
+    assertEquals(vs.size, 1)
   }
 }
