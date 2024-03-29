@@ -110,6 +110,30 @@ class LwcToAggrDatapointSuite extends FunSuite {
     assertEquals(countData.map(_.value).toSet, Set(4.0))
   }
 
+  test("eval trace time series") {
+    val styleExpr = "name,cpu,:eq,:avg"
+    val tsExpr = s"app,foo,:eq,$styleExpr,:span-time-series"
+    def subExpr(n: String, e: String): String = {
+      s"""{"id":"$n","expression":"$e","frequency":$step}"""
+    }
+    val expr1 = subExpr("sum", "name,cpu,:eq,:sum")
+    val expr2 = subExpr("count", "name,cpu,:eq,:count")
+    val subv2 =
+      s"""{"type":"subscription-v2","expression":"$tsExpr","exprType":"TRACE_TIME_SERIES","metrics":[$expr1,$expr2]}"""
+    val results = eval(subv2 :: input.tail)
+    assertEquals(results.size, 8)
+
+    val groups = results.groupBy(_.expr)
+    assertEquals(groups.size, 2)
+
+    val sumData = groups(DataExpr.Sum(Query.Equal("name", "cpu")))
+    assertEquals(sumData.map(_.value).toSet, Set(1.0, 2.0, 3.0, 4.0))
+
+    val countData = groups(DataExpr.Count(Query.Equal("name", "cpu")))
+    assertEquals(countData.size, 4)
+    assertEquals(countData.map(_.value).toSet, Set(4.0))
+  }
+
   test("diagnostic messages are logged") {
     logMessages.clear()
     eval(input)
