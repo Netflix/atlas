@@ -463,11 +463,11 @@ class EvaluatorSuite extends FunSuite {
     assertEquals(ds.step, Duration.ofMinutes(1))
   }
 
-  private def validateOk(params: String): Unit = {
+  private def validateOk(params: String, path: String = "graph"): Unit = {
     val evaluator = new Evaluator(config, registry, system)
     val ds = new Evaluator.DataSource(
       "test",
-      s"resource:///gc-pause.dat?$params"
+      s"synthetic://test/$path?$params"
     )
     evaluator.validate(ds)
   }
@@ -582,6 +582,25 @@ class EvaluatorSuite extends FunSuite {
   test("validate: hi-res with or for cluster") {
     validateOk(
       "q=name,foo,:eq,nf.cluster,www-dev,:eq,nf.cluster,www-prod,:eq,:or,:and,:sum&step=5s"
+    )
+  }
+
+  test("validate: events raw") {
+    validateOk("q=name,foo,:eq,nf.cluster,www-dev,:eq,:and", path = "events")
+  }
+
+  test("validate: events table") {
+    validateOk("q=name,foo,:eq,nf.cluster,www-dev,:eq,:and,(,value,),:table", path = "events")
+  }
+
+  test("validate: traces") {
+    validateOk("q=nf.app,www,:eq,nf.app,db,:eq,:child", path = "traces")
+  }
+
+  test("validate: trace time series") {
+    validateOk(
+      "q=app,www,:eq,app,db,:eq,:child,app,db,:eq,:sum,:span-time-series",
+      path = "traces/graph"
     )
   }
 
