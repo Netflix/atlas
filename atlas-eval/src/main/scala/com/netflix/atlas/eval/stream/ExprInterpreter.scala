@@ -56,6 +56,7 @@ class ExprInterpreter(config: Config) {
 
   private val hostRewriter = new HostRewriter(config.getConfig("atlas.eval.host-rewrite"))
 
+  /** Evaluate a normal Atlas Graph URI and produce and graph config. */
   def eval(uri: Uri): GraphConfig = {
     val graphCfg = grapher.toGraphConfig(uri)
 
@@ -69,6 +70,26 @@ class ExprInterpreter(config: Config) {
     val host = uri.authority.host.toString()
     val rewritten = hostRewriter.rewrite(host, results)
     graphCfg.copy(query = rewritten.mkString(","), parsedQuery = Success(rewritten))
+  }
+
+  /**
+    * Evaluate a time series URI. This could be an normal Atlas Graph URI or a trace
+    * time series URI. If a non-time series URI is passed in the result will be None.
+    */
+  def evalTimeSeries(uri: Uri): Option[GraphConfig] = {
+    determineExprType(uri) match {
+      case ExprType.TIME_SERIES       => Some(eval(uri))
+      case ExprType.TRACE_TIME_SERIES => Some(eval(toGraphUri(uri)))
+      case _                          => None
+    }
+  }
+
+  /** Convert a trace time series URI to a normal graph URI for generating the config. */
+  private def toGraphUri(uri: Uri): Uri = {
+    val ts = evalTraceTimeSeries(uri)
+    val newExpr = ts.map(_.expr).mkString(",")
+    val newQuery = uri.query().filterNot(_._1 == "q").prepended("q" -> newExpr)
+    uri.withQuery(Uri.Query(newQuery*))
   }
 
   /**

@@ -762,4 +762,60 @@ class FinalExprEvalSuite extends FunSuite {
     assertEquals(ts.styleMetadata.get.color, Color.RED)
     assertEquals(ts.styleMetadata.get.lineStyle, LineStyle.STACK)
   }
+
+  test("trace time series: aggregate with single datapoint per group") {
+    val expr = DataExpr.Sum(Query.Equal("name", "rps"))
+    val tags = Map("name" -> "rps")
+    val input = List(
+      sources(ds("a", s"http://atlas/traces/graph?q=app,foo,:eq,$expr,:span-time-series")),
+      group(0),
+      group(1, AggrDatapoint(0, step, expr, "i-1", tags, 42.0)),
+      group(2, AggrDatapoint(0, step, expr, "i-1", tags, 43.0)),
+      group(3, AggrDatapoint(0, step, expr, "i-1", tags, 44.0))
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(isTimeSeries)
+    assertEquals(timeseries.size, 4)
+    val expectedTimeseries = List(Double.NaN, 42.0, 43.0, 44.0)
+    timeseries.zip(expectedTimeseries).foreach {
+      case (env, expectedValue) =>
+        assertEquals(env.id, "a")
+        val ts = env.message.asInstanceOf[TimeSeriesMessage]
+        checkValue(ts, expectedValue)
+    }
+
+    val dataRateMsgs = output.filter(isEvalDataRate).filter(_.id == "a")
+    assert(dataRateMsgs.size == 3)
+    val expectedSizes = Array(
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      ),
+      Array(
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1, Map(expr.toString -> 1)),
+        EvalDataSize(1)
+      )
+    )
+    dataRateMsgs.zipWithIndex.foreach(envAndIndex => {
+      val rate = getAsEvalDataRate(envAndIndex._1)
+      val i = envAndIndex._2
+      checkRate(
+        rate,
+        60000 * (i + 1),
+        60000,
+        expectedSizes(i)(0),
+        expectedSizes(i)(1),
+        expectedSizes(i)(2)
+      )
+    })
+  }
 }
