@@ -31,4 +31,9 @@ import java.awt.Color
   * @param lineWidth
   *     Width of the stroke when rendering the line.
   */
-case class LineStyleMetadata(plot: Int, color: Color, lineStyle: LineStyle, lineWidth: Float)
+case class LineStyleMetadata(plot: Int, color: Color, lineStyle: LineStyle, lineWidth: Float) {
+
+  require(color != null, "color cannot be null")
+  require(lineStyle != null, "lineStyle cannot be null")
+  require(lineWidth >= 0.0f, "lineWidth cannot be negative")
+}
