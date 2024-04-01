@@ -65,12 +65,21 @@ private[stream] class StreamContext(
   private val backends = {
     import scala.jdk.CollectionConverters.*
     config.getConfigList("backends").asScala.toList.map { cfg =>
+      val checkForExpensiveQueries = isNotFalse(cfg, "check-for-expensive-queries")
       EurekaBackend(
         cfg.getString("host"),
         cfg.getString("eureka-uri"),
-        cfg.getString("instance-uri")
+        cfg.getString("instance-uri"),
+        checkForExpensiveQueries
       )
     }
+  }
+
+  private def isNotFalse(cfg: Config, k: String): Boolean = {
+    if (cfg.hasPath(k))
+      cfg.getBoolean(k)
+    else
+      true
   }
 
   private val ignoredTagKeys = {
@@ -163,17 +172,17 @@ private[stream] class StreamContext(
         )
       }
 
+      // Check that there is a backend available for it
+      val backend = findBackendForUri(uri)
+
       // Check that expression is parseable and perform basic static analysis of DataExprs to
       // weed out expensive queries up front
       val (exprType, exprs) = interpreter.parseQuery(uri)
-      if (exprType == ExprType.TIME_SERIES) {
+      if (backend.checkForExpensiveQueries && exprType == ExprType.TIME_SERIES) {
         exprs.foreach {
           case e: StyleExpr => validateStyleExpr(e, ds)
         }
       }
-
-      // Check that there is a backend available for it
-      findBackendForUri(uri)
 
       // Everything is ok
       ds
@@ -281,7 +290,10 @@ private[stream] class StreamContext(
 private[stream] object StreamContext {
 
   sealed trait Backend {
+
     def source: Source[ByteString, Future[IOResult]]
+
+    def checkForExpensiveQueries: Boolean
   }
 
   case class FileBackend(file: Path) extends Backend {
@@ -289,6 +301,8 @@ private[stream] object StreamContext {
     def source: Source[ByteString, Future[IOResult]] = {
       FileIO.fromPath(file).via(EvaluationFlows.sseFraming)
     }
+
+    def checkForExpensiveQueries: Boolean = true
   }
 
   case class ResourceBackend(resource: String) extends Backend {
@@ -298,6 +312,8 @@ private[stream] object StreamContext {
         .fromInputStream(() => Streams.resource(resource))
         .via(EvaluationFlows.sseFraming)
     }
+
+    def checkForExpensiveQueries: Boolean = true
   }
 
   case class SyntheticBackend(interpreter: ExprInterpreter, uri: Uri) extends Backend {
@@ -305,9 +321,16 @@ private[stream] object StreamContext {
     def source: Source[ByteString, Future[IOResult]] = {
       SyntheticDataSource(interpreter, uri)
     }
+
+    def checkForExpensiveQueries: Boolean = true
   }
 
-  case class EurekaBackend(host: String, eurekaUri: String, instanceUri: String) extends Backend {
+  case class EurekaBackend(
+    host: String,
+    eurekaUri: String,
+    instanceUri: String,
+    checkForExpensiveQueries: Boolean = true
+  ) extends Backend {
 
     def source: Source[ByteString, Future[IOResult]] = {
       throw new UnsupportedOperationException("only supported for file and classpath URIs")

@@ -312,7 +312,7 @@ class EvaluatorSuite extends FunSuite {
   }
 
   test("create processor, missing q parameter") {
-    val uri = "http://test/api/v1/graph"
+    val uri = "synthetic://test/api/v1/graph"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     val msg =
       "IllegalArgumentException: missing required parameter 'q'"
@@ -321,7 +321,7 @@ class EvaluatorSuite extends FunSuite {
 
   test("create processor, expression uses :offset") {
     val expr = "name,foo,:eq,:sum,PT168H,:offset"
-    val uri = s"http://test/api/v1/graph?q=$expr"
+    val uri = s"synthetic://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: :offset not supported for streaming evaluation [[$expr]]"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     testError(ds1, msg)
@@ -330,7 +330,7 @@ class EvaluatorSuite extends FunSuite {
   test("create processor, expression uses style variant of :offset") {
     val expr = "name,foo,:eq,:sum,(,0h,1w,),:offset"
     val badExpr = "name,foo,:eq,:sum,PT168H,:offset"
-    val uri = s"http://test/api/v1/graph?q=$expr"
+    val uri = s"synthetic://test/api/v1/graph?q=$expr"
     val msg =
       s"IllegalArgumentException: :offset not supported for streaming evaluation [[$badExpr]]"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
@@ -339,7 +339,7 @@ class EvaluatorSuite extends FunSuite {
 
   test("create processor, reject expensive :in queries") {
     val expr = "name,(,1,2,3,4,5,6,),:in,:sum"
-    val uri = s"http://test/api/v1/graph?q=$expr"
+    val uri = s"synthetic://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: rejected expensive query [name,(,1,2,3,4,5,6,),:in], " +
       "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
@@ -348,7 +348,7 @@ class EvaluatorSuite extends FunSuite {
 
   test("create processor, reject expensive :re queries") {
     val expr = "name,foo,:re,:sum"
-    val uri = s"http://test/api/v1/graph?q=$expr"
+    val uri = s"synthetic://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: rejected expensive query [name,foo,:re], " +
       "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
@@ -358,7 +358,7 @@ class EvaluatorSuite extends FunSuite {
   test("create processor, ignored tag keys are honored") {
     val query = "name,foo,:re,nf.account,12345,:eq,:and"
     val expr = s"$query,:sum"
-    val uri = s"http://test/api/v1/graph?q=$expr"
+    val uri = s"synthetic://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: rejected expensive query [$query], " +
       "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
