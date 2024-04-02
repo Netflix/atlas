@@ -32,31 +32,24 @@ import scala.concurrent.Await
 import scala.concurrent.duration.*
 import scala.util.Success
 
-class EurekaGroupsLookupSuite extends FunSuite {
+class EddaGroupsLookupSuite extends FunSuite {
 
-  import EurekaSource.*
+  import EddaSource.*
   import Evaluator.*
 
   private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
   private implicit val mat: Materializer = Materializer(system)
 
-  private val eurekaGroup = EurekaSource.VipResponse(
-    uri = "http://eureka/v2/vips/atlas-lwcapi:7001",
-    applications = EurekaSource.Apps(
-      List(
-        EurekaSource.App("one", mkInstances("one", 5)),
-        EurekaSource.App("two", mkInstances("two", 3))
-      )
-    )
+  private val eddaGroup = EddaSource.EddaResponse(
+    uri = "http://edda/v2/autoScalingGroups/atlas-lwcapi:7001",
+    instances = mkInstances("one", 5) ::: mkInstances("two", 5)
   )
 
-  private def mkInstances(name: String, n: Int): List[EurekaSource.Instance] = {
+  private def mkInstances(name: String, n: Int): List[EddaSource.Instance] = {
     (0 until n).toList.map { i =>
-      EurekaSource.Instance(
+      EddaSource.Instance(
         instanceId = f"$name-$i%05d",
-        status = "UP",
-        dataCenterInfo = DataCenterInfo("Amazon", Map("host" -> s"$name.$i")),
-        port = PortInfo(7101)
+        privateIpAddress = Some(s"$name.$i")
       )
     }
   }
@@ -73,11 +66,11 @@ class EurekaGroupsLookupSuite extends FunSuite {
     val client = Flow[(HttpRequest, AccessLogger)]
       .map {
         case (_, v) =>
-          val json = Json.encode(eurekaGroup)
+          val json = Json.encode(List(eddaGroup))
           Success(HttpResponse(StatusCodes.OK, entity = json)) -> v
       }
     val context = TestContext.createContext(mat, client)
-    Flow[DataSources].via(new EurekaGroupsLookup(context, 5.microseconds))
+    Flow[DataSources].via(new EddaGroupsLookup(context, 5.microseconds))
   }
 
   private def run(input: List[DataSources], n: Int = 1): List[SourcesAndGroups] = {
@@ -109,7 +102,7 @@ class EurekaGroupsLookupSuite extends FunSuite {
     )
     val output = run(input)
     assertEquals(output.head._2.groups.size, 1)
-    assertEquals(output.head._2.groups.head, eurekaGroup)
+    assertEquals(output.head._2.groups.head, eddaGroup)
   }
 
   test("unknown data source") {

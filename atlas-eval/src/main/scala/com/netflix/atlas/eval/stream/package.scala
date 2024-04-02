@@ -31,7 +31,7 @@ package object stream {
   type Client = Flow[(HttpRequest, AccessLogger), (Try[HttpResponse], AccessLogger), NotUsed]
   type SimpleClient = Flow[HttpRequest, Try[HttpResponse], NotUsed]
 
-  type SourcesAndGroups = (DataSources, EurekaSource.Groups)
+  type SourcesAndGroups = (DataSources, EddaSource.Groups)
 
   type DataSourceLogger = (DataSource, JsonSupport) => Unit
 }

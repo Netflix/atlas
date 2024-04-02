@@ -26,8 +26,8 @@ import org.apache.pekko.stream.stage.GraphStage
 import org.apache.pekko.stream.stage.GraphStageLogic
 import org.apache.pekko.stream.stage.InHandler
 import org.apache.pekko.stream.stage.OutHandler
-import com.netflix.atlas.eval.stream.EurekaSource.GroupResponse
-import com.netflix.atlas.eval.stream.EurekaSource.Groups
+import com.netflix.atlas.eval.stream.EddaSource.GroupResponse
+import com.netflix.atlas.eval.stream.EddaSource.Groups
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.typesafe.scalalogging.StrictLogging
@@ -38,7 +38,7 @@ import scala.concurrent.duration.FiniteDuration
   * Takes in a collection of data sources and outputs a source that will regularly emit
   * the metadata for the groups needed by those sources.
   */
-private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: FiniteDuration)
+private[stream] class EddaGroupsLookup(context: StreamContext, frequency: FiniteDuration)
     extends GraphStage[FlowShape[DataSources, Source[SourcesAndGroups, NotUsed]]]
     with StrictLogging {
 
@@ -72,7 +72,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
           val eurekaSources = next.sources.asScala
             .flatMap { s =>
               try {
-                Option(context.findEurekaBackendForUri(Uri(s.uri)).eurekaUri)
+                Option(context.findEurekaBackendForUri(Uri(s.uri)).eddaUri)
               } catch {
                 case e: Exception =>
                   val msg = DiagnosticMessage.error(e)
@@ -83,7 +83,7 @@ private[stream] class EurekaGroupsLookup(context: StreamContext, frequency: Fini
             .toList
             .distinct
             .map { uri =>
-              EurekaSource(uri, context)
+              EddaSource(uri, context)
             }
 
           // Perform lookup for each vip and create groups composite
