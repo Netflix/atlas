@@ -77,6 +77,11 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
       subHandlers.put(sub, q -> handler)
       flushableHandlers += handler
     }
+    diff.unchanged.timeSeries.foreach { sub =>
+      val handlerMeta = subHandlers.get(sub)
+      if (handlerMeta != null)
+        flushableHandlers += handlerMeta._2
+    }
     diff.removed.timeSeries.foreach(removeSubscription)
 
     // Trace pass-through
