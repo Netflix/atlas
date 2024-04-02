@@ -46,7 +46,7 @@ object TestContext {
       |    },
       |    {
       |      host = "atlas"
-      |      eureka-uri = "http://eureka/v2/vips/atlas-lwcapi:7001"
+      |      edda-uri = "http://edda/v2/autoScalingGroups/atlas-lwcapi:7001"
       |      instance-uri = "http://{host}:{port}"
       |    }
       |  ]

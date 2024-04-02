@@ -65,10 +65,13 @@ private[stream] class StreamContext(
   private val backends = {
     import scala.jdk.CollectionConverters.*
     config.getConfigList("backends").asScala.toList.map { cfg =>
+      // URI for Edda service. For backwards compatibility Eureka name is also
+      // checked.
+      val eddaUri = cfg.getString(if (cfg.hasPath("edda-uri")) "edda-uri" else "eureka-uri")
       val checkForExpensiveQueries = isNotFalse(cfg, "check-for-expensive-queries")
-      EurekaBackend(
+      EddaBackend(
         cfg.getString("host"),
-        cfg.getString("eureka-uri"),
+        eddaUri,
         cfg.getString("instance-uri"),
         checkForExpensiveQueries
       )
@@ -116,7 +119,7 @@ private[stream] class StreamContext(
     findBackendForUri(uri).source
   }
 
-  def findEurekaBackendForUri(uri: Uri): EurekaBackend = {
+  def findEurekaBackendForUri(uri: Uri): EddaBackend = {
     val host = uri.authority.host.address()
     backends.find(_.host == host) match {
       case Some(backend) => backend
@@ -325,9 +328,9 @@ private[stream] object StreamContext {
     def checkForExpensiveQueries: Boolean = true
   }
 
-  case class EurekaBackend(
+  case class EddaBackend(
     host: String,
-    eurekaUri: String,
+    eddaUri: String,
     instanceUri: String,
     checkForExpensiveQueries: Boolean = true
   ) extends Backend {

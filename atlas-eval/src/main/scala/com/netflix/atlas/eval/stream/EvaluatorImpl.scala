@@ -52,7 +52,7 @@ import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeGroupsTuple
-import com.netflix.atlas.eval.stream.EurekaSource.Instance
+import com.netflix.atlas.eval.stream.EddaSource.Instance
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.DatapointGroup
@@ -456,7 +456,7 @@ private[stream] abstract class EvaluatorImpl(
       .conflate((_, ds) => ds)
       .throttle(1, 1.second, 1, ThrottleMode.Shaping)
       .via(context.monitorFlow("00_DataSourceUpdates"))
-      .via(new EurekaGroupsLookup(context, 30.seconds))
+      .via(new EddaGroupsLookup(context, 30.seconds))
       .via(context.monitorFlow("01_EurekaGroups"))
       .flatMapMerge(Int.MaxValue, s => s)
       .via(context.monitorFlow("01_EurekaRefresh"))
@@ -517,7 +517,7 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   private def createWebSocketFlow(
-    instance: EurekaSource.Instance
+    instance: EddaSource.Instance
   ): Flow[Set[LwcExpression], ByteString, NotUsed] = {
     val base = instance.substitute("ws://{local-ipv4}:{port}")
     val id = UUID.randomUUID().toString

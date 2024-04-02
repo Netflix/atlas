@@ -35,7 +35,7 @@ import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.netflix.atlas.core.util.Streams
-import com.netflix.atlas.eval.stream.EurekaSource.GroupResponse
+import com.netflix.atlas.eval.stream.EddaSource.GroupResponse
 import com.netflix.atlas.pekko.AccessLogger
 import munit.FunSuite
 
@@ -47,7 +47,7 @@ import scala.util.Success
 import scala.util.Try
 import scala.util.Using
 
-class EurekaSourceSuite extends FunSuite {
+class EddaSourceSuite extends FunSuite {
 
   private def mkResponse(data: String, status: StatusCode = StatusCodes.OK): HttpResponse = {
     mkResponse(data.getBytes(StandardCharsets.UTF_8), false, status)
@@ -68,117 +68,8 @@ class EurekaSourceSuite extends FunSuite {
     }
   }
 
-  private val innerAppJson =
-    """
-      |{
-      |  "name": "test",
-      |  "instance": [
-      |    {
-      |      "instanceId": "i-12345",
-      |      "status": "UP",
-      |      "port": {
-      |        "$": 7001
-      |      },
-      |      "dataCenterInfo": {
-      |        "name": "Amazon",
-      |        "metadata": {
-      |          "public-hostname": "ec2-12345",
-      |          "local-ipv4": "1.2.3.4"
-      |        }
-      |      }
-      |    }
-      |  ]
-      |}
-    """.stripMargin
-
-  private val appJson = s"""{"application": $innerAppJson}"""
-
-  private val vipJson = s"""{"applications": {"application": [$innerAppJson]}}"""
-
   private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
   private implicit val mat: Materializer = Materializer(system)
-
-  private def run(uri: String, response: Try[HttpResponse]): GroupResponse = {
-    val client = Flow[(HttpRequest, AccessLogger)].map {
-      case (_, logger) => response -> logger
-    }
-    val context = TestContext.createContext(mat, client)
-    val future = EurekaSource(uri, context).runWith(Sink.head)
-    Await.result(future, Duration.Inf)
-  }
-
-  test("handles vip uri") {
-    val uri = "http://eureka/v1/vips/www-dev:7001"
-    val res = run(uri, Success(mkResponse(vipJson)))
-    assertEquals(res.uri, uri)
-    assertEquals(res.instances.size, 1)
-    assertEquals(res.instances.map(_.instanceId).toSet, Set("i-12345"))
-  }
-
-  test("supports compressed response") {
-    val uri = "http://eureka/v1/vips/www-dev:7001"
-    val res = run(uri, Success(mkResponse(gzip(vipJson), true, StatusCodes.OK)))
-    assertEquals(res.uri, uri)
-    assertEquals(res.instances.size, 1)
-    assertEquals(res.instances.map(_.instanceId).toSet, Set("i-12345"))
-  }
-
-  test("handles app uri") {
-    val uri = "http://eureka/v1/apps/www-dev:7001"
-    val res = run(uri, Success(mkResponse(appJson)))
-    assertEquals(res.uri, uri)
-    assertEquals(res.instances.size, 1)
-    assertEquals(res.instances.map(_.instanceId).toSet, Set("i-12345"))
-    assertEquals(res.instances.map(_.port.port).toSet, Set(7001))
-  }
-
-  test("invalid json response") {
-    val uri = "http://eureka/v1/vips/www-dev:7001"
-    intercept[ValueInstantiationException] {
-      run(uri, Success(mkResponse(appJson)))
-    }
-  }
-
-  test("unknown vip") {
-    val uri = "http://eureka/v1/vips/www-dev:7001"
-    intercept[NoSuchElementException] {
-      run(uri, Success(mkResponse("unknown vip", StatusCodes.NotFound)))
-    }
-  }
-
-  test("entity for bad status code is consumed") {
-    val consumedLatch = new CountDownLatch(1)
-    val source = Source
-      .single(ByteString.empty)
-      .map { data =>
-        consumedLatch.countDown()
-        data
-      }
-    val entity = HttpEntity(MediaTypes.`application/json`, source)
-    val response = HttpResponse(StatusCodes.BadRequest, entity = entity)
-    val uri = "http://eureka/v1/vips/www-dev:7001"
-    intercept[NoSuchElementException] {
-      run(uri, Success(response))
-    }
-    assert(consumedLatch.await(30, TimeUnit.SECONDS))
-  }
-
-  test("failure to connect") {
-    val uri = "http://eureka/v1/vips/www-dev:7001"
-    intercept[NoSuchElementException] {
-      run(uri, Failure(new ConnectionException("timeout")))
-    }
-  }
-
-  test("failed response stream") {
-    val uri = "http://eureka/v1/vips/www-dev:7001"
-    intercept[NoSuchElementException] {
-      val source = Source.future(Future.failed[ByteString](new IOException("peer reset")))
-      val entity = HttpEntity(MediaTypes.`application/json`, source)
-      val response = HttpResponse(StatusCodes.OK, entity = entity)
-      run(uri, Success(response))
-    }
-  }
 
   private val eddaResponseSingleGroup: String =
     """[
@@ -239,6 +130,71 @@ class EurekaSourceSuite extends FunSuite {
       |  }
       |]""".stripMargin
 
+  private def run(uri: String, response: Try[HttpResponse]): GroupResponse = {
+    val client = Flow[(HttpRequest, AccessLogger)].map {
+      case (_, logger) => response -> logger
+    }
+    val context = TestContext.createContext(mat, client)
+    val future = EddaSource(uri, context).runWith(Sink.head)
+    Await.result(future, Duration.Inf)
+  }
+
+  test("supports compressed response") {
+    val uri = "http://edda/v1/atuoScalingGroups/www-dev:7001"
+    val res = run(uri, Success(mkResponse(gzip(eddaResponseSingleGroup), true, StatusCodes.OK)))
+    assertEquals(res.uri, uri)
+    assertEquals(res.instances.size, 2)
+    assertEquals(res.instances.map(_.instanceId).toSet, Set("id1", "id2"))
+  }
+
+  test("invalid json response") {
+    val uri = "http://edda/v1/autoScalingGroups/www-dev:7001"
+    intercept[ValueInstantiationException] {
+      run(uri, Success(mkResponse("[{\"foo\":\"bar\"}]")))
+    }
+  }
+
+  test("unknown asg") {
+    val uri = "http://eddaa/v1/autoScalingGroups/www-dev:7001"
+    intercept[NoSuchElementException] {
+      run(uri, Success(mkResponse("unknown vip", StatusCodes.NotFound)))
+    }
+  }
+
+  test("entity for bad status code is consumed") {
+    val consumedLatch = new CountDownLatch(1)
+    val source = Source
+      .single(ByteString.empty)
+      .map { data =>
+        consumedLatch.countDown()
+        data
+      }
+    val entity = HttpEntity(MediaTypes.`application/json`, source)
+    val response = HttpResponse(StatusCodes.BadRequest, entity = entity)
+    val uri = "http://edda/v1/autoScalingGroups/www-dev:7001"
+    intercept[NoSuchElementException] {
+      run(uri, Success(response))
+    }
+    assert(consumedLatch.await(30, TimeUnit.SECONDS))
+  }
+
+  test("failure to connect") {
+    val uri = "http://edda/v1/autoScalingGroups/www-dev:7001"
+    intercept[NoSuchElementException] {
+      run(uri, Failure(new ConnectionException("timeout")))
+    }
+  }
+
+  test("failed response stream") {
+    val uri = "http://edda/v1/autoScalingGroups/www-dev:7001"
+    intercept[NoSuchElementException] {
+      val source = Source.future(Future.failed[ByteString](new IOException("peer reset")))
+      val entity = HttpEntity(MediaTypes.`application/json`, source)
+      val response = HttpResponse(StatusCodes.OK, entity = entity)
+      run(uri, Success(response))
+    }
+  }
+
   test("handles edda uri, 1 group") {
     val uri = "http://edda/api/v2/group/autoScalingGroups;cluster=atlas_lwcapi-main;_expand"
     val res = run(uri, Success(mkResponse(eddaResponseSingleGroup)))
@@ -268,5 +224,11 @@ class EurekaSourceSuite extends FunSuite {
     assertEquals(res.instances.map(_.instanceId).toSet, Set("id1", "id2"))
     assertEquals("http://1.2.3.4:7101", res.instances(0).substitute("http://{local-ipv4}:{port}"))
     assertEquals("http://1.2.3.5:7101", res.instances(1).substitute("http://{local-ipv4}:{port}"))
+  }
+
+  test("substitute, IPv6 preferred if available") {
+    val uri = "http://{ip}:{port}"
+    val instance = EddaSource.Instance("i-1", Some("1.2.3.4"), Some("::1"))
+    assertEquals(instance.substitute("http://{ip}:{port}"), "http://[::1]:7101")
   }
 }
