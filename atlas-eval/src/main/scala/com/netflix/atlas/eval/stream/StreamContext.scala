@@ -72,7 +72,6 @@ private[stream] class StreamContext(
       EddaBackend(
         cfg.getString("host"),
         eddaUri,
-        cfg.getString("instance-uri"),
         checkForExpensiveQueries
       )
     }
@@ -331,7 +330,6 @@ private[stream] object StreamContext {
   case class EddaBackend(
     host: String,
     eddaUri: String,
-    instanceUri: String,
     checkForExpensiveQueries: Boolean = true
   ) extends Backend {
 
