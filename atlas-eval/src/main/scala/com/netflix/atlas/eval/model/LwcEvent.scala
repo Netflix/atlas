@@ -27,6 +27,7 @@ import com.netflix.atlas.json.JsonSupport
   *     Raw event payload.
   */
 case class LwcEvent(id: String, payload: JsonNode) extends JsonSupport {
+
   require(id != null, "id cannot be null")
   val `type`: String = "event"
 }
