@@ -24,6 +24,7 @@ import com.netflix.atlas.eval.model.LwcEvent
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.EvaluateApi.*
 import com.netflix.atlas.pekko.DiagnosticMessage
+import com.netflix.atlas.pekko.RequestHandler
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.spectator.api.NoopRegistry
 
@@ -34,11 +35,11 @@ class EvaluateApiSuite extends MUnitRouteSuite {
   private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val sm = new StreamSubscriptionManager(new NoopRegistry)
-  private val endpoint = new EvaluateApi(new NoopRegistry, sm)
+  private val routes = RequestHandler.standardOptions(new EvaluateApi(new NoopRegistry, sm).routes)
 
   test("post empty payload") {
     val json = EvaluateRequest(1234L, Nil, Nil).toJson
-    Post("/lwc/api/v1/evaluate", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/evaluate", json) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
     }
   }
@@ -46,7 +47,7 @@ class EvaluateApiSuite extends MUnitRouteSuite {
   test("post metrics") {
     val metrics = List(Item("abc", SortedTagMap("a" -> "1"), 42.0))
     val json = EvaluateRequest(1234L, metrics, Nil, Nil).toJson
-    Post("/lwc/api/v1/evaluate", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/evaluate", json) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
     }
   }
@@ -54,29 +55,36 @@ class EvaluateApiSuite extends MUnitRouteSuite {
   test("post events") {
     val events = List(LwcEvent("abc", Json.decode[JsonNode]("42.0")))
     val json = EvaluateRequest(1234L, Nil, events, Nil).toJson
-    Post("/lwc/api/v1/evaluate", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/evaluate", json) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
+    }
+  }
+
+  test("post events, missing event id") {
+    val json = """{"timestamp":1234,"events":[{"payload":42.0,"type":"event"}]}"""
+    Post("/lwc/api/v1/evaluate", json) ~> routes ~> check {
+      assertEquals(response.status, StatusCodes.BadRequest)
     }
   }
 
   test("post diagnostic message") {
     val msgs = List(LwcDiagnosticMessage("abc", DiagnosticMessage.error("bad expression")))
     val json = EvaluateRequest(1234L, Nil, Nil, msgs).toJson
-    Post("/lwc/api/v1/evaluate", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/evaluate", json) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
     }
   }
 
   test("post missing messages field") {
     val json = """{"timestamp":12345,"metrics":[]}"""
-    Post("/lwc/api/v1/evaluate", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/evaluate", json) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
     }
   }
 
   test("post missing metrics field") {
     val json = """{"timestamp":12345,"messages":[]}"""
-    Post("/lwc/api/v1/evaluate", json) ~> endpoint.routes ~> check {
+    Post("/lwc/api/v1/evaluate", json) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
     }
   }
