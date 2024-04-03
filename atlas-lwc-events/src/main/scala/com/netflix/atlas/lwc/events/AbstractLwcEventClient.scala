@@ -39,7 +39,7 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
 
   @volatile private var traceHandlers: Map[Subscription, TraceQuery.SpanFilter] = Map.empty
 
-  @volatile private var traceHandlersTS: Map[Subscription, TraceQuery.SpanTimeSeries] = Map.empty
+  @volatile private var traceHandlersTS: Map[Subscription, TraceTimeSeries] = Map.empty
 
   protected def sync(subscriptions: Subscriptions): Unit = {
     val diff = Subscriptions.diff(currentSubs, subscriptions)
@@ -50,7 +50,7 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     // Pass-through events
     diff.added.events.foreach { sub =>
       val expr = ExprUtils.parseEventExpr(sub.expression)
-      val q = removeValueClause(expr.query)
+      val q = ExprUtils.toSpectatorQuery(removeValueClause(expr.query))
       val handler = expr match {
         case EventExpr.Raw(_)       => EventHandler(sub, e => List(e))
         case EventExpr.Table(_, cs) => EventHandler(sub, e => List(LwcEvent.Row(e, cs)))
@@ -64,7 +64,7 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     diff.added.timeSeries.foreach { sub =>
       val expr = ExprUtils.parseDataExpr(sub.expression)
       val converter = DatapointConverter(sub.id, expr, clock, sub.step, submit)
-      val q = removeValueClause(expr.query)
+      val q = ExprUtils.toSpectatorQuery(removeValueClause(expr.query))
       val handler = EventHandler(
         sub,
         event => {
@@ -94,7 +94,7 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
       val tq = ExprUtils.parseTraceTimeSeriesQuery(sub.expression)
       val dataExpr = tq.expr.expr.dataExprs.head
       val converter = DatapointConverter(sub.id, dataExpr, clock, sub.step, submit)
-      val q = removeValueClause(dataExpr.query)
+      val q = ExprUtils.toSpectatorQuery(removeValueClause(dataExpr.query))
       val handler = EventHandler(
         sub,
         event => {
@@ -113,7 +113,9 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     }
     diff.removed.traceTimeSeries.foreach(sub => subHandlers.remove(sub))
     traceHandlersTS = subscriptions.traceTimeSeries.map { sub =>
-      sub -> ExprUtils.parseTraceTimeSeriesQuery(sub.expression)
+      val tq = ExprUtils.parseTraceTimeSeriesQuery(sub.expression)
+      val tts = TraceTimeSeries(tq.q, removeValueClause(tq.expr.expr.dataExprs.head.query))
+      sub -> tts
     }.toMap
 
     handlers = flushableHandlers.result()
@@ -127,13 +129,13 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     }
   }
 
-  private def removeValueClause(query: Query): SpectatorQuery = {
+  private def removeValueClause(query: Query): Query = {
     val q = query
       .rewrite {
         case kq: Query.KeyQuery if kq.k == "value" => Query.True
       }
       .asInstanceOf[Query]
-    ExprUtils.toSpectatorQuery(Query.simplify(q, ignore = true))
+    Query.simplify(q, ignore = true)
   }
 
   override def process(event: LwcEvent): Unit = {
@@ -162,8 +164,7 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     }
     traceHandlersTS.foreachEntry { (sub, tq) =>
       if (TraceMatcher.matches(tq.q, trace)) {
-        val f = tq.expr.expr.dataExprs.head.query
-        val filtered = trace.filter(event => ExprUtils.matches(f, event.tagValue))
+        val filtered = trace.filter(event => ExprUtils.matches(tq.f, event.tagValue))
         if (filtered.nonEmpty) {
           val handlerMeta = subHandlers.get(sub)
           if (handlerMeta != null) {
@@ -193,4 +194,6 @@ object AbstractLwcEventClient {
       }
     }
   }
+
+  private case class TraceTimeSeries(q: TraceQuery, f: Query)
 }

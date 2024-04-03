@@ -21,7 +21,6 @@ import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.EventVocabulary
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
-import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TraceQuery
 import com.netflix.atlas.core.model.TraceVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
