@@ -519,7 +519,7 @@ private[stream] abstract class EvaluatorImpl(
   private def createWebSocketFlow(
     instance: EddaSource.Instance
   ): Flow[Set[LwcExpression], ByteString, NotUsed] = {
-    val base = instance.substitute("ws://{local-ipv4}:{port}")
+    val base = instance.substitute("ws://{ip}:{port}")
     val id = UUID.randomUUID().toString
     val uri = s"$base/api/v$lwcapiVersion/subscribe/$id"
     val webSocketFlowOrigin = Http(system).webSocketClientFlow(WebSocketRequest(uri))
