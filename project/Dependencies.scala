@@ -29,7 +29,7 @@ object Dependencies {
   val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.8"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "5.0.2"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.15.8"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.16.1"
   val hikariCP          = "com.zaxxer" % "HikariCP" % "5.1.0"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
