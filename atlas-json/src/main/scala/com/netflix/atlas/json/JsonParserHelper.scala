@@ -42,7 +42,7 @@ object JsonParserHelper {
   }
 
   def fail(parser: JsonParser, msg: String): Nothing = {
-    val loc = parser.getCurrentLocation
+    val loc = parser.currentLocation
     val line = loc.getLineNr
     val col = loc.getColumnNr
     val fullMsg = s"$msg (line=$line, col=$col)"
