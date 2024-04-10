@@ -43,8 +43,9 @@ trait LwcEvent {
     */
   def tagValue(key: String): String = {
     extractValue(key) match {
-      case v: String => v
-      case _         => null
+      case v: String  => v
+      case e: Enum[_] => e.name()
+      case _          => null
     }
   }
 

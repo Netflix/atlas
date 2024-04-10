@@ -18,6 +18,8 @@ package com.netflix.atlas.lwc.events
 import com.netflix.atlas.core.util.SortedTagMap
 import munit.FunSuite
 
+import java.lang.System.Logger
+
 class LwcEventSuite extends FunSuite {
 
   import LwcEventSuite.*
@@ -31,6 +33,10 @@ class LwcEventSuite extends FunSuite {
   test("tagValue: exists") {
     assertEquals(sampleLwcEvent.tagValue("app"), "www")
     assertEquals(sampleLwcEvent.tagValue("node"), "i-123")
+  }
+
+  test("tagValue: enum") {
+    assertEquals(sampleLwcEvent.tagValue("level"), "TRACE")
   }
 
   test("tagValue: missing") {
@@ -80,6 +86,7 @@ object LwcEventSuite {
     key match {
       case "tags"     => span.tags
       case "duration" => span.duration
+      case "level"    => Logger.Level.TRACE
       case k          => span.tags.getOrElse(k, null)
     }
   }
