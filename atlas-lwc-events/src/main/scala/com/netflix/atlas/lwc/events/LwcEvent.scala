@@ -96,6 +96,15 @@ trait LwcEvent {
       w.toString
     }
   }
+
+  /**
+    * Estimates the size of the events in bytes. This is used for batching to ensure that
+    * the payload is not too big for the backend. The default implementation just encodes
+    * to a JSON string. If possible, override with a more efficient implementation.
+    */
+  def estimatedSizeInBytes: Int = {
+    toJson.length
+  }
 }
 
 object LwcEvent {
