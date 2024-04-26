@@ -46,6 +46,7 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
   private val bufferSize = scopedConfig.getInt("buffer-size")
   private val flushSize = scopedConfig.getInt("flush-size")
   private val batchSize = scopedConfig.getInt("batch-size")
+  private val payloadSize = scopedConfig.getBytes("payload-size")
 
   private val buffer = new ArrayBlockingQueue[Event](bufferSize)
 
@@ -54,6 +55,7 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
   private val droppedQueueFull =
     registry.counter("lwc.events", "id", "dropped", "error", "queue-full")
   private val droppedSend = registry.counter("lwc.events", "id", "dropped", "error", "http")
+  private val droppedTooBig = registry.counter("lwc.events", "id", "dropped", "error", "too-big")
 
   private var scheduler: Scheduler = _
 
@@ -141,13 +143,45 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
 
       // Write out other events for pass through
       val now = registry.clock().wallTime()
-      events.asScala
-        .filterNot(_.isDatapoint)
-        .toList
-        .grouped(batchSize)
-        .foreach { vs =>
-          send(EvalPayload(now, events = vs))
+      batch(
+        events.asScala.filterNot(_.isDatapoint).toList,
+        es => send(EvalPayload(now, events = es))
+      )
+    }
+  }
+
+  private[events] def batch(events: List[Event], sink: List[Event] => Unit): Unit = {
+    var size = 0L
+    val eventBatch = List.newBuilder[Event]
+    val it = events.iterator
+    while (it.hasNext) {
+      val event = it.next()
+      val estimatedSize = event.payload.estimatedSizeInBytes
+
+      // Flush batch if size is met
+      if (size + estimatedSize > payloadSize) {
+        val es = eventBatch.result()
+        eventBatch.clear()
+        size = 0L
+        if (es.nonEmpty) {
+          sink(es)
         }
+      }
+
+      // Verify that a single message doesn't exceed the size
+      if (estimatedSize > payloadSize) {
+        logger.warn(s"dropping event with excessive size ($estimatedSize > $payloadSize)")
+        droppedTooBig.increment()
+      } else {
+        size += estimatedSize
+        eventBatch += event
+      }
+    }
+
+    // Flush final batch
+    val es = eventBatch.result()
+    if (es.nonEmpty) {
+      sink(es)
     }
   }
 
