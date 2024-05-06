@@ -19,12 +19,14 @@ import java.math.BigInteger
 import java.util
 import java.util.Optional
 import java.util.regex.Pattern
-
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.SerializationFeature
 import munit.FunSuite
+
+import java.time.Instant
 
 /**
   * Test case for the capabilities we need from a json parser. Mostly to document what we are using
@@ -472,6 +474,22 @@ class JsonSuite extends FunSuite {
   test("JsonSupport custom encoding") {
     val obj = JsonObjectWithSupport(42.0)
     assertEquals(Json.encode(List(obj)), """[{"custom":42.0}]""")
+  }
+
+  test("customize mapper") {
+    val now = Instant.now()
+    assertEquals(Json.encode(now), now.toEpochMilli.toString)
+
+    try {
+      Json.configure { mapper =>
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+      }
+      assertEquals(Json.encode(now), s"\"${now.toString}\"")
+    } finally {
+      Json.configure { mapper =>
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true)
+      }
+    }
   }
 }
 
