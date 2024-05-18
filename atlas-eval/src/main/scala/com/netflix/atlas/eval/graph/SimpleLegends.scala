@@ -73,7 +73,7 @@ object SimpleLegends extends StrictLogging {
   }
 
   private def withLegend(expr: StyleExpr, legend: String): StyleExpr = {
-    val label = if (expr.offset > 0L) s"$legend (offset=$$atlas.offset)" else legend
+    val label = if (expr.offset > 0L) s"$legend (offset=$$(atlas.offset))" else legend
     expr.copy(settings = expr.settings + ("legend" -> label))
   }
 
@@ -94,7 +94,7 @@ object SimpleLegends extends StrictLogging {
 
   private def generateLegend(expr: StyleExpr, kv: Map[String, String]): StyleExpr = {
     if (expr.expr.isGrouped) {
-      val fmt = expr.expr.finalGrouping.mkString("$", " $", "")
+      val fmt = expr.expr.finalGrouping.mkString("$(", ") $(", ")")
       withLegend(expr, fmt)
     } else if (kv.contains("name")) {
       withLegend(expr, kv("name"))
