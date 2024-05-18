@@ -62,7 +62,7 @@ class SimpleLegendsSuite extends FunSuite {
   }
 
   test("use group by keys") {
-    assertEquals(legends("name,cpu,:eq,:sum,(,app,id,),:by"), List("$app $id"))
+    assertEquals(legends("name,cpu,:eq,:sum,(,app,id,),:by"), List("$(app) $(id)"))
   }
 
   test("name with math") {
@@ -79,7 +79,7 @@ class SimpleLegendsSuite extends FunSuite {
 
   test("name with offsets") {
     val expr = "name,cpu,:eq,:sum,(,0h,1w,),:offset"
-    assertEquals(legends(expr), List("cpu", "cpu (offset=$atlas.offset)"))
+    assertEquals(legends(expr), List("cpu", "cpu (offset=$(atlas.offset))"))
   }
 
   test("name with avg") {
@@ -103,17 +103,21 @@ class SimpleLegendsSuite extends FunSuite {
   }
 
   test("name with node avg and grouping") {
-    assertEquals(legends("name,cpu,:eq,:node-avg,(,app,),:by"), List("$app"))
+    assertEquals(legends("name,cpu,:eq,:node-avg,(,app,),:by"), List("$(app)"))
+  }
+
+  test("name with node avg and grouping with special chars") {
+    assertEquals(legends("name,cpu,:eq,:node-avg,(,foo:bar,),:by"), List("$(foo:bar)"))
   }
 
   test("name with node avg and nested grouping") {
     val expr = "name,cpu,:eq,:node-avg,(,app,region,),:by,:max,(,region,),:by"
-    assertEquals(legends(expr), List("$region"))
+    assertEquals(legends(expr), List("$(region)"))
   }
 
   test("group by with offsets") {
     val expr = "name,cpu,:eq,:sum,(,id,),:by,(,0h,1w,),:offset"
-    assertEquals(legends(expr), List("$id", "$id (offset=$atlas.offset)"))
+    assertEquals(legends(expr), List("$(id)", "$(id) (offset=$(atlas.offset))"))
   }
 
   test("complex: same name and math") {
