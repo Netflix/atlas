@@ -13,7 +13,7 @@ Backend for managing dimensional time series data.
 
 Copyright 2014-2024 Netflix, Inc.
 
-Licensed under the Apache License, Version 2.0 (the “License”); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the “License”); you may not use this file except in compliance with the license. You may obtain a copy of the License at
 
 http://www.apache.org/licenses/LICENSE-2.0
 
