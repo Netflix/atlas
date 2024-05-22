@@ -30,6 +30,7 @@ import java.time.Duration
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.locks.ReentrantLock
 import scala.util.Using
 
 class RemoteLwcEventClient(registry: Registry, config: Config)
@@ -59,6 +60,8 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
     registry.counter("lwc.events", "id", "dropped", "error", "queue-full")
   private val droppedSend = registry.counter("lwc.events", "id", "dropped", "error", "http")
   private val droppedTooBig = registry.counter("lwc.events", "id", "dropped", "error", "too-big")
+
+  private val flushLock = new ReentrantLock()
 
   private var scheduler: Scheduler = _
 
@@ -132,24 +135,30 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
       flush()
   }
 
-  private def flush(): Unit = {
-    val events = new java.util.ArrayList[Event](buffer.size())
-    buffer.drainTo(events)
-    if (!events.isEmpty) {
-      import scala.jdk.CollectionConverters.*
+  override protected def flush(): Unit = {
+    if (flushLock.tryLock()) {
+      try {
+        val events = new java.util.ArrayList[Event](buffer.size())
+        buffer.drainTo(events)
+        if (!events.isEmpty) {
+          import scala.jdk.CollectionConverters.*
 
-      // Write out datapoints that need to be batch by timestamp
-      val ds = events.asScala.collect {
-        case Event(_, e: DatapointEvent) => e
-      }.toList
-      flushDatapoints(ds)
+          // Write out datapoints that need to be batch by timestamp
+          val ds = events.asScala.collect {
+            case Event(_, e: DatapointEvent) => e
+          }.toList
+          flushDatapoints(ds)
 
-      // Write out other events for pass through
-      val now = registry.clock().wallTime()
-      batch(
-        events.asScala.filterNot(_.isDatapoint).toList,
-        es => send(EvalPayload(now, events = es))
-      )
+          // Write out other events for pass through
+          val now = registry.clock().wallTime()
+          batch(
+            events.asScala.filterNot(_.isDatapoint).toList,
+            es => send(EvalPayload(now, events = es))
+          )
+        }
+      } finally {
+        flushLock.unlock()
+      }
     }
   }
 
@@ -197,7 +206,7 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
     }
   }
 
-  private def send(payload: EvalPayload): Unit = {
+  protected def send(payload: EvalPayload): Unit = {
     val task: Runnable = () => {
       try {
         val response = HttpClient.DEFAULT_CLIENT

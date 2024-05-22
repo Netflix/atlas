@@ -16,22 +16,37 @@
 package com.netflix.atlas.lwc.events
 
 import com.netflix.spectator.api.DefaultRegistry
-import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Utils
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
+import java.util.concurrent.CopyOnWriteArrayList
+
 class RemoveLwcEventClientSuite extends FunSuite {
 
   private val config = ConfigFactory.load()
+  private var payloads: java.util.List[RemoteLwcEventClient.EvalPayload] = _
   private var registry: Registry = _
   private var client: RemoteLwcEventClient = _
 
   override def beforeEach(context: BeforeEach): Unit = {
+    payloads = new CopyOnWriteArrayList[RemoteLwcEventClient.EvalPayload]()
     registry = new DefaultRegistry()
     client = new RemoteLwcEventClient(registry, config) {
-      override def start(): Unit = ()
+      override def start(): Unit = {
+        val subs = Subscriptions(events = List(Subscription(
+          "test",
+          0L,
+          ":true",
+          "EVENTS"
+        )))
+        sync(subs)
+      }
+
+      override protected def send(payload: RemoteLwcEventClient.EvalPayload): Unit = {
+        payloads.add(payload)
+      }
     }
   }
 
@@ -67,5 +82,20 @@ class RemoveLwcEventClientSuite extends FunSuite {
     errors.forEach { c =>
       assertEquals(c.count(), 1L)
     }
+  }
+
+  test("flush on heartbeat") {
+    client.start()
+
+    val str = "1234567890"
+    val event = LwcEvent(str, _ => str)
+    val events = (0 until 100).map(_ => event).toList
+
+    events.foreach(client.process)
+    assert(payloads.isEmpty)
+
+    client.process(LwcEvent.HeartbeatLwcEvent(registry.clock().wallTime()))
+    assertEquals(payloads.size(), 1)
+    assertEquals(payloads.get(0).size, 100)
   }
 }
