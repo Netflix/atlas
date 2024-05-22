@@ -31,8 +31,8 @@ trait LwcEvent {
   def rawEvent: Any
 
   /**
-    * Timestamp for the event. If it is an event such as a span that has a start and end,
-    * the timestamp should be for the end of the event.
+    * Timestamp for the event in Unix epoch milliseconds. If it is an event such as
+    * a span that has a start and end, the timestamp should be for the end of the event.
     */
   def timestamp: Long
 
