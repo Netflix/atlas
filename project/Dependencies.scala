@@ -6,13 +6,13 @@ object Dependencies {
   object Versions {
     val pekko       = "1.0.2"
     val pekkoHttpV  = "1.0.1"
-    val iep        = "5.0.19"
-    val jackson    = "2.16.2"
+    val iep        = "5.0.22"
+    val jackson    = "2.17.1"
     val log4j      = "2.23.1"
-    val scala      = "2.13.13"
+    val scala      = "2.13.14"
     val slf4j      = "1.7.36"
-    val spectator  = "1.7.11"
-    val spring     = "6.1.5"
+    val spectator  = "1.7.13"
+    val spring     = "6.1.8"
 
     val crossScala = Seq(scala, "3.4.1")
   }
@@ -51,11 +51,11 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val munit             = "org.scalameta" %% "munit" % "0.7.29"
+  val munit             = "org.scalameta" %% "munit" % "1.0.0"
   val postgres          = "org.postgresql" % "postgresql" % "42.7.3"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.6"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.0.6"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0"
   val scalaCompatJdk8   = "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
