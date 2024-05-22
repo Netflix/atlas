@@ -43,6 +43,9 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
   private val configUri = URI.create(scopedConfig.getString("config-uri"))
   private val evalUri = URI.create(scopedConfig.getString("eval-uri"))
 
+  private val configRefreshFrequency = scopedConfig.getDuration("config-refresh-frequency")
+  private val heartbeatFrequency = scopedConfig.getDuration("heartbeat-frequency")
+
   private val bufferSize = scopedConfig.getInt("buffer-size")
   private val flushSize = scopedConfig.getInt("flush-size")
   private val batchSize = scopedConfig.getInt("batch-size")
@@ -66,12 +69,12 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
       scheduler = new Scheduler(registry, "LwcEventClient", 2)
 
       val refreshOptions = new Scheduler.Options()
-        .withFrequency(Scheduler.Policy.FIXED_DELAY, Duration.ofSeconds(10))
+        .withFrequency(Scheduler.Policy.FIXED_DELAY, configRefreshFrequency)
         .withStopOnFailure(false)
       scheduler.schedule(refreshOptions, () => refreshConfigs())
 
       val heartbeatOptions = new Scheduler.Options()
-        .withFrequency(Scheduler.Policy.FIXED_DELAY, Duration.ofSeconds(2))
+        .withFrequency(Scheduler.Policy.FIXED_DELAY, heartbeatFrequency)
         .withStopOnFailure(false)
       scheduler.schedule(heartbeatOptions, () => sendHeartbeat())
 
