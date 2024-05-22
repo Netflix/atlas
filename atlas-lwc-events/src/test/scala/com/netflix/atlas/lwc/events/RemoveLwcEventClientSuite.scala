@@ -35,12 +35,16 @@ class RemoveLwcEventClientSuite extends FunSuite {
     registry = new DefaultRegistry()
     client = new RemoteLwcEventClient(registry, config) {
       override def start(): Unit = {
-        val subs = Subscriptions(events = List(Subscription(
-          "test",
-          0L,
-          ":true",
-          "EVENTS"
-        )))
+        val subs = Subscriptions(events =
+          List(
+            Subscription(
+              "test",
+              0L,
+              ":true",
+              "EVENTS"
+            )
+          )
+        )
         sync(subs)
       }
 
