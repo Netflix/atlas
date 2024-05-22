@@ -41,6 +41,12 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
 
   @volatile private var traceHandlersTS: Map[Subscription, TraceTimeSeries] = Map.empty
 
+  /**
+    * Called to force flushing the data. Implementations should override if they have
+    * some buffering.
+    */
+  protected def flush(): Unit = {}
+
   protected def sync(subscriptions: Subscriptions): Unit = {
     val diff = Subscriptions.diff(currentSubs, subscriptions)
     currentSubs = subscriptions
@@ -142,6 +148,7 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     event match {
       case LwcEvent.HeartbeatLwcEvent(timestamp) =>
         handlers.foreach(_.flush(timestamp))
+        flush()
       case _ =>
         index.forEachMatch(k => event.tagValue(k), h => handleMatch(event, h))
     }
