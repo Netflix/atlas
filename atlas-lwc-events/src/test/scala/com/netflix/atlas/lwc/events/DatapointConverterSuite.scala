@@ -33,16 +33,17 @@ class DatapointConverterSuite extends FunSuite {
   }
 
   test("toDouble") {
-    assertEquals(DatapointConverter.toDouble(false), 0.0)
-    assertEquals(DatapointConverter.toDouble(true), 1.0)
-    assertEquals(DatapointConverter.toDouble(42), 42.0)
-    assertEquals(DatapointConverter.toDouble(42L), 42.0)
-    assertEquals(DatapointConverter.toDouble(42.5f), 42.5)
-    assertEquals(DatapointConverter.toDouble(42.5), 42.5)
-    assertEquals(DatapointConverter.toDouble(new AtomicLong(42)), 42.0)
-    assertEquals(DatapointConverter.toDouble("42"), 42.0)
-    assertEquals(DatapointConverter.toDouble("42e3"), 42e3)
-    assert(DatapointConverter.toDouble("foo").isNaN)
+    assertEquals(DatapointConverter.toDouble(null, -1.0), -1.0)
+    assertEquals(DatapointConverter.toDouble(false, -1.0), 0.0)
+    assertEquals(DatapointConverter.toDouble(true, -1.0), 1.0)
+    assertEquals(DatapointConverter.toDouble(42, -1.0), 42.0)
+    assertEquals(DatapointConverter.toDouble(42L, -1.0), 42.0)
+    assertEquals(DatapointConverter.toDouble(42.5f, -1.0), 42.5)
+    assertEquals(DatapointConverter.toDouble(42.5, -1.0), 42.5)
+    assertEquals(DatapointConverter.toDouble(new AtomicLong(42), -1.0), 42.0)
+    assertEquals(DatapointConverter.toDouble("42", -1.0), 42.0)
+    assertEquals(DatapointConverter.toDouble("42e3", -1.0), 42e3)
+    assert(DatapointConverter.toDouble("foo", -1.0).isNaN)
   }
 
   test("counter - sum") {
@@ -88,6 +89,36 @@ class DatapointConverterSuite extends FunSuite {
     val results = events.result()
     assertEquals(results.size, 1)
     assertEquals(results.head, DatapointEvent("id", Map("value" -> "responseSize"), step, 5.0))
+  }
+
+  test("counter - max custom value") {
+    val expr = DataExpr.Max(Query.Equal("value", "responseSize"))
+    val events = List.newBuilder[LwcEvent]
+    val converter = DatapointConverter("id", expr, clock, step, (_, e) => events.addOne(e))
+    (0 until 5).foreach { i =>
+      val event = LwcEvent(Map("responseSize" -> i))
+      converter.update(event)
+    }
+    clock.setWallTime(step + 1)
+    converter.flush(clock.wallTime())
+    val results = events.result()
+    assertEquals(results.size, 1)
+    assertEquals(results.head, DatapointEvent("id", Map("value" -> "responseSize"), step, 4.0))
+  }
+
+  test("counter - max negative value") {
+    val expr = DataExpr.Max(Query.Equal("value", "responseSize"))
+    val events = List.newBuilder[LwcEvent]
+    val converter = DatapointConverter("id", expr, clock, step, (_, e) => events.addOne(e))
+    (0 until 5).foreach { i =>
+      val event = LwcEvent(Map("responseSize" -> -(i + 10)))
+      converter.update(event)
+    }
+    clock.setWallTime(step + 1)
+    converter.flush(clock.wallTime())
+    val results = events.result()
+    assertEquals(results.size, 1)
+    assertEquals(results.head, DatapointEvent("id", Map("value" -> "responseSize"), step, -10.0))
   }
 
   private def stat(name: String): Query = {

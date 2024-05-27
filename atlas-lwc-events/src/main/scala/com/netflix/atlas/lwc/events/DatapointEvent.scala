@@ -30,8 +30,12 @@ import com.netflix.atlas.json.Json
   * @param value
   *     Value for the data point.
   */
-case class DatapointEvent(id: String, tags: Map[String, String], timestamp: Long, value: Double)
-    extends LwcEvent {
+case class DatapointEvent(
+  id: String,
+  tags: Map[String, String],
+  timestamp: Long,
+  override val value: Double
+) extends LwcEvent {
 
   override def rawEvent: Any = this
 
