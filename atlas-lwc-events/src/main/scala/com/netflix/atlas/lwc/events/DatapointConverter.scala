@@ -116,7 +116,7 @@ private[events] object DatapointConverter {
   /** Compute sum for a counter as a rate per second. */
   case class Sum(params: Params) extends DatapointConverter {
 
-    val buffer = new StepDouble(0.0, params.clock, params.step)
+    private val buffer = new StepDouble(0.0, params.clock, params.step)
 
     override def update(event: LwcEvent): Unit = {
       val value = params.valueMapper(event)
@@ -138,7 +138,7 @@ private[events] object DatapointConverter {
   /** Compute count of contributing events. */
   case class Count(params: Params) extends DatapointConverter {
 
-    val buffer = new StepDouble(0.0, params.clock, params.step)
+    private val buffer = new StepDouble(0.0, params.clock, params.step)
 
     override def update(event: LwcEvent): Unit = {
       buffer.getCurrent.addAndGet(1.0)
@@ -157,7 +157,7 @@ private[events] object DatapointConverter {
   /** Compute max value from contributing events. */
   case class Max(params: Params) extends DatapointConverter {
 
-    val buffer = new StepDouble(Double.NaN, params.clock, params.step)
+    private val buffer = new StepDouble(Double.NaN, params.clock, params.step)
 
     override def update(event: LwcEvent): Unit = {
       val value = params.valueMapper(event)
@@ -179,7 +179,7 @@ private[events] object DatapointConverter {
   /** Compute min value from contributing events. */
   case class Min(params: Params) extends DatapointConverter {
 
-    val buffer = new StepDouble(Double.NaN, params.clock, params.step)
+    private val buffer = new StepDouble(Double.NaN, params.clock, params.step)
 
     override def update(event: LwcEvent): Unit = {
       val value = params.valueMapper(event)

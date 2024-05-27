@@ -121,6 +121,21 @@ class DatapointConverterSuite extends FunSuite {
     assertEquals(results.head, DatapointEvent("id", Map("value" -> "responseSize"), step, -10.0))
   }
 
+  test("counter - min negative value") {
+    val expr = DataExpr.Min(Query.Equal("value", "responseSize"))
+    val events = List.newBuilder[LwcEvent]
+    val converter = DatapointConverter("id", expr, clock, step, (_, e) => events.addOne(e))
+    (0 until 5).foreach { i =>
+      val event = LwcEvent(Map("responseSize" -> -i))
+      converter.update(event)
+    }
+    clock.setWallTime(step + 1)
+    converter.flush(clock.wallTime())
+    val results = events.result()
+    assertEquals(results.size, 1)
+    assertEquals(results.head, DatapointEvent("id", Map("value" -> "responseSize"), step, -4.0))
+  }
+
   private def stat(name: String): Query = {
     Query.Equal("statistic", name)
   }
