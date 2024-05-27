@@ -68,20 +68,20 @@ private[events] object DatapointConverter {
       case Some(k) =>
         tags.get("statistic") match {
           case Some("count")          => _ => 1.0
-          case Some("totalOfSquares") => event => squared(event.extractValue(k))
-          case _                      => event => toDouble(event.extractValue(k))
+          case Some("totalOfSquares") => event => squared(event.extractValue(k), event.value)
+          case _                      => event => toDouble(event.extractValue(k), event.value)
         }
       case None =>
-        _ => 1.0
+        event => event.value
     }
   }
 
-  private def squared(value: Any): Double = {
-    val v = toDouble(value)
+  private def squared(value: Any, dflt: Double): Double = {
+    val v = toDouble(value, dflt)
     v * v
   }
 
-  def toDouble(value: Any): Double = {
+  private[events] def toDouble(value: Any, dflt: Double): Double = {
     value match {
       case v: Boolean => if (v) 1.0 else 0.0
       case v: Byte    => v.toDouble
@@ -92,7 +92,7 @@ private[events] object DatapointConverter {
       case v: Double  => v
       case v: Number  => v.doubleValue()
       case v: String  => parseDouble(v)
-      case _          => 1.0
+      case _          => dflt
     }
   }
 
@@ -111,23 +111,22 @@ private[events] object DatapointConverter {
     step: Long,
     valueMapper: LwcEvent => Double,
     consumer: (String, LwcEvent) => Unit
-  ) {
-
-    val buffer = new StepDouble(0.0, clock, step)
-  }
+  )
 
   /** Compute sum for a counter as a rate per second. */
   case class Sum(params: Params) extends DatapointConverter {
 
+    private val buffer = new StepDouble(0.0, params.clock, params.step)
+
     override def update(event: LwcEvent): Unit = {
       val value = params.valueMapper(event)
       if (value.isFinite && value >= 0.0) {
-        params.buffer.getCurrent.addAndGet(value)
+        buffer.getCurrent.addAndGet(value)
       }
     }
 
     override def flush(timestamp: Long): Unit = {
-      val value = params.buffer.pollAsRate(timestamp)
+      val value = buffer.pollAsRate(timestamp)
       if (value.isFinite) {
         val ts = timestamp / params.step * params.step
         val event = DatapointEvent(params.id, params.tags, ts, value)
@@ -139,12 +138,14 @@ private[events] object DatapointConverter {
   /** Compute count of contributing events. */
   case class Count(params: Params) extends DatapointConverter {
 
+    private val buffer = new StepDouble(0.0, params.clock, params.step)
+
     override def update(event: LwcEvent): Unit = {
-      params.buffer.getCurrent.addAndGet(1.0)
+      buffer.getCurrent.addAndGet(1.0)
     }
 
     override def flush(timestamp: Long): Unit = {
-      val value = params.buffer.poll(timestamp)
+      val value = buffer.poll(timestamp)
       if (value.isFinite) {
         val ts = timestamp / params.step * params.step
         val event = DatapointEvent(params.id, params.tags, ts, value)
@@ -156,15 +157,17 @@ private[events] object DatapointConverter {
   /** Compute max value from contributing events. */
   case class Max(params: Params) extends DatapointConverter {
 
+    private val buffer = new StepDouble(Double.NaN, params.clock, params.step)
+
     override def update(event: LwcEvent): Unit = {
       val value = params.valueMapper(event)
-      if (value.isFinite && value >= 0.0) {
-        params.buffer.getCurrent.max(value)
+      if (value.isFinite) {
+        buffer.getCurrent.max(value)
       }
     }
 
     override def flush(timestamp: Long): Unit = {
-      val value = params.buffer.poll(timestamp)
+      val value = buffer.poll(timestamp)
       if (value.isFinite) {
         val ts = timestamp / params.step * params.step
         val event = DatapointEvent(params.id, params.tags, ts, value)
@@ -176,10 +179,12 @@ private[events] object DatapointConverter {
   /** Compute min value from contributing events. */
   case class Min(params: Params) extends DatapointConverter {
 
+    private val buffer = new StepDouble(Double.NaN, params.clock, params.step)
+
     override def update(event: LwcEvent): Unit = {
       val value = params.valueMapper(event)
-      if (value.isFinite && value >= 0.0) {
-        min(params.buffer.getCurrent, value)
+      if (value.isFinite) {
+        min(buffer.getCurrent, value)
       }
     }
 
@@ -197,7 +202,7 @@ private[events] object DatapointConverter {
     }
 
     override def flush(timestamp: Long): Unit = {
-      val value = params.buffer.poll(timestamp)
+      val value = buffer.poll(timestamp)
       if (value.isFinite) {
         val ts = timestamp / params.step * params.step
         val event = DatapointEvent(params.id, params.tags, ts, value)
