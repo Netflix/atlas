@@ -21,6 +21,7 @@ import com.netflix.spectator.api.Clock
 import com.netflix.spectator.impl.AtomicDouble
 import com.netflix.spectator.impl.StepDouble
 
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -83,16 +84,17 @@ private[events] object DatapointConverter {
 
   private[events] def toDouble(value: Any, dflt: Double): Double = {
     value match {
-      case v: Boolean => if (v) 1.0 else 0.0
-      case v: Byte    => v.toDouble
-      case v: Short   => v.toDouble
-      case v: Int     => v.toDouble
-      case v: Long    => v.toDouble
-      case v: Float   => v.toDouble
-      case v: Double  => v
-      case v: Number  => v.doubleValue()
-      case v: String  => parseDouble(v)
-      case _          => dflt
+      case v: Boolean  => if (v) 1.0 else 0.0
+      case v: Byte     => v.toDouble
+      case v: Short    => v.toDouble
+      case v: Int      => v.toDouble
+      case v: Long     => v.toDouble
+      case v: Float    => v.toDouble
+      case v: Double   => v
+      case v: Number   => v.doubleValue()
+      case v: String   => parseDouble(v)
+      case v: Duration => v.toNanos / 1e9
+      case _           => dflt
     }
   }
 
