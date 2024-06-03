@@ -20,6 +20,7 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.spectator.api.ManualClock
 import munit.FunSuite
 
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicLong
 
 class DatapointConverterSuite extends FunSuite {
@@ -43,6 +44,9 @@ class DatapointConverterSuite extends FunSuite {
     assertEquals(DatapointConverter.toDouble(new AtomicLong(42), -1.0), 42.0)
     assertEquals(DatapointConverter.toDouble("42", -1.0), 42.0)
     assertEquals(DatapointConverter.toDouble("42e3", -1.0), 42e3)
+    assertEquals(DatapointConverter.toDouble(Duration.ofMillis(42131), -1.0), 42.131)
+    assertEquals(DatapointConverter.toDouble(Duration.ofSeconds(42131), -1.0), 42131.0)
+    assertEquals(DatapointConverter.toDouble(Duration.ofMinutes(2), -1.0), 120.0)
     assert(DatapointConverter.toDouble("foo", -1.0).isNaN)
   }
 
