@@ -1,0 +1,9 @@
+package com.netflix.atlas.core.db
+
+class Database {
+  // Other methods...
+
+  def deleteReport(rName: atlas-lwcapi): Unit = {
+    // Code to delete the report with the given name from the database
+  }
+}
