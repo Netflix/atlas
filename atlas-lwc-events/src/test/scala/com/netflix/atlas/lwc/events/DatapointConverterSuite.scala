@@ -219,8 +219,39 @@ class DatapointConverterSuite extends FunSuite {
     assertEquals(results.head, DatapointEvent("id", Query.tags(expr.query), step, 0.0))
   }
 
-  test("dist - sum of totalTime") {
-    val expr = DataExpr.Sum(Query.Equal("value", "responseSize").and(stat("totalTime")))
+  test("timer - percentile") {
+    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("value", "latency")), List("percentile"))
+    val events = List.newBuilder[LwcEvent]
+    val converter = DatapointConverter("id", expr, clock, step, (_, e) => events.addOne(e))
+    (0 until 5).foreach { i =>
+      val event = LwcEvent(Map("latency" -> Duration.ofMillis(i)))
+      converter.update(event)
+    }
+    clock.setWallTime(step + 1)
+    converter.flush(clock.wallTime())
+    val results = events.result()
+    assertEquals(results.size, 4)
+    assertEquals(results.head.value, 0.2, 1e-12)
+  }
+
+  test("dist - sum of totalAmount") {
+    val expr = DataExpr.Sum(Query.Equal("value", "responseSize").and(stat("totalAmount")))
+    val events = List.newBuilder[LwcEvent]
+    val converter = DatapointConverter("id", expr, clock, step, (_, e) => events.addOne(e))
+    (0 until 5).foreach { i =>
+      val event = LwcEvent(Map("responseSize" -> i))
+      converter.update(event)
+    }
+    clock.setWallTime(step + 1)
+    converter.flush(clock.wallTime())
+    val results = events.result()
+    assertEquals(results.size, 1)
+    assertEquals(results.head, DatapointEvent("id", Query.tags(expr.query), step, 2.0))
+  }
+
+  test("dist - sum of total either") {
+    val stat = Query.In("statistic", List("totalTime", "totalAmount"))
+    val expr = DataExpr.Sum(Query.Equal("value", "responseSize").and(stat))
     val events = List.newBuilder[LwcEvent]
     val converter = DatapointConverter("id", expr, clock, step, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
@@ -277,6 +308,24 @@ class DatapointConverterSuite extends FunSuite {
     val results = events.result()
     assertEquals(results.size, 1)
     assertEquals(results.head, DatapointEvent("id", Query.tags(expr.query), step, 4.0))
+  }
+
+  test("dist - percentile") {
+    val expr = DataExpr.GroupBy(
+      DataExpr.Sum(Query.Equal("value", "responseSize")),
+      List("percentile")
+    )
+    val events = List.newBuilder[LwcEvent]
+    val converter = DatapointConverter("id", expr, clock, step, (_, e) => events.addOne(e))
+    (0 until 5).foreach { i =>
+      val event = LwcEvent(Map("responseSize" -> i))
+      converter.update(event)
+    }
+    clock.setWallTime(step + 1)
+    converter.flush(clock.wallTime())
+    val results = events.result()
+    assertEquals(results.size, 4)
+    assertEquals(results.head.value, 0.2, 1e-12)
   }
 
   test("groupBy - sum") {
