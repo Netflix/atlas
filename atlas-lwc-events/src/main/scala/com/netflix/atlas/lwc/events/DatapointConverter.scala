@@ -41,6 +41,9 @@ private[events] trait DatapointConverter {
 
   /** Flush the data for a given timestamp. */
   def flush(timestamp: Long): Unit
+
+  /** Returns true if the converter has no recent data. */
+  def hasNoData: Boolean
 }
 
 private[events] object DatapointConverter {
@@ -115,6 +118,22 @@ private[events] object DatapointConverter {
     }
   }
 
+  private[events] def addNaN(value: AtomicDouble, amount: Double): Unit = {
+    if (amount.isNaN)
+      return
+
+    var set = false
+    while (!set) {
+      val v = value.get()
+      if (v.isNaN) {
+        set = value.compareAndSet(v, amount)
+      } else {
+        value.addAndGet(amount)
+        set = true
+      }
+    }
+  }
+
   case class Params(
     id: String,
     tags: Map[String, String],
@@ -127,7 +146,7 @@ private[events] object DatapointConverter {
   /** Compute sum for a counter as a rate per second. */
   case class Sum(params: Params) extends DatapointConverter {
 
-    private val buffer = new StepDouble(0.0, params.clock, params.step)
+    private val buffer = new StepDouble(Double.NaN, params.clock, params.step)
 
     override def update(event: LwcEvent): Unit = {
       update(params.valueMapper(event))
@@ -135,7 +154,7 @@ private[events] object DatapointConverter {
 
     override def update(value: Double): Unit = {
       if (value.isFinite && value >= 0.0) {
-        buffer.getCurrent.addAndGet(value)
+        addNaN(buffer.getCurrent, value)
       }
     }
 
@@ -147,19 +166,24 @@ private[events] object DatapointConverter {
         params.consumer(params.id, event)
       }
     }
+
+    override def hasNoData: Boolean = {
+      val now = params.clock.wallTime()
+      buffer.getCurrent(now).get().isNaN && buffer.poll(now).isNaN
+    }
   }
 
   /** Compute count of contributing events. */
   case class Count(params: Params) extends DatapointConverter {
 
-    private val buffer = new StepDouble(0.0, params.clock, params.step)
+    private val buffer = new StepDouble(Double.NaN, params.clock, params.step)
 
     override def update(event: LwcEvent): Unit = {
-      buffer.getCurrent.addAndGet(1.0)
+      update(1.0)
     }
 
     override def update(value: Double): Unit = {
-      buffer.getCurrent.addAndGet(1.0)
+      addNaN(buffer.getCurrent, 1.0)
     }
 
     override def flush(timestamp: Long): Unit = {
@@ -169,6 +193,11 @@ private[events] object DatapointConverter {
         val event = DatapointEvent(params.id, params.tags, ts, value)
         params.consumer(params.id, event)
       }
+    }
+
+    override def hasNoData: Boolean = {
+      val now = params.clock.wallTime()
+      buffer.getCurrent(now).get().isNaN && buffer.poll(now).isNaN
     }
   }
 
@@ -194,6 +223,11 @@ private[events] object DatapointConverter {
         val event = DatapointEvent(params.id, params.tags, ts, value)
         params.consumer(params.id, event)
       }
+    }
+
+    override def hasNoData: Boolean = {
+      val now = params.clock.wallTime()
+      buffer.getCurrent(now).get().isNaN && buffer.poll(now).isNaN
     }
   }
 
@@ -232,6 +266,11 @@ private[events] object DatapointConverter {
         val event = DatapointEvent(params.id, params.tags, ts, value)
         params.consumer(params.id, event)
       }
+    }
+
+    override def hasNoData: Boolean = {
+      val now = params.clock.wallTime()
+      buffer.getCurrent(now).get().isNaN && buffer.poll(now).isNaN
     }
   }
 
@@ -312,7 +351,15 @@ private[events] object DatapointConverter {
     }
 
     override def flush(timestamp: Long): Unit = {
-      groups.values().forEach(_.flush(timestamp))
+      val it = groups.values().iterator()
+      while (it.hasNext) {
+        val converter = it.next()
+        converter.flush(timestamp)
+        if (converter.hasNoData)
+          it.remove()
+      }
     }
+
+    override def hasNoData: Boolean = groups.isEmpty
   }
 }

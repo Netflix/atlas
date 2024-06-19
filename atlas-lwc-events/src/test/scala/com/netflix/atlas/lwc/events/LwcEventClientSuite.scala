@@ -72,7 +72,7 @@ class LwcEventClientSuite extends FunSuite {
     clock.setWallTime(step)
     client.process(LwcEvent.HeartbeatLwcEvent(step))
     val vs = output.result()
-    assertEquals(vs.size, 2)
+    assertEquals(vs.size, 1)
   }
 
   test("analytics, basic aggregate extract value") {
@@ -139,7 +139,7 @@ class LwcEventClientSuite extends FunSuite {
     client.process(sampleLwcEvent)
     clock.setWallTime(step)
     client.process(LwcEvent.HeartbeatLwcEvent(step))
-    assertEquals(output.result().size, 2)
+    assertEquals(output.result().size, 1)
 
     // Sync expressions, same set
     (2 until 10).foreach { i =>
@@ -148,7 +148,7 @@ class LwcEventClientSuite extends FunSuite {
       client.process(sampleLwcEvent)
       clock.setWallTime(step * i)
       client.process(LwcEvent.HeartbeatLwcEvent(step * i))
-      assertEquals(output.result().size, 2)
+      assertEquals(output.result().size, 1)
     }
 
     // Sync expressions, subset
