@@ -6,13 +6,13 @@ object Dependencies {
   object Versions {
     val pekko       = "1.0.2"
     val pekkoHttpV  = "1.0.1"
-    val iep        = "5.0.22"
+    val iep        = "5.0.23"
     val jackson    = "2.17.1"
     val log4j      = "2.23.1"
     val scala      = "2.13.14"
     val slf4j      = "1.7.36"
-    val spectator  = "1.7.13"
-    val spring     = "6.1.8"
+    val spectator  = "1.7.14"
+    val spring     = "6.1.10"
 
     val crossScala = Seq(scala, "3.4.1")
   }
@@ -28,7 +28,7 @@ object Dependencies {
   val pekkoStreamTestkit= "org.apache.pekko" %% "pekko-stream-testkit" % pekko
   val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.8"
-  val datasketches      = "org.apache.datasketches" % "datasketches-java" % "5.0.2"
+  val datasketches      = "org.apache.datasketches" % "datasketches-java" % "6.0.0"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.16.1"
   val hikariCP          = "com.zaxxer" % "HikariCP" % "5.1.0"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
@@ -53,8 +53,8 @@ object Dependencies {
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
   val munit             = "org.scalameta" %% "munit" % "1.0.0"
   val postgres          = "org.postgresql" % "postgresql" % "42.7.3"
-  val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.6"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.0.6"
+  val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.7"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.1.0"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0"
   val scalaCompatJdk8   = "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
