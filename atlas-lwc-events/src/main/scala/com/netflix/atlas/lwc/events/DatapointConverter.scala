@@ -85,16 +85,16 @@ private[events] object DatapointConverter {
           case _                      => event => toDouble(event.extractValue(k), event.value)
         }
       case None =>
-        event => event.value
+        event => toDouble(event.value, 1.0)
     }
   }
 
-  private def squared(value: Any, dflt: Double): Double = {
+  private def squared(value: Any, dflt: Any): Double = {
     val v = toDouble(value, dflt)
     v * v
   }
 
-  private[events] def toDouble(value: Any, dflt: Double): Double = {
+  private[events] def toDouble(value: Any, dflt: Any): Double = {
     value match {
       case v: Boolean  => if (v) 1.0 else 0.0
       case v: Byte     => v.toDouble
@@ -106,7 +106,7 @@ private[events] object DatapointConverter {
       case v: Number   => v.doubleValue()
       case v: String   => parseDouble(v)
       case v: Duration => v.toNanos / 1e9
-      case _           => dflt
+      case _           => toDouble(dflt, 1.0)
     }
   }
 
