@@ -47,6 +47,7 @@ class DatapointConverterSuite extends FunSuite {
     assertEquals(DatapointConverter.toDouble(Duration.ofMillis(42131), -1.0), 42.131)
     assertEquals(DatapointConverter.toDouble(Duration.ofSeconds(42131), -1.0), 42131.0)
     assertEquals(DatapointConverter.toDouble(Duration.ofMinutes(2), -1.0), 120.0)
+    assertEquals(DatapointConverter.toDouble(null, Duration.ofMillis(42)), 0.042)
     assert(DatapointConverter.toDouble("foo", -1.0).isNaN)
   }
 

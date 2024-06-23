@@ -40,7 +40,7 @@ trait LwcEvent {
     * Value to use for the event when mapping to a time series. By default it will be
     * 1.0 same as incrementing a counter by 1.
     */
-  def value: Double = 1.0
+  def value: Any = 1.0
 
   /**
     * Extract a tag value for a given key. Returns `null` if there is no value for
