@@ -63,7 +63,7 @@ class CustomVocabularySuite extends FunSuite {
 
   test("simple average") {
     val expr = eval(s"$cpuUser,:node-avg").rewrite {
-      case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
+      case MathExpr.NamedRewrite("node-avg", _, _, e, _, _) => e
     }
     val expected = eval(s"$cpuUser,:sum,$numInstances,:sum,:div")
     assertEquals(expr, expected)
@@ -71,7 +71,7 @@ class CustomVocabularySuite extends FunSuite {
 
   test("expr with cluster") {
     val expr = eval(s"$cpuUser,cluster,foo,:eq,:and,:node-avg").rewrite {
-      case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
+      case MathExpr.NamedRewrite("node-avg", _, _, e, _, _) => e
     }
     val expected = eval(s"$cpuUser,:sum,$numInstances,:sum,:div,cluster,foo,:eq,:cq")
     assertEquals(expr, expected)
@@ -79,7 +79,7 @@ class CustomVocabularySuite extends FunSuite {
 
   test("expr with cq using non-infrastructure tags") {
     val expr = eval(s"$cpuUser,:node-avg,core,1,:eq,:cq").rewrite {
-      case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
+      case MathExpr.NamedRewrite("node-avg", _, _, e, _, _) => e
     }
     val expected = eval(s"$cpuUser,core,1,:eq,:and,:sum,$numInstances,:sum,:div")
     assertEquals(expr, expected)
@@ -87,7 +87,7 @@ class CustomVocabularySuite extends FunSuite {
 
   test("expr grouped by infrastructure tags") {
     val expr = eval(s"$cpuUser,cluster,foo,:eq,:and,:node-avg,(,zone,),:by").rewrite {
-      case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
+      case MathExpr.NamedRewrite("node-avg", _, _, e, _, _) => e
     }
     val expected =
       eval(s"$cpuUser,:sum,(,zone,),:by,$numInstances,:sum,(,zone,),:by,:div,cluster,foo,:eq,:cq")
@@ -96,7 +96,7 @@ class CustomVocabularySuite extends FunSuite {
 
   test("expr grouped by non-infrastructure tags") {
     val expr = eval(s"$cpuUser,cluster,foo,:eq,:and,:node-avg,(,name,),:by").rewrite {
-      case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
+      case MathExpr.NamedRewrite("node-avg", _, _, e, _, _) => e
     }
     val expected = eval(s"$cpuUser,:sum,(,name,),:by,$numInstances,:sum,:div,cluster,foo,:eq,:cq")
     assertEquals(expr, expected)
@@ -105,7 +105,7 @@ class CustomVocabularySuite extends FunSuite {
   test("expr grouped by non-infrastructure tags with offset") {
     val displayExpr = eval(s"$cpuUser,cluster,foo,:eq,:and,:node-avg,(,name,),:by,1h,:offset")
     val evalExpr = displayExpr.rewrite {
-      case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
+      case MathExpr.NamedRewrite("node-avg", _, _, e, _, _) => e
     }
     val expected = eval(
       s"$cpuUser,:sum,(,name,),:by,PT1H,:offset,$numInstances,:sum,PT1H,:offset,:div,cluster,foo,:eq,:cq"
@@ -131,7 +131,7 @@ class CustomVocabularySuite extends FunSuite {
 
   test("expr with not") {
     val expr = eval(s"$cpuUser,foo,bar,:eq,:not,:and,cluster,foo,:eq,:and,:node-avg").rewrite {
-      case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
+      case MathExpr.NamedRewrite("node-avg", _, _, e, _, _) => e
     }
     val expected =
       eval(s"$cpuUser,foo,bar,:eq,:not,:and,:sum,$numInstances,:sum,:div,cluster,foo,:eq,:cq")
@@ -140,7 +140,7 @@ class CustomVocabularySuite extends FunSuite {
 
   test("group by mixed keys") {
     val expr = eval("name,(,a,b,c,),:in,app,beacon,:eq,:and,:node-avg,(,name,asg,),:by").rewrite {
-      case MathExpr.NamedRewrite("node-avg", _, e, _, _) => e
+      case MathExpr.NamedRewrite("node-avg", _, _, e, _, _) => e
     }
     val expected = eval(
       s"name,(,a,b,c,),:in,:sum,(,name,asg,),:by,$numInstances,:sum,(,asg,),:by,:div,app,beacon,:eq,:cq"

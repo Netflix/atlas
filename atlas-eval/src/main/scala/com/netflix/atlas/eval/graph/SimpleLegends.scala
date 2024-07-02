@@ -118,7 +118,7 @@ object SimpleLegends extends StrictLogging {
     // a simple aggregate like sum based on the display expression.
     expr
       .rewrite {
-        case MathExpr.NamedRewrite(n, q: Query, evalExpr, _, _) if n.endsWith("-avg") =>
+        case MathExpr.NamedRewrite(n, q: Query, _, evalExpr, _, _) if n.endsWith("-avg") =>
           val aggr = DataExpr.Sum(q)
           if (evalExpr.isGrouped) DataExpr.GroupBy(aggr, evalExpr.finalGrouping) else aggr
       }

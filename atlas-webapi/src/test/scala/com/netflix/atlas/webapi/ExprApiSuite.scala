@@ -137,6 +137,18 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(data, List("name,(,sps1,sps2,),:in,:sum"))
   }
 
+  testGet("/api/v1/expr/normalize?q=name,latency,:eq,0,5,:sample-count") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,latency,:eq,0.0,5.0,:sample-count"))
+  }
+
+  testGet("/api/v1/expr/normalize?q=name,latency,:eq,0,5,:sample-count,(,app,),:by") {
+    assertEquals(response.status, StatusCodes.OK)
+    val data = Json.decode[List[String]](responseAs[String])
+    assertEquals(data, List("name,latency,:eq,0.0,5.0,:sample-count,(,app,),:by"))
+  }
+
   testGet(
     "/api/v1/expr/normalize?q=(,name,:swap,:eq,nf.cluster,foo,:eq,:and,:sum,),foo,:sset,cpu,foo,:fcall,disk,foo,:fcall"
   ) {
