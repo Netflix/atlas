@@ -505,9 +505,9 @@ object MathVocabulary extends Vocabulary {
 
     private def addCommonKeys(expr: TimeSeriesExpr, keys: List[String]): TimeSeriesExpr = {
       val newExpr = expr.rewrite {
-        case nr @ MathExpr.NamedRewrite(_, _: Query, e, _, _) if e.isGrouped =>
+        case nr @ MathExpr.NamedRewrite(_, _: Query, _, e, _, _) if e.isGrouped =>
           nr.copy(evalExpr = addCommonKeys(e, keys))
-        case nr @ MathExpr.NamedRewrite(_, _: Query, _, _, _) =>
+        case nr @ MathExpr.NamedRewrite(_, _: Query, _, _, _, _) =>
           nr.groupBy(keys)
         case af: AggregateFunction =>
           DataExpr.GroupBy(af, keys)
@@ -612,11 +612,11 @@ object MathVocabulary extends Vocabulary {
       case (n: String) :: TimeSeriesType(rw) :: (orig: Expr) :: stack =>
         // If the original is already an expr type, e.g. a Query, then we should
         // preserve it without modification. So we first match for Expr.
-        MathExpr.NamedRewrite(n, orig, rw, context) :: stack
+        MathExpr.NamedRewrite(n, orig, Nil, rw, context) :: stack
       case (n: String) :: TimeSeriesType(rw) :: TimeSeriesType(orig) :: stack =>
         // This is a more general match that will coerce the original into a
         // TimeSeriesExpr if it is not one already, e.g., a constant.
-        MathExpr.NamedRewrite(n, orig, rw, context) :: stack
+        MathExpr.NamedRewrite(n, orig, Nil, rw, context) :: stack
     }
 
     override def summary: String =
@@ -1284,7 +1284,8 @@ object MathVocabulary extends Vocabulary {
         case DoubleType(max) :: DoubleType(min) :: (q: Query) :: stack =>
           val rangeQuery = q.and(bucketQuery(min, max))
           val expr = DataExpr.Sum(rangeQuery)
-          context.copy(stack = expr :: stack)
+          val nr = MathExpr.NamedRewrite(name, q, List(min, max), expr, context)
+          context.copy(stack = nr :: stack)
         case _ =>
           invalidStack
       }

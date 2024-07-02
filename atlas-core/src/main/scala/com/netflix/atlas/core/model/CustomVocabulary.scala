@@ -157,7 +157,7 @@ object CustomVocabulary {
         val avg = MathExpr.Divide(numerator, denominator)
         val ctxt = Context(context.interpreter, Nil, Map.empty)
         val rewrite = Some(this)
-        MathExpr.NamedRewrite(name, q, avg, ctxt, rewrite) :: s
+        MathExpr.NamedRewrite(name, q, Nil, avg, ctxt, rewrite) :: s
     }
 
     /**

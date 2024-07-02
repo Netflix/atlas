@@ -990,6 +990,7 @@ object MathExpr {
   case class NamedRewrite(
     name: String,
     displayExpr: Expr,
+    displayParams: List[Any],
     evalExpr: TimeSeriesExpr,
     context: Context,
     groupByRewrite: Option[(Expr, List[String]) => Expr] = None
@@ -1000,6 +1001,11 @@ object MathExpr {
     override def toString: String = toString(displayExpr)
 
     private def toString(expr: Expr): String = {
+      val op =
+        if (displayParams.isEmpty)
+          s":$name"
+        else
+          displayParams.mkString("", ",", s",:$name")
       expr match {
         case q: Query =>
           // If the displayExpr is a query type, then the rewrite is simulating an
@@ -1007,7 +1013,7 @@ object MathExpr {
           // after the operation as part of the expression string. There are two
           // categories: offsets applied to the data function and group by.
           val buffer = new java.lang.StringBuilder
-          buffer.append(s"$q,:$name")
+          buffer.append(s"$q,$op")
           getOffset(evalExpr).foreach(d => buffer.append(s",$d,:offset"))
 
           val grouping = evalExpr.finalGrouping
@@ -1022,14 +1028,14 @@ object MathExpr {
           // would alter the toString behavior. So the grouping match check is based on the
           // original display expression.
           val evalOffset = getOffset(evalExpr)
-          evalOffset.fold(s"$t,:$name") { d =>
+          evalOffset.fold(s"$t,$op") { d =>
             val displayOffset = getOffset(t).getOrElse(Duration.ZERO)
-            if (d != displayOffset) s"${t.withOffset(d)},:$name" else s"$t,:$name"
+            if (d != displayOffset) s"${t.withOffset(d)},$op" else s"$t,$op"
           }
         case _ =>
           val grouping = evalExpr.finalGrouping
           val by = if (grouping.nonEmpty) grouping.mkString(",(,", ",", ",),:by") else ""
-          s"$expr,:$name$by"
+          s"$expr,$op$by"
       }
     }
 
