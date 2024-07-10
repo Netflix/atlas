@@ -27,6 +27,21 @@ import scala.util.Using
 trait LwcEventClient {
 
   /**
+    * Check if an event with a partial set of tags could match one of the expressions.
+    * This can be used as a pre-filter for cases where an expensive transform is required
+    * to generate the final event for consideration.
+    *
+    * @param tags
+    *     Function that returns the tag value for a given key, or `null` if there is no
+    *     value for that key. This tag set may be a subset of the final set of tags that
+    *     would be on the actual events.
+    * @return
+    *     True if an event with the partial set of tags might match one of the current
+    *     expressions.
+    */
+  def couldMatch(tags: String => String): Boolean
+
+  /**
     * Submit an event for a given subscription.
     *
     * @param id

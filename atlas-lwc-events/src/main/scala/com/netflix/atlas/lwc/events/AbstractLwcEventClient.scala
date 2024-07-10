@@ -144,6 +144,10 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     Query.simplify(q, ignore = true)
   }
 
+  override def couldMatch(tags: String => String): Boolean = {
+    index.couldMatch(k => tags(k))
+  }
+
   override def process(event: LwcEvent): Unit = {
     event match {
       case LwcEvent.HeartbeatLwcEvent(timestamp) =>
