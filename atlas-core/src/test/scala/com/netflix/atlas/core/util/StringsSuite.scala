@@ -466,6 +466,40 @@ class StringsSuite extends FunSuite {
     assertEquals(received, ref)
   }
 
+  test("parseDate, unix millis cutoff") {
+    val ref = ZonedDateTime.of(2400, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC)
+    val millisLast = ref.toInstant.toEpochMilli
+    assertEquals(parseDate(millisLast.toString), ref)
+
+    val microsRef = ZonedDateTime.of(1970, 6, 7, 1, 17, 45, 600_001_000, ZoneOffset.UTC)
+    val microsFirst = millisLast + 1
+    assertEquals(parseDate(microsFirst.toString), microsRef)
+  }
+
+  test("parseDate, unix micros") {
+    val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
+    val refStr = "%d".format(ref.toInstant.toEpochMilli * 1000L)
+    val received = parseDate(refStr)
+    assertEquals(received, ref)
+  }
+
+  test("parseDate, unix micros cutoff") {
+    val ref = ZonedDateTime.of(2400, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC)
+    val microsLast = ref.toInstant.toEpochMilli * 1000L
+    assertEquals(parseDate(microsLast.toString), ref)
+
+    val nanosRef = ZonedDateTime.of(1970, 6, 7, 1, 17, 45, 600_000_001, ZoneOffset.UTC)
+    val nanosFirst = microsLast + 1
+    assertEquals(parseDate(nanosFirst.toString), nanosRef)
+  }
+
+  test("parseDate, unix nanos") {
+    val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
+    val refStr = "%d".format(ref.toInstant.toEpochMilli * 1_000_000L)
+    val received = parseDate(refStr)
+    assertEquals(received, ref)
+  }
+
   test("parseDate, s=e-0h") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
