@@ -61,6 +61,30 @@ object Strings {
   private val UnixDate = """^([0-9]+)$""".r
 
   /**
+    * When parsing a timestamp string, timestamps after this point will be treated as
+    * milliseconds rather than seconds. This time if treated as millis represents
+    * `1970-01-25T20:31:23.647Z` so the region of overlap is well outside the range of
+    * dates that we use.
+    */
+  private val secondsCutoff = Integer.MAX_VALUE
+
+  /**
+    * When parsing a timestamp string, timestamps after this point will be treated as
+    * microseconds rather than milliseconds. It is several hundred years in the future
+    * when treated as milliseconds, so it is well outside the bounds of dates we use.
+    */
+  private val millisCutoff = {
+    ZonedDateTime.of(2400, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant.toEpochMilli
+  }
+
+  /**
+    * When parsing a timestamp string, timestamps after this point will be treated as
+    * nanoseconds rather than microseconds. It is several hundred years in the future
+    * when treated as microseconds, so it is well outside the bounds of dates we use.
+    */
+  private val microsCutoff = millisCutoff * 1000L
+
+  /**
     * Conversion functions that map a string value to an instance of a given
     * class.
     */
@@ -378,19 +402,23 @@ object Strings {
       case NamedDate(r) =>
         parseRefVar(refs, r)
       case UnixDate(d) =>
-        // If the value is too big assume it is a milliseconds unit like java uses. The overlap is
-        // fairly small and not in the range we typically use:
-        // scala> Instant.ofEpochMilli(Integer.MAX_VALUE)
-        // res1: java.time.Instant = 1970-01-25T20:31:23.647Z
-        val v = d.toLong
-        val t = if (v > Integer.MAX_VALUE) v else v * 1000L
-        ZonedDateTime.ofInstant(Instant.ofEpochMilli(t), tz)
+        val t = d.toLong match {
+          case v if v <= Integer.MAX_VALUE => Instant.ofEpochSecond(v)
+          case v if v <= millisCutoff      => Instant.ofEpochMilli(v)
+          case v if v <= microsCutoff      => ofEpoch(v, 1_000_000L, 1_000L)
+          case v                           => ofEpoch(v, 1_000_000_000L, 1L)
+        }
+        ZonedDateTime.ofInstant(t, tz)
       case str =>
         try IsoDateTimeParser.parse(str, tz)
         catch {
           case e: Exception => throw new IllegalArgumentException(s"invalid date $str", e)
         }
     }
+  }
+
+  private def ofEpoch(v: Long, f1: Long, f2: Long): Instant = {
+    Instant.ofEpochSecond(v / f1, (v % f1) * f2)
   }
 
   /**
