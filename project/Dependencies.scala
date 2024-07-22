@@ -4,17 +4,17 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val pekko       = "1.0.2"
+    val pekko       = "1.0.3"
     val pekkoHttpV  = "1.0.1"
-    val iep        = "5.0.23"
-    val jackson    = "2.17.1"
-    val log4j      = "2.23.1"
-    val scala      = "2.13.14"
-    val slf4j      = "1.7.36"
-    val spectator  = "1.7.16"
-    val spring     = "6.1.10"
+    val iep         = "5.0.24"
+    val jackson     = "2.17.2"
+    val log4j       = "2.23.1"
+    val scala       = "2.13.14"
+    val slf4j       = "1.7.36"
+    val spectator   = "1.7.17"
+    val spring      = "6.1.11"
 
-    val crossScala = Seq(scala, "3.4.1")
+    val crossScala  = Seq(scala, "3.4.1")
   }
 
   import Versions._
@@ -54,7 +54,7 @@ object Dependencies {
   val munit             = "org.scalameta" %% "munit" % "1.0.0"
   val postgres          = "org.postgresql" % "postgresql" % "42.7.3"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.0.7"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.1.0"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.2.1"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0"
   val scalaCompatJdk8   = "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
