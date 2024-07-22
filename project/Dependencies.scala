@@ -6,15 +6,15 @@ object Dependencies {
   object Versions {
     val pekko       = "1.0.2"
     val pekkoHttpV  = "1.0.1"
-    val iep        = "5.0.23"
-    val jackson    = "2.17.1"
-    val log4j      = "2.23.1"
-    val scala      = "2.13.14"
-    val slf4j      = "1.7.36"
-    val spectator  = "1.7.16"
-    val spring     = "6.1.10"
+    val iep         = "5.0.23"
+    val jackson     = "2.17.1"
+    val log4j       = "2.23.1"
+    val scala       = "2.13.14"
+    val slf4j       = "1.7.36"
+    val spectator   = "1.7.17"
+    val spring      = "6.1.10"
 
-    val crossScala = Seq(scala, "3.4.1")
+    val crossScala  = Seq(scala, "3.4.1")
   }
 
   import Versions._
