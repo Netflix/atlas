@@ -4,7 +4,7 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val pekko       = "1.0.2"
+    val pekko       = "1.0.3"
     val pekkoHttpV  = "1.0.1"
     val iep         = "5.0.24"
     val jackson     = "2.17.2"
