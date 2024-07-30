@@ -176,7 +176,6 @@ object PekkoHttpClient {
     ): Flow[(HttpRequest, C), (Try[HttpResponse], C), NotUsed] = {
       val connectionContext = config.connectionContext.getOrElse(http.defaultClientHttpsContext)
       val settings = config.settings.getOrElse(ConnectionPoolSettings(system))
-      println(settings.maxRetries)
 
       // All retries will be handled in this flow, disable in the pekko pool
       val pekkoSettings = settings.withMaxRetries(0)
