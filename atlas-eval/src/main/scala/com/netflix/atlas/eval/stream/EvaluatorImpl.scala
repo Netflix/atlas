@@ -107,7 +107,6 @@ private[stream] abstract class EvaluatorImpl(
   private def newStreamContext(dsLogger: DataSourceLogger = (_, _) => ()): StreamContext = {
     new StreamContext(
       config,
-      Http().superPool(),
       materializer,
       registry,
       dsLogger

@@ -39,6 +39,14 @@ import scala.util.Try
   */
 class AccessLogger private (entry: IpcLogEntry, client: Boolean) {
 
+  private var attempt: Int = 1
+  private var maxAttempts: Int = 1
+
+  def withMaxAttempts(max: Int): AccessLogger = {
+    maxAttempts = max
+    this
+  }
+
   /** Complete the log entry and write out the result. */
   def complete(request: HttpRequest, result: Try[HttpResponse]): Unit = {
     AccessLogger.addRequestInfo(entry, request)
@@ -56,7 +64,13 @@ class AccessLogger private (entry: IpcLogEntry, client: Boolean) {
         entry.withException(t)
         failure = true
     }
-    entry.markEnd().withLogLevel(if (failure) Level.WARN else Level.DEBUG).log()
+    entry
+      .markEnd()
+      .withLogLevel(if (failure) Level.WARN else Level.DEBUG)
+      .withAttempt(attempt)
+      .withAttemptFinal(attempt == maxAttempts)
+      .log()
+    attempt += 1
   }
 }
 

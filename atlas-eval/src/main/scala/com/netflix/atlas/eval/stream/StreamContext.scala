@@ -38,6 +38,7 @@ import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.AccessLogger
 import com.netflix.atlas.pekko.DiagnosticMessage
+import com.netflix.atlas.pekko.PekkoHttpClient
 import com.netflix.atlas.pekko.StreamOps
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
@@ -50,7 +51,6 @@ import scala.util.Try
 
 private[stream] class StreamContext(
   rootConfig: Config,
-  val client: Client,
   val materializer: Materializer,
   val registry: Registry = new NoopRegistry,
   val dsLogger: DataSourceLogger = (_, _) => ()
@@ -274,14 +274,7 @@ private[stream] class StreamContext(
     * Returns a simple http client flow that will log the request using the provide name.
     */
   def httpClient(name: String): SimpleClient = {
-    Flow[HttpRequest]
-      .map(r => r -> AccessLogger.newClientLogger(name, r))
-      .via(client)
-      .map {
-        case (response, log) =>
-          log.complete(response)
-          response
-      }
+    PekkoHttpClient.create(name, materializer.system).simpleFlow()
   }
 
   def monitorFlow[T](phase: String): Flow[T, T, NotUsed] = {

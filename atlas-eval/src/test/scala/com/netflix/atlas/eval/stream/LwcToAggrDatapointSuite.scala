@@ -70,7 +70,6 @@ class LwcToAggrDatapointSuite extends FunSuite {
 
   private val context = new StreamContext(
     ConfigFactory.load(),
-    null,
     materializer,
     dsLogger = (_, _) => ()
   )

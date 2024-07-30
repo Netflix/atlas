@@ -15,16 +15,15 @@
  */
 package com.netflix.atlas.eval.stream
 
-import com.netflix.atlas.pekko.AccessLogger
-import org.apache.pekko.http.scaladsl.model.HttpRequest
+import com.netflix.atlas.pekko.PekkoHttpClient
 import org.apache.pekko.http.scaladsl.model.HttpResponse
-import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.Flow
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.ConfigFactory
+import org.apache.pekko.http.scaladsl.model.StatusCodes
 
+import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
@@ -98,17 +97,14 @@ object TestContext {
 
   def createContext(
     mat: Materializer,
-    client: Client = defaultClient,
+    response: Try[HttpResponse] = Success(HttpResponse(StatusCodes.OK)),
     registry: Registry = new NoopRegistry
   ): StreamContext = {
-    new StreamContext(config, client, mat, registry)
-  }
+    new StreamContext(config, mat, registry) {
 
-  def defaultClient: Client = client(HttpResponse(StatusCodes.OK))
-
-  def client(response: HttpResponse): Client = client(Success(response))
-
-  def client(result: Try[HttpResponse]): Client = {
-    Flow[(HttpRequest, AccessLogger)].map { case (_, v) => result -> v }
+      override def httpClient(name: String): SimpleClient = {
+        PekkoHttpClient.create(response).simpleFlow()
+      }
+    }
   }
 }
