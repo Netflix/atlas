@@ -17,7 +17,6 @@ package com.netflix.atlas.pekko
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.Materializer
@@ -30,6 +29,7 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Utils
 import munit.FunSuite
 
+import java.util.concurrent.ArrayBlockingQueue
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -42,7 +42,7 @@ class StreamOpsSuite extends FunSuite {
 
   private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
-  private def checkOfferedCounts(registry: Registry, expected: Map[String, Double]): Unit = {
+  private def checkOfferedCounts(registry: Registry, expected: Map[String, Any]): Unit = {
     import scala.jdk.CollectionConverters.*
     registry
       .stream()
@@ -52,7 +52,14 @@ class StreamOpsSuite extends FunSuite {
       .filter(m => m.id().name().equals("pekko.stream.offeredToQueue"))
       .foreach { m =>
         val result = Utils.getTagValue(m.id(), "result")
-        assertEquals(m.value(), expected.getOrElse(result, 0.0), result)
+        expected.get(result) match {
+          case Some(v: Double) =>
+            assertEquals(m.value(), v, result)
+          case Some((mn: Double, mx: Double)) =>
+            assert(m.value() >= mn && m.value() <= mx, s"$result = ${m.value()}")
+          case _ =>
+            assertEquals(m.value(), 0.0, result)
+        }
       }
   }
 
@@ -134,7 +141,119 @@ class StreamOpsSuite extends FunSuite {
     checkOfferedCounts(registry, Map("enqueued" -> 1.0, "droppedQueueClosed" -> 1.0))
   }
 
-  private def checkCounts(registry: Registry, name: String, expected: Map[String, Double]): Unit = {
+  test("wrap blocking queue, enqueued") {
+    val registry = new DefaultRegistry()
+    val blockingQueue = new ArrayBlockingQueue[Int](10)
+    val source = StreamOps.wrapBlockingQueue[Int](registry, "test", blockingQueue)
+    val queue = source.toMat(Sink.ignore)(Keep.left).run()
+    Seq(1, 2, 3, 4).foreach(queue.offer)
+    queue.complete()
+    checkOfferedCounts(registry, Map("enqueued" -> 4.0))
+  }
+
+  test("wrap blocking queue, droppedQueueFull") {
+    val registry = new DefaultRegistry()
+    val blockingQueue = new ArrayBlockingQueue[Future[Int]](1)
+    val source = StreamOps.wrapBlockingQueue[Future[Int]](registry, "test", blockingQueue)
+    val streamStarted = new CountDownLatch(1)
+    val queue = source
+      .flatMapConcat(Source.future)
+      .map { value =>
+        streamStarted.countDown()
+        value
+      }
+      .toMat(Sink.ignore)(Keep.left)
+      .run()
+
+    // wait for stream to start and first item to pass through
+    queue.offer(Promise.successful(0).future)
+    streamStarted.await()
+
+    val promise = Promise[Int]()
+    queue.offer(promise.future) // will pass through
+    Seq(2, 3, 4, 5).foreach(i => queue.offer(Future(i)))
+    promise.complete(Success(1))
+    queue.complete()
+    checkOfferedCounts(
+      registry,
+      Map("enqueued" -> (2.0 -> 3.0), "droppedQueueFull" -> (3.0 -> 4.0))
+    )
+  }
+
+  test("wrap blocking queue, droppedQueueFull, dropOld") {
+    val registry = new DefaultRegistry()
+    val blockingQueue = new ArrayBlockingQueue[Future[Int]](1)
+    val source = StreamOps.wrapBlockingQueue[Future[Int]](registry, "test", blockingQueue, false)
+    val streamStarted = new CountDownLatch(1)
+    val queue = source
+      .flatMapConcat(Source.future)
+      .map { value =>
+        streamStarted.countDown()
+        value
+      }
+      .toMat(Sink.ignore)(Keep.left)
+      .run()
+
+    // wait for stream to start and first item to pass through
+    queue.offer(Promise.successful(0).future)
+    streamStarted.await()
+
+    val promise = Promise[Int]()
+    queue.offer(promise.future) // will pass through
+    Seq(2, 3, 4, 5).foreach(i => queue.offer(Future(i)))
+    promise.complete(Success(1))
+    queue.complete()
+    // when using drop old, all items will get enqueued
+    checkOfferedCounts(registry, Map("enqueued" -> 6.0, "droppedQueueFull" -> (3.0 -> 4.0)))
+  }
+
+  test("wrap blocking queue, droppedQueueClosed") {
+    val registry = new DefaultRegistry()
+    val blockingQueue = new ArrayBlockingQueue[Int](1)
+    val source = StreamOps.wrapBlockingQueue[Int](registry, "test", blockingQueue)
+    val queue = source
+      .toMat(Sink.ignore)(Keep.left)
+      .run()
+    queue.offer(1)
+    queue.complete()
+    Seq(2, 3, 4, 5).foreach(i => queue.offer(i))
+    checkOfferedCounts(registry, Map("enqueued" -> 1.0, "droppedQueueClosed" -> 4.0))
+  }
+
+  test("wrap blocking queue, complete with no data") {
+    val registry = new DefaultRegistry()
+    val blockingQueue = new ArrayBlockingQueue[Int](1)
+    val source = StreamOps.wrapBlockingQueue[Int](registry, "test", blockingQueue)
+    val latch = new CountDownLatch(1)
+    val (queue, fut) = source
+      .toMat(Sink.foreach(_ => latch.countDown()))(Keep.both)
+      .run()
+    queue.offer(1)
+    latch.await()
+    queue.complete()
+    Await.ready(fut, Duration.Inf)
+  }
+
+  test("wrap blocking queue, not open after completed") {
+    val registry = new DefaultRegistry()
+    val blockingQueue = new ArrayBlockingQueue[Int](1)
+    val source = StreamOps.wrapBlockingQueue[Int](registry, "test", blockingQueue)
+    val queue = source
+      .toMat(Sink.ignore)(Keep.left)
+      .run()
+    assert(queue.isOpen)
+
+    queue.offer(1)
+    assert(queue.isOpen)
+    checkOfferedCounts(registry, Map("enqueued" -> 1.0, "droppedQueueClosed" -> 0.0))
+
+    queue.complete()
+    assert(!queue.isOpen)
+    queue.offer(1)
+    checkOfferedCounts(registry, Map("enqueued" -> 1.0, "droppedQueueClosed" -> 1.0))
+  }
+
+  private def checkCounts(registry: Registry, name: String, expected: Map[String, Any]): Unit = {
     import scala.jdk.CollectionConverters.*
     registry
       .stream()
@@ -145,7 +264,14 @@ class StreamOpsSuite extends FunSuite {
       .foreach { m =>
         val value = Utils.getTagValue(m.id(), "statistic")
         val stat = if (value == null) "count" else value
-        assertEquals(m.value(), expected.getOrElse(stat, 0.0), stat)
+        expected.get(stat) match {
+          case Some(v: Double) =>
+            assertEquals(m.value(), v, stat)
+          case Some((mn: Double, mx: Double)) =>
+            assert(m.value() >= mn && m.value() <= mx, stat)
+          case _ =>
+            assertEquals(m.value(), 0.0, stat)
+        }
       }
   }
 
