@@ -16,7 +16,6 @@
 package com.netflix.atlas.pekko
 
 import java.util.concurrent.TimeUnit
-
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.ActorAttributes
 import org.apache.pekko.stream.Attributes
@@ -39,7 +38,9 @@ import org.apache.pekko.stream.stage.TimerGraphStageLogic
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
+import org.apache.pekko.stream.stage.GraphStageWithMaterializedValue
 
+import java.util.concurrent.BlockingQueue
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -133,6 +134,151 @@ object StreamOps extends StrictLogging {
 
     /** The approximate number of entries in the queue. */
     def size: Int = queue.size()
+  }
+
+  /**
+    * Wraps a `BlockingQueue` as a source. This can be a useful alternative to Pekko's
+    * BoundedSourceQueue when you want more control over the queue implementation. If no
+    * data is available in the queue when the downstream is ready, then it will poll the
+    * queue several times a second and forward data downstream when it is detected.
+    *
+    * The blocking queue should not be used directly. Use the materialized view to ensure
+    * that metrics are reported properly and you can detect if the stream is still running.
+    *
+    * @param registry
+    *     Spectator registry to manage metrics for this queue.
+    * @param id
+    *     Dimension used to distinguish a particular queue usage.
+    * @param queue
+    *     Blocking queue to use as the source of data.
+    * @param dropNew
+    *     Controls the behavior of dropping elements if the queue is full. If true, then
+    *     new elements that arrive will be dropped. If false, then it will remove old elements
+    *     from the queue until it is successfully able to insert the new element.
+    * @return
+    *     Source that emits values offered to the queue.
+    */
+  def wrapBlockingQueue[T](
+    registry: Registry,
+    id: String,
+    queue: BlockingQueue[T],
+    dropNew: Boolean = true
+  ): Source[T, BlockingSourceQueue[T]] = {
+    val sourceQueue = new BlockingSourceQueue[T](registry, id, queue, dropNew)
+    Source.fromGraph(new BlockingQueueSource[T](sourceQueue))
+  }
+
+  final class BlockingSourceQueue[V] private[pekko] (
+    registry: Registry,
+    id: String,
+    queue: BlockingQueue[V],
+    dropNew: Boolean
+  ) {
+
+    private val baseId = registry.createId("pekko.stream.offeredToQueue", "id", id)
+    private val enqueued = registry.counter(baseId.withTag("result", "enqueued"))
+    private val dropped = registry.counter(baseId.withTag("result", "droppedQueueFull"))
+    private val closed = registry.counter(baseId.withTag("result", "droppedQueueClosed"))
+
+    @volatile private var completed: Boolean = false
+
+    /**
+      * Add the value into the queue if there is room. Returns true if the value was successfully
+      * enqueued.
+      */
+    def offer(value: V): Boolean = {
+      if (completed) {
+        closed.increment()
+        return false
+      }
+
+      if (dropNew) {
+        // If the queue is full, then drop the new value that just arrived
+        if (queue.offer(value))
+          enqueued.increment()
+        else
+          dropped.increment()
+      } else {
+        // If the queue is full, then drop old items in the queue
+        while (!queue.offer(value)) {
+          queue.poll()
+          dropped.increment()
+        }
+        enqueued.increment()
+      }
+      true
+    }
+
+    private[pekko] def poll(): V = queue.poll()
+
+    /**
+      * Indicate that the use of the queue is complete. This will allow the associated stream
+      * to finish processing elements and then shutdown. Any new elements offered to the queue
+      * will be dropped.
+      */
+    def complete(): Unit = {
+      completed = true
+    }
+
+    /** Check if the queue is open to take more data. */
+    def isOpen: Boolean = !completed
+
+    /** The approximate number of entries in the queue. */
+    def size: Int = queue.size()
+
+    /** Check if queue has been marked complete and it is now empty. */
+    def isCompleteAndEmpty: Boolean = completed && queue.isEmpty
+  }
+
+  private final class BlockingQueueSource[V](queue: BlockingSourceQueue[V])
+      extends GraphStageWithMaterializedValue[SourceShape[V], BlockingSourceQueue[V]] {
+
+    private val out = Outlet[V]("BlockingQueueSource.out")
+
+    override val shape: SourceShape[V] = SourceShape(out)
+
+    override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes
+    ): (TimerGraphStageLogic, BlockingSourceQueue[V]) = {
+
+      val logic = new TimerGraphStageLogic(shape) with OutHandler {
+
+        override def preStart(): Unit = {
+          // If the queue is empty when pulled, then it will keep checking until some new
+          // data is available. This mechanism is simpler than juggling async callbacks and
+          // ensures the overhead is limited to the queue. There is some risk if there is
+          // bursty data that it could increase the rate of drops due to the queue being full
+          // while waiting for the delay.
+          val config = materializer.system.settings.config
+          val frequency = FiniteDuration(
+            config.getDuration("atlas.pekko.blocking-queue.frequency").toMillis,
+            TimeUnit.MILLISECONDS
+          )
+          scheduleWithFixedDelay(NotUsed, frequency, frequency)
+        }
+
+        override def postStop(): Unit = {
+          queue.complete()
+        }
+
+        override def onTimer(timerKey: Any): Unit = {
+          if (isAvailable(out))
+            onPull()
+          if (queue.isCompleteAndEmpty)
+            completeStage()
+        }
+
+        override def onPull(): Unit = {
+          val value = queue.poll()
+          if (value != null)
+            push(out, value)
+        }
+
+        setHandler(out, this)
+      }
+
+      logic -> queue
+    }
   }
 
   /**
