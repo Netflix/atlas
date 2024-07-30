@@ -60,6 +60,7 @@ import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.ClusterOps
+import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.StreamOps
 import com.netflix.atlas.pekko.ThreadPools
 import com.netflix.spectator.api.Registry
@@ -86,8 +87,11 @@ private[stream] abstract class EvaluatorImpl(
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  // Calls out to a rewrite service in case URIs need mutating to pick the proper backend.
+  private[stream] var dataSourceRewriter = new DataSourceRewriter(config, system)
+
   // Cached context instance used for things like expression validation.
-  private val validationStreamContext = newStreamContext()
+  private val validationStreamContext = newStreamContext(new ThrowingDSLogger)
 
   // Timeout for DataSources unique operator: emit repeating DataSources after timeout exceeds
   private val uniqueTimeout: Long = config.getDuration("atlas.eval.stream.unique-timeout").toMillis
@@ -129,7 +133,13 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   protected def validateImpl(ds: DataSource): Unit = {
-    validationStreamContext.validateDataSource(ds).get
+    val future = Source
+      .single(DataSources.of(ds))
+      .via(dataSourceRewriter.rewrite(validationStreamContext))
+      .map(_.sources().asScala.map(validationStreamContext.validateDataSource).map(_.get))
+      .toMat(Sink.head)(Keep.right)
+      .run()
+    Await.result(future, 60.seconds)
   }
 
   protected def writeInputToFileImpl(uri: String, file: Path, duration: Duration): Unit = {
@@ -212,6 +222,7 @@ private[stream] abstract class EvaluatorImpl(
   def createStreamsFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
     val (logSrc, context) = createStreamContextSource
     Flow[DataSources]
+      .via(dataSourceRewriter.rewrite(context))
       .map(dss => groupByHost(dss))
       // Emit empty DataSource if no more DataSource for a host, so that the sub-stream get the info
       .via(new FillRemovedKeysWith[String, DataSources](_ => DataSources.empty()))
@@ -580,5 +591,17 @@ private[stream] abstract class EvaluatorImpl(
 
   private def isPrintable(c: Int): Boolean = {
     c >= 32 && c < 127
+  }
+
+  private class ThrowingDSLogger extends DataSourceLogger {
+
+    override def apply(ds: DataSource, msg: JsonSupport): Unit = {
+      msg match {
+        case dsg: DiagnosticMessage =>
+          throw new IllegalArgumentException(dsg.message)
+      }
+    }
+
+    override def close(): Unit = {}
   }
 }

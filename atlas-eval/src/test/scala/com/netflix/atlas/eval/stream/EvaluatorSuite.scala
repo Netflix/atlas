@@ -35,6 +35,7 @@ import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
@@ -45,10 +46,14 @@ import com.typesafe.config.ConfigValueFactory
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
 import munit.FunSuite
+import org.apache.pekko.NotUsed
 
 import java.nio.file.Path
 import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration.DurationInt
+import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.util.Success
 import scala.util.Using
 
@@ -365,6 +370,56 @@ class EvaluatorSuite extends FunSuite {
     testError(ds1, msg)
   }
 
+  def testRewrite(skipOne: Boolean = false, throwEx: Boolean = false): Unit = {
+    val evaluator = new Evaluator(config, registry, system)
+    evaluator.dataSourceRewriter = new UTRewriter(skipOne, throwEx)
+
+    val baseUri = "resource:///gc-pause.dat"
+    val uri = s"$baseUri?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
+    val ds1 = Evaluator.DataSources.of(ds("one", uri), ds("two", uri))
+    val sourceRef = EvaluationFlows.stoppableSource(
+      Source
+        .single(ds1)
+        .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
+    )
+
+    val oneCount = new AtomicInteger()
+    val twoCount = new AtomicInteger()
+    val sink = Sink.foreach[Evaluator.MessageEnvelope] { msg =>
+      msg.id match {
+        case "one" => oneCount.incrementAndGet()
+        case "two" =>
+          if (skipOne && msg.message.isInstanceOf[DiagnosticMessage]) twoCount.incrementAndGet()
+          else twoCount.incrementAndGet()
+      }
+      if (oneCount.get() > 0 && twoCount.get() > 0) sourceRef.stop()
+    }
+
+    val future = sourceRef.source
+      .toMat(sink)(Keep.right)
+      .run()
+
+    if (throwEx) {
+      intercept[RuntimeException] {
+        Await.result(future, 1.minute)
+      }
+    } else {
+      Await.result(future, 1.minute)
+    }
+  }
+
+  test("create processor, rewrites ok") {
+    testRewrite()
+  }
+
+  test("create processor, one of two failed rewrite") {
+    testRewrite(skipOne = true)
+  }
+
+  test("create processor, rewrite call failed") {
+    testRewrite(throwEx = true)
+  }
+
   test("processor handles multiple steps") {
     val evaluator = new Evaluator(config, registry, system)
 
@@ -604,6 +659,18 @@ class EvaluatorSuite extends FunSuite {
     )
   }
 
+  test("validate: invalid rewrite") {
+    val evaluator = new Evaluator(config, registry, system)
+    evaluator.dataSourceRewriter = new UTRewriter(true)
+    val ds = new Evaluator.DataSource(
+      "test",
+      s"synthetic://test/?q=nf.ns,none,:eq,name,foo,:eq,:and"
+    )
+    intercept[IllegalArgumentException] {
+      evaluator.validate(ds)
+    }
+  }
+
   private def invalidHiResQuery(expr: String): Unit = {
     val evaluator = new Evaluator(config, registry, system)
     val ds = new Evaluator.DataSource(
@@ -790,5 +857,34 @@ class EvaluatorSuite extends FunSuite {
     val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
     val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
     assertEquals(result.size, 10)
+  }
+
+  class UTRewriter(skipOne: Boolean = false, throwEx: Boolean = false)
+      extends DataSourceRewriter(config, system) {
+
+    override def rewrite(context: StreamContext): Flow[DataSources, DataSources, NotUsed] = {
+      if (throwEx) {
+        Flow[DataSources]
+          .map(_ => throw new RuntimeException("test"))
+      } else if (skipOne) {
+        // mimic dropping one.
+        Flow[DataSources]
+          .map { dss =>
+            val dsl = dss.sources().asScala.toList
+            dsl.size match {
+              case 1 =>
+                val msg = DiagnosticMessage.error(s"failed rewrite")
+                context.dsLogger(dsl(0), msg)
+                DataSources.empty()
+              case 2 =>
+                val msg = DiagnosticMessage.error(s"failed rewrite")
+                context.dsLogger(dsl(1), msg)
+                DataSources.of(dsl(0))
+            }
+          }
+      } else {
+        Flow[DataSources]
+      }
+    }
   }
 }
