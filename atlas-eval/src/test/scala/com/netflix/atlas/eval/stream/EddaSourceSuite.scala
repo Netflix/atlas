@@ -21,7 +21,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.model.HttpEntity
-import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCode
@@ -29,14 +28,12 @@ import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.stream.ConnectionException
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.EddaSource.GroupResponse
-import com.netflix.atlas.pekko.AccessLogger
 import munit.FunSuite
 
 import scala.concurrent.Await
@@ -131,10 +128,7 @@ class EddaSourceSuite extends FunSuite {
       |]""".stripMargin
 
   private def run(uri: String, response: Try[HttpResponse]): GroupResponse = {
-    val client = Flow[(HttpRequest, AccessLogger)].map {
-      case (_, logger) => response -> logger
-    }
-    val context = TestContext.createContext(mat, client)
+    val context = TestContext.createContext(mat, response)
     val future = EddaSource(uri, context).runWith(Sink.head)
     Await.result(future, Duration.Inf)
   }

@@ -17,14 +17,12 @@ package com.netflix.atlas.eval.stream
 
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.pekko.AccessLogger
 import munit.FunSuite
 import org.apache.pekko.stream.Materializer
 
@@ -34,7 +32,6 @@ import scala.util.Success
 
 class EddaGroupsLookupSuite extends FunSuite {
 
-  import EddaSource.*
   import Evaluator.*
 
   private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
@@ -63,13 +60,9 @@ class EddaGroupsLookupSuite extends FunSuite {
   }
 
   private def lookupFlow: Flow[DataSources, Source[SourcesAndGroups, NotUsed], NotUsed] = {
-    val client = Flow[(HttpRequest, AccessLogger)]
-      .map {
-        case (_, v) =>
-          val json = Json.encode(List(eddaGroup))
-          Success(HttpResponse(StatusCodes.OK, entity = json)) -> v
-      }
-    val context = TestContext.createContext(mat, client)
+    val json = Json.encode(List(eddaGroup))
+    val response = Success(HttpResponse(StatusCodes.OK, entity = json))
+    val context = TestContext.createContext(mat, response)
     Flow[DataSources].via(new EddaGroupsLookup(context, 5.microseconds))
   }
 

@@ -28,7 +28,6 @@ import scala.util.Try
 
 package object stream {
 
-  type Client = Flow[(HttpRequest, AccessLogger), (Try[HttpResponse], AccessLogger), NotUsed]
   type SimpleClient = Flow[HttpRequest, Try[HttpResponse], NotUsed]
 
   type SourcesAndGroups = (DataSources, EddaSource.Groups)

@@ -15,41 +15,205 @@
  */
 package com.netflix.atlas.pekko
 
+import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.HttpsConnectionContext
 import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.model.StatusCode
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.settings.ConnectionPoolSettings
+import org.apache.pekko.stream.scaladsl.Flow
+import org.apache.pekko.stream.scaladsl.RetryFlow
 
+import java.net.ConnectException
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
   * A wrapper used for simple unit testing of Pekko HTTP calls.
   */
 trait PekkoHttpClient {
 
+  import PekkoHttpClient.*
+
   /**
-    * See org.apache.pekko.http.scaladsl.Http
+    * Helper for using single request API along with common IPC instrumentation.
     */
   def singleRequest(request: HttpRequest): Future[HttpResponse]
 
+  /**
+    * Helper for using super pool along with common IPC instrumentation. It provides custom
+    * handling of retries to allow for more flexible policies and being able to track the
+    * attempts.
+    */
+  def superPool[C](
+    config: ClientConfig = ClientConfig()
+  ): Flow[(HttpRequest, C), (Try[HttpResponse], C), NotUsed]
+
+  /**
+    * Helper for using super pool along with common IPC instrumentation when additional context
+    * is not needed. See `superPool` for more details.
+    */
+  def simpleFlow(
+    config: ClientConfig = ClientConfig()
+  ): Flow[HttpRequest, Try[HttpResponse], NotUsed] = {
+    Flow[HttpRequest]
+      .map(r => r -> NotUsed)
+      .via(superPool(config))
+      .map(_._1)
+  }
 }
 
-/**
-  * Default HTTP client wrapper that includes access logging.
-  *
-  * @param name
-  *     The name to use for access logging and metrics.
-  * @param system
-  *     The actor system.
-  */
-class DefaultPekkoHttpClient(name: String)(implicit val system: ActorSystem)
-    extends PekkoHttpClient {
+object PekkoHttpClient {
 
-  private implicit val ec: ExecutionContext = system.dispatcher
+  /**
+    * Create a new client instance.
+    *
+    * @param name
+    *     Name to use for access logging and metrics.
+    * @param system
+    *     Actor system to use for processing the requests.
+    * @return
+    *     New client instance.
+    */
+  def create(name: String, system: ActorSystem): PekkoHttpClient = {
+    new HttpClientImpl(name)(system)
+  }
 
-  override def singleRequest(request: HttpRequest): Future[HttpResponse] = {
-    val accessLogger = AccessLogger.newClientLogger(name, request)
-    Http()(system).singleRequest(request).andThen { case t => accessLogger.complete(t) }
+  /**
+    * Create a client instance that will return a fixed response for every request. Mainly
+    * used for testing.
+    */
+  def create(response: Try[HttpResponse]): PekkoHttpClient = {
+    new PekkoHttpClient {
+
+      override def singleRequest(request: HttpRequest): Future[HttpResponse] = {
+        Future.fromTry(response)
+      }
+
+      override def superPool[C](
+        config: ClientConfig
+      ): Flow[(HttpRequest, C), (Try[HttpResponse], C), NotUsed] = {
+        Flow[(HttpRequest, C)]
+          .map {
+            case (_, context) => response -> context
+          }
+      }
+    }
+  }
+
+  private[pekko] case class Context[C](accessLogger: AccessLogger, callerContext: C)
+
+  case class ClientConfig(
+    connectionContext: Option[HttpsConnectionContext] = None,
+    settings: Option[ConnectionPoolSettings] = None,
+    shouldRetry: Try[HttpResponse] => Boolean = retryForServerErrors
+  )
+
+  /**
+    * Returns true if there request was throttled or there was a server error. Client
+    * errors (4xx) will not be retried.
+    */
+  def retryForServerErrors(response: Try[HttpResponse]): Boolean = response match {
+    case Success(r) => isThrottling(r.status) || isServerError(r.status)
+    case Failure(_) => true
+  }
+
+  private def isThrottling(status: StatusCode): Boolean = status match {
+    case StatusCodes.TooManyRequests    => true
+    case StatusCodes.ServiceUnavailable => true
+    case _                              => false
+  }
+
+  private def isServerError(status: StatusCode): Boolean = status match {
+    case StatusCodes.TooManyRequests => true
+    case StatusCodes.ServerError(_)  => true
+    case _                           => false
+  }
+
+  /**
+    * Returns true if there request was throttled or there was a connection error.
+    * All other failures could have been partially processed by the server and thus
+    * are considered not safe to retry.
+    */
+  def retryForSafeErrors(response: Try[HttpResponse]): Boolean = response match {
+    case Success(r) => isThrottling(r.status)
+    case Failure(t) => isConnectException(t)
+  }
+
+  private def isConnectException(t: Throwable): Boolean = t.isInstanceOf[ConnectException]
+
+  /** Default implementation based on Pekko `Http()`. */
+  private[pekko] class HttpClientImpl(name: String)(implicit val system: ActorSystem)
+      extends PekkoHttpClient {
+
+    private implicit val ec: ExecutionContext = system.dispatcher
+    private val http = Http()
+
+    protected def doSingleRequest(request: HttpRequest): Future[HttpResponse] = {
+      http.singleRequest(request)
+    }
+
+    override def singleRequest(request: HttpRequest): Future[HttpResponse] = {
+      val accessLogger = AccessLogger.newClientLogger(name, request)
+      doSingleRequest(request).andThen { case t => accessLogger.complete(t) }
+    }
+
+    protected def superPoolFlow[C](
+      connectionContext: HttpsConnectionContext,
+      settings: ConnectionPoolSettings
+    ): Flow[(HttpRequest, C), (Try[HttpResponse], C), NotUsed] = {
+      http.superPool(connectionContext = connectionContext, settings = settings)
+    }
+
+    override def superPool[C](
+      config: ClientConfig
+    ): Flow[(HttpRequest, C), (Try[HttpResponse], C), NotUsed] = {
+      val connectionContext = config.connectionContext.getOrElse(http.defaultClientHttpsContext)
+      val settings = config.settings.getOrElse(ConnectionPoolSettings(system))
+      println(settings.maxRetries)
+
+      // All retries will be handled in this flow, disable in the pekko pool
+      val pekkoSettings = settings.withMaxRetries(0)
+      val clientFlow =
+        superPoolFlow[Context[C]](connectionContext = connectionContext, settings = pekkoSettings)
+          .map {
+            case (response, context) =>
+              context.accessLogger.complete(response)
+              response -> context
+          }
+
+      // Retry requests if needed with instrumentation via common IPC
+      val retryFlow =
+        RetryFlow.withBackoff[(HttpRequest, Context[C]), (Try[HttpResponse], Context[C]), NotUsed](
+          minBackoff = settings.baseConnectionBackoff,
+          maxBackoff = settings.maxConnectionBackoff,
+          randomFactor = 0.25,
+          maxRetries = settings.maxRetries,
+          flow = clientFlow
+        ) {
+          case (request, (response, _)) if config.shouldRetry(response) => Some(request)
+          case _                                                        => None
+        }
+
+      // Map caller context to internal version that includes access logger
+      Flow[(HttpRequest, C)]
+        .map {
+          case (request, callerContext) =>
+            val accessLogger = AccessLogger
+              .newClientLogger(name, request)
+              .withMaxAttempts(settings.maxRetries + 1)
+            request -> Context(accessLogger, callerContext)
+        }
+        .via(retryFlow)
+        .map {
+          case (response, context) => response -> context.callerContext
+        }
+    }
   }
 }
