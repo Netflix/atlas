@@ -31,6 +31,4 @@ package object stream {
   type SimpleClient = Flow[HttpRequest, Try[HttpResponse], NotUsed]
 
   type SourcesAndGroups = (DataSources, EddaSource.Groups)
-
-  type DataSourceLogger = (DataSource, JsonSupport) => Unit
 }

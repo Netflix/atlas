@@ -53,7 +53,7 @@ private[stream] class StreamContext(
   rootConfig: Config,
   val materializer: Materializer,
   val registry: Registry = new NoopRegistry,
-  val dsLogger: DataSourceLogger = (_, _) => ()
+  val dsLogger: DataSourceLogger = DataSourceLogger.Noop
 ) {
 
   import StreamContext.*
