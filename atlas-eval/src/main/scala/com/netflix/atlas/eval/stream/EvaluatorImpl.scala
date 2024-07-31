@@ -104,13 +104,28 @@ private[stream] abstract class EvaluatorImpl(
   // Execution context to use for parsing payloads coming back from lwcapi service
   private val parsingEC = ThreadPools.fixedSize(registry, "AtlasEvalParsing", parsingNumThreads)
 
-  private def newStreamContext(dsLogger: DataSourceLogger = (_, _) => ()): StreamContext = {
+  private def newStreamContext(
+    dsLogger: DataSourceLogger = DataSourceLogger.Noop
+  ): StreamContext = {
     new StreamContext(
       config,
       materializer,
       registry,
       dsLogger
     )
+  }
+
+  private def createStreamContextSource: (Source[MessageEnvelope, NotUsed], StreamContext) = {
+    // Flow used for logging diagnostic messages
+    val (queue, logSrc) = StreamOps
+      .blockingQueue[MessageEnvelope](registry, "DataSourceLogger", 10)
+      .toMat(BroadcastHub.sink(1))(Keep.both)
+      .run()
+    val dsLogger = DataSourceLogger.Queue(queue)
+
+    // One manager per processor to ensure distinct stream ids on LWC
+    val context = newStreamContext(dsLogger)
+    logSrc -> context
   }
 
   protected def validateImpl(ds: DataSource): Unit = {
@@ -176,8 +191,11 @@ private[stream] abstract class EvaluatorImpl(
         Source.single(ds)
     }
 
+    val (logSrc, context) = createStreamContextSource
     source
-      .via(createProcessorFlow)
+      .via(createProcessorFlow(context))
+      .via(new OnUpstreamFinish[MessageEnvelope](context.dsLogger.close()))
+      .merge(logSrc, eagerComplete = false)
       .map(_.message)
       .toMat(Sink.asPublisher(true))(Keep.right)
       .run()
@@ -192,6 +210,7 @@ private[stream] abstract class EvaluatorImpl(
     * to maximize throughput under heavy load by enabling operator fusion optimization.
     */
   def createStreamsFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
+    val (logSrc, context) = createStreamContextSource
     Flow[DataSources]
       .map(dss => groupByHost(dss))
       // Emit empty DataSource if no more DataSource for a host, so that the sub-stream get the info
@@ -199,8 +218,10 @@ private[stream] abstract class EvaluatorImpl(
       .flatMapMerge(Int.MaxValue, dssMap => Source(dssMap.toList))
       .groupBy(Int.MaxValue, _._1, true) // groupBy host
       .map(_._2) // keep only DataSources
-      .via(createProcessorFlow)
+      .via(createProcessorFlow(context))
       .mergeSubstreams
+      .via(new OnUpstreamFinish[MessageEnvelope](context.dsLogger.close()))
+      .merge(logSrc, eagerComplete = false)
   }
 
   protected def groupByHost(dataSources: DataSources): scala.collection.Map[String, DataSources] = {
@@ -216,20 +237,9 @@ private[stream] abstract class EvaluatorImpl(
       Uri(dataSource.uri).authority.host.address
   }
 
-  private[stream] def createProcessorFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
-
-    // Flow used for logging diagnostic messages
-    val (queue, logSrc) = StreamOps
-      .blockingQueue[MessageEnvelope](registry, "DataSourceLogger", 10)
-      .toMat(BroadcastHub.sink(1))(Keep.both)
-      .run()
-    val dsLogger: DataSourceLogger = { (ds, msg) =>
-      val env = new MessageEnvelope(ds.id, msg)
-      queue.offer(env)
-    }
-
-    // One manager per processor to ensure distinct stream ids on LWC
-    val context = newStreamContext(dsLogger)
+  private[stream] def createProcessorFlow(
+    context: StreamContext
+  ): Flow[DataSources, MessageEnvelope, NotUsed] = {
 
     val g = GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits.*
@@ -281,8 +291,6 @@ private[stream] abstract class EvaluatorImpl(
       .via(context.monitorFlow("12_OutputSources"))
       .flatMapConcat(s => s)
       .via(context.monitorFlow("13_OutputMessages"))
-      .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
-      .merge(logSrc, eagerComplete = false)
   }
 
   protected def createDatapointProcessorImpl(
@@ -293,17 +301,9 @@ private[stream] abstract class EvaluatorImpl(
     val stepSize = sources.stepSize()
 
     // Flow used for logging diagnostic messages
-    val (queue, logSrc) = StreamOps
-      .blockingQueue[MessageEnvelope](registry, "DataSourceLogger", 10)
-      .toMat(BroadcastHub.sink(1))(Keep.both)
-      .run()
-    val dsLogger: DataSourceLogger = { (ds, msg) =>
-      val env = new MessageEnvelope(ds.id, msg)
-      queue.offer(env)
-    }
+    val (logSrc, context) = createStreamContextSource
 
     // Initialize context with fixed data sources
-    val context = newStreamContext(dsLogger)
     context.validate(sources)
     context.setDataSources(sources)
     val interpreter = context.interpreter
@@ -320,7 +320,7 @@ private[stream] abstract class EvaluatorImpl(
       .merge(Source.single(sources), eagerComplete = false)
       .via(new FinalExprEval(interpreter))
       .flatMapConcat(s => s)
-      .via(new OnUpstreamFinish[MessageEnvelope](queue.complete()))
+      .via(new OnUpstreamFinish[MessageEnvelope](context.dsLogger.close()))
       .merge(logSrc, eagerComplete = false)
       .toProcessor
       .run()
