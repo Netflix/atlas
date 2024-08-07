@@ -23,6 +23,7 @@ import com.netflix.atlas.pekko.StreamOps
 import com.netflix.spectator.api.NoopRegistry
 import munit.FunSuite
 
+import java.util.concurrent.ArrayBlockingQueue
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -35,8 +36,9 @@ class StreamSubscriptionManagerSuite extends FunSuite {
     val sm = new StreamSubscriptionManager(registry)
     val meta = StreamMetadata("id")
 
+    val blockingQueue = new ArrayBlockingQueue[Seq[JsonSupport]](100)
     val (queue, queueSrc) = StreamOps
-      .blockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", 100)
+      .wrapBlockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", blockingQueue, dropNew = false)
       .toMat(Sink.ignore)(Keep.both)
       .run()
     val handler = new QueueHandler(meta, queue)
