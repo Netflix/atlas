@@ -44,6 +44,7 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.ArrayBlockingQueue
 import scala.concurrent.duration.*
 import scala.util.Failure
 import scala.util.Success
@@ -149,8 +150,9 @@ class SubscribeApi(
     // For now, the queue will close and if no messages are sent from the client, the
     // pekko.http.server.idle-timeout will kill the client connection and we'll try to
     // close a closed queue.
+    val blockingQueue = new ArrayBlockingQueue[Seq[JsonSupport]](queueSize)
     val (queue, pub) = StreamOps
-      .blockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", queueSize)
+      .wrapBlockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", blockingQueue, dropNew = false)
       .toMat(Sink.asPublisher(true))(Keep.both)
       .run()
 

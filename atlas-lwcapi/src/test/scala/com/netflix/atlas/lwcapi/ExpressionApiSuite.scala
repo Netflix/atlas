@@ -30,6 +30,7 @@ import com.typesafe.config.ConfigFactory
 
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.zip.GZIPInputStream
 import scala.util.Using
 
@@ -42,13 +43,21 @@ class ExpressionApiSuite extends MUnitRouteSuite {
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
 
   // Dummy queue used for handler
-  private val queue = new QueueHandler(
-    StreamMetadata("test"),
-    StreamOps
-      .blockingQueue[Seq[JsonSupport]](new NoopRegistry, "test", 1)
-      .toMat(Sink.ignore)(Keep.left)
-      .run()
-  )
+  private val queue = {
+    val blockingQueue = new ArrayBlockingQueue[Seq[JsonSupport]](1)
+    new QueueHandler(
+      StreamMetadata("test"),
+      StreamOps
+        .wrapBlockingQueue[Seq[JsonSupport]](
+          new NoopRegistry,
+          "test",
+          blockingQueue,
+          dropNew = false
+        )
+        .toMat(Sink.ignore)(Keep.left)
+        .run()
+    )
+  }
 
   private val sm = new StreamSubscriptionManager(new NoopRegistry)
   private val endpoint = ExpressionApi(sm, new NoopRegistry)

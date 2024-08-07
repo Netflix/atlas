@@ -28,8 +28,10 @@ import com.typesafe.scalalogging.StrictLogging
   * @param queue
   *     Underlying queue that will receive the messsages.
   */
-class QueueHandler(streamMeta: StreamMetadata, queue: StreamOps.SourceQueue[Seq[JsonSupport]])
-    extends StrictLogging {
+class QueueHandler(
+  streamMeta: StreamMetadata,
+  queue: StreamOps.BlockingSourceQueue[Seq[JsonSupport]]
+) extends StrictLogging {
 
   private val id = streamMeta.streamId
 
