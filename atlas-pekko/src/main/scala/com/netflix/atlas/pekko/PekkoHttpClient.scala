@@ -209,7 +209,7 @@ object PekkoHttpClient {
               .withMaxAttempts(settings.maxRetries + 1)
             request -> Context(accessLogger, callerContext)
         }
-        .via(retryFlow)
+        .via(if (settings.maxRetries > 0) retryFlow else clientFlow)
         .map {
           case (response, context) => response -> context.callerContext
         }
