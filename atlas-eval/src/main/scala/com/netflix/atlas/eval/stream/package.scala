@@ -30,5 +30,8 @@ package object stream {
 
   type SimpleClient = Flow[HttpRequest, Try[HttpResponse], NotUsed]
 
+  type SuperPoolClient =
+    Flow[(HttpRequest, List[DataSource]), (Try[HttpResponse], List[DataSource]), NotUsed]
+
   type SourcesAndGroups = (DataSources, EddaSource.Groups)
 }

@@ -68,10 +68,10 @@ lazy val `atlas-eval` = project
   .configure(BuildSettings.profile)
   .dependsOn(`atlas-pekko`, `atlas-chart`, `atlas-core`)
   .settings(libraryDependencies ++= Seq(
+    Dependencies.equalsVerifier % "test",
     Dependencies.pekkoHttpTestkit % "test",
     Dependencies.pekkoStreamTestkit % "test",
-    Dependencies.pekkoTestkit % "test",
-    Dependencies.equalsVerifier % "test"
+    Dependencies.pekkoTestkit % "test"
   ))
 
 lazy val `atlas-jmh` = project
