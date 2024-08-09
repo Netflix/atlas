@@ -65,6 +65,8 @@ class SubscribeApi(
   private val queueSize = config.getInt("atlas.lwcapi.queue-size")
   private val batchSize = config.getInt("atlas.lwcapi.batch-size")
 
+  private val dropNew = config.getBoolean("atlas.lwcapi.drop-new")
+
   private val evalsCounter = registry.counter("atlas.lwcapi.subscribe.count", "action", "subscribe")
 
   private val itemsCounter =
@@ -152,7 +154,7 @@ class SubscribeApi(
     // close a closed queue.
     val blockingQueue = new ArrayBlockingQueue[Seq[JsonSupport]](queueSize)
     val (queue, pub) = StreamOps
-      .wrapBlockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", blockingQueue, dropNew = false)
+      .wrapBlockingQueue[Seq[JsonSupport]](registry, "SubscribeApi", blockingQueue, dropNew)
       .toMat(Sink.asPublisher(true))(Keep.both)
       .run()
 
