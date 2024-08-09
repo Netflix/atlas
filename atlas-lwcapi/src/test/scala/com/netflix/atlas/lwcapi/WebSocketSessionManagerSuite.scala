@@ -77,8 +77,8 @@ class WebSocketSessionManagerSuite extends FunSuite {
 
   private def run(
     data: List[ByteString],
-    registerFunc: StreamMetadata => (QueueHandler, Source[JsonSupport, NotUsed]),
-    subscribeFunc: (String, List[ExpressionMetadata]) => List[ErrorMsg]
+    registerFunc: StreamMetadata => Source[JsonSupport, NotUsed],
+    subscribeFunc: (String, List[ExpressionMetadata]) => List[JsonSupport]
   ): List[String] = {
     val future = Source(data)
       .via(new WebSocketSessionManager(StreamMetadata(""), registerFunc, subscribeFunc))
@@ -91,23 +91,15 @@ class WebSocketSessionManagerSuite extends FunSuite {
 
   private def createSubscribeFunc(
     subsCollector: ArrayBuffer[List[ExpressionMetadata]]
-  ): (String, List[ExpressionMetadata]) => List[ErrorMsg] = {
-    val subFunc = (_: String, expressions: List[ExpressionMetadata]) => {
-      subsCollector += expressions
-      List[ErrorMsg]()
-    }
-    subFunc
+  ): (String, List[ExpressionMetadata]) => List[JsonSupport] = {
+    (_: String, expressions: List[ExpressionMetadata]) =>
+      {
+        subsCollector += expressions
+        Nil
+      }
   }
 
-  private def createNoopRegisterFunc()
-    : StreamMetadata => (QueueHandler, Source[JsonSupport, NotUsed]) = {
-    val noopQueueHandler = new QueueHandler(StreamMetadata(""), null) {
-      override def offer(msgs: Seq[JsonSupport]): Unit = ()
-      override def complete(): Unit = ()
-    }
-    val noopSource = Source.empty[JsonSupport].mapMaterializedValue(_ => NotUsed)
-    val noopRegisterFunc = (_: StreamMetadata) => (noopQueueHandler, noopSource)
-
-    noopRegisterFunc
+  private def createNoopRegisterFunc(): StreamMetadata => Source[JsonSupport, NotUsed] = { _ =>
+    Source.empty
   }
 }

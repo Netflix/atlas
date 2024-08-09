@@ -41,8 +41,8 @@ import scala.util.control.NonFatal
   */
 private[lwcapi] class WebSocketSessionManager(
   val streamMeta: StreamMetadata,
-  val registerFunc: StreamMetadata => (QueueHandler, Source[JsonSupport, NotUsed]),
-  val subscribeFunc: (String, List[ExpressionMetadata]) => List[ErrorMsg]
+  val registerFunc: StreamMetadata => Source[JsonSupport, NotUsed],
+  val subscribeFunc: (String, List[ExpressionMetadata]) => List[JsonSupport]
 ) extends GraphStage[FlowShape[AnyRef, Source[JsonSupport, NotUsed]]]
     with StrictLogging {
 
@@ -54,16 +54,17 @@ private[lwcapi] class WebSocketSessionManager(
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      var dataSourcePushed = false
-      var queueHandler: QueueHandler = _
-      var dataSource: Source[JsonSupport, NotUsed] = _
+      private var dataSourcePushed = false
+      private var dataSource: Source[JsonSupport, NotUsed] = _
+
+      // Messages that shouldn't get dropped and thus shouldn't go through the queue
+      // with other data
+      private var highPriorityMessages: List[JsonSupport] = Nil
 
       setHandlers(in, out, this)
 
       override def preStart(): Unit = {
-        val (_queueHandler, _dataSource) = registerFunc(streamMeta)
-        queueHandler = _queueHandler
-        dataSource = _dataSource
+        dataSource = registerFunc(streamMeta)
       }
 
       override def onPush(): Unit = {
@@ -75,12 +76,11 @@ private[lwcapi] class WebSocketSessionManager(
           val metadata =
             lwcExpressions.map(v => ExpressionMetadata(v.expression, v.exprType, v.step))
           // Update subscription here
-          val errors = subscribeFunc(streamMeta.streamId, metadata).map { error =>
-            DiagnosticMessage.error(s"[${error.expression}] ${error.message}")
-          }
-          queueHandler.offer(errors)
+          val messages = subscribeFunc(streamMeta.streamId, metadata)
+          highPriorityMessages = highPriorityMessages ::: messages
         } catch {
-          case NonFatal(t) => queueHandler.offer(Seq(DiagnosticMessage.error(t)))
+          case NonFatal(t) =>
+            highPriorityMessages = DiagnosticMessage.error(t) :: highPriorityMessages
         } finally {
           // Push out dataSource only once
           if (!dataSourcePushed) {
@@ -95,7 +95,12 @@ private[lwcapi] class WebSocketSessionManager(
       }
 
       override def onPull(): Unit = {
-        pull(in)
+        if (highPriorityMessages.nonEmpty) {
+          push(out, Source(highPriorityMessages))
+          highPriorityMessages = Nil
+        } else {
+          pull(in)
+        }
       }
     }
   }

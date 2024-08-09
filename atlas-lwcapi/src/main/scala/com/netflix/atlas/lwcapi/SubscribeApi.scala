@@ -136,7 +136,7 @@ class SubscribeApi(
     registry.clock().wallTime() / step * step
   }
 
-  private def register(streamMeta: StreamMetadata): (QueueHandler, Source[JsonSupport, NotUsed]) = {
+  private def register(streamMeta: StreamMetadata): Source[JsonSupport, NotUsed] = {
 
     val streamId = streamMeta.streamId
 
@@ -183,20 +183,21 @@ class SubscribeApi(
         Source(steps)
       }
 
-    val source = Source
+    Source
       .fromPublisher(pub)
       .flatMapConcat(Source.apply)
       .merge(heartbeatSrc)
       .viaMat(StreamOps.monitorFlow(registry, "StreamApi"))(Keep.left)
-
-    handler -> source
   }
 
-  private def subscribe(streamId: String, expressions: List[ExpressionMetadata]): List[ErrorMsg] = {
+  private def subscribe(
+    streamId: String,
+    expressions: List[ExpressionMetadata]
+  ): List[JsonSupport] = {
     evalsCounter.increment()
     itemsCounter.increment(expressions.size)
 
-    val errors = scala.collection.mutable.ListBuffer[ErrorMsg]()
+    val messages = List.newBuilder[JsonSupport]
     val subIdsBuilder = Set.newBuilder[String]
 
     expressions.foreach { expr =>
@@ -204,7 +205,7 @@ class SubscribeApi(
         val splits = splitter.split(expr.expression, expr.exprType, expr.frequency)
 
         // Add any new expressions
-        val (queue, addedSubs) = sm.subscribe(streamId, splits)
+        val (_, addedSubs) = sm.subscribe(streamId, splits)
         val subMessages = addedSubs.map { sub =>
           val meta = sub.metadata
           val exprInfo = LwcDataExpr(meta.id, meta.expression, meta.frequency)
@@ -216,14 +217,14 @@ class SubscribeApi(
             LwcSubscriptionV2(expr.expression, expr.exprType, List(exprInfo))
           }
         }
-        queue.offer(subMessages)
+        messages ++= subMessages
 
         // Add expression ids in use by this split
         subIdsBuilder ++= splits.map(_.metadata.id)
       } catch {
         case NonFatal(e) =>
           logger.error(s"Unable to subscribe to expression ${expr.expression}", e)
-          errors += ErrorMsg(expr.expression, e.getMessage)
+          messages += DiagnosticMessage.error(s"[${expr.expression}] ${e.getMessage}")
       }
     }
 
@@ -233,7 +234,7 @@ class SubscribeApi(
       .filter(s => !subIds.contains(s.metadata.id))
       .foreach(s => sm.unsubscribe(streamId, s.metadata.id))
 
-    errors.toList
+    messages.result()
   }
 }
 
