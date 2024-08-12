@@ -89,7 +89,7 @@ private[lwcapi] class WebSocketSessionManager(
           } else {
             // Only pull when no push happened, because push should have triggered a pull
             // from downstream
-            pull(in)
+            onPull()
           }
         }
       }
