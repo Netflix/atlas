@@ -21,6 +21,7 @@ import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.PekkoHttpClient
+import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
@@ -32,6 +33,7 @@ import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.StatusCode
+import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.Keep
@@ -84,20 +86,7 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
   test("rewrite: OK") {
     val client = mockClient(
       StatusCode.int2StatusCode(200),
-      Map(
-        "http://localhost/api/v1/graph?q=name,foo,:eq" -> Rewrite(
-          "OK",
-          "http://localhost/api/v1/graph?q=name,foo,:eq",
-          "http://localhost/api/v1/graph?q=name,foo,:eq",
-          ""
-        ),
-        "http://localhost/api/v1/graph?q=nf.ns,seg.prod,:eq,name,bar,:eq,:and" -> Rewrite(
-          "OK",
-          "http://atlas-seg.prod.netflix.net/api/v1/graph?q=name,bar,:eq",
-          "http://localhost/api/v1/graph?q=nf.ns,seg.prod,:eq,name,bar,:eq,:and",
-          ""
-        )
-      )
+      okRewrite()
     )
     val expected = DataSources.of(
       new DataSource("foo", Duration.ofSeconds(60), "http://localhost/api/v1/graph?q=name,foo,:eq"),
@@ -112,7 +101,7 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
     ctx.dsLogger.asInstanceOf[MockLogger].assertSize(0)
   }
 
-  test("parseRewrites: Bad URI in datasources") {
+  test("rewrite: Bad URI in datasources") {
     val client = mockClient(
       StatusCode.int2StatusCode(200),
       Map(
@@ -138,7 +127,7 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
     ctx.dsLogger.asInstanceOf[MockLogger].assertSize(1)
   }
 
-  test("parseRewrites: Malformed response JSON") {
+  test("rewrite: Malformed response JSON") {
     val client = mockClient(
       StatusCode.int2StatusCode(200),
       Map(
@@ -162,17 +151,18 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
     }
   }
 
-  test("parseRewrites: 500") {
+  test("rewrite: 500") {
     val client = mockClient(
       StatusCode.int2StatusCode(500),
       Map.empty
     )
-    intercept[RuntimeException] {
-      rewrite(dss, client)
-    }
+    val expected = DataSources.of()
+    val obtained = rewrite(dss, client)
+    assertEquals(obtained, expected)
+    ctx.dsLogger.asInstanceOf[MockLogger].assertSize(0)
   }
 
-  test("parseRewrites: Missing a rewrite") {
+  test("rewrite: Missing a rewrite") {
     val client = mockClient(
       StatusCode.int2StatusCode(200),
       Map(
@@ -192,6 +182,97 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
     ctx.dsLogger.asInstanceOf[MockLogger].assertSize(1)
   }
 
+  test("rewrite: source changes with good, bad, good") {
+    val client = new MockClient(
+      List(
+        StatusCode.int2StatusCode(200),
+        StatusCode.int2StatusCode(500),
+        StatusCode.int2StatusCode(200)
+      ),
+      List(
+        okRewrite(true),
+        Map.empty,
+        okRewrite()
+      )
+    ).superPool[List[DataSource]]()
+
+    val rewriter = new DataSourceRewriter(config, new NoopRegistry(), system)
+    val future = Source
+      .fromIterator(() =>
+        List(
+          DataSources.of(
+            new DataSource(
+              "foo",
+              Duration.ofSeconds(60),
+              "http://localhost/api/v1/graph?q=name,foo,:eq"
+            )
+          ),
+          dss,
+          dss
+        ).iterator
+      )
+      .via(rewriter.rewrite(client, ctx, true))
+      .grouped(3)
+      .toMat(Sink.head)(Keep.right)
+      .run()
+    val res = Await.result(future, 30.seconds)
+    assertEquals(res(0), expectedRewrite(true))
+    assertEquals(res(1), expectedRewrite(true))
+    assertEquals(res(2), expectedRewrite())
+  }
+
+  test("rewrite: retry initial flow with 500s") {
+    val client = new MockClient(
+      List(
+        StatusCode.int2StatusCode(500),
+        StatusCode.int2StatusCode(500),
+        StatusCode.int2StatusCode(200)
+      ),
+      List(
+        Map.empty,
+        Map.empty,
+        okRewrite()
+      )
+    ).superPool[List[DataSource]]()
+
+    val rewriter = new DataSourceRewriter(config, new NoopRegistry(), system)
+    val future = Source
+      .single(dss)
+      .via(rewriter.rewrite(client, ctx, true))
+      .grouped(3)
+      .toMat(Sink.head)(Keep.right)
+      .run()
+    val res = Await.result(future, 30.seconds)
+    assertEquals(res(0), DataSources.of())
+    assertEquals(res(1), expectedRewrite())
+  }
+
+  test("rewrite: retry initial flow with 500, exception, ok") {
+    val client = new MockClient(
+      List(
+        StatusCode.int2StatusCode(500),
+        StatusCodes.custom(0, "no conn", "no conn", false, true),
+        StatusCode.int2StatusCode(200)
+      ),
+      List(
+        Map.empty,
+        Map.empty,
+        okRewrite()
+      )
+    ).superPool[List[DataSource]]()
+
+    val rewriter = new DataSourceRewriter(config, new NoopRegistry(), system)
+    val future = Source
+      .single(dss)
+      .via(rewriter.rewrite(client, ctx, true))
+      .grouped(3)
+      .toMat(Sink.head)(Keep.right)
+      .run()
+    val res = Await.result(future, 30.seconds)
+    assertEquals(res(0), DataSources.of())
+    assertEquals(res(1), expectedRewrite())
+  }
+
   def mockClient(
     status: StatusCode,
     response: Map[String, Rewrite],
@@ -203,24 +284,64 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
         PekkoHttpClient.create(Failure(ex)).superPool[List[DataSource]]()
       }
       .getOrElse {
-        new MockClient(status, response, malformed).superPool[List[DataSource]]()
+        new MockClient(List(status), List(response), malformed).superPool[List[DataSource]]()
       }
   }
 
   def rewrite(dss: DataSources, client: SuperPoolClient): DataSources = {
-    val rewriter = new DataSourceRewriter(config, system)
+    val rewriter = new DataSourceRewriter(config, new NoopRegistry(), system)
     val future = Source
       .single(dss)
-      .via(
-        rewriter.rewrite(client, ctx)
-      )
+      .via(rewriter.rewrite(client, ctx, true))
       .toMat(Sink.head)(Keep.right)
       .run()
     Await.result(future, 30.seconds)
   }
 
-  class MockClient(status: StatusCode, response: Map[String, Rewrite], malformed: Boolean = false)
-      extends PekkoHttpClient {
+  def okRewrite(dropSecond: Boolean = false): Map[String, Rewrite] = {
+    val builder = Map.newBuilder[String, Rewrite]
+    builder +=
+      "http://localhost/api/v1/graph?q=name,foo,:eq" -> Rewrite(
+        "OK",
+        "http://localhost/api/v1/graph?q=name,foo,:eq",
+        "http://localhost/api/v1/graph?q=name,foo,:eq",
+        ""
+      )
+
+    if (!dropSecond) {
+      builder += "http://localhost/api/v1/graph?q=nf.ns,seg.prod,:eq,name,bar,:eq,:and" -> Rewrite(
+        "OK",
+        "http://atlas-seg.prod.netflix.net/api/v1/graph?q=name,bar,:eq",
+        "http://localhost/api/v1/graph?q=nf.ns,seg.prod,:eq,name,bar,:eq,:and",
+        ""
+      )
+    }
+
+    builder.result()
+  }
+
+  def expectedRewrite(dropSecond: Boolean = false): DataSources = {
+    val ds1 =
+      new DataSource("foo", Duration.ofSeconds(60), "http://localhost/api/v1/graph?q=name,foo,:eq")
+    val ds2 = new DataSource(
+      "bar",
+      Duration.ofSeconds(60),
+      "http://atlas-seg.prod.netflix.net/api/v1/graph?q=name,bar,:eq"
+    )
+    if (dropSecond) {
+      DataSources.of(ds1)
+    } else {
+      DataSources.of(ds1, ds2)
+    }
+  }
+
+  class MockClient(
+    status: List[StatusCode],
+    response: List[Map[String, Rewrite]],
+    malformed: Boolean = false
+  ) extends PekkoHttpClient {
+
+    var called = 0
 
     override def singleRequest(request: HttpRequest): Future[HttpResponse] = ???
 
@@ -231,23 +352,39 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
         .flatMapConcat {
           case (req, context) =>
             req.entity.withoutSizeLimit().dataBytes.map { body =>
-              val uris = Json.decode[List[String]](body.toArray)
-              val rewrites = uris.map { uri =>
-                response.get(uri) match {
-                  case Some(r) => r
-                  case None    => Rewrite("NOT_FOUND", uri, uri, "Empty")
-                }
+              val httpResp = status(called) match {
+                case status if status.intValue() == 0 => null
+
+                case status if status.intValue() != 200 =>
+                  HttpResponse(
+                    status,
+                    entity = HttpEntity(ContentTypes.`application/json`, "{\"error\":\"whoops\"}")
+                  )
+
+                case status =>
+                  val uris = Json.decode[List[String]](body.toArray)
+                  val rewrites = uris.map { uri =>
+                    response(called).get(uri) match {
+                      case Some(r) => r
+                      case None    => Rewrite("NOT_FOUND", uri, uri, "Empty")
+                    }
+                  }
+
+                  val json =
+                    if (malformed) Json.encode(rewrites).substring(0, 25) else Json.encode(rewrites)
+
+                  HttpResponse(
+                    status,
+                    entity = HttpEntity(ContentTypes.`application/json`, json)
+                  )
               }
 
-              val json =
-                if (malformed) Json.encode(rewrites).substring(0, 25) else Json.encode(rewrites)
-
-              val httpResp =
-                HttpResponse(
-                  status,
-                  entity = HttpEntity(ContentTypes.`application/json`, json)
-                )
-              Success(httpResp) -> context
+              called += 1
+              if (httpResp == null) {
+                Failure(new RuntimeException("no conn")) -> context
+              } else {
+                Success(httpResp) -> context
+              }
             }
         }
     }

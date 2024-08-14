@@ -88,7 +88,7 @@ private[stream] abstract class EvaluatorImpl(
   private val logger = LoggerFactory.getLogger(getClass)
 
   // Calls out to a rewrite service in case URIs need mutating to pick the proper backend.
-  private[stream] var dataSourceRewriter = new DataSourceRewriter(config, system)
+  private[stream] var dataSourceRewriter = new DataSourceRewriter(config, registry, system)
 
   // Cached context instance used for things like expression validation.
   private val validationStreamContext = newStreamContext(new ThrowingDSLogger)
@@ -135,7 +135,7 @@ private[stream] abstract class EvaluatorImpl(
   protected def validateImpl(ds: DataSource): Unit = {
     val future = Source
       .single(DataSources.of(ds))
-      .via(dataSourceRewriter.rewrite(validationStreamContext))
+      .via(dataSourceRewriter.rewrite(validationStreamContext, false))
       .map(_.sources().asScala.map(validationStreamContext.validateDataSource).map(_.get))
       .toMat(Sink.head)(Keep.right)
       .run()

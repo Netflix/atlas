@@ -21,11 +21,15 @@ import java.time.Duration
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.BroadcastHub
 import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.Keep
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.stream.scaladsl.StreamConverters
 import com.netflix.atlas.chart.util.SrcPath
+import com.netflix.atlas.core.model.FilterExpr.Filter
+import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
@@ -40,19 +44,23 @@ import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.DiagnosticMessage
+import com.netflix.atlas.pekko.StreamOps
 import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
 import munit.FunSuite
 import org.apache.pekko.NotUsed
+import org.apache.pekko.util.ByteString
 
 import java.nio.file.Path
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration.DurationInt
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.util.Success
 import scala.util.Using
@@ -368,6 +376,83 @@ class EvaluatorSuite extends FunSuite {
       "narrow the scope to a specific app or name"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
     testError(ds1, msg)
+  }
+
+  // TODO - these datasources changes tests are ignored as they are currently relying
+  // on a sleep since making it deterministic will be a challenge. But they do show how
+  // the last datasources wins. Previous streams are stopped.
+  def dataSourcesChanges(state: Int): Unit = {
+    val evaluator = new Evaluator(config, registry, system)
+
+    val baseUri = "resource:///gc-pause.dat"
+    val uri = s"$baseUri?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
+
+    def getSources: List[DataSources] = {
+      state match {
+        // duplicates
+        case 0 =>
+          List(
+            Evaluator.DataSources.of(ds("one", uri), ds("two", uri)),
+            Evaluator.DataSources.of(ds("one", uri), ds("two", uri))
+          )
+        // disjoint
+        case 1 =>
+          List(
+            Evaluator.DataSources.of(ds("one", uri)),
+            Evaluator.DataSources.of(ds("two", uri))
+          )
+        // overlap
+        case 2 =>
+          List(
+            Evaluator.DataSources.of(ds("one", uri)),
+            Evaluator.DataSources.of(ds("one", uri), ds("two", uri))
+          )
+        case x =>
+          throw new IllegalArgumentException(s"Haven't setup a test for ${x}")
+      }
+    }
+    val sourceRef = EvaluationFlows.stoppableSource(
+      Source
+        .fromIterator(() => getSources.iterator)
+        .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
+    )
+
+    val oneCount = new AtomicInteger()
+    val twoCount = new AtomicInteger()
+    val sink = Sink.foreach[Evaluator.MessageEnvelope] { msg =>
+      if (msg.message().isInstanceOf[TimeSeriesMessage]) {
+        msg.id match {
+          case "one" => oneCount.incrementAndGet()
+          case "two" => twoCount.incrementAndGet()
+        }
+      }
+    }
+
+    val future = sourceRef.source
+      .toMat(sink)(Keep.right)
+      .run()
+
+    // TODO - We should have a better trigger. Can't trigger off DPs as if duplication breaks,
+    // we don't want to stop at 264 and miss dupes.
+    Thread.sleep(5000)
+    sourceRef.stop()
+
+    Await.result(future, 1.minute)
+    // NOTE: Last source wins. So in this case, one is never processed.
+    assertEquals(oneCount.get(), if (state == 1) 0 else 255)
+    assertEquals(twoCount.get(), 255)
+  }
+
+  test("datasources changes, duplicates".ignore) {
+    dataSourcesChanges(0)
+  }
+
+  test("datasources changes, disjoint".ignore) {
+    dataSourcesChanges(1)
+  }
+
+  test("datasources changes, overlap".ignore) {
+    dataSourcesChanges(2)
   }
 
   def testRewrite(skipOne: Boolean = false, throwEx: Boolean = false): Unit = {
@@ -859,10 +944,23 @@ class EvaluatorSuite extends FunSuite {
     assertEquals(result.size, 10)
   }
 
-  class UTRewriter(skipOne: Boolean = false, throwEx: Boolean = false)
-      extends DataSourceRewriter(config, system) {
+  def getMessages(file: String, filter: Option[String] = None): Seq[ByteString] = {
+    Files
+      .readAllLines(Paths.get(file))
+      .asScala
+      .filter(!_.isBlank)
+      .filter(line => filter.forall(line.contains))
+      .map(ByteString(_))
+      .toSeq
+  }
 
-    override def rewrite(context: StreamContext): Flow[DataSources, DataSources, NotUsed] = {
+  class UTRewriter(skipOne: Boolean = false, throwEx: Boolean = false)
+      extends DataSourceRewriter(config, registry, system) {
+
+    override def rewrite(
+      context: StreamContext,
+      keepRetrying: Boolean = true
+    ): Flow[DataSources, DataSources, NotUsed] = {
       if (throwEx) {
         Flow[DataSources]
           .map(_ => throw new RuntimeException("test"))
