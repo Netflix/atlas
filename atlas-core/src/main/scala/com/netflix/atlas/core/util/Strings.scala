@@ -143,6 +143,66 @@ object Strings {
     }
   }
 
+  /**
+    * Escape special characters in the input string to unicode escape sequences (\uXXXX).
+    */
+  def escape(input: String, isSpecial: Int => Boolean): String = {
+    val length = input.length
+    val builder = new java.lang.StringBuilder(length)
+    var i = 0
+    while (i < length) {
+      val cp = input.codePointAt(i)
+      val len = Character.charCount(cp)
+      if (isSpecial(cp))
+        escapeCodePoint(cp, builder)
+      else
+        builder.appendCodePoint(cp)
+      i += len
+    }
+    builder.toString
+  }
+
+  private def escapeCodePoint(cp: Int, builder: java.lang.StringBuilder): Unit = {
+    builder.append("\\u")
+    builder.append(zeroPad(cp, 4))
+  }
+
+  /**
+    * Unescape unicode characters in the input string. Ignore any invalid or unrecognized
+    * escape sequences.
+    */
+  def unescape(input: String): String = {
+    val length = input.length
+    val builder = new java.lang.StringBuilder(length)
+    var i = 0
+    while (i < length) {
+      val c = input.charAt(i)
+      if (c == '\\') {
+        // Ensure there is enough space for an encoded character, there must be at
+        // least 5 characters left in the string (uXXXX).
+        if (length - i <= 5) {
+          builder.append(input.substring(i))
+          i = length
+        } else if (input.charAt(i + 1) == 'u') {
+          try {
+            val cp = Integer.parseInt(input.substring(i + 2, i + 6), 16)
+            builder.appendCodePoint(cp)
+            i += 5
+          } catch {
+            case _: NumberFormatException => builder.append(c)
+          }
+        } else {
+          // Some other escape, copy into buffer and move on
+          builder.append(c)
+        }
+      } else {
+        builder.append(c)
+      }
+      i += 1
+    }
+    builder.toString
+  }
+
   private val uriEscapes: Array[String] = {
 
     def hex(c: Char) = "%%%02X".format(c.toInt)
@@ -181,7 +241,7 @@ object Strings {
     * the only escaping necessary for '%', '&amp;', '+', '?', '=', and ' '.
     */
   def urlEncode(s: String): String = {
-    val buf = new java.lang.StringBuilder
+    val buf = new java.lang.StringBuilder(s.length)
     val size = s.length
     var pos = 0
     while (pos < size) {
@@ -212,7 +272,7 @@ object Strings {
     *     Decoded string.
     */
   def hexDecode(input: String, escapeChar: Char = '%'): String = {
-    val buf = new java.lang.StringBuilder
+    val buf = new java.lang.StringBuilder(input.length)
     val size = input.length
     var pos = 0
     while (pos < size) {
