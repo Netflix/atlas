@@ -169,6 +169,47 @@ class StringsSuite extends FunSuite {
     }
   }
 
+  test("escape") {
+    var i = 0
+    while (i < Short.MaxValue) {
+      val str = Character.toString(i)
+      assertEquals(escape(str, _ => true), s"\\u${zeroPad(i, 4)}")
+      i += 1
+    }
+  }
+
+  test("escape, comma and colon") {
+    val decoded = ":foo-bar,baz"
+    val encoded = "\\u003afoo-bar\\u002cbaz"
+    assertEquals(escape(decoded, c => c == ',' || c == ':'), encoded)
+    assertEquals(unescape(encoded), decoded)
+    assertEquals(unescape(decoded), decoded)
+  }
+
+  test("unescape") {
+    var i = 0
+    while (i < Short.MaxValue) {
+      val str = Character.toString(i)
+      assertEquals(unescape(s"\\u${zeroPad(i, 4)}"), str)
+      i += 1
+    }
+  }
+
+  test("unescape, too short") {
+    val input = "foo\\u000"
+    assertEquals(unescape(input), input)
+  }
+
+  test("unescape, unknown type") {
+    val input = "foo\\x0000"
+    assertEquals(unescape(input), input)
+  }
+
+  test("unescape, invalid") {
+    val input = "foo\\uzyff"
+    assertEquals(unescape(input), input)
+  }
+
   test("urlDecode") {
     val str = "a b %25 % %%% %21%zb"
     val expected = "a b % % %%% !%zb"
