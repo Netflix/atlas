@@ -290,6 +290,25 @@ class GrapherSuite extends FunSuite {
       "&ylabel.0=Axis%200&ylabel.1=Axis%201"
   }
 
+  imageTest("multi-Y, 5 axes") {
+    "/api/v1/graph?e=2012-01-01T00:00&q=(,0,1,2,3,4,),(,:dup,:axis,),:each"
+  }
+
+  test("multi-Y, 6 axes") {
+    val uri = "/api/v1/graph?e=2012-01-01T00:00&q=(,0,1,2,3,4,6,),(,:dup,:axis,),:each"
+    intercept[IllegalArgumentException] {
+      grapher.evalAndRender(Uri(uri), db)
+    }
+  }
+
+  imageTest("multi-Y, 5 axis per line") {
+    "/api/v1/graph?e=2012-01-01T00:00&q=0,1,2,3,4&axis_per_line=1"
+  }
+
+  imageTest("multi-Y, 6 axis per line") {
+    "/api/v1/graph?e=2012-01-01T00:00&q=0,1,2,3,4,6&axis_per_line=1"
+  }
+
   imageTest("significant time boundaries and tz=US/Pacific") {
     "/api/v1/graph?q=name,sps,:eq,:sum&s=e-2d&e=2015-06-17T13:13&no_legend=1&tz=US/Pacific"
   }
