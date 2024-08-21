@@ -116,7 +116,7 @@ case class Grapher(settings: DefaultSettings) {
       .getOrElse(Features.STABLE)
 
     import com.netflix.atlas.chart.GraphConstants.*
-    val axes = (0 to MaxYAxis).map(i => i -> newAxis(params, i)).toMap
+    val axes = (0 until MaxYAxis).map(i => i -> newAxis(params, i)).toMap
 
     val vision = params.get("vision").map(v => VisionType.valueOf(v))
 
@@ -311,7 +311,7 @@ case class Grapher(settings: DefaultSettings) {
 
     val plots = plotExprs.toList.sortWith(_._1 < _._1).map {
       case (yaxis, exprs) =>
-        val axisCfg = config.flags.axes(yaxis)
+        val axisCfg = config.flags.getAxis(yaxis)
         val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
 
         val statFormatter = axisCfg.tickLabelMode match {

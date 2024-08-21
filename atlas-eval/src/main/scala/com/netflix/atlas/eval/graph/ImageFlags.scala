@@ -45,4 +45,11 @@ case class ImageFlags(
       case None       => settings.primaryPalette(theme)
     }
   }
+
+  def getAxis(index: Int): Axis = {
+    axes.get(index) match {
+      case Some(axis) => axis
+      case None       => throw new IllegalArgumentException(s"invalid axis: $index")
+    }
+  }
 }
