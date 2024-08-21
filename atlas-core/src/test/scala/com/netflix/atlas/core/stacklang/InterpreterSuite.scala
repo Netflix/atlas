@@ -179,6 +179,24 @@ class InterpreterSuite extends FunSuite {
     val actual = Interpreter.splitAndTrim(", ,\t,\n\n,")
     assertEquals(actual, Nil)
   }
+
+  test("splitAndTrim with escaped whitespace") {
+    val space = Interpreter.escape(" ")
+    val nl = Interpreter.escape("\n")
+    val tab = Interpreter.escape("\t")
+    val escaped = s"$space${space}a$nl,$nl${tab}b$space,c"
+    val actual = Interpreter.splitAndTrim(escaped)
+    assertEquals(actual, List("  a\n", "\n\tb ", "c"))
+    assertEquals(Interpreter.toString(actual.reverse), escaped)
+  }
+
+  test("splitAndTrim with escaped comma") {
+    val comma = Interpreter.escape(",")
+    val escaped = s"a${comma}b${comma}c,d"
+    val actual = Interpreter.splitAndTrim(escaped)
+    assertEquals(actual, List("a,b,c", "d"))
+    assertEquals(Interpreter.toString(actual.reverse), escaped)
+  }
 }
 
 object InterpreterSuite {

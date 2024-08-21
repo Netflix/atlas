@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.stacklang
 
 import com.netflix.atlas.core.util.Features
+import com.netflix.atlas.core.util.Strings
 
 /**
   * Interpreter for stack expressions.
@@ -197,12 +198,15 @@ object Interpreter {
     stack.reverse.map(getTypeName).mkString("[", ",", "]")
   }
 
+  def toString(items: Any*): String = toStringImpl(items)
+
   def toString(stack: List[Any]): String = toStringImpl(stack.reverse)
 
-  private def toStringImpl(items: List[Any]): String = {
+  private def toStringImpl(items: Seq[Any]): String = {
     val parts = items.map {
-      case vs: List[?] => s"(,${toStringImpl(vs)},)"
-      case v           => v.toString
+      case vs: Seq[?] => s"(,${toStringImpl(vs)},)"
+      case v: String  => escape(v)
+      case v          => v.toString
     }
     parts.mkString(",")
   }
@@ -220,9 +224,23 @@ object Interpreter {
     while (i < parts.length) {
       val tmp = parts(i).trim
       if (tmp.nonEmpty)
-        builder += tmp
+        builder += unescape(tmp)
       i += 1
     }
     builder.result()
+  }
+
+  private def isSpecial(c: Int): Boolean = {
+    c == ',' || Character.isWhitespace(c)
+  }
+
+  /** Escape special characters in the expression. */
+  def escape(str: String): String = {
+    Strings.escape(str, isSpecial)
+  }
+
+  /** Unescape unicode characters in the expression. */
+  def unescape(str: String): String = {
+    Strings.unescape(str)
   }
 }

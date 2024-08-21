@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.spectator.impl.PatternMatcher
 
@@ -323,7 +324,7 @@ object Query {
 
     def labelString: String = s"has($k)"
 
-    override def toString: String = s"$k,:has"
+    override def toString: String = Interpreter.toString(k, ":has")
   }
 
   case class Equal(k: String, v: String) extends KeyValueQuery {
@@ -332,7 +333,7 @@ object Query {
 
     def labelString: String = s"$k=$v"
 
-    override def toString: String = s"$k,$v,:eq"
+    override def toString: String = Interpreter.toString(k, v, ":eq")
   }
 
   case class LessThan(k: String, v: String) extends KeyValueQuery {
@@ -341,7 +342,7 @@ object Query {
 
     def labelString: String = s"$k<$v"
 
-    override def toString: String = s"$k,$v,:lt"
+    override def toString: String = Interpreter.toString(k, v, ":lt")
   }
 
   case class LessThanEqual(k: String, v: String) extends KeyValueQuery {
@@ -350,7 +351,7 @@ object Query {
 
     def labelString: String = s"$k<=$v"
 
-    override def toString: String = s"$k,$v,:le"
+    override def toString: String = Interpreter.toString(k, v, ":le")
   }
 
   case class GreaterThan(k: String, v: String) extends KeyValueQuery {
@@ -359,7 +360,7 @@ object Query {
 
     def labelString: String = s"$k>$v"
 
-    override def toString: String = s"$k,$v,:gt"
+    override def toString: String = Interpreter.toString(k, v, ":gt")
   }
 
   case class GreaterThanEqual(k: String, v: String) extends KeyValueQuery {
@@ -368,7 +369,7 @@ object Query {
 
     def labelString: String = s"$k>=$v"
 
-    override def toString: String = s"$k,$v,:ge"
+    override def toString: String = Interpreter.toString(k, v, ":ge")
   }
 
   sealed trait PatternQuery extends KeyValueQuery {
@@ -384,7 +385,7 @@ object Query {
 
     def labelString: String = s"$k~/^$v/"
 
-    override def toString: String = s"$k,$v,:re"
+    override def toString: String = Interpreter.toString(k, v, ":re")
   }
 
   case class RegexIgnoreCase(k: String, v: String) extends PatternQuery {
@@ -395,7 +396,7 @@ object Query {
 
     def labelString: String = s"$k~/^$v/i"
 
-    override def toString: String = s"$k,$v,:reic"
+    override def toString: String = Interpreter.toString(k, v, ":reic")
   }
 
   case class In(k: String, vs: List[String]) extends KeyValueQuery {
@@ -406,7 +407,7 @@ object Query {
 
     def labelString: String = s"$k in (${vs.mkString(",")})"
 
-    override def toString: String = s"$k,(,${vs.mkString(",")},),:in"
+    override def toString: String = Interpreter.toString(k, vs, ":in")
 
     /** Convert this to a sequence of OR'd together equal queries. */
     def toOrQuery: Query = {
@@ -428,7 +429,7 @@ object Query {
 
     def labelString: String = s"(${q1.labelString}) and (${q2.labelString})"
 
-    override def toString: String = s"$q1,$q2,:and"
+    override def toString: String = Interpreter.toString(q1, q2, ":and")
   }
 
   case class Or(q1: Query, q2: Query) extends Query {
@@ -442,7 +443,7 @@ object Query {
 
     def labelString: String = s"(${q1.labelString}) or (${q2.labelString})"
 
-    override def toString: String = s"$q1,$q2,:or"
+    override def toString: String = Interpreter.toString(q1, q2, ":or")
   }
 
   case class Not(q: Query) extends Query {
@@ -455,6 +456,6 @@ object Query {
 
     def labelString: String = s"not(${q.labelString})"
 
-    override def toString: String = s"$q,:not"
+    override def toString: String = Interpreter.toString(q, ":not")
   }
 }

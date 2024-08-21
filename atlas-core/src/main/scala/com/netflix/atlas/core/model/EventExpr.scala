@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.stacklang.Interpreter
+
 /** Base type for event expressions. */
 sealed trait EventExpr extends Expr {
 
@@ -47,6 +49,6 @@ object EventExpr {
 
     require(columns.nonEmpty, "set of columns cannot be empty")
 
-    override def toString: String = s"$query,(,${columns.mkString(",")},),:table"
+    override def toString: String = Interpreter.toString(query, columns, ":table")
   }
 }
