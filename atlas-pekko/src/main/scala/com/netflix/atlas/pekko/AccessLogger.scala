@@ -15,11 +15,15 @@
  */
 package com.netflix.atlas.pekko
 
+import com.netflix.iep.config.ConfigManager
 import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import com.netflix.spectator.api.Spectator
 import com.netflix.spectator.ipc.IpcLogEntry
 import com.netflix.spectator.ipc.IpcLogger
+import com.netflix.spectator.ipc.IpcLoggerConfig
+import com.typesafe.config.Config
+import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 
 import scala.util.Failure
@@ -78,7 +82,32 @@ object AccessLogger {
 
   private val owner = "atlas-pekko"
 
-  private[pekko] val ipcLogger = new IpcLogger(Spectator.globalRegistry())
+  private[pekko] val ipcLogger = new IpcLogger(
+    Spectator.globalRegistry(),
+    LoggerFactory.getLogger(classOf[IpcLogger]),
+    new IpcConfig(ConfigManager.get().getConfig("atlas.pekko.ipc-logger"))
+  )
+
+  private class IpcConfig(config: Config) extends IpcLoggerConfig {
+
+    override def get(key: String): String = null
+
+    override def inflightMetricsEnabled(): Boolean = {
+      config.getBoolean("inflight-metrics-enabled")
+    }
+
+    override def cardinalityLimit(tagKey: String): Int = {
+      val prop = s"cardinality-limit.$tagKey"
+      if (config.hasPath(prop))
+        config.getInt(prop)
+      else
+        config.getInt("cardinality-limit.default")
+    }
+
+    override def entryQueueSize(): Int = {
+      config.getInt("entry-queue-size")
+    }
+  }
 
   /**
     * Create a new logger for a named client.
