@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.BoundedPriorityBuffer
 import com.netflix.atlas.core.util.Math
 
@@ -112,7 +113,7 @@ object FilterExpr {
 
     if (!expr1.isGrouped) require(!expr2.isGrouped, "filter grouping must match expr grouping")
 
-    override def toString: String = s"$expr1,$expr2,:filter"
+    override def toString: String = Interpreter.toString(expr1, expr2, ":filter")
 
     def dataExprs: List[DataExpr] = expr1.dataExprs ::: expr2.dataExprs
 
@@ -182,7 +183,7 @@ object FilterExpr {
 
     require(k > 0, s"k must be positive ($k <= 0)")
 
-    override def toString: String = s"$expr,$stat,$k,:$opName"
+    override def toString: String = Interpreter.toString(expr, stat, k, s":$opName")
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 

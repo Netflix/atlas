@@ -16,7 +16,6 @@
 package com.netflix.atlas.core.model
 
 import java.time.Duration
-
 import com.netflix.atlas.core.algorithm.OnlineAlgorithm
 import com.netflix.atlas.core.algorithm.OnlineDelay
 import com.netflix.atlas.core.algorithm.OnlineDes
@@ -32,6 +31,7 @@ import com.netflix.atlas.core.algorithm.OnlineRollingCount
 import com.netflix.atlas.core.algorithm.OnlineRollingMean
 import com.netflix.atlas.core.algorithm.OnlineRollingSum
 import com.netflix.atlas.core.algorithm.OnlineTrend
+import com.netflix.atlas.core.stacklang.Interpreter
 
 trait StatefulExpr extends TimeSeriesExpr {}
 
@@ -52,7 +52,7 @@ object StatefulExpr {
       if (period <= 1) OnlineIgnoreN(0) else OnlineTrend(period)
     }
 
-    override def toString: String = s"$expr,$window,:trend"
+    override def toString: String = Interpreter.toString(expr, window, ":trend")
   }
 
   /**
@@ -69,7 +69,7 @@ object StatefulExpr {
       OnlineIntegral(Double.NaN)
     }
 
-    override def toString: String = s"$expr,:integral"
+    override def toString: String = Interpreter.toString(expr, s":$name")
   }
 
   /**
@@ -83,7 +83,7 @@ object StatefulExpr {
       OnlineDerivative(Double.NaN)
     }
 
-    override def toString: String = s"$expr,:derivative"
+    override def toString: String = Interpreter.toString(expr, s":$name")
   }
 
   /**
@@ -98,7 +98,7 @@ object StatefulExpr {
       OnlineDelay(n)
     }
 
-    override def toString: String = s"$expr,$n,:delay"
+    override def toString: String = Interpreter.toString(expr, n, s":$name")
   }
 
   /**
@@ -112,7 +112,7 @@ object StatefulExpr {
       OnlineRollingCount(n)
     }
 
-    override def toString: String = s"$expr,$n,:rolling-count"
+    override def toString: String = Interpreter.toString(expr, n, s":$name")
   }
 
   /**
@@ -126,7 +126,7 @@ object StatefulExpr {
       OnlineRollingMin(n)
     }
 
-    override def toString: String = s"$expr,$n,:rolling-min"
+    override def toString: String = Interpreter.toString(expr, n, s":$name")
   }
 
   /**
@@ -140,7 +140,7 @@ object StatefulExpr {
       OnlineRollingMax(n)
     }
 
-    override def toString: String = s"$expr,$n,:rolling-max"
+    override def toString: String = Interpreter.toString(expr, n, s":$name")
   }
 
   /**
@@ -154,7 +154,7 @@ object StatefulExpr {
       OnlineRollingMean(n, minNumValues)
     }
 
-    override def toString: String = s"$expr,$n,$minNumValues,:rolling-mean"
+    override def toString: String = Interpreter.toString(expr, n, minNumValues, s":$name")
   }
 
   /**
@@ -168,7 +168,7 @@ object StatefulExpr {
       OnlineRollingSum(n)
     }
 
-    override def toString: String = s"$expr,$n,:rolling-sum"
+    override def toString: String = Interpreter.toString(expr, n, s":$name")
   }
 
   /**
@@ -184,7 +184,9 @@ object StatefulExpr {
       OnlineDes(trainingSize, alpha, beta)
     }
 
-    override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:des"
+    override def toString: String = {
+      Interpreter.toString(expr, trainingSize, alpha, beta, s":$name")
+    }
   }
 
   /**
@@ -216,7 +218,9 @@ object StatefulExpr {
         context.start / trainingStep * trainingStep + trainingStep
     }
 
-    override def toString: String = s"$expr,$trainingSize,$alpha,$beta,:sdes"
+    override def toString: String = {
+      Interpreter.toString(expr, trainingSize, alpha, beta, s":$name")
+    }
   }
 
   /**

@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.Query.Regex
 import com.netflix.atlas.core.stacklang.Interpreter
 import munit.FunSuite
 
@@ -26,12 +25,12 @@ class QueryVocabularySuite extends FunSuite {
   test("contains, escape") {
     var exp = interpreter.execute("a,^$.?*+[](){}\\#&!%,:contains").stack.head
     assertEquals(
-      exp.asInstanceOf[Regex].pattern.toString,
+      exp.asInstanceOf[Query.Regex].pattern.toString,
       ".*\\^\\$\\.\\?\\*\\+\\[\\]\\(\\)\\{\\}\\\\#&!%"
     )
     exp = interpreter.execute("a,space and ~,:contains").stack.head
     assertEquals(
-      exp.asInstanceOf[Regex].pattern.toString,
+      exp.asInstanceOf[Query.Regex].pattern.toString,
       ".*space\\u0020and\\u0020~"
     )
   }
@@ -41,7 +40,7 @@ class QueryVocabularySuite extends FunSuite {
       .execute("foo,my $var. [work-in-progress],:contains")
       .stack
       .head
-      .asInstanceOf[Regex]
+      .asInstanceOf[Query.Regex]
     assert(q.matches(Map("foo" -> "my $var. [work-in-progress]")))
     assert(q.matches(Map("foo" -> "initialize my $var. [work-in-progress], not a range")))
     assert(!q.matches(Map("foo" -> "my $var. [work-in progress]")))
@@ -49,8 +48,8 @@ class QueryVocabularySuite extends FunSuite {
 
   test("starts, prefix and escape") {
     val exp = interpreter.execute("a,[foo],:starts").stack.head
-    assertEquals(exp.asInstanceOf[Regex].pattern.prefix(), "[foo]")
-    assertEquals(exp.asInstanceOf[Regex].pattern.toString, "^\\[foo\\]")
+    assertEquals(exp.asInstanceOf[Query.Regex].pattern.prefix(), "[foo]")
+    assertEquals(exp.asInstanceOf[Query.Regex].pattern.toString, "^\\[foo\\]")
   }
 
   test("starts, matches escaped") {
@@ -58,7 +57,7 @@ class QueryVocabularySuite extends FunSuite {
       .execute("foo,my $var.,:starts")
       .stack
       .head
-      .asInstanceOf[Regex]
+      .asInstanceOf[Query.Regex]
     assert(q.matches(Map("foo" -> "my $var.")))
     assert(!q.matches(Map("foo" -> "initialize my $var. [work-in-progress], not a range")))
     assert(q.matches(Map("foo" -> "my $var. [work-in progress]")))
@@ -66,8 +65,8 @@ class QueryVocabularySuite extends FunSuite {
 
   test("ends, suffix and escape") {
     val exp = interpreter.execute("a,[foo],:ends").stack.head
-    assertEquals(exp.asInstanceOf[Regex].pattern.prefix(), null)
-    assertEquals(exp.asInstanceOf[Regex].pattern.toString, ".*\\[foo\\]$")
+    assertEquals(exp.asInstanceOf[Query.Regex].pattern.prefix(), null)
+    assertEquals(exp.asInstanceOf[Query.Regex].pattern.toString, ".*\\[foo\\]$")
   }
 
   test("ends, matches escaped") {
@@ -75,9 +74,27 @@ class QueryVocabularySuite extends FunSuite {
       .execute("foo,my $var.,:ends")
       .stack
       .head
-      .asInstanceOf[Regex]
+      .asInstanceOf[Query.Regex]
     assert(q.matches(Map("foo" -> "my $var.")))
     assert(!q.matches(Map("foo" -> "initialize my $var. [work-in-progress], not a range")))
     assert(!q.matches(Map("foo" -> "my $var. [work-in progress]")))
+  }
+
+  test("eq, with escaped comma") {
+    val txt = Interpreter.escape("foo, bar, baz")
+    val exp = interpreter.execute(s"a,$txt,:eq").stack.head
+    assertEquals(
+      exp.asInstanceOf[Query.Equal].v,
+      "foo, bar, baz"
+    )
+  }
+
+  test("contains, with escaped comma") {
+    val txt = Interpreter.escape("foo, bar, baz")
+    val exp = interpreter.execute(s"a,$txt,:contains").stack.head
+    assertEquals(
+      exp.asInstanceOf[Query.Regex].pattern.toString,
+      ".*foo,\\u0020bar,\\u0020baz"
+    )
   }
 }

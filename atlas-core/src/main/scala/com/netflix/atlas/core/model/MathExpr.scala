@@ -21,9 +21,9 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
-
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.stacklang.Context
+import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Math
@@ -49,7 +49,7 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
-    override def toString: String = s"$expr,$original,$replacement,:as"
+    override def toString: String = Interpreter.toString(expr, original, replacement, ":as")
 
     def isGrouped: Boolean = expr.isGrouped
 
@@ -83,7 +83,7 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = Nil
 
-    override def toString: String = s"$v,:const"
+    override def toString: String = Interpreter.toString(v, ":const")
 
     def isGrouped: Boolean = false
 
@@ -107,7 +107,7 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = Nil
 
-    override def toString: String = s":random"
+    override def toString: String = ":random"
 
     def isGrouped: Boolean = false
 
@@ -135,7 +135,7 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = Nil
 
-    override def toString: String = s"$seed,:srandom"
+    override def toString: String = Interpreter.toString(seed, ":srandom")
 
     def isGrouped: Boolean = false
 
@@ -215,7 +215,7 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = Nil
 
-    override def toString: String = s"$s,$e,:time-span"
+    override def toString: String = Interpreter.toString(s, e, ":time-span")
 
     def isGrouped: Boolean = false
 
@@ -286,7 +286,7 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
-    override def toString: String = s"$expr,$min,:$name"
+    override def toString: String = Interpreter.toString(expr, min, s":$name")
 
     def isGrouped: Boolean = expr.isGrouped
 
@@ -314,7 +314,7 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
-    override def toString: String = s"$expr,$max,:$name"
+    override def toString: String = Interpreter.toString(expr, max, s":$name")
 
     def isGrouped: Boolean = expr.isGrouped
 
@@ -344,7 +344,7 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
-    override def toString: String = s"$expr,:$name"
+    override def toString: String = Interpreter.toString(expr, s":$name")
 
     def isGrouped: Boolean = expr.isGrouped
 
@@ -455,7 +455,7 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr1.dataExprs ::: expr2.dataExprs
 
-    override def toString: String = s"$expr1,$expr2,:$name"
+    override def toString: String = Interpreter.toString(expr1, expr2, s":$name")
 
     def isGrouped: Boolean = expr1.isGrouped || expr2.isGrouped
 
@@ -679,7 +679,7 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
-    override def toString: String = s"$expr,:$name"
+    override def toString: String = Interpreter.toString(expr, s":$name")
 
     def isGrouped: Boolean = false
 
@@ -765,7 +765,7 @@ object MathExpr {
       }
     }
 
-    override def toString: String = s"$expr,(,${keys.mkString(",")},),:by"
+    override def toString: String = Interpreter.toString(expr, keys, ":by")
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
@@ -832,7 +832,7 @@ object MathExpr {
         if (evalGroupKeys.isEmpty)
           expr.af.query.toString
         else
-          s"${expr.af.query},(,${evalGroupKeys.mkString(",")},),:by"
+          Interpreter.toString(expr.af.query, evalGroupKeys, ":by")
       if (expr.offset.isZero)
         s"$baseExpr,(,${pcts.mkString(",")},),:percentiles"
       else
