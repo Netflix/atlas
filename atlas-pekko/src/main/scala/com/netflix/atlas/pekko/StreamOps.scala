@@ -37,6 +37,7 @@ import org.apache.pekko.stream.stage.OutHandler
 import org.apache.pekko.stream.stage.TimerGraphStageLogic
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.Tag
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.pekko.stream.stage.GraphStageWithMaterializedValue
 
@@ -99,23 +100,41 @@ object StreamOps extends StrictLogging {
   ) {
 
     private val baseId = registry.createId("pekko.stream.offeredToQueue", "id", id)
-    private val enqueued = registry.counter(baseId.withTag("result", "enqueued"))
-    private val dropped = registry.counter(baseId.withTag("result", "droppedQueueFull"))
-    private val closed = registry.counter(baseId.withTag("result", "droppedQueueClosed"))
-    private val failed = registry.counter(baseId.withTag("result", "droppedQueueFailure"))
+    private val enqueuedId = baseId.withTag("result", "enqueued")
+    private val droppedId = baseId.withTag("result", "droppedQueueFull")
+    private val closedId = baseId.withTag("result", "droppedQueueClosed")
+    private val failedId = baseId.withTag("result", "droppedQueueFailure")
 
     @volatile private var completed: Boolean = false
 
     /**
-      * Add the value into the queue if there is room. Returns true if the value was successfully
-      * enqueued.
-      */
+     * Add the value into the queue if there is room. Returns true if the value was successfully
+     * enqueued.
+     */
     def offer(value: T): Boolean = {
       queue.offer(value) match {
-        case QueueOfferResult.Enqueued    => enqueued.increment(); true
-        case QueueOfferResult.Dropped     => dropped.increment(); false
-        case QueueOfferResult.QueueClosed => closed.increment(); false
-        case QueueOfferResult.Failure(_)  => failed.increment(); false
+        case QueueOfferResult.Enqueued    => registry.counter(enqueuedId).increment(); true
+        case QueueOfferResult.Dropped     => registry.counter(droppedId).increment(); false
+        case QueueOfferResult.QueueClosed => registry.counter(closedId).increment(); false
+        case QueueOfferResult.Failure(_)  => registry.counter(failedId).increment(); false
+      }
+    }
+
+    /**
+     * Add the value into the queue if there is room. Returns true if the value was successfully
+     * enqueued. Queue metrics are reported with additional tag values.
+     */
+    def offer(value: T, tags: Iterable[Tag]): Boolean = {
+      import scala.jdk.CollectionConverters.*
+      queue.offer(value) match {
+        case QueueOfferResult.Enqueued =>
+          registry.counter(enqueuedId.withTags(tags.asJava)).increment(); true
+        case QueueOfferResult.Dropped =>
+          registry.counter(droppedId.withTags(tags.asJava)).increment(); false
+        case QueueOfferResult.QueueClosed =>
+          registry.counter(closedId.withTags(tags.asJava)).increment(); false
+        case QueueOfferResult.Failure(_) =>
+          registry.counter(failedId.withTags(tags.asJava)).increment(); false
       }
     }
 
