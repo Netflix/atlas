@@ -104,6 +104,10 @@ object StreamOps extends StrictLogging {
     private val droppedId = baseId.withTag("result", "droppedQueueFull")
     private val closedId = baseId.withTag("result", "droppedQueueClosed")
     private val failedId = baseId.withTag("result", "droppedQueueFailure")
+    private val enqueued = registry.counter(enqueuedId)
+    private val dropped = registry.counter(droppedId)
+    private val closed = registry.counter(closedId)
+    private val failed = registry.counter(failedId)
 
     @volatile private var completed: Boolean = false
 
@@ -113,10 +117,10 @@ object StreamOps extends StrictLogging {
      */
     def offer(value: T): Boolean = {
       queue.offer(value) match {
-        case QueueOfferResult.Enqueued    => registry.counter(enqueuedId).increment(); true
-        case QueueOfferResult.Dropped     => registry.counter(droppedId).increment(); false
-        case QueueOfferResult.QueueClosed => registry.counter(closedId).increment(); false
-        case QueueOfferResult.Failure(_)  => registry.counter(failedId).increment(); false
+        case QueueOfferResult.Enqueued    => enqueued.increment(); true
+        case QueueOfferResult.Dropped     => dropped.increment(); false
+        case QueueOfferResult.QueueClosed => closed.increment(); false
+        case QueueOfferResult.Failure(_)  => failed.increment(); false
       }
     }
 
