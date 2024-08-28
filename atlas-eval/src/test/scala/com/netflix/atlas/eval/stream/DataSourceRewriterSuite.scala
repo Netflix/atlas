@@ -24,7 +24,6 @@ import com.netflix.atlas.pekko.PekkoHttpClient
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import munit.FunSuite
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
@@ -51,7 +50,7 @@ import scala.util.Try
 
 class DataSourceRewriterSuite extends FunSuite with TestKitBase {
 
-  val dss = DataSources.of(
+  private val dss = DataSources.of(
     new DataSource("foo", Duration.ofSeconds(60), "http://localhost/api/v1/graph?q=name,foo,:eq"),
     new DataSource(
       "bar",
@@ -60,19 +59,21 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
     )
   )
 
-  var config: Config = _
-  var logger: MockLogger = _
-  var ctx: StreamContext = null
+  private var config: Config = _
+  private var logger: MockLogger = _
+  private var ctx: StreamContext = null
 
   override implicit def system: ActorSystem = ActorSystem("Test")
 
   override def beforeEach(context: BeforeEach): Unit = {
     config = ConfigFactory
-      .load()
-      .withValue(
-        "atlas.eval.stream.rewrite-url",
-        ConfigValueFactory.fromAnyRef("http://localhost/api/v1/rewrite")
-      )
+      .parseString("""
+          |atlas.eval.stream.rewrite {
+          |  enabled = true
+          |  uri = "http://localhost/api/v1/rewrite"
+          |}
+          |""".stripMargin)
+      .withFallback(ConfigFactory.load())
     logger = new MockLogger()
     ctx = new StreamContext(config, Materializer(system), dsLogger = logger)
   }
@@ -85,7 +86,7 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
 
   test("rewrite: OK") {
     val client = mockClient(
-      StatusCode.int2StatusCode(200),
+      StatusCodes.OK,
       okRewrite()
     )
     val expected = DataSources.of(
@@ -103,7 +104,7 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
 
   test("rewrite: Bad URI in datasources") {
     val client = mockClient(
-      StatusCode.int2StatusCode(200),
+      StatusCodes.OK,
       Map(
         "http://localhost/api/v1/graph?q=name,foo,:eq" -> Rewrite(
           "OK",
@@ -129,7 +130,7 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
 
   test("rewrite: Malformed response JSON") {
     val client = mockClient(
-      StatusCode.int2StatusCode(200),
+      StatusCodes.OK,
       Map(
         "http://localhost/api/v1/graph?q=name,foo,:eq" -> Rewrite(
           "OK",
@@ -153,7 +154,7 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
 
   test("rewrite: 500") {
     val client = mockClient(
-      StatusCode.int2StatusCode(500),
+      StatusCodes.InternalServerError,
       Map.empty
     )
     val expected = DataSources.of()
@@ -164,7 +165,7 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
 
   test("rewrite: Missing a rewrite") {
     val client = mockClient(
-      StatusCode.int2StatusCode(200),
+      StatusCodes.OK,
       Map(
         "http://localhost/api/v1/graph?q=name,foo,:eq" -> Rewrite(
           "OK",
@@ -185,9 +186,9 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
   test("rewrite: source changes with good, bad, good") {
     val client = new MockClient(
       List(
-        StatusCode.int2StatusCode(200),
-        StatusCode.int2StatusCode(500),
-        StatusCode.int2StatusCode(200)
+        StatusCodes.OK,
+        StatusCodes.InternalServerError,
+        StatusCodes.OK
       ),
       List(
         okRewrite(true),
@@ -224,9 +225,9 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
   test("rewrite: retry initial flow with 500s") {
     val client = new MockClient(
       List(
-        StatusCode.int2StatusCode(500),
-        StatusCode.int2StatusCode(500),
-        StatusCode.int2StatusCode(200)
+        StatusCodes.InternalServerError,
+        StatusCodes.InternalServerError,
+        StatusCodes.OK
       ),
       List(
         Map.empty,
@@ -250,9 +251,9 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
   test("rewrite: retry initial flow with 500, exception, ok") {
     val client = new MockClient(
       List(
-        StatusCode.int2StatusCode(500),
+        StatusCodes.InternalServerError,
         StatusCodes.custom(0, "no conn", "no conn", false, true),
-        StatusCode.int2StatusCode(200)
+        StatusCodes.OK
       ),
       List(
         Map.empty,
@@ -343,7 +344,9 @@ class DataSourceRewriterSuite extends FunSuite with TestKitBase {
 
     var called = 0
 
-    override def singleRequest(request: HttpRequest): Future[HttpResponse] = ???
+    override def singleRequest(request: HttpRequest): Future[HttpResponse] = {
+      Future.failed(new UnsupportedOperationException())
+    }
 
     override def superPool[C](
       config: PekkoHttpClient.ClientConfig

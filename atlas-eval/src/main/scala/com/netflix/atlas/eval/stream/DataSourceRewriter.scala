@@ -53,15 +53,14 @@ class DataSourceRewriter(
   implicit val system: ActorSystem
 ) extends StrictLogging {
 
-  private val (enabled, rewriteUrl) = {
-    val enabled = config.hasPath("atlas.eval.stream.rewrite-url")
-    val url = if (enabled) config.getString("atlas.eval.stream.rewrite-url") else ""
-    if (enabled) {
-      logger.info(s"Rewriting enabled with url: ${url}")
-    } else {
-      logger.info("Rewriting is disabled")
-    }
-    (enabled, url)
+  private val rewriteConfig = config.getConfig("atlas.eval.stream.rewrite")
+  private val enabled = rewriteConfig.getBoolean("enabled")
+  private val rewriteUri = rewriteConfig.getString("uri")
+
+  if (enabled) {
+    logger.info(s"rewriting enabled with uri: $rewriteUri")
+  } else {
+    logger.info(s"rewriting is disabled")
   }
 
   private val client = PekkoHttpClient
@@ -215,7 +214,7 @@ class DataSourceRewriter(
         Some(new DataSource(ds.id, ds.step(), rewrite))
       }
     }
-    DataSources.of(rewrites: _*)
+    DataSources.of(rewrites*)
   }
 
   private[stream] def constructRequest(dss: List[DataSource]): HttpRequest = {
@@ -226,7 +225,7 @@ class DataSourceRewriter(
       json.writeEndArray()
     }
     HttpRequest(
-      uri = rewriteUrl,
+      uri = rewriteUri,
       method = HttpMethods.POST,
       entity = HttpEntity(ContentTypes.`application/json`, baos.toByteArray)
     )
