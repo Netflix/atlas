@@ -20,17 +20,19 @@ package com.netflix.atlas.core.util
   */
 object Step {
 
+  private final val oneMilli = 1L
   private final val oneSecond = 1000L
   private final val oneMinute = 60000L
   private final val oneHour = 60 * oneMinute
   private final val oneDay = 24 * oneHour
 
   private final val allowedStepSizes = {
+    val subSecond = List(1L, 5L, 10L, 50L, 100L, 500L)
     val div60 = List(1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30)
     val subMinute = div60.map(_ * oneSecond)
     val subHour = div60.map(_ * oneMinute)
     val subDay = List(1, 2, 3, 4, 6, 8, 12).map(_ * oneHour)
-    subMinute ::: subHour ::: subDay
+    subSecond ::: subMinute ::: subHour ::: subDay
   }
 
   private def datapointsPerPixel(datapoints: Long, width: Int): Long = {
