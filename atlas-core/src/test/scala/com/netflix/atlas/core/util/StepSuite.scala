@@ -24,6 +24,17 @@ class StepSuite extends FunSuite {
 
   private def days(n: Long): Long = n * 24 * 60 * 60 * 1000
 
+  test("round: sub-second step sizes") {
+    val primaryStep = 1L
+    assertEquals(1L, Step.round(primaryStep, 1))
+    assertEquals(5L, Step.round(primaryStep, 2))
+    assertEquals(10L, Step.round(primaryStep, 6))
+    assertEquals(50L, Step.round(primaryStep, 20))
+    assertEquals(100L, Step.round(primaryStep, 60))
+    assertEquals(500L, Step.round(primaryStep, 200))
+    assertEquals(1000L, Step.round(primaryStep, 600))
+  }
+
   test("round: allow arbitrary number of days") {
     (1 until 500).foreach { i =>
       assertEquals(days(i), Step.round(60000, days(i)))
