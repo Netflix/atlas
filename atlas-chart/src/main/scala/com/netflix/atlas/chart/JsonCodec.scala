@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.atlas.chart.graphics.ChartSettings
 import com.netflix.atlas.chart.model.*
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.core.model.ArrayTimeSeq
@@ -423,7 +424,7 @@ object JsonCodec {
       loadTime       = Option(node.get("loadTime")).fold(-1L)(_.asLong()),
       stats          = Option(node.get("stats")).fold(CollectorStats.unknown)(toCollectorStats),
       warnings       = node.get("warnings").elements.asScala.map(_.asText()).toList,
-      themeName      = node.get("theme").asText(),
+      themeName      = Option(node.get("theme")).fold(ChartSettings.defaultTheme)(_.asText()),
       renderingHints = processRenderingHints(node.get("renderingHints"))
     )
     // format: on
