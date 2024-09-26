@@ -119,13 +119,11 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   }
 
   private def getOrCreateBlockStore(id: ItemId, tags: Map[String, String]): BlockStore = {
-    var blkStore = data.get(id)
-    if (blkStore == null) {
-      // Create a new block store and update the index
-      blkStore = data.computeIfAbsent(id, _ => new MemoryBlockStore(step, blockSize, numBlocks))
+    data.computeIfAbsent(id, _ => {
+      val blkStore = new MemoryBlockStore(step, blockSize, numBlocks)
       index.update(BlockStoreItem.create(id, tags, blkStore))
-    }
-    blkStore
+      blkStore
+    })
   }
 
   def update(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
