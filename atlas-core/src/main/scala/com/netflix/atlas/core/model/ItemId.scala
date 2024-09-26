@@ -43,16 +43,7 @@ class ItemId private (private val data: Array[Byte], private val hc: Int)
   }
 
   override def compareTo(other: ItemId): Int = {
-    val length = math.min(data.length, other.data.length)
-    var i = 0
-    while (i < length) {
-      val b1 = java.lang.Byte.toUnsignedInt(data(i))
-      val b2 = java.lang.Byte.toUnsignedInt(other.data(i))
-      val cmp = b1 - b2
-      if (cmp != 0) return cmp
-      i += 1
-    }
-    0
+    java.util.Arrays.compareUnsigned(data, other.data)
   }
 
   override def toString: String = {
@@ -80,13 +71,6 @@ class ItemId private (private val data: Array[Byte], private val hc: Int)
     }
     result
   }
-
-  /**
-    * Returns the byte array representing the id. This accessor is only provided to allow
-    * for serialization without additional allocations. The returned array should not be
-    * modified.
-    */
-  def byteArrayUnsafe: Array[Byte] = data
 }
 
 object ItemId {
