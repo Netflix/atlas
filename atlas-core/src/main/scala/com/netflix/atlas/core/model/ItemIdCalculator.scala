@@ -122,8 +122,6 @@ class ItemIdCalculator {
 
 object ItemIdCalculator {
 
-  type Pair = (String, String)
-
   private val emptyId = ItemId(Hash.sha1bytes(""))
 
   // Large enough for most key/value pairs
