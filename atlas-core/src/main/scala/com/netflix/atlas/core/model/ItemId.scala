@@ -16,28 +16,37 @@
 package com.netflix.atlas.core.model
 
 import java.math.BigInteger
-
 import com.netflix.atlas.core.util.Strings
 
-import scala.util.hashing.MurmurHash3
+import java.lang.invoke.MethodHandles
+import java.nio.ByteOrder
 
 /**
-  * Represents an identifier for a tagged item.
+  * Represents an identifier for a tagged item. If using for a hash map the
+  * bytes used for the id should come from a decent hash function as 4 bytes
+  * from the middle are used for the hash code of the id object.
   *
   * @param data
   *     Bytes for the id. This is usually the results of computing a SHA1 hash
   *     over a normalized representation of the tags.
-  * @param hc
-  *     Precomputed hash code for the bytes.
   */
-class ItemId private (private val data: Array[Byte], private val hc: Int)
-    extends Comparable[ItemId] {
+class ItemId private (private val data: Array[Byte]) extends Comparable[ItemId] {
 
-  override def hashCode(): Int = hc
+  // Typically it should be 20 bytes for SHA1. Require at least 16 to avoid
+  // checks for other operations.
+  require(data.length >= 16)
+
+  override def hashCode(): Int = {
+    // Choose middle byte. The id should be generated using decent hash
+    // function so in theory any subset will do. In some cases data is
+    // routed based on the prefix or a modulo of the intValue. Choosing a
+    // byte toward the middle helps to mitigate that.
+    ItemId.intHandle.get(data, 12)
+  }
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case other: ItemId => hc == other.hc && java.util.Arrays.equals(data, other.data)
+      case other: ItemId => java.util.Arrays.equals(data, other.data)
       case _             => false
     }
   }
@@ -60,20 +69,15 @@ class ItemId private (private val data: Array[Byte], private val hc: Int)
   def toBigInteger: BigInteger = new BigInteger(1, data)
 
   def intValue: Int = {
-    var result = 0
-    val end = math.max(0, data.length - 4)
-    var i = data.length - 1
-    var shift = 0
-    while (i >= end) {
-      result |= (data(i) & 0xFF) << shift
-      i -= 1
-      shift += 8
-    }
-    result
+    ItemId.intHandle.get(data, data.length - 4)
   }
 }
 
 object ItemId {
+
+  // Helper to access integer from byte array
+  private val intHandle =
+    MethodHandles.byteArrayViewVarHandle(classOf[Array[Int]], ByteOrder.BIG_ENDIAN)
 
   private val hexValueForByte = (0 until 256).toArray.map { i =>
     Strings.zeroPad(i, 2)
@@ -84,7 +88,7 @@ object ItemId {
     * using MurmurHash3.
     */
   def apply(data: Array[Byte]): ItemId = {
-    new ItemId(data, MurmurHash3.bytesHash(data))
+    new ItemId(data)
   }
 
   /**
