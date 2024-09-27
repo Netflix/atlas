@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.ItemId.intHandle
-
 import java.math.BigInteger
 import com.netflix.atlas.core.util.Strings
 
@@ -43,7 +41,7 @@ class ItemId private (private val data: Array[Byte]) extends Comparable[ItemId] 
     // function so in theory any subset will do. In some cases data is
     // routed based on the prefix or a modulo of the intValue. Choosing a
     // byte toward the middle helps to mitigate that.
-    intHandle.get(data, 12)
+    ItemId.intHandle.get(data, 12)
   }
 
   override def equals(obj: Any): Boolean = {
@@ -71,7 +69,7 @@ class ItemId private (private val data: Array[Byte]) extends Comparable[ItemId] 
   def toBigInteger: BigInteger = new BigInteger(1, data)
 
   def intValue: Int = {
-    intHandle.get(data, data.length - 4)
+    ItemId.intHandle.get(data, data.length - 4)
   }
 }
 
