@@ -21,6 +21,8 @@ import com.netflix.spectator.api.Clock
 
 class NormalizationCache(step: Long, updateF: UpdateFunction, clock: Clock = Clock.SYSTEM) {
 
+  import NormalizationCache.*
+
   /**
     * For small step sizes use a fixed two minute heartbeat as reporting can be irregular, for
     * larger step size allow one sample to be missed.
@@ -104,6 +106,10 @@ class NormalizationCache(step: Long, updateF: UpdateFunction, clock: Clock = Clo
     cacheValue.lastAccessTime = clock.wallTime
     cacheValue.f(timestamp, value)
   }
+
+}
+
+object NormalizationCache {
 
   class CacheValue(var lastAccessTime: Long, val f: ValueFunction)
 }
