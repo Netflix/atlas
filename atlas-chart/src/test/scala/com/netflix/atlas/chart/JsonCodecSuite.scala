@@ -82,7 +82,6 @@ class JsonCodecSuite extends FunSuite {
   test("rendering hint: none") {
     val gdef = graphDef(Set.empty)
     val str = JsonCodec.encode(gdef)
-    System.out.println(str)
     assert(str.contains(""""type":"graph-image""""))
   }
 
