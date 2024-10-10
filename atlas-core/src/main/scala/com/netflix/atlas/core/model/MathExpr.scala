@@ -402,8 +402,9 @@ object MathExpr {
     override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
       val newData = rs.data.map { t =>
-        // Assumes rate-per-second counter
-        val multiple = t.data.step / 1000
+        // Assumes rate-per-second counter. If the step size is less than a second, then it
+        // will be a fractional multiple and reduce the amount.
+        val multiple = t.data.step / 1000.0
         t.unaryOp(s"$name(%s)", v => v * multiple)
       }
       ResultSet(this, newData, rs.state)
@@ -920,7 +921,7 @@ object MathExpr {
         val results = new Array[Double](pcts.length)
 
         // Inputs are counters reported as a rate per second. We need to convert to a rate per
-        // step to get the correct counts for the estimation
+        // step to get the correct counts for the estimation.
         val multiple = context.step / 1000.0
 
         // If the input was a timer the unit for the buckets is nanoseconds. The type is reflected

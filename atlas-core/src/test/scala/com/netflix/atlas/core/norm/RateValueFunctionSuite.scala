@@ -26,7 +26,14 @@ class RateValueFunctionSuite extends FunSuite {
     listVF
   }
 
-  test("basic") {
+  test("basic, 1ms step") {
+    val vf = newFunction
+    assertEquals(vf.update(1L, 1.0), Nil)
+    assertEquals(vf.update(2L, 2.0), List(2L -> 1000.0))
+    assertEquals(vf.update(3L, 4.0), List(3L -> 2000.0))
+  }
+
+  test("basic, 5ms step") {
     val vf = newFunction
     assertEquals(vf.update(5L, 1.0), Nil)
     assertEquals(vf.update(15L, 2.0), List(15L -> 100.0))
