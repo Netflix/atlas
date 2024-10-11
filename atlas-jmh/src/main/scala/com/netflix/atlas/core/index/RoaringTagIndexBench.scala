@@ -16,10 +16,9 @@
 package com.netflix.atlas.core.index
 
 import java.util.UUID
-
 import com.netflix.atlas.core.model.BasicTaggedItem
 import com.netflix.atlas.core.model.Query
-import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
@@ -68,7 +67,7 @@ class RoaringTagIndexBench {
 
   private val items = (0 until 10000).map { _ =>
     val id = UUID.randomUUID().toString
-    BasicTaggedItem(SmallHashMap(baseId ++ Map("nf.node" -> id))) // , i.toString -> id))
+    BasicTaggedItem(SortedTagMap(baseId ++ Map("nf.node" -> id))) // , i.toString -> id))
   }
 
   private val index = RoaringTagIndex[BasicTaggedItem](items.toArray, new IndexStats())

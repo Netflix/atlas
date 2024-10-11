@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 import munit.FunSuite
 
 class QuerySuite extends FunSuite {
@@ -24,19 +24,19 @@ class QuerySuite extends FunSuite {
 
   def matches(q: Query, tags: Map[String, String]): Boolean = {
     val result = q.matches(tags)
-    assertEquals(result, q.matches(SmallHashMap(tags)))
+    assertEquals(result, q.matches(SortedTagMap(tags)))
     result
   }
 
   def matchesAny(q: Query, tags: Map[String, List[String]]): Boolean = {
     val result = q.matchesAny(tags)
-    assertEquals(result, q.matchesAny(SmallHashMap(tags)))
+    assertEquals(result, q.matchesAny(tags))
     result
   }
 
   def couldMatch(q: Query, tags: Map[String, String]): Boolean = {
     val result = q.couldMatch(tags)
-    assertEquals(result, q.couldMatch(SmallHashMap(tags)))
+    assertEquals(result, q.couldMatch(SortedTagMap(tags)))
     result
   }
 

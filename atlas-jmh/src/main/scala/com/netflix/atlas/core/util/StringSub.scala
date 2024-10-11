@@ -61,7 +61,7 @@ class StringSub {
 
   private val legend = "$(nf.cluster), $nf.asg, $nf.zone, $(name)"
 
-  private val tags = SmallHashMap(
+  private val tags = SortedTagMap(
     "nf.app"     -> "foo-main",
     "nf.cluster" -> "foo-main",
     "nf.asg"     -> "foo-main-v042",

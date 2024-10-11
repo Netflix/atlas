@@ -17,6 +17,7 @@ package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.ExprType
+import com.netflix.spectator.atlas.impl.Parser
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
@@ -27,7 +28,7 @@ class ExpressionSplitterSuite extends FunSuite {
   private val frequency1 = 60000
   private val ds1a = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:count,(,nf.node,),:by"
   private val ds1b = "nf.cluster,skan-test,:eq,name,memUsed,:eq,:and,:sum,(,nf.node,),:by"
-  private val matchList1 = Query.Equal("nf.cluster", "skan-test")
+  private val matchList1 = Parser.parseQuery("nf.cluster,skan-test,:eq")
 
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
 
@@ -58,11 +59,11 @@ class ExpressionSplitterSuite extends FunSuite {
     val actual = splitter.split(expr, ExprType.TRACE_TIME_SERIES, frequency1)
     val expected = List(
       Subscription(
-        Query.True,
+        MatchesAll,
         ExpressionMetadata(childExpr(ds1a), ExprType.TRACE_TIME_SERIES, frequency1)
       ),
       Subscription(
-        Query.True,
+        MatchesAll,
         ExpressionMetadata(childExpr(ds1b), ExprType.TRACE_TIME_SERIES, frequency1)
       )
     ).reverse
@@ -230,29 +231,6 @@ class ExpressionSplitterSuite extends FunSuite {
     val query = Query.Not(Query.Equal("nf.stack", "iep"))
     val ret = splitter.compress(query)
     assertEquals(ret, query)
-  }
-
-  //
-  // Interner exerciser
-  //
-  test("interner exerciser") {
-    val tests = List(
-      Query.True,
-      Query.False,
-      Query.Equal("a", "b"),
-      Query.LessThan("a", "123"),
-      Query.LessThanEqual("a", "123"),
-      Query.GreaterThan("a", "123"),
-      Query.GreaterThanEqual("a", "123"),
-      Query.Regex("a", "b"),
-      Query.RegexIgnoreCase("a", "b"),
-      Query.In("a", List("b", "c")),
-      Query.HasKey("a"),
-      Query.And(Query.True, Query.True),
-      Query.Or(Query.True, Query.True),
-      Query.Not(Query.True)
-    )
-    tests.foreach(query => assert(splitter.intern(query) == query))
   }
 
 }

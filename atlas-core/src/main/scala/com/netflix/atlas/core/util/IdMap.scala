@@ -25,11 +25,11 @@ import com.netflix.spectator.api.Utils
 final case class IdMap(id: Id) extends scala.collection.immutable.Map[String, String] {
 
   override def removed(key: String): Map[String, String] = {
-    SmallHashMap(this).removed(key)
+    SortedTagMap(this).removed(key)
   }
 
   override def updated[V1 >: String](key: String, value: V1): Map[String, V1] = {
-    SmallHashMap(this).updated(key, value)
+    SortedTagMap(this).updated(key, value)
   }
 
   override def get(key: String): Option[String] = {

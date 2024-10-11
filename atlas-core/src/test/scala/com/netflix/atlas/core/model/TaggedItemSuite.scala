@@ -16,7 +16,6 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.Hash
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import munit.FunSuite
 
@@ -54,14 +53,6 @@ class TaggedItemSuite extends FunSuite {
     assert(TaggedItem.computeId(t1) != TaggedItem.computeId(t2))
   }
 
-  test("computeId, small hash map") {
-    val t1 = SmallHashMap("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "1")
-    val t2 = SmallHashMap("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "2")
-    assertEquals(TaggedItem.computeId(t1), expectedId(t1))
-    assertEquals(TaggedItem.computeId(t2), expectedId(t2))
-    assert(TaggedItem.computeId(t1) != TaggedItem.computeId(t2))
-  }
-
   test("computeId, sorted tag map") {
     val t1 = SortedTagMap("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "1")
     val t2 = SortedTagMap("name" -> "foo", "cluster" -> "abc", "app" -> "a", "zone" -> "2")
@@ -74,7 +65,7 @@ class TaggedItemSuite extends FunSuite {
     // verify buffers grow as expected
     (10 until 10_000 by 1000).foreach { size =>
       val tags = (0 until size).map(i => i.toString -> UUID.randomUUID().toString).toMap
-      val smallTags = SmallHashMap(tags)
+      val smallTags = SortedTagMap(tags)
       assertEquals(TaggedItem.computeId(smallTags), expectedId(tags))
     }
   }

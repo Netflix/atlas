@@ -24,6 +24,7 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TraceQuery
 import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.stream.ExprInterpreter
+import com.netflix.spectator.atlas.impl.Parser
 import com.netflix.spectator.ipc.ServerGroup
 import com.typesafe.config.Config
 
@@ -58,61 +59,8 @@ class ExpressionSplitter(config: Config) {
     .expireAfterAccess(10, TimeUnit.MINUTES)
     .build[String, Try[List[DataExprMeta]]]()
 
-  /**
-    * Cache used to reduce the memory overhead of the query objects.
-    */
-  private val interner = Caffeine
-    .newBuilder()
-    .expireAfterAccess(12, TimeUnit.HOURS)
-    .build[Query, Query]()
-
-  /**
-    * On instance types with a lot of cores, the loading cache causes a lot of thread
-    * contention and most threads are blocked. This just does and get/put which potentially
-    * recomputes some values, but for this case that is preferable.
-    */
-  private def internQuery(q: Query, newQuery: => Query): Query = {
-    val cached = interner.getIfPresent(q)
-    if (cached == null) {
-      val tmp = newQuery
-      interner.put(tmp, tmp)
-      tmp
-    } else {
-      cached
-    }
-  }
-
-  private[lwcapi] def intern(query: Query): Query = {
-    query match {
-      case Query.True =>
-        query
-      case Query.False =>
-        query
-      case q: Query.Equal =>
-        internQuery(q, Query.Equal(q.k.intern(), q.v.intern()))
-      case q: Query.LessThan =>
-        internQuery(q, Query.LessThan(q.k.intern(), q.v.intern()))
-      case q: Query.LessThanEqual =>
-        internQuery(q, Query.LessThanEqual(q.k.intern(), q.v.intern()))
-      case q: Query.GreaterThan =>
-        internQuery(q, Query.GreaterThan(q.k.intern(), q.v.intern()))
-      case q: Query.GreaterThanEqual =>
-        internQuery(q, Query.GreaterThanEqual(q.k.intern(), q.v.intern()))
-      case q: Query.Regex =>
-        internQuery(q, Query.Regex(q.k.intern(), q.v.intern()))
-      case q: Query.RegexIgnoreCase =>
-        internQuery(q, Query.RegexIgnoreCase(q.k.intern(), q.v.intern()))
-      case q: Query.In =>
-        internQuery(q, Query.In(q.k.intern(), q.vs.map(_.intern())))
-      case q: Query.HasKey =>
-        internQuery(q, Query.HasKey(q.k.intern()))
-      case q: Query.And =>
-        internQuery(q, Query.And(intern(q.q1), intern(q.q2)))
-      case q: Query.Or =>
-        internQuery(q, Query.Or(intern(q.q1), intern(q.q2)))
-      case q: Query.Not =>
-        internQuery(q, Query.Not(intern(q.q)))
-    }
+  private def toSpectatorQuery(query: Query): SpectatorQuery = {
+    Parser.parseQuery(query.toString)
   }
 
   private def parse(expression: String, exprType: ExprType): Try[List[DataExprMeta]] = Try {
@@ -121,7 +69,7 @@ class ExpressionSplitter(config: Config) {
       case ExprType.EVENTS =>
         parsedExpressions.collect {
           case e: EventExpr =>
-            val q = intern(compress(e.query))
+            val q = toSpectatorQuery(compress(e.query))
             DataExprMeta(e.toString, q)
         }
       case ExprType.TIME_SERIES =>
@@ -132,13 +80,13 @@ class ExpressionSplitter(config: Config) {
           .flatten
           .distinct
           .map { e =>
-            val q = intern(compress(e.query))
+            val q = toSpectatorQuery(compress(e.query))
             DataExprMeta(e.toString, q)
           }
       case ExprType.TRACE_EVENTS =>
         parsedExpressions.map { e =>
           // Tracing cannot be scoped to specific infrastructure, always use True
-          DataExprMeta(e.toString, Query.True)
+          DataExprMeta(e.toString, MatchesAll)
         }
       case ExprType.TRACE_TIME_SERIES =>
         parsedExpressions
@@ -150,7 +98,7 @@ class ExpressionSplitter(config: Config) {
           .distinct
           .map { e =>
             // Tracing cannot be scoped to specific infrastructure, always use True
-            DataExprMeta(e.toString, Query.True)
+            DataExprMeta(e.toString, MatchesAll)
           }
     }
   }
@@ -226,5 +174,5 @@ class ExpressionSplitter(config: Config) {
 }
 
 object ExpressionSplitter {
-  private case class DataExprMeta(exprString: String, compressedQuery: Query)
+  private case class DataExprMeta(exprString: String, compressedQuery: SpectatorQuery)
 }

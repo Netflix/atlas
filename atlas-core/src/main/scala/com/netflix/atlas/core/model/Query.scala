@@ -16,7 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.impl.PatternMatcher
 
 sealed trait Query extends Expr {
@@ -285,7 +285,7 @@ object Query {
 
     def matches(tags: Map[String, String]): Boolean = {
       tags match {
-        case ts: SmallHashMap[String, String] =>
+        case ts: SortedTagMap =>
           val v = ts.getOrNull(k)
           v != null && check(v)
         case _ =>
@@ -294,18 +294,12 @@ object Query {
     }
 
     def matchesAny(tags: Map[String, List[String]]): Boolean = {
-      tags match {
-        case ts: SmallHashMap[String, ?] =>
-          val vs = ts.getOrNull(k).asInstanceOf[List[String]]
-          vs != null && vs.exists(check)
-        case _ =>
-          tags.get(k).exists(_.exists(check))
-      }
+      tags.get(k).exists(_.exists(check))
     }
 
     def couldMatch(tags: Map[String, String]): Boolean = {
       tags match {
-        case ts: SmallHashMap[String, String] =>
+        case ts: SortedTagMap =>
           val v = ts.getOrNull(k)
           v == null || check(v)
         case _ =>

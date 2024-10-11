@@ -16,10 +16,9 @@
 package com.netflix.atlas.core.model
 
 import java.time.Duration
-
 import com.netflix.atlas.core.model.ConsolidationFunction.SumOrAvgCf
 import com.netflix.atlas.core.util.Math
-import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Strings
 
 sealed trait DataExpr extends TimeSeriesExpr with Product {
@@ -76,7 +75,7 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
 
 object DataExpr {
 
-  private val unknown = SmallHashMap("name" -> "unknown")
+  private val unknown = SortedTagMap("name" -> "unknown")
 
   private def defaultLabel(expr: DataExpr, ts: TimeSeries): String = {
     val label = expr match {

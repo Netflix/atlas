@@ -17,7 +17,7 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.InternMap
 import com.netflix.atlas.core.util.Interner
-import com.netflix.atlas.core.util.SmallHashMap
+import com.netflix.atlas.core.util.SortedTagMap
 
 /**
   * Helper functions for manipulating tagged items.
@@ -57,7 +57,7 @@ object TaggedItem {
     val iter = tags.iterator.map { t =>
       strInterner.intern(t._1) -> strInterner.intern(t._2)
     }
-    val smallMap = SmallHashMap(tags.size, iter)
+    val smallMap = SortedTagMap(iter)
     tagsInterner.intern(smallMap)
   }
 

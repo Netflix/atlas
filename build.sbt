@@ -98,6 +98,7 @@ lazy val `atlas-lwcapi` = project
   .dependsOn(`atlas-pekko`, `atlas-pekko-testkit` % "test", `atlas-core`, `atlas-eval`, `atlas-json`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepDynConfig,
+    Dependencies.spectatorAtlas,
     Dependencies.pekkoTestkit % "test",
     Dependencies.pekkoHttpTestkit % "test",
     Dependencies.pekkoStreamTestkit % "test"
