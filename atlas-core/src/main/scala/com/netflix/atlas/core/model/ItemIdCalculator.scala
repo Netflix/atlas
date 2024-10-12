@@ -17,7 +17,6 @@ package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Hash
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 
 import java.nio.ByteBuffer
@@ -61,16 +60,6 @@ class ItemIdCalculator {
     tags match {
       case ts: SortedTagMap =>
         ts.copyToArray(pairs)
-      case ts: SmallHashMap[String, String] =>
-        var pos = 0
-        val iter = ts.entriesIterator
-        while (iter.hasNext) {
-          pairs(pos) = iter.key
-          pairs(pos + 1) = iter.value
-          iter.nextEntry()
-          pos += 2
-        }
-        ArrayHelper.sortPairs(pairs, length)
       case _ =>
         var pos = 0
         tags.foreachEntry { (k, v) =>

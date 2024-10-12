@@ -16,7 +16,6 @@
 package com.netflix.atlas.core.validation
 
 import com.netflix.atlas.core.util.IdMap
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.api.Id
 
@@ -24,16 +23,6 @@ import com.netflix.spectator.api.Id
   * Helper for rules that can be checked using a single key and value pair.
   */
 trait TagRule extends Rule {
-
-  override def validate(tags: SmallHashMap[String, String]): ValidationResult = {
-    val iter = tags.entriesIterator
-    while (iter.hasNext) {
-      val result = validate(iter.key, iter.value)
-      if (result != TagRule.Pass) return failure(result, tags)
-      iter.nextEntry()
-    }
-    ValidationResult.Pass
-  }
 
   override def validate(tags: SortedTagMap): ValidationResult = {
     val size = tags.size

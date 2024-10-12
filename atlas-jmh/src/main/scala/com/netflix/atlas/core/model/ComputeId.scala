@@ -16,7 +16,6 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.util.Hash
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
@@ -67,8 +66,6 @@ class ComputeId {
     "statistic"  -> "totalTime"
   )
 
-  private val smallTagMap = SmallHashMap(tagMap)
-
   private val sortedTagMap = SortedTagMap(tagMap)
 
   @Threads(1)
@@ -83,12 +80,6 @@ class ComputeId {
   @Benchmark
   def computeIdTagMap(bh: Blackhole): Unit = {
     bh.consume(TaggedItem.computeId(tagMap))
-  }
-
-  @Threads(1)
-  @Benchmark
-  def computeIdSmallTagMap(bh: Blackhole): Unit = {
-    bh.consume(TaggedItem.computeId(smallTagMap))
   }
 
   @Threads(1)

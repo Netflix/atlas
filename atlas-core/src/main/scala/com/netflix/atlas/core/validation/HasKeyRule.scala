@@ -16,7 +16,6 @@
 package com.netflix.atlas.core.validation
 
 import com.netflix.atlas.core.util.IdMap
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.api.Id
 import com.typesafe.config.Config
@@ -29,13 +28,6 @@ import com.typesafe.config.Config
   * ```
   */
 case class HasKeyRule(key: String) extends Rule {
-
-  override def validate(tags: SmallHashMap[String, String]): ValidationResult = {
-    if (tags.contains(key))
-      ValidationResult.Pass
-    else
-      failure(s"missing key '$key'", tags)
-  }
 
   override def validate(tags: SortedTagMap): ValidationResult = {
     if (tags.contains(key))

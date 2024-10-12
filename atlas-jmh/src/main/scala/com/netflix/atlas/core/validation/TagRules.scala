@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.validation
 
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.impl.AsciiSet
 import org.openjdk.jmh.annotations.Benchmark
@@ -44,7 +43,7 @@ import org.openjdk.jmh.infra.Blackhole
 @State(Scope.Thread)
 class TagRules {
 
-  private val tags = SmallHashMap(
+  private val tags = SortedTagMap(
     "nf.app"     -> "atlas_backend",
     "nf.cluster" -> "atlas_backend-dev",
     "nf.asg"     -> "atlas_backend-dev-v001",
@@ -59,8 +58,6 @@ class TagRules {
     "action"     -> "end_of_major_GC",
     "statistic"  -> "totalTime"
   )
-
-  private val sortedTags = SortedTagMap(tags)
 
   private val rules = List(
     KeyLengthRule(2, 80),
@@ -94,17 +91,7 @@ class TagRules {
   }
 
   @Benchmark
-  def separateSorted(bh: Blackhole): Unit = {
-    bh.consume(Rule.validate(sortedTags, rules))
-  }
-
-  @Benchmark
   def composite(bh: Blackhole): Unit = {
     bh.consume(composite.validate(tags))
-  }
-
-  @Benchmark
-  def compositeSorted(bh: Blackhole): Unit = {
-    bh.consume(composite.validate(sortedTags))
   }
 }

@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.NullNode
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonParserHelper.*
@@ -173,11 +172,11 @@ object LwcMessages {
   }
 
   private def parseTags(parser: JsonParser): Map[String, String] = {
-    val builder = new SmallHashMap.Builder[String, String](30)
+    val builder = new SortedTagMap.Builder(30)
     foreachField(parser) {
       case k => builder.add(k, nextString(parser))
     }
-    builder.result
+    builder.result()
   }
 
   private val Expression = 0
