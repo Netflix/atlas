@@ -94,6 +94,7 @@ private[events] object DatapointConverter {
     v * v
   }
 
+  @scala.annotation.tailrec
   private[events] def toDouble(value: Any, dflt: Any): Double = {
     value match {
       case v: Boolean  => if (v) 1.0 else 0.0
@@ -118,17 +119,17 @@ private[events] object DatapointConverter {
     }
   }
 
-  private[events] def addNaN(value: AtomicDouble, amount: Double): Unit = {
+  private[events] def addNaN(now: Long, value: StepDouble, amount: Double): Unit = {
     if (amount.isNaN)
       return
 
     var set = false
     while (!set) {
-      val v = value.get()
+      val v = value.getCurrent(now)
       if (v.isNaN) {
-        set = value.compareAndSet(v, amount)
+        set = value.compareAndSet(now, v, amount)
       } else {
-        value.addAndGet(amount)
+        value.addAndGet(now, amount)
         set = true
       }
     }
@@ -154,7 +155,7 @@ private[events] object DatapointConverter {
 
     override def update(value: Double): Unit = {
       if (value.isFinite && value >= 0.0) {
-        addNaN(buffer.getCurrent, value)
+        addNaN(params.clock.wallTime(), buffer, value)
       }
     }
 
@@ -169,7 +170,7 @@ private[events] object DatapointConverter {
 
     override def hasNoData: Boolean = {
       val now = params.clock.wallTime()
-      buffer.getCurrent(now).get().isNaN && buffer.poll(now).isNaN
+      buffer.getCurrent(now).isNaN && buffer.poll(now).isNaN
     }
   }
 
@@ -183,7 +184,7 @@ private[events] object DatapointConverter {
     }
 
     override def update(value: Double): Unit = {
-      addNaN(buffer.getCurrent, 1.0)
+      addNaN(params.clock.wallTime(), buffer, 1.0)
     }
 
     override def flush(timestamp: Long): Unit = {
@@ -197,7 +198,7 @@ private[events] object DatapointConverter {
 
     override def hasNoData: Boolean = {
       val now = params.clock.wallTime()
-      buffer.getCurrent(now).get().isNaN && buffer.poll(now).isNaN
+      buffer.getCurrent(now).isNaN && buffer.poll(now).isNaN
     }
   }
 
@@ -211,9 +212,7 @@ private[events] object DatapointConverter {
     }
 
     override def update(value: Double): Unit = {
-      if (value.isFinite) {
-        buffer.getCurrent.max(value)
-      }
+      buffer.max(params.clock.wallTime(), value)
     }
 
     override def flush(timestamp: Long): Unit = {
@@ -227,7 +226,7 @@ private[events] object DatapointConverter {
 
     override def hasNoData: Boolean = {
       val now = params.clock.wallTime()
-      buffer.getCurrent(now).get().isNaN && buffer.poll(now).isNaN
+      buffer.getCurrent(now).isNaN && buffer.poll(now).isNaN
     }
   }
 
@@ -241,9 +240,7 @@ private[events] object DatapointConverter {
     }
 
     override def update(value: Double): Unit = {
-      if (value.isFinite) {
-        min(buffer.getCurrent, value)
-      }
+      buffer.min(params.clock.wallTime(), value)
     }
 
     private def min(current: AtomicDouble, value: Double): Unit = {
@@ -270,7 +267,7 @@ private[events] object DatapointConverter {
 
     override def hasNoData: Boolean = {
       val now = params.clock.wallTime()
-      buffer.getCurrent(now).get().isNaN && buffer.poll(now).isNaN
+      buffer.getCurrent(now).isNaN && buffer.poll(now).isNaN
     }
   }
 
