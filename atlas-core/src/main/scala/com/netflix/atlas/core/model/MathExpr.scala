@@ -892,7 +892,7 @@ object MathExpr {
         }
 
         // Count for each bucket
-        val counts = new Array[Long](PercentileBuckets.length())
+        val counts = new Array[Double](PercentileBuckets.length())
         val byBucket = filtered.groupBy { t =>
           // Value should have a prefix of T or D, followed by 4 digit hex integer indicating the
           // bucket index
@@ -920,10 +920,6 @@ object MathExpr {
         // Array percentile results will get written to
         val results = new Array[Double](pcts.length)
 
-        // Inputs are counters reported as a rate per second. We need to convert to a rate per
-        // step to get the correct counts for the estimation.
-        val multiple = context.step / 1000.0
-
         // If the input was a timer the unit for the buckets is nanoseconds. The type is reflected
         // by the prefix of T on the bucket key. After estimating the value we multiply by 1e-9 to
         // keep the result in a base unit of seconds.
@@ -937,9 +933,9 @@ object MathExpr {
           // Fill in the counts for this interval and compute the estimate
           var j = 0
           while (j < usedCounts.length) {
-            // Note, NaN.toLong == 0, so NaN values are the same as 0 for the count estimate
-            val v = (bounded(j).data(i) * multiple).toLong
-            counts(usedCounts(j)) = v
+            val v = bounded(j).data(i)
+            if (v.isFinite)
+              counts(usedCounts(j)) = v
             j += 1
           }
           PercentileBuckets.percentiles(counts, pcts, results)
