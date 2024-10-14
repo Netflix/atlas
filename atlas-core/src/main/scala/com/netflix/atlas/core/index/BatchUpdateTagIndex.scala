@@ -143,5 +143,7 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
 
   def findItems(query: TagQuery): List[T] = currentIndex.get.findItems(query)
 
+  override def iterator: Iterator[T] = currentIndex.get.iterator
+
   def size: Int = currentIndex.get.size
 }

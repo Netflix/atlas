@@ -84,7 +84,11 @@ class PostgresTagIndex(postgres: PostgresService) extends TagIndex[TaggedItem] {
   }
 
   override def findItems(query: TagQuery): List[TaggedItem] = {
-    throw new UnsupportedOperationException("")
+    throw new UnsupportedOperationException("findItems")
+  }
+
+  override def iterator: Iterator[TaggedItem] = {
+    throw new UnsupportedOperationException("iterator")
   }
 
   override def size: Int = 0

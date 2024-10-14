@@ -495,6 +495,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     result.result()
   }
 
+  override def iterator: Iterator[T] = items.iterator
+
   val size: Int = items.length
 }
 

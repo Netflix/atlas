@@ -135,6 +135,8 @@ class SimpleTagIndex[T <: TaggedItem: ClassTag](items: Array[T]) extends TagInde
     sorted.take(query.limit)
   }
 
+  override def iterator: Iterator[T] = items.iterator
+
   val size: Int = items.length
 
   def update(additions: List[T], deletions: List[ItemId]): TagIndex[T] = {
