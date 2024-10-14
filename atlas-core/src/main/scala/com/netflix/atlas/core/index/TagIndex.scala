@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.index
 
-import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
 
