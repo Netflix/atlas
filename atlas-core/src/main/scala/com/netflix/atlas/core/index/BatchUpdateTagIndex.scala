@@ -19,6 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import com.netflix.atlas.core.model.ItemId
+import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.ArrayHelper
@@ -142,6 +143,8 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
   def findValues(query: TagQuery): List[String] = currentIndex.get.findValues(query)
 
   def findItems(query: TagQuery): List[T] = currentIndex.get.findItems(query)
+
+  override def iterator: Iterator[T] = currentIndex.get.iterator
 
   def size: Int = currentIndex.get.size
 }

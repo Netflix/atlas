@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.index
 
+import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
 
@@ -27,6 +28,8 @@ trait TagIndex[T <: TaggedItem] {
   def findValues(query: TagQuery): List[String]
 
   def findItems(query: TagQuery): List[T]
+
+  def iterator: Iterator[T]
 
   def size: Int
 }
