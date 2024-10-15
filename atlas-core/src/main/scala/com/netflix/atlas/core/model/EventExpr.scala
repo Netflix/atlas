@@ -34,7 +34,9 @@ object EventExpr {
     */
   case class Raw(query: Query) extends EventExpr {
 
-    override def toString: String = query.toString
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, query)
+    }
   }
 
   /**
@@ -49,6 +51,8 @@ object EventExpr {
 
     require(columns.nonEmpty, "set of columns cannot be empty")
 
-    override def toString: String = Interpreter.toString(query, columns, ":table")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, query, columns, ":table")
+    }
   }
 }

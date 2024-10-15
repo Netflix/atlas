@@ -52,7 +52,9 @@ object StatefulExpr {
       if (period <= 1) OnlineIgnoreN(0) else OnlineTrend(period)
     }
 
-    override def toString: String = Interpreter.toString(expr, window, ":trend")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, window, ":trend")
+    }
   }
 
   /**
@@ -69,7 +71,9 @@ object StatefulExpr {
       OnlineIntegral(Double.NaN)
     }
 
-    override def toString: String = Interpreter.toString(expr, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, s":$name")
+    }
   }
 
   /**
@@ -83,7 +87,9 @@ object StatefulExpr {
       OnlineDerivative(Double.NaN)
     }
 
-    override def toString: String = Interpreter.toString(expr, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, s":$name")
+    }
   }
 
   /**
@@ -98,7 +104,9 @@ object StatefulExpr {
       OnlineDelay(n)
     }
 
-    override def toString: String = Interpreter.toString(expr, n, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, n, s":$name")
+    }
   }
 
   /**
@@ -112,7 +120,9 @@ object StatefulExpr {
       OnlineRollingCount(n)
     }
 
-    override def toString: String = Interpreter.toString(expr, n, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, n, s":$name")
+    }
   }
 
   /**
@@ -126,7 +136,9 @@ object StatefulExpr {
       OnlineRollingMin(n)
     }
 
-    override def toString: String = Interpreter.toString(expr, n, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, n, s":$name")
+    }
   }
 
   /**
@@ -140,7 +152,9 @@ object StatefulExpr {
       OnlineRollingMax(n)
     }
 
-    override def toString: String = Interpreter.toString(expr, n, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, n, s":$name")
+    }
   }
 
   /**
@@ -154,7 +168,9 @@ object StatefulExpr {
       OnlineRollingMean(n, minNumValues)
     }
 
-    override def toString: String = Interpreter.toString(expr, n, minNumValues, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, n, minNumValues, s":$name")
+    }
   }
 
   /**
@@ -168,7 +184,9 @@ object StatefulExpr {
       OnlineRollingSum(n)
     }
 
-    override def toString: String = Interpreter.toString(expr, n, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, n, s":$name")
+    }
   }
 
   /**
@@ -184,8 +202,8 @@ object StatefulExpr {
       OnlineDes(trainingSize, alpha, beta)
     }
 
-    override def toString: String = {
-      Interpreter.toString(expr, trainingSize, alpha, beta, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, trainingSize, alpha, beta, s":$name")
     }
   }
 
@@ -218,8 +236,8 @@ object StatefulExpr {
         context.start / trainingStep * trainingStep + trainingStep
     }
 
-    override def toString: String = {
-      Interpreter.toString(expr, trainingSize, alpha, beta, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, trainingSize, alpha, beta, s":$name")
     }
   }
 

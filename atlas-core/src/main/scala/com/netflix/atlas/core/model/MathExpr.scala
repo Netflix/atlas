@@ -30,6 +30,8 @@ import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.Strings
 import com.netflix.spectator.api.histogram.PercentileBuckets
 
+import scala.collection.immutable.ArraySeq
+
 trait MathExpr extends TimeSeriesExpr
 
 object MathExpr {
@@ -49,7 +51,9 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
-    override def toString: String = Interpreter.toString(expr, original, replacement, ":as")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, original, replacement, ":as")
+    }
 
     def isGrouped: Boolean = expr.isGrouped
 
@@ -83,7 +87,9 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = Nil
 
-    override def toString: String = Interpreter.toString(v, ":const")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, v, ":const")
+    }
 
     def isGrouped: Boolean = false
 
@@ -107,7 +113,9 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = Nil
 
-    override def toString: String = ":random"
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, ":random")
+    }
 
     def isGrouped: Boolean = false
 
@@ -135,7 +143,9 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = Nil
 
-    override def toString: String = Interpreter.toString(seed, ":srandom")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, seed, ":srandom")
+    }
 
     def isGrouped: Boolean = false
 
@@ -196,7 +206,9 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = Nil
 
-    override def toString: String = s"$mode,:time"
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, mode, ":time")
+    }
 
     def isGrouped: Boolean = false
 
@@ -215,7 +227,9 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = Nil
 
-    override def toString: String = Interpreter.toString(s, e, ":time-span")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, s, e, ":time-span")
+    }
 
     def isGrouped: Boolean = false
 
@@ -286,7 +300,9 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
-    override def toString: String = Interpreter.toString(expr, min, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, min, s":$name")
+    }
 
     def isGrouped: Boolean = expr.isGrouped
 
@@ -316,6 +332,10 @@ object MathExpr {
 
     override def toString: String = Interpreter.toString(expr, max, s":$name")
 
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, max, s":$name")
+    }
+
     def isGrouped: Boolean = expr.isGrouped
 
     def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
@@ -344,7 +364,16 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
-    override def toString: String = Interpreter.toString(expr, s":$name")
+    override def toString: String = {
+      // Needs to be overridden here or it will get the copy from the based Function type
+      val builder = new java.lang.StringBuilder()
+      append(builder)
+      builder.toString
+    }
+
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, s":$name")
+    }
 
     def isGrouped: Boolean = expr.isGrouped
 
@@ -456,7 +485,16 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr1.dataExprs ::: expr2.dataExprs
 
-    override def toString: String = Interpreter.toString(expr1, expr2, s":$name")
+    override def toString: String = {
+      // Needs to be overridden here or it will get the copy from the based Function type
+      val builder = new java.lang.StringBuilder()
+      append(builder)
+      builder.toString
+    }
+
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr1, expr2, s":$name")
+    }
 
     def isGrouped: Boolean = expr1.isGrouped || expr2.isGrouped
 
@@ -680,7 +718,9 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
-    override def toString: String = Interpreter.toString(expr, s":$name")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, s":$name")
+    }
 
     def isGrouped: Boolean = false
 
@@ -766,7 +806,9 @@ object MathExpr {
       }
     }
 
-    override def toString: String = Interpreter.toString(expr, keys, ":by")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, keys, ":by")
+    }
 
     def dataExprs: List[DataExpr] = expr.dataExprs
 
@@ -828,16 +870,20 @@ object MathExpr {
     private val evalGroupKeys = expr.keys.filter(_ != TagKey.percentile)
     private val pcts = percentiles.distinct.sortWith(_ < _).toArray
 
-    override def toString: String = {
-      val baseExpr =
-        if (evalGroupKeys.isEmpty)
-          expr.af.query.toString
-        else
-          Interpreter.toString(expr.af.query, evalGroupKeys, ":by")
-      if (expr.offset.isZero)
-        s"$baseExpr,(,${pcts.mkString(",")},),:percentiles"
-      else
-        s"$baseExpr,(,${pcts.mkString(",")},),:percentiles,${expr.offset},:offset"
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      // Base expr
+      Interpreter.append(builder, expr.af.query)
+      if (evalGroupKeys.nonEmpty)
+        Interpreter.append(builder, expr.af.query, evalGroupKeys, ":by")
+
+      // Percentiles
+      builder.append(",(,")
+      Interpreter.append(builder, ArraySeq.unsafeWrapArray(pcts)*)
+      builder.append(",),:percentiles")
+
+      // Offset
+      if (!expr.offset.isZero)
+        builder.append(',').append(expr.offset).append(",:offset")
     }
 
     override def dataExprs: List[DataExpr] = List(expr)
@@ -995,9 +1041,11 @@ object MathExpr {
 
     def dataExprs: List[DataExpr] = evalExpr.dataExprs
 
-    override def toString: String = toString(displayExpr)
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      append(builder, displayExpr)
+    }
 
-    private def toString(expr: Expr): String = {
+    private def append(builder: java.lang.StringBuilder, expr: Expr): Unit = {
       val op =
         if (displayParams.isEmpty)
           s":$name"
@@ -1009,31 +1057,39 @@ object MathExpr {
           // aggregate function. Modifications to the aggregate need to be represented
           // after the operation as part of the expression string. There are two
           // categories: offsets applied to the data function and group by.
-          val buffer = new java.lang.StringBuilder
-          buffer.append(s"$q,$op")
-          getOffset(evalExpr).foreach(d => buffer.append(s",$d,:offset"))
+          builder.append(s"$q,$op")
+          getOffset(evalExpr).foreach(d => builder.append(s",$d,:offset"))
 
           val grouping = evalExpr.finalGrouping
           if (grouping.nonEmpty) {
-            buffer.append(grouping.mkString(",(,", ",", ",),:by"))
+            builder.append(grouping.mkString(",(,", ",", ",),:by"))
           }
-
-          buffer.toString
         case t: TimeSeriesExpr if groupingMatches =>
           // The passed in expression maybe the result of a rewrite to the display expression
           // that was not applied to the eval expression. If it changes the grouping, then it
           // would alter the toString behavior. So the grouping match check is based on the
           // original display expression.
           val evalOffset = getOffset(evalExpr)
-          evalOffset.fold(s"$t,$op") { d =>
+          val str = evalOffset.fold(s"$t,$op") { d =>
             val displayOffset = getOffset(t).getOrElse(Duration.ZERO)
             if (d != displayOffset) s"${t.withOffset(d)},$op" else s"$t,$op"
           }
+          builder.append(str)
         case _ =>
+          Interpreter.append(builder, expr, op)
           val grouping = evalExpr.finalGrouping
-          val by = if (grouping.nonEmpty) grouping.mkString(",(,", ",", ",),:by") else ""
-          s"$expr,$op$by"
+          if (grouping.nonEmpty) {
+            builder.append(",(,")
+            Interpreter.append(builder, grouping*)
+            builder.append(",),:by")
+          }
       }
+    }
+
+    private def toString(expr: Expr): String = {
+      val builder = new java.lang.StringBuilder()
+      append(builder, expr)
+      builder.toString
     }
 
     private def groupingMatches: Boolean = {
