@@ -201,6 +201,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
         // Generate the time series and diagnostic output
         val output = recipients.flatMap {
           case (styleExpr, infos) =>
+            val exprStr = styleExpr.toString
             val ids = infos.map(_.id)
             // Use an identity map for the state to ensure that multiple equivalent stateful
             // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
@@ -221,7 +222,8 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
                     styleExpr,
                     context,
                     t.withLabel(styleExpr.legend(t)),
-                    info.palette
+                    info.palette,
+                    Some(exprStr)
                   )
                   new MessageEnvelope(info.id, ts)
                 }
