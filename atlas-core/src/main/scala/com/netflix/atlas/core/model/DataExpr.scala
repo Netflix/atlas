@@ -60,8 +60,10 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
     ResultSet(this, data.getOrElse(this, Nil), context.state)
   }
 
-  override def toString: String = {
-    if (offset.isZero) exprString else s"$exprString,$offset,:offset"
+  override def append(builder: java.lang.StringBuilder): Unit = {
+    builder.append(exprString)
+    if (!offset.isZero)
+      builder.append(',').append(offset).append(",:offset")
   }
 
   /**

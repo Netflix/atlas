@@ -246,7 +246,9 @@ object Query {
 
     def labelString: String = "true"
 
-    override def toString: String = ":true"
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      builder.append(":true")
+    }
 
     override def and(query: Query): Query = query
 
@@ -265,7 +267,9 @@ object Query {
 
     def labelString: String = "false"
 
-    override def toString: String = ":false"
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      builder.append(":false")
+    }
 
     override def and(query: Query): Query = Query.False
 
@@ -318,7 +322,9 @@ object Query {
 
     def labelString: String = s"has($k)"
 
-    override def toString: String = Interpreter.toString(k, ":has")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, k, ":has")
+    }
   }
 
   case class Equal(k: String, v: String) extends KeyValueQuery {
@@ -327,7 +333,9 @@ object Query {
 
     def labelString: String = s"$k=$v"
 
-    override def toString: String = Interpreter.toString(k, v, ":eq")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, k, v, ":eq")
+    }
   }
 
   case class LessThan(k: String, v: String) extends KeyValueQuery {
@@ -336,7 +344,9 @@ object Query {
 
     def labelString: String = s"$k<$v"
 
-    override def toString: String = Interpreter.toString(k, v, ":lt")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, k, v, ":lt")
+    }
   }
 
   case class LessThanEqual(k: String, v: String) extends KeyValueQuery {
@@ -345,7 +355,9 @@ object Query {
 
     def labelString: String = s"$k<=$v"
 
-    override def toString: String = Interpreter.toString(k, v, ":le")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, k, v, ":le")
+    }
   }
 
   case class GreaterThan(k: String, v: String) extends KeyValueQuery {
@@ -354,7 +366,9 @@ object Query {
 
     def labelString: String = s"$k>$v"
 
-    override def toString: String = Interpreter.toString(k, v, ":gt")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, k, v, ":gt")
+    }
   }
 
   case class GreaterThanEqual(k: String, v: String) extends KeyValueQuery {
@@ -363,7 +377,9 @@ object Query {
 
     def labelString: String = s"$k>=$v"
 
-    override def toString: String = Interpreter.toString(k, v, ":ge")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, k, v, ":ge")
+    }
   }
 
   sealed trait PatternQuery extends KeyValueQuery {
@@ -379,7 +395,9 @@ object Query {
 
     def labelString: String = s"$k~/^$v/"
 
-    override def toString: String = Interpreter.toString(k, v, ":re")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, k, v, ":re")
+    }
   }
 
   case class RegexIgnoreCase(k: String, v: String) extends PatternQuery {
@@ -390,7 +408,9 @@ object Query {
 
     def labelString: String = s"$k~/^$v/i"
 
-    override def toString: String = Interpreter.toString(k, v, ":reic")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, k, v, ":reic")
+    }
   }
 
   case class In(k: String, vs: List[String]) extends KeyValueQuery {
@@ -401,7 +421,9 @@ object Query {
 
     def labelString: String = s"$k in (${vs.mkString(",")})"
 
-    override def toString: String = Interpreter.toString(k, vs, ":in")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, k, vs, ":in")
+    }
 
     /** Convert this to a sequence of OR'd together equal queries. */
     def toOrQuery: Query = {
@@ -423,7 +445,9 @@ object Query {
 
     def labelString: String = s"(${q1.labelString}) and (${q2.labelString})"
 
-    override def toString: String = Interpreter.toString(q1, q2, ":and")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, q1, q2, ":and")
+    }
   }
 
   case class Or(q1: Query, q2: Query) extends Query {
@@ -437,7 +461,9 @@ object Query {
 
     def labelString: String = s"(${q1.labelString}) or (${q2.labelString})"
 
-    override def toString: String = Interpreter.toString(q1, q2, ":or")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, q1, q2, ":or")
+    }
   }
 
   case class Not(q: Query) extends Query {
@@ -450,6 +476,8 @@ object Query {
 
     def labelString: String = s"not(${q.labelString})"
 
-    override def toString: String = Interpreter.toString(q, ":not")
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, q, ":not")
+    }
   }
 }

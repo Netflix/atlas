@@ -25,7 +25,8 @@ import com.netflix.atlas.core.util.Strings
 
 case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extends Expr {
 
-  override def toString: String = {
+  override def append(builder: java.lang.StringBuilder): Unit = {
+    Interpreter.append(builder, expr)
     // Use descending order to ensure that an explicit alpha used with
     // a palette is not overwritten when reprocessing the expression string.
     // This works because palette will be sorted before alpha, though a better
@@ -36,7 +37,9 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
       case ("ls", v)  => s":$v"
       case (k, v)     => s"$v,:$k"
     }
-    if (vs.isEmpty) expr.toString else s"$expr,${vs.mkString(",")}"
+    vs.foreach { v =>
+      builder.append(',').append(v)
+    }
   }
 
   def legend(t: TimeSeries): String = {

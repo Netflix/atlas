@@ -147,8 +147,16 @@ object Strings {
     * Escape special characters in the input string to unicode escape sequences (\uXXXX).
     */
   def escape(input: String, isSpecial: Int => Boolean): String = {
+    val builder = new java.lang.StringBuilder(input.length)
+    escape(builder, input, isSpecial)
+    builder.toString
+  }
+
+  /**
+    * Escape special characters in the input string to unicode escape sequences (\uXXXX).
+    */
+  def escape(builder: java.lang.StringBuilder, input: String, isSpecial: Int => Boolean): Unit = {
     val length = input.length
-    val builder = new java.lang.StringBuilder(length)
     var i = 0
     while (i < length) {
       val cp = input.codePointAt(i)
@@ -159,7 +167,6 @@ object Strings {
         builder.appendCodePoint(cp)
       i += len
     }
-    builder.toString
   }
 
   private def escapeCodePoint(cp: Int, builder: java.lang.StringBuilder): Unit = {
