@@ -107,7 +107,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
     splits.foreach { s =>
       sm.subscribe("a", s)
     }
-    sm.regenerateQueryIndex()
+    sm.updateQueryIndex()
     Get("/lwc/api/v1/expressions/skan") ~> endpoint.routes ~> check {
       val expected = s"""{"expressions":[$skanCount,$skanSum]}"""
       assertEquals(unzip(responseAs[Array[Byte]]), expected)
@@ -121,7 +121,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
     splits.foreach { s =>
       sm.subscribe("a", s)
     }
-    sm.regenerateQueryIndex()
+    sm.updateQueryIndex()
     Get("/lwc/api/v1/expressions") ~> endpoint.routes ~> check {
       val expected = s"""{"expressions":[$brhMax,$skanCount,$skanSum]}"""
       assertEquals(unzip(responseAs[Array[Byte]]), expected)
