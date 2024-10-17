@@ -74,11 +74,11 @@ class SubscriptionManagerSuite extends FunSuite {
 
     val exp1 = sub("name,exp1,:eq")
     sm.subscribe(meta.streamId, exp1)
-    sm.regenerateQueryIndex()
+    sm.updateQueryIndex()
     assertEquals(sm.subscriptions, List(exp1))
 
     assert(!sm.register(meta, 1))
-    sm.regenerateQueryIndex()
+    sm.updateQueryIndex()
     assertEquals(sm.subscriptions, List(exp1))
   }
 
@@ -89,7 +89,7 @@ class SubscriptionManagerSuite extends FunSuite {
 
     val subs = List(sub("name,exp1,:eq"), sub("name,exp2,:eq"))
     sm.subscribe(meta.streamId, subs)
-    sm.regenerateQueryIndex()
+    sm.updateQueryIndex()
 
     assertEquals(sm.subscriptions.toSet, subs.toSet)
   }
@@ -102,7 +102,7 @@ class SubscriptionManagerSuite extends FunSuite {
     val s = sub("name,exp1,:eq")
     sm.subscribe(meta.streamId, s)
     sm.subscribe(meta.streamId, s)
-    sm.regenerateQueryIndex()
+    sm.updateQueryIndex()
 
     assertEquals(sm.subscriptions, List(s))
   }
@@ -117,7 +117,7 @@ class SubscriptionManagerSuite extends FunSuite {
     val s = sub("name,exp1,:eq")
     sm.subscribe(a.streamId, s)
     sm.subscribe(b.streamId, s)
-    sm.regenerateQueryIndex()
+    sm.updateQueryIndex()
 
     assertEquals(sm.subscriptions, List(s))
     assertEquals(sm.subscriptionsForStream(a.streamId), List(s))
@@ -133,7 +133,7 @@ class SubscriptionManagerSuite extends FunSuite {
     val s = sub(expr)
     sm.register(StreamMetadata("a"), 1)
     sm.subscribe("a", s)
-    sm.regenerateQueryIndex()
+    sm.updateQueryIndex()
     sm.subscriptionsForCluster(cluster).map(_.metadata.expression)
   }
 

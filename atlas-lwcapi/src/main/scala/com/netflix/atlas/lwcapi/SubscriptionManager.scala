@@ -46,35 +46,33 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
   private val subHandlers = new ConcurrentHashMap[String, ConcurrentSet[T]]()
 
   @volatile private var subscriptionsList = List.empty[Subscription]
-  @volatile private var queryIndex = newIndex(Nil)
   @volatile private var queryListChanged = false
+  private val queryIndex = QueryIndex.newInstance[Subscription](registry)
 
   // Background process for updating the query index. It is not done inline because rebuilding
   // the index can be computationally expensive.
   private val ex =
     new ScheduledThreadPoolExecutor(1, ThreadPools.threadFactory("ExpressionDatabase"))
-  ex.scheduleWithFixedDelay(() => regenerateQueryIndex(), 1, 1, TimeUnit.SECONDS)
+  ex.scheduleWithFixedDelay(() => updateQueryIndex(), 1, 1, TimeUnit.SECONDS)
   ex.scheduleAtFixedRate(() => updateGauges(), 1, 1, TimeUnit.MINUTES)
 
-  private def newIndex(subs: List[Subscription]): QueryIndex[Subscription] = {
-    val idx = QueryIndex.newInstance[Subscription](registry)
-    subs.foreach { sub =>
-      idx.add(sub.query, sub)
-    }
-    idx
-  }
-
   /** Rebuild the query index if there have been changes since it was last created. */
-  private[lwcapi] def regenerateQueryIndex(): Unit = {
+  private[lwcapi] def updateQueryIndex(): Unit = {
     if (queryListChanged) {
       queryListChanged = false
+      val previous = subscriptionsList.toSet
       subscriptionsList = registrations
         .values()
         .asScala
         .flatMap(_.subscriptions)
         .toList
         .distinct
-      queryIndex = newIndex(subscriptionsList)
+
+      val current = subscriptionsList.toSet
+      val added = current.diff(previous)
+      val removed = previous.diff(current)
+      added.foreach(s => queryIndex.add(s.query, s))
+      removed.foreach(s => queryIndex.remove(s.query, s))
     }
   }
 
@@ -285,7 +283,7 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
     logger.debug("clearing all subscriptions")
     registrations.clear()
     queryListChanged = true
-    regenerateQueryIndex()
+    updateQueryIndex()
   }
 }
 
