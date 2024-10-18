@@ -99,6 +99,9 @@ private[stream] abstract class EvaluatorImpl(
   // Version of the LWC Server API to use
   private val lwcapiVersion: Int = config.getInt("atlas.eval.stream.lwcapi-version")
 
+  // Should no data messages be emitted?
+  private val enableNoDataMsgs = config.getBoolean("atlas.eval.stream.enable-no-data-messages")
+
   // Counter for message that cannot be parsed
   private val badMessages = registry.counter("atlas.eval.badMessages")
 
@@ -297,7 +300,7 @@ private[stream] abstract class EvaluatorImpl(
       .via(g)
       .flatMapConcat(s => Source(splitByStep(s)))
       .groupBy(Int.MaxValue, stepSize, allowClosedSubstreamRecreation = true)
-      .via(new FinalExprEval(context.interpreter))
+      .via(new FinalExprEval(context.interpreter, enableNoDataMsgs))
       .mergeSubstreams
       .via(context.monitorFlow("12_OutputSources"))
       .flatMapConcat(s => s)
@@ -329,7 +332,7 @@ private[stream] abstract class EvaluatorImpl(
     Flow[DatapointGroup]
       .map(g => toTimeGroup(stepSize, exprs, g, context))
       .merge(Source.single(sources), eagerComplete = false)
-      .via(new FinalExprEval(interpreter))
+      .via(new FinalExprEval(interpreter, enableNoDataMsgs))
       .flatMapConcat(s => s)
       .via(new OnUpstreamFinish[MessageEnvelope](context.dsLogger.close()))
       .merge(logSrc, eagerComplete = false)
