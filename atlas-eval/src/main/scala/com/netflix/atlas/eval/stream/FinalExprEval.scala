@@ -263,7 +263,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
       private def valueNotNaN(value: ChunkData): Boolean = {
         value match {
           case ArrayData(vs) => vs.exists(!_.isNaN)
-          case _             => true
+          case null          => true
         }
       }
 
