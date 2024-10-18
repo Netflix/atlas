@@ -32,6 +32,8 @@ import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.IdentityMap
+import com.netflix.atlas.eval.model.ArrayData
+import com.netflix.atlas.eval.model.ChunkData
 import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeGroupsTuple
@@ -49,8 +51,11 @@ import scala.collection.mutable
   *
   * @param exprInterpreter
   *     Used for evaluating the expressions.
+  * @param enableNoDataMsgs
+  *     If set to true, then a no data message will be emitted for each expression if there
+  *     is no data to generate an actual data point.
   */
-private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
+private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDataMsgs: Boolean)
     extends GraphStage[FlowShape[AnyRef, Source[MessageEnvelope, NotUsed]]]
     with StrictLogging {
 
@@ -199,49 +204,67 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter)
         }
 
         // Generate the time series and diagnostic output
-        val output = recipients.flatMap {
-          case (styleExpr, infos) =>
-            val exprStr = styleExpr.toString
-            val ids = infos.map(_.id)
-            // Use an identity map for the state to ensure that multiple equivalent stateful
-            // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
-            val state = states.getOrElse(styleExpr, IdentityMap.empty[StatefulExpr, Any])
-            val context = EvalContext(timestamp, timestamp + step, step, state)
-            try {
-              val result = styleExpr.expr.eval(context, dataExprToDatapoints)
-              states(styleExpr) = result.state
-              val data = if (result.data.isEmpty) List(noData(styleExpr)) else result.data
+        val output = recipients
+          .flatMap {
+            case (styleExpr, infos) =>
+              val exprStr = styleExpr.toString
+              val ids = infos.map(_.id)
+              // Use an identity map for the state to ensure that multiple equivalent stateful
+              // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
+              val state = states.getOrElse(styleExpr, IdentityMap.empty[StatefulExpr, Any])
+              val context = EvalContext(timestamp, timestamp + step, step, state)
+              try {
+                val result = styleExpr.expr.eval(context, dataExprToDatapoints)
+                states(styleExpr) = result.state
+                val data = if (result.data.isEmpty) List(noData(styleExpr)) else result.data
 
-              // Collect final data size per DataSource
-              ids.foreach(rateCollector.incrementOutput(_, data.size))
+                // Collect final data size per DataSource
+                ids.foreach(rateCollector.incrementOutput(_, data.size))
 
-              // Create time series messages
-              infos.flatMap { info =>
-                data.map { t =>
-                  val ts = TimeSeriesMessage(
-                    styleExpr,
-                    context,
-                    t.withLabel(styleExpr.legend(t)),
-                    info.palette,
-                    Some(exprStr)
-                  )
-                  new MessageEnvelope(info.id, ts)
+                // Create time series messages
+                infos.flatMap { info =>
+                  data.map { t =>
+                    val ts = TimeSeriesMessage(
+                      styleExpr,
+                      context,
+                      t.withLabel(styleExpr.legend(t)),
+                      info.palette,
+                      Some(exprStr)
+                    )
+                    new MessageEnvelope(info.id, ts)
+                  }
                 }
+              } catch {
+                case e: Exception =>
+                  val msg = error(styleExpr.toString, "final eval failed", e)
+                  ids.map { id =>
+                    new MessageEnvelope(id, msg)
+                  }
               }
-            } catch {
-              case e: Exception =>
-                val msg = error(styleExpr.toString, "final eval failed", e)
-                ids.map { id =>
-                  new MessageEnvelope(id, msg)
-                }
-            }
-        }
+          }
+          .filter { env =>
+            enableNoDataMsgs || hasFiniteValue(env.message())
+          }
 
         val rateMessages = rateCollector.getAll.map {
           case (id, rate) => new MessageEnvelope(id, rate)
         }.toList
 
         output ++ rateMessages
+      }
+
+      private def hasFiniteValue(value: AnyRef): Boolean = {
+        value match {
+          case ts: TimeSeriesMessage => valueNotNaN(ts.data)
+          case _                     => true
+        }
+      }
+
+      private def valueNotNaN(value: ChunkData): Boolean = {
+        value match {
+          case ArrayData(vs) => vs.exists(!_.isNaN)
+          case null          => true
+        }
       }
 
       private def handleSingleGroup(g: TimeGroup): Unit = {
