@@ -84,11 +84,17 @@ object ItemId {
   }
 
   /**
-    * Create a new id from an array of bytes. The pre-computed hash code will be generated
-    * using MurmurHash3.
+    * Create a new id from an array of bytes.
     */
   def apply(data: Array[Byte]): ItemId = {
     new ItemId(data)
+  }
+
+  /**
+    * Create a new id from a BigInteger instance.
+    */
+  def apply(data: BigInteger): ItemId = {
+    apply(data.toString(16))
   }
 
   /**
@@ -96,17 +102,19 @@ object ItemId {
     * an `ItemId`.
     */
   def apply(data: String): ItemId = {
-    require(data.length % 2 == 0, s"invalid item id string: $data")
-    val bytes = new Array[Byte](data.length / 2)
+    // Pad to min size for id. Allows it to work easily with hex strings from number types
+    val str = Strings.zeroPad(data, 32)
+    require(str.length % 2 == 0, s"invalid item id string: $str")
+    val bytes = new Array[Byte](str.length / 2)
     var i = 0
     while (i < bytes.length) {
-      val c1 = hexToInt(data.charAt(2 * i))
-      val c2 = hexToInt(data.charAt(2 * i + 1))
+      val c1 = hexToInt(str.charAt(2 * i))
+      val c2 = hexToInt(str.charAt(2 * i + 1))
       val v = (c1 << 4) | c2
       bytes(i) = v.toByte
       i += 1
     }
-    ItemId(bytes)
+    new ItemId(bytes)
   }
 
   private def hexToInt(c: Char): Int = {
