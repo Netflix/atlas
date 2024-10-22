@@ -31,23 +31,29 @@ class MemoryDatabaseSuite extends FunSuite {
   private val clock = new ManualClock()
   private val registry = new DefaultRegistry(clock)
 
-  private val db = new MemoryDatabase(
-    registry,
-    ConfigFactory.parseString("""
-      |block-size = 60
-      |num-blocks = 2
-      |rebuild-frequency = 10s
-      |test-mode = true
-      |intern-while-building = true
-    """.stripMargin)
-  )
+  private var db: MemoryDatabase = _
 
-  addData("a", 1.0, 2.0, 3.0)
-  addData("b", 3.0, 2.0, 1.0)
+  override def beforeEach(context: BeforeEach): Unit = {
+    clock.setWallTime(0L)
 
-  addRollupData("c", 4.0, 5.0, 6.0)
-  addRollupData("c", 5.0, 6.0, 7.0)
-  addRollupData("c", 6.0, 7.0, 8.0)
+    db = new MemoryDatabase(
+      registry,
+      ConfigFactory.parseString("""
+          |block-size = 60
+          |num-blocks = 2
+          |rebuild-frequency = 10s
+          |test-mode = true
+          |intern-while-building = true
+        """.stripMargin)
+    )
+
+    addData("a", 1.0, 2.0, 3.0)
+    addData("b", 3.0, 2.0, 1.0)
+
+    addRollupData("c", 4.0, 5.0, 6.0)
+    addRollupData("c", 5.0, 6.0, 7.0)
+    addRollupData("c", 6.0, 7.0, 8.0)
+  }
 
   private val context = EvalContext(0, 3 * step, step)
 
@@ -216,5 +222,13 @@ class MemoryDatabaseSuite extends FunSuite {
       expTS("c", "name=c", 3, 54.0)
     )
     assertEquals(exec(":true,:all", 3 * step), expected)
+  }
+
+  test("filter") {
+    assertEquals(exec("name,(,a,b,),:in"), List(ts("sum(name in (a,b))", 1, 4.0, 4.0, 4.0)))
+    clock.setWallTime(4 * step)
+    db.setFilter(Query.Equal("name", "a"))
+    db.rebuild()
+    assertEquals(exec("name,(,a,b,),:in"), List(ts("sum(name in (a,b))", 1, 1.0, 2.0, 3.0)))
   }
 }
