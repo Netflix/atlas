@@ -29,6 +29,7 @@ import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Spectator
@@ -118,7 +119,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
       }
       logger.info("done rebuilding metadata index, {} metrics", index.size)
 
-      BlockStoreItem.retain(_ > cutoff)
+      TaggedItem.retain(_ > cutoff)
     }
   }
 
