@@ -29,21 +29,11 @@ case class BlockStoreItem(id: ItemId, tags: Map[String, String], blocks: BlockSt
 
 object BlockStoreItem {
 
-  import com.netflix.atlas.core.util.InternMap
-
-  private val metricInterner = InternMap.concurrent[BlockStoreItem](1000000)
-
   def create(tags: Map[String, String], blocks: BlockStore): BlockStoreItem = {
     create(TaggedItem.createId(tags), tags, blocks)
   }
 
   def create(id: ItemId, tags: Map[String, String], blocks: BlockStore): BlockStoreItem = {
-    val m = new BlockStoreItem(id, tags, blocks)
-    metricInterner.intern(m)
-  }
-
-  def retain(keep: Long => Boolean): Unit = {
-    TaggedItem.retain(keep)
-    metricInterner.retain(keep)
+    new BlockStoreItem(id, tags, blocks)
   }
 }
