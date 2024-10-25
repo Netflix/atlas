@@ -1115,11 +1115,8 @@ object MathVocabulary extends Vocabulary {
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case DataExpr.GroupBy(a: DataExpr.Sum, _) :: stack if this == Sum => a :: stack
-      case DataExpr.GroupBy(a: DataExpr.Min, _) :: stack if this == Min => a :: stack
-      case DataExpr.GroupBy(a: DataExpr.Max, _) :: stack if this == Max => a :: stack
-      case (a: DataExpr.AggregateFunction) :: stack if this != Count    => a :: stack
-      case (t: TimeSeriesExpr) :: stack                                 => newInstance(t) :: stack
+      case (a: DataExpr.AggregateFunction) :: stack if this != Count => a :: stack
+      case (t: TimeSeriesExpr) :: stack                              => newInstance(t) :: stack
     }
 
     override def signature: String = "TimeSeriesExpr -- TimeSeriesExpr"
