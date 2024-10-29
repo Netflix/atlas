@@ -980,8 +980,7 @@ object MathExpr {
           var j = 0
           while (j < usedCounts.length) {
             val v = bounded(j).data(i)
-            if (v.isFinite)
-              counts(usedCounts(j)) = v
+            counts(usedCounts(j)) = if (v.isFinite) v else 0.0
             j += 1
           }
           PercentileBuckets.percentiles(counts, pcts, results)
