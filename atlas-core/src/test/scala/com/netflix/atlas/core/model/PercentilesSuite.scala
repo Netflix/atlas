@@ -57,6 +57,14 @@ class PercentilesSuite extends FunSuite {
     } toList
   }
 
+  private val inputNaN100 = {
+    (0 until 100).map { i =>
+      val bucket = f"D${PercentileBuckets.indexOf(i)}%04X"
+      val v = 1.0 / 60.0
+      ts(bucket, v, Double.NaN)
+    } toList
+  }
+
   private val inputBad100 = {
     // simulates bad client that incorrectly encodes the percentile tag
     (0 until 100).map { i =>
@@ -135,6 +143,24 @@ class PercentilesSuite extends FunSuite {
       eval("name,test,:eq,(,9,25,50,90,100,),:percentiles", input100 ::: inputBad100)
     }
     assertEquals(e.getMessage, "requirement failed: invalid percentile encoding: [D000A,D000a]")
+  }
+
+  test("distribution summary non-finite data") {
+    val data = eval("name,test,:eq,(,9,25,50,90,100,),:percentiles", inputNaN100)
+
+    assertEquals(data.size, 5)
+    List(9.0, 25.0, 50.0, 90.0).zip(data).foreach {
+      case (p, t) =>
+        assertEquals(t.tags, Map("name" -> "test", "percentile" -> f"$p%5.1f"))
+        assertEquals(t.label, f"percentile(name=test, $p%5.1f)")
+
+        val estimate1 = t.data(0L)
+        assertEqualsDouble(p, estimate1, 2.0)
+
+        val estimate2 = t.data(step)
+        assert(estimate2.isNaN)
+    }
+    assertEquals(data.last.label, f"percentile(name=test, 100.0)")
   }
 
   test("timer :sum") {
