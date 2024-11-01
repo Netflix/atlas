@@ -872,9 +872,10 @@ object MathExpr {
 
     override def append(builder: java.lang.StringBuilder): Unit = {
       // Base expr
-      Interpreter.append(builder, expr.af.query)
       if (evalGroupKeys.nonEmpty)
         Interpreter.append(builder, expr.af.query, evalGroupKeys, ":by")
+      else
+        Interpreter.append(builder, expr.af.query)
 
       // Percentiles
       builder.append(",(,")
