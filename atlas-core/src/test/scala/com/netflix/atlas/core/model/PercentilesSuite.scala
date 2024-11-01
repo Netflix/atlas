@@ -35,17 +35,25 @@ class PercentilesSuite extends FunSuite {
   private val step = 60000L
   private val context = EvalContext(start, start + step * 2, step)
 
-  def ts(bucket: String, values: Double*): TimeSeries = {
+  private def ts(bucket: String, values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, values.toArray)
     val mode = if (Integer.parseInt(bucket.substring(1), 16) % 2 == 0) "even" else "odd"
     TimeSeries(Map("name" -> "test", "mode" -> mode, "percentile" -> bucket), seq)
   }
 
-  def eval(str: String, input: List[TimeSeries]): List[TimeSeries] = {
-    val expr = interpreter.execute(str).stack match {
+  private def parseExpr(str: String): TimeSeriesExpr = {
+    interpreter.execute(str).stack match {
       case (v: TimeSeriesExpr) :: _ => v
       case _                        => throw new IllegalArgumentException("invalid expr")
     }
+  }
+
+  private def eval(str: String, input: List[TimeSeries]): List[TimeSeries] = {
+    val expr = parseExpr(str)
+    // Verify we can reparse the string representation and get an identical expression.
+    val e2 = parseExpr(expr.toString)
+    val e3 = parseExpr(e2.toString)
+    assertEquals(e2, e3)
     expr.eval(context, input).data
   }
 
@@ -305,6 +313,19 @@ class PercentilesSuite extends FunSuite {
         assertEquals(t.tags, Map("name" -> "test", "percentile" -> f"$p%5.1f"))
         assertEquals(t.label, f"(percentile=$p%5.1f)")
         assertEqualsDouble(p, estimate, 10.0)
+    }
+  }
+
+  test("group by with math") {
+    val data = eval("name,test,:eq,(,mode,),:by,(,90,),:percentiles,1000,:mul", input100)
+      .sortWith(_.tags("mode") < _.tags("mode"))
+
+    assertEquals(data.size, 2)
+    List("even", "odd").zip(data).foreach {
+      case (m, t) =>
+        val estimate = t.data(0L)
+        assertEquals(t.tags, Map("name" -> "test", "mode" -> m, "percentile" -> " 90.0"))
+        assertEquals(t.label, f"(percentile((mode=$m),  90.0) * 1000.0)")
     }
   }
 
