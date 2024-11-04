@@ -16,8 +16,9 @@
 package com.netflix.atlas.pekko
 
 import java.io.InputStream
-
 import org.apache.pekko.util.ByteString
+
+import java.util.zip.GZIPInputStream
 
 /**
   * Wraps a `ByteString` to allow it to be read from code expecting an `InputStream`. This
@@ -52,5 +53,26 @@ class ByteStringInputStream(data: ByteString) extends InputStream {
   override def available(): Int = {
     nextBuffer()
     current.remaining()
+  }
+}
+
+object ByteStringInputStream {
+
+  // Magic header to recognize GZIP compressed data
+  // http://www.zlib.org/rfc-gzip.html#file-format
+  private val gzipMagicHeader = ByteString(Array(0x1F.toByte, 0x8B.toByte))
+
+  /**
+    * Create an InputStream for reading the content of the ByteString. If the data is
+    * gzip compressed, then it will be wrapped in a GZIPInputStream to handle the
+    * decompression of the data. This can be handled at the server layer, but it may
+    * be preferable to decompress while parsing into the final object model to reduce
+    * the need to allocate an intermediate ByteString of the uncompressed data.
+    */
+  def create(data: ByteString): InputStream = {
+    if (data.startsWith(gzipMagicHeader))
+      new GZIPInputStream(new ByteStringInputStream(data))
+    else
+      new ByteStringInputStream(data)
   }
 }
