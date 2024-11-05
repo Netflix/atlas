@@ -485,7 +485,7 @@ private[stream] abstract class EvaluatorImpl(
         // Cluster message first: need to connect before subscribe
         val instances = sourcesAndGroups._2.groups.flatMap(_.instances).toSet
         val exprs = toExprSet(sourcesAndGroups._1, context.interpreter)
-        val bytes = LwcMessages.encodeBatch(exprs.toSeq)
+        val bytes = LwcMessages.encodeBatch(exprs.toSeq, compress = true)
         val dataMap = instances.map(i => i -> bytes).toMap
         Source(
           List(
