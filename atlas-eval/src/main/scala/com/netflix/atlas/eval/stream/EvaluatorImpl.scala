@@ -102,6 +102,9 @@ private[stream] abstract class EvaluatorImpl(
   // Should no data messages be emitted?
   private val enableNoDataMsgs = config.getBoolean("atlas.eval.stream.enable-no-data-messages")
 
+  // Should subscription messages be compressed?
+  private val compressSubMsgs = config.getBoolean("atlas.eval.stream.compress-sub-messages")
+
   // Counter for message that cannot be parsed
   private val badMessages = registry.counter("atlas.eval.badMessages")
 
@@ -485,7 +488,7 @@ private[stream] abstract class EvaluatorImpl(
         // Cluster message first: need to connect before subscribe
         val instances = sourcesAndGroups._2.groups.flatMap(_.instances).toSet
         val exprs = toExprSet(sourcesAndGroups._1, context.interpreter)
-        val bytes = LwcMessages.encodeBatch(exprs.toSeq, compress = true)
+        val bytes = LwcMessages.encodeBatch(exprs.toSeq, compressSubMsgs)
         val dataMap = instances.map(i => i -> bytes).toMap
         Source(
           List(
