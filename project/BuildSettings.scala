@@ -8,7 +8,6 @@ object BuildSettings {
     "-deprecation",
     "-unchecked",
     "-Werror",
-    "-Wunused",
     "-feature",
     "-release", "17",
   )
@@ -23,8 +22,8 @@ object BuildSettings {
     scalaVersion := Dependencies.Versions.scala,
     scalacOptions := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, _)) => compilerFlags ++ Seq("-Xsource:3")
-        case _            => compilerFlags ++ Seq("-source", "3.3")
+        case Some((2, _)) => compilerFlags ++ Seq("-Xsource:3", "-Wunused")
+        case _            => compilerFlags ++ Seq("-source", "3.3", "-Wunused:all")
       }
     },
     javacOptions ++= Seq("--release", "17"),
