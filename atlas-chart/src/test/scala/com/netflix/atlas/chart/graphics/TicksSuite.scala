@@ -232,7 +232,7 @@ class TicksSuite extends FunSuite {
   }
 
   test("sanity check, 0 to y") {
-    for (i <- 0 until 100; j <- 2 until 10) {
+    for (_ <- 0 until 100; j <- 2 until 10) {
       val v = Random.nextDouble() * 1e12
       try {
         val ticks = Ticks.value(0.0, v, j)
@@ -245,7 +245,7 @@ class TicksSuite extends FunSuite {
   }
 
   test("sanity check, y1 to y2") {
-    for (i <- 0 until 100; j <- 2 until 10) {
+    for (_ <- 0 until 100; j <- 2 until 10) {
       val v1 = Random.nextDouble() * 1e4
       val v2 = v1 + Random.nextDouble() * 1e3
       try {
@@ -379,7 +379,7 @@ class TicksSuite extends FunSuite {
   }
 
   test("binary sanity check, 0 to y") {
-    for (i <- 0 until 100; j <- 2 until 10) {
+    for (_ <- 0 until 100; j <- 2 until 10) {
       val v = Random.nextDouble() * 1e12
       try {
         val ticks = Ticks.binary(0.0, v, j)
@@ -392,7 +392,7 @@ class TicksSuite extends FunSuite {
   }
 
   test("binary sanity check, y1 to y2") {
-    for (i <- 0 until 100; j <- 2 until 10) {
+    for (_ <- 0 until 100; j <- 2 until 10) {
       val v1 = Random.nextDouble() * 1e4
       val v2 = v1 + Random.nextDouble() * 1e3
       try {

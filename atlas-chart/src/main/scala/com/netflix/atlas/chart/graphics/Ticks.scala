@@ -255,7 +255,7 @@ object Ticks {
     } else {
       valueTickSizes
         .find(t => r / t._1 <= n)
-        .fold(sciTicks(v1, v2, n))(t => decimalTicks(v1, v2, n, t, scale))
+        .fold(sciTicks(v1, v2))(t => decimalTicks(v1, v2, n, t, scale))
     }
   }
 
@@ -313,7 +313,7 @@ object Ticks {
 
     binaryValueTickSizes
       .find(t => r / t._1 <= n)
-      .fold(sciTicks(v1, v2, n))(t => binaryTicks(v1, v2, t))
+      .fold(sciTicks(v1, v2))(t => binaryTicks(v1, v2, t))
   }
 
   def duration(v1: Double, v2: Double, n: Int): List[ValueTick] = {
@@ -321,7 +321,7 @@ object Ticks {
 
     durationValueTickSizes
       .find(t => r / t._1 <= n)
-      .fold(sciTicks(v1, v2, n))(t => durationTicks(v1, v2, t))
+      .fold(sciTicks(v1, v2))(t => durationTicks(v1, v2, t))
   }
 
   /**
@@ -364,7 +364,7 @@ object Ticks {
     if (range < 1e-12) 1.0 else range
   }
 
-  private def sciTicks(v1: Double, v2: Double, n: Int): List[ValueTick] = {
+  private def sciTicks(v1: Double, v2: Double): List[ValueTick] = {
     List(ValueTick(v1, 0.0), ValueTick(v2, 0.0))
   }
 

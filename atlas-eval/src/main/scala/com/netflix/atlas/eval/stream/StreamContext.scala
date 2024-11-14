@@ -19,7 +19,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.UUID
 import org.apache.pekko.NotUsed
-import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.Uri
 import org.apache.pekko.stream.IOResult
 import org.apache.pekko.stream.Materializer
@@ -36,7 +35,6 @@ import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.pekko.AccessLogger
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.PekkoHttpClient
 import com.netflix.atlas.pekko.StreamOps

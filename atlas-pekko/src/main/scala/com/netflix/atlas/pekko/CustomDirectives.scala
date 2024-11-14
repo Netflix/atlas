@@ -15,9 +15,7 @@
  */
 package com.netflix.atlas.pekko
 
-import java.io.InputStream
 import java.io.StringWriter
-import java.util.zip.GZIPInputStream
 import org.apache.pekko.http.scaladsl.model.HttpCharsets
 import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.model.HttpHeader
@@ -84,17 +82,16 @@ object CustomDirectives {
     * `application/x-jackson-smile`, then a smile parser will be used. Otherwise
     * it will be treated as `application/json` regardless of the content type.
     */
-  def customJson[T: JavaTypeable](decoder: JsonParser => T): MediaType => ByteString => T = {
-    mediaType => bs =>
-      {
-        val p =
-          if (isSmile(mediaType))
-            Json.newSmileParser(ByteStringInputStream.create(bs))
-          else
-            Json.newJsonParser(ByteStringInputStream.create(bs))
-        try decoder(p)
-        finally p.close()
-      }
+  def customJson[T](decoder: JsonParser => T): MediaType => ByteString => T = { mediaType => bs =>
+    {
+      val p =
+        if (isSmile(mediaType))
+          Json.newSmileParser(ByteStringInputStream.create(bs))
+        else
+          Json.newJsonParser(ByteStringInputStream.create(bs))
+      try decoder(p)
+      finally p.close()
+    }
   }
 
   /**

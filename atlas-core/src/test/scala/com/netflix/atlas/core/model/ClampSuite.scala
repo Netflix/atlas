@@ -32,8 +32,6 @@ class ClampSuite extends FunSuite {
     )
   )
 
-  private val des = StatefulExpr.Des(DataExpr.Sum(Query.Equal("name", "cpu")), 2, 0.1, 0.02)
-
   def eval(expr: TimeSeriesExpr, data: List[List[Datapoint]]): List[List[TimeSeries]] = {
     var state = Map.empty[StatefulExpr, Any]
     data.map { ts =>

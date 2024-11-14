@@ -27,7 +27,6 @@ import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
-import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite

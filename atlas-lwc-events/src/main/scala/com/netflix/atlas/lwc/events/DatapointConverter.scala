@@ -21,7 +21,6 @@ import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.util.Strings
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.histogram.PercentileBuckets
-import com.netflix.spectator.impl.AtomicDouble
 import com.netflix.spectator.impl.StepDouble
 
 import java.time.Duration
@@ -243,19 +242,6 @@ private[events] object DatapointConverter {
       buffer.min(params.clock.wallTime(), value)
     }
 
-    private def min(current: AtomicDouble, value: Double): Unit = {
-      if (value.isFinite) {
-        var min = current.get()
-        while (isLessThan(value, min) && !current.compareAndSet(min, value)) {
-          min = current.get()
-        }
-      }
-    }
-
-    private def isLessThan(v1: Double, v2: Double): Boolean = {
-      v1 < v2 || v2.isNaN
-    }
-
     override def flush(timestamp: Long): Unit = {
       val value = buffer.poll(timestamp)
       if (value.isFinite) {
@@ -288,11 +274,11 @@ private[events] object DatapointConverter {
             case k                 => event.tagValue(k)
           }
           .filterNot(_ == null)
-        update(1.0, tagValues, event)
+        update(1.0, tagValues)
       } else {
         val tagValues = by.keys.map(event.tagValue).filterNot(_ == null)
         val value = params.valueMapper(event)
-        update(value, tagValues, event)
+        update(value, tagValues)
       }
     }
 
@@ -300,7 +286,7 @@ private[events] object DatapointConverter {
       // Since there are no values for the group by tags, this is a no-op
     }
 
-    private def update(value: Double, tagValues: List[String], event: LwcEvent): Unit = {
+    private def update(value: Double, tagValues: List[String]): Unit = {
       // Ignore events that are missing dimensions used in the grouping
       if (by.keys.size == tagValues.size) {
         if (value.isFinite) {

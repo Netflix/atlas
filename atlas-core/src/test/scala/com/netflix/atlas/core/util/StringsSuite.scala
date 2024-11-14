@@ -470,7 +470,6 @@ class StringsSuite extends FunSuite {
   }
 
   test("parseDate, epoch + 4h") {
-    val ref = ZonedDateTime.of(2012, 2, 2, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(1970, 1, 1, 4, 0, 0, 0, ZoneOffset.UTC)
     assertEquals(parseDate("epoch+4h", ZoneOffset.UTC), expected)
   }

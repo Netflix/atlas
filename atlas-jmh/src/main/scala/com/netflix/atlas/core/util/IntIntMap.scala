@@ -70,7 +70,7 @@ class IntIntMap {
     val map = new java.util.HashMap[Int, Int](10)
     var i = 0
     while (i < values800.length) {
-      map.compute(values800(i), (k, v) => v + 1)
+      map.compute(values800(i), (_, v) => v + 1)
       i += 1
     }
     bh.consume(map)
@@ -94,7 +94,7 @@ class IntIntMap {
     val map = new java.util.HashMap[Int, Int](10)
     var i = 0
     while (i < values8k.length) {
-      map.compute(values8k(i), (k, v) => v + 1)
+      map.compute(values8k(i), (_, v) => v + 1)
       i += 1
     }
     bh.consume(map)

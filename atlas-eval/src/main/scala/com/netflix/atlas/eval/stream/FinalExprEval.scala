@@ -34,7 +34,6 @@ import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.IdentityMap
 import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.ChunkData
-import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.TimeGroup
 import com.netflix.atlas.eval.model.TimeGroupsTuple
 import com.netflix.atlas.eval.model.TimeSeriesMessage

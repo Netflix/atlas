@@ -33,7 +33,7 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 
 object Json {
 
-  final class Decoder[T: JavaTypeable](reader: ObjectReader, factory: JsonFactory) {
+  final class Decoder[T](reader: ObjectReader, factory: JsonFactory) {
 
     def decode(json: Array[Byte]): T = decode(factory.createParser(json))
 
@@ -155,19 +155,19 @@ object Json {
     smileFactory.createParser(bytes, 0, bytes.length)
   }
 
-  def encode[T: JavaTypeable](obj: T): String = {
+  def encode(obj: Any): String = {
     jsonMapper.writeValueAsString(obj)
   }
 
-  def encode[T: JavaTypeable](writer: Writer, obj: T): Unit = {
+  def encode(writer: Writer, obj: Any): Unit = {
     jsonMapper.writeValue(writer, obj)
   }
 
-  def encode[T: JavaTypeable](stream: OutputStream, obj: T): Unit = {
+  def encode(stream: OutputStream, obj: Any): Unit = {
     jsonMapper.writeValue(stream, obj)
   }
 
-  def encode[T: JavaTypeable](gen: JsonGenerator, obj: T): Unit = {
+  def encode(gen: JsonGenerator, obj: Any): Unit = {
     jsonMapper.writeValue(gen, obj)
   }
 
@@ -204,11 +204,11 @@ object Json {
     new Decoder[T](reader, jsonFactory)
   }
 
-  def smileEncode[T: JavaTypeable](obj: T): Array[Byte] = {
+  def smileEncode(obj: Any): Array[Byte] = {
     smileMapper.writeValueAsBytes(obj)
   }
 
-  def smileEncode[T: JavaTypeable](stream: OutputStream, obj: T): Unit = {
+  def smileEncode(stream: OutputStream, obj: Any): Unit = {
     smileMapper.writeValue(stream, obj)
   }
 

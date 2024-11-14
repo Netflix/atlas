@@ -413,7 +413,7 @@ class JsonSuite extends FunSuite {
 
   test("smile encode/decode") {
     val v = List(1, 2, 3)
-    val b = Json.smileEncode[List[Int]](v)
+    val b = Json.smileEncode(v)
     assertEquals(Json.smileDecode[List[Int]](b), v)
   }
 

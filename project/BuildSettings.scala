@@ -7,8 +7,8 @@ object BuildSettings {
   val compilerFlags: Seq[String] = Seq(
     "-deprecation",
     "-unchecked",
-    //"-Xlint:_,-infer-any",
-    "-Xfatal-warnings",
+    "-Werror",
+    "-Wunused",
     "-feature",
     "-release", "17",
   )

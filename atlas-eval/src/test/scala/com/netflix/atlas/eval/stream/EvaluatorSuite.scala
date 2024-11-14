@@ -21,15 +21,11 @@ import java.time.Duration
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.stream.scaladsl.BroadcastHub
 import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.Keep
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
-import org.apache.pekko.stream.scaladsl.StreamConverters
 import com.netflix.atlas.chart.util.SrcPath
-import com.netflix.atlas.core.model.FilterExpr.Filter
-import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
@@ -44,9 +40,7 @@ import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.DiagnosticMessage
-import com.netflix.atlas.pekko.StreamOps
 import com.netflix.spectator.api.DefaultRegistry
-import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import nl.jqno.equalsverifier.EqualsVerifier
@@ -57,7 +51,6 @@ import org.apache.pekko.util.ByteString
 
 import java.nio.file.Path
 import scala.concurrent.Await
-import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -815,7 +808,7 @@ class EvaluatorSuite extends FunSuite {
 
     val evaluator = new Evaluator(config, registry, system)
 
-    val future = Source(sampleData(1, 10))
+    val future = Source(input)
       .via(Flow.fromProcessor(() => evaluator.createDatapointProcessor(sources)))
       .runWith(Sink.seq[MessageEnvelope])
     Await.result(future, scala.concurrent.duration.Duration.Inf).toList

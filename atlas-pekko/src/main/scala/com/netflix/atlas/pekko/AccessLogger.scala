@@ -35,13 +35,8 @@ import scala.util.Try
   *
   * @param entry
   *     Spectator log entry object that formats the log and updates metrics.
-  * @param client
-  *     True if the logger if for a client rather than a server. Clients are
-  *     typically logged based on a name given to the client by the application.
-  *     Server logs based on the endpoint. They will also be marked
-  *     so that they can be partitioned into separate files if needed.
   */
-class AccessLogger private (entry: IpcLogEntry, client: Boolean) {
+class AccessLogger private (entry: IpcLogEntry) {
 
   private var attempt: Int = 1
   private var maxAttempts: Int = 1
@@ -124,7 +119,7 @@ object AccessLogger {
     val entry = ipcLogger.createClientEntry().withOwner(owner).addTag("id", name)
     addRequestInfo(entry, request)
     entry.markStart()
-    new AccessLogger(entry, true)
+    new AccessLogger(entry)
   }
 
   /**
@@ -143,7 +138,7 @@ object AccessLogger {
     */
   def newServerLogger(entry: IpcLogEntry): AccessLogger = {
     entry.withOwner(owner).markStart()
-    new AccessLogger(entry, false)
+    new AccessLogger(entry)
   }
 
   private def addRequestInfo(entry: IpcLogEntry, request: HttpRequest): Unit = {

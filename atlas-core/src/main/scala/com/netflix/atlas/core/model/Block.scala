@@ -861,7 +861,7 @@ case class RollupBlock(sum: Block, count: Block, min: Block, max: Block) extends
   def update(pos: Int, value: Double): Unit = {
     if (!value.isNaN) {
       updateSum(pos, value)
-      updateCount(pos, value)
+      updateCount(pos)
       updateMin(pos, value)
       updateMax(pos, value)
     }
@@ -872,7 +872,7 @@ case class RollupBlock(sum: Block, count: Block, min: Block, max: Block) extends
     block.update(pos, Math.addNaN(block.get(pos), value))
   }
 
-  private def updateCount(pos: Int, value: Double): Unit = {
+  private def updateCount(pos: Int): Unit = {
     val block = count.asInstanceOf[MutableBlock]
     block.update(pos, Math.addNaN(block.get(pos), 1.0))
   }

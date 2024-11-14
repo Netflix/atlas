@@ -18,8 +18,6 @@ package com.netflix.atlas.core.model
 import com.netflix.atlas.core.stacklang.Interpreter
 import munit.FunSuite
 
-import scala.language.postfixOps
-
 class PerStepSuite extends FunSuite {
 
   private val interpreter = Interpreter(MathVocabulary.allWords)

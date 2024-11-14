@@ -23,7 +23,6 @@ import com.netflix.spectator.api.Registry
 import com.typesafe.config.ConfigFactory
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 
-import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 

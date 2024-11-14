@@ -17,6 +17,6 @@ package com.netflix.atlas.core.validation
 
 import com.typesafe.config.Config
 
-class ConfigConstructorTestRule(config: Config) extends TagRule {
+class ConfigConstructorTestRule(@scala.annotation.nowarn config: Config) extends TagRule {
   override def validate(k: String, v: String): String = TagRule.Pass
 }
