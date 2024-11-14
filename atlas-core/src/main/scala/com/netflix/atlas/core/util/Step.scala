@@ -20,7 +20,6 @@ package com.netflix.atlas.core.util
   */
 object Step {
 
-  private final val oneMilli = 1L
   private final val oneSecond = 1000L
   private final val oneMinute = 60000L
   private final val oneHour = 60 * oneMinute
