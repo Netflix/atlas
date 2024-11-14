@@ -51,9 +51,9 @@ class FinalExprEvalSuite extends FunSuite {
 
   private val registry = new DefaultRegistry()
 
-  private def run(input: List[AnyRef]): List[MessageEnvelope] = {
+  private def run(input: List[AnyRef], noDataMsgs: Boolean = true): List[MessageEnvelope] = {
     val future = Source(input)
-      .via(new FinalExprEval(interpreter))
+      .via(new FinalExprEval(interpreter, noDataMsgs))
       .flatMapConcat(s => s)
       .runWith(Sink.seq)
     Await.result(future, Duration.Inf).toList
@@ -120,7 +120,15 @@ class FinalExprEvalSuite extends FunSuite {
     val (tsId, tsMsg) = tsMsgs.head.id -> tsMsgs.head.message.asInstanceOf[TimeSeriesMessage]
     assert(tsId == "a")
     assertEquals(tsMsg.label, "(NO DATA / NO DATA)")
+  }
 
+  test("no data line suppressed") {
+    val input = List(
+      sources(ds("a", "http://atlas/graph?q=name,latency,:eq,:dist-avg")),
+      TimeGroup(0L, step, Map.empty)
+    )
+    val output = run(input, noDataMsgs = false)
+    assertEquals(output.size, 0)
   }
 
   private def isTimeSeries(messageEnvelope: MessageEnvelope): Boolean = {

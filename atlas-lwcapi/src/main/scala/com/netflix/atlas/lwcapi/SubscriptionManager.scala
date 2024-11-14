@@ -18,10 +18,10 @@ package com.netflix.atlas.lwcapi
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import com.netflix.atlas.core.index.QueryIndex
 import com.netflix.atlas.pekko.ThreadPools
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.atlas.impl.QueryIndex
 import com.netflix.spectator.ipc.ServerGroup
 import com.typesafe.scalalogging.StrictLogging
 
@@ -46,30 +46,33 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
   private val subHandlers = new ConcurrentHashMap[String, ConcurrentSet[T]]()
 
   @volatile private var subscriptionsList = List.empty[Subscription]
-  @volatile private var queryIndex = QueryIndex.create[Subscription](Nil)
   @volatile private var queryListChanged = false
+  private val queryIndex = QueryIndex.newInstance[Subscription](registry)
 
   // Background process for updating the query index. It is not done inline because rebuilding
   // the index can be computationally expensive.
   private val ex =
     new ScheduledThreadPoolExecutor(1, ThreadPools.threadFactory("ExpressionDatabase"))
-  ex.scheduleWithFixedDelay(() => regenerateQueryIndex(), 1, 1, TimeUnit.SECONDS)
+  ex.scheduleWithFixedDelay(() => updateQueryIndex(), 1, 1, TimeUnit.SECONDS)
   ex.scheduleAtFixedRate(() => updateGauges(), 1, 1, TimeUnit.MINUTES)
 
   /** Rebuild the query index if there have been changes since it was last created. */
-  private[lwcapi] def regenerateQueryIndex(): Unit = {
+  private[lwcapi] def updateQueryIndex(): Unit = {
     if (queryListChanged) {
       queryListChanged = false
+      val previous = subscriptionsList.toSet
       subscriptionsList = registrations
         .values()
         .asScala
         .flatMap(_.subscriptions)
         .toList
         .distinct
-      val entries = subscriptionsList.map { sub =>
-        QueryIndex.Entry(sub.query, sub)
-      }
-      queryIndex = QueryIndex.create(entries)
+
+      val current = subscriptionsList.toSet
+      val added = current.diff(previous)
+      val removed = previous.diff(current)
+      added.foreach(s => queryIndex.add(s.query, s))
+      removed.foreach(s => queryIndex.remove(s.query, s))
     }
   }
 
@@ -238,22 +241,25 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
     */
   def subscriptionsForCluster(cluster: String): List[Subscription] = {
     val group = ServerGroup.parse(cluster)
-    val tags = Map.newBuilder[String, String]
+    val tags = new java.util.HashMap[String, String]
     addIfNotNull(tags, "nf.cluster", group.cluster)
     addIfNotNull(tags, "nf.app", group.app)
     addIfNotNull(tags, "nf.stack", group.stack)
     addIfNotNull(tags, "nf.shard1", group.shard1)
     addIfNotNull(tags, "nf.shard2", group.shard2)
-    queryIndex.matchingEntries(tags.result())
+
+    val builder = List.newBuilder[Subscription]
+    queryIndex.forEachMatch(k => tags.get(k), sub => builder.addOne(sub))
+    builder.result()
   }
 
   private def addIfNotNull(
-    builder: scala.collection.mutable.Builder[(String, String), Map[String, String]],
+    builder: java.util.HashMap[String, String],
     key: String,
     value: String
   ): Unit = {
     if (value != null)
-      builder += (key -> value)
+      builder.put(key, value)
   }
 
   /**
@@ -277,7 +283,7 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
     logger.debug("clearing all subscriptions")
     registrations.clear()
     queryListChanged = true
-    regenerateQueryIndex()
+    updateQueryIndex()
   }
 }
 

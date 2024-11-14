@@ -19,6 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import com.netflix.atlas.core.model.ItemId
+import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.ArrayHelper
@@ -74,9 +75,10 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
 
   /**
     * Rebuild the index to include all of the pending updates that have accumulated. Any expired
-    * items will also be removed.
+    * items or items that do not match the filter will also be removed. Filtered out ids will be
+    * returned.
     */
-  def rebuildIndex(): Unit = {
+  def rebuildIndex(filter: Query = Query.True): List[T] = {
     val timerId = rebuildTimer.start()
     try {
       // Drain the update queue and create map of items for deduping, we put new items in the
@@ -86,14 +88,22 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
       pendingUpdates.drainTo(updates, size)
       val items = new java.util.HashMap[ItemId, T](size)
       updates.forEach { i =>
-        items.put(i.id, i)
+        if (filter.matches(i.tags))
+          items.put(i.id, i)
       }
 
-      // Get set of all items in the current index that are not expired
-      val matches = currentIndex.get.findItems(TagQuery(None)).filter(!_.isExpired)
-      matches.foreach { i =>
+      // Get set of all items in the current index that are not expired and match the filter
+      val currentItems = currentIndex.get
+        .findItems(TagQuery(None))
+        .filter(i => !i.isExpired)
+
+      // Remove items that are already indexed from the set of new items
+      currentItems.foreach { i =>
         items.remove(i.id)
       }
+
+      // Find set of items matching and not matching the filter
+      val (matches, nonMatches) = currentItems.partition(item => filter.matches(item.tags))
 
       // Merge previous with new updates. Previous matches are coming from index and
       // will already be sorted by the id.
@@ -113,6 +123,9 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
 
       // Create array of items and build the index
       rebuildIndex(dst)
+
+      // Return set of items that have been filtered out
+      nonMatches
     } finally {
       rebuildTimer.stop(timerId)
     }
@@ -120,7 +133,7 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
 
   def rebuildIndex(items: Array[T]): Unit = {
     currentIndex.set(newIndex(items))
-    lastRebuildTime.set(System.currentTimeMillis)
+    lastRebuildTime.set(registry.clock().wallTime())
   }
 
   def rebuildIndex(items: List[T]): Unit = {
@@ -142,6 +155,8 @@ class BatchUpdateTagIndex[T <: TaggedItem: ClassTag](
   def findValues(query: TagQuery): List[String] = currentIndex.get.findValues(query)
 
   def findItems(query: TagQuery): List[T] = currentIndex.get.findItems(query)
+
+  override def iterator: Iterator[T] = currentIndex.get.iterator
 
   def size: Int = currentIndex.get.size
 }

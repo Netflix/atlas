@@ -33,12 +33,13 @@ class TimeSeriesBufferSuite extends FunSuite {
 
   private val emptyTags = Map.empty[String, String]
 
-  private def newBuffer(v: Double, start: Long = 0L) = {
-    TimeSeriesBuffer(emptyTags, 60000, start, Array.fill(1)(v))
-  }
-
-  private def newBufferN(v: Double, n: Int, start: Long = 0L) = {
-    TimeSeriesBuffer(emptyTags, 60000, start, Array.fill(n)(v))
+  private def newBuffer(
+    v: Double,
+    step: Long = 60000L,
+    start: Long = 0L,
+    n: Int = 1
+  ): TimeSeriesBuffer = {
+    TimeSeriesBuffer(emptyTags, step, start, Array.fill(n)(v))
   }
 
   test("apply List[Block]") {
@@ -107,11 +108,49 @@ class TimeSeriesBufferSuite extends FunSuite {
   test("add Block with step 10s cf 6m") {
     val tags = emptyTags
     val step = 10000L
-    val blockSize = 6 * 60
+    val blockSize = 6 * 60 // each block is 1h
     val blocks =
       (0 until 1000).map(i => ConstantBlock(i * blockSize * step, blockSize, 4.0)).toList
 
     val multiple = 6 * 6
+    val consol = multiple * step
+    val buffer = TimeSeriesBuffer(tags, consol, consol, 20 * consol)
+    blocks.foreach { b =>
+      buffer.aggrBlock(b, Block.Sum, ConsolidationFunction.Max, multiple, Math.addNaN)
+    }
+    val m = buffer
+    assertEquals(m.step, consol)
+    assertEquals(m.start, consol)
+    assert(m.values.forall(_ == 4.0))
+  }
+
+  test("add Block with step 50ms cf 30s") {
+    val tags = emptyTags
+    val step = 50L
+    val blockSize = 20 * 60 // each block is 1m
+    val blocks =
+      (0 until 1000).map(i => ConstantBlock(i * blockSize * step, blockSize, 4.0)).toList
+
+    val multiple = 10 * 60
+    val consol = multiple * step
+    val buffer = TimeSeriesBuffer(tags, consol, consol, 20 * consol)
+    blocks.foreach { b =>
+      buffer.aggrBlock(b, Block.Sum, ConsolidationFunction.Max, multiple, Math.addNaN)
+    }
+    val m = buffer
+    assertEquals(m.step, consol)
+    assertEquals(m.start, consol)
+    assert(m.values.forall(_ == 4.0))
+  }
+
+  test("add Block with step 1ms cf 30s") {
+    val tags = emptyTags
+    val step = 1L
+    val blockSize = 1000 * 60 // each block is 1m
+    val blocks =
+      (0 until 1000).map(i => ConstantBlock(i * blockSize * step, blockSize, 4.0)).toList
+
+    val multiple = 1000 * 30
     val consol = multiple * step
     val buffer = TimeSeriesBuffer(tags, consol, consol, 20 * consol)
     blocks.foreach { b =>
@@ -349,17 +388,17 @@ class TimeSeriesBufferSuite extends FunSuite {
   }
 
   test("getValue prior to start") {
-    val b1 = newBuffer(42.0, 120000)
+    val b1 = newBuffer(42.0, start = 120000)
     assert(b1.getValue(60000).isNaN)
   }
 
   test("getValue after the end") {
-    val b1 = newBuffer(42.0, 120000)
+    val b1 = newBuffer(42.0, start = 120000)
     assert(b1.getValue(240000).isNaN)
   }
 
   test("getValue with match") {
-    val b1 = newBuffer(42.0, 120000)
+    val b1 = newBuffer(42.0, start = 120000)
     assertEquals(b1.getValue(129000), 42.0)
   }
 
@@ -400,15 +439,15 @@ class TimeSeriesBufferSuite extends FunSuite {
   }
 
   test("merge diff sizes b1.length < b2.length") {
-    val b1 = newBufferN(1.0, 1)
-    val b2 = newBufferN(2.0, 2)
+    val b1 = newBuffer(1.0, n = 1)
+    val b2 = newBuffer(2.0, n = 2)
     b1.merge(b2)
     assert(b1.values(0) == 2.0)
   }
 
   test("merge diff sizes b1.length > b2.length") {
-    val b1 = newBufferN(7.0, 1)
-    val b2 = newBufferN(2.0, 2)
+    val b1 = newBuffer(7.0, n = 1)
+    val b2 = newBuffer(2.0, n = 2)
     b2.merge(b1)
     assert(b2.values(0) == 7.0)
     assert(b2.values(1) == 2.0)

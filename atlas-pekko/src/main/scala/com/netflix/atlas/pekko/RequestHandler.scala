@@ -206,7 +206,7 @@ object RequestHandler extends StrictLogging {
       case e: NoSuchElementException =>
         DiagnosticMessage.error(StatusCodes.NotFound, e)
       case e: EntityStreamSizeException =>
-        DiagnosticMessage.error(StatusCodes.PayloadTooLarge, e)
+        DiagnosticMessage.error(StatusCodes.ContentTooLarge, e)
       case e: CircuitBreakerOpenException =>
         DiagnosticMessage.error(StatusCodes.ServiceUnavailable, e)
       case e: Throwable =>

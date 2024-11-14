@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.core.validation
 
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.api.Id
 import com.typesafe.config.Config
@@ -32,16 +31,10 @@ trait Rule {
     */
   def validate(tags: Map[String, String]): ValidationResult = {
     tags match {
-      case m: SmallHashMap[String, String] => validate(m)
-      case m: SortedTagMap                 => validate(m)
-      case _                               => validate(SmallHashMap(tags))
+      case m: SortedTagMap => validate(m)
+      case _               => validate(SortedTagMap(tags))
     }
   }
-
-  /**
-    * Validates that the tag map matches the rule.
-    */
-  def validate(tags: SmallHashMap[String, String]): ValidationResult
 
   /**
     * Validates that the tag map matches the rule.

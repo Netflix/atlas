@@ -29,6 +29,7 @@ import com.netflix.atlas.core.model.DefaultSettings
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Spectator
@@ -59,6 +60,8 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   private val blockSize = config.getInt("block-size")
   private val numBlocks = config.getInt("num-blocks")
   private val testMode = config.getBoolean("test-mode")
+
+  @volatile private var filter: Query = Query.True
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -95,13 +98,15 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     }
   }
 
-  private def now: Long = registry.clock().wallTime()
-
   def rebuild(): Unit = {
-    if (!testMode && now - index.buildTime > rebuildAge) {
-      logger.info("rebuilding metadata index")
-      index.rebuildIndex()
+    val now = registry.clock().wallTime()
+    if (now - index.buildTime > rebuildAge) {
+      val query = filter
+      logger.info("rebuilding metadata index (filter={})", query)
+      val droppedItems = index.rebuildIndex(query)
+      droppedItems.foreach(item => data.remove(item.id))
 
+      // Remove entries if all data has rolled out
       val windowSize = numBlocks * blockSize * step
       val cutoff = now - windowSize
       val iter = data.entrySet.iterator
@@ -112,9 +117,9 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
           iter.remove()
         }
       }
-      logger.info("done rebuilding metadata index, " + index.size + " metrics")
+      logger.info("done rebuilding metadata index, {} metrics", index.size)
 
-      BlockStoreItem.retain(_ > cutoff)
+      TaggedItem.retain(_ > cutoff)
     }
   }
 
@@ -128,9 +133,15 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     blkStore
   }
 
+  def setFilter(query: Query): Unit = {
+    filter = query
+  }
+
   def update(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
-    val blkStore = getOrCreateBlockStore(id, tags)
-    blkStore.update(timestamp, value)
+    if (filter.matches(tags)) {
+      val blkStore = getOrCreateBlockStore(id, tags)
+      blkStore.update(timestamp, value)
+    }
   }
 
   def update(dp: DatapointTuple): Unit = {

@@ -15,7 +15,18 @@
  */
 package com.netflix.atlas.core.model
 
-trait Expr extends Product {
+import com.netflix.atlas.core.stacklang.StackItem
+
+trait Expr extends Product with StackItem {
+
+  /** Use builder for encoding as a string. Sub-classes should override the append method. */
+  override def toString: String = {
+    // 256 is a rough size that isn't too large to waste a lot, but also limit the
+    // need for growing the buffer with typical expressions
+    val builder = new java.lang.StringBuilder(256)
+    append(builder)
+    builder.toString
+  }
 
   /**
     * Returns a string that can be executed with the stack interpreter to create this expression.

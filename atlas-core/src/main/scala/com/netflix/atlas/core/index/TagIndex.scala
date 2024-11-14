@@ -28,6 +28,8 @@ trait TagIndex[T <: TaggedItem] {
 
   def findItems(query: TagQuery): List[T]
 
+  def iterator: Iterator[T]
+
   def size: Int
 }
 

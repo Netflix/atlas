@@ -99,6 +99,12 @@ private[stream] abstract class EvaluatorImpl(
   // Version of the LWC Server API to use
   private val lwcapiVersion: Int = config.getInt("atlas.eval.stream.lwcapi-version")
 
+  // Should no data messages be emitted?
+  private val enableNoDataMsgs = config.getBoolean("atlas.eval.stream.enable-no-data-messages")
+
+  // Should subscription messages be compressed?
+  private val compressSubMsgs = config.getBoolean("atlas.eval.stream.compress-sub-messages")
+
   // Counter for message that cannot be parsed
   private val badMessages = registry.counter("atlas.eval.badMessages")
 
@@ -297,7 +303,7 @@ private[stream] abstract class EvaluatorImpl(
       .via(g)
       .flatMapConcat(s => Source(splitByStep(s)))
       .groupBy(Int.MaxValue, stepSize, allowClosedSubstreamRecreation = true)
-      .via(new FinalExprEval(context.interpreter))
+      .via(new FinalExprEval(context.interpreter, enableNoDataMsgs))
       .mergeSubstreams
       .via(context.monitorFlow("12_OutputSources"))
       .flatMapConcat(s => s)
@@ -329,7 +335,7 @@ private[stream] abstract class EvaluatorImpl(
     Flow[DatapointGroup]
       .map(g => toTimeGroup(stepSize, exprs, g, context))
       .merge(Source.single(sources), eagerComplete = false)
-      .via(new FinalExprEval(interpreter))
+      .via(new FinalExprEval(interpreter, enableNoDataMsgs))
       .flatMapConcat(s => s)
       .via(new OnUpstreamFinish[MessageEnvelope](context.dsLogger.close()))
       .merge(logSrc, eagerComplete = false)
@@ -482,7 +488,8 @@ private[stream] abstract class EvaluatorImpl(
         // Cluster message first: need to connect before subscribe
         val instances = sourcesAndGroups._2.groups.flatMap(_.instances).toSet
         val exprs = toExprSet(sourcesAndGroups._1, context.interpreter)
-        val dataMap = instances.map(i => i -> exprs).toMap
+        val bytes = LwcMessages.encodeBatch(exprs.toSeq, compressSubMsgs)
+        val dataMap = instances.map(i => i -> bytes).toMap
         Source(
           List(
             ClusterOps.Cluster(instances),
@@ -496,7 +503,7 @@ private[stream] abstract class EvaluatorImpl(
       // resent. This ensures the most recent set of subscriptions will go out at a
       // regular cadence.
       .via(StreamOps.repeatLastReceived(5.seconds))
-      .via(ClusterOps.groupBy(createGroupByContext(context)))
+      .via(ClusterOps.groupBy(createGroupByContext))
       .mapAsync(parsingNumThreads) { msg =>
         // This step is placed after merge of streams so there is a single
         // use of the pool and it is easier to track the concurrent usage.
@@ -506,9 +513,7 @@ private[stream] abstract class EvaluatorImpl(
       }
   }
 
-  private def createGroupByContext(
-    context: StreamContext
-  ): ClusterOps.GroupByContext[Instance, Set[LwcExpression], ByteString] = {
+  private def createGroupByContext: ClusterOps.GroupByContext[Instance, ByteString, ByteString] = {
     ClusterOps.GroupByContext(
       instance => createWebSocketFlow(instance),
       registry,
@@ -528,16 +533,14 @@ private[stream] abstract class EvaluatorImpl(
 
   private def createWebSocketFlow(
     instance: EddaSource.Instance
-  ): Flow[Set[LwcExpression], ByteString, NotUsed] = {
+  ): Flow[ByteString, ByteString, NotUsed] = {
     val base = instance.substitute("ws://{ip}:{port}")
     val id = UUID.randomUUID().toString
     val uri = s"$base/api/v$lwcapiVersion/subscribe/$id"
     val webSocketFlowOrigin = Http(system).webSocketClientFlow(WebSocketRequest(uri))
-    Flow[Set[LwcExpression]]
+    Flow[ByteString]
       .via(StreamOps.unique(uniqueTimeout)) // Updating subscriptions only if there's a change
-      .map { exprs =>
-        BinaryMessage(LwcMessages.encodeBatch(exprs.toSeq))
-      }
+      .map(BinaryMessage.apply)
       .via(webSocketFlowOrigin)
       .flatMapConcat {
         case _: TextMessage =>

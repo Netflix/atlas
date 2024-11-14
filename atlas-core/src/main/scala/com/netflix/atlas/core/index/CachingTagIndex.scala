@@ -57,5 +57,7 @@ class CachingTagIndex[T <: TaggedItem](delegate: TagIndex[T]) extends TagIndex[T
     findItemsCache.get(query)
   }
 
+  override def iterator: Iterator[T] = delegate.iterator
+
   def size: Int = delegate.size
 }

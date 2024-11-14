@@ -190,7 +190,14 @@ class MathGroupBySuite extends FunSuite {
   test("data group by, sum, unary op, math by") {
     val input = "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:sum,:abs,(,nf.asg,),:by"
     val expr = eval(input)
-    assertEquals(expr.toString, "name,sps,:eq,:sum,(,nf.asg,),:by,:abs")
+    // Optimization for aggregated groups disabled. Common case is binary operations, e.g. :avg,
+    // where at least one side will not get optimized. Applying the optimization is better for
+    // unary ops, but in the other case it increases the number of data expressions.
+    // assertEquals(expr.toString, "name,sps,:eq,:sum,(,nf.asg,),:by,:abs")
+    assertEquals(
+      expr.toString,
+      "name,sps,:eq,:sum,(,nf.cluster,nf.asg,),:by,:sum,(,nf.asg,),:by,:abs"
+    )
   }
 
   test("data group by, max, unary op, math by") {

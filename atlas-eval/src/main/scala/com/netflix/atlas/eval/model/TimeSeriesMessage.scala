@@ -124,14 +124,18 @@ object TimeSeriesMessage {
     *     Time series to use for the message.
     * @param palette
     *     If defined then include presentation metadata.
+    * @param exprStr
+    *     String view of the expression. Should match `expr`, but may be precomputed for
+    *     group by expressions with many messages.
     */
   def apply(
     expr: StyleExpr,
     context: EvalContext,
     ts: TimeSeries,
-    palette: Option[String] = None
+    palette: Option[String] = None,
+    exprStr: Option[String] = None
   ): TimeSeriesMessage = {
-    val query = expr.toString
+    val query = exprStr.getOrElse(expr.toString)
     val offset = Strings.toString(Duration.ofMillis(expr.offset))
     val outputTags = ts.tags + (TagKey.offset -> offset)
     val id = TaggedItem.computeId(outputTags + ("atlas.query" -> query)).toString

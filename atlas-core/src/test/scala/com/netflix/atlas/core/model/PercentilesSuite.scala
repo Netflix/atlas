@@ -35,17 +35,25 @@ class PercentilesSuite extends FunSuite {
   private val step = 60000L
   private val context = EvalContext(start, start + step * 2, step)
 
-  def ts(bucket: String, values: Double*): TimeSeries = {
+  private def ts(bucket: String, values: Double*): TimeSeries = {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, values.toArray)
     val mode = if (Integer.parseInt(bucket.substring(1), 16) % 2 == 0) "even" else "odd"
     TimeSeries(Map("name" -> "test", "mode" -> mode, "percentile" -> bucket), seq)
   }
 
-  def eval(str: String, input: List[TimeSeries]): List[TimeSeries] = {
-    val expr = interpreter.execute(str).stack match {
+  private def parseExpr(str: String): TimeSeriesExpr = {
+    interpreter.execute(str).stack match {
       case (v: TimeSeriesExpr) :: _ => v
       case _                        => throw new IllegalArgumentException("invalid expr")
     }
+  }
+
+  private def eval(str: String, input: List[TimeSeries]): List[TimeSeries] = {
+    val expr = parseExpr(str)
+    // Verify we can reparse the string representation and get an identical expression.
+    val e2 = parseExpr(expr.toString)
+    val e3 = parseExpr(e2.toString)
+    assertEquals(e2, e3)
     expr.eval(context, input).data
   }
 
@@ -54,6 +62,14 @@ class PercentilesSuite extends FunSuite {
       val bucket = f"D${PercentileBuckets.indexOf(i)}%04X"
       val v = 1.0 / 60.0
       ts(bucket, v, v)
+    } toList
+  }
+
+  private val inputNaN100 = {
+    (0 until 100).map { i =>
+      val bucket = f"D${PercentileBuckets.indexOf(i)}%04X"
+      val v = 1.0 / 60.0
+      ts(bucket, v, Double.NaN)
     } toList
   }
 
@@ -135,6 +151,24 @@ class PercentilesSuite extends FunSuite {
       eval("name,test,:eq,(,9,25,50,90,100,),:percentiles", input100 ::: inputBad100)
     }
     assertEquals(e.getMessage, "requirement failed: invalid percentile encoding: [D000A,D000a]")
+  }
+
+  test("distribution summary non-finite data") {
+    val data = eval("name,test,:eq,(,9,25,50,90,100,),:percentiles", inputNaN100)
+
+    assertEquals(data.size, 5)
+    List(9.0, 25.0, 50.0, 90.0).zip(data).foreach {
+      case (p, t) =>
+        assertEquals(t.tags, Map("name" -> "test", "percentile" -> f"$p%5.1f"))
+        assertEquals(t.label, f"percentile(name=test, $p%5.1f)")
+
+        val estimate1 = t.data(0L)
+        assertEqualsDouble(p, estimate1, 2.0)
+
+        val estimate2 = t.data(step)
+        assert(estimate2.isNaN)
+    }
+    assertEquals(data.last.label, f"percentile(name=test, 100.0)")
   }
 
   test("timer :sum") {
@@ -279,6 +313,19 @@ class PercentilesSuite extends FunSuite {
         assertEquals(t.tags, Map("name" -> "test", "percentile" -> f"$p%5.1f"))
         assertEquals(t.label, f"(percentile=$p%5.1f)")
         assertEqualsDouble(p, estimate, 10.0)
+    }
+  }
+
+  test("group by with math") {
+    val data = eval("name,test,:eq,(,mode,),:by,(,90,),:percentiles,1000,:mul", input100)
+      .sortWith(_.tags("mode") < _.tags("mode"))
+
+    assertEquals(data.size, 2)
+    List("even", "odd").zip(data).foreach {
+      case (m, t) =>
+        val estimate = t.data(0L)
+        assertEquals(t.tags, Map("name" -> "test", "mode" -> m, "percentile" -> " 90.0"))
+        assertEquals(t.label, f"(percentile((mode=$m),  90.0) * 1000.0)")
     }
   }
 

@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.lwcapi
+package com.netflix.atlas.core.stacklang
 
-case class Subscription(query: SpectatorQuery, metadata: ExpressionMetadata)
+trait StackItem {
+
+  /**
+    * Append the string representation of this object.
+    *
+    * @param builder
+    *     Builder to append the string representation into.
+    */
+  def append(builder: java.lang.StringBuilder): Unit
+}

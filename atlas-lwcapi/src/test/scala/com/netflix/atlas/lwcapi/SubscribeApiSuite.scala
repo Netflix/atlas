@@ -67,7 +67,7 @@ class SubscribeApiSuite extends MUnitRouteSuite {
 
       // Send list of expressions to subscribe to
       val exprs = List(LwcExpression("name,disk,:eq,:avg", ExprType.TIME_SERIES, 60000))
-      client.sendMessage(LwcMessages.encodeBatch(exprs))
+      client.sendMessage(LwcMessages.encodeBatch(exprs, compress = true))
 
       // Look for subscription messages, one for sum and one for count
       var subscriptions = List.empty[LwcSubscription]

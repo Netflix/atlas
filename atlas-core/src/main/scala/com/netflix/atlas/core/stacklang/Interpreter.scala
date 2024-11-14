@@ -203,12 +203,42 @@ object Interpreter {
   def toString(stack: List[Any]): String = toStringImpl(stack.reverse)
 
   private def toStringImpl(items: Seq[Any]): String = {
-    val parts = items.map {
-      case vs: Seq[?] => s"(,${toStringImpl(vs)},)"
-      case v: String  => escape(v)
-      case v          => v.toString
+    val builder = new java.lang.StringBuilder()
+    appendValues(builder, items)
+    builder.toString
+  }
+
+  def append(builder: java.lang.StringBuilder, items: Any*): Unit = {
+    appendValues(builder, items)
+  }
+
+  private def appendValues(builder: java.lang.StringBuilder, vs: Seq[Any]): Unit = {
+    val it = vs.iterator
+    if (it.hasNext) {
+      appendValue(builder, it.next())
+      while (it.hasNext) {
+        builder.append(',')
+        appendValue(builder, it.next())
+      }
     }
-    parts.mkString(",")
+  }
+
+  private def appendValue(builder: java.lang.StringBuilder, value: Any): Unit = {
+    value match {
+      case vs: Seq[?]   => appendSeq(builder, vs)
+      case v: String    => escape(builder, v)
+      case v: StackItem => v.append(builder)
+      case v            => builder.append(v)
+    }
+  }
+
+  private def appendSeq(builder: java.lang.StringBuilder, vs: Seq[Any]): Unit = {
+    builder.append('(')
+    vs.foreach { v =>
+      builder.append(',')
+      appendValue(builder, v)
+    }
+    builder.append(",)")
   }
 
   /**
@@ -237,6 +267,11 @@ object Interpreter {
   /** Escape special characters in the expression. */
   def escape(str: String): String = {
     Strings.escape(str, isSpecial)
+  }
+
+  /** Escape special characters in the expression. */
+  def escape(builder: java.lang.StringBuilder, str: String): Unit = {
+    Strings.escape(builder, str, isSpecial)
   }
 
   /** Unescape unicode characters in the expression. */

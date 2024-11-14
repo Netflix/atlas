@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.NullNode
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonParserHelper.*
@@ -28,6 +27,8 @@ import com.netflix.atlas.pekko.ByteStringInputStream
 import com.netflix.atlas.pekko.DiagnosticMessage
 
 import java.io.ByteArrayOutputStream
+import java.io.OutputStream
+import java.util.zip.GZIPOutputStream
 
 /**
   * Helpers for working with messages coming back from the LWCAPI service.
@@ -41,7 +42,7 @@ object LwcMessages {
     * Parse the message string into an internal model object based on the type.
     */
   def parse(msg: ByteString): AnyRef = {
-    parse(Json.newJsonParser(new ByteStringInputStream(msg)))
+    parse(Json.newJsonParser(ByteStringInputStream.create(msg)))
   }
 
   /**
@@ -173,11 +174,11 @@ object LwcMessages {
   }
 
   private def parseTags(parser: JsonParser): Map[String, String] = {
-    val builder = new SmallHashMap.Builder[String, String](30)
+    val builder = new SortedTagMap.Builder(30)
     foreachField(parser) {
       case k => builder.add(k, nextString(parser))
     }
-    builder.result
+    builder.result()
   }
 
   private val Expression = 0
@@ -192,8 +193,13 @@ object LwcMessages {
   /**
     * Encode messages using Jackson's smile format into a ByteString.
     */
-  def encodeBatch(msgs: Seq[AnyRef]): ByteString = {
-    encodeBatch(msgs, new ByteArrayOutputStream())
+  def encodeBatch(msgs: Seq[AnyRef], compress: Boolean = false): ByteString = {
+    val baos = new ByteArrayOutputStream()
+    if (compress)
+      encodeBatchImpl(msgs, new GZIPOutputStream(baos))
+    else
+      encodeBatchImpl(msgs, baos)
+    ByteString.fromArrayUnsafe(baos.toByteArray)
   }
 
   /**
@@ -203,82 +209,90 @@ object LwcMessages {
     */
   def encodeBatch(msgs: Seq[AnyRef], baos: ByteArrayOutputStream): ByteString = {
     baos.reset()
-    val gen = Json.newSmileGenerator(baos)
-    try {
-      gen.writeStartArray()
-      msgs.foreach {
-        case msg: LwcExpression =>
-          gen.writeNumber(Expression)
-          gen.writeString(msg.expression)
-          if (msg.exprType != ExprType.TIME_SERIES)
-            gen.writeString(msg.exprType.name())
-          gen.writeNumber(msg.step)
-        case msg: LwcSubscription =>
-          gen.writeNumber(Subscription)
-          gen.writeString(msg.expression)
-          gen.writeStartArray()
-          msg.metrics.foreach { m =>
-            gen.writeString(m.id)
-            gen.writeString(m.expression)
-            gen.writeNumber(m.step)
-          }
-          gen.writeEndArray()
-        case msg: LwcSubscriptionV2 =>
-          gen.writeNumber(SubscriptionV2)
-          gen.writeString(msg.expression)
-          gen.writeString(msg.exprType.name())
-          gen.writeStartArray()
-          msg.subExprs.foreach { s =>
-            gen.writeString(s.id)
-            gen.writeString(s.expression)
-            gen.writeNumber(s.step)
-          }
-          gen.writeEndArray()
-        case msg: LwcDatapoint =>
-          gen.writeNumber(Datapoint)
-          gen.writeNumber(msg.timestamp)
-          gen.writeString(msg.id)
-          // Should already be sorted, but convert if needed to ensure we can rely on
-          // the order. It will be a noop if already a SortedTagMap.
-          val tags = SortedTagMap(msg.tags)
-          gen.writeNumber(tags.size)
-          tags.foreachEntry { (k, v) =>
-            gen.writeString(k)
-            gen.writeString(v)
-          }
-          gen.writeNumber(msg.value)
-        case msg: LwcDiagnosticMessage =>
-          gen.writeNumber(LwcDiagnostic)
-          gen.writeString(msg.id)
-          gen.writeString(msg.message.typeName)
-          gen.writeString(msg.message.message)
-        case msg: DiagnosticMessage =>
-          gen.writeNumber(Diagnostic)
-          gen.writeString(msg.typeName)
-          gen.writeString(msg.message)
-        case msg: LwcHeartbeat =>
-          gen.writeNumber(Heartbeat)
-          gen.writeNumber(msg.timestamp)
-          gen.writeNumber(msg.step)
-        case msg: LwcEvent =>
-          gen.writeNumber(Event)
-          gen.writeString(msg.id)
-          mapper.writeTree(gen, msg.payload)
-        case msg =>
-          throw new MatchError(s"$msg")
-      }
-      gen.writeEndArray()
-    } finally {
-      gen.close()
-    }
+    encodeBatchImpl(msgs, baos)
     ByteString.fromArrayUnsafe(baos.toByteArray)
+  }
+
+  private def encodeBatchImpl(msgs: Seq[AnyRef], out: OutputStream): Unit = {
+    try {
+      val gen = Json.newSmileGenerator(out)
+      try {
+        gen.writeStartArray()
+        msgs.foreach {
+          case msg: LwcExpression =>
+            gen.writeNumber(Expression)
+            gen.writeString(msg.expression)
+            if (msg.exprType != ExprType.TIME_SERIES)
+              gen.writeString(msg.exprType.name())
+            gen.writeNumber(msg.step)
+          case msg: LwcSubscription =>
+            gen.writeNumber(Subscription)
+            gen.writeString(msg.expression)
+            gen.writeStartArray()
+            msg.metrics.foreach { m =>
+              gen.writeString(m.id)
+              gen.writeString(m.expression)
+              gen.writeNumber(m.step)
+            }
+            gen.writeEndArray()
+          case msg: LwcSubscriptionV2 =>
+            gen.writeNumber(SubscriptionV2)
+            gen.writeString(msg.expression)
+            gen.writeString(msg.exprType.name())
+            gen.writeStartArray()
+            msg.subExprs.foreach { s =>
+              gen.writeString(s.id)
+              gen.writeString(s.expression)
+              gen.writeNumber(s.step)
+            }
+            gen.writeEndArray()
+          case msg: LwcDatapoint =>
+            gen.writeNumber(Datapoint)
+            gen.writeNumber(msg.timestamp)
+            gen.writeString(msg.id)
+            // Should already be sorted, but convert if needed to ensure we can rely on
+            // the order. It will be a noop if already a SortedTagMap.
+            val tags = SortedTagMap(msg.tags)
+            gen.writeNumber(tags.size)
+            tags.foreachEntry { (k, v) =>
+              gen.writeString(k)
+              gen.writeString(v)
+            }
+            gen.writeNumber(msg.value)
+          case msg: LwcDiagnosticMessage =>
+            gen.writeNumber(LwcDiagnostic)
+            gen.writeString(msg.id)
+            gen.writeString(msg.message.typeName)
+            gen.writeString(msg.message.message)
+          case msg: DiagnosticMessage =>
+            gen.writeNumber(Diagnostic)
+            gen.writeString(msg.typeName)
+            gen.writeString(msg.message)
+          case msg: LwcHeartbeat =>
+            gen.writeNumber(Heartbeat)
+            gen.writeNumber(msg.timestamp)
+            gen.writeNumber(msg.step)
+          case msg: LwcEvent =>
+            gen.writeNumber(Event)
+            gen.writeString(msg.id)
+            mapper.writeTree(gen, msg.payload)
+          case msg =>
+            throw new MatchError(s"$msg")
+        }
+        gen.writeEndArray()
+      } finally {
+        gen.close()
+      }
+    } finally {
+      out.close()
+    }
   }
 
   /**
     * Parse a set of messages that were encoded with `encodeBatch`.
     */
   def parseBatch(msgs: ByteString): List[AnyRef] = {
-    parseBatch(Json.newSmileParser(new ByteStringInputStream(msgs)))
+    parseBatch(Json.newSmileParser(ByteStringInputStream.create(msgs)))
   }
 
   private def parseBatch(parser: JsonParser): List[AnyRef] = {

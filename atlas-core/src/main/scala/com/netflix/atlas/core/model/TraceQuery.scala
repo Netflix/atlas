@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.stacklang.Interpreter
+
 /** Base type for a query to match a trace. */
 sealed trait TraceQuery extends Expr
 
@@ -26,19 +28,25 @@ object TraceQuery {
     */
   case class Simple(query: Query) extends TraceQuery {
 
-    override def toString: String = query.toString
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, query)
+    }
   }
 
   /** Matches if the trace has a span that matches `q1` and a span that matches `q2`. */
   case class SpanAnd(q1: TraceQuery, q2: TraceQuery) extends TraceQuery {
 
-    override def toString: String = s"$q1,$q2,:span-and"
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, q1, q2, ":span-and")
+    }
   }
 
   /** Matches if the trace has a span that matches `q1` or a span that matches `q2`. */
   case class SpanOr(q1: TraceQuery, q2: TraceQuery) extends TraceQuery {
 
-    override def toString: String = s"$q1,$q2,:span-or"
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, q1, q2, ":span-or")
+    }
   }
 
   /**
@@ -47,18 +55,26 @@ object TraceQuery {
     */
   case class Child(q1: Query, q2: Query) extends TraceQuery {
 
-    override def toString: String = s"$q1,$q2,:child"
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, q1, q2, ":child")
+    }
   }
 
   /** Filter to select the set of spans from a trace to forward as events. */
   case class SpanFilter(q: TraceQuery, f: Query) extends Expr {
 
     override def toString: String = s"$q,$f,:span-filter"
+
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, q, f, ":span-filter")
+    }
   }
 
   /** Time series based on data from a set of matching traces. */
   case class SpanTimeSeries(q: TraceQuery, expr: StyleExpr) extends Expr {
 
-    override def toString: String = s"$q,$expr,:span-time-series"
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, q, expr, ":span-time-series")
+    }
   }
 }

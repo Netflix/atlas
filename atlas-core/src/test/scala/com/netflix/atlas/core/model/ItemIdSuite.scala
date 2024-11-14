@@ -19,6 +19,8 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
 import munit.FunSuite
 
+import java.math.BigInteger
+
 class ItemIdSuite extends FunSuite {
 
   def testByteArray: Array[Byte] = {
@@ -92,6 +94,16 @@ class ItemIdSuite extends FunSuite {
     val bytes = testByteArray
     val id = ItemId(bytes)
     assertEquals(id, ItemId("0102030405060708090A0B0C0D0E0F1011121314"))
+  }
+
+  test("from String short") {
+    val id = ItemId(Strings.zeroPad("abc", 32))
+    assertEquals(id, ItemId("abc"))
+  }
+
+  test("from BigInteger short") {
+    val id = ItemId(new BigInteger("abc", 16))
+    assertEquals(id, ItemId("abc"))
   }
 
   test("from String invalid") {

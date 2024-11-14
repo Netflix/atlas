@@ -17,7 +17,6 @@ package com.netflix.atlas.core.validation
 
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.util.IdMap
-import com.netflix.atlas.core.util.SmallHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.spectator.api.Id
 import com.typesafe.config.Config
@@ -30,19 +29,6 @@ import com.typesafe.config.Config
   * ```
   */
 case class MaxUserTagsRule(limit: Int) extends Rule {
-
-  override def validate(tags: SmallHashMap[String, String]): ValidationResult = {
-    var count = 0
-    val iter = tags.entriesIterator
-    while (iter.hasNext) {
-      if (!TagKey.isRestricted(iter.key)) count += 1
-      iter.nextEntry()
-    }
-    if (count <= limit) ValidationResult.Pass
-    else {
-      failure(s"too many user tags: $count > $limit", tags)
-    }
-  }
 
   override def validate(tags: SortedTagMap): ValidationResult = {
     val size = tags.size

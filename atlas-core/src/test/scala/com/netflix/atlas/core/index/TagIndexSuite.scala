@@ -347,4 +347,10 @@ abstract class TagIndexSuite extends FunSuite {
     }
     assertEquals(result.size, 4640)
   }
+
+  test("iterator") {
+    val expected = index.findItems(TagQuery(Some(Query.True))).map(_.tags.toString).sorted
+    val actual = index.iterator.map(_.tags.toString).toList.sorted
+    assertEquals(actual, expected)
+  }
 }
