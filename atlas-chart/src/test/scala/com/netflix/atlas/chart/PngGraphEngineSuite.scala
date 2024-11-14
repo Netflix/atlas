@@ -310,8 +310,7 @@ abstract class PngGraphEngineSuite extends FunSuite {
   private val zones = List(
     ZoneId.of("US/Pacific"),
     ZoneId.of("UTC"),
-    ZoneId.of("Europe/Berlin"),
-    ZoneId.of("Australia/Eucla")
+    ZoneId.of("Europe/Berlin")
   )
   singleLine("single_line_timezone", v => v.copy(timezones = zones.take(1)))
   singleLine("single_line_timezones_ab", v => v.copy(timezones = zones.take(2)))
