@@ -48,6 +48,6 @@ object EventVocabulary extends Vocabulary {
         |Find matching events and create a row by extracting the specified columns.
         |""".stripMargin
 
-    override def examples: List[String] = List("name,sps,:eq")
+    override def examples: List[String] = List("level,ERROR,:eq,(,message,)")
   }
 }
