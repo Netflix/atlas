@@ -25,12 +25,10 @@ import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.stream.scaladsl.Compression
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.ByteStringInputStream
 import com.typesafe.scalalogging.StrictLogging
 
-import java.nio.charset.StandardCharsets
 import scala.util.Failure
 import scala.util.Success
 

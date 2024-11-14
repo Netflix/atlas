@@ -39,7 +39,6 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
@@ -51,7 +50,6 @@ class PekkoHttpClientSuite extends FunSuite {
 
   import PekkoHttpClientSuite.*
   private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
-  private implicit val ec: ExecutionContext = system.dispatcher
 
   override def afterAll(): Unit = {
     system.terminate()

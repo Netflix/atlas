@@ -29,7 +29,6 @@ import org.apache.pekko.util.ByteString
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.lwcapi.SubscribeApi.ErrorMsg
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.typesafe.scalalogging.StrictLogging
 

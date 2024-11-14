@@ -47,7 +47,6 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.AggrValuesInfo
-import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.TimeGroup

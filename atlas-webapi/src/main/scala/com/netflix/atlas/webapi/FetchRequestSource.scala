@@ -17,7 +17,6 @@ package com.netflix.atlas.webapi
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.chart.JsonCodec
-import com.netflix.atlas.chart.model.PlotDef
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -48,7 +47,6 @@ import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.json.Json
-import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.webapi.GraphApi.DataRequest
 import com.netflix.atlas.webapi.GraphApi.DataResponse

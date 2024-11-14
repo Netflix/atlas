@@ -166,7 +166,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     }
   }
 
-  private def fill(blk: Block, buf: Array[Double], start: Long, end: Long, aggr: Int): Unit = {
+  private def fill(blk: Block, buf: Array[Double], start: Long, end: Long): Unit = {
     val s = start / step
     val e = end / step
     val bs = blk.start / step
@@ -198,7 +198,7 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     val buffer = ArrayHelper.fill(size, Double.NaN)
     var pos = 0
     while (pos < numBlocks) {
-      if (blocks(pos) != null) fill(blocks(pos), buffer, start, end, aggr)
+      if (blocks(pos) != null) fill(blocks(pos), buffer, start, end)
       pos += 1
     }
     buffer

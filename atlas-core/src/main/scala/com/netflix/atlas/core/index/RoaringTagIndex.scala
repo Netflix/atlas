@@ -203,7 +203,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
       case LessThan(k, v)         => lessThan(k, v, false)
       case LessThanEqual(k, v)    => lessThan(k, v, true)
       case q: In                  => findImpl(q.toOrQuery, offset)
-      case q: PatternQuery        => strPattern(q, offset)
+      case q: PatternQuery        => strPattern(q)
       case HasKey(k)              => hasKey(k, offset)
       case True                   => all.clone()
       case False                  => new RoaringBitmap()
@@ -289,7 +289,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     }
   }
 
-  private def strPattern(q: Query.PatternQuery, offset: Int): RoaringBitmap = {
+  private def strPattern(q: Query.PatternQuery): RoaringBitmap = {
     val kp = keyMap.get(q.k, -1)
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()

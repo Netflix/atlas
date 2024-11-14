@@ -221,7 +221,6 @@ class EddaSourceSuite extends FunSuite {
   }
 
   test("substitute, IPv6 preferred if available") {
-    val uri = "http://{ip}:{port}"
     val instance = EddaSource.Instance("i-1", Some("1.2.3.4"), Some("::1"))
     assertEquals(instance.substitute("http://{ip}:{port}"), "http://[::1]:7101")
   }

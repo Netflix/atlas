@@ -23,7 +23,6 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.stacklang.Interpreter
 
 import java.time.Instant
-import scala.util.Using
 
 class SqlUtilsSuite extends PostgresSuite {
 
@@ -361,13 +360,6 @@ class SqlUtilsSuite extends PostgresSuite {
       ) as t(vs)
       """
     assertEquals(arrayQuery(sql), list(8.0, 7.0, null))
-  }
-
-  private def arrayValues(rs: java.sql.ResultSet, i: Int): List[Any] = {
-    rs.getArray(i)
-      .getArray
-      .asInstanceOf[Array[java.lang.Double]]
-      .toList
   }
 
   test("aggrSum, state should not be preserved") {

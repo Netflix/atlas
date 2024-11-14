@@ -470,10 +470,10 @@ object Strings {
         parseRefVar(refs, r)
       case UnixDate(d) =>
         val t = d.toLong match {
-          case v if v <= Integer.MAX_VALUE => Instant.ofEpochSecond(v)
-          case v if v <= millisCutoff      => Instant.ofEpochMilli(v)
-          case v if v <= microsCutoff      => ofEpoch(v, 1_000_000L, 1_000L)
-          case v                           => ofEpoch(v, 1_000_000_000L, 1L)
+          case v if v <= secondsCutoff => Instant.ofEpochSecond(v)
+          case v if v <= millisCutoff  => Instant.ofEpochMilli(v)
+          case v if v <= microsCutoff  => ofEpoch(v, 1_000_000L, 1_000L)
+          case v                       => ofEpoch(v, 1_000_000_000L, 1L)
         }
         ZonedDateTime.ofInstant(t, tz)
       case str =>

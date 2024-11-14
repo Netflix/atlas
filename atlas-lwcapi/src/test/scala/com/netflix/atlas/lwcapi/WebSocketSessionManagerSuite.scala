@@ -23,7 +23,6 @@ import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.lwcapi.SubscribeApi.ErrorMsg
 import munit.FunSuite
 import org.apache.pekko.util.ByteString
 

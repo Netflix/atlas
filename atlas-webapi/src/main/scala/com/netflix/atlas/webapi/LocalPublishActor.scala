@@ -87,16 +87,8 @@ object LocalPublishActor {
     *     Registry for keeping track of metrics.
     * @param memDb
     *     Database that will receive the final processed datapoints.
-    * @param maxMessageIds
-    *     Maximum number of message ids to track. If this limit is exceeded, then it
-    *     is possible for duplicate messages to get processed which may lead to over
-    *     counting if rollups are being used.
     */
-  private[webapi] class DatapointProcessor(
-    registry: Registry,
-    memDb: MemoryDatabase,
-    maxMessageIds: Int = 1000000
-  ) {
+  private[webapi] class DatapointProcessor(registry: Registry, memDb: MemoryDatabase) {
 
     // Track the ages of data flowing into the system. Data is expected to arrive quickly and
     // should hit the backend within the step interval used.

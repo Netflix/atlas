@@ -21,8 +21,6 @@ import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.stream.scaladsl.Flow
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
-import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.pekko.AccessLogger
 
 import scala.util.Try
 

@@ -73,8 +73,10 @@ object UnboundedMeteredMailbox {
   }
 }
 
-class UnboundedMeteredMailbox(settings: ActorSystem.Settings, config: Config)
-    extends MailboxType
+class UnboundedMeteredMailbox(
+  @scala.annotation.nowarn settings: ActorSystem.Settings,
+  config: Config
+) extends MailboxType
     with ProducesMessageQueue[UnboundedMeteredMailbox.MeteredMessageQueue] {
 
   import UnboundedMeteredMailbox.*
