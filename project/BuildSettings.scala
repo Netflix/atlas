@@ -1,6 +1,6 @@
 import sbt.Def
-import sbt._
-import sbt.Keys._
+import sbt.*
+import sbt.Keys.*
 
 object BuildSettings {
 
@@ -16,9 +16,9 @@ object BuildSettings {
   lazy val checkLicenseHeaders = taskKey[Unit]("Check the license headers for all source files.")
   lazy val formatLicenseHeaders = taskKey[Unit]("Fix the license headers for all source files.")
 
-  lazy val baseSettings: Seq[Def.Setting[_]] = GitVersion.settings
+  lazy val baseSettings: Seq[Def.Setting[?]] = GitVersion.settings
 
-  lazy val buildSettings: Seq[Def.Setting[_]] = baseSettings ++ Seq(
+  lazy val buildSettings: Seq[Def.Setting[?]] = baseSettings ++ Seq(
     organization := "com.netflix.atlas_v1",
     scalaVersion := Dependencies.Versions.scala,
     scalacOptions := {
@@ -36,8 +36,8 @@ object BuildSettings {
     // Evictions: https://github.com/sbt/sbt/issues/1636
     // Linting: https://github.com/sbt/sbt/pull/5153
     (update / evictionWarningOptions).withRank(KeyRanks.Invisible) := EvictionWarningOptions.empty,
-    checkLicenseHeaders := License.checkLicenseHeaders(streams.value.log, sourceDirectory.value),
-    formatLicenseHeaders := License.formatLicenseHeaders(streams.value.log, sourceDirectory.value),
+    checkLicenseHeaders := LicenseCheck.checkLicenseHeaders(streams.value.log, sourceDirectory.value),
+    formatLicenseHeaders := LicenseCheck.formatLicenseHeaders(streams.value.log, sourceDirectory.value),
     packageBin / packageOptions += Package.ManifestAttributes(
       "Build-Date"   -> java.time.Instant.now().toString,
       "Build-Number" -> sys.env.getOrElse("GITHUB_RUN_ID", "unknown"),
@@ -64,7 +64,7 @@ object BuildSettings {
 
   def profile: Project => Project = p => {
     p.settings(SonatypeSettings.settings)
-      .settings(buildSettings: _*)
+      .settings(buildSettings *)
       .settings(libraryDependencies ++= commonDeps)
   }
 }

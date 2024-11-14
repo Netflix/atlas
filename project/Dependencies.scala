@@ -1,4 +1,4 @@
-import sbt._
+import sbt.*
 
 // format: off
 
@@ -17,7 +17,7 @@ object Dependencies {
     val crossScala  = Seq(scala, "3.5.1")
   }
 
-  import Versions._
+  import Versions.*
 
   val pekkoActor        = "org.apache.pekko" %% "pekko-actor" % pekko
   val pekkoHttp         = "org.apache.pekko" %% "pekko-http" % pekkoHttpV

@@ -3,7 +3,7 @@ import java.io.PrintStream
 import java.time.ZonedDateTime
 import java.time.ZoneOffset
 import scala.io.Source
-import sbt._
+import sbt.*
 
 import scala.util.Using
 
@@ -15,8 +15,8 @@ import scala.util.Using
   * - supports both test and main source files
   * - add target to check which can fail the build
   */
-object License {
-  private val lineSeparator = System.getProperty("line.separator")
+object LicenseCheck {
+  private val lineSeparator = java.lang.System.lineSeparator()
 
   def year: Int = ZonedDateTime.now(ZoneOffset.UTC).getYear
 

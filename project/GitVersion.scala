@@ -1,7 +1,7 @@
-import sbt._
-import sbt.Keys._
+import sbt.*
+import sbt.Keys.*
 import sbtrelease.Version
-import com.github.sbt.git.SbtGit._
+import com.github.sbt.git.SbtGit.*
 
 object GitVersion {
 
@@ -9,18 +9,18 @@ object GitVersion {
   private val baseVersion = "v1.8.x"
 
   // 0.1.x
-  private val versionBranch = """v?([0-9\.]+)(?:\.x)?""".r
+  private val versionBranch = """v?([0-9.]+)(?:\.x)?""".r
 
   // v0.1.47-31-g230560c
   // v0.1.47-20150807.161518-9
-  private val snapshotVersion = """v?([0-9\.]+)-(?:\d+)-(?:[0-9a-z]+)""".r
+  private val snapshotVersion = """v?([0-9.]+)-\d+-[0-9a-z]+""".r
 
   // 1.5.0-rc.1-123-gcbfe51a
-  private val candidateVersion = """v?([0-9\.]+)(?:-rc\.\d+)?-(?:\d+)-(?:[0-9a-z]+)""".r
+  private val candidateVersion = """v?([0-9.]+)(?:-rc\.\d+)?-\d+-[0-9a-z]+""".r
 
   // v0.1.47
   // 1.5.0-rc.1
-  private val releaseVersion = """v?([0-9\.]+(?:-rc\.\d+)?)""".r
+  private val releaseVersion = """v?([0-9.]+(?:-rc\.\d+)?)""".r
 
   /**
     * Needs to check for "false", don't assume it will ever be set to "true".
@@ -34,11 +34,11 @@ object GitVersion {
     * version to start with.
     */
   private def toSnapshotVersion(branch: String, v: String): String = {
-    val v2 = Version(v).map(_.bump.string).getOrElse(v)
+    val v2 = Version(v).map(_.bumpNext.unapply).getOrElse(v)
     val suffix = "-SNAPSHOT"
     branch match {
       case versionBranch(b) if !v2.startsWith(b) =>
-        s"${Version(s"$b.0").map(_.string).getOrElse(v2)}$suffix"
+        s"${Version(s"$b.0").map(_.unapply).getOrElse(v2)}$suffix"
       case _ =>
         s"$v2$suffix"
     }
@@ -53,7 +53,7 @@ object GitVersion {
     parts(parts.length - 1)
   }
 
-  lazy val settings: Seq[Def.Setting[_]] = Seq(
+  lazy val settings: Seq[Def.Setting[?]] = Seq(
     ThisBuild / version := {
       val branch = extractBranchName(git.gitCurrentBranch.value)
       val branchVersion = if (branch == "main" || branch == "master") baseVersion else branch
