@@ -65,7 +65,7 @@ private[stream] class StreamContext(
     config.getConfigList("backends").asScala.toList.map { cfg =>
       // URI for Edda service. For backwards compatibility Eureka name is also
       // checked.
-      val eddaUri = cfg.getString(if (cfg.hasPath("edda-uri")) "edda-uri" else "eureka-uri")
+      val eddaUri = cfg.getString("edda-uri")
       val checkForExpensiveQueries = isNotFalse(cfg, "check-for-expensive-queries")
       EddaBackend(
         cfg.getString("host"),

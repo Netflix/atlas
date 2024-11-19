@@ -39,7 +39,7 @@ object TestContext {
       |  backends = [
       |    {
       |      host = "localhost"
-      |      eureka-uri = "http://localhost:7102/v2/vips/local-dev:7001"
+      |      edda-uri = "http://localhost:7102/v2/vips/local-dev:7001"
       |      instance-uri = "http://{host}:{port}"
       |    },
       |    {
