@@ -20,6 +20,7 @@ import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.core.model.*
 import com.netflix.atlas.core.util.Strings
+import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 
 import java.awt.Color
@@ -57,6 +58,9 @@ import java.time.Duration
   *     Data for the time series.
   * @param styleMetadata
   *     Metadata for presentation details related to how to render the line.
+  * @param samples
+  *     Optional set of event samples associated with the message. Typically used when
+  *     mapping events into a count with a few sample messages.
   */
 case class TimeSeriesMessage(
   id: String,
@@ -68,7 +72,8 @@ case class TimeSeriesMessage(
   label: String,
   tags: Map[String, String],
   data: ChunkData,
-  styleMetadata: Option[LineStyleMetadata]
+  styleMetadata: Option[LineStyleMetadata],
+  samples: List[List[Any]]
 ) extends JsonSupport {
 
   override def hasCustomEncoding: Boolean = true
@@ -96,6 +101,10 @@ case class TimeSeriesMessage(
     gen.writeNumberField("step", step)
     gen.writeFieldName("data")
     data.encode(gen)
+    if (samples.nonEmpty) {
+      gen.writeFieldName("samples")
+      Json.encode(gen, samples)
+    }
     gen.writeEndObject()
   }
 
@@ -150,7 +159,8 @@ object TimeSeriesMessage {
       ts.label,
       outputTags,
       ArrayData(data.data),
-      palette.map(p => createStyleMetadata(expr, ts.label, p))
+      palette.map(p => createStyleMetadata(expr, ts.label, p)),
+      Nil
     )
   }
 

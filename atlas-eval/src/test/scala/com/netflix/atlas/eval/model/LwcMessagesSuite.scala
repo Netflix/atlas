@@ -104,6 +104,32 @@ class LwcMessagesSuite extends FunSuite {
     assertEquals(actual, expected)
   }
 
+  private def checkSamples(samples: List[List[Any]]): Unit = {
+    val tags = Map("foo" -> "bar")
+    val input = LwcDatapoint(step, "a", tags, 42.0, samples)
+    val actual = LwcMessages.parse(Json.encode(input))
+    val expected = input.copy(samples = Json.decode[List[List[JsonNode]]](Json.encode(samples)))
+    assertEquals(actual, expected)
+  }
+
+  test("datapoint, with samples empty") {
+    checkSamples(Nil)
+  }
+
+  test("datapoint, with samples empty rows") {
+    checkSamples(List(Nil, Nil, Nil))
+  }
+
+  test("datapoint, with samples") {
+    val tags = Map("foo" -> "bar")
+    checkSamples(List(List("a", tags)))
+  }
+
+  test("datapoint, with samples uneven") {
+    val tags = Map("foo" -> "bar")
+    checkSamples(List(List("a", tags), Nil, List("b", tags)))
+  }
+
   test("event") {
     val payload = Json.decode[JsonNode]("""{"foo":"bar"}""")
     val expected = LwcEvent("123", payload)

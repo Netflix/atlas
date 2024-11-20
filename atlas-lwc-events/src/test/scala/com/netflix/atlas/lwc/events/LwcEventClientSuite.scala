@@ -51,10 +51,30 @@ class LwcEventClientSuite extends FunSuite {
       )
     )
     val output = List.newBuilder[String]
-    val client = LwcEventClient(subs, output.addOne)
+    val client = LwcEventClient(subs, output.addOne, clock)
     client.process(sampleLwcEvent)
     assertEquals(
       List("""data: {"id":"2","event":{"tags":{"app":"www","node":"i-123"},"duration":42}}"""),
+      output.result()
+    )
+  }
+
+  test("sampled pass-through") {
+    val subs = Subscriptions.fromTypedList(
+      List(
+        Subscription("1", step, "app,foo,:eq,(,app,),(,node,),:sample", Subscriptions.Events),
+        Subscription("2", step, "app,www,:eq,(,app,),(,node,),:sample", Subscriptions.Events)
+      )
+    )
+    val output = List.newBuilder[String]
+    val client = LwcEventClient(subs, output.addOne, clock)
+    client.process(sampleLwcEvent)
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
+    assertEquals(
+      List(
+        """data: {"id":"2","event":{"id":"2","tags":{"app":"www"},"timestamp":5000,"value":0.2,"samples":[["i-123"]]}}"""
+      ),
       output.result()
     )
   }

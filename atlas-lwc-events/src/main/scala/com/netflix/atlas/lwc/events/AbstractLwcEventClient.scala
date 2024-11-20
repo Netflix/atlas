@@ -60,16 +60,40 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
       val handler = expr match {
         case EventExpr.Raw(_)       => EventHandler(sub, e => List(e))
         case EventExpr.Table(_, cs) => EventHandler(sub, e => List(LwcEvent.Row(e, cs)))
+        case expr: EventExpr.Sample =>
+          val converter = DatapointConverter(
+            sub.id,
+            expr.dataExpr,
+            clock,
+            sub.step,
+            Some(event => expr.projectionKeys.map(event.extractValue)),
+            submit
+          )
+          EventHandler(
+            sub,
+            event => {
+              converter.update(event)
+              Nil
+            },
+            Some(converter)
+          )
       }
       index.add(q, handler)
       subHandlers.put(sub, q -> handler)
+      if (handler.converter.isDefined)
+        flushableHandlers += handler
+    }
+    diff.unchanged.events.foreach { sub =>
+      val handlerMeta = subHandlers.get(sub)
+      if (handlerMeta != null && handlerMeta._2.converter.isDefined)
+        flushableHandlers += handlerMeta._2
     }
     diff.removed.events.foreach(removeSubscription)
 
     // Analytics based on events
     diff.added.timeSeries.foreach { sub =>
       val expr = ExprUtils.parseDataExpr(sub.expression)
-      val converter = DatapointConverter(sub.id, expr, clock, sub.step, submit)
+      val converter = DatapointConverter(sub.id, expr, clock, sub.step, None, submit)
       val q = ExprUtils.toSpectatorQuery(removeValueClause(expr.query))
       val handler = EventHandler(
         sub,
@@ -99,7 +123,7 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     diff.added.traceTimeSeries.foreach { sub =>
       val tq = ExprUtils.parseTraceTimeSeriesQuery(sub.expression)
       val dataExpr = tq.expr.expr.dataExprs.head
-      val converter = DatapointConverter(sub.id, dataExpr, clock, sub.step, submit)
+      val converter = DatapointConverter(sub.id, dataExpr, clock, sub.step, None, submit)
       val q = ExprUtils.toSpectatorQuery(removeValueClause(dataExpr.query))
       val handler = EventHandler(
         sub,

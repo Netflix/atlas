@@ -43,4 +43,11 @@ class EventVocabularySuite extends FunSuite {
     assertEquals(table.columns, List("a", "b"))
     assertEquals(table.query, Query.Equal("name", "sps"))
   }
+
+  test("sample, empty set of sampleBy") {
+    val e = intercept[IllegalArgumentException] {
+      parse("name,sps,:eq,(,),(,message,),:sample")
+    }
+    assert(e.getMessage.contains("sampleBy cannot be empty"))
+  }
 }
