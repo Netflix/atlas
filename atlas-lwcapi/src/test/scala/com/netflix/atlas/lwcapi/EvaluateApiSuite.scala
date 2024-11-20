@@ -45,7 +45,7 @@ class EvaluateApiSuite extends MUnitRouteSuite {
   }
 
   test("post metrics") {
-    val metrics = List(Item("abc", SortedTagMap("a" -> "1"), 42.0))
+    val metrics = List(Item("abc", SortedTagMap("a" -> "1"), 42.0, Nil))
     val json = EvaluateRequest(1234L, metrics, Nil, Nil).toJson
     Post("/lwc/api/v1/evaluate", json) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
