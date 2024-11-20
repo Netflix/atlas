@@ -524,7 +524,7 @@ private[stream] abstract class EvaluatorImpl(
     dss.sources.asScala.flatMap { dataSource =>
       val (exprType, exprs) = interpreter.parseQuery(Uri(dataSource.uri))
       exprs.map { expr =>
-        val step = if (exprType.isTimeSeriesType) dataSource.step.toMillis else 0L
+        val step = dataSource.step.toMillis
         LwcExpression(expr.toString, exprType, step)
       }
     }.toSet
