@@ -49,6 +49,9 @@ import com.netflix.spectator.api.Registry
   *     Tags associated with the datapoint.
   * @param value
   *     Value for the datapoint.
+  * @param samples
+  *     Optional set of event samples associated with the message. Typically used when
+  *     mapping events into a count with a few sample messages.
   */
 case class AggrDatapoint(
   timestamp: Long,
@@ -56,7 +59,8 @@ case class AggrDatapoint(
   expr: DataExpr,
   source: String,
   tags: Map[String, String],
-  value: Double
+  value: Double,
+  samples: List[List[Any]] = Nil
 ) {
 
   /**

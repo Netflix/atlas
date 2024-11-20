@@ -29,12 +29,15 @@ import com.netflix.atlas.json.Json
   *     Timestamp for the data point.
   * @param value
   *     Value for the data point.
+  * @param samples
+  *     Optional set of event samples associated with the message.
   */
 case class DatapointEvent(
   id: String,
   tags: Map[String, String],
   timestamp: Long,
-  override val value: Double
+  override val value: Double,
+  samples: List[List[Any]] = Nil
 ) extends LwcEvent {
 
   override def rawEvent: Any = this

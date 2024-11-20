@@ -16,6 +16,7 @@
 package com.netflix.atlas.eval.model
 
 import com.fasterxml.jackson.core.JsonGenerator
+import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 
 /**
@@ -31,9 +32,17 @@ import com.netflix.atlas.json.JsonSupport
   *     Tags associated with the datapoint.
   * @param value
   *     Value for the datapoint.
+  * @param samples
+  *     Optional set of event samples associated with the message. Typically used when
+  *     mapping events into a count with a few sample messages.
   */
-case class LwcDatapoint(timestamp: Long, id: String, tags: Map[String, String], value: Double)
-    extends JsonSupport {
+case class LwcDatapoint(
+  timestamp: Long,
+  id: String,
+  tags: Map[String, String],
+  value: Double,
+  samples: List[List[Any]] = Nil
+) extends JsonSupport {
 
   val `type`: String = "datapoint"
 
@@ -48,6 +57,10 @@ case class LwcDatapoint(timestamp: Long, id: String, tags: Map[String, String], 
     tags.foreachEntry(gen.writeStringField)
     gen.writeEndObject()
     gen.writeNumberField("value", value)
+    if (samples.nonEmpty) {
+      gen.writeFieldName("samples")
+      Json.encode(gen, samples)
+    }
     gen.writeEndObject()
   }
 }

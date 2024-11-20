@@ -55,4 +55,29 @@ object EventExpr {
       Interpreter.append(builder, query, columns, ":table")
     }
   }
+
+  /**
+    * Expression that specifies how to map an event to a simple row with the specified columns.
+    *
+    * @param query
+    *     Query to determine if an event should be matched.
+    * @param sampleBy
+    *     The set of tag values to extract for purposes of the sampling groups. A value will be
+    *     sent for each distinct sample group.
+    * @param projectionKeys
+    *     Set of columns to export into a row.
+    */
+  case class Sample(query: Query, sampleBy: List[String], projectionKeys: List[String])
+      extends EventExpr {
+
+    require(sampleBy.nonEmpty, "sampleBy cannot be empty")
+
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, query, sampleBy, projectionKeys, ":sample")
+    }
+
+    def dataExpr: DataExpr = {
+      DataExpr.GroupBy(DataExpr.Sum(query), sampleBy)
+    }
+  }
 }

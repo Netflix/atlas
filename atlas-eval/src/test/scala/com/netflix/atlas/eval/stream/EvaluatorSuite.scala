@@ -927,6 +927,30 @@ class EvaluatorSuite extends FunSuite {
     assertEquals(result.size, 5000)
   }
 
+  test("publisher, events table") {
+    val evaluator = new Evaluator(config, registry, system)
+    val uri =
+      "synthetic://test/events?q=name,cpu,:eq,nf.app,foo,:eq,:and,(,j,),:table&step=1ms&numStepIntervals=5"
+    val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
+    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+    assertEquals(result.size, 5000)
+  }
+
+  test("publisher, events sample") {
+    val evaluator = new Evaluator(config, registry, system)
+    val uri =
+      "synthetic://test/events?q=name,cpu,:eq,nf.app,foo,:eq,:and,(,i,),(,j,),:sample&step=1ms&numStepIntervals=5"
+    val future = Source.fromPublisher(evaluator.createPublisher(uri)).runWith(Sink.seq)
+    val result = Await.result(future, scala.concurrent.duration.Duration.Inf)
+    assertEquals(result.size, 5)
+    result.foreach {
+      case tsm: TimeSeriesMessage =>
+        assert(tsm.samples.nonEmpty)
+      case msg =>
+        fail(s"unexpected message: $msg")
+    }
+  }
+
   test("publisher, trace time series") {
     val evaluator = new Evaluator(config, registry, system)
 

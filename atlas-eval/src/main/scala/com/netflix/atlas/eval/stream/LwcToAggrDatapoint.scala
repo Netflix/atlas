@@ -17,6 +17,8 @@ package com.netflix.atlas.eval.stream
 
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DataVocabulary
+import com.netflix.atlas.core.model.EventExpr
+import com.netflix.atlas.core.model.EventVocabulary
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.TraceVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
@@ -38,6 +40,7 @@ import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.eval.model.LwcSubscriptionV2
 import com.netflix.atlas.eval.model.DatapointsTuple
 import com.netflix.atlas.eval.model.ExprType
+import com.netflix.atlas.eval.model.LwcDataExpr
 
 /**
   * Process the SSE output from an LWC service and convert it into a stream of
@@ -92,14 +95,21 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
 
       private def updateStateV2(sub: LwcSubscriptionV2): Unit = {
         sub.subExprs.foreach { s =>
-          if (sub.exprType.isTimeSeriesType && !tsState.contains(s.id)) {
-            val expr = parseExpr(s.expression, sub.exprType)
-            tsState.put(s.id, DatapointMetadata(s.expression, expr, s.step))
-          }
-          if (sub.exprType.isEventType && !eventState.contains(s.id)) {
+          if (isTimeSeries(sub, s)) {
+            if (!tsState.contains(s.id)) {
+              val expr = parseExpr(s.expression, sub.exprType)
+              tsState.put(s.id, DatapointMetadata(s.expression, expr, s.step))
+            }
+          } else if (sub.exprType.isEventType && !eventState.contains(s.id)) {
             eventState.put(s.id, s.expression)
           }
         }
+      }
+
+      private def isTimeSeries(sub: LwcSubscriptionV2, s: LwcDataExpr): Boolean = {
+        // The sample type behaves similar to a time series for most processing, but maintains
+        // some sample events during aggregation.
+        sub.exprType.isTimeSeriesType || s.expression.contains(",:sample")
       }
 
       private def pushDatapoint(dp: LwcDatapoint): Option[AggrDatapoint] = {
@@ -107,7 +117,17 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
           case Some(sub) =>
             val expr = sub.dataExpr
             val step = sub.step
-            Some(AggrDatapoint(dp.timestamp, step, expr, "datapoint", dp.tags, dp.value))
+            Some(
+              AggrDatapoint(
+                dp.timestamp,
+                step,
+                expr,
+                sub.dataExprStr,
+                dp.tags,
+                dp.value,
+                dp.samples
+              )
+            )
           case None =>
             unknown.increment()
             None
@@ -158,6 +178,7 @@ private[stream] object LwcToAggrDatapoint {
 
   private val dataInterpreter = Interpreter(DataVocabulary.allWords)
   private val traceInterpreter = Interpreter(TraceVocabulary.allWords)
+  private val eventInterpreter = Interpreter(EventVocabulary.allWords)
 
   private def parseExpr(input: String, exprType: ExprType = ExprType.TIME_SERIES): DataExpr = {
     exprType match {
@@ -169,6 +190,11 @@ private[stream] object LwcToAggrDatapoint {
       case ExprType.TRACE_TIME_SERIES =>
         traceInterpreter.execute(input).stack match {
           case ModelExtractors.TraceTimeSeriesType(tq) :: Nil => tq.expr.expr.dataExprs.head
+          case _ => throw new IllegalArgumentException(s"invalid expr: $input")
+        }
+      case ExprType.EVENTS =>
+        eventInterpreter.execute(input).stack match {
+          case ModelExtractors.EventExprType(expr: EventExpr.Sample) :: Nil => expr.dataExpr
           case _ => throw new IllegalArgumentException(s"invalid expr: $input")
         }
       case _ =>

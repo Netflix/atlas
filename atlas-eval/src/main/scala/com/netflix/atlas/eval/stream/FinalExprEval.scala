@@ -30,8 +30,10 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
+import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.IdentityMap
+import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.ArrayData
 import com.netflix.atlas.eval.model.ChunkData
 import com.netflix.atlas.eval.model.TimeGroup
@@ -76,6 +78,9 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
       // sources message that arrives and should be consistent for the life of this stage
       private var step = -1L
 
+      // Sampled event expressions
+      private var sampledEventRecipients = Map.empty[DataExpr, List[ExprInfo]]
+
       // Each expression matched with a list of data source ids that should receive
       // the data for it
       private var recipients = List.empty[(StyleExpr, List[ExprInfo])]
@@ -100,6 +105,16 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
 
         // Get set of expressions before we update the list
         val previous = recipients.map(t => t._1 -> t._1).toMap
+
+        // Compute set of sampled event expressions
+        sampledEventRecipients = sources
+          .flatMap { s =>
+            exprInterpreter.parseSampleExpr(Uri(s.uri)).map { expr =>
+              expr.dataExpr -> ExprInfo(s.id, None)
+            }
+          }
+          .groupBy(_._1)
+          .map(t => t._1 -> t._2.map(_._2))
 
         // Error messages for invalid expressions
         val errors = List.newBuilder[MessageEnvelope]
@@ -185,6 +200,23 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
         val timestamp = group.timestamp
         val groupedDatapoints = group.dataExprValues
 
+        // Messages for sampled events that look similar to time series
+        val sampledEventMessages = groupedDatapoints.flatMap {
+          case (expr, vs) =>
+            sampledEventRecipients
+              .get(expr)
+              .fold(List.empty[MessageEnvelope]) { infos =>
+                val ts = vs.values.map(toTimeSeriesMessage)
+                ts.flatMap { msg =>
+                  infos.map { info =>
+                    new MessageEnvelope(info.id, msg)
+                  }
+                }
+              }
+        }.toList
+
+        // Data for each time series data expression or no-data line if there is no data for
+        // the interval
         val dataExprToDatapoints = noData ++ groupedDatapoints.map {
           case (k, vs) =>
             k -> vs.values.map(_.toTimeSeries)
@@ -194,12 +226,12 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
         val rateCollector = new EvalDataRateCollector(timestamp, step)
         dataSourceIdToDataExprs.foreach {
           case (id, dataExprSet) =>
-            dataExprSet.foreach(dataExpr => {
+            dataExprSet.foreach { dataExpr =>
               group.dataExprValues.get(dataExpr).foreach { info =>
                 rateCollector.incrementInput(id, dataExpr, info.numRawDatapoints)
                 rateCollector.incrementIntermediate(id, dataExpr, info.values.size)
               }
-            })
+            }
         }
 
         // Generate the time series and diagnostic output
@@ -249,7 +281,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
           case (id, rate) => new MessageEnvelope(id, rate)
         }.toList
 
-        output ++ rateMessages
+        sampledEventMessages ++ output ++ rateMessages
       }
 
       private def hasFiniteValue(value: AnyRef): Boolean = {
@@ -264,6 +296,23 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
           case ArrayData(vs) => vs.exists(!_.isNaN)
           case null          => true
         }
+      }
+
+      private def toTimeSeriesMessage(value: AggrDatapoint): TimeSeriesMessage = {
+        val id = TaggedItem.computeId(value.tags + ("atlas.query" -> value.source)).toString
+        TimeSeriesMessage(
+          id,
+          value.source,
+          value.expr.finalGrouping,
+          value.timestamp,
+          value.timestamp + step,
+          step,
+          TimeSeries.toLabel(value.tags),
+          value.tags,
+          ArrayData(Array(value.value)),
+          None,
+          value.samples
+        )
       }
 
       private def handleSingleGroup(g: TimeGroup): Unit = {

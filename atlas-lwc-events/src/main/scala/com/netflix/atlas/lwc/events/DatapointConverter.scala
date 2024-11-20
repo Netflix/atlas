@@ -19,6 +19,7 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.util.Strings
+import com.netflix.iep.config.ConfigManager
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.histogram.PercentileBuckets
 import com.netflix.spectator.impl.StepDouble
@@ -47,16 +48,23 @@ private[events] trait DatapointConverter {
 
 private[events] object DatapointConverter {
 
+  /**
+    * Limit on the number of groups for a group by expression. If exceeded new groups
+    * will be dropped.
+    */
+  private val MaxGroupBySize: Int = ConfigManager.get().getInt("atlas.lwc.events.max-groups")
+
   def apply(
     id: String,
     expr: DataExpr,
     clock: Clock,
     step: Long,
+    sampleMapper: Option[LwcEvent => List[Any]],
     consumer: (String, LwcEvent) => Unit
   ): DatapointConverter = {
     val tags = Query.tags(expr.query)
     val mapper = createValueMapper(tags)
-    val params = Params(id, Query.tags(expr.query), clock, step, mapper, consumer)
+    val params = Params(id, Query.tags(expr.query), clock, step, mapper, sampleMapper, consumer)
     toConverter(expr, params)
   }
 
@@ -140,6 +148,7 @@ private[events] object DatapointConverter {
     clock: Clock,
     step: Long,
     valueMapper: LwcEvent => Double,
+    sampleMapper: Option[LwcEvent => List[Any]],
     consumer: (String, LwcEvent) => Unit
   )
 
@@ -148,8 +157,14 @@ private[events] object DatapointConverter {
 
     private val buffer = new StepDouble(Double.NaN, params.clock, params.step)
 
+    private val sampleMapper: LwcEvent => List[Any] = params.sampleMapper.orNull
+    @volatile private var sample: List[Any] = Nil
+
     override def update(event: LwcEvent): Unit = {
       update(params.valueMapper(event))
+      if (sampleMapper != null && sample.isEmpty) {
+        sample = sampleMapper(event)
+      }
     }
 
     override def update(value: Double): Unit = {
@@ -161,8 +176,13 @@ private[events] object DatapointConverter {
     override def flush(timestamp: Long): Unit = {
       val value = buffer.pollAsRate(timestamp)
       if (value.isFinite) {
+        var s = List.empty[List[Any]]
+        if (sampleMapper != null) {
+          s = List(sample)
+          sample = Nil
+        }
         val ts = timestamp / params.step * params.step
-        val event = DatapointEvent(params.id, params.tags, ts, value)
+        val event = DatapointEvent(params.id, params.tags, ts, value, s)
         params.consumer(params.id, event)
       }
     }
@@ -264,6 +284,8 @@ private[events] object DatapointConverter {
 
     private val isPercentile = by.keys.contains(TagKey.percentile)
 
+    @volatile private var maxGroupsExceeded: Boolean = false
+
     override def update(event: LwcEvent): Unit = {
       if (isPercentile) {
         val rawValue = getRawValue(event)
@@ -274,11 +296,10 @@ private[events] object DatapointConverter {
             case k                 => event.tagValue(k)
           }
           .filterNot(_ == null)
-        update(1.0, tagValues)
+        getConverter(tagValues).foreach(_.update(1.0))
       } else {
         val tagValues = by.keys.map(event.tagValue).filterNot(_ == null)
-        val value = params.valueMapper(event)
-        update(value, tagValues)
+        getConverter(tagValues).foreach(_.update(event))
       }
     }
 
@@ -286,14 +307,18 @@ private[events] object DatapointConverter {
       // Since there are no values for the group by tags, this is a no-op
     }
 
-    private def update(value: Double, tagValues: List[String]): Unit = {
+    private def getConverter(tagValues: List[String]): Option[DatapointConverter] = {
       // Ignore events that are missing dimensions used in the grouping
       if (by.keys.size == tagValues.size) {
-        if (value.isFinite) {
-          val tags = by.keys.zip(tagValues).toMap
-          val converter = groups.computeIfAbsent(tags, groupConverter)
-          converter.update(value)
-        }
+        val tags = by.keys.zip(tagValues).toMap
+        // If the max has been exceeded, allow existing groups to get updates, but do not
+        // create new ones.
+        if (maxGroupsExceeded)
+          Option(groups.get(tags))
+        else
+          Some(groups.computeIfAbsent(tags, groupConverter))
+      } else {
+        None
       }
     }
 
@@ -341,6 +366,7 @@ private[events] object DatapointConverter {
         if (converter.hasNoData)
           it.remove()
       }
+      maxGroupsExceeded = groups.size() >= MaxGroupBySize
     }
 
     override def hasNoData: Boolean = groups.isEmpty

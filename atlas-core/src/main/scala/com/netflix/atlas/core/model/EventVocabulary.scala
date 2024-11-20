@@ -25,7 +25,7 @@ object EventVocabulary extends Vocabulary {
 
   val dependsOn: List[Vocabulary] = List(QueryVocabulary)
 
-  override def words: List[Word] = List(TableWord)
+  override def words: List[Word] = List(SampleWord, TableWord)
 
   case object TableWord extends SimpleWord {
 
@@ -49,5 +49,32 @@ object EventVocabulary extends Vocabulary {
         |""".stripMargin
 
     override def examples: List[String] = List("level,ERROR,:eq,(,message,)")
+  }
+
+  case object SampleWord extends SimpleWord {
+
+    import ModelExtractors.*
+
+    override def name: String = "sample"
+
+    override protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case StringListType(_) :: StringListType(_) :: (_: Query) :: _ => true
+    }
+
+    override protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case StringListType(pks) :: StringListType(by) :: (q: Query) :: stack =>
+        EventExpr.Sample(q, by, pks) :: stack
+    }
+
+    override def signature: String = "q:Query sampleBy:List projectionKeys:List -- EventExpr"
+
+    override def summary: String =
+      """
+        |Find matching events and sample based on a set of keys. The output will be a count
+        |for the step interval along with some sample data for that group based on the projection
+        |keys.
+        |""".stripMargin
+
+    override def examples: List[String] = List("level,ERROR,:eq,(,fingerprint,),(,message,)")
   }
 }

@@ -185,4 +185,36 @@ class AggrDatapointSuite extends FunSuite {
 
     assert(aggregator.get.limitExceeded)
   }
+
+  test("aggregate with samples") {
+    val expr = DataExpr.Sum(Query.True)
+    val dataset = createDatapoints(expr, 0, 10).map { dp =>
+      dp.copy(samples = List(List(dp.value)))
+    }
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
+    val result = aggregator.get.datapoints
+
+    assertEquals(result.size, 1)
+    assertEquals(result.head.timestamp, 0L)
+    assertEquals(result.head.tags, Map("name" -> "cpu"))
+    assertEquals(result.head.value, 45.0)
+    assertEquals(result.head.samples, List(List(0.0)))
+  }
+
+  test("aggregate group by with samples") {
+    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.True), List("name", "node"))
+    val dataset = createDatapoints(expr, 0, 10).map { dp =>
+      dp.copy(samples = List(List(dp.value)))
+    }
+    val aggregator =
+      AggrDatapoint.aggregate(dataset, settings(Integer.MAX_VALUE, Integer.MAX_VALUE))
+    val result = aggregator.get.datapoints.sortWith(_.tags("node") > _.tags("node"))
+
+    assertEquals(result.size, 10)
+    assertEquals(result.head.timestamp, 0L)
+    assertEquals(result.head.tags, Map("name" -> "cpu", "node" -> "i-00000009"))
+    assertEquals(result.head.value, 9.0)
+    assertEquals(result.head.samples, List(List(9.0)))
+  }
 }

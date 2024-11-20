@@ -156,22 +156,47 @@ object SyntheticDataSource {
   }
 
   private def source(settings: Settings, expr: EventExpr): Source[ByteString, NotUsed] = {
-    val id = computeId(ExprType.EVENTS, expr, 0L)
-    val dataExpr = LwcDataExpr(id, expr.toString, 0L)
+    val id = computeId(ExprType.EVENTS, expr, settings.step)
+    val dataExpr = LwcDataExpr(id, expr.toString, settings.step)
     val subMessage = LwcSubscriptionV2(expr.toString, ExprType.EVENTS, List(dataExpr))
+    val start = System.currentTimeMillis() / settings.step * settings.step
 
     val exprSource = Source(0 until settings.numStepIntervals)
       .throttle(1, FiniteDuration(settings.step, TimeUnit.MILLISECONDS))
       .flatMapConcat { i =>
         Source(0 until settings.inputDataSize)
-          .map { j =>
+          .flatMap { j =>
+            val tags = Query.tags(expr.query)
             val data = Map(
-              "tags" -> Query.tags(expr.query),
+              "tags" -> tags,
               "i"    -> i,
               "j"    -> j
             )
-            val json = Json.decode[JsonNode](Json.encode(data))
-            LwcEvent(id, json)
+            expr match {
+              case EventExpr.Raw(_) =>
+                val json = Json.decode[JsonNode](Json.encode(data))
+                Source.single(LwcEvent(id, json))
+              case EventExpr.Table(_, cs) =>
+                val columns = cs.map(c => data.getOrElse(c, null))
+                val json = Json.decode[JsonNode](Json.encode(columns))
+                Source.single(LwcEvent(id, json))
+              case EventExpr.Sample(_, by, cs) =>
+                val groupKey = groupByKey(data, by)
+                if (groupKey == null) {
+                  Source.empty
+                } else {
+                  val timestamp = i * settings.step + start
+                  val columns = cs.map(c => data.getOrElse(c, null))
+                  val datapoint = LwcDatapoint(
+                    timestamp,
+                    id,
+                    tags ++ by.map(k => k -> data(k).toString),
+                    1.0,
+                    List(columns)
+                  )
+                  Source.single(datapoint)
+                }
+            }
           }
       }
 
@@ -179,6 +204,13 @@ object SyntheticDataSource {
       .single(subMessage)
       .concat(exprSource)
       .map(msg => ByteString(Json.encode(msg)))
+  }
+
+  private def groupByKey(data: Map[String, Any], by: List[String]): String = {
+    if (by.forall(data.contains))
+      by.map(k => data.getOrElse(k, null)).mkString(",")
+    else
+      null
   }
 
   private def computeId(exprType: ExprType, expr: Expr, step: Long): String = {

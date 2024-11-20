@@ -79,6 +79,7 @@ object LwcMessages {
       var id: String = null
       var tags: Map[String, String] = Map.empty
       var value: Double = Double.NaN
+      var samples: List[List[Any]] = Nil
 
       // LwcEvent
       var payload: JsonNode = NullNode.instance
@@ -110,6 +111,7 @@ object LwcMessages {
         case "id"        => id = nextString(parser)
         case "tags"      => tags = parseTags(parser)
         case "value"     => value = nextDouble(parser)
+        case "samples"   => samples = parseSamples(parser)
 
         case "payload" => payload = nextTree(parser)
 
@@ -127,7 +129,7 @@ object LwcMessages {
         case "expression"      => LwcExpression(expression, exprType, step)
         case "subscription"    => LwcSubscription(expression, subExprs)
         case "subscription-v2" => LwcSubscriptionV2(expression, exprType, subExprs)
-        case "datapoint"       => LwcDatapoint(timestamp, id, tags, value)
+        case "datapoint"       => LwcDatapoint(timestamp, id, tags, value, samples)
         case "event"           => LwcEvent(id, payload)
         case "diagnostic"      => LwcDiagnosticMessage(id, diagnosticMessage)
         case "heartbeat"       => LwcHeartbeat(timestamp, step)
@@ -160,6 +162,20 @@ object LwcMessages {
       builder += LwcDataExpr(id, expression, step)
     }
     builder.result()
+  }
+
+  private def parseSamples(parser: JsonParser): List[List[Any]] = {
+    val samples = List.newBuilder[List[Any]]
+    foreachItem(parser) {
+      val row = List.newBuilder[Any]
+      var t = parser.nextToken()
+      while (t != null && t != JsonToken.END_ARRAY) {
+        row += parser.readValueAsTree[JsonNode]()
+        t = parser.nextToken()
+      }
+      samples += row.result()
+    }
+    samples.result()
   }
 
   private def parseDiagnosticMessage(parser: JsonParser): DiagnosticMessage = {

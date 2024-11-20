@@ -221,6 +221,14 @@ class ExprInterpreter(config: Config) {
     exprType -> exprs.distinct
   }
 
+  /** Parse sampled event expression URI. */
+  def parseSampleExpr(uri: Uri): List[EventExpr.Sample] = {
+    determineExprType(uri) match {
+      case ExprType.EVENTS => evalEvents(uri).collect { case s: EventExpr.Sample => s }
+      case _               => Nil
+    }
+  }
+
   def dataExprs(uri: Uri): List[String] = {
     val exprs = determineExprType(uri) match {
       case ExprType.TIME_SERIES       => eval(uri).exprs.flatMap(_.expr.dataExprs)
