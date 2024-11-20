@@ -205,6 +205,7 @@ object LwcMessages {
   private val Heartbeat = 5
   private val Event = 6
   private val SubscriptionV2 = 7
+  private val DatapointV2 = 8
 
   /**
     * Encode messages using Jackson's smile format into a ByteString.
@@ -262,7 +263,7 @@ object LwcMessages {
               gen.writeNumber(s.step)
             }
             gen.writeEndArray()
-          case msg: LwcDatapoint =>
+          case msg: LwcDatapoint if msg.samples.isEmpty =>
             gen.writeNumber(Datapoint)
             gen.writeNumber(msg.timestamp)
             gen.writeString(msg.id)
@@ -275,6 +276,20 @@ object LwcMessages {
               gen.writeString(v)
             }
             gen.writeNumber(msg.value)
+          case msg: LwcDatapoint =>
+            gen.writeNumber(DatapointV2)
+            gen.writeNumber(msg.timestamp)
+            gen.writeString(msg.id)
+            // Should already be sorted, but convert if needed to ensure we can rely on
+            // the order. It will be a noop if already a SortedTagMap.
+            val tags = SortedTagMap(msg.tags)
+            gen.writeNumber(tags.size)
+            tags.foreachEntry { (k, v) =>
+              gen.writeString(k)
+              gen.writeString(v)
+            }
+            gen.writeNumber(msg.value)
+            Json.encode(gen, msg.samples)
           case msg: LwcDiagnosticMessage =>
             gen.writeNumber(LwcDiagnostic)
             gen.writeString(msg.id)
@@ -355,6 +370,13 @@ object LwcMessages {
             val tags = parseTags(parser, parser.nextIntValue(0))
             val value = nextDouble(parser)
             builder += LwcDatapoint(timestamp, id, tags, value)
+          case DatapointV2 =>
+            val timestamp = parser.nextLongValue(-1L)
+            val id = parser.nextTextValue()
+            val tags = parseTags(parser, parser.nextIntValue(0))
+            val value = nextDouble(parser)
+            val samples = parseSamples(parser)
+            builder += LwcDatapoint(timestamp, id, tags, value, samples)
           case LwcDiagnostic =>
             val id = parser.nextTextValue()
             val typeName = parser.nextTextValue()
