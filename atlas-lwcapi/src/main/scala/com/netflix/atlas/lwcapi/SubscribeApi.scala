@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.eval.model.ExprType
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.model.ws.BinaryMessage
 import org.apache.pekko.http.scaladsl.model.ws.Message
@@ -31,7 +30,6 @@ import org.apache.pekko.util.ByteString
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
-import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.eval.model.LwcSubscriptionV2
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.CustomDirectives.*
@@ -209,13 +207,7 @@ class SubscribeApi(
         val subMessages = addedSubs.map { sub =>
           val meta = sub.metadata
           val exprInfo = LwcDataExpr(meta.id, meta.expression, meta.frequency)
-          if (expr.exprType == ExprType.TIME_SERIES) {
-            // For backwards compatibility for older versions of eval library, use v1
-            // subscription response when it is a time series type
-            LwcSubscription(expr.expression, List(exprInfo))
-          } else {
-            LwcSubscriptionV2(expr.expression, expr.exprType, List(exprInfo))
-          }
+          LwcSubscriptionV2(expr.expression, expr.exprType, List(exprInfo))
         }
         messages ++= subMessages
 

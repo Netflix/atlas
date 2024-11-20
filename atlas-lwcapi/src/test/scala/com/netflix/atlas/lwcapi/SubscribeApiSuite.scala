@@ -25,7 +25,6 @@ import com.netflix.atlas.eval.model.LwcEvent
 import com.netflix.atlas.eval.model.LwcExpression
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
-import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.eval.model.LwcSubscriptionV2
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.DiagnosticMessage
@@ -70,20 +69,20 @@ class SubscribeApiSuite extends MUnitRouteSuite {
       client.sendMessage(LwcMessages.encodeBatch(exprs, compress = true))
 
       // Look for subscription messages, one for sum and one for count
-      var subscriptions = List.empty[LwcSubscription]
+      var subscriptions = List.empty[LwcSubscriptionV2]
       while (subscriptions.size < 2) {
         parseBatch(client.expectMessage()).foreach {
-          case _: DiagnosticMessage =>
-          case sub: LwcSubscription => subscriptions = sub :: subscriptions
-          case h: LwcHeartbeat      => assertEquals(h.step, 60000L)
-          case v                    => throw new MatchError(v)
+          case _: DiagnosticMessage   =>
+          case sub: LwcSubscriptionV2 => subscriptions = sub :: subscriptions
+          case h: LwcHeartbeat        => assertEquals(h.step, 60000L)
+          case v                      => throw new MatchError(v)
         }
       }
 
       // Verify subscription is in the manager, push a message to the queue check that it
       // is received by the client
-      assertEquals(subscriptions.flatMap(_.metrics).size, 2)
-      subscriptions.flatMap(_.metrics).foreach { m =>
+      assertEquals(subscriptions.flatMap(_.subExprs).size, 2)
+      subscriptions.flatMap(_.subExprs).foreach { m =>
         val tags = Map("name" -> "disk")
         val datapoint = LwcDatapoint(60000, m.id, tags, 42.0)
         val handlers = sm.handlersForSubscription(m.id)
