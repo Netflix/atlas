@@ -110,6 +110,11 @@ class LwcMessagesSuite extends FunSuite {
     val actual = LwcMessages.parse(Json.encode(input))
     val expected = input.copy(samples = Json.decode[List[List[JsonNode]]](Json.encode(samples)))
     assertEquals(actual, expected)
+
+    val encoded = LwcMessages.encodeBatch(List(input))
+    val decoded = LwcMessages.parseBatch(encoded)
+    assertEquals(decoded.size, 1)
+    assertEquals(decoded.head, expected)
   }
 
   test("datapoint, with samples empty") {
