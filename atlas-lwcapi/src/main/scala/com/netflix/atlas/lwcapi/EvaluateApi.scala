@@ -51,7 +51,7 @@ class EvaluateApi(registry: Registry, sm: StreamSubscriptionManager)
             req.metrics.groupBy(_.id).foreach {
               case (id, ms) =>
                 val datapoints = ms.map { m =>
-                  LwcDatapoint(timestamp, m.id, m.tags, m.value)
+                  LwcDatapoint(timestamp, m.id, m.tags, m.value, m.samples)
                 }
                 evaluate(addr, id, datapoints)
             }
@@ -87,7 +87,8 @@ object EvaluateApi {
   case class Item(
     id: String,
     @JsonDeserialize(`using` = classOf[SortedTagMapDeserializer]) tags: SortedTagMap,
-    value: Double
+    value: Double,
+    samples: List[List[Any]]
   )
 
   case class EvaluateRequest(

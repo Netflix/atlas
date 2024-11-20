@@ -258,6 +258,8 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
     }
     gen.writeEndObject()
     gen.writeNumberField("value", event.value)
+    gen.writeFieldName("samples")
+    Json.encode(gen, event.samples)
     gen.writeEndObject()
   }
 
