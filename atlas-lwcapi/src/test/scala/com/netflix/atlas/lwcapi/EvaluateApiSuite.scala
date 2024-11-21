@@ -88,4 +88,10 @@ class EvaluateApiSuite extends MUnitRouteSuite {
       assertEquals(response.status, StatusCodes.OK)
     }
   }
+
+  test("item samples decode") {
+    val json = """{"id":"1","tags":{"name":"test"},"value":1.0}"""
+    val expected = EvaluateApi.Item("1", SortedTagMap("name" -> "test"), 1.0, Nil)
+    assertEquals(Json.decode[EvaluateApi.Item](json), expected)
+  }
 }

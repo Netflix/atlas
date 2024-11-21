@@ -88,7 +88,7 @@ object EvaluateApi {
     id: String,
     @JsonDeserialize(`using` = classOf[SortedTagMapDeserializer]) tags: SortedTagMap,
     value: Double,
-    samples: List[List[Any]]
+    samples: List[List[Any]] = Nil
   )
 
   case class EvaluateRequest(
