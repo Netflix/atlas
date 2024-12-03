@@ -299,6 +299,10 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
       }
 
       private def toTimeSeriesMessage(value: AggrDatapoint): TimeSeriesMessage = {
+        // For sampled messages, convert to rate per step, i.e. a raw count per step, rather
+        // than a rate per second.
+        val secondsPerStep = step / 1000.0
+        val ratePerStep = value.value * secondsPerStep
         val id = TaggedItem.computeId(value.tags + ("atlas.query" -> value.source)).toString
         TimeSeriesMessage(
           id,
@@ -309,7 +313,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
           step,
           TimeSeries.toLabel(value.tags),
           value.tags,
-          ArrayData(Array(value.value)),
+          ArrayData(Array(ratePerStep)),
           None,
           value.samples
         )
