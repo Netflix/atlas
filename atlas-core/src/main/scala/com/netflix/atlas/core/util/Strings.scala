@@ -48,7 +48,7 @@ object Strings {
   /**
     * Date relative to a given reference point.
     */
-  private val RelativeDate = """^([a-z]+)([\-+])(.+)$""".r
+  private val RelativeDate = """^([a-z]+)([\-+])([^\-+]+)$""".r
 
   /**
     * Named date such as `epoch` or `now`.
@@ -59,6 +59,11 @@ object Strings {
     * Unix data in seconds since the epoch.
     */
   private val UnixDate = """^([0-9]+)$""".r
+
+  /**
+    * Unix data in seconds since the epoch.
+    */
+  private val UnixDateWithOp = """^([0-9]+)([\-+])([^\-+]+)$""".r
 
   /**
     * When parsing a timestamp string, timestamps after this point will be treated as
@@ -461,26 +466,37 @@ object Strings {
   ): ZonedDateTime = {
     str match {
       case RelativeDate(r, op, p) =>
-        op match {
-          case "-" => parseRefVar(refs, r).minus(parseDuration(p))
-          case "+" => parseRefVar(refs, r).plus(parseDuration(p))
-          case _   => throw new IllegalArgumentException("invalid operation " + op)
-        }
+        applyDateOffset(parseRefVar(refs, r), op, p)
       case NamedDate(r) =>
         parseRefVar(refs, r)
       case UnixDate(d) =>
-        val t = d.toLong match {
-          case v if v <= secondsCutoff => Instant.ofEpochSecond(v)
-          case v if v <= millisCutoff  => Instant.ofEpochMilli(v)
-          case v if v <= microsCutoff  => ofEpoch(v, 1_000_000L, 1_000L)
-          case v                       => ofEpoch(v, 1_000_000_000L, 1L)
-        }
-        ZonedDateTime.ofInstant(t, tz)
+        parseUnixDate(d, tz)
+      case UnixDateWithOp(d, op, p) =>
+        applyDateOffset(parseUnixDate(d, tz), op, p)
       case str =>
         try IsoDateTimeParser.parse(str, tz)
         catch {
           case e: Exception => throw new IllegalArgumentException(s"invalid date $str", e)
         }
+    }
+  }
+
+  private def parseUnixDate(d: String, tz: ZoneId): ZonedDateTime = {
+    val t = d.toLong match {
+      case v if v <= secondsCutoff => Instant.ofEpochSecond(v)
+      case v if v <= millisCutoff  => Instant.ofEpochMilli(v)
+      case v if v <= microsCutoff  => ofEpoch(v, 1_000_000L, 1_000L)
+      case v                       => ofEpoch(v, 1_000_000_000L, 1L)
+    }
+    ZonedDateTime.ofInstant(t, tz)
+  }
+
+  private def applyDateOffset(t: ZonedDateTime, op: String, p: String): ZonedDateTime = {
+    val d = parseDuration(p)
+    op match {
+      case "-" => t.minus(d)
+      case "+" => t.plus(d)
+      case _   => throw new IllegalArgumentException("invalid operation " + op)
     }
   }
 

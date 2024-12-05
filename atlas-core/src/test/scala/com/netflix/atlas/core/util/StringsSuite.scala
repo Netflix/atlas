@@ -540,6 +540,20 @@ class StringsSuite extends FunSuite {
     assertEquals(received, ref)
   }
 
+  test("parseDate, unix with sub") {
+    val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
+    val refStr = "%d-3h".format(ref.toInstant.toEpochMilli / 1000)
+    val received = parseDate(refStr)
+    assertEquals(received, ref.minusHours(3))
+  }
+
+  test("parseDate, unix with add") {
+    val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
+    val refStr = "%d+3h".format(ref.toInstant.toEpochMilli / 1000)
+    val received = parseDate(refStr)
+    assertEquals(received, ref.plusHours(3))
+  }
+
   test("parseDate, s=e-0h") {
     val ref = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
     val expected = ZonedDateTime.of(2012, 2, 1, 3, 0, 0, 0, ZoneOffset.UTC)
@@ -710,6 +724,12 @@ class StringsSuite extends FunSuite {
     intercept[IllegalArgumentException] {
       timeRange("e-5m", "s+5m")
     }
+  }
+
+  test("range: unix time with op is not relative") {
+    val (s, e) = timeRange("e-5m", "1733292000+5m")
+    assertEquals(s, parseDate("2024-12-04T06:00:00Z").toInstant)
+    assertEquals(e, parseDate("2024-12-04T06:05:00Z").toInstant)
   }
 
   test("range: start relative to end") {
