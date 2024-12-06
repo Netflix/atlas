@@ -225,6 +225,7 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
       } catch {
         case e: Exception =>
           logger.warn("failed to send events", e)
+          logger.trace(s"failed event payload: $payload", e)
           droppedSend.increment(payload.size)
       }
     }
