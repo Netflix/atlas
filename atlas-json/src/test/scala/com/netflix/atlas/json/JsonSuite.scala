@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.node.ObjectNode
 import munit.FunSuite
 
 import java.time.Instant
@@ -446,6 +447,15 @@ class JsonSuite extends FunSuite {
     val obj = Json.decode[JsonSuiteArrayString]("""{"name":"name", "values":[]}""")
     val json = Json.encode(obj)
     assertEquals(json, """{"name":"name","values":[]}""")
+  }
+
+  test("unmatched surrogate pairs") {
+    val json = "{\"test\": 1, \"test\uD83D\": 2}"
+    val jsonNode = Json.decode[ObjectNode](json)
+    val smile = Json.smileEncode(jsonNode)
+    val smileNode = Json.smileDecode[ObjectNode](smile)
+    val expected = Json.decode[ObjectNode](json.replace('\uD83D', '\uFFFD'))
+    assertEquals(smileNode, expected)
   }
 
   test("decode from JsonData") {
