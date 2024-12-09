@@ -26,6 +26,7 @@ import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.dataformat.smile.SmileFactory
+import com.fasterxml.jackson.dataformat.smile.SmileGenerator
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
@@ -75,6 +76,7 @@ object Json {
     .builder()
     .enable(StreamReadFeature.AUTO_CLOSE_SOURCE)
     .enable(StreamWriteFeature.AUTO_CLOSE_TARGET)
+    .enable(SmileGenerator.Feature.LENIENT_UTF_ENCODING)
     .build()
 
   private val jsonMapper = newMapper(jsonFactory)
