@@ -54,7 +54,8 @@ class DatapointConverterSuite extends FunSuite {
   test("counter - sum") {
     val expr = DataExpr.Sum(Query.True)
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("value" -> i))
       converter.update(event)
@@ -71,6 +72,7 @@ class DatapointConverterSuite extends FunSuite {
     val events = List.newBuilder[LwcEvent]
     val converter = DatapointConverter(
       "id",
+      expr.toString,
       expr,
       clock,
       step,
@@ -91,7 +93,8 @@ class DatapointConverterSuite extends FunSuite {
   test("counter - sum custom value") {
     val expr = DataExpr.Sum(Query.Equal("value", "responseSize"))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> i))
       converter.update(event)
@@ -106,7 +109,8 @@ class DatapointConverterSuite extends FunSuite {
   test("counter - count") {
     val expr = DataExpr.Count(Query.Equal("value", "responseSize"))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> i))
       converter.update(event)
@@ -121,7 +125,8 @@ class DatapointConverterSuite extends FunSuite {
   test("counter - max custom value") {
     val expr = DataExpr.Max(Query.Equal("value", "responseSize"))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> i))
       converter.update(event)
@@ -136,7 +141,8 @@ class DatapointConverterSuite extends FunSuite {
   test("counter - max negative value") {
     val expr = DataExpr.Max(Query.Equal("value", "responseSize"))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> -(i + 10)))
       converter.update(event)
@@ -151,7 +157,8 @@ class DatapointConverterSuite extends FunSuite {
   test("counter - min negative value") {
     val expr = DataExpr.Min(Query.Equal("value", "responseSize"))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> -i))
       converter.update(event)
@@ -170,7 +177,8 @@ class DatapointConverterSuite extends FunSuite {
   test("timer - sum of totalTime") {
     val expr = DataExpr.Sum(Query.Equal("value", "latency").and(stat("totalTime")))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("latency" -> i))
       converter.update(event)
@@ -185,7 +193,8 @@ class DatapointConverterSuite extends FunSuite {
   test("timer - sum of count") {
     val expr = DataExpr.Sum(Query.Equal("value", "latency").and(stat("count")))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("latency" -> i))
       converter.update(event)
@@ -200,7 +209,8 @@ class DatapointConverterSuite extends FunSuite {
   test("timer - sum of totalOfSquares") {
     val expr = DataExpr.Sum(Query.Equal("value", "latency").and(stat("totalOfSquares")))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("latency" -> i))
       converter.update(event)
@@ -215,7 +225,8 @@ class DatapointConverterSuite extends FunSuite {
   test("timer - dist-max") {
     val expr = DataExpr.Max(Query.Equal("value", "latency").and(stat("max")))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("latency" -> i))
       converter.update(event)
@@ -230,7 +241,8 @@ class DatapointConverterSuite extends FunSuite {
   test("timer - dist-min") {
     val expr = DataExpr.Min(Query.Equal("value", "latency").and(stat("max")))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("latency" -> i))
       converter.update(event)
@@ -245,7 +257,8 @@ class DatapointConverterSuite extends FunSuite {
   test("timer - percentile") {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("value", "latency")), List("percentile"))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("latency" -> Duration.ofMillis(i)))
       converter.update(event)
@@ -260,7 +273,8 @@ class DatapointConverterSuite extends FunSuite {
   test("dist - sum of totalAmount") {
     val expr = DataExpr.Sum(Query.Equal("value", "responseSize").and(stat("totalAmount")))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> i))
       converter.update(event)
@@ -276,7 +290,8 @@ class DatapointConverterSuite extends FunSuite {
     val stat = Query.In("statistic", List("totalTime", "totalAmount"))
     val expr = DataExpr.Sum(Query.Equal("value", "responseSize").and(stat))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> i))
       converter.update(event)
@@ -291,7 +306,8 @@ class DatapointConverterSuite extends FunSuite {
   test("dist - sum of count") {
     val expr = DataExpr.Sum(Query.Equal("value", "responseSize").and(stat("count")))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> i))
       converter.update(event)
@@ -306,7 +322,8 @@ class DatapointConverterSuite extends FunSuite {
   test("dist - sum of totalOfSquares") {
     val expr = DataExpr.Sum(Query.Equal("value", "responseSize").and(stat("totalOfSquares")))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> i))
       converter.update(event)
@@ -321,7 +338,8 @@ class DatapointConverterSuite extends FunSuite {
   test("dist - dist-max") {
     val expr = DataExpr.Max(Query.Equal("value", "responseSize").and(stat("max")))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> i))
       converter.update(event)
@@ -339,7 +357,8 @@ class DatapointConverterSuite extends FunSuite {
       List("percentile")
     )
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       val event = LwcEvent(Map("responseSize" -> i))
       converter.update(event)
@@ -354,7 +373,8 @@ class DatapointConverterSuite extends FunSuite {
   test("groupBy - sum") {
     val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("value", "responseSize")), List("app"))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
     (0 until 5).foreach { i =>
       converter.update(LwcEvent(Map("responseSize" -> i, "app" -> "a")))
       converter.update(LwcEvent(Map("responseSize" -> i * 2, "app" -> "b")))
@@ -379,7 +399,8 @@ class DatapointConverterSuite extends FunSuite {
     val expr =
       DataExpr.GroupBy(DataExpr.Sum(Query.Equal("value", "responseSize")), List("responseSize"))
     val events = List.newBuilder[LwcEvent]
-    val converter = DatapointConverter("id", expr, clock, step, None, (_, e) => events.addOne(e))
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
 
     (0 until 10_000).foreach { i =>
       converter.update(LwcEvent(Map("responseSize" -> i.toString, "app" -> "a")))
@@ -404,6 +425,7 @@ class DatapointConverterSuite extends FunSuite {
     val events = List.newBuilder[LwcEvent]
     val converter = DatapointConverter(
       "id",
+      expr.toString,
       expr,
       clock,
       step,

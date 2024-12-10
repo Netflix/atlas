@@ -63,6 +63,7 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
         case expr: EventExpr.Sample =>
           val converter = DatapointConverter(
             sub.id,
+            sub.expression,
             expr.dataExpr,
             clock,
             sub.step,
@@ -93,7 +94,8 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     // Analytics based on events
     diff.added.timeSeries.foreach { sub =>
       val expr = ExprUtils.parseDataExpr(sub.expression)
-      val converter = DatapointConverter(sub.id, expr, clock, sub.step, None, submit)
+      val converter =
+        DatapointConverter(sub.id, sub.expression, expr, clock, sub.step, None, submit)
       val q = ExprUtils.toSpectatorQuery(removeValueClause(expr.query))
       val handler = EventHandler(
         sub,
@@ -123,7 +125,8 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     diff.added.traceTimeSeries.foreach { sub =>
       val tq = ExprUtils.parseTraceTimeSeriesQuery(sub.expression)
       val dataExpr = tq.expr.expr.dataExprs.head
-      val converter = DatapointConverter(sub.id, dataExpr, clock, sub.step, None, submit)
+      val converter =
+        DatapointConverter(sub.id, sub.expression, dataExpr, clock, sub.step, None, submit)
       val q = ExprUtils.toSpectatorQuery(removeValueClause(dataExpr.query))
       val handler = EventHandler(
         sub,

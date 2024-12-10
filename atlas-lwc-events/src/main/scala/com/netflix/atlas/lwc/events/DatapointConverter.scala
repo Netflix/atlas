@@ -23,6 +23,7 @@ import com.netflix.iep.config.ConfigManager
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.histogram.PercentileBuckets
 import com.netflix.spectator.impl.StepDouble
+import com.typesafe.scalalogging.StrictLogging
 
 import java.time.Duration
 import java.util.Locale
@@ -56,6 +57,7 @@ private[events] object DatapointConverter {
 
   def apply(
     id: String,
+    rawExpr: String,
     expr: DataExpr,
     clock: Clock,
     step: Long,
@@ -64,7 +66,8 @@ private[events] object DatapointConverter {
   ): DatapointConverter = {
     val tags = Query.tags(expr.query)
     val mapper = createValueMapper(tags)
-    val params = Params(id, Query.tags(expr.query), clock, step, mapper, sampleMapper, consumer)
+    val params =
+      Params(id, rawExpr, Query.tags(expr.query), clock, step, mapper, sampleMapper, consumer)
     toConverter(expr, params)
   }
 
@@ -144,6 +147,7 @@ private[events] object DatapointConverter {
 
   case class Params(
     id: String,
+    rawExpr: String,
     tags: Map[String, String],
     clock: Clock,
     step: Long,
@@ -278,7 +282,9 @@ private[events] object DatapointConverter {
   }
 
   /** Compute set of data points, one for each distinct group. */
-  case class GroupBy(by: DataExpr.GroupBy, params: Params) extends DatapointConverter {
+  case class GroupBy(by: DataExpr.GroupBy, params: Params)
+      extends DatapointConverter
+      with StrictLogging {
 
     private val groups = new ConcurrentHashMap[Map[String, String], DatapointConverter]()
 
@@ -366,7 +372,10 @@ private[events] object DatapointConverter {
         if (converter.hasNoData)
           it.remove()
       }
-      maxGroupsExceeded = groups.size() >= MaxGroupBySize
+      if (groups.size() >= MaxGroupBySize) {
+        maxGroupsExceeded = true
+        logger.debug(s"max groups exceeded for expression: ${params.rawExpr}")
+      }
     }
 
     override def hasNoData: Boolean = groups.isEmpty
