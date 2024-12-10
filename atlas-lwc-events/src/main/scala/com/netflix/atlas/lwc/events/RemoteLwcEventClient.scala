@@ -142,7 +142,7 @@ class RemoteLwcEventClient(registry: Registry, config: Config)
         if (!events.isEmpty) {
           import scala.jdk.CollectionConverters.*
 
-          // Write out datapoints that need to be batch by timestamp
+          // Write out datapoints that need to be batched by timestamp
           val ds = events.asScala.collect {
             case Event(_, e: DatapointEvent) => e
           }.toList
