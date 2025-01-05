@@ -30,7 +30,7 @@ object Dependencies {
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.8"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "6.1.1"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.17.3"
-  val hikariCP          = "com.zaxxer" % "HikariCP" % "6.1.0"
+  val hikariCP          = "com.zaxxer" % "HikariCP" % "6.2.1"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
   val iepDynConfig      = "com.netflix.iep" % "iep-dynconfig" % iep
