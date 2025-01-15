@@ -28,7 +28,6 @@ import com.typesafe.scalalogging.StrictLogging
 import java.time.Duration
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantLock
 
 /**
   * Helper to convert a sequence of events into a data point.
@@ -162,25 +161,16 @@ private[events] object DatapointConverter {
 
     private val buffer = new StepDouble(Double.NaN, params.clock, params.step)
 
-    // Lock to avoid race condition between update and flush that can otherwise result
-    // in the samples occasionally being missing for an aggregate.
-    private val lock = new ReentrantLock()
     private val sampleMapper: LwcEvent => List[Any] = params.sampleMapper.orNull
-    private var sample: List[Any] = Nil
+    @volatile private var sample: List[Any] = Nil
+    @volatile private var sampleStale: Boolean = true
 
     override def update(event: LwcEvent): Unit = {
-      if (sampleMapper == null) {
-        update(params.valueMapper(event))
-      } else {
-        lock.lock()
-        try {
-          update(params.valueMapper(event))
-          if (sample.isEmpty)
-            sample = sampleMapper(event)
-        } finally {
-          lock.unlock()
-        }
+      if (sampleMapper != null && sampleStale) {
+        sampleStale = false
+        sample = sampleMapper(event)
       }
+      update(params.valueMapper(event))
     }
 
     override def update(value: Double): Unit = {
@@ -193,14 +183,10 @@ private[events] object DatapointConverter {
       if (sampleMapper == null) {
         Nil
       } else {
-        lock.lock()
-        try {
-          val s = sample
-          sample = Nil
-          List(s)
-        } finally {
-          lock.unlock()
-        }
+        // Mark the sample as stale so it will get refreshed roughly once per
+        // step interval
+        sampleStale = true
+        List(sample)
       }
     }
 
