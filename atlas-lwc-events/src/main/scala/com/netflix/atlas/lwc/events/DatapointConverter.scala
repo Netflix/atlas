@@ -383,7 +383,7 @@ private[events] object DatapointConverter {
       }
       if (groups.size() >= MaxGroupBySize) {
         maxGroupsExceeded = true
-        logger.debug(s"max groups exceeded for expression: ${params.rawExpr}")
+        logger.info(s"max groups exceeded for expression: ${params.rawExpr}")
       }
     }
 
