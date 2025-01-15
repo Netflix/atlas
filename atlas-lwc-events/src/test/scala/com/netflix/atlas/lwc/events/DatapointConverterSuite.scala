@@ -457,4 +457,35 @@ class DatapointConverterSuite extends FunSuite {
       }
     }
   }
+
+  test("groupBy - sum with sample ordering") {
+    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("value", "responseSize")), List("app"))
+    val events = List.newBuilder[LwcEvent]
+    val converter = DatapointConverter(
+      "id",
+      expr.toString,
+      expr,
+      clock,
+      step,
+      Some(e => List(e.extractValue("app"))),
+      (_, e) => events.addOne(e)
+    )
+    converter.update(LwcEvent(Map("responseSize" -> 100, "app" -> "a")))
+    clock.setWallTime(step + 1)
+
+    // Update after passing step boundary and before flush
+    converter.update(LwcEvent(Map("responseSize" -> 100, "app" -> "a")))
+    converter.flush(clock.wallTime())
+    var results = events.result()
+    assertEquals(results.size, 1)
+    assertEquals(results.head.asInstanceOf[DatapointEvent].samples, List(List("a")))
+
+    // Flush again with no update
+    clock.setWallTime(step * 2 + 1)
+    events.clear()
+    converter.flush(clock.wallTime())
+    results = events.result()
+    assertEquals(results.size, 1)
+    assertEquals(results.head.asInstanceOf[DatapointEvent].samples, List(List("a")))
+  }
 }
