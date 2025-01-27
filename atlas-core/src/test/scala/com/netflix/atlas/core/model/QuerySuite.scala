@@ -25,6 +25,7 @@ class QuerySuite extends FunSuite {
   def matches(q: Query, tags: Map[String, String]): Boolean = {
     val result = q.matches(tags)
     assertEquals(result, q.matches(SortedTagMap(tags)))
+    assertEquals(result, q.matches(SortedTagMap(tags).getOrNull _))
     result
   }
 

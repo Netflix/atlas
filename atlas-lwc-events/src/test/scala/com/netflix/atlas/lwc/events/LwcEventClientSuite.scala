@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.lwc.events
 
+import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.Clock
@@ -217,6 +218,13 @@ class LwcEventClientSuite extends FunSuite {
     assertEquals(vs.size, 1)
     assert(vs.forall(_.contains(""""tags":{"value":"duration"}""")))
     assert(vs.forall(_.contains(""""value":8.4""")))
+  }
+
+  test("check if event matches query") {
+    val matching = Query.And(Query.Equal("app", "www"), Query.Equal("node", "i-123"))
+    val nonMatching = Query.And(Query.Equal("app", "www"), Query.Equal("node", "i-124"))
+    assert(matching.matches(sampleLwcEvent.tagValue _))
+    assert(!nonMatching.matches(sampleLwcEvent.tagValue _))
   }
 }
 
