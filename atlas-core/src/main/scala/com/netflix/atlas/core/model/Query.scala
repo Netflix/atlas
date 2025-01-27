@@ -21,6 +21,9 @@ import com.netflix.spectator.impl.PatternMatcher
 
 sealed trait Query extends Expr {
 
+  /** Returns true if the query expression matches the tags provided by the function. */
+  def matches(tags: String => String): Boolean
+
   /** Returns true if the query expression matches the tags. */
   def matches(tags: Map[String, String]): Boolean
 
@@ -238,6 +241,8 @@ object Query {
 
   case object True extends Query {
 
+    def matches(tags: String => String): Boolean = true
+
     def matches(tags: Map[String, String]): Boolean = true
 
     def matchesAny(tags: Map[String, List[String]]): Boolean = true
@@ -258,6 +263,8 @@ object Query {
   }
 
   case object False extends Query {
+
+    def matches(tags: String => String): Boolean = false
 
     def matches(tags: Map[String, String]): Boolean = false
 
@@ -287,6 +294,11 @@ object Query {
 
     def check(s: String): Boolean
 
+    def matches(tags: String => String): Boolean = {
+      val v = tags(k)
+      v != null && check(v)
+    }
+
     def matches(tags: Map[String, String]): Boolean = {
       tags match {
         case ts: SortedTagMap =>
@@ -313,6 +325,8 @@ object Query {
   }
 
   case class HasKey(k: String) extends KeyQuery {
+
+    def matches(tags: String => String): Boolean = tags(k) != null
 
     def matches(tags: Map[String, String]): Boolean = tags.contains(k)
 
@@ -436,6 +450,8 @@ object Query {
 
   case class And(q1: Query, q2: Query) extends Query {
 
+    def matches(tags: String => String): Boolean = q1.matches(tags) && q2.matches(tags)
+
     def matches(tags: Map[String, String]): Boolean = q1.matches(tags) && q2.matches(tags)
 
     def matchesAny(tags: Map[String, List[String]]): Boolean =
@@ -452,6 +468,8 @@ object Query {
 
   case class Or(q1: Query, q2: Query) extends Query {
 
+    def matches(tags: String => String): Boolean = q1.matches(tags) || q2.matches(tags)
+
     def matches(tags: Map[String, String]): Boolean = q1.matches(tags) || q2.matches(tags)
 
     def matchesAny(tags: Map[String, List[String]]): Boolean =
@@ -467,6 +485,8 @@ object Query {
   }
 
   case class Not(q: Query) extends Query {
+
+    def matches(tags: String => String): Boolean = !q.matches(tags)
 
     def matches(tags: Map[String, String]): Boolean = !q.matches(tags)
 
