@@ -72,7 +72,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
       // Maintains the state for each expression we need to evaluate. TODO: implement
       // limits to sanity check against running of our memory
       private val states =
-        scala.collection.mutable.AnyRefMap.empty[StyleExpr, Map[StatefulExpr, Any]]
+        scala.collection.mutable.HashMap.empty[StyleExpr, Map[StatefulExpr, Any]]
 
       // Step size for datapoints flowing through, it will be determined by the first data
       // sources message that arrives and should be consistent for the life of this stage

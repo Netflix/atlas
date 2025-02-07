@@ -61,8 +61,8 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      private val tsState = scala.collection.mutable.AnyRefMap.empty[String, DatapointMetadata]
-      private val eventState = scala.collection.mutable.AnyRefMap.empty[String, String]
+      private val tsState = scala.collection.mutable.HashMap.empty[String, DatapointMetadata]
+      private val eventState = scala.collection.mutable.HashMap.empty[String, String]
 
       override def onPush(): Unit = {
         val dpBuilder = List.newBuilder[AggrDatapoint]
