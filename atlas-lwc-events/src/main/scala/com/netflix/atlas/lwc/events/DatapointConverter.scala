@@ -91,8 +91,8 @@ private[events] object DatapointConverter {
       case Some(k) =>
         tags.get("statistic") match {
           case Some("count")          => _ => 1.0
-          case Some("totalOfSquares") => event => squared(event.extractValue(k), event.value)
-          case _                      => event => toDouble(event.extractValue(k), event.value)
+          case Some("totalOfSquares") => event => squared(event.extractValueSafe(k), event.value)
+          case _                      => event => toDouble(event.extractValueSafe(k), event.value)
         }
       case None =>
         event => toDouble(event.value, 1.0)
@@ -339,7 +339,7 @@ private[events] object DatapointConverter {
 
     private def getRawValue(event: LwcEvent): Any = {
       params.tags.get("value") match {
-        case Some(k) => event.extractValue(k)
+        case Some(k) => event.extractValueSafe(k)
         case None    => event.value
       }
     }

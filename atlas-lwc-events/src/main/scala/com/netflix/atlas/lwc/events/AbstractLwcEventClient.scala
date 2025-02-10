@@ -67,7 +67,7 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
             expr.dataExpr,
             clock,
             sub.step,
-            Some(event => expr.projectionKeys.map(event.extractValue)),
+            Some(event => expr.projectionKeys.map(event.extractValueSafe)),
             submit
           )
           EventHandler(

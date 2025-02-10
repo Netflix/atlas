@@ -17,6 +17,8 @@ package com.netflix.atlas.lwc.events
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.json.Json
+import com.netflix.spectator.api.Spectator
+import org.slf4j.LoggerFactory
 
 import java.io.StringWriter
 import scala.util.Using
@@ -48,7 +50,7 @@ trait LwcEvent {
     * to ensure the two are consistent.
     */
   def tagValue(key: String): String = {
-    extractValue(key) match {
+    extractValueSafe(key) match {
       case v: String  => v
       case e: Enum[_] => e.name()
       case _          => null
@@ -60,6 +62,25 @@ trait LwcEvent {
     * with the `tagValue` method for keys that can be considered tags.
     */
   def extractValue(key: String): Any
+
+  /**
+    * Internal method for extracting the value that handles exceptions if any. If an exception
+    * is thrown, then the value will be treated as `null`. The underlying exception will be
+    * logged at trace level as it can be quite noisy if it is a common pattern across events.
+    */
+  private[events] final def extractValueSafe(key: String): Any = {
+    try {
+      extractValue(key)
+    } catch {
+      case e: Exception =>
+        LoggerFactory.getLogger(getClass).trace(s"failed to extract value for key: $key", e)
+        Spectator
+          .globalRegistry()
+          .counter("lwc.extractValueFailures", "error", e.getClass.getSimpleName)
+          .increment()
+        null
+    }
+  }
 
   /** Encode the raw event as JSON. */
   def encode(gen: JsonGenerator): Unit = {
@@ -78,7 +99,7 @@ trait LwcEvent {
   def encodeAsRow(columns: List[String], gen: JsonGenerator): Unit = {
     gen.writeStartArray()
     columns.foreach { key =>
-      Json.encode(gen, extractValue(key))
+      Json.encode(gen, extractValueSafe(key))
     }
     gen.writeEndArray()
   }
