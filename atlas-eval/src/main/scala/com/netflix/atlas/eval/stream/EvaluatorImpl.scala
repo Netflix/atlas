@@ -92,6 +92,9 @@ private[stream] abstract class EvaluatorImpl(
   // Cached context instance used for things like expression validation.
   private val validationStreamContext = newStreamContext(new ThrowingDSLogger)
 
+  // URI pattern for web-socket request to backend
+  private val backendUriPattern = config.getString("atlas.eval.stream.backend-uri-pattern")
+
   // Timeout for DataSources unique operator: emit repeating DataSources after timeout exceeds
   private val uniqueTimeout: Long = config.getDuration("atlas.eval.stream.unique-timeout").toMillis
 
@@ -533,7 +536,7 @@ private[stream] abstract class EvaluatorImpl(
   private def createWebSocketFlow(
     instance: EddaSource.Instance
   ): Flow[ByteString, ByteString, NotUsed] = {
-    val base = instance.substitute("ws://{ip}:{port}")
+    val base = instance.substitute(backendUriPattern)
     val id = UUID.randomUUID().toString
     val uri = s"$base/api/v$lwcapiVersion/subscribe/$id"
     val webSocketFlowOrigin = Http(system).webSocketClientFlow(WebSocketRequest(uri))
