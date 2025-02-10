@@ -49,13 +49,13 @@ class LwcEventDurationSuite extends FunSuite {
   }
 
   test("extractValue: exists") {
-    assertEquals(sampleLwcEvent.extractValue("app"), "www")
-    assertEquals(sampleLwcEvent.extractValue("node"), "i-123")
-    assertEquals(sampleLwcEvent.extractValue("duration"), Duration.ofMillis(42))
+    assertEquals(sampleLwcEvent.extractValueSafe("app"), "www")
+    assertEquals(sampleLwcEvent.extractValueSafe("node"), "i-123")
+    assertEquals(sampleLwcEvent.extractValueSafe("duration"), Duration.ofMillis(42))
   }
 
   test("extractValue: missing") {
-    assertEquals(sampleLwcEvent.extractValue("foo"), null)
+    assertEquals(sampleLwcEvent.extractValueSafe("foo"), null)
   }
 
   test("defautl value") {

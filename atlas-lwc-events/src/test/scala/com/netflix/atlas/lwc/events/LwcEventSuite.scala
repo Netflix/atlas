@@ -48,13 +48,17 @@ class LwcEventSuite extends FunSuite {
   }
 
   test("extractValue: exists") {
-    assertEquals(sampleLwcEvent.extractValue("app"), "www")
-    assertEquals(sampleLwcEvent.extractValue("node"), "i-123")
-    assertEquals(sampleLwcEvent.extractValue("duration"), 42L)
+    assertEquals(sampleLwcEvent.extractValueSafe("app"), "www")
+    assertEquals(sampleLwcEvent.extractValueSafe("node"), "i-123")
+    assertEquals(sampleLwcEvent.extractValueSafe("duration"), 42L)
   }
 
   test("extractValue: missing") {
-    assertEquals(sampleLwcEvent.extractValue("foo"), null)
+    assertEquals(sampleLwcEvent.extractValueSafe("foo"), null)
+  }
+
+  test("extractValue: exception thrown") {
+    assertEquals(sampleLwcEvent.extractValueSafe("npe"), null)
   }
 
   test("toJson: raw event") {
@@ -87,6 +91,7 @@ object LwcEventSuite {
       case "tags"     => span.tags
       case "duration" => span.duration
       case "level"    => Logger.Level.TRACE
+      case "npe"      => throw new NullPointerException()
       case k          => span.tags.getOrElse(k, null)
     }
   }

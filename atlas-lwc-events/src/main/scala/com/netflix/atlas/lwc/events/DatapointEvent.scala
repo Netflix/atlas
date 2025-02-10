@@ -59,7 +59,7 @@ case class DatapointEvent(
   @scala.annotation.tailrec
   private def encodeColumns(columns: List[String], gen: JsonGenerator): Unit = {
     if (columns.nonEmpty) {
-      Json.encode(gen, extractValue(columns.head))
+      Json.encode(gen, extractValueSafe(columns.head))
       encodeColumns(columns.tail, gen)
     }
   }
