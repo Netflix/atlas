@@ -74,7 +74,8 @@ trait LwcEvent {
     } catch {
       case e: Exception =>
         LoggerFactory.getLogger(getClass).trace(s"failed to extract value for key: $key", e)
-        Spectator.globalRegistry()
+        Spectator
+          .globalRegistry()
           .counter("lwc.extractValueFailures", "error", e.getClass.getSimpleName)
           .increment()
         null
