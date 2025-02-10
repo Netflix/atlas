@@ -247,7 +247,7 @@ object StatefulExpr {
     */
   trait OnlineExpr extends StatefulExpr {
 
-    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, AlgoState]
+    type StateMap = scala.collection.mutable.HashMap[ItemId, AlgoState]
 
     protected def name: String
 

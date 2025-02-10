@@ -98,7 +98,7 @@ class PostgresDatabase(postgres: PostgresService) extends Database {
 
   override def execute(ctxt: EvalContext, expr: DataExpr): List[TimeSeries] = {
     val exactTags = Query.tags(expr.query)
-    val data = mutable.AnyRefMap.empty[Map[String, String], TimeSeriesBuffer]
+    val data = mutable.HashMap.empty[Map[String, String], TimeSeriesBuffer]
     postgres.runQueries { stmt =>
       overlappingTimes(stmt, ctxt).foreach { t =>
         val block = ArrayBlock(t.toEpochMilli, blockSize)

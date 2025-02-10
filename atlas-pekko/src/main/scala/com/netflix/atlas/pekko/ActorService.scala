@@ -55,6 +55,8 @@ class ActorService(
       classOf[Config]   -> config,
       classOf[Registry] -> registry
     ).withDefaultValue(null)
+    // Force eager loading of dependencies to avoid locking issues with singleton beans
+    classFactory.verifyDependencies(cls, bindings.asJava)
     val props = Props(classFactory.newInstance[Actor](cls, bindings.asJava))
     val routerCfgPath = s"pekko.actor.deployment./$name.router"
     if (config.hasPath(routerCfgPath)) FromConfig.props(props) else props
