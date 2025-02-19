@@ -67,8 +67,8 @@ class RoaringTagIndexSuite extends TagIndexSuite {
     val items = (0 until 10).map { i =>
       val tags = Map(
         "name" -> "test",
-        "a" -> i.toString,
-        "b" -> "foo"
+        "a"    -> i.toString,
+        "b"    -> "foo"
       )
       BasicTaggedItem(tags)
     }
@@ -149,8 +149,8 @@ class RoaringTagIndexSuite extends TagIndexSuite {
     val items = (0 until 10).map { i =>
       val tags = Map(
         "name" -> "test",
-        "z" -> i.toString,
-        "b" -> "foo"
+        "z"    -> i.toString,
+        "b"    -> "foo"
       )
       BasicTaggedItem(tags)
     }
