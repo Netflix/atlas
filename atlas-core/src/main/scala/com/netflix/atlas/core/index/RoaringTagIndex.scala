@@ -276,14 +276,16 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     if (vidx == null) new RoaringBitmap()
     else {
       val set = new RoaringBitmap()
-      val vp = findOffset(values, v, if (orEqual) 0 else -1)
-      val t = tag(kp, vp)
-      var i = tagOffset(t)
+      val vp = findOffsetLessThan(values, v, if (orEqual) 0 else -1)
+      if (vp >= 0) {
+        val t = tag(kp, vp)
+        var i = tagOffset(t)
 
-      // Data is sorted, no need to perform a check for each entry if key matches
-      while (i >= 0 && tagKey(tagIndex(i)) == kp) {
-        set.or(vidx.get(tagValue(tagIndex(i))))
-        i -= 1
+        // Data is sorted, no need to perform a check for each entry if key matches
+        while (i >= 0 && tagKey(tagIndex(i)) == kp) {
+          set.or(vidx.get(tagValue(tagIndex(i))))
+          i -= 1
+        }
       }
       set
     }
@@ -347,14 +349,30 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   /**
     * Find the offset for `v` in the array `vs`. If an exact match is found, then
     * the value `n` will be added to the position. This is mostly used for skipping
-    * equal values in the case of strictly less than or greater than comparisons. By
-    * default a greater than, `n = 1`, comparison will be done.
+    * equal values in the case of strictly greater than comparisons. By default a
+    * greater than, `n = 1`, comparison will be done.
     */
   private def findOffset(vs: Array[String], v: String, n: Int = 1): Int = {
     if (v == null || v == "") 0
     else {
       val pos = util.Arrays.binarySearch(vs.asInstanceOf[Array[AnyRef]], v)
       if (pos >= 0) pos + n else -pos - 1
+    }
+  }
+
+  /**
+    * Find the offset for `v` in the array `vs`. If an exact match is found, then
+    * the value `n` will be added to the position. This is mostly used for skipping
+    * equal values in the case of strictly less than. If no match is found, then it
+    * will be the position where the next item less than the value should be.
+    */
+  private def findOffsetLessThan(vs: Array[String], v: String, n: Int): Int = {
+    if (v == null || v == "") 0
+    else {
+      // Binary search gives position of item if not found, need to skip one position
+      // for the position of the item less than.
+      val pos = util.Arrays.binarySearch(vs.asInstanceOf[Array[AnyRef]], v)
+      if (pos >= 0) pos + n else -pos - 2
     }
   }
 
