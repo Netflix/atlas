@@ -586,6 +586,36 @@ class FinalExprEvalSuite extends FunSuite {
     }
   }
 
+  test("multi-level aggr tagging") {
+    val expr = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "rps")), List("node", "app"))
+    val baseTags = Map("name" -> "rps", "app" -> "foo")
+    val input = List(
+      sources(ds("a", s"http://atlas/graph?q=$expr,:max")),
+      group(
+        0,
+        AggrDatapoint(0, step, expr, "i-1", baseTags + ("node" -> "i-1"), 42.0),
+        AggrDatapoint(0, step, expr, "i-2", baseTags + ("node" -> "i-2"), 1.0)
+      ),
+      group(
+        1,
+        AggrDatapoint(0, step, expr, "i-1", baseTags + ("node" -> "i-1"), 42.0),
+        AggrDatapoint(0, step, expr, "i-2", baseTags + ("node" -> "i-2"), 43.0)
+      )
+    )
+
+    val output = run(input)
+
+    val expected = Array(42.0, 43.0)
+    val timeseries = output.filter(isTimeSeries)
+    assertEquals(timeseries.size, 2)
+    timeseries.zip(expected).foreach {
+      case (envelope, expectedValue) =>
+        val ts = envelope.message.asInstanceOf[TimeSeriesMessage]
+        checkValue(ts, expectedValue)
+        assertEquals(ts.tags, Map("name" -> "rps", "atlas.offset" -> "0w"))
+    }
+  }
+
   // https://github.com/Netflix/atlas/issues/762
   test(":legend is honored") {
     val expr = DataExpr.Sum(Query.Equal("name", "rps"))

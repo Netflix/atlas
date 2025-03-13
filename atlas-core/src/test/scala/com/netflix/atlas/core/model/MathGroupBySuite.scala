@@ -30,7 +30,7 @@ class MathGroupBySuite extends FunSuite {
     val seq = new ArrayTimeSeq(DsType.Gauge, start, step, Array(v.toDouble))
     val mode = "mode"   -> (if (v % 2 == 0) "even" else "odd")
     val value = "value" -> v.toString
-    TimeSeries(Map("name" -> "test", mode, value), seq)
+    TimeSeries(Map("name" -> "test", mode, value, "foo" -> "bar"), seq)
   }
 
   def groupBy(
@@ -134,6 +134,43 @@ class MathGroupBySuite extends FunSuite {
     val context = EvalContext(start, start + step * n, step)
     val dataBy = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), List("mode"))
     val expr = MathExpr.GroupBy(MathExpr.Sum(dataBy), List("mode"))
+    val rs = expr.eval(context, input).data
+    assertEquals(rs.size, 2)
+
+    val expected = List(
+      ts(2).withTags(Map("name" -> "test", "mode" -> "even")).withLabel("(mode=even)"),
+      ts(4).withTags(Map("name" -> "test", "mode" -> "odd")).withLabel("(mode=odd)")
+    )
+    assertEquals(rs, expected)
+  }
+
+  test("name,test,:eq,(,foo,),:by,:max") {
+    val input = List(
+      ts(1),
+      ts(2),
+      ts(3)
+    )
+    val context = EvalContext(start, start + step * n, step)
+    val dataBy = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), List("foo"))
+    val expr = MathExpr.Max(dataBy)
+    val rs = expr.eval(context, input).data
+    assertEquals(rs.size, 1)
+
+    val expected = List(
+      ts(6).withTags(Map("name" -> "test")).withLabel("max(name=test)")
+    )
+    assertEquals(rs, expected)
+  }
+
+  test("name,test,:eq,(,mode,foo,),:by,:max,(,mode,),:by") {
+    val input = List(
+      ts(1),
+      ts(2),
+      ts(3)
+    )
+    val context = EvalContext(start, start + step * n, step)
+    val dataBy = DataExpr.GroupBy(DataExpr.Sum(Query.Equal("name", "test")), List("mode", "foo"))
+    val expr = MathExpr.GroupBy(MathExpr.Max(dataBy), List("mode"))
     val rs = expr.eval(context, input).data
     assertEquals(rs.size, 2)
 

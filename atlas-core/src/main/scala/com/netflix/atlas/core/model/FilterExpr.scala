@@ -221,7 +221,8 @@ object FilterExpr {
         case _ =>
           val others = aggregator.result()
           val otherTags = others.tags ++ finalGrouping.map(k => k -> "--others--").toMap
-          others.withTags(otherTags) :: buffer.toList.map(_.timeSeries)
+          val otherLabel = TimeSeries.toLabel(otherTags)
+          others.withTags(otherTags).withLabel(otherLabel) :: buffer.toList.map(_.timeSeries)
       }
       ResultSet(this, newData, rs.state)
     }

@@ -728,16 +728,30 @@ object MathExpr {
 
     def finalGrouping: List[String] = Nil
 
+    /**
+      * Returns the set of tag keys that should be present on time series evaluated by
+      * this expression. This will be the exact set in the first data expression.
+      */
+    private def filterKeys(tags: Map[String, String]): Map[String, String] = dataExprs match {
+      case dataExpr :: _ =>
+        val keys = Query.exactKeys(dataExpr.query)
+        tags.filter(t => keys.contains(t._1))
+      case _ =>
+        tags
+    }
+
     def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val rs = expr.eval(context, data)
       val ts =
         if (rs.data.isEmpty) {
           List(TimeSeries.noData(context.step))
         } else {
+          val tags = filterKeys(rs.data.head.tags)
+          val label = TimeSeries.toLabel(tags)
           val aggr = aggregator(context.start, context.end)
           rs.data.foreach(aggr.update)
           val t = aggr.result()
-          List(TimeSeries(t.tags, s"$name(${t.label})", t.data))
+          List(TimeSeries(tags, s"$name($label)", t.data))
         }
       ResultSet(this, ts, rs.state)
     }

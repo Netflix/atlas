@@ -126,7 +126,6 @@ object TimeSeries {
         aggrTags = t.tags
       } else {
         aggrBuffer.update(t.data)(f)
-        aggrTags = TaggedItem.aggrTags(aggrTags, t.tags)
       }
     }
 
@@ -157,7 +156,6 @@ object TimeSeries {
         aggrTags = t.tags
       } else {
         aggrBuffer.update(t.data)(countNaN)
-        aggrTags = TaggedItem.aggrTags(aggrTags, t.tags)
       }
     }
 
