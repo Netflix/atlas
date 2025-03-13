@@ -4,15 +4,15 @@ import sbt.*
 
 object Dependencies {
   object Versions {
-    val pekko       = "1.1.2"
+    val pekko       = "1.1.3"
     val pekkoHttpV  = "1.1.0"
-    val iep         = "5.0.32"
-    val jackson     = "2.18.2"
+    val iep         = "5.0.33"
+    val jackson     = "2.18.3"
     val log4j       = "2.24.3"
     val scala       = "2.13.16"
-    val slf4j       = "2.0.16"
-    val spectator   = "1.8.5"
-    val spring      = "6.2.2"
+    val slf4j       = "2.0.17"
+    val spectator   = "1.8.7"
+    val spring      = "6.2.3"
 
     val crossScala  = Seq(scala, "3.5.1")
   }
@@ -29,7 +29,7 @@ object Dependencies {
   val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.2.0"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "7.0.1"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.19"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.19.1"
   val hikariCP          = "com.zaxxer" % "HikariCP" % "6.2.1"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
