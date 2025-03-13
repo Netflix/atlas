@@ -989,12 +989,12 @@ class EvaluatorSuite extends FunSuite {
             dsl.size match {
               case 1 =>
                 val msg = DiagnosticMessage.error(s"failed rewrite")
-                context.dsLogger(dsl(0), msg)
+                context.dsLogger(dsl.head, msg)
                 DataSources.empty()
               case 2 =>
                 val msg = DiagnosticMessage.error(s"failed rewrite")
                 context.dsLogger(dsl(1), msg)
-                DataSources.of(dsl(0))
+                DataSources.of(dsl.head)
             }
           }
       } else {
