@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.netflix.atlas.core.util.Math
-
 /**
   * Sum of the values within a moving window of the input.
   *
@@ -25,31 +23,15 @@ import com.netflix.atlas.core.util.Math
   */
 case class OnlineRollingSum(buf: RollingBuffer) extends OnlineAlgorithm {
 
-  import java.lang.Double as JDouble
-
-  private[this] var sum = Math.addNaN(0.0, buf.sum)
-  private[this] var count = buf.values.count(v => !JDouble.isNaN(v))
+  private val buffer = new RollingSumBuffer(buf)
 
   override def next(v: Double): Double = {
-    val removed = buf.add(v)
-
-    if (!JDouble.isNaN(removed)) {
-      sum -= removed
-      count -= 1
-    }
-
-    if (!JDouble.isNaN(v)) {
-      sum += v
-      count += 1
-    }
-
-    if (count > 0) sum else Double.NaN
+    buffer.update(v)
+    if (buffer.count > 0) buffer.sum else Double.NaN
   }
 
   override def reset(): Unit = {
-    buf.clear()
-    sum = 0.0
-    count = 0
+    buffer.reset()
   }
 
   override def isEmpty: Boolean = buf.isEmpty
