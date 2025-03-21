@@ -68,4 +68,20 @@ class OnlineRollingSumSuite extends BaseOnlineAlgorithmSuite {
     algo.reset()
     assertEquals(algo.next(5.0), 5.0)
   }
+
+  test("n = 2, recover from large value") {
+    val algo = OnlineRollingSum(2)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0e300), 1.0e300)
+    assertEquals(algo.next(2.0), 1.0e300)
+    assertEquals(algo.next(3.0), 5.0)
+  }
+
+  test("n = 2, recover from small value") {
+    val algo = OnlineRollingSum(2)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(-1.0e300), -1.0e300)
+    assertEquals(algo.next(2.0), -1e300)
+    assertEquals(algo.next(3.0), 5.0)
+  }
 }

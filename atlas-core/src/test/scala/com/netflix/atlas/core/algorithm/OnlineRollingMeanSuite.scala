@@ -57,6 +57,22 @@ class OnlineRollingMeanSuite extends BaseOnlineAlgorithmSuite {
     assert(algo.isEmpty)
   }
 
+  test("n = 2, recover from large value") {
+    val algo = OnlineRollingMean(2, 1)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0e300), 5.0e299)
+    assertEquals(algo.next(2.0), 5.0e299)
+    assertEquals(algo.next(3.0), 2.5)
+  }
+
+  test("n = 2, recover from small value") {
+    val algo = OnlineRollingMean(2, 1)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(-1.0e300), -5.0e299)
+    assertEquals(algo.next(2.0), -5.0e299)
+    assertEquals(algo.next(3.0), 2.5)
+  }
+
   test("n = 2, min = 1, reset") {
     val algo = OnlineRollingMean(2, 1)
     assertEquals(algo.next(1.0), 1.0)

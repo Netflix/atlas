@@ -15,8 +15,6 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.netflix.atlas.core.util.Math
-
 /**
   * Mean of the values within a moving window of the input. The denominator is the number
   * of values (non-NaN entries) in the rolling buffer.
@@ -29,34 +27,18 @@ import com.netflix.atlas.core.util.Math
   */
 case class OnlineRollingMean(buf: RollingBuffer, minNumValues: Int) extends OnlineAlgorithm {
 
-  import java.lang.Double as JDouble
-
   require(minNumValues > 0, "minimum number of values must be >= 1")
   require(buf.values.length >= minNumValues, "minimum number of values must be <= window size")
 
-  private[this] var sum = Math.addNaN(0.0, buf.sum)
-  private[this] var count = buf.values.count(v => !JDouble.isNaN(v))
+  private val buffer = new RollingSumBuffer(buf)
 
   override def next(v: Double): Double = {
-    val removed = buf.add(v)
-
-    if (!JDouble.isNaN(removed)) {
-      sum -= removed
-      count -= 1
-    }
-
-    if (!JDouble.isNaN(v)) {
-      sum += v
-      count += 1
-    }
-
-    if (count >= minNumValues) sum / count else Double.NaN
+    buffer.update(v)
+    if (buffer.count >= minNumValues) buffer.sum / buffer.count else Double.NaN
   }
 
   override def reset(): Unit = {
-    buf.clear()
-    sum = 0.0
-    count = 0
+    buffer.reset()
   }
 
   override def isEmpty: Boolean = buf.isEmpty
