@@ -198,14 +198,14 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
       case Or(q1, q2)             => or(q1, q2, offset)
       case Not(q)                 => diff(all, findImpl(q, offset))
       case Equal(k, v)            => equal(k, v, offset)
-      case GreaterThan(k, v)      => greaterThan(k, v, false)
-      case GreaterThanEqual(k, v) => greaterThan(k, v, true)
-      case LessThan(k, v)         => lessThan(k, v, false)
-      case LessThanEqual(k, v)    => lessThan(k, v, true)
-      case q: In                  => findImpl(q.toOrQuery, offset)
-      case q: PatternQuery        => strPattern(q)
+      case GreaterThan(k, v)      => greaterThan(k, v, false, offset)
+      case GreaterThanEqual(k, v) => greaterThan(k, v, true, offset)
+      case LessThan(k, v)         => lessThan(k, v, false, offset)
+      case LessThanEqual(k, v)    => lessThan(k, v, true, offset)
+      case In(k, vs)              => in(k, vs, offset)
+      case q: PatternQuery        => strPattern(q, offset)
       case HasKey(k)              => hasKey(k, offset)
-      case True                   => all.clone()
+      case True                   => withOffset(all.clone(), offset)
       case False                  => new RoaringBitmap()
     }
   }
@@ -217,9 +217,13 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   }
 
   private def withOffset(set: RoaringBitmap, offset: Int): RoaringBitmap = {
-    val s = set.clone()
-    if (offset > 0) s.remove(0L, offset + 1L)
-    s
+    if (offset > 0)
+      set.remove(0L, offset + 1L)
+    set
+  }
+
+  private def withOffsetClone(set: RoaringBitmap, offset: Int): RoaringBitmap = {
+    withOffset(set.clone(), offset)
   }
 
   private def and(q1: Query, q2: Query, offset: Int): RoaringBitmap = {
@@ -247,35 +251,36 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     else {
       val vp = valueMap.get(v, -1)
       val matchSet = vidx.get(vp)
-      if (matchSet == null) new RoaringBitmap() else withOffset(matchSet, offset)
+      if (matchSet == null) new RoaringBitmap() else withOffsetClone(matchSet, offset)
     }
   }
 
-  private def greaterThan(k: String, v: String, orEqual: Boolean): RoaringBitmap = {
+  private def greaterThan(k: String, v: String, orEqual: Boolean, offset: Int): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()
     else {
-      val set = new RoaringBitmap()
+      val set = new LazyOrBitmap()
       val vp = findOffset(values, v, if (orEqual) 0 else 1)
       val t = tag(kp, vp)
       var i = tagOffset(t)
 
       // Data is sorted, no need to perform a check for each entry if key matches
       while (i < tagIndex.length && tagKey(tagIndex(i)) == kp) {
-        set.or(vidx.get(tagValue(tagIndex(i))))
+        set.naivelazyor(vidx.get(tagValue(tagIndex(i))))
         i += 1
       }
-      set
+      set.repairAfterLazy()
+      withOffset(set, offset)
     }
   }
 
-  private def lessThan(k: String, v: String, orEqual: Boolean): RoaringBitmap = {
+  private def lessThan(k: String, v: String, orEqual: Boolean, offset: Int): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()
     else {
-      val set = new RoaringBitmap()
+      val set = new LazyOrBitmap()
       val vp = findOffsetLessThan(values, v, if (orEqual) 0 else -1)
       if (vp >= 0) {
         val t = tag(kp, vp)
@@ -283,20 +288,38 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
 
         // Data is sorted, no need to perform a check for each entry if key matches
         while (i >= 0 && tagKey(tagIndex(i)) == kp) {
-          set.or(vidx.get(tagValue(tagIndex(i))))
+          set.naivelazyor(vidx.get(tagValue(tagIndex(i))))
           i -= 1
         }
       }
-      set
+      set.repairAfterLazy()
+      withOffset(set, offset)
     }
   }
 
-  private def strPattern(q: Query.PatternQuery): RoaringBitmap = {
+  private def in(k: String, vs: List[String], offset: Int): RoaringBitmap = {
+    val kp = keyMap.get(k, -1)
+    val vidx = itemIndex.get(kp)
+    if (vidx == null) new RoaringBitmap()
+    else {
+      val set = new LazyOrBitmap()
+      vs.foreach { v =>
+        val vp = valueMap.get(v, -1)
+        val matchSet = vidx.get(vp)
+        if (matchSet != null)
+          set.naivelazyor(matchSet)
+      }
+      set.repairAfterLazy()
+      withOffset(set, offset)
+    }
+  }
+
+  private def strPattern(q: Query.PatternQuery, offset: Int): RoaringBitmap = {
     val kp = keyMap.get(q.k, -1)
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()
     else {
-      val set = new RoaringBitmap()
+      val set = new LazyOrBitmap()
       val prefix = q.pattern.prefix()
       if (prefix != null) {
         val vp = findOffset(values, prefix, 0)
@@ -309,24 +332,25 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         ) {
           val v = tagValue(tagIndex(i))
           if (q.check(values(v))) {
-            set.or(vidx.get(v))
+            set.naivelazyor(vidx.get(v))
           }
           i += 1
         }
       } else {
         vidx.foreach { (v, items) =>
           if (q.check(values(v)))
-            set.or(items)
+            set.naivelazyor(items)
         }
       }
-      set
+      set.repairAfterLazy()
+      withOffset(set, offset)
     }
   }
 
   private def hasKey(k: String, offset: Int): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     val matchSet = keyIndex.get(kp)
-    if (matchSet == null) new RoaringBitmap() else withOffset(matchSet, offset)
+    if (matchSet == null) new RoaringBitmap() else withOffsetClone(matchSet, offset)
   }
 
   private def itemOffset(v: String): Int = {

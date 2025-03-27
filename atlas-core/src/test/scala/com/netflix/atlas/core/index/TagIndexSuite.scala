@@ -238,6 +238,22 @@ abstract class TagIndexSuite extends FunSuite {
     assertEquals(result.size, 4584)
   }
 
+  test("gt query with paging") {
+    val q = Query.GreaterThan("name", "sps_4")
+    val result = index.findItems(TagQuery(Some(q)))
+    val pageSize = 10
+    val builder = List.newBuilder[TimeSeries]
+    var tmp = index.findItems(TagQuery(Some(q), limit = pageSize))
+    while (tmp.size == pageSize) {
+      builder ++= tmp
+      val last = tmp.last.idString
+      tmp = index.findItems(TagQuery(Some(q), offset = last, limit = pageSize))
+    }
+    builder ++= tmp
+    assertEquals(result.size, builder.result().size)
+    assertEquals(result, builder.result())
+  }
+
   test("lt query") {
     val q = Query.LessThan("name", "sps_5")
     val result = index.findItems(TagQuery(Some(q)))
@@ -256,6 +272,22 @@ abstract class TagIndexSuite extends FunSuite {
     assertEquals(result.size, 4584)
   }
 
+  test("lt query with paging") {
+    val q = Query.LessThan("name", "sps_5")
+    val result = index.findItems(TagQuery(Some(q)))
+    val pageSize = 10
+    val builder = List.newBuilder[TimeSeries]
+    var tmp = index.findItems(TagQuery(Some(q), limit = pageSize))
+    while (tmp.size == pageSize) {
+      builder ++= tmp
+      val last = tmp.last.idString
+      tmp = index.findItems(TagQuery(Some(q), offset = last, limit = pageSize))
+    }
+    builder ++= tmp
+    assertEquals(result.size, builder.result().size)
+    assertEquals(result, builder.result())
+  }
+
   test("in query") {
     val q = Query.In("name", List("sps_5", "sps_7"))
     val result = index.findItems(TagQuery(Some(q)))
@@ -263,6 +295,22 @@ abstract class TagIndexSuite extends FunSuite {
       assert(m.tags("name") == "sps_5" || m.tags("name") == "sps_7")
     }
     assertEquals(result.size, 1528)
+  }
+
+  test("in query with paging") {
+    val q = Query.In("name", List("sps_5", "sps_7"))
+    val result = index.findItems(TagQuery(Some(q)))
+    val pageSize = 10
+    val builder = List.newBuilder[TimeSeries]
+    var tmp = index.findItems(TagQuery(Some(q), limit = pageSize))
+    while (tmp.size == pageSize) {
+      builder ++= tmp
+      val last = tmp.last.idString
+      tmp = index.findItems(TagQuery(Some(q), offset = last, limit = pageSize))
+    }
+    builder ++= tmp
+    assertEquals(result.size, builder.result().size)
+    assertEquals(result, builder.result())
   }
 
   test("regex query, prefix") {
@@ -290,6 +338,22 @@ abstract class TagIndexSuite extends FunSuite {
       assertEquals(m.tags("type2"), "IDEAL")
     }
     assertEquals(result.size, 7640)
+  }
+
+  test("regex query with paging") {
+    val q = Query.Regex("nf.cluster", "^nccp-silver.*")
+    val result = index.findItems(TagQuery(Some(q)))
+    val pageSize = 10
+    val builder = List.newBuilder[TimeSeries]
+    var tmp = index.findItems(TagQuery(Some(q), limit = pageSize))
+    while (tmp.size == pageSize) {
+      builder ++= tmp
+      val last = tmp.last.idString
+      tmp = index.findItems(TagQuery(Some(q), offset = last, limit = pageSize))
+    }
+    builder ++= tmp
+    assertEquals(result.size, builder.result().size)
+    assertEquals(result, builder.result())
   }
 
   test("haskey query") {
