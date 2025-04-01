@@ -63,6 +63,8 @@ import scala.util.Using
   */
 object FetchRequestSource {
 
+  private val chunkSize = ApiSettings.fetchChunkSize
+
   /**
     * Create an SSE source that can be used as the entity for the HttpResponse.
     */
@@ -75,7 +77,7 @@ object FetchRequestSource {
       val step = graphCfg.roundedStepSize
       val (fstart, fend) = roundToStep(step, graphCfg.resStart, graphCfg.resEnd)
       EvalContext(fstart.toEpochMilli, fend.toEpochMilli, step)
-        .partition(60 * step, ChronoUnit.MILLIS)
+        .partition(chunkSize * step, ChronoUnit.MILLIS)
     }
 
     val heartbeatSrc = Source
