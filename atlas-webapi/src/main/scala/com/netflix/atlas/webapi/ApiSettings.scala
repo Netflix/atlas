@@ -75,6 +75,8 @@ class ApiSettings(root: => Config) {
     }
   }
 
+  def fetchChunkSize: Int = config.getInt("fetch.chunk-size")
+
   def maxPermittedTags: Int = config.getInt("publish.max-permitted-tags")
 
   def maxDatapointAge: Long = config.getDuration("publish.max-age", TimeUnit.MILLISECONDS)
