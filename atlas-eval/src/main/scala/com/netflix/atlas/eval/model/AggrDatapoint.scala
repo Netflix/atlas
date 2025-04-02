@@ -248,7 +248,14 @@ object AggrDatapoint {
     }
 
     override def datapoints: List[AggrDatapoint] = {
-      aggregators.values.flatMap(_.datapoints).toList
+      val builder = List.newBuilder[AggrDatapoint]
+      aggregators.foreachEntry { (_, aggr) =>
+        aggr.datapoints match {
+          case d :: Nil => builder.addOne(d)
+          case ds       => builder.addAll(ds)
+        }
+      }
+      builder.result()
     }
   }
 
