@@ -42,7 +42,6 @@ class OnlineRollingSumSuite extends BaseOnlineAlgorithmSuite {
     assertEqualsDouble(algo.next(0.011667), 0.011667, 1e-9)
     assertEqualsDouble(algo.next(0.001111), 0.001111, 1e-9)
     assert(algo.next(Double.NaN).isNaN)
-    algo.next(0.000556)
     assertEqualsDouble(algo.next(0.000556), 0.000556, 1e-9)
   }
 
