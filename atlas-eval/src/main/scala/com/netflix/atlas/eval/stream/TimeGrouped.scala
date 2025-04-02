@@ -155,10 +155,10 @@ private[stream] class TimeGrouped(
 
       override def onPush(): Unit = {
         val builder = List.newBuilder[TimeGroup]
+        val now = clock.wallTime()
         val tuple = grab(in)
         tuple.data.foreach { v =>
           val t = v.timestamp
-          val now = clock.wallTime()
           step = v.step
           if (t > now) {
             droppedFutureUpdater.increment()
