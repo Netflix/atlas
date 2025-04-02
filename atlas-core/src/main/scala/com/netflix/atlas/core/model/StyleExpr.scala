@@ -43,7 +43,8 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
   }
 
   def legend(t: TimeSeries): String = {
-    legend(t.label, t.tags)
+    val fmt = settings.getOrElse("legend", t.label)
+    sed(Strings.substitute(fmt, t.tags))
   }
 
   def legend(label: String, tags: Map[String, String]): String = {
