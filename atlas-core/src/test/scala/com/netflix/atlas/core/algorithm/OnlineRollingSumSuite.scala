@@ -26,6 +26,26 @@ class OnlineRollingSumSuite extends BaseOnlineAlgorithmSuite {
     assertEquals(algo.next(2.0), 2.0)
   }
 
+  test("n = 1, NaN") {
+    val algo = OnlineRollingSum(1)
+    assertEquals(algo.next(0.0), 0.0)
+    assertEquals(algo.next(1.0), 1.0)
+    assert(algo.next(Double.NaN).isNaN)
+    assert(algo.next(Double.NaN).isNaN)
+    assertEquals(algo.next(2.0), 2.0)
+  }
+
+  test("n = 1, NaN, with fractional data") {
+    val algo = OnlineRollingSum(1)
+    assertEqualsDouble(algo.next(0.007222), 0.007222, 1e-9)
+    assertEqualsDouble(algo.next(0.001667), 0.001667, 1e-9)
+    assertEqualsDouble(algo.next(0.011667), 0.011667, 1e-9)
+    assertEqualsDouble(algo.next(0.001111), 0.001111, 1e-9)
+    assert(algo.next(Double.NaN).isNaN)
+    algo.next(0.000556)
+    assertEqualsDouble(algo.next(0.000556), 0.000556, 1e-9)
+  }
+
   test("n = 2") {
     val algo = OnlineRollingSum(2)
     assertEquals(algo.next(0.0), 0.0)

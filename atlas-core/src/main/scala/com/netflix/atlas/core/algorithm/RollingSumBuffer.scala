@@ -25,7 +25,7 @@ private[algorithm] class RollingSumBuffer(val buf: RollingBuffer) {
   import java.lang.Double as JDouble
 
   var sum: Double = Math.addNaN(0.0, buf.sum)
-  var count: Double = buf.values.count(v => !JDouble.isNaN(v))
+  var count: Int = buf.values.count(v => !JDouble.isNaN(v))
 
   def update(v: Double): Unit = {
     val removed = buf.add(v)
@@ -48,7 +48,7 @@ private[algorithm] class RollingSumBuffer(val buf: RollingBuffer) {
     * using the delta or recompute from the buffer.
     */
   private def adjustSum(delta: Double): Unit = {
-    val newSum = sum + delta
+    val newSum = Math.addNaN(sum, delta)
     val expSum = getExponent(sum)
     val expNewSum = getExponent(newSum)
     if (java.lang.Math.abs(expSum - expNewSum) < 15)
