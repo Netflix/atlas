@@ -195,8 +195,7 @@ case class Heatmap(
             // For percentile, spread the amount from the value across the cells in the
             // graph that overlap the range of the percentile bucket
             val (mn, mx) = pctRange.get
-            val cnt = v * step / 1000.0
-            if (cnt > 0.0) updateCounts(mn, mx, cnt, counts(x))
+            if (v > 0.0) updateCounts(mn, mx, v, counts(x))
           } else {
             // For normal lines, just update the counts based on the position of the value
             val y = findBucket(v)
