@@ -57,7 +57,6 @@ lazy val `atlas-core` = project
   .dependsOn(`atlas-json` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.caffeine,
-    Dependencies.datasketches,
     Dependencies.iepDynConfig,
     Dependencies.roaringBitmap,
     Dependencies.equalsVerifier % "test",
