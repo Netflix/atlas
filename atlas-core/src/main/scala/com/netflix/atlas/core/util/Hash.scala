@@ -61,10 +61,14 @@ object Hash {
   }
 
   def get(algorithm: String): MessageDigest = {
-    cloneableDigests.get(algorithm).fold(MessageDigest.getInstance(algorithm)) { digest =>
-      digest.clone().asInstanceOf[MessageDigest]
-    }
+  if (weakAlgorithms.contains(algorithm.toUpperCase)) {
+    throw new IllegalArgumentException(s"Algorithm $algorithm is not secure for use.")
   }
+  cloneableDigests.get(algorithm).fold(MessageDigest.getInstance(algorithm)) { digest =>
+    digest.clone().asInstanceOf[MessageDigest]
+  }
+}
+
 
   def md5(input: Array[Byte]): BigInteger = {
     computeHash("MD5", input)
