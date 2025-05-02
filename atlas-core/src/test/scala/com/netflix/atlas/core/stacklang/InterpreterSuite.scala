@@ -186,7 +186,7 @@ class InterpreterSuite extends FunSuite {
     val tab = Interpreter.escape("\t")
     val escaped = s"$space${space}a$nl,$nl${tab}b$space,c"
     val actual = Interpreter.splitAndTrim(escaped)
-    assertEquals(actual, List("  a\n", "\n\tb ", "c"))
+    assertEquals(actual, List(s"$space${space}a$nl", s"$nl${tab}b$space", "c"))
     assertEquals(Interpreter.toString(actual.reverse), escaped)
   }
 
@@ -194,7 +194,7 @@ class InterpreterSuite extends FunSuite {
     val comma = Interpreter.escape(",")
     val escaped = s"a${comma}b${comma}c,d"
     val actual = Interpreter.splitAndTrim(escaped)
-    assertEquals(actual, List("a,b,c", "d"))
+    assertEquals(actual, List(s"a${comma}b${comma}c", "d"))
     assertEquals(Interpreter.toString(actual.reverse), escaped)
   }
 }

@@ -52,7 +52,7 @@ object EventExpr {
     require(columns.nonEmpty, "set of columns cannot be empty")
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, query, columns, ":table")
+      Interpreter.append(builder, query, columns, Interpreter.WordToken(":table"))
     }
   }
 
@@ -73,7 +73,7 @@ object EventExpr {
     require(sampleBy.nonEmpty, "sampleBy cannot be empty")
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, query, sampleBy, projectionKeys, ":sample")
+      Interpreter.append(builder, query, sampleBy, projectionKeys, Interpreter.WordToken(":sample"))
     }
 
     def dataExpr: DataExpr = {
