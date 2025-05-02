@@ -80,13 +80,17 @@ class QueryVocabularySuite extends FunSuite {
     assert(!q.matches(Map("foo" -> "my $var. [work-in progress]")))
   }
 
+  private def execEquals(str: String): Query.Equal = {
+    val exp1 = interpreter.execute(str).stack.head
+    val exp2 = interpreter.execute(exp1.toString).stack.head
+    assertEquals(exp1, exp2)
+    exp1.asInstanceOf[Query.Equal]
+  }
+
   test("eq, with escaped comma") {
     val txt = Interpreter.escape("foo, bar, baz")
-    val exp = interpreter.execute(s"a,$txt,:eq").stack.head
-    assertEquals(
-      exp.asInstanceOf[Query.Equal].v,
-      "foo, bar, baz"
-    )
+    val exp = execEquals(s"a,$txt,:eq")
+    assertEquals(exp.v, "foo, bar, baz")
   }
 
   test("contains, with escaped comma") {
@@ -96,5 +100,29 @@ class QueryVocabularySuite extends FunSuite {
       exp.asInstanceOf[Query.Regex].pattern.toString,
       ".*foo,\\u0020bar,\\u0020baz"
     )
+  }
+
+  test("eq, with escaped colon in value") {
+    val txt = Interpreter.escape(":foo")
+    val exp = execEquals(s"a,$txt,:eq")
+    assertEquals(exp.v, ":foo")
+  }
+
+  test("eq, with escaped colon in key") {
+    val txt = Interpreter.escape(":foo")
+    val exp = execEquals(s"$txt,a,:eq")
+    assertEquals(exp.k, ":foo")
+  }
+
+  test("eq, with escaped open paren in value") {
+    val txt = Interpreter.escape("(")
+    val exp = execEquals(s"a,$txt,:eq")
+    assertEquals(exp.v, "(")
+  }
+
+  test("eq, with escaped close paren in value") {
+    val txt = Interpreter.escape(")")
+    val exp = execEquals(s"a,$txt,:eq")
+    assertEquals(exp.v, ")")
   }
 }

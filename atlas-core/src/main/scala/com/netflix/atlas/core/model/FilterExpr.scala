@@ -42,7 +42,7 @@ object FilterExpr {
     override def append(builder: java.lang.StringBuilder): Unit = {
       str match {
         case Some(s) => builder.append(s)
-        case None    => Interpreter.append(builder, expr, stat, ":stat")
+        case None    => Interpreter.append(builder, expr, stat, Interpreter.WordToken(":stat"))
       }
     }
 
@@ -70,7 +70,7 @@ object FilterExpr {
     def name: String
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, s":stat-$name")
+      Interpreter.append(builder, Interpreter.WordToken(s":stat-$name"))
     }
 
     def dataExprs: List[DataExpr] = Nil
@@ -121,7 +121,7 @@ object FilterExpr {
     if (!expr1.isGrouped) require(!expr2.isGrouped, "filter grouping must match expr grouping")
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr1, expr2, ":filter")
+      Interpreter.append(builder, expr1, expr2, Interpreter.WordToken(":filter"))
     }
 
     def dataExprs: List[DataExpr] = expr1.dataExprs ::: expr2.dataExprs
@@ -193,7 +193,7 @@ object FilterExpr {
     require(k > 0, s"k must be positive ($k <= 0)")
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, stat, k, s":$opName")
+      Interpreter.append(builder, expr, stat, k, Interpreter.WordToken(s":$opName"))
     }
 
     def dataExprs: List[DataExpr] = expr.dataExprs

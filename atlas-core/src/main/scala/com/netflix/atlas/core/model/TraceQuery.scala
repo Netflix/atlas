@@ -37,7 +37,7 @@ object TraceQuery {
   case class SpanAnd(q1: TraceQuery, q2: TraceQuery) extends TraceQuery {
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, q1, q2, ":span-and")
+      Interpreter.append(builder, q1, q2, Interpreter.WordToken(":span-and"))
     }
   }
 
@@ -45,7 +45,7 @@ object TraceQuery {
   case class SpanOr(q1: TraceQuery, q2: TraceQuery) extends TraceQuery {
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, q1, q2, ":span-or")
+      Interpreter.append(builder, q1, q2, Interpreter.WordToken(":span-or"))
     }
   }
 
@@ -56,17 +56,15 @@ object TraceQuery {
   case class Child(q1: Query, q2: Query) extends TraceQuery {
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, q1, q2, ":child")
+      Interpreter.append(builder, q1, q2, Interpreter.WordToken(":child"))
     }
   }
 
   /** Filter to select the set of spans from a trace to forward as events. */
   case class SpanFilter(q: TraceQuery, f: Query) extends Expr {
 
-    override def toString: String = s"$q,$f,:span-filter"
-
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, q, f, ":span-filter")
+      Interpreter.append(builder, q, f, Interpreter.WordToken(":span-filter"))
     }
   }
 
@@ -74,7 +72,7 @@ object TraceQuery {
   case class SpanTimeSeries(q: TraceQuery, expr: StyleExpr) extends Expr {
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, q, expr, ":span-time-series")
+      Interpreter.append(builder, q, expr, Interpreter.WordToken(":span-time-series"))
     }
   }
 }
