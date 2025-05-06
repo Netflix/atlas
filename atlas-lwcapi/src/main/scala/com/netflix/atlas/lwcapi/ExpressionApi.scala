@@ -150,7 +150,7 @@ object ExpressionApi {
     val hash = Strings.zeroPad(crc.getValue, 16)
     val etag = s""""$hash""""
 
-    val data = ByteString.fromArrayUnsafe(baos.toByteArray)
+    val data = ByteString.fromArrayUnsafe(bytes)
     EncodedExpressions(etag, data, expressions.size)
   }
 }
