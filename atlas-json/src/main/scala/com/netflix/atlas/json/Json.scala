@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.*
 import com.fasterxml.jackson.core.json.JsonReadFeature
 import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.databind.*
+import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator
@@ -79,23 +80,21 @@ object Json {
     .enable(SmileGenerator.Feature.LENIENT_UTF_ENCODING)
     .build()
 
-  private val jsonMapper = newMapper(jsonFactory)
+  private val jsonMapper = newMapperBuilder(jsonFactory).build()
 
-  private val smileMapper = newMapper(smileFactory)
+  private val smileMapper = newMapperBuilder(smileFactory).build()
 
-  private def newMapper(factory: JsonFactory): ObjectMapper = {
-    val mapper = new ObjectMapper(factory)
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-    mapper.configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
-    mapper.configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
-    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    mapper.registerModule(DefaultScalaModule)
-    mapper.registerModule(new JavaTimeModule)
-    mapper.registerModule(new Jdk8Module)
-    mapper.registerModule(
-      new SimpleModule().setSerializerModifier(new JsonSupportSerializerModifier)
-    )
-    mapper
+  private def newMapperBuilder(factory: JsonFactory): JsonMapper.Builder = {
+    JsonMapper
+      .builder(factory)
+      .serializationInclusion(JsonInclude.Include.NON_ABSENT)
+      .disable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
+      .disable(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS)
+      .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+      .addModule(DefaultScalaModule)
+      .addModule(new JavaTimeModule)
+      .addModule(new Jdk8Module)
+      .addModule(new SimpleModule().setSerializerModifier(new JsonSupportSerializerModifier))
   }
 
   /**
@@ -119,7 +118,10 @@ object Json {
     f(smileMapper)
   }
 
-  def newMapper: ObjectMapper = newMapper(jsonFactory)
+  def newMapperBuilder: JsonMapper.Builder = newMapperBuilder(jsonFactory)
+
+  @deprecated(message = "Use newMapperBuilder instead.")
+  def newMapper: ObjectMapper = newMapperBuilder.build()
 
   def newJsonGenerator(writer: Writer): JsonGenerator = {
     jsonFactory.createGenerator(writer)

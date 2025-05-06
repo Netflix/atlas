@@ -36,7 +36,7 @@ import java.util.zip.GZIPOutputStream
 object LwcMessages {
 
   // For reading arbitrary json structures for events
-  private val mapper = Json.newMapper
+  private val mapper = Json.newMapperBuilder.build()
 
   /**
     * Parse the message string into an internal model object based on the type.
