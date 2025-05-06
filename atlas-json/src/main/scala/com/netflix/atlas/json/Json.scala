@@ -85,7 +85,8 @@ object Json {
   private val smileMapper = newMapperBuilder(smileFactory).build()
 
   private def newMapperBuilder(factory: JsonFactory): JsonMapper.Builder = {
-    JsonMapper.builder(factory)
+    JsonMapper
+      .builder(factory)
       .serializationInclusion(JsonInclude.Include.NON_ABSENT)
       .disable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
       .disable(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS)
