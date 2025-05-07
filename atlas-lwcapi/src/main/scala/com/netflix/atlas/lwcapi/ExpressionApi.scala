@@ -37,6 +37,7 @@ import com.typesafe.scalalogging.StrictLogging
 
 import java.io.ByteArrayOutputStream
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 import java.util.zip.CRC32
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -52,8 +53,6 @@ case class ExpressionApi(
 
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  private val expressionCount = registry.distributionSummary("atlas.lwcapi.expressions.count")
-
   private val responseCache = Caffeine
     .newBuilder()
     .expireAfterWrite(Duration.ofSeconds(10))
@@ -61,14 +60,25 @@ case class ExpressionApi(
       new CacheLoader[Option[String], EncodedExpressions] {
 
         override def load(key: Option[String]): EncodedExpressions = {
-          val expressions = key match {
-            case Some(cluster) => sm.subscriptionsForCluster(cluster).map(_.metadata)
-            case None          => sm.subscriptions.map(_.metadata)
+          val (id, expressions) = key match {
+            case Some(cluster) => "overall" -> sm.subscriptionsForCluster(cluster).map(_.metadata)
+            case None          => "cluster" -> sm.subscriptions.map(_.metadata)
           }
-          encode(expressions)
+          val start = registry.clock().monotonicTime()
+          val encoded = encode(expressions)
+          val encodingTimeNanos = registry.clock().monotonicTime() - start
+          updateStats(id, encoded.size, encodingTimeNanos)
+          encoded
         }
       }
     )
+
+  private def updateStats(id: String, size: Int, encodingTimeNanos: Long): Unit = {
+    registry.distributionSummary("atlas.lwcapi.expressionsCount", "id", id).record(size)
+    registry
+      .timer("atlas.lwcapi.encodingTime", "id", id)
+      .record(encodingTimeNanos, TimeUnit.NANOSECONDS)
+  }
 
   /** Helper for testing to force the recomputation of encoded expressions. */
   private[lwcapi] def clearCache(): Unit = {
@@ -100,9 +110,9 @@ case class ExpressionApi(
 
   private def handle(
     receivedETags: Option[String],
-    expressions: EncodedExpressions
+    expressions: EncodedExpressions,
+    id: String
   ): HttpResponse = {
-    expressionCount.record(expressions.size)
     val tag = expressions.etag
     val headers: List[HttpHeader] = List(RawHeader("ETag", tag))
     val recvTags = receivedETags.getOrElse("")
