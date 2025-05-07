@@ -110,8 +110,7 @@ case class ExpressionApi(
 
   private def handle(
     receivedETags: Option[String],
-    expressions: EncodedExpressions,
-    id: String
+    expressions: EncodedExpressions
   ): HttpResponse = {
     val tag = expressions.etag
     val headers: List[HttpHeader] = List(RawHeader("ETag", tag))
