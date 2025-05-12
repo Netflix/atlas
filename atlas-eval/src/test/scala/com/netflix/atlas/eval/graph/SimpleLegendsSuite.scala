@@ -98,6 +98,14 @@ class SimpleLegendsSuite extends FunSuite {
     assertEquals(legends("name,cpu,:eq,:not,:sum"), List("!cpu"))
   }
 
+  test("name starts clause") {
+    assertEquals(legends("name,sys.cpu,:starts,:sum"), List("sys.cpu"))
+  }
+
+  test("name contains clause") {
+    assertEquals(legends("name,sys.cpu,:contains,:sum"), List("sys.cpu"))
+  }
+
   test("name with node avg") {
     assertEquals(legends("name,cpu,:eq,:node-avg"), List("cpu"))
   }
