@@ -85,11 +85,20 @@ object SimpleLegends extends StrictLogging {
       case Query.LessThanEqual(k, v)    => Map(k -> v)
       case Query.GreaterThan(k, v)      => Map(k -> v)
       case Query.GreaterThanEqual(k, v) => Map(k -> v)
-      case Query.Regex(k, v)            => Map(k -> v)
+      case re: Query.Regex              => Map(re.k -> regexPresentationValue(re))
       case Query.RegexIgnoreCase(k, v)  => Map(k -> v)
       case Query.Not(q: KeyValueQuery)  => keyValues(q).map(t => t._1 -> s"!${t._2}")
       case _                            => Map.empty
     }
+  }
+
+  private def regexPresentationValue(re: Query.Regex): String = {
+    if (re.pattern.isPrefixMatcher)
+      re.pattern.prefix()
+    else if (re.pattern.isContainsMatcher)
+      re.pattern.containedString()
+    else
+      re.v
   }
 
   private def generateLegend(expr: StyleExpr, kv: Map[String, String]): StyleExpr = {
