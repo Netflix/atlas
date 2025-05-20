@@ -803,6 +803,7 @@ object MathVocabulary extends Vocabulary {
       case TimeSeriesType(_) :: TimeSeriesType(_) :: _ => true
       case (_: StyleExpr) :: TimeSeriesType(_) :: _    => true
       case TimeSeriesType(_) :: (_: StyleExpr) :: _    => true
+      case (_: StyleExpr) :: (_: StyleExpr) :: _       => true
     }
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr
@@ -814,6 +815,10 @@ object MathVocabulary extends Vocabulary {
         t2.copy(expr = newInstance(t1, t2.expr)) :: stack
       case TimeSeriesType(t2) :: (t1: StyleExpr) :: stack =>
         t1.copy(expr = newInstance(t1.expr, t2)) :: stack
+      case (t2: StyleExpr) :: (t1: StyleExpr) :: stack =>
+        // If both sides have presentation, strip the presentation settings to avoid
+        // confusion as to which settings will get used.
+        newInstance(t1.expr, t2.expr) :: stack
     }
 
     override def signature: String = "TimeSeriesExpr TimeSeriesExpr -- TimeSeriesExpr"
