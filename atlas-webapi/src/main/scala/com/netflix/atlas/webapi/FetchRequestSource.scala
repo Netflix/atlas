@@ -93,7 +93,7 @@ object FetchRequestSource {
         Source
           .future(future)
           .collect {
-            case DataResponse(data) => DataChunk(chunk, data)
+            case DataResponse(_, data) => DataChunk(chunk, data)
           }
       }
       .via(new EvalFlow(graphCfg))

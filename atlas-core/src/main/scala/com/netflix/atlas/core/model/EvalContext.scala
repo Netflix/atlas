@@ -60,4 +60,19 @@ case class EvalContext(
     val dur = offset / step * step
     if (dur < step) this else EvalContext(start - dur, end - dur, step, state)
   }
+
+  def increaseStep(newStep: Long): EvalContext = {
+    if (newStep == step)
+      return this
+
+    // Compute the new start / end time by rounding to step boundaries. The eval context
+    // will end time is exclusive, so update by a step interval if the end time has changes
+    // due to rounding.
+    val s = start / newStep * newStep
+    val e = end / newStep * newStep
+    if (end == e)
+      EvalContext(s, e, newStep)
+    else
+      EvalContext(s, e + newStep, newStep)
+  }
 }

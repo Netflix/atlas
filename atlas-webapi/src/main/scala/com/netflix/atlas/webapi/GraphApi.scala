@@ -72,5 +72,5 @@ object GraphApi {
     }
   }
 
-  case class DataResponse(ts: Map[DataExpr, List[TimeSeries]])
+  case class DataResponse(step: Long, ts: Map[DataExpr, List[TimeSeries]])
 }

@@ -100,6 +100,16 @@ case class GraphConfig(
     EvalContext(fstart.toEpochMilli, fend.toEpochMilli + stepSize, stepSize)
   }
 
+  def withStep(newStep: Long): GraphConfig = {
+    if (newStep == stepSize)
+      return this
+    copy(
+      step = Some(s"${newStep}ms"),
+      start = Some(fstart.toEpochMilli.toString),
+      end = Some(fend.toEpochMilli.toString)
+    )
+  }
+
   def exprs: List[StyleExpr] = parsedQuery.get
 
   private def getGraphTags(plots: List[PlotDef]): Map[String, String] = {
