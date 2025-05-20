@@ -61,8 +61,8 @@ case class ExpressionApi(
 
         override def load(key: Option[String]): EncodedExpressions = {
           val (id, expressions) = key match {
-            case Some(cluster) => "overall" -> sm.subscriptionsForCluster(cluster).map(_.metadata)
-            case None          => "cluster" -> sm.subscriptions.map(_.metadata)
+            case Some(cluster) => "cluster" -> sm.subscriptionsForCluster(cluster).map(_.metadata)
+            case None          => "overall" -> sm.subscriptions.map(_.metadata)
           }
           val start = registry.clock().monotonicTime()
           val encoded = encode(expressions)
