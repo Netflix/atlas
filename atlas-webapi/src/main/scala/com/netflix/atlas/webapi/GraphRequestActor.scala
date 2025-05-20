@@ -64,8 +64,8 @@ class GraphRequestActor(grapher: Grapher, registry: Registry) extends Actor with
       graphCtx = ctx
       dbRef.tell(DataRequest(request), self)
 
-    case DataResponse(data) => sendImage(data)
-    case Failure(t)         => throw t
+    case DataResponse(step, data) => sendImage(step, data)
+    case Failure(t)               => throw t
   }
 
   private def sendErrorImage(t: Throwable, w: Int, h: Int): Unit = {
@@ -83,8 +83,8 @@ class GraphRequestActor(grapher: Grapher, registry: Registry) extends Actor with
     graphCtx.complete(HttpResponse(status = StatusCodes.OK, entity = image))
   }
 
-  private def sendImage(data: Map[DataExpr, List[TimeSeries]]): Unit = {
-    val result = grapher.evalAndRender(request, data)
+  private def sendImage(step: Long, data: Map[DataExpr, List[TimeSeries]]): Unit = {
+    val result = grapher.evalAndRender(request.withStep(step), data)
     val entity = HttpEntity.Strict(request.contentType, ByteString(result.data))
     graphCtx.complete(HttpResponse(StatusCodes.OK, entity = entity))
     context.stop(self)
