@@ -16,7 +16,6 @@
 package com.netflix.atlas.core.model
 
 import java.awt.Color
-
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.SimpleWord
@@ -66,7 +65,9 @@ object StyleVocabulary extends Vocabulary {
     ),
     Macro("vspan", List("vspan", ":ls"), List("name,sps,:eq,:sum,:dup,200e3,:gt")),
     // Legacy macro for visualizing epic expressions
-    Macro("des-epic-viz", desEpicViz, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
+    Macro("des-epic-viz", desEpicViz, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4")),
+    // Remove presentation settings
+    StripStyle
   )
 
   sealed trait StyleWord extends SimpleWord {
@@ -495,6 +496,31 @@ object StyleVocabulary extends Vocabulary {
   //
   // Helper macros
   //
+
+  case object StripStyle extends SimpleWord {
+
+    override def name: String = "strip-style"
+
+    override def summary: String =
+      """
+        |Remove all presentation settings from an expression.
+      """.stripMargin.trim
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case PresentationType(_) :: _ => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case PresentationType(t) :: s => t.expr :: s
+    }
+
+    override def signature: String = "StyleExpr -- TimeSeriesExpr"
+
+    override def examples: List[String] = List(
+      "name,sps,:eq,:sum,ff0000,:color",
+      "name,sps,:eq,:sum,custom,:legend"
+    )
+  }
 
   private def desEpicViz = List(
     // Show signal line as a vertical span
