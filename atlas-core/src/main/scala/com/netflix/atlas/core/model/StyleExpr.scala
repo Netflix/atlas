@@ -44,28 +44,28 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
 
   def legend(t: TimeSeries): String = {
     val fmt = settings.getOrElse("legend", t.label)
-    sed(Strings.substitute(fmt, t.tags))
+    sed(Strings.substitute(fmt, t.tags), t.tags)
   }
 
   def legend(label: String, tags: Map[String, String]): String = {
     val fmt = settings.getOrElse("legend", label)
-    sed(Strings.substitute(fmt, tags))
+    sed(Strings.substitute(fmt, tags), tags)
   }
 
-  private def sed(str: String): String = {
+  private def sed(str: String, tags: Map[String, String]): String = {
     settings.get("sed").fold(str) { v =>
-      sed(str, v.split(",").toList)
+      sed(str, v.split(",").toList, tags)
     }
   }
 
   @scala.annotation.tailrec
-  private def sed(str: String, cmds: List[String]): String = {
+  private def sed(str: String, cmds: List[String], tags: Map[String, String]): String = {
     if (cmds.isEmpty) str
     else {
       cmds match {
-        case mode :: ":decode" :: cs => sed(decode(str, mode), cs)
-        case s :: r :: ":s" :: cs    => sed(searchAndReplace(str, s, r), cs)
-        case _                       => sed(str, cmds.tail)
+        case mode :: ":decode" :: cs => sed(decode(str, mode), cs, tags)
+        case s :: r :: ":s" :: cs    => sed(searchAndReplace(str, s, r, tags), cs, tags)
+        case _                       => sed(str, cmds.tail, tags)
       }
     }
   }
@@ -78,27 +78,61 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     }
   }
 
-  private def searchAndReplace(str: String, search: String, replace: String): String = {
+  private def searchAndReplace(
+    str: String,
+    search: String,
+    replace: String,
+    tags: Map[String, String]
+  ): String = {
     val m = Pattern.compile(search).matcher(str)
     if (!m.find()) str
     else {
       val sb = new StringBuffer()
-      m.appendReplacement(sb, substitute(replace, m))
+      m.appendReplacement(sb, escape(substitute(replace, m, tags)))
       while (m.find()) {
-        m.appendReplacement(sb, substitute(replace, m))
+        m.appendReplacement(sb, escape(substitute(replace, m, tags)))
       }
       m.appendTail(sb)
       sb.toString
     }
   }
 
+  /** Escape string so it is treated like a literal for append replacement. */
+  private def escape(str: String): String = {
+    str.replace("\\", "\\\\").replace("$", "\\$")
+  }
+
   /**
     * The `appendReplacement` method on the matcher will do substitutions, but this makes
     * it consistent with the variable substitutions for legends to avoid confusion about
     * slightly different syntax for variables in legends verses the replacement field.
+    *
+    * If a given variable name is not present, then it will fall back to try and resolve
+    * the variable based on the tags for the expression.
     */
-  private def substitute(str: String, m: Matcher): String = {
-    Strings.substitute(str, k => if (StyleExpr.isNumber(k)) m.group(k.toInt) else m.group(k))
+  private def substitute(str: String, m: Matcher, tags: Map[String, String]): String = {
+    Strings.substitute(
+      str,
+      k => {
+        // Default to use if the value cannot be found in the pattern
+        val tagValue = tags.getOrElse(k, k)
+
+        // Try to extract from the matcher first, if the variable isn't present, then use
+        // the tags as a fallback.
+        if (StyleExpr.isNumber(k)) {
+          val i = k.toInt
+          if (i <= m.groupCount()) m.group(i) else tagValue
+        } else {
+          // Prior to jdk20 there isn't a good way to detect set of available groups. So
+          // for now rely on the exception to detect if the group name doesn't exist.
+          try {
+            m.group(k)
+          } catch {
+            case _: IllegalArgumentException => tagValue
+          }
+        }
+      }
+    )
   }
 
   def sortBy: Option[String] = settings.get("sort")
