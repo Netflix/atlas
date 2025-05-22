@@ -78,6 +78,7 @@ class StyleExprSuite extends FunSuite {
   check("^(?<prefix>[a-z]+).*$,prefix [$1],:s", "prefix [one]")
   check("^(?<prefix>[A-Z]*).*$,prefix [$1],:s", "prefix []")
   check("^(?<prefix>[A-Z]*).*$,prefix [$2],:s", "prefix [two]")
+  check("^(?<a>[a-z]+).*$,$a [$1],:s", "one [one]")
   check("_.*,,:s", "one")
   check("(_[A-F0-9]{2}), $1,:s,hex,:decode", "one ! % & ?")
   check("^([a-z]+).*$,$()prefix [$1],:s", "$prefix [one]")
