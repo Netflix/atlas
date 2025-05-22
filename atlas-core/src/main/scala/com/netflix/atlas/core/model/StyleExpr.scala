@@ -78,7 +78,12 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     }
   }
 
-  private def searchAndReplace(str: String, search: String, replace: String, tags: Map[String, String]): String = {
+  private def searchAndReplace(
+    str: String,
+    search: String,
+    replace: String,
+    tags: Map[String, String]
+  ): String = {
     val m = Pattern.compile(search).matcher(str)
     if (!m.find()) str
     else {
@@ -106,25 +111,28 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     * the variable based on the tags for the expression.
     */
   private def substitute(str: String, m: Matcher, tags: Map[String, String]): String = {
-    Strings.substitute(str, k => {
-      // Default to use if the value cannot be found in the pattern
-      val tagValue = tags.getOrElse(k, k)
+    Strings.substitute(
+      str,
+      k => {
+        // Default to use if the value cannot be found in the pattern
+        val tagValue = tags.getOrElse(k, k)
 
-      // Try to extract from the matcher first, if the variable isn't present, then use
-      // the tags as a fallback.
-      if (StyleExpr.isNumber(k)) {
-        val i = k.toInt
-        if (i <= m.groupCount()) m.group(i) else tagValue
-      } else {
-        // Prior to jdk20 there isn't a good way to detect set of available groups. So
-        // for now rely on the exception to detect if the group name doesn't exist.
-        try {
-          m.group(k)
-        } catch {
-          case _: IllegalArgumentException => tagValue
+        // Try to extract from the matcher first, if the variable isn't present, then use
+        // the tags as a fallback.
+        if (StyleExpr.isNumber(k)) {
+          val i = k.toInt
+          if (i <= m.groupCount()) m.group(i) else tagValue
+        } else {
+          // Prior to jdk20 there isn't a good way to detect set of available groups. So
+          // for now rely on the exception to detect if the group name doesn't exist.
+          try {
+            m.group(k)
+          } catch {
+            case _: IllegalArgumentException => tagValue
+          }
         }
       }
-    })
+    )
   }
 
   def sortBy: Option[String] = settings.get("sort")
