@@ -93,7 +93,7 @@ object FetchRequestSource {
         Source
           .future(future)
           .collect {
-            case DataResponse(_, data) => DataChunk(chunk, data)
+            case DataResponse(s, data) => DataChunk(chunk.increaseStep(s), data)
           }
       }
       .via(new EvalFlow(graphCfg))
@@ -196,11 +196,12 @@ object FetchRequestSource {
 
         override def onPush(): Unit = {
           val chunk = grab(in)
-          val ts = graphCfg.exprs
+          val cfg = graphCfg.withStep(chunk.context.step)
+          val ts = cfg.exprs
             .flatMap { s =>
               val palette =
                 if (metadata)
-                  Some(graphCfg.flags.axisPalette(graphCfg.settings, s.axis.getOrElse(0)))
+                  Some(cfg.flags.axisPalette(cfg.settings, s.axis.getOrElse(0)))
                 else None
               val context = chunk.context.copy(state = state)
               val result = s.expr.eval(context, chunk.data)
