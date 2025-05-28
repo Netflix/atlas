@@ -71,6 +71,11 @@ class ExpressionApiSuite extends MUnitRouteSuite {
     }
   }
 
+  override def beforeEach(context: BeforeEach): Unit = {
+    clock.setWallTime(0L)
+    sm.clear()
+  }
+
   test("get of a path returns empty data") {
     val expected_etag = ExpressionApi.encode(List()).etag
     Get("/lwc/api/v1/expressions/123") ~> endpoint.routes ~> check {
@@ -193,7 +198,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
     sm.updateQueryIndex()
 
     val fiveMinutes = 300_000L
-    val cache = new ExpressionApi.ExpressionsCache(sm, registry, fiveMinutes)
+    val cache = new ExpressionApi.ExpressionsCache(sm, registry, fiveMinutes, _ => true)
     assertEquals(cache.size, 0)
     cache.refresh()
     assertEquals(cache.size, 0) // No accesses, so it will still be empty
@@ -208,12 +213,36 @@ class ExpressionApiSuite extends MUnitRouteSuite {
     // expire and get reloaded.
     clock.setWallTime(fiveMinutes + 1)
     val s1 = cache.get(Some("skan"))
+    assertEquals(s1.size, 2)
     assertEquals(cache.size, 2)
     cache.refresh()
     val s2 = cache.get(Some("skan"))
     assert(s1 eq s2)
     val a3 = cache.get(None)
     assert(a1 ne a3)
+  }
+
+  test("cache refresh, cluster filter") {
+    val splits =
+      splitter.split("nf.cluster,skan,:eq,:avg,nf.app,brh,:eq,:sum", ExprType.TIME_SERIES, 60000)
+    sm.register(StreamMetadata("a"), queue)
+    splits.foreach { s =>
+      sm.subscribe("a", s)
+    }
+    sm.updateQueryIndex()
+
+    val fiveMinutes = 300_000L
+    val cache = new ExpressionApi.ExpressionsCache(
+      sm,
+      registry,
+      fiveMinutes,
+      _.metadata.expression.contains(":sum")
+    )
+    cache.refresh()
+
+    assertEquals(cache.get(None).size, 3)
+    assertEquals(cache.get(Some("skan")).size, 1)
+    assertEquals(cache.get(Some("brh")).size, 1)
   }
 
   private val skanCount =
