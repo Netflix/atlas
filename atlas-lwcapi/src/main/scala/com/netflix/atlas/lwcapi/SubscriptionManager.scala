@@ -286,6 +286,8 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
   def clear(): Unit = {
     logger.debug("clearing all subscriptions")
     registrations.clear()
+    subHandlers.clear()
+    subscriptionsList = Nil
     queryListChanged = true
     updateQueryIndex()
   }
