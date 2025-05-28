@@ -194,7 +194,6 @@ object ExpressionApi {
           "cluster" -> sm.subscriptionsForCluster(cluster).filter(clusterSubFilter).map(_.metadata)
         case None => "overall" -> sm.subscriptions.map(_.metadata)
       }
-      println(s"loading $key ${expressions.size}")
       val start = registry.clock().monotonicTime()
       val encoded = encode(expressions)
       val encodingTimeNanos = registry.clock().monotonicTime() - start
