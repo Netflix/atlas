@@ -49,6 +49,8 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
   @volatile private var queryListChanged = false
   private val queryIndex = QueryIndex.newInstance[Subscription](registry)
 
+  @volatile var lastUpdateTime: Long = 0L
+
   // Background process for updating the query index. It is not done inline because rebuilding
   // the index can be computationally expensive.
   private val ex =
@@ -73,6 +75,8 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
       val removed = previous.diff(current)
       added.foreach(s => queryIndex.add(s.query, s))
       removed.foreach(s => queryIndex.remove(s.query, s))
+
+      lastUpdateTime = registry.clock().wallTime()
     }
   }
 
