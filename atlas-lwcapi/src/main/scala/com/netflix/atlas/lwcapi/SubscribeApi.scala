@@ -65,10 +65,7 @@ class SubscribeApi(
 
   private val dropNew = config.getBoolean("atlas.lwcapi.drop-new")
 
-  private val evalsCounter = registry.counter("atlas.lwcapi.subscribe.count", "action", "subscribe")
-
-  private val itemsCounter =
-    registry.counter("atlas.lwcapi.subscribe.itemCount", "action", "subscribe")
+  private val subscriptionSize = registry.distributionSummary("atlas.lwcapi.subscriptionSize")
 
   def routes: Route = {
     extractClientIP { addr =>
@@ -114,10 +111,9 @@ class SubscribeApi(
       .flatMapMerge(Int.MaxValue, msg => msg)
       .groupedWithin(batchSize, 1.second)
       .statefulMap(() => new ByteArrayOutputStream())(
-        (baos, seq) => baos -> List(BinaryMessage(LwcMessages.encodeBatch(seq, baos))),
+        (baos, seq) => baos -> BinaryMessage(LwcMessages.encodeBatch(seq, baos)),
         _ => None
       )
-      .mapConcat(identity)
       .watchTermination() { (_, f) =>
         f.onComplete {
           case Success(_) =>
@@ -192,8 +188,7 @@ class SubscribeApi(
     streamId: String,
     expressions: List[ExpressionMetadata]
   ): List[JsonSupport] = {
-    evalsCounter.increment()
-    itemsCounter.increment(expressions.size)
+    subscriptionSize.record(expressions.size)
 
     val messages = List.newBuilder[JsonSupport]
     val subIdsBuilder = Set.newBuilder[String]
