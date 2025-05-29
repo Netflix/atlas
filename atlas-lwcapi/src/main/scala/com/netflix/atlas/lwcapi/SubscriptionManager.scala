@@ -63,19 +63,17 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
     if (queryListChanged) {
       queryListChanged = false
       val previous = subscriptionsList.toSet
-      subscriptionsList = registrations
+      val current = registrations
         .values()
         .asScala
         .flatMap(_.subscriptions)
-        .toList
-        .distinct
-
-      val current = subscriptionsList.toSet
+        .toSet
       val added = current.diff(previous)
       val removed = previous.diff(current)
       added.foreach(s => queryIndex.add(s.query, s))
       removed.foreach(s => queryIndex.remove(s.query, s))
 
+      subscriptionsList = current.toList
       lastUpdateTime = registry.clock().wallTime()
     }
   }
