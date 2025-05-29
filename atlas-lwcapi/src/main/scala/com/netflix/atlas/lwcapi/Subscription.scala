@@ -15,4 +15,13 @@
  */
 package com.netflix.atlas.lwcapi
 
-case class Subscription(query: SpectatorQuery, metadata: ExpressionMetadata)
+case class Subscription(query: SpectatorQuery, metadata: ExpressionMetadata) {
+
+  /**
+    * The hash code is needed for most of the usage, precompute when it is created to
+    * keep that usage as cheap as possible.
+    */
+  private val cachedHashCode = super.hashCode()
+
+  override def hashCode(): Int = cachedHashCode
+}
