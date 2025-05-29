@@ -198,11 +198,15 @@ object DataVocabulary extends Vocabulary {
     override def name: String = "offset"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case DurationType(_) :: TimeSeriesType(_) :: _ => true
+      case DurationType(_) :: TimeSeriesType(_) :: _   => true
+      case DurationType(_) :: PresentationType(_) :: _ => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case DurationType(d) :: TimeSeriesType(t) :: stack => t.withOffset(d) :: stack
+      case DurationType(d) :: TimeSeriesType(t) :: stack =>
+        t.withOffset(d) :: stack
+      case DurationType(d) :: PresentationType(t) :: stack =>
+        t.copy(expr = t.expr.withOffset(d)) :: stack
     }
 
     override def summary: String =

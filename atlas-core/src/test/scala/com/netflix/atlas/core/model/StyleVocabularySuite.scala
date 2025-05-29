@@ -79,4 +79,9 @@ class StyleVocabularySuite extends FunSuite {
     val expr = eval("name,test,:eq,:sum,(,app,),:by,$app,:legend,:stddev")
     assertEquals(expr.toString, "name,test,:eq,:sum,(,app,),:by,:stddev,$app,:legend")
   }
+
+  test(":offset after presentation") {
+    val expr = eval("name,test,:eq,:sum,foo,:legend,f00,:color,1h,:offset")
+    assertEquals(expr.toString, "name,test,:eq,:sum,PT1H,:offset,foo,:legend,f00,:color"
+  }
 }
