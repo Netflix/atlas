@@ -60,6 +60,26 @@ class StyleVocabularySuite extends FunSuite {
     assertEquals(expr, expected)
   }
 
+  test("math aggr after presentation") {
+    val expr = eval("name,test,:eq,:sum,(,app,),:by,$app,:legend,:count")
+    assertEquals(expr.toString, "name,test,:eq,:sum,(,app,),:by,:count,$app,:legend")
+  }
+
+  test("math aggr via macro after presentation - pct") {
+    val expr = eval("name,test,:eq,:sum,(,app,),:by,$app,:legend,:pct")
+    assertEquals(expr.toString, "name,test,:eq,:sum,(,app,),:by,:pct,$app,:legend")
+  }
+
+  test("math aggr via macro after presentation - avg") {
+    val expr = eval("name,test,:eq,:sum,(,app,),:by,$app,:legend,:avg")
+    assertEquals(expr.toString, "name,test,:eq,:sum,(,app,),:by,:avg,$app,:legend")
+  }
+
+  test("math aggr via macro after presentation - stddev") {
+    val expr = eval("name,test,:eq,:sum,(,app,),:by,$app,:legend,:stddev")
+    assertEquals(expr.toString, "name,test,:eq,:sum,(,app,),:by,:stddev,$app,:legend")
+  }
+
   test(":offset after presentation") {
     val expr = eval("name,test,:eq,:sum,foo,:legend,f00,:color,1h,:offset")
     assertEquals(expr.toString, "name,test,:eq,:sum,PT1H,:offset,foo,:legend,f00,:color")
