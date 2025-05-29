@@ -222,9 +222,11 @@ class SubscribeApi(
 
     // Remove any expressions that are no longer required
     val subIds = subIdsBuilder.result()
-    sm.subscriptionsForStream(streamId)
+    val unSubIds = sm
+      .subscriptionsForStream(streamId)
       .filter(s => !subIds.contains(s.metadata.id))
-      .foreach(s => sm.unsubscribe(streamId, s.metadata.id))
+      .map(_.metadata.id)
+    sm.unsubscribe(streamId, unSubIds)
 
     messages.result()
   }
