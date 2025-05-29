@@ -59,4 +59,9 @@ class StyleVocabularySuite extends FunSuite {
     val expected = StyleExpr(DataExpr.Sum(Query.True), Map("color" -> "60ff0000"))
     assertEquals(expr, expected)
   }
+
+  test(":offset after presentation") {
+    val expr = eval("name,test,:eq,:sum,foo,:legend,f00,:color,1h,:offset")
+    assertEquals(expr.toString, "name,test,:eq,:sum,PT1H,:offset,foo,:legend,f00,:color")
+  }
 }
