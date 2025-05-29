@@ -49,7 +49,7 @@ class SubscriptionManagerSuite extends FunSuite {
     sm.subscribe(sse1, exp2)
     assertEquals(sm.handlersForSubscription(exp2.metadata.id), List(Integer.valueOf(1)))
 
-    sm.unsubscribe(sse1, exp1.metadata.id)
+    sm.unsubscribe(sse1, List(exp1.metadata.id))
     assertEquals(sm.handlersForSubscription(exp1.metadata.id), List.empty)
 
     assertEquals(sm.unregister(sse1), Some(Integer.valueOf(1)))
@@ -202,14 +202,14 @@ class SubscriptionManagerSuite extends FunSuite {
   test("unsubscribe from unknown stream") {
     val sm = new SubscriptionManager[Integer](new NoopRegistry)
     intercept[IllegalStateException] {
-      sm.unsubscribe("a", "d")
+      sm.unsubscribe("a", List("d"))
     }
   }
 
   test("unsubscribe for unknown expression does not cause any exceptions") {
     val sm = new SubscriptionManager[Integer](new NoopRegistry)
     sm.register(StreamMetadata("a"), 42)
-    sm.unsubscribe("a", "d")
+    sm.unsubscribe("a", List("d"))
   }
 
   test("unregister for unknown stream does not cause any exceptions") {
