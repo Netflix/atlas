@@ -606,9 +606,21 @@ object MathVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: String) :: TimeSeriesType(_) :: TimeSeriesType(_) :: _ => true
+      case (_: String) :: TimeSeriesType(_) :: (_: StyleExpr) :: _    => true
+      case (_: String) :: (_: StyleExpr) :: (_: StyleExpr) :: _       => true
     }
 
     protected def executor(context: Context): PartialFunction[List[Any], List[Any]] = {
+      case (n: String) :: (rw: StyleExpr) :: (orig: StyleExpr) :: stack =>
+        // If the original and rewrite have presentation settings, then ignore
+        // on the rewrite and carry forward presentation.
+        val nrw = MathExpr.NamedRewrite(n, orig.expr, Nil, rw.expr, context)
+        orig.copy(expr = nrw) :: stack
+      case (n: String) :: TimeSeriesType(rw) :: (orig: StyleExpr) :: stack =>
+        // If the original has presentation settings, apply the rewrite to the
+        // underlying expression and carry forward the presentation.
+        val nrw = MathExpr.NamedRewrite(n, orig.expr, Nil, rw, context)
+        orig.copy(expr = nrw) :: stack
       case (n: String) :: TimeSeriesType(rw) :: (orig: Expr) :: stack =>
         // If the original is already an expr type, e.g. a Query, then we should
         // preserve it without modification. So we first match for Expr.
@@ -1115,13 +1127,20 @@ object MathVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: TimeSeriesExpr) :: _ => true
+      case (_: StyleExpr) :: _      => true
     }
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (a: DataExpr.AggregateFunction) :: stack if this != Count => a :: stack
-      case (t: TimeSeriesExpr) :: stack                              => newInstance(t) :: stack
+      case (a: DataExpr.AggregateFunction) :: stack if this != Count =>
+        // If applied to a base aggregate function, then it will be a single line
+        // and be a noop unless it is a count.
+        a :: stack
+      case (t: TimeSeriesExpr) :: stack =>
+        newInstance(t) :: stack
+      case (t: StyleExpr) :: stack =>
+        t.copy(expr = newInstance(t.expr)) :: stack
     }
 
     override def signature: String = "TimeSeriesExpr -- TimeSeriesExpr"
