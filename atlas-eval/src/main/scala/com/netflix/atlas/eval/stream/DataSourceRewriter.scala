@@ -17,7 +17,6 @@ package com.netflix.atlas.eval.stream
 
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
-import com.netflix.atlas.eval.stream.HostSource.unzipIfNeeded
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.OpportunisticEC.ec
@@ -148,7 +147,7 @@ class DataSourceRewriter(
       .via(client)
       .flatMapConcat {
         case (Success(resp), dsl) =>
-          unzipIfNeeded(resp)
+          PekkoHttpClient.unzipIfNeeded(resp)
             .map(_.utf8String)
             .map { body =>
               resp.status match {

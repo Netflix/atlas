@@ -22,11 +22,11 @@ import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.headers.*
-import org.apache.pekko.stream.scaladsl.Compression
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.ByteStringInputStream
+import com.netflix.atlas.pekko.PekkoHttpClient
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.util.Failure
@@ -64,16 +64,11 @@ private[stream] object EddaSource extends StrictLogging {
       }
   }
 
-  private def unzipIfNeeded(res: HttpResponse): Source[ByteString, Any] = {
-    val isCompressed = res.headers.contains(`Content-Encoding`(HttpEncodings.gzip))
-    if (isCompressed) res.entity.dataBytes.via(Compression.gunzip()) else res.entity.dataBytes
-  }
-
   private def parseResponse(
     uri: String,
     res: HttpResponse
   ): Source[GroupResponse, Any] = {
-    unzipIfNeeded(res)
+    PekkoHttpClient.unzipIfNeeded(res)
       .reduce(_ ++ _)
       .recover {
         case t: Throwable =>
