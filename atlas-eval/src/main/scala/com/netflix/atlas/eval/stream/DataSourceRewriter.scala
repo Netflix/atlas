@@ -147,7 +147,8 @@ class DataSourceRewriter(
       .via(client)
       .flatMapConcat {
         case (Success(resp), dsl) =>
-          PekkoHttpClient.unzipIfNeeded(resp)
+          PekkoHttpClient
+            .unzipIfNeeded(resp)
             .map(_.utf8String)
             .map { body =>
               resp.status match {

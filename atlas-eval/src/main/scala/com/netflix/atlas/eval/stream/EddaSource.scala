@@ -68,7 +68,8 @@ private[stream] object EddaSource extends StrictLogging {
     uri: String,
     res: HttpResponse
   ): Source[GroupResponse, Any] = {
-    PekkoHttpClient.unzipIfNeeded(res)
+    PekkoHttpClient
+      .unzipIfNeeded(res)
       .reduce(_ ++ _)
       .recover {
         case t: Throwable =>
