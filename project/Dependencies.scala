@@ -50,7 +50,7 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val munit             = "org.scalameta" %% "munit" % "1.1.0"
+  val munit             = "org.scalameta" %% "munit" % "1.1.1"
   val postgres          = "org.postgresql" % "postgresql" % "42.7.5"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.1.0"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.3.0"
