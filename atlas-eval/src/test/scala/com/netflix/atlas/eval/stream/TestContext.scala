@@ -64,6 +64,7 @@ object TestContext {
       |
       |atlas.eval.graph {
       |  step = 60s
+      |  block-size = 60
       |  start-time = e-3h
       |  end-time = now
       |  timezone = US/Pacific
