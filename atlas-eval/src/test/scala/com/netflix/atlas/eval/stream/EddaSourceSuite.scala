@@ -31,7 +31,6 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.stream.EddaSource.GroupResponse
 import munit.FunSuite
@@ -143,9 +142,9 @@ class EddaSourceSuite extends FunSuite {
 
   test("invalid json response") {
     val uri = "http://edda/v1/autoScalingGroups/www-dev:7001"
-    intercept[ValueInstantiationException] {
-      run(uri, Success(mkResponse("[{\"foo\":\"bar\"}]")))
-    }
+    val res = run(uri, Success(mkResponse("[{\"foo\":\"bar\"}]")))
+    assertEquals(res.uri, uri)
+    assertEquals(res.instances.size, 0)
   }
 
   test("unknown asg") {

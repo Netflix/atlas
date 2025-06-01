@@ -5,14 +5,14 @@ import sbt.*
 object Dependencies {
   object Versions {
     val pekko       = "1.1.3"
-    val pekkoHttpV  = "1.1.0"
-    val iep         = "5.1.1"
-    val jackson     = "2.18.3"
+    val pekkoHttpV  = "1.2.0"
+    val iep         = "5.1.2"
+    val jackson     = "2.19.0"
     val log4j       = "2.24.3"
     val scala       = "2.13.16"
     val slf4j       = "2.0.17"
-    val spectator   = "1.8.11"
-    val spring      = "6.2.5"
+    val spectator   = "1.8.14"
+    val spring      = "6.2.7"
 
     val crossScala  = Seq(scala, "3.6.4")
   }
@@ -28,7 +28,7 @@ object Dependencies {
   val pekkoStreamTestkit= "org.apache.pekko" %% "pekko-stream-testkit" % pekko
   val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.2.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.19.3"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "4.0"
   val hikariCP          = "com.zaxxer" % "HikariCP" % "6.3.0"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
@@ -50,8 +50,8 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val munit             = "org.scalameta" %% "munit" % "1.1.0"
-  val postgres          = "org.postgresql" % "postgresql" % "42.7.5"
+  val munit             = "org.scalameta" %% "munit" % "1.1.1"
+  val postgres          = "org.postgresql" % "postgresql" % "42.7.6"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.1.0"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.3.0"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0"
