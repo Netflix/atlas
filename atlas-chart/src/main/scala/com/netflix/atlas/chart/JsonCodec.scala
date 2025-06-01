@@ -549,7 +549,7 @@ object JsonCodec {
 
   private def toTimeSeries(gdef: GraphDef, node: JsonNode): TimeSeries = {
     import scala.jdk.CollectionConverters.*
-    val tags = node.get("tags").fields.asScala.map(e => e.getKey -> e.getValue.asText()).toMap
+    val tags = node.get("tags").properties.asScala.map(e => e.getKey -> e.getValue.asText()).toMap
     val values = node.get("data").get("values").elements.asScala.map(_.asDouble()).toArray
     val seq = new ArrayTimeSeq(DsType.Gauge, gdef.startTime.toEpochMilli, gdef.step, values)
     TimeSeries(tags, node.get("label").asText(), seq)
