@@ -64,6 +64,7 @@ object GitVersion {
         case releaseVersion(v)   => v
         case v                   => v
       }
-    }
+    },
+    ThisBuild / versionScheme := Some("semver-spec")
   )
 }
