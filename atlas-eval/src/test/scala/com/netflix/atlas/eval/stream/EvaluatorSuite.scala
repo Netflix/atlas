@@ -46,15 +46,12 @@ import com.typesafe.config.ConfigValueFactory
 import nl.jqno.equalsverifier.EqualsVerifier
 import nl.jqno.equalsverifier.Warning
 import munit.FunSuite
-import org.apache.pekko.NotUsed
 import org.apache.pekko.util.ByteString
 
 import java.nio.file.Path
 import scala.concurrent.Await
 import scala.concurrent.Promise
 import scala.concurrent.duration.DurationInt
-import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.util.Success
 import scala.util.Using
 
@@ -448,56 +445,6 @@ class EvaluatorSuite extends FunSuite {
     dataSourcesChanges(2)
   }
 
-  def testRewrite(skipOne: Boolean = false, throwEx: Boolean = false): Unit = {
-    val evaluator = new Evaluator(config, registry, system)
-    evaluator.dataSourceRewriter = new UTRewriter(skipOne, throwEx)
-
-    val baseUri = "resource:///gc-pause.dat"
-    val uri = s"$baseUri?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"
-    val ds1 = Evaluator.DataSources.of(ds("one", uri), ds("two", uri))
-    val sourceRef = EvaluationFlows.stoppableSource(
-      Source
-        .single(ds1)
-        .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
-    )
-
-    val oneCount = new AtomicInteger()
-    val twoCount = new AtomicInteger()
-    val sink = Sink.foreach[Evaluator.MessageEnvelope] { msg =>
-      msg.id match {
-        case "one" => oneCount.incrementAndGet()
-        case "two" =>
-          if (skipOne && msg.message.isInstanceOf[DiagnosticMessage]) twoCount.incrementAndGet()
-          else twoCount.incrementAndGet()
-      }
-      if (oneCount.get() > 0 && twoCount.get() > 0) sourceRef.stop()
-    }
-
-    val future = sourceRef.source
-      .toMat(sink)(Keep.right)
-      .run()
-
-    if (throwEx) {
-      intercept[RuntimeException] {
-        Await.result(future, 1.minute)
-      }
-    } else {
-      Await.result(future, 1.minute)
-    }
-  }
-
-  test("create processor, rewrites ok") {
-    testRewrite()
-  }
-
-  test("create processor, one of two failed rewrite") {
-    testRewrite(skipOne = true)
-  }
-
-  test("create processor, rewrite call failed") {
-    testRewrite(throwEx = true)
-  }
-
   test("processor handles multiple steps") {
     val evaluator = new Evaluator(config, registry, system)
 
@@ -737,16 +684,25 @@ class EvaluatorSuite extends FunSuite {
     )
   }
 
-  test("validate: invalid rewrite") {
+  test("validate: ok rewrite") {
     val evaluator = new Evaluator(config, registry, system)
-    evaluator.dataSourceRewriter = new UTRewriter(true)
     val ds = new Evaluator.DataSource(
       "test",
-      s"synthetic://test/?q=nf.ns,none,:eq,name,foo,:eq,:and"
+      s"synthetic://test/?q=name,foo,:eq&ns=foo"
     )
-    intercept[IllegalArgumentException] {
+    evaluator.validate(ds)
+  }
+
+  test("validate: invalid rewrite") {
+    val evaluator = new Evaluator(config, registry, system)
+    val ds = new Evaluator.DataSource(
+      "test",
+      s"synthetic://test/?q=name,foo,:eq&ns=none"
+    )
+    val e = intercept[IllegalArgumentException] {
       evaluator.validate(ds)
     }
+    assertEquals(e.getMessage, "unsupported namespace: none")
   }
 
   private def invalidHiResQuery(expr: String): Unit = {
@@ -962,6 +918,7 @@ class EvaluatorSuite extends FunSuite {
   }
 
   def getMessages(file: String, filter: Option[String] = None): Seq[ByteString] = {
+    import scala.jdk.CollectionConverters.*
     Files
       .readAllLines(Paths.get(file))
       .asScala
@@ -969,37 +926,5 @@ class EvaluatorSuite extends FunSuite {
       .filter(line => filter.forall(line.contains))
       .map(ByteString(_))
       .toSeq
-  }
-
-  class UTRewriter(skipOne: Boolean = false, throwEx: Boolean = false)
-      extends DataSourceRewriter(config, registry, system) {
-
-    override def rewrite(
-      context: StreamContext,
-      keepRetrying: Boolean = true
-    ): Flow[DataSources, DataSources, NotUsed] = {
-      if (throwEx) {
-        Flow[DataSources]
-          .map(_ => throw new RuntimeException("test"))
-      } else if (skipOne) {
-        // mimic dropping one.
-        Flow[DataSources]
-          .map { dss =>
-            val dsl = dss.sources().asScala.toList
-            dsl.size match {
-              case 1 =>
-                val msg = DiagnosticMessage.error(s"failed rewrite")
-                context.dsLogger(dsl.head, msg)
-                DataSources.empty()
-              case 2 =>
-                val msg = DiagnosticMessage.error(s"failed rewrite")
-                context.dsLogger(dsl(1), msg)
-                DataSources.of(dsl.head)
-            }
-          }
-      } else {
-        Flow[DataSources]
-      }
-    }
   }
 }
