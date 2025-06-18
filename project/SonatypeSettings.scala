@@ -37,7 +37,7 @@ object SonatypeSettings {
     pomIncludeRepository := { _ => false },
 
     licenses += ("Apache 2" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
-    credentials += Credentials("Sonatype Central Portal", "central.sonatype.com", user, pass),
+    credentials += Credentials("Sonatype Nexus Repository Manager", "central.sonatype.com", user, pass),
 
     publishTo := {
       if (isSnapshot.value)
