@@ -423,7 +423,7 @@ object Strings {
     */
   def parseDuration(str: String): Duration = str match {
     case AtPeriod(a, u) => parseAtDuration(a, u)
-    case IsoPeriod(p)   => Duration.parse(str)
+    case IsoPeriod(_)   => Duration.parse(str)
     case _              => throw new IllegalArgumentException("invalid period " + str)
   }
 

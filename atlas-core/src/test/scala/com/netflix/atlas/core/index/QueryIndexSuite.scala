@@ -254,7 +254,7 @@ class QueryIndexSuite extends FunSuite {
     assertEquals(matchingEntries(index, tags), List(clusterQuery))
   }
 
-  type QueryInterner = scala.collection.mutable.AnyRefMap[Query, Query]
+  type QueryInterner = scala.collection.mutable.HashMap[Query, Query]
 
   private def intern(interner: QueryInterner, query: Query): Query = {
     query match {

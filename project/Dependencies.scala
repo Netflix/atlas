@@ -7,12 +7,12 @@ object Dependencies {
     val pekko       = "1.0.1"
     val pekkoHttpV  = "1.0.0"
 
-    val iep        = "4.2.0"
+    val iep        = "4.2.1"
     val jackson    = "2.15.0"
-    val log4j      = "2.20.0"
-    val scala      = "2.13.10"
+    val log4j      = "2.25.2"
+    val scala      = "2.13.16"
     val slf4j      = "1.7.36"
-    val spectator  = "1.5.4"
+    val spectator  = "1.9.0"
     val spring     = "5.3.25"
 
     val crossScala = Seq(scala)
@@ -30,7 +30,7 @@ object Dependencies {
   val pekkoTestkit       = "org.apache.pekko" %% "pekko-testkit" % pekko
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "2.9.3"
   val datasketches      = "org.apache.datasketches" % "datasketches-java" % "3.3.0"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "3.14"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "4.1"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
   val iepDynConfig      = "com.netflix.iep" % "iep-dynconfig" % iep

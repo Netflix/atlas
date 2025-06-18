@@ -32,7 +32,7 @@ class GraphApiMemDbSuite extends MUnitRouteSuite {
 
   // Set to high value to avoid spurious failures with code coverage. Typically 5s shows no
   // issues outside of running with code coverage.
-  private implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   private val dbConfig = ConfigFactory.parseString("""
       |atlas.core.db {

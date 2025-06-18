@@ -95,8 +95,8 @@ class EurekaSourceSuite extends FunSuite {
 
   private val vipJson = s"""{"applications": {"application": [$innerAppJson]}}"""
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val mat = Materializer(system)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  private implicit val mat: Materializer = Materializer(system)
 
   private def run(uri: String, response: Try[HttpResponse]): GroupResponse = {
     val client = Flow[(HttpRequest, AccessLogger)].map {

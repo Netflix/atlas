@@ -25,7 +25,7 @@ class StreamMetadataSuite extends FunSuite {
     val clock = new ManualClock()
     val step = 60_000L
     val meta =
-      StreamMetadata("id", "addr", new StepLong(0, clock, step), new StepLong(0, clock, step))
+      StreamMetadata("id", "addr", clock, new StepLong(0, clock, step), new StepLong(0, clock, step))
     meta.updateReceived(100)
     meta.updateDropped(2)
 

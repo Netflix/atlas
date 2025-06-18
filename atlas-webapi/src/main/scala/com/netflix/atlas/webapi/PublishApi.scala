@@ -32,6 +32,7 @@ import com.netflix.atlas.json.JsonSupport
 import com.netflix.iep.config.ConfigManager
 import com.typesafe.scalalogging.StrictLogging
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Promise
 
 class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi with StrictLogging {
@@ -109,7 +110,7 @@ object PublishApi {
     ctx: RequestContext
   ) {
 
-    private implicit val ec = ctx.executionContext
+    private implicit val ec: ExecutionContextExecutor = ctx.executionContext
 
     def complete(res: HttpResponse): Unit = {
       ctx.complete(res).onComplete(promise.complete)

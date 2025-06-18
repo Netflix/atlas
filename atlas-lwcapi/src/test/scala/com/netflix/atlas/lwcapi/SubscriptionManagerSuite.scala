@@ -228,7 +228,7 @@ class SubscriptionManagerSuite extends FunSuite {
 
     val sm = new SubscriptionManager[Integer](registry)
     val meta =
-      StreamMetadata("a", "test", new StepLong(0, clock, step), new StepLong(0, clock, step))
+      StreamMetadata("a", "test", clock, new StepLong(0, clock, step), new StepLong(0, clock, step))
     assert(sm.register(meta, 1))
 
     val ok = Id.create("atlas.lwcapi.currentStreams").withTag("state", "ok")

@@ -32,7 +32,7 @@ class PublishApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   system.actorOf(Props(new TestActor), "publish")
 

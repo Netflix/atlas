@@ -164,7 +164,7 @@ case class QueryIndex[T](
   */
 object QueryIndex {
 
-  type IndexMap[T <: Any] = scala.collection.mutable.AnyRefMap[AnyRef, QueryIndex[T]]
+  type IndexMap[T <: Any] = scala.collection.mutable.HashMap[AnyRef, QueryIndex[T]]
 
   case class Entry[T](query: Query, value: T)
 

@@ -25,7 +25,7 @@ import scala.concurrent.duration.Duration
 
 class FillRemovedKeysWithSuite extends FunSuite {
 
-  implicit val system = ActorSystem(getClass.getSimpleName)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   val map1 = Map[String, String]("a" -> "1")
   val map2 = Map[String, String]("b" -> "2")

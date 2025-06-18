@@ -395,7 +395,7 @@ object Ticks {
     if (logDistance <= n) {
       1
     } else {
-      math.ceil(logDistance / n).toInt
+      math.ceil(logDistance.toDouble / n).toInt
     }
   }
 

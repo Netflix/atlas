@@ -391,7 +391,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
         // exclude equality.
         if (this eq m) return true
         size == m.size && hashCode == m.hashCode && dataEquals(m.asInstanceOf[SmallHashMap[K, V]])
-      case m: Map[_, _] =>
+      case _: Map[_, _] =>
         super.equals(obj)
       case _ =>
         false

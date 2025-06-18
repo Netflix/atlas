@@ -26,7 +26,7 @@ import scala.concurrent.duration.Duration
 
 class ClusterOpsSuite extends FunSuite {
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   test("groupBy: empty cluster") {
     val input = List(

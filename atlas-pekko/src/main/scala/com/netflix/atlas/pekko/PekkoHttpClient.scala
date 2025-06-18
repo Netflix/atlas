@@ -19,6 +19,8 @@ import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.Http
 import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
+
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 
 /**
@@ -44,7 +46,7 @@ trait PekkoHttpClient {
 class DefaultPekkoHttpClient(name: String)(implicit val system: ActorSystem)
     extends PekkoHttpClient {
 
-  private implicit val ec = system.dispatcher
+  private implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   override def singleRequest(request: HttpRequest): Future[HttpResponse] = {
     val accessLogger = AccessLogger.newClientLogger(name, request)

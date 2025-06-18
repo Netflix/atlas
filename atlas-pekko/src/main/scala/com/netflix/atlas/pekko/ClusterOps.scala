@@ -101,7 +101,7 @@ object ClusterOps extends StrictLogging {
       new GraphStageLogic(shape) with InHandler with OutHandler {
 
         private val registry = context.registry
-        private val membersSources = mutable.AnyRefMap.empty[M, SourceQueue[D]]
+        private val membersSources = mutable.HashMap.empty[M, SourceQueue[D]]
 
         override def onPush(): Unit = {
           val msg = grab(in)

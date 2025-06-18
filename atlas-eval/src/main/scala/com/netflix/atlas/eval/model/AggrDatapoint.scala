@@ -217,7 +217,7 @@ object AggrDatapoint {
   private class GroupByAggregator(settings: AggregatorSettings) extends Aggregator(settings) {
 
     private val aggregators =
-      scala.collection.mutable.AnyRefMap.empty[Map[String, String], Aggregator]
+      scala.collection.mutable.HashMap.empty[Map[String, String], Aggregator]
 
     private def newAggregator(datapoint: AggrDatapoint): Aggregator = {
       datapoint.expr match {

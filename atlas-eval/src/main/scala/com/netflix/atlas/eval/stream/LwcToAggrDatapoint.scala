@@ -45,7 +45,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      private[this] val state = scala.collection.mutable.AnyRefMap.empty[String, LwcDataExpr]
+      private[this] val state = scala.collection.mutable.HashMap.empty[String, LwcDataExpr]
 
       // HACK: needed until we can plumb the actual source through the system
       private var nextSource: Int = 0

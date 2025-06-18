@@ -37,8 +37,8 @@ class EurekaGroupsLookupSuite extends FunSuite {
   import EurekaSource._
   import Evaluator._
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val mat = Materializer(system)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  private implicit val mat: Materializer = Materializer(system)
 
   private val eurekaGroup = EurekaSource.VipResponse(
     uri = "http://eureka/v2/vips/atlas-lwcapi:7001",

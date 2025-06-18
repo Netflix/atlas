@@ -37,8 +37,8 @@ import scala.concurrent.duration.Duration
 
 class LwcToAggrDatapointSuite extends FunSuite {
 
-  implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val materializer = Materializer(system)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  private implicit val materializer: Materializer = Materializer(system)
 
   private val step = 10000
 

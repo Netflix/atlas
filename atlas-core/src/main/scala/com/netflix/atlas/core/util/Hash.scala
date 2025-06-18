@@ -47,8 +47,8 @@ object Hash {
   // https://github.com/jruby/jruby/commit/e840823c435393e8365be1bae93f646c1bb0043f
   private val cloneableDigests = createDigests()
 
-  private def createDigests(): scala.collection.mutable.AnyRefMap[String, MessageDigest] = {
-    val digests = new scala.collection.mutable.AnyRefMap[String, MessageDigest]()
+  private def createDigests(): scala.collection.mutable.HashMap[String, MessageDigest] = {
+    val digests = new scala.collection.mutable.HashMap[String, MessageDigest]()
     List("MD5", "SHA1").foreach { algorithm =>
       Try(MessageDigest.getInstance(algorithm)).foreach { digest =>
         // Try to clone the digest to make sure it is cloneable
@@ -61,7 +61,7 @@ object Hash {
   }
 
   def get(algorithm: String): MessageDigest = {
-    val digest = cloneableDigests.getOrNull(algorithm)
+    val digest = cloneableDigests.getOrElse(algorithm, null)
     if (digest != null)
       digest.clone().asInstanceOf[MessageDigest]
     else

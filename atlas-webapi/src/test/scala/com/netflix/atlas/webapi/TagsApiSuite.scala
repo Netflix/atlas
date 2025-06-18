@@ -32,7 +32,7 @@ class TagsApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val staticDb = StaticDatabase.range(0, 11)
 

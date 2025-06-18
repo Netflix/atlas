@@ -36,7 +36,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
 
-  private implicit val routeTestTimeout = RouteTestTimeout(5.second)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
 

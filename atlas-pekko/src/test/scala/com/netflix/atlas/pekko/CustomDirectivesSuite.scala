@@ -45,7 +45,7 @@ class CustomDirectivesSuite extends MUnitRouteSuite {
   import CustomDirectivesSuite._
 
   // Some of the tests were a bit flakey with default of 1 second on slower machines
-  implicit val timeout = RouteTestTimeout(5.seconds)
+  implicit val timeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   class TestService(val actorRefFactory: ActorRefFactory) {
 

@@ -40,7 +40,7 @@ class StreamOpsSuite extends FunSuite {
 
   import OpportunisticEC._
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   private def checkOfferedCounts(registry: Registry, expected: Map[String, Double]): Unit = {
     import scala.jdk.CollectionConverters._

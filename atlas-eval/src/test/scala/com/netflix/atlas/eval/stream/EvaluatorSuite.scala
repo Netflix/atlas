@@ -60,7 +60,7 @@ class EvaluatorSuite extends FunSuite {
 
   private val config = ConfigFactory.load()
   private val registry = new DefaultRegistry()
-  private implicit val system = ActorSystem("test", config)
+  private implicit val system: ActorSystem = ActorSystem("test", config)
 
   override def beforeEach(context: BeforeEach): Unit = {
     Files.createDirectories(targetDir)
