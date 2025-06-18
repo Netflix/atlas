@@ -15,381 +15,139 @@
  */
 package com.netflix.atlas.eval.stream
 
-import com.fasterxml.jackson.databind.JsonMappingException
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
-import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
-import com.netflix.atlas.pekko.PekkoHttpClient
-import com.netflix.spectator.api.NoopRegistry
+import com.netflix.atlas.pekko.DiagnosticMessage
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
-import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.http.scaladsl.model.ContentTypes
-import org.apache.pekko.http.scaladsl.model.HttpEntity
-import org.apache.pekko.http.scaladsl.model.HttpRequest
-import org.apache.pekko.http.scaladsl.model.HttpResponse
-import org.apache.pekko.http.scaladsl.model.StatusCode
-import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.Flow
-import org.apache.pekko.stream.scaladsl.Keep
-import org.apache.pekko.stream.scaladsl.Sink
-import org.apache.pekko.stream.scaladsl.Source
-import org.apache.pekko.testkit.TestKitBase
 
 import java.time.Duration
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
 
-class DataSourceRewriterSuite extends FunSuite with TestKitBase {
+class DataSourceRewriterSuite extends FunSuite {
 
   private val dss = DataSources.of(
-    new DataSource("foo", Duration.ofSeconds(60), "http://localhost/api/v1/graph?q=name,foo,:eq"),
     new DataSource(
-      "bar",
+      "foo1",
       Duration.ofSeconds(60),
-      "http://localhost/api/v1/graph?q=nf.ns,seg.prod,:eq,name,bar,:eq,:and"
+      "http://localhost/api/v1/graph?q=name,foo,:eq"
+    ),
+    new DataSource(
+      "foo2",
+      Duration.ofSeconds(60),
+      "http://localhost/api/v1/graph?q=name,foo,:eq&ns=foo"
+    ),
+    new DataSource(
+      "bar1",
+      Duration.ofSeconds(60),
+      "http://localhost/api/v1/graph?q=name,bar,:eq&ns=bar"
+    ),
+    new DataSource(
+      "bar2",
+      Duration.ofSeconds(60),
+      "https://localhost/api/v1/graph?q=name,bar,:eq&ns=bar"
+    ),
+    new DataSource(
+      "bar3",
+      Duration.ofSeconds(60),
+      "https://localhost:12345/api/v1/graph?q=name,bar,:eq&ns=bar"
+    ),
+    new DataSource(
+      "bar4",
+      Duration.ofSeconds(5),
+      "https://localhost:12345/api/v1/graph?q=name,bar,:eq&ns=bar&tz=UTC"
+    ),
+    new DataSource(
+      "bad",
+      Duration.ofSeconds(60),
+      "http://localhost/api/v1/graph?q=name,bar,:eq&ns=bad"
     )
   )
 
   private var config: Config = _
   private var logger: MockLogger = _
-  private var ctx: StreamContext = null
+  private var ctx: StreamContext = _
 
-  override implicit def system: ActorSystem = ActorSystem("Test")
+  private implicit def system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   override def beforeEach(context: BeforeEach): Unit = {
-    config = ConfigFactory
-      .parseString("""
-          |atlas.eval.stream.rewrite {
-          |  enabled = true
-          |  uri = "http://localhost/api/v1/rewrite"
-          |}
-          |""".stripMargin)
-      .withFallback(ConfigFactory.load())
+    config = ConfigFactory.load()
     logger = new MockLogger()
     ctx = new StreamContext(config, Materializer(system), dsLogger = logger)
   }
 
-  test("rewrite: Disabled") {
-    config = ConfigFactory.load()
-    val obtained = rewrite(dss, null)
-    assertEquals(obtained, dss)
-  }
-
-  test("rewrite: OK") {
-    val client = mockClient(
-      StatusCodes.OK,
-      okRewrite()
-    )
-    val expected = DataSources.of(
-      new DataSource("foo", Duration.ofSeconds(60), "http://localhost/api/v1/graph?q=name,foo,:eq"),
-      new DataSource(
-        "bar",
-        Duration.ofSeconds(60),
-        "http://atlas-seg.prod.netflix.net/api/v1/graph?q=name,bar,:eq"
-      )
-    )
-    val obtained = rewrite(dss, client)
-    assertEquals(obtained, expected)
-    ctx.dsLogger.asInstanceOf[MockLogger].assertSize(0)
-  }
-
-  test("rewrite: Bad URI in datasources") {
-    val client = mockClient(
-      StatusCodes.OK,
-      Map(
-        "http://localhost/api/v1/graph?q=name,foo,:eq" -> Rewrite(
-          "OK",
-          "http://localhost/api/v1/graph?q=name,foo,:eq",
-          "http://localhost/api/v1/graph?q=name,foo,:eq",
-          ""
-        ),
-        "http://localhost/api/v1/graph?q=nf.ns,seg.prod,:eq,name,bar,:eq,:and" -> Rewrite(
-          "NOT_FOUND",
-          "http://atlas-seg.prod.netflix.net/api/v1/graph?q=name,bar,:eq",
-          "http://atlas-seg.prod.netflix.net/api/v1/graph?q=name,bar,:eq",
-          "No namespace found for seg"
-        )
-      )
-    )
-    val expected = DataSources.of(
-      new DataSource("foo", Duration.ofSeconds(60), "http://localhost/api/v1/graph?q=name,foo,:eq")
-    )
-    val obtained = rewrite(dss, client)
-    assertEquals(obtained, expected)
-    ctx.dsLogger.asInstanceOf[MockLogger].assertSize(1)
-  }
-
-  test("rewrite: Malformed response JSON") {
-    val client = mockClient(
-      StatusCodes.OK,
-      Map(
-        "http://localhost/api/v1/graph?q=name,foo,:eq" -> Rewrite(
-          "OK",
-          "http://localhost/api/v1/graph?q=name,foo,:eq",
-          "http://localhost/api/v1/graph?q=name,foo,:eq",
-          ""
-        ),
-        "http://localhost/api/v1/graph?q=nf.ns,seg.prod,:eq,name,bar,:eq,:and" -> Rewrite(
-          "OK",
-          "http://atlas-seg.prod.netflix.net/api/v1/graph?q=name,bar,:eq",
-          "http://localhost/api/v1/graph?q=nf.ns,seg.prod,:eq,name,bar,:eq,:and",
-          ""
-        )
-      ),
-      malformed = true
-    )
-    intercept[JsonMappingException] {
-      rewrite(dss, client)
+  test("rewrite: invalid") {
+    config = ConfigFactory.parseString("""
+        |atlas.eval.stream.rewrite {
+        |  mode = foo
+        |}
+        |""".stripMargin)
+    val e = intercept[IllegalArgumentException] {
+      DataSourceRewriter.create(config)
     }
+    assertEquals(e.getMessage, "unsupported rewrite mode: foo")
   }
 
-  test("rewrite: 500") {
-    val client = mockClient(
-      StatusCodes.InternalServerError,
-      Map.empty
-    )
-    val expected = DataSources.of()
-    val obtained = rewrite(dss, client)
-    assertEquals(obtained, expected)
-    ctx.dsLogger.asInstanceOf[MockLogger].assertSize(0)
+  test("rewrite: none") {
+    config = ConfigFactory.parseString("""
+        |atlas.eval.stream.rewrite {
+        |  mode = none
+        |}
+        |""".stripMargin)
+    val rewriter = DataSourceRewriter.create(config)
+    assertEquals(rewriter.rewrite(ctx, dss), dss)
   }
 
-  test("rewrite: Missing a rewrite") {
-    val client = mockClient(
-      StatusCodes.OK,
-      Map(
-        "http://localhost/api/v1/graph?q=name,foo,:eq" -> Rewrite(
-          "OK",
-          "http://localhost/api/v1/graph?q=name,foo,:eq",
-          "http://localhost/api/v1/graph?q=name,foo,:eq",
-          ""
-        )
-      )
-    )
-    val expected = DataSources.of(
-      new DataSource("foo", Duration.ofSeconds(60), "http://localhost/api/v1/graph?q=name,foo,:eq")
-    )
-    val obtained = rewrite(dss, client)
-    assertEquals(obtained, expected)
-    ctx.dsLogger.asInstanceOf[MockLogger].assertSize(1)
-  }
+  test("rewrite: config") {
+    config = ConfigFactory.parseString("""
+        |atlas.eval.stream.rewrite {
+        |  mode = config
+        |  namespaces = [
+        |    { namespace = "foo", host = "foo.example.com" },
+        |    { namespace = "bar", host = "bar.example.com" }
+        |  ]
+        |}
+        |""".stripMargin)
+    val rewriter = DataSourceRewriter.create(config)
+    val newDss = rewriter.rewrite(ctx, dss)
+    assertEquals(newDss.sources.size, dss.sources.size - 1)
 
-  test("rewrite: source changes with good, bad, good") {
-    val client = new MockClient(
-      List(
-        StatusCodes.OK,
-        StatusCodes.InternalServerError,
-        StatusCodes.OK
-      ),
-      List(
-        okRewrite(true),
-        Map.empty,
-        okRewrite()
-      )
-    ).superPool[List[DataSource]]()
+    // Bad entry should have been logged
+    assertEquals(logger.tuples.size, 1)
+    logger.tuples.foreach {
+      case (ds, msg: DiagnosticMessage) =>
+        assertEquals(ds.id, "bad")
+        assertEquals(msg.message, "unsupported namespace: bad")
+    }
 
-    val rewriter = new DataSourceRewriter(config, new NoopRegistry(), system)
-    val future = Source
-      .fromIterator(() =>
-        List(
-          DataSources.of(
-            new DataSource(
-              "foo",
-              Duration.ofSeconds(60),
-              "http://localhost/api/v1/graph?q=name,foo,:eq"
-            )
-          ),
-          dss,
-          dss
-        ).iterator
-      )
-      .via(rewriter.rewrite(client, ctx, true))
-      .grouped(3)
-      .toMat(Sink.head)(Keep.right)
-      .run()
-    val res = Await.result(future, 30.seconds)
-    assertEquals(res(0), expectedRewrite(true))
-    assertEquals(res(1), expectedRewrite(true))
-    assertEquals(res(2), expectedRewrite())
-  }
-
-  test("rewrite: retry initial flow with 500s") {
-    val client = new MockClient(
-      List(
-        StatusCodes.InternalServerError,
-        StatusCodes.InternalServerError,
-        StatusCodes.OK
-      ),
-      List(
-        Map.empty,
-        Map.empty,
-        okRewrite()
-      )
-    ).superPool[List[DataSource]]()
-
-    val rewriter = new DataSourceRewriter(config, new NoopRegistry(), system)
-    val future = Source
-      .single(dss)
-      .via(rewriter.rewrite(client, ctx, true))
-      .grouped(3)
-      .toMat(Sink.head)(Keep.right)
-      .run()
-    val res = Await.result(future, 30.seconds)
-    assertEquals(res(0), DataSources.of())
-    assertEquals(res(1), expectedRewrite())
-  }
-
-  test("rewrite: retry initial flow with 500, exception, ok") {
-    val client = new MockClient(
-      List(
-        StatusCodes.InternalServerError,
-        StatusCodes.custom(0, "no conn", "no conn", false, true),
-        StatusCodes.OK
-      ),
-      List(
-        Map.empty,
-        Map.empty,
-        okRewrite()
-      )
-    ).superPool[List[DataSource]]()
-
-    val rewriter = new DataSourceRewriter(config, new NoopRegistry(), system)
-    val future = Source
-      .single(dss)
-      .via(rewriter.rewrite(client, ctx, true))
-      .grouped(3)
-      .toMat(Sink.head)(Keep.right)
-      .run()
-    val res = Await.result(future, 30.seconds)
-    assertEquals(res(0), DataSources.of())
-    assertEquals(res(1), expectedRewrite())
-  }
-
-  def mockClient(
-    status: StatusCode,
-    response: Map[String, Rewrite],
-    returnEx: Option[Exception] = None,
-    malformed: Boolean = false
-  ): SuperPoolClient = {
-    returnEx
-      .map { ex =>
-        PekkoHttpClient.create(Failure(ex)).superPool[List[DataSource]]()
+    // Other entries should be mapped\
+    import scala.jdk.CollectionConverters.*
+    val dsMap = dss.sources.asScala.map(ds => ds.id -> ds).toMap
+    newDss.sources.forEach { ds =>
+      ds.id match {
+        case "foo1" =>
+          // No explicit parameter, no modification
+          assertEquals(ds, dsMap(ds.id))
+        case "foo2" =>
+          // Basic rewrite
+          assertEquals(ds.uri, "http://foo.example.com/api/v1/graph?q=name,foo,:eq")
+        case "bar1" =>
+          // Basic rewrite, different ns
+          assertEquals(ds.uri, "http://bar.example.com/api/v1/graph?q=name,bar,:eq")
+        case "bar2" =>
+          // Basic rewrite, scheme is not modified
+          assertEquals(ds.uri, "https://bar.example.com/api/v1/graph?q=name,bar,:eq")
+        case "bar3" =>
+          // Basic rewrite, explicit port preserved
+          assertEquals(ds.uri, "https://bar.example.com:12345/api/v1/graph?q=name,bar,:eq")
+        case "bar4" =>
+          // Basic rewrite, other query params preserved
+          assertEquals(ds.uri, "https://bar.example.com:12345/api/v1/graph?q=name,bar,:eq&tz=UTC")
       }
-      .getOrElse {
-        new MockClient(List(status), List(response), malformed).superPool[List[DataSource]]()
-      }
-  }
-
-  def rewrite(dss: DataSources, client: SuperPoolClient): DataSources = {
-    val rewriter = new DataSourceRewriter(config, new NoopRegistry(), system)
-    val future = Source
-      .single(dss)
-      .via(rewriter.rewrite(client, ctx, true))
-      .toMat(Sink.head)(Keep.right)
-      .run()
-    Await.result(future, 30.seconds)
-  }
-
-  def okRewrite(dropSecond: Boolean = false): Map[String, Rewrite] = {
-    val builder = Map.newBuilder[String, Rewrite]
-    builder +=
-      "http://localhost/api/v1/graph?q=name,foo,:eq" -> Rewrite(
-        "OK",
-        "http://localhost/api/v1/graph?q=name,foo,:eq",
-        "http://localhost/api/v1/graph?q=name,foo,:eq",
-        ""
-      )
-
-    if (!dropSecond) {
-      builder += "http://localhost/api/v1/graph?q=nf.ns,seg.prod,:eq,name,bar,:eq,:and" -> Rewrite(
-        "OK",
-        "http://atlas-seg.prod.netflix.net/api/v1/graph?q=name,bar,:eq",
-        "http://localhost/api/v1/graph?q=nf.ns,seg.prod,:eq,name,bar,:eq,:and",
-        ""
-      )
-    }
-
-    builder.result()
-  }
-
-  def expectedRewrite(dropSecond: Boolean = false): DataSources = {
-    val ds1 =
-      new DataSource("foo", Duration.ofSeconds(60), "http://localhost/api/v1/graph?q=name,foo,:eq")
-    val ds2 = new DataSource(
-      "bar",
-      Duration.ofSeconds(60),
-      "http://atlas-seg.prod.netflix.net/api/v1/graph?q=name,bar,:eq"
-    )
-    if (dropSecond) {
-      DataSources.of(ds1)
-    } else {
-      DataSources.of(ds1, ds2)
-    }
-  }
-
-  class MockClient(
-    status: List[StatusCode],
-    response: List[Map[String, Rewrite]],
-    malformed: Boolean = false
-  ) extends PekkoHttpClient {
-
-    var called = 0
-
-    override def singleRequest(request: HttpRequest): Future[HttpResponse] = {
-      Future.failed(new UnsupportedOperationException())
-    }
-
-    override def superPool[C](
-      config: PekkoHttpClient.ClientConfig
-    ): Flow[(HttpRequest, C), (Try[HttpResponse], C), NotUsed] = {
-      Flow[(HttpRequest, C)]
-        .flatMapConcat {
-          case (req, context) =>
-            req.entity.withoutSizeLimit().dataBytes.map { body =>
-              val httpResp = status(called) match {
-                case status if status.intValue() == 0 => null
-
-                case status if status.intValue() != 200 =>
-                  HttpResponse(
-                    status,
-                    entity = HttpEntity(ContentTypes.`application/json`, "{\"error\":\"whoops\"}")
-                  )
-
-                case status =>
-                  val uris = Json.decode[List[String]](body.toArray)
-                  val rewrites = uris.map { uri =>
-                    response(called).get(uri) match {
-                      case Some(r) => r
-                      case None    => Rewrite("NOT_FOUND", uri, uri, "Empty")
-                    }
-                  }
-
-                  val json =
-                    if (malformed) Json.encode(rewrites).substring(0, 25) else Json.encode(rewrites)
-
-                  HttpResponse(
-                    status,
-                    entity = HttpEntity(ContentTypes.`application/json`, json)
-                  )
-              }
-
-              called += 1
-              if (httpResp == null) {
-                Failure(new RuntimeException("no conn")) -> context
-              } else {
-                Success(httpResp) -> context
-              }
-            }
-        }
+      assertEquals(ds.step, dsMap(ds.id).step)
     }
   }
 

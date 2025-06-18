@@ -87,7 +87,7 @@ private[stream] abstract class EvaluatorImpl(
   private val logger = LoggerFactory.getLogger(getClass)
 
   // Calls out to a rewrite service in case URIs need mutating to pick the proper backend.
-  private[stream] var dataSourceRewriter = new DataSourceRewriter(config, registry, system)
+  private val dataSourceRewriter = DataSourceRewriter.create(config)
 
   // Cached context instance used for things like expression validation.
   private val validationStreamContext = newStreamContext(new ThrowingDSLogger)
@@ -143,7 +143,7 @@ private[stream] abstract class EvaluatorImpl(
   protected def validateImpl(ds: DataSource): Unit = {
     val future = Source
       .single(DataSources.of(ds))
-      .via(dataSourceRewriter.rewrite(validationStreamContext, false))
+      .map(dss => dataSourceRewriter.rewrite(validationStreamContext, dss))
       .map(_.sources().asScala.map(validationStreamContext.validateDataSource).map(_.get))
       .toMat(Sink.head)(Keep.right)
       .run()
@@ -230,7 +230,7 @@ private[stream] abstract class EvaluatorImpl(
   def createStreamsFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {
     val (logSrc, context) = createStreamContextSource
     Flow[DataSources]
-      .via(dataSourceRewriter.rewrite(context))
+      .map(dss => dataSourceRewriter.rewrite(context, dss))
       .map(dss => groupByHost(dss))
       // Emit empty DataSource if no more DataSource for a host, so that the sub-stream get the info
       .via(new FillRemovedKeysWith[String, DataSources](_ => DataSources.empty()))
