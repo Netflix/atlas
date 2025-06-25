@@ -46,7 +46,6 @@ object MathVocabulary extends Vocabulary {
     Time,
     TimeSpan,
     CommonGroupBy,
-    CommonQuery,
     NamedRewrite,
     ClampMin,
     ClampMax,
@@ -550,41 +549,6 @@ object MathVocabulary extends Vocabulary {
       List(
         "name,sps,:eq,(,nf.region,)",
         "name,bar,:eq,(,nf.node,),:by,(,nf.region,)"
-      )
-  }
-
-  case object CommonQuery extends SimpleWord {
-
-    override def name: String = "cq"
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: _ :: _ => true
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q2: Query) :: (expr: Expr) :: stack =>
-        val newExpr = expr.rewrite {
-          case q1: Query => q1.and(q2)
-        }
-        newExpr :: stack
-      case (_: Query) :: stack =>
-        // Ignore items on the stack that are not expressions. So we pop the query and leave
-        // the rest of the stack unchanged.
-        stack
-    }
-
-    override def summary: String =
-      """
-        |Recursively AND a common query to all queries in an expression. If the first parameter
-        |is not an expression, then it will be not be modified.
-      """.stripMargin.trim
-
-    override def signature: String = "Expr Query -- Expr"
-
-    override def examples: List[String] =
-      List(
-        "name,ssCpuUser,:eq,name,DiscoveryStatus_UP,:eq,:mul,nf.app,alerttest,:eq",
-        "42,nf.app,alerttest,:eq"
       )
   }
 
