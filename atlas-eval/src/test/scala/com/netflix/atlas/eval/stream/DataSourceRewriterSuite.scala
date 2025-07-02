@@ -121,6 +121,8 @@ class DataSourceRewriterSuite extends FunSuite {
       case (ds, msg: DiagnosticMessage) =>
         assertEquals(ds.id, "bad")
         assertEquals(msg.message, "unsupported namespace: bad")
+      case (ds, msg) =>
+        fail(s"unexpected message type: $ds: $msg")
     }
 
     // Other entries should be mapped\
