@@ -71,8 +71,6 @@ class EvaluatorSuite extends FunSuite {
   }
 
   def testPublisher(baseUri: String, bufferSize: Option[Int] = None): Unit = {
-    import scala.concurrent.duration.*
-
     val buffers = bufferSize.getOrElse(config.getInt("atlas.eval.stream.num-buffers"))
     val evaluator = new Evaluator(
       config.withValue("atlas.eval.stream.num-buffers", ConfigValueFactory.fromAnyRef(buffers)),
@@ -206,8 +204,6 @@ class EvaluatorSuite extends FunSuite {
   }
 
   def testProcessor(baseUri: String): Unit = {
-    import scala.concurrent.duration.*
-
     val evaluator = new Evaluator(config, registry, system)
 
     val uri = s"$baseUri?q=name,jvm.gc.pause,:eq,:dist-max,(,nf.asg,nf.node,),:by"

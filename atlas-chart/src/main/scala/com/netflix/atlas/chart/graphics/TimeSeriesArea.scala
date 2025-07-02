@@ -42,7 +42,6 @@ case class TimeSeriesArea(style: Style, ts: TimeSeq, xaxis: TimeAxis, yaxis: Val
     val yscale = yaxis.scale(y1, y2)
     val axisy = yscale(0.0)
     var t = xaxis.start
-    var py = yscale(ts(t))
     while (t < xaxis.end) {
       val px1 = xscale(t - step)
       val px2 = xscale(t)
@@ -52,7 +51,6 @@ case class TimeSeriesArea(style: Style, ts: TimeSeq, xaxis: TimeAxis, yaxis: Val
       val py2 = math.max(axisy, ny) + 1
       if (!nv.isNaN) g.fillRect(px1, py1, px2 - px1, py2 - py1)
       t += step
-      py = ny
     }
   }
 }

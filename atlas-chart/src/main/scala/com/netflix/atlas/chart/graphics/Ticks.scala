@@ -190,12 +190,12 @@ object Ticks {
     * 2. Avoid the use of an offset when the number can be shown without an offset by shifting
     *    the decimal point.
     */
-  private def labelFormat(prefix: UnitPrefix, v: Double): (String, Double) = {
+  private def labelFormat(prefix: UnitPrefix, v: Double): String = {
     val f = v / prefix.factor
     (f * 1000.0).toInt match {
-      case i if (i % 10) > 0  => "%.3f%s" -> prefix.factor * 10.0 // 1.234
-      case i if (i % 100) > 0 => "%.2f%s" -> prefix.factor * 100.0 // 12.34
-      case _                  => "%.1f%s" -> prefix.factor * 1000.0 // 123.4
+      case i if (i % 10) > 0  => "%.3f%s" // 1.234
+      case i if (i % 100) > 0 => "%.2f%s" // 12.34
+      case _                  => "%.1f%s" // 123.4
     }
   }
 
@@ -431,7 +431,7 @@ object Ticks {
     val ticks = List.newBuilder[ValueTick]
 
     val prefix = getPrefix(math.abs(v2), major)
-    val (labelFmt, maxValue) = labelFormat(prefix, major)
+    val labelFmt = labelFormat(prefix, major)
 
     val base = round(v1, major)
     val end = ((v2 - base) / minor).toInt + 1
