@@ -4,15 +4,15 @@ import sbt.*
 
 object Dependencies {
   object Versions {
-    val pekko       = "1.1.4"
+    val pekko       = "1.1.5"
     val pekkoHttpV  = "1.2.0"
-    val iep         = "5.1.6"
-    val jackson     = "2.19.1"
-    val log4j       = "2.25.0"
+    val iep         = "5.1.7"
+    val jackson     = "2.19.2"
+    val log4j       = "2.25.1"
     val scala       = "2.13.16"
     val slf4j       = "2.0.17"
-    val spectator   = "1.8.16"
-    val spring      = "6.2.8"
+    val spectator   = "1.8.17"
+    val spring      = "6.2.9"
 
     val crossScala  = Seq(scala, "3.7.1")
   }
@@ -27,9 +27,9 @@ object Dependencies {
   val pekkoStream       = "org.apache.pekko" %% "pekko-stream" % pekko
   val pekkoStreamTestkit= "org.apache.pekko" %% "pekko-stream-testkit" % pekko
   val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
-  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.2.1"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "4.0.3"
-  val hikariCP          = "com.zaxxer" % "HikariCP" % "6.3.0"
+  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.2.2"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "4.0.7"
+  val hikariCP          = "com.zaxxer" % "HikariCP" % "7.0.0"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
   val iepDynConfig      = "com.netflix.iep" % "iep-dynconfig" % iep
@@ -69,7 +69,7 @@ object Dependencies {
   val spectatorLog4j    = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2       = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
   val springContext     = "org.springframework" % "spring-context" % spring
-  val typesafeConfig    = "com.typesafe" % "config" % "1.4.3"
+  val typesafeConfig    = "com.typesafe" % "config" % "1.4.4"
 }
 
 // format: on
