@@ -125,4 +125,37 @@ class QueryVocabularySuite extends FunSuite {
     val exp = execEquals(s"a,$txt,:eq")
     assertEquals(exp.v, ")")
   }
+
+  test("gcq, empty stack") {
+    intercept[IllegalStateException] {
+      interpreter.execute(":gcq")
+    }
+  }
+
+  test("gcq, just query") {
+    val context = interpreter.execute("app,www,:eq,:gcq")
+    assertEquals(context.stack, Nil)
+    assertEquals(context.frozenStack, Nil)
+  }
+
+  test("gcq, apply to expr") {
+    val context = interpreter.execute("name,cpu,:eq,app,www,:eq,:gcq")
+    val expected = interpreter.execute("name,cpu,:eq,app,www,:eq,:and")
+    assertEquals(context.stack, expected.stack)
+    assertEquals(context.frozenStack, expected.frozenStack)
+  }
+
+  test("gcq, apply to multiple exprs") {
+    val context = interpreter.execute("name,cpu,:eq,42,name,disk,:eq,app,www,:eq,:gcq")
+    val expected = interpreter.execute("name,cpu,:eq,app,www,:eq,:and,42,name,disk,:eq,app,www,:eq,:and")
+    assertEquals(context.stack, expected.stack)
+    assertEquals(context.frozenStack, expected.frozenStack)
+  }
+
+  test("gcq, apply to frozen stack") {
+    val context = interpreter.execute("name,cpu,:eq,42,:freeze,name,disk,:eq,app,www,:eq,:gcq")
+    val expected = interpreter.execute("name,cpu,:eq,app,www,:eq,:and,42,:freeze,name,disk,:eq,app,www,:eq,:and")
+    assertEquals(context.stack, expected.stack)
+    assertEquals(context.frozenStack, expected.frozenStack)
+  }
 }
