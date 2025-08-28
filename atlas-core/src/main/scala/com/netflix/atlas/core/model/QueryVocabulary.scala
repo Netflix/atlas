@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.stacklang.Vocabulary
@@ -47,7 +48,8 @@ object QueryVocabulary extends Vocabulary {
     And,
     Or,
     Not,
-    CommonQuery
+    CommonQuery,
+    GlobalCommonQuery
   )
 
   case object True extends SimpleWord {
@@ -584,6 +586,51 @@ object QueryVocabulary extends Vocabulary {
       """.stripMargin.trim
 
     override def signature: String = "Expr Query -- Expr"
+
+    override def examples: List[String] =
+      List(
+        "name,ssCpuUser,:eq,name,DiscoveryStatus_UP,:eq,:or,nf.app,alerttest,:eq",
+        "42,nf.app,alerttest,:eq"
+      )
+  }
+
+  case object GlobalCommonQuery extends Word {
+
+    override def name: String = "gcq"
+
+    override def signature: String = "* Query -- *"
+
+    override def summary: String =
+      """
+        |Recursively AND a common query to all queries in all expressions on the current stack
+        |as well as any frozen stacks.
+        |""".stripMargin
+
+    override def matches(stack: List[Any]): Boolean = stack match {
+      case (_: Query) :: _ => true
+      case _               => false
+    }
+
+    private def applyCQ(cq: Query)(value: Any): Any = {
+      value match {
+        case expr: Expr =>
+          expr.rewrite {
+            case q: Query => q.and(cq)
+          }
+        case v => v
+      }
+    }
+
+    override def execute(context: Context): Context = {
+      context.stack match {
+        case (q: Query) :: vs =>
+          val stack = vs.map(applyCQ(q))
+          val frozenStack = context.frozenStack.map(applyCQ(q))
+          context.copy(stack = stack, frozenStack = frozenStack)
+        case _ =>
+          throw new IllegalStateException(s"invalid stack for :$name")
+      }
+    }
 
     override def examples: List[String] =
       List(

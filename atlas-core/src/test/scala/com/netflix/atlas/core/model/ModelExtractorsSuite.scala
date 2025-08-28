@@ -34,8 +34,8 @@ class ModelExtractorsSuite extends FunSuite {
 
   completionTest("name", 8)
   completionTest("name,sps", 22)
-  completionTest("name,sps,:eq", 22)
-  completionTest("name,sps,:eq,app,foo,:eq", 43)
+  completionTest("name,sps,:eq", 23)
+  completionTest("name,sps,:eq,app,foo,:eq", 44)
   completionTest("name,sps,:eq,app,foo,:eq,:and,(,asg,)", 12)
 
   test("TraceQueryType: implicit from Query") {
