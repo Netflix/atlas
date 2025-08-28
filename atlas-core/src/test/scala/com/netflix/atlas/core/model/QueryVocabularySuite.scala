@@ -147,14 +147,16 @@ class QueryVocabularySuite extends FunSuite {
 
   test("gcq, apply to multiple exprs") {
     val context = interpreter.execute("name,cpu,:eq,42,name,disk,:eq,app,www,:eq,:gcq")
-    val expected = interpreter.execute("name,cpu,:eq,app,www,:eq,:and,42,name,disk,:eq,app,www,:eq,:and")
+    val expected =
+      interpreter.execute("name,cpu,:eq,app,www,:eq,:and,42,name,disk,:eq,app,www,:eq,:and")
     assertEquals(context.stack, expected.stack)
     assertEquals(context.frozenStack, expected.frozenStack)
   }
 
   test("gcq, apply to frozen stack") {
     val context = interpreter.execute("name,cpu,:eq,42,:freeze,name,disk,:eq,app,www,:eq,:gcq")
-    val expected = interpreter.execute("name,cpu,:eq,app,www,:eq,:and,42,:freeze,name,disk,:eq,app,www,:eq,:and")
+    val expected =
+      interpreter.execute("name,cpu,:eq,app,www,:eq,:and,42,:freeze,name,disk,:eq,app,www,:eq,:and")
     assertEquals(context.stack, expected.stack)
     assertEquals(context.frozenStack, expected.frozenStack)
   }
