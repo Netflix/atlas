@@ -661,6 +661,43 @@ class GrapherSuite extends FunSuite {
     val config = grapher.toGraphConfig(uri)
     assertEquals(config.id, "default")
   }
+
+  test("cq: parameter not present") {
+    val uri = Uri("/api/v1/graph?q=a,b,:eq")
+    grapher.toGraphConfig(uri)
+  }
+
+  test("cq: basic query") {
+    val uri = Uri("/api/v1/graph?q=a,b,:eq&cq=region,us-east-1,:eq")
+    val config = grapher.toGraphConfig(uri)
+    assert(config.parsedQuery.get.forall(_.toString.contains("region,us-east-1,:eq")))
+  }
+
+  test("cq: in query") {
+    val uri = Uri("/api/v1/graph?q=a,b,:eq&cq=region,(,us-east-1,us-west-2,),:in")
+    val config = grapher.toGraphConfig(uri)
+    assert(config.parsedQuery.get.forall(_.toString.contains("region,(,us-east-1,us-west-2,),:in")))
+  }
+
+  test("cq: across freeze operation") {
+    val uri = Uri("/api/v1/graph?q=a,b,:eq,:freeze,c,d,:eq&cq=region,us-east-1,:eq")
+    val config = grapher.toGraphConfig(uri)
+    assert(config.parsedQuery.get.forall(_.toString.contains("region,us-east-1,:eq")))
+  }
+
+  test("cq: invalid query") {
+    val uri = Uri("/api/v1/graph?q=a,b,:eq&cq=region,us-east-1,:invalid")
+    intercept[IllegalStateException] {
+      grapher.toGraphConfig(uri)
+    }
+  }
+
+  test("cq: more than one query") {
+    val uri = Uri("/api/v1/graph?q=a,b,:eq&cq=region,us-east-1,:eq,region,us-west-2,:eq")
+    intercept[IllegalStateException] {
+      grapher.toGraphConfig(uri)
+    }
+  }
 }
 
 object GrapherSuite {
