@@ -16,7 +16,6 @@
 package com.netflix.atlas.core.model
 
 import java.time.Duration
-
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.util.Strings
 
@@ -30,6 +29,17 @@ object ModelExtractors {
       case v: String   => Try(Strings.parseDuration(v)).toOption
       case v: Duration => Some(v)
       case _           => None
+    }
+  }
+
+  case object ConsolidationFunctionType {
+
+    def unapply(value: Any): Option[ConsolidationFunction] = value match {
+      case "avg" => Some(ConsolidationFunction.Avg)
+      case "sum" => Some(ConsolidationFunction.Sum)
+      case "min" => Some(ConsolidationFunction.Min)
+      case "max" => Some(ConsolidationFunction.Max)
+      case _     => None
     }
   }
 

@@ -19,6 +19,7 @@ import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.BoundedPriorityBuffer
 import com.netflix.atlas.core.util.Math
 
+import java.time.Duration
 import java.util.Comparator
 
 trait FilterExpr extends TimeSeriesExpr
@@ -345,6 +346,47 @@ object FilterExpr {
 
     override def compare(t1: TimeSeriesSummary, t2: TimeSeriesSummary): Int = {
       java.lang.Double.compare(t1.stat, t2.stat)
+    }
+  }
+
+  /**
+    * Computes a consolidated time series if the new step is larger than the step size for the
+    * graph. If new step is not an even multiple, the consolidated series will be rounded up
+    * to the next even multiple.
+    *
+    * @param expr
+    *     Input expression to compute the stat over.
+    * @param cf
+    *     Consolidation function to use.
+    * @param newStep
+    *     Minimum step size to use for the consolidated line.
+    */
+  case class Consolidate(expr: TimeSeriesExpr, cf: ConsolidationFunction, newStep: Duration)
+      extends FilterExpr {
+
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, cf.name, newStep, Interpreter.WordToken(":consolidate"))
+    }
+
+    def dataExprs: List[DataExpr] = expr.dataExprs
+
+    def isGrouped: Boolean = expr.isGrouped
+
+    def groupByKey(tags: Map[String, String]): Option[String] = expr.groupByKey(tags)
+
+    def finalGrouping: List[String] = expr.finalGrouping
+
+    private def roundToEvenMultiple(value: Long, m: Long): Long = {
+      if (value < m || value % m == 0) value else m * (value / m + 1)
+    }
+
+    def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      val step = roundToEvenMultiple(newStep.toMillis, context.step)
+      val rs = expr.eval(context, data)
+      val newData = rs.data.map { t =>
+        t.consolidate(step, cf)
+      }
+      ResultSet(this, newData, rs.state)
     }
   }
 }
