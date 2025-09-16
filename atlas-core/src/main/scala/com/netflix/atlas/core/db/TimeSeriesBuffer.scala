@@ -25,6 +25,7 @@ import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.ArrayHelper
 import com.netflix.atlas.core.util.Math
+import com.netflix.atlas.core.util.Step
 
 object TimeSeriesBuffer {
 
@@ -34,16 +35,17 @@ object TimeSeriesBuffer {
     start: Long,
     vs: Array[Double]
   ): TimeSeriesBuffer = {
-    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType(tags), start / step * step, step, vs))
+    val s = Step.roundToStepBoundary(start, step)
+    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType(tags), s, step, vs))
   }
 
   def apply(tags: Map[String, String], step: Long, start: Long, end: Long): TimeSeriesBuffer = {
-    val s = start / step
-    val e = end / step
+    val s = Step.roundToStepBoundary(start, step)
+    val e = Step.roundToStepBoundary(end, step)
 
-    val size = (e - s).toInt + 1
+    val size = ((e - s) / step).toInt + 1
     val buffer = ArrayHelper.fill(size, Double.NaN)
-    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType(tags), s * step, step, buffer))
+    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType(tags), s, step, buffer))
   }
 
   def apply(
@@ -55,37 +57,16 @@ object TimeSeriesBuffer {
     aggr: Int
   ): TimeSeriesBuffer = {
 
-    val s = start / step
-    val e = end / step
+    val s = Step.roundToStepBoundary(start, step)
+    val e = Step.roundToStepBoundary(end, step)
 
-    val size = (e - s).toInt + 1
-    val buffer = ArrayHelper.fill(size, Double.NaN)
+    val size = ((e - s) / step).toInt + 1
+    val values = ArrayHelper.fill(size, Double.NaN)
+    val buffer = new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType(tags), s, step, values))
     blocks.foreach { block =>
-      fill(block, buffer, step, s, e, aggr)
+      buffer.aggrBlock(block, aggr, ConsolidationFunction.Sum, 1, Math.maxNaN)
     }
-
-    new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType(tags), start, step, buffer))
-  }
-
-  private def fill(
-    blk: Block,
-    buf: Array[Double],
-    step: Long,
-    s: Long,
-    e: Long,
-    aggr: Int
-  ): Unit = {
-    val bs = blk.start / step
-    val be = bs + blk.size - 1
-    if (e >= bs && s <= be) {
-      val spos = if (s > bs) s else bs
-      val epos = if (e < be) e else be
-      var i = spos
-      while (i <= epos) {
-        buf((i - s).toInt) = blk.get((i - bs).toInt, aggr)
-        i += 1
-      }
-    }
+    buffer
   }
 
   def sum(buffers: List[TimeSeriesBuffer]): Option[TimeSeriesBuffer] = {
@@ -449,7 +430,7 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
     * Returns a new buffer with values consolidated to a larger step size.
     */
   def consolidate(multiple: Int, cf: ConsolidationFunction): TimeSeriesBuffer = {
-    val e = start + step * values.length
+    val e = start + step * values.length + step
     val newStep = step * multiple
     val seq = new MapStepTimeSeq(data, newStep, cf).bounded(start, e)
     new TimeSeriesBuffer(tags, seq)
@@ -479,18 +460,19 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
       else this
     if (buf.start == start && buf.step == step) buf
     else {
+      val s = Step.roundToStepBoundary(start, step)
       val buffer = new Array[Double](size)
       var i = 0
       while (i < buffer.length) {
-        buffer(i) = buf.getValue(start + i * step)
+        buffer(i) = buf.getValue(s + i * step)
         i += 1
       }
-      new TimeSeriesBuffer(tags, new ArrayTimeSeq(dsType, start / step * step, step, buffer))
+      new TimeSeriesBuffer(tags, new ArrayTimeSeq(dsType, s, step, buffer))
     }
   }
 
   def getValue(timestamp: Long): Double = {
-    val offset = timestamp - start
+    val offset = Step.roundToStepBoundary(timestamp, step) - start
     val pos = (offset / step).toInt
     if (offset < 0 || pos >= values.length) Double.NaN else values(pos)
   }

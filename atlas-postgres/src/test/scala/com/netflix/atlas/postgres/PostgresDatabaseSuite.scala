@@ -237,6 +237,9 @@ class PostgresDatabaseSuite extends PostgresSuite {
     assertEquals(ts.tags, Map("nf.app" -> "www"))
     val seq = ts.data.bounded(context.start, context.end)
     assertEquals(seq.start, context.start)
-    checkData(seq.data, 3, 3, 90.0)
+    assertEquals(seq.data.length, 3)
+    assertEquals(seq.data(0), 45.0)
+    assertEquals(seq.data(1), 90.0)
+    assertEquals(seq.data(2), 90.0)
   }
 }

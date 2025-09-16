@@ -229,9 +229,16 @@ trait TimeSeries extends TaggedItem {
     if (s.isEmpty) this else LazyTimeSeries(tags, s, data)
   }
 
+  /** Consolidate the series to a larger step size. */
   def consolidate(step: Long, cf: ConsolidationFunction): TimeSeries = {
     val newData = new MapStepTimeSeq(data, step, cf)
     LazyTimeSeries(tags, label, newData)
+  }
+
+  /** Create a consolidated view while retaining then original step size for the series. */
+  def consolidatedView(step: Long, cf: ConsolidationFunction): TimeSeries = {
+    val newData = new MapStepTimeSeq(data, step, cf)
+    LazyTimeSeries(tags, label, new StepViewTimeSeq(newData, data.step))
   }
 
   def blend(ts: TimeSeries): TimeSeries = {
