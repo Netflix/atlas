@@ -88,4 +88,16 @@ object Step {
     }
     new Step(stepsForBlock)
   }
+
+  /**
+    * Map an arbitrary timestamp in milliseconds to the corresponding timestamp on a step boundary
+    * that contains the specified timestamp. The step timestamp will represent the end of the
+    * interval.
+    */
+  def roundToStepBoundary(timestamp: Long, step: Long): Long = {
+    if (timestamp % step == 0)
+      timestamp
+    else
+      timestamp / step * step + step
+  }
 }

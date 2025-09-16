@@ -384,7 +384,7 @@ object FilterExpr {
       val step = roundToEvenMultiple(newStep.toMillis, context.step)
       val rs = expr.eval(context, data)
       val newData = rs.data.map { t =>
-        t.consolidate(step, cf)
+        t.consolidatedView(step, cf)
       }
       ResultSet(this, newData, rs.state)
     }

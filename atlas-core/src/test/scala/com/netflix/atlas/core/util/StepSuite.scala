@@ -81,4 +81,26 @@ class StepSuite extends FunSuite {
     val s = e.minus(12 * 30, ChronoUnit.DAYS)
     assertEquals(days(1), oneHourStep.compute(60000, 430, s.toEpochMilli, e.toEpochMilli))
   }
+
+  test("roundToStepBoundary: 2ms step") {
+    assertEquals(Step.roundToStepBoundary(0L, 2L), 0L)
+    assertEquals(Step.roundToStepBoundary(1L, 2L), 2L)
+    assertEquals(Step.roundToStepBoundary(2L, 2L), 2L)
+    assertEquals(Step.roundToStepBoundary(3L, 2L), 4L)
+    assertEquals(Step.roundToStepBoundary(4L, 2L), 4L)
+  }
+
+  test("roundToStepBoundary: 5s step") {
+    assertEquals(Step.roundToStepBoundary(0L, 5_000L), 0L)
+    assertEquals(Step.roundToStepBoundary(1L, 5_000L), 5_000L)
+    assertEquals(Step.roundToStepBoundary(2_000L, 5_000L), 5_000L)
+    assertEquals(Step.roundToStepBoundary(5_000L, 5_000L), 5_000L)
+    assertEquals(Step.roundToStepBoundary(11_000L, 5_000L), 15_000L)
+  }
+
+  test("roundToStepBoundary: 60s step") {
+    assertEquals(Step.roundToStepBoundary(0L, 60_000L), 0L)
+    assertEquals(Step.roundToStepBoundary(1L, 60_000L), 60_000L)
+    assertEquals(Step.roundToStepBoundary(87_123L, 60_000L), 120_000L)
+  }
 }
