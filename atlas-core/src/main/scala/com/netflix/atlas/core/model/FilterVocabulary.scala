@@ -30,6 +30,7 @@ object FilterVocabulary extends Vocabulary {
   val dependsOn: List[Vocabulary] = List(StatefulVocabulary)
 
   val words: List[Word] = List(
+    Consolidate,
     Stat,
     StatAvg,
     StatMax,
@@ -262,5 +263,34 @@ object FilterVocabulary extends Vocabulary {
 
     override def examples: List[String] =
       List("name,sps,:eq,:sum,(,nf.cluster,),:by,max,5")
+  }
+
+  case object Consolidate extends SimpleWord {
+
+    override def name: String = "consolidate"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case DurationType(_) :: ConsolidationFunctionType(_) :: TimeSeriesType(_) :: _ => true
+      case DurationType(_) :: ConsolidationFunctionType(_) :: (_: StyleExpr) :: _    => true
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case DurationType(step) :: ConsolidationFunctionType(cf) :: TimeSeriesType(t) :: s =>
+        FilterExpr.Consolidate(t, cf, step) :: s
+      case DurationType(step) :: ConsolidationFunctionType(cf) :: (t: StyleExpr) :: s =>
+        t.copy(expr = FilterExpr.Consolidate(t.expr, cf, step)) :: s
+    }
+
+    override def summary: String =
+      """
+        |Computes a consolidated time series if the new step is larger than the step size for the
+        |graph. If new step is not an even multiple, the consolidated series will be rounded up
+        |to the next even multiple.
+      """.stripMargin.trim
+
+    override def signature: String =
+      "TimeSeriesExpr ConsolidationFunction newStep:Duration -- TimeSeriesExpr"
+
+    override def examples: List[String] = List(":random,avg,5m")
   }
 }
