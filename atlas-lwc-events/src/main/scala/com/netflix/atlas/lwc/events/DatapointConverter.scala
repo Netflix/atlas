@@ -90,13 +90,17 @@ private[events] object DatapointConverter {
     tags.get("value") match {
       case Some(k) =>
         tags.get("statistic") match {
-          case Some("count")          => _ => 1.0
-          case Some("totalOfSquares") => event => squared(event.extractValueSafe(k), event.value)
-          case _                      => event => toDouble(event.extractValueSafe(k), event.value)
+          case Some("count")          => event => countIfPresent(event.extractValueSafe(k))
+          case Some("totalOfSquares") => event => squared(event.extractValueSafe(k), Double.NaN)
+          case _                      => event => toDouble(event.extractValueSafe(k), Double.NaN)
         }
       case None =>
         event => toDouble(event.value, 1.0)
     }
+  }
+
+  private def countIfPresent(value: Any): Double = {
+    if (value == null) Double.NaN else 1.0
   }
 
   private def squared(value: Any, dflt: Any): Double = {
@@ -104,9 +108,16 @@ private[events] object DatapointConverter {
     v * v
   }
 
+  /**
+    * Convert the value extracted from the event to a double. If the value is `null`, then it
+    * will be mapped to `NaN` to indicate there was no data available. If the type of the value
+    * is unknown, then it will use a default value that is typically specified as part of the
+    * event.
+    */
   @scala.annotation.tailrec
   private[events] def toDouble(value: Any, dflt: Any): Double = {
     value match {
+      case null        => Double.NaN
       case v: Boolean  => if (v) 1.0 else 0.0
       case v: Byte     => v.toDouble
       case v: Short    => v.toDouble
@@ -212,11 +223,14 @@ private[events] object DatapointConverter {
     private val buffer = new StepDouble(Double.NaN, params.clock, params.step)
 
     override def update(event: LwcEvent): Unit = {
-      update(1.0)
+      update(params.valueMapper(event))
     }
 
     override def update(value: Double): Unit = {
-      addNaN(params.clock.wallTime(), buffer, 1.0)
+      // Actual value is ignored, simply count it if present and is not a special value
+      // such as NaN
+      if (value.isFinite)
+        addNaN(params.clock.wallTime(), buffer, 1.0)
     }
 
     override def flush(timestamp: Long): Unit = {

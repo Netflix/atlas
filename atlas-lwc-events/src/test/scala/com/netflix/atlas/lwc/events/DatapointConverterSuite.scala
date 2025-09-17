@@ -34,7 +34,6 @@ class DatapointConverterSuite extends FunSuite {
   }
 
   test("toDouble") {
-    assertEquals(DatapointConverter.toDouble(null, -1.0), -1.0)
     assertEquals(DatapointConverter.toDouble(false, -1.0), 0.0)
     assertEquals(DatapointConverter.toDouble(true, -1.0), 1.0)
     assertEquals(DatapointConverter.toDouble(42, -1.0), 42.0)
@@ -47,7 +46,8 @@ class DatapointConverterSuite extends FunSuite {
     assertEquals(DatapointConverter.toDouble(Duration.ofMillis(42131), -1.0), 42.131)
     assertEquals(DatapointConverter.toDouble(Duration.ofSeconds(42131), -1.0), 42131.0)
     assertEquals(DatapointConverter.toDouble(Duration.ofMinutes(2), -1.0), 120.0)
-    assertEquals(DatapointConverter.toDouble(null, Duration.ofMillis(42)), 0.042)
+    assert(DatapointConverter.toDouble(null, Duration.ofMillis(42)).isNaN)
+    assert(DatapointConverter.toDouble(null, -1.0).isNaN)
     assert(DatapointConverter.toDouble("foo", -1.0).isNaN)
   }
 
@@ -106,6 +106,21 @@ class DatapointConverterSuite extends FunSuite {
     assertEquals(results.head, DatapointEvent("id", Map("value" -> "responseSize"), step, 2.0))
   }
 
+  test("counter - sum custom value field doesn't exist") {
+    val expr = DataExpr.Sum(Query.Equal("value", "doesNotExist"))
+    val events = List.newBuilder[LwcEvent]
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
+    (0 until 5).foreach { i =>
+      val event = LwcEvent(Map("value" -> i))
+      converter.update(event)
+    }
+    clock.setWallTime(step + 1)
+    converter.flush(clock.wallTime())
+    val results = events.result()
+    assertEquals(results.size, 0) // Non finite values will not get propagated
+  }
+
   test("counter - count") {
     val expr = DataExpr.Count(Query.Equal("value", "responseSize"))
     val events = List.newBuilder[LwcEvent]
@@ -120,6 +135,21 @@ class DatapointConverterSuite extends FunSuite {
     val results = events.result()
     assertEquals(results.size, 1)
     assertEquals(results.head, DatapointEvent("id", Map("value" -> "responseSize"), step, 5.0))
+  }
+
+  test("counter - count custom value field doesn't exist") {
+    val expr = DataExpr.Count(Query.Equal("value", "doesNotExist"))
+    val events = List.newBuilder[LwcEvent]
+    val converter =
+      DatapointConverter("id", expr.toString, expr, clock, step, None, (_, e) => events.addOne(e))
+    (0 until 5).foreach { i =>
+      val event = LwcEvent(Map("value" -> i))
+      converter.update(event)
+    }
+    clock.setWallTime(step + 1)
+    converter.flush(clock.wallTime())
+    val results = events.result()
+    assertEquals(results.size, 0)
   }
 
   test("counter - max custom value") {
