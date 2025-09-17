@@ -23,7 +23,7 @@ import munit.FunSuite
 
 import java.util.concurrent.CopyOnWriteArrayList
 
-class RemoveLwcEventClientSuite extends FunSuite {
+class RemoteLwcEventClientSuite extends FunSuite {
 
   private val config = ConfigFactory.load()
   private var payloads: java.util.List[RemoteLwcEventClient.EvalPayload] = _
