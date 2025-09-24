@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,7 +217,7 @@ object AggrDatapoint {
   private class GroupByAggregator(settings: AggregatorSettings) extends Aggregator(settings) {
 
     private val aggregators =
-      scala.collection.mutable.AnyRefMap.empty[Map[String, String], Aggregator]
+      scala.collection.mutable.HashMap.empty[Map[String, String], Aggregator]
 
     private def newAggregator(datapoint: AggrDatapoint): Aggregator = {
       datapoint.expr match {

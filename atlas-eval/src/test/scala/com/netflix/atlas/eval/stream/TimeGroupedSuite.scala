@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@ import scala.concurrent.duration.Duration
 
 class TimeGroupedSuite extends FunSuite {
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val materializer = Materializer(system)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  private implicit val materializer: Materializer = Materializer(system)
 
   private val registry = new DefaultRegistry()
 
@@ -230,7 +230,7 @@ class TimeGroupedSuite extends FunSuite {
     val data = (0 until n).toList.map { i =>
       AggrDatapoint(10, 10, expr, "test", Map.empty, i)
     }
-    val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n * (n - 1) / 2)
+    val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, (n * (n - 1) / 2).toDouble)
 
     val groups = run(data)
     assertEquals(groups, List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))
@@ -266,7 +266,7 @@ class TimeGroupedSuite extends FunSuite {
     val data = (0 until n).toList.map { i =>
       AggrDatapoint(10, 10, expr, "test", Map.empty, i)
     }
-    val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, n * (n - 1) / 2)
+    val expected = AggrDatapoint(10, 10, expr, "test", Map.empty, (n * (n - 1) / 2).toDouble)
 
     val groups = run(data)
     assertEquals(groups, List(TimeGroup(10, step, Map(expr -> AggrValuesInfo(List(expected), n)))))

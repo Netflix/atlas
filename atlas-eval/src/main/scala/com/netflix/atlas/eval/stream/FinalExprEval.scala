@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ private[stream] class FinalExprEval(interpreter: ExprInterpreter)
       // Maintains the state for each expression we need to evaluate. TODO: implement
       // limits to sanity check against running of our memory
       private val states =
-        scala.collection.mutable.AnyRefMap.empty[StyleExpr, Map[StatefulExpr, Any]]
+        scala.collection.mutable.HashMap.empty[StyleExpr, Map[StatefulExpr, Any]]
 
       // Step size for datapoints flowing through, it will be determined by the first data
       // sources message that arrives and should be consistent for the life of this stage

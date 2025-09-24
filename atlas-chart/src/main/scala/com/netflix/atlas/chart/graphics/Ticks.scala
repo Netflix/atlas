@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -395,7 +395,7 @@ object Ticks {
     if (logDistance <= n) {
       1
     } else {
-      math.ceil(logDistance / n).toInt
+      math.ceil(logDistance.toDouble / n).toInt
     }
   }
 

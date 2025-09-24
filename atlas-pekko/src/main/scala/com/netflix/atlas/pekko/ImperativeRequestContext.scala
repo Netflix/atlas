@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.server.RequestContext
 import org.apache.pekko.http.scaladsl.server.RouteResult
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Promise
 
 /**
@@ -31,7 +32,7 @@ case class ImperativeRequestContext(value: AnyRef, ctx: RequestContext) {
 
   val promise: Promise[RouteResult] = Promise()
 
-  private implicit val ec = ctx.executionContext
+  private implicit val ec: ExecutionContextExecutor = ctx.executionContext
 
   def complete(res: HttpResponse): Unit = {
     ctx.complete(res).onComplete(promise.complete)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,7 +225,7 @@ object StatefulExpr {
     */
   trait OnlineExpr extends StatefulExpr {
 
-    type StateMap = scala.collection.mutable.AnyRefMap[ItemId, AlgoState]
+    type StateMap = scala.collection.mutable.HashMap[ItemId, AlgoState]
 
     protected def name: String
 

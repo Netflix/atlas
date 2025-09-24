@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,13 +36,15 @@ import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json.Json
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.Failure
 
 class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   import com.netflix.atlas.webapi.TagsApi._
-  implicit val ec = actorRefFactory.dispatcher
+
+  implicit val ec: ExecutionContextExecutor = actorRefFactory.dispatcher
 
   private val dbRef = actorRefFactory.actorSelection("/user/db")
 

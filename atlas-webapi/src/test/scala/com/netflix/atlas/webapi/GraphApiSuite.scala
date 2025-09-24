@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ class GraphApiSuite extends MUnitRouteSuite {
 
   // Set to high value to avoid spurious failures with code coverage. Typically 5s shows no
   // issues outside of running with code coverage.
-  implicit val routeTestTimeout = RouteTestTimeout(600.seconds)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(600.seconds)
 
   private val db = StaticDatabase.demo
   system.actorOf(Props(new LocalDatabaseActor(db)), "db")

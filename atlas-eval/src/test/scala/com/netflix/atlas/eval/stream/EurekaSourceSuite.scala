@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,8 +95,8 @@ class EurekaSourceSuite extends FunSuite {
 
   private val vipJson = s"""{"applications": {"application": [$innerAppJson]}}"""
 
-  private implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val mat = Materializer(system)
+  private implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  private implicit val mat: Materializer = Materializer(system)
 
   private def run(uri: String, response: Try[HttpResponse]): GroupResponse = {
     val client = Flow[(HttpRequest, AccessLogger)].map {

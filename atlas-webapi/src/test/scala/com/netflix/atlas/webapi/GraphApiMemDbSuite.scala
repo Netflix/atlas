@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ class GraphApiMemDbSuite extends MUnitRouteSuite {
 
   // Set to high value to avoid spurious failures with code coverage. Typically 5s shows no
   // issues outside of running with code coverage.
-  private implicit val routeTestTimeout = RouteTestTimeout(5.seconds)
+  private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   private val dbConfig = ConfigFactory.parseString("""
       |atlas.core.db {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ import scala.concurrent.duration.Duration
 
 class LwcToAggrDatapointSuite extends FunSuite {
 
-  implicit val system = ActorSystem(getClass.getSimpleName)
-  private implicit val materializer = Materializer(system)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  private implicit val materializer: Materializer = Materializer(system)
 
   private val step = 10000
 

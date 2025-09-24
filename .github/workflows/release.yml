@@ -11,9 +11,9 @@ jobs:
     if: ${{ github.repository == 'Netflix/atlas' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'zulu'
@@ -31,5 +31,5 @@ jobs:
           PGP_PASSPHRASE: ${{ secrets.ORG_SIGNING_PASSWORD }}
         run: |
           git fetch --unshallow --tags
-          cat /dev/null | project/sbt clean test +publishSigned
-          cat /dev/null | project/sbt sonatypeBundleRelease
+          cat /dev/null | project/sbt ++2.13.16 clean test +publishSigned
+          cat /dev/null | project/sbt sonaRelease

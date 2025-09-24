@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,8 @@ import java.lang.reflect.Type
 class RequestHandlerSuite extends MUnitRouteSuite {
 
   import scala.concurrent.duration._
-  implicit val routeTestTimeout = RouteTestTimeout(5.second)
+
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val config = ConfigFactory.parseString(
     """

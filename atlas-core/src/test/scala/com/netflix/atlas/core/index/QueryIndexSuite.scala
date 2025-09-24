@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -254,7 +254,7 @@ class QueryIndexSuite extends FunSuite {
     assertEquals(matchingEntries(index, tags), List(clusterQuery))
   }
 
-  type QueryInterner = scala.collection.mutable.AnyRefMap[Query, Query]
+  type QueryInterner = scala.collection.mutable.HashMap[Query, Query]
 
   private def intern(interner: QueryInterner, query: Query): Query = {
     query match {

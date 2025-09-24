@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import scala.concurrent.duration.Duration
 
 class FillRemovedKeysWithSuite extends FunSuite {
 
-  implicit val system = ActorSystem(getClass.getSimpleName)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   val map1 = Map[String, String]("a" -> "1")
   val map2 = Map[String, String]("b" -> "2")

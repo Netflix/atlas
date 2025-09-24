@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,7 +228,7 @@ class SubscriptionManagerSuite extends FunSuite {
 
     val sm = new SubscriptionManager[Integer](registry)
     val meta =
-      StreamMetadata("a", "test", new StepLong(0, clock, step), new StepLong(0, clock, step))
+      StreamMetadata("a", "test", clock, new StepLong(0, clock, step), new StepLong(0, clock, step))
     assert(sm.register(meta, 1))
 
     val ok = Id.create("atlas.lwcapi.currentStreams").withTag("state", "ok")

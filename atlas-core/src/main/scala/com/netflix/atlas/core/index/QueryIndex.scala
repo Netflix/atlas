@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,7 +164,7 @@ case class QueryIndex[T](
   */
 object QueryIndex {
 
-  type IndexMap[T <: Any] = scala.collection.mutable.AnyRefMap[AnyRef, QueryIndex[T]]
+  type IndexMap[T <: Any] = scala.collection.mutable.HashMap[AnyRef, QueryIndex[T]]
 
   case class Entry[T](query: Query, value: T)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ class EvaluatorSuite extends FunSuite {
 
   private val config = ConfigFactory.load()
   private val registry = new DefaultRegistry()
-  private implicit val system = ActorSystem("test", config)
+  private implicit val system: ActorSystem = ActorSystem("test", config)
 
   override def beforeEach(context: BeforeEach): Unit = {
     Files.createDirectories(targetDir)

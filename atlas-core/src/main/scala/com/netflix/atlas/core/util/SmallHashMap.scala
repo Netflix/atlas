@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -391,7 +391,7 @@ final class SmallHashMap[K <: Any, V <: Any] private (val data: Array[Any], data
         // exclude equality.
         if (this eq m) return true
         size == m.size && hashCode == m.hashCode && dataEquals(m.asInstanceOf[SmallHashMap[K, V]])
-      case m: Map[_, _] =>
+      case _: Map[_, _] =>
         super.equals(obj)
       case _ =>
         false

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ object ClusterOps extends StrictLogging {
       new GraphStageLogic(shape) with InHandler with OutHandler {
 
         private val registry = context.registry
-        private val membersSources = mutable.AnyRefMap.empty[M, SourceQueue[D]]
+        private val membersSources = mutable.HashMap.empty[M, SourceQueue[D]]
 
         override def onPush(): Unit = {
           val msg = grab(in)

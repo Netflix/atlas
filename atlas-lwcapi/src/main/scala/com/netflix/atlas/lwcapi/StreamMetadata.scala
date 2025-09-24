@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Netflix, Inc.
+ * Copyright 2014-2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,16 +38,17 @@ import com.netflix.spectator.impl.StepLong
 case class StreamMetadata(
   streamId: String,
   remoteAddress: String = "unknown",
+  clock: Clock = Clock.SYSTEM,
   receivedMessages: StepLong = new StepLong(0, Clock.SYSTEM, 60_000),
   droppedMessages: StepLong = new StepLong(0, Clock.SYSTEM, 60_000)
 ) extends JsonSupport {
 
   def updateReceived(n: Int): Unit = {
-    receivedMessages.getCurrent.addAndGet(n)
+    receivedMessages.addAndGet(clock.wallTime(), n)
   }
 
   def updateDropped(n: Int): Unit = {
-    droppedMessages.getCurrent.addAndGet(n)
+    droppedMessages.addAndGet(clock.wallTime(), n)
   }
 
   override def hasCustomEncoding: Boolean = true
