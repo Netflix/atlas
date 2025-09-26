@@ -44,19 +44,27 @@ object GraphConstants {
     val clampedZoom = math.min(zoom, MaxZoom)
 
     val warnings = List.newBuilder[String]
-    
+
     if (height > MaxHeight) {
-      warnings += s"Restricted graph height to ${MaxHeight}."
+      warnings += s"Restricted graph height to $MaxHeight."
     }
-    
+
     if (width > MaxWidth) {
-      warnings += s"Restricted graph width to ${MaxWidth}."
+      warnings += s"Restricted graph width to $MaxWidth."
     }
-    
+
     if (zoom > MaxZoom) {
-      warnings += s"Restricted zoom to ${MaxZoom}."
+      warnings += s"Restricted zoom to $MaxZoom."
     }
-    
-    ValidationResult(width, height, zoom, clampedWidth, clampedHeight, clampedZoom, warnings.result())
+
+    ValidationResult(
+      width,
+      height,
+      zoom,
+      clampedWidth,
+      clampedHeight,
+      clampedZoom,
+      warnings.result()
+    )
   }
 }

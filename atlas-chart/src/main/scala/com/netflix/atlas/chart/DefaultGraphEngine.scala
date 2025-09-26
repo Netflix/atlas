@@ -46,27 +46,26 @@ class DefaultGraphEngine extends PngGraphEngine {
   }
 
   override def name: String = "png"
-  
 
   override def createImage(gdef: GraphDef): RenderedImage = {
     import com.netflix.atlas.chart.graphics.*
 
     val originalConfig = gdef.computeStats
-    
+
     // Validate and clamp dimensions
-    val validation = GraphConstants.validate(originalConfig.width, originalConfig.height, originalConfig.zoom)
+    val validation =
+      GraphConstants.validate(originalConfig.width, originalConfig.height, originalConfig.zoom)
 
     // Apply validated dimensions to the config
     val config = originalConfig.copy(
       width = validation.clampedWidth,
-      height = validation.clampedHeight, 
+      height = validation.clampedHeight,
       zoom = validation.clampedZoom
     )
 
     val notices = List.newBuilder[String]
     notices ++= config.warnings
     notices ++= validation.warnings
-
 
     val aboveCanvas = List.newBuilder[Element]
 
