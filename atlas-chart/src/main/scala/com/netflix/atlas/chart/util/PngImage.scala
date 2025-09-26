@@ -91,20 +91,19 @@ object PngImage {
     val userErrorYellow = new Color(0xFF, 0xCF, 0x00)
     val clampedWidth = math.min(width, GraphConstants.MaxWidth)
     val clampedHeight = math.min(height, GraphConstants.MaxHeight)
-    
-    val dimensionWarning = if (width > GraphConstants.MaxWidth || height > GraphConstants.MaxHeight) {
-      s" Image dimensions clamped to ${clampedWidth}x${clampedHeight} (max: ${GraphConstants.MaxWidth}x${GraphConstants.MaxHeight})."
-    } else ""
-    
+
+    val dimensionWarning =
+      if (width > GraphConstants.MaxWidth || height > GraphConstants.MaxHeight) {
+        s" Image dimensions clamped to ${clampedWidth}x${clampedHeight} (max: ${GraphConstants.MaxWidth}x${GraphConstants.MaxHeight})."
+      } else ""
+
     val fullMessage = imgText + dimensionWarning
     error(fullMessage, clampedWidth, clampedHeight, "USER ERROR:", Color.BLACK, userErrorYellow)
   }
 
   def systemError(imgText: String, width: Int, height: Int): PngImage = {
     val systemErrorRed = new Color(0xF8, 0x20, 0x00)
-    val clampedWidth = math.min(width, GraphConstants.MaxWidth)
-    val clampedHeight = math.min(height, GraphConstants.MaxHeight)
-    error(imgText, clampedWidth, clampedHeight, "SYSTEM ERROR:", Color.WHITE, systemErrorRed)
+    error(imgText, width, height, "SYSTEM ERROR:", Color.WHITE, systemErrorRed)
   }
 
   def error(
@@ -115,9 +114,11 @@ object PngImage {
     imgTextColor: Color = Color.WHITE,
     imgBackgroundColor: Color = Color.BLACK
   ): PngImage = {
+    val clampedWidth = math.min(width, GraphConstants.MaxWidth)
+    val clampedHeight = math.min(height, GraphConstants.MaxHeight)
     val fullMsg = s"$imgTextPrefix $imgText"
 
-    val image = newBufferedImage(width, height)
+    val image = newBufferedImage(clampedWidth, clampedHeight)
     val g = image.createGraphics
 
     if (useAntiAliasing) {
@@ -133,7 +134,7 @@ object PngImage {
     g.setFont(font)
 
     g.setPaint(imgBackgroundColor)
-    g.fill(new Rectangle(0, 0, width, height))
+    g.fill(new Rectangle(0, 0, clampedWidth, clampedHeight))
 
     g.setPaint(imgTextColor)
     val attrStr = new AttributedString(fullMsg)
@@ -141,7 +142,7 @@ object PngImage {
     val iterator = attrStr.getIterator
     val measurer = new LineBreakMeasurer(iterator, g.getFontRenderContext)
 
-    val wrap = width - 8.0f
+    val wrap = clampedWidth - 8.0f
     var y = 0.0f
     while (measurer.getPosition < fullMsg.length) {
       val layout = measurer.nextLayout(wrap)
