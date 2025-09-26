@@ -46,26 +46,27 @@ class DefaultGraphEngine extends PngGraphEngine {
   }
 
   override def name: String = "png"
+  
 
   override def createImage(gdef: GraphDef): RenderedImage = {
     import com.netflix.atlas.chart.graphics.*
 
-    val config = gdef.computeStats
+    val originalConfig = gdef.computeStats
+    
+    // Validate and clamp dimensions
+    val validation = GraphConstants.validate(originalConfig.width, originalConfig.height, originalConfig.zoom)
+
+    // Apply validated dimensions to the config
+    val config = originalConfig.copy(
+      width = validation.clampedWidth,
+      height = validation.clampedHeight, 
+      zoom = validation.clampedZoom
+    )
 
     val notices = List.newBuilder[String]
     notices ++= config.warnings
+    notices ++= validation.warnings
 
-    if (config.height > GraphConstants.MaxHeight) {
-      notices += s"Restricted graph height to ${GraphConstants.MaxHeight}."
-    }
-
-    if (config.width > GraphConstants.MaxWidth) {
-      notices += s"Restricted graph width to ${GraphConstants.MaxWidth}."
-    }
-
-    if (config.zoom > GraphConstants.MaxZoom) {
-      notices += s"Restricted zoom to ${GraphConstants.MaxZoom}."
-    }
 
     val aboveCanvas = List.newBuilder[Element]
 
@@ -200,7 +201,8 @@ class DefaultGraphEngine extends PngGraphEngine {
     val imgWidth = graph.width
     val imgHeight = height(elements, imgWidth)
 
-    val zoom = if (config.zoom > GraphConstants.MaxZoom) GraphConstants.MaxZoom else config.zoom
+    // Use validated zoom value from config
+    val zoom = config.zoom
     val zoomWidth = (imgWidth * zoom).toInt
     val zoomHeight = (imgHeight * zoom).toInt
     val image = new BufferedImage(zoomWidth, zoomHeight, BufferedImage.TYPE_INT_ARGB)
