@@ -92,13 +92,7 @@ object PngImage {
     val clampedWidth = math.min(width, GraphConstants.MaxWidth)
     val clampedHeight = math.min(height, GraphConstants.MaxHeight)
 
-    val dimensionWarning =
-      if (width > GraphConstants.MaxWidth || height > GraphConstants.MaxHeight) {
-        s" Image dimensions clamped to ${clampedWidth}x${clampedHeight} (max: ${GraphConstants.MaxWidth}x${GraphConstants.MaxHeight})."
-      } else ""
-
-    val fullMessage = imgText + dimensionWarning
-    error(fullMessage, clampedWidth, clampedHeight, "USER ERROR:", Color.BLACK, userErrorYellow)
+    error(imgText, clampedWidth, clampedHeight, "USER ERROR:", Color.BLACK, userErrorYellow)
   }
 
   def systemError(imgText: String, width: Int, height: Int): PngImage = {
