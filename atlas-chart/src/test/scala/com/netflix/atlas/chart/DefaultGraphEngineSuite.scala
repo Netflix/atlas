@@ -146,4 +146,109 @@ class DefaultGraphEngineSuite extends PngGraphEngineSuite {
     assert(image.getWidth > 400, "Should produce valid image")
     assert(image.getHeight > 1000, "Should have substantial height from legend")
   }
+
+  test("GraphConstants validation: oversized dimensions should be clamped") {
+    // Test the validation logic directly before any UI rendering
+    val validation = GraphConstants.validate(5000, 50000, 10.0)
+
+    // Original values should be preserved
+    assertEquals(validation.originalWidth, 5000)
+    assertEquals(validation.originalHeight, 50000)
+    assertEquals(validation.originalZoom, 10.0)
+
+    // Clamped values should respect limits
+    assertEquals(validation.clampedWidth, GraphConstants.MaxWidth)
+    assertEquals(validation.clampedHeight, GraphConstants.MaxHeight)
+    assertEquals(validation.clampedZoom, GraphConstants.MaxZoom)
+
+    // Should generate warnings
+    assertEquals(validation.warnings.size, 3)
+    assert(validation.warnings.exists(_.contains("width")))
+    assert(validation.warnings.exists(_.contains("height")))
+    assert(validation.warnings.exists(_.contains("zoom")))
+  }
+
+  test("GraphConstants validation: normal dimensions should pass") {
+    val validation = GraphConstants.validate(800, 400, 1.0)
+
+    assertEquals(validation.clampedWidth, 800)
+    assertEquals(validation.clampedHeight, 400)
+    assertEquals(validation.clampedZoom, 1.0)
+    assertEquals(validation.warnings.size, 0)
+  }
+
+  test("GraphConstants validation: only width oversized") {
+    val validation = GraphConstants.validate(5000, 400, 1.0)
+
+    assertEquals(validation.clampedWidth, GraphConstants.MaxWidth)
+    assertEquals(validation.clampedHeight, 400)
+    assertEquals(validation.clampedZoom, 1.0)
+    assertEquals(validation.warnings.size, 1)
+    assert(validation.warnings.head.contains("width"))
+  }
+
+  test("GraphConstants validation: only height oversized") {
+    val validation = GraphConstants.validate(800, 5000, 1.0)
+
+    assertEquals(validation.clampedWidth, 800)
+    assertEquals(validation.clampedHeight, GraphConstants.MaxHeight)
+    assertEquals(validation.clampedZoom, 1.0)
+    assertEquals(validation.warnings.size, 1)
+    assert(validation.warnings.head.contains("height"))
+  }
+
+  test("GraphConstants validation: only zoom oversized") {
+    val validation = GraphConstants.validate(800, 400, 10.0)
+
+    assertEquals(validation.clampedWidth, 800)
+    assertEquals(validation.clampedHeight, 400)
+    assertEquals(validation.clampedZoom, GraphConstants.MaxZoom)
+    assertEquals(validation.warnings.size, 1)
+    assert(validation.warnings.head.contains("zoom"))
+  }
+
+  test("GraphConstants validation: dimensions at exact limits") {
+    val validation = GraphConstants.validate(
+      GraphConstants.MaxWidth,
+      GraphConstants.MaxHeight,
+      GraphConstants.MaxZoom
+    )
+
+    assertEquals(validation.clampedWidth, GraphConstants.MaxWidth)
+    assertEquals(validation.clampedHeight, GraphConstants.MaxHeight)
+    assertEquals(validation.clampedZoom, GraphConstants.MaxZoom)
+    assertEquals(validation.warnings.size, 0)
+  }
+
+  test("GraphConstants validation: dimensions one over limit") {
+    val validation = GraphConstants.validate(
+      GraphConstants.MaxWidth + 1,
+      GraphConstants.MaxHeight + 1,
+      GraphConstants.MaxZoom + 0.1
+    )
+
+    assertEquals(validation.clampedWidth, GraphConstants.MaxWidth)
+    assertEquals(validation.clampedHeight, GraphConstants.MaxHeight)
+    assertEquals(validation.clampedZoom, GraphConstants.MaxZoom)
+    assertEquals(validation.warnings.size, 3)
+  }
+
+  test("GraphConstants validation: zero and negative dimensions") {
+    val validation = GraphConstants.validate(0, -100, 0.0)
+
+    // math.min preserves smaller values (including negatives)
+    assertEquals(validation.clampedWidth, 0)
+    assertEquals(validation.clampedHeight, -100)
+    assertEquals(validation.clampedZoom, 0.0)
+    assertEquals(validation.warnings.size, 0) // No warnings since under limits
+  }
+
+  test("GraphConstants validation: extreme values") {
+    val validation = GraphConstants.validate(Int.MaxValue, Int.MaxValue, Double.MaxValue)
+
+    assertEquals(validation.clampedWidth, GraphConstants.MaxWidth)
+    assertEquals(validation.clampedHeight, GraphConstants.MaxHeight)
+    assertEquals(validation.clampedZoom, GraphConstants.MaxZoom)
+    assertEquals(validation.warnings.size, 3)
+  }
 }
