@@ -89,10 +89,7 @@ object PngImage {
 
   def userError(imgText: String, width: Int, height: Int): PngImage = {
     val userErrorYellow = new Color(0xFF, 0xCF, 0x00)
-    val clampedWidth = math.min(width, GraphConstants.MaxWidth)
-    val clampedHeight = math.min(height, GraphConstants.MaxHeight)
-
-    error(imgText, clampedWidth, clampedHeight, "USER ERROR:", Color.BLACK, userErrorYellow)
+    error(imgText, width, height, "USER ERROR:", Color.BLACK, userErrorYellow)
   }
 
   def systemError(imgText: String, width: Int, height: Int): PngImage = {
