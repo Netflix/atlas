@@ -78,7 +78,10 @@ class DefaultGraphEngineSuite extends PngGraphEngineSuite {
 
     // Should still produce a valid graph (not error image), but clamped dimensions
     assert(image.getWidth > 400, "Should produce valid image")
-    assert(image.getHeight > 200, "Should produce valid image with clamped height")
+    assert(
+      image.getHeight <= GraphConstants.MaxHeight + 300,
+      "Height should not exceed MaxHeight + UI"
+    )
   }
 
   test("dimension validation: oversized zoom should be clamped") {
@@ -89,6 +92,9 @@ class DefaultGraphEngineSuite extends PngGraphEngineSuite {
     assert(image.getWidth > 400, "Should produce valid image with clamped zoom")
     assert(image.getHeight > 200, "Should produce valid image")
     // Zoom should be clamped to GraphConstants.MaxZoom
+    // The final image.getWidth should be smaller than the
+    // GraphConstants.MaxWidth
+    assert(image.getWidth <= GraphConstants.MaxWidth)
   }
 
   test("dimension validation: many series should expand legend height naturally") {
@@ -98,6 +104,7 @@ class DefaultGraphEngineSuite extends PngGraphEngineSuite {
 
     // Should create image with expanded height due to legend
     assert(image.getWidth > 400, "Should produce valid image")
+    assert(image.getWidth < GraphConstants.MaxWidth)
     assert(image.getHeight > 1000, "Should have expanded height due to long legend")
   }
 
@@ -114,8 +121,10 @@ class DefaultGraphEngineSuite extends PngGraphEngineSuite {
     val graphDef = createGraphDef(width = GraphConstants.MaxWidth, height = 400)
     val image = graphEngine.createImage(graphDef)
 
-    // Should work fine at the limit
-    assert(image.getWidth > 1000, "Should work at MaxWidth limit")
+    // Should work fine at the limit and should also account
+    // for the UI elements which are estimated to be 200
+    assert(image.getWidth >= GraphConstants.MaxWidth, "Width should be at least MaxWidth")
+    assert(image.getWidth <= GraphConstants.MaxWidth + 200, "Width should not exceed MaxWidth + UI")
     assert(image.getHeight > 200, "Should produce valid image")
   }
 
@@ -124,7 +133,7 @@ class DefaultGraphEngineSuite extends PngGraphEngineSuite {
     val image = graphEngine.createImage(graphDef)
 
     // Should work fine at the limit
-    assert(image.getWidth > 400, "Should produce valid image")
+    assert(image.getWidth <= GraphConstants.MaxWidth, "Should produce valid image")
     assert(image.getHeight > 500, "Should work at MaxHeight limit")
   }
 
