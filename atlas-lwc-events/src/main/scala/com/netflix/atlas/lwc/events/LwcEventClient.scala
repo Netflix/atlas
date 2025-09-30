@@ -53,15 +53,6 @@ trait LwcEventClient {
 
   /** Process event for the stream. */
   def process(event: LwcEvent): Unit
-
-  /**
-    * Process a trace for the stream.
-    *
-    * @param trace
-    *     The trace is modelled as a sequence of spans as the trace graph can be costly
-    *     to construct as part of the ingestion pipeline.
-    */
-  def processTrace(trace: Seq[LwcEvent.Span]): Unit
 }
 
 object LwcEventClient {

@@ -49,10 +49,7 @@ class LwcEventConfiguration {
     val cfg = config.getConfig("atlas.lwc.events.subscriptions")
     Subscriptions(
       events = toSubscriptions(cfg.getConfigList("events"), Subscriptions.Events),
-      timeSeries = toSubscriptions(cfg.getConfigList("time-series"), Subscriptions.TimeSeries),
-      traceEvents = toSubscriptions(cfg.getConfigList("trace-events"), Subscriptions.TraceEvents),
-      traceTimeSeries =
-        toSubscriptions(cfg.getConfigList("trace-time-series"), Subscriptions.TraceTimeSeries)
+      timeSeries = toSubscriptions(cfg.getConfigList("time-series"), Subscriptions.TimeSeries)
     )
   }
 

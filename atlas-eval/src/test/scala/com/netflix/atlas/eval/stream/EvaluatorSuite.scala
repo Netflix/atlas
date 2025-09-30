@@ -669,17 +669,6 @@ class EvaluatorSuite extends FunSuite {
     validateOk("q=name,foo,:eq,nf.cluster,www-dev,:eq,:and,(,value,),:table", path = "events")
   }
 
-  test("validate: traces") {
-    validateOk("q=nf.app,www,:eq,nf.app,db,:eq,:child", path = "traces")
-  }
-
-  test("validate: trace time series") {
-    validateOk(
-      "q=app,www,:eq,app,db,:eq,:child,app,db,:eq,:sum,:span-time-series",
-      path = "traces/graph"
-    )
-  }
-
   test("validate: ok rewrite") {
     val evaluator = new Evaluator(config, registry, system)
     val ds = new Evaluator.DataSource(

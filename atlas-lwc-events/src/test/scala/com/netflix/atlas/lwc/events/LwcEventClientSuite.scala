@@ -183,43 +183,6 @@ class LwcEventClientSuite extends FunSuite {
     }
   }
 
-  test("trace analytics, basic aggregate") {
-    val subs = Subscriptions.fromTypedList(
-      List(
-        Subscription("1", step, "app,www,:eq", Subscriptions.TraceTimeSeries)
-      )
-    )
-    val output = List.newBuilder[String]
-    val client = LwcEventClient(subs, output.addOne, clock)
-    client.processTrace(Seq(new TestSpan(sampleSpan)))
-    clock.setWallTime(step)
-    client.process(LwcEvent.HeartbeatLwcEvent(step))
-    val vs = output.result()
-    assertEquals(vs.size, 1)
-  }
-
-  test("trace analytics, basic aggregate extract value") {
-    val subs = Subscriptions.fromTypedList(
-      List(
-        Subscription(
-          "1",
-          step,
-          "app,www,:eq,value,duration,:eq,:span-time-series",
-          Subscriptions.TraceTimeSeries
-        )
-      )
-    )
-    val output = List.newBuilder[String]
-    val client = LwcEventClient(subs, output.addOne, clock)
-    client.processTrace(Seq(new TestSpan(sampleSpan)))
-    clock.setWallTime(step)
-    client.process(LwcEvent.HeartbeatLwcEvent(step))
-    val vs = output.result()
-    assertEquals(vs.size, 1)
-    assert(vs.forall(_.contains(""""tags":{"value":"duration"}""")))
-    assert(vs.forall(_.contains(""""value":8.4""")))
-  }
-
   test("check if event matches query") {
     val matching = Query.And(Query.Equal("app", "www"), Query.Equal("node", "i-123"))
     val nonMatching = Query.And(Query.Equal("app", "www"), Query.Equal("node", "i-124"))

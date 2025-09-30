@@ -26,7 +26,6 @@ import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.Expr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.StyleExpr
-import com.netflix.atlas.core.model.TraceQuery
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.LwcDataExpr
@@ -93,10 +92,6 @@ object SyntheticDataSource {
         source(settings, expr.asInstanceOf[EventExpr])
       case ExprType.TIME_SERIES =>
         source(settings, expr.asInstanceOf[StyleExpr])
-      case ExprType.TRACE_EVENTS =>
-        Source.empty
-      case ExprType.TRACE_TIME_SERIES =>
-        source(settings, expr.asInstanceOf[TraceQuery.SpanTimeSeries].expr)
     }
   }
 

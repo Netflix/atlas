@@ -17,7 +17,6 @@ package com.netflix.atlas.lwc.events
 
 import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.Query
-import com.netflix.atlas.core.model.TraceQuery
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.atlas.impl.QueryIndex
@@ -36,10 +35,6 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
   @volatile private var currentSubs: Subscriptions = Subscriptions()
 
   @volatile private var handlers: List[EventHandler] = Nil
-
-  @volatile private var traceHandlers: Map[Subscription, TraceQuery.SpanFilter] = Map.empty
-
-  @volatile private var traceHandlersTS: Map[Subscription, TraceTimeSeries] = Map.empty
 
   /**
     * Called to force flushing the data. Implementations should override if they have
@@ -116,41 +111,6 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     }
     diff.removed.timeSeries.foreach(removeSubscription)
 
-    // Trace pass-through
-    traceHandlers = subscriptions.traceEvents.map { sub =>
-      sub -> ExprUtils.parseTraceEventsQuery(sub.expression)
-    }.toMap
-
-    // Analytics based on traces
-    diff.added.traceTimeSeries.foreach { sub =>
-      val tq = ExprUtils.parseTraceTimeSeriesQuery(sub.expression)
-      val dataExpr = tq.expr.expr.dataExprs.head
-      val converter =
-        DatapointConverter(sub.id, sub.expression, dataExpr, clock, sub.step, None, submit)
-      val q = ExprUtils.toSpectatorQuery(removeValueClause(dataExpr.query))
-      val handler = EventHandler(
-        sub,
-        event => {
-          converter.update(event)
-          Nil
-        },
-        Some(converter)
-      )
-      subHandlers.put(sub, q -> handler)
-      flushableHandlers += handler
-    }
-    diff.unchanged.traceTimeSeries.foreach { sub =>
-      val handlerMeta = subHandlers.get(sub)
-      if (handlerMeta != null)
-        flushableHandlers += handlerMeta._2
-    }
-    diff.removed.traceTimeSeries.foreach(sub => subHandlers.remove(sub))
-    traceHandlersTS = subscriptions.traceTimeSeries.map { sub =>
-      val tq = ExprUtils.parseTraceTimeSeriesQuery(sub.expression)
-      val tts = TraceTimeSeries(tq.q, removeValueClause(tq.expr.expr.dataExprs.head.query))
-      sub -> tts
-    }.toMap
-
     handlers = flushableHandlers.result()
   }
 
@@ -190,28 +150,6 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
       submit(handler.subscription.id, e)
     }
   }
-
-  override def processTrace(trace: Seq[LwcEvent.Span]): Unit = {
-    traceHandlers.foreachEntry { (sub, filter) =>
-      if (TraceMatcher.matches(filter.q, trace)) {
-        val filtered = trace.filter(event => ExprUtils.matches(filter.f, event.tagValue))
-        if (filtered.nonEmpty) {
-          submit(sub.id, LwcEvent.Events(filtered))
-        }
-      }
-    }
-    traceHandlersTS.foreachEntry { (sub, tq) =>
-      if (TraceMatcher.matches(tq.q, trace)) {
-        val filtered = trace.filter(event => ExprUtils.matches(tq.f, event.tagValue))
-        if (filtered.nonEmpty) {
-          val handlerMeta = subHandlers.get(sub)
-          if (handlerMeta != null) {
-            filtered.foreach(handlerMeta._2.mapper)
-          }
-        }
-      }
-    }
-  }
 }
 
 object AbstractLwcEventClient {
@@ -232,6 +170,4 @@ object AbstractLwcEventClient {
       }
     }
   }
-
-  private case class TraceTimeSeries(q: TraceQuery, f: Query)
 }

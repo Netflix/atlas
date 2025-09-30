@@ -104,41 +104,4 @@ object ModelExtractors {
       case _            => None
     }
   }
-
-  case object TraceQueryType {
-
-    def unapply(value: Any): Option[TraceQuery] = value match {
-      case q: TraceQuery => Some(q)
-      case q: Query      => Some(TraceQuery.Simple(q))
-      case _             => None
-    }
-  }
-
-  case object TraceFilterType {
-
-    def unapply(value: Any): Option[TraceQuery.SpanFilter] = value match {
-      case q: TraceQuery            => Some(toFilter(q))
-      case q: Query                 => Some(toFilter(TraceQuery.Simple(q)))
-      case f: TraceQuery.SpanFilter => Some(f)
-      case _                        => None
-    }
-
-    private def toFilter(q: TraceQuery): TraceQuery.SpanFilter = {
-      TraceQuery.SpanFilter(q, Query.True)
-    }
-  }
-
-  case object TraceTimeSeriesType {
-
-    def unapply(value: Any): Option[TraceQuery.SpanTimeSeries] = value match {
-      case q: TraceQuery                => Some(toTimeSeries(q))
-      case q: Query                     => Some(toTimeSeries(TraceQuery.Simple(q)))
-      case t: TraceQuery.SpanTimeSeries => Some(t)
-      case _                            => None
-    }
-
-    private def toTimeSeries(q: TraceQuery): TraceQuery.SpanTimeSeries = {
-      TraceQuery.SpanTimeSeries(q, StyleExpr(DataExpr.Sum(Query.True), Map.empty))
-    }
-  }
 }

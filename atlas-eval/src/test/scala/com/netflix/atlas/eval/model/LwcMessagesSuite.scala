@@ -72,26 +72,6 @@ class LwcMessagesSuite extends FunSuite {
     assertEquals(actual, expected)
   }
 
-  test("subscription-v2 trace events") {
-    val q1 = "app,www,:eq,app,db,:eq,:child"
-    val q2 = "app,www,:eq,app,foo,:eq,:span-and"
-    val expr = s"$q1,$q2"
-    val dataExprs = List(LwcDataExpr("a", q1, 0L), LwcDataExpr("b", q2, 0L))
-    val expected = LwcSubscriptionV2(expr, ExprType.TRACE_EVENTS, dataExprs)
-    val actual = LwcMessages.parse(Json.encode(expected))
-    assertEquals(actual, expected)
-  }
-
-  test("subscription-v2 trace time series") {
-    val q1 = "app,www,:eq,app,db,:eq,:child"
-    val q2 = "app,www,:eq,app,foo,:eq,:span-and"
-    val expr = s"$q1,$q2"
-    val dataExprs = List(LwcDataExpr("a", q1, 0L), LwcDataExpr("b", q2, 0L))
-    val expected = LwcSubscriptionV2(expr, ExprType.TRACE_TIME_SERIES, dataExprs)
-    val actual = LwcMessages.parse(Json.encode(expected))
-    assertEquals(actual, expected)
-  }
-
   test("datapoint") {
     val expected = LwcDatapoint(step, "a", Map("foo" -> "bar"), 42.0)
     val actual = LwcMessages.parse(Json.encode(expected))

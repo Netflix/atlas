@@ -25,13 +25,7 @@ public enum ExprType {
    * Time series expression such as used with Atlas Graph API. Can also be used for analytics
    * queries on top of event data.
    */
-  TIME_SERIES(true),
-
-  /** Expression to select a set of traces to be passed through. */
-  TRACE_EVENTS(false),
-
-  /** Time series expression based on data extraced from traces. */
-  TRACE_TIME_SERIES(true);
+  TIME_SERIES(true);
 
   private final boolean timeSeries;
 
