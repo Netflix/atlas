@@ -190,8 +190,6 @@ private[stream] object LwcToAggrDatapoint {
           case ModelExtractors.EventExprType(expr: EventExpr.Sample) :: Nil => expr.dataExpr
           case _ => throw new IllegalArgumentException(s"invalid expr: $input")
         }
-      case _ =>
-        throw new IllegalArgumentException(s"unsupported expression type: $exprType")
     }
   }
 }
