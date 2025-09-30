@@ -225,7 +225,12 @@ class LwcEventClientSuite extends FunSuite {
   test("trace analytics, group by with parent attributes") {
     val subs = Subscriptions.fromTypedList(
       List(
-        Subscription("1", step, "app,e,:eq,(,app,parent.app,parent.parent.app,),:by", Subscriptions.TimeSeries)
+        Subscription(
+          "1",
+          step,
+          "app,e,:eq,(,app,parent.app,parent.parent.app,),:by",
+          Subscriptions.TimeSeries
+        )
       )
     )
     val output = List.newBuilder[String]
