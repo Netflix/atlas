@@ -186,16 +186,18 @@ class LwcEventClientSuite extends FunSuite {
   test("trace analytics, basic aggregate") {
     val subs = Subscriptions.fromTypedList(
       List(
-        Subscription("1", step, "app,www,:eq", Subscriptions.TraceTimeSeries)
+        Subscription("1", step, "app,e,:eq,parent.app,b,:eq,:and", Subscriptions.TimeSeries)
       )
     )
     val output = List.newBuilder[String]
     val client = LwcEventClient(subs, output.addOne, clock)
-    client.processTrace(Seq(new TestSpan(sampleSpan)))
+    TraceLwcEvent.sampleTrace.foreach(client.process)
     clock.setWallTime(step)
     client.process(LwcEvent.HeartbeatLwcEvent(step))
     val vs = output.result()
     assertEquals(vs.size, 1)
+    assert(vs.forall(_.contains(""""tags":{"app":"e","parent.app":"b"}""")))
+    assert(vs.forall(_.contains(""""value":0.6""")))
   }
 
   test("trace analytics, basic aggregate extract value") {
@@ -204,20 +206,43 @@ class LwcEventClientSuite extends FunSuite {
         Subscription(
           "1",
           step,
-          "app,www,:eq,value,duration,:eq,:span-time-series",
-          Subscriptions.TraceTimeSeries
+          "app,e,:eq,value,duration,:eq,:and,:sum",
+          Subscriptions.TimeSeries
         )
       )
     )
     val output = List.newBuilder[String]
     val client = LwcEventClient(subs, output.addOne, clock)
-    client.processTrace(Seq(new TestSpan(sampleSpan)))
+    TraceLwcEvent.sampleTrace.foreach(client.process)
     clock.setWallTime(step)
     client.process(LwcEvent.HeartbeatLwcEvent(step))
     val vs = output.result()
     assertEquals(vs.size, 1)
-    assert(vs.forall(_.contains(""""tags":{"value":"duration"}""")))
-    assert(vs.forall(_.contains(""""value":8.4""")))
+    assert(vs.forall(_.contains(""""tags":{"app":"e","value":"duration"}""")))
+    assert(vs.forall(_.contains(""""value":2.1E-8""")))
+  }
+
+  test("trace analytics, group by with parent attributes") {
+    val subs = Subscriptions.fromTypedList(
+      List(
+        Subscription("1", step, "app,e,:eq,(,app,parent.app,parent.parent.app,),:by", Subscriptions.TimeSeries)
+      )
+    )
+    val output = List.newBuilder[String]
+    val client = LwcEventClient(subs, output.addOne, clock)
+    TraceLwcEvent.sampleTrace.foreach(client.process)
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
+    val vs = output.result()
+    assertEquals(vs.size, 2)
+    vs.foreach { v =>
+      if (v.contains(""""tags":{"app":"e","parent.app":"b","parent.parent.app":"a"}"""))
+        assert(v.contains(""""value":0.6"""), v)
+      else if (v.contains(""""tags":{"app":"e","parent.app":"c","parent.parent.app":"a"}"""))
+        assert(v.contains(""""value":0.4"""), v)
+      else
+        fail(s"invalid result: $v")
+    }
   }
 
   test("check if event matches query") {
