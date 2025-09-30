@@ -27,4 +27,44 @@ object GraphConstants {
   final val MaxWidth = config.getInt("max-width")
   final val MaxHeight = config.getInt("max-height")
   final val MaxZoom = config.getDouble("max-zoom")
+
+  case class ValidationResult(
+    originalWidth: Int,
+    originalHeight: Int,
+    originalZoom: Double,
+    clampedWidth: Int,
+    clampedHeight: Int,
+    clampedZoom: Double,
+    warnings: List[String]
+  )
+
+  def validate(width: Int, height: Int, zoom: Double): ValidationResult = {
+    val clampedWidth = math.min(width, MaxWidth)
+    val clampedHeight = math.min(height, MaxHeight)
+    val clampedZoom = math.min(zoom, MaxZoom)
+
+    val warnings = List.newBuilder[String]
+
+    if (height > MaxHeight) {
+      warnings += s"Restricted graph height to $MaxHeight."
+    }
+
+    if (width > MaxWidth) {
+      warnings += s"Restricted graph width to $MaxWidth."
+    }
+
+    if (zoom > MaxZoom) {
+      warnings += s"Restricted zoom to $MaxZoom."
+    }
+
+    ValidationResult(
+      width,
+      height,
+      zoom,
+      clampedWidth,
+      clampedHeight,
+      clampedZoom,
+      warnings.result()
+    )
+  }
 }

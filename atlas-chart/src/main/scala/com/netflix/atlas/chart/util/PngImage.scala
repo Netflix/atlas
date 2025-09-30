@@ -40,6 +40,8 @@ import javax.imageio.metadata.IIOMetadataNode
 import scala.util.Using
 import scala.util.Using.Releasable
 
+import com.netflix.atlas.chart.GraphConstants
+
 object PngImage {
 
   // Disable using on-disk cache for images. Avoids temp files on shared services.
@@ -103,9 +105,11 @@ object PngImage {
     imgTextColor: Color = Color.WHITE,
     imgBackgroundColor: Color = Color.BLACK
   ): PngImage = {
+    val clampedWidth = math.min(width, GraphConstants.MaxWidth)
+    val clampedHeight = math.min(height, GraphConstants.MaxHeight)
     val fullMsg = s"$imgTextPrefix $imgText"
 
-    val image = newBufferedImage(width, height)
+    val image = newBufferedImage(clampedWidth, clampedHeight)
     val g = image.createGraphics
 
     if (useAntiAliasing) {
@@ -121,7 +125,7 @@ object PngImage {
     g.setFont(font)
 
     g.setPaint(imgBackgroundColor)
-    g.fill(new Rectangle(0, 0, width, height))
+    g.fill(new Rectangle(0, 0, clampedWidth, clampedHeight))
 
     g.setPaint(imgTextColor)
     val attrStr = new AttributedString(fullMsg)
@@ -129,7 +133,7 @@ object PngImage {
     val iterator = attrStr.getIterator
     val measurer = new LineBreakMeasurer(iterator, g.getFontRenderContext)
 
-    val wrap = width - 8.0f
+    val wrap = clampedWidth - 8.0f
     var y = 0.0f
     while (measurer.getPosition < fullMsg.length) {
       val layout = measurer.nextLayout(wrap)
