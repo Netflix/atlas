@@ -114,8 +114,11 @@ class LwcEventClientSuite extends FunSuite {
     client.process(LwcEvent.HeartbeatLwcEvent(step))
     val vs = output.result()
     assertEquals(vs.size, 1)
-    assert(vs.forall(_.contains(""""tags":{"app":"www","value":"duration"}""")))
-    assert(vs.forall(_.contains(""""value":8.4""")))
+    vs.foreach { v =>
+      val event = parseDatapointEvent(v)
+      assertEquals(event.tags, Map("app" -> "www", "value" -> "duration"))
+      assertEqualsDouble(event.value, 8.4, 1e-6)
+    }
   }
 
   test("analytics, group by") {
@@ -132,8 +135,11 @@ class LwcEventClientSuite extends FunSuite {
     client.process(LwcEvent.HeartbeatLwcEvent(step))
     val vs = output.result()
     assertEquals(vs.size, 1)
-    assert(vs.forall(_.contains(""""tags":{"app":"www","node":"i-123"}""")))
-    assert(vs.forall(_.contains(""""value":0.2""")))
+    vs.foreach { v =>
+      val event = parseDatapointEvent(v)
+      assertEquals(event.tags, Map("app" -> "www", "node" -> "i-123"))
+      assertEqualsDouble(event.value, 0.2, 1e-6)
+    }
   }
 
   test("analytics, group by missing key") {
@@ -196,8 +202,11 @@ class LwcEventClientSuite extends FunSuite {
     client.process(LwcEvent.HeartbeatLwcEvent(step))
     val vs = output.result()
     assertEquals(vs.size, 1)
-    assert(vs.forall(_.contains(""""tags":{"app":"e","parent.app":"b"}""")))
-    assert(vs.forall(_.contains(""""value":0.6""")))
+    vs.foreach { v =>
+      val event = parseDatapointEvent(v)
+      assertEquals(event.tags, Map("app" -> "e", "parent.app" -> "b"))
+      assertEqualsDouble(event.value, 0.6, 1e-6)
+    }
   }
 
   test("trace analytics, basic aggregate extract value") {
@@ -218,8 +227,11 @@ class LwcEventClientSuite extends FunSuite {
     client.process(LwcEvent.HeartbeatLwcEvent(step))
     val vs = output.result()
     assertEquals(vs.size, 1)
-    assert(vs.forall(_.contains(""""tags":{"app":"e","value":"duration"}""")))
-    assert(vs.forall(_.contains(""""value":2.1E-8""")))
+    vs.foreach { v =>
+      val event = parseDatapointEvent(v)
+      assertEquals(event.tags, Map("app" -> "e", "value" -> "duration"))
+      assertEqualsDouble(event.value, 2.1e-8, 1e-6)
+    }
   }
 
   test("trace analytics, group by with parent attributes") {
@@ -241,12 +253,13 @@ class LwcEventClientSuite extends FunSuite {
     val vs = output.result()
     assertEquals(vs.size, 2)
     vs.foreach { v =>
-      if (v.contains(""""tags":{"app":"e","parent.app":"b","parent.parent.app":"a"}"""))
-        assert(v.contains(""""value":0.6"""), v)
-      else if (v.contains(""""tags":{"app":"e","parent.app":"c","parent.parent.app":"a"}"""))
-        assert(v.contains(""""value":0.4"""), v)
+      val event = parseDatapointEvent(v)
+      if (event.tags == Map("app" -> "e", "parent.app" -> "b", "parent.parent.app" -> "a"))
+        assertEqualsDouble(event.value, 0.6, 1e-6)
+      else if (event.tags == Map("app" -> "e", "parent.app" -> "c", "parent.parent.app" -> "a"))
+        assertEqualsDouble(event.value, 0.4, 1e-6)
       else
-        fail(s"invalid result: $v")
+        fail(s"unexpected tags: ${event.tags}")
     }
   }
 
@@ -284,5 +297,11 @@ object LwcEventClientSuite {
         consumer(s"data: ${w.toString}")
       }
     }
+  }
+
+  case class Message(id: String, event: DatapointEvent)
+
+  private def parseDatapointEvent(str: String): DatapointEvent = {
+    Json.decode[Message](str.substring("data: ".length)).event
   }
 }
