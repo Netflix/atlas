@@ -67,22 +67,26 @@ object LwcEventClient {
     *     Function that will receive the output.
     * @param clock
     *     Clock to use for timing events.
+    * @param filter
+    *     Filter to perform custom filtering after the index match.
     * @return
     *     Client instance.
     */
   def apply(
     subscriptions: Subscriptions,
     consumer: String => Unit,
-    clock: Clock = Clock.SYSTEM
+    clock: Clock = Clock.SYSTEM,
+    filter: LwcEventFilter = LwcEventFilter.default
   ): LwcEventClient = {
-    new LocalLwcEventClient(subscriptions, consumer, clock)
+    new LocalLwcEventClient(subscriptions, consumer, clock, filter)
   }
 
   private class LocalLwcEventClient(
     subscriptions: Subscriptions,
     consumer: String => Unit,
-    clock: Clock
-  ) extends AbstractLwcEventClient(clock) {
+    clock: Clock,
+    filter: LwcEventFilter
+  ) extends AbstractLwcEventClient(clock, filter) {
 
     sync(subscriptions)
 

@@ -44,6 +44,11 @@ class LwcEventClientSuite extends FunSuite {
 
   private val sampleLwcEvent: LwcEvent = LwcEvent(sampleSpan, extractSpanValue(sampleSpan))
 
+  private def mkEvent(duration: Long): LwcEvent = {
+    val event = TestEvent(SortedTagMap("app" -> "www", "node" -> "i-123"), duration)
+    LwcEvent(event, extractSpanValue(event))
+  }
+
   test("pass-through") {
     val subs = Subscriptions.fromTypedList(
       List(
@@ -117,6 +122,61 @@ class LwcEventClientSuite extends FunSuite {
     vs.foreach { v =>
       val event = parseDatapointEvent(v)
       assertEquals(event.tags, Map("app" -> "www", "value" -> "duration"))
+      assertEqualsDouble(event.value, 8.4, 1e-6)
+    }
+  }
+
+  test("analytics, basic aggregate with post filter") {
+    val subs = Subscriptions.fromTypedList(
+      List(
+        Subscription(
+          "1",
+          step,
+          "app,www,:eq,value,duration,:eq,:and,duration,43ns,:gt,:and,:sum",
+          Subscriptions.TimeSeries
+        )
+      )
+    )
+    val output = List.newBuilder[String]
+    val filter = TypedLwcEventFilter(Map("duration" -> TypedLwcEventFilter.DurationMatcher))
+    val client = LwcEventClient(subs, output.addOne, clock, filter)
+    (0 until 100).foreach { i =>
+      val event = mkEvent(i)
+      client.process(event)
+    }
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
+    val vs = output.result()
+    assertEquals(vs.size, 1)
+    vs.foreach { v =>
+      val event = parseDatapointEvent(v)
+      assertEquals(event.tags, Map("app" -> "www", "value" -> "duration"))
+      assertEqualsDouble(event.value, 800.8, 1e-6)
+    }
+  }
+
+  test("analytics, basic aggregate extract value using custom key") {
+    val subs = Subscriptions.fromTypedList(
+      List(
+        Subscription(
+          "1",
+          step,
+          "app,www,:eq,custom,duration,:eq,:and,:sum",
+          Subscriptions.TimeSeries
+        )
+      )
+    )
+    val output = List.newBuilder[String]
+    val filter = TypedLwcEventFilter(Map.empty, "custom")
+    val client = LwcEventClient(subs, output.addOne, clock, filter)
+    client.process(sampleLwcEvent)
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
+    val vs = output.result()
+    assertEquals(vs.size, 1)
+    vs.foreach { v =>
+      val event = parseDatapointEvent(v)
+      assertEquals(event.tags, Map("app" -> "www", "custom" -> "duration"))
       assertEqualsDouble(event.value, 8.4, 1e-6)
     }
   }
@@ -277,7 +337,7 @@ object LwcEventClientSuite {
     subscriptions: Subscriptions,
     consumer: String => Unit,
     clock: Clock
-  ) extends AbstractLwcEventClient(clock) {
+  ) extends AbstractLwcEventClient(clock, LwcEventFilter.default) {
 
     sync(subscriptions)
 
