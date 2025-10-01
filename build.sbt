@@ -108,7 +108,9 @@ lazy val `atlas-lwc-events` = project
   .dependsOn(`atlas-pekko`, `atlas-core`, `atlas-json`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepDynConfig,
-    Dependencies.spectatorAtlas
+    Dependencies.spectatorAtlas,
+    Dependencies.otelSdk % "test",
+    Dependencies.otelSdkTest % "test"
   ))
 
 lazy val `atlas-postgres` = project
