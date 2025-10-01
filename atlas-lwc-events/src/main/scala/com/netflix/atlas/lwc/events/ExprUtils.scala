@@ -21,8 +21,6 @@ import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.EventVocabulary
 import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
-import com.netflix.atlas.core.model.TraceQuery
-import com.netflix.atlas.core.model.TraceVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.spectator.atlas.impl.Parser
 
@@ -50,24 +48,6 @@ private[events] object ExprUtils {
     eventInterpreter.execute(str).stack match {
       case EventExprType(e) :: Nil => e
       case _                       => throw new IllegalArgumentException(str)
-    }
-  }
-
-  private val traceInterpreter = Interpreter(TraceVocabulary.allWords)
-
-  /** Parse a single trace events query expression. */
-  def parseTraceEventsQuery(str: String): TraceQuery.SpanFilter = {
-    traceInterpreter.execute(str).stack match {
-      case TraceFilterType(tq) :: Nil => tq
-      case _                          => throw new IllegalArgumentException(str)
-    }
-  }
-
-  /** Parse a single trace time series query expression. */
-  def parseTraceTimeSeriesQuery(str: String): TraceQuery.SpanTimeSeries = {
-    traceInterpreter.execute(str).stack match {
-      case TraceTimeSeriesType(tq) :: Nil => tq
-      case _                              => throw new IllegalArgumentException(str)
     }
   }
 

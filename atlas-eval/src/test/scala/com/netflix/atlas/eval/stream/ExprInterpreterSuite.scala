@@ -36,22 +36,4 @@ class ExprInterpreterSuite extends FunSuite {
     assertEquals(interpreter.determineExprType(Uri("/api/v1/events/")), ExprType.EVENTS)
     assertEquals(interpreter.determineExprType(Uri("/events")), ExprType.EVENTS)
   }
-
-  test("determineExprType trace events") {
-    assertEquals(interpreter.determineExprType(Uri("/api/v1/traces")), ExprType.TRACE_EVENTS)
-    assertEquals(interpreter.determineExprType(Uri("/api/v1/traces/")), ExprType.TRACE_EVENTS)
-    assertEquals(interpreter.determineExprType(Uri("/traces")), ExprType.TRACE_EVENTS)
-  }
-
-  test("determineExprType trace time series") {
-    assertEquals(
-      interpreter.determineExprType(Uri("/api/v1/traces/graph")),
-      ExprType.TRACE_TIME_SERIES
-    )
-    assertEquals(
-      interpreter.determineExprType(Uri("/api/v1/traces/graph/")),
-      ExprType.TRACE_TIME_SERIES
-    )
-    assertEquals(interpreter.determineExprType(Uri("/traces/graph")), ExprType.TRACE_TIME_SERIES)
-  }
 }

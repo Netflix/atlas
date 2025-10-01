@@ -234,14 +234,4 @@ object LwcEvent {
       throw new UnsupportedOperationException()
     }
   }
-
-  /** Represents a span event that makes up a trace. */
-  trait Span extends LwcEvent {
-
-    /** Return the id for this span. */
-    def spanId: String
-
-    /** Returns the id for the parent or `null` if it is the root span. */
-    def parentId: String
-  }
 }

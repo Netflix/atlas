@@ -51,25 +51,6 @@ class ExpressionSplitterSuite extends FunSuite {
     assertEquals(actual, expected)
   }
 
-  test("splits compound trace time series expression into data expressions") {
-    def childExpr(e: String): String = {
-      s"nf.app,api,:eq,nf.cluster,skan-test,:eq,:child,$e,:span-time-series"
-    }
-    val expr = s"${childExpr(query1)},${childExpr(query1)}"
-    val actual = splitter.split(expr, ExprType.TRACE_TIME_SERIES, frequency1)
-    val expected = List(
-      Subscription(
-        MatchesAll,
-        ExpressionMetadata(childExpr(ds1a), ExprType.TRACE_TIME_SERIES, frequency1)
-      ),
-      Subscription(
-        MatchesAll,
-        ExpressionMetadata(childExpr(ds1b), ExprType.TRACE_TIME_SERIES, frequency1)
-      )
-    ).reverse
-    assertEquals(actual, expected)
-  }
-
   test("throws IAE for invalid expressions") {
     val msg = intercept[IllegalArgumentException] {
       splitter.split("foo", ExprType.TIME_SERIES, frequency1)

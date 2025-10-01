@@ -25,11 +25,11 @@ class LwcEventDurationSuite extends FunSuite {
 
   import LwcEventDurationSuite.*
 
-  private val sampleSpan: TestEvent = {
+  private val sampleEvent: TestEvent = {
     TestEvent(SortedTagMap("app" -> "www", "node" -> "i-123"), Duration.ofMillis(42))
   }
 
-  private val sampleLwcEvent: LwcEvent = new TestSpan(sampleSpan)
+  private val sampleLwcEvent: LwcEvent = LwcEvent(sampleEvent, extractSpanValue(sampleEvent))
 
   test("tagValue: exists") {
     assertEquals(sampleLwcEvent.tagValue("app"), "www")
@@ -58,8 +58,8 @@ class LwcEventDurationSuite extends FunSuite {
     assertEquals(sampleLwcEvent.extractValueSafe("foo"), null)
   }
 
-  test("defautl value") {
-    assertEquals(sampleLwcEvent.value, Duration.ofMillis(42))
+  test("default value") {
+    assertEquals(sampleLwcEvent.value, 1.0)
   }
 
   test("toJson: raw event") {
@@ -93,23 +93,6 @@ object LwcEventDurationSuite {
       case "duration" => span.duration
       case "level"    => Logger.Level.TRACE
       case k          => span.tags.getOrElse(k, null)
-    }
-  }
-
-  class TestSpan(event: TestEvent) extends LwcEvent.Span {
-
-    override def spanId: String = "test"
-
-    override def parentId: String = "parent"
-
-    override def rawEvent: Any = event
-
-    override def timestamp: Long = 0L
-
-    override def value: Any = event.duration
-
-    override def extractValue(key: String): Any = {
-      extractSpanValue(event)(key)
     }
   }
 }

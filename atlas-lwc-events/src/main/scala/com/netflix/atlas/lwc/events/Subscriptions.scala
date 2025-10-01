@@ -22,24 +22,16 @@ package com.netflix.atlas.lwc.events
   *     Subscriptions looking for the raw events to be passed through.
   * @param timeSeries
   *     Subscriptions that should be mapped into time series.
-  * @param traceEvents
-  *     Trace subscriptions looking for the trace spans to be passed through.
-  * @param traceTimeSeries
-  *     Trace subscriptions that should map the selected spans into time-series.
   */
 case class Subscriptions(
   events: List[Subscription] = Nil,
-  timeSeries: List[Subscription] = Nil,
-  traceEvents: List[Subscription] = Nil,
-  traceTimeSeries: List[Subscription] = Nil
+  timeSeries: List[Subscription] = Nil
 )
 
 object Subscriptions {
 
   val Events = "EVENTS"
   val TimeSeries = "TIME_SERIES"
-  val TraceEvents = "TRACE_EVENTS"
-  val TraceTimeSeries = "TRACE_TIME_SERIES"
 
   /**
     * Create instance from a flattened list with types based on the ExprType enum
@@ -49,9 +41,7 @@ object Subscriptions {
     val groups = subs.groupBy(_.exprType)
     Subscriptions(
       events = groups.getOrElse(Events, Nil),
-      timeSeries = groups.getOrElse(TimeSeries, Nil),
-      traceEvents = groups.getOrElse(TraceEvents, Nil),
-      traceTimeSeries = groups.getOrElse(TraceTimeSeries, Nil)
+      timeSeries = groups.getOrElse(TimeSeries, Nil)
     )
   }
 
@@ -59,11 +49,9 @@ object Subscriptions {
   def diff(a: Subscriptions, b: Subscriptions): Diff = {
     val (addedE, removedE, unchangedE) = diff(a.events, b.events)
     val (addedTS, removedTS, unchangedTS) = diff(a.timeSeries, b.timeSeries)
-    val (addedTE, removedTE, unchangedTE) = diff(a.traceEvents, b.traceEvents)
-    val (addedTTS, removedTTS, unchangedTTS) = diff(a.traceTimeSeries, b.traceTimeSeries)
-    val added = Subscriptions(addedE, addedTS, addedTE, addedTTS)
-    val removed = Subscriptions(removedE, removedTS, removedTE, removedTTS)
-    val unchanged = Subscriptions(unchangedE, unchangedTS, unchangedTE, unchangedTTS)
+    val added = Subscriptions(addedE, addedTS)
+    val removed = Subscriptions(removedE, removedTS)
+    val unchanged = Subscriptions(unchangedE, unchangedTS)
     Diff(added, removed, unchanged)
   }
 

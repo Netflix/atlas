@@ -20,7 +20,6 @@ import com.netflix.atlas.core.model.DataVocabulary
 import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.EventVocabulary
 import com.netflix.atlas.core.model.ModelExtractors
-import com.netflix.atlas.core.model.TraceVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import org.apache.pekko.stream.Attributes
 import org.apache.pekko.stream.FlowShape
@@ -177,7 +176,6 @@ private[stream] object LwcToAggrDatapoint {
   case class DatapointMetadata(dataExprStr: String, dataExpr: DataExpr, step: Long)
 
   private val dataInterpreter = Interpreter(DataVocabulary.allWords)
-  private val traceInterpreter = Interpreter(TraceVocabulary.allWords)
   private val eventInterpreter = Interpreter(EventVocabulary.allWords)
 
   private def parseExpr(input: String, exprType: ExprType = ExprType.TIME_SERIES): DataExpr = {
@@ -187,18 +185,11 @@ private[stream] object LwcToAggrDatapoint {
           case (expr: DataExpr) :: Nil => expr
           case _ => throw new IllegalArgumentException(s"invalid expr: $input")
         }
-      case ExprType.TRACE_TIME_SERIES =>
-        traceInterpreter.execute(input).stack match {
-          case ModelExtractors.TraceTimeSeriesType(tq) :: Nil => tq.expr.expr.dataExprs.head
-          case _ => throw new IllegalArgumentException(s"invalid expr: $input")
-        }
       case ExprType.EVENTS =>
         eventInterpreter.execute(input).stack match {
           case ModelExtractors.EventExprType(expr: EventExpr.Sample) :: Nil => expr.dataExpr
           case _ => throw new IllegalArgumentException(s"invalid expr: $input")
         }
-      case _ =>
-        throw new IllegalArgumentException(s"unsupported expression type: $exprType")
     }
   }
 }

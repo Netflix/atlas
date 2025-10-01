@@ -21,7 +21,6 @@ import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.Query.KeyQuery
 import com.netflix.atlas.core.model.StyleExpr
-import com.netflix.atlas.core.model.TraceQuery
 import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.stream.ExprInterpreter
 import com.netflix.spectator.atlas.impl.Parser
@@ -82,23 +81,6 @@ class ExpressionSplitter(config: Config) {
           .map { e =>
             val q = toSpectatorQuery(compress(e.query))
             DataExprMeta(e.toString, q)
-          }
-      case ExprType.TRACE_EVENTS =>
-        parsedExpressions.map { e =>
-          // Tracing cannot be scoped to specific infrastructure, always use True
-          DataExprMeta(e.toString, MatchesAll)
-        }
-      case ExprType.TRACE_TIME_SERIES =>
-        parsedExpressions
-          .collect {
-            case tq: TraceQuery.SpanTimeSeries =>
-              tq.expr.expr.dataExprs.map(e => tq.copy(expr = StyleExpr(e, Map.empty)))
-          }
-          .flatten
-          .distinct
-          .map { e =>
-            // Tracing cannot be scoped to specific infrastructure, always use True
-            DataExprMeta(e.toString, MatchesAll)
           }
     }
   }
