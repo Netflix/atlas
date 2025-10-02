@@ -106,7 +106,7 @@ private[events] object DatapointConverter {
           case _                      => event => toDouble(event.extractValueSafe(k), Double.NaN)
         }
       case None =>
-        event => toDouble(event.value, 1.0)
+        _ => 1.0
     }
   }
 
@@ -329,8 +329,7 @@ private[events] object DatapointConverter {
 
     override def update(event: LwcEvent): Unit = {
       if (isPercentile) {
-        val rawValue = getRawValue(event)
-        val pctTag = toPercentileTag(rawValue)
+        val pctTag = getPercentileTag(event)
         val tagValues = by.keys
           .map {
             case TagKey.percentile => pctTag
@@ -363,10 +362,10 @@ private[events] object DatapointConverter {
       }
     }
 
-    private def getRawValue(event: LwcEvent): Any = {
+    private def getPercentileTag(event: LwcEvent): String = {
       params.tags.get(params.valueKey) match {
-        case Some(k) => event.extractValueSafe(k)
-        case None    => event.value
+        case Some(k) => toPercentileTag(event.extractValueSafe(k))
+        case None    => toPercentileHex("D", 1L)
       }
     }
 
