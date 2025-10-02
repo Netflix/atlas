@@ -36,8 +36,12 @@ abstract class TypedLwcEventFilter extends LwcEventFilter {
     */
   def typedDimensions: Map[String, TypedLwcEventFilter.TypeMatcher]
 
+  /**
+    * Indicates the subclass will handle the matching logic with `customMatches`. */
+  def isCustom(key: String): Boolean = false
+
   private def isSpecial(key: String): Boolean = {
-    typedDimensions.contains(key)
+    typedDimensions.contains(key) || isCustom(key)
   }
 
   private def removeValueKey(query: Query): Query = {
@@ -106,22 +110,35 @@ abstract class TypedLwcEventFilter extends LwcEventFilter {
     }
   }
 
+  /**
+    * Overridden by a subclass to provide custom matching logic for some keys.
+    *
+    * @param event
+    *     The event to check
+    * @param query
+    *     Query to check against the event
+    * @return
+    *     True if the event matches the query
+    */
+  def customMatches(event: LwcEvent, query: Query.KeyQuery): Boolean = false
+
   override def matches(event: LwcEvent, postFilterQuery: Query): Boolean = {
     postFilterQuery match {
-      case Query.False               => false
-      case Query.True                => true
-      case q: Query.HasKey           => event.extractValueSafe(q.k) != null
-      case q: Query.Equal            => checkKV(event, q.k, q.v, c => c == 0)
-      case q: Query.LessThan         => checkKV(event, q.k, q.v, c => c < 0)
-      case q: Query.LessThanEqual    => checkKV(event, q.k, q.v, c => c <= 0)
-      case q: Query.GreaterThan      => checkKV(event, q.k, q.v, c => c > 0)
-      case q: Query.GreaterThanEqual => checkKV(event, q.k, q.v, c => c >= 0)
-      case q: Query.In               => checkIn(event, q.k, q.vs)
-      case q: Query.Regex            => checkPattern(event, q)
-      case q: Query.RegexIgnoreCase  => checkPattern(event, q)
-      case q: Query.And              => matches(event, q.q1) && matches(event, q.q2)
-      case q: Query.Or               => matches(event, q.q1) || matches(event, q.q2)
-      case q: Query.Not              => !matches(event, q.q)
+      case Query.False                        => false
+      case Query.True                         => true
+      case q: Query.KeyQuery if isCustom(q.k) => customMatches(event, q)
+      case q: Query.HasKey                    => event.extractValueSafe(q.k) != null
+      case q: Query.Equal                     => checkKV(event, q.k, q.v, c => c == 0)
+      case q: Query.LessThan                  => checkKV(event, q.k, q.v, c => c < 0)
+      case q: Query.LessThanEqual             => checkKV(event, q.k, q.v, c => c <= 0)
+      case q: Query.GreaterThan               => checkKV(event, q.k, q.v, c => c > 0)
+      case q: Query.GreaterThanEqual          => checkKV(event, q.k, q.v, c => c >= 0)
+      case q: Query.In                        => checkIn(event, q.k, q.vs)
+      case q: Query.Regex                     => checkPattern(event, q)
+      case q: Query.RegexIgnoreCase           => checkPattern(event, q)
+      case q: Query.And                       => matches(event, q.q1) && matches(event, q.q2)
+      case q: Query.Or                        => matches(event, q.q1) || matches(event, q.q2)
+      case q: Query.Not                       => !matches(event, q.q)
     }
   }
 }

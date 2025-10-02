@@ -34,6 +34,8 @@ import scala.util.Random
   */
 class TraceLwcEvent(spans: Seq[SpanData]) extends LwcEvent {
 
+  import TraceLwcEvent.*
+
   require(spans.size > 1, "must have at least one span")
 
   // Map to lookup parent by id
@@ -50,28 +52,37 @@ class TraceLwcEvent(spans: Seq[SpanData]) extends LwcEvent {
     }
   }
 
-  // Current span to be considered, defaults to the root span
-  private var current: SpanData = root
-
   /** Invoke the function for each span in the trace as an LwcEvent. */
   def foreach(f: LwcEvent => Unit): Unit = {
+    val spanEvent = new SpanLwcEvent(this, null)
     spans.foreach { span =>
-      current = span
-      f(this)
+      spanEvent.current = span
+      f(spanEvent)
     }
   }
 
-  override def rawEvent: Any = current
+  /** Checks if there exists an span in the trace that matches the predicate. */
+  def exists(f: LwcEvent => Boolean): Boolean = {
+    val spanEvent = new SpanLwcEvent(this, null)
+    spans.exists { span =>
+      spanEvent.current = span
+      f(spanEvent)
+    }
+  }
 
-  override def timestamp: Long = current.getEndEpochNanos / 1_000_000L
+  override def rawEvent: Any = root
 
-  override def extractValue(key: String): Any = {
+  override def timestamp: Long = root.getEndEpochNanos / 1_000_000L
+
+  override def extractValue(key: String): Any = extractValue(root, key)
+
+  private def extractValue(span: SpanData, key: String): Any = {
     if (key.startsWith("root."))
-      extractValue(root, key.substring("root.".length))
+      extractValueImpl(root, key.substring("root.".length))
     else if (key.startsWith("parent."))
-      extractFromParent(current, key.substring("parent.".length))
+      extractFromParent(span, key.substring("parent.".length))
     else
-      extractValue(current, key)
+      extractValueImpl(span, key)
   }
 
   @scala.annotation.tailrec
@@ -80,13 +91,13 @@ class TraceLwcEvent(spans: Seq[SpanData]) extends LwcEvent {
       case Some(s) if key.startsWith("parent.") =>
         extractFromParent(s, key.substring("parent.".length))
       case Some(s) =>
-        extractValue(s, key)
+        extractValueImpl(s, key)
       case None =>
         null
     }
   }
 
-  private def extractValue(span: SpanData, key: String): Any = {
+  private def extractValueImpl(span: SpanData, key: String): Any = {
     key match {
       case "name"     => span.getName
       case "spanId"   => span.getSpanId
@@ -100,6 +111,64 @@ class TraceLwcEvent(spans: Seq[SpanData]) extends LwcEvent {
 }
 
 object TraceLwcEvent {
+
+  /**
+    * Helper that wraps a trace event to represent an event for a span. Used as part
+    * of operations that iterate over the spans in the trace.
+    */
+  private class SpanLwcEvent(val traceEvent: TraceLwcEvent, var current: SpanData)
+      extends LwcEvent {
+
+    override def rawEvent: Any = current
+
+    override def timestamp: Long = current.getEndEpochNanos / 1_000_000L
+
+    override def extractValue(key: String): Any = traceEvent.extractValue(current, key)
+  }
+
+  /**
+    * Sample event filter to allow some custom post filter handling. Supports duration
+    * match on the spans and adds support for "any." prefix. Note, the "any." prefix
+    * would require a linear scan over all the spans for each index query that matches
+    * and thus could be quite expensive.
+    */
+  object TraceLwcEventFilter extends TypedLwcEventFilter {
+
+    override val typedDimensions: Map[String, TypedLwcEventFilter.TypeMatcher] =
+      Map("duration" -> TypedLwcEventFilter.DurationMatcher)
+
+    override def valueDimension: String = "value"
+
+    override def isCustom(key: String): Boolean = key.startsWith("any.")
+
+    private def fixKey(query: Query.KeyQuery): Query.KeyQuery = {
+      val k = query.k.substring("any.".length)
+      query match {
+        case Query.HasKey(_)              => Query.HasKey(k)
+        case Query.Equal(_, v)            => Query.Equal(k, v)
+        case Query.LessThan(_, v)         => Query.LessThan(k, v)
+        case Query.LessThanEqual(_, v)    => Query.LessThanEqual(k, v)
+        case Query.GreaterThan(_, v)      => Query.GreaterThan(k, v)
+        case Query.GreaterThanEqual(_, v) => Query.GreaterThanEqual(k, v)
+        case Query.In(_, vs)              => Query.In(k, vs)
+        case Query.Regex(_, v)            => Query.Regex(k, v)
+        case Query.RegexIgnoreCase(_, v)  => Query.RegexIgnoreCase(k, v)
+      }
+    }
+
+    private def check(event: TraceLwcEvent, query: Query.KeyQuery): Boolean = {
+      val q = fixKey(query)
+      event.exists(e => matches(e, q))
+    }
+
+    override def customMatches(event: LwcEvent, query: Query.KeyQuery): Boolean = {
+      event match {
+        case e: TraceLwcEvent if isCustom(query.k) => check(e, query)
+        case e: SpanLwcEvent if isCustom(query.k)  => check(e.traceEvent, query)
+        case _                                     => false
+      }
+    }
+  }
 
   /**
     * Rewrite keys for the query to use parent instead of child. Child is just a convenience
