@@ -122,7 +122,7 @@ class LwcEventClientSuite extends FunSuite {
     vs.foreach { v =>
       val event = parseDatapointEvent(v)
       assertEquals(event.tags, Map("app" -> "www", "value" -> "duration"))
-      assertEqualsDouble(event.value, 8.4, 1e-6)
+      assertEqualsDouble(event.value, 8.4, 1e-12)
     }
   }
 
@@ -151,7 +151,7 @@ class LwcEventClientSuite extends FunSuite {
     vs.foreach { v =>
       val event = parseDatapointEvent(v)
       assertEquals(event.tags, Map("app" -> "www", "value" -> "duration"))
-      assertEqualsDouble(event.value, 800.8, 1e-6)
+      assertEqualsDouble(event.value, 800.8, 1e-12)
     }
   }
 
@@ -177,7 +177,7 @@ class LwcEventClientSuite extends FunSuite {
     vs.foreach { v =>
       val event = parseDatapointEvent(v)
       assertEquals(event.tags, Map("app" -> "www", "custom" -> "duration"))
-      assertEqualsDouble(event.value, 8.4, 1e-6)
+      assertEqualsDouble(event.value, 8.4, 1e-12)
     }
   }
 
@@ -198,7 +198,7 @@ class LwcEventClientSuite extends FunSuite {
     vs.foreach { v =>
       val event = parseDatapointEvent(v)
       assertEquals(event.tags, Map("app" -> "www", "node" -> "i-123"))
-      assertEqualsDouble(event.value, 0.2, 1e-6)
+      assertEqualsDouble(event.value, 0.2, 1e-12)
     }
   }
 
@@ -265,7 +265,7 @@ class LwcEventClientSuite extends FunSuite {
     vs.foreach { v =>
       val event = parseDatapointEvent(v)
       assertEquals(event.tags, Map("app" -> "e", "parent.app" -> "b"))
-      assertEqualsDouble(event.value, 0.6, 1e-6)
+      assertEqualsDouble(event.value, 0.6, 1e-12)
     }
   }
 
@@ -290,8 +290,107 @@ class LwcEventClientSuite extends FunSuite {
     vs.foreach { v =>
       val event = parseDatapointEvent(v)
       assertEquals(event.tags, Map("app" -> "e", "value" -> "duration"))
-      assertEqualsDouble(event.value, 2.1e-8, 1e-6)
+      assertEqualsDouble(event.value, 2.1e-8, 1e-12)
     }
+  }
+
+  test("trace analytics, using trace filter") {
+    val subs = Subscriptions.fromTypedList(
+      List(
+        Subscription(
+          "1",
+          step,
+          "duration,50ns,:gt,value,duration,:eq,:and,:sum",
+          Subscriptions.TimeSeries
+        )
+      )
+    )
+    val output = List.newBuilder[String]
+    val filter = TraceLwcEvent.TraceLwcEventFilter
+    val client = LwcEventClient(subs, output.addOne, clock, filter)
+    TraceLwcEvent.sampleTrace.foreach(client.process)
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
+    val vs = output.result()
+    assertEquals(vs.size, 1)
+    vs.foreach { v =>
+      val event = parseDatapointEvent(v)
+      assertEquals(event.tags, Map("value" -> "duration"))
+      assertEqualsDouble(event.value, 4.88e-8, 1e-12)
+    }
+  }
+
+  test("trace analytics, using trace filter, any predicate, one match") {
+    val subs = Subscriptions.fromTypedList(
+      List(
+        Subscription(
+          "1",
+          step,
+          "app,a,:eq,any.status,ERROR,:eq,:and,:sum",
+          Subscriptions.TimeSeries
+        )
+      )
+    )
+    val output = List.newBuilder[String]
+    val filter = TraceLwcEvent.TraceLwcEventFilter
+    val client = LwcEventClient(subs, output.addOne, clock, filter)
+    TraceLwcEvent.sampleTrace.foreach(client.process)
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
+    val vs = output.result()
+    assertEquals(vs.size, 1)
+    vs.foreach { v =>
+      val event = parseDatapointEvent(v)
+      assertEquals(event.tags, Map("app" -> "a", "any.status" -> "ERROR"))
+      assertEqualsDouble(event.value, 0.2, 1e-12)
+    }
+  }
+
+  test("trace analytics, using trace filter, any predicate, many matches") {
+    val subs = Subscriptions.fromTypedList(
+      List(
+        Subscription(
+          "1",
+          step,
+          "app,a,:eq,any.status,OK,:eq,:and,:sum",
+          Subscriptions.TimeSeries
+        )
+      )
+    )
+    val output = List.newBuilder[String]
+    val filter = TraceLwcEvent.TraceLwcEventFilter
+    val client = LwcEventClient(subs, output.addOne, clock, filter)
+    TraceLwcEvent.sampleTrace.foreach(client.process)
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
+    val vs = output.result()
+    assertEquals(vs.size, 1)
+    vs.foreach { v =>
+      val event = parseDatapointEvent(v)
+      assertEquals(event.tags, Map("app" -> "a", "any.status" -> "OK"))
+      assertEqualsDouble(event.value, 0.2, 1e-12)
+    }
+  }
+
+  test("trace analytics, using trace filter, any predicate, no matches") {
+    val subs = Subscriptions.fromTypedList(
+      List(
+        Subscription(
+          "1",
+          step,
+          "app,a,:eq,any.status,FOO,:eq,:and,:sum",
+          Subscriptions.TimeSeries
+        )
+      )
+    )
+    val output = List.newBuilder[String]
+    val filter = TraceLwcEvent.TraceLwcEventFilter
+    val client = LwcEventClient(subs, output.addOne, clock, filter)
+    TraceLwcEvent.sampleTrace.foreach(client.process)
+    clock.setWallTime(step)
+    client.process(LwcEvent.HeartbeatLwcEvent(step))
+    val vs = output.result()
+    assert(vs.isEmpty)
   }
 
   test("trace analytics, group by with parent attributes") {
@@ -315,9 +414,9 @@ class LwcEventClientSuite extends FunSuite {
     vs.foreach { v =>
       val event = parseDatapointEvent(v)
       if (event.tags == Map("app" -> "e", "parent.app" -> "b", "parent.parent.app" -> "a"))
-        assertEqualsDouble(event.value, 0.6, 1e-6)
+        assertEqualsDouble(event.value, 0.6, 1e-12)
       else if (event.tags == Map("app" -> "e", "parent.app" -> "c", "parent.parent.app" -> "a"))
-        assertEqualsDouble(event.value, 0.4, 1e-6)
+        assertEqualsDouble(event.value, 0.4, 1e-12)
       else
         fail(s"unexpected tags: ${event.tags}")
     }
