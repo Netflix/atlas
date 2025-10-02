@@ -165,6 +165,8 @@ object AbstractLwcEventClient {
 
     private val lastFlushTimestamp = new AtomicLong(0L)
 
+    override val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
+
     def flush(timestamp: Long): Unit = {
       val stepTime = timestamp / subscription.step
       if (stepTime > lastFlushTimestamp.get()) {
