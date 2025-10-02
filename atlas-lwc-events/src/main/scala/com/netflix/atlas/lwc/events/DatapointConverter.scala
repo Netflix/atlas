@@ -56,6 +56,7 @@ private[events] object DatapointConverter {
   private val MaxGroupBySize: Int = ConfigManager.get().getInt("atlas.lwc.events.max-groups")
 
   def apply(
+    valueKey: String,
     id: String,
     rawExpr: String,
     expr: DataExpr,
@@ -65,9 +66,19 @@ private[events] object DatapointConverter {
     consumer: (String, LwcEvent) => Unit
   ): DatapointConverter = {
     val tags = Query.tags(expr.query)
-    val mapper = createValueMapper(tags)
+    val mapper = createValueMapper(valueKey, tags)
     val params =
-      Params(id, rawExpr, Query.tags(expr.query), clock, step, mapper, sampleMapper, consumer)
+      Params(
+        valueKey,
+        id,
+        rawExpr,
+        Query.tags(expr.query),
+        clock,
+        step,
+        mapper,
+        sampleMapper,
+        consumer
+      )
     toConverter(expr, params)
   }
 
@@ -86,8 +97,8 @@ private[events] object DatapointConverter {
     * Extract value and map as needed based on the type. Uses statistic and grouping to
     * coerce events so they structurally work like spectator composite types.
     */
-  private def createValueMapper(tags: Map[String, String]): LwcEvent => Double = {
-    tags.get("value") match {
+  private def createValueMapper(valueKey: String, tags: Map[String, String]): LwcEvent => Double = {
+    tags.get(valueKey) match {
       case Some(k) =>
         tags.get("statistic") match {
           case Some("count")          => event => countIfPresent(event.extractValueSafe(k))
@@ -157,6 +168,7 @@ private[events] object DatapointConverter {
   }
 
   case class Params(
+    valueKey: String,
     id: String,
     rawExpr: String,
     tags: Map[String, String],
@@ -352,7 +364,7 @@ private[events] object DatapointConverter {
     }
 
     private def getRawValue(event: LwcEvent): Any = {
-      params.tags.get("value") match {
+      params.tags.get(params.valueKey) match {
         case Some(k) => event.extractValueSafe(k)
         case None    => event.value
       }

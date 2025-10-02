@@ -33,7 +33,7 @@ class RemoteLwcEventClientSuite extends FunSuite {
   override def beforeEach(context: BeforeEach): Unit = {
     payloads = new CopyOnWriteArrayList[RemoteLwcEventClient.EvalPayload]()
     registry = new DefaultRegistry()
-    client = new RemoteLwcEventClient(registry, config) {
+    client = new RemoteLwcEventClient(registry, config, LwcEventFilter.default) {
       override def start(): Unit = {
         val subs = Subscriptions(events =
           List(

@@ -32,8 +32,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantLock
 import scala.util.Using
 
-class RemoteLwcEventClient(registry: Registry, config: Config)
-    extends AbstractLwcEventClient(registry.clock())
+class RemoteLwcEventClient(registry: Registry, config: Config, filter: LwcEventFilter)
+    extends AbstractLwcEventClient(registry.clock(), filter)
     with AutoCloseable
     with StrictLogging {
 

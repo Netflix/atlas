@@ -16,7 +16,6 @@
 package com.netflix.atlas.lwc.events
 
 import com.netflix.atlas.core.model.EventExpr
-import com.netflix.atlas.core.model.Query
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.atlas.impl.QueryIndex
@@ -24,7 +23,7 @@ import com.netflix.spectator.atlas.impl.QueryIndex
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
-abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
+abstract class AbstractLwcEventClient(clock: Clock, filter: LwcEventFilter) extends LwcEventClient {
 
   import AbstractLwcEventClient.*
 
@@ -51,12 +50,14 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     // Pass-through events
     diff.added.events.foreach { sub =>
       val expr = ExprUtils.parseEventExpr(sub.expression)
-      val q = ExprUtils.toSpectatorQuery(removeValueClause(expr.query))
+      val queries = filter.splitQuery(expr.query)
+      val q = ExprUtils.toSpectatorQuery(queries.indexQuery)
       val handler = expr match {
         case EventExpr.Raw(_)       => EventHandler(sub, e => List(e))
         case EventExpr.Table(_, cs) => EventHandler(sub, e => List(LwcEvent.Row(e, cs)))
         case expr: EventExpr.Sample =>
           val converter = DatapointConverter(
+            filter.valueDimension,
             sub.id,
             sub.expression,
             expr.dataExpr,
@@ -68,7 +69,8 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
           EventHandler(
             sub,
             event => {
-              converter.update(event)
+              if (filter.matches(event, queries.postFilterQuery))
+                converter.update(event)
               Nil
             },
             Some(converter)
@@ -89,13 +91,23 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
     // Analytics based on events
     diff.added.timeSeries.foreach { sub =>
       val expr = ExprUtils.parseDataExpr(sub.expression)
-      val converter =
-        DatapointConverter(sub.id, sub.expression, expr, clock, sub.step, None, submit)
-      val q = ExprUtils.toSpectatorQuery(removeValueClause(expr.query))
+      val converter = DatapointConverter(
+        filter.valueDimension,
+        sub.id,
+        sub.expression,
+        expr,
+        clock,
+        sub.step,
+        None,
+        submit
+      )
+      val queries = filter.splitQuery(expr.query)
+      val q = ExprUtils.toSpectatorQuery(queries.indexQuery)
       val handler = EventHandler(
         sub,
         event => {
-          converter.update(event)
+          if (filter.matches(event, queries.postFilterQuery))
+            converter.update(event)
           Nil
         },
         Some(converter)
@@ -120,15 +132,6 @@ abstract class AbstractLwcEventClient(clock: Clock) extends LwcEventClient {
       val (q, handler) = handlerMeta
       index.remove(q, handler)
     }
-  }
-
-  private def removeValueClause(query: Query): Query = {
-    val q = query
-      .rewrite {
-        case kq: Query.KeyQuery if kq.k == "value" => Query.True
-      }
-      .asInstanceOf[Query]
-    Query.simplify(q, ignore = true)
   }
 
   override def couldMatch(tags: String => String): Boolean = {
