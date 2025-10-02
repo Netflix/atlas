@@ -39,12 +39,6 @@ trait LwcEvent {
   def timestamp: Long
 
   /**
-    * Value to use for the event when mapping to a time series. By default it will be
-    * 1.0 same as incrementing a counter by 1.
-    */
-  def value: Any = 1.0
-
-  /**
     * Extract a tag value for a given key. Returns `null` if there is no value for
     * the key or the value is not a string. By default it will delegate to `extractValue`
     * to ensure the two are consistent.

@@ -58,10 +58,6 @@ class LwcEventDurationSuite extends FunSuite {
     assertEquals(sampleLwcEvent.extractValueSafe("foo"), null)
   }
 
-  test("default value") {
-    assertEquals(sampleLwcEvent.value, 1.0)
-  }
-
   test("toJson: raw event") {
     val expected = """{"tags":{"app":"www","node":"i-123"},"duration":42}"""
     assertEquals(sampleLwcEvent.toJson, expected)

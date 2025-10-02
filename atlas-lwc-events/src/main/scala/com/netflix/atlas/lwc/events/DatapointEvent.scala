@@ -36,7 +36,7 @@ case class DatapointEvent(
   id: String,
   tags: Map[String, String],
   timestamp: Long,
-  override val value: Double,
+  value: Double,
   samples: List[List[Any]] = Nil
 ) extends LwcEvent {
 

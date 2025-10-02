@@ -310,7 +310,9 @@ class DatapointConverterSuite extends FunSuite {
     }
     clock.setWallTime(step + 1)
     converter.flush(clock.wallTime())
-    val results = events.result()
+    val results = events.result().collect {
+      case d: DatapointEvent => d
+    }
     assertEquals(results.size, 4)
     assertEquals(results.head.value, 0.2, 1e-12)
   }
@@ -404,7 +406,9 @@ class DatapointConverterSuite extends FunSuite {
     }
     clock.setWallTime(step + 1)
     converter.flush(clock.wallTime())
-    val results = events.result()
+    val results = events.result().collect {
+      case d: DatapointEvent => d
+    }
     assertEquals(results.size, 4)
     assertEquals(results.head.value, 0.2, 1e-12)
   }
@@ -431,7 +435,9 @@ class DatapointConverterSuite extends FunSuite {
     }
     clock.setWallTime(step + 1)
     converter.flush(clock.wallTime())
-    val results = events.result()
+    val results = events.result().collect {
+      case d: DatapointEvent => d
+    }
     assertEquals(results.size, 4)
     assertEquals(results.head.value, 0.2, 1e-12)
   }
