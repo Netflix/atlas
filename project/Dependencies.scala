@@ -72,7 +72,7 @@ object Dependencies {
   val spectatorLog4j    = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2       = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
   val springContext     = "org.springframework" % "spring-context" % spring
-  val typesafeConfig    = "com.typesafe" % "config" % "1.4.4"
+  val typesafeConfig    = "com.typesafe" % "config" % "1.4.5"
 }
 
 // format: on
