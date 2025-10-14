@@ -4,18 +4,18 @@ import sbt.*
 
 object Dependencies {
   object Versions {
-    val pekko       = "1.2.0"
+    val pekko       = "1.2.1"
     val pekkoHttpV  = "1.2.0"
-    val iep         = "5.1.8"
+    val iep         = "5.1.9"
     val jackson     = "2.20.0"
-    val log4j       = "2.25.1"
-    val otel        = "1.54.1"
-    val scala       = "2.13.16"
+    val log4j       = "2.25.2"
+    val otel        = "1.55.0"
+    val scala       = "2.13.17"
     val slf4j       = "2.0.17"
-    val spectator   = "1.9.0"
-    val spring      = "6.2.10"
+    val spectator   = "1.9.1"
+    val spring      = "6.2.11"
 
-    val crossScala  = Seq(scala, "3.7.1")
+    val crossScala  = Seq(scala, "3.7.3")
   }
 
   import Versions.*
@@ -29,7 +29,7 @@ object Dependencies {
   val pekkoStreamTestkit= "org.apache.pekko" %% "pekko-stream-testkit" % pekko
   val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
   val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.2.2"
-  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "4.1"
+  val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "4.2"
   val hikariCP          = "com.zaxxer" % "HikariCP" % "7.0.2"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
   val iepLeaderDynamoDb = "com.netflix.iep" % "iep-leader-dynamodb" % iep
@@ -51,18 +51,18 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
-  val munit             = "org.scalameta" %% "munit" % "1.1.1"
+  val munit             = "org.scalameta" %% "munit" % "1.2.1"
   val otelSdk           = "io.opentelemetry" % "opentelemetry-sdk" % otel
   val otelSdkTest       = "io.opentelemetry" % "opentelemetry-sdk-testing" % otel
-  val postgres          = "org.postgresql" % "postgresql" % "42.7.7"
+  val postgres          = "org.postgresql" % "postgresql" % "42.7.8"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.1.1"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.3.0"
-  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0"
+  val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.14.0"
   val scalaCompatJdk8   = "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
   val scalaLibrary      = "org.scala-lang" % "scala-library"
   val scalaLibraryAll   = "org.scala-lang" % "scala-library-all"
-  val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5"
+  val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6"
   val slf4jApi          = "org.slf4j" % "slf4j-api" % slf4j
   val slf4jLog4j        = "org.slf4j" % "slf4j-log4j12" % slf4j
   val slf4jSimple       = "org.slf4j" % "slf4j-simple" % slf4j
@@ -72,7 +72,7 @@ object Dependencies {
   val spectatorLog4j    = "com.netflix.spectator" % "spectator-ext-log4j2" % spectator
   val spectatorM2       = "com.netflix.spectator" % "spectator-reg-metrics2" % spectator
   val springContext     = "org.springframework" % "spring-context" % spring
-  val typesafeConfig    = "com.typesafe" % "config" % "1.4.4"
+  val typesafeConfig    = "com.typesafe" % "config" % "1.4.5"
 }
 
 // format: on

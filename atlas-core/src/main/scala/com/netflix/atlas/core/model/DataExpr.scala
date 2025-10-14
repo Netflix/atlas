@@ -72,7 +72,7 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
     * to `super()` being called in the case class constructor. That appears to be the case
     * with current scala versions.
     */
-  override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
+  override val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
 }
 
 object DataExpr {
