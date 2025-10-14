@@ -54,7 +54,7 @@ object Dependencies {
   val munit             = "org.scalameta" %% "munit" % "1.2.1"
   val otelSdk           = "io.opentelemetry" % "opentelemetry-sdk" % otel
   val otelSdkTest       = "io.opentelemetry" % "opentelemetry-sdk-testing" % otel
-  val postgres          = "org.postgresql" % "postgresql" % "42.7.7"
+  val postgres          = "org.postgresql" % "postgresql" % "42.7.8"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.1.1"
   val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.3.0"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0"
