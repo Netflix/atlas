@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.eval.model
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.databind.JsonNode
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
+import tools.jackson.core.JsonGenerator
+import tools.jackson.databind.JsonNode
 
 /**
   * Message type use for events to forward to a consumer.
@@ -27,8 +27,8 @@ case class EventMessage(payload: JsonNode) extends JsonSupport {
 
   override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("type", "event")
-    gen.writeFieldName("payload")
+    gen.writeStringProperty("type", "event")
+    gen.writeName("payload")
     Json.encode(gen, payload)
     gen.writeEndObject()
   }

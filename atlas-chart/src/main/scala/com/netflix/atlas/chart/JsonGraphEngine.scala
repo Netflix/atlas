@@ -17,8 +17,8 @@ package com.netflix.atlas.chart
 
 import java.io.OutputStream
 import java.io.OutputStreamWriter
-
 import com.netflix.atlas.chart.model.*
+import tools.jackson.core.ObjectWriteContext
 
 class JsonGraphEngine extends GraphEngine {
 
@@ -31,30 +31,30 @@ class JsonGraphEngine extends GraphEngine {
   def write(config: GraphDef, output: OutputStream): Unit = {
     val writer = new OutputStreamWriter(output, "UTF-8")
     val seriesList = config.plots.flatMap(_.lines)
-    val gen = jsonFactory.createGenerator(writer)
+    val gen = jsonFactory.createGenerator(ObjectWriteContext.empty, writer)
 
     gen.writeStartObject()
-    gen.writeNumberField("start", config.startTime.toEpochMilli)
-    gen.writeNumberField("step", config.step)
+    gen.writeNumberProperty("start", config.startTime.toEpochMilli)
+    gen.writeNumberProperty("step", config.step)
 
-    gen.writeArrayFieldStart("legend")
+    gen.writeArrayPropertyStart("legend")
     seriesList.foreach { series =>
       val label = series.data.label
       gen.writeString(label)
     }
     gen.writeEndArray()
 
-    gen.writeArrayFieldStart("metrics")
+    gen.writeArrayPropertyStart("metrics")
     seriesList.foreach { series =>
       gen.writeStartObject()
       series.data.tags.toList.sortWith(_._1 < _._1).foreach { t =>
-        gen.writeStringField(t._1, t._2)
+        gen.writeStringProperty(t._1, t._2)
       }
       gen.writeEndObject()
     }
     gen.writeEndArray()
 
-    gen.writeArrayFieldStart("values")
+    gen.writeArrayPropertyStart("values")
     val step = config.step.asInstanceOf[Int]
     val endTime = config.endTime.toEpochMilli
     var timestamp = config.startTime.toEpochMilli
@@ -69,7 +69,7 @@ class JsonGraphEngine extends GraphEngine {
     }
     gen.writeEndArray()
 
-    gen.writeArrayFieldStart("notices")
+    gen.writeArrayPropertyStart("notices")
     config.warnings.foreach(gen.writeString)
     gen.writeEndArray()
 
@@ -79,16 +79,16 @@ class JsonGraphEngine extends GraphEngine {
       val graphLines = config.plots.map(_.data.size).sum
       val graphDatapoints = graphLines * ((end - start) / (config.step / 1000) + 1)
 
-      gen.writeObjectFieldStart("explain")
-      gen.writeNumberField("dataFetchTime", config.loadTime)
+      gen.writeObjectPropertyStart("explain")
+      gen.writeNumberProperty("dataFetchTime", config.loadTime)
 
-      gen.writeNumberField("inputLines", config.stats.inputLines)
-      gen.writeNumberField("intermediateLines", config.stats.outputLines)
-      gen.writeNumberField("graphLines", graphLines)
+      gen.writeNumberProperty("inputLines", config.stats.inputLines)
+      gen.writeNumberProperty("intermediateLines", config.stats.outputLines)
+      gen.writeNumberProperty("graphLines", graphLines)
 
-      gen.writeNumberField("inputDatapoints", config.stats.inputDatapoints)
-      gen.writeNumberField("intermediateDatapoints", config.stats.outputDatapoints)
-      gen.writeNumberField("graphDatapoints", graphDatapoints)
+      gen.writeNumberProperty("inputDatapoints", config.stats.inputDatapoints)
+      gen.writeNumberProperty("intermediateDatapoints", config.stats.outputDatapoints)
+      gen.writeNumberProperty("graphDatapoints", graphDatapoints)
       gen.writeEndObject()
     }
 

@@ -15,20 +15,20 @@
  */
 package com.netflix.atlas.eval.model
 
-import org.apache.pekko.util.ByteString
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.JsonToken
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.NullNode
+import java.io.ByteArrayOutputStream
+import java.io.OutputStream
+import java.util.zip.GZIPOutputStream
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonParserHelper.*
 import com.netflix.atlas.pekko.ByteStringInputStream
 import com.netflix.atlas.pekko.DiagnosticMessage
-
-import java.io.ByteArrayOutputStream
-import java.io.OutputStream
-import java.util.zip.GZIPOutputStream
+import org.apache.pekko.util.ByteString
+import tools.jackson.core.JsonParser
+import tools.jackson.core.JsonToken
+import tools.jackson.databind.DeserializationFeature
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.node.NullNode
 
 /**
   * Helpers for working with messages coming back from the LWCAPI service.
@@ -36,7 +36,9 @@ import java.util.zip.GZIPOutputStream
 object LwcMessages {
 
   // For reading arbitrary json structures for events
-  private val mapper = Json.newMapperBuilder.build()
+  private val mapper = Json.newMapperBuilder
+    .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+    .build()
 
   /**
     * Parse the message string into an internal model object based on the type.
@@ -118,7 +120,7 @@ object LwcMessages {
         case "message" =>
           val t = parser.nextToken()
           if (t == JsonToken.VALUE_STRING)
-            message = parser.getText
+            message = parser.getString
           else
             diagnosticMessage = parseDiagnosticMessage(parser)
 
@@ -170,7 +172,7 @@ object LwcMessages {
       val row = List.newBuilder[Any]
       var t = parser.nextToken()
       while (t != null && t != JsonToken.END_ARRAY) {
-        row += parser.readValueAsTree[JsonNode]()
+        row += mapper.readTree[JsonNode](parser)
         t = parser.nextToken()
       }
       samples += row.result()
@@ -332,9 +334,9 @@ object LwcMessages {
       foreachItem(parser) {
         parser.getIntValue match {
           case Expression =>
-            val expression = parser.nextTextValue()
+            val expression = parser.nextStringValue()
             if (parser.nextToken() == JsonToken.VALUE_STRING) {
-              val exprType = ExprType.valueOf(parser.getText)
+              val exprType = ExprType.valueOf(parser.getString)
               val step = parser.nextLongValue(-1L)
               builder += LwcExpression(expression, exprType, step)
             } else {
@@ -342,56 +344,56 @@ object LwcMessages {
               builder += LwcExpression(expression, ExprType.TIME_SERIES, step)
             }
           case Subscription =>
-            val expression = parser.nextTextValue()
+            val expression = parser.nextStringValue()
             val dataExprs = List.newBuilder[LwcDataExpr]
             foreachItem(parser) {
               dataExprs += LwcDataExpr(
-                parser.getText,
-                parser.nextTextValue(),
+                parser.getString,
+                parser.nextStringValue(),
                 parser.nextLongValue(-1L)
               )
             }
             builder += LwcSubscription(expression, dataExprs.result())
           case SubscriptionV2 =>
-            val expression = parser.nextTextValue()
-            val exprType = ExprType.valueOf(parser.nextTextValue())
+            val expression = parser.nextStringValue()
+            val exprType = ExprType.valueOf(parser.nextStringValue())
             val subExprs = List.newBuilder[LwcDataExpr]
             foreachItem(parser) {
               subExprs += LwcDataExpr(
-                parser.getText,
-                parser.nextTextValue(),
+                parser.getString,
+                parser.nextStringValue(),
                 parser.nextLongValue(-1L)
               )
             }
             builder += LwcSubscriptionV2(expression, exprType, subExprs.result())
           case Datapoint =>
             val timestamp = parser.nextLongValue(-1L)
-            val id = parser.nextTextValue()
+            val id = parser.nextStringValue()
             val tags = parseTags(parser, parser.nextIntValue(0))
             val value = nextDouble(parser)
             builder += LwcDatapoint(timestamp, id, tags, value)
           case DatapointV2 =>
             val timestamp = parser.nextLongValue(-1L)
-            val id = parser.nextTextValue()
+            val id = parser.nextStringValue()
             val tags = parseTags(parser, parser.nextIntValue(0))
             val value = nextDouble(parser)
             val samples = parseSamples(parser)
             builder += LwcDatapoint(timestamp, id, tags, value, samples)
           case LwcDiagnostic =>
-            val id = parser.nextTextValue()
-            val typeName = parser.nextTextValue()
-            val message = parser.nextTextValue()
+            val id = parser.nextStringValue()
+            val typeName = parser.nextStringValue()
+            val message = parser.nextStringValue()
             builder += LwcDiagnosticMessage(id, DiagnosticMessage(typeName, message, None))
           case Diagnostic =>
-            val typeName = parser.nextTextValue()
-            val message = parser.nextTextValue()
+            val typeName = parser.nextStringValue()
+            val message = parser.nextStringValue()
             builder += DiagnosticMessage(typeName, message, None)
           case Heartbeat =>
             val timestamp = parser.nextLongValue(-1L)
             val step = parser.nextLongValue(-1L)
             builder += LwcHeartbeat(timestamp, step)
           case Event =>
-            val id = parser.nextTextValue()
+            val id = parser.nextStringValue()
             builder += LwcEvent(id, nextTree(parser))
           case v =>
             throw new MatchError(s"invalid type id: $v")
@@ -410,8 +412,8 @@ object LwcMessages {
       val data = new Array[String](2 * n)
       var i = 0
       while (i < data.length) {
-        data(i) = parser.nextTextValue()
-        data(i + 1) = parser.nextTextValue()
+        data(i) = parser.nextStringValue()
+        data(i + 1) = parser.nextStringValue()
         i += 2
       }
       // The map should be sorted from the server side, so we can avoid resorting

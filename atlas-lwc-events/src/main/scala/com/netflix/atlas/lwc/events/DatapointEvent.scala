@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.lwc.events
 
-import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.json.Json
+import tools.jackson.core.JsonGenerator
 
 /**
   * Event that represents a time series data point generated from the events.

@@ -16,9 +16,8 @@
 package com.netflix.atlas.json
 
 import java.io.StringWriter
-import com.fasterxml.jackson.core.JsonGenerator
-
 import scala.util.Using
+import tools.jackson.core.JsonGenerator
 
 /**
   * Trait that adds methods to easily encode the object to JSON. Can be used to indicate

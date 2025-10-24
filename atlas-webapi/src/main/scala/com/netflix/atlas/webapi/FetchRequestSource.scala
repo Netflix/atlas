@@ -15,11 +15,18 @@
  */
 package com.netflix.atlas.webapi
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.netflix.atlas.chart.JsonCodec
-
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import com.netflix.atlas.chart.JsonCodec
+import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.EvalContext
+import com.netflix.atlas.core.model.StatefulExpr
+import com.netflix.atlas.core.model.TimeSeq
+import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.eval.graph.GraphConfig
+import com.netflix.atlas.eval.model.TimeSeriesMessage
+import com.netflix.atlas.json.Json
+import com.netflix.atlas.pekko.DiagnosticMessage
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorRefFactory
 import org.apache.pekko.http.scaladsl.model.HttpEntity
@@ -39,15 +46,7 @@ import org.apache.pekko.stream.stage.InHandler
 import org.apache.pekko.stream.stage.OutHandler
 import org.apache.pekko.util.ByteString
 import org.apache.pekko.util.Timeout
-import com.netflix.atlas.core.model.DataExpr
-import com.netflix.atlas.core.model.EvalContext
-import com.netflix.atlas.core.model.StatefulExpr
-import com.netflix.atlas.core.model.TimeSeq
-import com.netflix.atlas.core.model.TimeSeries
-import com.netflix.atlas.eval.graph.GraphConfig
-import com.netflix.atlas.eval.model.TimeSeriesMessage
-import com.netflix.atlas.json.Json
-import com.netflix.atlas.pekko.DiagnosticMessage
+import tools.jackson.core.JsonGenerator
 import com.netflix.atlas.webapi.GraphApi.DataRequest
 import com.netflix.atlas.webapi.GraphApi.DataResponse
 

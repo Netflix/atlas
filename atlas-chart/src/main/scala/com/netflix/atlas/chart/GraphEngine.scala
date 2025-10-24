@@ -16,9 +16,8 @@
 package com.netflix.atlas.chart
 
 import java.io.OutputStream
-
-import com.fasterxml.jackson.core.JsonFactory
 import com.netflix.atlas.chart.model.GraphDef
+import tools.jackson.core.json.JsonFactory
 
 object GraphEngine {
   val jsonFactory = new JsonFactory

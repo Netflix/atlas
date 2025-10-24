@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.eval.model
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.netflix.atlas.json.JsonSupport
+import tools.jackson.databind.JsonNode
 
 /**
   * Raw event data to pass through to the consumer.

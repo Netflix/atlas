@@ -16,15 +16,12 @@
 package com.netflix.atlas.chart
 
 import java.awt.Color
+import java.io.InputStream
 import java.io.OutputStream
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Base64
-import com.fasterxml.jackson.core.JsonFactory
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import scala.util.Using
 import com.netflix.atlas.chart.graphics.ChartSettings
 import com.netflix.atlas.chart.model.*
 import com.netflix.atlas.chart.util.PngImage
@@ -35,9 +32,14 @@ import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.core.util.Strings
-
-import java.io.InputStream
-import scala.util.Using
+import tools.jackson.core.JsonGenerator
+import tools.jackson.core.JsonParser
+import tools.jackson.core.ObjectReadContext
+import tools.jackson.core.ObjectWriteContext
+import tools.jackson.core.json.JsonFactory
+import tools.jackson.databind.DeserializationFeature
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.json.JsonMapper
 
 /**
   * Helper for converting a graph definition to and from json. The format is still being tested
@@ -56,32 +58,36 @@ object JsonCodec {
 
   import com.netflix.atlas.json.JsonParserHelper.*
   private val factory = new JsonFactory()
-  private val mapper = new ObjectMapper(factory)
+
+  private val mapper = JsonMapper
+    .builder(factory)
+    .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+    .build()
 
   private val pngEngine = new DefaultGraphEngine
 
   def encode(config: GraphDef): String = {
     Streams.string { w =>
-      Using.resource(factory.createGenerator(w)) { gen =>
+      Using.resource(factory.createGenerator(ObjectWriteContext.empty, w)) { gen =>
         writeGraphDef(gen, config)
       }
     }
   }
 
   def encode(output: OutputStream, config: GraphDef): Unit = {
-    Using.resource(factory.createGenerator(output)) { gen =>
+    Using.resource(factory.createGenerator(ObjectWriteContext.empty, output)) { gen =>
       writeGraphDef(gen, config)
     }
   }
 
   def decode(json: String): GraphDef = {
-    Using.resource(factory.createParser(json)) { parser =>
+    Using.resource(factory.createParser(ObjectReadContext.empty, json)) { parser =>
       readGraphDef(parser)
     }
   }
 
   def decode(json: InputStream): GraphDef = {
-    Using.resource(factory.createParser(json)) { parser =>
+    Using.resource(factory.createParser(ObjectReadContext.empty, json)) { parser =>
       readGraphDef(parser)
     }
   }
@@ -109,8 +115,8 @@ object JsonCodec {
   private def writeGraphImage(gen: JsonGenerator, config: GraphDef): Unit = {
     if (!config.renderingHints.contains("no-image")) {
       gen.writeStartObject()
-      gen.writeStringField("type", "graph-image")
-      gen.writeStringField("data", toDataUri(config))
+      gen.writeStringProperty("type", "graph-image")
+      gen.writeStringProperty("data", toDataUri(config))
       gen.writeEndObject()
     }
   }
@@ -123,47 +129,47 @@ object JsonCodec {
 
   def writeGraphDefMetadata(gen: JsonGenerator, config: GraphDef): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("type", "graph-metadata")
-    gen.writeNumberField("startTime", config.startTime.toEpochMilli)
-    gen.writeNumberField("endTime", config.endTime.toEpochMilli)
-    gen.writeArrayFieldStart("timezones")
+    gen.writeStringProperty("type", "graph-metadata")
+    gen.writeNumberProperty("startTime", config.startTime.toEpochMilli)
+    gen.writeNumberProperty("endTime", config.endTime.toEpochMilli)
+    gen.writeArrayPropertyStart("timezones")
     config.timezones.foreach { tz =>
       gen.writeString(tz.getId)
     }
     gen.writeEndArray()
-    gen.writeNumberField("step", config.step)
+    gen.writeNumberProperty("step", config.step)
 
-    gen.writeNumberField("width", config.width)
-    gen.writeNumberField("height", config.height)
-    gen.writeStringField("layout", config.layout.name())
-    gen.writeNumberField("zoom", config.zoom)
+    gen.writeNumberProperty("width", config.width)
+    gen.writeNumberProperty("height", config.height)
+    gen.writeStringProperty("layout", config.layout.name())
+    gen.writeNumberProperty("zoom", config.zoom)
 
     config.title.foreach { t =>
-      gen.writeStringField("title", t)
+      gen.writeStringProperty("title", t)
     }
-    gen.writeStringField("legendType", config.legendType.name())
-    gen.writeBooleanField("onlyGraph", config.onlyGraph)
-    gen.writeStringField("theme", config.themeName)
+    gen.writeStringProperty("legendType", config.legendType.name())
+    gen.writeBooleanProperty("onlyGraph", config.onlyGraph)
+    gen.writeStringProperty("theme", config.themeName)
 
     if (config.loadTime > 0) {
-      gen.writeNumberField("loadTime", config.loadTime)
+      gen.writeNumberProperty("loadTime", config.loadTime)
     }
 
     if (config.stats != CollectorStats.unknown) {
-      gen.writeObjectFieldStart("stats")
-      gen.writeNumberField("inputLines", config.stats.inputLines)
-      gen.writeNumberField("inputDatapoints", config.stats.inputDatapoints)
-      gen.writeNumberField("outputLines", config.stats.outputLines)
-      gen.writeNumberField("outputDatapoints", config.stats.outputDatapoints)
+      gen.writeObjectPropertyStart("stats")
+      gen.writeNumberProperty("inputLines", config.stats.inputLines)
+      gen.writeNumberProperty("inputDatapoints", config.stats.inputDatapoints)
+      gen.writeNumberProperty("outputLines", config.stats.outputLines)
+      gen.writeNumberProperty("outputDatapoints", config.stats.outputDatapoints)
       gen.writeEndObject()
     }
 
-    gen.writeArrayFieldStart("warnings")
+    gen.writeArrayPropertyStart("warnings")
     config.warnings.foreach(gen.writeString)
     gen.writeEndArray()
 
     if (config.renderingHints.nonEmpty) {
-      gen.writeArrayFieldStart("renderingHints")
+      gen.writeArrayPropertyStart("renderingHints")
       config.renderingHints.foreach(gen.writeString)
       gen.writeEndArray()
     }
@@ -173,45 +179,45 @@ object JsonCodec {
 
   def writePlotDefMetadata(gen: JsonGenerator, plot: PlotDef, id: Int): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("type", "plot-metadata")
-    gen.writeNumberField("id", id)
+    gen.writeStringProperty("type", "plot-metadata")
+    gen.writeNumberProperty("id", id)
     plot.ylabel.foreach { v =>
-      gen.writeStringField("ylabel", v)
+      gen.writeStringProperty("ylabel", v)
     }
     plot.axisColor.foreach { c =>
-      gen.writeFieldName("axisColor")
+      gen.writeName("axisColor")
       writeColor(gen, c)
     }
-    gen.writeStringField("scale", plot.scale.name())
-    gen.writeStringField("upper", plot.upper.toString)
-    gen.writeStringField("lower", plot.lower.toString)
-    gen.writeStringField("tickLabelMode", plot.tickLabelMode.name())
+    gen.writeStringProperty("scale", plot.scale.name())
+    gen.writeStringProperty("upper", plot.upper.toString)
+    gen.writeStringProperty("lower", plot.lower.toString)
+    gen.writeStringProperty("tickLabelMode", plot.tickLabelMode.name())
     gen.writeEndObject()
   }
 
   private def writeHeatmapDef(gen: JsonGenerator, graph: GraphDef, plot: PlotDef, id: Int): Unit = {
     plot.heatmapData(graph).foreach { heatmap =>
       gen.writeStartObject()
-      gen.writeStringField("type", "heatmap")
-      gen.writeNumberField("plot", id)
-      gen.writeStringField("colorScale", heatmap.settings.colorScale.name())
-      gen.writeStringField("upper", heatmap.settings.upper.toString)
-      gen.writeStringField("lower", heatmap.settings.lower.toString)
+      gen.writeStringProperty("type", "heatmap")
+      gen.writeNumberProperty("plot", id)
+      gen.writeStringProperty("colorScale", heatmap.settings.colorScale.name())
+      gen.writeStringProperty("upper", heatmap.settings.upper.toString)
+      gen.writeStringProperty("lower", heatmap.settings.lower.toString)
       heatmap.settings.label.foreach { label =>
-        gen.writeStringField("label", label)
+        gen.writeStringProperty("label", label)
       }
 
       // Y-tick information, used to define the vertical buckets for heatmap counts. Included
       // so the result can be reproduced in a dynamic rendering.
-      gen.writeArrayFieldStart("yTicks")
+      gen.writeArrayPropertyStart("yTicks")
       var min = heatmap.yaxis.min
       var i = 0
       while (i < heatmap.yTicks.size) {
         val max = heatmap.yTicks(i).v
         gen.writeStartObject()
-        gen.writeNumberField("min", min)
-        gen.writeNumberField("max", max)
-        gen.writeStringField("label", heatmap.yTicks(i).label)
+        gen.writeNumberProperty("min", min)
+        gen.writeNumberProperty("max", max)
+        gen.writeStringProperty("label", heatmap.yTicks(i).label)
         gen.writeEndObject()
         min = max
         i += 1
@@ -219,18 +225,18 @@ object JsonCodec {
       gen.writeEndArray()
 
       // Color ticks used to map counts to a color
-      gen.writeArrayFieldStart("colorTicks")
+      gen.writeArrayPropertyStart("colorTicks")
       val colorTicks = heatmap.colorTicks
       min = heatmap.minCount
       i = 1
       while (i < colorTicks.size) {
         val max = colorTicks(i).v
         gen.writeStartObject()
-        gen.writeFieldName("color")
+        gen.writeName("color")
         writeColor(gen, heatmap.palette.colors(i - 1))
-        gen.writeNumberField("min", min)
-        gen.writeNumberField("max", max)
-        gen.writeStringField("label", colorTicks(i).label)
+        gen.writeNumberProperty("min", min)
+        gen.writeNumberProperty("max", max)
+        gen.writeStringProperty("label", colorTicks(i).label)
         gen.writeEndObject()
         min = max
         i += 1
@@ -238,9 +244,9 @@ object JsonCodec {
       gen.writeEndArray()
 
       // Output the counts associated with each cell
-      gen.writeObjectFieldStart("data")
-      gen.writeStringField("type", "heatmap")
-      gen.writeArrayFieldStart("values")
+      gen.writeObjectPropertyStart("data")
+      gen.writeStringProperty("type", "heatmap")
+      gen.writeArrayPropertyStart("values")
       var t = heatmap.xaxis.start
       while (t < heatmap.xaxis.end) {
         gen.writeStartArray()
@@ -282,31 +288,31 @@ object JsonCodec {
     end: Long
   ): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("type", "timeseries")
+    gen.writeStringProperty("type", "timeseries")
     line.query.foreach { q =>
       val id = TaggedItem.computeId(line.data.tags + ("atlas.query" -> q)).toString
-      gen.writeStringField("id", id)
+      gen.writeStringProperty("id", id)
     }
-    gen.writeNumberField("plot", plot)
-    gen.writeStringField("label", line.data.label)
-    gen.writeFieldName("color")
+    gen.writeNumberProperty("plot", plot)
+    gen.writeStringProperty("label", line.data.label)
+    gen.writeName("color")
     writeColor(gen, line.color)
-    gen.writeStringField("lineStyle", line.lineStyle.name())
-    gen.writeNumberField("lineWidth", line.lineWidth)
+    gen.writeStringProperty("lineStyle", line.lineStyle.name())
+    gen.writeNumberProperty("lineWidth", line.lineWidth)
     line.query.foreach { q =>
-      gen.writeStringField("query", q)
+      gen.writeStringProperty("query", q)
     }
     if (line.groupByKeys.nonEmpty) {
-      gen.writeArrayFieldStart("groupByKeys")
+      gen.writeArrayPropertyStart("groupByKeys")
       line.groupByKeys.foreach(gen.writeString)
       gen.writeEndArray()
     }
-    gen.writeObjectFieldStart("tags")
-    line.data.tags.foreachEntry(gen.writeStringField)
+    gen.writeObjectPropertyStart("tags")
+    line.data.tags.foreachEntry(gen.writeStringProperty)
     gen.writeEndObject()
-    gen.writeObjectFieldStart("data")
-    gen.writeStringField("type", "array")
-    gen.writeArrayFieldStart("values")
+    gen.writeObjectPropertyStart("data")
+    gen.writeStringProperty("type", "array")
+    gen.writeArrayPropertyStart("values")
     line.data.data.foreach(start, end) { (_, v) =>
       gen.writeNumber(v)
     }
@@ -317,38 +323,38 @@ object JsonCodec {
 
   private def writeHSpanDef(gen: JsonGenerator, plot: Int, span: HSpanDef): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("type", "hspan")
-    gen.writeNumberField("plot", plot)
+    gen.writeStringProperty("type", "hspan")
+    gen.writeNumberProperty("plot", plot)
     span.labelOpt.foreach { v =>
-      gen.writeStringField("label", v)
+      gen.writeStringProperty("label", v)
     }
-    gen.writeFieldName("color")
+    gen.writeName("color")
     writeColor(gen, span.color)
-    gen.writeNumberField("v1", span.v1)
-    gen.writeNumberField("v2", span.v2)
+    gen.writeNumberProperty("v1", span.v1)
+    gen.writeNumberProperty("v2", span.v2)
     gen.writeEndObject()
   }
 
   private def writeVSpanDef(gen: JsonGenerator, plot: Int, span: VSpanDef): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("type", "vspan")
-    gen.writeNumberField("plot", plot)
+    gen.writeStringProperty("type", "vspan")
+    gen.writeNumberProperty("plot", plot)
     span.labelOpt.foreach { v =>
-      gen.writeStringField("label", v)
+      gen.writeStringProperty("label", v)
     }
-    gen.writeFieldName("color")
+    gen.writeName("color")
     writeColor(gen, span.color)
-    gen.writeNumberField("t1", span.t1.toEpochMilli)
-    gen.writeNumberField("t2", span.t2.toEpochMilli)
+    gen.writeNumberProperty("t1", span.t1.toEpochMilli)
+    gen.writeNumberProperty("t2", span.t2.toEpochMilli)
     gen.writeEndObject()
   }
 
   private def writeMessageDef(gen: JsonGenerator, plot: Int, msg: MessageDef): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("type", "message")
-    gen.writeNumberField("plot", plot)
-    gen.writeStringField("label", msg.label)
-    gen.writeFieldName("color")
+    gen.writeStringProperty("type", "message")
+    gen.writeNumberProperty("plot", plot)
+    gen.writeStringProperty("label", msg.label)
+    gen.writeName("color")
     writeColor(gen, msg.color)
     gen.writeEndObject()
   }
@@ -364,7 +370,7 @@ object JsonCodec {
     val data = List.newBuilder[(Int, DataDef)]
     foreachItem(parser) {
       val node = mapper.readTree[JsonNode](parser)
-      node.get("type").asText() match {
+      node.get("type").asString() match {
         case "graph-image" =>
         // ignored for right now
         case "graph-metadata" =>
@@ -412,19 +418,19 @@ object JsonCodec {
       Nil,
       startTime      = Instant.ofEpochMilli(node.get("startTime").asLong()),
       endTime        = Instant.ofEpochMilli(node.get("endTime").asLong()),
-      timezones      = node.get("timezones").elements.asScala.map(n => ZoneId.of(n.asText())).toList,
+      timezones      = node.get("timezones").iterator().asScala.map(n => ZoneId.of(n.asString())).toList,
       step           = node.get("step").asLong(),
       width          = node.get("width").asInt(),
       height         = node.get("height").asInt(),
-      layout         = Layout.valueOf(node.get("layout").asText()),
+      layout         = Layout.valueOf(node.get("layout").asString()),
       zoom           = node.get("zoom").asDouble(),
-      title          = Option(node.get("title")).map(_.asText()),
-      legendType     = LegendType.valueOf(node.get("legendType").asText()),
+      title          = Option(node.get("title")).map(_.asString()),
+      legendType     = LegendType.valueOf(node.get("legendType").asString()),
       onlyGraph      = node.get("onlyGraph").asBoolean(),
       loadTime       = Option(node.get("loadTime")).fold(-1L)(_.asLong()),
       stats          = Option(node.get("stats")).fold(CollectorStats.unknown)(toCollectorStats),
-      warnings       = node.get("warnings").elements.asScala.map(_.asText()).toList,
-      themeName      = Option(node.get("theme")).fold(ChartSettings.defaultTheme)(_.asText()),
+      warnings       = node.get("warnings").iterator().asScala.map(_.asString()).toList,
+      themeName      = Option(node.get("theme")).fold(ChartSettings.defaultTheme)(_.asString()),
       renderingHints = processRenderingHints(node.get("renderingHints"))
     )
     // format: on
@@ -447,7 +453,7 @@ object JsonCodec {
     if (node == null)
       Set.empty
     else
-      node.elements.asScala.map(_.asText()).toSet
+      node.iterator().asScala.map(_.asString()).toSet
   }
 
   private def toPlotDef(node: JsonNode): PlotDef = {
@@ -455,12 +461,12 @@ object JsonCodec {
     // format: off
     PlotDef(
       Nil,
-      ylabel        = Option(node.get("ylabel")).map(_.asText()),
+      ylabel        = Option(node.get("ylabel")).map(_.asString()),
       axisColor     = Option(node.get("axisColor")).map(toColor),
-      scale         = Scale.valueOf(node.get("scale").asText()),
-      upper         = PlotBound(node.get("upper").asText()),
-      lower         = PlotBound(node.get("lower").asText()),
-      tickLabelMode = TickLabelMode.valueOf(node.get("tickLabelMode").asText())
+      scale         = Scale.valueOf(node.get("scale").asString()),
+      upper         = PlotBound(node.get("upper").asString()),
+      lower         = PlotBound(node.get("lower").asString()),
+      tickLabelMode = TickLabelMode.valueOf(node.get("tickLabelMode").asString())
     )
     // format: on
   }
@@ -477,14 +483,14 @@ object JsonCodec {
     * res0: Int = 255
     * ```
     */
-  private def toColor(node: JsonNode): Color = Strings.parseColor(node.asText())
+  private def toColor(node: JsonNode): Color = Strings.parseColor(node.asString())
 
   private def toStringList(node: JsonNode): List[String] = {
     if (node != null && node.isArray) {
       val builder = List.newBuilder[String]
-      val iter = node.elements()
+      val iter = node.iterator()
       while (iter.hasNext) {
-        builder += iter.next().asText()
+        builder += iter.next().asString()
       }
       builder.result()
     } else {
@@ -496,28 +502,28 @@ object JsonCodec {
     import scala.jdk.CollectionConverters.*
     val colors = node
       .get("colorTicks")
-      .elements()
+      .iterator()
       .asScala
       .map { node =>
         toColor(node.get("color"))
       }
       .toArray
     HeatmapDef(
-      colorScale = Scale.valueOf(node.get("colorScale").asText()),
-      upper = PlotBound(node.get("upper").asText()),
-      lower = PlotBound(node.get("lower").asText()),
+      colorScale = Scale.valueOf(node.get("colorScale").asString()),
+      upper = PlotBound(node.get("upper").asString()),
+      lower = PlotBound(node.get("lower").asString()),
       palette = Some(Palette.fromArray("heatmap", colors)),
-      label = Option(node.get("label")).map(_.asText())
+      label = Option(node.get("label")).map(_.asString())
     )
   }
 
   private def toLineDef(gdef: GraphDef, node: JsonNode): LineDef = {
     LineDef(
       data = toTimeSeries(gdef, node),
-      query = Option(node.get("query")).map(_.asText()),
+      query = Option(node.get("query")).map(_.asString()),
       groupByKeys = toStringList(node.get("groupByKeys")),
       color = toColor(node.get("color")),
-      lineStyle = LineStyle.valueOf(node.get("lineStyle").asText()),
+      lineStyle = LineStyle.valueOf(node.get("lineStyle").asString()),
       lineWidth = node.get("lineWidth").asDouble().toFloat
     )
   }
@@ -527,7 +533,7 @@ object JsonCodec {
       v1 = node.get("v1").asDouble(),
       v2 = node.get("v2").asDouble(),
       color = toColor(node.get("color")),
-      labelOpt = Option(node.get("label")).map(_.asText())
+      labelOpt = Option(node.get("label")).map(_.asString())
     )
   }
 
@@ -536,22 +542,31 @@ object JsonCodec {
       t1 = Instant.ofEpochMilli(node.get("t1").asLong()),
       t2 = Instant.ofEpochMilli(node.get("t2").asLong()),
       color = toColor(node.get("color")),
-      labelOpt = Option(node.get("label")).map(_.asText())
+      labelOpt = Option(node.get("label")).map(_.asString())
     )
   }
 
   private def toMessageDef(node: JsonNode): MessageDef = {
     MessageDef(
       color = toColor(node.get("color")),
-      label = node.get("label").asText()
+      label = node.get("label").asString()
     )
   }
 
   private def toTimeSeries(gdef: GraphDef, node: JsonNode): TimeSeries = {
     import scala.jdk.CollectionConverters.*
-    val tags = node.get("tags").properties.asScala.map(e => e.getKey -> e.getValue.asText()).toMap
-    val values = node.get("data").get("values").elements.asScala.map(_.asDouble()).toArray
+    val tags = node.get("tags").properties.asScala.map(e => e.getKey -> e.getValue.asString()).toMap
+    val values = node.get("data").get("values").iterator().asScala.map(toDouble).toArray
     val seq = new ArrayTimeSeq(DsType.Gauge, gdef.startTime.toEpochMilli, gdef.step, values)
-    TimeSeries(tags, node.get("label").asText(), seq)
+    TimeSeries(tags, node.get("label").asString(), seq)
+  }
+
+  private def toDouble(node: JsonNode): Double = {
+    if (node.isNumber)
+      node.asDouble()
+    else if (node.isString)
+      node.stringValue().toDouble
+    else
+      Double.NaN
   }
 }

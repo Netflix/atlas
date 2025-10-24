@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.json
 
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.JsonToken
+import tools.jackson.core.JsonParser
+import tools.jackson.core.JsonToken
 
 object JsonParserHelper {
 
@@ -55,23 +55,23 @@ object JsonParserHelper {
 
   def nextString(parser: JsonParser): String = {
     requireNextToken(parser, JsonToken.VALUE_STRING)
-    parser.getText
+    parser.getString
   }
 
   def nextStringList(parser: JsonParser): List[String] = {
     val vs = List.newBuilder[String]
     foreachItem(parser) {
-      vs += parser.getText
+      vs += parser.getString
     }
     vs.result()
   }
 
   def nextBoolean(parser: JsonParser): Boolean = {
-    import com.fasterxml.jackson.core.JsonToken.*
+    import tools.jackson.core.JsonToken.*
     parser.nextToken() match {
       case VALUE_FALSE  => parser.getValueAsBoolean
       case VALUE_TRUE   => parser.getValueAsBoolean
-      case VALUE_STRING => java.lang.Boolean.parseBoolean(parser.getText)
+      case VALUE_STRING => java.lang.Boolean.parseBoolean(parser.getString)
       case t            => fail(parser, s"expected VALUE_FALSE or VALUE_TRUE but received $t")
     }
   }
@@ -89,11 +89,11 @@ object JsonParserHelper {
   def nextFloat(parser: JsonParser): Double = nextDouble(parser).toFloat
 
   def nextDouble(parser: JsonParser): Double = {
-    import com.fasterxml.jackson.core.JsonToken.*
+    import tools.jackson.core.JsonToken.*
     parser.nextToken() match {
       case VALUE_NUMBER_INT   => parser.getValueAsDouble
       case VALUE_NUMBER_FLOAT => parser.getValueAsDouble
-      case VALUE_STRING       => parseDouble(parser.getText)
+      case VALUE_STRING       => parseDouble(parser.getString)
       case t                  => fail(parser, s"expected VALUE_NUMBER_FLOAT but received $t")
     }
   }
@@ -118,15 +118,15 @@ object JsonParserHelper {
   }
 
   def foreachField[T](parser: JsonParser)(f: PartialFunction[String, T]): Unit = {
-    while (skipTo(parser, JsonToken.FIELD_NAME, JsonToken.END_OBJECT)) {
-      val n = parser.getText
+    while (skipTo(parser, JsonToken.PROPERTY_NAME, JsonToken.END_OBJECT)) {
+      val n = parser.getString
       f.applyOrElse[String, T](n, k => throw new IllegalArgumentException(s"invalid field: '$k'"))
     }
   }
 
   def firstField[T](parser: JsonParser)(f: PartialFunction[String, T]): Unit = {
-    if (skipTo(parser, JsonToken.FIELD_NAME, JsonToken.END_OBJECT)) {
-      val n = parser.getText
+    if (skipTo(parser, JsonToken.PROPERTY_NAME, JsonToken.END_OBJECT)) {
+      val n = parser.getString
       f.applyOrElse[String, T](n, k => throw new IllegalArgumentException(s"invalid field: '$k'"))
     }
   }

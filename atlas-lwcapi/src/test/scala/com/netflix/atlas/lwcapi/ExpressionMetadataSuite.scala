@@ -15,11 +15,11 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.json.Json
 import munit.FunSuite
+import tools.jackson.databind.exc.InvalidFormatException
+import tools.jackson.databind.exc.ValueInstantiationException
 
 class ExpressionMetadataSuite extends FunSuite {
 

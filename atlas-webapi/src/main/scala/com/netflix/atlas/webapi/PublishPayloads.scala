@@ -15,9 +15,7 @@
  */
 package com.netflix.atlas.webapi
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.JsonToken
+import scala.util.Using
 import com.netflix.atlas.core.model.Datapoint
 import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.model.ItemId
@@ -27,8 +25,9 @@ import com.netflix.atlas.core.util.RefIntHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
-
-import scala.util.Using
+import tools.jackson.core.JsonGenerator
+import tools.jackson.core.JsonParser
+import tools.jackson.core.JsonToken
 
 object PublishPayloads {
 
@@ -55,7 +54,7 @@ object PublishPayloads {
     if (commonTags != null) b.addAll(commonTags)
     foreachField(parser) {
       case key =>
-        val value = parser.nextTextValue()
+        val value = parser.nextStringValue()
         if (value != null) {
           if (intern)
             b.add(strInterner.intern(key), strInterner.intern(value))
@@ -67,11 +66,11 @@ object PublishPayloads {
   }
 
   private def getValue(parser: JsonParser): Double = {
-    import com.fasterxml.jackson.core.JsonToken.*
+    import tools.jackson.core.JsonToken.*
     parser.nextToken() match {
       case START_ARRAY        => nextDouble(parser)
       case VALUE_NUMBER_FLOAT => parser.getValueAsDouble()
-      case VALUE_STRING       => java.lang.Double.valueOf(parser.getText())
+      case VALUE_STRING       => java.lang.Double.valueOf(parser.getString())
       case t                  => fail(parser, s"expected VALUE_NUMBER_FLOAT but received $t")
     }
   }
@@ -351,16 +350,16 @@ object PublishPayloads {
   }
 
   private def encodeTags(gen: JsonGenerator, tags: Map[String, String]): Unit = {
-    gen.writeObjectFieldStart("tags")
-    tags.foreachEntry(gen.writeStringField)
+    gen.writeObjectPropertyStart("tags")
+    tags.foreachEntry(gen.writeStringProperty)
     gen.writeEndObject()
   }
 
   private def encodeDatapoint(gen: JsonGenerator, d: DatapointTuple): Unit = {
     gen.writeStartObject()
     encodeTags(gen, d.tags)
-    gen.writeNumberField("timestamp", d.timestamp)
-    gen.writeNumberField("value", d.value)
+    gen.writeNumberProperty("timestamp", d.timestamp)
+    gen.writeNumberProperty("value", d.value)
     gen.writeEndObject()
   }
 
@@ -375,8 +374,8 @@ object PublishPayloads {
   private def encodeBatchDatapoint(gen: JsonGenerator, d: Datapoint): Unit = {
     gen.writeStartObject()
     encodeTags(gen, d.tags)
-    gen.writeNumberField("timestamp", d.timestamp)
-    gen.writeNumberField("value", d.value)
+    gen.writeNumberProperty("timestamp", d.timestamp)
+    gen.writeNumberProperty("value", d.value)
     gen.writeEndObject()
   }
 
@@ -386,7 +385,7 @@ object PublishPayloads {
   def encodeBatch(gen: JsonGenerator, tags: TagMap, values: List[DatapointTuple]): Unit = {
     gen.writeStartObject()
     encodeTags(gen, tags)
-    gen.writeArrayFieldStart("metrics")
+    gen.writeArrayPropertyStart("metrics")
     values.foreach(v => encodeDatapoint(gen, v))
     gen.writeEndArray()
     gen.writeEndObject()
@@ -406,7 +405,7 @@ object PublishPayloads {
   def encodeBatchDatapoints(gen: JsonGenerator, tags: TagMap, values: List[Datapoint]): Unit = {
     gen.writeStartObject()
     encodeTags(gen, tags)
-    gen.writeArrayFieldStart("metrics")
+    gen.writeArrayPropertyStart("metrics")
     values.foreach(v => encodeBatchDatapoint(gen, v))
     gen.writeEndArray()
     gen.writeEndObject()

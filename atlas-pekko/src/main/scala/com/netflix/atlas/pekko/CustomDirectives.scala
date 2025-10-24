@@ -16,6 +16,12 @@
 package com.netflix.atlas.pekko
 
 import java.io.StringWriter
+import java.util.concurrent.ThreadLocalRandom
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.Failure
+import com.netflix.atlas.json.Json
+import com.netflix.spectator.ipc.NetflixHeader
 import org.apache.pekko.http.scaladsl.model.HttpCharsets
 import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.model.HttpHeader
@@ -35,19 +41,12 @@ import org.apache.pekko.http.scaladsl.server.PathMatcher
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.http.scaladsl.server.RouteResult
 import org.apache.pekko.http.scaladsl.server.directives.LoggingMagnet
+import org.apache.pekko.http.scaladsl.server.util.Tuple
 import org.apache.pekko.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.util.ByteString
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.module.scala.JavaTypeable
-import com.netflix.atlas.json.Json
-import com.netflix.spectator.ipc.NetflixHeader
-import org.apache.pekko.http.scaladsl.server.util.Tuple
-
-import java.util.concurrent.ThreadLocalRandom
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.util.Failure
+import tools.jackson.core.JsonParser
+import tools.jackson.module.scala.JavaTypeable
 import scala.util.Success
 
 object CustomDirectives {
@@ -238,14 +237,14 @@ object CustomDirectives {
           writer.append('(')
           val gen = Json.newJsonGenerator(writer)
           gen.writeStartObject()
-          gen.writeNumberField("status", res.status.intValue)
+          gen.writeNumberProperty("status", res.status.intValue)
 
           // Write out list of headers, the content-type is part of the entity so the object is
           // closed as the first part of the entity encoding
-          gen.writeObjectFieldStart("headers")
+          gen.writeObjectPropertyStart("headers")
           res.headers.groupBy(_.lowercaseName).foreach {
             case (n, hs) =>
-              gen.writeArrayFieldStart(n)
+              gen.writeArrayPropertyStart(n)
               hs.foreach { h =>
                 gen.writeString(h.value)
               }
@@ -257,7 +256,7 @@ object CustomDirectives {
             case entity: HttpEntity.Strict =>
               // Complete headers object
               val contentType = entity.contentType.mediaType
-              gen.writeArrayFieldStart("content-type")
+              gen.writeArrayPropertyStart("content-type")
               if (contentType.mainType == "none")
                 gen.writeString("text/plain")
               else
@@ -265,7 +264,7 @@ object CustomDirectives {
               gen.writeEndArray()
               gen.writeEndObject()
 
-              gen.writeFieldName("body")
+              gen.writeName("body")
 
               contentType match {
                 case MediaTypes.`application/json` =>
@@ -277,14 +276,14 @@ object CustomDirectives {
               gen.writeEndObject()
             case _ =>
               // Complete headers object
-              gen.writeArrayFieldStart("content-type")
+              gen.writeArrayPropertyStart("content-type")
               gen.writeString("text/plain")
               gen.writeEndArray()
               gen.writeEndObject()
 
               // Empty, just write out an empty string. Not sure why it is this instead of null
               // but keeping it this way for backwards compatibility.
-              gen.writeFieldName("body")
+              gen.writeName("body")
               gen.writeString("entity type not supported via JSONP, switch to CORS")
               gen.writeEndObject()
           }
