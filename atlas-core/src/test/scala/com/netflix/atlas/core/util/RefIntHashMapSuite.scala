@@ -205,6 +205,15 @@ class RefIntHashMapSuite extends FunSuite {
     val s = new RefIntHashMap[RefIntHashMapSuite.MinHash]()
     assertEquals(s.get(new RefIntHashMapSuite.MinHash, 0), 0)
   }
+
+  test("get for missing key returns default when map is full") {
+    val m = new RefIntHashMap[String](3)
+    m.put("a", 0)
+    m.put("b", 1)
+    m.put("c", 2)
+    assertEquals(0, m.get("a", -1))
+    assertEquals(-1, m.get("d", -1))
+  }
 }
 
 object RefIntHashMapSuite {

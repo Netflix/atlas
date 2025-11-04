@@ -239,6 +239,15 @@ class RefDoubleHashMapSuite extends FunSuite {
     val s = new RefDoubleHashMap[RefDoubleHashMapSuite.MinHash]()
     assertEquals(s.get(new RefDoubleHashMapSuite.MinHash, 0.0), 0.0)
   }
+
+  test("get for missing key returns default when map is full") {
+    val m = new RefDoubleHashMap[String](3)
+    m.put("a", 0.0)
+    m.put("b", 1.0)
+    m.put("c", 2.0)
+    assertEquals(0.0, m.get("a", -1.0))
+    assertEquals(-1.0, m.get("d", -1.0))
+  }
 }
 
 object RefDoubleHashMapSuite {
