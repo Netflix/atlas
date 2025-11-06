@@ -50,7 +50,7 @@ object Dependencies {
   val log4jCore         = "org.apache.logging.log4j" % "log4j-core" % log4j
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
-  val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4j
+  val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j2-impl" % log4j
   val munit             = "org.scalameta" %% "munit" % "1.2.1"
   val otelSdk           = "io.opentelemetry" % "opentelemetry-sdk" % otel
   val otelSdkTest       = "io.opentelemetry" % "opentelemetry-sdk-testing" % otel
