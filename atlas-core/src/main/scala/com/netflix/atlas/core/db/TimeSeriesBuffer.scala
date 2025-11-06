@@ -183,19 +183,20 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
     valueCount
   }
 
-  /** Aggregate the data from the block into this buffer. */
+  /** Bit mask indicating which positions in the buffer have a value from the blocks. */
   private[db] def valueMask(mask: JBitSet, block: Block, multiple: Int): Unit = {
     val blkStep = step / multiple
-    val s = start / blkStep
+    val s = start / blkStep - multiple + 1 // Adjust to start time for first primary data point
     val e = values.length * multiple + s - 1
     val bs = block.start / blkStep
     val be = bs + block.size - 1
     if (e >= bs && s <= be) {
       val spos = if (s > bs) s else bs
       val epos = if (e < be) e else be
-      var i = spos
+      var i = spos // Index to this shifted by the start pos
       while (i <= epos) {
-        val v = block.get((i - bs).toInt)
+        val j = (i - bs).toInt
+        val v = block.get(j)
         if (!v.isNaN) mask.set((i - s).toInt)
         i += 1
       }
