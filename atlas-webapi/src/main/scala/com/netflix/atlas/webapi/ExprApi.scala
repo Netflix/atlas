@@ -31,6 +31,7 @@ import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.Word
 import com.netflix.atlas.core.util.Features
+import com.netflix.atlas.core.util.RefIntHashMap
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.CustomDirectives.*
@@ -376,7 +377,7 @@ object ExprApi {
           .cnfList(q)
           .map(normalizeClauses)
           .distinct
-          .sortWith(_.toString < _.toString)
+          .sorted(QueryOrdering)
       }
       .distinct
     removeRedundantClauses(normalized)
@@ -389,5 +390,99 @@ object ExprApi {
       .reduce { (q1, q2) =>
         Query.Or(q1, q2)
       }
+  }
+
+  /**
+    * Custom ordering for queries that provides consistent and predictable sorting based on
+    * tag key importance and position.
+    *
+    * The ordering follows these rules in priority order:
+    *
+    * 1. '''Prefix keys''': Keys specified in `ApiSettings.normalizePrefixKeys` are ordered
+    *    by their position in the list. These typically represent the most important dimensions
+    *    (e.g., name, nf.app, nf.stack, nf.cluster) and will appear first in normalized queries.
+    *
+    * 2. '''Regular keys''': Keys that are neither in the prefix nor suffix lists are ordered
+    *    lexically by the query's string representation.
+    *
+    * 3. '''Suffix keys''': Keys specified in `ApiSettings.normalizeSuffixKeys` are ordered
+    *    by their position in the list. These typically represent less important dimensions
+    *    (e.g., statistic) and will appear last in normalized queries.
+    *
+    * 4. '''Equal keys''': When two queries have the same key, they are compared by their
+    *    string representation to ensure deterministic ordering.
+    *
+    * Example ordering with prefix keys [name, nf.app] and suffix keys [statistic]:
+    * {{{
+    *   name,foo,:eq              // prefix key, position 0
+    *   nf.app,bar,:eq            // prefix key, position 1
+    *   app,baz,:eq               // regular key (lexical)
+    *   zoo,test,:eq              // regular key (lexical)
+    *   statistic,count,:eq       // suffix key, position 0
+    * }}}
+    */
+  private object QueryOrdering extends Ordering[Query] {
+
+    private val prefixPositionMap = createPositionMap(ApiSettings.normalizePrefixKeys)
+    private val suffixPositionMap = createPositionMap(ApiSettings.normalizeSuffixKeys)
+
+    private def createPositionMap(vs: List[String]): RefIntHashMap[String] = {
+      val positions = new RefIntHashMap[String](vs.size)
+      vs.zipWithIndex.foreach {
+        case (v, i) => positions.put(v, i)
+      }
+      positions
+    }
+
+    @scala.annotation.tailrec
+    private def key(query: Query): String = {
+      query match {
+        case q: Query.KeyQuery => q.k
+        case Query.And(q1, _)  => key(q1)
+        case Query.Or(q1, _)   => key(q1)
+        case Query.Not(q)      => key(q)
+        case _                 => ""
+      }
+    }
+
+    override def compare(q1: Query, q2: Query): Int = {
+      val k1 = key(q1)
+      val k2 = key(q2)
+
+      // If both keys are equal, compare toString of queries
+      if (k1 == k2) {
+        q1.toString.compare(q2.toString)
+      } else {
+        val p1 = prefixPositionMap.get(k1, -1)
+        val p2 = prefixPositionMap.get(k2, -1)
+        val s1 = suffixPositionMap.get(k1, -1)
+        val s2 = suffixPositionMap.get(k2, -1)
+
+        // If both in prefix map, use prefix positions
+        if (p1 >= 0 && p2 >= 0) {
+          p1.compare(p2)
+        }
+        // If one in prefix and the other isn't, it comes first
+        else if (p1 >= 0) {
+          -1
+        } else if (p2 >= 0) {
+          1
+        }
+        // If one in suffix and the other isn't, it comes after
+        else if (s1 >= 0 && s2 < 0) {
+          1
+        } else if (s2 >= 0 && s1 < 0) {
+          -1
+        }
+        // If both in suffix map, use suffix positions
+        else if (s1 >= 0 && s2 >= 0) {
+          s1.compare(s2)
+        }
+        // Otherwise normal lexical ordering
+        else {
+          q1.toString.compare(q2.toString)
+        }
+      }
+    }
   }
 }
