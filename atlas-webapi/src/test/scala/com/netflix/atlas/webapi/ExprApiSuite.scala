@@ -338,7 +338,7 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(
       normalize(add.toString),
       List(
-        "app,foo,:eq,name,cpuUser,:eq,:and,:sum,app,foo,:eq,name,cpuUser,:eq,:and,:sum,:add"
+        "name,cpuUser,:eq,app,foo,:eq,:and,:sum,name,cpuUser,:eq,app,foo,:eq,:and,:sum,:add"
       )
     )
   }
@@ -352,60 +352,60 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(
       normalize(add.toString),
       List(
-        "app,foo,:eq,name,cpuUser,:eq,:and,:sum,app,foo,:eq,name,cpuSystem,:eq,:and,:sum,:add"
+        "name,cpuUser,:eq,app,foo,:eq,:and,:sum,name,cpuSystem,:eq,app,foo,:eq,:and,:sum,:add"
       )
     )
   }
 
   test("normalize :avg") {
-    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:avg"
+    val avg = "name,cpuUser,:eq,app,foo,:eq,:and,:avg"
     assertEquals(normalize(avg), List(avg))
   }
 
   test("normalize :dist-avg") {
-    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg"
+    val avg = "name,cpuUser,:eq,app,foo,:eq,:and,:dist-avg"
     assertEquals(normalize(avg), List(avg))
   }
 
   test("normalize :dist-avg,(,nf.cluster,),:by") {
-    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg,(,nf.cluster,),:by"
+    val avg = "name,cpuUser,:eq,app,foo,:eq,:and,:dist-avg,(,nf.cluster,),:by"
     assertEquals(normalize(avg), List(avg))
   }
 
   test("normalize :dist-stddev") {
-    val stddev = "app,foo,:eq,name,cpuUser,:eq,:and,:dist-stddev"
+    val stddev = "name,cpuUser,:eq,app,foo,:eq,:and,:dist-stddev"
     assertEquals(normalize(stddev), List(stddev))
   }
 
   test("normalize :dist-max") {
-    val max = "app,foo,:eq,name,cpuUser,:eq,:and,:dist-max"
+    val max = "name,cpuUser,:eq,app,foo,:eq,:and,:dist-max"
     assertEquals(normalize(max), List(max))
   }
 
   test("normalize :dist-avg + expr2") {
     val avg =
-      "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg,app,foo,:eq,name,cpuSystem,:eq,:and,:max"
+      "name,cpuUser,:eq,app,foo,:eq,:and,:dist-avg,name,cpuSystem,:eq,app,foo,:eq,:and,:max"
     assertEquals(
       normalize(avg),
       List(
-        "app,foo,:eq,name,cpuUser,:eq,:and,:dist-avg",
-        "app,foo,:eq,name,cpuSystem,:eq,:and,:max"
+        "name,cpuUser,:eq,app,foo,:eq,:and,:dist-avg",
+        "name,cpuSystem,:eq,app,foo,:eq,:and,:max"
       )
     )
   }
 
   test("normalize :avg,(,nf.cluster,),:by,:pct") {
-    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:avg,(,nf.cluster,),:by,:pct"
+    val avg = "name,cpuUser,:eq,app,foo,:eq,:and,:avg,(,nf.cluster,),:by,:pct"
     assertEquals(normalize(avg), List(avg))
   }
 
   test("normalize :stat-aggr filters") {
-    val avg = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,nf.cluster,),:by,:stat-max,5.0,:gt,:filter"
+    val avg = "name,cpuUser,:eq,app,foo,:eq,:and,:sum,(,nf.cluster,),:by,:stat-max,5.0,:gt,:filter"
     assertEquals(normalize(avg), List(avg))
   }
 
   test("normalize :stat-aggr with no condition filters") {
-    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,nf.cluster,),:by,:stat-max,:filter"
+    val expr = "name,cpuUser,:eq,app,foo,:eq,:and,:sum,(,nf.cluster,),:by,:stat-max,:filter"
     assertEquals(normalize(expr), List(expr))
   }
 
@@ -430,30 +430,30 @@ class ExprApiSuite extends MUnitRouteSuite {
 
   test("normalize, remove redundant clauses") {
     val expr = "name,a,:eq,:sum,b,:has,c,:has,:or,:cq,b,:has,c,:has,:or,:cq"
-    val expected = "b,:has,name,a,:eq,:and,c,:has,name,a,:eq,:and,:or,:sum"
+    val expected = "name,a,:eq,b,:has,:and,name,a,:eq,c,:has,:and,:or,:sum"
     assertEquals(normalize(expr), List(expected))
   }
 
   test("normalize simplify query") {
     val input = "app,foo,:eq,name,cpuUser,:eq,:and,:true,:and,:sum"
-    val expected = "app,foo,:eq,name,cpuUser,:eq,:and,:sum"
+    val expected = "name,cpuUser,:eq,app,foo,:eq,:and,:sum"
     assertEquals(normalize(input), List(expected))
   }
 
   test("normalize sort query") {
     val input = "name,cpuUser,:eq,app,foo,:eq,:and,:sum"
-    val expected = "app,foo,:eq,name,cpuUser,:eq,:and,:sum"
+    val expected = "name,cpuUser,:eq,app,foo,:eq,:and,:sum"
     assertEquals(normalize(input), List(expected))
   }
 
   test("normalize sensible OR handling") {
     val input = "name,cpuUser,:eq,app,foo,:eq,:and,name,cpuUser2,:eq,app,bar,:eq,:and,:or,:sum"
-    val expected = "app,bar,:eq,name,cpuUser2,:eq,:and,app,foo,:eq,name,cpuUser,:eq,:and,:or,:sum"
+    val expected = "name,cpuUser,:eq,app,foo,:eq,:and,name,cpuUser2,:eq,app,bar,:eq,:and,:or,:sum"
     assertEquals(normalize(input), List(expected))
   }
 
   test("normalize :des-fast") {
-    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,:des-fast"
+    val expr = "name,cpuUser,:eq,app,foo,:eq,:and,:sum,:des-fast"
     assertEquals(normalize(expr), List(expr))
   }
 
@@ -475,24 +475,120 @@ class ExprApiSuite extends MUnitRouteSuite {
   }
 
   test("normalize :line") {
-    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,stack,),:by"
+    val expr = "name,cpuUser,:eq,app,foo,:eq,:and,:sum,(,stack,),:by"
     assertEquals(normalize(expr), List(expr))
     assertEquals(normalize(s"$expr,:line"), List(expr))
   }
 
   test("normalize :stack") {
-    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,stack,),:by,:stack"
+    val expr = "name,cpuUser,:eq,app,foo,:eq,:and,:sum,(,stack,),:by,:stack"
     assertEquals(normalize(expr), List(expr))
   }
 
   test("normalize :area") {
-    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,stack,),:by,:area"
+    val expr = "name,cpuUser,:eq,app,foo,:eq,:and,:sum,(,stack,),:by,:area"
     assertEquals(normalize(expr), List(expr))
   }
 
   test("normalize :vspan") {
-    val expr = "app,foo,:eq,name,cpuUser,:eq,:and,:sum,(,stack,),:by,:vspan"
+    val expr = "name,cpuUser,:eq,app,foo,:eq,:and,:sum,(,stack,),:by,:vspan"
     assertEquals(normalize(expr), List(expr))
+  }
+
+  // Comprehensive ordering tests
+  test("ordering: prefix keys ordered by position") {
+    // nf.app should come before nf.cluster (positions 1 and 3 in prefix-keys)
+    val expr = "nf.cluster,foo,:eq,nf.app,bar,:eq,:and,:sum"
+    val expected = "nf.app,bar,:eq,nf.cluster,foo,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("ordering: multiple prefix keys in order") {
+    // Order should be: name, nf.app, nf.stack, nf.cluster (positions 0, 1, 2, 3)
+    val expr = "nf.cluster,c,:eq,name,n,:eq,nf.stack,s,:eq,nf.app,a,:eq,:and,:and,:and,:sum"
+    val expected = "name,n,:eq,nf.app,a,:eq,:and,nf.stack,s,:eq,:and,nf.cluster,c,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("ordering: prefix key before regular key") {
+    // name is prefix key, app is regular key (not in prefix list as 'app', only 'nf.app')
+    val expr = "app,foo,:eq,name,bar,:eq,:and,:sum"
+    val expected = "name,bar,:eq,app,foo,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("ordering: regular keys lexically ordered") {
+    // app, foo, and zoo are all regular keys, should be ordered lexically
+    val expr = "zoo,z,:eq,app,a,:eq,foo,f,:eq,:and,:and,:sum"
+    val expected = "app,a,:eq,foo,f,:eq,:and,zoo,z,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("ordering: suffix key after regular key") {
+    // statistic is suffix key, app is regular key
+    val expr = "statistic,count,:eq,app,foo,:eq,:and,:sum"
+    val expected = "app,foo,:eq,statistic,count,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("ordering: suffix key after prefix key") {
+    // name is prefix key, statistic is suffix key
+    val expr = "statistic,count,:eq,name,foo,:eq,:and,:sum"
+    val expected = "name,foo,:eq,statistic,count,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("ordering: prefix, regular, and suffix keys together") {
+    // name (prefix), app (regular), statistic (suffix)
+    val expr = "statistic,count,:eq,app,foo,:eq,name,bar,:eq,:and,:and,:sum"
+    val expected = "name,bar,:eq,app,foo,:eq,:and,statistic,count,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("ordering: all prefix keys in reverse order") {
+    // Testing all prefix keys: name, nf.app, nf.stack, nf.cluster, nf.asg, nf.region, nf.zone, nf.node
+    val expr =
+      "nf.node,8,:eq,nf.zone,7,:eq,nf.region,6,:eq,nf.asg,5,:eq,nf.cluster,4,:eq,nf.stack,3,:eq,nf.app,2,:eq,name,1,:eq,:and,:and,:and,:and,:and,:and,:and,:sum"
+    val expected =
+      "name,1,:eq,nf.app,2,:eq,:and,nf.stack,3,:eq,:and,nf.cluster,4,:eq,:and,nf.asg,5,:eq,:and,nf.region,6,:eq,:and,nf.zone,7,:eq,:and,nf.node,8,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("ordering: same key with different values uses toString") {
+    // When keys are equal, should compare by toString of queries
+    val expr1 = "name,aaa,:eq,:sum"
+    val expr2 = "name,zzz,:eq,:sum"
+    // Both should normalize to themselves and be different
+    assertEquals(normalize(expr1), List("name,aaa,:eq,:sum"))
+    assertEquals(normalize(expr2), List("name,zzz,:eq,:sum"))
+
+    // When combined with OR, the toString ordering determines the order
+    val exprOr = "name,zzz,:eq,name,aaa,:eq,:or,:sum"
+    val expectedOr = "name,aaa,:eq,name,zzz,:eq,:or,:sum"
+    assertEquals(normalize(exprOr), List(expectedOr))
+  }
+
+  test("ordering: complex mix with all key types") {
+    // Multiple of each type: prefix (name, nf.app), regular (app, foo, zoo), suffix (statistic)
+    val expr =
+      "statistic,s,:eq,zoo,z,:eq,nf.app,na,:eq,foo,f,:eq,name,n,:eq,app,a,:eq,:and,:and,:and,:and,:and,:sum"
+    val expected =
+      "name,n,:eq,nf.app,na,:eq,:and,app,a,:eq,:and,foo,f,:eq,:and,zoo,z,:eq,:and,statistic,s,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("ordering: regular keys between prefix and suffix") {
+    // name (prefix), bar, foo (regular, lexical), statistic (suffix)
+    val expr = "statistic,s,:eq,foo,f,:eq,bar,b,:eq,name,n,:eq,:and,:and,:and,:sum"
+    val expected = "name,n,:eq,bar,b,:eq,:and,foo,f,:eq,:and,statistic,s,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("ordering: prefix keys preserve position with gaps") {
+    // Using non-consecutive prefix keys: name (0), nf.cluster (3), nf.zone (6)
+    val expr = "nf.zone,z,:eq,nf.cluster,c,:eq,name,n,:eq,:and,:and,:sum"
+    val expected = "name,n,:eq,nf.cluster,c,:eq,:and,nf.zone,z,:eq,:and,:sum"
+    assertEquals(normalize(expr), List(expected))
   }
 }
 
