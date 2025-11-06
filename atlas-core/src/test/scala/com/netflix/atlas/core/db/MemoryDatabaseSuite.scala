@@ -28,6 +28,8 @@ class MemoryDatabaseSuite extends FunSuite {
 
   private val step = DefaultSettings.stepSize
 
+  private val start = step
+
   private val clock = new ManualClock()
   private val registry = new DefaultRegistry(clock)
 
@@ -55,15 +57,16 @@ class MemoryDatabaseSuite extends FunSuite {
     addRollupData("c", 6.0, 7.0, 8.0)
   }
 
-  private val context = EvalContext(0, 3 * step, step)
+  private val context = EvalContext(start, start + 3 * step, step)
 
   private def addData(name: String, values: Double*): Unit = {
     val tags = Map("name" -> name)
     val id = TaggedItem.computeId(tags)
     val data = values.toList.zipWithIndex.map {
       case (v, i) =>
-        clock.setWallTime(i * step)
-        DatapointTuple(id, tags, i * step, v)
+        val t = start + i * step
+        clock.setWallTime(t)
+        DatapointTuple(id, tags, t, v)
     }
     db.update(data)
     db.index.rebuildIndex()
@@ -74,8 +77,9 @@ class MemoryDatabaseSuite extends FunSuite {
     val id = TaggedItem.computeId(tags)
     val data = values.toList.zipWithIndex.map {
       case (v, i) =>
-        clock.setWallTime(i * step)
-        DatapointTuple(id, tags, i * step, v)
+        val t = start + i * step
+        clock.setWallTime(t)
+        DatapointTuple(id, tags, t, v)
     }
     data.foreach(db.rollup)
     db.index.rebuildIndex()
@@ -89,18 +93,20 @@ class MemoryDatabaseSuite extends FunSuite {
   }
 
   private def exec(str: String, s: Long = step): List[TimeSeries] = {
-    val ctxt = context.copy(step = s)
+    val ctxt = if (s == step) context else context.copy(start = s, end = 2 * s, step = s)
     db.execute(ctxt, expr(str)).sortWith(_.label < _.label).map { t =>
       t.mapTimeSeq(s => s.bounded(context.start, context.end))
     }
   }
 
   private def ts(label: String, mul: Int, values: Double*): TimeSeries = {
-    TimeSeries(Map.empty, label, new ArrayTimeSeq(DsType.Rate, 0L, mul * step, values.toArray))
+    val s = start + (mul * step) - step
+    TimeSeries(Map.empty, label, new ArrayTimeSeq(DsType.Rate, s, mul * step, values.toArray))
   }
 
   private def ts(name: String, label: String, mul: Int, values: Double*): TimeSeries = {
-    val seq = new ArrayTimeSeq(DsType.Rate, 0L, mul * step, values.toArray)
+    val s = start + (mul * step) - step
+    val seq = new ArrayTimeSeq(DsType.Rate, s, mul * step, values.toArray)
     TimeSeries(Map("name" -> name, "foo" -> "bar"), label, seq)
   }
 

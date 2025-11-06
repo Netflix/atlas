@@ -166,6 +166,11 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
       val epos = if (e < be) e else be
       var i = spos // Index to this buffer
       var j = (i - bs).toInt * multiple // Index into the block
+      if (multiple > 1) {
+        // Adjust index position for consolidated data since all but the final primary
+        // datapoint will have earlier start time than the consolidated datapoint.
+        j -= multiple
+      }
       while (i <= epos) {
         val pos = (i - s).toInt
         val v = cf.compute(block, j, aggr, multiple)

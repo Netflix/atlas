@@ -177,17 +177,10 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     val aggr = blockAggr(expr)
     val collector = AggregateCollector(expr)
 
-    val end = context.end
     val multiple = (cfStep / step).asInstanceOf[Int]
-    val s = context.start / cfStep
-    val e = end / cfStep
-    val bs = s * multiple
-    val be = e * multiple
 
-    val stepLength = be - bs + 1
-    val cfStepLength = stepLength / multiple
-    val bufStart = bs * step
-    val bufEnd = bufStart + cfStepLength * cfStep - cfStep
+    val bufStart = context.start
+    val bufEnd = context.end - cfStep
 
     def newBuffer(tags: Map[String, String]): TimeSeriesBuffer = {
       TimeSeriesBuffer(tags, cfStep, bufStart, bufEnd)
@@ -198,7 +191,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
         queryBlocks.increment()
         // Check if the block has data for the desired time range
         val blockEnd = b.start + (b.size + 1) * step
-        if (b.start <= be * step && blockEnd >= bs * step) {
+        if (b.start <= bufEnd && blockEnd > bufStart - cfStep) {
           aggrBlocks.increment()
           collector.add(item.tags, List(b), aggr, expr.cf, multiple, newBuffer)
         }
