@@ -87,6 +87,12 @@ class QueryVocabularySuite extends FunSuite {
     exp1.asInstanceOf[Query.Equal]
   }
 
+  test("eq, with escaped whitespace") {
+    val txt = Interpreter.escape("\n \t foo bar \t \n")
+    val exp = execEquals(s"a,$txt,:eq")
+    assertEquals(exp.v, "\n \t foo bar \t \n")
+  }
+
   test("eq, with escaped comma") {
     val txt = Interpreter.escape("foo, bar, baz")
     val exp = execEquals(s"a,$txt,:eq")
