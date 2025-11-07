@@ -103,4 +103,93 @@ class StepSuite extends FunSuite {
     assertEquals(Step.roundToStepBoundary(1L, 60_000L), 60_000L)
     assertEquals(Step.roundToStepBoundary(87_123L, 60_000L), 120_000L)
   }
+
+  test("firstPrimaryStepTimestamp: multiple = 1") {
+    // No consolidation, timestamp should be returned as-is
+    assertEquals(Step.firstPrimaryStepTimestamp(60_000L, 60_000L, 1), 60_000L)
+    assertEquals(Step.firstPrimaryStepTimestamp(0L, 60_000L, 1), 0L)
+    assertEquals(Step.firstPrimaryStepTimestamp(180_000L, 60_000L, 1), 180_000L)
+  }
+
+  test("firstPrimaryStepTimestamp: example from documentation") {
+    // Consolidated interval timestamp = 1:03 (3 minutes = 180_000ms)
+    // Step = 3 minutes, Multiple = 3
+    // Primary step = 1 minute
+    // Result should be 1:01 (60_000ms)
+    val timestamp = minutes(3)
+    val step = minutes(3)
+    val multiple = 3
+    val expected = minutes(1)
+    assertEquals(Step.firstPrimaryStepTimestamp(timestamp, step, multiple), expected)
+  }
+
+  test("firstPrimaryStepTimestamp: 1 hour with multiple = 60") {
+    // Consolidated interval timestamp = 1 hour
+    // Step = 1 hour, Multiple = 60
+    // Primary step = 1 minute
+    // Result should be 1 minute
+    val timestamp = minutes(60)
+    val step = minutes(60)
+    val multiple = 60
+    val expected = minutes(1)
+    assertEquals(Step.firstPrimaryStepTimestamp(timestamp, step, multiple), expected)
+  }
+
+  test("firstPrimaryStepTimestamp: 10 minutes with multiple = 10") {
+    // Consolidated interval timestamp = 10 minutes
+    // Step = 10 minutes, Multiple = 10
+    // Primary step = 1 minute
+    // Result should be 1 minute
+    val timestamp = minutes(10)
+    val step = minutes(10)
+    val multiple = 10
+    val expected = minutes(1)
+    assertEquals(Step.firstPrimaryStepTimestamp(timestamp, step, multiple), expected)
+  }
+
+  test("firstPrimaryStepTimestamp: zero timestamp") {
+    // At timestamp = 0, the first primary step timestamp should be negative
+    // For step = 3m, multiple = 3, primary step = 1m
+    // Result: 0 - 180_000 + 60_000 = -120_000
+    val timestamp = 0L
+    val step = minutes(3)
+    val multiple = 3
+    val expected = -minutes(2)
+    assertEquals(Step.firstPrimaryStepTimestamp(timestamp, step, multiple), expected)
+  }
+
+  test("firstPrimaryStepTimestamp: multiple = 2") {
+    // Consolidated interval timestamp = 2 minutes
+    // Step = 2 minutes, Multiple = 2
+    // Primary step = 1 minute
+    // Result should be 1 minute
+    val timestamp = minutes(2)
+    val step = minutes(2)
+    val multiple = 2
+    val expected = minutes(1)
+    assertEquals(Step.firstPrimaryStepTimestamp(timestamp, step, multiple), expected)
+  }
+
+  test("firstPrimaryStepTimestamp: large timestamp") {
+    // Test with a large timestamp to ensure calculation handles overflow correctly
+    val timestamp = minutes(1000)
+    val step = minutes(10)
+    val multiple = 10
+    val expected = minutes(1000) - minutes(10) + minutes(1)
+    assertEquals(Step.firstPrimaryStepTimestamp(timestamp, step, multiple), expected)
+  }
+
+  test("firstPrimaryStepTimestamp: timestamp not on boundary") {
+    // Should fail with require check
+    intercept[IllegalArgumentException] {
+      Step.firstPrimaryStepTimestamp(61_000L, 60_000L, 1)
+    }
+  }
+
+  test("firstPrimaryStepTimestamp: step not divisible by multiple") {
+    // Should fail with require check
+    intercept[IllegalArgumentException] {
+      Step.firstPrimaryStepTimestamp(60_000L, 60_000L, 7)
+    }
+  }
 }

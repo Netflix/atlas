@@ -148,6 +148,14 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
     new TimeSeriesBuffer(tags, new ArrayTimeSeq(data.dsType, start, step, values.clone))
   }
 
+  private def end: Long = {
+    start + values.length * step
+  }
+
+  private def blockEnd(block: Block, primaryStep: Long): Long = {
+    block.start + block.size * primaryStep
+  }
+
   /** Aggregate the data from the block into this buffer. */
   private[db] def aggrBlock(
     block: Block,
@@ -156,29 +164,22 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
     multiple: Int,
     op: (Double, Double) => Double
   ): Int = {
-    val s = start / step
-    val e = values.length + s - 1
-    val bs = block.start / step
-    val be = bs + block.size / multiple - 1
+    val primaryStep = step / multiple
+    val s = math.max(start, Step.roundToStepBoundary(block.start, step))
+    val e = math.min(end, Step.roundToStepBoundary(blockEnd(block, primaryStep), step))
+    val blockOffset = step - primaryStep
+    val blockStart = s - blockOffset
     var valueCount = 0
-    if (e >= bs && s <= be) {
-      val spos = if (s > bs) s else bs
-      val epos = if (e < be) e else be
-      var i = spos // Index to this buffer
-      var j = (i - bs).toInt * multiple // Index into the block
-      if (multiple > 1) {
-        // Adjust index position for consolidated data since all but the final primary
-        // datapoint will have earlier start time than the consolidated datapoint.
-        j -= multiple
-      }
-      while (i <= epos) {
-        val pos = (i - s).toInt
-        val v = cf.compute(block, j, aggr, multiple)
-        values(pos) = op(values(pos), v)
-        if (!values(pos).isNaN) valueCount += 1
-        i += 1
-        j += multiple
-      }
+    var t = blockStart
+    while (t < e - blockOffset) {
+      val blockPos = ((t - block.start) / primaryStep).toInt
+      val v = cf.compute(block, blockPos, aggr, multiple)
+
+      val pos = ((t + blockOffset - start) / step).toInt
+      values(pos) = op(values(pos), v)
+      if (!values(pos).isNaN) valueCount += 1
+
+      t += step
     }
     valueCount
   }

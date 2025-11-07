@@ -175,4 +175,228 @@ class AggregateCollectorSuite extends FunSuite {
     assertEquals(c.result.toSet, expected.toSet)
     assertEquals(c.stats, CollectorStats(1, 1, 1, 1))
   }
+
+  private def sumCollectorTest(
+    blockStart: Long,
+    bufferStart: Long,
+    multiple: Int
+  ): List[TimeSeriesBuffer] = {
+    // Reproduces: ArrayIndexOutOfBoundsException: Index -3 out of bounds for length 60
+    // This occurs when consolidating data with multiple > 1 and the buffer start
+    // aligns in a specific way with the block start.
+    import com.netflix.atlas.core.model.ArrayBlock
+    import com.netflix.atlas.core.model.Block
+    import com.netflix.atlas.core.model.ConsolidationFunction
+
+    val c = new SumAggregateCollector
+    val tags = Map("name" -> "test")
+
+    // Create a block with start=0 and 60 values
+    val block = ArrayBlock(blockStart, 60)
+    // Fill the block with test data
+    var i = 0
+    while (i < 60) {
+      block.update(i, 1.0)
+      i += 1
+    }
+    val blocks = List(block)
+
+    // Buffer parameters: start=0, step=3m
+    // When multiple=3, this causes j to become negative
+    val bufferStep = 60_000L * multiple
+
+    val newBuffer = (t: Map[String, String]) => {
+      val data = new Array[Double](60)
+      java.util.Arrays.fill(data, Double.NaN)
+      new TimeSeriesBuffer(
+        t,
+        new ArrayTimeSeq(DsType.Gauge, bufferStart, bufferStep, data)
+      )
+    }
+
+    // This should trigger the ArrayIndexOutOfBoundsException with index -3
+    c.add(tags, blocks, Block.Sum, ConsolidationFunction.Sum, multiple, newBuffer)
+
+    c.result
+  }
+
+  test("sum collector -- blockStart=0, bufferStart=0, m=1") {
+    val buffers = sumCollectorTest(0L, 0L, 1)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    // Block has 60 values, buffer has 60 positions, should have 60 values of 1.0
+    buffer.values.foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+  }
+
+  test("sum collector -- blockStart=0, bufferStart=0, m=3".fail) {
+    // This case triggers ArrayIndexOutOfBoundsException: Index -3
+    val buffers = sumCollectorTest(0L, 0L, 3)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    // With consolidation of 3, each buffer position sums 3 block values
+    buffer.values.foreach(v => assertEqualsDouble(v, 3.0, 1e-12))
+  }
+
+  test("sum collector -- blockStart=0, bufferStart=step") {
+    val buffers = sumCollectorTest(0L, 60_000L, 1)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.take(59).foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+    buffer.values.drop(59).foreach(v => assert(v.isNaN))
+  }
+
+  test("sum collector -- blockStart=primaryStep, bufferStart=0, m=1") {
+    val buffers = sumCollectorTest(60_000L, 0L, 1)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.take(1).foreach(v => assert(v.isNaN))
+    buffer.values.drop(1).foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+  }
+
+  test("sum collector -- blockStart=primaryStep, bufferStart=0, m=3") {
+    val buffers = sumCollectorTest(60_000L, 0L, 3)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.take(1).foreach(v => assert(v.isNaN))
+    buffer.values.slice(1, 21).foreach(v => assertEqualsDouble(v, 3.0, 1e-12))
+    buffer.values.drop(21).foreach(v => assert(v.isNaN))
+  }
+
+  test("sum collector -- blockStart=primaryStep, bufferStart=step, m=2") {
+    val buffers = sumCollectorTest(60_000L, 120_000L, 2)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    // Block: 60_000 to 3_660_000 (60 * 60_000)
+    // Buffer: 120_000 to 7_320_000 (60 * 120_000)
+    // With m=2, buffer step is 120_000
+    // First 30 positions should have values
+    buffer.values.take(30).foreach(v => assertEqualsDouble(v, 2.0, 1e-12))
+    // Rest should be NaN
+    buffer.values.drop(30).foreach(v => assert(v.isNaN))
+  }
+
+  test("sum collector -- blockStart=primaryStep, bufferStart=step, m=3") {
+    // May trigger negative index with consolidation
+    val buffers = sumCollectorTest(60_000L, 180_000L, 3)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    // Block: 60_000 to 3_660_000
+    // Buffer: 180_000 to 10_980_000 (60 * 180_000)
+    // With m=3, buffer step is 180_000
+    buffer.values.take(20).foreach(v => assertEqualsDouble(v, 3.0, 1e-12))
+    buffer.values.drop(20).foreach(v => assert(v.isNaN))
+  }
+
+  test("sum collector -- blockStart=step, bufferStart=step") {
+    val buffers = sumCollectorTest(60_000L, 60_000L, 1)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+  }
+
+  private def avgCollectorTest(
+    blockStart: Long,
+    bufferStart: Long,
+    multiple: Int
+  ): List[TimeSeriesBuffer] = {
+    // Reproduces: ArrayIndexOutOfBoundsException: Index -3 out of bounds for length 60
+    // This occurs when consolidating data with multiple > 1 and the buffer start
+    // aligns in a specific way with the block start.
+    import com.netflix.atlas.core.model.ArrayBlock
+    import com.netflix.atlas.core.model.Block
+    import com.netflix.atlas.core.model.ConsolidationFunction
+
+    val c = new SumAggregateCollector
+    val tags = Map("name" -> "test")
+
+    // Create a block with start=0 and 60 values
+    val block = ArrayBlock(blockStart, 60)
+    // Fill the block with test data
+    var i = 0
+    while (i < 60) {
+      block.update(i, 1.0)
+      i += 1
+    }
+    val blocks = List(block)
+
+    // Buffer parameters: start=0, step=3m
+    // When multiple=3, this causes j to become negative
+    val bufferStep = 60_000L * multiple
+
+    val newBuffer = (t: Map[String, String]) => {
+      val data = new Array[Double](60)
+      java.util.Arrays.fill(data, Double.NaN)
+      new TimeSeriesBuffer(
+        t,
+        new ArrayTimeSeq(DsType.Gauge, bufferStart, bufferStep, data)
+      )
+    }
+
+    // This should trigger the ArrayIndexOutOfBoundsException with index -3
+    c.add(tags, blocks, Block.Sum, ConsolidationFunction.Avg, multiple, newBuffer)
+
+    c.result
+  }
+
+  test("avg collector -- blockStart=0, bufferStart=0, m=1") {
+    val buffers = avgCollectorTest(0L, 0L, 1)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+  }
+
+  test("avg collector -- blockStart=0, bufferStart=0, m=3".fail) {
+    val buffers = avgCollectorTest(0L, 0L, 3)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.foreach(v => assertEqualsDouble(v, 3.0, 1e-12))
+  }
+
+  test("avg collector -- blockStart=0, bufferStart=step") {
+    val buffers = avgCollectorTest(0L, 60_000L, 1)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.take(59).foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+    buffer.values.drop(59).foreach(v => assert(v.isNaN))
+  }
+
+  test("avg collector -- blockStart=primaryStep, bufferStart=0, m=1") {
+    val buffers = avgCollectorTest(60_000L, 0L, 1)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.take(1).foreach(v => assert(v.isNaN))
+    buffer.values.drop(1).foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+  }
+
+  test("avg collector -- blockStart=primaryStep, bufferStart=0, m=3") {
+    val buffers = avgCollectorTest(60_000L, 0L, 3)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.take(1).foreach(v => assert(v.isNaN))
+    buffer.values.slice(1, 21).foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+    buffer.values.drop(21).foreach(v => assert(v.isNaN))
+  }
+
+  test("avg collector -- blockStart=primaryStep, bufferStart=step, m=2") {
+    val buffers = avgCollectorTest(60_000L, 120_000L, 2)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.take(30).foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+    buffer.values.drop(30).foreach(v => assert(v.isNaN))
+  }
+
+  test("avg collector -- blockStart=primaryStep, bufferStart=step, m=3") {
+    val buffers = avgCollectorTest(60_000L, 180_000L, 3)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.take(20).foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+    buffer.values.drop(20).foreach(v => assert(v.isNaN))
+  }
+
+  test("avg collector -- blockStart=step, bufferStart=step") {
+    val buffers = avgCollectorTest(60_000L, 60_000L, 1)
+    assertEquals(buffers.size, 1)
+    val buffer = buffers.head
+    buffer.values.foreach(v => assertEqualsDouble(v, 1.0, 1e-12))
+  }
 }
