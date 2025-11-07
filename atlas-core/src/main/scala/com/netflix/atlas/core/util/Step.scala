@@ -100,4 +100,37 @@ object Step {
     else
       timestamp / step * step + step
   }
+
+  /**
+    * Find the timestamp for the first primary data point within a consolidated data point.
+    *
+    * {{{
+    * Consolidated interval, step size of 3m, timestamp = 1:03
+    *   1:00                             1:03
+    *    ├────────────────────────────────┤
+    *
+    * Primary interval, step size of 1m, first start time is 1:01
+    *   1:00       1:01       1:02       1:03
+    *    ├──────────┼──────────┼──────────┤
+    * }}}
+    *
+    * @param timestamp
+    *     Timestamp of the consolidated step interval.
+    * @param step
+    *     Step interval for the timestamp. The timestamp should be on a step boundary.
+    * @param multiple
+    *     Multiple of the primary step, `step / multiple = primaryStep`.
+    * @return
+    *     Start time of the first primary step interval within the consolidated interval.
+    */
+  def firstPrimaryStepTimestamp(timestamp: Long, step: Long, multiple: Int): Long = {
+    require(timestamp % step == 0, s"$timestamp is not on a step boundary (step=$step)")
+    require(step % multiple == 0, s"$step is not an even multiple (multiple=$multiple)")
+    if (multiple == 1) {
+      timestamp
+    } else {
+      val primaryStep = step / multiple
+      timestamp - step + primaryStep
+    }
+  }
 }
