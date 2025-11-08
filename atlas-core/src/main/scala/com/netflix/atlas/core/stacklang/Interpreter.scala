@@ -263,8 +263,42 @@ object Interpreter {
     builder.result()
   }
 
+  /**
+    * Check if a character is special in the string.
+    */
   private def isSpecial(c: Int): Boolean = {
     c == ',' || c == ':' || Character.isWhitespace(c)
+  }
+
+  /**
+    * Check if a character is special in the middle of a string, with special handling
+    * for spaces. For spaces, only escape if they are at the leading or trailing edge
+    * where they would be removed by trim. This makes expressions with spaces in the
+    * middle more user-friendly.
+    */
+  private def isSpecialForMiddle(c: Int): Boolean = {
+    // In the middle of the string, spaces are not special, but other characters are
+    c == ',' || c == ':' || (Character.isWhitespace(c) && c != ' ')
+  }
+
+  private def indexOfNonWhitespace(str: String): Int = {
+    var i = 0
+    while (i < str.length) {
+      if (!Character.isWhitespace(str.charAt(i)))
+        return i
+      i += 1
+    }
+    -1
+  }
+
+  private def lastIndexOfNonWhitespace(str: String): Int = {
+    var i = str.length - 1
+    while (i >= 0) {
+      if (!Character.isWhitespace(str.charAt(i)))
+        return i
+      i -= 1
+    }
+    -1
   }
 
   /** Escape special characters in the expression. */
@@ -275,7 +309,17 @@ object Interpreter {
     str match {
       case "(" => "\\u0028"
       case ")" => "\\u0029"
-      case s   => Strings.escape(s, isSpecial)
+      case s =>
+        val f = indexOfNonWhitespace(s)
+        val l = lastIndexOfNonWhitespace(s)
+        if (f >= 0 && l >= 0) {
+          val prefix = Strings.escape(s.substring(0, f), isSpecial)
+          val middle = Strings.escape(s.substring(f, l + 1), isSpecialForMiddle)
+          val suffix = Strings.escape(s.substring(l + 1), isSpecial)
+          s"$prefix$middle$suffix"
+        } else {
+          Strings.escape(s, isSpecial)
+        }
     }
   }
 
@@ -287,7 +331,16 @@ object Interpreter {
     str match {
       case "(" => builder.append("\\u0028")
       case ")" => builder.append("\\u0029")
-      case s   => Strings.escape(builder, s, isSpecial)
+      case s =>
+        val f = indexOfNonWhitespace(s)
+        val l = lastIndexOfNonWhitespace(s)
+        if (f >= 0 && l >= 0) {
+          Strings.escape(builder, s.substring(0, f), isSpecial)
+          Strings.escape(builder, s.substring(f, l + 1), isSpecialForMiddle)
+          Strings.escape(builder, s.substring(l + 1), isSpecial)
+        } else {
+          Strings.escape(builder, s, isSpecial)
+        }
     }
   }
 

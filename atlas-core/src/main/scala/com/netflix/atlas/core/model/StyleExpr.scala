@@ -33,9 +33,10 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     // future solution would be to use a map that preserves the order of
     // updates to the object.
     val vs = settings.toList.sortWith(_._1 > _._1).map {
-      case ("sed", v) => v
-      case ("ls", v)  => s":$v"
-      case (k, v)     => s"${Interpreter.escape(v)},:$k"
+      case ("sed", v)    => v
+      case ("ls", v)     => s":$v"
+      case ("offset", v) => s"$v,:offset"
+      case (k, v)        => s"${Interpreter.escape(v)},:$k"
     }
     vs.foreach { v =>
       builder.append(',').append(v)
