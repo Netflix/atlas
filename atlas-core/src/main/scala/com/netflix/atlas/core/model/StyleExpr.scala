@@ -35,7 +35,7 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     val vs = settings.toList.sortWith(_._1 > _._1).map {
       case ("sed", v) => v
       case ("ls", v)  => s":$v"
-      case (k, v)     => s"$v,:$k"
+      case (k, v)     => s"${Interpreter.escape(v)},:$k"
     }
     vs.foreach { v =>
       builder.append(',').append(v)
