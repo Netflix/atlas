@@ -84,4 +84,9 @@ class StyleVocabularySuite extends FunSuite {
     val expr = eval("name,test,:eq,:sum,foo,:legend,f00,:color,1h,:offset")
     assertEquals(expr.toString, "name,test,:eq,:sum,PT1H,:offset,foo,:legend,f00,:color")
   }
+
+  test("legend with escaped comma") {
+    val expr = eval("name,test,:eq,:sum,foo\\u002cbar,:legend")
+    assertEquals(expr.toString, "name,test,:eq,:sum,foo\\u002cbar,:legend")
+  }
 }

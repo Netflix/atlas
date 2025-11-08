@@ -197,6 +197,59 @@ class InterpreterSuite extends FunSuite {
     assertEquals(actual, List(s"a${comma}b${comma}c", "d"))
     assertEquals(Interpreter.toString(actual.reverse), escaped)
   }
+
+  //
+  // escape with smart space handling
+  //
+
+  test("escape: space in middle") {
+    val input = "foo bar"
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "foo bar")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: leading space") {
+    val input = " foo"
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "\\u0020foo")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: trailing space") {
+    val input = "foo "
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "foo\\u0020")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: leading and trailing spaces") {
+    val input = " foo bar "
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "\\u0020foo bar\\u0020")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: multiple leading and trailing spaces") {
+    val input = "\n\t  foo  bar  "
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "\\u000a\\u0009\\u0020\\u0020foo  bar\\u0020\\u0020")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: only spaces") {
+    val input = "   "
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "\\u0020\\u0020\\u0020")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: tabs and newlines still escaped") {
+    val input = "foo\tbar\nbaz"
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "foo\\u0009bar\\u000abaz")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
 }
 
 object InterpreterSuite {
