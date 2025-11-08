@@ -26,7 +26,7 @@ object Fonts {
 
   private def loadTrueTypeFont(resource: String): Font = {
     Using.resource(getClass.getClassLoader.getResourceAsStream(resource)) { in =>
-      Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(12.0f)
+      Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(13.0f)
     }
   }
 

@@ -73,13 +73,13 @@ object ChartSettings {
   val monospaceFont: Font = Fonts.loadFont(config.getString("fonts.monospace"))
 
   /** Small sized monospaced font. */
-  val smallFont: Font = monospaceFont.deriveFont(10.0f)
+  val smallFont: Font = monospaceFont.deriveFont(config.getDouble("fonts.small").toFloat)
 
   /** Normal sized monospaced font. */
-  val normalFont: Font = monospaceFont
+  val normalFont: Font = monospaceFont.deriveFont(config.getDouble("fonts.normal").toFloat)
 
   /** Large sized monospaced font. */
-  val largeFont: Font = monospaceFont.deriveFont(14.0f)
+  val largeFont: Font = monospaceFont.deriveFont(config.getDouble("fonts.large").toFloat)
 
   /** Dimensions for a character using the small font. */
   val smallFontDims: Dimensions = dimensions(smallFont)
