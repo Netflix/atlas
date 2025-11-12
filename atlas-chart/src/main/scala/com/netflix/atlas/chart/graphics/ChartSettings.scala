@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.chart.graphics
 
+import com.netflix.atlas.chart.util.FontSet
+
 import java.awt.BasicStroke
 import java.awt.Font
 import java.awt.Stroke
@@ -70,25 +72,32 @@ object ChartSettings {
   /**
     * Base monospaced font used for graphics. Monospace is used to make the layout easier.
     */
-  val monospaceFont: Font = Fonts.loadFont(config.getString("fonts.monospace"))
+  val monospaceFont: FontSet = {
+    import scala.jdk.CollectionConverters.*
+    val fonts = config.getStringList("fonts.monospace")
+      .asScala
+      .map(Fonts.loadFont)
+      .toList
+    new FontSet(fonts)
+  }
 
   /** Small sized monospaced font. */
-  val smallFont: Font = monospaceFont.deriveFont(config.getDouble("fonts.small").toFloat)
+  val smallFont: FontSet = monospaceFont.withSize(config.getDouble("fonts.small").toFloat)
 
   /** Normal sized monospaced font. */
-  val normalFont: Font = monospaceFont.deriveFont(config.getDouble("fonts.normal").toFloat)
+  val normalFont: FontSet = monospaceFont.withSize(config.getDouble("fonts.normal").toFloat)
 
   /** Large sized monospaced font. */
-  val largeFont: Font = monospaceFont.deriveFont(config.getDouble("fonts.large").toFloat)
+  val largeFont: FontSet = monospaceFont.withSize(config.getDouble("fonts.large").toFloat)
 
   /** Dimensions for a character using the small font. */
-  val smallFontDims: Dimensions = dimensions(smallFont)
+  val smallFontDims: Dimensions = dimensions(smallFont.primaryFont)
 
   /** Dimensions for a character using the normal font. */
-  val normalFontDims: Dimensions = dimensions(normalFont)
+  val normalFontDims: Dimensions = dimensions(normalFont.primaryFont)
 
   /** Dimensions for a character using the large font. */
-  val largeFontDims: Dimensions = dimensions(largeFont)
+  val largeFontDims: Dimensions = dimensions(largeFont.primaryFont)
 
   /**
     * Minimum width required for text elements. Value was chosen to allow typical messages to
