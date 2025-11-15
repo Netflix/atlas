@@ -15,13 +15,12 @@
  */
 package com.netflix.atlas.lwc.events
 
-import com.fasterxml.jackson.core.JsonGenerator
+import java.io.StringWriter
+import scala.util.Using
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.Spectator
 import org.slf4j.LoggerFactory
-
-import java.io.StringWriter
-import scala.util.Using
+import tools.jackson.core.JsonGenerator
 
 /**
   * Represents an event that should be published via an LWC stream. Defines how to

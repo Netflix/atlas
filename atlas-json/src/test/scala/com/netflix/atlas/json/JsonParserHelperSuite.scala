@@ -17,13 +17,12 @@ package com.netflix.atlas.json
 
 import java.util.Random
 import java.util.UUID
-
-import com.fasterxml.jackson.core.JsonToken
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.ArrayNode
-import com.fasterxml.jackson.databind.node.JsonNodeFactory
-import com.fasterxml.jackson.databind.node.ObjectNode
 import munit.FunSuite
+import tools.jackson.core.JsonToken
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.node.ArrayNode
+import tools.jackson.databind.node.JsonNodeFactory
+import tools.jackson.databind.node.ObjectNode
 
 class JsonParserHelperSuite extends FunSuite {
 
@@ -193,14 +192,14 @@ class JsonParserHelperSuite extends FunSuite {
       case 3 => JsonNodeFactory.instance.numberNode(r.nextDouble())
       case 4 => JsonNodeFactory.instance.booleanNode(r.nextBoolean())
       case 5 => JsonNodeFactory.instance.nullNode()
-      case 6 => JsonNodeFactory.instance.textNode(UUID.randomUUID().toString)
+      case 6 => JsonNodeFactory.instance.stringNode(UUID.randomUUID().toString)
     }
   }
 
   private def randomObject(r: Random): ObjectNode = {
     val obj = JsonNodeFactory.instance.objectNode()
     (0 until r.nextInt(5)).foreach { i =>
-      obj.set[ObjectNode](i.toString, randomJson(r))
+      obj.set(i.toString, randomJson(r))
     }
     obj
   }

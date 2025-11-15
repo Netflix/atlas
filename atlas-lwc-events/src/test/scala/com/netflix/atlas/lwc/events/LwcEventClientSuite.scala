@@ -15,15 +15,14 @@
  */
 package com.netflix.atlas.lwc.events
 
+import java.io.StringWriter
+import scala.util.Using
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.ManualClock
 import munit.FunSuite
-
-import java.io.StringWriter
-import scala.util.Using
 
 class LwcEventClientSuite extends FunSuite {
 
@@ -448,8 +447,8 @@ object LwcEventClientSuite {
       Using.resource(new StringWriter()) { w =>
         Using.resource(Json.newJsonGenerator(w)) { gen =>
           gen.writeStartObject()
-          gen.writeStringField("id", id)
-          gen.writeFieldName("event")
+          gen.writeStringProperty("id", id)
+          gen.writeName("event")
           event.encode(gen)
           gen.writeEndObject()
         }

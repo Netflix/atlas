@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.eval.model
 
-import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
+import tools.jackson.core.JsonGenerator
 
 /**
   * Datapoint read in from the LWC service.
@@ -50,15 +50,15 @@ case class LwcDatapoint(
 
   override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("type", `type`)
-    gen.writeNumberField("timestamp", timestamp)
-    gen.writeStringField("id", id)
-    gen.writeObjectFieldStart("tags")
-    tags.foreachEntry(gen.writeStringField)
+    gen.writeStringProperty("type", `type`)
+    gen.writeNumberProperty("timestamp", timestamp)
+    gen.writeStringProperty("id", id)
+    gen.writeObjectPropertyStart("tags")
+    tags.foreachEntry(gen.writeStringProperty)
     gen.writeEndObject()
-    gen.writeNumberField("value", value)
+    gen.writeNumberProperty("value", value)
     if (samples.nonEmpty) {
-      gen.writeFieldName("samples")
+      gen.writeName("samples")
       Json.encode(gen, samples)
     }
     gen.writeEndObject()

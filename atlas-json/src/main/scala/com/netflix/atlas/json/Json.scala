@@ -15,38 +15,42 @@
  */
 package com.netflix.atlas.json
 
+import com.fasterxml.jackson.annotation.JsonInclude
+
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.Reader
 import java.io.Writer
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.core.*
-import com.fasterxml.jackson.core.json.JsonReadFeature
-import com.fasterxml.jackson.core.json.JsonWriteFeature
-import com.fasterxml.jackson.databind.*
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.dataformat.smile.SmileFactory
-import com.fasterxml.jackson.dataformat.smile.SmileGenerator
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.fasterxml.jackson.module.scala.JavaTypeable
+import tools.jackson.core.*
+import tools.jackson.core.json.JsonFactory
+import tools.jackson.core.json.JsonFactoryBuilder
+import tools.jackson.core.json.JsonReadFeature
+import tools.jackson.core.json.JsonWriteFeature
+import tools.jackson.databind.*
+import tools.jackson.databind.cfg.DateTimeFeature
+import tools.jackson.databind.cfg.MapperBuilder
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.module.SimpleModule
+import tools.jackson.dataformat.smile.SmileFactory
+import tools.jackson.dataformat.smile.SmileMapper
+import tools.jackson.dataformat.smile.SmileWriteFeature
+import tools.jackson.module.scala.DefaultScalaModule
+import tools.jackson.module.scala.JavaTypeable
 
 object Json {
 
-  final class Decoder[T](reader: ObjectReader, factory: JsonFactory) {
+  final class Decoder[T](reader: ObjectReader, factory: TokenStreamFactory) {
 
-    def decode(json: Array[Byte]): T = decode(factory.createParser(json))
+    def decode(json: Array[Byte]): T = decode(factory.createParser(ObjectReadContext.empty, json))
 
     def decode(json: Array[Byte], offset: Int, length: Int): T =
-      decode(factory.createParser(json, offset, length))
+      decode(factory.createParser(ObjectReadContext.empty, json, offset, length))
 
-    def decode(json: String): T = decode(factory.createParser(json))
+    def decode(json: String): T = decode(factory.createParser(ObjectReadContext.empty, json))
 
-    def decode(input: Reader): T = decode(factory.createParser(input))
+    def decode(input: Reader): T = decode(factory.createParser(ObjectReadContext.empty, input))
 
-    def decode(input: InputStream): T = decode(factory.createParser(input))
+    def decode(input: InputStream): T = decode(factory.createParser(ObjectReadContext.empty, input))
 
     def decode(node: JsonNode): T = reader.readValue[T](node)
 
@@ -77,88 +81,66 @@ object Json {
     .builder()
     .enable(StreamReadFeature.AUTO_CLOSE_SOURCE)
     .enable(StreamWriteFeature.AUTO_CLOSE_TARGET)
-    .enable(SmileGenerator.Feature.LENIENT_UTF_ENCODING)
+    .enable(SmileWriteFeature.LENIENT_UTF_ENCODING)
     .build()
 
-  private val jsonMapper = newMapperBuilder(jsonFactory).build()
+  private val jsonMapper = configure(JsonMapper.builder(jsonFactory)).build()
 
-  private val smileMapper = newMapperBuilder(smileFactory).build()
+  private val smileMapper = configure(SmileMapper.builder(smileFactory)).build()
 
-  private def newMapperBuilder(factory: JsonFactory): JsonMapper.Builder = {
-    JsonMapper
-      .builder(factory)
-      .defaultPropertyInclusion(
+  def newMapperBuilder: JsonMapper.Builder = configure(JsonMapper.builder(jsonFactory))
+
+  private def configure[M <: ObjectMapper, B <: MapperBuilder[M, B]](
+    builder: MapperBuilder[M, B]
+  ): B = {
+    builder
+      .changeDefaultPropertyInclusion(_ =>
         JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.NON_ABSENT)
       )
-      .disable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
-      .disable(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS)
+      .enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+      .disable(DateTimeFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
+      .disable(DateTimeFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS)
+      .enable(DateTimeFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
       .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+      .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
       .addModule(DefaultScalaModule)
-      .addModule(new JavaTimeModule)
-      .addModule(new Jdk8Module)
       .addModule(new SimpleModule().setSerializerModifier(new JsonSupportSerializerModifier))
   }
 
-  /**
-    * Register additional modules with the default mappers used for JSON and Smile.
-    *
-    * @param module
-    *     Jackson databind module to register.
-    */
-  def registerModule(module: Module): Unit = {
-    jsonMapper.registerModule(module)
-    smileMapper.registerModule(module)
-  }
-
-  /**
-    * Can be called to alter the configuration of the default mapper. Note, this will
-    * cause changes to apply everything using this object which could break things that
-    * expect the default behavior.
-    */
-  def configure(f: ObjectMapper => Unit): Unit = {
-    f(jsonMapper)
-    f(smileMapper)
-  }
-
-  def newMapperBuilder: JsonMapper.Builder = newMapperBuilder(jsonFactory)
-
-  @deprecated(message = "Use newMapperBuilder instead.")
-  def newMapper: ObjectMapper = newMapperBuilder.build()
-
   def newJsonGenerator(writer: Writer): JsonGenerator = {
-    jsonFactory.createGenerator(writer)
+    jsonFactory.createGenerator(ObjectWriteContext.empty, writer)
   }
 
   def newJsonGenerator(stream: OutputStream): JsonGenerator = {
-    jsonFactory.createGenerator(stream, JsonEncoding.UTF8)
+    jsonFactory.createGenerator(ObjectWriteContext.empty, stream, JsonEncoding.UTF8)
   }
 
   def newJsonParser(reader: Reader): JsonParser = {
-    jsonFactory.createParser(reader)
+    jsonFactory.createParser(ObjectReadContext.empty, reader)
   }
 
   def newJsonParser(stream: InputStream): JsonParser = {
-    jsonFactory.createParser(stream)
+    jsonFactory.createParser(ObjectReadContext.empty, stream)
   }
 
   def newJsonParser(string: String): JsonParser = {
-    jsonFactory.createParser(string)
+    jsonFactory.createParser(ObjectReadContext.empty, string)
   }
 
   def newJsonParser(bytes: Array[Byte]): JsonParser = {
-    jsonFactory.createParser(bytes)
+    jsonFactory.createParser(ObjectReadContext.empty, bytes)
   }
 
   def newSmileGenerator(stream: OutputStream): JsonGenerator = {
-    smileFactory.createGenerator(stream)
+    smileFactory.createGenerator(ObjectWriteContext.empty, stream)
   }
 
   def newSmileParser(stream: InputStream): JsonParser = {
-    smileFactory.createParser(stream)
+    smileFactory.createParser(ObjectReadContext.empty, stream)
   }
 
   def newSmileParser(bytes: Array[Byte]): JsonParser = {
-    smileFactory.createParser(bytes, 0, bytes.length)
+    smileFactory.createParser(ObjectReadContext.empty, bytes, 0, bytes.length)
   }
 
   def encode(obj: Any): String = {

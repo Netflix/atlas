@@ -15,21 +15,21 @@
  */
 package com.netflix.atlas.json
 
-import com.fasterxml.jackson.databind.BeanDescription
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.SerializationConfig
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
+import tools.jackson.databind.BeanDescription
+import tools.jackson.databind.ValueSerializer
+import tools.jackson.databind.SerializationConfig
+import tools.jackson.databind.ser.ValueSerializerModifier
 
-private[json] class JsonSupportSerializerModifier extends BeanSerializerModifier {
+private[json] class JsonSupportSerializerModifier extends ValueSerializerModifier {
 
   override def modifySerializer(
     config: SerializationConfig,
-    beanDesc: BeanDescription,
-    serializer: JsonSerializer[?]
-  ): JsonSerializer[?] = {
+    beanDesc: BeanDescription.Supplier,
+    serializer: ValueSerializer[?]
+  ): ValueSerializer[?] = {
 
     if (classOf[JsonSupport].isAssignableFrom(beanDesc.getBeanClass))
-      new JsonSupportSerializer(serializer.asInstanceOf[JsonSerializer[AnyRef]])
+      new JsonSupportSerializer(serializer.asInstanceOf[ValueSerializer[AnyRef]])
     else
       serializer
   }

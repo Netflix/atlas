@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.fasterxml.jackson.core.JsonGenerator
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.impl.StepLong
+import tools.jackson.core.JsonGenerator
 
 /**
   * Metadata for a stream.
@@ -55,10 +55,10 @@ case class StreamMetadata(
 
   override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("streamId", streamId)
-    gen.writeStringField("remoteAddress", remoteAddress)
-    gen.writeNumberField("receivedMessages", receivedMessages.poll())
-    gen.writeNumberField("droppedMessages", droppedMessages.poll())
+    gen.writeStringProperty("streamId", streamId)
+    gen.writeStringProperty("remoteAddress", remoteAddress)
+    gen.writeNumberProperty("receivedMessages", receivedMessages.poll())
+    gen.writeNumberProperty("droppedMessages", droppedMessages.poll())
     gen.writeEndObject()
   }
 }

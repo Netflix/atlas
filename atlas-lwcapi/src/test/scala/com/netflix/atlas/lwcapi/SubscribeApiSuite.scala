@@ -15,10 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.fasterxml.jackson.databind.JsonNode
-import org.apache.pekko.http.scaladsl.model.ws.Message
-import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
-import org.apache.pekko.http.scaladsl.testkit.WSProbe
 import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcEvent
@@ -32,6 +28,10 @@ import com.netflix.atlas.pekko.RequestHandler
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.spectator.api.NoopRegistry
 import com.typesafe.config.ConfigFactory
+import org.apache.pekko.http.scaladsl.model.ws.Message
+import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
+import org.apache.pekko.http.scaladsl.testkit.WSProbe
+import tools.jackson.databind.JsonNode
 
 class SubscribeApiSuite extends MUnitRouteSuite {
 

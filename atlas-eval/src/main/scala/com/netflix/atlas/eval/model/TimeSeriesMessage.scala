@@ -15,16 +15,15 @@
  */
 package com.netflix.atlas.eval.model
 
-import com.fasterxml.jackson.core.JsonGenerator
+import java.awt.Color
+import java.time.Duration
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.core.model.*
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
-
-import java.awt.Color
-import java.time.Duration
+import tools.jackson.core.JsonGenerator
 
 /**
   * Message type use for emitting time series data in LWC and fetch responses.
@@ -80,38 +79,38 @@ case class TimeSeriesMessage(
 
   override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("type", "timeseries")
-    gen.writeStringField("id", id)
-    gen.writeStringField("query", query)
+    gen.writeStringProperty("type", "timeseries")
+    gen.writeStringProperty("id", id)
+    gen.writeStringProperty("query", query)
     if (groupByKeys.nonEmpty) {
-      gen.writeArrayFieldStart("groupByKeys")
+      gen.writeArrayPropertyStart("groupByKeys")
       groupByKeys.foreach(gen.writeString)
       gen.writeEndArray()
     }
-    gen.writeStringField("label", label)
+    gen.writeStringProperty("label", label)
     encodeTags(gen, tags)
     styleMetadata.foreach { metadata =>
-      gen.writeNumberField("plot", metadata.plot)
-      gen.writeStringField("color", Strings.zeroPad(metadata.color.getRGB, 8))
-      gen.writeStringField("lineStyle", metadata.lineStyle.name())
-      gen.writeNumberField("lineWidth", metadata.lineWidth)
+      gen.writeNumberProperty("plot", metadata.plot)
+      gen.writeStringProperty("color", Strings.zeroPad(metadata.color.getRGB, 8))
+      gen.writeStringProperty("lineStyle", metadata.lineStyle.name())
+      gen.writeNumberProperty("lineWidth", metadata.lineWidth)
     }
-    gen.writeNumberField("start", start)
-    gen.writeNumberField("end", end)
-    gen.writeNumberField("step", step)
-    gen.writeFieldName("data")
+    gen.writeNumberProperty("start", start)
+    gen.writeNumberProperty("end", end)
+    gen.writeNumberProperty("step", step)
+    gen.writeName("data")
     data.encode(gen)
     if (samples.nonEmpty) {
-      gen.writeFieldName("samples")
+      gen.writeName("samples")
       Json.encode(gen, samples)
     }
     gen.writeEndObject()
   }
 
   private def encodeTags(gen: JsonGenerator, tags: Map[String, String]): Unit = {
-    gen.writeObjectFieldStart("tags")
+    gen.writeObjectPropertyStart("tags")
     tags.foreachEntry { (k, v) =>
-      gen.writeStringField(k, v)
+      gen.writeStringProperty(k, v)
     }
     gen.writeEndObject()
   }

@@ -94,8 +94,8 @@ object LwcEventClient {
       Using.resource(new StringWriter()) { w =>
         Using.resource(Json.newJsonGenerator(w)) { gen =>
           gen.writeStartObject()
-          gen.writeStringField("id", id)
-          gen.writeFieldName("event")
+          gen.writeStringProperty("id", id)
+          gen.writeName("event")
           event.encode(gen)
           gen.writeEndObject()
         }

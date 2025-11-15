@@ -15,15 +15,6 @@
  */
 package com.netflix.atlas.lwc.events
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.netflix.atlas.core.util.FastGzipOutputStream
-import com.netflix.atlas.json.Json
-import com.netflix.spectator.api.Registry
-import com.netflix.spectator.impl.Scheduler
-import com.netflix.spectator.ipc.http.HttpClient
-import com.typesafe.config.Config
-import com.typesafe.scalalogging.StrictLogging
-
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.util.concurrent.ArrayBlockingQueue
@@ -31,6 +22,14 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantLock
 import scala.util.Using
+import com.netflix.atlas.core.util.FastGzipOutputStream
+import com.netflix.atlas.json.Json
+import com.netflix.spectator.api.Registry
+import com.netflix.spectator.impl.Scheduler
+import com.netflix.spectator.ipc.http.HttpClient
+import com.typesafe.config.Config
+import com.typesafe.scalalogging.StrictLogging
+import tools.jackson.core.JsonGenerator
 
 class RemoteLwcEventClient(registry: Registry, config: Config, filter: LwcEventFilter)
     extends AbstractLwcEventClient(registry.clock(), filter)
@@ -237,11 +236,11 @@ class RemoteLwcEventClient(registry: Registry, config: Config, filter: LwcEventF
     Using.resource(new FastGzipOutputStream(baos)) { out =>
       Using.resource(Json.newSmileGenerator(out)) { gen =>
         gen.writeStartObject()
-        gen.writeNumberField("timestamp", payload.timestamp)
-        gen.writeArrayFieldStart("metrics")
+        gen.writeNumberProperty("timestamp", payload.timestamp)
+        gen.writeArrayPropertyStart("metrics")
         payload.metrics.foreach(m => encodeMetric(m, gen))
         gen.writeEndArray()
-        gen.writeArrayFieldStart("events")
+        gen.writeArrayPropertyStart("events")
         payload.events.foreach(e => encodeEvent(e, gen))
         gen.writeEndArray()
         gen.writeEndObject()
@@ -252,22 +251,22 @@ class RemoteLwcEventClient(registry: Registry, config: Config, filter: LwcEventF
 
   private def encodeMetric(event: DatapointEvent, gen: JsonGenerator): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("id", event.id)
-    gen.writeObjectFieldStart("tags")
+    gen.writeStringProperty("id", event.id)
+    gen.writeObjectPropertyStart("tags")
     event.tags.foreachEntry { (k, v) =>
-      gen.writeStringField(k, v)
+      gen.writeStringProperty(k, v)
     }
     gen.writeEndObject()
-    gen.writeNumberField("value", event.value)
-    gen.writeFieldName("samples")
+    gen.writeNumberProperty("value", event.value)
+    gen.writeName("samples")
     Json.encode(gen, event.samples)
     gen.writeEndObject()
   }
 
   private def encodeEvent(event: Event, gen: JsonGenerator): Unit = {
     gen.writeStartObject()
-    gen.writeStringField("id", event.id)
-    gen.writeFieldName("payload")
+    gen.writeStringProperty("id", event.id)
+    gen.writeName("payload")
     event.payload.encode(gen)
     gen.writeEndObject()
   }

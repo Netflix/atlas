@@ -85,8 +85,6 @@ lazy val `atlas-json` = project
   .configure(BuildSettings.profile)
   .settings(libraryDependencies ++= Seq(
     Dependencies.jacksonCore,
-    Dependencies.jacksonJava8,
-    Dependencies.jacksonJsr310,
     Dependencies.jacksonMapper,
     Dependencies.jacksonScala,
     Dependencies.jacksonSmile

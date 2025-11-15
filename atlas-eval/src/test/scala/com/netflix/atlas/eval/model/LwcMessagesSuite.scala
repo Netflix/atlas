@@ -15,16 +15,15 @@
  */
 package com.netflix.atlas.eval.model
 
-import com.fasterxml.jackson.databind.JsonNode
-import org.apache.pekko.util.ByteString
+import java.util.Random
+import java.util.UUID
+import scala.util.Using
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.DiagnosticMessage
 import munit.FunSuite
-
-import java.util.Random
-import java.util.UUID
-import scala.util.Using
+import org.apache.pekko.util.ByteString
+import tools.jackson.databind.JsonNode
 
 class LwcMessagesSuite extends FunSuite {
 

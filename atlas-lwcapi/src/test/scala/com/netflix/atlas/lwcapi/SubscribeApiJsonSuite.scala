@@ -15,12 +15,12 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.fasterxml.jackson.databind.JsonMappingException
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.lwcapi.SubscribeApi.*
 import munit.FunSuite
+import tools.jackson.databind.exc.MismatchedInputException
+import tools.jackson.databind.exc.ValueInstantiationException
 
 class SubscribeApiJsonSuite extends FunSuite {
 
@@ -48,7 +48,7 @@ class SubscribeApiJsonSuite extends FunSuite {
   }
 
   test("decode array") {
-    intercept[JsonMappingException] {
+    intercept[MismatchedInputException] {
       Json.decode[SubscribeRequest]("[]")
     }
   }

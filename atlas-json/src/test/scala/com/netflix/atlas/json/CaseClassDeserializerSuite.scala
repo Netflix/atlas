@@ -17,23 +17,27 @@ package com.netflix.atlas.json
 
 import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.JsonMappingException
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.fasterxml.jackson.module.scala.JavaTypeable
+import tools.jackson.core.JacksonException
+import tools.jackson.core.JsonParser
+import tools.jackson.databind.DeserializationFeature
+import tools.jackson.databind.DeserializationContext
+import tools.jackson.databind.ValueDeserializer
+import tools.jackson.databind.annotation.JsonDeserialize
+import tools.jackson.databind.exc.ValueInstantiationException
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.scala.DefaultScalaModule
+import tools.jackson.module.scala.JavaTypeable
 import munit.FunSuite
 
 class CaseClassDeserializerSuite extends FunSuite {
 
   import CaseClassDeserializerSuite.*
 
-  private val mapper = new ObjectMapper()
-    .registerModule(DefaultScalaModule)
+  private val mapper = JsonMapper
+    .builder()
+    .addModule(DefaultScalaModule)
+    .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+    .build()
 
   def decode[T: JavaTypeable](json: String): T = {
     val javaType = implicitly[JavaTypeable[T]].asJavaType(mapper.getTypeFactory)
@@ -47,13 +51,13 @@ class CaseClassDeserializerSuite extends FunSuite {
   }
 
   test("read array") {
-    intercept[JsonMappingException] {
+    intercept[JacksonException] {
       decode[SimpleObject]("""[]""")
     }
   }
 
   test("read int") {
-    intercept[JsonMappingException] {
+    intercept[JacksonException] {
       decode[SimpleObject]("""42""")
     }
   }
@@ -65,7 +69,7 @@ class CaseClassDeserializerSuite extends FunSuite {
   }
 
   test("invalid type for field (invalid number)") {
-    intercept[JsonMappingException] {
+    intercept[JacksonException] {
       decode[SimpleObject]("""{"foo": "that", "bar": "abc", "baz": "def"}""")
     }
   }
@@ -243,7 +247,7 @@ object CaseClassDeserializerSuite {
 
   case class DeserUsingAnno(@JsonDeserialize(`using` = classOf[AddOneDeserializer]) value: Long)
 
-  class AddOneDeserializer extends JsonDeserializer[java.lang.Long] {
+  class AddOneDeserializer extends ValueDeserializer[java.lang.Long] {
 
     override def deserialize(p: JsonParser, ctxt: DeserializationContext): java.lang.Long = {
       val v = p.getLongValue

@@ -15,9 +15,6 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.fasterxml.jackson.databind.JsonNode
-import org.apache.pekko.http.scaladsl.model.StatusCodes
-import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.eval.model.LwcDiagnosticMessage
 import com.netflix.atlas.eval.model.LwcEvent
@@ -27,6 +24,9 @@ import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.RequestHandler
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.spectator.api.NoopRegistry
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
+import tools.jackson.databind.JsonNode
 
 class EvaluateApiSuite extends MUnitRouteSuite {
 

@@ -15,18 +15,18 @@
  */
 package com.netflix.atlas.json
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.SerializerProvider
+import tools.jackson.core.JsonGenerator
+import tools.jackson.databind.ValueSerializer
+import tools.jackson.databind.SerializationContext
 
 private[json] class JsonSupportSerializer(
-  defaultSerializer: JsonSerializer[AnyRef]
-) extends JsonSerializer[JsonSupport] {
+  defaultSerializer: ValueSerializer[AnyRef]
+) extends ValueSerializer[JsonSupport] {
 
   override def serialize(
     value: JsonSupport,
     gen: JsonGenerator,
-    serializers: SerializerProvider
+    serializers: SerializationContext
   ): Unit = {
 
     if (value.hasCustomEncoding)

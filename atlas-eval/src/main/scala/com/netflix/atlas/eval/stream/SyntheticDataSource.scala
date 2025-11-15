@@ -15,12 +15,10 @@
  */
 package com.netflix.atlas.eval.stream
 
-import com.fasterxml.jackson.databind.JsonNode
-import org.apache.pekko.NotUsed
-import org.apache.pekko.http.scaladsl.model.Uri
-import org.apache.pekko.stream.IOResult
-import org.apache.pekko.stream.scaladsl.Source
-import org.apache.pekko.util.ByteString
+import java.util.concurrent.TimeUnit
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration.FiniteDuration
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.Expr
@@ -35,11 +33,12 @@ import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.eval.model.LwcSubscriptionV2
 import com.netflix.atlas.json.Json
 import com.netflix.spectator.impl.Hash64
-
-import java.util.concurrent.TimeUnit
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration.FiniteDuration
+import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.model.Uri
+import org.apache.pekko.stream.IOResult
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
+import tools.jackson.databind.JsonNode
 
 /**
   * Helper for generating arbitrary data for a stream. Can be used to easily simulate

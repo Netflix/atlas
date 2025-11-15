@@ -17,6 +17,11 @@ package com.netflix.atlas.pekko
 
 import java.lang.reflect.Type
 import java.util.zip.Deflater
+import com.netflix.iep.service.ClassFactory
+import com.netflix.spectator.api.Registry
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.StrictLogging
 import org.apache.pekko.http.scaladsl.coding.Coders
 import org.apache.pekko.http.scaladsl.model.EntityStreamSizeException
 import org.apache.pekko.http.scaladsl.model.HttpHeader
@@ -34,12 +39,7 @@ import org.apache.pekko.http.scaladsl.server.Rejection
 import org.apache.pekko.http.scaladsl.server.RejectionHandler
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.pattern.CircuitBreakerOpenException
-import com.fasterxml.jackson.core.JsonProcessingException
-import com.netflix.iep.service.ClassFactory
-import com.netflix.spectator.api.Registry
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.scalalogging.StrictLogging
+import tools.jackson.core.JacksonException
 
 class RequestHandler(config: Config, registry: Registry, classFactory: ClassFactory)
     extends StrictLogging {
@@ -200,8 +200,7 @@ object RequestHandler extends StrictLogging {
 
     // Determine most appropriate status code to use based on the exception type
     t match {
-      case e @ (_: IllegalArgumentException | _: IllegalStateException |
-          _: JsonProcessingException) =>
+      case e @ (_: IllegalArgumentException | _: IllegalStateException | _: JacksonException) =>
         DiagnosticMessage.error(StatusCodes.BadRequest, e)
       case e: NoSuchElementException =>
         DiagnosticMessage.error(StatusCodes.NotFound, e)

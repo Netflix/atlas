@@ -7,7 +7,7 @@ object Dependencies {
     val pekko       = "1.2.1"
     val pekkoHttpV  = "1.2.0"
     val iep         = "5.1.9"
-    val jackson     = "2.20.0"
+    val jackson     = "3.0.1"
     val log4j       = "2.25.2"
     val otel        = "1.55.0"
     val scala       = "2.13.17"
@@ -37,13 +37,10 @@ object Dependencies {
   val iepService        = "com.netflix.iep" % "iep-service" % iep
   val iepSpring         = "com.netflix.iep" % "iep-spring" % iep
   val iepSpringAtlas    = "com.netflix.iep" % "iep-spring-atlas" % iep
-  val jacksonAnno       = "com.fasterxml.jackson.core" % "jackson-annotations" % jackson
-  val jacksonCore       = "com.fasterxml.jackson.core" % "jackson-core" % jackson
-  val jacksonJava8      = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jackson
-  val jacksonJsr310     = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jackson
-  val jacksonMapper     = "com.fasterxml.jackson.core" % "jackson-databind" % jackson
-  val jacksonScala      = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jackson
-  val jacksonSmile      = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jackson
+  val jacksonCore       = "tools.jackson.core" % "jackson-core" % jackson
+  val jacksonMapper     = "tools.jackson.core" % "jackson-databind" % jackson
+  val jacksonScala      = "tools.jackson.module" %% "jackson-module-scala" % jackson
+  val jacksonSmile      = "tools.jackson.dataformat" % "jackson-dataformat-smile" % jackson
   val jol               = "org.openjdk.jol" % "jol-core" % "0.17"
   val jsr305            = "com.google.code.findbugs" % "jsr305" % "3.0.2"
   val log4jApi          = "org.apache.logging.log4j" % "log4j-api" % log4j
