@@ -74,7 +74,8 @@ object ChartSettings {
     */
   val monospaceFont: FontSet = {
     import scala.jdk.CollectionConverters.*
-    val fonts = config.getStringList("fonts.monospace")
+    val fonts = config
+      .getStringList("fonts.monospace")
       .asScala
       .map(Fonts.loadFont)
       .toList
