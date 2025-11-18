@@ -15,11 +15,10 @@
  */
 package com.netflix.atlas.chart.graphics
 
-import java.awt.Font
+import com.netflix.atlas.chart.util.FontSet
+
 import java.awt.Graphics2D
 import java.awt.font.LineBreakMeasurer
-import java.awt.font.TextAttribute
-import java.text.AttributedString
 
 /**
   * Draw text with a single font and simple alignment.
@@ -36,13 +35,15 @@ import java.text.AttributedString
   */
 case class Text(
   str: String,
-  font: Font = ChartSettings.normalFont,
+  font: FontSet = ChartSettings.normalFont,
   alignment: TextAlignment = TextAlignment.CENTER,
   style: Style = Style.default
 ) extends Element
     with VariableHeight {
 
-  lazy val dims: ChartSettings.Dimensions = ChartSettings.dimensions(font)
+  private val attrStr = font.createAttributedString(str)
+
+  lazy val dims: ChartSettings.Dimensions = ChartSettings.dimensions(font.primaryFont)
 
   def truncate(width: Int): Text = {
     val maxChars = (width - Text.rightPadding) / dims.width
@@ -58,8 +59,6 @@ case class Text(
   override def minHeight: Int = dims.height
 
   override def computeHeight(g: Graphics2D, width: Int): Int = {
-    val attrStr = new AttributedString(str)
-    attrStr.addAttribute(TextAttribute.FONT, font)
     val iterator = attrStr.getIterator
     val measurer = new LineBreakMeasurer(iterator, g.getFontRenderContext)
 
@@ -75,8 +74,6 @@ case class Text(
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
     style.configure(g)
 
-    val attrStr = new AttributedString(str)
-    attrStr.addAttribute(TextAttribute.FONT, font)
     val iterator = attrStr.getIterator
     val measurer = new LineBreakMeasurer(iterator, g.getFontRenderContext)
 

@@ -44,7 +44,7 @@ object Fonts {
     * Font that is provided with the library and thus will be available on all systems. There
     * may be slight differences in the rendering on different versions of the JDK.
     */
-  val default: Font = loadFont("fonts/RobotoMono-Regular.ttf")
+  val default: Font = loadFont("fonts/NotoSansMono-Regular.ttf")
 
   /**
     * Returns true if the JDK and OS being used match those used to generate the blessed

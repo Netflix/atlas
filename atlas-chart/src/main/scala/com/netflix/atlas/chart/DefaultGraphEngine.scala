@@ -164,7 +164,7 @@ class DefaultGraphEngine extends PngGraphEngine {
       val warnings = List.newBuilder[Element]
       warnings += Text(
         "Warnings",
-        font = ChartSettings.normalFont.deriveFont(Font.BOLD),
+        font = ChartSettings.normalFont.withStyle(Font.BOLD),
         alignment = TextAlignment.LEFT,
         style = config.theme.warnings.text
       )
