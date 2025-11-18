@@ -65,7 +65,25 @@ class MathAcrossStyleSuite extends FunSuite {
         val actual = eval(s"$a,abc,:legend,$b,:${w.name}")
         assertEquals(actual, expected)
       }
+
+      test(s"${w.name}, StyleExpr op StyleExpr") {
+        val expected = eval(s"$a,$b,:${w.name}")
+        val actual = eval(s"$a,a,:legend,$b,b,:legend,f00,:color,:${w.name}")
+        assertEquals(actual, expected)
+      }
     }
+
+  test("binary op, strip-style for LHS") {
+    val expected = eval("a,:has,a,:legend,:strip-style,b,:has,b,:legend,:add")
+    val actual = eval("a,:has,b,:has,:add,b,:legend")
+    assertEquals(actual, expected)
+  }
+
+  test("binary op, strip-style for RHS") {
+    val expected = eval("a,:has,a,:legend,b,:has,b,:legend,:strip-style,:add")
+    val actual = eval("a,:has,b,:has,:add,a,:legend")
+    assertEquals(actual, expected)
+  }
 
   test("clamp-min") {
     val expected = eval("a,:has,1,:clamp-min,abc,:legend")

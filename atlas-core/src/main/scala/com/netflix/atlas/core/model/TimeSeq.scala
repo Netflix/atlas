@@ -16,8 +16,8 @@
 package com.netflix.atlas.core.model
 
 import java.time.Instant
-
 import com.netflix.atlas.core.util.Math
+import com.netflix.atlas.core.util.Step
 
 // TimeSeries can be lazy or eager. By default manipulations are done as a view over another
 // time series. This view can be materialized for a given range by calling the bounded method.
@@ -38,8 +38,8 @@ trait TimeSeq {
   /** Fast loop with no intermediate object creation. */
   def foreach(s: Long, e: Long)(f: (Long, Double) => Unit): Unit = {
     require(s <= e, "start must be <= end")
-    val end = e / step * step
-    var t = s / step * step
+    val end = Step.roundToStepBoundary(e, step)
+    var t = Step.roundToStepBoundary(s, step)
     while (t < end) {
       f(t, apply(t))
       t += step
@@ -48,8 +48,8 @@ trait TimeSeq {
 
   def bounded(s: Long, e: Long): ArrayTimeSeq = {
     require(s <= e, "start must be <= end")
-    val end = e / step * step
-    val start = s / step * step
+    val end = Step.roundToStepBoundary(e, step)
+    val start = Step.roundToStepBoundary(s, step)
     val length = ((end - start) / step).toInt
     val data = new Array[Double](length)
     var i = 0
@@ -188,13 +188,14 @@ class MapStepTimeSeq(ts: TimeSeq, val step: Long, cf: ConsolidationFunction) ext
 
   def apply(timestamp: Long): Double = {
     if (isConsolidation) {
-      val t = timestamp / step * step
       val m = (step / ts.step).toInt
+      val e = Step.roundToStepBoundary(timestamp, step)
+      val s = e - m * ts.step + ts.step
       var i = 0
       var v = Double.NaN
       var c = 0
       while (i < m) {
-        val n = ts(t + i * ts.step)
+        val n = if (s >= 0) ts(s + i * ts.step) else Double.NaN
         v = consolidate(v, n)
         if (!n.isNaN) c += 1
         i += 1
@@ -208,10 +209,16 @@ class MapStepTimeSeq(ts: TimeSeq, val step: Long, cf: ConsolidationFunction) ext
       val denominator = if (dsType == DsType.Rate) m else c
       if (c > 0 && cf == Avg) v / denominator else v
     } else {
-      val t = timestamp / ts.step * ts.step
-      ts(t)
+      ts(Step.roundToStepBoundary(timestamp, ts.step))
     }
   }
+}
+
+class StepViewTimeSeq(ts: TimeSeq, val step: Long) extends TimeSeq {
+
+  override def dsType: DsType = ts.dsType
+
+  override def apply(timestamp: Long): Double = ts(timestamp)
 }
 
 class UnaryOpTimeSeq(ts: TimeSeq, f: UnaryOp) extends TimeSeq {

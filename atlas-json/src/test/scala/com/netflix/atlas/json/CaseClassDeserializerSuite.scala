@@ -149,7 +149,8 @@ class CaseClassDeserializerSuite extends FunSuite {
   }
 
   test("read with List[String] field, null") {
-    val expected = ListString(null)
+    // Behavior changed in 2.19.0: https://github.com/FasterXML/jackson-module-scala/issues/722
+    val expected = ListString(Nil)
     val actual = decode[ListString]("""{"vs":null}""")
     assertEquals(actual, expected)
   }

@@ -49,6 +49,8 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
   @volatile private var queryListChanged = false
   private val queryIndex = QueryIndex.newInstance[Subscription](registry)
 
+  @volatile var lastUpdateTime: Long = 0L
+
   // Background process for updating the query index. It is not done inline because rebuilding
   // the index can be computationally expensive.
   private val ex =
@@ -61,18 +63,18 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
     if (queryListChanged) {
       queryListChanged = false
       val previous = subscriptionsList.toSet
-      subscriptionsList = registrations
+      val current = registrations
         .values()
         .asScala
         .flatMap(_.subscriptions)
-        .toList
-        .distinct
-
-      val current = subscriptionsList.toSet
+        .toSet
       val added = current.diff(previous)
       val removed = previous.diff(current)
       added.foreach(s => queryIndex.add(s.query, s))
       removed.foreach(s => queryIndex.remove(s.query, s))
+
+      subscriptionsList = current.toList
+      lastUpdateTime = registry.clock().wallTime()
     }
   }
 
@@ -184,25 +186,29 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
     logger.debug(s"updating subscriptions for $streamId")
     val info = getInfo(streamId)
     val addedSubs = List.newBuilder[Subscription]
-    subs.foreach { sub =>
+    val changed = subs.count { sub =>
       if (info.subs.putIfAbsent(sub.metadata.id, sub) == null) {
         logger.debug(s"subscribed $streamId to $sub")
         addedSubs += sub
       }
-      queryListChanged |= addHandler(sub.metadata.id, info.handler)
+      addHandler(sub.metadata.id, info.handler)
     }
+    queryListChanged |= (changed > 0)
     info.handler -> addedSubs.result()
   }
 
   /**
-    * Stop sending data for the subscription to the given stream id.
+    * Stop sending data for the subscriptions to the given stream id.
     */
-  def unsubscribe(streamId: String, subId: String): Unit = {
+  def unsubscribe(streamId: String, subIds: List[String]): Unit = {
     val info = getInfo(streamId)
-    if (info.subs.remove(subId) != null) {
-      logger.debug(s"unsubscribed $streamId from $subId")
+    val changed = subIds.count { subId =>
+      if (info.subs.remove(subId) != null) {
+        logger.debug(s"unsubscribed $streamId from $subId")
+      }
+      removeHandler(subId, info.handler)
     }
-    queryListChanged = removeHandler(subId, info.handler)
+    queryListChanged |= (changed > 0)
   }
 
   /**
@@ -282,6 +288,8 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
   def clear(): Unit = {
     logger.debug("clearing all subscriptions")
     registrations.clear()
+    subHandlers.clear()
+    subscriptionsList = Nil
     queryListChanged = true
     updateQueryIndex()
   }
@@ -297,6 +305,10 @@ object SubscriptionManager {
     val subs: ConcurrentHashMap[String, Subscription] =
       new ConcurrentHashMap[String, Subscription]()
   ) {
+
+    def foreach(f: Subscription => Unit): Unit = {
+      subs.forEachValue(1L, sub => f(sub))
+    }
 
     def subscriptions: List[Subscription] = {
       subs.values().asScala.toList

@@ -470,25 +470,15 @@ object Strings {
       case NamedDate(r) =>
         parseRefVar(refs, r)
       case UnixDate(d) =>
-        parseUnixDate(d, tz)
+        ofEpoch(d.toLong, tz)
       case UnixDateWithOp(d, op, p) =>
-        applyDateOffset(parseUnixDate(d, tz), op, p)
+        applyDateOffset(ofEpoch(d.toLong, tz), op, p)
       case str =>
         try IsoDateTimeParser.parse(str, tz)
         catch {
           case e: Exception => throw new IllegalArgumentException(s"invalid date $str", e)
         }
     }
-  }
-
-  private def parseUnixDate(d: String, tz: ZoneId): ZonedDateTime = {
-    val t = d.toLong match {
-      case v if v <= secondsCutoff => Instant.ofEpochSecond(v)
-      case v if v <= millisCutoff  => Instant.ofEpochMilli(v)
-      case v if v <= microsCutoff  => ofEpoch(v, 1_000_000L, 1_000L)
-      case v                       => ofEpoch(v, 1_000_000_000L, 1L)
-    }
-    ZonedDateTime.ofInstant(t, tz)
   }
 
   private def applyDateOffset(t: ZonedDateTime, op: String, p: String): ZonedDateTime = {
@@ -498,6 +488,20 @@ object Strings {
       case "+" => t.plus(d)
       case _   => throw new IllegalArgumentException("invalid operation " + op)
     }
+  }
+
+  /**
+    * Convert epoch timestamp to ZonedDateTime. The unit for the epoch will be automatically
+    * determined based on the magnitude.
+    */
+  def ofEpoch(timestamp: Long, tz: ZoneId): ZonedDateTime = {
+    val t = timestamp match {
+      case v if v <= secondsCutoff => Instant.ofEpochSecond(v)
+      case v if v <= millisCutoff  => Instant.ofEpochMilli(v)
+      case v if v <= microsCutoff  => ofEpoch(v, 1_000_000L, 1_000L)
+      case v                       => ofEpoch(v, 1_000_000_000L, 1L)
+    }
+    ZonedDateTime.ofInstant(t, tz)
   }
 
   private def ofEpoch(v: Long, f1: Long, f2: Long): Instant = {

@@ -59,7 +59,7 @@ sealed trait Query extends Expr {
     * to `super()` being called in the case class constructor. That appears to be the case
     * with current scala versions.
     */
-  override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
+  override val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
 }
 
 object Query {
@@ -337,7 +337,7 @@ object Query {
     def labelString: String = s"has($k)"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, k, ":has")
+      Interpreter.append(builder, k, Interpreter.WordToken(":has"))
     }
   }
 
@@ -348,7 +348,7 @@ object Query {
     def labelString: String = s"$k=$v"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, k, v, ":eq")
+      Interpreter.append(builder, k, v, Interpreter.WordToken(":eq"))
     }
   }
 
@@ -359,7 +359,7 @@ object Query {
     def labelString: String = s"$k<$v"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, k, v, ":lt")
+      Interpreter.append(builder, k, v, Interpreter.WordToken(":lt"))
     }
   }
 
@@ -370,7 +370,7 @@ object Query {
     def labelString: String = s"$k<=$v"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, k, v, ":le")
+      Interpreter.append(builder, k, v, Interpreter.WordToken(":le"))
     }
   }
 
@@ -381,7 +381,7 @@ object Query {
     def labelString: String = s"$k>$v"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, k, v, ":gt")
+      Interpreter.append(builder, k, v, Interpreter.WordToken(":gt"))
     }
   }
 
@@ -392,7 +392,7 @@ object Query {
     def labelString: String = s"$k>=$v"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, k, v, ":ge")
+      Interpreter.append(builder, k, v, Interpreter.WordToken(":ge"))
     }
   }
 
@@ -410,7 +410,7 @@ object Query {
     def labelString: String = s"$k~/^$v/"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, k, v, ":re")
+      Interpreter.append(builder, k, v, Interpreter.WordToken(":re"))
     }
   }
 
@@ -423,7 +423,7 @@ object Query {
     def labelString: String = s"$k~/^$v/i"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, k, v, ":reic")
+      Interpreter.append(builder, k, v, Interpreter.WordToken(":reic"))
     }
   }
 
@@ -436,7 +436,7 @@ object Query {
     def labelString: String = s"$k in (${vs.mkString(",")})"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, k, vs, ":in")
+      Interpreter.append(builder, k, vs, Interpreter.WordToken(":in"))
     }
 
     /** Convert this to a sequence of OR'd together equal queries. */
@@ -462,7 +462,7 @@ object Query {
     def labelString: String = s"(${q1.labelString}) and (${q2.labelString})"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, q1, q2, ":and")
+      Interpreter.append(builder, q1, q2, Interpreter.WordToken(":and"))
     }
   }
 
@@ -480,7 +480,7 @@ object Query {
     def labelString: String = s"(${q1.labelString}) or (${q2.labelString})"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, q1, q2, ":or")
+      Interpreter.append(builder, q1, q2, Interpreter.WordToken(":or"))
     }
   }
 
@@ -497,7 +497,7 @@ object Query {
     def labelString: String = s"not(${q.labelString})"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, q, ":not")
+      Interpreter.append(builder, q, Interpreter.WordToken(":not"))
     }
   }
 }

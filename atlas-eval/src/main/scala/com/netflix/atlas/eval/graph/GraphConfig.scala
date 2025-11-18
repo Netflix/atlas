@@ -60,18 +60,21 @@ case class GraphConfig(
   val (resStart, resEnd) =
     Strings.timeRange(start.getOrElse(settings.startTime), end.getOrElse(settings.endTime), tz)
 
+  // Step util for block size
+  private val stepUtil = Step.forBlockStep(settings.blockStep)
+
   /** Input step size rounded if necessary to a supported step. */
   val roundedStepSize: Long = {
     val stepDuration = step.map(Strings.parseDuration)
     val stepMillis = settings.stepSize
-    stepDuration.fold(stepMillis)(s => Step.round(stepMillis, s.toMillis))
+    stepDuration.fold(stepMillis)(s => stepUtil.round(stepMillis, s.toMillis))
   }
 
   /** Effective step size for the graph after adjusting based on the size and time window. */
   val stepSize: Long = {
     val datapointWidth = math.min(settings.maxDatapoints, flags.width)
     val stepParam = roundedStepSize
-    Step.compute(stepParam, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
+    stepUtil.compute(stepParam, datapointWidth, resStart.toEpochMilli, resEnd.toEpochMilli)
   }
 
   // Final start and end time rounded to step boundaries
@@ -98,6 +101,16 @@ case class GraphConfig(
 
   val evalContext: EvalContext = {
     EvalContext(fstart.toEpochMilli, fend.toEpochMilli + stepSize, stepSize)
+  }
+
+  def withStep(newStep: Long): GraphConfig = {
+    if (newStep == stepSize)
+      return this
+    copy(
+      step = Some(s"${newStep}ms"),
+      start = Some(fstart.toEpochMilli.toString),
+      end = Some(fend.toEpochMilli.toString)
+    )
   }
 
   def exprs: List[StyleExpr] = parsedQuery.get

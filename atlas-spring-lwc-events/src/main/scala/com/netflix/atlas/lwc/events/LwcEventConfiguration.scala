@@ -31,11 +31,16 @@ class LwcEventConfiguration {
   import scala.jdk.CollectionConverters.*
 
   @Bean
-  def lwcEventClient(registry: Optional[Registry], config: Optional[Config]): LwcEventClient = {
+  def lwcEventClient(
+    registry: Optional[Registry],
+    config: Optional[Config],
+    filter: Optional[LwcEventFilter]
+  ): LwcEventClient = {
     val r = registry.orElseGet(() => new NoopRegistry)
     val c = config.orElseGet(() => ConfigFactory.load())
+    val f = filter.orElseGet(() => LwcEventFilter.default)
     if (c.getBoolean("atlas.lwc.events.enabled")) {
-      val client = new RemoteLwcEventClient(r, c)
+      val client = new RemoteLwcEventClient(r, c, f)
       client.start()
       client
     } else {
@@ -49,10 +54,7 @@ class LwcEventConfiguration {
     val cfg = config.getConfig("atlas.lwc.events.subscriptions")
     Subscriptions(
       events = toSubscriptions(cfg.getConfigList("events"), Subscriptions.Events),
-      timeSeries = toSubscriptions(cfg.getConfigList("time-series"), Subscriptions.TimeSeries),
-      traceEvents = toSubscriptions(cfg.getConfigList("trace-events"), Subscriptions.TraceEvents),
-      traceTimeSeries =
-        toSubscriptions(cfg.getConfigList("trace-time-series"), Subscriptions.TraceTimeSeries)
+      timeSeries = toSubscriptions(cfg.getConfigList("time-series"), Subscriptions.TimeSeries)
     )
   }
 

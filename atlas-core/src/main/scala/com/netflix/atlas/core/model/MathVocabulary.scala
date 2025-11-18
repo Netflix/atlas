@@ -48,7 +48,6 @@ object MathVocabulary extends Vocabulary {
     Time,
     TimeSpan,
     CommonGroupBy,
-    CommonQuery,
     NamedRewrite,
     ClampMin,
     ClampMax,
@@ -601,41 +600,6 @@ object MathVocabulary extends Vocabulary {
       )
   }
 
-  case object CommonQuery extends SimpleWord {
-
-    override def name: String = "cq"
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: _ :: _ => true
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q2: Query) :: (expr: Expr) :: stack =>
-        val newExpr = expr.rewrite {
-          case q1: Query => q1.and(q2)
-        }
-        newExpr :: stack
-      case (_: Query) :: stack =>
-        // Ignore items on the stack that are not expressions. So we pop the query and leave
-        // the rest of the stack unchanged.
-        stack
-    }
-
-    override def summary: String =
-      """
-        |Recursively AND a common query to all queries in an expression. If the first parameter
-        |is not an expression, then it will be not be modified.
-      """.stripMargin.trim
-
-    override def signature: String = "Expr Query -- Expr"
-
-    override def examples: List[String] =
-      List(
-        "name,ssCpuUser,:eq,name,DiscoveryStatus_UP,:eq,:mul,nf.app,alerttest,:eq",
-        "42,nf.app,alerttest,:eq"
-      )
-  }
-
   case object NamedRewrite extends Word {
 
     override def name: String = "named-rewrite"
@@ -654,9 +618,21 @@ object MathVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: String) :: TimeSeriesType(_) :: TimeSeriesType(_) :: _ => true
+      case (_: String) :: TimeSeriesType(_) :: (_: StyleExpr) :: _    => true
+      case (_: String) :: (_: StyleExpr) :: (_: StyleExpr) :: _       => true
     }
 
     protected def executor(context: Context): PartialFunction[List[Any], List[Any]] = {
+      case (n: String) :: (rw: StyleExpr) :: (orig: StyleExpr) :: stack =>
+        // If the original and rewrite have presentation settings, then ignore
+        // on the rewrite and carry forward presentation.
+        val nrw = MathExpr.NamedRewrite(n, orig.expr, Nil, rw.expr, context)
+        orig.copy(expr = nrw) :: stack
+      case (n: String) :: TimeSeriesType(rw) :: (orig: StyleExpr) :: stack =>
+        // If the original has presentation settings, apply the rewrite to the
+        // underlying expression and carry forward the presentation.
+        val nrw = MathExpr.NamedRewrite(n, orig.expr, Nil, rw, context)
+        orig.copy(expr = nrw) :: stack
       case (n: String) :: TimeSeriesType(rw) :: (orig: Expr) :: stack =>
         // If the original is already an expr type, e.g. a Query, then we should
         // preserve it without modification. So we first match for Expr.
@@ -868,6 +844,7 @@ object MathVocabulary extends Vocabulary {
       case TimeSeriesType(_) :: TimeSeriesType(_) :: _ => true
       case (_: StyleExpr) :: TimeSeriesType(_) :: _    => true
       case TimeSeriesType(_) :: (_: StyleExpr) :: _    => true
+      case (_: StyleExpr) :: (_: StyleExpr) :: _       => true
     }
 
     def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr
@@ -889,6 +866,10 @@ object MathVocabulary extends Vocabulary {
         t2.copy(expr = newInstance(t1, t2.expr)) :: stack
       case TimeSeriesType(t2) :: (t1: StyleExpr) :: stack =>
         t1.copy(expr = newInstance(t1.expr, t2)) :: stack
+      case (t2: StyleExpr) :: (t1: StyleExpr) :: stack =>
+        // If both sides have presentation, strip the presentation settings to avoid
+        // confusion as to which settings will get used.
+        newInstance(t1.expr, t2.expr) :: stack
     }
 
     override def signature: String = "TimeSeriesExpr TimeSeriesExpr -- TimeSeriesExpr"
@@ -1185,13 +1166,20 @@ object MathVocabulary extends Vocabulary {
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
       case (_: TimeSeriesExpr) :: _ => true
+      case (_: StyleExpr) :: _      => true
     }
 
     def newInstance(t: TimeSeriesExpr): TimeSeriesExpr
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (a: DataExpr.AggregateFunction) :: stack if this != Count => a :: stack
-      case (t: TimeSeriesExpr) :: stack                              => newInstance(t) :: stack
+      case (a: DataExpr.AggregateFunction) :: stack if this != Count =>
+        // If applied to a base aggregate function, then it will be a single line
+        // and be a noop unless it is a count.
+        a :: stack
+      case (t: TimeSeriesExpr) :: stack =>
+        newInstance(t) :: stack
+      case (t: StyleExpr) :: stack =>
+        t.copy(expr = newInstance(t.expr)) :: stack
     }
 
     override def signature: String = "TimeSeriesExpr -- TimeSeriesExpr"

@@ -76,11 +76,20 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
   }
 
   private def alignStart(start: Long): Long = {
-    start - start % blockStep
+    // First timestamp in the block is the end of the first step interval
+    if (blockSize == 1)
+      start
+    else
+      start - start % blockStep + step
+  }
+
+  private def isAligned(start: Long): Boolean = {
+    val mod = start % blockStep
+    mod == step || (mod == 0 && blockSize == 1)
   }
 
   private def newBlock(start: Long, rollup: Boolean): Unit = {
-    require(start % blockStep == 0, s"start time $start is not on block boundary")
+    require(isAligned(start), s"start time $start is not on block boundary")
     val oldBlock = currentBlock
     val newBlock =
       if (rollup)

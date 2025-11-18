@@ -24,19 +24,24 @@ import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.util.ByteString
-import com.github.benmanes.caffeine.cache.CacheLoader
-import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.core.util.FastGzipOutputStream
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.CustomDirectives.*
+import com.netflix.atlas.pekko.ThreadPools
 import com.netflix.atlas.pekko.WebApi
+import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.Registry
+import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 
 import java.io.ByteArrayOutputStream
-import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.CRC32
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -44,7 +49,8 @@ import scala.util.Using
 
 case class ExpressionApi(
   sm: StreamSubscriptionManager,
-  registry: Registry
+  registry: Registry,
+  config: Config
 ) extends WebApi
     with StrictLogging {
 
@@ -52,23 +58,10 @@ case class ExpressionApi(
 
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  private val expressionCount = registry.distributionSummary("atlas.lwcapi.expressions.count")
+  private val exprsTTL = config.getDuration("atlas.lwcapi.exprs-ttl").toMillis
 
-  private val responseCache = Caffeine
-    .newBuilder()
-    .expireAfterWrite(Duration.ofSeconds(10))
-    .build[Option[String], EncodedExpressions](
-      new CacheLoader[Option[String], EncodedExpressions] {
-
-        override def load(key: Option[String]): EncodedExpressions = {
-          val expressions = key match {
-            case Some(cluster) => sm.subscriptionsForCluster(cluster).map(_.metadata)
-            case None          => sm.subscriptions.map(_.metadata)
-          }
-          encode(expressions)
-        }
-      }
-    )
+  private val responseCache =
+    new ExpressionsCache(sm, registry, exprsTTL, createClusterSubFilter(config))
 
   /** Helper for testing to force the recomputation of encoded expressions. */
   private[lwcapi] def clearCache(): Unit = {
@@ -102,7 +95,6 @@ case class ExpressionApi(
     receivedETags: Option[String],
     expressions: EncodedExpressions
   ): HttpResponse = {
-    expressionCount.record(expressions.size)
     val tag = expressions.etag
     val headers: List[HttpHeader] = List(RawHeader("ETag", tag))
     val recvTags = receivedETags.getOrElse("")
@@ -117,9 +109,111 @@ case class ExpressionApi(
 
 object ExpressionApi {
 
+  private def createClusterSubFilter(config: Config): Subscription => Boolean = {
+    val ignorePublishStep = config.getBoolean("atlas.lwcapi.exprs-cluster-ignore-publish-step")
+    if (ignorePublishStep) {
+      val publishStep = config.getDuration("atlas.lwcapi.register.default-step").toMillis
+      sub => sub.metadata.frequency != publishStep
+    } else { _ =>
+      true
+    }
+  }
+
   case class Return(expressions: List[ExpressionMetadata]) extends JsonSupport
 
   case class EncodedExpressions(etag: String, data: ByteString, size: Int)
+
+  private class CacheEntry(
+    val exprs: AtomicReference[EncodedExpressions],
+    val lastUpdated: AtomicLong,
+    val lastAccessed: AtomicLong
+  ) {
+
+    def isExpired(clock: Clock, ttl: Long): Boolean = (clock.wallTime() - lastAccessed.get()) > ttl
+  }
+
+  private def newEntry(exprs: EncodedExpressions, now: Long): CacheEntry = {
+    new CacheEntry(
+      new AtomicReference[EncodedExpressions](exprs),
+      new AtomicLong(now),
+      new AtomicLong(now)
+    )
+  }
+
+  /**
+    * Cache for the encoded expressions. If a new key is requested, then the data will be
+    * encoded immediately. Otherwise, it will return the previously encoded data. The encoded
+    * data will be refreshed in the background, not inline with the requests.
+    */
+  class ExpressionsCache(
+    sm: StreamSubscriptionManager,
+    registry: Registry,
+    ttl: Long,
+    clusterSubFilter: Subscription => Boolean
+  ) extends StrictLogging {
+
+    private val executor =
+      new ScheduledThreadPoolExecutor(1, ThreadPools.threadFactory("ExpressionsCache"))
+    executor.scheduleWithFixedDelay(() => refresh(), 10, 10, TimeUnit.SECONDS)
+
+    private val data = new ConcurrentHashMap[Option[String], CacheEntry]()
+
+    def get(key: Option[String]): EncodedExpressions = {
+      val entry = data.computeIfAbsent(key, k => newEntry(load(k), registry.clock().wallTime()))
+      entry.lastAccessed.set(registry.clock().wallTime())
+      entry.exprs.get()
+    }
+
+    /**
+      * Refresh the set of encoded expressions if the set has changed. Otherwise, just expire
+      * any entries that haven't been accessed recently.
+      */
+    def refresh(): Unit = {
+      try {
+        val iter = data.entrySet().iterator()
+        while (iter.hasNext) {
+          val entry = iter.next()
+          val key = entry.getKey
+          val value = entry.getValue
+          if (value.isExpired(registry.clock(), ttl)) {
+            iter.remove()
+          } else if (value.lastUpdated.get() < sm.lastUpdateTime) {
+            value.lastUpdated.set(sm.lastUpdateTime)
+            value.exprs.set(load(key))
+          }
+        }
+        logger.debug(s"successfully refreshed cache")
+      } catch {
+        case e: Exception => logger.warn("failed to refresh expression cache", e)
+      }
+    }
+
+    private def load(key: Option[String]): EncodedExpressions = {
+      val (id, expressions) = key match {
+        case Some(cluster) =>
+          "cluster" -> sm.subscriptionsForCluster(cluster).filter(clusterSubFilter).map(_.metadata)
+        case None => "overall" -> sm.subscriptions.map(_.metadata)
+      }
+      val start = registry.clock().monotonicTime()
+      val encoded = encode(expressions)
+      val encodingTimeNanos = registry.clock().monotonicTime() - start
+      updateStats(id, encoded.size, encodingTimeNanos)
+      encoded
+    }
+
+    private def updateStats(id: String, size: Int, encodingTimeNanos: Long): Unit = {
+      registry.distributionSummary("atlas.lwcapi.expressionsCount", "id", id).record(size)
+      registry
+        .timer("atlas.lwcapi.encodingTime", "id", id)
+        .record(encodingTimeNanos, TimeUnit.NANOSECONDS)
+    }
+
+    def invalidateAll(): Unit = {
+      data.clear()
+    }
+
+    def size: Int = data.size()
+  }
 
   private val streams = new ThreadLocal[ByteArrayOutputStream]
 
@@ -150,7 +244,7 @@ object ExpressionApi {
     val hash = Strings.zeroPad(crc.getValue, 16)
     val etag = s""""$hash""""
 
-    val data = ByteString.fromArrayUnsafe(baos.toByteArray)
+    val data = ByteString.fromArrayUnsafe(bytes)
     EncodedExpressions(etag, data, expressions.size)
   }
 }

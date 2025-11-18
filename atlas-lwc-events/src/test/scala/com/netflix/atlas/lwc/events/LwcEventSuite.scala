@@ -24,11 +24,11 @@ class LwcEventSuite extends FunSuite {
 
   import LwcEventSuite.*
 
-  private val sampleSpan: TestEvent = {
+  private val sampleEvent: TestEvent = {
     TestEvent(SortedTagMap("app" -> "www", "node" -> "i-123"), 42L)
   }
 
-  private val sampleLwcEvent: LwcEvent = LwcEvent(sampleSpan, extractSpanValue(sampleSpan))
+  private val sampleLwcEvent: LwcEvent = LwcEvent(sampleEvent, extractSpanValue(sampleEvent))
 
   test("tagValue: exists") {
     assertEquals(sampleLwcEvent.tagValue("app"), "www")
@@ -93,21 +93,6 @@ object LwcEventSuite {
       case "level"    => Logger.Level.TRACE
       case "npe"      => throw new NullPointerException()
       case k          => span.tags.getOrElse(k, null)
-    }
-  }
-
-  class TestSpan(event: TestEvent) extends LwcEvent.Span {
-
-    override def spanId: String = "test"
-
-    override def parentId: String = "parent"
-
-    override def rawEvent: Any = event
-
-    override def timestamp: Long = 0L
-
-    override def extractValue(key: String): Any = {
-      extractSpanValue(event)(key)
     }
   }
 }

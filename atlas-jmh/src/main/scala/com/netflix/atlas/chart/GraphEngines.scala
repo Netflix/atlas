@@ -81,4 +81,26 @@ class GraphEngines {
     }
     bh.consume(bytes)
   }
+
+  @Threads(1)
+  @Benchmark
+  def pngImageGeneration(bh: Blackhole): Unit = {
+    // Defining an image with default dimensions
+    val engine = new DefaultGraphEngine()
+    val image = engine.createImage(graphDef)
+    bh.consume(image)
+  }
+
+  @Threads(1)
+  @Benchmark
+  def oversizedImageGeneration(bh: Blackhole): Unit = {
+    // Defining an oversized chart dimensions using GraphConstants limits + buffer
+    val oversizedGraphDef = graphDef.copy(
+      width = GraphConstants.MaxWidth + 100,
+      height = GraphConstants.MaxHeight + 100
+    )
+    val engine = new DefaultGraphEngine()
+    val image = engine.createImage(oversizedGraphDef)
+    bh.consume(image)
+  }
 }

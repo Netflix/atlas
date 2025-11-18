@@ -26,7 +26,7 @@ object Fonts {
 
   private def loadTrueTypeFont(resource: String): Font = {
     Using.resource(getClass.getClassLoader.getResourceAsStream(resource)) { in =>
-      Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(12.0f)
+      Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(13.0f)
     }
   }
 
@@ -44,7 +44,7 @@ object Fonts {
     * Font that is provided with the library and thus will be available on all systems. There
     * may be slight differences in the rendering on different versions of the JDK.
     */
-  val default: Font = loadFont("fonts/RobotoMono-Regular.ttf")
+  val default: Font = loadFont("fonts/NotoSansMono-Regular.ttf")
 
   /**
     * Returns true if the JDK and OS being used match those used to generate the blessed

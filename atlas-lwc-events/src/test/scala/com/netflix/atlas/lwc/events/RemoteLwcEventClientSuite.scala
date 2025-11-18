@@ -23,7 +23,7 @@ import munit.FunSuite
 
 import java.util.concurrent.CopyOnWriteArrayList
 
-class RemoveLwcEventClientSuite extends FunSuite {
+class RemoteLwcEventClientSuite extends FunSuite {
 
   private val config = ConfigFactory.load()
   private var payloads: java.util.List[RemoteLwcEventClient.EvalPayload] = _
@@ -33,7 +33,7 @@ class RemoveLwcEventClientSuite extends FunSuite {
   override def beforeEach(context: BeforeEach): Unit = {
     payloads = new CopyOnWriteArrayList[RemoteLwcEventClient.EvalPayload]()
     registry = new DefaultRegistry()
-    client = new RemoteLwcEventClient(registry, config) {
+    client = new RemoteLwcEventClient(registry, config, LwcEventFilter.default) {
       override def start(): Unit = {
         val subs = Subscriptions(events =
           List(

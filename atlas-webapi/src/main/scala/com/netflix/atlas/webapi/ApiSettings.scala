@@ -88,6 +88,16 @@ class ApiSettings(root: => Config) {
     config.getStringList("expr.complete.excluded-words").asScala.toSet
   }
 
+  def normalizePrefixKeys: List[String] = {
+    import scala.jdk.CollectionConverters.*
+    config.getStringList("expr.normalize.prefix-keys").asScala.toList
+  }
+
+  def normalizeSuffixKeys: List[String] = {
+    import scala.jdk.CollectionConverters.*
+    config.getStringList("expr.normalize.suffix-keys").asScala.toList
+  }
+
   private def newInstance[T](cls: String): T = {
     Class.forName(cls).getDeclaredConstructor().newInstance().asInstanceOf[T]
   }

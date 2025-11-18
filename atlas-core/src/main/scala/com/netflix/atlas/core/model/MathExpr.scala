@@ -52,7 +52,7 @@ object MathExpr {
     def dataExprs: List[DataExpr] = expr.dataExprs
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, original, replacement, ":as")
+      Interpreter.append(builder, expr, original, replacement, Interpreter.WordToken(":as"))
     }
 
     def isGrouped: Boolean = expr.isGrouped
@@ -88,7 +88,7 @@ object MathExpr {
     def dataExprs: List[DataExpr] = Nil
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, v, ":const")
+      Interpreter.append(builder, v, Interpreter.WordToken(":const"))
     }
 
     def isGrouped: Boolean = false
@@ -122,7 +122,7 @@ object MathExpr {
     def dataExprs: List[DataExpr] = Nil
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, ":random")
+      Interpreter.append(builder, Interpreter.WordToken(":random"))
     }
 
     def isGrouped: Boolean = false
@@ -152,7 +152,7 @@ object MathExpr {
     def dataExprs: List[DataExpr] = Nil
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, seed, ":srandom")
+      Interpreter.append(builder, seed, Interpreter.WordToken(":srandom"))
     }
 
     def isGrouped: Boolean = false
@@ -215,7 +215,7 @@ object MathExpr {
     def dataExprs: List[DataExpr] = Nil
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, mode, ":time")
+      Interpreter.append(builder, mode, Interpreter.WordToken(":time"))
     }
 
     def isGrouped: Boolean = false
@@ -236,7 +236,7 @@ object MathExpr {
     def dataExprs: List[DataExpr] = Nil
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, s, e, ":time-span")
+      Interpreter.append(builder, s, e, Interpreter.WordToken(":time-span"))
     }
 
     def isGrouped: Boolean = false
@@ -309,7 +309,7 @@ object MathExpr {
     def dataExprs: List[DataExpr] = expr.dataExprs
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, min, s":$name")
+      Interpreter.append(builder, expr, min, Interpreter.WordToken(s":$name"))
     }
 
     def isGrouped: Boolean = expr.isGrouped
@@ -341,7 +341,7 @@ object MathExpr {
     override def toString: String = Interpreter.toString(expr, max, s":$name")
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, max, s":$name")
+      Interpreter.append(builder, expr, max, Interpreter.WordToken(s":$name"))
     }
 
     def isGrouped: Boolean = expr.isGrouped
@@ -380,7 +380,7 @@ object MathExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, s":$name")
+      Interpreter.append(builder, expr, Interpreter.WordToken(s":$name"))
     }
 
     def isGrouped: Boolean = expr.isGrouped
@@ -501,7 +501,7 @@ object MathExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr1, expr2, s":$name")
+      Interpreter.append(builder, expr1, expr2, Interpreter.WordToken(s":$name"))
     }
 
     def isGrouped: Boolean = expr1.isGrouped || expr2.isGrouped
@@ -727,7 +727,7 @@ object MathExpr {
     def dataExprs: List[DataExpr] = expr.dataExprs
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, s":$name")
+      Interpreter.append(builder, expr, Interpreter.WordToken(s":$name"))
     }
 
     def isGrouped: Boolean = false
@@ -829,7 +829,7 @@ object MathExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, keys, ":by")
+      Interpreter.append(builder, expr, keys, Interpreter.WordToken(":by"))
     }
 
     def dataExprs: List[DataExpr] = expr.dataExprs
@@ -895,7 +895,7 @@ object MathExpr {
     override def append(builder: java.lang.StringBuilder): Unit = {
       // Base expr
       if (evalGroupKeys.nonEmpty)
-        Interpreter.append(builder, expr.af.query, evalGroupKeys, ":by")
+        Interpreter.append(builder, expr.af.query, evalGroupKeys, Interpreter.WordToken(":by"))
       else
         Interpreter.append(builder, expr.af.query)
 
@@ -1098,7 +1098,7 @@ object MathExpr {
           }
           builder.append(str)
         case _ =>
-          Interpreter.append(builder, expr, op)
+          Interpreter.append(builder, expr, Interpreter.WordToken(op))
           val grouping = evalExpr.finalGrouping
           if (grouping.nonEmpty) {
             builder.append(",(,")

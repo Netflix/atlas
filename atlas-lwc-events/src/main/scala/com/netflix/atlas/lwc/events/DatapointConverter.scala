@@ -56,6 +56,7 @@ private[events] object DatapointConverter {
   private val MaxGroupBySize: Int = ConfigManager.get().getInt("atlas.lwc.events.max-groups")
 
   def apply(
+    valueKey: String,
     id: String,
     rawExpr: String,
     expr: DataExpr,
@@ -65,9 +66,19 @@ private[events] object DatapointConverter {
     consumer: (String, LwcEvent) => Unit
   ): DatapointConverter = {
     val tags = Query.tags(expr.query)
-    val mapper = createValueMapper(tags)
+    val mapper = createValueMapper(valueKey, tags)
     val params =
-      Params(id, rawExpr, Query.tags(expr.query), clock, step, mapper, sampleMapper, consumer)
+      Params(
+        valueKey,
+        id,
+        rawExpr,
+        Query.tags(expr.query),
+        clock,
+        step,
+        mapper,
+        sampleMapper,
+        consumer
+      )
     toConverter(expr, params)
   }
 
@@ -86,17 +97,21 @@ private[events] object DatapointConverter {
     * Extract value and map as needed based on the type. Uses statistic and grouping to
     * coerce events so they structurally work like spectator composite types.
     */
-  private def createValueMapper(tags: Map[String, String]): LwcEvent => Double = {
-    tags.get("value") match {
+  private def createValueMapper(valueKey: String, tags: Map[String, String]): LwcEvent => Double = {
+    tags.get(valueKey) match {
       case Some(k) =>
         tags.get("statistic") match {
-          case Some("count")          => _ => 1.0
-          case Some("totalOfSquares") => event => squared(event.extractValueSafe(k), event.value)
-          case _                      => event => toDouble(event.extractValueSafe(k), event.value)
+          case Some("count")          => event => countIfPresent(event.extractValueSafe(k))
+          case Some("totalOfSquares") => event => squared(event.extractValueSafe(k), Double.NaN)
+          case _                      => event => toDouble(event.extractValueSafe(k), Double.NaN)
         }
       case None =>
-        event => toDouble(event.value, 1.0)
+        _ => 1.0
     }
+  }
+
+  private def countIfPresent(value: Any): Double = {
+    if (value == null) Double.NaN else 1.0
   }
 
   private def squared(value: Any, dflt: Any): Double = {
@@ -104,9 +119,16 @@ private[events] object DatapointConverter {
     v * v
   }
 
+  /**
+    * Convert the value extracted from the event to a double. If the value is `null`, then it
+    * will be mapped to `NaN` to indicate there was no data available. If the type of the value
+    * is unknown, then it will use a default value that is typically specified as part of the
+    * event.
+    */
   @scala.annotation.tailrec
   private[events] def toDouble(value: Any, dflt: Any): Double = {
     value match {
+      case null        => Double.NaN
       case v: Boolean  => if (v) 1.0 else 0.0
       case v: Byte     => v.toDouble
       case v: Short    => v.toDouble
@@ -146,6 +168,7 @@ private[events] object DatapointConverter {
   }
 
   case class Params(
+    valueKey: String,
     id: String,
     rawExpr: String,
     tags: Map[String, String],
@@ -212,11 +235,14 @@ private[events] object DatapointConverter {
     private val buffer = new StepDouble(Double.NaN, params.clock, params.step)
 
     override def update(event: LwcEvent): Unit = {
-      update(1.0)
+      update(params.valueMapper(event))
     }
 
     override def update(value: Double): Unit = {
-      addNaN(params.clock.wallTime(), buffer, 1.0)
+      // Actual value is ignored, simply count it if present and is not a special value
+      // such as NaN
+      if (value.isFinite)
+        addNaN(params.clock.wallTime(), buffer, 1.0)
     }
 
     override def flush(timestamp: Long): Unit = {
@@ -303,8 +329,7 @@ private[events] object DatapointConverter {
 
     override def update(event: LwcEvent): Unit = {
       if (isPercentile) {
-        val rawValue = getRawValue(event)
-        val pctTag = toPercentileTag(rawValue)
+        val pctTag = getPercentileTag(event)
         val tagValues = by.keys
           .map {
             case TagKey.percentile => pctTag
@@ -337,10 +362,10 @@ private[events] object DatapointConverter {
       }
     }
 
-    private def getRawValue(event: LwcEvent): Any = {
-      params.tags.get("value") match {
-        case Some(k) => event.extractValueSafe(k)
-        case None    => event.value
+    private def getPercentileTag(event: LwcEvent): String = {
+      params.tags.get(params.valueKey) match {
+        case Some(k) => toPercentileTag(event.extractValueSafe(k))
+        case None    => toPercentileHex("D", 1L)
       }
     }
 

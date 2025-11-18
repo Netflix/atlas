@@ -28,10 +28,13 @@ class MemoryDatabaseSuite extends FunSuite {
 
   private val step = DefaultSettings.stepSize
 
+  private val start = step
+
   private val clock = new ManualClock()
   private val registry = new DefaultRegistry(clock)
 
   private var db: MemoryDatabase = _
+  private var gaugeDb: MemoryDatabase = _
 
   override def beforeEach(context: BeforeEach): Unit = {
     clock.setWallTime(0L)
@@ -53,17 +56,35 @@ class MemoryDatabaseSuite extends FunSuite {
     addRollupData("c", 4.0, 5.0, 6.0)
     addRollupData("c", 5.0, 6.0, 7.0)
     addRollupData("c", 6.0, 7.0, 8.0)
+
+    // For testing gauge consolidation behavior
+    gaugeDb = new MemoryDatabase(
+      registry,
+      ConfigFactory.parseString("""
+          |block-size = 60
+          |num-blocks = 2
+          |rebuild-frequency = 10s
+          |test-mode = true
+          |intern-while-building = true
+        """.stripMargin)
+    )
+
+    addGaugeData("a", 1.0, 2.0, 3.0, 4.0)
+    addGaugeData("b", 4.0, 3.0, 2.0, 1.0)
+    addGaugeData("c", 3.0, 1.0, Double.NaN, Double.NaN)
+    addGaugeData("d", Double.NaN, 4.0, Double.NaN, Double.NaN)
   }
 
-  private val context = EvalContext(0, 3 * step, step)
+  private val context = EvalContext(start, start + 3 * step, step)
 
   private def addData(name: String, values: Double*): Unit = {
     val tags = Map("name" -> name)
     val id = TaggedItem.computeId(tags)
     val data = values.toList.zipWithIndex.map {
       case (v, i) =>
-        clock.setWallTime(i * step)
-        DatapointTuple(id, tags, i * step, v)
+        val t = start + i * step
+        clock.setWallTime(t)
+        DatapointTuple(id, tags, t, v)
     }
     db.update(data)
     db.index.rebuildIndex()
@@ -74,11 +95,25 @@ class MemoryDatabaseSuite extends FunSuite {
     val id = TaggedItem.computeId(tags)
     val data = values.toList.zipWithIndex.map {
       case (v, i) =>
-        clock.setWallTime(i * step)
-        DatapointTuple(id, tags, i * step, v)
+        val t = start + i * step
+        clock.setWallTime(t)
+        DatapointTuple(id, tags, t, v)
     }
     data.foreach(db.rollup)
     db.index.rebuildIndex()
+  }
+
+  private def addGaugeData(name: String, values: Double*): Unit = {
+    val tags = Map("name" -> name, TagKey.dsType -> "gauge")
+    val id = TaggedItem.computeId(tags)
+    val data = values.toList.zipWithIndex.map {
+      case (v, i) =>
+        val t = start + i * step
+        clock.setWallTime(t)
+        DatapointTuple(id, tags, t, v)
+    }
+    gaugeDb.update(data)
+    gaugeDb.index.rebuildIndex()
   }
 
   private def expr(str: String): DataExpr = {
@@ -89,23 +124,48 @@ class MemoryDatabaseSuite extends FunSuite {
   }
 
   private def exec(str: String, s: Long = step): List[TimeSeries] = {
-    val ctxt = context.copy(step = s)
+    val ctxt = if (s == step) context else context.copy(start = s, end = 2 * s, step = s)
     db.execute(ctxt, expr(str)).sortWith(_.label < _.label).map { t =>
-      t.mapTimeSeq(s => s.bounded(context.start, context.end))
+      t.mapTimeSeq(s => s.bounded(ctxt.start, ctxt.end))
+    }
+  }
+
+  private def gaugeExec(str: String, s: Long): List[TimeSeries] = {
+    val ctxt = if (s == step) context else context.copy(start = s, end = 2 * s, step = s)
+    gaugeDb.execute(ctxt, expr(str)).sortWith(_.label < _.label).map { t =>
+      t.mapTimeSeq(s => s.bounded(ctxt.start, ctxt.end))
     }
   }
 
   private def ts(label: String, mul: Int, values: Double*): TimeSeries = {
-    TimeSeries(Map.empty, label, new ArrayTimeSeq(DsType.Rate, 0L, mul * step, values.toArray))
+    val s = start + (mul * step) - step
+    TimeSeries(Map.empty, label, new ArrayTimeSeq(DsType.Rate, s, mul * step, values.toArray))
   }
 
   private def ts(name: String, label: String, mul: Int, values: Double*): TimeSeries = {
-    val seq = new ArrayTimeSeq(DsType.Rate, 0L, mul * step, values.toArray)
+    val s = start + (mul * step) - step
+    val seq = new ArrayTimeSeq(DsType.Rate, s, mul * step, values.toArray)
     TimeSeries(Map("name" -> name, "foo" -> "bar"), label, seq)
   }
 
   private def expTS(name: String, label: String, mul: Int, values: Double*): TimeSeries = {
     val tmp = ts(name, label, mul, values*)
+    tmp.withTags(tmp.tags - "foo")
+  }
+
+  private def gts(label: String, mul: Int, values: Double*): TimeSeries = {
+    val s = start + (mul * step) - step
+    TimeSeries(Map.empty, label, new ArrayTimeSeq(DsType.Gauge, s, mul * step, values.toArray))
+  }
+
+  private def gts(name: String, label: String, mul: Int, values: Double*): TimeSeries = {
+    val s = start + (mul * step) - step
+    val seq = new ArrayTimeSeq(DsType.Gauge, s, mul * step, values.toArray)
+    TimeSeries(Map("name" -> name, "foo" -> "bar"), label, seq)
+  }
+
+  private def gaugeTS(name: String, label: String, mul: Int, values: Double*): TimeSeries = {
+    val tmp = gts(name, label, mul, values*)
     tmp.withTags(tmp.tags - "foo")
   }
 
@@ -222,6 +282,33 @@ class MemoryDatabaseSuite extends FunSuite {
       expTS("c", "name=c", 3, 54.0)
     )
     assertEquals(exec(":true,:all", 3 * step), expected)
+  }
+
+  test("gauge :sum expr, c=2, single time series") {
+    assertEquals(gaugeExec("name,a,:eq,:sum", 2 * step), List(gaugeTS("a", "sum(name=a)", 2, 1.5)))
+    assertEquals(gaugeExec("name,b,:eq,:sum", 2 * step), List(gaugeTS("b", "sum(name=b)", 2, 3.5)))
+  }
+
+  test("gauge :sum expr, c=3, single time series") {
+    assertEquals(gaugeExec("name,a,:eq,:sum", 3 * step), List(gaugeTS("a", "sum(name=a)", 3, 2.0)))
+    assertEquals(gaugeExec("name,b,:eq,:sum", 3 * step), List(gaugeTS("b", "sum(name=b)", 3, 3.0)))
+  }
+
+  test("gauge :sum expr, c=4, single time series") {
+    assertEquals(gaugeExec("name,a,:eq,:sum", 4 * step), List(gaugeTS("a", "sum(name=a)", 4, 2.5)))
+    assertEquals(gaugeExec("name,b,:eq,:sum", 4 * step), List(gaugeTS("b", "sum(name=b)", 4, 2.5)))
+  }
+
+  test("gauge :sum expr, c=2, with data") {
+    assertEquals(
+      gaugeExec("name,(,a,b,),:in,:sum", 2 * step),
+      List(gts("sum(name in (a,b))", 2, 5.0))
+    )
+  }
+
+  test("gauge :sum expr, c=4, single time series with NaN") {
+    assertEquals(gaugeExec("name,c,:eq,:sum", 4 * step), List(gaugeTS("c", "sum(name=c)", 4, 2.0)))
+    assertEquals(gaugeExec("name,d,:eq,:sum", 4 * step), List(gaugeTS("d", "sum(name=d)", 4, 4.0)))
   }
 
   test("filter") {

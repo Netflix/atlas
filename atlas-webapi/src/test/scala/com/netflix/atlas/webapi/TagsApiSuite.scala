@@ -119,6 +119,10 @@ class TagsApiSuite extends MUnitRouteSuite {
     assertEquals(responseAs[String], """["01"]""")
   }
 
+  testGet("/api/v1/tags/name?q=name,01,:eq,:list,(,class,odd,:eq,:cq,),:each") {
+    assertEquals(responseAs[String], """["01"]""")
+  }
+
   testGet("/api/v1/tags/name?verbose=1") {
     val expected = (0 to 11).map(toTagJson).mkString("[", ",", "]")
     assertEquals(responseAs[String], expected)

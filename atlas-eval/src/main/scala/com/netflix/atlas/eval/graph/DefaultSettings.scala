@@ -48,6 +48,12 @@ case class DefaultSettings(root: Config, config: Config) {
   val stepSize: Long = config.getDuration("step", TimeUnit.MILLISECONDS)
 
   /**
+    * Duration of a block for the underlying storage. Influences the possible consolidated
+    * step sizes that can be used when graphing the data.
+    */
+  val blockStep: Long = config.getInt("block-size") * stepSize
+
+  /**
     * Default start time for the chart. This value should typically be relative to the
     * end time.
     */

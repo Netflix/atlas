@@ -39,12 +39,6 @@ trait LwcEvent {
   def timestamp: Long
 
   /**
-    * Value to use for the event when mapping to a time series. By default it will be
-    * 1.0 same as incrementing a counter by 1.
-    */
-  def value: Any = 1.0
-
-  /**
     * Extract a tag value for a given key. Returns `null` if there is no value for
     * the key or the value is not a string. By default it will delegate to `extractValue`
     * to ensure the two are consistent.
@@ -233,15 +227,5 @@ object LwcEvent {
     override def encodeAsRow(columns: List[String], gen: JsonGenerator): Unit = {
       throw new UnsupportedOperationException()
     }
-  }
-
-  /** Represents a span event that makes up a trace. */
-  trait Span extends LwcEvent {
-
-    /** Return the id for this span. */
-    def spanId: String
-
-    /** Returns the id for the parent or `null` if it is the root span. */
-    def parentId: String
   }
 }

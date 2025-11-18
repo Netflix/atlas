@@ -100,15 +100,20 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
     * `dflt` value will be returned.
     */
   def get(k: T, dflt: Double): Double = {
-    var pos = Hash.absOrZero(k.hashCode()) % keys.length
+    val start = Hash.absOrZero(k.hashCode()) % keys.length
+    var pos = start
     while (true) {
       val prev = keys(pos)
       if (prev == null)
         return dflt
       else if (prev.equals(k))
         return values(pos)
-      else
+      else {
         pos = (pos + 1) % keys.length
+        // If we've wrapped around to the start, the key is not present
+        if (pos == start)
+          return dflt
+      }
     }
     dflt
   }

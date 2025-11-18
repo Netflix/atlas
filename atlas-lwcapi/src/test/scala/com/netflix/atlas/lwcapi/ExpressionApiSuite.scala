@@ -25,7 +25,8 @@ import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.json.JsonSupport
 import com.netflix.atlas.pekko.StreamOps
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
-import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.ManualClock
 import com.typesafe.config.ConfigFactory
 
 import java.io.ByteArrayInputStream
@@ -41,6 +42,8 @@ class ExpressionApiSuite extends MUnitRouteSuite {
   private implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
   private val splitter = new ExpressionSplitter(ConfigFactory.load())
+  private val clock = new ManualClock()
+  private val registry = new DefaultRegistry(clock)
 
   // Dummy queue used for handler
   private val queue = {
@@ -49,7 +52,7 @@ class ExpressionApiSuite extends MUnitRouteSuite {
       StreamMetadata("test"),
       StreamOps
         .wrapBlockingQueue[Seq[JsonSupport]](
-          new NoopRegistry,
+          registry,
           "test",
           blockingQueue,
           dropNew = false
@@ -59,13 +62,18 @@ class ExpressionApiSuite extends MUnitRouteSuite {
     )
   }
 
-  private val sm = new StreamSubscriptionManager(new NoopRegistry)
-  private val endpoint = ExpressionApi(sm, new NoopRegistry)
+  private val sm = new StreamSubscriptionManager(registry)
+  private val endpoint = ExpressionApi(sm, registry, ConfigFactory.load())
 
   private def unzip(bytes: Array[Byte]): String = {
     Using.resource(new GZIPInputStream(new ByteArrayInputStream(bytes))) { in =>
       new String(Streams.byteArray(in), StandardCharsets.UTF_8)
     }
+  }
+
+  override def beforeEach(context: BeforeEach): Unit = {
+    clock.setWallTime(0L)
+    sm.clear()
   }
 
   test("get of a path returns empty data") {
@@ -178,6 +186,63 @@ class ExpressionApiSuite extends MUnitRouteSuite {
     val tag_e1 = ExpressionApi.encode(e1).etag
     val tag_e2 = ExpressionApi.encode(e2).etag
     assert(tag_e1 != tag_e2)
+  }
+
+  test("cache refresh") {
+    val splits =
+      splitter.split("nf.cluster,skan,:eq,:avg,nf.app,brh,:eq,:max", ExprType.TIME_SERIES, 60000)
+    sm.register(StreamMetadata("a"), queue)
+    splits.foreach { s =>
+      sm.subscribe("a", s)
+    }
+    sm.updateQueryIndex()
+
+    val fiveMinutes = 300_000L
+    val cache = new ExpressionApi.ExpressionsCache(sm, registry, fiveMinutes, _ => true)
+    assertEquals(cache.size, 0)
+    cache.refresh()
+    assertEquals(cache.size, 0) // No accesses, so it will still be empty
+
+    // Ensure we get the same item back
+    val a1 = cache.get(None)
+    val a2 = cache.get(None)
+    assert(a1 eq a2)
+
+    // Update clock time to allow for expiration. The skan key is accessed after the
+    // clock update, so it should expire during refresh. The all key loaded above should
+    // expire and get reloaded.
+    clock.setWallTime(fiveMinutes + 1)
+    val s1 = cache.get(Some("skan"))
+    assertEquals(s1.size, 2)
+    assertEquals(cache.size, 2)
+    cache.refresh()
+    val s2 = cache.get(Some("skan"))
+    assert(s1 eq s2)
+    val a3 = cache.get(None)
+    assert(a1 ne a3)
+  }
+
+  test("cache refresh, cluster filter") {
+    val splits =
+      splitter.split("nf.cluster,skan,:eq,:avg,nf.app,brh,:eq,:sum", ExprType.TIME_SERIES, 60000)
+    sm.register(StreamMetadata("a"), queue)
+    splits.foreach { s =>
+      sm.subscribe("a", s)
+    }
+    sm.updateQueryIndex()
+
+    val fiveMinutes = 300_000L
+    val cache = new ExpressionApi.ExpressionsCache(
+      sm,
+      registry,
+      fiveMinutes,
+      _.metadata.expression.contains(":sum")
+    )
+    cache.refresh()
+
+    assertEquals(cache.get(None).size, 3)
+    assertEquals(cache.get(Some("skan")).size, 1)
+    assertEquals(cache.get(Some("brh")).size, 1)
   }
 
   private val skanCount =

@@ -18,6 +18,34 @@ package com.netflix.atlas.core.util
 /**
   * Utilities for computing and rounding times based on the step size for a dataset.
   */
+class Step private (allowedStepSizesForBlock: List[Long]) {
+
+  import Step.*
+
+  /**
+    * Round an arbitrary step to the next largest allowed step size.
+    */
+  def round(primary: Long, step: Long): Long = {
+    val max = math.max(primary, step)
+    allowedStepSizesForBlock.find(_ >= max).getOrElse(roundToDayBoundary(step))
+  }
+
+  /**
+    * Compute an appropriate step size so that each datapoint shown for the graph has at least one
+    * pixel. The computed step must be a multiple of the primary step that is passed in.
+    *
+    * @param primary  step size that the input data is stored with
+    * @param width    width in pixels available for rendering the line
+    * @param start    start time for the graph
+    * @param end      end time for the graph
+    */
+  def compute(primary: Long, width: Int, start: Long, end: Long): Long = {
+    val datapoints = (end - start) / primary
+    val minStep = datapointsPerPixel(datapoints, width) * primary
+    round(primary, minStep)
+  }
+}
+
 object Step {
 
   private final val oneSecond = 1000L
@@ -47,25 +75,62 @@ object Step {
   }
 
   /**
-    * Round an arbitrary step to the next largest allowed step size.
+    * Create a helper instance for a given underlying block size. The allowed steps must
+    * evenly divide or be even multiples of the block step. The block step is the number
+    * of milliseconds for a block of data in the underlying storage.
     */
-  def round(primary: Long, step: Long): Long = {
-    val max = math.max(primary, step)
-    allowedStepSizes.find(_ >= max).getOrElse(roundToDayBoundary(step))
+  def forBlockStep(blockStep: Long): Step = {
+    val stepsForBlock = allowedStepSizes.filter { s =>
+      if (s <= blockStep)
+        blockStep % s == 0
+      else
+        s % blockStep == 0
+    }
+    new Step(stepsForBlock)
   }
 
   /**
-    * Compute an appropriate step size so that each datapoint shown for the graph has at least one
-    * pixel. The computed step must be a multiple of the primary step that is passed in.
-    *
-    * @param primary  step size that the input data is stored with
-    * @param width    width in pixels available for rendering the line
-    * @param start    start time for the graph
-    * @param end      end time for the graph
+    * Map an arbitrary timestamp in milliseconds to the corresponding timestamp on a step boundary
+    * that contains the specified timestamp. The step timestamp will represent the end of the
+    * interval.
     */
-  def compute(primary: Long, width: Int, start: Long, end: Long): Long = {
-    val datapoints = (end - start) / primary
-    val minStep = datapointsPerPixel(datapoints, width) * primary
-    round(primary, minStep)
+  def roundToStepBoundary(timestamp: Long, step: Long): Long = {
+    if (timestamp % step == 0)
+      timestamp
+    else
+      timestamp / step * step + step
+  }
+
+  /**
+    * Find the timestamp for the first primary data point within a consolidated data point.
+    *
+    * {{{
+    * Consolidated interval, step size of 3m, timestamp = 1:03
+    *   1:00                             1:03
+    *    ├────────────────────────────────┤
+    *
+    * Primary interval, step size of 1m, first start time is 1:01
+    *   1:00       1:01       1:02       1:03
+    *    ├──────────┼──────────┼──────────┤
+    * }}}
+    *
+    * @param timestamp
+    *     Timestamp of the consolidated step interval.
+    * @param step
+    *     Step interval for the timestamp. The timestamp should be on a step boundary.
+    * @param multiple
+    *     Multiple of the primary step, `step / multiple = primaryStep`.
+    * @return
+    *     Start time of the first primary step interval within the consolidated interval.
+    */
+  def firstPrimaryStepTimestamp(timestamp: Long, step: Long, multiple: Int): Long = {
+    require(timestamp % step == 0, s"$timestamp is not on a step boundary (step=$step)")
+    require(step % multiple == 0, s"$step is not an even multiple (multiple=$multiple)")
+    if (multiple == 1) {
+      timestamp
+    } else {
+      val primaryStep = step / multiple
+      timestamp - step + primaryStep
+    }
   }
 }

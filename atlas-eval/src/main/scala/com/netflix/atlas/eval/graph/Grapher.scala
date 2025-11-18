@@ -32,12 +32,16 @@ import com.netflix.atlas.chart.model.VisionType
 import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
+import com.netflix.atlas.core.model.Expr
 import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.model.ResultSet
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.SummaryStats
 import com.netflix.atlas.core.model.TagKey
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
@@ -145,6 +149,13 @@ case class Grapher(settings: DefaultSettings) {
       throw new IllegalArgumentException("missing required parameter 'q'")
     }
 
+    // Global common query to apply to all expressions. It will apply across freeze operations
+    // and thus provides a global context.
+    val cq = params.get("cq").fold[Any => Any](v => v) { q =>
+      val query = parseQuery(q)
+      v => applyCQ(v, query)
+    }
+
     val timezones = params.getAll("tz").reverse
     val parsedQuery = Try {
       val vars = Map("tz" -> GraphConfig.getTimeZoneIds(settings, timezones).head)
@@ -152,6 +163,7 @@ case class Grapher(settings: DefaultSettings) {
         .execute(q.get, vars, features)
         .stack
         .reverse
+        .map(cq)
         .flatMap {
           case ModelExtractors.PresentationType(s) =>
             s.perOffset
@@ -181,6 +193,15 @@ case class Grapher(settings: DefaultSettings) {
       isAllowedFromBrowser = true,
       uri = uri.toString
     )
+  }
+
+  private def applyCQ(value: Any, cq: Query): Any = value match {
+    case expr: Expr =>
+      expr.rewrite {
+        case q: Query => q.and(cq)
+      }
+    case v =>
+      v
   }
 
   private def getAxisParam(params: Uri.Query, k: String, id: Int): Option[String] = {
@@ -524,5 +545,14 @@ object Grapher {
     */
   case class Result(config: GraphConfig, data: Array[Byte]) {
     def dataString: String = new String(data, "UTF-8")
+  }
+
+  private val queryInterpreter = Interpreter(QueryVocabulary.allWords)
+
+  private def parseQuery(str: String): Query = {
+    queryInterpreter.execute(str).stack match {
+      case (q: Query) :: Nil => q
+      case _                 => throw new IllegalStateException(s"invalid cq parameter: $str")
+    }
   }
 }

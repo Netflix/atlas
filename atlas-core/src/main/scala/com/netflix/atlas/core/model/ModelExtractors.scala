@@ -16,7 +16,6 @@
 package com.netflix.atlas.core.model
 
 import java.time.Duration
-
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.util.Strings
 
@@ -30,6 +29,17 @@ object ModelExtractors {
       case v: String   => Try(Strings.parseDuration(v)).toOption
       case v: Duration => Some(v)
       case _           => None
+    }
+  }
+
+  case object ConsolidationFunctionType {
+
+    def unapply(value: Any): Option[ConsolidationFunction] = value match {
+      case "avg" => Some(ConsolidationFunction.Avg)
+      case "sum" => Some(ConsolidationFunction.Sum)
+      case "min" => Some(ConsolidationFunction.Min)
+      case "max" => Some(ConsolidationFunction.Max)
+      case _     => None
     }
   }
 
@@ -92,43 +102,6 @@ object ModelExtractors {
       case e: EventExpr => Some(e)
       case q: Query     => Some(EventExpr.Raw(q))
       case _            => None
-    }
-  }
-
-  case object TraceQueryType {
-
-    def unapply(value: Any): Option[TraceQuery] = value match {
-      case q: TraceQuery => Some(q)
-      case q: Query      => Some(TraceQuery.Simple(q))
-      case _             => None
-    }
-  }
-
-  case object TraceFilterType {
-
-    def unapply(value: Any): Option[TraceQuery.SpanFilter] = value match {
-      case q: TraceQuery            => Some(toFilter(q))
-      case q: Query                 => Some(toFilter(TraceQuery.Simple(q)))
-      case f: TraceQuery.SpanFilter => Some(f)
-      case _                        => None
-    }
-
-    private def toFilter(q: TraceQuery): TraceQuery.SpanFilter = {
-      TraceQuery.SpanFilter(q, Query.True)
-    }
-  }
-
-  case object TraceTimeSeriesType {
-
-    def unapply(value: Any): Option[TraceQuery.SpanTimeSeries] = value match {
-      case q: TraceQuery                => Some(toTimeSeries(q))
-      case q: Query                     => Some(toTimeSeries(TraceQuery.Simple(q)))
-      case t: TraceQuery.SpanTimeSeries => Some(t)
-      case _                            => None
-    }
-
-    private def toTimeSeries(q: TraceQuery): TraceQuery.SpanTimeSeries = {
-      TraceQuery.SpanTimeSeries(q, StyleExpr(DataExpr.Sum(Query.True), Map.empty))
     }
   }
 }

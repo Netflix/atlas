@@ -96,7 +96,7 @@ case class Interpreter(vocabulary: List[Word]) {
           case "("       => popAndPushList(0, Nil, Step(tokens, context))
           case ")"       => throw new IllegalStateException("unmatched closing parenthesis")
           case IsWord(t) => Step(tokens, executeWord(t, context))
-          case t         => Step(tokens, context.copy(stack = t :: context.stack))
+          case t         => Step(tokens, context.copy(stack = unescape(t) :: context.stack))
         }
       case Nil => s
     }
@@ -180,6 +180,8 @@ object Interpreter {
 
   case class Step(program: List[Any], context: Context)
 
+  case class WordToken(name: String)
+
   case object IsWord {
 
     def unapply(v: String): Option[String] = if (v.startsWith(":")) Some(v.substring(1)) else None
@@ -227,6 +229,7 @@ object Interpreter {
     value match {
       case vs: Seq[?]   => appendSeq(builder, vs)
       case v: String    => escape(builder, v)
+      case v: WordToken => builder.append(v.name)
       case v: StackItem => v.append(builder)
       case v            => builder.append(v)
     }
@@ -254,28 +257,101 @@ object Interpreter {
     while (i < parts.length) {
       val tmp = parts(i).trim
       if (tmp.nonEmpty)
-        builder += unescape(tmp)
+        builder += tmp
       i += 1
     }
     builder.result()
   }
 
+  /**
+    * Check if a character is special in the string.
+    */
   private def isSpecial(c: Int): Boolean = {
-    c == ',' || Character.isWhitespace(c)
+    c == ',' || c == ':' || Character.isWhitespace(c)
+  }
+
+  /**
+    * Check if a character is special in the middle of a string, with special handling
+    * for spaces. For spaces, only escape if they are at the leading or trailing edge
+    * where they would be removed by trim. This makes expressions with spaces in the
+    * middle more user-friendly.
+    */
+  private def isSpecialForMiddle(c: Int): Boolean = {
+    // In the middle of the string, spaces are not special, but other characters are
+    c == ',' || c == ':' || (Character.isWhitespace(c) && c != ' ')
+  }
+
+  private def indexOfNonWhitespace(str: String): Int = {
+    var i = 0
+    while (i < str.length) {
+      if (!Character.isWhitespace(str.charAt(i)))
+        return i
+      i += 1
+    }
+    -1
+  }
+
+  private def lastIndexOfNonWhitespace(str: String): Int = {
+    var i = str.length - 1
+    while (i >= 0) {
+      if (!Character.isWhitespace(str.charAt(i)))
+        return i
+      i -= 1
+    }
+    -1
   }
 
   /** Escape special characters in the expression. */
   def escape(str: String): String = {
-    Strings.escape(str, isSpecial)
+    // Parenthesis only matter if they are the only part of the token for constructing
+    // lists. Only escape if using as a literal in that context. For things like regex
+    // escaping makes the expression much harder to read.
+    str match {
+      case "(" => "\\u0028"
+      case ")" => "\\u0029"
+      case s =>
+        val f = indexOfNonWhitespace(s)
+        val l = lastIndexOfNonWhitespace(s)
+        if (f >= 0 && l >= 0) {
+          val prefix = Strings.escape(s.substring(0, f), isSpecial)
+          val middle = Strings.escape(s.substring(f, l + 1), isSpecialForMiddle)
+          val suffix = Strings.escape(s.substring(l + 1), isSpecial)
+          s"$prefix$middle$suffix"
+        } else {
+          Strings.escape(s, isSpecial)
+        }
+    }
   }
 
   /** Escape special characters in the expression. */
   def escape(builder: java.lang.StringBuilder, str: String): Unit = {
-    Strings.escape(builder, str, isSpecial)
+    // Parenthesis only matter if they are the only part of the token for constructing
+    // lists. Only escape if using as a literal in that context. For things like regex
+    // escaping makes the expression much harder to read.
+    str match {
+      case "(" => builder.append("\\u0028")
+      case ")" => builder.append("\\u0029")
+      case s =>
+        val f = indexOfNonWhitespace(s)
+        val l = lastIndexOfNonWhitespace(s)
+        if (f >= 0 && l >= 0) {
+          Strings.escape(builder, s.substring(0, f), isSpecial)
+          Strings.escape(builder, s.substring(f, l + 1), isSpecialForMiddle)
+          Strings.escape(builder, s.substring(l + 1), isSpecial)
+        } else {
+          Strings.escape(builder, s, isSpecial)
+        }
+    }
   }
 
   /** Unescape unicode characters in the expression. */
   def unescape(str: String): String = {
     Strings.unescape(str)
+  }
+
+  /** Unescape unicode characters in the expression. */
+  def unescape(value: Any): Any = value match {
+    case s: String => Strings.unescape(s)
+    case v         => v
   }
 }

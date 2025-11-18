@@ -23,9 +23,13 @@ import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.StatusCode
 import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.http.scaladsl.settings.ConnectionPoolSettings
+import org.apache.pekko.stream.scaladsl.Compression
 import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.RetryFlow
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 
 import java.net.ConnectException
 import scala.concurrent.ExecutionContext
@@ -214,5 +218,11 @@ object PekkoHttpClient {
           case (response, context) => response -> context.callerContext
         }
     }
+  }
+
+  def unzipIfNeeded(res: HttpResponse): Source[ByteString, Any] = {
+    val isCompressed = res.headers.contains(`Content-Encoding`(HttpEncodings.gzip))
+    val dataBytes = res.entity.withoutSizeLimit().dataBytes
+    if (isCompressed) dataBytes.via(Compression.gunzip()) else dataBytes
   }
 }

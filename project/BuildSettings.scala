@@ -59,7 +59,8 @@ object BuildSettings {
   val resolvers: Seq[Resolver] = Seq(
     Resolver.mavenLocal,
     Resolver.mavenCentral,
-  ) ++ Resolver.sonatypeOssRepos("snapshots")
+    Resolver.sonatypeCentralSnapshots
+  )
 
   def profile: Project => Project = p => {
     p.settings(SonatypeSettings.settings)

@@ -46,41 +46,41 @@ class TimeSeriesBufferSuite extends FunSuite {
     val tags = emptyTags
     val step = 60000L
     val blocks = List(
-      ConstantBlock(0 * step, 6, 1.0),
-      ConstantBlock(6 * step, 6, 2.0),
-      ConstantBlock(18 * step, 6, 4.0)
+      ConstantBlock(1 * step, 6, 1.0),
+      ConstantBlock(7 * step, 6, 2.0),
+      ConstantBlock(19 * step, 6, 4.0)
     )
 
-    val buffer = TimeSeriesBuffer(tags, step, 1 * step, 19 * step, blocks, Block.Sum)
+    val buffer = TimeSeriesBuffer(tags, step, step, 20 * step, blocks, Block.Sum)
     val m = buffer
     assertEquals(m.step, step)
     assertEquals(m.start, step)
-    assert(m.values.take(5).forall(_ == 1.0))
-    assert(m.values.slice(5, 11).forall(_ == 2.0))
-    assert(m.values.slice(11, 17).forall(v => JDouble.isNaN(v)))
-    assert(m.values.drop(17).forall(_ == 4.0))
+    assert(m.values.take(6).forall(_ == 1.0))
+    assert(m.values.slice(6, 12).forall(_ == 2.0))
+    assert(m.values.slice(12, 18).forall(v => JDouble.isNaN(v)))
+    assert(m.values.drop(18).forall(_ == 4.0))
   }
 
   test("add Block") {
     val tags = emptyTags
     val step = 60000L
     val blocks = List(
-      ConstantBlock(0 * step, 6, 1.0),
-      ConstantBlock(6 * step, 6, 2.0),
-      ConstantBlock(18 * step, 6, 4.0)
+      ConstantBlock(1 * step, 6, 1.0),
+      ConstantBlock(7 * step, 6, 2.0),
+      ConstantBlock(19 * step, 6, 4.0)
     )
 
-    val buffer = TimeSeriesBuffer(tags, step, 1 * step, 19 * step)
+    val buffer = TimeSeriesBuffer(tags, step, 1 * step, 20 * step)
     blocks.foreach { b =>
       buffer.add(b)
     }
     val m = buffer
     assertEquals(m.step, step)
     assertEquals(m.start, step)
-    assert(m.values.take(5).forall(_ == 1.0))
-    assert(m.values.slice(5, 11).forall(_ == 2.0))
-    assert(m.values.slice(11, 17).forall(v => JDouble.isNaN(v)))
-    assert(m.values.drop(17).forall(_ == 4.0))
+    assert(m.values.take(6).forall(_ == 1.0))
+    assert(m.values.slice(6, 12).forall(_ == 2.0))
+    assert(m.values.slice(12, 18).forall(v => JDouble.isNaN(v)))
+    assert(m.values.drop(18).forall(_ == 4.0))
   }
 
   test("add Block with cf 6") {
@@ -92,7 +92,7 @@ class TimeSeriesBufferSuite extends FunSuite {
       ConstantBlock(18 * step, 6, 4.0)
     )
 
-    val buffer = TimeSeriesBuffer(tags, 6 * step, step, 18 * step)
+    val buffer = TimeSeriesBuffer(tags, 6 * step, 0L, 18 * step)
     blocks.foreach { b =>
       buffer.aggrBlock(b, Block.Sum, ConsolidationFunction.Max, 6, Math.addNaN)
     }
@@ -399,7 +399,8 @@ class TimeSeriesBufferSuite extends FunSuite {
 
   test("getValue with match") {
     val b1 = newBuffer(42.0, start = 120000)
-    assertEquals(b1.getValue(129000), 42.0)
+    assertEquals(b1.getValue(119000), 42.0)
+    assert(b1.getValue(129000).isNaN)
   }
 
   test("sum") {
@@ -457,16 +458,16 @@ class TimeSeriesBufferSuite extends FunSuite {
     val start = 1366746900000L
     val b = TimeSeriesBuffer(emptyTags, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
 
-    val b2 = TimeSeriesBuffer(emptyTags, 120000, start, Array(1.0, 5.0, 9.0))
+    val b2 = TimeSeriesBuffer(emptyTags, 120000, start, Array(3.0, 7.0, 5.0))
     assertEquals(b.consolidate(2, ConsolidationFunction.Sum), b2)
 
-    val b3 = TimeSeriesBuffer(emptyTags, 180000, start, Array(3.0, 12.0))
+    val b3 = TimeSeriesBuffer(emptyTags, 180000, start, Array(6.0, 9.0))
     assertEquals(b.consolidate(3, ConsolidationFunction.Sum), b3)
 
-    val b4 = TimeSeriesBuffer(emptyTags, 240000, start, Array(1.0, 14.0))
+    val b4 = TimeSeriesBuffer(emptyTags, 240000, start, Array(3.0, 12.0))
     assertEquals(b.consolidate(4, ConsolidationFunction.Sum), b4)
 
-    val b5 = TimeSeriesBuffer(emptyTags, 300000, start, Array(15.0))
+    val b5 = TimeSeriesBuffer(emptyTags, 300000, start, Array(1.0, 14.0))
     assertEquals(b.consolidate(5, ConsolidationFunction.Sum), b5)
   }
 
@@ -475,7 +476,7 @@ class TimeSeriesBufferSuite extends FunSuite {
     val tags = Map(TagKey.dsType -> "rate")
     val b = TimeSeriesBuffer(tags, 60000, start, Array(1.0, 2.0, Double.NaN, 4.0, 5.0))
 
-    val b5 = TimeSeriesBuffer(tags, 300000, start, Array(12.0 / 5.0))
+    val b5 = TimeSeriesBuffer(tags, 300000, start, Array(1.0 / 5.0, 11.0 / 5.0))
     assertEquals(b.consolidate(5, ConsolidationFunction.Avg), b5)
   }
 
@@ -484,20 +485,21 @@ class TimeSeriesBufferSuite extends FunSuite {
     val tags = Map(TagKey.dsType -> "gauge")
     val b = TimeSeriesBuffer(tags, 60000, start, Array(1.0, 2.0, Double.NaN, 4.0, 5.0))
 
-    val b5 = TimeSeriesBuffer(tags, 300000, start, Array(12.0 / 4.0))
+    val b5 = TimeSeriesBuffer(tags, 300000, start, Array(1.0, 11.0 / 3.0))
     assertEquals(b.consolidate(5, ConsolidationFunction.Avg), b5)
   }
 
   test("normalize rate") {
     val start = 1366746900000L
     val b1 = TimeSeriesBuffer(emptyTags, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
-    val b1e = TimeSeriesBuffer(emptyTags, 120000, start, Array(0.5, 2.5, 4.5))
+    val b1e = TimeSeriesBuffer(emptyTags, 120000, start, Array(1.5, 3.5, 2.5))
     assertEquals(b1.normalize(60000, start, 5), b1)
     assertEquals(b1.normalize(120000, start, 3), b1e)
 
     val b2 = TimeSeriesBuffer(emptyTags, 120000, start, Array(3.0, 7.0))
     val b2e =
-      TimeSeriesBuffer(emptyTags, 60000, start, Array(3.0, 7.0, 7.0, Double.NaN, Double.NaN))
+      TimeSeriesBuffer(emptyTags, 60000, start, Array(3.0, 3.0, 7.0, 7.0, Double.NaN))
+    assertEquals(b2.start, start + 60000)
     assertEquals(b2.normalize(60000, start, 5), b2e)
   }
 
@@ -505,13 +507,13 @@ class TimeSeriesBufferSuite extends FunSuite {
     val start = 1366746900000L
     val tags = Map(TagKey.dsType -> "gauge")
     val b1 = TimeSeriesBuffer(tags, 60000, start, Array(1.0, 2.0, 3.0, 4.0, 5.0))
-    val b1e = TimeSeriesBuffer(tags, 120000, start, Array(1.0, 2.5, 4.5))
+    val b1e = TimeSeriesBuffer(tags, 120000, start, Array(1.5, 3.5, 5.0))
     assertEquals(b1.normalize(60000, start, 5), b1)
     assertEquals(b1.normalize(120000, start, 3), b1e)
 
     val b2 = TimeSeriesBuffer(tags, 120000, start, Array(3.0, 7.0))
     val b2e =
-      TimeSeriesBuffer(tags, 60000, start, Array(3.0, 7.0, 7.0, Double.NaN, Double.NaN))
+      TimeSeriesBuffer(tags, 60000, start, Array(3.0, 3.0, 7.0, 7.0, Double.NaN))
     assertEquals(b2.normalize(60000, start, 5), b2e)
   }
 

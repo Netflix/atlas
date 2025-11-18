@@ -166,7 +166,7 @@ object Block {
   */
 sealed trait Block {
 
-  /** Start time for the block (epoch in milliseconds). */
+  /** Start time for the first data point in the block (epoch in milliseconds). */
   def start: Long
 
   /** Number of data points to store in the block. */
@@ -251,7 +251,7 @@ trait MutableBlock extends Block {
 /**
   * Block that stores the raw data in an array.
   *
-  * @param start  start time for the block (epoch in milliseconds)
+  * @param start  start time for the first data point in the block (epoch in milliseconds)
   * @param size   number of data points to store in the block
   */
 case class ArrayBlock(var start: Long, size: Int) extends MutableBlock {

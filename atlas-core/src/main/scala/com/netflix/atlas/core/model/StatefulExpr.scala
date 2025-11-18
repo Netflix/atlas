@@ -53,7 +53,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, window, ":trend")
+      Interpreter.append(builder, expr, window, Interpreter.WordToken(":trend"))
     }
   }
 
@@ -72,7 +72,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, s":$name")
+      Interpreter.append(builder, expr, Interpreter.WordToken(s":$name"))
     }
   }
 
@@ -88,7 +88,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, s":$name")
+      Interpreter.append(builder, expr, Interpreter.WordToken(s":$name"))
     }
   }
 
@@ -105,7 +105,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, s":$name")
+      Interpreter.append(builder, expr, n, Interpreter.WordToken(s":$name"))
     }
   }
 
@@ -121,7 +121,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, s":$name")
+      Interpreter.append(builder, expr, n, Interpreter.WordToken(s":$name"))
     }
   }
 
@@ -137,7 +137,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, s":$name")
+      Interpreter.append(builder, expr, n, Interpreter.WordToken(s":$name"))
     }
   }
 
@@ -153,7 +153,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, s":$name")
+      Interpreter.append(builder, expr, n, Interpreter.WordToken(s":$name"))
     }
   }
 
@@ -169,7 +169,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, minNumValues, s":$name")
+      Interpreter.append(builder, expr, n, minNumValues, Interpreter.WordToken(s":$name"))
     }
   }
 
@@ -185,7 +185,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, s":$name")
+      Interpreter.append(builder, expr, n, Interpreter.WordToken(s":$name"))
     }
   }
 
@@ -203,7 +203,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, trainingSize, alpha, beta, s":$name")
+      Interpreter.append(builder, expr, trainingSize, alpha, beta, Interpreter.WordToken(s":$name"))
     }
   }
 
@@ -237,7 +237,7 @@ object StatefulExpr {
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, trainingSize, alpha, beta, s":$name")
+      Interpreter.append(builder, expr, trainingSize, alpha, beta, Interpreter.WordToken(s":$name"))
     }
   }
 

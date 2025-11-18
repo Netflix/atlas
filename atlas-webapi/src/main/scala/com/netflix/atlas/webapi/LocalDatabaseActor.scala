@@ -43,6 +43,6 @@ class LocalDatabaseActor(db: Database) extends Actor with ActorLogging {
 
   private def executeDataRequest(req: DataRequest): DataResponse = {
     val data = req.exprs.map(expr => expr -> db.execute(req.context, expr)).toMap
-    DataResponse(data)
+    DataResponse(req.context.step, data)
   }
 }
