@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.stacklang
 
+import com.netflix.atlas.core.model.MathExpr
+
 import scala.util.Try
 
 object Extractors {
@@ -22,18 +24,20 @@ object Extractors {
   case object IntType {
 
     def unapply(value: Any): Option[Int] = value match {
-      case v: String => Try(v.toInt).toOption
-      case v: Int    => Some(v)
-      case _         => None
+      case v: String            => Try(v.toInt).toOption
+      case v: MathExpr.Constant => Some(v.v.toInt)
+      case v: Int               => Some(v)
+      case _                    => None
     }
   }
 
   case object DoubleType {
 
     def unapply(value: Any): Option[Double] = value match {
-      case v: String => Try(v.toDouble).toOption
-      case v: Double => Some(v)
-      case _         => None
+      case v: String            => Try(v.toDouble).toOption
+      case v: MathExpr.Constant => Some(v.v)
+      case v: Double            => Some(v)
+      case _                    => None
     }
   }
 }

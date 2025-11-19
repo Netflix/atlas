@@ -49,4 +49,14 @@ class MathExamplesSuite extends BaseExamplesSuite {
       "name,test,:eq,app,foo,:eq,:and,:dist-avg,PT1H,:offset,(,cluster,),:by"
     )
   }
+
+  test("constant math: unary expressions") {
+    val expr = eval("name,test,:eq,:sum,5,:neg,:abs,:mul")
+    assertEquals(expr.toString, "name,test,:eq,:sum,5.0,:const,:mul")
+  }
+
+  test("constant math: binary expressions") {
+    val expr = eval("name,test,:eq,:sum,5,4,:mul,2,:add,:div")
+    assertEquals(expr.toString, "name,test,:eq,:sum,22.0,:const,:div")
+  }
 }

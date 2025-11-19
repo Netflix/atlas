@@ -102,6 +102,14 @@ object MathExpr {
       val ts = TimeSeries(Map("name" -> v.toString), v.toString, seq)
       ResultSet(this, List(ts), context.state)
     }
+
+    /** Overridden to allow for NaN value to be equivalent. */
+    override def equals(that: Any): Boolean = {
+      that match {
+        case other: Constant => java.lang.Double.compare(v, other.v) == 0
+        case _               => false
+      }
+    }
   }
 
   /**

@@ -695,11 +695,23 @@ object MathVocabulary extends Vocabulary {
       case (_: StyleExpr) :: _    => true
     }
 
-    def newInstance(t: TimeSeriesExpr): TimeSeriesExpr
+    def newInstance(t: TimeSeriesExpr): MathExpr.UnaryMathExpr
+
+    protected def execute(t: TimeSeriesExpr, stack: List[Any]): List[Any] = {
+      t match {
+        case c: MathExpr.Constant =>
+          // Precompute math on constants
+          MathExpr.Constant(newInstance(c)(c.v)) :: stack
+        case _ =>
+          newInstance(t) :: stack
+      }
+    }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case TimeSeriesType(t) :: stack => newInstance(t) :: stack
-      case (t: StyleExpr) :: stack    => t.copy(expr = newInstance(t.expr)) :: stack
+      case TimeSeriesType(t) :: stack =>
+        execute(t, stack)
+      case (t: StyleExpr) :: stack =>
+        t.copy(expr = newInstance(t.expr)) :: stack
     }
 
     override def signature: String = "TimeSeriesExpr -- TimeSeriesExpr"
@@ -711,7 +723,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "abs"
 
-    def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Abs(t)
+    def newInstance(t: TimeSeriesExpr): MathExpr.UnaryMathExpr = MathExpr.Abs(t)
 
     override def summary: String =
       """
@@ -724,7 +736,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "neg"
 
-    def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Negate(t)
+    def newInstance(t: TimeSeriesExpr): MathExpr.UnaryMathExpr = MathExpr.Negate(t)
 
     override def summary: String =
       """
@@ -737,7 +749,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "sin"
 
-    def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Sine(t)
+    def newInstance(t: TimeSeriesExpr): MathExpr.UnaryMathExpr = MathExpr.Sine(t)
 
     override def summary: String =
       """
@@ -750,7 +762,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "sqrt"
 
-    def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.Sqrt(t)
+    def newInstance(t: TimeSeriesExpr): MathExpr.UnaryMathExpr = MathExpr.Sqrt(t)
 
     override def summary: String =
       """
@@ -763,7 +775,12 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "per-step"
 
-    def newInstance(t: TimeSeriesExpr): TimeSeriesExpr = MathExpr.PerStep(t)
+    def newInstance(t: TimeSeriesExpr): MathExpr.UnaryMathExpr = MathExpr.PerStep(t)
+
+    override protected def execute(t: TimeSeriesExpr, stack: List[Any]): List[Any] = {
+      // Cannot be precomputed as the step size depends on the execution context
+      newInstance(t) :: stack
+    }
 
     override def summary: String =
       """
@@ -782,11 +799,21 @@ object MathVocabulary extends Vocabulary {
       case (_: StyleExpr) :: (_: StyleExpr) :: _       => true
     }
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr
+
+    private def execute(t1: TimeSeriesExpr, t2: TimeSeriesExpr, stack: List[Any]): List[Any] = {
+      (t1, t2) match {
+        case (c1: MathExpr.Constant, c2: MathExpr.Constant) =>
+          // Precompute math on constants
+          MathExpr.Constant(newInstance(c1, c2)(c1.v, c2.v)) :: stack
+        case _ =>
+          newInstance(t1, t2) :: stack
+      }
+    }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case TimeSeriesType(t2) :: TimeSeriesType(t1) :: stack =>
-        newInstance(t1, t2) :: stack
+        execute(t1, t2, stack)
       case (t2: StyleExpr) :: TimeSeriesType(t1) :: stack =>
         t2.copy(expr = newInstance(t1, t2.expr)) :: stack
       case TimeSeriesType(t2) :: (t1: StyleExpr) :: stack =>
@@ -807,7 +834,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "add"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.Add(t1, t2)
     }
 
@@ -829,7 +856,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "sub"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.Subtract(t1, t2)
     }
 
@@ -851,7 +878,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "mul"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.Multiply(t1, t2)
     }
 
@@ -866,7 +893,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "div"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.Divide(t1, t2)
     }
 
@@ -890,7 +917,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "pow"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.Power(t1, t2)
     }
 
@@ -905,7 +932,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "gt"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.GreaterThan(t1, t2)
     }
 
@@ -920,7 +947,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "ge"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.GreaterThanEqual(t1, t2)
     }
 
@@ -935,7 +962,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "lt"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.LessThan(t1, t2)
     }
 
@@ -950,7 +977,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "le"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.LessThanEqual(t1, t2)
     }
 
@@ -965,7 +992,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "fadd"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.FAdd(t1, t2)
     }
 
@@ -992,7 +1019,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "fsub"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.FSubtract(t1, t2)
     }
 
@@ -1019,7 +1046,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "fmul"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.FMultiply(t1, t2)
     }
 
@@ -1034,7 +1061,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "fdiv"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.FDivide(t1, t2)
     }
 
@@ -1061,7 +1088,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "and"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.And(t1, t2)
     }
 
@@ -1076,7 +1103,7 @@ object MathVocabulary extends Vocabulary {
 
     override def name: String = "or"
 
-    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
+    def newInstance(t1: TimeSeriesExpr, t2: TimeSeriesExpr): MathExpr.BinaryMathExpr = {
       MathExpr.Or(t1, t2)
     }
 
