@@ -42,8 +42,8 @@ class MathAcrossStyleSuite extends FunSuite {
     .filter(_.isInstanceOf[MathVocabulary.UnaryWord])
     .foreach { w =>
       test(s"${w.name}, StyleExpr op") {
-        val expected = eval(s"1,:${w.name},abc,:legend")
-        val actual = eval(s"1,abc,:legend,:${w.name}")
+        val expected = eval(s"a,:has,:sum,:${w.name},abc,:legend")
+        val actual = eval(s"a,:has,:sum,abc,:legend,:${w.name}")
         assertEquals(actual, expected)
       }
     }

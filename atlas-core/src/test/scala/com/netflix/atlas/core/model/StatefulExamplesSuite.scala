@@ -28,7 +28,7 @@ class StatefulExamplesSuite extends BaseExamplesSuite {
   }
 
   test("constant math: use as parameter") {
-    val expr = eval("name,test,:eq,:sum,3600,60,:div,:int,:rolling-count")
+    val expr = eval("name,test,:eq,:sum,3600,60,:div,:rolling-count")
     assertEquals(expr.toString, "name,test,:eq,:sum,60,:rolling-count")
   }
 }

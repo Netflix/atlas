@@ -40,8 +40,6 @@ object MathVocabulary extends Vocabulary {
     As,
     GroupBy,
     Const,
-    ToInt,
-    ToDouble,
     Pi,
     Random,
     SeededRandom,
@@ -351,52 +349,6 @@ object MathVocabulary extends Vocabulary {
       """.stripMargin.trim
 
     override def signature: String = " -- TimeSeriesExpr"
-
-    override def examples: List[String] = Nil
-  }
-
-  case object ToInt extends SimpleWord {
-
-    override def name: String = "int"
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case TimeSeriesType(t) :: _ => t.isInstanceOf[MathExpr.Constant]
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case MathExpr.Constant(c) :: stack          => c.toInt :: stack
-    }
-
-    override def summary: String =
-      """
-        |Converts a constant time series expression to an integer. This can be useful if the
-        |value is needed to use as a parameter to another operation.
-      """.stripMargin.trim
-
-    override def signature: String = "Constant -- Int"
-
-    override def examples: List[String] = Nil
-  }
-
-  case object ToDouble extends SimpleWord {
-
-    override def name: String = "double"
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case TimeSeriesType(t) :: _ => t.isInstanceOf[MathExpr.Constant]
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case MathExpr.Constant(c) :: stack => c :: stack
-    }
-
-    override def summary: String =
-      """
-        |Converts a constant time series expression to a double. This can be useful if the
-        |value is needed to use as a parameter to another operation.
-      """.stripMargin.trim
-
-    override def signature: String = "Constant -- Double"
 
     override def examples: List[String] = Nil
   }
