@@ -15,11 +15,13 @@
  */
 package com.netflix.atlas.eval.stream
 
-import java.nio.charset.StandardCharsets
+import com.fasterxml.jackson.databind.JsonNode
 
+import java.nio.charset.StandardCharsets
 import org.apache.pekko.util.ByteString
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.json.Json
+import com.netflix.atlas.pekko.ByteStringInputStream
 import com.typesafe.scalalogging.StrictLogging
 
 /**
@@ -32,9 +34,20 @@ import com.typesafe.scalalogging.StrictLogging
   */
 private[stream] object ReplayLogging extends StrictLogging {
 
+  def isSmile(msg: ByteString): Boolean = {
+    msg.lengthCompare(2) >= 0 && msg(0) == ':' && msg(1) == ')'
+  }
+
+  def asString(msg: ByteString): String = {
+    if (isSmile(msg))
+      Json.encode(Json.smileDecode[JsonNode](new ByteStringInputStream(msg)))
+    else
+      msg.decodeString(StandardCharsets.UTF_8)
+  }
+
   def log(msg: ByteString): ByteString = {
     if (msg.nonEmpty) {
-      logger.trace(msg.decodeString(StandardCharsets.UTF_8))
+      logger.trace(asString(msg))
     }
     msg
   }
