@@ -191,8 +191,13 @@ object ExpressionApi {
     private def load(key: Option[String]): EncodedExpressions = {
       val (id, expressions) = key match {
         case Some(cluster) =>
-          "cluster" -> sm.subscriptionsForCluster(cluster).filter(clusterSubFilter).map(_.metadata)
-        case None => "overall" -> sm.subscriptions.map(_.metadata)
+          "cluster" -> sm
+            .subscriptionsForCluster(cluster)
+            .filter(clusterSubFilter)
+            .map(_.metadata)
+            .distinct
+        case None =>
+          "overall" -> sm.subscriptions.map(_.metadata).distinct
       }
       val start = registry.clock().monotonicTime()
       val encoded = encode(expressions)
