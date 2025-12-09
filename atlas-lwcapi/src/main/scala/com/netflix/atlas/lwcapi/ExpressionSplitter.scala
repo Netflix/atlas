@@ -146,6 +146,11 @@ class ExpressionSplitter(config: Config) {
         case q @ Query.Equal("nf.asg", asg) =>
           val cluster = ServerGroup.parse(asg).cluster()
           if (cluster == null) q else Query.Equal("nf.cluster", cluster)
+        case q @ Query.In("nf.asg", asgs) =>
+          val clusters = asgs
+            .map { asg => ServerGroup.parse(asg).cluster() }
+            .filterNot(_ == null)
+          if (clusters.isEmpty) q else Query.In("nf.cluster", clusters)
       }
       .rewrite {
         case kq: KeyQuery if !keepKeys.contains(kq.k) => Query.True
