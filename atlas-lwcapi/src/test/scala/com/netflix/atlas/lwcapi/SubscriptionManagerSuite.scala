@@ -165,6 +165,20 @@ class SubscriptionManagerSuite extends FunSuite {
     assertEquals(subsForCluster("name,exp1,:eq,nf.asg,www-dev-v001,:eq,:and,:sum", "foo"), Nil)
   }
 
+  test("subscriptions for cluster, asg IN clause") {
+    checkSubsForCluster(
+      "name,exp1,:eq,nf.asg,(,www-dev-v001,www-dev-v002,),:in,:and,:sum",
+      "www-dev"
+    )
+  }
+
+  test("subscriptions for cluster, asg IN clause no match") {
+    assertEquals(
+      subsForCluster("name,exp1,:eq,nf.asg,(,www-dev-v001,www-dev-v002,),:in,:and,:sum", "foo"),
+      Nil
+    )
+  }
+
   test("subscriptions for cluster, stack") {
     checkSubsForCluster("name,exp1,:eq,nf.stack,dev,:eq,:and,:sum", "www-dev")
   }
