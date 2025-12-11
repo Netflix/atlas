@@ -22,9 +22,11 @@ import com.netflix.atlas.pekko.ThreadPools
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.atlas.impl.QueryIndex
+import com.netflix.spectator.impl.Cache
 import com.netflix.spectator.ipc.ServerGroup
 import com.typesafe.scalalogging.StrictLogging
 
+import java.util.Collections
 import scala.jdk.CollectionConverters.*
 
 /**
@@ -47,7 +49,10 @@ class SubscriptionManager[T](registry: Registry) extends StrictLogging {
 
   @volatile private var subscriptionsList = List.empty[Subscription]
   @volatile private var queryListChanged = false
-  private val queryIndex = QueryIndex.newInstance[Subscription](registry)
+
+  // Caching is disabled as there can be race conditions leading to :in and :re checks
+  // being stale in the cache.
+  private val queryIndex = QueryIndex.newInstance[Subscription](DisabledCacheSupplier)
 
   @volatile var lastUpdateTime: Long = 0L
 
@@ -335,5 +340,33 @@ object SubscriptionManager {
       import scala.jdk.CollectionConverters.*
       data.values().asScala.toList
     }
+  }
+
+  private type CacheValue = java.util.List[QueryIndex[Subscription]]
+
+  /** Supply a cache instance that does nothing. */
+  private object DisabledCacheSupplier extends QueryIndex.CacheSupplier[Subscription] {
+    override def get(): Cache[String, CacheValue] = DisabledCache
+  }
+
+  /** Cache implementation that does nothing. */
+  private object DisabledCache extends Cache[String, CacheValue] {
+
+    override def get(key: String): CacheValue = null
+
+    override def peek(key: String): CacheValue = null
+
+    override def put(key: String, value: CacheValue): Unit = ()
+
+    override def computeIfAbsent(
+      key: String,
+      f: java.util.function.Function[String, CacheValue]
+    ): CacheValue = f.apply(key)
+
+    override def clear(): Unit = ()
+
+    override def size(): Int = 0
+
+    override def asMap(): java.util.Map[String, CacheValue] = Collections.emptyMap
   }
 }
