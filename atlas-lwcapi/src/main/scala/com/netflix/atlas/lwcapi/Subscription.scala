@@ -15,13 +15,15 @@
  */
 package com.netflix.atlas.lwcapi
 
+import scala.runtime.ScalaRunTime
+
 case class Subscription(query: SpectatorQuery, metadata: ExpressionMetadata) {
 
   /**
     * The hash code is needed for most of the usage, precompute when it is created to
     * keep that usage as cheap as possible.
     */
-  private val cachedHashCode = super.hashCode()
+  private val cachedHashCode = ScalaRunTime._hashCode(this)
 
   override def hashCode(): Int = cachedHashCode
 }
