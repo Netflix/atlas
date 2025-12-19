@@ -63,6 +63,14 @@ class QueryVocabularySuite extends FunSuite {
     assert(q.matches(Map("foo" -> "my $var. [work-in progress]")))
   }
 
+  test("starts with space") {
+    val re = interpreter.execute("a,a b,:re").stack.head.asInstanceOf[Query.Regex]
+    val exp = interpreter.execute("a,a b,:starts").stack.head.asInstanceOf[Query.Regex]
+    assertEquals(exp.pattern.prefix(), re.pattern.prefix())
+    assertEquals(exp.pattern.toString, re.pattern.toString)
+    assertEquals(exp.toString, re.toString)
+  }
+
   test("ends, suffix and escape") {
     val exp = interpreter.execute("a,[foo],:ends").stack.head
     assertEquals(exp.asInstanceOf[Query.Regex].pattern.prefix(), null)
@@ -78,6 +86,14 @@ class QueryVocabularySuite extends FunSuite {
     assert(q.matches(Map("foo" -> "my $var.")))
     assert(!q.matches(Map("foo" -> "initialize my $var. [work-in-progress], not a range")))
     assert(!q.matches(Map("foo" -> "my $var. [work-in progress]")))
+  }
+
+  test("ends with space") {
+    val re = interpreter.execute("a,.*a b$,:re").stack.head.asInstanceOf[Query.Regex]
+    val exp = interpreter.execute("a,a b,:ends").stack.head.asInstanceOf[Query.Regex]
+    assertEquals(exp.pattern.prefix(), re.pattern.prefix())
+    assertEquals(exp.pattern.toString, re.pattern.toString)
+    assertEquals(exp.toString, re.toString)
   }
 
   private def execEquals(str: String): Query.Equal = {
@@ -106,6 +122,14 @@ class QueryVocabularySuite extends FunSuite {
       exp.asInstanceOf[Query.Regex].pattern.toString,
       ".*foo,\\u0020bar,\\u0020baz"
     )
+  }
+
+  test("contains with space") {
+    val re = interpreter.execute("a,.*a b,:re").stack.head.asInstanceOf[Query.Regex]
+    val exp = interpreter.execute("a,a b,:contains").stack.head.asInstanceOf[Query.Regex]
+    assertEquals(exp.pattern.prefix(), re.pattern.prefix())
+    assertEquals(exp.pattern.toString, re.pattern.toString)
+    assertEquals(exp.toString, re.toString)
   }
 
   test("eq, with escaped colon in value") {

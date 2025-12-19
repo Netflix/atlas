@@ -20,6 +20,9 @@ import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 import org.apache.pekko.http.scaladsl.model.Uri
 
+import java.time.Duration
+import java.util.Collections
+
 class ExprInterpreterSuite extends FunSuite {
 
   private val interpreter = new ExprInterpreter(ConfigFactory.load())
@@ -35,5 +38,19 @@ class ExprInterpreterSuite extends FunSuite {
     assertEquals(interpreter.determineExprType(Uri("/api/v1/events")), ExprType.EVENTS)
     assertEquals(interpreter.determineExprType(Uri("/api/v1/events/")), ExprType.EVENTS)
     assertEquals(interpreter.determineExprType(Uri("/events")), ExprType.EVENTS)
+  }
+
+  test("dataExprMap: starts") {
+    val ds = new Evaluator.DataSource(
+      "_",
+      Duration.ofSeconds(1),
+      "/events?q=app,www,:eq,msg,a+b+c,:starts,:and,(,app,msg,),:table"
+    )
+    val dss = new Evaluator.DataSources(Collections.singleton(ds))
+    val map = interpreter.dataExprMap(dss)
+    val expected = Map(
+      "app,www,:eq,msg,a b c,:re,:and,(,app,msg,),:table" -> List(ds)
+    )
+    assertEquals(map, expected)
   }
 }
