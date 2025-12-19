@@ -338,7 +338,11 @@ object QueryVocabulary extends Vocabulary {
 
     override def name: String = "contains"
 
-    def newInstance(k: String, v: String): Query = Query.Regex(k, s".*${PatternUtils.escape(v)}")
+    def newInstance(k: String, v: String): Query = {
+      // Ensure compatible space escaping with using :re directly
+      val escaped = PatternUtils.escape(v).replace("\\u0020", " ")
+      Query.Regex(k, s".*$escaped")
+    }
 
     override def summary: String =
       """
@@ -370,7 +374,11 @@ object QueryVocabulary extends Vocabulary {
 
     override def name: String = "starts"
 
-    def newInstance(k: String, v: String): Query = Query.Regex(k, PatternUtils.escape(v))
+    def newInstance(k: String, v: String): Query = {
+      // Ensure compatible space escaping with using :re directly
+      val escaped = PatternUtils.escape(v).replace("\\u0020", " ")
+      Query.Regex(k, escaped)
+    }
 
     override def summary: String =
       """
@@ -398,7 +406,11 @@ object QueryVocabulary extends Vocabulary {
 
     override def name: String = "ends"
 
-    def newInstance(k: String, v: String): Query = Query.Regex(k, s".*${PatternUtils.escape(v)}$$")
+    def newInstance(k: String, v: String): Query = {
+      // Ensure compatible space escaping with using :re directly
+      val escaped = PatternUtils.escape(v).replace("\\u0020", " ")
+      Query.Regex(k, s".*$escaped$$")
+    }
 
     override def summary: String =
       """

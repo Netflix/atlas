@@ -75,6 +75,19 @@ class ExpressionSplitterSuite extends FunSuite {
     assertEquals(msg.getMessage, s":offset not supported for streaming evaluation [[$badExpr]]")
   }
 
+  test("splits single expression with starts") {
+    val expr = "app,www,:eq,msg,info level,:starts,:and,(,timestamp,msg,),:table"
+    val exprExp = "app,www,:eq,msg,info level,:re,:and,(,timestamp,msg,),:table"
+    val actual = splitter.split(expr, ExprType.EVENTS, frequency1)
+    val expected = List(
+      Subscription(
+        Parser.parseQuery(":true"),
+        ExpressionMetadata(exprExp, ExprType.EVENTS, frequency1)
+      )
+    ).reverse
+    assertEquals(actual, expected)
+  }
+
   //
   // Tests for compress()
   //
