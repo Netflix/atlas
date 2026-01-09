@@ -131,8 +131,10 @@ object ClusterOps extends StrictLogging {
           }
           val sources = added.toList
             .map { m =>
+              val queueId =
+                if (context.distinctQueueIds) s"${context.id}-${m.toString}" else context.id
               val (queue, source) = StreamOps
-                .blockingQueue(registry, context.id, context.queueSize)
+                .blockingQueue(registry, queueId, context.queueSize)
                 .via(newSubFlow(m))
                 .preMaterialize()(materializer)
 
@@ -216,7 +218,8 @@ object ClusterOps extends StrictLogging {
     client: M => Flow[D, O, NotUsed],
     registry: Registry = noopRegistry,
     id: String = "clusterGroupBy",
-    queueSize: Int = 1
+    queueSize: Int = 1,
+    distinctQueueIds: Boolean = false
   )
 
   /** Base type for messages to a cluster operation. */
