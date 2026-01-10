@@ -75,6 +75,10 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     (pos + 1) % numBlocks
   }
 
+  private def previous(pos: Int): Int = {
+    (pos - 1 + numBlocks) % numBlocks
+  }
+
   private def alignStart(start: Long): Long = {
     // First timestamp in the block is the end of the first step interval
     if (blockSize == 1)
@@ -147,8 +151,8 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     } else if (pos < 0) {
       // Out of order update received for an older block, try to update the
       // previous block
-      val previousPos = (currentPos - 1) % numBlocks
-      if (previousPos > 0 && blocks(previousPos) != null) {
+      val previousPos = previous(currentPos)
+      if (blocks(previousPos) != null) {
         val previousBlock = blocks(previousPos)
         pos = ((timestamp - previousBlock.start) / step).asInstanceOf[Int]
         if (pos >= 0 && pos < blockSize) {
