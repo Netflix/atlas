@@ -94,14 +94,12 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
 
   private def newBlock(start: Long, rollup: Boolean): Unit = {
     require(isAligned(start), s"start time $start is not on block boundary")
-    val oldBlock = currentBlock
     val newBlock =
       if (rollup)
         newRollupBlock(start, blockSize)
       else
         newArrayBlock(start, blockSize)
     BlockStats.inc(newBlock)
-    blocks(currentPos) = oldBlock
     currentBlock = newBlock
     currentPos = next(currentPos)
     if (blocks(currentPos) != null) BlockStats.dec(blocks(currentPos))
