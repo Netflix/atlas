@@ -277,4 +277,15 @@ class MemoryBlockStoreSuite extends FunSuite {
     bs.update(63, List(1.0))
     assertEquals(BlockStats.overallCount, 2)
   }
+
+  test("align start maps correctly") {
+    val step = 60_000L
+    val bs = new MemoryBlockStore(step, 60, 6)
+    (step to step * 60 by step).foreach { t =>
+      assertEquals(bs.alignStart(t), step)
+    }
+    (step * 60 + step to step * 120 by step).foreach { t =>
+      assertEquals(bs.alignStart(t), step * 60 + step)
+    }
+  }
 }
