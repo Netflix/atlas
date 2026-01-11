@@ -90,4 +90,34 @@ class BlockBoundarySuite extends FunSuite {
       }
     }
   }
+
+  test("first update at exact hour boundary") {
+    val tags = Map("name" -> "test", "atlas.dstype" -> "sum")
+    val id = ItemIdCalculator.compute(tags)
+
+    // First update arrives at exactly 1 hour mark (step * 60)
+    // This is the boundary between blocks and should be handled correctly
+    val hourBoundary = step * 60 // 3600000ms = 1 hour
+
+    clock.setWallTime(hourBoundary)
+    db.update(id, tags, hourBoundary, 1.0)
+    db.update(id, tags, hourBoundary, 2.0)
+    db.update(id, tags, hourBoundary, 3.0)
+
+    // Add more data points
+    clock.setWallTime(hourBoundary + step)
+    db.update(id, tags, hourBoundary + step, 1.0)
+
+    db.rebuild()
+
+    // Query including the hour boundary
+    val ctxt = EvalContext(hourBoundary, hourBoundary + step, step)
+    val expr = parseExpr("name,test,:eq,:sum")
+    val results = db.execute(ctxt, expr)
+    results.foreach { r =>
+      val data = r.data.bounded(ctxt.start, ctxt.end)
+      val firstValue = data.data.head
+      assertEqualsDouble(firstValue, 3.0, 1.0e-12)
+    }
+  }
 }

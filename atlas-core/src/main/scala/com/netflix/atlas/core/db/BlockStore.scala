@@ -79,12 +79,19 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     (pos - 1 + numBlocks) % numBlocks
   }
 
-  private def alignStart(start: Long): Long = {
+  private[db] def alignStart(start: Long): Long = {
     // First timestamp in the block is the end of the first step interval
     if (blockSize == 1)
       start
-    else
-      start - start % blockStep + step
+    else {
+      val aligned = start - start % blockStep + step
+      // If timestamp is exactly on a block boundary, it belongs to the block ending at that
+      // boundary, not the next block
+      if (aligned > start)
+        aligned - blockStep
+      else
+        aligned
+    }
   }
 
   private def isAligned(start: Long): Boolean = {
