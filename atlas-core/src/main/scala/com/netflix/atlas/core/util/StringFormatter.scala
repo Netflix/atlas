@@ -21,9 +21,9 @@ import java.text.DecimalFormat
   * Secure string formatter with bounded width and precision to make it safe for usage with
   * arbitrary user inputs. Supports a subset of printf-style formatting with strict validation.
   *
-  * Format spec: `%[index$][flags][width][.precision][type]`
+  * Format spec: `%[index$$][flags][width][.precision][type]`
   *
-  * - `index$`: Optional 1-based positional index (e.g., %1$s, %2$d)
+  * - `index$$`: Optional 1-based positional index (e.g., %1$$s, %2$$d)
   * - `flags`: Optional flags:
   *   - `-`: Left align (right align is default)
   *   - `+`: Always show sign for numeric values
@@ -57,7 +57,7 @@ object StringFormatter {
     *     Arguments to format into the pattern.
     * @return
     *     Formatted string.
-    * @throws IllegalArgumentException
+    * @throws java.lang.IllegalArgumentException
     *     If the pattern is invalid or arguments are incompatible.
     */
   def format(pattern: String, args: Any*): String = {
