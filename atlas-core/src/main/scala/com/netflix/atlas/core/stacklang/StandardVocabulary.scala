@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.core.stacklang
 
+import com.netflix.atlas.core.util.StringFormatter
+
 object StandardVocabulary extends Vocabulary {
 
   val name: String = "std"
@@ -224,7 +226,7 @@ object StandardVocabulary extends Vocabulary {
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (vs: List[?]) :: (s: String) :: stack => s.format(vs*) :: stack
+      case (vs: List[?]) :: (s: String) :: stack => StringFormatter.format(s, vs*) :: stack
     }
 
     override def summary: String =
