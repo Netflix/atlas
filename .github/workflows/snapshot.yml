@@ -10,6 +10,7 @@ jobs:
   build:
     if: ${{ github.repository == 'Netflix/atlas' }}
     runs-on: ubuntu-latest
+    environment: Publish
     steps:
       - uses: actions/checkout@v6
       - name: Set up JDK
