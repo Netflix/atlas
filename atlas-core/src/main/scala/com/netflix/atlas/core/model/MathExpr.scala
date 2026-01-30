@@ -1148,8 +1148,8 @@ object MathExpr {
 
     def groupBy(keys: List[String]): NamedRewrite = {
       def applyGroupBy: PartialFunction[Expr, Expr] = {
-        case af: AggregateFunction => DataExpr.GroupBy(af, keys)
-        case af: AggrMathExpr      => MathExpr.GroupBy(af, keys)
+        case af: AggregateFunction                 => DataExpr.GroupBy(af, keys)
+        case af: AggrMathExpr if af.expr.isGrouped => MathExpr.GroupBy(af, keys)
       }
       val newDisplayExpr = if (isDisplayGrouped) displayExpr else displayExpr.rewrite(applyGroupBy)
 
