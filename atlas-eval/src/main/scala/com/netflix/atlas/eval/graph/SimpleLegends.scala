@@ -127,9 +127,14 @@ object SimpleLegends extends StrictLogging {
     // a simple aggregate like sum based on the display expression.
     expr
       .rewrite {
-        case MathExpr.NamedRewrite(n, q: Query, _, evalExpr, _, _) if n.endsWith("-avg") =>
+        case MathExpr.NamedRewrite(_, q: Query, _, evalExpr, _, _) =>
+          // For NamedRewrites with Query displayExpr (like :avg, :dist-avg, :dist-stddev),
+          // convert to a simple aggregate to avoid confusing legends
           val aggr = DataExpr.Sum(q)
           if (evalExpr.isGrouped) DataExpr.GroupBy(aggr, evalExpr.finalGrouping) else aggr
+        case nr: MathExpr.NamedRewrite =>
+          // For other NamedRewrites, just use the display expression directly
+          nr.displayExpr
       }
       .asInstanceOf[StyleExpr]
   }
