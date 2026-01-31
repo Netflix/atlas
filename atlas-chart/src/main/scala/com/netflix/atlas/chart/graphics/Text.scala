@@ -59,6 +59,10 @@ case class Text(
   override def minHeight: Int = dims.height
 
   override def computeHeight(g: Graphics2D, width: Int): Int = {
+    if (str.isEmpty) {
+      return minHeight
+    }
+
     val iterator = attrStr.getIterator
     val measurer = new LineBreakMeasurer(iterator, g.getFontRenderContext)
 
@@ -72,6 +76,10 @@ case class Text(
   }
 
   override def draw(g: Graphics2D, x1: Int, y1: Int, x2: Int, y2: Int): Unit = {
+    if (str.isEmpty) {
+      return
+    }
+
     style.configure(g)
 
     val iterator = attrStr.getIterator
