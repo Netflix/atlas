@@ -64,7 +64,6 @@ object SimpleLegends extends StrictLogging {
       // be reached.
       case e: Exception =>
         logger.warn("failed to generate simple legend, using default", e)
-        e.printStackTrace()
         exprs
     }
   }
