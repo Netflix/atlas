@@ -428,15 +428,15 @@ class TicksSuite extends FunSuite {
   test("duration [0, 3659]") {
     val ticks = Ticks.duration(0.0, 3659, 5)
     sanityCheck(ticks)
-    assertEquals(ticks.size, 21)
-    assertEquals(ticks.count(_.major), 6)
+    assertEquals(ticks.size, 17)
+    assertEquals(ticks.count(_.major), 5)
     assertEquals(ticks.head.offset, 0.0)
     assertEquals(ticks.head.label, "0m")
     assertEquals(ticks.last.label, "60m")
   }
 
   test("duration [0, 3600]") {
-    val ticks = Ticks.duration(0.0, 3659, 5)
+    val ticks = Ticks.duration(0.0, 3600, 5)
     sanityCheck(ticks)
     assertEquals(ticks.size, 21)
     assertEquals(ticks.count(_.major), 6)
@@ -448,31 +448,31 @@ class TicksSuite extends FunSuite {
   test("duration [0, 86400]") {
     val ticks = Ticks.duration(0.0, 86400, 5)
     sanityCheck(ticks)
-    assertEquals(ticks.size, 25)
-    assertEquals(ticks.count(_.major), 7)
+    assertEquals(ticks.size, 17)
+    assertEquals(ticks.count(_.major), 5)
     assertEquals(ticks.head.offset, 0.0)
     assertEquals(ticks.head.label, "0h")
     assertEquals(ticks.last.label, "24h")
   }
 
   test("duration [86400, 86500]") {
-    val ticks = Ticks.duration(0.0, 86400, 5)
+    val ticks = Ticks.duration(86400, 86500, 5)
     sanityCheck(ticks)
-    assertEquals(ticks.size, 25)
-    assertEquals(ticks.count(_.major), 7)
-    assertEquals(ticks.head.offset, 0.0)
-    assertEquals(ticks.head.label, "0h")
-    assertEquals(ticks.last.label, "24h")
+    assertEquals(ticks.size, 21)
+    assertEquals(ticks.count(_.major), 6)
+    assertEquals(ticks.head.offset, 86400.0)
+    assertEquals(ticks.head.label, "0.0m")
+    assertEquals(ticks.last.label, "1.7m")
   }
 
   test("duration [86400, 87500]") {
-    val ticks = Ticks.duration(0.0, 86400, 5)
+    val ticks = Ticks.duration(86400, 87500, 5)
     sanityCheck(ticks)
-    assertEquals(ticks.size, 25)
-    assertEquals(ticks.count(_.major), 7)
-    assertEquals(ticks.head.offset, 0.0)
-    assertEquals(ticks.head.label, "0h")
-    assertEquals(ticks.last.label, "24h")
+    assertEquals(ticks.size, 19)
+    assertEquals(ticks.count(_.major), 5)
+    assertEquals(ticks.head.offset, 86400.0)
+    assertEquals(ticks.head.label, "0m")
+    assertEquals(ticks.last.label, "18m")
   }
 
   test("duration [0, 2592000]") {
@@ -701,6 +701,16 @@ class TicksSuite extends FunSuite {
     assertEquals(ticks.head.offset, 0.0)
     assertEquals(ticks.head.label, "-15.0s")
     assertEquals(ticks.last.label, "-1.0s")
+  }
+
+  test("duration [2.45, 8820.0]") {
+    val ticks = Ticks.duration(2.45, 8820.0, 5)
+    sanityCheck(ticks)
+    assertEquals(ticks.size, 4)
+    assertEquals(ticks.count(_.major), 1)
+    assertEquals(ticks.head.offset, 0.0)
+    assertEquals(ticks.head.label, "1h")
+    assertEquals(ticks.last.label, "2h")
   }
 
   test("log-linear [0, 1e12], include all") {
