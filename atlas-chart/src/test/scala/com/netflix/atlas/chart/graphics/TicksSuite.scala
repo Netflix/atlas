@@ -643,16 +643,14 @@ class TicksSuite extends FunSuite {
     assertEquals(ticks.last.label, "950y")
   }
 
-  // TODO goofy edge case due to ieee 754 causes 3 decimals. Fix it some day if
-  // we want.
   test("duration [0.0000001, 0.000001]") {
     val ticks = Ticks.duration(0.0000001, 0.000001, 5)
     sanityCheck(ticks)
     assertEquals(ticks.size, 19)
     assertEquals(ticks.count(_.major), 5)
     assertEquals(ticks.head.offset, 0.0)
-    assertEquals(ticks.head.label, "100.000ns")
-    assertEquals(ticks.last.label, "1000.000ns")
+    assertEquals(ticks.head.label, "100.0ns")
+    assertEquals(ticks.last.label, "1000.0ns")
   }
 
   test("duration [1.0e-10, 1.0e-9]") {
