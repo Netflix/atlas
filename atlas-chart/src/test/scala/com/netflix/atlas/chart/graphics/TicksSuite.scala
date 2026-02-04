@@ -20,6 +20,9 @@ import com.netflix.atlas.chart.model.Scale
 import java.time.ZoneOffset
 import munit.FunSuite
 
+import java.time.Instant
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import scala.util.Random
 
 class TicksSuite extends FunSuite {
@@ -741,6 +744,74 @@ class TicksSuite extends FunSuite {
     val e = 1498751868000L
     val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5)
     assertEquals(ticks.size, 6)
+    var t = ZonedDateTime.ofInstant(Instant.ofEpochMilli(s), ZoneOffset.UTC)
+    ticks.foreach { tick =>
+      assert(tick.major)
+      assertEquals(tick.timestamp, t.toInstant.toEpochMilli)
+      t = t.plus(9, ChronoUnit.YEARS)
+    }
+  }
+
+  test("time: 1m") {
+    val s = 1498751868000L
+    val e = s + 60_000L
+    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5)
+    assertEquals(ticks.size, 12)
+    assertEquals(ticks.count(_.major), 4)
+
+    // Verify major ticks are on 10-second boundaries
+    val majorTicks = ticks.filter(_.major)
+    var t = s + 12_000L
+    majorTicks.foreach { tick =>
+      assertEquals(tick.timestamp, t)
+      t += 15_000L
+    }
+  }
+
+  test("time: 10s") {
+    val s = 1498751868000L
+    val e = s + 10_000L
+    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5)
+    assertEquals(ticks.size, 11)
+    assertEquals(ticks.count(_.major), 2)
+
+    // Verify major ticks are on 5-second boundaries (:50 and :55)
+    val majorTicks = ticks.filter(_.major)
+    var t = s + 2_000L // First major at :50 (+2s from :48)
+    majorTicks.foreach { tick =>
+      assertEquals(tick.timestamp, t)
+      t += 5_000L // Next major at :55 (+5s)
+    }
+  }
+
+  test("time: 10s aligned") {
+    val s = 1498751860000L
+    val e = s + 10_000L
+    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 5)
+    assertEquals(ticks.size, 11)
+    assertEquals(ticks.count(_.major), 3)
+
+    val majorTicks = ticks.filter(_.major)
+    var t = s
+    majorTicks.foreach { tick =>
+      assertEquals(tick.timestamp, t)
+      t += 5_000L
+    }
+  }
+
+  test("time: 8s") {
+    val s = 1325375940000L
+    val e = s + 8_000L
+    val ticks = Ticks.time(s, e, ZoneOffset.UTC, 9)
+    assertEquals(ticks.size, 9)
+    assertEquals(ticks.count(_.major), 2)
+
+    val majorTicks = ticks.filter(_.major)
+    var t = s
+    majorTicks.foreach { tick =>
+      assertEquals(tick.timestamp, t)
+      t += 5_000L
+    }
   }
 
   test("issue-948: [6.667e-3, 0.01]") {

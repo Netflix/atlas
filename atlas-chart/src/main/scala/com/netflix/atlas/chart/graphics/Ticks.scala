@@ -53,6 +53,11 @@ object Ticks {
 
   // Major and minor tick sizes for time axis.
   private val timeTickSizes = List(
+    seconds(5)  -> seconds(1),
+    seconds(10) -> seconds(2),
+    seconds(15) -> seconds(5),
+    seconds(20) -> seconds(5),
+    seconds(30) -> seconds(10),
     minutes(1)  -> seconds(10),
     minutes(2)  -> seconds(30),
     minutes(3)  -> minutes(1),
