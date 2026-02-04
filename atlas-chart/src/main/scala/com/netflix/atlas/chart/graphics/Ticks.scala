@@ -136,16 +136,14 @@ object Ticks {
       List(1, 2, 3, 4, 6, 86400 * 365)
     )
 
-    var lastFactor = 0.0
     for (i <- 1 until UnitPrefix.durationBigPrefixes.size) {
       val nextPrefix = UnitPrefix.durationBigPrefixes.reverse(i)
       val n = 4
       val multiples = majorMultiples(i - 1)
       val subList = multiples.reverse.map { m =>
         val q = nextPrefix.factor / m
-        (lastFactor + q, q / n, n)
+        (q, q / n, n)
       }
-      lastFactor = nextPrefix.factor
       ticks = ticks ::: subList
     }
 
