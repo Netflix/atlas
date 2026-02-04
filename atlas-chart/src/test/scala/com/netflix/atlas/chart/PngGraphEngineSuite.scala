@@ -918,6 +918,72 @@ abstract class PngGraphEngineSuite extends FunSuite {
     }
     check("heatmap_dist_log_linear.png", graphDef)
   }
+
+  def oneSecondLine: PlotDef = {
+    val v = 42
+    val t = TimeSeries(Map("name" -> v.toString), new FunctionTimeSeq(DsType.Gauge, 1_000L, _ => v))
+    PlotDef(label(LineDef(t)))
+  }
+
+  test("time axis, 1m range") {
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 1, 0, 1, 0, 0, ZoneOffset.UTC).toInstant,
+      plots = List(oneSecondLine),
+      step = 1_000L
+    )
+
+    val name = prefix + "_time_axis_1m_range.png"
+    check(name, graphDef)
+  }
+
+  test("time axis, 45s range") {
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 45, 0, ZoneOffset.UTC).toInstant,
+      plots = List(oneSecondLine),
+      step = 1_000L
+    )
+
+    val name = prefix + "_time_axis_45s_range.png"
+    check(name, graphDef)
+  }
+
+  test("time axis, 34s range") {
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 34, 0, ZoneOffset.UTC).toInstant,
+      plots = List(oneSecondLine),
+      step = 1_000L
+    )
+
+    val name = prefix + "_time_axis_34s_range.png"
+    check(name, graphDef)
+  }
+
+  test("time axis, 10s range") {
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 10, 0, ZoneOffset.UTC).toInstant,
+      plots = List(oneSecondLine),
+      step = 1_000L
+    )
+
+    val name = prefix + "_time_axis_10s_range.png"
+    check(name, graphDef)
+  }
+
+  test("time axis, 8s range") {
+    val graphDef = GraphDef(
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 8, 0, ZoneOffset.UTC).toInstant,
+      plots = List(oneSecondLine),
+      step = 1_000L
+    )
+
+    val name = prefix + "_time_axis_8s_range.png"
+    check(name, graphDef)
+  }
 }
 
 case class GraphData(
