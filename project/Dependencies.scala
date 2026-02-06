@@ -8,7 +8,7 @@ object Dependencies {
     val pekkoHttpV  = "1.3.0"
     val iep         = "5.1.11"
     val jackson     = "2.21.0"
-    val log4j       = "2.25.2"
+    val log4j       = "2.25.3"
     val otel        = "1.59.0"
     val scala       = "2.13.18"
     val slf4j       = "2.0.17"
