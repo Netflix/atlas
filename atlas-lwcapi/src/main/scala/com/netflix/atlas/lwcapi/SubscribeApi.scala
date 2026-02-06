@@ -179,7 +179,7 @@ class SubscribeApi(
 
     Source
       .fromPublisher(pub)
-      .flatMapConcat(Source.apply)
+      .flatMapConcat(vs => Source(vs))
       .merge(heartbeatSrc)
       .viaMat(StreamOps.monitorFlow(registry, "StreamApi"))(Keep.left)
   }

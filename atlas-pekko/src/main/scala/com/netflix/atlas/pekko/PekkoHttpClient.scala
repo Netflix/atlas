@@ -223,6 +223,6 @@ object PekkoHttpClient {
   def unzipIfNeeded(res: HttpResponse): Source[ByteString, Any] = {
     val isCompressed = res.headers.contains(`Content-Encoding`(HttpEncodings.gzip))
     val dataBytes = res.entity.withoutSizeLimit().dataBytes
-    if (isCompressed) dataBytes.via(Compression.gunzip()) else dataBytes
+    if (isCompressed) dataBytes.via(Compression.gzipDecompress()) else dataBytes
   }
 }

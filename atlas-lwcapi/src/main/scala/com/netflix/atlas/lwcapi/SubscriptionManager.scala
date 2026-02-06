@@ -342,7 +342,7 @@ object SubscriptionManager {
     }
   }
 
-  private type CacheValue = java.util.List[QueryIndex[Subscription]]
+  private type CacheValue = QueryIndex.CacheValue[Subscription]
 
   /** Supply a cache instance that does nothing. */
   private object DisabledCacheSupplier extends QueryIndex.CacheSupplier[Subscription] {
