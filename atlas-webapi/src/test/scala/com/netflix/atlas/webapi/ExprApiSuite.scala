@@ -495,6 +495,90 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(normalize(expr), List(expr))
   }
 
+  private def rewrite(expr: String): List[String] = {
+    val interpreter = Interpreter(StyleVocabulary.allWords)
+    ExprApi.rewrite(expr, interpreter)
+  }
+
+  test("rewrite: no offset") {
+    val expr = "name,cpu,:eq,:avg"
+    val rewritten = rewrite(expr).mkString(",")
+    assertEquals(rewritten, "name,cpu,:eq,:avg")
+  }
+
+  test("rewrite: single zero offset removed") {
+    val expr = "name,cpu,:eq,:avg,(,0s,),:offset"
+    val rewritten = rewrite(expr).mkString(",")
+    assertEquals(rewritten, "name,cpu,:eq,:avg")
+  }
+
+  test("rewrite: single non-zero offset") {
+    val expr = "name,cpu,:eq,:avg,(,1h,),:offset"
+    val rewritten = rewrite(expr).mkString(",")
+    assertEquals(rewritten, "name,cpu,:eq,:avg,1h,:offset")
+  }
+
+  test("rewrite: single non-zero offset with minutes") {
+    val expr = "name,cpu,:eq,:avg,(,30m,),:offset"
+    val rewritten = rewrite(expr).mkString(",")
+    assertEquals(rewritten, "name,cpu,:eq,:avg,30m,:offset")
+  }
+
+  test("rewrite: multiple offsets expanded") {
+    val expr = "name,cpu,:eq,:avg,(,0s,1h,),:offset"
+    val rewritten = rewrite(expr)
+    assertEquals(rewritten.size, 1)
+    assert(rewritten.head.contains("Query0"))
+    assert(rewritten.head.contains(":set"))
+    assert(rewritten.head.contains(":get"))
+  }
+
+  test("rewrite: multiple offsets with zero and non-zero") {
+    val expr = "name,cpu,:eq,:avg,(,0s,1h,2h,),:offset"
+    val rewritten = rewrite(expr)
+    assertEquals(rewritten.size, 1)
+    val result = rewritten.head
+    // Should contain Query0 variable
+    assert(result.contains("Query0"))
+    // Should have :set to define the base query
+    assert(result.contains(":set"))
+    // Should have multiple :get references
+    assert(result.split(":get").length >= 3)
+    // Should handle 0s offset without explicit :offset
+    assert(result.contains("Query0,:get,"))
+    // Should have explicit :offset for non-zero values
+    assert(result.contains(",1h,:offset"))
+    assert(result.contains(",2h,:offset"))
+  }
+
+  test("rewrite: multiple expressions with offsets") {
+    val expr = "name,cpu,:eq,:avg,(,0s,1h,),:offset,name,disk,:eq,:sum"
+    val rewritten = rewrite(expr)
+    assertEquals(rewritten.size, 2)
+    // Second expression (index 0 in result) has no offset
+    assertEquals(rewritten.head, "name,disk,:eq,:sum")
+    // First expression (index 1 in result) has offset rewriting
+    assert(rewritten(1).contains("Query1"))
+  }
+
+  test("rewrite: offset with style settings preserved") {
+    val expr = "name,cpu,:eq,:avg,(,0s,1h,),:offset,foo,:legend"
+    val rewritten = rewrite(expr)
+    assertEquals(rewritten.size, 1)
+    assert(rewritten.head.contains("foo"))
+    assert(rewritten.head.contains(":legend"))
+  }
+
+  test("rewrite: complex offset durations") {
+    val expr = "name,cpu,:eq,:avg,(,0s,1h,1d,1w,),:offset"
+    val rewritten = rewrite(expr)
+    assertEquals(rewritten.size, 1)
+    val result = rewritten.head
+    assert(result.contains("1h,:offset"))
+    assert(result.contains("1d,:offset"))
+    assert(result.contains("1w,:offset"))
+  }
+
   // Comprehensive ordering tests
   test("ordering: prefix keys ordered by position") {
     // nf.app should come before nf.cluster (positions 1 and 3 in prefix-keys)
