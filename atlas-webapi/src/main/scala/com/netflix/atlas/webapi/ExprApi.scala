@@ -36,6 +36,7 @@ import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.WebApi
+import com.netflix.atlas.webapi.ExprApi.rewrite
 
 import scala.util.Try
 
@@ -72,6 +73,11 @@ class ExprApi extends WebApi {
         } ~
         endpointPath("queries") {
           complete(processQueriesRequest(q, vocab))
+        }
+      } ~
+      endpointPath("rewrite") {
+        parameters("q") { q =>
+          complete(processRewriteRequest(q))
         }
       } ~
       endpointPath("strip") {
@@ -254,6 +260,16 @@ class ExprApi extends WebApi {
       case e: StyleExpr => e.expr
       case e            => e
     }
+  }
+
+  /**
+    * Rewrite a graph expression to phase out deprecate usage. Currently, it will
+    * only rewrite the legacy offset usage.
+    */
+  private def processRewriteRequest(expr: String): HttpResponse = {
+    val interpreter = Interpreter(vocabulary.allWords)
+    val rewrittenExprs = rewrite(expr, interpreter)
+    jsonResponse(rewrittenExprs)
   }
 
   /** Encode `obj` as json and create the HttpResponse. */
@@ -484,5 +500,42 @@ object ExprApi {
         }
       }
     }
+  }
+
+  def rewrite(expr: String, interpreter: Interpreter): List[String] = {
+    val result = interpreter.execute(expr, features = Features.UNSTABLE)
+
+    val exprs = result.stack.collect {
+      case ModelExtractors.PresentationType(t) => t
+    }
+
+    exprs.zipWithIndex.map(t => rewriteOffset(t._1, t._2))
+  }
+
+  private def rewriteOffset(expr: StyleExpr, i: Int): String = {
+    expr.styleOffsets match {
+      case Nil =>
+        expr.toString
+      case d :: Nil if d.isZero =>
+        removeOffsets(expr).toString
+      case d :: Nil =>
+        s"${removeOffsets(expr)},${Strings.toString(d)},:offset"
+      case ds =>
+        val varName = s"Query$i"
+        val baseExpr = s"$varName,${removeOffsets(expr)},:set"
+        val offsets = ds
+          .map { d =>
+            if (d.isZero)
+              s"$varName,:get"
+            else
+              s"$varName,:get,${Strings.toString(d)},:offset"
+          }
+          .mkString(",")
+        s"$baseExpr,$offsets"
+    }
+  }
+
+  private def removeOffsets(expr: StyleExpr): StyleExpr = {
+    expr.copy(settings = expr.settings - "offset")
   }
 }

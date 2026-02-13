@@ -162,7 +162,7 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     if (expr.dataExprs.isEmpty) 0L else expr.dataExprs.map(_.offset.toMillis).min
   }
 
-  private def offsets: List[Duration] = {
+  def styleOffsets: List[Duration] = {
     settings.get("offset").fold(List.empty[Duration])(StyleExpr.parseDurationList)
   }
 
@@ -176,7 +176,7 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     * If no high level offset is used then a list with this expression will be returned.
     */
   def perOffset: List[StyleExpr] = {
-    offsets match {
+    styleOffsets match {
       case Nil => List(this)
       case vs  => vs.map(d => copy(expr = expr.withOffset(d), settings = settings - "offset"))
     }
