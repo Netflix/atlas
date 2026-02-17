@@ -74,6 +74,11 @@ class ExprApi extends WebApi {
           complete(processQueriesRequest(q, vocab))
         }
       } ~
+      endpointPath("rewrite") {
+        parameters("q") { q =>
+          complete(processRewriteRequest(q))
+        }
+      } ~
       endpointPath("strip") {
         parameters("q", "k".repeated, "r".repeated) { (q, keys, vocabsToRemove) =>
           complete(processStripRequest(q, keys.toSet, vocabsToRemove.toSet))
@@ -256,6 +261,16 @@ class ExprApi extends WebApi {
     }
   }
 
+  /**
+    * Rewrite a graph expression to phase out deprecate usage. Currently, it will
+    * only rewrite the legacy offset usage.
+    */
+  private def processRewriteRequest(expr: String): HttpResponse = {
+    val interpreter = Interpreter(vocabulary.allWords)
+    val rewrittenExprs = ExprApi.rewrite(expr, interpreter)
+    jsonResponse(rewrittenExprs)
+  }
+
   /** Encode `obj` as json and create the HttpResponse. */
   private def jsonResponse(obj: AnyRef): HttpResponse = {
     val data = Json.encode(obj)
@@ -266,10 +281,41 @@ class ExprApi extends WebApi {
 
 object ExprApi {
 
+  /**
+    * Normalizes an Atlas expression program into a canonical string representation.
+    *
+    * This method parses the program string using the provided interpreter, extracts
+    * style expressions from the stack, and normalizes them into consistent, comparable
+    * string forms. Normalization includes:
+    *
+    *  - Standardizing legend variable syntax to always use parentheses: `$(var)`
+    *  - Sorting query clauses by importance (prefix keys, regular keys, suffix keys)
+    *  - Removing redundant clauses and simplifying queries
+    *  - Converting stat filters to their canonical forms
+    *  - Removing explicit `:const` and `:line` suffixes
+    *
+    * @param program
+    *     The Atlas expression program string to normalize (e.g., "name,cpu,:eq,:avg")
+    * @param interpreter
+    *     The interpreter configured with the appropriate vocabulary for parsing
+    * @return
+    *     A list of normalized expression strings in user-expected order (reversed from stack order)
+    */
   def normalize(program: String, interpreter: Interpreter): List[String] = {
     normalize(eval(interpreter, program))
   }
 
+  /**
+    * Normalizes a list of style expressions into canonical string representations.
+    *
+    * This overload operates directly on parsed style expressions rather than a program string.
+    * It applies the same normalization transformations as the string-based version.
+    *
+    * @param exprs
+    *     The list of style expressions to normalize
+    * @return
+    *     A list of normalized expression strings in user-expected order (reversed from stack order)
+    */
   def normalize(exprs: List[StyleExpr]): List[String] = {
     // Normalize the legend vars
     val styleExprs = exprs.map(normalizeLegendVars)
@@ -484,5 +530,62 @@ object ExprApi {
         }
       }
     }
+  }
+
+  /**
+    * Rewrites an Atlas expression to phase out deprecated usage patterns.
+    *
+    * Currently focuses on rewriting legacy offset usage to the canonical form:
+    *
+    *  - Single zero offset: Removes the offset setting entirely
+    *  - Single non-zero offset: Converts to `:offset` operation (e.g., `expr,1h,:offset`)
+    *  - Multiple offsets: Extracts the base expression into a variable and applies each offset
+    *    separately (e.g., `Query0,expr,:set,Query0,:get,Query0,:get,1h,:offset`)
+    *
+    * This is useful for migrating expressions that use the deprecated style-based offset
+    * settings to the newer operator-based approach.
+    *
+    * @param expr
+    *     The Atlas expression string to rewrite
+    * @param interpreter
+    *     The interpreter configured with the graph vocabulary for parsing
+    * @return
+    *     A list of rewritten expression strings, one per style expression in the input
+    */
+  def rewrite(expr: String, interpreter: Interpreter): List[String] = {
+    val result = interpreter.execute(expr, features = Features.UNSTABLE)
+
+    val exprs = result.stack.collect {
+      case ModelExtractors.PresentationType(t) => t
+    }
+
+    exprs.zipWithIndex.map(t => rewriteOffset(t._1, t._2))
+  }
+
+  private def rewriteOffset(expr: StyleExpr, i: Int): String = {
+    expr.styleOffsets match {
+      case Nil =>
+        expr.toString
+      case d :: Nil if d.isZero =>
+        removeOffsets(expr).toString
+      case d :: Nil =>
+        s"${removeOffsets(expr)},${Strings.toString(d)},:offset"
+      case ds =>
+        val varName = s"Query$i"
+        val baseExpr = s"$varName,${removeOffsets(expr)},:set"
+        val offsets = ds
+          .map { d =>
+            if (d.isZero)
+              s"$varName,:get"
+            else
+              s"$varName,:get,${Strings.toString(d)},:offset"
+          }
+          .mkString(",")
+        s"$baseExpr,$offsets"
+    }
+  }
+
+  private def removeOffsets(expr: StyleExpr): StyleExpr = {
+    expr.copy(settings = expr.settings - "offset")
   }
 }
