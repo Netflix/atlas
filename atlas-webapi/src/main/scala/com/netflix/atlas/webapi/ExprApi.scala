@@ -36,7 +36,6 @@ import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json.Json
 import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.WebApi
-import com.netflix.atlas.webapi.ExprApi.rewrite
 
 import scala.util.Try
 
@@ -268,7 +267,7 @@ class ExprApi extends WebApi {
     */
   private def processRewriteRequest(expr: String): HttpResponse = {
     val interpreter = Interpreter(vocabulary.allWords)
-    val rewrittenExprs = rewrite(expr, interpreter)
+    val rewrittenExprs = ExprApi.rewrite(expr, interpreter)
     jsonResponse(rewrittenExprs)
   }
 
@@ -282,10 +281,41 @@ class ExprApi extends WebApi {
 
 object ExprApi {
 
+  /**
+    * Normalizes an Atlas expression program into a canonical string representation.
+    *
+    * This method parses the program string using the provided interpreter, extracts
+    * style expressions from the stack, and normalizes them into consistent, comparable
+    * string forms. Normalization includes:
+    *
+    *  - Standardizing legend variable syntax to always use parentheses: `$(var)`
+    *  - Sorting query clauses by importance (prefix keys, regular keys, suffix keys)
+    *  - Removing redundant clauses and simplifying queries
+    *  - Converting stat filters to their canonical forms
+    *  - Removing explicit `:const` and `:line` suffixes
+    *
+    * @param program
+    *     The Atlas expression program string to normalize (e.g., "name,cpu,:eq,:avg")
+    * @param interpreter
+    *     The interpreter configured with the appropriate vocabulary for parsing
+    * @return
+    *     A list of normalized expression strings in user-expected order (reversed from stack order)
+    */
   def normalize(program: String, interpreter: Interpreter): List[String] = {
     normalize(eval(interpreter, program))
   }
 
+  /**
+    * Normalizes a list of style expressions into canonical string representations.
+    *
+    * This overload operates directly on parsed style expressions rather than a program string.
+    * It applies the same normalization transformations as the string-based version.
+    *
+    * @param exprs
+    *     The list of style expressions to normalize
+    * @return
+    *     A list of normalized expression strings in user-expected order (reversed from stack order)
+    */
   def normalize(exprs: List[StyleExpr]): List[String] = {
     // Normalize the legend vars
     val styleExprs = exprs.map(normalizeLegendVars)
@@ -502,6 +532,26 @@ object ExprApi {
     }
   }
 
+  /**
+    * Rewrites an Atlas expression to phase out deprecated usage patterns.
+    *
+    * Currently focuses on rewriting legacy offset usage to the canonical form:
+    *
+    *  - Single zero offset: Removes the offset setting entirely
+    *  - Single non-zero offset: Converts to `:offset` operation (e.g., `expr,1h,:offset`)
+    *  - Multiple offsets: Extracts the base expression into a variable and applies each offset
+    *    separately (e.g., `Query0,expr,:set,Query0,:get,Query0,:get,1h,:offset`)
+    *
+    * This is useful for migrating expressions that use the deprecated style-based offset
+    * settings to the newer operator-based approach.
+    *
+    * @param expr
+    *     The Atlas expression string to rewrite
+    * @param interpreter
+    *     The interpreter configured with the graph vocabulary for parsing
+    * @return
+    *     A list of rewritten expression strings, one per style expression in the input
+    */
   def rewrite(expr: String, interpreter: Interpreter): List[String] = {
     val result = interpreter.execute(expr, features = Features.UNSTABLE)
 
