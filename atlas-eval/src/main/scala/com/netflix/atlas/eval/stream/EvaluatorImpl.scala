@@ -550,7 +550,7 @@ private[stream] abstract class EvaluatorImpl(
         case BinaryMessage.Strict(str) =>
           Source.single(str)
         case msg: BinaryMessage =>
-          msg.dataStream.fold(ByteString.empty)(_ ++ _)
+          msg.dataStream.via(StreamOps.collectBytes)
       }
       .mapMaterializedValue(_ => NotUsed)
   }
