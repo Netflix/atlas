@@ -319,7 +319,7 @@ class EvaluatorSuite extends FunSuite {
   }
 
   test("create processor, expression uses :offset") {
-    val expr = "name,foo,:eq,:sum,PT168H,:offset"
+    val expr = "name,foo,:eq,:sum,1w,:offset"
     val uri = s"synthetic://test/api/v1/graph?q=$expr"
     val msg = s"IllegalArgumentException: :offset not supported for streaming evaluation [[$expr]]"
     val ds1 = Evaluator.DataSources.of(ds("one", uri))
@@ -328,7 +328,7 @@ class EvaluatorSuite extends FunSuite {
 
   test("create processor, expression uses style variant of :offset") {
     val expr = "name,foo,:eq,:sum,(,0h,1w,),:offset"
-    val badExpr = "name,foo,:eq,:sum,PT168H,:offset"
+    val badExpr = "name,foo,:eq,:sum,1w,:offset"
     val uri = s"synthetic://test/api/v1/graph?q=$expr"
     val msg =
       s"IllegalArgumentException: :offset not supported for streaming evaluation [[$badExpr]]"

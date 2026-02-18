@@ -906,7 +906,7 @@ object MathExpr {
 
       // Offset
       if (!expr.offset.isZero)
-        builder.append(',').append(expr.offset).append(",:offset")
+        builder.append(',').append(Strings.toString(expr.offset)).append(",:offset")
     }
 
     override def dataExprs: List[DataExpr] = List(expr)
@@ -1080,7 +1080,7 @@ object MathExpr {
           // after the operation as part of the expression string. There are two
           // categories: offsets applied to the data function and group by.
           builder.append(s"$q,$op")
-          getOffset(evalExpr).foreach(d => builder.append(s",$d,:offset"))
+          getOffset(evalExpr).foreach(d => builder.append(s",${Strings.toString(d)},:offset"))
 
           val grouping = evalExpr.finalGrouping
           if (grouping.nonEmpty) {

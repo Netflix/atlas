@@ -63,7 +63,7 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
   override def append(builder: java.lang.StringBuilder): Unit = {
     builder.append(exprString)
     if (!offset.isZero)
-      builder.append(',').append(offset).append(",:offset")
+      builder.append(',').append(Strings.toString(offset)).append(",:offset")
   }
 
   /**
