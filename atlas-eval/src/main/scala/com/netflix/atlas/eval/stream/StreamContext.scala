@@ -158,7 +158,7 @@ private[stream] class StreamContext(
   }
 
   /**
-    * Perform static checks to verify that the provide data source can be evaluated correctly
+    * Perform static checks to verify that the provided data source can be evaluated correctly
     * in this context.
     */
   def validateDataSource(ds: DataSource): Try[DataSource] = {
@@ -194,7 +194,7 @@ private[stream] class StreamContext(
 
     // For hi-res streams, require more precise scoping that allows us to more efficiently
     // match the data and run it only where needed. This would ideally be applied everywhere,
-    // but for backwards compatiblity the 1m step is opted out for now.
+    // but for backwards compatibility the 1m step is opted out for now.
     if (ds.step.toMillis < 60_000) {
       styleExpr.expr.dataExprs.foreach(expr => restrictsNameAndApp(expr.query))
     }
@@ -269,7 +269,7 @@ private[stream] class StreamContext(
   }
 
   /**
-    * Returns a simple http client flow that will log the request using the provide name.
+    * Returns a simple http client flow that will log the request using the provided name.
     */
   def httpClient(name: String): SimpleClient = {
     PekkoHttpClient.create(name, materializer.system).simpleFlow()

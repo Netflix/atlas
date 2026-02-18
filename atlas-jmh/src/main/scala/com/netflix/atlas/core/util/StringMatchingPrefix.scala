@@ -26,7 +26,7 @@ import org.openjdk.jmh.annotations.Threads
 import org.openjdk.jmh.infra.Blackhole
 
 /**
-  * Sanity check prefix matching and the benefits of short ciruiting with a startsWith
+  * Sanity check prefix matching and the benefits of short circuiting with a startsWith
   * check before falling back to the regex matcher.
   *
   * ```

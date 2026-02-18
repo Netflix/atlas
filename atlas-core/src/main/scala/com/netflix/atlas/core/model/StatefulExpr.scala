@@ -191,7 +191,7 @@ object StatefulExpr {
 
   /**
     * DES expression. In order to get the same results, it must be replayed from the same
-    * starting point. Used sliding DES if deterministic results are important.
+    * starting point. Use sliding DES if deterministic results are important.
     */
   case class Des(expr: TimeSeriesExpr, trainingSize: Int, alpha: Double, beta: Double)
       extends OnlineExpr {

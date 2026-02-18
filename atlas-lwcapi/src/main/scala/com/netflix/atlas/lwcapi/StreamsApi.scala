@@ -25,7 +25,7 @@ import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.WebApi
 
 /**
-  * Provides a summary of the current streams. This is to aide in debugging and can be
+  * Provides a summary of the current streams. This is to aid in debugging and can be
   * disabled without impacting the service.
   */
 class StreamsApi(sm: StreamSubscriptionManager) extends WebApi {

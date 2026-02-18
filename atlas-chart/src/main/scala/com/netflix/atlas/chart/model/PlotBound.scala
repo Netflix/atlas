@@ -40,7 +40,7 @@ object PlotBound {
   }
 
   /**
-    * Automatically set the bounds so the visual settings for the lines. In particular, if a line
+    * Automatically set the bounds based on the visual settings for the lines. In particular, if a line
     * style is set to area or stack, then the bounds will be adjusted so it goes to the axis.
     */
   case object AutoStyle extends PlotBound {

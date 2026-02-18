@@ -21,7 +21,7 @@ import java.awt.Graphics2D
   * Draws vertical grid lines based on a time axis.
   *
   * @param xaxis
-  *     Axis to use for creating the scale and determining the the tick marks that correspond with
+  *     Axis to use for creating the scale and determining the tick marks that correspond with
   *     the major grid lines.
   * @param major
   *     Style to use for drawing the major tick lines.

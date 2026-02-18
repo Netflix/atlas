@@ -19,7 +19,7 @@ import com.netflix.spectator.impl.AsciiSet
 import com.typesafe.config.Config
 
 /**
-  * Verifies that the keys and values only use the set of ASCII characters specificied
+  * Verifies that the keys and values only use the set of ASCII characters specified
   * in the config. By default it will be alpha-numeric, underscore, dash, and period.
   * Sample config:
   *

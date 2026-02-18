@@ -281,7 +281,7 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-    * Subtract a constant value to all positions of this buffer.
+    * Subtract a constant value from all positions of this buffer.
     */
   def subtract(v: Double): Unit = {
     var pos = 0
@@ -307,7 +307,7 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-    * Multiply a constant value to all positions of this buffer.
+    * Multiply all positions of this buffer by a constant value.
     */
   def multiply(v: Double): Unit = {
     var pos = 0
@@ -333,7 +333,7 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-    * Divide a constant value to all positions of this buffer.
+    * Divide all positions of this buffer by a constant value.
     */
   def divide(v: Double): Unit = {
     var pos = 0
@@ -344,7 +344,7 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-    * Updates each position we the max value between the two buffers. The
+    * Updates each position with the max value between the two buffers. The
     * buffers must have the same settings. The tags for the new buffer will be
     * the intersection.
     */
@@ -365,7 +365,7 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
   }
 
   /**
-    * Updates each position we the min value between the two buffers. The
+    * Updates each position with the min value between the two buffers. The
     * buffers must have the same settings. The tags for the new buffer will be
     * the intersection.
     */
@@ -398,7 +398,7 @@ final class TimeSeriesBuffer(val tags: Map[String, String], val data: ArrayTimeS
 
   /**
     * Updates each position by 1 if the corresponding position in the other
-    * buffer is a valid number, i.e., is not equal NaN. The buffers must have
+    * buffer is a valid number, i.e., is not equal to NaN. The buffers must have
     * the same settings. The tags for the new buffer will be the intersection.
     */
   def count(ts: TimeSeriesBuffer): Unit = {

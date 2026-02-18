@@ -31,7 +31,7 @@ trait JsonSupport {
 
   /**
     * Encode this object as JSON. By default it will just use `Json.encode`. This method
-    * can be overridden to customize the format or to provide a more performance implementation.
+    * can be overridden to customize the format or to provide a more performant implementation.
     * When using a custom format, the subclass should also override `hasCustomEncoding` to
     * return true. This will cause `Json.encode` to use the custom implementation rather than
     * the default serializer for the type.

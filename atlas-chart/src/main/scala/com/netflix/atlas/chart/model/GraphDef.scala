@@ -37,7 +37,7 @@ import com.netflix.atlas.core.model.TimeSeries
   *     End time (exclusive) for the last datapoint.
   * @param timezones
   *     Time zones to show as time axes on the chart. The first time zone in the list will be the
-  *     primary used when dislaying time stamps or for formats that don't support multiple time
+  *     primary used when displaying time stamps or for formats that don't support multiple time
   *     zone rendering.
   * @param step
   *     Step size for each datapoint.
@@ -138,7 +138,7 @@ case class GraphDef(
     if (layout.isFixedHeight) LegendType.OFF else legendType
   }
 
-  /** Convert the defintion from a single axis to using one per line in the chart. */
+  /** Convert the definition from a single axis to using one per line in the chart. */
   def axisPerLine: GraphDef = {
     if (plots.size > 1) {
       val msg = "axisPerLine cannot be used with explicit multi axis"
@@ -198,7 +198,7 @@ case class GraphDef(
     }
   }
 
-  /** Return a new graph defintion with the lines bounded. */
+  /** Return a new graph definition with the lines bounded. */
   def bounded: GraphDef = {
     val s = startTime.toEpochMilli
     val e = endTime.toEpochMilli

@@ -25,7 +25,7 @@ package com.netflix.atlas.core.norm
   * @param aggr
   *     Aggregation function to use to combine values for the same interval.
   * @param next
-  *     Normalized values will be passed to the this function.
+  *     Normalized values will be passed to this function.
   */
 class RollingValueFunction(
   step: Long,

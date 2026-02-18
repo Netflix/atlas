@@ -32,7 +32,7 @@ sealed trait ChunkData extends JsonSupport {
   * this chunk.
   *
   * @param values
-  *     Time series values assocated with a [[TimeSeriesMessage]].
+  *     Time series values associated with a [[TimeSeriesMessage]].
   */
 final case class ArrayData(values: Array[Double]) extends ChunkData {
 

@@ -24,7 +24,7 @@ import com.netflix.atlas.core.util.Math
   * @param step
   *     Normalized distance between samples produced by this class.
   * @param next
-  *     Normalized values will be passed to the this function.
+  *     Normalized values will be passed to this function.
   */
 class SumValueFunction(step: Long, next: ValueFunction) extends ValueFunction {
 

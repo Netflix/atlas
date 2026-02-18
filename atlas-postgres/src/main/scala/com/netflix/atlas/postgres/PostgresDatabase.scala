@@ -108,7 +108,7 @@ class PostgresDatabase(postgres: PostgresService) extends Database {
           while (rs.next()) {
             val tags = exactTags ++ extractTags(expr, rs)
             // The buffer step size always matches the storage for now. This can be optimized once
-            // the aggegates pushed down to postgres support consolidation while performing the
+            // the aggregates pushed down to postgres support consolidation while performing the
             // aggregation.
             val buffer = data.getOrElseUpdate(
               tags,

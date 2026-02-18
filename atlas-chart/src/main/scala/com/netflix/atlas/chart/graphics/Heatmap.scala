@@ -129,7 +129,7 @@ case class Heatmap(
 
   private def lookupColor(i: Int): Color = {
     // The default palette lookup will go back to the first color if the index exceeds the
-    // last index of hte palette's color array. For heatmaps that is not desirable and should
+    // last index of the palette's color array. For heatmaps that is not desirable and should
     // just use the last color.
     val idx = if (i >= palette.colorArray.size) i - 1 else i
     palette.colorArray(idx)
