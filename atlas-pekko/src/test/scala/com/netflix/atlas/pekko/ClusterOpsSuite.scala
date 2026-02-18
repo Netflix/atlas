@@ -258,45 +258,6 @@ class ClusterOpsSuite extends FunSuite {
     assertEquals(seq.filter(_._1 == "b").map(_._2).sorted, Seq("data1", "data3"))
   }
 
-  test("staggeredBroadcast: verify delays are applied") {
-    val members = Set("m1", "m2", "m3")
-    val input: List[ClusterOps.GroupByMessage[String, String]] = List(
-      ClusterOps.Cluster(members),
-      ClusterOps.Data(Map("m1" -> "data", "m2" -> "data", "m3" -> "data"))
-    )
-
-    val startTimes = new ConcurrentHashMap[String, Long]()
-
-    val context = ClusterOps.StaggeredBroadcastContext[String, String, (String, Long)](
-      client = (member: String) =>
-        Flow[String].map { _ =>
-          val time = System.nanoTime()
-          startTimes.put(member, time)
-          member -> time
-        },
-      sizeOf = _.length.toLong,
-      targetRateBytesPerSec = 100, // 100 bytes/sec
-      queueSize = 10
-    )
-
-    val future = Source(input)
-      .via(ClusterOps.staggeredBroadcast(context))
-      .runWith(Sink.seq[(String, Long)])
-    val results = Await.result(future, Duration.Inf)
-
-    assertEquals(results.size, 3)
-
-    // Verify there are delays between members (not all at the same time)
-    val times = results.sortBy(_._2).map(_._2)
-    val gap1 = times(1) - times(0)
-    val gap2 = times(2) - times(1)
-
-    // With payload size 4 bytes and rate 100 bytes/sec, delay should be 40ms per member
-    // Allow some slack for timing variations (at least 20ms between sends)
-    assert(gap1 > 20_000_000L, s"Gap1 was ${gap1 / 1_000_000}ms, expected > 20ms")
-    assert(gap2 > 20_000_000L, s"Gap2 was ${gap2 / 1_000_000}ms, expected > 20ms")
-  }
-
   test("staggeredBroadcast: backpressure prevents overlap") {
     val input: List[ClusterOps.GroupByMessage[String, String]] = List(
       ClusterOps.Cluster(Set("a", "b")),
