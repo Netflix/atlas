@@ -398,4 +398,90 @@ class StreamOpsSuite extends FunSuite {
     val vs = Await.result(future, Duration.Inf)
     assertEquals(vs, (0 until 10).map(_ => 1).toList)
   }
+
+  test("collectBytes: small chunks") {
+    import org.apache.pekko.util.ByteString
+    val chunks = List(
+      ByteString("Hello "),
+      ByteString("world"),
+      ByteString("!")
+    )
+    val future = Source(chunks)
+      .via(StreamOps.collectBytes(1000))
+      .runWith(Sink.head)
+    val result = Await.result(future, Duration.Inf)
+    assertEquals(result.utf8String, "Hello world!")
+  }
+
+  test("collectBytes: empty stream") {
+    import org.apache.pekko.util.ByteString
+    val future = Source
+      .empty[ByteString]
+      .via(StreamOps.collectBytes(1000))
+      .runWith(Sink.head)
+    val result = Await.result(future, Duration.Inf)
+    assertEquals(result, ByteString.empty)
+  }
+
+  test("collectBytes: single chunk") {
+    import org.apache.pekko.util.ByteString
+    val chunk = ByteString("test")
+    val future = Source
+      .single(chunk)
+      .via(StreamOps.collectBytes(1000))
+      .runWith(Sink.head)
+    val result = Await.result(future, Duration.Inf)
+    assertEquals(result, chunk)
+  }
+
+  test("collectBytes: exceeds size limit") {
+    import org.apache.pekko.util.ByteString
+    val chunks = (0 until 100).map(_ => ByteString("x" * 100))
+    val future = Source(chunks)
+      .via(StreamOps.collectBytes(500)) // 500 byte limit, will exceed
+      .runWith(Sink.head)
+
+    intercept[IllegalStateException] {
+      Await.result(future, Duration.Inf)
+    }
+  }
+
+  test("collectBytes: exactly at size limit") {
+    import org.apache.pekko.util.ByteString
+    val chunks = List(
+      ByteString("x" * 50),
+      ByteString("y" * 50)
+    )
+    val future = Source(chunks)
+      .via(StreamOps.collectBytes(100)) // Exactly 100 bytes
+      .runWith(Sink.head)
+    val result = Await.result(future, Duration.Inf)
+    assertEquals(result.size, 100)
+  }
+
+  test("collectBytes: uses config default") {
+    import org.apache.pekko.util.ByteString
+    val chunks = List(
+      ByteString("Hello "),
+      ByteString("from "),
+      ByteString("config")
+    )
+    val future = Source(chunks)
+      .via(StreamOps.collectBytes) // Uses default from config
+      .runWith(Sink.head)
+    val result = Await.result(future, Duration.Inf)
+    assertEquals(result.utf8String, "Hello from config")
+  }
+
+  test("collectBytes: large data within limit") {
+    import org.apache.pekko.util.ByteString
+    val chunkSize = 1024 // 1 KB
+    val numChunks = 100
+    val chunks = (0 until numChunks).map(_ => ByteString("x" * chunkSize))
+    val future = Source(chunks)
+      .via(StreamOps.collectBytes(200 * 1024)) // 200 KB limit
+      .runWith(Sink.head)
+    val result = Await.result(future, Duration.Inf)
+    assertEquals(result.size, chunkSize * numChunks)
+  }
 }

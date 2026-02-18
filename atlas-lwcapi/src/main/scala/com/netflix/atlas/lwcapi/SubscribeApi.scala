@@ -26,7 +26,6 @@ import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.Keep
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
-import org.apache.pekko.util.ByteString
 import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
@@ -105,7 +104,7 @@ class SubscribeApi(
         case BinaryMessage.Strict(str) =>
           Source.single(str)
         case msg: BinaryMessage =>
-          msg.dataStream.fold(ByteString.empty)(_ ++ _)
+          msg.dataStream.via(StreamOps.collectBytes)
       }
       .via(new WebSocketSessionManager(streamMeta, register, subscribe))
       .flatMapMerge(Int.MaxValue, msg => msg)

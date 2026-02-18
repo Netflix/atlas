@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.pekko
 
+import com.netflix.iep.config.ConfigManager
+
 import java.util.concurrent.TimeUnit
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.ActorAttributes
@@ -35,6 +37,7 @@ import org.apache.pekko.stream.stage.GraphStageLogic
 import org.apache.pekko.stream.stage.InHandler
 import org.apache.pekko.stream.stage.OutHandler
 import org.apache.pekko.stream.stage.TimerGraphStageLogic
+import org.apache.pekko.util.ByteString
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
@@ -528,6 +531,87 @@ object StreamOps extends StrictLogging {
         override def onPull(): Unit = {
           if (!hasBeenPulled(in))
             pull(in)
+        }
+
+        setHandlers(in, out, this)
+      }
+    }
+  }
+
+  /** Default max size for ByteStrings with collectBytes. */
+  private val MaxByteStringSize = {
+    ConfigManager.dynamicConfig().getBytes("atlas.pekko.max-bytestring-size")
+  }
+
+  /**
+    * Collects a stream of ByteStrings into a single ByteString with a size limit to prevent
+    * memory issues from extremely large messages. This is a safer alternative to using
+    * `fold(ByteString.empty)(_ ++ _)` which has no size limits.
+    *
+    * If the total size exceeds the limit, the stream will fail with an IllegalStateException.
+    * The maximum size is read from the config setting `atlas.pekko.max-bytestring-size`.
+    *
+    * @return
+    *     Flow that accumulates ByteStrings and emits a single combined ByteString when
+    *     the upstream completes.
+    */
+  def collectBytes: Flow[ByteString, ByteString, NotUsed] = {
+    collectBytes(MaxByteStringSize)
+  }
+
+  /**
+    * Collects a stream of ByteStrings into a single ByteString with a specified size limit
+    * to prevent memory issues from extremely large messages.
+    *
+    * If the total size exceeds the limit, the stream will fail with an IllegalStateException.
+    *
+    * @param maxSize
+    *     Maximum total size in bytes. If the accumulated ByteStrings exceed this size,
+    *     the stream will fail.
+    * @return
+    *     Flow that accumulates ByteStrings and emits a single combined ByteString when
+    *     the upstream completes.
+    */
+  def collectBytes(maxSize: Long): Flow[ByteString, ByteString, NotUsed] = {
+    require(maxSize > 0, "maxSize must be > 0")
+    Flow[ByteString].via(new CollectBytesFlow(maxSize))
+  }
+
+  private final class CollectBytesFlow(maxSize: Long)
+      extends GraphStage[FlowShape[ByteString, ByteString]] {
+
+    private val in = Inlet[ByteString]("CollectBytesFlow.in")
+    private val out = Outlet[ByteString]("CollectBytesFlow.out")
+
+    override val shape: FlowShape[ByteString, ByteString] = FlowShape(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+
+      new GraphStageLogic(shape) with InHandler with OutHandler {
+        private var accumulated = ByteString.empty
+        private var totalSize = 0L
+
+        override def onPush(): Unit = {
+          val chunk = grab(in)
+          val newSize = totalSize + chunk.size
+
+          if (newSize > maxSize) {
+            val msg = f"ByteString size limit exceeded: $newSize%,d bytes > $maxSize%,d bytes"
+            failStage(new IllegalStateException(msg))
+          } else {
+            accumulated = accumulated ++ chunk
+            totalSize = newSize
+            pull(in)
+          }
+        }
+
+        override def onPull(): Unit = {
+          pull(in)
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          emit(out, accumulated)
+          completeStage()
         }
 
         setHandlers(in, out, this)
