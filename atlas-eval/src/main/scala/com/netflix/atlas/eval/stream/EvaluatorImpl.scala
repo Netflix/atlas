@@ -107,6 +107,9 @@ private[stream] abstract class EvaluatorImpl(
   // Should subscription messages be compressed?
   private val compressSubMsgs = config.getBoolean("atlas.eval.stream.compress-sub-messages")
 
+  // Target rate in bytes/sec for staggering subscription broadcasts to prevent network saturation
+  private val broadcastTargetRate = config.getLong("atlas.eval.stream.broadcast-target-rate")
+
   // Counter for message that cannot be parsed
   private val badMessages = registry.counter("atlas.eval.badMessages")
 
@@ -491,6 +494,7 @@ private[stream] abstract class EvaluatorImpl(
         val instances = sourcesAndGroups._2.groups.flatMap(_.instances).toSet
         val exprs = toExprSet(sourcesAndGroups._1, context.interpreter)
         val bytes = LwcMessages.encodeBatch(exprs.toSeq, compressSubMsgs)
+        // Use Data with same bytes for all members for staggered broadcast
         val dataMap = instances.map(i => i -> bytes).toMap
         Source(
           List(
@@ -501,11 +505,11 @@ private[stream] abstract class EvaluatorImpl(
       }
       // Repeat the last received element which will be the data map with the set
       // expressions to subscribe to. In the event of a connection failure the cluster
-      // group by step will automatically reconnect, but the data message needs to be
+      // staggered broadcast will automatically reconnect, but the data message needs to be
       // resent. This ensures the most recent set of subscriptions will go out at a
       // regular cadence.
       .via(StreamOps.repeatLastReceived(5.seconds))
-      .via(ClusterOps.groupBy(createGroupByContext))
+      .via(ClusterOps.staggeredBroadcast(createStaggeredBroadcastContext))
       .mapAsync(parsingNumThreads) { msg =>
         // This step is placed after merge of streams so there is a single
         // use of the pool and it is easier to track the concurrent usage.
@@ -515,10 +519,13 @@ private[stream] abstract class EvaluatorImpl(
       }
   }
 
-  private def createGroupByContext: ClusterOps.GroupByContext[Instance, ByteString, ByteString] = {
-    ClusterOps.GroupByContext(
-      instance => createWebSocketFlow(instance),
-      registry,
+  private def createStaggeredBroadcastContext
+    : ClusterOps.StaggeredBroadcastContext[Instance, ByteString, ByteString] = {
+    ClusterOps.StaggeredBroadcastContext(
+      client = instance => createWebSocketFlow(instance),
+      sizeOf = bytes => bytes.length.toLong,
+      targetRateBytesPerSec = broadcastTargetRate,
+      registry = registry,
       queueSize = 10
     )
   }
