@@ -415,7 +415,8 @@ class StreamOpsSuite extends FunSuite {
 
   test("collectBytes: empty stream") {
     import org.apache.pekko.util.ByteString
-    val future = Source.empty[ByteString]
+    val future = Source
+      .empty[ByteString]
       .via(StreamOps.collectBytes(1000))
       .runWith(Sink.head)
     val result = Await.result(future, Duration.Inf)
@@ -425,7 +426,8 @@ class StreamOpsSuite extends FunSuite {
   test("collectBytes: single chunk") {
     import org.apache.pekko.util.ByteString
     val chunk = ByteString("test")
-    val future = Source.single(chunk)
+    val future = Source
+      .single(chunk)
       .via(StreamOps.collectBytes(1000))
       .runWith(Sink.head)
     val result = Await.result(future, Duration.Inf)
