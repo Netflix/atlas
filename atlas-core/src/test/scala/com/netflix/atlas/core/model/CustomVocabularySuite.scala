@@ -113,7 +113,7 @@ class CustomVocabularySuite extends FunSuite {
     assertEquals(evalExpr, expected)
     assertEquals(
       displayExpr.toString,
-      s"$cpuUser,cluster,foo,:eq,:and,:node-avg,PT1H,:offset,(,name,),:by"
+      s"$cpuUser,cluster,foo,:eq,:and,:node-avg,1h,:offset,(,name,),:by"
     )
   }
 

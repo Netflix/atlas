@@ -178,7 +178,7 @@ class NamedRewriteSuite extends FunSuite {
       }
     }
     val actual = exprs.mkString(",")
-    val expected = "name,a,:eq,region,east,:eq,:and,(,99.0,),:percentiles,PT1H,:offset"
+    val expected = "name,a,:eq,region,east,:eq,:and,(,99.0,),:percentiles,1h,:offset"
     assertEquals(actual, expected)
   }
 
