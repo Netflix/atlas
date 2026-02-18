@@ -20,7 +20,7 @@ import com.netflix.atlas.json.JsonSupport
 /**
   * Pair representing the expression and step size for data being requested from the LWCAPI
   * service. A set of data expressions corresponding with this request will be returned as
-  * an [LwcSubscription] response message.
+  * an [[LwcSubscription]] response message.
   *
   * @param expression
   *     Expression to subscribe to from LWCAPI.

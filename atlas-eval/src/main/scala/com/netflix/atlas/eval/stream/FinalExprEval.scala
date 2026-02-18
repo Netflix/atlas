@@ -70,7 +70,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with InHandler with OutHandler {
       // Maintains the state for each expression we need to evaluate. TODO: implement
-      // limits to sanity check against running of our memory
+      // limits to sanity check against running out of memory
       private val states =
         scala.collection.mutable.HashMap.empty[StyleExpr, Map[StatefulExpr, Any]]
 

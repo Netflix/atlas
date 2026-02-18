@@ -24,7 +24,7 @@ trait TimeSeriesExpr extends Expr {
 
   /**
     * The underlying data expressions that supply input for the evaluation. These are
-    * used to fetch data from the data stores. There may be some expressions types that
+    * used to fetch data from the data stores. There may be some expression types that
     * generate data and will have an empty set. Examples are constants, random, or time.
     */
   def dataExprs: List[DataExpr]

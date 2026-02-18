@@ -120,7 +120,7 @@ object PekkoHttpClient {
   )
 
   /**
-    * Returns true if there request was throttled or there was a server error. Client
+    * Returns true if the request was throttled or there was a server error. Client
     * errors (4xx) will not be retried.
     */
   def retryForServerErrors(response: Try[HttpResponse]): Boolean = response match {
@@ -141,7 +141,7 @@ object PekkoHttpClient {
   }
 
   /**
-    * Returns true if there request was throttled or there was a connection error.
+    * Returns true if the request was throttled or there was a connection error.
     * All other failures could have been partially processed by the server and thus
     * are considered not safe to retry.
     */

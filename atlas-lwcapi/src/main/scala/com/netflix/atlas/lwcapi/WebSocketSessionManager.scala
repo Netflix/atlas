@@ -35,8 +35,8 @@ import com.typesafe.scalalogging.StrictLogging
 import scala.util.control.NonFatal
 
 /**
-  * Operator that register a WebSocket Stream, subscribe/update Expressions on demand as they
-  * flow in, and produce output message stream a single "Source".
+  * Operator that registers a WebSocket Stream, subscribes/updates Expressions on demand as they
+  * flow in, and produces an output message stream as a single "Source".
   */
 private[lwcapi] class WebSocketSessionManager(
   val streamMeta: StreamMetadata,

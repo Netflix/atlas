@@ -19,7 +19,7 @@ package com.netflix.atlas.core.model
   * Time series with a single value.
   *
   * @param tags
-  *     Metadata for the identifying the datapoint.
+  *     Metadata for identifying the datapoint.
   * @param timestamp
   *     Timestamp for the data point. The time is the end of an interval that
   *     starts at `timestamp - step`.

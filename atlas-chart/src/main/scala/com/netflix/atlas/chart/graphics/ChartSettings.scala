@@ -107,7 +107,7 @@ object ChartSettings {
   val minWidthForText: Int = smallFontDims.width * "Warnings: abcdef".length
 
   /**
-    * Minimum width required for text elements. Value was chosen to allow the typical legend with
+    * Minimum width required for legend stats. Value was chosen to allow the typical legend with
     * stats to show cleanly. It also keeps the cutoff below the level of sizes that are frequently
     * used in practice.
     */

@@ -32,7 +32,7 @@ import java.time.Duration
   * @param id
   *     Identifier for the time series. This can be used to stitch together messages for
   *     the same time series over time. For example in a streaming use-case you get one
-  *     message per interval for each time series. To get all of the message for a given
+  *     message per interval for each time series. To get all of the messages for a given
   *     time series group by this id.
   * @param query
   *     Expression for the time series. Note, the same expression can result in many time

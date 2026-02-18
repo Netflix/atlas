@@ -58,7 +58,7 @@ private[stream] object EvaluationFlows {
   def stoppableSource[T, M](source: Source[T, M]): SourceRef[T, M] = {
 
     // Note, we cannot just do `takeWhile(_ => !promise.isCompleted)` because it will
-    // only take effect if something is emitted via the source. The workaround it to
+    // only take effect if something is emitted via the source. The workaround is to
     // merge with a source on the future there will be an item that will trigger the
     // takeWhile condition.
     val promise = Promise[Done]()
@@ -87,13 +87,13 @@ private[stream] object EvaluationFlows {
   }
 
   /**
-    * Creates a flow that increments the counter foreach item that comes through. The items
+    * Creates a flow that increments the counter for each item that comes through. The items
     * themselves are not modified in any way.
     *
     * @param c
     *     Counter to increment.
     * @tparam T
-    *     Types of the items flowing through.
+    *     Type of the items flowing through.
     * @return
     *     Flow for counting the number of events flowing through.
     */

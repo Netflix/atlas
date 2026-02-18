@@ -30,7 +30,7 @@ object NormalizeValueFunction {
   *
   * @param step        normalized distance between samples produced by this class.
   * @param heartbeat   maximum time allowed between updates before NaN values will be used.
-  * @param next        normalized values will be passed to the this function.
+  * @param next        normalized values will be passed to this function.
   */
 class NormalizeValueFunction(step: Long, heartbeat: Long, next: ValueFunction)
     extends ValueFunction {

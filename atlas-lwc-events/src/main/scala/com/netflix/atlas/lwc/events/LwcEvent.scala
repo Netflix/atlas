@@ -184,7 +184,7 @@ object LwcEvent {
     * @param event
     *     Event to wrap.
     * @param columns
-    *     Columsn to project into the rwo.
+    *     Columns to project into the row.
     */
   case class Row(event: LwcEvent, columns: List[String]) extends LwcEvent {
 

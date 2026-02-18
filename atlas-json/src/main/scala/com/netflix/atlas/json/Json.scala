@@ -112,7 +112,7 @@ object Json {
 
   /**
     * Can be called to alter the configuration of the default mapper. Note, this will
-    * cause changes to apply everything using this object which could break things that
+    * cause changes to apply to everything using this object which could break things that
     * expect the default behavior.
     */
   def configure(f: ObjectMapper => Unit): Unit = {

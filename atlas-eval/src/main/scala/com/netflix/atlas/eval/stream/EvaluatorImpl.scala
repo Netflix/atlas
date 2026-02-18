@@ -227,7 +227,7 @@ private[stream] abstract class EvaluatorImpl(
   }
 
   /**
-    * Internal API, may change in future releases, should only used by internal components
+    * Internal API, may change in future releases, should only be used by internal components
     * to maximize throughput under heavy load by enabling operator fusion optimization.
     */
   def createStreamsFlow: Flow[DataSources, MessageEnvelope, NotUsed] = {

@@ -26,7 +26,6 @@ import java.awt.Graphics2D
   *     Start time in milliseconds since the epoch.
   * @param t2
   *     End time in milliseconds since the epoch.
-  *     Step size in milliseconds.
   * @param xaxis
   *     Axis used for creating the scale.
   */

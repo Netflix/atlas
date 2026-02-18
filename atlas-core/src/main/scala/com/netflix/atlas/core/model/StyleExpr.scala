@@ -168,7 +168,7 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
 
   /**
     * Returns a list of style expressions with one entry per offset specified. This is to support
-    * a legacy form or :offset that takes a list and is applied on the style expression. Since
+    * a legacy form of :offset that takes a list and is applied on the style expression. Since
     * further style operations need to get applied to all results we cannot expand until the
     * full expression is evaluated. Should get removed after we have a better story around
     * deprecation.

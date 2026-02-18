@@ -235,7 +235,7 @@ trait TimeSeries extends TaggedItem {
     LazyTimeSeries(tags, label, newData)
   }
 
-  /** Create a consolidated view while retaining then original step size for the series. */
+  /** Create a consolidated view while retaining the original step size for the series. */
   def consolidatedView(step: Long, cf: ConsolidationFunction): TimeSeries = {
     val newData = new MapStepTimeSeq(data, step, cf)
     LazyTimeSeries(tags, label, new StepViewTimeSeq(newData, data.step))

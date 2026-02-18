@@ -39,7 +39,7 @@ object Block {
 
   /**
     * Attempts to compress an array block into a more compact type. If compression fails to provide
-    * savings the orignal block will be returned.
+    * savings the original block will be returned.
     */
   def compress(block: ArrayBlock): Block = {
     if (block.size < 10) {
@@ -213,7 +213,7 @@ sealed trait Block {
   }
 
   /**
-    * Used to get a quick estimate of the size of numeric primatives and arrays of numeric
+    * Used to get a quick estimate of the size of numeric primitives and arrays of numeric
     * primitives.
     */
   def sizeOf(value: Any): Int = value match {
@@ -421,7 +421,7 @@ case class FloatArrayBlock(start: Long, size: Int) extends Block {
 
 /**
   * Mutable block type that tries to compress data as it is updated. The main compression
-  * benefit comes by not needed to store the most common values that are seen in the data.
+  * benefit comes by not needing to store the most common values that are seen in the data.
   * Initially 2 bits per value will be used that indicate one of four common values: NaN,
   * 0, 1, 1/60. If another value is used, then it will update the buffer to use 4 bits per
   * value that can be one of the four common values or an index to an explicit value. If
@@ -740,7 +740,7 @@ object SparseBlock {
     }
   }
 
-  /** Returns the value for a  */
+  /** Returns the value for a given position. */
   def get(pos: Int, values: Array[Double]): Double = {
     (pos: @scala.annotation.switch) match {
       case SparseBlock.NaN  => Double.NaN

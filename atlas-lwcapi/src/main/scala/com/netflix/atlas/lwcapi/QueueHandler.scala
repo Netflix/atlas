@@ -26,7 +26,7 @@ import com.typesafe.scalalogging.StrictLogging
   *     Stream metadata for this handler. Used to provide context in the log messages and easily
   *     be able to grep for a given id.
   * @param queue
-  *     Underlying queue that will receive the messsages.
+  *     Underlying queue that will receive the messages.
   */
 class QueueHandler(
   streamMeta: StreamMetadata,

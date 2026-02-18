@@ -27,7 +27,7 @@ sealed trait EventExpr extends Expr {
 object EventExpr {
 
   /**
-    * Specifies to just pass through the raw event if they match the query.
+    * Specifies to just pass through the raw event if it matches the query.
     *
     * @param query
     *     Query to determine if an event should be matched.

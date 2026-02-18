@@ -350,7 +350,7 @@ object CustomDirectives {
   }
 
   /**
-    * This is a convenience directive for the common pattern of have a fixed path with an
+    * This is a convenience directive for the common pattern of having a fixed path with an
     * extracted portion such as an identifier at the end. It will set the endpoint header based
     * on the prefix matcher. Example:
     *

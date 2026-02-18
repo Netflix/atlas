@@ -31,7 +31,7 @@ import scala.collection.Map
   * removed keys using "valueForRemovedKey" function.
   *
   * Typical usage is to plug this flow before groupBy, so that if a key is removed, a custom value
-  * can be pushed down to sub-streams to trigger appropriate action immediately, as apposed to wait
+  * can be pushed down to sub-streams to trigger appropriate action immediately, as opposed to waiting
   * for subscription timeout and then cleanup.
   */
 private[stream] class FillRemovedKeysWith[K, V](valueForRemovedKey: K => V)

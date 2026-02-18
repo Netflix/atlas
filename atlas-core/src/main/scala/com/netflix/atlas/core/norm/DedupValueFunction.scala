@@ -27,7 +27,7 @@ package com.netflix.atlas.core.norm
   * @param size
   *     Size of the buffer.
   * @param next
-  *     Normalized values will be passed to the this function.
+  *     Normalized values will be passed to this function.
   */
 class DedupValueFunction(step: Long, size: Int, next: ValueFunction) extends ValueFunction {
 

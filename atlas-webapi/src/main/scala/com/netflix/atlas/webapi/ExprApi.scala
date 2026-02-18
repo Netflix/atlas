@@ -158,7 +158,7 @@ class ExprApi extends WebApi {
 
   // This check is needed to be sure an operation will work if matches is not exhaustive. In
   // some cases it only validates types, but not acceptable values such as :time. For others like
-  // macros it alwasy returns true. This ensures the operation will actually be successful before
+  // macros it always returns true. This ensures the operation will actually be successful before
   // returning to a user.
   private def execWorks(interpreter: Interpreter, w: Word, ctxt: Context): Boolean = {
     Try(interpreter.executeProgram(List(s":${w.name}"), ctxt)).isSuccess
@@ -262,7 +262,7 @@ class ExprApi extends WebApi {
   }
 
   /**
-    * Rewrite a graph expression to phase out deprecate usage. Currently, it will
+    * Rewrite a graph expression to phase out deprecated usage. Currently, it will
     * only rewrite the legacy offset usage.
     */
   private def processRewriteRequest(expr: String): HttpResponse = {
