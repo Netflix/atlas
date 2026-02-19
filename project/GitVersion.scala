@@ -6,7 +6,7 @@ import com.github.sbt.git.SbtGit.*
 object GitVersion {
 
   // Base version for master branch
-  private val baseVersion = "v1.8.x"
+  private val baseVersion = "v1.9.x"
 
   // 0.1.x
   private val versionBranch = """v?([0-9.]+)(?:\.x)?""".r
