@@ -15,7 +15,10 @@ object Dependencies {
     val spectator   = "1.9.4"
     val spring      = "6.2.15"
 
-    val crossScala  = Seq(scala, "3.8.1")
+    // Stay on scala 3.7.x, 3.8.x no longer uses 2.13 std library causing
+    // some dependency issues. Move to Atlas 1.9.x if newer versions are
+    // needed.
+    val crossScala  = Seq(scala, "3.7.4")
   }
 
   import Versions.*
