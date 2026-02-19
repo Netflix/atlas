@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.eval.model
 
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.JsonSupport
 
 /**
   * Heartbeat message to indicate the time according to the server side. The eval client always

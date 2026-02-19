@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.json
+package com.netflix.atlas.json3
 
 import java.io.StringWriter
-import com.fasterxml.jackson.core.JsonGenerator
-
 import scala.util.Using
+import tools.jackson.core.JsonGenerator
 
 /**
   * Trait that adds methods to easily encode the object to JSON. Can be used to indicate

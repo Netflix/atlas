@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.lwc.events
 
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.spectator.api.Clock
 
 import java.io.StringWriter
@@ -94,8 +94,8 @@ object LwcEventClient {
       Using.resource(new StringWriter()) { w =>
         Using.resource(Json.newJsonGenerator(w)) { gen =>
           gen.writeStartObject()
-          gen.writeStringField("id", id)
-          gen.writeFieldName("event")
+          gen.writeStringProperty("id", id)
+          gen.writeName("event")
           event.encode(gen)
           gen.writeEndObject()
         }

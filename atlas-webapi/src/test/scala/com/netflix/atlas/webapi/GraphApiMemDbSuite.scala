@@ -20,7 +20,7 @@ import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.core.db.MemoryDatabase
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.RequestHandler
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite

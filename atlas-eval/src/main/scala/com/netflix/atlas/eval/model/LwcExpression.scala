@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.eval.model
 
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.JsonSupport
 
 /**
   * Pair representing the expression and step size for data being requested from the LWCAPI

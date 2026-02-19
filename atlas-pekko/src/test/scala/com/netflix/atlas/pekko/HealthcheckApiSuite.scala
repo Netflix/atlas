@@ -18,7 +18,7 @@ package com.netflix.atlas.pekko
 import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.iep.service.Service
 import com.netflix.iep.service.ServiceManager

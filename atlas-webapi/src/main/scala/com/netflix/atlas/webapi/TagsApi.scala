@@ -32,7 +32,7 @@ import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.WebApi
 

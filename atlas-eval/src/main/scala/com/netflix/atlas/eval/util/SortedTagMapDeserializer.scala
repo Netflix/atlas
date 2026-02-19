@@ -15,10 +15,10 @@
  */
 package com.netflix.atlas.eval.util
 
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
 import com.netflix.atlas.core.util.SortedTagMap
+import tools.jackson.core.JsonParser
+import tools.jackson.databind.DeserializationContext
+import tools.jackson.databind.ValueDeserializer
 
 /**
   * Custom deserializer for tag maps to go directly to `SortedTagMap` type. It is assumed
@@ -27,18 +27,18 @@ import com.netflix.atlas.core.util.SortedTagMap
   * @param initSize
   *     The initial size to use for the maps.
   */
-class SortedTagMapDeserializer(initSize: Int) extends JsonDeserializer[SortedTagMap] {
+class SortedTagMapDeserializer(initSize: Int) extends ValueDeserializer[SortedTagMap] {
 
   /** Default constructor so it can be used with the annotations. */
   def this() = this(10)
 
   override def deserialize(p: JsonParser, ctxt: DeserializationContext): SortedTagMap = {
     val builder = SortedTagMap.builder(initSize)
-    var k = p.nextFieldName()
+    var k = p.nextName()
     while (k != null) {
-      val v = p.nextTextValue()
+      val v = p.nextStringValue()
       builder.add(k, v)
-      k = p.nextFieldName()
+      k = p.nextName()
     }
     builder.result()
   }

@@ -15,12 +15,12 @@
  */
 package com.netflix.atlas.eval.stream
 
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 
 import java.nio.charset.StandardCharsets
 import org.apache.pekko.util.ByteString
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.atlas.pekko.ByteStringInputStream
 import com.typesafe.scalalogging.StrictLogging
 

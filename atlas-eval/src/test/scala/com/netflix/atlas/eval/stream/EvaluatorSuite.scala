@@ -37,8 +37,8 @@ import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
 import com.netflix.atlas.eval.stream.Evaluator.MessageEnvelope
-import com.netflix.atlas.json.Json
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.Json
+import com.netflix.atlas.json3.JsonSupport
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.spectator.api.DefaultRegistry
 import com.typesafe.config.ConfigFactory

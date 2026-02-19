@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.eval.model
 
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.JsonSupport
 import com.netflix.atlas.pekko.DiagnosticMessage
 
 /**

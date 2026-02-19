@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.json
+package com.netflix.atlas.json3
 
-import com.netflix.atlas.json.CaseClasses.Data
+import com.netflix.atlas.json3.CaseClasses.Data
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State

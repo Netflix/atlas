@@ -24,7 +24,7 @@ import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.atlas.pekko.ByteStringInputStream
 import com.netflix.atlas.pekko.PekkoHttpClient
 import com.typesafe.scalalogging.StrictLogging

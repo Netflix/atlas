@@ -15,6 +15,13 @@
  */
 package com.netflix.atlas.webapi
 
+import scala.util.Failure
+import com.netflix.atlas.chart.util.PngImage
+import com.netflix.atlas.core.model.*
+import com.netflix.atlas.eval.graph.GraphConfig
+import com.netflix.atlas.eval.graph.Grapher
+import com.netflix.atlas.pekko.ImperativeRequestContext
+import com.netflix.spectator.api.Registry
 import org.apache.pekko.actor.Actor
 import org.apache.pekko.actor.ActorLogging
 import org.apache.pekko.http.scaladsl.model.HttpEntity
@@ -22,15 +29,7 @@ import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.util.ByteString
-import com.fasterxml.jackson.core.JsonProcessingException
-import com.netflix.atlas.chart.util.PngImage
-import com.netflix.atlas.core.model.*
-import com.netflix.atlas.eval.graph.GraphConfig
-import com.netflix.atlas.eval.graph.Grapher
-import com.netflix.atlas.pekko.ImperativeRequestContext
-import com.netflix.spectator.api.Registry
-
-import scala.util.Failure
+import tools.jackson.core.JacksonException
 
 class GraphRequestActor(grapher: Grapher, registry: Registry) extends Actor with ActorLogging {
 
@@ -74,7 +73,7 @@ class GraphRequestActor(grapher: Grapher, registry: Registry) extends Actor with
 
     val msg = s"$simpleName: ${t.getMessage}"
     val errorImg = t match {
-      case _: IllegalArgumentException | _: IllegalStateException | _: JsonProcessingException =>
+      case _: IllegalArgumentException | _: IllegalStateException | _: JacksonException =>
         PngImage.userError(msg, w, h)
       case _ =>
         PngImage.systemError(msg, w, h)

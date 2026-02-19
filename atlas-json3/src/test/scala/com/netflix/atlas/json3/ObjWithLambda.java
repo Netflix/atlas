@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.json;
+package com.netflix.atlas.json3;
 
 import java.util.function.Function;
 
@@ -25,11 +25,11 @@ import java.util.function.Function;
  *
  * <pre>
  * java.lang.ArrayIndexOutOfBoundsException: 55596
- *   at com.fasterxml.jackson.module.paranamer.shaded.BytecodeReadingParanamer$ClassReader.readUnsignedShort(BytecodeReadingParanamer.java:722)
- *   at com.fasterxml.jackson.module.paranamer.shaded.BytecodeReadingParanamer$ClassReader.accept(BytecodeReadingParanamer.java:571)
- *   at com.fasterxml.jackson.module.paranamer.shaded.BytecodeReadingParanamer$ClassReader.access$200(BytecodeReadingParanamer.java:338)
- *   at com.fasterxml.jackson.module.paranamer.shaded.BytecodeReadingParanamer.lookupParameterNames(BytecodeReadingParanamer.java:103)
- *   at com.fasterxml.jackson.module.paranamer.shaded.CachingParanamer.lookupParameterNames(CachingParanamer.java:79)
+ *   at tools.jackson.module.paranamer.shaded.BytecodeReadingParanamer$ClassReader.readUnsignedShort(BytecodeReadingParanamer.java:722)
+ *   at tools.jackson.module.paranamer.shaded.BytecodeReadingParanamer$ClassReader.accept(BytecodeReadingParanamer.java:571)
+ *   at tools.jackson.module.paranamer.shaded.BytecodeReadingParanamer$ClassReader.access$200(BytecodeReadingParanamer.java:338)
+ *   at tools.jackson.module.paranamer.shaded.BytecodeReadingParanamer.lookupParameterNames(BytecodeReadingParanamer.java:103)
+ *   at tools.jackson.module.paranamer.shaded.CachingParanamer.lookupParameterNames(CachingParanamer.java:79)
  * </pre>
  */
 public class ObjWithLambda {

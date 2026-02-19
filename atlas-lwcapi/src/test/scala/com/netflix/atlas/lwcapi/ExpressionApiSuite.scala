@@ -22,7 +22,7 @@ import org.apache.pekko.stream.scaladsl.Keep
 import org.apache.pekko.stream.scaladsl.Sink
 import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.model.ExprType
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.JsonSupport
 import com.netflix.atlas.pekko.StreamOps
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.spectator.api.DefaultRegistry

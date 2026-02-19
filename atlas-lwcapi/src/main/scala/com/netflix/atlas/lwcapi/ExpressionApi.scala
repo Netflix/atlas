@@ -26,8 +26,8 @@ import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.util.ByteString
 import com.netflix.atlas.core.util.FastGzipOutputStream
 import com.netflix.atlas.core.util.Strings
-import com.netflix.atlas.json.Json
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.Json
+import com.netflix.atlas.json3.JsonSupport
 import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.ThreadPools
 import com.netflix.atlas.pekko.WebApi

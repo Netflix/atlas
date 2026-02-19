@@ -30,7 +30,7 @@ import com.netflix.atlas.eval.model.LwcDataExpr
 import com.netflix.atlas.eval.model.LwcHeartbeat
 import com.netflix.atlas.eval.model.LwcMessages
 import com.netflix.atlas.eval.model.LwcSubscriptionV2
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.JsonSupport
 import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.StreamOps

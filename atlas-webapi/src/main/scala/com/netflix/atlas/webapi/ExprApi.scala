@@ -33,7 +33,7 @@ import com.netflix.atlas.core.stacklang.Word
 import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.RefIntHashMap
 import com.netflix.atlas.core.util.Strings
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.WebApi
 

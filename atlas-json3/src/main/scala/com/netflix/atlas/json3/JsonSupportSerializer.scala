@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.json
+package com.netflix.atlas.json3
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.SerializerProvider
+import tools.jackson.core.JsonGenerator
+import tools.jackson.databind.ValueSerializer
+import tools.jackson.databind.SerializationContext
 
-private[json] class JsonSupportSerializer(
-  defaultSerializer: JsonSerializer[AnyRef]
-) extends JsonSerializer[JsonSupport] {
+private[json3] class JsonSupportSerializer(
+  defaultSerializer: ValueSerializer[AnyRef]
+) extends ValueSerializer[JsonSupport] {
 
   override def serialize(
     value: JsonSupport,
     gen: JsonGenerator,
-    serializers: SerializerProvider
+    serializers: SerializationContext
   ): Unit = {
 
     if (value.hasCustomEncoding)

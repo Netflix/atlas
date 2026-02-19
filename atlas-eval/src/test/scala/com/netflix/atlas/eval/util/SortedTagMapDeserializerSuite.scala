@@ -15,17 +15,17 @@
  */
 package com.netflix.atlas.eval.util
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.module.SimpleModule
 import com.netflix.atlas.core.util.SortedTagMap
 import munit.FunSuite
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.module.SimpleModule
 
 class SortedTagMapDeserializerSuite extends FunSuite {
 
   private val mapper = {
     val module = new SimpleModule()
       .addDeserializer(classOf[SortedTagMap], new SortedTagMapDeserializer(2))
-    new ObjectMapper().registerModule(module)
+    JsonMapper.builder().addModule(module).build()
   }
 
   private def parse(json: String): SortedTagMap = {

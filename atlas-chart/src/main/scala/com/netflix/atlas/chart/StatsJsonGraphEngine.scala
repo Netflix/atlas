@@ -17,9 +17,9 @@ package com.netflix.atlas.chart
 
 import java.io.OutputStream
 import java.io.OutputStreamWriter
-
 import com.netflix.atlas.chart.model.*
 import com.netflix.atlas.core.model.SummaryStats
+import tools.jackson.core.ObjectWriteContext
 
 /**
   * Returns a handful of summary stats instead of all the raw data for a given graph.
@@ -35,49 +35,49 @@ class StatsJsonGraphEngine extends GraphEngine {
   def write(config: GraphDef, output: OutputStream): Unit = {
     val writer = new OutputStreamWriter(output, "UTF-8")
     val seriesList = config.plots.flatMap(_.lines)
-    val gen = jsonFactory.createGenerator(writer)
+    val gen = jsonFactory.createGenerator(ObjectWriteContext.empty, writer)
 
     gen.writeStartObject()
-    gen.writeNumberField("start", config.startTime.toEpochMilli)
-    gen.writeNumberField("end", config.endTime.toEpochMilli)
-    gen.writeNumberField("step", config.step)
+    gen.writeNumberProperty("start", config.startTime.toEpochMilli)
+    gen.writeNumberProperty("end", config.endTime.toEpochMilli)
+    gen.writeNumberProperty("step", config.step)
 
-    gen.writeArrayFieldStart("legend")
+    gen.writeArrayPropertyStart("legend")
     seriesList.foreach { series =>
       val label = series.data.label
       gen.writeString(label)
     }
     gen.writeEndArray()
 
-    gen.writeArrayFieldStart("metrics")
+    gen.writeArrayPropertyStart("metrics")
     seriesList.foreach { series =>
       gen.writeStartObject()
       series.data.tags.toList.sortWith(_._1 < _._1).foreach { t =>
-        gen.writeStringField(t._1, t._2)
+        gen.writeStringProperty(t._1, t._2)
       }
       gen.writeEndObject()
     }
     gen.writeEndArray()
 
-    gen.writeArrayFieldStart("stats")
+    gen.writeArrayPropertyStart("stats")
     seriesList.foreach { series =>
       val stats =
         SummaryStats(series.data, config.startTime.toEpochMilli, config.endTime.toEpochMilli)
 
       gen.writeStartObject()
-      gen.writeNumberField("count", stats.count)
+      gen.writeNumberProperty("count", stats.count)
       if (seriesList.nonEmpty) {
-        gen.writeNumberField("avg", stats.avg)
-        gen.writeNumberField("total", stats.total)
-        gen.writeNumberField("max", stats.max)
-        gen.writeNumberField("min", stats.min)
-        gen.writeNumberField("last", stats.last)
+        gen.writeNumberProperty("avg", stats.avg)
+        gen.writeNumberProperty("total", stats.total)
+        gen.writeNumberProperty("max", stats.max)
+        gen.writeNumberProperty("min", stats.min)
+        gen.writeNumberProperty("last", stats.last)
       }
       gen.writeEndObject()
     }
     gen.writeEndArray()
 
-    gen.writeArrayFieldStart("notices")
+    gen.writeArrayPropertyStart("notices")
     config.warnings.foreach(gen.writeString)
     gen.writeEndArray()
 

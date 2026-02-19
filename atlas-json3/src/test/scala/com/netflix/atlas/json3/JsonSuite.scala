@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.json
+package com.netflix.atlas.json3
 
 import java.math.BigInteger
 import java.util
 import java.util.Optional
 import java.util.regex.Pattern
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.core.JsonToken
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.node.ObjectNode
 import munit.FunSuite
-
-import java.time.Instant
+import tools.jackson.core.JacksonException
+import tools.jackson.core.JsonGenerator
+import tools.jackson.core.JsonToken
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.exc.MismatchedInputException
+import tools.jackson.databind.node.ObjectNode
 
 /**
   * Test case for the capabilities we need from a json parser. Mostly to document what we are using
@@ -37,11 +35,11 @@ class JsonSuite extends FunSuite {
 
   import java.lang.Double as JDouble
 
-  import com.netflix.atlas.json.Json.*
+  import com.netflix.atlas.json3.Json.*
 
   test("garbage") {
-    intercept[JsonParseException] { decode[Boolean]("true dklfjal;k;hfnklanf'") }
-    intercept[IllegalArgumentException] { decode[Map[String, AnyRef]]("""{"f":"b"} {"b":"d"}""") }
+    intercept[JacksonException] { decode[Boolean]("true dklfjal;k;hfnklanf'") }
+    intercept[MismatchedInputException] { decode[Map[String, AnyRef]]("""{"f":"b"} {"b":"d"}""") }
   }
 
   test("true") {
@@ -398,7 +396,7 @@ class JsonSuite extends FunSuite {
 
   // CLDMTA-2174
   test("case class defined in object") {
-    import com.netflix.atlas.json.JsonSuiteObjectWithClass.*
+    import com.netflix.atlas.json3.JsonSuiteObjectWithClass.*
     val v = ClassInObject("a", 42)
     assertEquals(encode(v), """{"s":"a","v":42}""")
     assertEquals(decode[ClassInObject](encode(v)), v)
@@ -406,7 +404,7 @@ class JsonSuite extends FunSuite {
 
   // CLDMTA-2174
   test("list of case class defined in object") {
-    import com.netflix.atlas.json.JsonSuiteObjectWithClass.*
+    import com.netflix.atlas.json3.JsonSuiteObjectWithClass.*
     val v = List(ClassInObject("a", 42))
     assertEquals(encode(v), """[{"s":"a","v":42}]""")
     assertEquals(decode[List[ClassInObject]](encode(v)), v)
@@ -485,22 +483,6 @@ class JsonSuite extends FunSuite {
     val obj = JsonObjectWithSupport(42.0)
     assertEquals(Json.encode(List(obj)), """[{"custom":42.0}]""")
   }
-
-  test("customize mapper") {
-    val now = Instant.now()
-    assertEquals(Json.encode(now), now.toEpochMilli.toString)
-
-    try {
-      Json.configure { mapper =>
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-      }
-      assertEquals(Json.encode(now), s"\"${now.toString}\"")
-    } finally {
-      Json.configure { mapper =>
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true)
-      }
-    }
-  }
 }
 
 case class JsonKeyWithDot(`a.b`: String)
@@ -545,7 +527,7 @@ case class JsonObjectWithSupport(v: Double) extends JsonSupport {
 
   override def encode(gen: JsonGenerator): Unit = {
     gen.writeStartObject()
-    gen.writeNumberField("custom", v)
+    gen.writeNumberProperty("custom", v)
     gen.writeEndObject()
   }
 }

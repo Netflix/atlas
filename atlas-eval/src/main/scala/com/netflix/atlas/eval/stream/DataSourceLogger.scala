@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.eval.stream
 
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.JsonSupport
 import com.netflix.atlas.pekko.StreamOps
 
 private[stream] trait DataSourceLogger {

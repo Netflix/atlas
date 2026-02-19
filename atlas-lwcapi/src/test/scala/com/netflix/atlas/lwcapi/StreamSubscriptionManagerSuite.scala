@@ -18,7 +18,7 @@ package com.netflix.atlas.lwcapi
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.Keep
 import org.apache.pekko.stream.scaladsl.Sink
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.JsonSupport
 import com.netflix.atlas.pekko.StreamOps
 import com.netflix.spectator.api.NoopRegistry
 import munit.FunSuite
