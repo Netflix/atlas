@@ -19,8 +19,8 @@ import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.util.zip.GZIPOutputStream
 import com.netflix.atlas.core.util.SortedTagMap
-import com.netflix.atlas.json.Json
-import com.netflix.atlas.json.JsonParserHelper.*
+import com.netflix.atlas.json3.Json
+import com.netflix.atlas.json3.JsonParserHelper.*
 import com.netflix.atlas.pekko.ByteStringInputStream
 import com.netflix.atlas.pekko.DiagnosticMessage
 import org.apache.pekko.util.ByteString

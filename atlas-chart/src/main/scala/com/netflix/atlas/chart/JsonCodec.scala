@@ -56,7 +56,7 @@ import tools.jackson.databind.json.JsonMapper
   */
 object JsonCodec {
 
-  import com.netflix.atlas.json.JsonParserHelper.*
+  import com.netflix.atlas.json3.JsonParserHelper.*
   private val factory = new JsonFactory()
 
   private val mapper = JsonMapper

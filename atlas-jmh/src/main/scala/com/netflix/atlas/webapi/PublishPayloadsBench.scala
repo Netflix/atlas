@@ -20,7 +20,7 @@ import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Streams
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State

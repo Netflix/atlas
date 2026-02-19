@@ -19,7 +19,7 @@ import java.io.StringWriter
 import scala.util.Using
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.util.SortedTagMap
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.ManualClock
 import munit.FunSuite

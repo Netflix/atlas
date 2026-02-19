@@ -20,7 +20,7 @@ import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.Failure
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.spectator.ipc.NetflixHeader
 import org.apache.pekko.http.scaladsl.model.HttpCharsets
 import org.apache.pekko.http.scaladsl.model.HttpEntity

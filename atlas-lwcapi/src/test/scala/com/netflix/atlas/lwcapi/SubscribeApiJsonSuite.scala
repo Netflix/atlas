@@ -16,7 +16,7 @@
 package com.netflix.atlas.lwcapi
 
 import com.netflix.atlas.eval.model.ExprType
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.atlas.lwcapi.SubscribeApi.*
 import munit.FunSuite
 import tools.jackson.databind.exc.MismatchedInputException

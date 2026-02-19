@@ -24,14 +24,14 @@ import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.RefIntHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Streams
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import tools.jackson.core.JsonGenerator
 import tools.jackson.core.JsonParser
 import tools.jackson.core.JsonToken
 
 object PublishPayloads {
 
-  import com.netflix.atlas.json.JsonParserHelper.*
+  import com.netflix.atlas.json3.JsonParserHelper.*
 
   type TagMap = Map[String, String]
 

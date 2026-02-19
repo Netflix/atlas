@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.algorithm
 
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import munit.FunSuite
 
 class AlgoStateSuite extends FunSuite {

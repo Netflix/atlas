@@ -21,8 +21,8 @@ import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.core.model.*
 import com.netflix.atlas.core.util.Strings
-import com.netflix.atlas.json.Json
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.Json
+import com.netflix.atlas.json3.JsonSupport
 import tools.jackson.core.JsonGenerator
 
 /**

@@ -19,7 +19,7 @@ import java.util.Random
 import java.util.UUID
 import scala.util.Using
 import com.netflix.atlas.core.util.Streams
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.atlas.pekko.DiagnosticMessage
 import munit.FunSuite
 import org.apache.pekko.util.ByteString

@@ -15,9 +15,9 @@
  */
 package com.netflix.atlas.eval.stream
 
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import org.apache.pekko.util.ByteString
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import munit.FunSuite
 
 import java.nio.charset.StandardCharsets

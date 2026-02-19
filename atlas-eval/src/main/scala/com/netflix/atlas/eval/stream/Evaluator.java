@@ -26,7 +26,7 @@ import org.apache.pekko.stream.javadsl.StreamConverters;
 import org.apache.pekko.util.ByteString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.atlas.core.util.Strings$;
-import com.netflix.atlas.json.JsonSupport;
+import com.netflix.atlas.json3.JsonSupport;
 import com.netflix.spectator.api.NoopRegistry;
 import com.netflix.spectator.api.Registry;
 import com.typesafe.config.Config;

@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonAlias
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.eval.model.ExprType
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.JsonSupport
 
 case class ExpressionMetadata(
   expression: String,

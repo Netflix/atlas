@@ -17,7 +17,7 @@ package com.netflix.atlas.eval.model
 
 import java.io.StringWriter
 
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State

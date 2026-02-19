@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.json
+package com.netflix.atlas.json3
 
 import java.math.BigInteger
 import java.util
@@ -35,7 +35,7 @@ class JsonSuite extends FunSuite {
 
   import java.lang.Double as JDouble
 
-  import com.netflix.atlas.json.Json.*
+  import com.netflix.atlas.json3.Json.*
 
   test("garbage") {
     intercept[JacksonException] { decode[Boolean]("true dklfjal;k;hfnklanf'") }
@@ -396,7 +396,7 @@ class JsonSuite extends FunSuite {
 
   // CLDMTA-2174
   test("case class defined in object") {
-    import com.netflix.atlas.json.JsonSuiteObjectWithClass.*
+    import com.netflix.atlas.json3.JsonSuiteObjectWithClass.*
     val v = ClassInObject("a", 42)
     assertEquals(encode(v), """{"s":"a","v":42}""")
     assertEquals(decode[ClassInObject](encode(v)), v)
@@ -404,7 +404,7 @@ class JsonSuite extends FunSuite {
 
   // CLDMTA-2174
   test("list of case class defined in object") {
-    import com.netflix.atlas.json.JsonSuiteObjectWithClass.*
+    import com.netflix.atlas.json3.JsonSuiteObjectWithClass.*
     val v = List(ClassInObject("a", 42))
     assertEquals(encode(v), """[{"s":"a","v":42}]""")
     assertEquals(decode[List[ClassInObject]](encode(v)), v)

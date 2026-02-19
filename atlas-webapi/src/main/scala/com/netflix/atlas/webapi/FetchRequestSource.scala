@@ -25,7 +25,7 @@ import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.model.TimeSeriesMessage
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.atlas.pekko.DiagnosticMessage
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorRefFactory

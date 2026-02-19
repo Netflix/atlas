@@ -8,7 +8,7 @@ lazy val atlas = project.in(file("."))
     `atlas-core`,
     `atlas-eval`,
     `atlas-jmh`,
-    `atlas-json`,
+    `atlas-json3`,
     `atlas-lwcapi`,
     `atlas-lwc-events`,
     `atlas-postgres`,
@@ -23,7 +23,7 @@ lazy val atlas = project.in(file("."))
 
 lazy val `atlas-pekko` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-json`, `atlas-pekko-testkit` % "test")
+  .dependsOn(`atlas-json3`, `atlas-pekko-testkit` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.pekkoActor,
     Dependencies.pekkoSlf4j,
@@ -50,11 +50,11 @@ lazy val `atlas-pekko-testkit` = project
 
 lazy val `atlas-chart` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-core`, `atlas-json`)
+  .dependsOn(`atlas-core`, `atlas-json3`)
 
 lazy val `atlas-core` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-json` % "test")
+  .dependsOn(`atlas-json3` % "test")
   .settings(libraryDependencies ++= Seq(
     Dependencies.caffeine,
     Dependencies.iepDynConfig,
@@ -75,13 +75,13 @@ lazy val `atlas-eval` = project
 
 lazy val `atlas-jmh` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-chart`, `atlas-core`, `atlas-eval`, `atlas-json`, `atlas-webapi`)
+  .dependsOn(`atlas-chart`, `atlas-core`, `atlas-eval`, `atlas-json3`, `atlas-webapi`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.spectatorAtlas
   ))
   .enablePlugins(pl.project13.scala.sbt.SbtJmh)
 
-lazy val `atlas-json` = project
+lazy val `atlas-json3` = project
   .configure(BuildSettings.profile)
   .settings(libraryDependencies ++= Seq(
     Dependencies.jacksonCore,
@@ -92,7 +92,7 @@ lazy val `atlas-json` = project
 
 lazy val `atlas-lwcapi` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-pekko`, `atlas-pekko-testkit` % "test", `atlas-core`, `atlas-eval`, `atlas-json`)
+  .dependsOn(`atlas-pekko`, `atlas-pekko-testkit` % "test", `atlas-core`, `atlas-eval`, `atlas-json3`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepDynConfig,
     Dependencies.spectatorAtlas,
@@ -103,7 +103,7 @@ lazy val `atlas-lwcapi` = project
 
 lazy val `atlas-lwc-events` = project
   .configure(BuildSettings.profile)
-  .dependsOn(`atlas-pekko`, `atlas-core`, `atlas-json`)
+  .dependsOn(`atlas-pekko`, `atlas-core`, `atlas-json3`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.iepDynConfig,
     Dependencies.spectatorAtlas,
@@ -179,7 +179,7 @@ lazy val `atlas-webapi` = project
     `atlas-chart`,
     `atlas-core`,
     `atlas-eval`,
-    `atlas-json`)
+    `atlas-json3`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.pekkoTestkit % "test",
     Dependencies.pekkoHttpTestkit % "test",

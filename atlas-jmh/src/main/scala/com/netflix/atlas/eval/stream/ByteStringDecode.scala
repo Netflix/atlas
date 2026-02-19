@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets
 
 import org.apache.pekko.util.ByteString
 import com.netflix.atlas.eval.model.LwcDatapoint
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State

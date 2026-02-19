@@ -24,8 +24,8 @@ import org.apache.pekko.http.scaladsl.server.RouteResult
 import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.validation.Rule
 import com.netflix.atlas.core.validation.ValidationResult
-import com.netflix.atlas.json.Json
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.Json
+import com.netflix.atlas.json3.JsonSupport
 import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.WebApi

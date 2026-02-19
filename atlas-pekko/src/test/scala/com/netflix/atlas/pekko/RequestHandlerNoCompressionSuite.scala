@@ -23,7 +23,7 @@ import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.iep.service.DefaultClassFactory
 import com.netflix.spectator.api.NoopRegistry

@@ -17,7 +17,7 @@ package com.netflix.atlas.lwc.events
 
 import java.io.StringWriter
 import scala.util.Using
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.spectator.api.Spectator
 import org.slf4j.LoggerFactory
 import tools.jackson.core.JsonGenerator

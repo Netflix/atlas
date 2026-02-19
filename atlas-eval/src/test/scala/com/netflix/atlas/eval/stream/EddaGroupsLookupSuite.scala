@@ -22,7 +22,7 @@ import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.stream.scaladsl.Flow
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import munit.FunSuite
 import org.apache.pekko.stream.Materializer
 

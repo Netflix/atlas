@@ -15,8 +15,8 @@
  */
 package com.netflix.atlas.eval.model
 
-import com.netflix.atlas.json.Json
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.Json
+import com.netflix.atlas.json3.JsonSupport
 import tools.jackson.core.JsonGenerator
 
 /**

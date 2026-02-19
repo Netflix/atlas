@@ -34,7 +34,7 @@ import com.netflix.atlas.core.util.Streams
 import com.netflix.atlas.eval.model.ExprType
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
 import com.netflix.atlas.eval.stream.Evaluator.DataSources
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.JsonSupport
 import com.netflix.atlas.pekko.DiagnosticMessage
 import com.netflix.atlas.pekko.PekkoHttpClient
 import com.netflix.atlas.pekko.StreamOps

@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.lwc.events
 
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import tools.jackson.core.JsonGenerator
 
 /**

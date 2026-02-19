@@ -23,7 +23,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantLock
 import scala.util.Using
 import com.netflix.atlas.core.util.FastGzipOutputStream
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.impl.Scheduler
 import com.netflix.spectator.ipc.http.HttpClient

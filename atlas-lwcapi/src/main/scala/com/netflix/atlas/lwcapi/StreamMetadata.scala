@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.lwcapi
 
-import com.netflix.atlas.json.JsonSupport
+import com.netflix.atlas.json3.JsonSupport
 import com.netflix.spectator.api.Clock
 import com.netflix.spectator.impl.StepLong
 import tools.jackson.core.JsonGenerator

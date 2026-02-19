@@ -13,24 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.json
+package com.netflix.atlas.json3
 
-import tools.jackson.databind.BeanDescription
+import tools.jackson.core.JsonGenerator
 import tools.jackson.databind.ValueSerializer
-import tools.jackson.databind.SerializationConfig
-import tools.jackson.databind.ser.ValueSerializerModifier
+import tools.jackson.databind.SerializationContext
 
-private[json] class JsonSupportSerializerModifier extends ValueSerializerModifier {
+private[json3] class JsonSupportSerializer(
+  defaultSerializer: ValueSerializer[AnyRef]
+) extends ValueSerializer[JsonSupport] {
 
-  override def modifySerializer(
-    config: SerializationConfig,
-    beanDesc: BeanDescription.Supplier,
-    serializer: ValueSerializer[?]
-  ): ValueSerializer[?] = {
+  override def serialize(
+    value: JsonSupport,
+    gen: JsonGenerator,
+    serializers: SerializationContext
+  ): Unit = {
 
-    if (classOf[JsonSupport].isAssignableFrom(beanDesc.getBeanClass))
-      new JsonSupportSerializer(serializer.asInstanceOf[ValueSerializer[AnyRef]])
+    if (value.hasCustomEncoding)
+      value.encode(gen)
     else
-      serializer
+      defaultSerializer.serialize(value, gen, serializers)
   }
 }

@@ -16,7 +16,7 @@
 package com.netflix.atlas.webapi
 
 import com.netflix.atlas.core.model.Datapoint
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import munit.FunSuite
 
 class PublishApiJsonSuite extends FunSuite {

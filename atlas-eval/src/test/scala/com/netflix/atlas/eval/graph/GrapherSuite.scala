@@ -24,7 +24,7 @@ import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 

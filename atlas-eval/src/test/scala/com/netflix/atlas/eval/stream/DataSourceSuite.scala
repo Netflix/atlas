@@ -18,7 +18,7 @@ package com.netflix.atlas.eval.stream
 import java.time.Duration
 
 import com.netflix.atlas.eval.stream.Evaluator.DataSource
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import munit.FunSuite
 
 class DataSourceSuite extends FunSuite {

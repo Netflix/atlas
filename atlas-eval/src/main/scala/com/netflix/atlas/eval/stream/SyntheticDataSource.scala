@@ -31,7 +31,7 @@ import com.netflix.atlas.eval.model.LwcDatapoint
 import com.netflix.atlas.eval.model.LwcEvent
 import com.netflix.atlas.eval.model.LwcSubscription
 import com.netflix.atlas.eval.model.LwcSubscriptionV2
-import com.netflix.atlas.json.Json
+import com.netflix.atlas.json3.Json
 import com.netflix.spectator.impl.Hash64
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.model.Uri
