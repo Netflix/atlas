@@ -6,14 +6,14 @@ object Dependencies {
   object Versions {
     val pekko       = "1.4.0"
     val pekkoHttpV  = "1.3.0"
-    val iep         = "5.1.11"
+    val iep         = "6.0.0"
     val jackson     = "2.21.0"
     val log4j       = "2.25.3"
     val otel        = "1.59.0"
     val scala       = "2.13.18"
     val slf4j       = "2.0.17"
     val spectator   = "1.9.4"
-    val spring      = "6.2.15"
+    val spring      = "7.0.4"
 
     val crossScala  = Seq(scala, "3.8.1")
   }
