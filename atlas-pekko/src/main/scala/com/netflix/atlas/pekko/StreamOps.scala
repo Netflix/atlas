@@ -597,6 +597,7 @@ object StreamOps extends StrictLogging {
 
           if (newSize > maxSize) {
             val msg = f"ByteString size limit exceeded: $newSize%,d bytes > $maxSize%,d bytes"
+            logger.warn(msg)
             failStage(new IllegalStateException(msg))
           } else {
             accumulated = accumulated ++ chunk
