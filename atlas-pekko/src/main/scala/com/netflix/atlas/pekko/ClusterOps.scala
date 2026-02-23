@@ -377,7 +377,7 @@ object ClusterOps extends StrictLogging {
             // Calculate max delay (last member's delay) for backpressure
             val numMembers = shuffledMembers.size
             val maxDelay = ((numMembers - 1) * delayMillis).millis
-            logger.debug(s"sending $payloadSize bytes to $numMembers members over $maxDelay ms ")
+            logger.debug(s"sending $payloadSize bytes to $numMembers members over $maxDelay")
 
             // Schedule pull after the broadcast window completes
             if (maxDelay > Duration.Zero) {
