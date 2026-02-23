@@ -81,20 +81,18 @@ private[lwcapi] class WebSocketSessionManager(
           case NonFatal(t) =>
             highPriorityMessages = DiagnosticMessage.error(t) :: highPriorityMessages
         } finally {
-          // Push out dataSource only once
-          if (!dataSourcePushed) {
-            push(out, dataSource)
-            dataSourcePushed = true
-          } else {
-            // Only pull when no push happened, because push should have triggered a pull
-            // from downstream
-            onPull()
-          }
+          onPull()
         }
       }
 
       override def onPull(): Unit = {
-        if (highPriorityMessages.nonEmpty) {
+        if (!dataSourcePushed) {
+          // Push out the data source immediately so heartbeats start flowing
+          // before the client sends any subscription messages. This prevents
+          // idle timeouts when subscription delivery is delayed.
+          push(out, dataSource)
+          dataSourcePushed = true
+        } else if (highPriorityMessages.nonEmpty) {
           push(out, Source(highPriorityMessages))
           highPriorityMessages = Nil
         } else {

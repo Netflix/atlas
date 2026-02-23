@@ -74,7 +74,7 @@ class SubscribeApiSuite extends MUnitRouteSuite {
         parseBatch(client.expectMessage()).foreach {
           case _: DiagnosticMessage   =>
           case sub: LwcSubscriptionV2 => subscriptions = sub :: subscriptions
-          case h: LwcHeartbeat        => assertEquals(h.step, 60000L)
+          case _: LwcHeartbeat        =>
           case v                      => throw new MatchError(v)
         }
       }
@@ -109,7 +109,7 @@ class SubscribeApiSuite extends MUnitRouteSuite {
         parseBatch(client.expectMessage()).foreach {
           case _: DiagnosticMessage   =>
           case sub: LwcSubscriptionV2 => subscriptions = sub :: subscriptions
-          case h: LwcHeartbeat        => assertEquals(h.step, 60000L)
+          case _: LwcHeartbeat        =>
           case v                      => throw new MatchError(v)
         }
       }

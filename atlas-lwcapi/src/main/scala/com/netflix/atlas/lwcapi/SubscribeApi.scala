@@ -156,7 +156,9 @@ class SubscribeApi(
     val handler = new QueueHandler(streamMeta, queue)
     sm.register(streamMeta, handler)
 
-    // Heartbeat messages to ensure that the socket is never idle
+    // Heartbeat messages to ensure that the socket is never idle. A default heartbeat
+    // with a 5s step is used before any subscriptions are established to prevent idle
+    // timeouts when subscription delivery is delayed.
     val heartbeatSrc = Source
       .tick(0.seconds, 5.seconds, NotUsed)
       .flatMapConcat { _ =>
@@ -173,7 +175,10 @@ class SubscribeApi(
             // timestamp is delayed by one interval
             LwcHeartbeat(stepAlignedTime(step) - step, step)
           }
-        Source(steps)
+        if (steps.isEmpty)
+          Source.single(LwcHeartbeat(stepAlignedTime(5_000L) - 5_000L, 5_000L))
+        else
+          Source(steps)
       }
 
     Source
