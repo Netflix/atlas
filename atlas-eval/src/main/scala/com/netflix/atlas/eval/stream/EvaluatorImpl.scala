@@ -525,7 +525,7 @@ private[stream] abstract class EvaluatorImpl(
       client = instance => createWebSocketFlow(instance),
       sizeOf = bytes => bytes.length.toLong,
       targetRateBytesPerSec = broadcastTargetRate,
-      registry = registry,
+      registry = registry
     )
   }
 
