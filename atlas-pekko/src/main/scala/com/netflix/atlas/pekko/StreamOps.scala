@@ -223,6 +223,12 @@ object StreamOps extends StrictLogging {
       completed = true
     }
 
+    /** Complete the queue and clear any pending elements. */
+    def completeAndClear(): Unit = {
+      completed = true
+      queue.clear()
+    }
+
     /** Check if the queue is open to take more data. */
     def isOpen: Boolean = !completed
 
@@ -597,6 +603,7 @@ object StreamOps extends StrictLogging {
 
           if (newSize > maxSize) {
             val msg = f"ByteString size limit exceeded: $newSize%,d bytes > $maxSize%,d bytes"
+            logger.warn(msg)
             failStage(new IllegalStateException(msg))
           } else {
             accumulated = accumulated ++ chunk
