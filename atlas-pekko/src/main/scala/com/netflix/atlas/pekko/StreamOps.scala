@@ -223,6 +223,12 @@ object StreamOps extends StrictLogging {
       completed = true
     }
 
+    /** Complete the queue and clear any pending elements. */
+    def completeAndClear(): Unit = {
+      completed = true
+      queue.clear()
+    }
+
     /** Check if the queue is open to take more data. */
     def isOpen: Boolean = !completed
 

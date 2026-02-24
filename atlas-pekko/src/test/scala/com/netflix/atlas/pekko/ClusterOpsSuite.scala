@@ -21,7 +21,6 @@ import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
 import munit.FunSuite
 
-import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -151,8 +150,7 @@ class ClusterOpsSuite extends FunSuite {
     )
     val context = ClusterOps.StaggeredBroadcastContext[String, String, String](
       client = (_: String) => Flow[String].map(v => v),
-      sizeOf = _.length.toLong,
-      targetRateBytesPerSec = 1000
+      sizeOf = _.length.toLong
     )
     val future = Source(input)
       .via(ClusterOps.staggeredBroadcast(context))
@@ -164,44 +162,37 @@ class ClusterOpsSuite extends FunSuite {
   test("staggeredBroadcast: single member") {
     val input: List[ClusterOps.GroupByMessage[String, String]] = List(
       ClusterOps.Cluster(Set("a")),
-      ClusterOps.Data(Map("a" -> "data1")),
-      ClusterOps.Data(Map("a" -> "data2")),
-      ClusterOps.Data(Map("a" -> "data3"))
+      ClusterOps.Data(Map("a" -> "data1"))
     )
     val context = ClusterOps.StaggeredBroadcastContext[String, String, String](
       client = (_: String) => Flow[String].map(v => v),
-      sizeOf = _.length.toLong,
-      targetRateBytesPerSec = 1000,
-      queueSize = 10
+      sizeOf = _.length.toLong
     )
     val future = Source(input)
       .via(ClusterOps.staggeredBroadcast(context))
       .runWith(Sink.seq[String])
     val seq = Await.result(future, Duration.Inf)
-    assertEquals(seq.sorted, Seq("data1", "data2", "data3"))
+    assertEquals(seq.sorted, Seq("data1"))
   }
 
   test("staggeredBroadcast: multiple members receive same data") {
     val input: List[ClusterOps.GroupByMessage[String, String]] = List(
       ClusterOps.Cluster(Set("a", "b", "c")),
-      ClusterOps.Data(Map("a" -> "broadcast1", "b" -> "broadcast1", "c" -> "broadcast1")),
-      ClusterOps.Data(Map("a" -> "broadcast2", "b" -> "broadcast2", "c" -> "broadcast2"))
+      ClusterOps.Data(Map("a" -> "broadcast1", "b" -> "broadcast1", "c" -> "broadcast1"))
     )
     val context = ClusterOps.StaggeredBroadcastContext[String, String, (String, String)](
       client = (k: String) => Flow[String].map(v => k -> v),
-      sizeOf = _.length.toLong,
-      targetRateBytesPerSec = 1000,
-      queueSize = 10
+      sizeOf = _.length.toLong
     )
     val future = Source(input)
       .via(ClusterOps.staggeredBroadcast(context))
       .runWith(Sink.seq[(String, String)])
     val seq = Await.result(future, Duration.Inf)
 
-    // All members should receive all broadcasts
-    assertEquals(seq.filter(_._1 == "a").map(_._2).sorted, Seq("broadcast1", "broadcast2"))
-    assertEquals(seq.filter(_._1 == "b").map(_._2).sorted, Seq("broadcast1", "broadcast2"))
-    assertEquals(seq.filter(_._1 == "c").map(_._2).sorted, Seq("broadcast1", "broadcast2"))
+    // All members should receive the broadcast
+    assertEquals(seq.filter(_._1 == "a").map(_._2).sorted, Seq("broadcast1"))
+    assertEquals(seq.filter(_._1 == "b").map(_._2).sorted, Seq("broadcast1"))
+    assertEquals(seq.filter(_._1 == "c").map(_._2).sorted, Seq("broadcast1"))
   }
 
   test("staggeredBroadcast: add and remove member") {
@@ -215,81 +206,41 @@ class ClusterOpsSuite extends FunSuite {
     )
     val context = ClusterOps.StaggeredBroadcastContext[String, String, (String, String)](
       client = (k: String) => Flow[String].map(v => k -> v),
-      sizeOf = _.length.toLong,
-      targetRateBytesPerSec = 1000,
-      queueSize = 10
+      sizeOf = _.length.toLong
     )
     val future = Source(input)
       .via(ClusterOps.staggeredBroadcast(context))
       .runWith(Sink.seq[(String, String)])
     val seq = Await.result(future, Duration.Inf)
 
-    assertEquals(seq.filter(_._1 == "a").map(_._2).sorted, Seq("data1", "data2"))
-    assertEquals(seq.filter(_._1 == "b").map(_._2).sorted, Seq("data2", "data3"))
+    // Member "a" may not receive any data because completeAndClear is called
+    // when it is removed, and the drop-old queue may have already replaced data1
+    // with data2 before either could be consumed.
+    // Member "b" should receive data3 (last data for the surviving member)
+    assert(seq.filter(_._1 == "b").map(_._2).contains("data3"))
   }
 
   test("staggeredBroadcast: failed substream") {
     val input: List[ClusterOps.GroupByMessage[String, String]] = List(
-      ClusterOps.Cluster(Set("a", "b", "c")),
-      ClusterOps.Data(Map("a" -> "data1", "b" -> "data1", "c" -> "data1")),
-      ClusterOps.Data(Map("a" -> "data2", "b" -> "data2", "c" -> "data2")),
-      ClusterOps.Data(Map("a" -> "data3", "b" -> "data3", "c" -> "data3"))
+      ClusterOps.Cluster(Set("a")),
+      ClusterOps.Data(Map("a" -> "data1")),
+      ClusterOps.Data(Map("a" -> "data2"))
     )
     val context = ClusterOps.StaggeredBroadcastContext[String, String, (String, String)](
       client = (k: String) =>
         Flow[String].map { v =>
-          // Fail for member "b" on data2
-          if (k == "b" && v == "data2") throw new RuntimeException("test")
+          // Fail on data1
+          if (v == "data1") throw new RuntimeException("test")
           k -> v
         },
-      sizeOf = _.length.toLong,
-      targetRateBytesPerSec = 1000,
-      queueSize = 10
+      sizeOf = _.length.toLong
     )
     val future = Source(input)
       .via(ClusterOps.staggeredBroadcast(context))
       .runWith(Sink.seq[(String, String)])
     val seq = Await.result(future, Duration.Inf)
 
-    // Member "a" and "c" should receive all values
-    assertEquals(seq.filter(_._1 == "a").map(_._2).sorted, Seq("data1", "data2", "data3"))
-    assertEquals(seq.filter(_._1 == "c").map(_._2).sorted, Seq("data1", "data2", "data3"))
-    // Member "b" should recover and receive values after failure
-    assertEquals(seq.filter(_._1 == "b").map(_._2).sorted, Seq("data1", "data3"))
-  }
-
-  test("staggeredBroadcast: backpressure prevents overlap") {
-    val input: List[ClusterOps.GroupByMessage[String, String]] = List(
-      ClusterOps.Cluster(Set("a", "b")),
-      ClusterOps.Data(Map("a" -> "broadcast1", "b" -> "broadcast1")),
-      ClusterOps.Data(Map("a" -> "broadcast2", "b" -> "broadcast2"))
-    )
-
-    val receiveTimes = new ConcurrentHashMap[String, Long]()
-
-    val context = ClusterOps.StaggeredBroadcastContext[String, String, String](
-      client = (_: String) =>
-        Flow[String].map { v =>
-          receiveTimes.put(v, System.nanoTime())
-          v
-        },
-      sizeOf = _.length.toLong,
-      targetRateBytesPerSec = 100, // 100 bytes/sec, creates ~100ms delays
-      queueSize = 10
-    )
-
-    val future = Source(input)
-      .via(ClusterOps.staggeredBroadcast(context))
-      .runWith(Sink.seq[String])
-    Await.result(future, Duration.Inf)
-
-    // Verify broadcast2 starts after broadcast1 completes
-    val broadcast1Time = receiveTimes.get("broadcast1")
-    val broadcast2Time = receiveTimes.get("broadcast2")
-
-    // Broadcast2 should start after broadcast1 finishes
-    // With 2 members and ~100ms delay per member, gap should be > 50ms
-    val gap = broadcast2Time - broadcast1Time
-    assert(gap > 50_000_000L, s"Gap was ${gap / 1_000_000}ms, expected > 50ms")
+    // Member "a" should recover after failure and receive data2
+    assert(seq.filter(_._1 == "a").map(_._2).contains("data2"))
   }
 }
