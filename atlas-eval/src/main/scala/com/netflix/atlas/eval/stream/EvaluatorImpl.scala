@@ -526,7 +526,6 @@ private[stream] abstract class EvaluatorImpl(
       sizeOf = bytes => bytes.length.toLong,
       targetRateBytesPerSec = broadcastTargetRate,
       registry = registry,
-      queueSize = 10
     )
   }
 

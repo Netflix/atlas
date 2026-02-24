@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.pekko
 
+import com.netflix.atlas.pekko.StreamOps.BlockingSourceQueue
 import com.netflix.atlas.pekko.StreamOps.SourceQueue
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.Attributes
@@ -30,7 +31,6 @@ import org.apache.pekko.stream.stage.GraphStage
 import org.apache.pekko.stream.stage.GraphStageLogic
 import org.apache.pekko.stream.stage.InHandler
 import org.apache.pekko.stream.stage.OutHandler
-import org.apache.pekko.stream.stage.TimerGraphStageLogic
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.scalalogging.StrictLogging
@@ -280,13 +280,12 @@ object ClusterOps extends StrictLogging {
       FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
-      new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+      new GraphStageLogic(shape) with InHandler with OutHandler {
 
         private val registry = context.registry
-        private val membersSources = mutable.HashMap.empty[M, SourceQueue[DelayedData[D]]]
+        private val membersSources = mutable.HashMap.empty[M, BlockingSourceQueue[DelayedData[D]]]
+        private val pendingSources = mutable.ListBuffer.empty[Source[O, NotUsed]]
         private val random = new scala.util.Random()
-        private val pullTimerKey = "pull"
-        private var inDelayWindow = false
 
         override def onPush(): Unit = {
           val msg = grab(in)
@@ -306,7 +305,7 @@ object ClusterOps extends StrictLogging {
           removed.foreach { m =>
             membersSources.remove(m).foreach { queue =>
               logger.debug(s"stopping $m")
-              queue.complete()
+              queue.completeAndClear()
             }
           }
 
@@ -314,20 +313,29 @@ object ClusterOps extends StrictLogging {
           if (added.nonEmpty) {
             logger.debug(s"members added: $added")
           }
-          val sources = added.toList
-            .map { m =>
-              val (queue, source) = StreamOps
-                .blockingQueue[DelayedData[D]](registry, context.id, context.queueSize)
-                // Apply delay and unwrap to original data
-                .flatMapConcat(_.source)
-                .via(newSubFlow(m))
-                .preMaterialize()(materializer)
+          added.foreach { m =>
+            val queue = new java.util.concurrent.ArrayBlockingQueue[DelayedData[D]](1)
+            val (blockingQueue, source) = StreamOps
+              .wrapBlockingQueue[DelayedData[D]](registry, context.id, queue, dropNew = false)
+              // Apply delay and unwrap to original data
+              .flatMapConcat(_.source)
+              .via(newSubFlow(m))
+              .preMaterialize()(materializer)
 
-              membersSources += m -> queue
-              source
-            }
+            membersSources += m -> blockingQueue
+            pendingSources += source
+          }
 
-          push(out, sources)
+          pushPending()
+          pull(in)
+        }
+
+        private def pushPending(): Unit = {
+          if (isAvailable(out) && pendingSources.nonEmpty) {
+            val sources = pendingSources.toList
+            pendingSources.clear()
+            push(out, sources)
+          }
         }
 
         private def newSubFlow(m: M): Flow[D, O, NotUsed] = {
@@ -374,36 +382,17 @@ object ClusterOps extends StrictLogging {
                 queue.offer(DelayedData(d, delay))
             }
 
-            // Calculate max delay (last member's delay) for backpressure
             val numMembers = shuffledMembers.size
             val maxDelay = ((numMembers - 1) * delayMillis).millis
             logger.debug(s"sending $payloadSize bytes to $numMembers members over $maxDelay")
-
-            // Schedule pull after the broadcast window completes
-            if (maxDelay > Duration.Zero) {
-              inDelayWindow = true
-              scheduleOnce(pullTimerKey, maxDelay)
-            } else {
-              // No delay needed, pull immediately
-              if (isAvailable(out)) {
-                pull(in)
-              }
-            }
           }
-        }
 
-        override def onTimer(timerKey: Any): Unit = {
-          if (timerKey == pullTimerKey) {
-            inDelayWindow = false
-            if (isAvailable(out)) {
-              pull(in)
-            }
-          }
+          pull(in)
         }
 
         override def onPull(): Unit = {
-          // Only pull if not in delay window
-          if (!inDelayWindow) {
+          pushPending()
+          if (!hasBeenPulled(in)) {
             pull(in)
           }
         }
@@ -433,8 +422,6 @@ object ClusterOps extends StrictLogging {
     *     Registry providing basic stats for the queue. Default is NoopRegistry.
     * @param id
     *     Id used with the queue metrics.
-    * @param queueSize
-    *     Size of the queue for each sub-stream. Default size is 1.
     * @tparam M
     *     Key identifying a member of a cluster.
     * @tparam D
@@ -447,8 +434,7 @@ object ClusterOps extends StrictLogging {
     sizeOf: D => Long,
     targetRateBytesPerSec: Long = 125000, // 1 Mbps default
     registry: Registry = noopRegistry,
-    id: String = "clusterStaggeredBroadcast",
-    queueSize: Int = 1
+    id: String = "clusterStaggeredBroadcast"
   ) {
     require(targetRateBytesPerSec > 0, "targetRateBytesPerSec must be > 0")
   }
