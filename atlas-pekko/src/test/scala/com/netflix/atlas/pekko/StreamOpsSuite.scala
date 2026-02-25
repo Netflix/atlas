@@ -399,6 +399,48 @@ class StreamOpsSuite extends FunSuite {
     assertEquals(vs, (0 until 10).map(_ => 1).toList)
   }
 
+  private def bufferedCount(registry: Registry): Long = {
+    val id = registry.createId("pekko.stream.bufferEvents", "id", "test", "result", "buffered")
+    registry.counter(id).count()
+  }
+
+  private def droppedCount(registry: Registry): Long = {
+    val id = registry.createId("pekko.stream.bufferEvents", "id", "test", "result", "dropped")
+    registry.counter(id).count()
+  }
+
+  test("buffer, no drops") {
+    val registry = new DefaultRegistry()
+    val future = Source(1 to 10)
+      .via(StreamOps.buffer(registry, "test", 100))
+      .runWith(Sink.seq[Int])
+    val result = Await.result(future, Duration.Inf)
+    assertEquals(result.toList, (1 to 10).toList)
+    assertEquals(bufferedCount(registry), 10L)
+    assertEquals(droppedCount(registry), 0L)
+  }
+
+  test("buffer, drops") {
+    val registry = new DefaultRegistry()
+    val future = Source(1 to 100)
+      .via(StreamOps.buffer[Int](registry, "test", 1))
+      .throttle(1, 1.second)
+      .runWith(Sink.ignore)
+    Await.result(future, Duration.Inf)
+    assert(bufferedCount(registry) < 100)
+    assert(droppedCount(registry) > 0)
+  }
+
+  test("buffer, upstream completes with items in buffer") {
+    val registry = new DefaultRegistry()
+    val future = Source(1 to 5)
+      .via(StreamOps.buffer(registry, "test", 10))
+      .runWith(Sink.seq[Int])
+    val result = Await.result(future, Duration.Inf)
+    assertEquals(result.toList, (1 to 5).toList)
+    assertEquals(droppedCount(registry), 0L)
+  }
+
   test("collectBytes: small chunks") {
     import org.apache.pekko.util.ByteString
     val chunks = List(
