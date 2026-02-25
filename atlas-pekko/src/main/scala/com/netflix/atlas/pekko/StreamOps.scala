@@ -389,8 +389,97 @@ object StreamOps extends StrictLogging {
 
   private object MonitorFlow {
 
-    private val MeterBatchSize = 1_000_000
-    private val MeterUpdateInterval = TimeUnit.SECONDS.toNanos(1L)
+    val MeterBatchSize: Int = 1_000_000
+    val MeterUpdateInterval: Long = TimeUnit.SECONDS.toNanos(1L)
+  }
+
+  /**
+    * Buffer elements in the stream with a fixed size buffer. If the buffer is full when a
+    * new element arrives, the element will be dropped and a counter will be incremented.
+    * This is similar to `Flow.buffer(size, OverflowStrategy.dropNew)`, but tracks the
+    * number of dropped elements using a Spectator counter.
+    *
+    * @param registry
+    *     Spectator registry for managing the drop counter.
+    * @param id
+    *     Id for the counter that will be incremented when an element is dropped.
+    * @param size
+    *     Maximum number of elements to buffer.
+    * @return
+    *     Flow that buffers elements and drops new arrivals when full.
+    */
+  def buffer[T](registry: Registry, id: String, size: Int): Flow[T, T, NotUsed] = {
+    Flow[T].via(new BufferFlow[T](registry, id, size))
+  }
+
+  private final class BufferFlow[T](registry: Registry, id: String, size: Int)
+      extends GraphStage[FlowShape[T, T]] {
+
+    private val baseId = registry.createId("pekko.stream.bufferEvents", "id", id)
+    private val bufferedCounter = registry.counter(baseId.withTag("result", "buffered"))
+    private val droppedCounter = registry.counter(baseId.withTag("result", "dropped"))
+
+    private val in = Inlet[T]("BufferFlow.in")
+    private val out = Outlet[T]("BufferFlow.out")
+
+    override val shape: FlowShape[T, T] = FlowShape(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): TimerGraphStageLogic = {
+
+      new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+
+        private val bufferedUpdater = bufferedCounter.batchUpdater(MonitorFlow.MeterBatchSize)
+        private val droppedUpdater = droppedCounter.batchUpdater(MonitorFlow.MeterBatchSize)
+
+        private val queue = new java.util.ArrayDeque[T](size)
+
+        override def preStart(): Unit = {
+          val frequency = FiniteDuration(MonitorFlow.MeterUpdateInterval, TimeUnit.NANOSECONDS)
+          scheduleWithFixedDelay(NotUsed, frequency, frequency)
+        }
+
+        override def onTimer(timerKey: Any): Unit = {
+          bufferedUpdater.flush()
+          droppedUpdater.flush()
+        }
+
+        override def onPush(): Unit = {
+          val elem = grab(in)
+          if (queue.size() < size) {
+            queue.offer(elem)
+            bufferedUpdater.increment()
+            if (isAvailable(out)) {
+              push(out, queue.poll())
+            }
+          } else {
+            droppedUpdater.increment()
+          }
+          pull(in)
+        }
+
+        override def onPull(): Unit = {
+          if (!queue.isEmpty) {
+            push(out, queue.poll())
+          }
+          if (!hasBeenPulled(in) && !isClosed(in)) {
+            pull(in)
+          }
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          if (queue.isEmpty) {
+            completeStage()
+          } else {
+            emitMultiple(out, queue.iterator())
+            completeStage()
+          }
+          bufferedUpdater.close()
+          droppedUpdater.close()
+        }
+
+        setHandlers(in, out, this)
+      }
+    }
   }
 
   /**
