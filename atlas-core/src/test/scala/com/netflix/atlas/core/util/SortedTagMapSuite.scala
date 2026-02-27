@@ -253,6 +253,7 @@ class SortedTagMapSuite extends FunSuite {
       .add("b", "2")
       .compact()
     assertEquals(actual, expected)
+    assertEquals(expected.backingArraySize, 4)
     assertEquals(actual.backingArraySize, 4)
   }
 

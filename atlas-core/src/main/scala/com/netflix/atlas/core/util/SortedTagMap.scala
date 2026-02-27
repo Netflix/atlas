@@ -23,18 +23,18 @@ import java.lang
 /**
   * Immutable map implementation for tag maps using a sorted array as the underlying storage.
   */
-final class SortedTagMap private (private val data: Array[String], private val length: Int)
+final class SortedTagMap private (private val data: Array[String])
     extends scala.collection.immutable.Map[String, String]
     with Comparable[SortedTagMap] {
 
   private[this] var cachedHashCode: Int = 0
 
   private def find(key: String): Int = {
-    if (length == 0) {
+    if (data.length == 0) {
       -2
     } else {
       var left = 0
-      var right = length / 2 - 1
+      var right = data.length / 2 - 1
       while (left <= right) {
         val mid = (left + right) / 2
         val cmp = data(mid * 2).compareTo(key)
@@ -58,10 +58,10 @@ final class SortedTagMap private (private val data: Array[String], private val l
     val pos = find(key)
     if (pos < 0) this
     else {
-      val copy = new Array[String](length - 2)
+      val copy = new Array[String](data.length - 2)
       System.arraycopy(data, 0, copy, 0, pos)
-      System.arraycopy(data, pos + 2, copy, pos, length - pos - 2)
-      new SortedTagMap(copy, copy.length)
+      System.arraycopy(data, pos + 2, copy, pos, data.length - pos - 2)
+      new SortedTagMap(copy)
     }
   }
 
@@ -69,17 +69,17 @@ final class SortedTagMap private (private val data: Array[String], private val l
     val pos = find(key)
     if (pos < 0) {
       val insertPos = -(pos + 2)
-      val copy = new Array[String](length + 2)
+      val copy = new Array[String](data.length + 2)
       System.arraycopy(data, 0, copy, 0, insertPos)
       copy(insertPos) = key
       copy(insertPos + 1) = value.asInstanceOf[String]
-      System.arraycopy(data, insertPos, copy, insertPos + 2, length - insertPos)
-      new SortedTagMap(copy, copy.length)
+      System.arraycopy(data, insertPos, copy, insertPos + 2, data.length - insertPos)
+      new SortedTagMap(copy)
     } else {
-      val copy = new Array[String](length)
-      System.arraycopy(data, 0, copy, 0, length)
+      val copy = new Array[String](data.length)
+      System.arraycopy(data, 0, copy, 0, data.length)
       copy(pos + 1) = value.asInstanceOf[String]
-      new SortedTagMap(copy, copy.length)
+      new SortedTagMap(copy)
     }
   }
 
@@ -111,7 +111,7 @@ final class SortedTagMap private (private val data: Array[String], private val l
   }
 
   override def iterator: Iterator[(String, String)] = {
-    val n = length
+    val n = data.length
     new Iterator[(String, String)] {
       private var i = 0
 
@@ -127,14 +127,14 @@ final class SortedTagMap private (private val data: Array[String], private val l
 
   override def foreachEntry[U](f: (String, String) => U): Unit = {
     var i = 0
-    while (i < length) {
+    while (i < data.length) {
       f(data(i), data(i + 1))
       i += 2
     }
   }
 
   override def size: Int = {
-    length / 2
+    data.length / 2
   }
 
   /**
@@ -165,7 +165,7 @@ final class SortedTagMap private (private val data: Array[String], private val l
     var a, b = 0
     var c = 1
     var i = 0
-    while (i < length) {
+    while (i < data.length) {
       val h = data(i).hashCode
       a += h
       b ^= h
@@ -176,7 +176,7 @@ final class SortedTagMap private (private val data: Array[String], private val l
     h = scala.util.hashing.MurmurHash3.mix(h, a)
     h = scala.util.hashing.MurmurHash3.mix(h, b)
     h = scala.util.hashing.MurmurHash3.mixLast(h, c)
-    scala.util.hashing.MurmurHash3.finalizeHash(h, length)
+    scala.util.hashing.MurmurHash3.finalizeHash(h, data.length)
   }
 
   /**
@@ -184,25 +184,13 @@ final class SortedTagMap private (private val data: Array[String], private val l
     */
   override def equals(other: Any): Boolean = {
     other match {
-      case m: SortedTagMap => arrayEquals(data, length, m.data, m.length)
-      case o               => super.equals(o)
+      case m: SortedTagMap =>
+        java.util.Arrays.equals(
+          data.asInstanceOf[Array[AnyRef]],
+          m.data.asInstanceOf[Array[AnyRef]]
+        )
+      case o => super.equals(o)
     }
-  }
-
-  private def arrayEquals(
-    a1: Array[String],
-    length1: Int,
-    a2: Array[String],
-    length2: Int
-  ): Boolean = {
-    if (length1 != length2)
-      return false
-    var i = 0
-    while (i < length1) {
-      if (a1(i) != a2(i)) return false
-      i += 1
-    }
-    true
   }
 
   override def compareTo(other: SortedTagMap): Int = {
@@ -232,7 +220,7 @@ final class SortedTagMap private (private val data: Array[String], private val l
     * a length of at least twice the size of this map.
     */
   def copyToArray(buffer: Array[String]): Unit = {
-    System.arraycopy(data, 0, buffer, 0, length)
+    System.arraycopy(data, 0, buffer, 0, data.length)
   }
 
   /** Return a sorted array containing the keys for this map. */
@@ -271,7 +259,7 @@ final class SortedTagMap private (private val data: Array[String], private val l
     val pos = find("name")
     if (pos < 0) {
       defaultName match {
-        case Some(name) => Id.unsafeCreate(name, data, length)
+        case Some(name) => Id.unsafeCreate(name, data, data.length)
         case None       => throw new IllegalArgumentException(s"`name` key is not present: $this")
       }
     } else {
@@ -284,7 +272,7 @@ final class SortedTagMap private (private val data: Array[String], private val l
 object SortedTagMap {
 
   /** Instance of empty tag map that can be reused. */
-  val empty: SortedTagMap = new SortedTagMap(new Array[String](0), 0)
+  val empty: SortedTagMap = new SortedTagMap(Array.empty[String])
 
   /**
     * Create a new instance based on an array of paired strings. The array that is passed
@@ -294,7 +282,10 @@ object SortedTagMap {
     val array = java.util.Arrays.copyOf(data, data.length)
     ArrayHelper.sortPairs(array)
     val length = dedup(array, array.length)
-    new SortedTagMap(array, length)
+    if (length < array.length)
+      new SortedTagMap(java.util.Arrays.copyOf(array, length))
+    else
+      new SortedTagMap(array)
   }
 
   /**
@@ -324,7 +315,10 @@ object SortedTagMap {
     * internally to the map and should not be modified.
     */
   def createUnsafe(data: Array[String], length: Int): SortedTagMap = {
-    new SortedTagMap(data, length)
+    if (length < data.length)
+      new SortedTagMap(java.util.Arrays.copyOf(data, length))
+    else
+      new SortedTagMap(data)
   }
 
   /**
@@ -378,7 +372,7 @@ object SortedTagMap {
     private var pos = 0
 
     private def resize(): Unit = {
-      val tmp = new Array[String](buf.length + initialSize * 2)
+      val tmp = new Array[String](buf.length * 2)
       System.arraycopy(buf, 0, tmp, 0, pos)
       buf = tmp
     }
@@ -414,34 +408,22 @@ object SortedTagMap {
 
     /**
       * Compute result and clear the internal buffer. The builder instance cannot be used again
-      * after calling.
+      * after calling. The backing array will be trimmed to exactly fit the data.
       */
     def result(): SortedTagMap = {
       ArrayHelper.sortPairs(buf, pos)
       val length = dedup(buf, pos)
-      val map = createUnsafe(buf, length)
+      val data = if (length < buf.length) java.util.Arrays.copyOf(buf, length) else buf
       buf = null
-      map
+      new SortedTagMap(data)
     }
 
     /**
-      * Same as result except that it will ensure the backing array is sized to exactly
-      * fit the data.
+      * Same as result. Previously this method would ensure the backing array is sized to
+      * exactly fit the data, but now result always does that.
       */
     def compact(): SortedTagMap = {
-      ArrayHelper.sortPairs(buf, pos)
-      val length = dedup(buf, pos)
-      if (length < buf.length) {
-        val tmp = new Array[String](length)
-        System.arraycopy(buf, 0, tmp, 0, length)
-        val map = createUnsafe(tmp, length)
-        buf = null
-        map
-      } else {
-        val map = createUnsafe(buf, length)
-        buf = null
-        map
-      }
+      result()
     }
   }
 
