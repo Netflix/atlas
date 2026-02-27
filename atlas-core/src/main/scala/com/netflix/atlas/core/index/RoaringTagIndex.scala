@@ -92,8 +92,25 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   //   to the keys and values arrays respectively.
   private val (itemIds, itemIndex, keyIndex, tagIndex, itemTags) = buildItemIndex()
 
+  // Optimize all bitmaps for memory after the index is fully built. Items are inserted
+  // sequentially so many bitmaps will have consecutive runs that compress well.
+  optimizeBitmaps()
+
   // Collect and log various index stats
   collectStats()
+
+  private def optimizeBitmaps(): Unit = {
+    keyIndex.foreach { (_, bitmap) =>
+      bitmap.runOptimize()
+      bitmap.trim()
+    }
+    itemIndex.foreach { (_, vidx) =>
+      vidx.foreach { (_, bitmap) =>
+        bitmap.runOptimize()
+        bitmap.trim()
+      }
+    }
+  }
 
   private def collectStats(): Unit = {
     logger.info(s"items = ${items.length}, keys = ${keys.length}, values = ${values.length}")
@@ -211,9 +228,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   }
 
   private def diff(s1: RoaringBitmap, s2: RoaringBitmap): RoaringBitmap = {
-    val s = s1.clone()
-    s.andNot(s2)
-    s
+    RoaringBitmap.andNot(s1, s2)
   }
 
   private def withOffset(set: RoaringBitmap, offset: Int): RoaringBitmap = {
@@ -570,17 +585,6 @@ object RoaringTagIndex {
   }
 
   private[index] def hasNonEmptyIntersection(b1: RoaringBitmap, b2: RoaringBitmap): Boolean = {
-    var v1 = b1.nextValue(0).asInstanceOf[Int]
-    var v2 = b2.nextValue(0).asInstanceOf[Int]
-    while (v1 >= 0 && v2 >= 0) {
-      if (v1 == v2) {
-        return true
-      } else if (v1 < v2) {
-        v1 = b1.nextValue(v2).asInstanceOf[Int]
-      } else if (v1 > v2) {
-        v2 = b2.nextValue(v1).asInstanceOf[Int]
-      }
-    }
-    false
+    RoaringBitmap.intersects(b1, b2)
   }
 }
