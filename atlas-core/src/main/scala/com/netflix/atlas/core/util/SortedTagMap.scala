@@ -189,7 +189,7 @@ final class SortedTagMap private (private val data: Array[String])
           data.asInstanceOf[Array[AnyRef]],
           m.data.asInstanceOf[Array[AnyRef]]
         )
-      case o               => super.equals(o)
+      case o => super.equals(o)
     }
   }
 
