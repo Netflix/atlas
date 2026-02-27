@@ -53,7 +53,7 @@ object Dependencies {
   val otelSdkTest       = "io.opentelemetry" % "opentelemetry-sdk-testing" % otel
   val postgres          = "org.postgresql" % "postgresql" % "42.7.9"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.2.0"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.3.0"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.6.12"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.14.0"
   val scalaCompatJdk8   = "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
