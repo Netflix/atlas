@@ -55,8 +55,12 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   }
 
   private val (keys, values) = {
-    val keySet = new util.HashSet[String](items.length)
-    val valueSet = new util.HashSet[String](items.length)
+    // Initial capacities are based on observed production data where the number of
+    // unique keys is typically under 10k and unique values are roughly 1/6th of the
+    // number of items. These are much smaller than items.length, avoiding large
+    // temporary allocations during construction.
+    val keySet = new util.HashSet[String](1024)
+    val valueSet = new util.HashSet[String](math.max(1024, items.length / 4))
     var pos = 0
     while (pos < items.length) {
       items(pos).foreach { (k, v) =>
@@ -88,9 +92,12 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   //   32bits. Key is a position in the keys array, value is a position in the values
   //   array.
   //
-  // * itemTags: map of key value pairs for an item. The key and value numbers are positions
-  //   to the keys and values arrays respectively.
-  private val (itemIds, itemIndex, keyIndex, tagIndex, itemTags) = buildItemIndex()
+  // * itemTagOffsets/itemTagData: flat representation of key value pairs for each item.
+  //   itemTagData is a single array of [k1,v1,k2,v2,...] pairs for all items concatenated.
+  //   itemTagOffsets maps item index to the start position in itemTagData. The key and
+  //   value numbers are positions in the keys and values arrays respectively.
+  private val (itemIds, itemIndex, keyIndex, tagIndex, itemTagOffsets, itemTagData) =
+    buildItemIndex()
 
   // Optimize all bitmaps for memory after the index is fully built. Items are inserted
   // sequentially so many bitmaps will have consecutive runs that compress well.
@@ -137,24 +144,34 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   }
 
   private def buildItemIndex()
-    : (Array[ItemId], RoaringKeyMap, RoaringValueMap, Array[Long], Array[Array[Int]]) = {
+    : (Array[ItemId], RoaringKeyMap, RoaringValueMap, Array[Long], Array[Int], Array[Int]) = {
 
     // Sort items array based on the id, allows for efficient paging of requests using the id
     // as the offset
     logger.debug(s"building index with ${items.length} items, starting sort")
     val itemIds = new Array[ItemId](items.length)
 
+    // Compute offsets for flat itemTagData array
+    val tagOffsets = new Array[Int](items.length + 1)
+    var totalTags = 0
+    var i = 0
+    while (i < items.length) {
+      tagOffsets(i) = totalTags
+      totalTags += 2 * items(i).tags.size
+      i += 1
+    }
+    tagOffsets(items.length) = totalTags
+    val tagData = new Array[Int](totalTags)
+
     // Build the main index
     logger.debug(s"building index with ${items.length} items, create main key map")
     val kidx = new RoaringValueMap(-1)
     val idx = new RoaringKeyMap(-1)
-    val itemTags = new Array[Array[Int]](items.length)
     val tagsSet = new LongHashSet(-1L, items.length)
     var pos = 0
     while (pos < items.length) {
       itemIds(pos) = items(pos).id
-      itemTags(pos) = new Array[Int](2 * items(pos).tags.size)
-      var itemTagsPos = 0
+      var itemTagsPos = tagOffsets(pos)
       items(pos).foreach { (k, v) =>
         val kp = keyMap.get(k, -1)
         var vidx = idx.get(kp)
@@ -180,8 +197,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         }
         matchSet.add(pos)
 
-        itemTags(pos)(itemTagsPos) = kp
-        itemTags(pos)(itemTagsPos + 1) = vp
+        tagData(itemTagsPos) = kp
+        tagData(itemTagsPos + 1) = vp
         itemTagsPos += 2
 
         val t = (kp.toLong << 32) | vp.toLong
@@ -193,7 +210,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     val tagsArray = tagsSet.toArray
     util.Arrays.sort(tagsArray)
 
-    (itemIds, idx, kidx, tagsArray, itemTags)
+    (itemIds, idx, kidx, tagsArray, tagOffsets, tagData)
   }
 
   /**
@@ -443,10 +460,11 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
       val results = new util.BitSet(keys.length)
       val iter = itemSet.getIntIterator
       while (iter.hasNext) {
-        val tags = itemTags(iter.next())
-        var i = 0
-        while (i < tags.length) {
-          val k = tags(i)
+        val itemPos = iter.next()
+        var i = itemTagOffsets(itemPos)
+        val end = itemTagOffsets(itemPos + 1)
+        while (i < end) {
+          val k = itemTagData(i)
           if (k >= offset) results.set(k)
           i += 2
         }
@@ -497,8 +515,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         // Loop over the items that match the query
         val iter = itemSet.getIntIterator
         while (iter.hasNext) {
-          val tags = itemTags(iter.next())
-          val v = getValue(tags, kp)
+          val itemPos = iter.next()
+          val v = getValue(itemPos, kp)
           if (v >= offset) {
             results.set(v)
           }
@@ -509,10 +527,11 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     createResultList(values, results, query.limit)
   }
 
-  private def getValue(tags: Array[Int], k: Int): Int = {
-    var i = 0
-    while (i < tags.length) {
-      if (k == tags(i)) return tags(i + 1)
+  private def getValue(itemPos: Int, k: Int): Int = {
+    var i = itemTagOffsets(itemPos)
+    val end = itemTagOffsets(itemPos + 1)
+    while (i < end) {
+      if (k == itemTagData(i)) return itemTagData(i + 1)
       i += 2
     }
     -1
