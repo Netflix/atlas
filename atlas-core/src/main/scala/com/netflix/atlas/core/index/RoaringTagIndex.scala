@@ -318,6 +318,13 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         val t = tag(kp, vp)
         var i = tagOffset(t)
 
+        // tagOffset returns the insertion point when the tag is not found, which
+        // is the position of the first element greater than t. For backward iteration,
+        // adjust to the last element <= t.
+        if (i >= tagIndex.length || tagIndex(i) > t) {
+          i -= 1
+        }
+
         // Data is sorted, no need to perform a check for each entry if key matches
         while (i >= 0 && tagKey(tagIndex(i)) == kp) {
           set.naivelazyor(vidx.get(tagValue(tagIndex(i))))

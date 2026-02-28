@@ -226,4 +226,45 @@ class RoaringTagIndexSuite extends TagIndexSuite {
     val rs = idx.findItems(TagQuery(Some(q)))
     assertEquals(rs.map(_.tags("z")).toSet, Set.empty[String])
   }
+
+  // Tests for lessThan/lessThanEqual when the computed value position in the global
+  // values array doesn't correspond to an existing tag for the queried key. This
+  // causes tagOffset to return an insertion point rather than an exact match, and
+  // the backward iteration can incorrectly include the first element after the
+  // insertion point.
+  test("lt, value from other key between queried key values") {
+    // "Zvalue" from key "name" sits between nothing and "a1javasandbox" in the global
+    // values array. When querying k < "a", findOffsetLessThan maps to the position of
+    // "Zvalue", which is not a value for key "k", so the tag doesn't exist in tagIndex.
+    val items = Array(
+      BasicTaggedItem(Map("name" -> "Zvalue", "k" -> "a1javasandbox")),
+      BasicTaggedItem(Map("name" -> "Zvalue", "k" -> "Zasg"))
+    )
+    val idx = RoaringTagIndex(items, new IndexStats())
+    val q = Query.LessThan("k", "a")
+    val rs = idx.findItems(TagQuery(Some(q)))
+    // "Zasg" < "a" is true (uppercase Z < lowercase a), "a1javasandbox" < "a" is false
+    assertEquals(rs.map(_.tags("k")).toSet, Set("Zasg"))
+  }
+
+  test("lt, no values less than target") {
+    val items = Array(
+      BasicTaggedItem(Map("name" -> "Zvalue", "k" -> "a1javasandbox"))
+    )
+    val idx = RoaringTagIndex(items, new IndexStats())
+    val q = Query.LessThan("k", "a")
+    val rs = idx.findItems(TagQuery(Some(q)))
+    assertEquals(rs.map(_.tags("k")).toSet, Set.empty[String])
+  }
+
+  test("le, value from other key between queried key values") {
+    val items = Array(
+      BasicTaggedItem(Map("name" -> "Zvalue", "k" -> "a1javasandbox")),
+      BasicTaggedItem(Map("name" -> "Zvalue", "k" -> "Zasg"))
+    )
+    val idx = RoaringTagIndex(items, new IndexStats())
+    val q = Query.LessThanEqual("k", "a")
+    val rs = idx.findItems(TagQuery(Some(q)))
+    assertEquals(rs.map(_.tags("k")).toSet, Set("Zasg"))
+  }
 }
