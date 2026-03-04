@@ -110,6 +110,9 @@ private[stream] abstract class EvaluatorImpl(
   // Target rate in bytes/sec for staggering subscription broadcasts to prevent network saturation
   private val broadcastTargetRate = config.getLong("atlas.eval.stream.broadcast-target-rate")
 
+  // Output buffer size for the eval stage
+  private val outputBufferSize = config.getInt("atlas.eval.stream.output-buffer-size")
+
   // Counter for message that cannot be parsed
   private val badMessages = registry.counter("atlas.eval.badMessages")
 
@@ -310,6 +313,8 @@ private[stream] abstract class EvaluatorImpl(
       .groupBy(Int.MaxValue, stepSize, allowClosedSubstreamRecreation = true)
       .via(new FinalExprEval(context.interpreter, enableNoDataMsgs))
       .mergeSubstreams
+      .via(StreamOps.buffer(registry, "EvalOutput", outputBufferSize))
+      .async
       .via(context.monitorFlow("12_OutputSources"))
       .flatMapConcat(s => s)
       .via(context.monitorFlow("13_OutputMessages"))
