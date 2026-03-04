@@ -652,4 +652,8 @@ class QuerySuite extends FunSuite {
     assertEquals(Query.expandInClauses(q, 1), List(q))
   }
 
+  test("comment start escaped in patterns") {
+    val q = Regex("a", "http:/*")
+    assertEquals(q.toString, "a,http\\u003a\\u002f*,:re")
+  }
 }

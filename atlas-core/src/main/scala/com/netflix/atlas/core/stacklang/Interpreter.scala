@@ -251,7 +251,7 @@ object Interpreter {
     * uses a single character and does a simple `trim` operation to cleanup the whitespace.
     */
   def splitAndTrim(str: String): List[String] = {
-    val parts = str.split(",")
+    val parts = stripComments(str).split(",")
     val builder = List.newBuilder[String]
     var i = 0
     while (i < parts.length) {
@@ -306,7 +306,7 @@ object Interpreter {
     // Parenthesis only matter if they are the only part of the token for constructing
     // lists. Only escape if using as a literal in that context. For things like regex
     // escaping makes the expression much harder to read.
-    str match {
+    val escaped = str match {
       case "(" => "\\u0028"
       case ")" => "\\u0029"
       case s =>
@@ -321,6 +321,7 @@ object Interpreter {
           Strings.escape(s, isSpecial)
         }
     }
+    escapeCommentStart(escaped)
   }
 
   /** Escape special characters in the expression. */
@@ -328,6 +329,7 @@ object Interpreter {
     // Parenthesis only matter if they are the only part of the token for constructing
     // lists. Only escape if using as a literal in that context. For things like regex
     // escaping makes the expression much harder to read.
+    val start = builder.length
     str match {
       case "(" => builder.append("\\u0028")
       case ")" => builder.append("\\u0029")
@@ -342,6 +344,25 @@ object Interpreter {
           Strings.escape(builder, s, isSpecial)
         }
     }
+    escapeCommentStart(builder, start)
+  }
+
+  /** Escape comment start sequences so they are not interpreted as comment delimiters. */
+  private def escapeCommentStart(str: String): String = {
+    str.replace("/*", "\\u002f*")
+  }
+
+  /** Escape comment start sequences so they are not interpreted as comment delimiters. */
+  private def escapeCommentStart(builder: java.lang.StringBuilder, start: Int): Unit = {
+    var i = start
+    while (i < builder.length - 1) {
+      if (builder.charAt(i) == '/' && builder.charAt(i + 1) == '*') {
+        builder.replace(i, i + 1, "\\u002f")
+        i += 7 // skip past \u002F*
+      } else {
+        i += 1
+      }
+    }
   }
 
   /** Unescape unicode characters in the expression. */
@@ -353,5 +374,41 @@ object Interpreter {
   def unescape(value: Any): Any = value match {
     case s: String => Strings.unescape(s)
     case v         => v
+  }
+
+  /**
+    * Remove comment strings from the expression. Comments have the form `/* ... */`
+    * and can be nested for example `/* outer /* /*nested*/ text */ text */`.
+    */
+  def stripComments(str: String): String = {
+    val pos = str.indexOf("/*")
+    if (pos < 0) str else stripCommentsImpl(str, pos)
+  }
+
+  private def stripCommentsImpl(str: String, pos: Int): String = {
+    val n = str.length
+    val builder = new java.lang.StringBuilder(n)
+    builder.append(str, 0, pos)
+    var depth = 1
+    var i = pos + 2
+    while (i < n) {
+      val c = str.charAt(i)
+      if (c == '/' && i + 1 < n && str.charAt(i + 1) == '*') {
+        depth += 1
+        i += 2
+      } else if (c == '*' && i + 1 < n && str.charAt(i + 1) == '/') {
+        depth -= 1
+        i += 2
+      } else {
+        if (depth == 0) {
+          builder.append(c)
+        }
+        i += 1
+      }
+    }
+    if (depth > 0) {
+      throw new IllegalStateException("unclosed comment")
+    }
+    builder.toString
   }
 }
