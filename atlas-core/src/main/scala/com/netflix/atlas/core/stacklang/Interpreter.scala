@@ -382,7 +382,13 @@ object Interpreter {
     */
   def stripComments(str: String): String = {
     val pos = str.indexOf("/*")
-    if (pos < 0) str else stripCommentsImpl(str, pos)
+    if (pos < 0) {
+      if (str.contains("*/"))
+        throw new IllegalStateException("unclosed comment")
+      str
+    } else {
+      stripCommentsImpl(str, pos)
+    }
   }
 
   private def stripCommentsImpl(str: String, pos: Int): String = {
@@ -398,6 +404,9 @@ object Interpreter {
         i += 2
       } else if (c == '*' && i + 1 < n && str.charAt(i + 1) == '/') {
         depth -= 1
+        if (depth < 0) {
+          throw new IllegalStateException("unclosed comment")
+        }
         i += 2
       } else {
         if (depth == 0) {

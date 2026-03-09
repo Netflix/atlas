@@ -317,6 +317,20 @@ class InterpreterSuite extends FunSuite {
     assertEquals(e.getMessage, "unclosed comment")
   }
 
+  test("stripComments: unclosed comment end throws") {
+    val e = intercept[IllegalStateException] {
+      Interpreter.stripComments("a,b*/ unclosed")
+    }
+    assertEquals(e.getMessage, "unclosed comment")
+  }
+
+  test("stripComments: nested comments with unmatched close") {
+    val e = intercept[IllegalStateException] {
+      Interpreter.stripComments("a/* outer /* inner */ */ still */,b")
+    }
+    assertEquals(e.getMessage, "unclosed comment")
+  }
+
   test("stripComments: comment symbol in regex") {
     intercept[IllegalStateException] {
       Interpreter.stripComments("url,http:/*,:re")
@@ -343,8 +357,11 @@ class InterpreterSuite extends FunSuite {
     assertEquals(e.getMessage, "unclosed comment")
   }
 
-  test("stripComments: closing delimiter without opening is literal") {
-    assertEquals(Interpreter.stripComments("a*/b"), "a*/b")
+  test("stripComments: closing delimiter without opening throws") {
+    val e = intercept[IllegalStateException] {
+      Interpreter.stripComments("a*/b")
+    }
+    assertEquals(e.getMessage, "unclosed comment")
   }
 }
 
