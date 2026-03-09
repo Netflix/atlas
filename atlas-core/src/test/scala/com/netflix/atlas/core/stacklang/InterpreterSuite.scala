@@ -198,6 +198,11 @@ class InterpreterSuite extends FunSuite {
     assertEquals(Interpreter.toString(actual.reverse), escaped)
   }
 
+  test("splitAndTrim with comments") {
+    val actual = Interpreter.splitAndTrim("a,/* comment */b,:eq")
+    assertEquals(actual, List("a", "b", ":eq"))
+  }
+
   //
   // escape with smart space handling
   //
@@ -249,6 +254,114 @@ class InterpreterSuite extends FunSuite {
     val escaped = Interpreter.escape(input)
     assertEquals(escaped, "foo\\u0009bar\\u000abaz")
     assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: comment start in value") {
+    val input = "http:/*"
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "http\\u003a\\u002f*")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: comment start in middle of value") {
+    val input = "a/*b"
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "a\\u002f*b")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  //
+  // stripComments
+  //
+
+  test("stripComments: no comment") {
+    assertEquals(Interpreter.stripComments("a,b,:eq"), "a,b,:eq")
+  }
+
+  test("stripComments: empty string") {
+    assertEquals(Interpreter.stripComments(""), "")
+  }
+
+  test("stripComments: comment at start") {
+    assertEquals(Interpreter.stripComments("/* comment */a,b,:eq"), "a,b,:eq")
+  }
+
+  test("stripComments: comment at end") {
+    assertEquals(Interpreter.stripComments("a,b,:eq/* comment */"), "a,b,:eq")
+  }
+
+  test("stripComments: comment in middle") {
+    assertEquals(Interpreter.stripComments("a,b/* comment */,:eq"), "a,b,:eq")
+  }
+
+  test("stripComments: entire string is comment") {
+    assertEquals(Interpreter.stripComments("/* everything */"), "")
+  }
+
+  test("stripComments: multiple comments") {
+    assertEquals(Interpreter.stripComments("a/* c1 */,b/* c2 */,:eq"), "a,b,:eq")
+  }
+
+  test("stripComments: nested comments") {
+    assertEquals(Interpreter.stripComments("a/* outer /* inner */ still */,b"), "a,b")
+  }
+
+  test("stripComments: deeply nested comments") {
+    assertEquals(Interpreter.stripComments("a/* l1 /* l2 /* l3 */ l2 */ l1 */b"), "ab")
+  }
+
+  test("stripComments: unclosed comment throws") {
+    val e = intercept[IllegalStateException] {
+      Interpreter.stripComments("a,b/* unclosed")
+    }
+    assertEquals(e.getMessage, "unclosed comment")
+  }
+
+  test("stripComments: unclosed comment end throws") {
+    val e = intercept[IllegalStateException] {
+      Interpreter.stripComments("a,b*/ unclosed")
+    }
+    assertEquals(e.getMessage, "unclosed comment")
+  }
+
+  test("stripComments: nested comments with unmatched close") {
+    val e = intercept[IllegalStateException] {
+      Interpreter.stripComments("a/* outer /* inner */ */ still */,b")
+    }
+    assertEquals(e.getMessage, "unclosed comment")
+  }
+
+  test("stripComments: comment symbol in regex") {
+    intercept[IllegalStateException] {
+      Interpreter.stripComments("url,http:/*,:re")
+    }
+    assertEquals(Interpreter.stripComments("url,http:\\u002f*,:re"), "url,http:\\u002f*,:re")
+  }
+
+  test("stripComments: comment with asterisks") {
+    assertEquals(Interpreter.stripComments("a/** stars **/b"), "ab")
+  }
+
+  test("stripComments: comment with slashes inside") {
+    assertEquals(Interpreter.stripComments("a/* a/b/c */b"), "ab")
+  }
+
+  test("stripComments: adjacent comments") {
+    assertEquals(Interpreter.stripComments("a/* c1 *//* c2 */b"), "ab")
+  }
+
+  test("stripComments: only opening delimiter throws") {
+    val e = intercept[IllegalStateException] {
+      Interpreter.stripComments("abc/*")
+    }
+    assertEquals(e.getMessage, "unclosed comment")
+  }
+
+  test("stripComments: closing delimiter without opening throws") {
+    val e = intercept[IllegalStateException] {
+      Interpreter.stripComments("a*/b")
+    }
+    assertEquals(e.getMessage, "unclosed comment")
   }
 }
 
