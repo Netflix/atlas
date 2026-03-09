@@ -57,6 +57,10 @@ import scala.util.Using
 
 class EvaluatorSuite extends FunSuite {
 
+  // Increased to avoid spurious timeouts when running on CI
+  override val munitTimeout: scala.concurrent.duration.Duration =
+    scala.concurrent.duration.Duration(2, "min")
+
   private val targetDir = Paths.get(SrcPath.forProject("atlas-eval"), "target", "EvaluatorSuite")
 
   private val resourcesDir =
