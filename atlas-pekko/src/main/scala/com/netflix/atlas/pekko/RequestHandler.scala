@@ -41,6 +41,8 @@ import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.pattern.CircuitBreakerOpenException
 import tools.jackson.core.JacksonException
 
+import java.time.DateTimeException
+
 class RequestHandler(config: Config, registry: Registry, classFactory: ClassFactory)
     extends StrictLogging {
 
@@ -200,7 +202,8 @@ object RequestHandler extends StrictLogging {
 
     // Determine most appropriate status code to use based on the exception type
     t match {
-      case e @ (_: IllegalArgumentException | _: IllegalStateException | _: JacksonException) =>
+      case e @ (_: IllegalArgumentException | _: IllegalStateException | _: JacksonException |
+          _: DateTimeException) =>
         DiagnosticMessage.error(StatusCodes.BadRequest, e)
       case e: NoSuchElementException =>
         DiagnosticMessage.error(StatusCodes.NotFound, e)
