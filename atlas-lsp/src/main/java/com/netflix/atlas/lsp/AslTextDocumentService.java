@@ -43,7 +43,7 @@ import org.eclipse.lsp4j.services.TextDocumentService;
 import scala.jdk.javaapi.CollectionConverters;
 
 /**
- * Java adapter for {@link TextDocumentService} that delegates to a {@link DocumentAnalyzer}.
+ * Java adapter for TextDocumentService that delegates to a DocumentAnalyzer.
  * Written in Java to avoid Scala/JDK annotation interop issues with LSP4j.
  */
 public class AslTextDocumentService implements TextDocumentService {
