@@ -1,0 +1,534 @@
+{
+  "id": "nflx.sample",
+  "description": "Sample glossary for LSP testing, combining common tags, conceptual types, and a representative set of metrics from the ontology.",
+
+  "tagKeys": {
+    "nf.account": {
+      "description": "AWS account ID for the metric.",
+      "category": "infrastructure"
+    },
+    "nf.region": {
+      "description": "AWS region where the instance is running.",
+      "category": "infrastructure",
+      "values": ["us-east-1", "us-west-2", "eu-west-1", "us-west-1"],
+      "valuesType": "enum"
+    },
+    "nf.zone": {
+      "description": "Datacenter in an AWS region. Netflix typically uses three zones.",
+      "category": "infrastructure"
+    },
+    "nf.ami": {
+      "description": "Base image used to launch an instance.",
+      "category": "infrastructure"
+    },
+    "nf.vmtype": {
+      "description": "Instance type (e.g. r3.2xlarge).",
+      "category": "infrastructure",
+      "valuesType": "examples",
+      "values": ["r3.2xlarge", "m5.xlarge", "c5.2xlarge", "r5.4xlarge"]
+    },
+    "nf.app": {
+      "description": "Application name. Used to associate metadata like owner info.",
+      "category": "application"
+    },
+    "nf.cluster": {
+      "description": "Specific deployment of an application, typically app-stack-detail.",
+      "category": "application"
+    },
+    "nf.stack": {
+      "description": "Cross-application grouping (e.g. main, integration).",
+      "category": "application",
+      "valuesType": "examples",
+      "values": ["main", "test", "staging"]
+    },
+    "nf.shard1": {
+      "description": "Operational partition dimension. Limited to alphanumeric characters.",
+      "category": "application"
+    },
+    "nf.shard2": {
+      "description": "Secondary operational partition dimension.",
+      "category": "application"
+    },
+    "nf.asg": {
+      "description": "Server group or auto-scaling group of instances representing a service.",
+      "category": "application"
+    },
+    "nf.node": {
+      "description": "Instance identifier (EC2 instance ID or Titus task ID).",
+      "category": "infrastructure"
+    },
+    "nf.process": {
+      "description": "Process identifier. Requires NETFLIX_PROCESS_NAME environment variable.",
+      "category": "application"
+    },
+    "nf.country": {
+      "description": "ISO country code. Use cautiously as it can increase metrics volume.",
+      "category": "geographic"
+    },
+    "nf.country.rollup": {
+      "description": "Business-level country grouping (e.g. US, EMEA, APAC, LATAM).",
+      "category": "geographic",
+      "valuesType": "examples",
+      "values": ["US", "EMEA", "APAC", "LATAM"]
+    },
+    "statistic": {
+      "description": "Identifies the component of a conceptual type (count, totalTime, gauge, etc.).",
+      "category": "type-system",
+      "link": "https://netflix.github.io/atlas-docs/asl/conceptual-types/",
+      "valuesType": "enum",
+      "values": [
+        "count",
+        "totalTime",
+        "totalOfSquares",
+        "max",
+        "gauge",
+        "activeTasks",
+        "duration",
+        "totalAmount",
+        "percentile"
+      ]
+    },
+    "id": {
+      "description": "Sub-identifier within a metric. Meaning is metric-specific.",
+      "category": "metric"
+    }
+  },
+
+  "tagValues": {
+    "statistic=count": {
+      "description": "Rate of events per second. Present on counters, timers, distribution summaries, and interval counters."
+    },
+    "statistic=totalTime": {
+      "description": "Total time in seconds spent on events per second. Present on timers."
+    },
+    "statistic=totalOfSquares": {
+      "description": "Sum of squared measurements per second. Used with count and totalTime to compute standard deviation. Present on timers and distribution summaries."
+    },
+    "statistic=max": {
+      "description": "Maximum value recorded in the polling interval. Present on timers and distribution summaries."
+    },
+    "statistic=gauge": {
+      "description": "Sampled value at a point in time. Present on gauges."
+    },
+    "statistic=activeTasks": {
+      "description": "Number of currently in-progress long tasks. Present on long task timers."
+    },
+    "statistic=duration": {
+      "description": "Total duration of all active tasks in seconds. Present on long task timers and interval counters."
+    },
+    "statistic=totalAmount": {
+      "description": "Total amount recorded per second (units vary). Present on distribution summaries."
+    },
+    "statistic=percentile": {
+      "description": "Used for modeling distribution to approximate percentiles. Present on timers and distribution summaries."
+    }
+  },
+
+  "metrics": {
+    "apache.http.request": {
+      "description": "Timer generated from parsing request logs indicating the latency for serving requests from Apache.",
+      "unit": "seconds",
+      "category": "baseami/apache",
+      "type": "timer",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/baseami/apache/#apachehttprequest"
+    },
+
+    "aws.alb.activeConnectionCount": {
+      "description": "The total number of concurrent TCP connections active from clients to the load balancer and from the load balancer to targets.",
+      "unit": "connections",
+      "category": "aws/load-balancers",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/load-balancers/#awsalbactiveconnectioncount"
+    },
+    "aws.alb.backendResponses": {
+      "description": "Number of HTTP response codes generated by targets, excluding load balancer responses.",
+      "unit": "responses/second",
+      "category": "aws/load-balancers",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/load-balancers/#awsalbbackendresponses",
+      "tags": {
+        "status": {
+          "description": "HTTP status code class.",
+          "valuesType": "enum",
+          "values": ["2xx", "3xx", "4xx", "5xx"]
+        }
+      }
+    },
+    "aws.alb.healthyHostCount": {
+      "description": "The number of targets that are considered healthy.",
+      "unit": "hosts",
+      "category": "aws/load-balancers",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/load-balancers/#awsalbhealthyhostcount"
+    },
+    "aws.alb.requestCount": {
+      "description": "Number of requests processed over IPv4 and IPv6.",
+      "unit": "requests/second",
+      "category": "aws/load-balancers",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/load-balancers/#awsalbrequestcount"
+    },
+    "aws.alb.targetResponseTime": {
+      "description": "Time elapsed after the request leaves the load balancer until a response from the target is received.",
+      "unit": "seconds",
+      "category": "aws/load-balancers",
+      "type": "timer",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/load-balancers/#awsalbtargetresponsetime"
+    },
+
+    "aws.ec2.cpuUtilization": {
+      "description": "Percentage of allocated EC2 compute units that are currently in use on the instance.",
+      "unit": "percent",
+      "category": "aws/ec2",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/ec2/#awsec2cpuutilization"
+    },
+    "aws.ec2.networkIn": {
+      "description": "Number of bytes received on all network interfaces by the instance.",
+      "unit": "bytes/second",
+      "category": "aws/ec2",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/ec2/#awsec2networkin"
+    },
+    "aws.ec2.networkOut": {
+      "description": "Number of bytes sent out on all network interfaces by the instance.",
+      "unit": "bytes/second",
+      "category": "aws/ec2",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/ec2/#awsec2networkout"
+    },
+    "aws.ec2.diskReadBytes": {
+      "description": "Bytes read from all instance store volumes available to the instance.",
+      "unit": "bytes/second",
+      "category": "aws/ec2",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/ec2/#awsec2diskreadbytes"
+    },
+
+    "aws.dynamodb.consumedCapacity": {
+      "description": "The number of read capacity units consumed.",
+      "unit": "capacity units",
+      "category": "aws/dynamodb",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/dynamodb/#awsdynamodbconsumedcapacity"
+    },
+    "aws.dynamodb.throttledRequests": {
+      "description": "Requests to DynamoDB that exceed the provisioned throughput limits.",
+      "unit": "requests/second",
+      "category": "aws/dynamodb",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/dynamodb/#awsdynamodbthrottledrequests"
+    },
+
+    "aws.elasticache.cpuUtilization": {
+      "description": "The percentage of CPU utilization for the entire host.",
+      "unit": "percent",
+      "category": "aws/elasticache",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/elasticache/#awselasticachecpuutilization"
+    },
+    "aws.elasticache.currConnections": {
+      "description": "The number of client connections, excluding connections from read replicas.",
+      "unit": "connections",
+      "category": "aws/elasticache",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/elasticache/#awselasticachecurrconnections"
+    },
+    "aws.elasticache.cacheHits": {
+      "description": "The number of successful read-only key lookups in the main dictionary.",
+      "unit": "hits/second",
+      "category": "aws/elasticache",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/elasticache/#awselasticachecachehits"
+    },
+    "aws.elasticache.evictions": {
+      "description": "The number of non-expired items the cache evicted due to the memory limit.",
+      "unit": "evictions/second",
+      "category": "aws/elasticache",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/elasticache/#awselasticacheevictions"
+    },
+
+    "aws.rds.cpuUtilization": {
+      "description": "The percentage of CPU utilization.",
+      "unit": "percent",
+      "category": "aws/rds",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/rds/#awsrdscpuutilization"
+    },
+    "aws.rds.databaseConnections": {
+      "description": "The number of database connections in use.",
+      "unit": "connections",
+      "category": "aws/rds",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/rds/#awsrdsdatabaseconnections"
+    },
+    "aws.rds.freeableMemory": {
+      "description": "The amount of available random access memory.",
+      "unit": "bytes",
+      "category": "aws/rds",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/rds/#awsrdsfreeablememory"
+    },
+
+    "aws.sqs.numberOfMessagesReceived": {
+      "description": "Number of messages returned by calls to the ReceiveMessage action.",
+      "unit": "messages/second",
+      "category": "aws/sqs",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/sqs/#awssqsnumberofmessagesreceived"
+    },
+    "aws.sqs.approximateNumberOfMessagesVisible": {
+      "description": "The number of messages available for retrieval from the queue.",
+      "unit": "messages",
+      "category": "aws/sqs",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/aws/sqs/#awssqsapproximatenumberofmessagesvisible"
+    },
+
+    "ipc.client.call": {
+      "description": "Timer recording the latency of outgoing IPC calls.",
+      "unit": "seconds",
+      "category": "ipc/client",
+      "type": "timer",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/ipc/#ipcclientcall",
+      "tags": {
+        "ipc.protocol": {
+          "description": "Protocol used for the call.",
+          "valuesType": "examples",
+          "values": ["grpc", "http_1", "http_2"]
+        },
+        "ipc.result": {
+          "description": "Outcome of the call.",
+          "valuesType": "enum",
+          "values": ["success", "failure"]
+        },
+        "ipc.status": {
+          "description": "Detailed status of the call.",
+          "valuesType": "examples",
+          "values": ["200", "404", "500", "503", "timeout", "connection_error"]
+        },
+        "ipc.vip": {
+          "description": "Virtual IP (VIP) or service name of the target."
+        },
+        "ipc.endpoint": {
+          "description": "Target endpoint or URI path."
+        }
+      }
+    },
+    "ipc.server.call": {
+      "description": "Timer recording the latency of incoming IPC calls handled by the server.",
+      "unit": "seconds",
+      "category": "ipc/server",
+      "type": "timer",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/ipc/#ipcservercall",
+      "tags": {
+        "ipc.protocol": {
+          "description": "Protocol used for the call.",
+          "valuesType": "examples",
+          "values": ["grpc", "http_1", "http_2"]
+        },
+        "ipc.result": {
+          "description": "Outcome of the call.",
+          "valuesType": "enum",
+          "values": ["success", "failure"]
+        },
+        "ipc.status": {
+          "description": "Detailed status of the call.",
+          "valuesType": "examples",
+          "values": ["200", "404", "500", "503"]
+        }
+      }
+    },
+
+    "jvm.gc.pause": {
+      "description": "Timer recording the pause time for JVM garbage collection events.",
+      "unit": "seconds",
+      "category": "jvm/gc",
+      "type": "timer",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/jvm/#jvmgcpause",
+      "tags": {
+        "cause": {
+          "description": "Cause of the garbage collection.",
+          "valuesType": "examples",
+          "values": ["Allocation Failure", "G1 Evacuation Pause", "Metadata GC Threshold", "System.gc()"]
+        },
+        "action": {
+          "description": "GC action performed.",
+          "valuesType": "examples",
+          "values": ["end of minor GC", "end of major GC"]
+        }
+      }
+    },
+    "jvm.gc.allocationRate": {
+      "description": "Rate at which memory is being allocated by the JVM.",
+      "unit": "bytes/second",
+      "category": "jvm/gc",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/jvm/#jvmgcallocationrate"
+    },
+    "jvm.gc.promotionRate": {
+      "description": "Rate at which data is being promoted from young to old generation.",
+      "unit": "bytes/second",
+      "category": "jvm/gc",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/jvm/#jvmgcpromotionrate"
+    },
+    "jvm.gc.liveDataSize": {
+      "description": "Size of old generation memory pool after a full GC.",
+      "unit": "bytes",
+      "category": "jvm/gc",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/jvm/#jvmgclivedatasize"
+    },
+    "jvm.gc.maxDataSize": {
+      "description": "Maximum size of old generation memory pool.",
+      "unit": "bytes",
+      "category": "jvm/gc",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/jvm/#jvmgcmaxdatasize"
+    },
+    "jvm.memory.used": {
+      "description": "The amount of used memory.",
+      "unit": "bytes",
+      "category": "jvm/memory",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/jvm/#jvmmemoryused",
+      "tags": {
+        "id": {
+          "description": "Memory pool name.",
+          "valuesType": "examples",
+          "values": ["G1 Eden Space", "G1 Old Gen", "G1 Survivor Space", "Metaspace", "Compressed Class Space"]
+        }
+      }
+    },
+    "jvm.memory.max": {
+      "description": "The maximum amount of memory that can be used.",
+      "unit": "bytes",
+      "category": "jvm/memory",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/jvm/#jvmmemorymax",
+      "tags": {
+        "id": {
+          "description": "Memory pool name.",
+          "valuesType": "examples",
+          "values": ["G1 Eden Space", "G1 Old Gen", "G1 Survivor Space", "Metaspace", "Compressed Class Space"]
+        }
+      }
+    },
+    "jvm.buffer.memoryUsed": {
+      "description": "An estimate of the memory that the JVM is using for buffer pools.",
+      "unit": "bytes",
+      "category": "jvm/buffer",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/jvm/#jvmbuffermemoryused",
+      "tags": {
+        "id": {
+          "description": "Buffer pool name.",
+          "valuesType": "examples",
+          "values": ["direct", "mapped"]
+        }
+      }
+    },
+    "jvm.thread.count": {
+      "description": "The current number of live threads including both daemon and non-daemon threads.",
+      "unit": "threads",
+      "category": "jvm/threads",
+      "type": "gauge"
+    },
+
+    "sys.cpu.utilization": {
+      "description": "CPU utilization as a percentage.",
+      "unit": "percent",
+      "category": "system/cpu",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/system/#syscpuutilization",
+      "tags": {
+        "id": {
+          "description": "CPU mode.",
+          "valuesType": "examples",
+          "values": ["user", "system", "nice", "iowait", "irq", "softirq", "steal", "idle"]
+        }
+      }
+    },
+    "sys.load.1": {
+      "description": "System load average over 1 minute.",
+      "unit": "load",
+      "category": "system/load",
+      "type": "gauge"
+    },
+    "sys.load.5": {
+      "description": "System load average over 5 minutes.",
+      "unit": "load",
+      "category": "system/load",
+      "type": "gauge"
+    },
+    "sys.load.15": {
+      "description": "System load average over 15 minutes.",
+      "unit": "load",
+      "category": "system/load",
+      "type": "gauge"
+    },
+    "sys.mem.free": {
+      "description": "Amount of free system memory.",
+      "unit": "bytes",
+      "category": "system/memory",
+      "type": "gauge"
+    },
+    "sys.mem.total": {
+      "description": "Total amount of system memory.",
+      "unit": "bytes",
+      "category": "system/memory",
+      "type": "gauge"
+    },
+    "sys.disk.utilization": {
+      "description": "Disk utilization as a percentage.",
+      "unit": "percent",
+      "category": "system/disk",
+      "type": "gauge",
+      "tags": {
+        "dev": {
+          "description": "Device name."
+        }
+      }
+    },
+    "sys.net.bytes": {
+      "description": "Number of bytes transmitted or received on a network interface.",
+      "unit": "bytes/second",
+      "category": "system/network",
+      "type": "counter",
+      "tags": {
+        "iface": {
+          "description": "Network interface name."
+        },
+        "direction": {
+          "description": "Direction of traffic.",
+          "valuesType": "enum",
+          "values": ["in", "out"]
+        }
+      }
+    },
+
+    "nodejs.eventloop.lag": {
+      "description": "Event loop lag for Node.js applications.",
+      "unit": "seconds",
+      "category": "nodejs",
+      "type": "gauge"
+    },
+
+    "spectator.measurements": {
+      "description": "Counter indicating the number of measurements reported by the Spectator library.",
+      "unit": "measurements/second",
+      "category": "spectator",
+      "type": "counter",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/spectator/#spectatormeasurements"
+    },
+    "spectator.registrySize": {
+      "description": "Number of meters currently registered in the Spectator registry.",
+      "unit": "meters",
+      "category": "spectator",
+      "type": "gauge",
+      "link": "https://netflix.github.io/atlas-docs/spectator/ext/spectator/#spectatorregistrysize"
+    }
+  }
+}

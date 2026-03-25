@@ -41,6 +41,7 @@ object Dependencies {
   val jacksonMapper     = "tools.jackson.core" % "jackson-databind" % jackson
   val jacksonScala      = "tools.jackson.module" %% "jackson-module-scala" % jackson
   val jacksonSmile      = "tools.jackson.dataformat" % "jackson-dataformat-smile" % jackson
+  val javaWebSocket     = "org.java-websocket" % "Java-WebSocket" % "1.6.0"
   val jol               = "org.openjdk.jol" % "jol-core" % "0.17"
   val jsr305            = "com.google.code.findbugs" % "jsr305" % "3.0.2"
   val log4jApi          = "org.apache.logging.log4j" % "log4j-api" % log4j
@@ -48,6 +49,7 @@ object Dependencies {
   val log4jJcl          = "org.apache.logging.log4j" % "log4j-jcl" % log4j
   val log4jJul          = "org.apache.logging.log4j" % "log4j-jul" % log4j
   val log4jSlf4j        = "org.apache.logging.log4j" % "log4j-slf4j2-impl" % log4j
+  val lsp4j             = "org.eclipse.lsp4j" % "org.eclipse.lsp4j" % "1.0.0"
   val munit             = "org.scalameta" %% "munit" % "1.2.2"
   val otelSdk           = "io.opentelemetry" % "opentelemetry-sdk" % otel
   val otelSdkTest       = "io.opentelemetry" % "opentelemetry-sdk-testing" % otel
