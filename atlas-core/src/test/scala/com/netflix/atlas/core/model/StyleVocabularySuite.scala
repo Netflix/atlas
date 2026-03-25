@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.model.ModelExtractors.PresentationType
+import com.netflix.atlas.core.model.ModelDataTypes.PresentationType
 import com.netflix.atlas.core.stacklang.Interpreter
 import munit.FunSuite
 
@@ -44,13 +44,13 @@ class StyleVocabularySuite extends FunSuite {
 
   test("color") {
     val expr = eval(":true,f00,:color")
-    val expected = StyleExpr(DataExpr.Sum(Query.True), Map("color" -> "f00"))
+    val expected = StyleExpr(DataExpr.Sum(Query.True), Map("color" -> "ffff0000"))
     assertEquals(expr, expected)
   }
 
   test("alpha > color") {
     val expr = eval(":true,40,:alpha,f00,:color")
-    val expected = StyleExpr(DataExpr.Sum(Query.True), Map("color" -> "f00"))
+    val expected = StyleExpr(DataExpr.Sum(Query.True), Map("color" -> "ffff0000"))
     assertEquals(expr, expected)
   }
 
@@ -82,7 +82,7 @@ class StyleVocabularySuite extends FunSuite {
 
   test(":offset after presentation") {
     val expr = eval("name,test,:eq,:sum,foo,:legend,f00,:color,1h,:offset")
-    assertEquals(expr.toString, "name,test,:eq,:sum,1h,:offset,foo,:legend,f00,:color")
+    assertEquals(expr.toString, "name,test,:eq,:sum,1h,:offset,foo,:legend,ffff0000,:color")
   }
 
   test("legend with escaped comma") {

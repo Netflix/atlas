@@ -26,7 +26,7 @@ class VocabularySuite extends FunSuite {
       """
         |## call
         |
-        |**Signature:** `? List -- ?`
+        |**Signature:** `program:List -- `
         |
         |Pop a list off the stack and execute it as a program.
         |
@@ -43,7 +43,7 @@ class VocabularySuite extends FunSuite {
         |
         |## dup
         |
-        |**Signature:** `a -- a a`
+        |**Signature:** `a:Any -- Any Any`
         |
         |Duplicate the item on the top of the stack.
         |
@@ -77,7 +77,7 @@ class VocabularySuite extends FunSuite {
         | In:
         |
         |Out:
-        |IllegalStateException: no matches for word ':dup' with stack [], candidates: [a -- a a]
+        |IllegalStateException: no matches for word ':dup' with stack [], candidates: [a:Any -- Any Any]
         |```
       """.stripMargin.trim
     assertEquals(TestVocabulary.toMarkdown, expected)

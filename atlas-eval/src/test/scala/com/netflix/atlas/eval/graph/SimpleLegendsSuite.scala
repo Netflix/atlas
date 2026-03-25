@@ -16,7 +16,7 @@
 package com.netflix.atlas.eval.graph
 
 import com.netflix.atlas.core.model.CustomVocabulary
-import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.ModelDataTypes
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.typesafe.config.ConfigFactory
@@ -33,8 +33,8 @@ class SimpleLegendsSuite extends FunSuite {
       .execute(str)
       .stack
       .map {
-        case ModelExtractors.PresentationType(t) => t
-        case v                                   => throw new MatchError(v)
+        case ModelDataTypes.PresentationType(t) => t
+        case v                                  => throw new MatchError(v)
       }
       .reverse
       .flatMap(_.perOffset)

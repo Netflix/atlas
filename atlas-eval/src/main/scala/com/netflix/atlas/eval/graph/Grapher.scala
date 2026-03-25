@@ -33,7 +33,7 @@ import com.netflix.atlas.core.db.Database
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.Expr
-import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.ModelDataTypes
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.model.ResultSet
@@ -165,7 +165,7 @@ case class Grapher(settings: DefaultSettings) {
         .reverse
         .map(cq)
         .flatMap {
-          case ModelExtractors.PresentationType(s) =>
+          case ModelDataTypes.PresentationType(s) =>
             s.perOffset
           case v =>
             val tpe = v.getClass.getSimpleName
@@ -406,7 +406,8 @@ case class Grapher(settings: DefaultSettings) {
                 // alpha can be set directly using an ARGB hex format for the color.
                 s.alpha.fold(c)(a => Colors.withAlpha(c, a))
               } { c =>
-                settings.resolveColor(config.flags.theme, c)
+                val resolved = settings.resolveColor(config.flags.theme, c)
+                s.alpha.fold(resolved)(a => Colors.withAlpha(resolved, a))
               }
 
               LineDef(

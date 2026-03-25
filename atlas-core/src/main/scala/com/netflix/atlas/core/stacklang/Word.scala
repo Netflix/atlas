@@ -41,7 +41,12 @@ trait Word {
   def isStable: Boolean = true
 
   /**
-    * Check if the this word can be executed against the current stack. Can be used as a basis for
+    * If the word is deprecated, returns a message describing the preferred alternative.
+    */
+  def deprecated: Option[String] = None
+
+  /**
+    * Check if this word can be executed against the current stack. Can be used as a basis for
     * finding auto-completion candidates.
     */
   def matches(stack: List[Any]): Boolean

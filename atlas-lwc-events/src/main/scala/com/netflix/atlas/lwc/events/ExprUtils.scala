@@ -19,7 +19,6 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DataVocabulary
 import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.EventVocabulary
-import com.netflix.atlas.core.model.ModelExtractors
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.spectator.atlas.impl.Parser
@@ -29,7 +28,7 @@ import com.netflix.spectator.atlas.impl.Parser
   */
 private[events] object ExprUtils {
 
-  import ModelExtractors.*
+  import com.netflix.atlas.core.model.ModelDataTypes.*
 
   private val dataInterpreter = Interpreter(DataVocabulary.allWords)
 

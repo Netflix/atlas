@@ -16,17 +16,25 @@
 package com.netflix.atlas.core.model
 
 import java.awt.Color
+
+import scala.collection.immutable.ArraySeq
+import scala.util.Try
+
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.SimpleWord
 import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
+import com.netflix.atlas.core.stacklang.TypedMacro
+import com.netflix.atlas.core.stacklang.TypedWord
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
+import com.netflix.atlas.core.stacklang.ast.DataType
+import com.netflix.atlas.core.stacklang.ast.Parameter
 import com.netflix.atlas.core.util.Strings
 
 object StyleVocabulary extends Vocabulary {
 
-  import com.netflix.atlas.core.model.ModelExtractors.*
+  import com.netflix.atlas.core.model.ModelDataTypes.*
 
   val name: String = "style"
 
@@ -47,75 +55,133 @@ object StyleVocabulary extends Vocabulary {
     Sort,
     Order,
     Limit,
-    Macro("head", List(":limit"), List("name,sps,:eq,(,nf.cluster,),:by,2")),
+    TypedMacro(
+      "head",
+      List(":limit"),
+      ArraySeq(
+        Parameter("", "input expression", PresentationType),
+        Parameter("n", "max number of lines", DataType.StringType)
+      ),
+      ArraySeq(PresentationType),
+      "Restrict output to the first N lines. Shorthand for `:limit`.",
+      List("name,sps,:eq,(,nf.cluster,),:by,2")
+    ),
     // Operations for manipulating the line style or presentation
     Alpha,
     Color,
     Palette,
     LineStyle,
     LineWidth,
-    Macro("area", List("area", ":ls"), List("name,sps,:eq,:sum")),
-    Macro("line", List("line", ":ls"), List("name,sps,:eq,:sum")),
-    Macro("stack", List("stack", ":ls"), List("name,sps,:eq,(,nf.cluster,),:by")),
-    Macro("heatmap", List("heatmap", ":ls"), List("name,sps,:eq,(,nf.cluster,),:by")),
-    Macro(
+    TypedMacro(
+      "area",
+      List("area", ":ls"),
+      ArraySeq(Parameter("", "input expression", PresentationType)),
+      ArraySeq(PresentationType),
+      "Set the line style to area.",
+      List("name,sps,:eq,:sum")
+    ),
+    TypedMacro(
+      "line",
+      List("line", ":ls"),
+      ArraySeq(Parameter("", "input expression", PresentationType)),
+      ArraySeq(PresentationType),
+      "Set the line style to line.",
+      List("name,sps,:eq,:sum")
+    ),
+    TypedMacro(
+      "stack",
+      List("stack", ":ls"),
+      ArraySeq(Parameter("", "input expression", PresentationType)),
+      ArraySeq(PresentationType),
+      "Set the line style to stack.",
+      List("name,sps,:eq,(,nf.cluster,),:by")
+    ),
+    TypedMacro(
+      "heatmap",
+      List("heatmap", ":ls"),
+      ArraySeq(Parameter("", "input expression", PresentationType)),
+      ArraySeq(PresentationType),
+      "Set the line style to heatmap.",
+      List("name,sps,:eq,(,nf.cluster,),:by")
+    ),
+    TypedMacro(
       "percentiles-heatmap",
       List("(", "percentile", ")", ":cg", "heatmap", ":ls"),
+      ArraySeq(Parameter("", "input expression", PresentationType)),
+      ArraySeq(PresentationType),
+      "Group by percentile and display as a heatmap.",
       List("name,requestLatency,:eq")
     ),
-    Macro("vspan", List("vspan", ":ls"), List("name,sps,:eq,:sum,:dup,200e3,:gt")),
+    TypedMacro(
+      "vspan",
+      List("vspan", ":ls"),
+      ArraySeq(Parameter("", "input expression", PresentationType)),
+      ArraySeq(PresentationType),
+      "Set the line style to vertical span.",
+      List("name,sps,:eq,:sum,:dup,200e3,:gt")
+    ),
     // Legacy macro for visualizing epic expressions
     Macro("des-epic-viz", desEpicViz, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4")),
     // Remove presentation settings
     StripStyle
   )
 
-  sealed trait StyleWord extends SimpleWord {
+  sealed trait StyleWord extends TypedWord {
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: PresentationType(_) :: _ => true
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", PresentationType),
+      Parameter("v", "setting value", DataType.StringType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(PresentationType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[StyleExpr]
+      val v = params(1).asInstanceOf[String]
+      context.copy(stack = t.copy(settings = t.settings + (this.name -> v)) :: context.stack)
     }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (v: String) :: PresentationType(t) :: s =>
-        t.copy(settings = t.settings + (this.name -> v)) :: s
-    }
-
-    override def signature: String = "TimeSeriesExpr String -- StyleExpr"
   }
 
-  case object Alpha extends SimpleWord {
+  case object Alpha extends TypedWord {
 
     override def name: String = "alpha"
 
-    override def summary: String =
-      """
-        |Set the alpha value for the colors on the line. The value should be a two digit hex number
-        |where `00` is transparent and `ff` is opague. This setting will be ignored if the
-        |[color](style-color) setting is used for the same line.
-      """.stripMargin.trim
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", PresentationType),
+      Parameter("v", "alpha hex value", DataType.StringType)
+    )
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: PresentationType(_) :: _ => true
-    }
+    override def outputs: IndexedSeq[DataType] = ArraySeq(PresentationType)
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (v: String) :: PresentationType(t) :: s =>
-        val settings = t.settings.get("color") match {
-          case Some(c) => t.settings + ("color" -> withAlpha(c, v)) - "alpha"
-          case None    => t.settings + ("alpha" -> v)
-        }
-        t.copy(settings = settings) :: s
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[StyleExpr]
+      val v = params(1).asInstanceOf[String]
+      val settings = t.settings.get("color") match {
+        case Some(c) =>
+          Try(Strings.parseColor(c)) match {
+            case scala.util.Success(_) =>
+              t.settings + ("color" -> withAlpha(c, v)) - "alpha"
+            case _ =>
+              // Named color — store alpha separately, resolved at render time
+              t.settings + ("alpha" -> v)
+          }
+        case None => t.settings + ("alpha" -> v)
+      }
+      context.copy(stack = t.copy(settings = settings) :: context.stack)
     }
 
     private def withAlpha(color: String, alpha: String): String = {
       val a = Integer.parseInt(alpha, 16)
       val c = Strings.parseColor(color)
       val nc = new Color(c.getRed, c.getGreen, c.getBlue, a)
-      "%08x".format(nc.getRGB)
+      Strings.toString(nc)
     }
 
-    override def signature: String = "TimeSeriesExpr String -- StyleExpr"
+    override def summary: String =
+      """
+        |Set the alpha value for the colors on the line. The value should be a two digit hex number
+        |where `00` is transparent and `ff` is opaque.
+      """.stripMargin.trim
 
     override def examples: List[String] = List(
       "name,sps,:eq,:sum,:stack,40",
@@ -123,31 +189,36 @@ object StyleVocabulary extends Vocabulary {
     )
   }
 
-  case object Color extends SimpleWord {
+  case object Color extends TypedWord {
 
     override def name: String = "color"
+
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", PresentationType),
+      Parameter("v", "color value", DataType.ColorStringType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(PresentationType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[StyleExpr]
+      val raw = params(1).asInstanceOf[String]
+      // Normalize hex colors to 8-digit ARGB; pass named colors through as-is
+      val v = Try(Strings.parseColor(raw)).map(Strings.toString).getOrElse(raw)
+      val settings = t.settings + ("color" -> v) - "alpha" - "palette"
+      context.copy(stack = t.copy(settings = settings) :: context.stack)
+    }
 
     override def summary: String =
       """
         |Set the color for the line. The value should be one of:
         |
         |* [Hex triplet](http://en.wikipedia.org/wiki/Web_colors#Hex_triplet), e.g. f00 is red.
-        |* 6 digit hex RBG, e.g. ff0000 is red.
+        |* 6 digit hex RGB, e.g. ff0000 is red.
         |* 8 digit hex ARGB, e.g. ffff0000 is red. The first byte is the [alpha](style-alpha)
         |  setting to use with the color.
+        |* Named color, e.g. blue1, red2. Named colors are resolved based on the theme.
       """.stripMargin.trim
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: PresentationType(_) :: _ => true
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (v: String) :: PresentationType(t) :: s =>
-        val settings = t.settings + ("color" -> v) - "alpha" - "palette"
-        t.copy(settings = settings) :: s
-    }
-
-    override def signature: String = "TimeSeriesExpr String -- StyleExpr"
 
     override def examples: List[String] = List(
       "name,sps,:eq,:sum,ff0000",
@@ -181,15 +252,15 @@ object StyleVocabulary extends Vocabulary {
       """.stripMargin.trim
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: PresentationType(_) :: _       => true
-      case StringListType(_) :: PresentationType(_) :: _ => true
+      case (_: String) :: PresentationType(_) :: _                => true
+      case DataType.StringListType(_) :: PresentationType(_) :: _ => true
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
       case (v: String) :: PresentationType(t) :: s =>
         val settings = t.settings + ("palette" -> v) - "color" - "alpha"
         t.copy(settings = settings) :: s
-      case StringListType(vs) :: PresentationType(t) :: s =>
+      case DataType.StringListType(vs) :: PresentationType(t) :: s =>
         val v = vs.mkString("(,", ",", ",)")
         val settings = t.settings + ("palette" -> v) - "color" - "alpha"
         t.copy(settings = settings) :: s
@@ -254,30 +325,32 @@ object StyleVocabulary extends Vocabulary {
     override def examples: List[String] = List("name,sps,:eq,:sum,1")
   }
 
-  case object Offset extends SimpleWord {
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case StringListType(_) :: PresentationType(_) :: _ => true
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case StringListType(vs) :: PresentationType(t) :: s =>
-        val v = Interpreter.toString(List(vs))
-        t.copy(settings = t.settings + (name -> v)) :: s
-    }
-
-    override def signature: String = "TimeSeriesExpr List -- StyleExpr"
+  case object Offset extends TypedWord {
 
     override def name: String = "offset"
 
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", PresentationType),
+      Parameter("offsets", "list of offset durations", DataType.StringListType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(PresentationType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[StyleExpr]
+      val vs = params(1).asInstanceOf[List[String]]
+      val v = Interpreter.toString(List(vs))
+      context.copy(stack = t.copy(settings = t.settings + (name -> v)) :: context.stack)
+    }
+
     override def summary: String =
       """
-        |> :warning: **Deprecated**. Use the [data variant](data-offset) with signature
-        |> `TimeSeriesExpr Duration -- TimeSeriesExpr` instead.
-        |
         |Shift the time frame to use when fetching the data. The expression will be copied for
         |each shift value in the list.
       """.stripMargin.trim
+
+    override def deprecated: Option[String] =
+      Some("Use :offset (data variant) instead")
 
     override def examples: List[String] = List("name,sps,:eq,:sum,(,0h,1d,1w,)")
   }
@@ -287,13 +360,13 @@ object StyleVocabulary extends Vocabulary {
     override def name: String = "filter"
 
     override def matches(stack: List[Any]): Boolean = stack match {
-      case TimeSeriesType(_) :: (_: StyleExpr) :: _ => true
-      case _                                        => false
+      case TimeSeriesExprType(_) :: (_: StyleExpr) :: _ => true
+      case _                                            => false
     }
 
     override def execute(context: Context): Context = {
       context.stack match {
-        case TimeSeriesType(ts) :: (se: StyleExpr) :: s =>
+        case TimeSeriesExprType(ts) :: (se: StyleExpr) :: s =>
           val rs = FilterVocabulary.Filter.execute(context.copy(stack = ts :: se.expr :: s))
           val newExpr = se.copy(expr = rs.stack.head.asInstanceOf[TimeSeriesExpr])
           rs.copy(stack = newExpr :: rs.stack.tail)
@@ -346,11 +419,24 @@ object StyleVocabulary extends Vocabulary {
       )
   }
 
-  case object Decode extends SimpleWord {
+  case object Decode extends TypedWord {
 
     override def name: String = "decode"
 
-    override def signature: String = "TimeSeriesExpr String -- StyleExpr"
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", PresentationType),
+      Parameter("mode", "decoding mode", DataType.StringType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(PresentationType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[StyleExpr]
+      val v = params(1).asInstanceOf[String]
+      val transform = s"$v,:$name"
+      val newTransform = t.settings.get("sed").fold(transform)(p => s"$p,$transform")
+      context.copy(stack = t.copy(settings = t.settings + ("sed" -> newTransform)) :: context.stack)
+    }
 
     override def summary: String =
       """
@@ -377,24 +463,28 @@ object StyleVocabulary extends Vocabulary {
       """.stripMargin.trim
 
     override def examples: List[String] = List(s"1,one_21_25_26_3F,:legend,hex")
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: PresentationType(_) :: _ => true
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (v: String) :: PresentationType(t) :: s =>
-        val transform = s"$v,:$name"
-        val newTransform = t.settings.get("sed").fold(transform)(p => s"$p,$transform")
-        t.copy(settings = t.settings + ("sed" -> newTransform)) :: s
-    }
   }
 
-  case object SearchAndReplace extends SimpleWord {
+  case object SearchAndReplace extends TypedWord {
 
     override def name: String = "s"
 
-    override def signature: String = "TimeSeriesExpr s:String r:String -- StyleExpr"
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", PresentationType),
+      Parameter("s", "search pattern", DataType.StringType),
+      Parameter("r", "replacement string", DataType.StringType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(PresentationType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[StyleExpr]
+      val s = params(1).asInstanceOf[String]
+      val r = params(2).asInstanceOf[String]
+      val transform = s"$s,$r,:${this.name}"
+      val newTransform = t.settings.get("sed").fold(transform)(p => s"$p,$transform")
+      context.copy(stack = t.copy(settings = t.settings + ("sed" -> newTransform)) :: context.stack)
+    }
 
     override def summary: String =
       """
@@ -417,17 +507,6 @@ object StyleVocabulary extends Vocabulary {
       s"name,sps,:eq,(,nf.cluster,),:by,$$nf.cluster,:legend,nccp-,_",
       s"name,sps,:eq,(,nf.cluster,),:by,$$nf.cluster,:legend,([a-z]),_$$1"
     )
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: (_: String) :: PresentationType(_) :: _ => true
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (r: String) :: (s: String) :: PresentationType(t) :: stack =>
-        val transform = s"$s,$r,:$name"
-        val newTransform = t.settings.get("sed").fold(transform)(p => s"$p,$transform")
-        t.copy(settings = t.settings + ("sed" -> newTransform)) :: stack
-    }
   }
 
   //
@@ -497,24 +576,25 @@ object StyleVocabulary extends Vocabulary {
   // Helper macros
   //
 
-  case object StripStyle extends SimpleWord {
+  case object StripStyle extends TypedWord {
 
     override def name: String = "strip-style"
+
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", PresentationType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[StyleExpr]
+      context.copy(stack = t.expr :: context.stack)
+    }
 
     override def summary: String =
       """
         |Remove all presentation settings from an expression.
       """.stripMargin.trim
-
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case PresentationType(_) :: _ => true
-    }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case PresentationType(t) :: s => t.expr :: s
-    }
-
-    override def signature: String = "StyleExpr -- TimeSeriesExpr"
 
     override def examples: List[String] = List(
       "name,sps,:eq,:sum,ff0000,:color",

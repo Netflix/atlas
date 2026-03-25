@@ -63,8 +63,8 @@ class FilterSuite extends FunSuite {
 
   private def parse(str: String): TimeSeriesExpr = {
     interpreter.execute(str).stack match {
-      case ModelExtractors.TimeSeriesType(t) :: Nil => t
-      case _                                        => throw new MatchError(str)
+      case ModelDataTypes.TimeSeriesExprType(t) :: Nil => t
+      case _                                           => throw new MatchError(str)
     }
   }
 

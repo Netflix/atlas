@@ -15,7 +15,14 @@
  */
 package com.netflix.atlas.core.stacklang
 
+import scala.collection.immutable.ArraySeq
+
+import com.netflix.atlas.core.stacklang.ast.DataType
+import com.netflix.atlas.core.stacklang.ast.Parameter
 import com.netflix.atlas.core.util.StringFormatter
+
+import DataType.AnyType
+import DataType.StringType
 
 object StandardVocabulary extends Vocabulary {
 
@@ -44,14 +51,42 @@ object StandardVocabulary extends Vocabulary {
     Set,
     Swap,
     ToList,
-    Macro("2over", List(":over", ":over"), List("a,b")),
-    Macro("nip", List(":swap", ":drop"), List("a,b")),
-    Macro("tuck", List(":swap", ":over"), List("a,b")),
+    TypedMacro(
+      "2over",
+      List(":over", ":over"),
+      ArraySeq(Parameter("a", "first item", AnyType), Parameter("b", "second item", AnyType)),
+      ArraySeq(AnyType, AnyType, AnyType, AnyType),
+      "Copy the top two items: `a b -- a b a b`.",
+      List("a,b")
+    ),
+    TypedMacro(
+      "nip",
+      List(":swap", ":drop"),
+      ArraySeq(Parameter("a", "item to remove", AnyType), Parameter("b", "item to keep", AnyType)),
+      ArraySeq(AnyType),
+      "Remove the second item: `a b -- b`.",
+      List("a,b")
+    ),
+    TypedMacro(
+      "tuck",
+      List(":swap", ":over"),
+      ArraySeq(Parameter("a", "first item", AnyType), Parameter("b", "second item", AnyType)),
+      ArraySeq(AnyType, AnyType, AnyType),
+      "Copy the top below the second: `a b -- b a b`.",
+      List("a,b")
+    ),
     Macro("fcall", List(":get", ":call"), List("duplicate,(,:dup,),:set,a,duplicate")),
-    Macro("sset", List(":swap", ":set"), List("a,b"))
+    TypedMacro(
+      "sset",
+      List(":swap", ":set"),
+      ArraySeq(Parameter("v", "value", AnyType), Parameter("k", "variable name", StringType)),
+      ArraySeq.empty,
+      "Set a variable: shorthand for `:swap :set`.",
+      List("a,b")
+    )
   )
 
-  import Extractors.*
+  import com.netflix.atlas.core.stacklang.ast.DataType.*
 
   /** A word defined as a sequence of other commands. */
   case class Macro(name: String, body: List[Any], examples: List[String] = Nil) extends Word {
@@ -71,29 +106,25 @@ object StandardVocabulary extends Vocabulary {
   }
 
   /** Pop a list off the stack and execute it as a program. */
-  case object Call extends Word {
+  case object Call extends TypedWord {
 
     override def name: String = "call"
 
-    override def matches(stack: List[Any]): Boolean = stack match {
-      case (_: List[?]) :: _ => true
-      case _                 => false
-    }
+    override def parameters: ArraySeq[Parameter] = ArraySeq(
+      Parameter("program", "list to execute as a program", DataType.ListType)
+    )
 
-    override def execute(context: Context): Context = {
-      context.stack match {
-        case (vs: List[?]) :: stack =>
-          context.interpreter.executeProgram(vs, context.copy(stack = stack), unfreeze = false)
-        case _ => invalidStack
-      }
+    override def outputs: ArraySeq[DataType] = ArraySeq.empty
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val vs = params(0).asInstanceOf[List[Any]]
+      context.interpreter.executeProgram(vs, context, unfreeze = false)
     }
 
     override def summary: String =
       """
         |Pop a list off the stack and execute it as a program.
       """.stripMargin.trim
-
-    override def signature: String = "? List -- ?"
 
     override def examples: List[String] = List("(,a,)")
   }
@@ -118,18 +149,18 @@ object StandardVocabulary extends Vocabulary {
   }
 
   /** Compute the depth of the stack. */
-  case object Depth extends SimpleWord {
+  case object Depth extends TypedWord {
 
     override def name: String = "depth"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
+    override def parameters: ArraySeq[Parameter] = ArraySeq.empty
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
+    override def outputs: ArraySeq[DataType] = ArraySeq(DataType.IntType)
 
-      // The depth is pushed as a string because we don't currently have a way to indicate the
-      // type. The IntType extractor will match the string for operations that need to extract
-      // and int.
-      case vs => vs.size.toString :: vs
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      // The depth is pushed as a string because the IntType extractor will match
+      // the string for operations that need to extract an int.
+      context.copy(stack = context.stack.size.toString :: context.stack)
     }
 
     override def summary: String =
@@ -139,49 +170,50 @@ object StandardVocabulary extends Vocabulary {
         |Since: 1.5.0
       """.stripMargin.trim
 
-    override def signature: String = " -- N"
-
     override def examples: List[String] = List("", "a", "a,b")
   }
 
   /** Remove the item on the top of the stack. */
-  case object Drop extends SimpleWord {
+  case object Drop extends TypedWord {
 
     override def name: String = "drop"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = { case vs => vs.nonEmpty }
+    override def parameters: ArraySeq[Parameter] = ArraySeq(
+      Parameter("a", "item to remove", DataType.AnyType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case _ :: s => s
-    }
+    override def outputs: ArraySeq[DataType] = ArraySeq.empty
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = context
 
     override def summary: String =
       """
         |Remove the item on the top of the stack.
       """.stripMargin.trim
 
-    override def signature: String = "a -- "
-
     override def examples: List[String] = List("a,b,c", "ERROR:")
   }
 
   /** Duplicate the item on the top of the stack. */
-  case object Dup extends SimpleWord {
+  case object Dup extends TypedWord {
 
     override def name: String = "dup"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = { case vs => vs.nonEmpty }
+    override def parameters: ArraySeq[Parameter] = ArraySeq(
+      Parameter("a", "item to duplicate", DataType.AnyType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case s @ v :: _ => v :: s
+    override def outputs: ArraySeq[DataType] = ArraySeq(DataType.AnyType, DataType.AnyType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val a = params(0)
+      context.copy(stack = a :: a :: context.stack)
     }
 
     override def summary: String =
       """
         |Duplicate the item on the top of the stack.
       """.stripMargin.trim
-
-    override def signature: String = "a -- a a"
 
     override def examples: List[String] = List("a", "a,b", "ERROR:")
   }
@@ -217,16 +249,21 @@ object StandardVocabulary extends Vocabulary {
   }
 
   /** Format a string. */
-  case object Format extends SimpleWord {
+  case object Format extends TypedWord {
 
     override def name: String = "format"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: List[?]) :: (_: String) :: _ => true
-    }
+    override def parameters: ArraySeq[Parameter] = ArraySeq(
+      Parameter("pattern", "printf-style format pattern", DataType.StringType),
+      Parameter("args", "arguments for the format pattern", DataType.ListType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (vs: List[?]) :: (s: String) :: stack => StringFormatter.format(s, vs*) :: stack
+    override def outputs: ArraySeq[DataType] = ArraySeq(DataType.StringType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val pattern = params(0).asInstanceOf[String]
+      val args = params(1).asInstanceOf[List[Any]]
+      context.copy(stack = StringFormatter.format(pattern, args*) :: context.stack)
     }
 
     override def summary: String =
@@ -235,8 +272,6 @@ object StandardVocabulary extends Vocabulary {
         |
         |[formatter]: https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html
       """.stripMargin.trim
-
-    override def signature: String = "pattern:String args:List -- str:String"
 
     override def examples: List[String] = List("foo%s,(,bar,)")
   }
@@ -297,28 +332,25 @@ object StandardVocabulary extends Vocabulary {
   }
 
   /** Get the value of a variable and push it on the stack. */
-  case object Get extends Word {
+  case object Get extends TypedWord {
 
     override def name: String = "get"
 
-    override def matches(stack: List[Any]): Boolean = stack match {
-      case (_: String) :: _ => true
-      case _                => false
-    }
+    override def parameters: ArraySeq[Parameter] = ArraySeq(
+      Parameter("k", "variable name to look up", DataType.StringType)
+    )
 
-    override def execute(context: Context): Context = {
-      context.stack match {
-        case (k: String) :: _ => context.copy(stack = context.variables(k) :: context.stack.tail)
-        case _                => invalidStack
-      }
+    override def outputs: ArraySeq[DataType] = ArraySeq(DataType.AnyType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val k = params(0).asInstanceOf[String]
+      context.copy(stack = context.variables(k) :: context.stack)
     }
 
     override def summary: String =
       """
         |Get the value of a variable and push it on the stack.
       """.stripMargin.trim
-
-    override def signature: String = "k -- vars[k]"
 
     override def examples: List[String] = List("k,v,:set,k")
   }
@@ -434,24 +466,28 @@ object StandardVocabulary extends Vocabulary {
   }
 
   /** Copy the item in the second position on the stack to the top. */
-  case object Over extends SimpleWord {
+  case object Over extends TypedWord {
 
     override def name: String = "over"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Any) :: (_: Any) :: _ => true
-    }
+    override def parameters: ArraySeq[Parameter] = ArraySeq(
+      Parameter("a", "item to copy", DataType.AnyType),
+      Parameter("b", "top item", DataType.AnyType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case s @ _ :: v :: _ => v :: s
+    override def outputs: ArraySeq[DataType] =
+      ArraySeq(DataType.AnyType, DataType.AnyType, DataType.AnyType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val a = params(0)
+      val b = params(1)
+      context.copy(stack = a :: b :: a :: context.stack)
     }
 
     override def summary: String =
       """
         |Copy the item in the second position on the stack to the top.
       """.stripMargin.trim
-
-    override def signature: String = "a b -- a b a"
 
     override def examples: List[String] = List("a,b")
   }
@@ -525,21 +561,21 @@ object StandardVocabulary extends Vocabulary {
   }
 
   /** Set the value of a variable. */
-  case object Set extends Word {
+  case object Set extends TypedWord {
 
     override def name: String = "set"
 
-    override def matches(stack: List[Any]): Boolean = stack match {
-      case (_: Any) :: (_: String) :: _ => true
-      case _                            => false
-    }
+    override def parameters: ArraySeq[Parameter] = ArraySeq(
+      Parameter("k", "key name to use", DataType.StringType),
+      Parameter("v", "value to associate with the key", DataType.AnyType)
+    )
 
-    override def execute(context: Context): Context = {
-      context.stack match {
-        case (v: Any) :: (k: String) :: vs =>
-          context.copy(stack = vs, variables = context.variables + (k -> v))
-        case _ => invalidStack
-      }
+    override def outputs: ArraySeq[DataType] = ArraySeq.empty
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val k = params(0).asInstanceOf[String]
+      val v = params(1)
+      context.copy(variables = context.variables + (k -> v))
     }
 
     override def summary: String =
@@ -547,30 +583,31 @@ object StandardVocabulary extends Vocabulary {
         |Set the value of a variable.
       """.stripMargin.trim
 
-    override def signature: String = "k v -- "
-
     override def examples: List[String] = List("k,v")
   }
 
   /** Swap the top two items on the stack. */
-  case object Swap extends SimpleWord {
+  case object Swap extends TypedWord {
 
     override def name: String = "swap"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Any) :: (_: Any) :: _ => true
-    }
+    override def parameters: ArraySeq[Parameter] = ArraySeq(
+      Parameter("a", "first item", DataType.AnyType),
+      Parameter("b", "second item", DataType.AnyType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (b: Any) :: (a: Any) :: vs => a :: b :: vs
+    override def outputs: ArraySeq[DataType] = ArraySeq(DataType.AnyType, DataType.AnyType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val a = params(0)
+      val b = params(1)
+      context.copy(stack = a :: b :: context.stack)
     }
 
     override def summary: String =
       """
         |Swap the top two items on the stack.
       """.stripMargin.trim
-
-    override def signature: String = "a b -- b a"
 
     override def examples: List[String] = List("a,b")
   }

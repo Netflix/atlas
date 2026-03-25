@@ -15,15 +15,20 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.stacklang.SimpleWord
+import scala.collection.immutable.ArraySeq
+
+import com.netflix.atlas.core.model.ModelDataTypes.*
+import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.StandardVocabulary
+import com.netflix.atlas.core.stacklang.TypedWord
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
+import com.netflix.atlas.core.stacklang.ast.DataType
+import com.netflix.atlas.core.stacklang.ast.DataType.StringListType
+import com.netflix.atlas.core.stacklang.ast.Parameter
 import com.netflix.spectator.impl.matcher.PatternUtils
 
 object QueryVocabulary extends Vocabulary {
-
-  import com.netflix.atlas.core.model.ModelExtractors.*
 
   val name: String = "query"
 
@@ -50,14 +55,16 @@ object QueryVocabulary extends Vocabulary {
     CommonQuery
   )
 
-  case object True extends SimpleWord {
+  case object True extends TypedWord {
 
     override def name: String = "true"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq.empty
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case s => Query.True :: s
+    override def outputs: IndexedSeq[DataType] = ArraySeq(QueryType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      context.copy(stack = Query.True :: context.stack)
     }
 
     override def summary: String =
@@ -65,19 +72,19 @@ object QueryVocabulary extends Vocabulary {
         |Query expression that matches all input time series.
       """.stripMargin.trim
 
-    override def signature: String = " -- Query"
-
     override def examples: List[String] = List("")
   }
 
-  case object False extends SimpleWord {
+  case object False extends TypedWord {
 
     override def name: String = "false"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq.empty
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case s => Query.False :: s
+    override def outputs: IndexedSeq[DataType] = ArraySeq(QueryType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      context.copy(stack = Query.False :: context.stack)
     }
 
     override def summary: String =
@@ -85,21 +92,22 @@ object QueryVocabulary extends Vocabulary {
         |Query expression that will not match any input time series.
       """.stripMargin.trim
 
-    override def signature: String = " -- Query"
-
     override def examples: List[String] = List("")
   }
 
-  case object HasKey extends SimpleWord {
+  case object HasKey extends TypedWord {
 
     override def name: String = "has"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("k", "tag key", DataType.StringType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (k: String) :: s => Query.HasKey(k) :: s
+    override def outputs: IndexedSeq[DataType] = ArraySeq(QueryType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val k = params(0).asInstanceOf[String]
+      context.copy(stack = Query.HasKey(k) :: context.stack)
     }
 
     override def summary: String =
@@ -121,24 +129,25 @@ object QueryVocabulary extends Vocabulary {
         |* `name=sys.cpu, type=user, nf.app=server`
       """.stripMargin.trim
 
-    override def signature: String = "k:String -- Query"
-
     override def examples: List[String] = List("a", "name", "ERROR:")
   }
 
-  trait KeyValueWord extends SimpleWord {
+  trait KeyValueWord extends TypedWord {
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: (_: String) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("k", "tag key", DataType.StringType),
+      Parameter("v", "tag value", DataType.StringType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(QueryType)
 
     def newInstance(k: String, v: String): Query
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (v: String) :: (k: String) :: s => newInstance(k, v) :: s
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val k = params(0).asInstanceOf[String]
+      val v = params(1).asInstanceOf[String]
+      context.copy(stack = newInstance(k, v) :: context.stack)
     }
-
-    override def signature: String = "k:String v:String -- Query"
 
     override def examples: List[String] = List("a,b", "nf.node,silverlight-003e", "ERROR:name")
   }
@@ -435,18 +444,27 @@ object QueryVocabulary extends Vocabulary {
       List("name,error", "result,failed")
   }
 
-  case object In extends SimpleWord {
+  case object In extends TypedWord {
 
     override def name: String = "in"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: List[?]) :: (_: String) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("k", "tag key", DataType.StringType),
+      Parameter("vs", "list of tag values", DataType.StringListType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case Nil :: (_: String) :: s                  => Query.False :: s
-      case ((v: String) :: Nil) :: (k: String) :: s => Query.Equal(k, v) :: s
-      case StringListType(vs) :: (k: String) :: s   => Query.In(k, vs) :: s
+    override def outputs: IndexedSeq[DataType] = ArraySeq(QueryType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val k = params(0).asInstanceOf[String]
+      val vs = params(1).asInstanceOf[List[?]]
+      val query = vs match {
+        case Nil                => Query.False
+        case (v: String) :: Nil => Query.Equal(k, v)
+        case StringListType(sv) => Query.In(k, sv)
+        case _ => throw new IllegalArgumentException("list must contain only strings")
+      }
+      context.copy(stack = query :: context.stack)
     }
 
     override def summary: String =
@@ -464,22 +482,25 @@ object QueryVocabulary extends Vocabulary {
         |* `name=sys.cpu, type=user, nf.app=bar`
       """.stripMargin.trim
 
-    override def signature: String = "k:String vs:List -- Query"
-
     override def examples: List[String] =
       List("name,(,sps,)", "name,(,requestsPerSecond,sps,)", "name,(,)", "ERROR:name,sps")
   }
 
-  case object And extends SimpleWord {
+  case object And extends TypedWord {
 
     override def name: String = "and"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: (_: Query) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("q1", "first query", QueryType),
+      Parameter("q2", "second query", QueryType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q2: Query) :: (q1: Query) :: s => q1.and(q2) :: s
+    override def outputs: IndexedSeq[DataType] = ArraySeq(QueryType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val q1 = params(0).asInstanceOf[Query]
+      val q2 = params(1).asInstanceOf[Query]
+      context.copy(stack = q1.and(q2) :: context.stack)
     }
 
     override def summary: String =
@@ -496,22 +517,25 @@ object QueryVocabulary extends Vocabulary {
         |* `name=sys.cpu, type=user, nf.app=foo`
       """.stripMargin.trim
 
-    override def signature: String = "Query Query -- Query"
-
     override def examples: List[String] =
       List(":false,:false", ":false,:true", ":true,:false", ":true,:true")
   }
 
-  case object Or extends SimpleWord {
+  case object Or extends TypedWord {
 
     override def name: String = "or"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: (_: Query) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("q1", "first query", QueryType),
+      Parameter("q2", "second query", QueryType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q2: Query) :: (q1: Query) :: s => q1.or(q2) :: s
+    override def outputs: IndexedSeq[DataType] = ArraySeq(QueryType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val q1 = params(0).asInstanceOf[Query]
+      val q2 = params(1).asInstanceOf[Query]
+      context.copy(stack = q1.or(q2) :: context.stack)
     }
 
     override def summary: String =
@@ -532,22 +556,23 @@ object QueryVocabulary extends Vocabulary {
         |better option.
       """.stripMargin.trim
 
-    override def signature: String = "Query Query -- Query"
-
     override def examples: List[String] =
       List(":false,:false", ":false,:true", ":true,:false", ":true,:true")
   }
 
-  case object Not extends SimpleWord {
+  case object Not extends TypedWord {
 
     override def name: String = "not"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("q", "query to negate", QueryType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q: Query) :: s => q.not :: s
+    override def outputs: IndexedSeq[DataType] = ArraySeq(QueryType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val q = params(0).asInstanceOf[Query]
+      context.copy(stack = q.not :: context.stack)
     }
 
     override def summary: String =
@@ -564,29 +589,33 @@ object QueryVocabulary extends Vocabulary {
         |* `name=http.requests, status=200, nf.app=server`
       """.stripMargin.trim
 
-    override def signature: String = "Query -- Query"
-
     override def examples: List[String] = List(":false", ":true")
   }
 
-  case object CommonQuery extends SimpleWord {
+  case object CommonQuery extends TypedWord {
 
     override def name: String = "cq"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: _ :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("expr", "expression or value to apply the query to", DataType.AnyType),
+      Parameter("q", "common query to AND into all sub-queries", QueryType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q2: Query) :: (expr: Expr) :: stack =>
-        val newExpr = expr.rewrite {
-          case q1: Query => q1.and(q2)
-        }
-        newExpr :: stack
-      case (_: Query) :: stack =>
-        // Ignore items on the stack that are not expressions. So we pop the query and leave
-        // the rest of the stack unchanged.
-        stack
+    override def outputs: IndexedSeq[DataType] = ArraySeq(DataType.AnyType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val result = (params(0), params(1)) match {
+        case (expr: Expr, q2: Query) =>
+          val newExpr = expr.rewrite {
+            case q1: Query => q1.and(q2)
+          }
+          newExpr :: context.stack
+        case (other, _: Query) =>
+          // Ignore items on the stack that are not expressions. So we pop the query and leave
+          // the rest of the stack unchanged.
+          other :: context.stack
+      }
+      context.copy(stack = result)
     }
 
     override def summary: String =
@@ -594,8 +623,6 @@ object QueryVocabulary extends Vocabulary {
         |Recursively AND a common query to all queries in an expression. If the first parameter
         |is not an expression, then it will be not be modified.
       """.stripMargin.trim
-
-    override def signature: String = "Expr Query -- Expr"
 
     override def examples: List[String] =
       List(

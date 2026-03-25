@@ -22,7 +22,7 @@ import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.EventVocabulary
 import com.netflix.atlas.core.model.Expr
 import com.netflix.atlas.core.model.FilterExpr
-import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.ModelDataTypes
 import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.stacklang.Interpreter
@@ -126,8 +126,8 @@ class ExprInterpreter(config: Config) {
 
   private def parseTimeSeries(query: String): List[StyleExpr] = {
     val exprs = tsInterpreter.execute(query).stack.map {
-      case ModelExtractors.PresentationType(t) => t
-      case value                               => throw invalidValue(value)
+      case ModelDataTypes.PresentationType(t) => t
+      case value                              => throw invalidValue(value)
     }
     exprs.foreach(validate)
     exprs
@@ -135,8 +135,8 @@ class ExprInterpreter(config: Config) {
 
   private def parseEvents(query: String): List[EventExpr] = {
     eventInterpreter.execute(query).stack.map {
-      case ModelExtractors.EventExprType(t) => t
-      case value                            => throw invalidValue(value)
+      case ModelDataTypes.EventExprType(t) => t
+      case value                           => throw invalidValue(value)
     }
   }
 

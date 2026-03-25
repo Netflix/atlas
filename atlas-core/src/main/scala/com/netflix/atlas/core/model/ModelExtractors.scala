@@ -15,93 +15,81 @@
  */
 package com.netflix.atlas.core.model
 
-import java.time.Duration
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
-import com.netflix.atlas.core.util.Strings
 
-import scala.util.Try
-
+/** Use ModelDataTypes and DataType instead. */
+@deprecated("Use ModelDataTypes and DataType instead", "1.9")
 object ModelExtractors {
 
+  /** Use DataType.DurationType instead. */
+  @deprecated("Use DataType.DurationType instead", "1.9")
   case object DurationType {
 
-    def unapply(value: Any): Option[Duration] = value match {
-      case v: String   => Try(Strings.parseDuration(v)).toOption
-      case v: Duration => Some(v)
-      case _           => None
-    }
+    def unapply(value: Any): Option[java.time.Duration] =
+      com.netflix.atlas.core.stacklang.ast.DataType.DurationType.unapply(value)
   }
 
+  /** Use ModelDataTypes.ConsolidationFunctionType instead. */
+  @deprecated("Use ModelDataTypes.ConsolidationFunctionType instead", "1.9")
   case object ConsolidationFunctionType {
 
-    def unapply(value: Any): Option[ConsolidationFunction] = value match {
-      case "avg" => Some(ConsolidationFunction.Avg)
-      case "sum" => Some(ConsolidationFunction.Sum)
-      case "min" => Some(ConsolidationFunction.Min)
-      case "max" => Some(ConsolidationFunction.Max)
-      case _     => None
-    }
+    def unapply(value: Any): Option[ConsolidationFunction] =
+      ModelDataTypes.ConsolidationFunctionType.unapply(value)
   }
 
+  /** Use DataType.StringListType instead. */
+  @deprecated("Use DataType.StringListType instead", "1.9")
   case object StringListType {
 
-    def unapply(value: Any): Option[List[String]] = value match {
-      case vs: List[?] if vs.forall(_.isInstanceOf[String]) => Some(vs.asInstanceOf[List[String]])
-      case _                                                => None
-    }
+    def unapply(value: Any): Option[List[String]] =
+      com.netflix.atlas.core.stacklang.ast.DataType.StringListType.unapply(value)
   }
 
+  /** Use DataType.DoubleListType instead. */
+  @deprecated("Use DataType.DoubleListType instead", "1.9")
   case object DoubleListType {
 
-    def unapply(value: Any): Option[List[Double]] = value match {
-      case StringListType(vs) => Try(vs.map(_.toDouble)).toOption
-      case _                  => None
-    }
+    def unapply(value: Any): Option[List[Double]] =
+      com.netflix.atlas.core.stacklang.ast.DataType.DoubleListType.unapply(value)
   }
 
+  /** Use ModelDataTypes.AggrType instead. */
+  @deprecated("Use ModelDataTypes.AggrType instead", "1.9")
   case object AggrType {
 
-    def unapply(value: Any): Option[AggregateFunction] = value match {
-      case v: Query             => Some(DataExpr.Sum(v))
-      case v: AggregateFunction => Some(v)
-      case _                    => None
-    }
+    def unapply(value: Any): Option[AggregateFunction] =
+      ModelDataTypes.AggrType.unapply(value)
   }
 
+  /** Use ModelDataTypes.DataExprType instead. */
+  @deprecated("Use ModelDataTypes.DataExprType instead", "1.9")
   case object DataExprType {
 
-    def unapply(value: Any): Option[DataExpr] = value match {
-      case v: Query    => Some(DataExpr.Sum(v))
-      case v: DataExpr => Some(v)
-      case _           => None
-    }
+    def unapply(value: Any): Option[DataExpr] =
+      ModelDataTypes.DataExprType.unapply(value)
   }
 
+  /** Use ModelDataTypes.TimeSeriesExprType instead. */
+  @deprecated("Use ModelDataTypes.TimeSeriesExprType instead", "1.9")
   case object TimeSeriesType {
 
-    def unapply(value: Any): Option[TimeSeriesExpr] = value match {
-      case v: String if Try(v.toDouble).isSuccess => Some(MathExpr.Constant(v.toDouble))
-      case v: Query                               => Some(DataExpr.Sum(v))
-      case v: TimeSeriesExpr                      => Some(v)
-      case _                                      => None
-    }
+    def unapply(value: Any): Option[TimeSeriesExpr] =
+      ModelDataTypes.TimeSeriesExprType.unapply(value)
   }
 
+  /** Use ModelDataTypes.PresentationType instead. */
+  @deprecated("Use ModelDataTypes.PresentationType instead", "1.9")
   case object PresentationType {
 
-    def unapply(value: Any): Option[StyleExpr] = value match {
-      case TimeSeriesType(t) => Some(StyleExpr(t, Map.empty))
-      case s: StyleExpr      => Some(s)
-      case _                 => None
-    }
+    def unapply(value: Any): Option[StyleExpr] =
+      ModelDataTypes.PresentationType.unapply(value)
   }
 
+  /** Use ModelDataTypes.EventExprType instead. */
+  @deprecated("Use ModelDataTypes.EventExprType instead", "1.9")
   case object EventExprType {
 
-    def unapply(value: Any): Option[EventExpr] = value match {
-      case e: EventExpr => Some(e)
-      case q: Query     => Some(EventExpr.Raw(q))
-      case _            => None
-    }
+    def unapply(value: Any): Option[EventExpr] =
+      ModelDataTypes.EventExprType.unapply(value)
   }
 }

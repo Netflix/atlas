@@ -118,7 +118,7 @@ class MemoryDatabaseSuite extends FunSuite {
 
   private def expr(str: String): DataExpr = {
     interpreter.execute(str).stack match {
-      case ModelExtractors.DataExprType(v) :: Nil => v
+      case ModelDataTypes.DataExprType(v) :: Nil => v
       case _ => throw new IllegalArgumentException(s"invalid data expr: $str")
     }
   }

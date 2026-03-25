@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.stacklang
+package com.netflix.atlas.core.stacklang.ast
 
-import com.netflix.atlas.core.stacklang.ast.DataType
-
-/** Use DataType.IntType and DataType.DoubleType instead. */
-@deprecated("Use DataType.IntType and DataType.DoubleType instead", "1.9")
-object Extractors {
-
-  @deprecated("Use DataType.IntType instead", "1.9")
-  val IntType: DataType.IntType.type = DataType.IntType
-
-  @deprecated("Use DataType.DoubleType instead", "1.9")
-  val DoubleType: DataType.DoubleType.type = DataType.DoubleType
-}
+/**
+  * Describes a typed parameter for a stack language word.
+  *
+  * @param name
+  *     Display name for this parameter (e.g. "training", "alpha").
+  * @param description
+  *     Short description of the parameter's purpose.
+  * @param dataType
+  *     The expected type for this parameter.
+  */
+case class Parameter(name: String, description: String, dataType: DataType)

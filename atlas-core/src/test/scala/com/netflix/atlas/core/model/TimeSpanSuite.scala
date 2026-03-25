@@ -31,7 +31,7 @@ class TimeSpanSuite extends FunSuite {
 
   private def eval(program: String): Array[Double] = {
     val results = interpreter.execute(program).stack.collect {
-      case ModelExtractors.TimeSeriesType(t) => t
+      case ModelDataTypes.TimeSeriesExprType(t) => t
     }
     assertEquals(results.size, 1)
     val span = results.head

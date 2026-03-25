@@ -15,7 +15,7 @@
  */
 package com.netflix.atlas.core.stacklang
 
-import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.ModelDataTypes
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeriesExpr
 import com.netflix.atlas.core.util.Features
@@ -33,8 +33,8 @@ abstract class BaseExamplesSuite extends FunSuite {
 
   protected def eval(program: String): TimeSeriesExpr = {
     execute(program).stack match {
-      case ModelExtractors.TimeSeriesType(t) :: Nil => t
-      case v                                        => throw new MatchError(v)
+      case ModelDataTypes.TimeSeriesExprType(t) :: Nil => t
+      case v                                           => throw new MatchError(v)
     }
   }
 

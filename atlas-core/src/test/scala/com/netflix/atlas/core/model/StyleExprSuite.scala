@@ -91,8 +91,8 @@ class StyleExprSuite extends FunSuite {
 
   private def eval(str: String): StyleExpr = {
     interpreter.execute(str).stack match {
-      case ModelExtractors.PresentationType(t) :: Nil => t
-      case _                                          => throw new MatchError(str)
+      case ModelDataTypes.PresentationType(t) :: Nil => t
+      case _                                         => throw new MatchError(str)
     }
   }
 

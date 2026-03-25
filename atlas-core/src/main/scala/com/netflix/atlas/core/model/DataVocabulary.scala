@@ -15,15 +15,20 @@
  */
 package com.netflix.atlas.core.model
 
+import scala.collection.immutable.ArraySeq
+
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
 import com.netflix.atlas.core.model.MathExpr.NamedRewrite
-import com.netflix.atlas.core.stacklang.SimpleWord
+import com.netflix.atlas.core.stacklang.Context
+import com.netflix.atlas.core.stacklang.TypedWord
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
+import com.netflix.atlas.core.stacklang.ast.DataType
+import com.netflix.atlas.core.stacklang.ast.Parameter
 
 object DataVocabulary extends Vocabulary {
 
-  import com.netflix.atlas.core.model.ModelExtractors.*
+  import com.netflix.atlas.core.model.ModelDataTypes.*
 
   val name: String = "data"
 
@@ -43,19 +48,20 @@ object DataVocabulary extends Vocabulary {
     CfMax
   )
 
-  sealed trait DataWord extends SimpleWord {
+  sealed trait DataWord extends TypedWord {
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: Query) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("q", "input query", QueryType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(DataExprType)
 
     def newInstance(q: Query): DataExpr
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (q: Query) :: stack => newInstance(q) :: stack
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val q = params(0).asInstanceOf[Query]
+      context.copy(stack = newInstance(q) :: context.stack)
     }
-
-    override def signature: String = "Query -- DataExpr"
 
     override def examples: List[String] = List("name,sps,:eq")
   }
@@ -161,29 +167,27 @@ object DataVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  case object GroupBy extends SimpleWord {
+  case object GroupBy extends TypedWord {
 
     override def name: String = "by"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: List[?]) :: (_: Query) :: _             => true
-      case (_: List[?]) :: (_: AggregateFunction) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("af", "aggregate function or query", AggrType),
+      Parameter("keys", "tag keys to group by", DataType.StringListType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (ks: List[?]) :: (q: Query) :: stack =>
-        val f = DataExpr.Sum(q)
-        DataExpr.GroupBy(f, ks.asInstanceOf[List[String]]) :: stack
-      case (ks: List[?]) :: (f: AggregateFunction) :: stack =>
-        DataExpr.GroupBy(f, ks.asInstanceOf[List[String]]) :: stack
+    override def outputs: IndexedSeq[DataType] = ArraySeq(DataExprType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val af = params(0).asInstanceOf[AggregateFunction]
+      val keys = params(1).asInstanceOf[List[String]]
+      context.copy(stack = DataExpr.GroupBy(af, keys) :: context.stack)
     }
 
     override def summary: String =
       """
         |Compute a set of time series matching the query and grouped by the specified keys.
       """.stripMargin.trim
-
-    override def signature: String = "af:AggregateFunction keys:List -- DataExpr"
 
     override def examples: List[String] =
       List(
@@ -193,20 +197,21 @@ object DataVocabulary extends Vocabulary {
       )
   }
 
-  case object Offset extends SimpleWord {
+  case object Offset extends TypedWord with StylePassthrough {
 
     override def name: String = "offset"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case DurationType(_) :: TimeSeriesType(_) :: _   => true
-      case DurationType(_) :: PresentationType(_) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input time series", TimeSeriesExprType),
+      Parameter("dur", "offset duration", DataType.DurationType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case DurationType(d) :: TimeSeriesType(t) :: stack =>
-        t.withOffset(d) :: stack
-      case DurationType(d) :: PresentationType(t) :: stack =>
-        t.copy(expr = t.expr.withOffset(d)) :: stack
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[TimeSeriesExpr]
+      val d = params(1).asInstanceOf[java.time.Duration]
+      context.copy(stack = t.withOffset(d) :: context.stack)
     }
 
     override def summary: String =
@@ -215,36 +220,34 @@ object DataVocabulary extends Vocabulary {
         |interval as a point of reference, e.g., day-over-day or week-over-week.
       """.stripMargin.trim
 
-    override def signature: String = "TimeSeriesExpr Duration -- TimeSeriesExpr"
-
     override def examples: List[String] =
       List("name,sps,:eq,(,name,),:by,1w", "name,sps,:eq,:max,PT1H")
   }
 
-  sealed trait CfWord extends SimpleWord {
+  sealed trait CfWord extends TypedWord {
 
     def cf: ConsolidationFunction
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case TimeSeriesType(_) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("expr", "input expression", TimeSeriesExprType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case TimeSeriesType(t) :: stack =>
-        // Expand rewrites, custom consolidation cannot be preserved with the rewrite in
-        // place. Expand so we can preserve correctness.
-        val evalExpr = t.rewrite {
-          case nr: NamedRewrite => nr.evalExpr
-        }
-        // Update the aggregation functions within the expression to use the specified
-        // consolidation function
-        val expr = evalExpr.rewrite {
-          case af: AggregateFunction => af.withConsolidation(cf)
-        }
-        expr :: stack
-    }
+    override def outputs: IndexedSeq[DataType] = ArraySeq(DataExprType)
 
-    override def signature: String = "AggregateFunction -- DataExpr"
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[TimeSeriesExpr]
+      // Expand rewrites, custom consolidation cannot be preserved with the rewrite in
+      // place. Expand so we can preserve correctness.
+      val evalExpr = t.rewrite {
+        case nr: NamedRewrite => nr.evalExpr
+      }
+      // Update the aggregation functions within the expression to use the specified
+      // consolidation function
+      val expr = evalExpr.rewrite {
+        case af: AggregateFunction => af.withConsolidation(cf)
+      }
+      context.copy(stack = expr :: context.stack)
+    }
 
     override def examples: List[String] =
       List(

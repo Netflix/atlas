@@ -19,7 +19,7 @@ import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DataVocabulary
 import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.EventVocabulary
-import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.ModelDataTypes
 import com.netflix.atlas.core.stacklang.Interpreter
 import org.apache.pekko.stream.Attributes
 import org.apache.pekko.stream.FlowShape
@@ -187,7 +187,7 @@ private[stream] object LwcToAggrDatapoint {
         }
       case ExprType.EVENTS =>
         eventInterpreter.execute(input).stack match {
-          case ModelExtractors.EventExprType(expr: EventExpr.Sample) :: Nil => expr.dataExpr
+          case ModelDataTypes.EventExprType(expr: EventExpr.Sample) :: Nil => expr.dataExpr
           case _ => throw new IllegalArgumentException(s"invalid expr: $input")
         }
     }

@@ -15,15 +15,21 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.stacklang.SimpleWord
-import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
+import java.time.Duration
+
+import scala.collection.immutable.ArraySeq
+
+import com.netflix.atlas.core.stacklang.Context
+import com.netflix.atlas.core.stacklang.TypedMacro
+import com.netflix.atlas.core.stacklang.TypedWord
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
+import com.netflix.atlas.core.stacklang.ast.DataType
+import com.netflix.atlas.core.stacklang.ast.Parameter
 
 object FilterVocabulary extends Vocabulary {
 
-  import com.netflix.atlas.core.model.ModelExtractors.*
-  import com.netflix.atlas.core.stacklang.Extractors.*
+  import com.netflix.atlas.core.model.ModelDataTypes.*
 
   val name: String = "filter"
 
@@ -40,9 +46,30 @@ object FilterVocabulary extends Vocabulary {
     StatTotal,
     Filter,
     // Legacy operations equivalent to `max,:stat`
-    Macro("stat-min-mf", List("min", ":stat"), List("42")),
-    Macro("stat-max-mf", List("max", ":stat"), List("42")),
-    Macro("stat-avg-mf", List("avg", ":stat"), List("42")),
+    TypedMacro(
+      "stat-min-mf",
+      List("min", ":stat"),
+      ArraySeq(Parameter("", "input time series", TimeSeriesExprType)),
+      ArraySeq(TimeSeriesExprType),
+      "Compute min summary statistic. Shorthand for `min,:stat`.",
+      List("42")
+    ),
+    TypedMacro(
+      "stat-max-mf",
+      List("max", ":stat"),
+      ArraySeq(Parameter("", "input time series", TimeSeriesExprType)),
+      ArraySeq(TimeSeriesExprType),
+      "Compute max summary statistic. Shorthand for `max,:stat`.",
+      List("42")
+    ),
+    TypedMacro(
+      "stat-avg-mf",
+      List("avg", ":stat"),
+      ArraySeq(Parameter("", "input time series", TimeSeriesExprType)),
+      ArraySeq(TimeSeriesExprType),
+      "Compute avg summary statistic. Shorthand for `avg,:stat`.",
+      List("42")
+    ),
     // Priority operators: https://github.com/Netflix/atlas/issues/1224
     PriorityK("bottomk", FilterExpr.BottomK.apply),
     PriorityK("bottomk-others-min", FilterExpr.BottomKOthersMin.apply),
@@ -56,22 +83,22 @@ object FilterVocabulary extends Vocabulary {
     PriorityK("topk-others-avg", FilterExpr.TopKOthersAvg.apply)
   )
 
-  case object Stat extends SimpleWord {
+  case object Stat extends TypedWord with StylePassthrough {
 
     override def name: String = "stat"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: TimeSeriesType(_) :: _ => true
-      case (_: String) :: (_: StyleExpr) :: _    => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input time series", TimeSeriesExprType),
+      Parameter("stat", "statistic name", DataType.StringType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (s: String) :: TimeSeriesType(t) :: stack => FilterExpr.Stat(t, s) :: stack
-      case (s: String) :: (t: StyleExpr) :: stack =>
-        t.copy(expr = FilterExpr.Stat(t.expr, s)) :: stack
-    }
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
 
-    override def signature: String = "TimeSeriesExpr String -- FilterExpr"
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[TimeSeriesExpr]
+      val s = params(1).asInstanceOf[String]
+      context.copy(stack = FilterExpr.Stat(t, s) :: context.stack)
+    }
 
     override def summary: String =
       """
@@ -119,15 +146,15 @@ object FilterVocabulary extends Vocabulary {
       )
   }
 
-  trait StatWord extends SimpleWord {
+  trait StatWord extends TypedWord {
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = { case _ => true }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq.empty
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case stack => value :: stack
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      context.copy(stack = value :: context.stack)
     }
-
-    override def signature: String = " -- FilterExpr"
 
     override def examples: List[String] = List("", "name,sps,:eq,:sum")
 
@@ -206,17 +233,21 @@ object FilterVocabulary extends Vocabulary {
       """.stripMargin.trim
   }
 
-  case object Filter extends SimpleWord {
+  case object Filter extends TypedWord {
 
     override def name: String = "filter"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case TimeSeriesType(_) :: TimeSeriesType(_) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("t1", "input time series", TimeSeriesExprType),
+      Parameter("t2", "filter expression", TimeSeriesExprType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case TimeSeriesType(t2) :: TimeSeriesType(t1) :: stack =>
-        FilterExpr.Filter(t1, rewriteStatExprs(t1, t2)) :: stack
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t1 = params(0).asInstanceOf[TimeSeriesExpr]
+      val t2 = params(1).asInstanceOf[TimeSeriesExpr]
+      context.copy(stack = FilterExpr.Filter(t1, rewriteStatExprs(t1, t2)) :: context.stack)
     }
 
     private def rewriteStatExprs(t1: TimeSeriesExpr, t2: TimeSeriesExpr): TimeSeriesExpr = {
@@ -225,8 +256,6 @@ object FilterVocabulary extends Vocabulary {
       }
       r.asInstanceOf[TimeSeriesExpr]
     }
-
-    override def signature: String = "TimeSeriesExpr TimeSeriesExpr -- FilterExpr"
 
     override def summary: String =
       """
@@ -239,21 +268,23 @@ object FilterVocabulary extends Vocabulary {
   }
 
   case class PriorityK(name: String, op: (TimeSeriesExpr, String, Int) => FilterExpr)
-      extends SimpleWord {
+      extends TypedWord
+      with StylePassthrough {
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case IntType(_) :: (_: String) :: TimeSeriesType(_) :: _ => true
-      case IntType(_) :: (_: String) :: (_: StyleExpr) :: _    => true
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input time series", TimeSeriesExprType),
+      Parameter("stat", "statistic name", DataType.StringType),
+      Parameter("k", "number of results", DataType.IntType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[TimeSeriesExpr]
+      val s = params(1).asInstanceOf[String]
+      val k = params(2).asInstanceOf[Int]
+      context.copy(stack = op(t, s, k) :: context.stack)
     }
-
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case IntType(k) :: (s: String) :: TimeSeriesType(t) :: stack =>
-        op(t, s, k) :: stack
-      case IntType(k) :: (s: String) :: (t: StyleExpr) :: stack =>
-        t.copy(expr = op(t.expr, s, k)) :: stack
-    }
-
-    override def signature: String = "TimeSeriesExpr stat:String k:Int -- FilterExpr"
 
     override def summary: String =
       """
@@ -265,20 +296,23 @@ object FilterVocabulary extends Vocabulary {
       List("name,sps,:eq,:sum,(,nf.cluster,),:by,max,5")
   }
 
-  case object Consolidate extends SimpleWord {
+  case object Consolidate extends TypedWord with StylePassthrough {
 
     override def name: String = "consolidate"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case DurationType(_) :: ConsolidationFunctionType(_) :: TimeSeriesType(_) :: _ => true
-      case DurationType(_) :: ConsolidationFunctionType(_) :: (_: StyleExpr) :: _    => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input time series", TimeSeriesExprType),
+      Parameter("cf", "consolidation function", ConsolidationFunctionType),
+      Parameter("newStep", "new step size", DataType.DurationType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case DurationType(step) :: ConsolidationFunctionType(cf) :: TimeSeriesType(t) :: s =>
-        FilterExpr.Consolidate(t, cf, step) :: s
-      case DurationType(step) :: ConsolidationFunctionType(cf) :: (t: StyleExpr) :: s =>
-        t.copy(expr = FilterExpr.Consolidate(t.expr, cf, step)) :: s
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[TimeSeriesExpr]
+      val cf = params(1).asInstanceOf[ConsolidationFunction]
+      val step = params(2).asInstanceOf[Duration]
+      context.copy(stack = FilterExpr.Consolidate(t, cf, step) :: context.stack)
     }
 
     override def summary: String =
@@ -287,9 +321,6 @@ object FilterVocabulary extends Vocabulary {
         |graph. If new step is not an even multiple, the consolidated series will be rounded up
         |to the next even multiple.
       """.stripMargin.trim
-
-    override def signature: String =
-      "TimeSeriesExpr ConsolidationFunction newStep:Duration -- TimeSeriesExpr"
 
     override def examples: List[String] = List(":random,avg,5m")
   }

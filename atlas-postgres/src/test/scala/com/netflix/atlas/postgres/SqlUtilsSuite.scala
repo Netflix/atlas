@@ -18,7 +18,7 @@ package com.netflix.atlas.postgres
 import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.DataVocabulary
-import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.ModelDataTypes
 import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.stacklang.Interpreter
 
@@ -112,8 +112,8 @@ class SqlUtilsSuite extends PostgresSuite {
 
   private def parseDataExpr(str: String): DataExpr = {
     interpreter.execute(str).stack match {
-      case ModelExtractors.DataExprType(t) :: Nil => t
-      case _                                      => throw new IllegalArgumentException(str)
+      case ModelDataTypes.DataExprType(t) :: Nil => t
+      case _                                     => throw new IllegalArgumentException(str)
     }
   }
 

@@ -15,11 +15,18 @@
  */
 package com.netflix.atlas.core.model
 
-import com.netflix.atlas.core.stacklang.SimpleWord
+import scala.collection.immutable.ArraySeq
+
+import com.netflix.atlas.core.stacklang.Context
+import com.netflix.atlas.core.stacklang.TypedWord
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
+import com.netflix.atlas.core.stacklang.ast.DataType
+import com.netflix.atlas.core.stacklang.ast.Parameter
 
 object EventVocabulary extends Vocabulary {
+
+  import com.netflix.atlas.core.model.ModelDataTypes.*
 
   val name: String = "event"
 
@@ -27,21 +34,22 @@ object EventVocabulary extends Vocabulary {
 
   override def words: List[Word] = List(SampleWord, TableWord)
 
-  case object TableWord extends SimpleWord {
-
-    import ModelExtractors.*
+  case object TableWord extends TypedWord {
 
     override def name: String = "table"
 
-    override protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case StringListType(_) :: (_: Query) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("q", "query to match events", QueryType),
+      Parameter("columns", "columns to extract", DataType.StringListType)
+    )
 
-    override protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case StringListType(cs) :: (q: Query) :: stack => EventExpr.Table(q, cs) :: stack
-    }
+    override def outputs: IndexedSeq[DataType] = ArraySeq(EventExprType)
 
-    override def signature: String = "q:Query columns:List -- EventExpr"
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val q = params(0).asInstanceOf[Query]
+      val cs = params(1).asInstanceOf[List[String]]
+      context.copy(stack = EventExpr.Table(q, cs) :: context.stack)
+    }
 
     override def summary: String =
       """
@@ -51,22 +59,24 @@ object EventVocabulary extends Vocabulary {
     override def examples: List[String] = List("level,ERROR,:eq,(,message,)")
   }
 
-  case object SampleWord extends SimpleWord {
-
-    import ModelExtractors.*
+  case object SampleWord extends TypedWord {
 
     override def name: String = "sample"
 
-    override protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case StringListType(_) :: StringListType(_) :: (_: Query) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("q", "query to match events", QueryType),
+      Parameter("sampleBy", "keys to sample by", DataType.StringListType),
+      Parameter("projectionKeys", "keys for sample projection", DataType.StringListType)
+    )
 
-    override protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case StringListType(pks) :: StringListType(by) :: (q: Query) :: stack =>
-        EventExpr.Sample(q, by, pks) :: stack
-    }
+    override def outputs: IndexedSeq[DataType] = ArraySeq(EventExprType)
 
-    override def signature: String = "q:Query sampleBy:List projectionKeys:List -- EventExpr"
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val q = params(0).asInstanceOf[Query]
+      val by = params(1).asInstanceOf[List[String]]
+      val pks = params(2).asInstanceOf[List[String]]
+      context.copy(stack = EventExpr.Sample(q, by, pks) :: context.stack)
+    }
 
     override def summary: String =
       """

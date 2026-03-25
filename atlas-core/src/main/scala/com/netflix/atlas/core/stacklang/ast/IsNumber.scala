@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.atlas.core.stacklang
+package com.netflix.atlas.core.stacklang.ast
 
-import com.netflix.atlas.core.stacklang.ast.DataType
+/**
+  * Trait for types that represent a single numeric value but cannot extend
+  * `java.lang.Number` (e.g., because they already have a superclass).
+  */
+trait IsNumber {
 
-/** Use DataType.IntType and DataType.DoubleType instead. */
-@deprecated("Use DataType.IntType and DataType.DoubleType instead", "1.9")
-object Extractors {
-
-  @deprecated("Use DataType.IntType instead", "1.9")
-  val IntType: DataType.IntType.type = DataType.IntType
-
-  @deprecated("Use DataType.DoubleType instead", "1.9")
-  val DoubleType: DataType.DoubleType.type = DataType.DoubleType
+  /** The numeric value. */
+  def toNumber: Number
 }

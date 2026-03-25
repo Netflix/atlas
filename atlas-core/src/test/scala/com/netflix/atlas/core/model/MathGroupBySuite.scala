@@ -201,8 +201,8 @@ class MathGroupBySuite extends FunSuite {
 
   private def eval(s: String): TimeSeriesExpr = {
     interpreter.execute(s).stack match {
-      case ModelExtractors.TimeSeriesType(t) :: Nil => t
-      case _                                        => throw new IllegalArgumentException(s)
+      case ModelDataTypes.TimeSeriesExprType(t) :: Nil => t
+      case _                                           => throw new IllegalArgumentException(s)
     }
   }
 

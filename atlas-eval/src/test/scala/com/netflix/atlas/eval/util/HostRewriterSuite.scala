@@ -16,7 +16,7 @@
 package com.netflix.atlas.eval.util
 
 import com.netflix.atlas.core.model.CustomVocabulary
-import com.netflix.atlas.core.model.ModelExtractors
+import com.netflix.atlas.core.model.ModelDataTypes
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.typesafe.config.ConfigFactory
@@ -29,8 +29,8 @@ class HostRewriterSuite extends FunSuite {
 
   private def interpret(str: String): List[StyleExpr] = {
     interpreter.execute(str).stack.reverse.flatMap {
-      case ModelExtractors.PresentationType(t) => t.perOffset
-      case v                                   => throw new MatchError(v)
+      case ModelDataTypes.PresentationType(t) => t.perOffset
+      case v                                  => throw new MatchError(v)
     }
   }
 

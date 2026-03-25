@@ -39,8 +39,8 @@ class NamedRewriteSuite extends FunSuite {
 
   private def rawEval(program: String): List[StyleExpr] = {
     interpreter.execute(program).stack.flatMap {
-      case ModelExtractors.PresentationType(t) => t.perOffset
-      case v                                   => throw new MatchError(v)
+      case ModelDataTypes.PresentationType(t) => t.perOffset
+      case v                                  => throw new MatchError(v)
     }
   }
 
@@ -48,7 +48,7 @@ class NamedRewriteSuite extends FunSuite {
     // Eval and re-encode to make sure display expression is consistent with the
     // original expression.
     interpreter.execute(rawEval(program).mkString(",")).stack.flatMap {
-      case ModelExtractors.PresentationType(t) =>
+      case ModelDataTypes.PresentationType(t) =>
         val expanded = t.rewrite {
           case nr: MathExpr.NamedRewrite => nr.evalExpr
         }

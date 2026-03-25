@@ -603,6 +603,13 @@ object Strings {
       new Color(java.lang.Long.parseLong(colorStr, 16).toInt, true)
   }
 
+  /**
+    * Returns a string representation of a color.
+    */
+  def toString(c: Color): String = {
+    "%08x".format(c.getRGB)
+  }
+
   // Standardized date/time constants:
   private final val oneSecond = 1000L
   private final val oneMinute = oneSecond * 60L

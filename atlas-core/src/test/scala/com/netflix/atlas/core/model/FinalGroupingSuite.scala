@@ -24,8 +24,8 @@ class FinalGroupingSuite extends FunSuite {
 
   private def eval(s: String): List[String] = {
     val expr = interpreter.execute(s).stack match {
-      case ModelExtractors.PresentationType(t) :: Nil => t
-      case _                                          => throw new IllegalArgumentException(s)
+      case ModelDataTypes.PresentationType(t) :: Nil => t
+      case _                                         => throw new IllegalArgumentException(s)
     }
     expr.expr.finalGrouping
   }

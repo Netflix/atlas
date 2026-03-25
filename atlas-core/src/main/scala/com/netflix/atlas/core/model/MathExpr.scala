@@ -22,6 +22,7 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
 import com.netflix.atlas.core.model.DataExpr.AggregateFunction
+import com.netflix.atlas.core.stacklang.ast.IsNumber
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.ArrayHelper
@@ -83,7 +84,9 @@ object MathExpr {
     }
   }
 
-  case class Constant(v: Double) extends TimeSeriesExpr {
+  case class Constant(v: Double) extends TimeSeriesExpr with IsNumber {
+
+    def toNumber: Number = v
 
     def dataExprs: List[DataExpr] = Nil
 

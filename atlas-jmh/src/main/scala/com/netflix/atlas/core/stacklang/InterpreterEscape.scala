@@ -90,7 +90,7 @@ class InterpreterEscape {
 
 object InterpreterEscape {
 
-  import com.netflix.atlas.core.model.ModelExtractors.*
+  import com.netflix.atlas.core.model.ModelDataTypes.*
 
   private val interpreter = Interpreter(StyleVocabulary.allWords)
 
