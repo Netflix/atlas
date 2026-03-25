@@ -59,7 +59,8 @@ trait TypedWord extends Word {
   /**
     * Like the default `matches`, but also accepts `StyleExpr` in positions that declare
     * `TimeSeriesExprType`. Used by [[com.netflix.atlas.core.model.StylePassthrough]] and
-    * [[TypedMacro]] to allow body words and downstream operations to handle style wrapping.
+    * [[com.netflix.atlas.core.stacklang.TypedMacro]] to allow body words and downstream
+    * operations to handle style wrapping.
     */
   protected def matchesWithStylePassthrough(stack: List[Any]): Boolean =
     TypedWord.matchesWithStylePassthrough(parameters, stack)
@@ -80,7 +81,7 @@ trait TypedWord extends Word {
 
   /**
     * Extracts typed parameters from the stack and delegates to
-    * [[execute(context:Context,params:IndexedSeq[Any])*]]. The consumed items are removed
+    * `execute(context, params)`. The consumed items are removed
     * from the context stack before the call. After execution, [[transformResult]] is called
     * to allow post-processing.
     */
@@ -102,7 +103,7 @@ trait TypedWord extends Word {
 
   /**
     * Post-process the result of execution. Called after
-    * [[execute(context:Context,params:IndexedSeq[Any])*]] with the original raw stack
+    * `execute(context, params)` with the original raw stack
     * values (top-of-stack first), the extracted parameters, and the result context.
     * Override to implement cross-cutting concerns like style passthrough. Default
     * implementation returns the result unchanged.
