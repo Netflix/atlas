@@ -196,15 +196,12 @@ class UriDocumentAnalyzerSuite extends FunSuite {
 
   /** Decode raw LSP integer array into (absolutePos, length, tokenType) tuples. */
   private def decodeTokens(data: List[Integer]): List[(Int, Int, Int)] = {
-    var line = 0
     var col = 0
     data
       .map(_.intValue())
       .grouped(5)
       .map { group =>
-        line += group(0)
         col = if (group(0) > 0) group(1) else col + group(1)
-        // For single-line, col == absolutePos
         (col, group(2), group(3))
       }
       .toList

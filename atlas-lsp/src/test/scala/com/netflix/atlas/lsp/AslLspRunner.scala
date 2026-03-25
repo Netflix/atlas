@@ -99,13 +99,14 @@ object AslLspRunner {
       server.connect(launcher.getRemoteProxy)
 
       // Start listening on a daemon thread
-      val thread = new Thread(() => {
+      val runnable: Runnable = () => {
         try {
           launcher.startListening().get()
         } catch {
           case _: Exception => // connection closed
         }
-      })
+      }
+      val thread = new Thread(runnable)
       thread.setDaemon(true)
       thread.start()
     }
