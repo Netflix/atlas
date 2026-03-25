@@ -358,7 +358,8 @@ class UriDocumentAnalyzer(
     data: List[Integer],
     param: QueryParam
   ): List[(Int, Int, Int)] = {
-    var line = 0
+    // ASL expressions are single-line, so delta line is always 0.
+    // We only need to accumulate the column delta.
     var col = 0
     data
       .map(_.intValue())
@@ -366,7 +367,6 @@ class UriDocumentAnalyzer(
       .flatMap { group =>
         if (group.size < 5) None
         else {
-          line += group(0)
           col = if (group(0) > 0) group(1) else col + group(1)
           val absPos = decodedOffsetToRaw(param, col)
           val endPos = decodedOffsetToRaw(param, col + group(2))
