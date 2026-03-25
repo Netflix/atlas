@@ -18,10 +18,13 @@ package com.netflix.atlas.eval.graph
 import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.Uri
 import org.apache.pekko.http.scaladsl.model.headers.Host
+import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
 import com.netflix.atlas.core.db.StaticDatabase
+import com.netflix.atlas.core.model.DataExpr
+import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.json3.Json
@@ -578,6 +581,32 @@ class GrapherSuite extends FunSuite {
 
   imageTest("named colors: red with dark theme") {
     "/api/v1/graph?e=2012-01-01&q=1,red1,:color,1,red2,:color,1,red3,:color&stack=1&theme=dark"
+  }
+
+  test("named color with alpha applies alpha to resolved color") {
+    val uri = "/api/v1/graph?e=2012-01-01&q=1,blue1,:color,40,:alpha&theme=light"
+    val config = grapher.toGraphConfig(Uri(uri))
+    val graphDef =
+      grapher.create(config, _.expr.eval(config.evalContext, Map.empty[DataExpr, List[TimeSeries]]))
+    val lineDef = graphDef.plots.head.data.head.asInstanceOf[LineDef]
+    // blue1 in light theme is 6BAED6, alpha 0x40 = 64
+    assertEquals(lineDef.color.getAlpha, 0x40)
+    assertEquals(lineDef.color.getRed, 0x6B)
+    assertEquals(lineDef.color.getGreen, 0xAE)
+    assertEquals(lineDef.color.getBlue, 0xD6)
+  }
+
+  test("named color without alpha has full opacity") {
+    val uri = "/api/v1/graph?e=2012-01-01&q=1,red2,:color&theme=light"
+    val config = grapher.toGraphConfig(Uri(uri))
+    val graphDef =
+      grapher.create(config, _.expr.eval(config.evalContext, Map.empty[DataExpr, List[TimeSeries]]))
+    val lineDef = graphDef.plots.head.data.head.asInstanceOf[LineDef]
+    // red2 in light theme is CB181D
+    assertEquals(lineDef.color.getAlpha, 0xFF)
+    assertEquals(lineDef.color.getRed, 0xCB)
+    assertEquals(lineDef.color.getGreen, 0x18)
+    assertEquals(lineDef.color.getBlue, 0x1D)
   }
 
   test("invalid stuff on stack") {
