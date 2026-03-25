@@ -610,7 +610,7 @@ object QueryVocabulary extends Vocabulary {
             case q1: Query => q1.and(q2)
           }
           newExpr :: context.stack
-        case (other, _: Query) =>
+        case (other, _) =>
           // Ignore items on the stack that are not expressions. So we pop the query and leave
           // the rest of the stack unchanged.
           other :: context.stack
