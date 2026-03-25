@@ -118,9 +118,12 @@ object ExprNormalizer {
       case _ :: Nil => queries
       case _ =>
         val indexed = queries.map(q => q -> q.toSet)
-        indexed.filterNot { case (_, qSet) =>
-          indexed.forall { case (_, s) => s.subsetOf(qSet) }
-        }.map(_._1)
+        indexed
+          .filterNot {
+            case (_, qSet) =>
+              indexed.forall { case (_, s) => s.subsetOf(qSet) }
+          }
+          .map(_._1)
     }
   }
 
