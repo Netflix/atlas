@@ -10,6 +10,7 @@ lazy val atlas = project.in(file("."))
     `atlas-jmh`,
     `atlas-json3`,
     `atlas-lsp`,
+    `atlas-lspapi`,
     `atlas-lwcapi`,
     `atlas-lwc-events`,
     `atlas-postgres`,
@@ -97,6 +98,15 @@ lazy val `atlas-lsp` = project
   .settings(libraryDependencies ++= Seq(
     Dependencies.lsp4j,
     Dependencies.javaWebSocket % "test"
+  ))
+
+lazy val `atlas-lspapi` = project
+  .configure(BuildSettings.profile)
+  .dependsOn(`atlas-pekko`, `atlas-pekko-testkit` % "test", `atlas-lsp`)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.pekkoTestkit % "test",
+    Dependencies.pekkoHttpTestkit % "test",
+    Dependencies.pekkoStreamTestkit % "test"
   ))
 
 lazy val `atlas-lwcapi` = project
