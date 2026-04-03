@@ -41,4 +41,49 @@ class LoopSuite extends FunSuite {
     }
     assertEquals(e.getMessage, "looping detected")
   }
+
+  test("stack overflow: dup chain") {
+    val smallInterpreter = Interpreter(StandardVocabulary.allWords, maxStackSize = 10)
+    val e = intercept[IllegalStateException] {
+      smallInterpreter.execute("1" + ",:dup" * 20)
+    }
+    assert(e.getMessage.contains("stack overflow"))
+  }
+
+  test("stack overflow: exponential via fcall") {
+    val e = intercept[IllegalStateException] {
+      interpreter.execute(
+        "(,:depth,:nlist,(,:dup,),:each,),f,:sset,1" + ",f,:fcall" * 20
+      )
+    }
+    assert(e.getMessage.contains("stack overflow"))
+  }
+
+  test("stack overflow: each expansion") {
+    val smallInterpreter = Interpreter(StandardVocabulary.allWords, maxStackSize = 10)
+    val e = intercept[IllegalStateException] {
+      smallInterpreter.execute("1,:dup,:dup,:dup,:dup,5,:nlist,(,:dup,),:each,(,:dup,),:each")
+    }
+    assert(e.getMessage.contains("stack overflow"))
+  }
+
+  test("stack overflow: list literal exceeds limit") {
+    val smallInterpreter = Interpreter(StandardVocabulary.allWords, maxStackSize = 3)
+    val e = intercept[IllegalStateException] {
+      smallInterpreter.execute("(,1,2,3,4,5,)")
+    }
+    assert(e.getMessage.contains("stack overflow"))
+  }
+
+  test("list literal within limit succeeds") {
+    val smallInterpreter = Interpreter(StandardVocabulary.allWords, maxStackSize = 3)
+    val context = smallInterpreter.execute("(,a,b,c,)")
+    assertEquals(context.stack, List(List("a", "b", "c")))
+  }
+
+  test("stack within limit succeeds") {
+    val smallInterpreter = Interpreter(StandardVocabulary.allWords, maxStackSize = 10)
+    val context = smallInterpreter.execute("1" + ",:dup" * 9)
+    assertEquals(context.stack.size, 10)
+  }
 }
