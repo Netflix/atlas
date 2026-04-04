@@ -49,6 +49,9 @@ case class Context(
 
   require(callDepth >= 0, "call depth cannot be negative")
 
+  /** Cached stack size for O(1) limit checks. */
+  val stackSize: Int = stack.size
+
   /**
     * Remove the contents of the stack and push them onto the frozen stack. The variable
     * state will also be cleared.
