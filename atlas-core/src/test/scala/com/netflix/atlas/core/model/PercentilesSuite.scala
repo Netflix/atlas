@@ -418,6 +418,18 @@ class PercentilesSuite extends FunSuite {
     assertEqualsDouble(t.data(0L), 0.9, 1e-6)
   }
 
+  test("sample-count: distribution summary, all (macro)") {
+    val expected = eval("name,test,:eq,0,Infinity,:sample-count", input100)
+    val data = eval("name,test,:eq,:sample-count", input100)
+    assertEquals(data.size, 1)
+    assertEqualsDouble(data.head.data(0L), expected.head.data(0L), 1e-6)
+  }
+
+  test("sample-count: macro normalize") {
+    val expr = parseExpr("name,test,:eq,:sample-count")
+    assertEquals(expr.toString, "name,test,:eq,:sample-count")
+  }
+
   test("sample-count: distribution summary, Min >= Max") {
     val e = intercept[IllegalArgumentException] {
       eval("name,test,:eq,5,5,:sample-count", input100)

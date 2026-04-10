@@ -82,6 +82,13 @@ object MathVocabulary extends Vocabulary {
     Percentiles,
     SampleCount,
     TypedMacro(
+      "sample-count",
+      List(":dup", "0", "Infinity", ":sample-count", "sample-count", ":named-rewrite"),
+      ArraySeq(Parameter("q", "base query", QueryType)),
+      ArraySeq(TimeSeriesExprType),
+      "Shorthand for `0,Infinity,:sample-count` to count all samples."
+    ),
+    TypedMacro(
       "avg",
       List(
         ":dup",
