@@ -239,34 +239,27 @@ class EvaluatorSuite extends FunSuite {
         .via(Flow.fromProcessor(() => evaluator.createStreamsProcessor()))
     )
 
-    // States
+    // States: verify transitions as data sources change
     var state = 0
     val states = Array[(AtomicInteger, AtomicInteger) => Unit](
-      // 0: Start getting events for one only
+      // 0: Getting events for one only, then add two
       (one, two) => {
-        if (one.getAndSet(0) > 0L) {
-          assertEquals(two.getAndSet(0), 0)
+        if (one.get() > 0) {
+          assertEquals(two.get(), 0)
           p2.complete(Success(ds2))
           state = 1
         }
       },
-      // 1: See first events for two
+      // 1: Wait until both one and two have received events
       (one, two) => {
-        if (two.getAndSet(0) > 0) {
-          one.getAndSet(0)
+        if (one.get() > 0 && two.get() > 0) {
+          p3.complete(Success(ds3))
           state = 2
         }
       },
-      // 2: Still seeing events for one and two
-      (one, two) => {
-        if (one.getAndSet(0) > 0 && two.getAndSet(0) > 0) {
-          p3.complete(Success(ds3))
-          state = 3
-        }
-      },
-      // 3: Stop seeing events for one
-      (one, two) => {
-        if (one.getAndSet(0) == 0 && two.get() > 100) {
+      // 2: After removing one, verify two keeps receiving events
+      (_, two) => {
+        if (two.get() > 100) {
           sourceRef.stop()
         }
       }
