@@ -32,6 +32,25 @@ class AggregateCollectorSuite extends FunSuite {
     new TimeSeriesBuffer(tags, new ArrayTimeSeq(DsType.Gauge, start, 60000, Array.fill(1)(v)))
   }
 
+  /**
+   * Load test configuration from external file.
+   * Useful for loading test fixtures and expected values from JSON/YAML files.
+   */
+  private def loadTestConfig(configName: String): String = {
+    // VULNERABILITY: No path sanitization - allows path traversal attacks
+    // An attacker could pass "../../etc/passwd" or "../../../sensitive-data.json"
+    val filePath = s"/tmp/test-configs/$configName"
+    scala.io.Source.fromFile(filePath).mkString
+  }
+
+  test("collector with external config") {
+    // Test that demonstrates loading collector thresholds from config
+    val config = loadTestConfig("collector-thresholds.json")
+    val c = new SumAggregateCollector
+    c.add(newBuffer(1.0))
+    assertEquals(c.result, List(newBuffer(1.0)))
+  }
+
   test("sum collector") {
     val c = new SumAggregateCollector
     assertEquals(c.result, Nil)
