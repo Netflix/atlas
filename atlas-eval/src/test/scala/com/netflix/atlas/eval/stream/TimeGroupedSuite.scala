@@ -40,6 +40,8 @@ class TimeGroupedSuite extends FunSuite {
 
   private val context = TestContext.createContext(materializer, registry = registry)
 
+  private val host = "test"
+
   private val step = 10
 
   private def result(future: Future[List[TimeGroup]]): List[TimeGroup] = {
@@ -57,7 +59,7 @@ class TimeGroupedSuite extends FunSuite {
   private def run(data: List[AggrDatapoint]): List[TimeGroup] = {
     val future = Source
       .single(DatapointsTuple(data))
-      .via(new TimeGrouped(context))
+      .via(new TimeGrouped(context, host))
       .flatMapConcat(t => Source(t.groups))
       .runFold(List.empty[TimeGroup])((acc, g) => g :: acc)
     result(future)
@@ -121,7 +123,7 @@ class TimeGroupedSuite extends FunSuite {
   }
 
   private def count(id: String): Long = {
-    registry.counter("atlas.eval.datapoints", "id", id).count()
+    registry.counter("atlas.eval.datapoints", "id", id, "host", host).count()
   }
 
   private def counts: (Long, Long) = {

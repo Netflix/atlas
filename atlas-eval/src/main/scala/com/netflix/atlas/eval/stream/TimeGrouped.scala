@@ -37,9 +37,13 @@ import com.netflix.atlas.eval.model.TimeGroupsTuple
   *
   * @param context
   *     Shared context for the evaluation stream.
+  * @param host
+  *     Upstream host identifier used to tag metrics so activity can be attributed to a
+  *     specific backend.
   */
 private[stream] class TimeGrouped(
-  context: StreamContext
+  context: StreamContext,
+  host: String
 ) extends GraphStage[FlowShape[DatapointsTuple, TimeGroupsTuple]] {
 
   type AggrMap = java.util.HashMap[DataExpr, AggrDatapoint.Aggregator]
@@ -59,7 +63,8 @@ private[stream] class TimeGrouped(
   private val aggrSettings = AggrDatapoint.AggregatorSettings(
     maxInputDatapointsPerExpression,
     maxIntermediateDatapointsPerExpression,
-    context.registry
+    context.registry,
+    host
   )
 
   private val in = Inlet[DatapointsTuple]("TimeGrouped.in")
@@ -69,9 +74,9 @@ private[stream] class TimeGrouped(
 
   private val metricName = "atlas.eval.datapoints"
   private val registry = context.registry
-  private val droppedOld = registry.counter(metricName, "id", "dropped-old")
-  private val droppedFuture = registry.counter(metricName, "id", "dropped-future")
-  private val buffered = registry.counter(metricName, "id", "buffered")
+  private val droppedOld = registry.counter(metricName, "id", "dropped-old", "host", host)
+  private val droppedFuture = registry.counter(metricName, "id", "dropped-future", "host", host)
+  private val buffered = registry.counter(metricName, "id", "buffered", "host", host)
   private val clock = registry.clock()
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
