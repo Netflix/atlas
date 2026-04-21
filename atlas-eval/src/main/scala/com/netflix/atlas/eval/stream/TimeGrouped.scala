@@ -59,7 +59,8 @@ private[stream] class TimeGrouped(
   private val aggrSettings = AggrDatapoint.AggregatorSettings(
     maxInputDatapointsPerExpression,
     maxIntermediateDatapointsPerExpression,
-    context.registry
+    context.registry,
+    context.streamName
   )
 
   private val in = Inlet[DatapointsTuple]("TimeGrouped.in")
@@ -69,9 +70,16 @@ private[stream] class TimeGrouped(
 
   private val metricName = "atlas.eval.datapoints"
   private val registry = context.registry
-  private val droppedOld = registry.counter(metricName, "id", "dropped-old")
-  private val droppedFuture = registry.counter(metricName, "id", "dropped-future")
-  private val buffered = registry.counter(metricName, "id", "buffered")
+  private val streamName = context.streamName
+
+  private val droppedOld =
+    registry.counter(metricName, "id", "dropped-old", "streamName", streamName)
+
+  private val droppedFuture =
+    registry.counter(metricName, "id", "dropped-future", "streamName", streamName)
+
+  private val buffered =
+    registry.counter(metricName, "id", "buffered", "streamName", streamName)
   private val clock = registry.clock()
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {

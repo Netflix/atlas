@@ -97,11 +97,15 @@ object AggrDatapoint {
     *     Limit for the number of intermediate datapoints.
     * @param registry
     *     Registry used for reporting metrics related to the aggregation behavior.
+    * @param streamName
+    *     Identifier for the LWC stream, used as a tag on emitted metrics so that
+    *     counters from distinct evaluator instances can be distinguished.
     */
   case class AggregatorSettings(
     maxInputDatapoints: Int,
     maxIntermediateDatapoints: Int,
-    registry: Registry
+    registry: Registry,
+    streamName: String = "default"
   ) {
 
     /**
@@ -109,7 +113,13 @@ object AggrDatapoint {
       * configured limits.
       */
     val droppedCounter: Counter =
-      registry.counter("atlas.eval.datapoints", "id", "dropped-datapoints-limit-exceeded")
+      registry.counter(
+        "atlas.eval.datapoints",
+        "id",
+        "dropped-datapoints-limit-exceeded",
+        "streamName",
+        streamName
+      )
   }
 
   /**

@@ -58,7 +58,18 @@ public final class Evaluator extends EvaluatorImpl {
    * signature may change over time.
    */
   public Evaluator(Config config, Registry registry, ActorSystem system) {
-    super(config, registry, system, Materializer.createMaterializer(system));
+    this(config, registry, system, "default");
+  }
+
+  /**
+   * Create a new instance with an explicit stream name. The stream name is applied as
+   * a {@code streamName} tag on metrics emitted from this evaluator, allowing an app
+   * that instantiates multiple {@code Evaluator} instances (for example, against
+   * different LWC APIs such as logs and metrics) to distinguish which stream a given
+   * counter value is coming from.
+   */
+  public Evaluator(Config config, Registry registry, ActorSystem system, String streamName) {
+    super(config, registry, system, Materializer.createMaterializer(system), streamName);
   }
 
   /**

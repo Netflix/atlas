@@ -121,7 +121,7 @@ class TimeGroupedSuite extends FunSuite {
   }
 
   private def count(id: String): Long = {
-    registry.counter("atlas.eval.datapoints", "id", id).count()
+    registry.counter("atlas.eval.datapoints", "id", id, "streamName", "default").count()
   }
 
   private def counts: (Long, Long) = {

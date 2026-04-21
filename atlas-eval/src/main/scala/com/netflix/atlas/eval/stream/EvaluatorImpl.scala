@@ -81,7 +81,8 @@ private[stream] abstract class EvaluatorImpl(
   config: Config,
   registry: Registry,
   implicit val system: ActorSystem,
-  implicit val materializer: Materializer
+  implicit val materializer: Materializer,
+  streamName: String = "default"
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -129,7 +130,8 @@ private[stream] abstract class EvaluatorImpl(
       config,
       materializer,
       registry,
-      dsLogger
+      dsLogger,
+      streamName
     )
   }
 
@@ -362,7 +364,8 @@ private[stream] abstract class EvaluatorImpl(
     val aggrSettings = AggrDatapoint.AggregatorSettings(
       context.maxInputDatapointsPerExpression,
       context.maxIntermediateDatapointsPerExpression,
-      context.registry
+      context.registry,
+      context.streamName
     )
     val valuesInfo = group.datapoints.asScala.zipWithIndex
       .flatMap {
