@@ -186,17 +186,27 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
       TimeSeriesBuffer(tags, cfStep, bufStart, bufEnd)
     }
 
+    // Accumulate the block counts locally and increment the counters once after
+    // the loop. These counts scale with (matched series * blocks per series), so
+    // for broad queries on a busy node this inner loop runs billions of times.
+    // Calling Counter.increment() per block makes the counter bookkeeping
+    // (expiry checks, last-mod updates, step rolls) a top CPU consumer. Avoid
+    // per-iteration meter updates in hot paths like this.
+    var numQueryBlocks = 0L
+    var numAggrBlocks = 0L
     index.findItems(query).foreach { item =>
       item.blocks.blockList.foreach { b =>
-        queryBlocks.increment()
+        numQueryBlocks += 1
         // Check if the block has data for the desired time range
         val blockEnd = b.start + (b.size + 1) * step
         if (b.start <= bufEnd && blockEnd > bufStart - cfStep) {
-          aggrBlocks.increment()
+          numAggrBlocks += 1
           collector.add(item.tags, List(b), aggr, expr.cf, multiple, newBuffer)
         }
       }
     }
+    queryBlocks.increment(numQueryBlocks)
+    aggrBlocks.increment(numAggrBlocks)
 
     val stats = collector.stats
     queryMetrics.increment(stats.inputLines)
