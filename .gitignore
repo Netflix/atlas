@@ -26,3 +26,7 @@ target
 .idea
 .idea_modules
 out
+
+# Metals (Scala LSP)
+.metals
+.bloop
