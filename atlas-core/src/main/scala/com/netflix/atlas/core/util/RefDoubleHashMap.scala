@@ -15,6 +15,19 @@
  */
 package com.netflix.atlas.core.util
 
+object RefDoubleHashMap {
+
+  /**
+    * Consumer for [[RefDoubleHashMap.foreach]]. A single-abstract-method trait with
+    * a primitive `double` value parameter, so iteration does not box the value the
+    * way a `Function2[T, Double, Unit]` would. Call sites can still pass a lambda; it
+    * is converted to this SAM type.
+    */
+  trait Consumer[T] {
+    def accept(key: T, value: Double): Unit
+  }
+}
+
 /**
   * Mutable reference to double map based on open-addressing. Primary use-case is
   * computing an aggregate double value based on a key.
@@ -183,12 +196,17 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
     }
   }
 
-  /** Execute `f` for each item in the set. */
-  def foreach(f: (T, Double) => Unit): Unit = {
+  /**
+    * Execute `f` for each item in the set. Uses a specialized consumer rather than
+    * a `Function2[T, Double, Unit]` so the double value is not boxed on each call (a
+    * `Function2` with a reference-typed parameter falls back to the generic
+    * `apply(Object, Object)`, which boxes the double).
+    */
+  def foreach(f: RefDoubleHashMap.Consumer[T]): Unit = {
     var i = 0
     while (i < keys.length) {
       val k = keys(i)
-      if (k != null) f(k, values(i))
+      if (k != null) f.accept(k, values(i))
       i += 1
     }
   }
