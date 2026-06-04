@@ -267,4 +267,164 @@ class RoaringTagIndexSuite extends TagIndexSuite {
     val rs = idx.findItems(TagQuery(Some(q)))
     assertEquals(rs.map(_.tags("k")).toSet, Set("Zasg"))
   }
+
+  // --------------------------------------------------------------------------
+  // Ownership / shared-bitmap safety.
+  //
+  // findReadOnly may hand back a reference to a bitmap stored in the index (for
+  // Equal/HasKey/True). If any query path mutated one of those, the index would be
+  // silently corrupted and later queries for the same tag would return wrong
+  // results. These tests run leaf queries, then a battery of compound queries that
+  // route those leaves through the in-place and/or, and assert the leaf results are
+  // unchanged afterward.
+  // --------------------------------------------------------------------------
+
+  // Each test builds its own index: a buggy implementation would corrupt the shared
+  // one and the tests would corrupt each other (order-dependent failures). A fresh
+  // index per test makes a regression fail deterministically.
+  private def freshIndex(): TagIndex[TimeSeries] =
+    RoaringTagIndex(TagIndexSuite.dataset.toArray, new IndexStats())
+
+  private def ids(idx: TagIndex[TimeSeries], q: Query): List[com.netflix.atlas.core.model.ItemId] =
+    idx.findItems(TagQuery(Some(q))).map(_.id)
+
+  // Real (key, value) pairs and keys drawn from the dataset so the queries match.
+  private val sampleTags: List[(String, String)] =
+    TagIndexSuite.dataset.iterator.flatMap(_.tags).toList.distinct.take(12)
+
+  private val sampleKeys: List[String] = sampleTags.map(_._1).distinct
+
+  // The key with the most distinct values, and its (sorted) values. Used to build
+  // In/Regex/range leaves so the ownership battery also exercises the non-Equal
+  // leaves as and/or operands -- locking the invariant that they return fresh sets.
+  private val multiKey: String =
+    TagIndexSuite.dataset.iterator
+      .flatMap(_.tags)
+      .toList
+      .groupBy(_._1)
+      .view
+      .mapValues(_.map(_._2).distinct.size)
+      .maxBy(_._2)
+      ._1
+
+  private val multiVals: List[String] =
+    TagIndexSuite.dataset.iterator
+      .flatMap(_.tags)
+      .collect { case (k, v) if k == multiKey => v }
+      .toList
+      .distinct
+      .sorted
+
+  private val inQuery: Query = Query.In(multiKey, multiVals.take(3))
+  private val regexQuery: Query = Query.Regex(multiKey, multiVals.head.take(2))
+  private val geQuery: Query = Query.GreaterThanEqual(multiKey, multiVals(multiVals.size / 2))
+
+  private val leafQueries: List[Query] =
+    Query.True :: inQuery :: regexQuery :: geQuery ::
+      sampleKeys.map(Query.HasKey.apply) :::
+      sampleTags.map { case (k, v) => Query.Equal(k, v) }
+
+  test("ownership: AND does not corrupt the shared bitmap of its first operand") {
+    val idx = freshIndex()
+    val q = Query.Equal(sampleTags.head._1, sampleTags.head._2)
+    val before = ids(idx, q)
+    // q is the first operand, evaluated via findOwned (must clone); the in-place
+    // `and` then mutates the accumulator. AND with *different* equality tags so the
+    // intersection is a strict subset -- if the clone is missing, q's stored bitmap
+    // shrinks. Guard against a vacuous setup: require at least one term to shrink q.
+    assert(
+      sampleTags.tail.exists {
+        case (k, v) => ids(idx, Query.And(q, Query.Equal(k, v))).size < before.size
+      },
+      "test setup is vacuous: no AND term shrinks the first operand"
+    )
+    sampleTags.tail.foreach {
+      case (k, v) => idx.findItems(TagQuery(Some(Query.And(q, Query.Equal(k, v)))))
+    }
+    assertEquals(ids(idx, q), before, "Equal result changed after AND -> shared bitmap mutated")
+  }
+
+  test("ownership: OR does not corrupt the shared bitmap of its first operand") {
+    val idx = freshIndex()
+    val q = Query.Equal(sampleTags.head._1, sampleTags.head._2)
+    val before = ids(idx, q)
+    // Guard against vacuity: require at least one OR term to grow the result.
+    assert(
+      sampleTags.tail.exists {
+        case (k, v) => ids(idx, Query.Or(q, Query.Equal(k, v))).size > before.size
+      },
+      "test setup is vacuous: no OR term grows the first operand"
+    )
+    // in-place `or` would add bits to q's stored bitmap if it were not cloned.
+    sampleTags.tail.foreach {
+      case (k, v) => idx.findItems(TagQuery(Some(Query.Or(q, Query.Equal(k, v)))))
+    }
+    assertEquals(ids(idx, q), before, "Equal result changed after OR -> shared bitmap mutated")
+  }
+
+  test("ownership: HasKey/True survive NOT and a deep compound battery") {
+    val idx = freshIndex()
+    val baseline = leafQueries.map(q => q -> ids(idx, q)).toMap
+
+    val a = Query.Equal(sampleTags.head._1, sampleTags.head._2)
+    val b = Query.Equal(sampleTags(1)._1, sampleTags(1)._2)
+    val compounds = List(
+      Query.And(a, Query.HasKey(sampleKeys.head)),
+      Query.And(Query.HasKey(sampleKeys.head), a),
+      Query.Or(a, b),
+      Query.Or(Query.True, a),
+      Query.Not(a),
+      Query.And(Query.Not(a), Query.HasKey(sampleKeys.head)),
+      Query.And(Query.And(a, Query.HasKey(sampleKeys.head)), b),
+      Query.Or(Query.Or(a, b), Query.HasKey(sampleKeys.last)),
+      // Non-Equal leaves as the first (mutated) operand -- locks the invariant that
+      // In/Regex/range return fresh sets and don't need a copy in findOwned.
+      Query.And(inQuery, Query.HasKey(sampleKeys.head)),
+      Query.Or(regexQuery, a),
+      Query.And(geQuery, Query.HasKey(sampleKeys.head))
+    )
+    // Run twice to surface progressive corruption (each run would further
+    // shrink/grow a shared bitmap that was wrongly aliased).
+    (0 until 2).foreach(_ => compounds.foreach(c => idx.findItems(TagQuery(Some(c)))))
+
+    leafQueries.foreach { q =>
+      assertEquals(ids(idx, q), baseline(q), s"leaf query changed after compound battery: $q")
+    }
+  }
+
+  test("ownership: offset query does not corrupt `all`") {
+    val idx = freshIndex()
+    val full = idx.findItems(TagQuery(None, limit = Int.MaxValue))
+    val before = full.map(_.id)
+    // Use an id from the MIDDLE of the sorted set so itemOffset(someId) > 0 and the
+    // offset>0 branch (which clones `all` before removing the prefix) actually runs.
+    // The lowest id is at sorted position 0 and would yield offset 0 (read-only path).
+    val someId = full(full.size / 2).id.toString
+    val paged = idx.findItems(TagQuery(None, offset = someId, limit = Int.MaxValue))
+    assert(paged.size < full.size, "offset did not trim; offset>0 clone path not exercised")
+    // Run both offset>0 paths: no-query (all.clone()) and True-query (findOwned(True)).
+    idx.findItems(TagQuery(Some(Query.True), offset = someId, limit = Int.MaxValue))
+    idx.findItems(TagQuery(None, offset = someId, limit = Int.MaxValue))
+    assertEquals(
+      idx.findItems(TagQuery(None, limit = Int.MaxValue)).map(_.id),
+      before,
+      "all changed after offset query -> shared `all` was mutated"
+    )
+  }
+
+  test("offset: paging a :not query excludes ids at/below the cursor") {
+    // Locks the offset-deferral fix: previously offset was applied per-leaf and the
+    // Not branch (`andNot(all, ...)`) left `all` untrimmed, so paging a :not query
+    // re-emitted the already-paged prefix. Offset is now applied once on the result.
+    val idx = freshIndex()
+    val q = Query.Not(Query.Equal(sampleTags.head._1, sampleTags.head._2))
+    val full = idx.findItems(TagQuery(Some(q), limit = Int.MaxValue))
+    val cursor = full(full.size / 2).id.toString
+    val paged = idx.findItems(TagQuery(Some(q), offset = cursor, limit = Int.MaxValue))
+    assert(paged.nonEmpty && paged.size < full.size, "offset did not page the :not result")
+    assert(
+      paged.forall(_.id.toString > cursor),
+      "paged :not result contains ids <= the offset cursor"
+    )
+  }
 }

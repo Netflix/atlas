@@ -225,26 +225,65 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   /** Extract the value for an encoded tag. */
   private def tagValue(t: Long): Int = (t & 0x00000000FFFFFFFFL).toInt
 
-  private[index] def findImpl(query: Query, offset: Int): RoaringBitmap = {
+  /**
+    * Evaluate a query into the set of matching item positions.
+    *
+    * OWNERSHIP: the returned bitmap must be treated as READ-ONLY. For some queries it
+    * is a shared reference into the index (e.g. the stored bitmap for an exact tag
+    * match, or `all`), and mutating it would corrupt the index for every later query.
+    * Callers that need to mutate the result (in-place `and`/`or`, offset removal) must
+    * obtain an owned copy via [[findOwned]].
+    *
+    * Offset is NOT applied here. Removing a fixed prefix range commutes with
+    * and/or/andNot, so it is applied once on the final set at the top-level entry
+    * points instead of being cloned into every leaf.
+    */
+  private def findReadOnly(query: Query): RoaringBitmap = {
     import com.netflix.atlas.core.model.Query.*
     query match {
-      case And(q1, q2)            => and(q1, q2, offset)
-      case Or(q1, q2)             => or(q1, q2, offset)
-      case Not(q)                 => diff(all, findImpl(q, offset))
-      case Equal(k, v)            => equal(k, v, offset)
-      case GreaterThan(k, v)      => greaterThan(k, v, false, offset)
-      case GreaterThanEqual(k, v) => greaterThan(k, v, true, offset)
-      case LessThan(k, v)         => lessThan(k, v, false, offset)
-      case LessThanEqual(k, v)    => lessThan(k, v, true, offset)
-      case In(k, vs)              => in(k, vs, offset)
-      case q: PatternQuery        => strPattern(q, offset)
-      case HasKey(k)              => hasKey(k, offset)
-      case True                   => withOffset(all.clone(), offset)
+      case And(q1, q2)            => and(q1, q2)
+      case Or(q1, q2)             => or(q1, q2)
+      case Not(q)                 => diff(all, findReadOnly(q))
+      case Equal(k, v)            => equal(k, v)
+      case GreaterThan(k, v)      => greaterThan(k, v, false)
+      case GreaterThanEqual(k, v) => greaterThan(k, v, true)
+      case LessThan(k, v)         => lessThan(k, v, false)
+      case LessThanEqual(k, v)    => lessThan(k, v, true)
+      case In(k, vs)              => in(k, vs)
+      case q: PatternQuery        => strPattern(q)
+      case HasKey(k)              => hasKey(k)
+      case True                   => all
       case False                  => new RoaringBitmap()
     }
   }
 
+  /**
+    * Evaluate a query into a bitmap the caller OWNS and may mutate in place. Only the
+    * cases that [[findReadOnly]] can answer with a shared index bitmap need a copy;
+    * every other case already produces a freshly-allocated set.
+    *
+    * MAINTENANCE: the shared-returning leaves are exactly `Equal` (`vidx.get`),
+    * `HasKey` (`keyIndex.get`), and `True` (`all`). If a new leaf is added that
+    * returns a stored index bitmap rather than a fresh one, it MUST be added to the
+    * match below, or using it as the left operand of `and`/`or` will corrupt the
+    * index. (See the "ownership" tests in RoaringTagIndexSuite.)
+    */
+  private def findOwned(query: Query): RoaringBitmap = {
+    import com.netflix.atlas.core.model.Query.*
+    query match {
+      case _: Equal | _: HasKey | True => ownedCopy(findReadOnly(query))
+      case _                           => findReadOnly(query)
+    }
+  }
+
+  /** Copy a possibly-shared bitmap so it can be mutated. Empty sets are already owned. */
+  private def ownedCopy(set: RoaringBitmap): RoaringBitmap = {
+    if (set.isEmpty) set else set.clone()
+  }
+
   private def diff(s1: RoaringBitmap, s2: RoaringBitmap): RoaringBitmap = {
+    // Static andNot allocates a new owned result and reads (does not mutate) s1/s2,
+    // so passing the shared `all` for s1 is safe.
     RoaringBitmap.andNot(s1, s2)
   }
 
@@ -254,44 +293,41 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     set
   }
 
-  private def withOffsetClone(set: RoaringBitmap, offset: Int): RoaringBitmap = {
-    withOffset(set.clone(), offset)
-  }
-
-  private def and(q1: Query, q2: Query, offset: Int): RoaringBitmap = {
-    val s1 = findImpl(q1, offset)
+  private def and(q1: Query, q2: Query): RoaringBitmap = {
+    val s1 = findOwned(q1) // mutated in place below, so must be owned
     if (s1.isEmpty) s1
     else {
-      // Short circuit, only perform second query if s1 is not empty
-      val s2 = findImpl(q2, offset)
-      s1.and(s2)
+      // Short circuit, only perform second query if s1 is not empty. `and` only reads
+      // s2, so a shared bitmap is fine here -- no copy needed.
+      s1.and(findReadOnly(q2))
       s1
     }
   }
 
-  private def or(q1: Query, q2: Query, offset: Int): RoaringBitmap = {
-    val s1 = findImpl(q1, offset)
-    val s2 = findImpl(q2, offset)
-    s1.or(s2)
+  private def or(q1: Query, q2: Query): RoaringBitmap = {
+    val s1 = findOwned(q1)
+    s1.or(findReadOnly(q2)) // s2 only read, shared is fine
     s1
   }
 
-  private def equal(k: String, v: String, offset: Int): RoaringBitmap = {
+  private def equal(k: String, v: String): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()
     else {
       val vp = valueMap.get(v, -1)
+      // Shared reference into the index -- read only (see findReadOnly/findOwned).
       val matchSet = vidx.get(vp)
-      if (matchSet == null) new RoaringBitmap() else withOffsetClone(matchSet, offset)
+      if (matchSet == null) new RoaringBitmap() else matchSet
     }
   }
 
-  private def greaterThan(k: String, v: String, orEqual: Boolean, offset: Int): RoaringBitmap = {
+  private def greaterThan(k: String, v: String, orEqual: Boolean): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()
     else {
+      // Fresh accumulator -- owned, safe to return for either read-only or owned use.
       val set = new LazyOrBitmap()
       val vp = findOffset(values, v, if (orEqual) 0 else 1)
       val t = tag(kp, vp)
@@ -303,11 +339,11 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         i += 1
       }
       set.repairAfterLazy()
-      withOffset(set, offset)
+      set
     }
   }
 
-  private def lessThan(k: String, v: String, orEqual: Boolean, offset: Int): RoaringBitmap = {
+  private def lessThan(k: String, v: String, orEqual: Boolean): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()
@@ -332,11 +368,11 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         }
       }
       set.repairAfterLazy()
-      withOffset(set, offset)
+      set
     }
   }
 
-  private def in(k: String, vs: List[String], offset: Int): RoaringBitmap = {
+  private def in(k: String, vs: List[String]): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()
@@ -349,11 +385,11 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
           set.naivelazyor(matchSet)
       }
       set.repairAfterLazy()
-      withOffset(set, offset)
+      set
     }
   }
 
-  private def strPattern(q: Query.PatternQuery, offset: Int): RoaringBitmap = {
+  private def strPattern(q: Query.PatternQuery): RoaringBitmap = {
     val kp = keyMap.get(q.k, -1)
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()
@@ -382,14 +418,15 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         }
       }
       set.repairAfterLazy()
-      withOffset(set, offset)
+      set
     }
   }
 
-  private def hasKey(k: String, offset: Int): RoaringBitmap = {
+  private def hasKey(k: String): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
+    // Shared reference into the index -- read only (see findReadOnly/findOwned).
     val matchSet = keyIndex.get(kp)
-    if (matchSet == null) new RoaringBitmap() else withOffsetClone(matchSet, offset)
+    if (matchSet == null) new RoaringBitmap() else matchSet
   }
 
   private def itemOffset(v: String): Int = {
@@ -461,7 +498,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
       builder.result()
     } else {
       val q = query.query.getOrElse(Query.True)
-      val itemSet = findImpl(q, 0)
+      val itemSet = findReadOnly(q) // read-only below (iterate); no offset on item ids
       val offset = findOffset(keys, query.offset)
 
       val results = new util.BitSet(keys.length)
@@ -504,7 +541,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
       // Need to restrict by the query, always include restriction for items with the key
       val has = Query.HasKey(k)
       val q = query.query.fold[Query](has)(q => q.and(has))
-      val itemSet = findImpl(q, 0)
+      val itemSet = findReadOnly(q) // read-only below (intersect/iterate)
 
       // Double check if there were any matches
       if (itemSet.isEmpty) return Nil
@@ -547,7 +584,14 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   def findItems(query: TagQuery): List[T] = {
     val offset = itemOffset(query.offset)
     val limit = query.limit
-    val intSet = query.query.fold(withOffset(all, offset))(q => findImpl(q, offset))
+    // Apply the offset once on the final set. When offset > 0 the prefix removal
+    // mutates, so the set must be owned; otherwise the result is only read by
+    // createResultList and a shared bitmap is fine.
+    val intSet =
+      if (offset > 0)
+        withOffset(query.query.fold(all.clone())(q => findOwned(q)), offset)
+      else
+        query.query.fold(all)(q => findReadOnly(q))
     createResultList(items, intSet, limit)
   }
 
