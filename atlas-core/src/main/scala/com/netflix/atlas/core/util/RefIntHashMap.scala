@@ -15,6 +15,19 @@
  */
 package com.netflix.atlas.core.util
 
+object RefIntHashMap {
+
+  /**
+    * Consumer for [[RefIntHashMap.foreach]]. A single-abstract-method trait with a
+    * primitive `int` value parameter, so iteration does not box the value the way a
+    * `Function2[T, Int, Unit]` would. Call sites can still pass a lambda; it is
+    * converted to this SAM type.
+    */
+  trait Consumer[T] {
+    def accept(key: T, value: Int): Unit
+  }
+}
+
 /**
   * Mutable reference to integer map based on open-addressing. Primary use-case is
   * computing a count for the number of times a particular value was encountered.
@@ -143,12 +156,17 @@ class RefIntHashMap[T <: AnyRef](capacity: Int = 10) {
     }
   }
 
-  /** Execute `f` for each item in the set. */
-  def foreach(f: (T, Int) => Unit): Unit = {
+  /**
+    * Execute `f` for each item in the set. Uses a specialized consumer rather than
+    * a `Function2[T, Int, Unit]` so the int value is not boxed on each call (a
+    * `Function2` with a reference-typed parameter falls back to the generic
+    * `apply(Object, Object)`, which boxes the int).
+    */
+  def foreach(f: RefIntHashMap.Consumer[T]): Unit = {
     var i = 0
     while (i < keys.length) {
       val k = keys(i)
-      if (k != null) f(k, values(i))
+      if (k != null) f.accept(k, values(i))
       i += 1
     }
   }
