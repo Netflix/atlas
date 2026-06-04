@@ -114,7 +114,11 @@ class MemoryBlockStore(step: Long, blockSize: Int, numBlocks: Int) extends Block
     hasData = true
   }
 
-  var hasData: Boolean = false
+  // Volatile so the background rebuild thread observes revivals/cleanups made by
+  // ingest threads: index membership is derived from this flag, and it is written
+  // only when a block is created or during cleanup, so the barrier is not on the
+  // per-datapoint path.
+  @volatile var hasData: Boolean = false
 
   def cleanup(cutoff: Long): Unit = {
     var pos = 0
