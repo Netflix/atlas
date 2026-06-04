@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.db
 
+import com.netflix.atlas.core.index.TagQuery
 import com.netflix.atlas.core.model.*
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.spectator.api.DefaultRegistry
@@ -87,7 +88,7 @@ class MemoryDatabaseSuite extends FunSuite {
         DatapointTuple(id, tags, t, v)
     }
     db.update(data)
-    db.index.rebuildIndex()
+    db.rebuildIndex()
   }
 
   private def addRollupData(name: String, values: Double*): Unit = {
@@ -100,7 +101,7 @@ class MemoryDatabaseSuite extends FunSuite {
         DatapointTuple(id, tags, t, v)
     }
     data.foreach(db.rollup)
-    db.index.rebuildIndex()
+    db.rebuildIndex()
   }
 
   private def addGaugeData(name: String, values: Double*): Unit = {
@@ -113,7 +114,7 @@ class MemoryDatabaseSuite extends FunSuite {
         DatapointTuple(id, tags, t, v)
     }
     gaugeDb.update(data)
-    gaugeDb.index.rebuildIndex()
+    gaugeDb.rebuildIndex()
   }
 
   private def expr(str: String): DataExpr = {
@@ -315,7 +316,119 @@ class MemoryDatabaseSuite extends FunSuite {
     assertEquals(exec("name,(,a,b,),:in"), List(ts("sum(name in (a,b))", 1, 4.0, 4.0, 4.0)))
     clock.setWallTime(4 * step)
     db.setFilter(Query.Equal("name", "a"))
-    db.rebuild()
+    db.rebuildIndex()
     assertEquals(exec("name,(,a,b,),:in"), List(ts("sum(name in (a,b))", 1, 1.0, 2.0, 3.0)))
   }
+
+  private def findItems(name: String): List[BlockStoreItem] =
+    db.index.findItems(TagQuery(Some(Query.Equal("name", name))))
+
+  test("series revived during rebuild cleanup is not orphaned") {
+    val tags = Map("name" -> "racy")
+    val id = TaggedItem.computeId(tags)
+
+    // A block store with a single old datapoint that will age out of the window.
+    val delegate = new MemoryBlockStore(step, 60, 2)
+    delegate.update(start, 1.0)
+
+    // Wrap it to simulate a concurrent update landing in the tiny window between
+    // rebuild()'s emptiness check and the entry's removal from data: once armed,
+    // the first check that observes an empty store reports "no data" (so removal
+    // proceeds) but revives the underlying store as a side effect first, exactly
+    // as a racing ingest thread would.
+    var revived = false
+    val racy = new RacyBlockStore(
+      delegate,
+      () => {
+        // getOrCreateItem still finds this store in `data` and writes to it
+        db.update(id, tags, clock.wallTime(), 2.0)
+        revived = true
+      }
+    )
+
+    db.data.put(id, BlockStoreItem.create(id, tags, racy))
+    db.rebuildIndex()
+
+    // Present in both the data map and the index to start with.
+    assert(db.data.containsKey(id))
+    assert(findItems("racy").nonEmpty)
+
+    // Advance well past the retention window, arm the simulated race, and rebuild.
+    clock.setWallTime(start + 1000 * step)
+    racy.arm()
+    db.rebuildIndex()
+
+    assert(revived, "revive callback should fire during the cleanup emptiness check")
+    assert(racy.hasData, "store was revived, so it has data again")
+
+    // Index membership is derived from `data`, so a revived store must remain in
+    // `data` (kept by the computeIfPresent re-check) and therefore stay queryable;
+    // a removed store would simply be absent from both, never an index-only orphan.
+    assert(db.data.containsKey(id), "revived store must not be removed from data")
+    assert(findItems("racy").nonEmpty, "series should remain queryable and consistent")
+  }
+
+  test("rebuild is throttled until rebuild-frequency elapses") {
+    val tags = Map("name" -> "throttled")
+    val id = TaggedItem.computeId(tags)
+
+    // Establish a known last-build time, then write a new series that is in `data`
+    // but not yet in the index.
+    clock.setWallTime(start + 3 * step)
+    db.rebuildIndex()
+    db.update(id, tags, start + 3 * step, 1.0)
+
+    // Within rebuild-frequency (10s) of the last build, rebuild() is a no-op.
+    clock.setWallTime(start + 3 * step + 5000)
+    db.rebuild()
+    assert(findItems("throttled").isEmpty, "rebuild within the throttle window must not rebuild")
+
+    // Past rebuild-frequency, rebuild() runs and indexes the new series.
+    clock.setWallTime(start + 3 * step + 11000)
+    db.rebuild()
+    assert(
+      findItems("throttled").nonEmpty,
+      "rebuild after the throttle window must index the series"
+    )
+  }
+}
+
+/**
+  * Block store wrapper used to deterministically reproduce the race between
+  * `rebuild()` cleanup and a concurrent `update()`. Once armed, the first call to
+  * `hasData` that observes an empty delegate fires the supplied callback (the
+  * simulated concurrent update), then still reports empty -- its value before the
+  * revive -- so the cleanup loop proceeds to attempt removal of the now-revived
+  * store.
+  */
+private class RacyBlockStore(delegate: MemoryBlockStore, onEmptyCheck: () => Unit)
+    extends BlockStore {
+
+  @volatile private var armed = false
+
+  def arm(): Unit = armed = true
+
+  def hasData: Boolean = {
+    val current = delegate.hasData
+    if (armed && !current) {
+      armed = false
+      onEmptyCheck()
+      false
+    } else {
+      current
+    }
+  }
+
+  def cleanup(cutoff: Long): Unit = delegate.cleanup(cutoff)
+
+  def update(timestamp: Long, value: Double, rollup: Boolean): Unit =
+    delegate.update(timestamp, value, rollup)
+
+  def update(timestamp: Long): Unit = delegate.update(timestamp)
+
+  def blockList: List[Block] = delegate.blockList
+
+  def fetch(start: Long, end: Long, aggr: Int): Array[Double] = delegate.fetch(start, end, aggr)
+
+  def get(start: Long): Option[Block] = delegate.get(start)
 }

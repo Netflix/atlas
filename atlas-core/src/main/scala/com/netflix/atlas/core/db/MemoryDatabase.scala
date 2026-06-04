@@ -78,7 +78,7 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   // If the last update time for the index is older than the rebuild age force an update
   private val rebuildAge = config.getDuration("rebuild-frequency", TimeUnit.MILLISECONDS)
 
-  private val data = new ConcurrentHashMap[ItemId, BlockStore]
+  private[db] val data = new ConcurrentHashMap[ItemId, BlockStoreItem]
 
   private val rebuildThread = new Thread(new RebuildTask, "MemoryDatabaseRebuildIndex")
   if (!testMode) rebuildThread.start()
@@ -98,39 +98,80 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     }
   }
 
+  /** Force an index rebuild if the last one is older than the configured age. */
   def rebuild(): Unit = {
     val now = registry.clock().wallTime()
-    if (now - index.buildTime > rebuildAge) {
-      val query = filter
-      logger.info("rebuilding metadata index (filter={})", query)
-      val droppedItems = index.rebuildIndex(query)
-      droppedItems.foreach(item => data.remove(item.id))
-
-      // Remove entries if all data has rolled out
-      val windowSize = numBlocks * blockSize * step
-      val cutoff = now - windowSize
-      val iter = data.entrySet.iterator
-      while (iter.hasNext) {
-        val entry = iter.next()
-        entry.getValue.cleanup(cutoff)
-        if (!entry.getValue.hasData) {
-          iter.remove()
-        }
-      }
-      logger.info("done rebuilding metadata index, {} metrics", index.size)
-
-      TaggedItem.retain(_ > cutoff)
-    }
+    if (now - index.buildTime > rebuildAge) rebuildIndex()
   }
 
-  private def getOrCreateBlockStore(id: ItemId, tags: Map[String, String]): BlockStore = {
-    var blkStore = data.get(id)
-    if (blkStore == null) {
-      // Create a new block store and update the index
-      blkStore = data.computeIfAbsent(id, _ => new MemoryBlockStore(step, blockSize, numBlocks))
-      index.update(BlockStoreItem.create(id, tags, blkStore))
+  /**
+    * Clean up rolled-out stores and rebuild the metadata index from `data`.
+    *
+    * Index membership is derived directly from `data` -- the authoritative,
+    * concurrently-maintained set of stores -- rather than carried independently in
+    * the index. Cleaning up first and then building the index from the surviving
+    * entries guarantees that a store removed here cannot linger in the index
+    * (the orphaned-series symptom), since the index can only ever contain ids that
+    * are currently present in `data`.
+    */
+  private[db] def rebuildIndex(): Unit = {
+    val now = registry.clock().wallTime()
+    val query = filter
+    logger.info("rebuilding metadata index (filter={})", query)
+
+    // Single pass: drop entries whose data has rolled out or that no longer match
+    // the filter, and collect the survivors into the array used to rebuild the
+    // index. Building the index from the surviving `data` entries is what keeps a
+    // removed store from lingering in the index. RoaringTagIndex requires the
+    // array sorted by id.
+    val windowSize = numBlocks * blockSize * step
+    val cutoff = now - windowSize
+    val items = new java.util.ArrayList[BlockStoreItem](data.size)
+    val iter = data.entrySet.iterator
+    while (iter.hasNext) {
+      val entry = iter.next()
+      val item = entry.getValue
+      item.blocks.cleanup(cutoff)
+      val kept =
+        if (item.blocks.hasData && query.matches(item.tags)) item
+        else
+          // Re-check under the bin lock so a concurrent update that revived the
+          // store (and still matches the filter) is kept rather than removed.
+          data.computeIfPresent(
+            entry.getKey,
+            (_, it) => if (it.blocks.hasData && query.matches(it.tags)) it else null
+          )
+      if (kept != null) items.add(kept)
     }
-    blkStore
+    val arr = items.toArray(new Array[BlockStoreItem](0))
+    java.util.Arrays.sort(arr, RoaringTagIndex.IdComparator)
+    index.rebuildIndex(arr)
+
+    logger.info("done rebuilding metadata index, {} metrics", arr.length)
+    TaggedItem.retain(_ > cutoff)
+  }
+
+  private def getOrCreateItem(id: ItemId, tags: Map[String, String]): BlockStoreItem = {
+    var item = data.get(id)
+    if (item == null) {
+      item = data.computeIfAbsent(
+        id,
+        _ => BlockStoreItem.create(id, tags, new MemoryBlockStore(step, blockSize, numBlocks))
+      )
+    }
+    item
+  }
+
+  /**
+    * Guard against a concurrent `rebuildIndex` cleanup removing this entry between
+    * the lookup and the write. The common path is a single lock-free `get` that
+    * returns the same item (no-op); the locked `putIfAbsent` runs only in the rare
+    * race where the entry was removed, re-inserting the just-written store so the
+    * datapoint is not lost. (If a different store was already recreated for the id,
+    * that newer store wins and this is a no-op.)
+    */
+  private def ensurePresent(id: ItemId, item: BlockStoreItem): Unit = {
+    if (data.get(id) ne item) data.putIfAbsent(id, item)
   }
 
   def setFilter(query: Query): Unit = {
@@ -139,8 +180,9 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
 
   def update(id: ItemId, tags: Map[String, String], timestamp: Long, value: Double): Unit = {
     if (filter.matches(tags)) {
-      val blkStore = getOrCreateBlockStore(id, tags)
-      blkStore.update(timestamp, value)
+      val item = getOrCreateItem(id, tags)
+      item.blocks.update(timestamp, value)
+      ensurePresent(id, item)
     }
   }
 
@@ -153,8 +195,9 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
   }
 
   def rollup(dp: DatapointTuple): Unit = {
-    val blkStore = getOrCreateBlockStore(dp.id, dp.tags)
-    blkStore.update(dp.timestamp, dp.value, rollup = true)
+    val item = getOrCreateItem(dp.id, dp.tags)
+    item.blocks.update(dp.timestamp, dp.value, rollup = true)
+    ensurePresent(dp.id, item)
   }
 
   @scala.annotation.tailrec
