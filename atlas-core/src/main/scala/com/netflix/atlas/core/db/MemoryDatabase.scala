@@ -113,8 +113,12 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     * entries guarantees that a store removed here cannot linger in the index
     * (the orphaned-series symptom), since the index can only ever contain ids that
     * are currently present in `data`.
+    *
+    * This forces a rebuild unconditionally. Use it to make data written via
+    * `update` queryable synchronously (e.g. in tests, or after a bulk load);
+    * `rebuild()` is the throttled variant the background thread uses.
     */
-  private[db] def rebuildIndex(): Unit = {
+  def rebuildIndex(): Unit = {
     val now = registry.clock().wallTime()
     val query = filter
     logger.info("rebuilding metadata index (filter={})", query)
