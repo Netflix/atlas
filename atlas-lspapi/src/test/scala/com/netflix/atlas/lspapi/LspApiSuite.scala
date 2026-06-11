@@ -18,7 +18,10 @@ package com.netflix.atlas.lspapi
 import com.netflix.atlas.pekko.RequestHandler
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.typesafe.config.ConfigFactory
+import org.apache.pekko.http.scaladsl.model.ws.BinaryMessage
 import org.apache.pekko.http.scaladsl.testkit.WSProbe
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 
 class LspApiSuite extends MUnitRouteSuite {
 
@@ -47,6 +50,25 @@ class LspApiSuite extends MUnitRouteSuite {
     val client = WSProbe()
     WS("/lsp/metrics/uri", client.flow) ~> routes ~> check {
       assert(isWebSocketUpgrade)
+      client.sendMessage(initializeRequest(1))
+      val response = client.expectMessage()
+      val text = response.asTextMessage.getStrictText
+      assert(text.contains("\"id\":1"))
+      assert(text.contains("\"result\""))
+      client.sendCompletion()
+    }
+  }
+
+  test("binary message is ignored and does not break the connection") {
+    val client = WSProbe()
+    WS("/lsp/metrics/asl", client.flow) ~> routes ~> check {
+      assert(isWebSocketUpgrade)
+      // LSP transport is text-only. A binary message (here streamed across
+      // multiple chunks) must be drained and ignored, leaving the connection
+      // usable for subsequent text messages.
+      val chunks =
+        Source(List(ByteString(Array.fill[Byte](512)(0)), ByteString(Array.fill[Byte](512)(1))))
+      client.sendMessage(BinaryMessage(chunks))
       client.sendMessage(initializeRequest(1))
       val response = client.expectMessage()
       val text = response.asTextMessage.getStrictText

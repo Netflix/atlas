@@ -16,6 +16,7 @@
 package com.netflix.atlas.lspapi
 
 import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.model.ws.BinaryMessage
 import org.apache.pekko.http.scaladsl.model.ws.Message
 import org.apache.pekko.http.scaladsl.model.ws.TextMessage
 import org.apache.pekko.stream.Materializer
@@ -88,6 +89,12 @@ object LspWebSocketFlow {
     val incoming: Sink[Message, NotUsed] = Flow[Message]
       .flatMapConcat {
         case TextMessage.Strict(text) =>
+          // No explicit size check is needed here: Pekko only delivers a
+          // message as Strict when an entire frame arrives within a single
+          // parser pass (bounded by the TCP read buffer, pekko.io.tcp
+          // .direct-buffer-size, 128 KiB by default). Any larger message is
+          // split across parser passes and delivered as Streamed, which is
+          // bounded by MaxMessageSize below.
           Source.single(text)
         case TextMessage.Streamed(textStream) =>
           textStream.fold("") { (acc, chunk) =>
@@ -96,10 +103,14 @@ object LspWebSocketFlow {
               throw new IllegalStateException("LSP message too large")
             combined
           }
-        case _ =>
-          Source.single(null)
+        case bm: BinaryMessage =>
+          // LSP JSON-RPC is exchanged as text only. Emit nothing for binary
+          // messages (a null element would violate the stream contract), but
+          // drain the data source so an unconsumed streamed message cannot
+          // stall the connection.
+          bm.dataStream.runWith(Sink.ignore)
+          Source.empty
       }
-      .filter(_ != null)
       .to(Sink.foreach { text =>
         val msg = jsonHandler.parseMessage(text)
         remoteEndpoint.consume(msg)
