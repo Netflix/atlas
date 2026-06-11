@@ -25,6 +25,12 @@ class OnlineRollingMeanSuite extends BaseOnlineAlgorithmSuite {
     assertEquals(algo.next(1.0), 1.0)
   }
 
+  test("window size beyond max is rejected") {
+    intercept[IllegalArgumentException] {
+      OnlineRollingMean(RollingBuffer.MaxWindowSize + 1, 1)
+    }
+  }
+
   test("n = 2, min = 1") {
     val algo = OnlineRollingMean(2, 1)
     assertEquals(algo.next(0.0), 0.0)

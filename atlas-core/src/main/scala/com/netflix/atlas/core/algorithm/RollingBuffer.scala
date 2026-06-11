@@ -117,8 +117,22 @@ class RollingBuffer(val values: Array[Double], start: Int = 0) {
 
 object RollingBuffer {
 
+  /**
+    * Maximum allowed window size. Window operators (`:rolling-*`, `:delay`, `:trend`)
+    * eagerly allocate an array of this size for each matching time series, so a window
+    * taken from a user-supplied expression must be bounded to avoid exhausting the heap.
+    * The cap of 86400 is one day of data at a 1s step (or several weeks at 1m), which is
+    * well beyond any legitimate window, while preventing a crafted query such as
+    * `300000000,:rolling-mean` from triggering an out-of-memory error.
+    */
+  val MaxWindowSize: Int = 86400
+
   /** Create a new buffer of size `n` initialized with NaN values. */
   def apply(n: Int): RollingBuffer = {
+    require(
+      n > 0 && n <= MaxWindowSize,
+      s"window size must be between 1 and $MaxWindowSize: $n"
+    )
     new RollingBuffer(ArrayHelper.fill(n, Double.NaN))
   }
 
