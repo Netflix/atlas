@@ -27,6 +27,29 @@ class StyleExprSuite extends FunSuite {
   private val oneDay = Duration.ofDays(1)
   private val oneWeek = Duration.ofDays(7)
 
+  test("sed: catastrophic backtracking is bounded") {
+    // A pathological pattern that would otherwise burn hundreds of ms per legend
+    // (ReDoS). The bounded matcher must fail fast with a 400-mapped exception.
+    val expr = StyleExpr(
+      DataExpr.Sum(Query.True),
+      Map("legend" -> ("a" * 40), "sed" -> "(.*a){25},X,:s")
+    )
+    val start = System.nanoTime()
+    intercept[IllegalArgumentException] {
+      expr.legend("x", Map.empty)
+    }
+    val elapsedMs = (System.nanoTime() - start) / 1000000
+    assert(elapsedMs < 1000, s"matching was not bounded, took ${elapsedMs}ms")
+  }
+
+  test("sed: normal search and replace still works") {
+    val expr = StyleExpr(
+      DataExpr.Sum(Query.True),
+      Map("legend" -> "$name", "sed" -> "^(?<prefix>[a-z]+)-.*$,group [$prefix] / [$1],:s")
+    )
+    assertEquals(expr.legend("x", Map("name" -> "abc-123")), "group [abc] / [abc]")
+  }
+
   test("perOffset") {
     val expr = StyleExpr(DataExpr.Sum(Query.True), Map("offset" -> "(,0h,1d,1w,)"))
     val expected = List(
