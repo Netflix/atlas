@@ -25,6 +25,23 @@ class RollingBufferSuite extends FunSuite {
     }
   }
 
+  test("n < 0") {
+    intercept[IllegalArgumentException] {
+      RollingBuffer(-1)
+    }
+  }
+
+  test("n = max window size") {
+    val buf = RollingBuffer(RollingBuffer.MaxWindowSize)
+    assertEquals(buf.values.length, RollingBuffer.MaxWindowSize)
+  }
+
+  test("n > max window size") {
+    intercept[IllegalArgumentException] {
+      RollingBuffer(RollingBuffer.MaxWindowSize + 1)
+    }
+  }
+
   test("n = 1, add") {
     val buf = RollingBuffer(1)
     assert(buf.add(0.0).isNaN)
