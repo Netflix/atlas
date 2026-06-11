@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -79,16 +80,25 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     }
   }
 
+  // Patterns are constant for a given expression, so compile each one once and reuse
+  // it across the many legend entries (time series) handled by this instance. The
+  // matcher itself is stateful and created per legend.
+  private val compiledPatterns = new ConcurrentHashMap[String, Pattern]()
+
   private def searchAndReplace(
     str: String,
     search: String,
     replace: String,
     tags: Map[String, String]
   ): String = {
-    val m = Pattern.compile(search).matcher(str)
+    val pattern = compiledPatterns.computeIfAbsent(search, s => Pattern.compile(s))
+    // Match against a bounded view of the input so catastrophic backtracking (ReDoS)
+    // on an attacker-influenced pattern fails fast with a 400 instead of pinning a
+    // request thread.
+    val m = pattern.matcher(new StyleExpr.BoundedCharSequence(str, search))
     if (!m.find()) str
     else {
-      val sb = new StringBuffer()
+      val sb = new java.lang.StringBuilder()
       m.appendReplacement(sb, escape(substitute(replace, m, tags)))
       while (m.find()) {
         m.appendReplacement(sb, escape(substitute(replace, m, tags)))
@@ -202,4 +212,42 @@ object StyleExpr {
   private val numberPattern = Pattern.compile("""^(\d+)$""")
 
   private def isNumber(s: String): Boolean = numberPattern.matcher(s).matches()
+
+  /**
+    * Maximum number of character reads allowed while matching a single legend entry.
+    * Catastrophic backtracking reads input characters an exponential number of times,
+    * so capping the reads bounds the work for a pathological `:s` pattern. The limit is
+    * far above any legitimate legend rewrite (legends are short) while a ReDoS pattern
+    * blows past it almost immediately.
+    */
+  private val MaxRegexCharReads = 1_000_000
+
+  /**
+    * View of a string that limits how many characters the regex engine may read while
+    * matching. Once the budget is exhausted `charAt` fails the match with an
+    * `IllegalArgumentException` (surfaced as a 400) rather than allowing it to run away.
+    */
+  private final class BoundedCharSequence(seq: CharSequence, pattern: String, reads: Array[Int])
+      extends CharSequence {
+
+    // Entry point: start a fresh read budget that is shared with any sub-sequences
+    // derived from this instance (reads is a single-element mutable counter).
+    def this(seq: CharSequence, pattern: String) = this(seq, pattern, new Array[Int](1))
+
+    override def length(): Int = seq.length()
+
+    override def charAt(index: Int): Char = {
+      reads(0) += 1
+      if (reads(0) > MaxRegexCharReads)
+        throw new IllegalArgumentException(s"regex is too expensive to evaluate: '$pattern'")
+      seq.charAt(index)
+    }
+
+    // Sub-sequences share the same budget so matching work cannot escape the limit by
+    // reading through a sub-sequence view.
+    override def subSequence(start: Int, end: Int): CharSequence =
+      new BoundedCharSequence(seq.subSequence(start, end), pattern, reads)
+
+    override def toString: String = seq.toString
+  }
 }
