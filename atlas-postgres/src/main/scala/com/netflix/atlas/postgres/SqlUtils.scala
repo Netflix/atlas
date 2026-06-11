@@ -152,7 +152,7 @@ object SqlUtils {
         val limit = tq.limit
         val offset = s"and $column > '${escapeLiteral(tq.offset)}'"
         s"""
-        select distinct $column as "${escapeLiteral(key)}"
+        select distinct $column as ${escapeIdentifier(key)}
           from $schema.${table.tableName}_$suffix
          where ${toWhere(table.columns, query)} $offset
          order by $column
@@ -186,7 +186,7 @@ object SqlUtils {
           val selectColumns = cs
             .zip(expr.finalGrouping)
             .map {
-              case (column, label) => s"$column as \"${escapeLiteral(label)}\""
+              case (column, label) => s"$column as ${escapeIdentifier(label)}"
             }
             .mkString(", ")
           val groupByColumns = cs.mkString(", ")
@@ -260,7 +260,7 @@ object SqlUtils {
 
   private def formatColumn(columns: List[String], k: String): String = {
     if (columns.contains(k))
-      s"\"${escapeLiteral(k)}\""
+      escapeIdentifier(k)
     else
       s"tags -> '${escapeLiteral(k)}'"
   }
@@ -268,6 +268,19 @@ object SqlUtils {
   private[postgres] def escapeLiteral(str: String): String = {
     val buf = new java.lang.StringBuilder(str.length)
     org.postgresql.core.Utils.escapeLiteral(buf, str, false)
+    buf.toString
+  }
+
+  /**
+   * Escape a string for use as a double-quoted SQL identifier (e.g. a column alias).
+   * Unlike [[escapeLiteral]], this doubles embedded double quotes and includes the
+   * surrounding quotes, so the returned value must not be wrapped in additional quotes.
+   * This is required for any identifier built from user input (tag keys, grouping
+   * labels) to prevent breaking out of the quoted identifier.
+   */
+  private[postgres] def escapeIdentifier(str: String): String = {
+    val buf = new java.lang.StringBuilder(str.length + 2)
+    org.postgresql.core.Utils.escapeIdentifier(buf, str)
     buf.toString
   }
 

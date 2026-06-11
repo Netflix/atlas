@@ -449,4 +449,38 @@ class SqlUtilsSuite extends PostgresSuite {
       """
     assertEquals(arrayQuery(sql), list(1.0, 2.0, null))
   }
+
+  //
+  // Security: SQL injection via tag keys / grouping labels. These are used as
+  // double-quoted SQL identifiers (column aliases), so a `"` must be doubled to
+  // prevent breaking out of the identifier and injecting arbitrary SQL.
+  //
+
+  test("grouping label with double quote is treated as a literal identifier") {
+    val table = populateSelectTable()
+    // The label is used as a column alias: `<col> as "<label>"`. Were the `"`
+    // not escaped, this payload would inject `31337 as "injected"` as its own
+    // select column. With escaping the whole payload is one quoted identifier.
+    val payload = "x\", 31337 as \"injected"
+    val expr = DataExpr.GroupBy(DataExpr.Sum(parseQuery("name,cpu,:eq")), List(payload))
+    val sql = SqlUtils.dataQueries(time, List(table), expr).head
+    assert(sql.contains("\"x\"\", 31337 as \"\"injected\""), sql)
+    service.runQueries { stmt =>
+      val rs = stmt.executeQuery(sql)
+      assert(rs.next())
+      // The injection did not create a separate "injected" column.
+      intercept[Exception](rs.findColumn("injected"))
+    }
+  }
+
+  test("value query key with double quote is treated as a literal identifier") {
+    val table = populateSelectTable()
+    // The tag key (e.g. from the /api/v1/tags/<key> path) is used as a column
+    // alias. With escaping the `"` is doubled and the key is just a (nonexistent)
+    // tag name, so the query runs and returns no values instead of injecting SQL.
+    val tq = TagQuery(None, Some("a\"b"))
+    val sql = SqlUtils.valueQueries(time, List(table), tq).head
+    assert(sql.contains("\"a\"\"b\""), sql)
+    assertEquals(stringList(sql), Nil)
+  }
 }
