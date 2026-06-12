@@ -127,10 +127,15 @@ case class Grapher(settings: DefaultSettings) {
     val theme = params.get("theme").getOrElse(settings.theme)
     val palette = params.get("palette").getOrElse(settings.primaryPalette(theme))
 
+    val width = params.get("w").fold(settings.width)(_.toInt)
+    val height = params.get("h").fold(settings.height)(_.toInt)
+    require(width > 0, s"width must be positive (got $width)")
+    require(height > 0, s"height must be positive (got $height)")
+
     val flags = ImageFlags(
       title = params.get("title").filter(_ != ""),
-      width = params.get("w").fold(settings.width)(_.toInt),
-      height = params.get("h").fold(settings.height)(_.toInt),
+      width = width,
+      height = height,
       zoom = params.get("zoom").fold(1.0)(_.toDouble),
       axes = axes,
       axisPerLine = params.get("axis_per_line").contains("1"),
