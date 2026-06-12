@@ -537,21 +537,29 @@ object Strings {
   private def parseAtDuration(amount: String, unit: String): Duration = {
     val v = amount.toLong
 
-    // format: off
-    unit match {
-      case "ns"                               => Duration.ofNanos(v)
-      case "us" | "μs"                        => Duration.ofNanos(v * 1000L)
-      case "ms"                               => Duration.ofMillis(v)
-      case "seconds" | "second" | "s"         => Duration.ofSeconds(v)
-      case "minutes" | "minute" | "min" | "m" => Duration.ofMinutes(v)
-      case "hours"   | "hour"   | "h"         => Duration.ofHours(v)
-      case "days"    | "day"    | "d"         => Duration.ofDays(v)
-      case "weeks"   | "week"   | "wk"  | "w" => Duration.ofDays(v * 7)
-      case "months"  | "month"                => Duration.ofDays(v * 30)
-      case "years"   | "year"   | "y"         => Duration.ofDays(v * 365)
-      case _                                  => throw new IllegalArgumentException("unknown unit " + unit)
+    // Use multiplyExact and convert overflow to an IllegalArgumentException so an
+    // out-of-range amount is reported as a client error (400) rather than allowing
+    // an ArithmeticException (mapped to a 500) or a silently wrapped value.
+    try {
+      // format: off
+      unit match {
+        case "ns"                               => Duration.ofNanos(v)
+        case "us" | "μs"                        => Duration.ofNanos(java.lang.Math.multiplyExact(v, 1000L))
+        case "ms"                               => Duration.ofMillis(v)
+        case "seconds" | "second" | "s"         => Duration.ofSeconds(v)
+        case "minutes" | "minute" | "min" | "m" => Duration.ofMinutes(v)
+        case "hours"   | "hour"   | "h"         => Duration.ofHours(v)
+        case "days"    | "day"    | "d"         => Duration.ofDays(v)
+        case "weeks"   | "week"   | "wk"  | "w" => Duration.ofDays(java.lang.Math.multiplyExact(v, 7L))
+        case "months"  | "month"                => Duration.ofDays(java.lang.Math.multiplyExact(v, 30L))
+        case "years"   | "year"   | "y"         => Duration.ofDays(java.lang.Math.multiplyExact(v, 365L))
+        case _                                  => throw new IllegalArgumentException("unknown unit " + unit)
+      }
+      // format: on
+    } catch {
+      case e: ArithmeticException =>
+        throw new IllegalArgumentException(s"duration out of range: $amount$unit", e)
     }
-    // format: on
   }
 
   /**
