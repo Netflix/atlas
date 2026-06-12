@@ -162,8 +162,13 @@ object DataType {
     def extract(value: Any): Option[Any] = unapply(value)
 
     def unapply(value: Any): Option[List[String]] = value match {
-      case vs: List[?] if vs.forall(_.isInstanceOf[String]) => Some(vs.asInstanceOf[List[String]])
-      case _                                                => None
+      // Unlike scalar string tokens, list elements are not unescaped when pushed
+      // onto the stack (the raw form must be preserved for lists used as programs,
+      // e.g. `:each`/`:map`/`:call`). Unescape here so list values consumed as data
+      // match the behavior of scalar string values (e.g. `:in` matches `:eq`).
+      case vs: List[?] if vs.forall(_.isInstanceOf[String]) =>
+        Some(vs.asInstanceOf[List[String]].map(Strings.unescape))
+      case _ => None
     }
   }
 

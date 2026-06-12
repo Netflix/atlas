@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.stacklang.Interpreter
 import munit.FunSuite
 
 class DataExprSuite extends FunSuite {
@@ -23,6 +24,21 @@ class DataExprSuite extends FunSuite {
     val expr = DataExpr.Sum(Query.True)
     val tags = Map("name" -> "foo")
     assertEquals(expr.groupByKey(tags), None)
+  }
+
+  test("GroupBy exprString round-trips keys that need escaping") {
+    val interpreter = Interpreter(StyleVocabulary.allWords)
+    def dataExpr(s: String): DataExpr = interpreter.execute(s).stack match {
+      case ModelDataTypes.PresentationType(t) :: Nil => t.expr.asInstanceOf[DataExpr]
+      case _                                         => throw new IllegalArgumentException(s)
+    }
+
+    // The single tag key contains a comma (escaped on input). Parsing unescapes it,
+    // so the rendered expression must re-escape it; otherwise re-parsing splits it
+    // into two keys.
+    val expr = dataExpr("name,sps,:eq,:sum,(,a\\u002cb,),:by")
+    assertEquals(expr.asInstanceOf[DataExpr.GroupBy].keys, List("a,b"))
+    assertEquals(dataExpr(expr.exprString), expr)
   }
 
   test("allKeys") {

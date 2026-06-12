@@ -24,7 +24,6 @@ import com.netflix.atlas.core.stacklang.TypedWord
 import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
 import com.netflix.atlas.core.stacklang.ast.DataType
-import com.netflix.atlas.core.stacklang.ast.DataType.StringListType
 import com.netflix.atlas.core.stacklang.ast.Parameter
 import com.netflix.spectator.impl.matcher.PatternUtils
 
@@ -457,12 +456,16 @@ object QueryVocabulary extends Vocabulary {
 
     override def execute(context: Context, params: IndexedSeq[Any]): Context = {
       val k = params(0).asInstanceOf[String]
-      val vs = params(1).asInstanceOf[List[?]]
+      // `params(1)` has already been coerced and unescaped by the StringListType
+      // extractor. Re-matching `StringListType` here would unescape a second time, and
+      // since `Strings.unescape` is not idempotent that would corrupt multi-value `:in`
+      // and make it inconsistent with `:eq` and the single-value case. Use the extracted
+      // list directly.
+      val vs = params(1).asInstanceOf[List[String]]
       val query = vs match {
-        case Nil                => Query.False
-        case (v: String) :: Nil => Query.Equal(k, v)
-        case StringListType(sv) => Query.In(k, sv)
-        case _ => throw new IllegalArgumentException("list must contain only strings")
+        case Nil      => Query.False
+        case v :: Nil => Query.Equal(k, v)
+        case _        => Query.In(k, vs)
       }
       context.copy(stack = query :: context.stack)
     }

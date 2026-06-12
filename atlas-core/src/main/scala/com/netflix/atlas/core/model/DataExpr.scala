@@ -17,6 +17,7 @@ package com.netflix.atlas.core.model
 
 import java.time.Duration
 import com.netflix.atlas.core.model.ConsolidationFunction.SumOrAvgCf
+import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Strings
@@ -289,7 +290,8 @@ object DataExpr {
 
     override def finalGrouping: List[String] = keys
 
-    override def exprString: String = s"$af,(,${keys.mkString(",")},),:by"
+    override def exprString: String =
+      s"$af,(,${keys.map(Interpreter.escape).mkString(",")},),:by"
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       val ks = Query.exactKeys(query) ++ keys
