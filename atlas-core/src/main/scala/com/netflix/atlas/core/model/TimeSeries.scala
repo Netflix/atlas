@@ -50,15 +50,16 @@ object TimeSeries {
   def noData(query: Query, step: Long): TimeSeries = {
     val tags = Query.tags(query)
     val data = new FunctionTimeSeq(DsType.Gauge, step, _ => Double.NaN)
-    LazyTimeSeries(if (tags.isEmpty) noDataTags else tags, "NO DATA", data)
+    LazyTimeSeries(if (tags.isEmpty) noDataTags else tags, Some("NO DATA"), data)
   }
 
   def apply(tags: Map[String, String], label: String, data: TimeSeq): TimeSeries = {
-    LazyTimeSeries(tags, label, data)
+    LazyTimeSeries(tags, Some(label), data)
   }
 
   def apply(tags: Map[String, String], data: TimeSeq): TimeSeries = {
-    TimeSeries(tags, toLabel(tags), data)
+    // Label is derived from the tags lazily, only materialized if actually consumed.
+    LazyTimeSeries(tags, None, data)
   }
 
   def toLabel(tags: Map[String, String]): String = {
@@ -211,55 +212,76 @@ trait TimeSeries extends TaggedItem {
     Datapoint(tags, timestamp, data(timestamp))
   }
 
-  def unaryOp(labelFmt: String, f: Double => Double): TimeSeries = {
-    LazyTimeSeries(tags, labelFmt.format(label), new UnaryOpTimeSeq(data, f))
+  def unaryOp(f: Double => Double): TimeSeries = {
+    // The default label is derived from the tags, so there is no need to represent the
+    // operation in the label. See LazyTimeSeries for how the label is resolved.
+    LazyTimeSeries(tags, None, new UnaryOpTimeSeq(data, f))
   }
 
-  def binaryOp(ts: TimeSeries, labelFmt: String, f: BinaryOp): TimeSeries = {
+  def binaryOp(ts: TimeSeries, f: BinaryOp): TimeSeries = {
     val newData = new BinaryOpTimeSeq(data, ts.data, f)
-    LazyTimeSeries(tags, labelFmt.format(label, ts.label), newData)
+    LazyTimeSeries(tags, None, newData)
   }
 
   def withTags(ts: Map[String, String]): TimeSeries = {
-    LazyTimeSeries(ts, label, data)
+    LazyTimeSeries(ts, Some(label), data)
   }
 
   def withLabel(s: String): TimeSeries = {
     // If the specified label is empty, then fallback to the default
-    if (s.isEmpty) this else LazyTimeSeries(tags, s, data)
+    if (s.isEmpty) this else LazyTimeSeries(tags, Some(s), data)
   }
 
   /** Consolidate the series to a larger step size. */
   def consolidate(step: Long, cf: ConsolidationFunction): TimeSeries = {
     val newData = new MapStepTimeSeq(data, step, cf)
-    LazyTimeSeries(tags, label, newData)
+    LazyTimeSeries(tags, Some(label), newData)
   }
 
   /** Create a consolidated view while retaining the original step size for the series. */
   def consolidatedView(step: Long, cf: ConsolidationFunction): TimeSeries = {
     val newData = new MapStepTimeSeq(data, step, cf)
-    LazyTimeSeries(tags, label, new StepViewTimeSeq(newData, data.step))
+    LazyTimeSeries(tags, Some(label), new StepViewTimeSeq(newData, data.step))
   }
 
   def blend(ts: TimeSeries): TimeSeries = {
     val newData = new BinaryOpTimeSeq(data, ts.data, Math.maxNaN)
-    LazyTimeSeries(ts.tags, ts.label, newData)
+    LazyTimeSeries(ts.tags, Some(ts.label), newData)
   }
 
   // Create a copy with a modified time sequence.
   def mapTimeSeq(f: TimeSeq => TimeSeq): TimeSeries = {
-    LazyTimeSeries(tags, label, f(data))
+    LazyTimeSeries(tags, Some(label), f(data))
   }
 
   def offset(dur: Long): TimeSeries = {
-    LazyTimeSeries(tags, label, new OffsetTimeSeq(data, dur))
+    LazyTimeSeries(tags, Some(label), new OffsetTimeSeq(data, dur))
   }
 }
 
 case class BasicTimeSeries(id: ItemId, tags: Map[String, String], label: String, data: TimeSeq)
     extends TimeSeries
 
-case class LazyTimeSeries(tags: Map[String, String], label: String, data: TimeSeq)
-    extends TimeSeries {
+/**
+  * Lazy view over another time series. The label can be specified explicitly or, when
+  * `labelOpt` is empty, derived from the tags via `TimeSeries.toLabel`. Deriving from the
+  * tags is deferred until the label is actually consumed (e.g. when no legend has been set),
+  * which avoids building labels for the many intermediate views created during expression
+  * evaluation.
+  */
+case class LazyTimeSeries(
+  tags: Map[String, String],
+  labelOpt: Option[String],
+  data: TimeSeq
+) extends TimeSeries {
+
+  override lazy val label: String = labelOpt.getOrElse(TimeSeries.toLabel(tags))
+
   lazy val id: ItemId = TaggedItem.computeId(tags)
+
+  // Propagate the unresolved label intent rather than the resolved string so that a
+  // tag-derived label stays lazy and re-derives from the updated set of tags.
+  override def withTags(ts: Map[String, String]): TimeSeries = {
+    LazyTimeSeries(ts, labelOpt, data)
+  }
 }

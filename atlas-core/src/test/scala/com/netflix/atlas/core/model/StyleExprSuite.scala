@@ -78,7 +78,7 @@ class StyleExprSuite extends FunSuite {
 
   private def newTimeSeries(label: String, tags: Map[String, String]): TimeSeries = {
     val data = new FunctionTimeSeq(DsType.Gauge, 1, _ => Double.NaN)
-    LazyTimeSeries(tags, label, data)
+    LazyTimeSeries(tags, Some(label), data)
   }
 
   test("decode after substitute") {
