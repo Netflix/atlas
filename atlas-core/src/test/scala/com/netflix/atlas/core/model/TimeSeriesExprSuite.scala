@@ -30,67 +30,67 @@ class TimeSeriesExprSuite extends FunSuite {
   private val unknownTag = "name" -> "unknown"
 
   private val tests = List(
-    ":true,:all"        -> const(constants),
-    ":true"             -> const(ts(unknownTag, 55)),
-    ":true,:sum"        -> const(ts(unknownTag, 55)),
-    ":true,:count"      -> const(ts(unknownTag, 11)),
-    ":true,:avg"        -> const(ts(unknownTag, "(name=unknown / name=unknown)", 5)),
-    ":true,:min"        -> const(ts(unknownTag, 0)),
-    ":true,:max"        -> const(ts(unknownTag, 10)),
-    ":true,:sum,:sum"   -> const(ts(unknownTag, "name=unknown", 55)),
-    ":true,:max,:sum"   -> const(ts(unknownTag, "name=unknown", 10)),
-    ":true,:sum,:max"   -> const(ts(unknownTag, "name=unknown", 55)),
-    ":true,:sum,:count" -> const(ts(Map.empty[String, String], "count(NO TAGS)", 1)),
-    ":true,:avg,:count" -> const(ts(Map.empty[String, String], "count(NO TAGS)", 1)),
-    ":true,:sum,:avg"   -> const(ts(unknownTag, "(name=unknown / count(NO TAGS))", 55)),
-    ":true,:avg,:avg" -> const(ts(Map.empty[String, String], "(sum(NO TAGS) / count(NO TAGS))", 5)),
-    ":false,:sum"     -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
-    ":false,:min"     -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
-    ":false,:max"     -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
-    ":false,:count"   -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
-    "name,:has"       -> const(ts(unknownTag, 55)),
-    "name,1,:eq"      -> const(ts(Map("name" -> "1"), 1)),
-    "name,1,:re"      -> const(ts(unknownTag, 11)),
-    "name,2,:re"      -> const(ts(unknownTag, 2)),
+    ":true,:all"                 -> const(constants),
+    ":true"                      -> const(ts(unknownTag, 55)),
+    ":true,:sum"                 -> const(ts(unknownTag, 55)),
+    ":true,:count"               -> const(ts(unknownTag, 11)),
+    ":true,:avg"                 -> const(ts(unknownTag, "name=unknown", 5)),
+    ":true,:min"                 -> const(ts(unknownTag, 0)),
+    ":true,:max"                 -> const(ts(unknownTag, 10)),
+    ":true,:sum,:sum"            -> const(ts(unknownTag, "name=unknown", 55)),
+    ":true,:max,:sum"            -> const(ts(unknownTag, "name=unknown", 10)),
+    ":true,:sum,:max"            -> const(ts(unknownTag, "name=unknown", 55)),
+    ":true,:sum,:count"          -> const(ts(Map.empty[String, String], "count(NO TAGS)", 1)),
+    ":true,:avg,:count"          -> const(ts(Map.empty[String, String], "count(NO TAGS)", 1)),
+    ":true,:sum,:avg"            -> const(ts(unknownTag, "name=unknown", 55)),
+    ":true,:avg,:avg"            -> const(ts(Map.empty[String, String], "NO TAGS", 5)),
+    ":false,:sum"                -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
+    ":false,:min"                -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
+    ":false,:max"                -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
+    ":false,:count"              -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
+    "name,:has"                  -> const(ts(unknownTag, 55)),
+    "name,1,:eq"                 -> const(ts(Map("name" -> "1"), 1)),
+    "name,1,:re"                 -> const(ts(unknownTag, 11)),
+    "name,2,:re"                 -> const(ts(unknownTag, 2)),
     "name,2,:contains"           -> const(ts(unknownTag, 2)),
     "name,(,1,10,),:in"          -> const(ts(unknownTag, 11)),
     "name,1,:eq,name,10,:eq,:or" -> const(ts(unknownTag, 11)),
-    ":true,:abs"                 -> const(ts(unknownTag, "abs(name=unknown)", 55.0)),
+    ":true,:abs"                 -> const(ts(unknownTag, "name=unknown", 55.0)),
     "10,:abs"                    -> const(ts(Map("name" -> "10.0"), "10.0", 10.0)),
     "-10,:abs"                   -> const(ts(Map("name" -> "10.0"), "10.0", 10.0)),
-    ":true,:neg"                 -> const(ts(unknownTag, "neg(name=unknown)", -55.0)),
+    ":true,:neg"                 -> const(ts(unknownTag, "name=unknown", -55.0)),
     "10,:neg"                    -> const(ts(Map("name" -> "-10.0"), "-10.0", -10.0)),
     "-10,:neg"                   -> const(ts(Map("name" -> "10.0"), "10.0", 10.0)),
     "10,:neg,:abs"               -> const(ts(Map("name" -> "10.0"), "10.0", 10.0)),
     "4,:sqrt"                    -> const(ts(Map("name" -> "2.0"), "2.0", 2.0)),
-    ":true,10,:add"              -> const(ts(unknownTag, "(name=unknown + 10.0)", 55.0 + 10)),
-    ":true,10,:sub"              -> const(ts(unknownTag, "(name=unknown - 10.0)", 55.0 - 10)),
-    ":true,10,:mul"              -> const(ts(unknownTag, "(name=unknown * 10.0)", 55.0 * 10)),
-    ":true,10,:div"              -> const(ts(unknownTag, "(name=unknown / 10.0)", 55.0 / 10)),
-    ":true,2,:pow" -> const(ts(unknownTag, "pow(name=unknown, 2.0)", math.pow(55.0, 2.0))),
+    ":true,10,:add"              -> const(ts(unknownTag, "name=unknown", 55.0 + 10)),
+    ":true,10,:sub"              -> const(ts(unknownTag, "name=unknown", 55.0 - 10)),
+    ":true,10,:mul"              -> const(ts(unknownTag, "name=unknown", 55.0 * 10)),
+    ":true,10,:div"              -> const(ts(unknownTag, "name=unknown", 55.0 / 10)),
+    ":true,2,:pow"               -> const(ts(unknownTag, "name=unknown", math.pow(55.0, 2.0))),
     "2,:true,:pow" -> const(
-      ts(Map("name" -> "2.0"), "pow(2.0, name=unknown)", math.pow(2.0, 55.0))
+      ts(Map("name" -> "2.0"), "name=2.0", math.pow(2.0, 55.0))
     ),
-    ":true,0,:div"   -> const(ts(unknownTag, "(name=unknown / 0.0)", Double.NaN)),
-    ":true,55,:gt"   -> const(ts(unknownTag, "(name=unknown > 55.0)", 0.0)),
-    ":true,0,:gt"    -> const(ts(unknownTag, "(name=unknown > 0.0)", 1.0)),
-    ":true,55.1,:ge" -> const(ts(unknownTag, "(name=unknown >= 55.1)", 0.0)),
-    ":true,55,:ge"   -> const(ts(unknownTag, "(name=unknown >= 55.0)", 1.0)),
-    ":true,0,:ge"    -> const(ts(unknownTag, "(name=unknown >= 0.0)", 1.0)),
-    ":true,55,:lt"   -> const(ts(unknownTag, "(name=unknown < 55.0)", 0.0)),
-    ":true,56,:lt"   -> const(ts(unknownTag, "(name=unknown < 56.0)", 1.0)),
-    ":true,55.1,:le" -> const(ts(unknownTag, "(name=unknown <= 55.1)", 1.0)),
-    ":true,55,:le"   -> const(ts(unknownTag, "(name=unknown <= 55.0)", 1.0)),
-    ":true,0,:le"    -> const(ts(unknownTag, "(name=unknown <= 0.0)", 0.0)),
-    ":true,0,:and"   -> const(ts(unknownTag, "(name=unknown AND 0.0)", 0.0)),
-    ":true,1,:and"   -> const(ts(unknownTag, "(name=unknown AND 1.0)", 1.0)),
-    ":true,0,:or"    -> const(ts(unknownTag, "(name=unknown OR 0.0)", 1.0)),
-    ":true,1,:or"    -> const(ts(unknownTag, "(name=unknown OR 1.0)", 1.0)),
+    ":true,0,:div"   -> const(ts(unknownTag, "name=unknown", Double.NaN)),
+    ":true,55,:gt"   -> const(ts(unknownTag, "name=unknown", 0.0)),
+    ":true,0,:gt"    -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,55.1,:ge" -> const(ts(unknownTag, "name=unknown", 0.0)),
+    ":true,55,:ge"   -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,0,:ge"    -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,55,:lt"   -> const(ts(unknownTag, "name=unknown", 0.0)),
+    ":true,56,:lt"   -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,55.1,:le" -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,55,:le"   -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,0,:le"    -> const(ts(unknownTag, "name=unknown", 0.0)),
+    ":true,0,:and"   -> const(ts(unknownTag, "name=unknown", 0.0)),
+    ":true,1,:and"   -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,0,:or"    -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,1,:or"    -> const(ts(unknownTag, "name=unknown", 1.0)),
     "0,0,:or"        -> const(ts("name" -> "0.0", "0.0", 0.0)),
-    "1,:per-step"    -> const(ts(Map("name" -> "1.0"), "per-step(1.0)", 60)),
+    "1,:per-step"    -> const(ts(Map("name" -> "1.0"), "name=1.0", 60)),
     "1,:integral"    -> const(integral(Map("name" -> "1.0"), "integral(1.0)", 1.0)),
     "minuteOfDay,:time,1,:add" -> const(
-      integral(Map("name" -> "minuteOfDay"), "(minuteOfDay + 1.0)", 1.0)
+      integral(Map("name" -> "minuteOfDay"), "name=minuteOfDay", 1.0)
     ),
     "1,:integral,:derivative" -> const(integralDerivative),
     "8,:integral"             -> const(integral(Map("name" -> "8.0"), "integral(8.0)", 8.0)),
@@ -118,7 +118,7 @@ class TimeSeriesExprSuite extends FunSuite {
     ":true,:max,(,name,),:by,:max" -> const(ts(Map.empty[String, String], "max(NO TAGS)", 10)),
     ":true,:max,(,type,),:by,:sum" -> const(ts(Map.empty[String, String], "sum(NO TAGS)", 10)),
     ":true,(,name,),:by,:avg" -> const(
-      ts(Map.empty[String, String], "(sum(NO TAGS) / count(NO TAGS))", 5)
+      ts(Map.empty[String, String], "NO TAGS", 5)
     ),
     ":true,(,foo,),:by"            -> const(Nil),
     ":false,(,name,),:by"          -> const(Nil),
@@ -184,22 +184,17 @@ class TimeSeriesExprSuite extends FunSuite {
     "1.0,2.0,:const,:ge"         -> const(ts(Map("name" -> "0.0"), "0.0", 0.0)),
     "1.0,1.0,:const,:ge"         -> const(ts(Map("name" -> "1.0"), "1.0", 1.0)),
     ":true,1w,:offset"           -> const(ts(unknownTag, "name=unknown (offset=1w)", 55)),
-    ":true,5,:add,1w,:offset"    -> const(ts(unknownTag, "(name=unknown (offset=1w) + 5.0)", 60)),
+    ":true,5,:add,1w,:offset"    -> const(ts(unknownTag, "name=unknown", 60)),
     "issue,283,:eq"              -> const(ts(Map("issue" -> "283"), "NO DATA", Double.NaN)),
     ":false,(,name,),:by,:count" -> const(ts(Map("name" -> "NO_DATA"), "NO DATA", Double.NaN)),
     ":true,(,name,),:by,:stddev" -> const(
-      ts(Map.empty[String, String], stddevLegend("NO TAGS"), 3.1622776601683795)
+      ts(Map.empty[String, String], "NO TAGS", 3.1622776601683795)
     ),
-    ":true,:max,:stddev" -> const(ts(Map.empty[String, String], stddevLegend("NO TAGS"), 0.0)),
-    ":true,:sum,:stddev" -> const(ts(Map.empty[String, String], stddevLegend("NO TAGS"), 0.0)),
-    ":true,:stddev"      -> const(ts(Map.empty[String, String], stddevLegend("NO TAGS"), 0.0)),
+    ":true,:max,:stddev" -> const(ts(Map.empty[String, String], "NO TAGS", 0.0)),
+    ":true,:sum,:stddev" -> const(ts(Map.empty[String, String], "NO TAGS", 0.0)),
+    ":true,:stddev"      -> const(ts(Map.empty[String, String], "NO TAGS", 0.0)),
     "42"                 -> const(ts(42))
   )
-
-  // stddev legend
-  private def stddevLegend(label: String): String = {
-    s"sqrt((((count($label) * sum($label)) - (sum($label) * sum($label))) / (count($label) * count($label))))"
-  }
 
   // Tests that cannot be executed with incremental evaluation
   private val globalTests = List(
@@ -297,7 +292,7 @@ class TimeSeriesExprSuite extends FunSuite {
     case (t, i) =>
       TimeSeries(
         t.tags.filter(_._1 == "name"),
-        s"((name=${i.toString}) + 1.0)",
+        s"name=${i.toString}",
         t.data.mapValues(_ + 1.0)
       )
   }
@@ -306,7 +301,7 @@ class TimeSeriesExprSuite extends FunSuite {
     case (t, i) =>
       TimeSeries(
         t.tags.filter(_._1 == "name"),
-        s"(1.0 + (name=${i.toString}))",
+        s"name=${i.toString}",
         t.data.mapValues(_ + 1.0)
       )
   }
@@ -315,7 +310,7 @@ class TimeSeriesExprSuite extends FunSuite {
     case (t, i) =>
       TimeSeries(
         t.tags.filter(_._1 == "name"),
-        s"((name=${i.toString}) + (name=${i.toString}))",
+        s"name=${i.toString}",
         t.data.mapValues(_ * 2.0)
       )
   }

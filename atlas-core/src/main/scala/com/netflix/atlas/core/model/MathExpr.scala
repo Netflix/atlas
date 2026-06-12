@@ -326,7 +326,7 @@ object MathExpr {
       ResultSet(
         this,
         rs.data.map { t =>
-          t.unaryOp(s"$name(%s, $min)", this)
+          t.unaryOp(this)
         },
         rs.state
       )
@@ -358,7 +358,7 @@ object MathExpr {
       ResultSet(
         this,
         rs.data.map { t =>
-          t.unaryOp(s"$name(%s, $max)", this)
+          t.unaryOp(this)
         },
         rs.state
       )
@@ -397,7 +397,7 @@ object MathExpr {
       ResultSet(
         this,
         rs.data.map { t =>
-          t.unaryOp(s"$name(%s)", this)
+          t.unaryOp(this)
         },
         rs.state
       )
@@ -445,7 +445,7 @@ object MathExpr {
         // Assumes rate-per-second counter. If the step size is less than a second, then it
         // will be a fractional multiple and reduce the amount.
         val multiple = t.data.step / 1000.0
-        t.unaryOp(s"$name(%s)", v => v * multiple)
+        t.unaryOp(v => v * multiple)
       }
       ResultSet(this, newData, rs.state)
     }
@@ -487,8 +487,6 @@ object MathExpr {
     }
 
     def name: String
-
-    def labelFmt: String
 
     def expr1: TimeSeriesExpr
 
@@ -536,7 +534,7 @@ object MathExpr {
         g1.get(k).map {
           // Normally tags are kept for the lhs, in this case we want to prefer the tags from
           // the grouped expr on the rhs
-          case t1 :: Nil => t1.binaryOp(t2, labelFmt, this).withTags(t2.tags)
+          case t1 :: Nil => t1.binaryOp(t2, this).withTags(t2.tags)
           case _         => throw new IllegalStateException("too many values for key")
         }
       }
@@ -549,7 +547,7 @@ object MathExpr {
       rs1.data.flatMap { t1 =>
         val k = groupByKeyF(t1.tags)
         g2.get(k).map {
-          case t2 :: Nil => t1.binaryOp(t2, labelFmt, this)
+          case t2 :: Nil => t1.binaryOp(t2, this)
           case _         => throw new IllegalStateException("too many values for key")
         }
       }
@@ -560,16 +558,12 @@ object MathExpr {
 
     def name: String = "add"
 
-    def labelFmt: String = "(%s + %s)"
-
     def apply(v1: Double, v2: Double): Double = Math.addNaN(v1, v2)
   }
 
   case class Subtract(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
 
     def name: String = "sub"
-
-    def labelFmt: String = "(%s - %s)"
 
     def apply(v1: Double, v2: Double): Double = Math.subtractNaN(v1, v2)
   }
@@ -578,16 +572,12 @@ object MathExpr {
 
     def name: String = "mul"
 
-    def labelFmt: String = "(%s * %s)"
-
     def apply(v1: Double, v2: Double): Double = v1 * v2
   }
 
   case class Divide(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
 
     def name: String = "div"
-
-    def labelFmt: String = "(%s / %s)"
 
     def apply(v1: Double, v2: Double): Double = {
       if (v2 == 0.0) {
@@ -614,8 +604,6 @@ object MathExpr {
 
     def name: String = "pow"
 
-    def labelFmt: String = "pow(%s, %s)"
-
     def apply(v1: Double, v2: Double): Double = {
       // we just use the behavior of math.pow, so expressions like math.pow(0, 0)
       // or math.pow(Double.PositiveInfinity, 0) will return 1, not NaN (or an arithmetic exception)
@@ -629,16 +617,12 @@ object MathExpr {
 
     def name: String = "gt"
 
-    def labelFmt: String = "(%s > %s)"
-
     def apply(v1: Double, v2: Double): Double = if (v1 > v2) 1.0 else 0.0
   }
 
   case class GreaterThanEqual(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
 
     def name: String = "ge"
-
-    def labelFmt: String = "(%s >= %s)"
 
     def apply(v1: Double, v2: Double): Double = if (v1 >= v2) 1.0 else 0.0
   }
@@ -647,16 +631,12 @@ object MathExpr {
 
     def name: String = "lt"
 
-    def labelFmt: String = "(%s < %s)"
-
     def apply(v1: Double, v2: Double): Double = if (v1 < v2) 1.0 else 0.0
   }
 
   case class LessThanEqual(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
 
     def name: String = "le"
-
-    def labelFmt: String = "(%s <= %s)"
 
     def apply(v1: Double, v2: Double): Double = if (v1 <= v2) 1.0 else 0.0
   }
@@ -665,16 +645,12 @@ object MathExpr {
 
     def name: String = "fadd"
 
-    def labelFmt: String = "(%s + %s)"
-
     def apply(v1: Double, v2: Double): Double = v1 + v2
   }
 
   case class FSubtract(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
 
     def name: String = "fsub"
-
-    def labelFmt: String = "(%s - %s)"
 
     def apply(v1: Double, v2: Double): Double = v1 - v2
   }
@@ -683,8 +659,6 @@ object MathExpr {
 
     def name: String = "fmul"
 
-    def labelFmt: String = "(%s * %s)"
-
     def apply(v1: Double, v2: Double): Double = v1 * v2
   }
 
@@ -692,16 +666,12 @@ object MathExpr {
 
     def name: String = "fdiv"
 
-    def labelFmt: String = "(%s / %s)"
-
     def apply(v1: Double, v2: Double): Double = v1 / v2
   }
 
   case class And(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
 
     def name: String = "and"
-
-    def labelFmt: String = "(%s AND %s)"
 
     def apply(v1: Double, v2: Double): Double = {
       if (Math.toBoolean(v1) && Math.toBoolean(v2)) 1.0 else 0.0
@@ -711,8 +681,6 @@ object MathExpr {
   case class Or(expr1: TimeSeriesExpr, expr2: TimeSeriesExpr) extends BinaryMathExpr {
 
     def name: String = "or"
-
-    def labelFmt: String = "(%s OR %s)"
 
     def apply(v1: Double, v2: Double): Double = {
       if (Math.toBoolean(v1) || Math.toBoolean(v2)) 1.0 else 0.0

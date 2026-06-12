@@ -28,7 +28,7 @@ class PerStepSuite extends FunSuite {
       case _                        => throw new IllegalArgumentException("invalid expr")
     }
     val seq = new FunctionTimeSeq(DsType.Rate, step, _ => value)
-    val input = List(LazyTimeSeries(Map("name" -> "test"), "test", seq))
+    val input = List(LazyTimeSeries(Map("name" -> "test"), Some("test"), seq))
     val context = EvalContext(0L, step * 2, step)
     expr.eval(context, input).data
   }

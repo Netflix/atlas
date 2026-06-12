@@ -324,7 +324,7 @@ class PercentilesSuite extends FunSuite {
     List("even", "odd").zip(data).foreach {
       case (m, t) =>
         assertEquals(t.tags, Map("name" -> "test", "mode" -> m, "percentile" -> " 90.0"))
-        assertEquals(t.label, f"(percentile((mode=$m),  90.0) * 1000.0)")
+        assertEquals(t.label, f"mode=$m, name=test, percentile= 90.0")
     }
   }
 

@@ -119,7 +119,7 @@ class FinalExprEvalSuite extends FunSuite {
     assertEquals(tsMsgs.size, 1)
     val (tsId, tsMsg) = tsMsgs.head.id -> tsMsgs.head.message.asInstanceOf[TimeSeriesMessage]
     assert(tsId == "a")
-    assertEquals(tsMsg.label, "(NO DATA / NO DATA)")
+    assertEquals(tsMsg.label, "name=latency")
   }
 
   test("no data line suppressed") {

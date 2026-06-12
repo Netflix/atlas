@@ -49,7 +49,9 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     sed(Strings.substitute(fmt, t.tags), t.tags)
   }
 
-  def legend(label: String, tags: Map[String, String]): String = {
+  def legend(label: => String, tags: Map[String, String]): String = {
+    // `label` is by-name so a lazily tag-derived label is not materialized when an explicit
+    // legend has been set.
     val fmt = settings.getOrElse("legend", label)
     sed(Strings.substitute(fmt, tags), tags)
   }
