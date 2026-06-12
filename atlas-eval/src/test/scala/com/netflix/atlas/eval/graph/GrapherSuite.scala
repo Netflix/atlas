@@ -304,6 +304,34 @@ class GrapherSuite extends FunSuite {
     }
   }
 
+  test("reject zero width") {
+    val uri = "/api/v1/graph?e=2012-01-01T00:00&q=1&w=0"
+    intercept[IllegalArgumentException] {
+      grapher.toGraphConfig(Uri(uri))
+    }
+  }
+
+  test("reject negative width") {
+    val uri = "/api/v1/graph?e=2012-01-01T00:00&q=1&w=-5"
+    intercept[IllegalArgumentException] {
+      grapher.toGraphConfig(Uri(uri))
+    }
+  }
+
+  test("reject zero height") {
+    val uri = "/api/v1/graph?e=2012-01-01T00:00&q=1&h=0"
+    intercept[IllegalArgumentException] {
+      grapher.toGraphConfig(Uri(uri))
+    }
+  }
+
+  test("reject negative height") {
+    val uri = "/api/v1/graph?e=2012-01-01T00:00&q=1&h=-5"
+    intercept[IllegalArgumentException] {
+      grapher.toGraphConfig(Uri(uri))
+    }
+  }
+
   imageTest("multi-Y, 5 axis per line") {
     "/api/v1/graph?e=2012-01-01T00:00&q=0,1,2,3,4&axis_per_line=1"
   }
