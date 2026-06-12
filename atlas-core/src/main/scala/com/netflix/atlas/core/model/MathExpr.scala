@@ -1087,7 +1087,9 @@ object MathExpr {
 
           val grouping = evalExpr.finalGrouping
           if (grouping.nonEmpty) {
-            builder.append(grouping.mkString(",(,", ",", ",),:by"))
+            builder.append(",(,")
+            Interpreter.append(builder, grouping*)
+            builder.append(",),:by")
           }
         case t: TimeSeriesExpr if groupingMatches =>
           // The passed in expression maybe the result of a rewrite to the display expression

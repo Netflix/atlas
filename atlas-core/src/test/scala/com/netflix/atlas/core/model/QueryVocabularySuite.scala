@@ -46,6 +46,51 @@ class QueryVocabularySuite extends FunSuite {
     assert(!q.matches(Map("foo" -> "my $var. [work-in progress]")))
   }
 
+  test("eq and in handle escapes consistently") {
+    // `:` is the escape sequence for ':'. With :eq the value is unescaped
+    // to ":foo". The same value passed through a list to :in should behave the
+    // same way.
+    val eq = interpreter.execute("name,\\u003afoo,:eq").stack.head.asInstanceOf[Query.Equal]
+    assertEquals(eq.v, ":foo")
+
+    // :in with a single value optimizes to Query.Equal and should match :eq.
+    val in = interpreter.execute("name,(,\\u003afoo,),:in").stack.head.asInstanceOf[Query.Equal]
+    assertEquals(in.v, ":foo")
+  }
+
+  test("in unescapes all values, not just the single-value opt case") {
+    // With multiple values :in produces a Query.In and each value in the set
+    // should be unescaped the same way a scalar token would be.
+    val in = interpreter
+      .execute("name,(,\\u003afoo,\\u003abar,),:in")
+      .stack
+      .head
+      .asInstanceOf[Query.In]
+    assertEquals(in.vs, List(":foo", ":bar"))
+  }
+
+  test("in unescapes each value exactly once, matching eq") {
+    // Strings.unescape is not idempotent: the token used below decodes in one pass
+    // to a 6-character string that still contains a valid escape sequence, which a
+    // second pass would decode further. Asserting the once-decoded form pins the
+    // value to exactly one unescape, matching the scalar :eq path. The earlier tests
+    // use a colon escape whose decoded form is a fixed point, so they cannot detect a
+    // double unescape.
+    val eq = interpreter.execute("name,\\u005cu0041,:eq").stack.head.asInstanceOf[Query.Equal]
+    assertEquals(eq.v, "\\u0041")
+
+    val in = interpreter
+      .execute("name,(,\\u005cu0041,\\u005cu0042,),:in")
+      .stack
+      .head
+      .asInstanceOf[Query.In]
+    assertEquals(in.vs, List("\\u0041", "\\u0042"))
+  }
+
+  test("in with empty list is Query.False") {
+    assertEquals(interpreter.execute("name,(,),:in").stack.head, Query.False)
+  }
+
   test("starts, prefix and escape") {
     val exp = interpreter.execute("a,[foo],:starts").stack.head
     assertEquals(exp.asInstanceOf[Query.Regex].pattern.prefix(), "[foo]")
