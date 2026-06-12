@@ -307,6 +307,14 @@ class StringsSuite extends FunSuite {
     assertEquals(parseDuration("42y"), Duration.ofDays(42 * 365))
   }
 
+  test("parseDuration, overflow is a client error") {
+    // Amounts that fit in a Long but overflow the duration arithmetic must surface
+    // as an IllegalArgumentException (400) rather than an ArithmeticException (500).
+    intercept[IllegalArgumentException] { parseDuration("9999999999999999y") }
+    intercept[IllegalArgumentException] { parseDuration("99999999999999999d") }
+    intercept[IllegalArgumentException] { parseDuration("999999999999999999m") }
+  }
+
   test("parseDuration, at invalid unit") {
     val e = intercept[IllegalArgumentException] {
       parseDuration("42fubars")
