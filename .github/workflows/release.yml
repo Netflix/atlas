@@ -11,6 +11,8 @@ jobs:
     if: ${{ github.repository == 'Netflix/atlas' }}
     runs-on: ubuntu-latest
     environment: Publish
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
       - name: Set up JDK
@@ -34,3 +36,11 @@ jobs:
           git fetch --unshallow --tags
           cat /dev/null | project/sbt ++2.13.18 clean test +publishSigned
           cat /dev/null | project/sbt sonaRelease
+      - name: Build Standalone JAR
+        run: |
+          cat /dev/null | project/sbt ++2.13.18 atlas-standalone/packageBin
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: atlas-standalone/target/scala-2.13/atlas-standalone_2.13-*.jar
+
