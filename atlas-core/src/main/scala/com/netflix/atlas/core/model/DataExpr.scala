@@ -149,7 +149,12 @@ object DataExpr {
           val aggr = aggregator(context.start, context.end)
           filtered.foreach(aggr.update)
           val t = aggr.result()
-          TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
+          // Derive the label lazily from the tags rather than computing it eagerly. For
+          // grouped queries this aggregate is immediately re-labeled by GroupBy.eval, and
+          // for aggregates feeding further math operators the label is never read, so the
+          // toLabel cost (a large share of allocations for big queries) is avoided unless
+          // the label is actually consumed.
+          TimeSeries(tags, t.data)
         }
       val rs = consolidate(context.step, List(aggr))
       ResultSet(this, rs, context.state)
@@ -295,15 +300,24 @@ object DataExpr {
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
       val ks = Query.exactKeys(query) ++ keys
-      val groups = data
-        .filter(t => query.matches(t.tags))
-        .groupBy(t => keyString(t.tags))
-        .filter(_._1 != null)
-        .toList
-      val sorted = groups.sortWith(_._1 < _._1)
+
+      // Accumulate matching series into a mutable map keyed by group key. Using the
+      // standard library `groupBy` would build an intermediate immutable HashMap that is
+      // discarded immediately by the `toList` below; the trie node copies it generates are
+      // a significant source of allocations (and thus GC pressure) for large group by
+      // queries. Series with a null key (missing one of the grouping tags) are skipped.
+      val groups = scala.collection.mutable.HashMap.empty[String, List[TimeSeries]]
+      data.foreach { t =>
+        if (query.matches(t.tags)) {
+          val k = keyString(t.tags)
+          if (k != null) {
+            groups(k) = t :: groups.getOrElse(k, Nil)
+          }
+        }
+      }
+
+      val sorted = groups.toList.sortWith(_._1 < _._1)
       val newData = sorted.flatMap {
-        case (null, _) => Nil
-        case (_, Nil)  => List(TimeSeries.noData(query, context.step))
         case (k, ts) =>
           val tags = ts.head.tags.filter(e => ks.contains(e._1))
           af.eval(context, ts).data.map { t =>
