@@ -41,13 +41,12 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
   def exprString: String
 
   protected def consolidate(step: Long, ts: List[TimeSeries]): List[TimeSeries] = {
+    // Labels are left to derive lazily from the tags. Avoid forcing `t.label` (and the
+    // associated allocations) here: it is a significant share of allocations for large
+    // group by queries and the label is frequently not consumed. Presentation concerns
+    // such as the offset annotation are handled when the legend is rendered (see Grapher).
     ts.map { t =>
-      val offsetStr = Strings.toString(offset)
-      val label = if (offset.isZero) t.label else s"${t.label} (offset=$offsetStr)"
-      if (step == t.data.step) t.withLabel(label)
-      else {
-        TimeSeries(t.tags, label, new MapStepTimeSeq(t.data, step, cf))
-      }
+      if (step == t.data.step) t else TimeSeries(t.tags, new MapStepTimeSeq(t.data, step, cf))
     }
   }
 
