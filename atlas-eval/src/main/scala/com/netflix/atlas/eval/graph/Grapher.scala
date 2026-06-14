@@ -375,7 +375,13 @@ case class Grapher(settings: DefaultSettings) {
             // as part of the output tag map
             val legendTags = outputTags ++ stats.tags(statFormatter)
             val newT = t.withTags(outputTags)
-            newT.withLabel(s.legend(newT.label, legendTags)) -> stats
+            // Derive the default label from the original series label rather than newT.label:
+            // newT carries the injected atlas.offset tag which would otherwise leak into a
+            // lazily tag-derived label. The offset annotation for the default label is handled
+            // by StyleExpr.legend. legendTags still carries atlas.offset for explicit
+            // $(atlas.offset) substitution. The label is passed by-name so it is not
+            // materialized when an explicit legend is set.
+            newT.withLabel(s.legend(t.label, legendTags)) -> stats
           }
 
           val palette = s.palette.map(newPalette).getOrElse {

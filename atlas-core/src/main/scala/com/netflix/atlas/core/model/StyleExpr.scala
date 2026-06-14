@@ -44,15 +44,20 @@ case class StyleExpr(expr: TimeSeriesExpr, settings: Map[String, String]) extend
     }
   }
 
-  def legend(t: TimeSeries): String = {
-    val fmt = settings.getOrElse("legend", t.label)
-    sed(Strings.substitute(fmt, t.tags), t.tags)
-  }
+  def legend(t: TimeSeries): String = legend(t.label, t.tags)
 
   def legend(label: => String, tags: Map[String, String]): String = {
     // `label` is by-name so a lazily tag-derived label is not materialized when an explicit
-    // legend has been set.
-    val fmt = settings.getOrElse("legend", label)
+    // legend has been set. When there is no explicit legend, a shifted expression is annotated
+    // with its offset so the line can be distinguished. This annotation is applied here, as
+    // part of deriving the default label for presentation, rather than in the core evaluation
+    // where the label is frequently not consumed. The literal offset is used (rather than the
+    // atlas.offset tag) so it resolves even when that tag is not present, e.g. on the fetch path.
+    val fmt = settings.get("legend") match {
+      case Some(explicit)      => explicit
+      case None if offset > 0L => s"$label (offset=${Strings.toString(Duration.ofMillis(offset))})"
+      case None                => label
+    }
     sed(Strings.substitute(fmt, tags), tags)
   }
 
