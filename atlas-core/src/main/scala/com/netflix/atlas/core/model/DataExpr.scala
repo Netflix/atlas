@@ -26,6 +26,14 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
 
   def query: Query
 
+  /**
+    * Set of tag keys that are matched exactly by the query. The query is fixed for a given
+    * expression, so this is computed once and reused across the many evaluations rather than
+    * rebuilt each time. Rebuilding it per eval (via `Query.exactKeys`) was a meaningful share
+    * of allocations for large query workloads.
+    */
+  protected lazy val exactKeys: Set[String] = Query.exactKeys(query)
+
   def cf: ConsolidationFunction
 
   def offset: Duration
@@ -51,8 +59,7 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
   }
 
   protected def commonTags(tags: Map[String, String]): Map[String, String] = {
-    val keys = Query.exactKeys(query)
-    val result = tags.filter(t => keys.contains(t._1))
+    val result = tags.filter(t => exactKeys.contains(t._1))
     if (result.isEmpty) DataExpr.unknown else result
   }
 
@@ -294,12 +301,14 @@ object DataExpr {
 
     override def finalGrouping: List[String] = keys
 
+    // Keys retained in the result tags: the exact-match query keys plus the group by keys.
+    // Cached so it is not rebuilt on each evaluation.
+    private lazy val resultKeys: Set[String] = exactKeys ++ keys
+
     override def exprString: String =
       s"$af,(,${keys.map(Interpreter.escape).mkString(",")},),:by"
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
-      val ks = Query.exactKeys(query) ++ keys
-
       // Accumulate matching series into a mutable map keyed by group key. Using the
       // standard library `groupBy` would build an intermediate immutable HashMap that is
       // discarded immediately by the `toList` below; the trie node copies it generates are
@@ -318,7 +327,7 @@ object DataExpr {
       val sorted = groups.toList.sortWith(_._1 < _._1)
       val newData = sorted.flatMap {
         case (k, ts) =>
-          val tags = ts.head.tags.filter(e => ks.contains(e._1))
+          val tags = ts.head.tags.filter(e => resultKeys.contains(e._1))
           af.eval(context, ts).data.map { t =>
             TimeSeries(tags, k, t.data)
           }
