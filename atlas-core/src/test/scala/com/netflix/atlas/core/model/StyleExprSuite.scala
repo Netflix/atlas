@@ -50,6 +50,21 @@ class StyleExprSuite extends FunSuite {
     assertEquals(expr.legend("x", Map("name" -> "abc-123")), "group [abc] / [abc]")
   }
 
+  test("legend: default label annotated with offset") {
+    val expr = StyleExpr(DataExpr.Sum(Query.True).withOffset(oneWeek), Map.empty)
+    assertEquals(expr.legend("name=foo", Map.empty), "name=foo (offset=1w)")
+  }
+
+  test("legend: explicit legend is not annotated with offset") {
+    val expr = StyleExpr(DataExpr.Sum(Query.True).withOffset(oneWeek), Map("legend" -> "custom"))
+    assertEquals(expr.legend("name=foo", Map.empty), "custom")
+  }
+
+  test("legend: no offset, no annotation") {
+    val expr = StyleExpr(DataExpr.Sum(Query.True), Map.empty)
+    assertEquals(expr.legend("name=foo", Map.empty), "name=foo")
+  }
+
   test("perOffset") {
     val expr = StyleExpr(DataExpr.Sum(Query.True), Map("offset" -> "(,0h,1d,1w,)"))
     val expected = List(

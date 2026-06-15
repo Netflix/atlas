@@ -27,6 +27,14 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
 
   def query: Query
 
+  /**
+    * Set of tag keys that are matched exactly by the query. The query is fixed for a given
+    * expression, so this is computed once and reused across the many evaluations rather than
+    * rebuilt each time. Rebuilding it per eval (via `Query.exactKeys`) was a meaningful share
+    * of allocations for large query workloads.
+    */
+  protected lazy val exactKeys: Set[String] = Query.exactKeys(query)
+
   def cf: ConsolidationFunction
 
   def offset: Duration
@@ -42,19 +50,17 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
   def exprString: String
 
   protected def consolidate(step: Long, ts: List[TimeSeries]): List[TimeSeries] = {
+    // Labels are left to derive lazily from the tags. Avoid forcing `t.label` (and the
+    // associated allocations) here: it is a significant share of allocations for large
+    // group by queries and the label is frequently not consumed. Presentation concerns
+    // such as the offset annotation are handled when the legend is rendered (see Grapher).
     ts.map { t =>
-      val offsetStr = Strings.toString(offset)
-      val label = if (offset.isZero) t.label else s"${t.label} (offset=$offsetStr)"
-      if (step == t.data.step) t.withLabel(label)
-      else {
-        TimeSeries(t.tags, label, new MapStepTimeSeq(t.data, step, cf))
-      }
+      if (step == t.data.step) t else TimeSeries(t.tags, new MapStepTimeSeq(t.data, step, cf))
     }
   }
 
   protected def commonTags(tags: Map[String, String]): Map[String, String] = {
-    val keys = Query.exactKeys(query)
-    val result = tags.filter(t => keys.contains(t._1))
+    val result = tags.filter(t => exactKeys.contains(t._1))
     if (result.isEmpty) DataExpr.unknown else result
   }
 
@@ -295,6 +301,10 @@ object DataExpr {
     override def groupByKey(tags: Map[String, String]): Option[String] = Option(keyString(tags))
 
     override def finalGrouping: List[String] = keys
+
+    // Keys retained in the result tags: the exact-match query keys plus the group by keys.
+    // Cached so it is not rebuilt on each evaluation.
+    private lazy val resultKeys: Set[String] = exactKeys ++ keys
 
     override def exprString: String =
       s"$af,(,${keys.map(Interpreter.escape).mkString(",")},),:by"
