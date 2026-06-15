@@ -310,8 +310,8 @@ object DataExpr {
       s"$af,(,${keys.map(Interpreter.escape).mkString(",")},),:by"
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
-      val ks = Query.exactKeys(query) ++ keys
       // Hoisted so the predicate is not re-created for each group below.
+      val ks = resultKeys
       val keyFilter: String => Boolean = ks.contains
 
       // Accumulate matching series into a mutable map keyed by group key. Using the
