@@ -18,6 +18,7 @@ package com.netflix.atlas.core.model
 import java.time.Duration
 import com.netflix.atlas.core.model.ConsolidationFunction.SumOrAvgCf
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.util.FilteredMap
 import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Strings
@@ -309,6 +310,10 @@ object DataExpr {
       s"$af,(,${keys.map(Interpreter.escape).mkString(",")},),:by"
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
+      // Hoisted so the predicate is not re-created for each group below.
+      val ks = resultKeys
+      val keyFilter: String => Boolean = ks.contains
+
       // Accumulate matching series into a mutable map keyed by group key. Using the
       // standard library `groupBy` would build an intermediate immutable HashMap that is
       // discarded immediately by the `toList` below; the trie node copies it generates are
@@ -327,7 +332,10 @@ object DataExpr {
       val sorted = groups.toList.sortWith(_._1 < _._1)
       val newData = sorted.flatMap {
         case (k, ts) =>
-          val tags = ts.head.tags.filter(e => resultKeys.contains(e._1))
+          // Filtered view over the source tags rather than a materialized copy. The result
+          // is used as the output series tags and is only accessed a bounded number of times
+          // during the rest of the evaluation, so avoiding the copy reduces allocations.
+          val tags = new FilteredMap(ts.head.tags, keyFilter)
           af.eval(context, ts).data.map { t =>
             TimeSeries(tags, k, t.data)
           }
