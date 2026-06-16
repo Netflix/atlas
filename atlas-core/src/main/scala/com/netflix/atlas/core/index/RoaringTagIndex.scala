@@ -61,12 +61,15 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     // temporary allocations during construction.
     val keySet = new util.HashSet[String](1024)
     val valueSet = new util.HashSet[String](math.max(1024, items.length / 4))
+    // Hoisted once rather than allocating a fresh closure per item; it captures only the
+    // two stable sets, so a single instance is reused across all items.
+    val collect: (String, String) => Unit = (k, v) => {
+      keySet.add(k)
+      valueSet.add(v)
+    }
     var pos = 0
     while (pos < items.length) {
-      items(pos).foreach { (k, v) =>
-        keySet.add(k)
-        valueSet.add(v)
-      }
+      items(pos).foreach(collect)
       pos += 1
     }
     val ks = keySet.toArray(new Array[String](keySet.size()))
@@ -168,11 +171,17 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     val kidx = new RoaringValueMap(-1)
     val idx = new RoaringKeyMap(-1)
     val tagsSet = new LongHashSet(-1L, items.length)
-    var pos = 0
-    while (pos < items.length) {
-      itemIds(pos) = items(pos).id
-      var itemTagsPos = tagOffsets(pos)
-      items(pos).foreach { (k, v) =>
+
+    // Single reusable consumer for the per-item tag iteration. A `(k, v) => ...` lambda
+    // here would allocate a fresh closure for every item (plus an `IntRef` to box the
+    // mutable `itemTagsPos` it captures); with ~millions of items per rebuild that is a
+    // top allocation leaf. The stable maps are captured once and the per-item `pos` /
+    // `itemTagsPos` are set as fields before each item is iterated.
+    final class TagConsumer extends ((String, String) => Unit) {
+      var pos: Int = 0
+      var itemTagsPos: Int = 0
+
+      def apply(k: String, v: String): Unit = {
         val kp = keyMap.get(k, -1)
         var vidx = idx.get(kp)
         if (vidx == null) {
@@ -204,6 +213,15 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         val t = (kp.toLong << 32) | vp.toLong
         tagsSet.add(t)
       }
+    }
+
+    val consumer = new TagConsumer
+    var pos = 0
+    while (pos < items.length) {
+      itemIds(pos) = items(pos).id
+      consumer.pos = pos
+      consumer.itemTagsPos = tagOffsets(pos)
+      items(pos).foreach(consumer)
       pos += 1
     }
 
