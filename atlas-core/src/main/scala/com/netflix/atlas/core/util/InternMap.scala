@@ -48,9 +48,10 @@ class OpenHashInternMap[K <: AnyRef](initialCapacity: Int, clock: Clock = Clock.
   private var timestamps = new Array[Long](primeCapacity)
   private var currentSize = 0
 
+  // The raw `hashCode` has weak high-bit dispersion, so mix it with `lowbias32`
+  // before reducing into the slot range (the reduction keys off the high bits).
   private def hash(k: K): Int = {
-    val h = k.hashCode % data.length
-    if (h < 0) -h else h
+    Hash.reduce(Hash.lowbias32(k.hashCode), data.length)
   }
 
   private def resize(newCapacity: Int, keep: Long => Boolean): Unit = {
@@ -70,10 +71,9 @@ class OpenHashInternMap[K <: AnyRef](initialCapacity: Int, clock: Clock = Clock.
   }
 
   private def intern(k: K, t: Long): K = {
-    val h = hash(k)
-    var i = h
-    while (i < h + data.length) {
-      val j = i % data.length
+    var j = hash(k)
+    var n = 0
+    while (n < data.length) {
       if (data(j) == null) {
         currentSize += 1
         data(j) = k
@@ -83,7 +83,8 @@ class OpenHashInternMap[K <: AnyRef](initialCapacity: Int, clock: Clock = Clock.
         timestamps(j) = t
         return data(j)
       }
-      i += 1
+      j = if (j + 1 < data.length) j + 1 else 0
+      n += 1
     }
     throw new IllegalStateException("failed to add entry to map")
   }
@@ -119,9 +120,10 @@ class ConcurrentInternMap[K <: AnyRef](newMap: => InternMap[K], concurrencyLevel
   }
 
   private def index(key: K): Int = {
-    val k = key.hashCode
-    val i = k % concurrencyLevel
-    if (i < 0) -1 * i else i
+    // Mix and reduce rather than `hashCode % concurrencyLevel`: the latter returns a
+    // negative index for hashCode == Integer.MIN_VALUE (negation overflows), and keys off
+    // the weak low bits. `reduce` is always in `[0, concurrencyLevel)`.
+    Hash.reduce(Hash.lowbias32(key.hashCode), concurrencyLevel)
   }
 
   def intern(k: K): K = {

@@ -32,4 +32,35 @@ class HashSuite extends FunSuite {
     val actual = Strings.zeroPad(Hash.sha1bytes("42"), 40)
     assertEquals(actual, expected)
   }
+
+  test("reduce range") {
+    // Result must always be in [0, n) for any hash, including negative values
+    // and extremes such as Integer.MIN_VALUE.
+    val ns = List(1, 5, 7, 8, 97, 1597, 100000)
+    val hashes = List(0, 1, -1, Int.MaxValue, Int.MinValue, 0x7FFFFFFF, 0x80000000)
+    ns.foreach { n =>
+      hashes.foreach { h =>
+        val r = Hash.reduce(h, n)
+        assert(r >= 0 && r < n, s"reduce($h, $n) = $r out of range")
+      }
+    }
+  }
+
+  test("reduce distribution for mixed hashes") {
+    // With a good avalanche mix in front, reduce should spread keys roughly
+    // evenly across the slots and never wildly overload one bucket.
+    val n = 1597
+    val counts = new Array[Int](n)
+    val total = 100000
+    var i = 0
+    while (i < total) {
+      counts(Hash.reduce(Hash.lowbias32(i), n)) += 1
+      i += 1
+    }
+    val expected = total.toDouble / n
+    val max = counts.max
+    // No bucket should hold more than ~3x the expected load.
+    assert(max < expected * 3, s"max bucket $max vs expected $expected")
+    assertEquals(counts.sum, total)
+  }
 }
