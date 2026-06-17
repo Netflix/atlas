@@ -186,6 +186,16 @@ class StringsSuite extends FunSuite {
     assertEquals(unescape(decoded), decoded)
   }
 
+  test("escape, supplementary code point round-trips") {
+    // U+1F600 is above the BMP, so escape must emit a UTF-16 surrogate pair that unescape can
+    // decode back; a single five-hex `\uXXXXX` would leave a stray digit (escape/unescape must
+    // be exact inverses).
+    val emoji = new String(Character.toChars(0x1F600))
+    val escaped = escape(emoji, _ => true)
+    assertEquals(escaped, "\\ud83d\\ude00")
+    assertEquals(unescape(escaped), emoji)
+  }
+
   test("unescape") {
     var i = 0
     while (i < Short.MaxValue) {

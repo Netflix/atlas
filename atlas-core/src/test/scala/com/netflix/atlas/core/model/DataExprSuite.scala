@@ -41,6 +41,25 @@ class DataExprSuite extends FunSuite {
     assertEquals(dataExpr(expr.exprString), expr)
   }
 
+  test("Equal exprString round-trips a value containing a literal unicode escape (#1926)") {
+    val interpreter = Interpreter(StyleVocabulary.allWords)
+    def dataExpr(s: String): DataExpr = interpreter.execute(s).stack match {
+      case ModelDataTypes.PresentationType(t) :: Nil => t.expr.asInstanceOf[DataExpr]
+      case _                                         => throw new IllegalArgumentException(s)
+    }
+
+    // The query value literally contains backslash-u-0041 (six chars), NOT the character 'A'.
+    // escape now escapes the leading backslash, so the rendered exprString re-parses (via
+    // unescape) back to the same value instead of decoding to "A".
+    val eq = DataExpr.Sum(Query.Equal("name", "\\" + "u0041"))
+    assertEquals(dataExpr(eq.exprString), eq)
+
+    // `:in` renders its values through a different escape path (Interpreter.append over a
+    // list); a literal unicode escape in a list value must round-trip there too.
+    val in = DataExpr.Sum(Query.In("name", List("\\" + "u0041", "bar")))
+    assertEquals(dataExpr(in.exprString), in)
+  }
+
   test("allKeys") {
     val expr = DataExpr.Sum(Query.Equal("k1", "v1"))
     assertEquals(DataExpr.allKeys(expr), Set("k1"))
