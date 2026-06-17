@@ -181,6 +181,36 @@ class PublishPayloadsSuite extends FunSuite {
     assertEquals(decoded.tail, input.tail)
   }
 
+  test("decode compact batch with interning returns canonical tag maps") {
+    val input = datapointTuples(10)
+    val encoded = PublishPayloads.encodeCompactBatch(input)
+
+    def decodeInterned(): List[DatapointTuple] = {
+      val parser = com.netflix.atlas.json3.Json.newJsonParser(encoded)
+      val consumer = PublishConsumer.datapointList
+      try PublishPayloads.decodeCompactBatch(parser, consumer, intern = true)
+      finally parser.close()
+      consumer.toList
+    }
+
+    // Correctness: interned decode yields the same content as the input.
+    val first = decodeInterned()
+    assert(first.head.value.isNaN)
+    assertEquals(first.head.tags, input.head.tags)
+    assertEquals(first.tail, input.tail)
+
+    // Decoding again must hit the interner via the scratch probe and return the same canonical
+    // tag map instances rather than freshly allocated copies.
+    val second = decodeInterned()
+    first.zip(second).foreach {
+      case (a, b) =>
+        assert(
+          a.tags.asInstanceOf[AnyRef] eq b.tags.asInstanceOf[AnyRef],
+          s"tags not canonical across decodes: ${a.tags}"
+        )
+    }
+  }
+
   test("encode and decode empty compact batch tuples") {
     val input = datapointTuples(0)
     val encoded = PublishPayloads.encodeCompactBatch(input)
