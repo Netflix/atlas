@@ -135,7 +135,85 @@ class OpenHashInternMap[K <: AnyRef](initialCapacity: Int, clock: Clock = Clock.
   }
 
   def retain(f: Long => Boolean): Unit = {
+    val n = data.length
+    // Anchor the scan just after an empty slot. A backward-shift removal never moves an entry
+    // past an empty slot, so anchoring there guarantees a removal cannot push an un-scanned
+    // (possibly expired) entry behind the scan cursor into an already-visited slot.
+    var anchor = 0
+    while (anchor < n && data(anchor) != null) anchor += 1
+    if (anchor == n) {
+      // Table is completely full (cannot happen below the 3/4 load factor); fall back to a rehash.
+      resize(n, f)
+    } else {
+      var count = 0
+      var i = if (anchor + 1 < n) anchor + 1 else 0
+      while (count < n) {
+        // A removal may shift another entry (also possibly expired) into slot `i`, so drain
+        // until the slot is empty or holds a kept entry.
+        while (data(i) != null && !f(timestamps(i))) {
+          removeAt(i)
+        }
+        i = if (i + 1 < n) i + 1 else 0
+        count += 1
+      }
+    }
+  }
+
+  // Backward-shift deletion for linear probing (Knuth Algorithm R): remove the entry at `idx`
+  // and slide back any following entry that can legally fill the gap, so no probe chain is
+  // broken and no tombstone is left behind.
+  private def removeAt(idx: Int): Unit = {
+    val n = data.length
+    var gap = idx
+    var j = if (idx + 1 < n) idx + 1 else 0
+    while (data(j) != null) {
+      val h = slot(data(j).hashCode)
+      // Move the entry at `j` back into the gap unless its home slot `h` lies in `(gap, j]`
+      // (cyclically); moving it then would place it before its home and make it unreachable.
+      val homeInRange =
+        if (gap < j) h > gap && h <= j
+        else h > gap || h <= j
+      if (!homeInRange) {
+        data(gap) = data(j)
+        timestamps(gap) = timestamps(j)
+        gap = j
+      }
+      j = if (j + 1 < n) j + 1 else 0
+    }
+    data(gap) = null.asInstanceOf[K]
+    currentSize -= 1
+  }
+
+  // Reference implementation of retain via full rehash, kept for differential testing and
+  // benchmarking against the in-place [[retain]].
+  private[util] def retainByRehash(f: Long => Boolean): Unit = {
     resize(data.length, f)
+  }
+
+  /** Probe for `k`; true if present and reachable. Test/benchmark helper. */
+  private[util] def contains(k: K): Boolean = {
+    val n = data.length
+    var j = slot(k.hashCode)
+    var count = 0
+    while (count < n) {
+      val d = data(j)
+      if (d == null) return false
+      else if (d == k) return true
+      j = if (j + 1 < n) j + 1 else 0
+      count += 1
+    }
+    false
+  }
+
+  /** Snapshot of the current entries (array contents). Test helper. */
+  private[util] def snapshot: Set[K] = {
+    val builder = Set.newBuilder[K]
+    var i = 0
+    while (i < data.length) {
+      if (data(i) != null) builder += data(i)
+      i += 1
+    }
+    builder.result()
   }
 
   def size: Int = currentSize
