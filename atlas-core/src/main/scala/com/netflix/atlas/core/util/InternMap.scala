@@ -21,13 +21,44 @@ import com.netflix.spectator.api.Clock
 
 object InternMap {
 
+  /**
+    * Create a concurrent interner backed by independently locked segments.
+    *
+    * @param initialCapacity
+    *     Total expected number of entries. It is divided across the segments.
+    * @param clock
+    *     Clock used to timestamp entries for recency-based [[InternMap.retain]].
+    * @param concurrencyLevel
+    *     Number of striped-lock segments. A larger value lowers the chance that concurrent
+    *     threads contend on the same lock, so it should comfortably exceed the number of threads
+    *     that intern at once. The default is chosen to keep contention low for common thread-pool
+    *     sizes (up to roughly 64 threads); use a larger value if more threads may intern
+    *     concurrently. Additional segments cost only a few locks, not data memory, since the
+    *     capacity is split among them.
+    */
   def concurrent[K <: AnyRef](
     initialCapacity: Int,
     clock: Clock = Clock.SYSTEM,
-    concurrencyLevel: Int = 16
+    concurrencyLevel: Int = 128
   ): InternMap[K] = {
     val segmentCapacity = initialCapacity / concurrencyLevel + concurrencyLevel
     new ConcurrentInternMap[K](new OpenHashInternMap[K](segmentCapacity, clock), concurrencyLevel)
+  }
+
+  /**
+    * Probe used by [[InternMap.getOrIntern]] to look up a value with a reusable buffer and build
+    * it only on a miss. `matches` confirms a candidate by content; `create` builds the value to
+    * insert when the slot is empty. Implemented as an abstract class with a primitive `Boolean`
+    * result rather than a `Function1[K, Boolean]` so the per-probe comparison does not box the
+    * result or allocate a closure for the factory.
+    */
+  abstract class InternProbe[K <: AnyRef] {
+
+    /** True if `value` is the one being sought (compared by content against the probe buffer). */
+    def matches(value: K): Boolean
+
+    /** Build the value to insert. Called only on a miss, so a hit allocates nothing. */
+    def create(): K
   }
 }
 
@@ -49,6 +80,18 @@ trait InternMap[K <: AnyRef] extends Interner[K] {
     * is not dropped by a subsequent [[retain]].
     */
   def get(hashCode: Int, isEqual: K => Boolean, timestamp: Long): K
+
+  /**
+    * Look up the value identified by `hashCode`/`probe` and return it, interning a newly built
+    * copy (`probe.create()`) if it is not already present. Combines the probe and insert into a
+    * single chain walk, so a miss does not scan twice, and a hit allocates nothing.
+    *
+    * `hashCode` must equal the `hashCode` of the value that `probe` matches and `create()` builds.
+    * The entry is stored at the slot derived from `hashCode`, so a mismatch would place it where
+    * neither a later `get`/`getOrIntern` (by the real hash) nor `intern` would look, silently
+    * defeating deduplication.
+    */
+  def getOrIntern(hashCode: Int, probe: InternMap.InternProbe[K], timestamp: Long): K
 
   def retain(f: Long => Boolean): Unit
 
@@ -89,14 +132,40 @@ class OpenHashInternMap[K <: AnyRef](initialCapacity: Int, clock: Clock = Clock.
     var j = slot(k.hashCode)
     var n = 0
     while (n < data.length) {
-      if (data(j) == null) {
+      val d = data(j)
+      if (d == null) {
         currentSize += 1
         data(j) = k
         timestamps(j) = t
         return k
-      } else if (data(j) == k) {
+      } else if ((d eq k) || d.equals(k)) {
+        // `K <: AnyRef`, so `d.equals(k)` is a direct virtual call. Using `==` here would route
+        // through `BoxesRunTime.equals`, adding a Number/Character instanceof dispatch on every
+        // comparison. The `eq` fast-path skips `equals` when the same instance is re-interned.
         timestamps(j) = t
-        return data(j)
+        return d
+      }
+      j = if (j + 1 < data.length) j + 1 else 0
+      n += 1
+    }
+    throw new IllegalStateException("failed to add entry to map")
+  }
+
+  def getOrIntern(hashCode: Int, probe: InternMap.InternProbe[K], timestamp: Long): K = {
+    if (currentSize + 1 > 3 * data.length / 4) resize(nextCapacity(2 * data.length), _ => true)
+    var j = slot(hashCode)
+    var n = 0
+    while (n < data.length) {
+      val d = data(j)
+      if (d == null) {
+        val k = probe.create()
+        currentSize += 1
+        data(j) = k
+        timestamps(j) = timestamp
+        return k
+      } else if (probe.matches(d)) {
+        timestamps(j) = timestamp
+        return d
       }
       j = if (j + 1 < data.length) j + 1 else 0
       n += 1
@@ -198,7 +267,7 @@ class OpenHashInternMap[K <: AnyRef](initialCapacity: Int, clock: Clock = Clock.
     while (count < n) {
       val d = data(j)
       if (d == null) return false
-      else if (d == k) return true
+      else if ((d eq k) || d.equals(k)) return true
       j = if (j + 1 < n) j + 1 else 0
       count += 1
     }
@@ -262,6 +331,15 @@ class ConcurrentInternMap[K <: AnyRef](newMap: => InternMap[K], concurrencyLevel
     val i = index(hashCode)
     locks(i).lock()
     try segments(i).get(hashCode, isEqual, timestamp)
+    finally {
+      locks(i).unlock()
+    }
+  }
+
+  def getOrIntern(hashCode: Int, probe: InternMap.InternProbe[K], timestamp: Long): K = {
+    val i = index(hashCode)
+    locks(i).lock()
+    try segments(i).getOrIntern(hashCode, probe, timestamp)
     finally {
       locks(i).unlock()
     }

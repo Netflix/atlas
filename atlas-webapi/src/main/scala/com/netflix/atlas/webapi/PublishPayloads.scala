@@ -21,6 +21,7 @@ import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.Interner
+import com.netflix.atlas.core.util.InternMap
 import com.netflix.atlas.core.util.RefIntHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Streams
@@ -52,7 +53,7 @@ object PublishPayloads {
   // The grow-only `buffer` holds the flat key/value strings; the probe doubles as the equality
   // predicate for the interner lookup so a hit allocates nothing (no scratch map, no reallocation
   // when the tag count varies between datapoints).
-  private final class TagsProbe extends (Map[String, String] => Boolean) {
+  private final class TagsProbe extends InternMap.InternProbe[Map[String, String]] {
 
     private[this] var buffer = new Array[String](32)
     private[this] var length = 0
@@ -68,9 +69,15 @@ object PublishPayloads {
       buffer
     }
 
-    def apply(m: Map[String, String]): Boolean = m match {
+    def matches(m: Map[String, String]): Boolean = m match {
       case s: SortedTagMap => s.dataEquals(buffer, length)
       case _               => false
+    }
+
+    // Called only on an interner miss, so a hit allocates nothing. Copies the active prefix of
+    // the reusable buffer into a permanent, exact-size array for the interned map.
+    def create(): Map[String, String] = {
+      SortedTagMap.createUnsafe(java.util.Arrays.copyOf(buffer, length), length)
     }
   }
 
@@ -379,14 +386,9 @@ object PublishPayloads {
         j += 1
       }
       val hashCode = SortedTagMap.computeHashCode(buffer, len)
-      val existing = TaggedItem.lookupTagsShallow(hashCode, probe, wallTime)
-      val tags =
-        if (existing != null) existing
-        else
-          TaggedItem.internTagsShallow(
-            SortedTagMap.createUnsafe(java.util.Arrays.copyOf(buffer, len), len),
-            wallTime
-          )
+      // Single chain walk: returns the existing map on a hit (no allocation) or interns a copy
+      // built by `probe.create()` on a miss. Avoids the separate probe + intern double scan.
+      val tags = TaggedItem.getOrInternTagsShallow(hashCode, probe, wallTime)
       val timestamp = nextLong(parser)
       val value = getValue(parser)
       consumer.consume(id, tags, timestamp, value)
