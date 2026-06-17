@@ -128,6 +128,44 @@ class ItemIdSuite extends FunSuite {
     assert(id2.compareTo(id1) > 0)
   }
 
+  test("compareTo agrees with unsigned byte comparison incl. prefix collisions") {
+    def bytes(init: Int => Int): Array[Byte] = Array.tabulate(20)(i => init(i).toByte)
+    val base = bytes(i => i + 1)
+    // Differ only after the first 8 bytes -> exercises the fast-path fallback.
+    val late = base.clone(); late(15) = (late(15) + 1).toByte
+    // Differ within the first 8 bytes -> resolved by the fast path.
+    val early = base.clone(); early(3) = (early(3) + 1).toByte
+    // High bit set in byte 0 -> must compare as unsigned, not signed.
+    val high = base.clone(); high(0) = 0x80.toByte
+
+    val a = ItemId(base)
+    assertEquals(a.compareTo(ItemId(base.clone())), 0)
+    assert(a.compareTo(ItemId(late)) < 0)
+    assert(ItemId(late).compareTo(a) > 0)
+    assert(a.compareTo(ItemId(early)) < 0)
+    assert(a.compareTo(ItemId(high)) < 0) // unsigned: 0x01.. < 0x80..
+
+    // Variable-length ids (16 vs 20 bytes) that share an 8-byte prefix: the fast path ties and
+    // the fallback must order the shorter (a prefix of the longer) first.
+    val id16 = ItemId(Array.tabulate(16)(i => (i + 1).toByte))
+    val id20 = ItemId(Array.tabulate(20)(i => (i + 1).toByte))
+    assert(id16.compareTo(id20) < 0)
+    assert(id20.compareTo(id16) > 0)
+
+    // Cross-check the sign against java.util.Arrays.compareUnsigned over random pairs that
+    // sometimes share an 8-byte prefix.
+    val rnd = new scala.util.Random(1)
+    (0 until 5000).foreach { _ =>
+      val x = bytes(_ => rnd.nextInt(256))
+      val y = x.clone()
+      if (rnd.nextBoolean())
+        y(8 + rnd.nextInt(12)) = rnd.nextInt(256).toByte // shared 8-byte prefix
+      else y(rnd.nextInt(20)) = rnd.nextInt(256).toByte
+      val expected = math.signum(java.util.Arrays.compareUnsigned(x, y))
+      assertEquals(math.signum(ItemId(x).compareTo(ItemId(y))), expected)
+    }
+  }
+
   test("int value") {
     (0 until 100).foreach { i =>
       val id = ItemId(Hash.sha1bytes(i.toString))
