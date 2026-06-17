@@ -64,6 +64,50 @@ class InternMapSuite extends FunSuite {
     assert(b1 eq interner.intern(b2))
   }
 
+  test("open hash get does not insert on miss") {
+    val i = new OpenHashInternMap[String](16)
+    assertEquals(i.get("foo".hashCode, _ == "foo", 0L), null.asInstanceOf[String])
+    assertEquals(i.size, 0)
+  }
+
+  test("open hash get returns interned value on hit") {
+    val i = new OpenHashInternMap[String](16)
+    val s1 = new String("foo")
+    assert(i.intern(s1) eq s1)
+    assert(i.get("foo".hashCode, _ == "foo", 0L) eq s1)
+    assertEquals(i.size, 1)
+  }
+
+  test("open hash get with non-matching predicate is a miss") {
+    val i = new OpenHashInternMap[String](16)
+    i.intern(new String("foo"))
+    // Probe lands on the same slot by hash, but the predicate rejects it.
+    assertEquals(i.get("foo".hashCode, _ == "bar", 0L), null.asInstanceOf[String])
+  }
+
+  test("open hash get refreshes recency so retain keeps the entry") {
+    val c = new ManualClock()
+    val interner = new OpenHashInternMap[String](16, c)
+    val f1 = new String("foo")
+    interner.intern(f1) // interned at time 0
+
+    // Access only via get with a later timestamp; recency should advance.
+    assert(interner.get("foo".hashCode, _ == "foo", 42L) eq f1)
+
+    // retain dropping anything older than 21 must keep the get-refreshed entry.
+    interner.retain(_ > 21L)
+    assert(interner.get("foo".hashCode, _ == "foo", 42L) eq f1)
+  }
+
+  test("concurrent get probes without inserting") {
+    val i = InternMap.concurrent[String](16)
+    assertEquals(i.get("foo".hashCode, _ == "foo", 0L), null.asInstanceOf[String])
+    assertEquals(i.size, 0)
+    val s1 = new String("foo")
+    assert(i.intern(s1) eq s1)
+    assert(i.get("foo".hashCode, _ == "foo", 0L) eq s1)
+  }
+
   test("concurrent") {
     val i = InternMap.concurrent[String](2)
     val s1 = new String("foo")

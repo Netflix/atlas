@@ -162,21 +162,24 @@ final class SortedTagMap private (private val data: Array[String])
     * objects as well as tuples during iteration.
     */
   private[util] def computeHashCode: Int = {
-    var a, b = 0
-    var c = 1
-    var i = 0
-    while (i < data.length) {
-      val h = data(i).hashCode
-      a += h
-      b ^= h
-      if (h != 0) c *= h
-      i += 1
-    }
-    var h = 0x3C074A61
-    h = scala.util.hashing.MurmurHash3.mix(h, a)
-    h = scala.util.hashing.MurmurHash3.mix(h, b)
-    h = scala.util.hashing.MurmurHash3.mixLast(h, c)
-    scala.util.hashing.MurmurHash3.finalizeHash(h, data.length)
+    SortedTagMap.computeHashCode(data, data.length)
+  }
+
+  /**
+    * True if this map's backing array equals the first `length` entries of `other`. Lets a caller
+    * probe an interner with a reusable buffer (see [[SortedTagMap.computeHashCode]]) and confirm a
+    * candidate without constructing a map. `length` must be the `2 * numTags` flat-pair length.
+    */
+  def dataEquals(other: Array[String], length: Int): Boolean = {
+    data.length == length &&
+    java.util.Arrays.equals(
+      data.asInstanceOf[Array[AnyRef]],
+      0,
+      length,
+      other.asInstanceOf[Array[AnyRef]],
+      0,
+      length
+    )
   }
 
   /**
@@ -319,6 +322,30 @@ object SortedTagMap {
       new SortedTagMap(java.util.Arrays.copyOf(data, length))
     else
       new SortedTagMap(data)
+  }
+
+  /**
+    * Compute the hash code that a `SortedTagMap` built from the first `length` entries of `data`
+    * would have. Lets a caller probe an interner using a reusable buffer (paired with
+    * [[SortedTagMap.dataEquals]]) without constructing a map. Must stay consistent with the
+    * instance `computeHashCode`.
+    */
+  def computeHashCode(data: Array[String], length: Int): Int = {
+    var a, b = 0
+    var c = 1
+    var i = 0
+    while (i < length) {
+      val h = data(i).hashCode
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+      i += 1
+    }
+    var h = 0x3C074A61
+    h = scala.util.hashing.MurmurHash3.mix(h, a)
+    h = scala.util.hashing.MurmurHash3.mix(h, b)
+    h = scala.util.hashing.MurmurHash3.mixLast(h, c)
+    scala.util.hashing.MurmurHash3.finalizeHash(h, length)
   }
 
   /**
