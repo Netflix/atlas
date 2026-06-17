@@ -169,19 +169,12 @@ class InternMapSuite extends FunSuite {
   test("backward-shift keeps a forced collision chain reachable") {
     // All keys hash to the same home slot, forming one long probe chain; removing interior
     // entries must leave the rest reachable (the case naive in-place removal would orphan).
-    final class FixedHash(val v: Int) {
-      override def hashCode(): Int = 0
-      override def equals(o: Any): Boolean = o match {
-        case f: FixedHash => f.v == v
-        case _            => false
-      }
-    }
     val c = new ManualClock()
-    val m = new OpenHashInternMap[FixedHash](8, c)
+    val m = new OpenHashInternMap[FixedHashKey](8, c)
     val keys = (0 until 10).map { v =>
       // Even v older (will be dropped), odd v newer (kept).
       c.setWallTime(if (v % 2 == 0) 1L else 100L)
-      val k = new FixedHash(v)
+      val k = new FixedHashKey(v, 0)
       m.intern(k)
       k
     }
@@ -194,15 +187,8 @@ class InternMapSuite extends FunSuite {
   }
 
   test("backward-shift handles a collision chain that wraps the table end") {
-    final class FixedHash(val v: Int, h: Int) {
-      override def hashCode(): Int = h
-      override def equals(o: Any): Boolean = o match {
-        case f: FixedHash => f.v == v
-        case _            => false
-      }
-    }
     val c = new ManualClock()
-    val m = new OpenHashInternMap[FixedHash](8, c)
+    val m = new OpenHashInternMap[FixedHashKey](8, c)
     val len = m.capacity
     // Pick a hashCode whose home slot is the last slot, so a collision chain wraps to slot 0.
     var hc = 0
@@ -211,7 +197,7 @@ class InternMapSuite extends FunSuite {
     // removal backward-shifts the wrapped tail, exercising the gap > j (wrapped) range check.
     val keys = (0 until 4).map { v =>
       c.setWallTime(if (v == 0) 1L else 100L)
-      val k = new FixedHash(v, hc)
+      val k = new FixedHashKey(v, hc)
       m.intern(k)
       k
     }
@@ -263,5 +249,17 @@ class InternMapSuite extends FunSuite {
     assert(f1 ne interner.intern(f2))
     assert(f2 eq interner.intern(f2))
     assert(b1 eq interner.intern(b2))
+  }
+}
+
+// Top-level (not a local class, so Scala 3 can check the type test in `equals`) key with a
+// caller-supplied hashCode, used to force collision chains in the retain tests.
+private final class FixedHashKey(val v: Int, h: Int) {
+
+  override def hashCode(): Int = h
+
+  override def equals(o: Any): Boolean = o match {
+    case f: FixedHashKey => f.v == v
+    case _               => false
   }
 }
