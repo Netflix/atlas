@@ -167,7 +167,7 @@ final class SortedTagMap private (private val data: Array[String])
 
   /**
     * True if this map's backing array equals the first `length` entries of `other`. Lets a caller
-    * probe an interner with a reusable buffer (see [[SortedTagMap.computeHashCode]]) and confirm a
+    * probe an interner with a reusable buffer (see `SortedTagMap.computeHashCode`) and confirm a
     * candidate without constructing a map. `length` must be the `2 * numTags` flat-pair length.
     */
   def dataEquals(other: Array[String], length: Int): Boolean = {

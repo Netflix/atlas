@@ -86,7 +86,7 @@ object TaggedItem {
 
   /**
     * Probe for an already-interned tag map without inserting. `hashCode` must equal the hash of
-    * the sought map (see [[SortedTagMap.computeHashCode]]) and `isEqual` confirms the candidate,
+    * the sought map (see `SortedTagMap.computeHashCode`) and `isEqual` confirms the candidate,
     * so a caller can probe with a reusable buffer and allocate a permanent copy only on a miss.
     * Returns the interned map or `null`; a hit refreshes recency with `timestamp`.
     */
