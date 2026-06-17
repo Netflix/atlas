@@ -34,8 +34,8 @@ object TaggedItem {
 
   /**
     * Current wall time from the interner clock. Code processing a batch can read this once and
-    * pass it to the timestamped `internId`/`internTagsShallow`/`lookupTagsShallow` variants to
-    * avoid a clock read per datapoint.
+    * pass it to the timestamped `internId`/`getOrInternTagsShallow` variants to avoid a clock read
+    * per datapoint.
     */
   def currentWallTime: Long = clock.wallTime
 
@@ -79,23 +79,19 @@ object TaggedItem {
     tagsInterner.intern(tags)
   }
 
-  /** Intern tags using an explicit batch timestamp rather than a per-call clock read. */
-  def internTagsShallow(tags: Map[String, String], timestamp: Long): Map[String, String] = {
-    tagsInterner.intern(tags, timestamp)
-  }
-
   /**
-    * Probe for an already-interned tag map without inserting. `hashCode` must equal the hash of
-    * the sought map (see `SortedTagMap.computeHashCode`) and `isEqual` confirms the candidate,
-    * so a caller can probe with a reusable buffer and allocate a permanent copy only on a miss.
-    * Returns the interned map or `null`; a hit refreshes recency with `timestamp`.
+    * Look up an interned tag map by `hashCode`/`probe`, interning a freshly built copy
+    * (`probe.create()`) only on a miss. Combines the probe and intern into a single chain walk so
+    * a miss does not scan the chain twice, and a hit allocates nothing. `hashCode` must equal the
+    * hash of the map `probe` matches and creates (see `SortedTagMap.computeHashCode`); otherwise
+    * the entry is stored where later lookups will not find it.
     */
-  def lookupTagsShallow(
+  def getOrInternTagsShallow(
     hashCode: Int,
-    isEqual: Map[String, String] => Boolean,
+    probe: InternMap.InternProbe[Map[String, String]],
     timestamp: Long
   ): Map[String, String] = {
-    tagsInterner.get(hashCode, isEqual, timestamp)
+    tagsInterner.getOrIntern(hashCode, probe, timestamp)
   }
 
   def retain(keep: Long => Boolean): Unit = {

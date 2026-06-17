@@ -30,6 +30,114 @@ class InternMapSuite extends FunSuite {
     assertEquals(i.capacity, 3)
   }
 
+  // Probe for getOrIntern over String keys: matches by content, builds a fresh String on a miss,
+  // and counts how many times create was invoked so tests can assert no allocation on a hit.
+  private class StringProbe(target: String) extends InternMap.InternProbe[String] {
+
+    var created = 0
+    def matches(v: String): Boolean = v == target
+    def create(): String = { created += 1; new String(target) }
+  }
+
+  // Probe over FixedHashKey so a test can force two keys onto the same home slot (equal hashCode,
+  // unequal value) and exercise the collision-chain walk.
+  private class FixedHashProbe(target: FixedHashKey) extends InternMap.InternProbe[FixedHashKey] {
+
+    var created = 0
+    def matches(v: FixedHashKey): Boolean = v == target
+    def create(): FixedHashKey = { created += 1; target }
+  }
+
+  test("open hash getOrIntern: insert on miss, reuse on hit") {
+    val i = new OpenHashInternMap[String](16)
+    val p1 = new StringProbe("foo")
+    val a = i.getOrIntern("foo".hashCode, p1, 0L)
+    assertEquals(a, "foo")
+    assertEquals(p1.created, 1)
+    assertEquals(i.size, 1)
+
+    val p2 = new StringProbe("foo")
+    val b = i.getOrIntern("foo".hashCode, p2, 0L)
+    assert(b eq a) // returns the existing instance
+    assertEquals(p2.created, 0) // did not build a new value on a hit
+    assertEquals(i.size, 1)
+  }
+
+  test("open hash getOrIntern refreshes recency for retain") {
+    val c = new ManualClock()
+    val i = new OpenHashInternMap[String](16, c)
+    val first = i.getOrIntern("foo".hashCode, new StringProbe("foo"), 10L)
+    // Access via getOrIntern with a later timestamp; recency should advance to 42.
+    assert(i.getOrIntern("foo".hashCode, new StringProbe("foo"), 42L) eq first)
+    i.retain(_ > 21L) // would drop the t=10 entry, but recency was refreshed to 42
+    assert(i.getOrIntern("foo".hashCode, new StringProbe("foo"), 42L) eq first)
+    assertEquals(i.size, 1)
+  }
+
+  test("concurrent getOrIntern: insert on miss, reuse on hit") {
+    val i = InternMap.concurrent[String](16)
+    val a = i.getOrIntern("foo".hashCode, new StringProbe("foo"), 0L)
+    val p = new StringProbe("foo")
+    val b = i.getOrIntern("foo".hashCode, p, 0L)
+    assert(a eq b)
+    assertEquals(p.created, 0)
+    assertEquals(i.size, 1)
+  }
+
+  test("open hash getOrIntern walks a collision chain and inserts past non-matching entries") {
+    val m = new OpenHashInternMap[FixedHashKey](16)
+    // Same hashCode (same home slot) but unequal: `b` must be inserted past `a`, and both stay
+    // reachable. This is the probe.matches(d) == false branch the real TagsProbe relies on.
+    val a = new FixedHashKey(1, 42)
+    val b = new FixedHashKey(2, 42)
+    val pa = new FixedHashProbe(a)
+    assert(m.getOrIntern(42, pa, 0L) eq a)
+    assertEquals(pa.created, 1)
+    val pb = new FixedHashProbe(b)
+    assert(m.getOrIntern(42, pb, 0L) eq b) // collided with `a`, walked, inserted at next slot
+    assertEquals(pb.created, 1)
+    assertEquals(m.size, 2)
+    // Both still found on a hit, without building anything new.
+    val pa2 = new FixedHashProbe(a)
+    assert(m.getOrIntern(42, pa2, 0L) eq a)
+    assertEquals(pa2.created, 0)
+    val pb2 = new FixedHashProbe(b)
+    assert(m.getOrIntern(42, pb2, 0L) eq b)
+    assertEquals(pb2.created, 0)
+  }
+
+  test("getOrIntern dedups against values inserted via intern, and vice versa") {
+    // Production feeds one interner through both intern (internTagsShallow) and getOrIntern
+    // (getOrInternTagsShallow), plus internEntry on retain/resize, so the two paths must agree.
+    val m = new OpenHashInternMap[String](16)
+    val foo = new String("foo")
+    assert(m.intern(foo, 0L) eq foo) // inserted via intern
+    val p = new StringProbe("foo")
+    assert(m.getOrIntern("foo".hashCode, p, 0L) eq foo) // getOrIntern finds the intern'd instance
+    assertEquals(p.created, 0)
+
+    val bar = m.getOrIntern("bar".hashCode, new StringProbe("bar"), 0L) // inserted via getOrIntern
+    assert(m.intern(new String("bar"), 0L) eq bar) // intern finds the getOrIntern'd instance
+    assertEquals(m.size, 2)
+  }
+
+  test("open hash getOrIntern inserts through a resize and keeps all entries findable") {
+    val m = new OpenHashInternMap[String](4)
+    val n = 1000
+    (0 until n).foreach { i =>
+      val p = new StringProbe(i.toString)
+      assertEquals(m.getOrIntern(i.toString.hashCode, p, 0L), i.toString)
+      assertEquals(p.created, 1) // all distinct, so each is built and inserted
+    }
+    assertEquals(m.size, n)
+    // After the resizes, every entry is still found on a hit with no new builds.
+    (0 until n).foreach { i =>
+      val p = new StringProbe(i.toString)
+      assertEquals(m.getOrIntern(i.toString.hashCode, p, 0L), i.toString)
+      assertEquals(p.created, 0)
+    }
+  }
+
   test("open hash resize") {
     val interner = new OpenHashInternMap[String](2)
     (1 until 10000).foreach { i =>
