@@ -96,6 +96,9 @@ trait InternMap[K <: AnyRef] extends Interner[K] {
   def retain(f: Long => Boolean): Unit
 
   def size: Int
+
+  /** (average, max) linear-probe distance from the home slot. Exposed for the distribution test. */
+  private[util] def probeStats: (Double, Int)
 }
 
 class OpenHashInternMap[K <: AnyRef](initialCapacity: Int, clock: Clock = Clock.SYSTEM)
@@ -286,6 +289,26 @@ class OpenHashInternMap[K <: AnyRef](initialCapacity: Int, clock: Clock = Clock.
   }
 
   def size: Int = currentSize
+
+  private[util] def probeStats: (Double, Int) = {
+    var total = 0L
+    var max = 0
+    var cnt = 0
+    val len = data.length
+    var i = 0
+    while (i < len) {
+      val d = data(i)
+      if (d != null) {
+        val home = slot(d.hashCode)
+        val dist = if (i >= home) i - home else len - home + i
+        total += dist
+        if (dist > max) max = dist
+        cnt += 1
+      }
+      i += 1
+    }
+    (if (cnt == 0) 0.0 else total.toDouble / cnt, max)
+  }
 }
 
 class ConcurrentInternMap[K <: AnyRef](newMap: => InternMap[K], concurrencyLevel: Int)
@@ -303,10 +326,13 @@ class ConcurrentInternMap[K <: AnyRef](newMap: => InternMap[K], concurrencyLevel
   private def index(key: K): Int = index(key.hashCode)
 
   private def index(hashCode: Int): Int = {
-    // Mix and reduce rather than `hashCode % concurrencyLevel`: the latter returns a
-    // negative index for hashCode == Integer.MIN_VALUE (negation overflows), and keys off
-    // the weak low bits. `reduce` is always in `[0, concurrencyLevel)`.
-    Hash.reduce(Hash.lowbias32(hashCode), concurrencyLevel)
+    // Decorrelate the segment selection from the in-segment slot. The segment's `slot` reduces
+    // `lowbias32(hashCode)`, and `Hash.reduce` keys off the HIGH bits of its input. Reducing the
+    // same mixed value at both levels makes them key off overlapping high bits, so every entry in
+    // a segment lands in a tiny slot range (capacity / concurrencyLevel^2 slots) — catastrophic
+    // clustering that worsens as concurrencyLevel grows. Bit-reversing first makes this level key
+    // off the LOW bits of the mix, which the slot ignores, so the two levels are independent.
+    Hash.reduce(Integer.reverse(Hash.lowbias32(hashCode)), concurrencyLevel)
   }
 
   def intern(k: K): K = {
@@ -365,5 +391,24 @@ class ConcurrentInternMap[K <: AnyRef](newMap: => InternMap[K], concurrencyLevel
       }
     }
     totalSize
+  }
+
+  private[util] def probeStats: (Double, Int) = {
+    var weighted = 0.0
+    var cnt = 0
+    var max = 0
+    (0 until concurrencyLevel).foreach { i =>
+      locks(i).lock()
+      try {
+        val (avg, m) = segments(i).probeStats
+        val sz = segments(i).size
+        weighted += avg * sz
+        cnt += sz
+        if (m > max) max = m
+      } finally {
+        locks(i).unlock()
+      }
+    }
+    (if (cnt == 0) 0.0 else weighted / cnt, max)
   }
 }

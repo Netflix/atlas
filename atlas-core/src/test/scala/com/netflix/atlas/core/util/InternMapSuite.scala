@@ -138,6 +138,25 @@ class InternMapSuite extends FunSuite {
     }
   }
 
+  test("concurrent interner keeps probe chains short at scale") {
+    // Regression: the segment index and the in-segment slot must key off independent bits of the
+    // mixed hash. When both `Hash.reduce` the same value they share high bits, so every key in a
+    // segment collapses into a tiny slot range (~capacity / concurrencyLevel^2) and probe chains
+    // grow to O(n) even at low load factors. Here the load is well under the resize threshold, so
+    // a correct distribution keeps the average probe distance well under 1 (it is ~0.3); the bug
+    // pushed it into the hundreds. The bound of 5 is deliberate slack between the two.
+    val n = 50000
+    val interner = InternMap.concurrent[String](n * 2)
+    var i = 0
+    while (i < n) {
+      interner.intern(s"key-$i", 0L)
+      i += 1
+    }
+    assertEquals(interner.size, n)
+    val (avg, max) = interner.probeStats
+    assert(avg < 5.0, s"average probe distance $avg (max $max) too high -- interner is clustering")
+  }
+
   test("open hash resize") {
     val interner = new OpenHashInternMap[String](2)
     (1 until 10000).foreach { i =>
