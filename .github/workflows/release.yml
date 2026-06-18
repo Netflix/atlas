@@ -38,9 +38,10 @@ jobs:
           cat /dev/null | project/sbt sonaRelease
       - name: Build Standalone JAR
         run: |
-          cat /dev/null | project/sbt ++2.13.18 atlas-standalone/packageBin
+          make one-jar
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: atlas-standalone/target/scala-2.13/atlas-standalone_2.13-*.jar
+          files: target/standalone.jar
+
 
