@@ -187,7 +187,9 @@ class InterpreterSuite extends FunSuite {
     val escaped = s"$space${space}a$nl,$nl${tab}b$space,c"
     val actual = Interpreter.splitAndTrim(escaped)
     assertEquals(actual, List(s"$space${space}a$nl", s"$nl${tab}b$space", "c"))
-    assertEquals(Interpreter.toString(actual.reverse), escaped)
+    // escape/unescape are true inverses (issue #1926): the escaped separators keep each
+    // multi-character value as a single token, and unescape recovers the intended value.
+    assertEquals(actual.map(t => Interpreter.unescape(t)), List("  a\n", "\n\tb ", "c"))
   }
 
   test("splitAndTrim with escaped comma") {
@@ -195,7 +197,9 @@ class InterpreterSuite extends FunSuite {
     val escaped = s"a${comma}b${comma}c,d"
     val actual = Interpreter.splitAndTrim(escaped)
     assertEquals(actual, List(s"a${comma}b${comma}c", "d"))
-    assertEquals(Interpreter.toString(actual.reverse), escaped)
+    // escape/unescape are true inverses (issue #1926): the escaped commas keep "a,b,c" as a
+    // single token, and unescape recovers the intended value.
+    assertEquals(actual.map(t => Interpreter.unescape(t)), List("a,b,c", "d"))
   }
 
   test("splitAndTrim with comments") {
@@ -268,6 +272,40 @@ class InterpreterSuite extends FunSuite {
     val escaped = Interpreter.escape(input)
     assertEquals(escaped, "a\\u002f*b")
     assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: value containing a literal unicode escape round-trips (#1926)") {
+    // The value literally contains backslash-u-0041 (six chars), NOT the character 'A'.
+    // (Built via concatenation so the Scala source itself does not contain a \\uXXXX sequence.)
+    // escape must escape the backslash that begins the \\uXXXX run so unescape does not decode
+    // it back to 'A'; escape and unescape are true inverses.
+    val input = "\\" + "u0041"
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "\\" + "u005cu0041")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: backslash not beginning a unicode escape stays readable (#1926)") {
+    // A regex-style backslash (\\d) must not be escaped: only a backslash that begins a
+    // \\uXXXX run needs escaping for the round-trip, so common expressions stay readable.
+    val input = "\\" + "d+"
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, input)
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: incomplete or non-hex unicode escape stays literal (#1926)") {
+    // A backslash followed by `u` but not a full four-hex run is not something unescape would
+    // decode, so escape must leave it untouched and the value round-trips unchanged. This locks
+    // the beginsUnicodeEscape guard, including the sign-prefixed forms that Integer.parseInt
+    // would otherwise accept (`\\u-fff` used to throw on unescape), keeping the two exact
+    // inverses.
+    val cases = List("\\" + "u041", "\\" + "u041x", "\\" + "u+fff", "\\" + "u-fff")
+    cases.foreach { input =>
+      val escaped = Interpreter.escape(input)
+      assertEquals(escaped, input)
+      assertEquals(Interpreter.unescape(escaped), input)
+    }
   }
 
   //

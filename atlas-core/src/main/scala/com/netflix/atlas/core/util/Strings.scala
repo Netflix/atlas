@@ -166,7 +166,7 @@ object Strings {
     while (i < length) {
       val cp = input.codePointAt(i)
       val len = Character.charCount(cp)
-      if (isSpecial(cp))
+      if (isSpecial(cp) || (cp == '\\' && beginsUnicodeEscape(input, i)))
         escapeCodePoint(cp, builder)
       else
         builder.appendCodePoint(cp)
@@ -174,9 +174,36 @@ object Strings {
     }
   }
 
+  /**
+    * Check if the backslash at position `i` begins a `\uXXXX` sequence that `unescape` would
+    * decode. Such a backslash must itself be escaped so that `escape` is a true inverse of
+    * `unescape` (otherwise a value literally containing `\uXXXX` text would be decoded on the
+    * round-trip). Mirrors the decode condition in `unescape`; other backslashes (e.g. the `\d`
+    * in a regex) are left untouched for readability.
+    */
+  private def beginsUnicodeEscape(input: String, i: Int): Boolean = {
+    input.length - i > 5 && input.charAt(i + 1) == 'u' &&
+    isHexDigit(input.charAt(i + 2)) && isHexDigit(input.charAt(i + 3)) &&
+    isHexDigit(input.charAt(i + 4)) && isHexDigit(input.charAt(i + 5))
+  }
+
+  private def isHexDigit(c: Char): Boolean = {
+    (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+  }
+
   private def escapeCodePoint(cp: Int, builder: java.lang.StringBuilder): Unit = {
-    builder.append("\\u")
-    builder.append(zeroPad(cp, 4))
+    if (Character.isBmpCodePoint(cp)) {
+      builder.append("\\u")
+      builder.append(zeroPad(cp, 4))
+    } else {
+      // Supplementary code points do not fit in four hex digits. Emit a UTF-16 surrogate
+      // pair so that `unescape` (which decodes each `\uXXXX` to a char and recombines the
+      // surrogates) stays an exact inverse; a single `\uXXXXX` would leave a stray digit.
+      builder.append("\\u")
+      builder.append(zeroPad(Character.highSurrogate(cp).toInt, 4))
+      builder.append("\\u")
+      builder.append(zeroPad(Character.lowSurrogate(cp).toInt, 4))
+    }
   }
 
   /**
@@ -195,14 +222,13 @@ object Strings {
         if (length - i <= 5) {
           builder.append(input.substring(i))
           i = length
-        } else if (input.charAt(i + 1) == 'u') {
-          try {
-            val cp = Integer.parseInt(input.substring(i + 2, i + 6), 16)
-            builder.appendCodePoint(cp)
-            i += 5
-          } catch {
-            case _: NumberFormatException => builder.append(c)
-          }
+        } else if (beginsUnicodeEscape(input, i)) {
+          // `beginsUnicodeEscape` guarantees four hex digits, so the parse always yields a
+          // value in [0, 0xFFFF] and cannot throw. Using the same predicate that `escape`
+          // uses to decide what to escape keeps the two exact inverses (issue #1926).
+          val cp = Integer.parseInt(input.substring(i + 2, i + 6), 16)
+          builder.appendCodePoint(cp)
+          i += 5
         } else {
           // Some other escape, copy into buffer and move on
           builder.append(c)
