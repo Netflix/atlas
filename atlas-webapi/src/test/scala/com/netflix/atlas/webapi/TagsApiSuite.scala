@@ -106,6 +106,14 @@ class TagsApiSuite extends MUnitRouteSuite {
     assertEquals(response.status, StatusCodes.BadRequest)
   }
 
+  testGet("/api/v1/tags?limit=-1") {
+    assertEquals(response.status, StatusCodes.BadRequest)
+  }
+
+  testGet("/api/v1/tags?limit=0") {
+    assertEquals(response.status, StatusCodes.BadRequest)
+  }
+
   testGet("/api/v1/tags?verbose=1") {
     assertEquals(responseAs[String], "[]")
   }
