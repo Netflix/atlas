@@ -203,7 +203,7 @@ object RequestHandler extends StrictLogging {
     // Determine most appropriate status code to use based on the exception type
     t match {
       case e @ (_: IllegalArgumentException | _: IllegalStateException | _: JacksonException |
-          _: DateTimeException) =>
+          _: DateTimeException | _: ArithmeticException) =>
         DiagnosticMessage.error(StatusCodes.BadRequest, e)
       case e: NoSuchElementException =>
         DiagnosticMessage.error(StatusCodes.NotFound, e)
