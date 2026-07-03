@@ -90,6 +90,35 @@ object PekkoHttpClient {
   }
 
   /**
+    * Create a new client instance that uses the provided connection context by default for its
+    * requests. A per-call `ClientConfig.connectionContext` passed to `superPool` still takes
+    * precedence over this default. This can be used to make mutual TLS (mTLS) calls. The context
+    * is typically built from an `SSLContext` configured with the client certificate and trust
+    * store, e.g.:
+    *
+    * {{{
+    * val connectionContext = ConnectionContext.httpsClient(sslContext)
+    * PekkoHttpClient.create("myapp", system, connectionContext)
+    * }}}
+    *
+    * @param name
+    *     Name to use for access logging and metrics.
+    * @param system
+    *     Actor system to use for processing the requests.
+    * @param connectionContext
+    *     Connection context used to establish the client connections.
+    * @return
+    *     New client instance.
+    */
+  def create(
+    name: String,
+    system: ActorSystem,
+    connectionContext: HttpsConnectionContext
+  ): PekkoHttpClient = {
+    new HttpClientImpl(name, Some(connectionContext))(system)
+  }
+
+  /**
     * Create a client instance that will return a fixed response for every request. Mainly
     * used for testing.
     */
@@ -153,14 +182,18 @@ object PekkoHttpClient {
   private def isConnectException(t: Throwable): Boolean = t.isInstanceOf[ConnectException]
 
   /** Default implementation based on Pekko `Http()`. */
-  private[pekko] class HttpClientImpl(name: String)(implicit val system: ActorSystem)
+  private[pekko] class HttpClientImpl(
+    name: String,
+    defaultConnectionContext: Option[HttpsConnectionContext] = None
+  )(implicit val system: ActorSystem)
       extends PekkoHttpClient {
 
     private implicit val ec: ExecutionContext = system.dispatcher
     private val http = Http()
 
     protected def doSingleRequest(request: HttpRequest): Future[HttpResponse] = {
-      http.singleRequest(request)
+      val connectionContext = defaultConnectionContext.getOrElse(http.defaultClientHttpsContext)
+      http.singleRequest(request, connectionContext)
     }
 
     override def singleRequest(request: HttpRequest): Future[HttpResponse] = {
@@ -178,7 +211,9 @@ object PekkoHttpClient {
     override def superPool[C](
       config: ClientConfig
     ): Flow[(HttpRequest, C), (Try[HttpResponse], C), NotUsed] = {
-      val connectionContext = config.connectionContext.getOrElse(http.defaultClientHttpsContext)
+      val connectionContext = config.connectionContext
+        .orElse(defaultConnectionContext)
+        .getOrElse(http.defaultClientHttpsContext)
       val settings = config.settings.getOrElse(ConnectionPoolSettings(system))
 
       // All retries will be handled in this flow, disable in the pekko pool
