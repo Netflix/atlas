@@ -82,6 +82,21 @@ class StepSuite extends FunSuite {
     assertEquals(days(1), oneHourStep.compute(60000, 430, s.toEpochMilli, e.toEpochMilli))
   }
 
+  test("compute: window smaller than step does not yield a zero step") {
+    // Regression: a window narrower than the (rounded) primary step makes `datapoints` round
+    // to 0, which previously produced a zero step size that was later used as a divisor.
+    assert(oneHourStep.compute(days(1), 400, 0L, minutes(60)) > 0)
+  }
+
+  test("compute: always returns a positive step") {
+    val primaries = List(1000L, minutes(1), minutes(60), days(1))
+    val widths = List(1, 10, 400, 1500)
+    val windows = List(0L, 1L, minutes(60), days(1), days(400))
+    for (p <- primaries; w <- widths; win <- windows) {
+      assert(oneHourStep.compute(p, w, 0L, win) > 0, s"compute($p, $w, 0, $win) was not positive")
+    }
+  }
+
   test("roundToStepBoundary: 2ms step") {
     assertEquals(Step.roundToStepBoundary(0L, 2L), 0L)
     assertEquals(Step.roundToStepBoundary(1L, 2L), 2L)

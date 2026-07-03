@@ -41,7 +41,10 @@ class Step private (allowedStepSizesForBlock: List[Long]) {
     */
   def compute(primary: Long, width: Int, start: Long, end: Long): Long = {
     val datapoints = (end - start) / primary
-    val minStep = datapointsPerPixel(datapoints, width) * primary
+    // Ensure at least one datapoint per pixel so the resulting step can never round down to
+    // zero. When the window is smaller than the primary step `datapoints` is 0, which would
+    // otherwise make `minStep` 0 and yield a zero step size (later used as a divisor).
+    val minStep = math.max(1L, datapointsPerPixel(datapoints, width)) * primary
     round(primary, minStep)
   }
 }
