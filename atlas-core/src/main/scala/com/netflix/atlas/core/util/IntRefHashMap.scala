@@ -72,14 +72,14 @@ class IntRefHashMap[T <: AnyRef](noData: Int, capacity: Int = 10) {
   }
 
   private def hash(k: Int, length: Int): Int = {
-    Hash.absOrZero(Hash.lowbias32(k)) % length
+    Hash.reduce(Hash.lowbias32(k), length)
   }
 
   private def put(ks: Array[Int], vs: Array[T], k: Int, v: T): Boolean = {
     var pos = hash(k, ks.length)
     var posV = ks(pos)
     while (posV != noData && posV != k) {
-      pos = (pos + 1) % ks.length
+      pos = if (pos + 1 < ks.length) pos + 1 else 0
       posV = ks(pos)
     }
     ks(pos) = k
@@ -110,7 +110,7 @@ class IntRefHashMap[T <: AnyRef](noData: Int, capacity: Int = 10) {
       else if (prev == k)
         return values(pos)
       else
-        pos = (pos + 1) % keys.length
+        pos = if (pos + 1 < keys.length) pos + 1 else 0
     }
     null.asInstanceOf[T]
   }

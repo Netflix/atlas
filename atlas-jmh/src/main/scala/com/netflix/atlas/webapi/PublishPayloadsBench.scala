@@ -65,8 +65,12 @@ class PublishPayloadsBench {
   )
 
   private val datapoints = {
+    // Vary the tag count per datapoint (9..14 tags) so the decode sees a mix of sizes rather than
+    // a constant width, which is what stresses the reusable scratch buffer in the intern path.
+    val base = tagMap.toList
     (0 until 10_000).toList.map { i =>
-      val tags = SortedTagMap(tagMap + ("i" -> i.toString))
+      val n = 8 + (i % 6)
+      val tags = SortedTagMap(base.take(n).toMap + ("i" -> i.toString))
       Datapoint(tags, 1636116180000L, Math.PI).toTuple
     }
   }
@@ -95,6 +99,12 @@ class PublishPayloadsBench {
   private def decodeCompactBatch(data: Array[Byte], consumer: PublishConsumer): Unit = {
     Using.resource(Json.newSmileParser(new ByteArrayInputStream(data))) { parser =>
       PublishPayloads.decodeCompactBatch(parser, consumer)
+    }
+  }
+
+  private def decodeCompactBatchIntern(data: Array[Byte], consumer: PublishConsumer): Unit = {
+    Using.resource(Json.newSmileParser(new ByteArrayInputStream(data))) { parser =>
+      PublishPayloads.decodeCompactBatch(parser, consumer, intern = true)
     }
   }
 
@@ -146,6 +156,14 @@ class PublishPayloadsBench {
   def decodeCompactBatch(bh: Blackhole): Unit = {
     val consumer = new BlackholePublishConsumer(bh)
     decodeCompactBatch(encodedCompactBatch, consumer)
+  }
+
+  // Interning path with a high hit rate: the global tags interner is populated during warmup,
+  // so steady-state measurement iterations re-decode the same series and probe-hit the interner.
+  @Benchmark
+  def decodeCompactBatchIntern(bh: Blackhole): Unit = {
+    val consumer = new BlackholePublishConsumer(bh)
+    decodeCompactBatchIntern(encodedCompactBatch, consumer)
   }
 
   @Benchmark

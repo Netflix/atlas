@@ -525,16 +525,36 @@ object MathExpr {
       ResultSet(this, result, rs1.state ++ rs2.state)
     }
 
+    /**
+      * Index the series by their group by key for the join with the other side. A
+      * `java.util.HashMap` is used because the map does not escape this object and is only
+      * probed with `get`: it returns `null` for a missing key rather than allocating an
+      * `Option`, and it avoids building the intermediate immutable map (with `Option` keys)
+      * that `groupBy` would. That intermediate map was a large source of allocations for
+      * binary operations on grouped expressions. A null key (missing grouping tag) is
+      * permitted by `java.util.HashMap`.
+      */
+    private def indexByKey(
+      expr: TimeSeriesExpr,
+      data: List[TimeSeries]
+    ): java.util.HashMap[String, List[TimeSeries]] = {
+      val index = new java.util.HashMap[String, List[TimeSeries]]()
+      data.foreach { t =>
+        val k = expr.groupByKey(t.tags).orNull
+        index.put(k, t :: index.getOrDefault(k, Nil))
+      }
+      index
+    }
+
     /** LHS grouping keys are subset of the RHS grouping keys. */
     private def lhsSubset(rs1: ResultSet, rs2: ResultSet): List[TimeSeries] = {
-      val groupByKeyF = expr1.groupByKey _
-      val g1 = rs1.data.groupBy(t => groupByKeyF(t.tags))
+      val g1 = indexByKey(expr1, rs1.data)
       rs2.data.flatMap { t2 =>
-        val k = groupByKeyF(t2.tags)
-        g1.get(k).map {
+        g1.get(expr1.groupByKey(t2.tags).orNull) match {
+          case null => Nil
           // Normally tags are kept for the lhs, in this case we want to prefer the tags from
           // the grouped expr on the rhs
-          case t1 :: Nil => t1.binaryOp(t2, this).withTags(t2.tags)
+          case t1 :: Nil => List(t1.binaryOp(t2, this).withTags(t2.tags))
           case _         => throw new IllegalStateException("too many values for key")
         }
       }
@@ -542,12 +562,11 @@ object MathExpr {
 
     /** RHS grouping keys are subset of the LHS grouping keys. */
     private def rhsSubset(rs1: ResultSet, rs2: ResultSet): List[TimeSeries] = {
-      val groupByKeyF = expr2.groupByKey _
-      val g2 = rs2.data.groupBy(t => groupByKeyF(t.tags))
+      val g2 = indexByKey(expr2, rs2.data)
       rs1.data.flatMap { t1 =>
-        val k = groupByKeyF(t1.tags)
-        g2.get(k).map {
-          case t2 :: Nil => t1.binaryOp(t2, this)
+        g2.get(expr2.groupByKey(t1.tags).orNull) match {
+          case null      => Nil
+          case t2 :: Nil => List(t1.binaryOp(t2, this))
           case _         => throw new IllegalStateException("too many values for key")
         }
       }

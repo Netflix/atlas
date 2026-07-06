@@ -24,6 +24,7 @@ import com.netflix.spectator.ipc.IpcStatus
 import munit.FunSuite
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.ConnectionContext
 import org.apache.pekko.http.scaladsl.HttpsConnectionContext
 import org.apache.pekko.http.scaladsl.model.HttpMethods
 import org.apache.pekko.http.scaladsl.model.HttpRequest
@@ -38,6 +39,7 @@ import org.apache.pekko.stream.scaladsl.Source
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
+import javax.net.ssl.SSLContext
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -119,7 +121,14 @@ class PekkoHttpClientSuite extends FunSuite {
       .withMaxRetries(3)
       .withBaseConnectionBackoff(FiniteDuration(0, TimeUnit.MILLISECONDS))
       .withMaxConnectionBackoff(FiniteDuration(0, TimeUnit.MILLISECONDS))
-    val config = ClientConfig(settings = Some(settings))
+    flowRequest(client, request, ClientConfig(settings = Some(settings)))
+  }
+
+  private def flowRequest(
+    client: PekkoHttpClient,
+    request: HttpRequest,
+    config: ClientConfig
+  ): Try[HttpResponse] = {
     val future = Source
       .single(request)
       .map(r => r -> NotUsed)
@@ -165,6 +174,22 @@ class PekkoHttpClientSuite extends FunSuite {
     }
   }
 
+  test("superPool: uses default connection context from create") {
+    val ctx = ConnectionContext.httpsClient(SSLContext.getDefault)
+    val client = new ContextCapturingClient(system, Some(ctx))
+    flowRequest(client, HttpRequest(HttpMethods.GET, Uri("/test")))
+    assertEquals(client.lastContext, ctx)
+  }
+
+  test("superPool: config connection context overrides default") {
+    val defaultCtx = ConnectionContext.httpsClient(SSLContext.getDefault)
+    val overrideCtx = ConnectionContext.httpsClient(SSLContext.getDefault)
+    val client = new ContextCapturingClient(system, Some(defaultCtx))
+    val config = ClientConfig(connectionContext = Some(overrideCtx))
+    flowRequest(client, HttpRequest(HttpMethods.GET, Uri("/test")), config)
+    assertEquals(client.lastContext, overrideCtx)
+  }
+
   test("superPool: ipc metrics on throttled") {
     val responses = List(
       Success(HttpResponse(StatusCodes.TooManyRequests)),
@@ -184,6 +209,25 @@ class PekkoHttpClientSuite extends FunSuite {
 }
 
 object PekkoHttpClientSuite {
+
+  /** Records the connection context passed to the super pool so it can be asserted on. */
+  class ContextCapturingClient(
+    system: ActorSystem,
+    defaultContext: Option[HttpsConnectionContext]
+  ) extends PekkoHttpClient.HttpClientImpl("test", defaultContext)(system) {
+
+    @volatile var lastContext: HttpsConnectionContext = _
+
+    override protected def superPoolFlow[C](
+      connectionContext: HttpsConnectionContext,
+      settings: ConnectionPoolSettings
+    ): Flow[(HttpRequest, C), (Try[HttpResponse], C), NotUsed] = {
+      lastContext = connectionContext
+      Flow[(HttpRequest, C)].map {
+        case (_, context) => Success(HttpResponse(StatusCodes.OK)) -> context
+      }
+    }
+  }
 
   class TestHttpClient(system: ActorSystem, responses: List[Try[HttpResponse]])
       extends PekkoHttpClient.HttpClientImpl("test")(system) {

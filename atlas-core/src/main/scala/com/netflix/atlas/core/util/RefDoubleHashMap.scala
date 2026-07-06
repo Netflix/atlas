@@ -51,6 +51,12 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
     ArrayHelper.newInstance[T](PrimeFinder.nextPrime(n))
   }
 
+  // The raw `hashCode` has weak high-bit dispersion, so mix it with `lowbias32`
+  // before reducing into the slot range (the reduction keys off the high bits).
+  private def hash(k: T, length: Int): Int = {
+    Hash.reduce(Hash.lowbias32(k.hashCode()), length)
+  }
+
   private def resize(): Unit = {
     val tmpKS = newArray(keys.length * 2)
     val tmpVS = new Array[Double](tmpKS.length)
@@ -66,10 +72,10 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
   }
 
   private def put(ks: Array[T], vs: Array[Double], k: T, v: Double): Boolean = {
-    var pos = Hash.absOrZero(k.hashCode()) % ks.length
+    var pos = hash(k, ks.length)
     var posV = ks(pos)
     while (posV != null && posV != k) {
-      pos = (pos + 1) % ks.length
+      pos = if (pos + 1 < ks.length) pos + 1 else 0
       posV = ks(pos)
     }
     ks(pos) = k
@@ -93,10 +99,10 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
     */
   def putIfAbsent(k: T, v: Double): Boolean = {
     if (used >= cutoff) resize()
-    var pos = Hash.absOrZero(k.hashCode()) % keys.length
+    var pos = hash(k, keys.length)
     var posV = keys(pos)
     while (posV != null && posV != k) {
-      pos = (pos + 1) % keys.length
+      pos = if (pos + 1 < keys.length) pos + 1 else 0
       posV = keys(pos)
     }
     if (posV != null) false
@@ -113,7 +119,7 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
     * `dflt` value will be returned.
     */
   def get(k: T, dflt: Double): Double = {
-    val start = Hash.absOrZero(k.hashCode()) % keys.length
+    val start = hash(k, keys.length)
     var pos = start
     while (true) {
       val prev = keys(pos)
@@ -122,7 +128,7 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
       else if (prev.equals(k))
         return values(pos)
       else {
-        pos = (pos + 1) % keys.length
+        pos = if (pos + 1 < keys.length) pos + 1 else 0
         // If we've wrapped around to the start, the key is not present
         if (pos == start)
           return dflt
@@ -137,7 +143,7 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
     */
   def add(k: T, amount: Double): Unit = {
     if (used >= cutoff) resize()
-    var pos = Hash.absOrZero(k.hashCode()) % keys.length
+    var pos = hash(k, keys.length)
     while (true) {
       val prev = keys(pos)
       if (prev == null || prev == k) {
@@ -146,7 +152,7 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
         if (prev == null) used += 1
         return
       }
-      pos = (pos + 1) % keys.length
+      pos = if (pos + 1 < keys.length) pos + 1 else 0
     }
   }
 
@@ -156,7 +162,7 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
     */
   def max(k: T, amount: Double): Unit = {
     if (used >= cutoff) resize()
-    var pos = Hash.absOrZero(k.hashCode()) % keys.length
+    var pos = hash(k, keys.length)
     while (true) {
       val prev = keys(pos)
       if (prev == null || prev == k) {
@@ -169,7 +175,7 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
         }
         return
       }
-      pos = (pos + 1) % keys.length
+      pos = if (pos + 1 < keys.length) pos + 1 else 0
     }
   }
 
@@ -179,7 +185,7 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
     */
   def min(k: T, amount: Double): Unit = {
     if (used >= cutoff) resize()
-    var pos = Hash.absOrZero(k.hashCode()) % keys.length
+    var pos = hash(k, keys.length)
     while (true) {
       val prev = keys(pos)
       if (prev == null || prev == k) {
@@ -192,7 +198,7 @@ class RefDoubleHashMap[T <: AnyRef](capacity: Int = 10) {
         }
         return
       }
-      pos = (pos + 1) % keys.length
+      pos = if (pos + 1 < keys.length) pos + 1 else 0
     }
   }
 

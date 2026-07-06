@@ -48,6 +48,16 @@ class ExprApiSuite extends MUnitRouteSuite {
     assertEquals(response.status, StatusCodes.BadRequest)
   }
 
+  // Regex features rejected by the matcher (inline flags, back references) must surface as a
+  // client error, not a 500. `(?i)` is url-encoded as %28%3Fi%29 and `\1` as %5C1.
+  testGet("/api/v1/expr/normalize?q=a,%28%3Fi%29b,:re") {
+    assertEquals(response.status, StatusCodes.BadRequest)
+  }
+
+  testGet("/api/v1/expr/normalize?q=a,%5C1,:re") {
+    assertEquals(response.status, StatusCodes.BadRequest)
+  }
+
   testGet("/api/v1/expr?q=name,sps,:eq") {
     assertEquals(response.status, StatusCodes.OK)
     val data = Json.decode[List[ExprApiSuite.Output]](responseAs[String])

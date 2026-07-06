@@ -62,7 +62,7 @@ class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
     get {
       extractRequestContext { ctx =>
         val req = toRequest(ctx, path)
-        val limit = req.limit
+        val limit = req.actualLimit
         _ =>
           ask(dbRef, req.toDbRequest)(60.seconds).map {
             case TagListResponse(vs) if req.useText => asText(tagString(vs), offsetTag(limit, vs))
@@ -137,6 +137,8 @@ object TagsApi {
     verbose: Boolean = false,
     limit: Int = 1000
   ) {
+
+    require(limit > 0, s"limit must be positive (got $limit)")
 
     def actualLimit: Int = if (limit > ApiSettings.maxTagLimit) ApiSettings.maxTagLimit else limit
 

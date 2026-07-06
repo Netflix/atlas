@@ -37,7 +37,7 @@ class IntHashSet(noData: Int, capacity: Int = 10) {
   private def computeCutoff(n: Int): Int = math.max(3, n / 2)
 
   private def hash(k: Int, length: Int): Int = {
-    Hash.absOrZero(Hash.lowbias32(k)) % length
+    Hash.reduce(Hash.lowbias32(k), length)
   }
 
   private def newArray(n: Int): Array[Int] = {
@@ -66,7 +66,7 @@ class IntHashSet(noData: Int, capacity: Int = 10) {
     var pos = hash(v, buffer.length)
     var posV = buffer(pos)
     while (posV != noData && posV != v) {
-      pos = (pos + 1) % buffer.length
+      pos = if (pos + 1 < buffer.length) pos + 1 else 0
       posV = buffer(pos)
     }
     buffer(pos) = v

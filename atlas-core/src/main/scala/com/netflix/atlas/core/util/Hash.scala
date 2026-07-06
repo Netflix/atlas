@@ -86,9 +86,20 @@ object Hash {
     computeHashBytes("SHA1", input.getBytes("UTF-8"))
   }
 
-  // If the hash value is `Integer.MIN_VALUE`, then the absolute value will be
-  // negative. For our purposes that will get mapped to a starting position of 0.
-  private[util] def absOrZero(v: Int): Int = math.max(math.abs(v), 0)
+  /**
+    * Map a hash into the range `[0, n)` without a division. Based on Lemire's
+    * [[https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/ fast
+    * alternative to the modulo reduction]]: treats `hash` as a 32-bit fraction of the unit
+    * interval and multiplies by `n`, keeping the high 32 bits of the 64-bit product.
+    *
+    * Unlike a bitmask this works for an arbitrary (e.g. prime) `n`, so the backing tables can
+    * keep their existing prime sizing while avoiding the per-slot `idiv`. The reduction keys
+    * off the high bits of `hash`, so callers must feed it a well-mixed value (e.g. the result
+    * of [[lowbias32]]); a raw `hashCode` with weak high bits would cluster.
+    */
+  def reduce(hash: Int, n: Int): Int = {
+    ((hash & 0xFFFFFFFFL) * (n & 0xFFFFFFFFL) >>> 32).toInt
+  }
 
   private def computeHash(algorithm: String, bytes: Array[Byte]): BigInteger = {
     new BigInteger(1, computeHashBytes(algorithm, bytes))

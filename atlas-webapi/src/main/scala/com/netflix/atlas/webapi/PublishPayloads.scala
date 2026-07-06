@@ -21,6 +21,7 @@ import com.netflix.atlas.core.model.DatapointTuple
 import com.netflix.atlas.core.model.ItemId
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.util.Interner
+import com.netflix.atlas.core.util.InternMap
 import com.netflix.atlas.core.util.RefIntHashMap
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Streams
@@ -47,6 +48,49 @@ object PublishPayloads {
   // Used to store string tables used when decoding a batch. Allows the string table
   // arrays to be reused to reduce allocations.
   private final val stringArrays = new ThreadLocal[Array[String]]
+
+  // Reusable per-thread probe for building each datapoint's tag map in the compact batch decode.
+  // The grow-only `buffer` holds the flat key/value strings; the probe doubles as the equality
+  // predicate for the interner lookup so a hit allocates nothing (no scratch map, no reallocation
+  // when the tag count varies between datapoints).
+  private final class TagsProbe extends InternMap.InternProbe[Map[String, String]] {
+
+    private[this] var buffer = new Array[String](32)
+    private[this] var length = 0
+
+    /**
+      * Grow the buffer to hold at least `n` entries and mark `n` as the active prefix the probe
+      * compares against, returning the buffer for the caller to fill. Setting the length here
+      * keeps it from drifting out of sync with the buffer.
+      */
+    def prepare(n: Int): Array[String] = {
+      if (buffer.length < n) buffer = new Array[String](n)
+      length = n
+      buffer
+    }
+
+    def matches(m: Map[String, String]): Boolean = m match {
+      case s: SortedTagMap => s.dataEquals(buffer, length)
+      case _               => false
+    }
+
+    // Called only on an interner miss, so a hit allocates nothing. Copies the active prefix of
+    // the reusable buffer into a permanent, exact-size array for the interned map.
+    def create(): Map[String, String] = {
+      SortedTagMap.createUnsafe(java.util.Arrays.copyOf(buffer, length), length)
+    }
+  }
+
+  private final val tagProbes = new ThreadLocal[TagsProbe]
+
+  private def tagsProbe(): TagsProbe = {
+    var probe = tagProbes.get()
+    if (probe == null) {
+      probe = new TagsProbe
+      tagProbes.set(probe)
+    }
+    probe
+  }
 
   private def decodeTags(parser: JsonParser, commonTags: TagMap, intern: Boolean): TagMap = {
     val strInterner = Interner.forStrings
@@ -285,27 +329,68 @@ object PublishPayloads {
     }
 
     val numDatapointTuples = nextInt(parser)
-    i = 0
-    while (i < numDatapointTuples) {
-      val idRaw = ItemId(nextString(parser))
-      val id = if (intern) TaggedItem.internId(idRaw) else idRaw
+    // `intern` is fixed for the whole batch, so branch once and run a specialized loop rather
+    // than re-checking it per datapoint.
+    if (intern) decodeCompactTuplesInterned(parser, table, numDatapointTuples, consumer)
+    else decodeCompactTuplesRaw(parser, table, numDatapointTuples, consumer)
+  }
 
+  private def decodeCompactTuplesRaw(
+    parser: JsonParser,
+    table: Array[String],
+    numTuples: Int,
+    consumer: PublishConsumer
+  ): Unit = {
+    var i = 0
+    while (i < numTuples) {
+      val id = ItemId(nextString(parser))
       val numTags = nextArraySize(parser)
-      val tagsArray = new Array[String](2 * numTags)
+      val len = 2 * numTags
+      val tagsArray = new Array[String](len)
       var j = 0
       while (j < numTags) {
-        val k = table(nextInt(parser))
-        val v = table(nextInt(parser))
-        tagsArray(2 * j) = k
-        tagsArray(2 * j + 1) = v
+        tagsArray(2 * j) = table(nextInt(parser))
+        tagsArray(2 * j + 1) = table(nextInt(parser))
         j += 1
       }
-      val tagMap = SortedTagMap.createUnsafe(tagsArray, tagsArray.length)
-      val tags = if (intern) TaggedItem.internTagsShallow(tagMap) else tagMap
-
+      val tags = SortedTagMap.createUnsafe(tagsArray, len)
       val timestamp = nextLong(parser)
       val value = getValue(parser)
+      consumer.consume(id, tags, timestamp, value)
+      i += 1
+    }
+  }
 
+  private def decodeCompactTuplesInterned(
+    parser: JsonParser,
+    table: Array[String],
+    numTuples: Int,
+    consumer: PublishConsumer
+  ): Unit = {
+    // One timestamp and one reusable probe for the whole batch. For steady-state publishes the
+    // same series report repeatedly, so the probe usually hits the interner and the per-datapoint
+    // `String[]` + map allocation is avoided entirely; on a miss a permanent exact-size copy is
+    // interned.
+    val wallTime = TaggedItem.currentWallTime
+    val probe = tagsProbe()
+    var i = 0
+    while (i < numTuples) {
+      val id = TaggedItem.internId(ItemId(nextString(parser)), wallTime)
+      val numTags = nextArraySize(parser)
+      val len = 2 * numTags
+      val buffer = probe.prepare(len)
+      var j = 0
+      while (j < numTags) {
+        buffer(2 * j) = table(nextInt(parser))
+        buffer(2 * j + 1) = table(nextInt(parser))
+        j += 1
+      }
+      val hashCode = SortedTagMap.computeHashCode(buffer, len)
+      // Single chain walk: returns the existing map on a hit (no allocation) or interns a copy
+      // built by `probe.create()` on a miss. Avoids the separate probe + intern double scan.
+      val tags = TaggedItem.getOrInternTagsShallow(hashCode, probe, wallTime)
+      val timestamp = nextLong(parser)
+      val value = getValue(parser)
       consumer.consume(id, tags, timestamp, value)
       i += 1
     }

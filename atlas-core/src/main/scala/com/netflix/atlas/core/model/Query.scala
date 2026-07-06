@@ -305,7 +305,12 @@ object Query {
           val v = ts.getOrNull(k)
           v != null && check(v)
         case _ =>
-          tags.get(k).exists(check)
+          // Avoid eta-expanding `check` into a function for `exists`. getOrElse with a null
+          // default also lets map implementations that override it (e.g. immutable HashMap
+          // and the small MapN classes) skip the Option allocation from `get`, though the
+          // default implementation still allocates one.
+          val v = tags.getOrElse(k, null)
+          v != null && check(v)
       }
     }
 
@@ -319,7 +324,8 @@ object Query {
           val v = ts.getOrNull(k)
           v == null || check(v)
         case _ =>
-          tags.get(k).fold(true)(check)
+          val v = tags.getOrElse(k, null)
+          v == null || check(v)
       }
     }
   }

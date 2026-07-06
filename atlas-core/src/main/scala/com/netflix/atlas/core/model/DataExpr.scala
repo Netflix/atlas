@@ -18,6 +18,7 @@ package com.netflix.atlas.core.model
 import java.time.Duration
 import com.netflix.atlas.core.model.ConsolidationFunction.SumOrAvgCf
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.util.FilteredMap
 import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.SortedTagMap
 import com.netflix.atlas.core.util.Strings
@@ -25,6 +26,14 @@ import com.netflix.atlas.core.util.Strings
 sealed trait DataExpr extends TimeSeriesExpr with Product {
 
   def query: Query
+
+  /**
+    * Set of tag keys that are matched exactly by the query. The query is fixed for a given
+    * expression, so this is computed once and reused across the many evaluations rather than
+    * rebuilt each time. Rebuilding it per eval (via `Query.exactKeys`) was a meaningful share
+    * of allocations for large query workloads.
+    */
+  protected lazy val exactKeys: Set[String] = Query.exactKeys(query)
 
   def cf: ConsolidationFunction
 
@@ -41,19 +50,17 @@ sealed trait DataExpr extends TimeSeriesExpr with Product {
   def exprString: String
 
   protected def consolidate(step: Long, ts: List[TimeSeries]): List[TimeSeries] = {
+    // Labels are left to derive lazily from the tags. Avoid forcing `t.label` (and the
+    // associated allocations) here: it is a significant share of allocations for large
+    // group by queries and the label is frequently not consumed. Presentation concerns
+    // such as the offset annotation are handled when the legend is rendered (see Grapher).
     ts.map { t =>
-      val offsetStr = Strings.toString(offset)
-      val label = if (offset.isZero) t.label else s"${t.label} (offset=$offsetStr)"
-      if (step == t.data.step) t.withLabel(label)
-      else {
-        TimeSeries(t.tags, label, new MapStepTimeSeq(t.data, step, cf))
-      }
+      if (step == t.data.step) t else TimeSeries(t.tags, new MapStepTimeSeq(t.data, step, cf))
     }
   }
 
   protected def commonTags(tags: Map[String, String]): Map[String, String] = {
-    val keys = Query.exactKeys(query)
-    val result = tags.filter(t => keys.contains(t._1))
+    val result = tags.filter(t => exactKeys.contains(t._1))
     if (result.isEmpty) DataExpr.unknown else result
   }
 
@@ -149,7 +156,12 @@ object DataExpr {
           val aggr = aggregator(context.start, context.end)
           filtered.foreach(aggr.update)
           val t = aggr.result()
-          TimeSeries(tags, TimeSeries.toLabel(tags), t.data)
+          // Derive the label lazily from the tags rather than computing it eagerly. For
+          // grouped queries this aggregate is immediately re-labeled by GroupBy.eval, and
+          // for aggregates feeding further math operators the label is never read, so the
+          // toLabel cost (a large share of allocations for big queries) is avoided unless
+          // the label is actually consumed.
+          TimeSeries(tags, t.data)
         }
       val rs = consolidate(context.step, List(aggr))
       ResultSet(this, rs, context.state)
@@ -290,22 +302,40 @@ object DataExpr {
 
     override def finalGrouping: List[String] = keys
 
+    // Keys retained in the result tags: the exact-match query keys plus the group by keys.
+    // Cached so it is not rebuilt on each evaluation.
+    private lazy val resultKeys: Set[String] = exactKeys ++ keys
+
     override def exprString: String =
       s"$af,(,${keys.map(Interpreter.escape).mkString(",")},),:by"
 
     override def eval(context: EvalContext, data: List[TimeSeries]): ResultSet = {
-      val ks = Query.exactKeys(query) ++ keys
-      val groups = data
-        .filter(t => query.matches(t.tags))
-        .groupBy(t => keyString(t.tags))
-        .filter(_._1 != null)
-        .toList
-      val sorted = groups.sortWith(_._1 < _._1)
+      // Hoisted so the predicate is not re-created for each group below.
+      val ks = resultKeys
+      val keyFilter: String => Boolean = ks.contains
+
+      // Accumulate matching series into a mutable map keyed by group key. Using the
+      // standard library `groupBy` would build an intermediate immutable HashMap that is
+      // discarded immediately by the `toList` below; the trie node copies it generates are
+      // a significant source of allocations (and thus GC pressure) for large group by
+      // queries. Series with a null key (missing one of the grouping tags) are skipped.
+      val groups = scala.collection.mutable.HashMap.empty[String, List[TimeSeries]]
+      data.foreach { t =>
+        if (query.matches(t.tags)) {
+          val k = keyString(t.tags)
+          if (k != null) {
+            groups(k) = t :: groups.getOrElse(k, Nil)
+          }
+        }
+      }
+
+      val sorted = groups.toList.sortWith(_._1 < _._1)
       val newData = sorted.flatMap {
-        case (null, _) => Nil
-        case (_, Nil)  => List(TimeSeries.noData(query, context.step))
         case (k, ts) =>
-          val tags = ts.head.tags.filter(e => ks.contains(e._1))
+          // Filtered view over the source tags rather than a materialized copy. The result
+          // is used as the output series tags and is only accessed a bounded number of times
+          // during the rest of the evaluation, so avoiding the copy reduces allocations.
+          val tags = new FilteredMap(ts.head.tags, keyFilter)
           af.eval(context, ts).data.map { t =>
             TimeSeries(tags, k, t.data)
           }
