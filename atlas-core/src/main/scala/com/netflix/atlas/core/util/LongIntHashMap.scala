@@ -62,14 +62,14 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
   }
 
   private def hash(ks: Array[Long], k: Long): Int = {
-    Hash.absOrZero(Hash.lowbias64(k)) % ks.length
+    Hash.reduce(Hash.lowbias64(k), ks.length)
   }
 
   private def put(ks: Array[Long], vs: Array[Int], k: Long, v: Int): Boolean = {
     var pos = hash(ks, k)
     var posV = ks(pos)
     while (posV != noData && posV != k) {
-      pos = (pos + 1) % ks.length
+      pos = if (pos + 1 < ks.length) pos + 1 else 0
       posV = ks(pos)
     }
     ks(pos) = k
@@ -100,7 +100,7 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
       else if (prev == k)
         return values(pos)
       else
-        pos = (pos + 1) % keys.length
+        pos = if (pos + 1 < keys.length) pos + 1 else 0
     }
     dflt
   }
@@ -126,7 +126,7 @@ class LongIntHashMap(noData: Long, capacity: Int = 10) {
         if (prev == noData) used += 1
         return
       }
-      pos = (pos + 1) % keys.length
+      pos = if (pos + 1 < keys.length) pos + 1 else 0
     }
   }
 

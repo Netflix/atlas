@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Publish
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:

@@ -59,10 +59,10 @@ class LongHashSet(noData: Long, capacity: Int = 10) {
   }
 
   private def add(buffer: Array[Long], v: Long): Boolean = {
-    var pos = Hash.absOrZero(Hash.lowbias64(v)) % buffer.length
+    var pos = Hash.reduce(Hash.lowbias64(v), buffer.length)
     var posV = buffer(pos)
     while (posV != noData && posV != v) {
-      pos = (pos + 1) % buffer.length
+      pos = if (pos + 1 < buffer.length) pos + 1 else 0
       posV = buffer(pos)
     }
     buffer(pos) = v

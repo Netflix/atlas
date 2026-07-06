@@ -18,6 +18,7 @@ package com.netflix.atlas.core.model
 import com.netflix.atlas.core.util.InternMap
 import com.netflix.atlas.core.util.Interner
 import com.netflix.atlas.core.util.SortedTagMap
+import com.netflix.spectator.api.Clock
 
 /**
   * Helper functions for manipulating tagged items.
@@ -27,8 +28,16 @@ object TaggedItem {
   type Pair = (String, String)
 
   private val initCapacity = 1000000
-  private val idInterner = InternMap.concurrent[ItemId](initCapacity)
-  private val tagsInterner = InternMap.concurrent[Map[String, String]](initCapacity)
+  private val clock = Clock.SYSTEM
+  private val idInterner = InternMap.concurrent[ItemId](initCapacity, clock)
+  private val tagsInterner = InternMap.concurrent[Map[String, String]](initCapacity, clock)
+
+  /**
+    * Current wall time from the interner clock. Code processing a batch can read this once and
+    * pass it to the timestamped `internId`/`getOrInternTagsShallow` variants to avoid a clock read
+    * per datapoint.
+    */
+  def currentWallTime: Long = clock.wallTime
 
   /**
     * Compute an identifier for a set of tags. The id is a sha1 hash of a normalized string
@@ -52,6 +61,11 @@ object TaggedItem {
     idInterner.intern(id)
   }
 
+  /** Intern an id using an explicit batch timestamp rather than a per-call clock read. */
+  def internId(id: ItemId, timestamp: Long): ItemId = {
+    idInterner.intern(id, timestamp)
+  }
+
   def internTags(tags: Map[String, String]): Map[String, String] = {
     val strInterner = Interner.forStrings
     val iter = tags.iterator.map { t =>
@@ -63,6 +77,21 @@ object TaggedItem {
 
   def internTagsShallow(tags: Map[String, String]): Map[String, String] = {
     tagsInterner.intern(tags)
+  }
+
+  /**
+    * Look up an interned tag map by `hashCode`/`probe`, interning a freshly built copy
+    * (`probe.create()`) only on a miss. Combines the probe and intern into a single chain walk so
+    * a miss does not scan the chain twice, and a hit allocates nothing. `hashCode` must equal the
+    * hash of the map `probe` matches and creates (see `SortedTagMap.computeHashCode`); otherwise
+    * the entry is stored where later lookups will not find it.
+    */
+  def getOrInternTagsShallow(
+    hashCode: Int,
+    probe: InternMap.InternProbe[Map[String, String]],
+    timestamp: Long
+  ): Map[String, String] = {
+    tagsInterner.getOrIntern(hashCode, probe, timestamp)
   }
 
   def retain(keep: Long => Boolean): Unit = {

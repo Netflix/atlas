@@ -51,8 +51,16 @@ class ItemId private (private val data: Array[Byte]) extends Comparable[ItemId] 
     }
   }
 
+  // First 8 bytes read as a big-endian unsigned long, used as a fast pre-check in compareTo.
+  // Safe because the constructor requires at least 16 bytes.
+  private def prefix: Long = ItemId.longHandle.get(data, 0)
+
   override def compareTo(other: ItemId): Int = {
-    java.util.Arrays.compareUnsigned(data, other.data)
+    // Fast path: compare the first 8 bytes as a big-endian unsigned long, which matches
+    // lexicographic unsigned-byte order. For hash-based ids these almost always differ, so the
+    // comparison resolves without scanning the arrays; fall back to a full compare on a tie.
+    val cmp = java.lang.Long.compareUnsigned(prefix, other.prefix)
+    if (cmp != 0) cmp else java.util.Arrays.compareUnsigned(data, other.data)
   }
 
   override def toString: String = {
@@ -78,6 +86,10 @@ object ItemId {
   // Helper to access integer from byte array
   private val intHandle =
     MethodHandles.byteArrayViewVarHandle(classOf[Array[Int]], ByteOrder.BIG_ENDIAN)
+
+  // Helper to read the first 8 bytes as a big-endian long for fast comparison.
+  private val longHandle =
+    MethodHandles.byteArrayViewVarHandle(classOf[Array[Long]], ByteOrder.BIG_ENDIAN)
 
   private val hexValueForByte = (0 until 256).toArray.map { i =>
     Strings.zeroPad(i, 2)
