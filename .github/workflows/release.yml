@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: Publish
     permissions:
-      contents: write
+      contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
@@ -36,12 +36,28 @@ jobs:
           git fetch --unshallow --tags
           cat /dev/null | project/sbt ++2.13.18 clean test +publishSigned
           cat /dev/null | project/sbt sonaRelease
-      - name: Build Standalone JAR
-        run: |
-          make one-jar
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v2
-        with:
-          files: target/standalone.jar
 
+  release-asset:
+    needs: build
+    if: ${{ github.repository == 'Netflix/atlas' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 17
+          distribution: 'zulu'
+          cache: 'sbt'
+      - name: Build standalone JAR
+        run: make one-jar
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          cp target/standalone.jar "atlas-standalone-${version}.jar"
+          gh release upload "$GITHUB_REF_NAME" "atlas-standalone-${version}.jar" --clobber
 
