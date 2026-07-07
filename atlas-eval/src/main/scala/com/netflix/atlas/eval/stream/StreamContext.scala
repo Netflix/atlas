@@ -41,6 +41,7 @@ import com.netflix.atlas.pekko.StreamOps
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.typesafe.config.Config
+import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.Future
 import scala.util.Failure
@@ -52,13 +53,19 @@ private[stream] class StreamContext(
   val materializer: Materializer,
   val registry: Registry = new NoopRegistry,
   val dsLogger: DataSourceLogger = DataSourceLogger.Noop
-) {
+) extends StrictLogging {
 
   import StreamContext.*
 
   val id: String = UUID.randomUUID().toString
 
   private val config = rootConfig.getConfig("atlas.eval.stream")
+
+  // Number of messages that could not be matched to an active data source expression and
+  // were dropped. Some churn is expected while the set of data sources is being updated, but
+  // a sustained non-zero rate indicates data loss, e.g. from a producer and consumer that
+  // disagree on how an expression is rendered.
+  private val unmatchedMessages = registry.counter("atlas.eval.unmatchedMessages")
 
   private val backends = {
     import scala.jdk.CollectionConverters.*
@@ -263,8 +270,15 @@ private[stream] class StreamContext(
     * Creates a set of messages for each data source that uses a given expression.
     */
   def messagesForDataSource(expr: String, msg: JsonSupport): List[Evaluator.MessageEnvelope] = {
-    dataExprMap.get(expr).toList.flatMap { ds =>
-      ds.map(s => new Evaluator.MessageEnvelope(s.id, msg))
+    dataExprMap.get(expr) match {
+      case Some(ds) =>
+        ds.map(s => new Evaluator.MessageEnvelope(s.id, msg))
+      case None =>
+        // No active data source maps to this expression, so the message would be dropped.
+        // Track it and log the details to make this observable rather than silent.
+        unmatchedMessages.increment()
+        logger.debug(s"dropping message, no data source for expression [$expr]")
+        Nil
     }
   }
 
