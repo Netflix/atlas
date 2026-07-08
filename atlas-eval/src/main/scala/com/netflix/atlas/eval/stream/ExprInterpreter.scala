@@ -22,6 +22,7 @@ import com.netflix.atlas.core.model.EventExpr
 import com.netflix.atlas.core.model.EventVocabulary
 import com.netflix.atlas.core.model.Expr
 import com.netflix.atlas.core.model.FilterExpr
+import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.ModelDataTypes
 import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.core.model.StyleExpr
@@ -85,17 +86,25 @@ class ExprInterpreter(config: Config) {
     */
   private def validate(styleExpr: StyleExpr): Unit = {
     styleExpr.perOffset.foreach { s =>
-      // Use rewrite as a helper for searching the expression for invalid operations
-      s.expr.rewrite {
-        case op: StatefulExpr.Integral         => invalidOperator(op); op
-        case op: StatefulExpr.CumulativeMax    => invalidOperator(op); op
-        case op: FilterExpr                    => invalidOperator(op); op
-        case op: DataExpr if !op.offset.isZero => invalidOperator(op); op
-      }
+      validateExpr(s.expr)
 
       // Double check all data expressions do not have an offset. In some cases for named rewrites
       // the check above may not detect the offset.
       s.expr.dataExprs.filterNot(_.offset.isZero).foreach(invalidOperator)
+    }
+  }
+
+  // Search the expression for invalid operations. For a named rewrite the evaluated form is
+  // checked rather than the display form: the display can hide operators that are actually
+  // evaluated (for example :approx-distinct-cumulative expands to a :cumulative-max), so
+  // inspecting the eval expression avoids gaps and per-operator special cases.
+  private def validateExpr(expr: Expr): Unit = {
+    expr.rewrite {
+      case nr: MathExpr.NamedRewrite         => validateExpr(nr.evalExpr); nr
+      case op: StatefulExpr.Integral         => invalidOperator(op); op
+      case op: StatefulExpr.CumulativeMax    => invalidOperator(op); op
+      case op: FilterExpr                    => invalidOperator(op); op
+      case op: DataExpr if !op.offset.isZero => invalidOperator(op); op
     }
   }
 

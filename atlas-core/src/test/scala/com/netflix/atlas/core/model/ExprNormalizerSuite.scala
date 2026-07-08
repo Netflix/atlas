@@ -16,6 +16,7 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.util.Features
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
@@ -28,7 +29,10 @@ class ExprNormalizerSuite extends FunSuite {
   private val interpreter = Interpreter(StyleVocabulary.allWords)
 
   private def normalize(expr: String): List[String] = {
-    val exprs = interpreter.execute(expr).stack.collect {
+    // Unstable features are enabled so operators that are not yet stable (such as
+    // :approx-distinct) can be normalized. Normalization must work regardless of the stability
+    // of the operators involved.
+    val exprs = interpreter.execute(expr, Map.empty[String, Any], Features.UNSTABLE).stack.collect {
       case ModelDataTypes.PresentationType(t) => t
     }
     exprs.map(normalizer.normalizeToString).reverse
@@ -124,5 +128,50 @@ class ExprNormalizerSuite extends FunSuite {
 
   test("normalize removes :line") {
     assertEquals(normalize("name,sps,:eq,:sum"), List("name,sps,:eq,:sum"))
+  }
+
+  test("approx-distinct preserves operator and normalizes query") {
+    // Renders as <input>,:approx-distinct, so the input aggregate (:sum here) is shown.
+    assertEquals(
+      normalize("name,sps,:eq,:approx-distinct"),
+      List("name,sps,:eq,:sum,:approx-distinct")
+    )
+  }
+
+  test("approx-distinct normalizes prefix key order") {
+    val expr = "nf.cluster,c,:eq,name,n,:eq,:and,:approx-distinct"
+    val expected = "name,n,:eq,nf.cluster,c,:eq,:and,:sum,:approx-distinct"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("approx-distinct with group by") {
+    assertEquals(
+      normalize("name,sps,:eq,(,nf.cluster,),:by,:approx-distinct"),
+      List("name,sps,:eq,:sum,(,nf.cluster,),:by,:approx-distinct")
+    )
+  }
+
+  test("approx-distinct-cumulative preserves operator and normalizes query") {
+    // Regression: normalizing rewrites the query inside the named rewrite, which re-materializes
+    // it. That must not re-enforce the stability gate for the unstable operator.
+    assertEquals(
+      normalize("name,sps,:eq,:approx-distinct-cumulative"),
+      List("name,sps,:eq,:approx-distinct-cumulative")
+    )
+  }
+
+  test("approx-distinct-cumulative normalizes prefix key order") {
+    val expr = "nf.cluster,c,:eq,name,n,:eq,:and,:approx-distinct-cumulative"
+    val expected = "name,n,:eq,nf.cluster,c,:eq,:and,:approx-distinct-cumulative"
+    assertEquals(normalize(expr), List(expected))
+  }
+
+  test("approx-distinct-cumulative with group by") {
+    // The grouped form displays the explicit :sum aggregate of the input group by; it round trips
+    // and normalizes deterministically.
+    assertEquals(
+      normalize("name,sps,:eq,(,nf.cluster,),:by,:approx-distinct-cumulative"),
+      List("name,sps,:eq,:sum,(,nf.cluster,),:by,:approx-distinct-cumulative")
+    )
   }
 }
