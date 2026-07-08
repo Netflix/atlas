@@ -47,6 +47,7 @@ object StatefulVocabulary extends Vocabulary {
     SlidingDes,
     Trend,
     Integral,
+    CumulativeMax,
     Derivative,
     desTypedMacro("des-simple", List("10", "0.1", "0.5", ":des")),
     desTypedMacro("des-fast", List("10", "0.1", "0.02", ":des")),
@@ -561,6 +562,43 @@ object StatefulVocabulary extends Vocabulary {
       """.stripMargin.trim
 
     override def examples: List[String] = List("1", "name,requestsPerSecond,:eq,:sum,:per-step")
+  }
+
+  case object CumulativeMax extends TypedWord with StylePassthrough {
+
+    override def name: String = "cumulative-max"
+
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input time series", TimeSeriesExprType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[TimeSeriesExpr]
+      context.copy(stack = StatefulExpr.CumulativeMax(t) :: context.stack)
+    }
+
+    override def summary: String =
+      """
+        |Compute the maximum value across the evaluation context. Each datapoint for the output
+        |line represents the maximum value seen on the input line from the start of the graph up
+        |to the time for that datapoint. This is the max analogue of
+        |[:integral](stateful-integral): a running max from the window start rather than a sliding
+        |window like [:rolling-max](stateful-rolling‐max). Missing values, `NaN`, are ignored and
+        |leave the running max unchanged. For example:
+        |
+        || Input | :cumulative-max |
+        ||-------|-----------------|
+        || 1     | 1               |
+        || 2     | 2               |
+        || 0     | 2               |
+        || NaN   | 2               |
+        || 5     | 5               |
+        || 3     | 5               |
+      """.stripMargin.trim
+
+    override def examples: List[String] = List("1", "name,activeUsers,:eq,:sum")
   }
 
   case object Derivative extends TypedWord with StylePassthrough {
