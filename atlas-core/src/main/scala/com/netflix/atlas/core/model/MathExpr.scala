@@ -30,6 +30,7 @@ import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.Strings
 import com.netflix.spectator.api.histogram.PercentileBuckets
+import com.netflix.spectator.api.patterns.DistinctCountSketch
 
 import scala.collection.immutable.ArraySeq
 
@@ -1020,6 +1021,148 @@ object MathExpr {
             val tags = data.head.tags + (TagKey.percentile -> p)
             TimeSeries(tags, f"percentile($baseLabel, $p)", seq)
         }
+      }
+    }
+  }
+
+  /**
+    * Estimate the number of distinct values recorded into a distinct count sketch. The data
+    * must have been published as a set of per-register max-gauges tagged with
+    * `statistic=distinct` and a `distinct=R##` register id, for example via the
+    * `DistinctCountSketch` helper in spectator. Each register holds the max rho seen for that
+    * register and merges across sources by taking the max, so the input is grouped on the
+    * `distinct` register key with a `:max` aggregate. The registers are then collapsed to a
+    * single cardinality estimate using the same HyperLogLog estimator as the client.
+    *
+    * The estimate is computed independently for each interval. Any surviving group by keys
+    * (everything other than `distinct`) are preserved on the output.
+    *
+    * @param expr
+    *     Grouped data expression that includes the `distinct` register key. The registers are
+    *     always aggregated with `:max`, the native HLL merge.
+    */
+  case class ApproxDistinct(expr: DataExpr.GroupBy) extends TimeSeriesExpr {
+
+    require(
+      expr.keys.contains(TagKey.distinct),
+      s"key list for group by must contain '${TagKey.distinct}'"
+    )
+
+    private val evalGroupKeys = expr.keys.filter(_ != TagKey.distinct)
+
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      // Base expr
+      if (evalGroupKeys.nonEmpty)
+        Interpreter.append(builder, expr.af.query, evalGroupKeys, Interpreter.WordToken(":by"))
+      else
+        Interpreter.append(builder, expr.af.query)
+
+      builder.append(",:approx-distinct")
+
+      // Offset
+      if (!expr.offset.isZero)
+        builder.append(',').append(Strings.toString(expr.offset)).append(",:offset")
+    }
+
+    override def dataExprs: List[DataExpr] = List(expr)
+
+    override def isGrouped: Boolean = evalGroupKeys.nonEmpty
+
+    override def groupByKey(tags: Map[String, String]): Option[String] = {
+      // Option(...) rather than Some(...): keyString returns null when a group key is missing
+      // from the tags, matching DataExpr.GroupBy.groupByKey and the other grouped expressions.
+      if (evalGroupKeys.isEmpty) None else Option(DataExpr.keyString(evalGroupKeys, tags))
+    }
+
+    def finalGrouping: List[String] = evalGroupKeys
+
+    override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
+      val inner = expr.eval(context, data)
+      if (inner.data.isEmpty) {
+        inner
+      } else if (evalGroupKeys.isEmpty) {
+        val label = s"approx-distinct(${expr.af.query.labelString})"
+        ResultSet(this, estimateDistinct(context, label, inner.data), context.state)
+      } else {
+        val groups = inner.data.groupBy(_.tags - TagKey.distinct)
+        val rs = groups.values.toList.flatMap { ts =>
+          if (ts.isEmpty) ts
+          else {
+            val tags = ts.head.tags - TagKey.distinct
+            // Grouped output is one line per group, so the group key string is the natural
+            // label, matching a normal grouped aggregate.
+            val label = DataExpr.keyString(evalGroupKeys, tags)
+            estimateDistinct(context, label, ts)
+          }
+        }
+        ResultSet(this, rs, context.state)
+      }
+    }
+
+    private def estimateDistinct(
+      context: EvalContext,
+      label: String,
+      data: List[TimeSeries]
+    ): List[TimeSeries] = {
+
+      // As with percentiles, a "no data" placeholder series without the register tag can be
+      // present. Filter them out so the estimate can still be computed from the real data.
+      val filtered = data.filter(_.tags.contains(TagKey.distinct))
+      if (filtered.isEmpty) {
+        List(TimeSeries.noData(context.step))
+      } else {
+        val length = ((context.end - context.start) / context.step).toInt
+        val m = DistinctCountSketch.REGISTERS
+
+        // Output sequence for the collapsed cardinality estimate
+        val buf = ArrayHelper.fill(length, Double.NaN)
+        val output = new ArrayTimeSeq(DsType.Gauge, context.start, context.step, buf)
+
+        // Map each input series to its register index. The value stored in a register is the
+        // max rho; missing or NaN registers are treated as unset (0), matching the client. Only
+        // in-range registers are kept so the per-interval loop below needs no bounds check; an
+        // out-of-range id (e.g. from a client/backend register-count mismatch) is dropped.
+        val byRegister = filtered
+          .groupBy(t => Integer.parseInt(t.tags(TagKey.distinct).substring(1), 16))
+          .filter { case (idx, _) => idx >= 0 && idx < m }
+        val usedRegisters = byRegister.keys.toArray
+        java.util.Arrays.sort(usedRegisters)
+
+        val bounded = new Array[ArrayTimeSeq](usedRegisters.length)
+        var i = 0
+        while (i < usedRegisters.length) {
+          val vs = byRegister(usedRegisters(i))
+          require(
+            vs.lengthCompare(1) == 0,
+            s"invalid distinct encoding: [${vs.map(_.tags(TagKey.distinct)).mkString(",")}]"
+          )
+          bounded(i) = vs.head.data.bounded(context.start, context.end)
+          i += 1
+        }
+
+        // Register array reused across intervals. Used registers are (re)assigned each interval
+        // so the reset is folded into the assignment; registers with no series stay 0. If no
+        // register has data for an interval the sketch is absent, so the estimate is left as NaN
+        // (no data) rather than reporting a spurious 0 distinct values.
+        val registers = new Array[Double](m)
+        i = 0
+        while (i < length) {
+          var anySet = false
+          var j = 0
+          while (j < usedRegisters.length) {
+            val v = bounded(j).data(i)
+            val rho = if (v.isFinite && v > 0.0) v else 0.0
+            registers(usedRegisters(j)) = rho
+            if (rho > 0.0) anySet = true
+            j += 1
+          }
+          if (anySet)
+            output.data(i) = DistinctCountSketch.cardinality(registers)
+          i += 1
+        }
+
+        val tags = data.head.tags - TagKey.distinct
+        List(TimeSeries(tags, label, output))
       }
     }
   }

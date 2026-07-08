@@ -90,6 +90,9 @@ object TagKey {
   /** Used to store the bucket id for percentile approximation. */
   final val percentile = "percentile"
 
+  /** Used to store the register id for a distinct count sketch approximation. */
+  final val distinct = "distinct"
+
   /**
     * Returns true if the name uses a restricted prefix that is managed by the system. These
     * tag keys should not be set or used directly by users

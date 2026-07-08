@@ -80,6 +80,7 @@ object MathVocabulary extends Vocabulary {
     Min,
     Max,
     Percentiles,
+    ApproxDistinct,
     SampleCount,
     TypedMacro(
       "sample-count",
@@ -1308,6 +1309,62 @@ object MathVocabulary extends Vocabulary {
 
     override def examples: List[String] = List(
       "name,requestLatency,:eq,(,25,50,90,)"
+    )
+  }
+
+  case object ApproxDistinct extends SimpleWord {
+
+    override def name: String = "approx-distinct"
+
+    protected def matcher: PartialFunction[List[Any], Boolean] = {
+      case DataExprType(expr) :: _ =>
+        expr match {
+          case _: DataExpr.All => false
+          case _               => true
+        }
+    }
+
+    protected def executor: PartialFunction[List[Any], List[Any]] = {
+      case DataExprType(t) :: stack =>
+        // Registers merge across sources by taking the max, so force a max aggregate and
+        // group by the register key regardless of the aggregate the user specified.
+        val expr = t match {
+          case af: AggregateFunction => DataExpr.GroupBy(toMax(af), List(TagKey.distinct))
+          case by: DataExpr.GroupBy  => DataExpr.GroupBy(toMax(by.af), TagKey.distinct :: by.keys)
+          case _ =>
+            throw new IllegalArgumentException(":approx-distinct cannot be used with :all")
+        }
+        MathExpr.ApproxDistinct(expr) :: stack
+    }
+
+    // Not yet stable: the distinct count sketch statistic still needs cross-team sign-off, so
+    // gate the operator behind the unstable features flag until the API is finalized.
+    override def isStable: Boolean = false
+
+    private def toMax(af: AggregateFunction): DataExpr.Max = {
+      DataExpr.Max(af.query, offset = af.offset)
+    }
+
+    override def summary: String =
+      """
+        |Estimate the number of distinct values recorded into a distinct count sketch. The data
+        |must have been published appropriately to allow the approximation, as a set of
+        |per-register max-gauges tagged with `statistic=distinct` and a `distinct=R##` register
+        |id. If using [spectator](http://netflix.github.io/spectator/en/latest/), then see the
+        |`DistinctCountSketch` helper class.
+        |
+        |The registers are merged across all matching sources (by taking the max per register)
+        |and then collapsed to a single cardinality estimate using the same HyperLogLog estimator
+        |as the client. The result is an estimate, not an exact count, with a relative standard
+        |error of roughly 13%. Add `(,key,),:by` before the operator to break the estimate out by
+        |another dimension.
+      """.stripMargin.trim
+
+    override def signature: String = "DataExpr -- Expr"
+
+    override def examples: List[String] = List(
+      "name,server.uniqueUsers,:eq",
+      "name,server.uniqueUsers,:eq,(,nf.region,),:by"
     )
   }
 
