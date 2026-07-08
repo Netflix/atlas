@@ -50,20 +50,21 @@ object OnlineAlgorithm {
     */
   def apply(state: AlgoState): OnlineAlgorithm = {
     state.algorithm match {
-      case "delay"         => OnlineDelay(state)
-      case "derivative"    => OnlineDerivative(state)
-      case "des"           => OnlineDes(state)
-      case "ignore"        => OnlineIgnoreN(state)
-      case "integral"      => OnlineIntegral(state)
-      case "pipeline"      => Pipeline(state)
-      case "rolling-count" => OnlineRollingCount(state)
-      case "rolling-sum"   => OnlineRollingSum(state)
-      case "rolling-max"   => OnlineRollingMax(state)
-      case "rolling-mean"  => OnlineRollingMean(state)
-      case "rolling-min"   => OnlineRollingMin(state)
-      case "sliding-des"   => OnlineSlidingDes(state)
-      case "trend"         => OnlineTrend(state)
-      case t               => throw new IllegalArgumentException(s"unknown type: '$t'")
+      case "cumulative-max" => OnlineCumulativeMax(state)
+      case "delay"          => OnlineDelay(state)
+      case "derivative"     => OnlineDerivative(state)
+      case "des"            => OnlineDes(state)
+      case "ignore"         => OnlineIgnoreN(state)
+      case "integral"       => OnlineIntegral(state)
+      case "pipeline"       => Pipeline(state)
+      case "rolling-count"  => OnlineRollingCount(state)
+      case "rolling-sum"    => OnlineRollingSum(state)
+      case "rolling-max"    => OnlineRollingMax(state)
+      case "rolling-mean"   => OnlineRollingMean(state)
+      case "rolling-min"    => OnlineRollingMin(state)
+      case "sliding-des"    => OnlineSlidingDes(state)
+      case "trend"          => OnlineTrend(state)
+      case t                => throw new IllegalArgumentException(s"unknown type: '$t'")
     }
   }
 }

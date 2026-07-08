@@ -27,6 +27,7 @@ import com.netflix.atlas.core.algorithm.Pipeline
 import com.netflix.atlas.core.algorithm.AlgoState
 import com.netflix.atlas.core.algorithm.OnlineDerivative
 import com.netflix.atlas.core.algorithm.OnlineIntegral
+import com.netflix.atlas.core.algorithm.OnlineCumulativeMax
 import com.netflix.atlas.core.algorithm.OnlineRollingCount
 import com.netflix.atlas.core.algorithm.OnlineRollingMean
 import com.netflix.atlas.core.algorithm.OnlineRollingSum
@@ -69,6 +70,26 @@ object StatefulExpr {
 
     override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
       OnlineIntegral(Double.NaN)
+    }
+
+    override def append(builder: java.lang.StringBuilder): Unit = {
+      Interpreter.append(builder, expr, Interpreter.WordToken(s":$name"))
+    }
+  }
+
+  /**
+    * Compute the maximum value across the evaluation context. Each datapoint for the output
+    * line represents the maximum value seen on the input line from the start of the graph up
+    * to the time for that datapoint. This is the max analogue of `:integral`: a running max
+    * from the window start rather than a sliding window like `:rolling-max`. Missing values,
+    * `NaN`, are ignored and leave the running max unchanged.
+    */
+  case class CumulativeMax(expr: TimeSeriesExpr) extends OnlineExpr {
+
+    override protected def name: String = "cumulative-max"
+
+    override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
+      OnlineCumulativeMax(Double.NaN)
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {

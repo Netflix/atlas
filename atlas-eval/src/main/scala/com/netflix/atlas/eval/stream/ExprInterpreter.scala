@@ -79,14 +79,16 @@ class ExprInterpreter(config: Config) {
 
   /**
     * Check that data expressions are supported. The streaming path doesn't support
-    * time shifts, filters, and integral. The filters and integral are excluded because
-    * they can be confusing as the time window for evaluation is not bounded.
+    * time shifts, filters, and cumulative operators (integral, cumulative-max). The
+    * filters and cumulative operators are excluded because they can be confusing as the
+    * time window for evaluation is not bounded.
     */
   private def validate(styleExpr: StyleExpr): Unit = {
     styleExpr.perOffset.foreach { s =>
       // Use rewrite as a helper for searching the expression for invalid operations
       s.expr.rewrite {
         case op: StatefulExpr.Integral         => invalidOperator(op); op
+        case op: StatefulExpr.CumulativeMax    => invalidOperator(op); op
         case op: FilterExpr                    => invalidOperator(op); op
         case op: DataExpr if !op.offset.isZero => invalidOperator(op); op
       }

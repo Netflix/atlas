@@ -594,6 +594,10 @@ class EvaluatorSuite extends FunSuite {
     invalidOperator("integral", "name,jvm.gc.pause,:eq,:sum,:integral")
   }
 
+  test("validate: unsupported operation `:cumulative-max`") {
+    invalidOperator("cumulative-max", "name,jvm.gc.pause,:eq,:sum,:cumulative-max")
+  }
+
   test("validate: unsupported operation `:filter`") {
     invalidOperator("filter", "name,jvm.gc.pause,:eq,:sum,:stat-max,5,:gt,:filter")
   }
