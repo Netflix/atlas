@@ -145,7 +145,7 @@ private[stream] class TimeGrouped(
         val aggregateMapForExpWithinLimits = aggrMap.asScala
           .filter {
             case (expr, aggr) if aggr.limitExceeded =>
-              context.logDatapointsExceeded(ts, expr.toString)
+              context.logDatapointsExceeded(host, ts, expr.toString)
               false
             case _ =>
               true

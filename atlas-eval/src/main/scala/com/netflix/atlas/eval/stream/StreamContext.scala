@@ -18,6 +18,7 @@ package com.netflix.atlas.eval.stream
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import org.apache.pekko.NotUsed
 import org.apache.pekko.http.scaladsl.model.Uri
 import org.apache.pekko.stream.IOResult
@@ -132,20 +133,25 @@ private[stream] class StreamContext(
   }
 
   /**
-    * Current set of data sources being processed by the stream. This may be updated while
-    * there are still some in-flight data for a given data source that was previously being
-    * processed.
+    * State for the data sources being processed by the stream, tracked per backend host.
+    * `createStreamsFlow` groups data sources by host and runs a per-host processor over this
+    * shared context, so each host must update its own state independently. Partitioning by host
+    * prevents one host from clobbering another's data sources and lets message delivery be scoped
+    * to the host that produced the data. Each host's data sources and derived expression map are
+    * held together and updated with a single atomic operation so a reader never sees them
+    * disagree. This may be updated while there are still some in-flight data for a given data
+    * source that was previously being processed.
     */
-  @volatile private var dataSources: DataSources = DataSources.empty()
+  private val stateByHost = new ConcurrentHashMap[String, StreamContext.HostState]()
 
-  /** Map of DataExpr to data sources for being able to quickly log information. */
-  @volatile private var dataExprMap: Map[String, List[DataSource]] = Map.empty
-
-  def setDataSources(ds: DataSources): Unit = {
-    if (dataSources != ds) {
-      dataSources = ds
-      dataExprMap = interpreter.dataExprMap(ds)
-    }
+  def setDataSources(host: String, ds: DataSources): Unit = {
+    stateByHost.compute(
+      host,
+      (_, prev) =>
+        // Reuse the previous state, and its already-computed expression map, if unchanged.
+        if (prev != null && prev.dataSources == ds) prev
+        else StreamContext.HostState(ds, interpreter.dataExprMap(ds))
+    )
   }
 
   /**
@@ -247,37 +253,69 @@ private[stream] class StreamContext(
     * Emit an error to the sources where the number of input
     * or intermediate datapoints exceed for an expression.
     */
+  /** Report exceeded limits to the data sources for `dataExpr` on a specific host. */
+  def logDatapointsExceeded(host: String, timestamp: Long, dataExpr: String): Unit = {
+    log(host, dataExpr, datapointsExceededMessage(timestamp, dataExpr))
+  }
+
+  /**
+    * Report exceeded limits to the data sources for `dataExpr` across all hosts. Used by the
+    * combined datapoint processor, where evaluation is not partitioned by host.
+    */
   def logDatapointsExceeded(timestamp: Long, dataExpr: String): Unit = {
-    val diagnosticMessage = DiagnosticMessage.error(
+    log(dataExpr, datapointsExceededMessage(timestamp, dataExpr))
+  }
+
+  private def datapointsExceededMessage(timestamp: Long, dataExpr: String): DiagnosticMessage = {
+    DiagnosticMessage.error(
       s"expression: $dataExpr exceeded the configured max input datapoints limit" +
         s" '$maxInputDatapointsPerExpression' or max intermediate" +
         s" datapoints limit '$maxIntermediateDatapointsPerExpression'" +
         s" for timestamp '$timestamp}"
     )
-    log(dataExpr, diagnosticMessage)
   }
 
   /**
-    * Send a diagnostic message to all data sources that use a particular data expression.
+    * Send a diagnostic message to the data sources on the given host that use a particular data
+    * expression.
     */
-  def log(expr: String, msg: JsonSupport): Unit = {
-    dataExprMap.get(expr).foreach { ds =>
-      ds.foreach(s => dsLogger(s, msg))
+  def log(host: String, expr: String, msg: JsonSupport): Unit = {
+    val state = stateByHost.get(host)
+    if (state != null) {
+      state.dataExprMap.get(expr).foreach(ds => ds.foreach(s => dsLogger(s, msg)))
     }
   }
 
   /**
-    * Creates a set of messages for each data source that uses a given expression.
+    * Send a diagnostic message to all data sources that use a particular data expression across
+    * all hosts. Used where the expression is not tied to a specific host.
     */
-  def messagesForDataSource(expr: String, msg: JsonSupport): List[Evaluator.MessageEnvelope] = {
-    dataExprMap.get(expr) match {
+  def log(expr: String, msg: JsonSupport): Unit = {
+    stateByHost.values.forEach { state =>
+      state.dataExprMap.get(expr).foreach(ds => ds.foreach(s => dsLogger(s, msg)))
+    }
+  }
+
+  /**
+    * Creates a set of messages for each data source on the given host that uses a given
+    * expression. Scoping to the host avoids delivering data produced by one backend to a data
+    * source pointed at a different backend that happens to use the same expression.
+    */
+  def messagesForDataSource(
+    host: String,
+    expr: String,
+    msg: JsonSupport
+  ): List[Evaluator.MessageEnvelope] = {
+    val state = stateByHost.get(host)
+    val dataSources = if (state == null) None else state.dataExprMap.get(expr)
+    dataSources match {
       case Some(ds) =>
         ds.map(s => new Evaluator.MessageEnvelope(s.id, msg))
       case None =>
         // No active data source maps to this expression, so the message would be dropped.
         // Track it and log the details to make this observable rather than silent.
         unmatchedMessages.increment()
-        logger.debug(s"dropping message, no data source for expression [$expr]")
+        logger.debug(s"dropping message, no data source for expression [$expr] on host [$host]")
         Nil
     }
   }
@@ -295,6 +333,9 @@ private[stream] class StreamContext(
 }
 
 private[stream] object StreamContext {
+
+  /** Per-host data sources and the expression map derived from them, updated together. */
+  case class HostState(dataSources: DataSources, dataExprMap: Map[String, List[DataSource]])
 
   sealed trait Backend {
 
