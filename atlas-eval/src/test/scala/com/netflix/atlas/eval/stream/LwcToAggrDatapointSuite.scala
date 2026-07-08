@@ -74,6 +74,7 @@ class LwcToAggrDatapointSuite extends FunSuite {
   )
 
   context.setDataSources(
+    "_",
     DataSources.of(
       new DataSource("abc", java.time.Duration.ofMinutes(1), "/api/v1/graph?q=name,cpu,:eq,:avg")
     )
@@ -84,7 +85,7 @@ class LwcToAggrDatapointSuite extends FunSuite {
       .map(ByteString.apply)
       .map(LwcMessages.parse)
       .map(msg => List(msg))
-      .via(new LwcToAggrDatapoint(context))
+      .via(new LwcToAggrDatapoint(context, "_"))
       .flatMapConcat { t =>
         t.messages.foreach(m => logMessages.add(m))
         Source(t.data)

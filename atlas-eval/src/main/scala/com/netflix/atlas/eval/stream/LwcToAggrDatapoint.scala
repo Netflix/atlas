@@ -45,7 +45,7 @@ import com.netflix.atlas.eval.model.LwcDataExpr
   * Process the SSE output from an LWC service and convert it into a stream of
   * [[AggrDatapoint]]s that can be used for evaluation.
   */
-private[stream] class LwcToAggrDatapoint(context: StreamContext)
+private[stream] class LwcToAggrDatapoint(context: StreamContext, host: String)
     extends GraphStage[FlowShape[List[AnyRef], DatapointsTuple]] {
 
   import LwcToAggrDatapoint.*
@@ -135,7 +135,7 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
 
       private def pushEvent(event: LwcEvent): List[Evaluator.MessageEnvelope] = {
         eventState.get(event.id) match {
-          case Some(sub) => context.messagesForDataSource(sub, EventMessage(event.payload))
+          case Some(sub) => context.messagesForDataSource(host, sub, EventMessage(event.payload))
           case None      => unknown.increment(); Nil
         }
       }
@@ -145,10 +145,10 @@ private[stream] class LwcToAggrDatapoint(context: StreamContext)
       ): List[Evaluator.MessageEnvelope] = {
         tsState.get(diagMsg.id) match {
           case Some(sub) =>
-            context.messagesForDataSource(sub.dataExprStr, diagMsg.message)
+            context.messagesForDataSource(host, sub.dataExprStr, diagMsg.message)
           case None =>
             eventState.get(diagMsg.id) match {
-              case Some(sub) => context.messagesForDataSource(sub, diagMsg.message)
+              case Some(sub) => context.messagesForDataSource(host, sub, diagMsg.message)
               case None      => unknown.increment(); Nil
             }
         }

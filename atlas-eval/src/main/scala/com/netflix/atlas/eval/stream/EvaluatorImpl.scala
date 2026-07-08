@@ -285,7 +285,7 @@ private[stream] abstract class EvaluatorImpl(
 
       val intermediateEval = createInputFlow(context)
         .via(context.monitorFlow("10_InputBatches"))
-        .via(new LwcToAggrDatapoint(context))
+        .via(new LwcToAggrDatapoint(context, host))
         .flatMapConcat { t =>
           Source(t.groupByStep)
         }
@@ -312,7 +312,7 @@ private[stream] abstract class EvaluatorImpl(
       .map(ReplayLogging.log)
       .map { s =>
         val validated = context.validate(s)
-        context.setDataSources(validated)
+        context.setDataSources(host, validated)
         validated
       }
       .via(g)
@@ -337,9 +337,9 @@ private[stream] abstract class EvaluatorImpl(
     // Flow used for logging diagnostic messages
     val (logSrc, context) = createStreamContextSource
 
-    // Initialize context with fixed data sources
+    // Initialize context with fixed data sources, grouped by host to match the streaming path.
     context.validate(sources)
-    context.setDataSources(sources)
+    groupByHost(sources).foreach { case (host, dss) => context.setDataSources(host, dss) }
     val interpreter = context.interpreter
 
     // Extract data expressions to reuse for creating time groups
