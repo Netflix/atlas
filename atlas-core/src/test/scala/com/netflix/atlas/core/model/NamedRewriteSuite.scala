@@ -17,6 +17,7 @@ package com.netflix.atlas.core.model
 
 import java.time.Duration
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.util.Features
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
@@ -37,17 +38,18 @@ class NamedRewriteSuite extends FunSuite {
 
   private val interpreter = Interpreter(new CustomVocabulary(config).allWords)
 
-  private def rawEval(program: String): List[StyleExpr] = {
-    interpreter.execute(program).stack.flatMap {
+  private def rawEval(program: String, features: Features = Features.STABLE): List[StyleExpr] = {
+    interpreter.execute(program, Map.empty[String, Any], features).stack.flatMap {
       case ModelDataTypes.PresentationType(t) => t.perOffset
       case v                                  => throw new MatchError(v)
     }
   }
 
-  private def eval(program: String): List[StyleExpr] = {
+  private def eval(program: String, features: Features = Features.STABLE): List[StyleExpr] = {
     // Eval and re-encode to make sure display expression is consistent with the
     // original expression.
-    interpreter.execute(rawEval(program).mkString(",")).stack.flatMap {
+    val encoded = rawEval(program, features).mkString(",")
+    interpreter.execute(encoded, Map.empty[String, Any], features).stack.flatMap {
       case ModelDataTypes.PresentationType(t) =>
         val expanded = t.rewrite {
           case nr: MathExpr.NamedRewrite => nr.evalExpr
@@ -287,5 +289,72 @@ class NamedRewriteSuite extends FunSuite {
     val expected = rawEval(s"$q,(,a,b,),:by,:des-fast")
     assertEquals(exprs, expected)
     assertEquals(exprs2, expected)
+  }
+
+  private val U = Features.UNSTABLE
+
+  // Expand named rewrites to their eval expression without re-encoding to a string. The macro
+  // is compared against the equivalent explicit `:cumulative-max,:approx-distinct` composition;
+  // that raw composition is not compared via toString because the agnostic :approx-distinct
+  // display does not preserve the wrapping :cumulative-max (only the named rewrite does).
+  private def expand(program: String): List[StyleExpr] = {
+    rawEval(program, U).map { se =>
+      se.rewrite { case nr: MathExpr.NamedRewrite => nr.evalExpr }.asInstanceOf[StyleExpr]
+    }
+  }
+
+  test("approx-distinct-cumulative") {
+    val actual = expand("name,a,:eq,:approx-distinct-cumulative")
+    val expected = rawEval("name,a,:eq,:cumulative-max,:approx-distinct", U)
+    assertEquals(actual, expected)
+  }
+
+  test("approx-distinct-cumulative with group by") {
+    val actual = expand("name,a,:eq,(,b,),:by,:approx-distinct-cumulative")
+    val expected = rawEval("name,a,:eq,(,b,),:by,:cumulative-max,:approx-distinct", U)
+    assertEquals(actual, expected)
+  }
+
+  test("approx-distinct-cumulative with offset") {
+    val actual = expand("name,a,:eq,:approx-distinct-cumulative,1h,:offset")
+    val expected = rawEval("name,a,:eq,:cumulative-max,:approx-distinct,1h,:offset", U)
+    assertEquals(actual, expected)
+  }
+
+  test("approx-distinct-cumulative with cq") {
+    val actual = expand("name,a,:eq,:approx-distinct-cumulative,foo,bar,:eq,:cq")
+    val expected = rawEval("name,a,:eq,foo,bar,:eq,:and,:cumulative-max,:approx-distinct", U)
+    assertEquals(actual, expected)
+  }
+
+  test("approx-distinct-cumulative, display preserved in toString") {
+    val actual = rawEval("name,a,:eq,:approx-distinct-cumulative", U).mkString(",")
+    assertEquals(actual, "name,a,:eq,:approx-distinct-cumulative")
+  }
+
+  test("approx-distinct-cumulative, offset maintained after query rewrite") {
+    val exprs = rawEval("name,a,:eq,:approx-distinct-cumulative,1h,:offset", U).map { expr =>
+      expr.rewrite {
+        case q: Query => Query.And(q, Query.Equal("region", "east"))
+      }
+    }
+    val offsets = exprs
+      .collect {
+        case t: StyleExpr => t.expr.dataExprs.map(_.offset)
+      }
+      .flatten
+      .distinct
+    assertEquals(offsets, List(Duration.ofHours(1)))
+  }
+
+  test("approx-distinct-cumulative, query rewrite maintained in toString") {
+    val exprs = rawEval("name,a,:eq,:approx-distinct-cumulative", U).map { expr =>
+      expr.rewrite {
+        case q: Query => Query.And(q, Query.Equal("region", "east"))
+      }
+    }
+    val actual = exprs.mkString(",")
+    val expected = "name,a,:eq,region,east,:eq,:and,:approx-distinct-cumulative"
+    assertEquals(actual, expected)
   }
 }

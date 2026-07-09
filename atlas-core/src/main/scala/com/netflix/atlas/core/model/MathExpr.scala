@@ -26,6 +26,7 @@ import com.netflix.atlas.core.stacklang.ast.IsNumber
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.ArrayHelper
+import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.Hash
 import com.netflix.atlas.core.util.Math
 import com.netflix.atlas.core.util.Strings
@@ -1030,41 +1031,54 @@ object MathExpr {
     * must have been published as a set of per-register max-gauges tagged with
     * `statistic=distinct` and a `distinct=R##` register id, for example via the
     * `DistinctCountSketch` helper in spectator. Each register holds the max rho seen for that
-    * register and merges across sources by taking the max, so the input is grouped on the
-    * `distinct` register key with a `:max` aggregate. The registers are then collapsed to a
-    * single cardinality estimate using the same HyperLogLog estimator as the client.
+    * register and merges across sources by taking the max. The estimator reshapes `expr` to
+    * group on the `distinct` register key with a `:max` aggregate (see `registerExpr`), then
+    * collapses the registers to a single cardinality estimate using the same HyperLogLog
+    * estimator as the client.
     *
     * The estimate is computed independently for each interval. Any surviving group by keys
     * (everything other than `distinct`) are preserved on the output.
     *
+    * The register grouping is derived internally, so `expr` is the input as provided (not the
+    * register-grouped form): typically an aggregate or group by, optionally wrapped (for example
+    * by [[StatefulExpr.CumulativeMax]] to max the registers across time before the estimate). It
+    * is kept as-is so the operator renders as `<expr>,:approx-distinct` and round trips.
+    *
     * @param expr
-    *     Grouped data expression that includes the `distinct` register key. The registers are
-    *     always aggregated with `:max`, the native HLL merge.
+    *     Input expression to estimate the distinct count over. Typically an aggregate or group
+    *     by, optionally wrapped (for example by `:cumulative-max`). It is kept as provided so the
+    *     operator renders as `<expr>,:approx-distinct` and round trips regardless of what
+    *     produced it; the register grouping is derived internally for evaluation.
     */
-  case class ApproxDistinct(expr: DataExpr.GroupBy) extends TimeSeriesExpr {
+  case class ApproxDistinct(expr: TimeSeriesExpr) extends TimeSeriesExpr {
+
+    // Registers merge across sources (and time) by taking the max, so the data expressions are
+    // reshaped to group by the register key with a max aggregate. The reshape is applied through
+    // any wrappers (e.g. :cumulative-max) so the running max is applied per register. This
+    // reshaped form is what gets evaluated and fetched; `expr` itself is left untouched for
+    // rendering.
+    private val registerExpr: TimeSeriesExpr = expr
+      .rewrite {
+        case gb: DataExpr.GroupBy  => DataExpr.GroupBy(toMax(gb.af), TagKey.distinct :: gb.keys)
+        case af: AggregateFunction => DataExpr.GroupBy(toMax(af), List(TagKey.distinct))
+      }
+      .asInstanceOf[TimeSeriesExpr]
 
     require(
-      expr.keys.contains(TagKey.distinct),
-      s"key list for group by must contain '${TagKey.distinct}'"
+      registerExpr.finalGrouping.contains(TagKey.distinct),
+      s"input must have an aggregate that can be grouped by '${TagKey.distinct}'"
     )
 
-    private val evalGroupKeys = expr.keys.filter(_ != TagKey.distinct)
+    private def toMax(af: AggregateFunction): DataExpr.Max =
+      DataExpr.Max(af.query, offset = af.offset)
+
+    private val evalGroupKeys = registerExpr.finalGrouping.filter(_ != TagKey.distinct)
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      // Base expr
-      if (evalGroupKeys.nonEmpty)
-        Interpreter.append(builder, expr.af.query, evalGroupKeys, Interpreter.WordToken(":by"))
-      else
-        Interpreter.append(builder, expr.af.query)
-
-      builder.append(",:approx-distinct")
-
-      // Offset
-      if (!expr.offset.isZero)
-        builder.append(',').append(Strings.toString(expr.offset)).append(",:offset")
+      Interpreter.append(builder, expr, Interpreter.WordToken(":approx-distinct"))
     }
 
-    override def dataExprs: List[DataExpr] = List(expr)
+    override val dataExprs: List[DataExpr] = registerExpr.dataExprs
 
     override def isGrouped: Boolean = evalGroupKeys.nonEmpty
 
@@ -1077,11 +1091,11 @@ object MathExpr {
     def finalGrouping: List[String] = evalGroupKeys
 
     override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
-      val inner = expr.eval(context, data)
+      val inner = registerExpr.eval(context, data)
       if (inner.data.isEmpty) {
         inner
       } else if (evalGroupKeys.isEmpty) {
-        val label = s"approx-distinct(${expr.af.query.labelString})"
+        val label = s"approx-distinct(${dataExprs.head.query.labelString})"
         ResultSet(this, estimateDistinct(context, label, inner.data), context.state)
       } else {
         val groups = inner.data.groupBy(_.tags - TagKey.distinct)
@@ -1273,7 +1287,12 @@ object MathExpr {
         super.rewrite(f)
       } else {
         val newDisplayExpr = displayExpr.rewrite(f)
-        val ctxt = context.interpreter.execute(toString(newDisplayExpr))
+        // Re-materialize the rewrite from its display string. This is reconstructing an
+        // expression that was already accepted, so it must not re-enforce the stability gate;
+        // otherwise rewrites such as normalization or `:cq` would fail for a named rewrite built
+        // from an unstable operator (e.g. :approx-distinct-cumulative).
+        val ctxt =
+          context.interpreter.execute(toString(newDisplayExpr), Map.empty, Features.UNSTABLE)
         ctxt.stack match {
           case (r: NamedRewrite) :: Nil => r
           case _ => throw new IllegalStateException(s"invalid stack for :$name")

@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import java.time.Duration
 import java.util.stream.Collectors
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.Features
@@ -180,24 +181,43 @@ class ApproxDistinctSuite extends FunSuite {
   }
 
   test("round trip toString") {
-    assertEquals(
-      parseExpr("name,test,:eq,:approx-distinct").toString,
-      "name,test,:eq,:approx-distinct"
-    )
-    assertEquals(
-      parseExpr("name,test,:eq,(,region,),:by,:approx-distinct").toString,
-      "name,test,:eq,(,region,),:by,:approx-distinct"
-    )
+    // The operator renders as <input>,:approx-distinct, so the input aggregate is shown. The
+    // important property is that it re-parses to an equal expression.
+    val e1 = parseExpr("name,test,:eq,:approx-distinct")
+    assertEquals(e1.toString, "name,test,:eq,:sum,:approx-distinct")
+    assertEquals(parseExpr(e1.toString), e1)
+
+    val e2 = parseExpr("name,test,:eq,(,region,),:by,:approx-distinct")
+    assertEquals(e2.toString, "name,test,:eq,:sum,(,region,),:by,:approx-distinct")
+    assertEquals(parseExpr(e2.toString), e2)
   }
 
   test("forces max aggregate regardless of input aggregate") {
-    // Even if the user writes :sum, the registers must be merged with :max.
+    // Even if the user writes :sum, the fetched data is grouped by the register key with :max.
     val expr = parseExpr("name,test,:eq,:sum,:approx-distinct")
-    expr match {
-      case MathExpr.ApproxDistinct(gb) =>
+    expr.dataExprs.head match {
+      case gb: DataExpr.GroupBy =>
         assert(gb.af.isInstanceOf[DataExpr.Max])
         assert(gb.keys.contains(TagKey.distinct))
-      case _ => fail("expected ApproxDistinct")
+      case other => fail(s"expected register group by, got $other")
+    }
+  }
+
+  test("offset round trips and reaches the register data expr") {
+    val e = parseExpr("name,test,:eq,:approx-distinct,1h,:offset")
+    assertEquals(parseExpr(e.toString), e)
+    assertEquals(e.dataExprs.head.offset, Duration.ofHours(1))
+  }
+
+  test("group by applied after the operator") {
+    // The input is kept as provided, so a `:by` after the operator groups the underlying
+    // aggregate and the register grouping is re-derived; the surviving group key is preserved.
+    val e = parseExpr("name,test,:eq,:approx-distinct,(,region,),:by")
+    assertEquals(e.finalGrouping, List("region"))
+    assertEquals(parseExpr(e.toString), e)
+    e.dataExprs.head match {
+      case gb: DataExpr.GroupBy => assertEquals(gb.keys, List(TagKey.distinct, "region"))
+      case other                => fail(s"expected register group by, got $other")
     }
   }
 }

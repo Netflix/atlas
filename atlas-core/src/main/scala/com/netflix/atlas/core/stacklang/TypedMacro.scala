@@ -41,8 +41,14 @@ case class TypedMacro(
   parameters: IndexedSeq[Parameter],
   outputs: IndexedSeq[DataType],
   summary: String,
-  examples: List[String] = Nil
+  examples: List[String] = Nil,
+  stable: Boolean = true
 ) extends TypedWord {
+
+  // A macro should not present itself as stable if its expansion uses an unstable word,
+  // otherwise it would be offered in stable completions and skip the unstable diagnostic while
+  // still failing at execution time.
+  override def isStable: Boolean = stable
 
   // Pass through raw stack values without coercion — the body must see the
   // original values (e.g. a raw Query, not DataExpr.Sum(query)).

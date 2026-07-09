@@ -1317,33 +1317,21 @@ object MathVocabulary extends Vocabulary {
     override def name: String = "approx-distinct"
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case DataExprType(expr) :: _ =>
-        expr match {
-          case _: DataExpr.All => false
-          case _               => true
-        }
+      case TimeSeriesExprType(t) :: _ =>
+        t.dataExprs.nonEmpty && !t.dataExprs.exists(_.isInstanceOf[DataExpr.All])
     }
 
     protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case DataExprType(t) :: stack =>
-        // Registers merge across sources by taking the max, so force a max aggregate and
-        // group by the register key regardless of the aggregate the user specified.
-        val expr = t match {
-          case af: AggregateFunction => DataExpr.GroupBy(toMax(af), List(TagKey.distinct))
-          case by: DataExpr.GroupBy  => DataExpr.GroupBy(toMax(by.af), TagKey.distinct :: by.keys)
-          case _ =>
-            throw new IllegalArgumentException(":approx-distinct cannot be used with :all")
-        }
-        MathExpr.ApproxDistinct(expr) :: stack
+      // The estimator reshapes the input to the register grouping internally (forcing a max
+      // aggregate grouped by the register key), including through wrappers such as
+      // :cumulative-max. That is how :approx-distinct-cumulative composes.
+      case TimeSeriesExprType(t) :: stack =>
+        MathExpr.ApproxDistinct(t) :: stack
     }
 
     // Not yet stable: the distinct count sketch statistic still needs cross-team sign-off, so
     // gate the operator behind the unstable features flag until the API is finalized.
     override def isStable: Boolean = false
-
-    private def toMax(af: AggregateFunction): DataExpr.Max = {
-      DataExpr.Max(af.query, offset = af.offset)
-    }
 
     override def summary: String =
       """
@@ -1360,7 +1348,7 @@ object MathVocabulary extends Vocabulary {
         |another dimension.
       """.stripMargin.trim
 
-    override def signature: String = "DataExpr -- Expr"
+    override def signature: String = "TimeSeriesExpr -- Expr"
 
     override def examples: List[String] = List(
       "name,server.uniqueUsers,:eq",
