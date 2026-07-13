@@ -34,6 +34,7 @@ import com.netflix.atlas.json3.Json
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.Spectator
+import com.netflix.spectator.api.Utils
 import com.netflix.spectator.ipc.IpcMetric
 import com.netflix.spectator.ipc.NetflixHeader
 
@@ -167,6 +168,78 @@ class CustomDirectivesSuite extends MUnitRouteSuite {
   }
 
   val endpoint = new TestService(system)
+
+  // Routes wrapped with the full standard request handling stack (access log plus the
+  // real exception and rejection handlers). This is used to check what endpoint value
+  // gets recorded when the inner route of an `endpointPath*` directive throws an
+  // exception or is rejected. In those cases the response is produced by the exception
+  // or rejection handler, which is wrapped *outside* of the `endpointPath*` directive.
+  // The recorded-endpoint mechanism still applies the `Netflix-Endpoint` header to those
+  // error responses so the endpoint is captured on the access log.
+  private val standardRoutes: Route = {
+    val inner =
+      endpointPath("endpoint-ok") {
+        get {
+          complete(HttpResponse(status = StatusCodes.OK))
+        }
+      } ~
+      endpointPath("endpoint-throw") {
+        get {
+          throw new IllegalArgumentException("boom")
+        }
+      } ~
+      endpointPathPrefix("endpoint-reject") {
+        path("data") {
+          // Only supports GET so that a POST after the prefix has been matched will
+          // result in a method rejection.
+          get {
+            complete(HttpResponse(status = StatusCodes.OK))
+          }
+        }
+      } ~
+      endpointPath("endpoint-large") {
+        post {
+          // Small size limit so a modest payload triggers an EntityStreamSizeException
+          // when the entity is consumed (after the endpoint path has been matched).
+          withSizeLimit(10) {
+            parseEntity(CustomDirectives.json[String]) { _ =>
+              complete(HttpResponse(status = StatusCodes.OK))
+            }
+          }
+        }
+      } ~
+      // A shared prefix where an `endpointPath*` branch matches the prefix (recording its
+      // endpoint) but then rejects, and a sibling non-endpoint route completes the
+      // request. The sibling response must not inherit the rejected branch's endpoint.
+      endpointPathPrefix("shared") {
+        path("a") {
+          get {
+            complete(HttpResponse(status = StatusCodes.OK))
+          }
+        }
+      } ~
+      path("shared" / "b") {
+        get {
+          complete(HttpResponse(status = StatusCodes.OK))
+        }
+      } ~
+      // Like the "shared" prefix above, but the sibling that completes the request is
+      // itself an `endpointPath*` route. Attribution should follow the path actually
+      // taken (the sibling), not the rejected prefix.
+      endpointPathPrefix("picked") {
+        path("a") {
+          get {
+            complete(HttpResponse(status = StatusCodes.OK))
+          }
+        }
+      } ~
+      endpointPath("picked" / "b") {
+        get {
+          complete(HttpResponse(status = StatusCodes.OK))
+        }
+      }
+    RequestHandler.standardOptions(inner)
+  }
 
   override def beforeEach(context: BeforeEach): Unit = {
     val registry = Spectator.globalRegistry()
@@ -468,6 +541,85 @@ class CustomDirectivesSuite extends MUnitRouteSuite {
       // Ideally it wouldn't match the 404 value that was extracted, but since this sort
       // of nesting is not common for our use-cases, that is left for later refinement
       assertEquals(getEndpoint(response), "/endpoint/v1/foo/404/bar")
+    }
+  }
+
+  private def endpointTag: Option[String] = {
+    import scala.jdk.CollectionConverters.*
+    Spectator
+      .globalRegistry()
+      .iterator()
+      .asScala
+      .map(_.id())
+      .filter(_.name() == "ipc.server.call")
+      .flatMap(id => Option(Utils.getTagValue(id, "ipc.endpoint")))
+      .nextOption()
+  }
+
+  test("endpoint header/tag set when inner route completes") {
+    Get("/endpoint-ok") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(getEndpoint(response), "/endpoint-ok")
+      // The access log endpoint tag matches the matched path
+      assertEquals(endpointTag, Some("/endpoint-ok"))
+    }
+  }
+
+  test("endpoint header/tag preserved when inner route throws") {
+    Get("/endpoint-throw") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.BadRequest)
+      // Even though the response is produced by the exception handler wrapped outside
+      // of the endpointPath directive, the endpoint matched during path matching is
+      // still applied to the response and recorded on the access log.
+      assertEquals(getEndpoint(response), "/endpoint-throw")
+      assertEquals(endpointTag, Some("/endpoint-throw"))
+    }
+  }
+
+  test("endpoint header/tag preserved when inner route is rejected") {
+    Post("/endpoint-reject/data") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.MethodNotAllowed)
+      // Even though the response is produced by the rejection handler wrapped outside
+      // of the endpointPathPrefix directive, the matched endpoint prefix is still
+      // applied to the response and recorded on the access log.
+      assertEquals(getEndpoint(response), "/endpoint-reject")
+      assertEquals(endpointTag, Some("/endpoint-reject"))
+    }
+  }
+
+  test("endpoint not leaked to a sibling route after prefix match and rejection") {
+    // GET /shared/b matches the "shared" endpoint prefix (recording it) but its inner
+    // route rejects on the sub-path, so routing backtracks to the sibling
+    // "shared" / "b" route which completes successfully. That successful response must
+    // not be attributed to the rejected prefix's endpoint.
+    Get("/shared/b") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.OK)
+      assert(response.headers.find(_.is("netflix-endpoint")).isEmpty)
+      assertNotEquals(endpointTag, Some("/shared"))
+    }
+  }
+
+  test("endpoint attributed to the path taken when a sibling endpointPath completes") {
+    // GET /picked/b matches the "picked" endpoint prefix (recording it) but its inner
+    // route rejects; routing backtracks to the sibling endpointPath("picked" / "b")
+    // which completes. The endpoint must reflect the path that actually handled the
+    // request, not the rejected prefix.
+    Get("/picked/b") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(getEndpoint(response), "/picked/b")
+      assertEquals(endpointTag, Some("/picked/b"))
+    }
+  }
+
+  test("endpoint header/tag preserved when payload is too large") {
+    val body = "\"" + "a".repeat(100) + "\""
+    Post("/endpoint-large", body) ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.ContentTooLarge)
+      // The size limit is exceeded while consuming the entity, which happens after the
+      // endpoint path has been matched, so the endpoint is still applied to the error
+      // response and recorded on the access log.
+      assertEquals(getEndpoint(response), "/endpoint-large")
+      assertEquals(endpointTag, Some("/endpoint-large"))
     }
   }
 
