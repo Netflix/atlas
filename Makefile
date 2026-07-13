@@ -59,6 +59,8 @@ publish-wiki: update-wiki
 one-jar:
 	mkdir -p target
 	curl -L $(LAUNCHER_JAR_URL) -o target/iep-launcher.jar
+	classpath=`$(SBT) --error "export atlas-standalone/runtime:fullClasspath" | tail -n1 | tr -d '\r'`; \
+	test -n "$$classpath" || { echo "error: empty classpath from sbt export" >&2; exit 1; }; \
 	java -classpath target/iep-launcher.jar com.netflix.iep.launcher.JarBuilder \
 		target/standalone.jar com.netflix.atlas.standalone.Main \
-		`$(SBT) "export atlas-standalone/runtime:fullClasspath" | tail -n1 | sed 's/:/ /g'`
+		`echo "$$classpath" | sed 's/:/ /g'`
