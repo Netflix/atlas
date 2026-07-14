@@ -3,8 +3,12 @@
 # Additional options to add in when calling java
 OPTIONS=""
 
-# On jenkins the colors should be disabled for the console log
-[ -n "$BUILD_ID" ] && OPTIONS="$OPTIONS -Dsbt.log.noformat=true"
+# Disable log formatting on CI so terminal control sequences (e.g. sbt's trailing
+# ESC[0J) do not corrupt output parsed by scripts, such as the classpath used by the
+# one-jar target. BUILD_ID is set by Jenkins; CI by GitHub Actions and most CI systems.
+if [ -n "$BUILD_ID" ] || [ -n "$CI" ]; then
+  OPTIONS="$OPTIONS -Dsbt.log.noformat=true"
+fi
 
 java \
   -XX:+UseG1GC \
