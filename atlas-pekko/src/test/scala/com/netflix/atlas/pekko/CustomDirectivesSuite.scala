@@ -237,6 +237,25 @@ class CustomDirectivesSuite extends MUnitRouteSuite {
         get {
           complete(HttpResponse(status = StatusCodes.OK))
         }
+      } ~
+      // A multi-segment prefix. pekko string matchers match a literal prefix, so
+      // "boundary" / "seg" must not match a partial segment such as "/boundary/segXYZ".
+      endpointPathPrefix("boundary" / "seg") {
+        path("data") {
+          get {
+            complete(HttpResponse(status = StatusCodes.OK))
+          }
+        }
+      } ~
+      // A non-idiomatic prefix matcher that consumes the boundary slash itself. The inner
+      // matches the bare remaining segment, so whether the request routes depends on the
+      // endpointPathPrefix boundary check rather than the inner matcher.
+      endpointPathPrefix("slashy" ~ Slash) {
+        rawPathPrefix(Segment) { _ =>
+          get {
+            complete(HttpResponse(status = StatusCodes.OK))
+          }
+        }
       }
     RequestHandler.standardOptions(inner)
   }
@@ -608,6 +627,69 @@ class CustomDirectivesSuite extends MUnitRouteSuite {
       assertEquals(response.status, StatusCodes.OK)
       assertEquals(getEndpoint(response), "/picked/b")
       assertEquals(endpointTag, Some("/picked/b"))
+    }
+  }
+
+  test("endpoint prefix matches a full segment") {
+    Get("/boundary/seg/data") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(getEndpoint(response), "/boundary/seg")
+      assertEquals(endpointTag, Some("/boundary/seg"))
+    }
+  }
+
+  test("endpoint prefix does not match a partial segment") {
+    // "boundary" / "seg" must not match "/boundary/segXYZ": that path is unmapped, so it
+    // should be a 404 attributed to "unknown", not to the "/boundary/seg" endpoint.
+    Get("/boundary/segXYZ/data") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.NotFound)
+      assert(response.headers.find(_.is("netflix-endpoint")).isEmpty)
+      assertEquals(endpointTag, Some("unknown"))
+    }
+  }
+
+  test("endpoint retained for an unmapped sub-path under a matched prefix") {
+    // The prefix "boundary" / "seg" matches at a segment boundary, so even though the
+    // sub-path is unmapped (404), the request is still attributed to that endpoint --
+    // unlike the partial-segment case above, which is "unknown".
+    Get("/boundary/seg/not-found") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.NotFound)
+      assertEquals(getEndpoint(response), "/boundary/seg")
+      assertEquals(endpointTag, Some("/boundary/seg"))
+    }
+  }
+
+  test("endpoint prefix matches when it consumes the whole path") {
+    // Exercises the end-of-path boundary (empty remainder). The prefix matches exactly,
+    // records the endpoint, then the inner path("data") rejects, so it is a 404 still
+    // attributed to "/boundary/seg".
+    Get("/boundary/seg") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.NotFound)
+      assertEquals(getEndpoint(response), "/boundary/seg")
+      assertEquals(endpointTag, Some("/boundary/seg"))
+    }
+  }
+
+  test("single-arg endpointPath does not match a partial segment") {
+    // endpointPath uses path(...) which is PathEnd-anchored, so "/endpoint-okXYZ" must
+    // not be attributed to the "/endpoint-ok" endpoint.
+    Get("/endpoint-okXYZ") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.NotFound)
+      assert(response.headers.find(_.is("netflix-endpoint")).isEmpty)
+      assertEquals(endpointTag, Some("unknown"))
+    }
+  }
+
+  test("endpointPathPrefix rejects a matcher that consumes the boundary slash") {
+    // Known limitation: a prefix matcher that itself consumes the trailing slash
+    // ("slashy" ~ Slash) leaves a bare Segment remainder, which the segment-boundary
+    // check rejects even though the inner route could match it. Idiomatic "/"-joined
+    // matchers stop before the boundary slash and are unaffected; that matcher form is
+    // also redundant (endpointPathPrefix and the inner route handle the boundary), so no
+    // real route uses it. Documented here so the behavior is explicit.
+    Get("/slashy/x") ~> standardRoutes ~> check {
+      assertEquals(response.status, StatusCodes.NotFound)
+      assert(response.headers.find(_.is("netflix-endpoint")).isEmpty)
     }
   }
 

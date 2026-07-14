@@ -29,6 +29,7 @@ import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.MediaType
 import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.model.Uri
 import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.http.scaladsl.server.Directive
 import org.apache.pekko.http.scaladsl.server.Directive0
@@ -370,7 +371,15 @@ object CustomDirectives {
     */
   def endpointPathPrefix(pm: PathMatcher[Unit]): Directive0 = {
     pathPrefix(pm).tflatMap { _ =>
-      respondWithEndpointHeader
+      // pekko string matchers match a literal prefix, so a matcher like "foo" / "bar"
+      // would also match "/foo/barXYZ" (consuming "bar" out of "barXYZ"). Only proceed
+      // when the prefix ended at a segment boundary (end of path or a following slash);
+      // otherwise reject so a partial-segment match falls through as unmatched (a 404
+      // attributed to "unknown") instead of being recorded as this endpoint.
+      extractUnmatchedPath.flatMap {
+        case Uri.Path.Empty | Uri.Path.Slash(_) => respondWithEndpointHeader
+        case _                                  => reject
+      }
     }
   }
 
