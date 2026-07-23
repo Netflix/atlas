@@ -46,6 +46,30 @@ class AccessLogger private (entry: IpcLogEntry) {
     this
   }
 
+  /**
+    * Add the caller identity extracted by a `RequestAuthenticator` to the log entry. The direct
+    * and initial callers are added as log-only tags (`addLogTag`) so the full identity, including
+    * potentially high cardinality user ids, is captured on the access log without adding a metric
+    * dimension. An application direct caller is additionally recorded as the client app so that
+    * the bounded `ipc.client.app` metric dimension is populated.
+    */
+  def withCaller(caller: CallerContext): AccessLogger = {
+    val direct = caller.direct
+    val original = caller.original
+    if (direct.kind == Principal.Kind.App) {
+      entry.withClientApp(direct.id)
+    }
+    if (direct.kind != Principal.Kind.Unknown) {
+      entry.addLogTag("caller", direct.id)
+    }
+    // Only record the initial caller separately when it differs from the direct caller, e.g.
+    // an application calling on behalf of a user.
+    if (original.kind != Principal.Kind.Unknown && original != direct) {
+      entry.addLogTag("caller.origin", original.id)
+    }
+    this
+  }
+
   /** Complete the log entry and write out the result. */
   def complete(request: HttpRequest, result: Try[HttpResponse]): Unit = {
     AccessLogger.addRequestInfo(entry, request)
@@ -76,6 +100,19 @@ class AccessLogger private (entry: IpcLogEntry) {
 object AccessLogger {
 
   private val owner = "atlas-pekko"
+
+  // Request header names (lower-cased) whose values should be redacted in the access log. Used
+  // to keep secrets and bearer tokens forwarded by an upstream proxy (e.g. a proxy auth secret
+  // or an end-to-end token) out of the logs. Empty by default; deployments opt in via config.
+  private val sensitiveHeaders: Set[String] = {
+    import scala.jdk.CollectionConverters.*
+    val config = ConfigManager.get()
+    val path = "atlas.pekko.access-log.sensitive-headers"
+    if (config.hasPath(path))
+      config.getStringList(path).asScala.map(_.toLowerCase(java.util.Locale.US)).toSet
+    else
+      Set.empty
+  }
 
   private[pekko] val ipcLogger = new IpcLogger(
     Spectator.globalRegistry(),
@@ -145,7 +182,10 @@ object AccessLogger {
     entry
       .withHttpMethod(request.method.name)
       .withUri(request.uri.toString(), request.uri.path.toString())
-    request.headers.foreach(h => entry.addRequestHeader(h.name, h.value))
+    request.headers.foreach { h =>
+      val value = if (sensitiveHeaders.contains(h.lowercaseName())) "<redacted>" else h.value
+      entry.addRequestHeader(h.name, value)
+    }
     entry.addRequestHeader("Content-Type", request.entity.contentType.value)
     request.entity.contentLengthOption.foreach(entry.withRequestContentLength)
   }
