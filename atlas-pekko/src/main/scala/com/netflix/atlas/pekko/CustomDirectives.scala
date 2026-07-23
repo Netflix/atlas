@@ -62,6 +62,14 @@ object CustomDirectives {
     */
   private val endpointAttr = AttributeKey[AtomicReference[String]]("atlas-endpoint")
 
+  /**
+    * Request attribute holding the mutable slot used to propagate the caller established by a
+    * `RequestAuthenticator` (via [[recordCaller]]) out to the `accessLog` directive. Uses the
+    * same holder pattern as [[endpointAttr]] so the caller is available on the access log even
+    * though the authenticator runs inside the access log wrapper.
+    */
+  private val callerAttr = AttributeKey[AtomicReference[CallerContext]]("atlas-caller-holder")
+
   private def isSmile(mediaType: MediaType): Boolean = {
     mediaType == CustomMediaTypes.`application/x-jackson-smile`
   }
@@ -136,6 +144,29 @@ object CustomDirectives {
         val entity = request.entity
         entity.dataBytes.runReduce(_ ++ _).map(parse(entity.contentType.mediaType))
       }
+    }
+  }
+
+  /**
+    * Extract the [[CallerContext]] that was populated by a [[RequestAuthenticator]]. If no
+    * authenticator is configured, or it did not set the context, then the anonymous context
+    * is provided. This allows endpoints to depend on the caller identity without a compile
+    * time dependency on the mechanism used to establish it.
+    */
+  def extractCaller: Directive1[CallerContext] = {
+    optionalAttribute(CallerContext.attr).map(_.getOrElse(CallerContext.Anonymous))
+  }
+
+  /**
+    * Record the caller established by a [[RequestAuthenticator]] so that it is available to the
+    * inner routes via [[extractCaller]] and to the access log. It both sets the [[CallerContext]]
+    * request attribute (read by `extractCaller`) and, when present, populates the holder installed
+    * by `accessLog` so the caller is logged even though the authenticator runs inside it.
+    */
+  def recordCaller(caller: CallerContext): Directive0 = {
+    optionalAttribute(callerAttr).flatMap { holder =>
+      holder.foreach(_.set(caller))
+      mapRequest(_.addAttribute(CallerContext.attr, caller))
     }
   }
 
@@ -232,8 +263,14 @@ object CustomDirectives {
     corsPreflight(hosts) ~ respondWithCorsHeaders(hosts) { inner }
   }
 
-  // Helper function to finish constructing the log entry and writing to the logger.
-  private def log(logger: AccessLogger)(req: HttpRequest)(result: RouteResult): Unit = {
+  // Helper function to finish constructing the log entry and writing to the logger. The caller
+  // holder is read at completion time so that an identity recorded by an inner authenticator is
+  // applied to the log entry.
+  private def log(
+    logger: AccessLogger,
+    caller: AtomicReference[CallerContext]
+  )(req: HttpRequest)(result: RouteResult): Unit = {
+    logger.withCaller(caller.get())
     result match {
       case RouteResult.Complete(res) => logger.complete(req, Success(res))
       case RouteResult.Rejected(vs)  => logger.complete(req, Failure(new Exception(vs.toString)))
@@ -254,16 +291,17 @@ object CustomDirectives {
       val entry = AccessLogger.ipcLogger.createServerEntry.withRemoteAddress(addr)
       val logger = AccessLogger.newServerLogger(entry)
 
-      // Holder for the endpoint matched by an inner `endpointPath*` directive. It is
-      // made available to the inner routes via a request attribute and is applied to
-      // the response below so that the endpoint is captured on the access log even for
-      // responses produced by an error handler (exception or rejection) that runs
-      // outside the scope of the `endpointPath*` directive.
-      // Note the ordering: `logRequestResult` must wrap `addRecordedEndpointHeader` so
-      // that the logged response reflects the endpoint header that was added.
+      // Holders for values recorded by inner directives while the request is handled, so they
+      // can still be applied to the access log even when the response is produced by an error
+      // handler (exception or rejection) that runs outside the recording directive's scope.
+      // `endpoint` is set by the `endpointPath*` directives; `caller` is set by a
+      // `RequestAuthenticator` via `recordCaller`. Both run inside this `accessLog` wrapper.
+      // Note the ordering: `logRequestResult` must wrap `addRecordedEndpointHeader` so that the
+      // logged response reflects the endpoint header that was added.
       val endpoint = new AtomicReference[String]()
-      mapRequest(_.addAttribute(endpointAttr, endpoint)) &
-        logRequestResult(LoggingMagnet(_ => log(logger))) &
+      val caller = new AtomicReference[CallerContext](CallerContext.Anonymous)
+      mapRequest(_.addAttribute(endpointAttr, endpoint).addAttribute(callerAttr, caller)) &
+        logRequestResult(LoggingMagnet(_ => log(logger, caller))) &
         addRecordedEndpointHeader(endpoint) &
         respondWithDefaultHeaders(headers)
     }
