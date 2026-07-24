@@ -130,7 +130,11 @@ object RequestHandler extends StrictLogging {
       config.getDouble("atlas.pekko.request-handler.close-probability")
     }
 
-    val requestAuthenticator: RequestAuthenticator = {
+    // Lazy so the authenticator is built only when the routes are actually wired (the real
+    // `Settings(config)` path), not eagerly for the `defaultSettings` singleton built from
+    // `ConfigFactory.load()` at object init. A stateful authenticator otherwise gets constructed
+    // early from the wrong config source (and twice).
+    lazy val requestAuthenticator: RequestAuthenticator = {
       RequestAuthenticator(config)
     }
   }
