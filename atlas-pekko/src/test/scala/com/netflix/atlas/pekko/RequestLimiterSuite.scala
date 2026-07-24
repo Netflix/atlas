@@ -239,4 +239,48 @@ class RequestLimiterSuite extends FunSuite {
       new RequestLimiter(config("mode = bogus\nendpoints {}"), new DefaultRegistry())
     }
   }
+
+  test("fair-share default bucket contains a hog while a victim can still acquire") {
+    val cfg =
+      """
+        |mode = enforce
+        |endpoints {
+        |  graph {
+        |    fair-share = true
+        |    default-bucket-budget = 4
+        |  }
+        |}
+        |""".stripMargin
+    val registry = new DefaultRegistry()
+    val limiter = new RequestLimiter(config(cfg), registry)
+
+    // Hog fills the shared bucket, then keeps hammering until it is penalized.
+    val held = (1 to 4).flatMap(_ => limiter.acquire(graphKey("hog"), 1))
+    assertEquals(held.size, 4)
+    assert(limiter.acquire(graphKey("victim"), 1).isEmpty) // bucket full, marks victim as waiting
+    (1 to 3).foreach(_ => assert(limiter.acquire(graphKey("hog"), 1).isEmpty))
+
+    // A permit frees: the penalized hog cannot reclaim it, but the victim can.
+    held.head.release()
+    assert(limiter.acquire(graphKey("hog"), 1).isEmpty)
+    assert(limiter.acquire(graphKey("victim"), 1).isDefined)
+  }
+
+  test("fair-share is off by default so the default bucket is a plain shared limiter") {
+    val cfg =
+      """
+        |mode = enforce
+        |endpoints {
+        |  graph { default-bucket-budget = 4 }
+        |}
+        |""".stripMargin
+    val registry = new DefaultRegistry()
+    val limiter = new RequestLimiter(config(cfg), registry)
+    // Without fair sharing a single caller can take the whole bucket and is not penalized.
+    val held = (1 to 4).flatMap(_ => limiter.acquire(graphKey("hog"), 1))
+    assertEquals(held.size, 4)
+    held.head.release()
+    // The freed permit is available first-come, including back to the same caller.
+    assert(limiter.acquire(graphKey("hog"), 1).isDefined)
+  }
 }
