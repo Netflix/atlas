@@ -56,7 +56,7 @@ trait ConcurrencyLimiter {
   /** Number of permits currently held. Intended for reporting via gauges. */
   def usedPermits: Int
 
-  /** Total number of permits, or [[Int.MaxValue]] when there is no limit. */
+  /** Total number of permits, or `Int.MaxValue` when there is no limit. */
   def maxPermits: Int
 }
 
