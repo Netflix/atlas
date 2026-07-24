@@ -20,8 +20,10 @@ import com.netflix.spectator.api.DistributionSummary
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.patterns.PolledMeter
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigUtil
 
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.jdk.CollectionConverters.*
 
@@ -52,6 +54,11 @@ class RequestLimiter(config: Config, registry: Registry) {
   import RequestLimiter.*
 
   private val mode: Mode = Mode.fromString(config.getString("mode"))
+
+  private val clock = registry.clock()
+
+  // Tuning shared by every bucket that enables fair sharing.
+  private val fairShare: FairShareConfig = FairShareConfig.from(config)
 
   // When disabled there is nothing to enforce, so no limiters or gauges are built.
   private val endpoints: Map[String, EndpointLimiter] = {
@@ -94,7 +101,19 @@ class RequestLimiter(config: Config, registry: Registry) {
       else ConcurrencyLimiter(limits.totalBudget)
     monitorInflight(total, name, "__total__")
 
-    val default = ConcurrencyLimiter(limits.defaultBucketBudget)
+    // The default bucket is shared by many callers, so it can enable fair sharing to keep one
+    // caller from starving the others. Dedicated buckets are per-caller and so gain nothing.
+    val default =
+      if (limits.fairShare && limits.defaultBucketBudget > 0)
+        new FairShareLimiter(
+          limits.defaultBucketBudget,
+          clock,
+          fairShare.window,
+          fairShare.penalizedThreshold,
+          fairShare.demeritPerDenial,
+          fairShare.decayPerSecond
+        )
+      else ConcurrencyLimiter(limits.defaultBucketBudget)
     monitorInflight(default, name, LimitKey.DefaultBucket)
 
     // A caller budget named "default" is reserved for the shared bucket and does not create a
@@ -231,12 +250,49 @@ object RequestLimiter {
     * @param callerBudgets
     *     Dedicated budgets keyed by bucket name. Presence of an entry provisions a dedicated
     *     bucket for that caller. A value of zero blocks the bucket entirely.
+    * @param fairShare
+    *     Whether the shared default bucket enforces per-caller fairness.
     */
   private case class EndpointLimits(
     totalBudget: Int,
     defaultBucketBudget: Int,
-    callerBudgets: Map[String, Int]
+    callerBudgets: Map[String, Int],
+    fairShare: Boolean
   )
+
+  /** Tuning for buckets that enable fair sharing. */
+  private case class FairShareConfig(
+    window: Duration,
+    penalizedThreshold: Double,
+    demeritPerDenial: Double,
+    decayPerSecond: Double
+  )
+
+  private object FairShareConfig {
+
+    // Fallbacks used when a caller supplies config without merging reference.conf (for example a
+    // programmatic Config), and for any key omitted from a partial `fair-share` block. Keep these
+    // in sync with the reference.conf defaults.
+    private val defaults: Config = ConfigFactory.parseString(
+      """
+        |window = 5s
+        |penalized-threshold = 3.0
+        |demerit-per-denial = 1.0
+        |decay-per-second = 0.3
+        |""".stripMargin
+    )
+
+    def from(config: Config): FairShareConfig = {
+      val base = if (config.hasPath("fair-share")) config.getConfig("fair-share") else defaults
+      val c = base.withFallback(defaults)
+      FairShareConfig(
+        c.getDuration("window"),
+        c.getDouble("penalized-threshold"),
+        c.getDouble("demerit-per-denial"),
+        c.getDouble("decay-per-second")
+      )
+    }
+  }
 
   private def readEndpoints(config: Config): Map[String, EndpointLimits] = {
     if (!config.hasPath("endpoints")) Map.empty
@@ -251,7 +307,13 @@ object RequestLimiter {
           // literally rather than being interpreted as a nested config path.
           val ec = obj.getConfig(ConfigUtil.joinPath(name))
           val totalBudget = if (ec.hasPath("total-budget")) ec.getInt("total-budget") else 0
-          name -> EndpointLimits(totalBudget, ec.getInt("default-bucket-budget"), readBudgets(ec))
+          val fair = ec.hasPath("fair-share") && ec.getBoolean("fair-share")
+          name -> EndpointLimits(
+            totalBudget,
+            ec.getInt("default-bucket-budget"),
+            readBudgets(ec),
+            fair
+          )
         }
         .toMap
     }
