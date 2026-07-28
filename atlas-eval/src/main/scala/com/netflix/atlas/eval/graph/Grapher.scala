@@ -46,6 +46,7 @@ import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.core.util.UnitPrefix
 import com.netflix.atlas.eval.util.IdParamSanitizer
+import com.netflix.atlas.pekko.CallerContext
 import com.netflix.atlas.pekko.Cors
 import com.typesafe.config.Config
 
@@ -58,9 +59,13 @@ case class Grapher(settings: DefaultSettings) {
 
   /**
     * Create a graph config from a request object. This will look at the URI and try to
-    * extract some context from the headers.
+    * extract some context from the headers. The `caller`, if established by an upstream
+    * authenticator, is recorded on the config so downstream data access can be attributed.
     */
-  def toGraphConfig(request: HttpRequest): GraphConfig = {
+  def toGraphConfig(
+    request: HttpRequest,
+    caller: CallerContext = CallerContext.Anonymous
+  ): GraphConfig = {
     val config = rewriteBasedOnHost(request, toGraphConfig(request.uri))
 
     // Check if the request is coming from a browser
@@ -76,9 +81,9 @@ case class Grapher(settings: DefaultSettings) {
         .find(_.is("origin"))
         .flatMap(h => Cors.normalizedOrigin(h.value()))
         .getOrElse("default")
-      config.copy(isBrowser = isBrowser, id = IdParamSanitizer.sanitize(origin))
+      config.copy(isBrowser = isBrowser, id = IdParamSanitizer.sanitize(origin), caller = caller)
     } else {
-      config.copy(isBrowser = isBrowser)
+      config.copy(isBrowser = isBrowser, caller = caller)
     }
   }
 

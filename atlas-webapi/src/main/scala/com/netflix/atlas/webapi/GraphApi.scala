@@ -36,19 +36,23 @@ class GraphApi(config: Config, implicit val actorRefFactory: ActorRefFactory) ex
 
   def routes: Route = {
     endpointPath("api" / "v1" / "graph") {
-      get { ctx =>
-        val reqHandler = actorRefFactory.actorOf(Props(new GraphRequestActor(grapher, registry)))
-        val graphCfg = grapher.toGraphConfig(ctx.request)
-        val rc = ImperativeRequestContext(graphCfg, ctx)
-        reqHandler ! rc
-        rc.promise.future
+      get {
+        extractCaller { caller => ctx =>
+          val reqHandler = actorRefFactory.actorOf(Props(new GraphRequestActor(grapher, registry)))
+          val graphCfg = grapher.toGraphConfig(ctx.request, caller)
+          val rc = ImperativeRequestContext(graphCfg, ctx)
+          reqHandler ! rc
+          rc.promise.future
+        }
       }
     } ~
     endpointPath("api" / "v2" / "fetch") {
       get {
-        extractRequest { request =>
-          val graphCfg = grapher.toGraphConfig(request)
-          complete(FetchRequestSource.createResponse(actorRefFactory, graphCfg))
+        extractCaller { caller =>
+          extractRequest { request =>
+            val graphCfg = grapher.toGraphConfig(request, caller)
+            complete(FetchRequestSource.createResponse(actorRefFactory, graphCfg))
+          }
         }
       }
     }
