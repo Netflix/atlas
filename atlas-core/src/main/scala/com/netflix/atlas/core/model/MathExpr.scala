@@ -1290,7 +1290,7 @@ object MathExpr {
         // Re-materialize the rewrite from its display string. This is reconstructing an
         // expression that was already accepted, so it must not re-enforce the stability gate;
         // otherwise rewrites such as normalization or `:cq` would fail for a named rewrite built
-        // from an unstable operator (e.g. :approx-distinct-cumulative).
+        // from an operator gated behind the unstable features flag.
         val ctxt =
           context.interpreter.execute(toString(newDisplayExpr), Map.empty, Features.UNSTABLE)
         ctxt.stack match {

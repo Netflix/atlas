@@ -32,7 +32,7 @@ class ApproxDistinctCumulativeSuite extends FunSuite {
   private val step = 60000L
 
   private def parseExpr(str: String): TimeSeriesExpr = {
-    interpreter.execute(str, Map.empty[String, Any], Features.UNSTABLE).stack match {
+    interpreter.execute(str, Map.empty[String, Any], Features.STABLE).stack match {
       case (v: TimeSeriesExpr) :: _ => v
       case _                        => throw new IllegalArgumentException("invalid expr")
     }
