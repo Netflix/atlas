@@ -95,7 +95,14 @@ class StreamOpsSuite extends FunSuite {
     Seq(2, 3, 4, 5).foreach(i => queue.offer(Future(i)))
     promise.complete(Success(1))
     queue.complete()
-    checkOfferedCounts(registry, Map("enqueued" -> 3.0, "droppedQueueFull" -> 4.0))
+    // Whether the second offer passes straight through on downstream demand or lands in the single
+    // queue slot races with the stream's async demand signaling, so the split between enqueued and
+    // dropped can drift by one (the total of 7 offers is fixed). Match the range form used by the
+    // wrapBlockingQueue variant of this test.
+    checkOfferedCounts(
+      registry,
+      Map("enqueued" -> (2.0 -> 3.0), "droppedQueueFull" -> (4.0 -> 5.0))
+    )
   }
 
   test("blocking queue, droppedQueueClosed") {
