@@ -47,8 +47,7 @@ class ApproxDistinctSuite extends FunSuite {
   }
 
   private def parseExpr(str: String): TimeSeriesExpr = {
-    // :approx-distinct is not yet a stable word, so enable unstable features.
-    interpreter.execute(str, Map.empty[String, Any], Features.UNSTABLE).stack match {
+    interpreter.execute(str, Map.empty[String, Any], Features.STABLE).stack match {
       case (v: TimeSeriesExpr) :: _ => v
       case _                        => throw new IllegalArgumentException("invalid expr")
     }

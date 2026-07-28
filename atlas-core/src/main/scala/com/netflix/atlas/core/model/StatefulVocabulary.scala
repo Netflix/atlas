@@ -92,9 +92,7 @@ object StatefulVocabulary extends Vocabulary {
       List(
         "name,server.uniqueUsers,:eq",
         "name,server.uniqueUsers,:eq,(,nf.region,),:by"
-      ),
-      // Unstable: it expands to :approx-distinct, which is not yet stable.
-      stable = false
+      )
     )
   }
 

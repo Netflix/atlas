@@ -1329,10 +1329,6 @@ object MathVocabulary extends Vocabulary {
         MathExpr.ApproxDistinct(t) :: stack
     }
 
-    // Not yet stable: the distinct count sketch statistic still needs cross-team sign-off, so
-    // gate the operator behind the unstable features flag until the API is finalized.
-    override def isStable: Boolean = false
-
     override def summary: String =
       """
         |Estimate the number of distinct values recorded into a distinct count sketch. The data
