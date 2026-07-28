@@ -28,6 +28,7 @@ import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.Step
 import com.netflix.atlas.core.util.Strings
+import com.netflix.atlas.pekko.CallerContext
 
 import scala.util.Try
 
@@ -45,7 +46,10 @@ case class GraphConfig(
   features: Features,
   isBrowser: Boolean,
   isAllowedFromBrowser: Boolean,
-  uri: String
+  uri: String,
+  // Identity of the caller, populated from the request by the endpoint so downstream data access
+  // can be attributed to a caller. Defaults to the anonymous caller when not established.
+  caller: CallerContext = CallerContext.Anonymous
 ) {
 
   import GraphConfig.*

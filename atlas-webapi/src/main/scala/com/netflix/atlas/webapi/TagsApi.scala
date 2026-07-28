@@ -33,6 +33,7 @@ import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.model.Tag
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.json3.Json
+import com.netflix.atlas.pekko.CallerContext
 import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.WebApi
 
@@ -60,22 +61,25 @@ class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
   private def handleReq(path: Option[String]): Route = {
     get {
-      extractRequestContext { ctx =>
-        val req = toRequest(ctx, path)
-        val limit = req.actualLimit
-        _ =>
-          ask(dbRef, req.toDbRequest)(60.seconds).map {
-            case TagListResponse(vs) if req.useText => asText(tagString(vs), offsetTag(limit, vs))
-            case KeyListResponse(vs) if req.useText =>
-              asText(vs.mkString("\n"), offsetString(limit, vs))
-            case ValueListResponse(vs) if req.useText =>
-              asText(vs.mkString("\n"), offsetString(limit, vs))
-            case TagListResponse(vs) if req.useJson   => asJson(vs, offsetTag(limit, vs))
-            case KeyListResponse(vs) if req.useJson   => asJson(vs, offsetString(limit, vs))
-            case ValueListResponse(vs) if req.useJson => asJson(vs, offsetString(limit, vs))
-            case Failure(t)                           => throw t
-            case v                                    => throw new MatchError(v)
-          }
+      extractCaller { caller =>
+        extractRequestContext { ctx =>
+          val req = toRequest(ctx, path)
+          val limit = req.actualLimit
+          _ =>
+            ask(dbRef, req.toDbRequest(caller))(60.seconds).map {
+              case TagListResponse(vs) if req.useText =>
+                asText(tagString(vs), offsetTag(limit, vs))
+              case KeyListResponse(vs) if req.useText =>
+                asText(vs.mkString("\n"), offsetString(limit, vs))
+              case ValueListResponse(vs) if req.useText =>
+                asText(vs.mkString("\n"), offsetString(limit, vs))
+              case TagListResponse(vs) if req.useJson   => asJson(vs, offsetTag(limit, vs))
+              case KeyListResponse(vs) if req.useJson   => asJson(vs, offsetString(limit, vs))
+              case ValueListResponse(vs) if req.useJson => asJson(vs, offsetString(limit, vs))
+              case Failure(t)                           => throw t
+              case v                                    => throw new MatchError(v)
+            }
+        }
       }
     }
   }
@@ -146,12 +150,12 @@ object TagsApi {
 
     def useJson: Boolean = !useText
 
-    def toDbRequest: AnyRef = {
+    def toDbRequest(caller: CallerContext): AnyRef = {
       (key -> verbose) match {
-        case (Some(k), true)  => ListTagsRequest(toTagQuery(Query.HasKey(k)))
-        case (Some(k), false) => ListValuesRequest(toTagQuery(Query.HasKey(k)))
-        case (None, true)     => ListTagsRequest(toTagQuery(Query.True))
-        case (None, false)    => ListKeysRequest(toTagQuery(Query.True))
+        case (Some(k), true)  => ListTagsRequest(toTagQuery(Query.HasKey(k)), caller)
+        case (Some(k), false) => ListValuesRequest(toTagQuery(Query.HasKey(k)), caller)
+        case (None, true)     => ListTagsRequest(toTagQuery(Query.True), caller)
+        case (None, false)    => ListKeysRequest(toTagQuery(Query.True), caller)
       }
     }
 
@@ -170,11 +174,13 @@ object TagsApi {
     }
   }
 
-  case class ListTagsRequest(q: TagQuery)
+  // The `caller` on these requests is propagated from the endpoint so downstream data access can
+  // be attributed to a caller. It defaults to the anonymous caller when not provided.
+  case class ListTagsRequest(q: TagQuery, caller: CallerContext = CallerContext.Anonymous)
 
-  case class ListKeysRequest(q: TagQuery)
+  case class ListKeysRequest(q: TagQuery, caller: CallerContext = CallerContext.Anonymous)
 
-  case class ListValuesRequest(q: TagQuery)
+  case class ListValuesRequest(q: TagQuery, caller: CallerContext = CallerContext.Anonymous)
 
   case class KeyListResponse(vs: List[String])
 

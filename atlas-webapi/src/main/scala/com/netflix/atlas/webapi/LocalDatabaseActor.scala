@@ -35,10 +35,12 @@ class LocalDatabaseActor(db: Database) extends Actor with ActorLogging {
   }
 
   private def innerReceive: Receive = {
-    case ListTagsRequest(tq)   => sender() ! TagListResponse(db.index.findTags(tq))
-    case ListKeysRequest(tq)   => sender() ! KeyListResponse(db.index.findKeys(tq))
-    case ListValuesRequest(tq) => sender() ! ValueListResponse(db.index.findValues(tq))
-    case req: DataRequest      => sender() ! executeDataRequest(req)
+    // The `caller` carried on these requests (and on DataRequest via its GraphConfig) is available
+    // for attribution but is not consumed by this local database; a remote database can read it.
+    case r: ListTagsRequest   => sender() ! TagListResponse(db.index.findTags(r.q))
+    case r: ListKeysRequest   => sender() ! KeyListResponse(db.index.findKeys(r.q))
+    case r: ListValuesRequest => sender() ! ValueListResponse(db.index.findValues(r.q))
+    case req: DataRequest     => sender() ! executeDataRequest(req)
   }
 
   private def executeDataRequest(req: DataRequest): DataResponse = {
