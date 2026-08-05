@@ -138,7 +138,7 @@ object Strings {
     else {
       conversions.get(c) match {
         case Some(f) => f(v).asInstanceOf[T]
-        case None =>
+        case None    =>
           throw new IllegalArgumentException(
             "unsupported property type " +
               c.getName + ", must be one of " +

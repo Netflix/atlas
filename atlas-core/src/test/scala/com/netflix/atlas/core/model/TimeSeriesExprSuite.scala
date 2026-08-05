@@ -68,27 +68,27 @@ class TimeSeriesExprSuite extends FunSuite {
     ":true,10,:mul"              -> const(ts(unknownTag, "name=unknown", 55.0 * 10)),
     ":true,10,:div"              -> const(ts(unknownTag, "name=unknown", 55.0 / 10)),
     ":true,2,:pow"               -> const(ts(unknownTag, "name=unknown", math.pow(55.0, 2.0))),
-    "2,:true,:pow" -> const(
+    "2,:true,:pow"               -> const(
       ts(Map("name" -> "2.0"), "name=2.0", math.pow(2.0, 55.0))
     ),
-    ":true,0,:div"   -> const(ts(unknownTag, "name=unknown", Double.NaN)),
-    ":true,55,:gt"   -> const(ts(unknownTag, "name=unknown", 0.0)),
-    ":true,0,:gt"    -> const(ts(unknownTag, "name=unknown", 1.0)),
-    ":true,55.1,:ge" -> const(ts(unknownTag, "name=unknown", 0.0)),
-    ":true,55,:ge"   -> const(ts(unknownTag, "name=unknown", 1.0)),
-    ":true,0,:ge"    -> const(ts(unknownTag, "name=unknown", 1.0)),
-    ":true,55,:lt"   -> const(ts(unknownTag, "name=unknown", 0.0)),
-    ":true,56,:lt"   -> const(ts(unknownTag, "name=unknown", 1.0)),
-    ":true,55.1,:le" -> const(ts(unknownTag, "name=unknown", 1.0)),
-    ":true,55,:le"   -> const(ts(unknownTag, "name=unknown", 1.0)),
-    ":true,0,:le"    -> const(ts(unknownTag, "name=unknown", 0.0)),
-    ":true,0,:and"   -> const(ts(unknownTag, "name=unknown", 0.0)),
-    ":true,1,:and"   -> const(ts(unknownTag, "name=unknown", 1.0)),
-    ":true,0,:or"    -> const(ts(unknownTag, "name=unknown", 1.0)),
-    ":true,1,:or"    -> const(ts(unknownTag, "name=unknown", 1.0)),
-    "0,0,:or"        -> const(ts("name" -> "0.0", "0.0", 0.0)),
-    "1,:per-step"    -> const(ts(Map("name" -> "1.0"), "name=1.0", 60)),
-    "1,:integral"    -> const(integral(Map("name" -> "1.0"), "integral(1.0)", 1.0)),
+    ":true,0,:div"             -> const(ts(unknownTag, "name=unknown", Double.NaN)),
+    ":true,55,:gt"             -> const(ts(unknownTag, "name=unknown", 0.0)),
+    ":true,0,:gt"              -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,55.1,:ge"           -> const(ts(unknownTag, "name=unknown", 0.0)),
+    ":true,55,:ge"             -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,0,:ge"              -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,55,:lt"             -> const(ts(unknownTag, "name=unknown", 0.0)),
+    ":true,56,:lt"             -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,55.1,:le"           -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,55,:le"             -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,0,:le"              -> const(ts(unknownTag, "name=unknown", 0.0)),
+    ":true,0,:and"             -> const(ts(unknownTag, "name=unknown", 0.0)),
+    ":true,1,:and"             -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,0,:or"              -> const(ts(unknownTag, "name=unknown", 1.0)),
+    ":true,1,:or"              -> const(ts(unknownTag, "name=unknown", 1.0)),
+    "0,0,:or"                  -> const(ts("name" -> "0.0", "0.0", 0.0)),
+    "1,:per-step"              -> const(ts(Map("name" -> "1.0"), "name=1.0", 60)),
+    "1,:integral"              -> const(integral(Map("name" -> "1.0"), "integral(1.0)", 1.0)),
     "minuteOfDay,:time,1,:add" -> const(
       integral(Map("name" -> "minuteOfDay"), "name=minuteOfDay", 1.0)
     ),
@@ -117,7 +117,7 @@ class TimeSeriesExprSuite extends FunSuite {
     ":true,:min,(,name,),:by,:min" -> const(ts(Map.empty[String, String], "min(NO TAGS)", 0)),
     ":true,:max,(,name,),:by,:max" -> const(ts(Map.empty[String, String], "max(NO TAGS)", 10)),
     ":true,:max,(,type,),:by,:sum" -> const(ts(Map.empty[String, String], "sum(NO TAGS)", 10)),
-    ":true,(,name,),:by,:avg" -> const(
+    ":true,(,name,),:by,:avg"      -> const(
       ts(Map.empty[String, String], "NO TAGS", 5)
     ),
     ":true,(,foo,),:by"            -> const(Nil),
@@ -198,10 +198,10 @@ class TimeSeriesExprSuite extends FunSuite {
 
   // Tests that cannot be executed with incremental evaluation
   private val globalTests = List(
-    "1,:integral,min,:stat"  -> const(ts(Map("name" -> "1.0"), "stat-min(integral(1.0))", 1.0)),
-    "1,:integral,max,:stat"  -> const(ts(Map("name" -> "1.0"), "stat-max(integral(1.0))", 10.0)),
-    "1,:integral,avg,:stat"  -> const(ts(Map("name" -> "1.0"), "stat-avg(integral(1.0))", 5.5)),
-    "1,:integral,last,:stat" -> const(ts(Map("name" -> "1.0"), "stat-last(integral(1.0))", 10.0)),
+    "1,:integral,min,:stat"   -> const(ts(Map("name" -> "1.0"), "stat-min(integral(1.0))", 1.0)),
+    "1,:integral,max,:stat"   -> const(ts(Map("name" -> "1.0"), "stat-max(integral(1.0))", 10.0)),
+    "1,:integral,avg,:stat"   -> const(ts(Map("name" -> "1.0"), "stat-avg(integral(1.0))", 5.5)),
+    "1,:integral,last,:stat"  -> const(ts(Map("name" -> "1.0"), "stat-last(integral(1.0))", 10.0)),
     "1,:integral,total,:stat" -> const(
       ts(Map("name" -> "1.0"), "stat-total(integral(1.0))", 55.0)
     ),

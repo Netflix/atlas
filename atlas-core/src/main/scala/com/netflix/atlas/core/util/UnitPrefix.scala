@@ -126,7 +126,7 @@ object UnitPrefix {
     math.abs(value) match {
       case v if isNearlyZero(v)      => sec
       case v if !JDouble.isFinite(v) => sec
-      case v if v >= sec.factor =>
+      case v if v >= sec.factor      =>
         durationBigPrefixes.find(_.factor <= v).getOrElse(year)
       case v if v < 1.0 =>
         durationSmallPrefixes.find(_.factor <= v).getOrElse(picos)
@@ -176,7 +176,7 @@ object UnitPrefix {
       case v if isNearlyZero(v)          => sec
       case v if !JDouble.isFinite(v)     => sec
       case v if v < sec.factor && v >= 1 => sec
-      case v if v >= sec.factor =>
+      case v if v >= sec.factor          =>
         var last = sec
         var found: UnitPrefix = null
         durationBigPrefixes.reverse.foreach { prefix =>

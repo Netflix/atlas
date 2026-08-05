@@ -844,7 +844,7 @@ object MathExpr {
       val newData = sorted.flatMap {
         case (null, _) => Nil
         case (_, Nil)  => List(TimeSeries.noData(context.step))
-        case (k, ts) =>
+        case (k, ts)   =>
           val tags = ts.head.tags.filter(e => ks.contains(e._1))
           val aggr = expr.aggregator(context.start, context.end)
           ts.foreach(aggr.update)
