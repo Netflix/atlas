@@ -25,8 +25,6 @@ import com.netflix.spectator.api.histogram.PercentileDistributionSummary
 import com.netflix.spectator.api.histogram.PercentileTimer
 import munit.FunSuite
 
-import scala.language.postfixOps
-
 class PercentilesSuite extends FunSuite {
 
   private val interpreter = Interpreter(MathVocabulary.allWords)
@@ -62,7 +60,7 @@ class PercentilesSuite extends FunSuite {
       val bucket = f"D${PercentileBuckets.indexOf(i)}%04X"
       val v = 1.0 / 60.0
       ts(bucket, v, v)
-    } toList
+    }.toList
   }
 
   private val inputNaN100 = {
@@ -70,7 +68,7 @@ class PercentilesSuite extends FunSuite {
       val bucket = f"D${PercentileBuckets.indexOf(i)}%04X"
       val v = 1.0 / 60.0
       ts(bucket, v, Double.NaN)
-    } toList
+    }.toList
   }
 
   private val inputBad100 = {
@@ -79,7 +77,7 @@ class PercentilesSuite extends FunSuite {
       val bucket = f"D${PercentileBuckets.indexOf(i)}%04x"
       val v = 1.0 / 60.0
       ts(bucket, v, v)
-    } toList
+    }.toList
   }
 
   private val inputTimer100 = {
@@ -87,7 +85,7 @@ class PercentilesSuite extends FunSuite {
       val bucket = f"T${PercentileBuckets.indexOf(i)}%04X"
       val v = 1.0 / 60.0
       ts(bucket, v, v)
-    } toList
+    }.toList
   }
 
   private val inputNaN = {
@@ -95,7 +93,7 @@ class PercentilesSuite extends FunSuite {
       val bucket = f"D${PercentileBuckets.indexOf(i)}%04X"
       val v = Double.NaN
       ts(bucket, v, v)
-    } toList
+    }.toList
   }
 
   private val inputSpectatorTimer = {

@@ -129,7 +129,7 @@ object PublishPayloads {
       case "value"     => value = nextDouble(parser)
       case "start"     => timestamp = nextLong(parser) // Legacy support
       case "values"    => value = getValue(parser)
-      case _ => // Ignore unknown fields
+      case _           => // Ignore unknown fields
         parser.nextToken()
         parser.skipChildren()
     }
@@ -174,7 +174,7 @@ object PublishPayloads {
     var metrics: List[DatapointTuple] = null
     var tagsLoadedFirst = false
     foreachField(parser) {
-      case "tags" => tags = decodeTags(parser, null, intern)
+      case "tags"    => tags = decodeTags(parser, null, intern)
       case "metrics" =>
         tagsLoadedFirst = tags != null
         val builder = List.newBuilder[DatapointTuple]
@@ -215,7 +215,7 @@ object PublishPayloads {
       case "value"     => value = nextDouble(parser)
       case "start"     => timestamp = nextLong(parser) // Legacy support
       case "values"    => value = getValue(parser)
-      case _ => // Ignore unknown fields
+      case _           => // Ignore unknown fields
         parser.nextToken()
         parser.skipChildren()
     }
@@ -235,7 +235,7 @@ object PublishPayloads {
     var metrics: List[Datapoint] = null
     var tagsLoadedFirst = false
     foreachField(parser) {
-      case "tags" => tags = decodeTags(parser, null, intern = false)
+      case "tags"    => tags = decodeTags(parser, null, intern = false)
       case "metrics" =>
         tagsLoadedFirst = tags != null
         val builder = List.newBuilder[Datapoint]

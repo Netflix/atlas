@@ -71,7 +71,7 @@ class LocalPublishActor(registry: Registry, db: Database) extends Actor with Act
 
   private def updateStats(failures: List[ValidationResult]): Unit = {
     failures.foreach {
-      case ValidationResult.Pass => // Ignored
+      case ValidationResult.Pass              => // Ignored
       case ValidationResult.Fail(error, _, _) =>
         registry.counter(numInvalid.withTag("error", error)).increment()
     }
