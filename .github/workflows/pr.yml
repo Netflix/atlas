@@ -18,7 +18,7 @@ jobs:
           distribution: 'zulu'
           cache: 'sbt'
       - name: Build
-        run: cat /dev/null | project/sbt ++${{ matrix.scala }} clean test doc
+        run: cat /dev/null | project/sbt ++${{ matrix.scala }} clean testFull doc
   check:
     runs-on: ubuntu-latest
     steps:

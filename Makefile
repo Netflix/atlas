@@ -15,14 +15,14 @@ LAUNCHER_JAR_URL := https://repo1.maven.org/maven2/com/netflix/iep/iep-launcher/
 .PHONY: build snapshot release clean format update-wiki publish-wiki
 
 build:
-	$(SBT) clean test checkLicenseHeaders scalafmtCheckAll
+	$(SBT) clean testFull checkLicenseHeaders scalafmtCheckAll
 
 snapshot:
 	# Travis uses a depth when fetching git data so the tags needed for versioning may not
 	# be available unless we explicitly fetch them
 	git fetch --unshallow --tags
 	$(SBT) storeBintrayCredentials
-	$(SBT) clean test checkLicenseHeaders publish
+	$(SBT) clean testFull checkLicenseHeaders publish
 
 release:
 	# Travis uses a depth when fetching git data so the tags needed for versioning may not
@@ -35,7 +35,7 @@ release:
 	# The storeBintrayCredentials still needs to be on the subsequent command or we get:
 	# [error] (iep-service/*:bintrayEnsureCredentials) java.util.NoSuchElementException: None.get
 	$(SBT) storeBintrayCredentials
-	$(SBT) clean test checkLicenseHeaders storeBintrayCredentials publish bintrayRelease
+	$(SBT) clean testFull checkLicenseHeaders storeBintrayCredentials publish bintrayRelease
 
 clean:
 	$(SBT) clean
@@ -62,7 +62,7 @@ publish-wiki: update-wiki
 one-jar:
 	mkdir -p target
 	curl -fL $(LAUNCHER_JAR_URL) -o target/iep-launcher.jar
-	classpath=`$(SBT) --error "export atlas-standalone/runtime:fullClasspath" | tr -d '\r' | tr ':' '\n' | grep '\.jar$$'`; \
-	test -n "$$classpath" || { echo "error: no jars in classpath from sbt export" >&2; exit 1; }; \
+	classpath=`$(SBT) --error "atlas-standalone/printRuntimeClasspath" | tr -d '\r' | grep '\.jar$$'`; \
+	test -n "$$classpath" || { echo "error: no jars in classpath from sbt" >&2; exit 1; }; \
 	java -classpath target/iep-launcher.jar com.netflix.iep.launcher.JarBuilder \
 		target/standalone.jar com.netflix.atlas.standalone.Main $$classpath
