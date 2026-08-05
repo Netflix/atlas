@@ -39,7 +39,7 @@ object LicenseCheck {
   """.stripMargin.trim
 
   def findFiles(dir: File): Seq[File] = {
-    (dir ** "*.scala").get ++ (dir ** "*.java").get
+    (dir ** "*.scala").get() ++ (dir ** "*.java").get()
   }
 
   def checkLicenseHeaders(log: Logger, srcDir: File): Unit = {

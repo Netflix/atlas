@@ -1,5 +1,6 @@
 import sbt.*
 import sbt.Keys.*
+import sbt.librarymanagement.syntax.given
 
 object SonatypeSettings {
 
