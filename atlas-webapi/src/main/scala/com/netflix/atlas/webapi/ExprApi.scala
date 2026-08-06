@@ -99,7 +99,7 @@ class ExprApi extends WebApi {
         // Expectation is that there would be a single query on the stack
         stack match {
           case _ :: Nil =>
-          case _ :: _ =>
+          case _ :: _   =>
             val summary = Interpreter.typeSummary(stack)
             throw new IllegalArgumentException(s"expected a single query, found $summary")
           case Nil =>

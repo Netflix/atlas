@@ -187,7 +187,7 @@ object StringFormatter {
       val maxPrecision = formatType match {
         case 's' => MaxStringPrecision
         case 'f' => MaxFloatPrecision
-        case _ =>
+        case _   =>
           throw new IllegalArgumentException(s"precision not allowed for type $formatType")
       }
       if (p < 0 || p > maxPrecision) {

@@ -1280,7 +1280,7 @@ object MathVocabulary extends Vocabulary {
         val expr = t match {
           case af: AggregateFunction => DataExpr.GroupBy(toSum(af), List(TagKey.percentile))
           case by: DataExpr.GroupBy  => DataExpr.GroupBy(toSum(by.af), TagKey.percentile :: by.keys)
-          case _ =>
+          case _                     =>
             throw new IllegalArgumentException(":percentiles can only be used with :sum and :by")
         }
         MathExpr.Percentiles(expr, pcts) :: stack

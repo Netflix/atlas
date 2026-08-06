@@ -197,7 +197,7 @@ object PngImage {
   private def newBufferedImage(img: RenderedImage): BufferedImage = {
     img match {
       case bi: BufferedImage => bi
-      case _ =>
+      case _                 =>
         val w = img.getWidth
         val h = img.getHeight
         val bi = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)

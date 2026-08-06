@@ -120,7 +120,7 @@ object Block {
     (block1, block2) match {
       case (b1: ArrayBlock, _) => b1.add(block2); b1
       case (_, b2: ArrayBlock) => b2.add(block1); b2
-      case _ =>
+      case _                   =>
         val b1 = block1.toArrayBlock
         b1.add(block2)
         b1

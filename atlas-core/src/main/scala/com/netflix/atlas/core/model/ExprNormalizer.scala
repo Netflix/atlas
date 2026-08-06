@@ -116,7 +116,7 @@ object ExprNormalizer {
     queries match {
       case Nil      => queries
       case _ :: Nil => queries
-      case _ =>
+      case _        =>
         val indexed = queries.map(q => q -> q.toSet)
         indexed
           .filterNot {

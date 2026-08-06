@@ -234,8 +234,8 @@ class AslDocumentAnalyzer(
   /** Format a stack value briefly for diagnostic messages. */
   private def formatValueBrief(value: Any): String = {
     value match {
-      case s: String => s"""String "$s""""
-      case n: Number => s"${n.getClass.getSimpleName} $n"
+      case s: String      => s"""String "$s""""
+      case n: Number      => s"${n.getClass.getSimpleName} $n"
       case items: List[?] =>
         val inner = items.map(formatValueBrief).mkString(", ")
         s"List ($inner)"
@@ -617,7 +617,7 @@ class AslDocumentAnalyzer(
   private val maxLineLength = 78
 
   private def renderNode(node: FormatNode, indent: Boolean): String = node match {
-    case SimpleNode(text) => text
+    case SimpleNode(text)    => text
     case ParenNode(children) =>
       val rendered = children.map(n => renderNode(n, indent = false))
       val inline = s"(,${rendered.mkString(",")},)"
@@ -880,7 +880,7 @@ class AslDocumentAnalyzer(
       case s: String                  => s"\"$s\""
       case n: Number                  => n.toString
       case items: List[?]             => items.map(formatStackItem).mkString("(", ", ", ")")
-      case other =>
+      case other                      =>
         val s = other.toString
         if (s.length > 60) s.take(57) + "..." else s
     }

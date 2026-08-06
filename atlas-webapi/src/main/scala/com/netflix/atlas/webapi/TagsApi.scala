@@ -168,7 +168,7 @@ object TagsApi {
       val c = queryInterpreter.execute(s)
       c.stack match {
         case (q: Query) :: Nil => q
-        case _ =>
+        case _                 =>
           throw new IllegalStateException(s"expected a single query on the stack")
       }
     }
