@@ -20,7 +20,10 @@ import org.apache.pekko.http.scaladsl.model.HttpRequest
 
 class LimitKeyResolverSuite extends FunSuite {
 
-  private val resolver = new DefaultLimitKeyResolver(_ => Set("vip"))
+  // "vip" is provisioned in both namespaces so the tests below distinguish a legacy caller being
+  // kept out of an authenticated caller's budget from it merely naming something unconfigured.
+  private val resolver =
+    new DefaultLimitKeyResolver(_ => Set("vip", "legacy.vip", "legacy.old-app"))
 
   private def app(id: String): CallerContext = {
     CallerContext(Principal(Principal.Kind.App, id), Principal.Anonymous, None)
@@ -45,16 +48,68 @@ class LimitKeyResolverSuite extends FunSuite {
     assertEquals(key, LimitKey(LimitKey.DefaultBucket, "user@example.com", "graph"))
   }
 
-  test("anonymous caller falls back to the legacy id query parameter") {
-    val request = HttpRequest(uri = "/api/v1/graph?id=legacy-app&q=name,sps,:eq")
+  test("legacy id can select a provisioned bucket of its own") {
+    val request = HttpRequest(uri = "/api/v1/graph?id=old-app")
     val key = resolver.resolve(CallerContext.Anonymous, "graph", request)
-    assertEquals(key, LimitKey(LimitKey.DefaultBucket, "legacy-app", "graph"))
+    assertEquals(key, LimitKey("legacy.old-app", "legacy.old-app", "graph"))
   }
 
-  test("legacy id can select a provisioned bucket") {
+  test("legacy id cannot name an authenticated caller") {
+    // "vip" has a dedicated budget under both names, but the parameter is asserted rather than
+    // authenticated, so it is namespaced and lands in the legacy budget rather than in the one the
+    // authenticated caller "vip" would get.
     val request = HttpRequest(uri = "/api/v1/graph?id=vip")
     val key = resolver.resolve(CallerContext.Anonymous, "graph", request)
-    assertEquals(key, LimitKey("vip", "vip", "graph"))
+    assertEquals(key, LimitKey("legacy.vip", "legacy.vip", "graph"))
+    assertNotEquals(key, resolver.resolve(app("vip"), "graph", HttpRequest()))
+  }
+
+  test("an authenticated caller cannot reach a legacy budget by naming itself into it") {
+    // Nothing constrains what an authenticator produces, so the namespace has to be closed from
+    // both sides: an identity that already carries the prefix keeps its own sub-key but must not
+    // match the legacy caller's dedicated budget.
+    val key = resolver.resolve(app("legacy.old-app"), "graph", HttpRequest())
+    assertEquals(key, LimitKey(LimitKey.DefaultBucket, "legacy.old-app", "graph"))
+  }
+
+  test("an empty legacy id is not an identity") {
+    // `?id=` parses to a present but empty value, which must not be read as the bare prefix. The
+    // bare prefix is provisioned here so the value is what decides the outcome rather than the
+    // lookup happening to miss.
+    val bare = new DefaultLimitKeyResolver(_ => Set(LimitKey.LegacyPrefix))
+    val request = HttpRequest(uri = "/api/v1/graph?id=")
+    val key = bare.resolve(CallerContext.Anonymous, "graph", request)
+    assertEquals(key, LimitKey(LimitKey.DefaultBucket, LimitKey.Anonymous, "graph"))
+  }
+
+  test("a legacy caller and an authenticated caller of the same name stay separate") {
+    val legacy = resolver.resolve(
+      CallerContext.Anonymous,
+      "graph",
+      HttpRequest(uri = "/api/v1/graph?id=old-app")
+    )
+    val authenticated = resolver.resolve(app("old-app"), "graph", HttpRequest())
+    assertNotEquals(legacy.subKey, authenticated.subKey)
+    assertNotEquals(legacy.bucket, authenticated.bucket)
+  }
+
+  test("unprovisioned legacy id is not trusted as an identity") {
+    // The parameter is supplied by an unauthenticated caller, so honoring an arbitrary value would
+    // let one caller claim a share of a fair-share bucket for every value it invents.
+    val request = HttpRequest(uri = "/api/v1/graph?id=legacy-app&q=name,sps,:eq")
+    val key = resolver.resolve(CallerContext.Anonymous, "graph", request)
+    assertEquals(key, LimitKey(LimitKey.DefaultBucket, LimitKey.Anonymous, "graph"))
+  }
+
+  test("rotating the legacy id yields the same sub-key every time") {
+    val keys = (1 to 100).map { i =>
+      val request = HttpRequest(uri = s"/api/v1/graph?id=random-$i")
+      resolver.resolve(CallerContext.Anonymous, "graph", request)
+    }
+    assertEquals(
+      keys.distinct.toList,
+      List(LimitKey(LimitKey.DefaultBucket, LimitKey.Anonymous, "graph"))
+    )
   }
 
   test("anonymous caller with no legacy id uses the anonymous marker") {

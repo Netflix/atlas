@@ -43,4 +43,16 @@ object LimitKey {
 
   /** Sub-key used for a caller whose identity could not be determined. */
   val Anonymous: String = "anonymous"
+
+  /**
+    * Prefix applied to an identity taken from the legacy `id` query parameter, which is asserted
+    * by the caller rather than authenticated. It keeps those identities in a namespace of their
+    * own, so that presenting `?id=x` does not resolve to the same key as an authenticated caller
+    * `x` and so cannot reach that caller's budget. A dedicated budget for a legacy caller is
+    * therefore configured under the prefixed name.
+    *
+    * A bucket name is published as a metric dimension, so the separator has to be a character
+    * Atlas accepts in a tag value; `:` is not one.
+    */
+  val LegacyPrefix: String = "legacy."
 }

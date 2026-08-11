@@ -111,7 +111,8 @@ class RequestLimiter(config: Config, registry: Registry) {
           fairShare.window,
           fairShare.penalizedThreshold,
           fairShare.demeritPerDenial,
-          fairShare.decayPerSecond
+          fairShare.decayPerSecond,
+          fairShare.maxTrackedCallers
         )
       else ConcurrencyLimiter(limits.defaultBucketBudget)
     monitorInflight(default, name, LimitKey.DefaultBucket)
@@ -265,7 +266,8 @@ object RequestLimiter {
     window: Duration,
     penalizedThreshold: Double,
     demeritPerDenial: Double,
-    decayPerSecond: Double
+    decayPerSecond: Double,
+    maxTrackedCallers: Int
   )
 
   private object FairShareConfig {
@@ -279,6 +281,7 @@ object RequestLimiter {
         |penalized-threshold = 3.0
         |demerit-per-denial = 1.0
         |decay-per-second = 0.3
+        |max-tracked-callers = 1000
         |""".stripMargin
     )
 
@@ -289,7 +292,8 @@ object RequestLimiter {
         c.getDuration("window"),
         c.getDouble("penalized-threshold"),
         c.getDouble("demerit-per-denial"),
-        c.getDouble("decay-per-second")
+        c.getDouble("decay-per-second"),
+        c.getInt("max-tracked-callers")
       )
     }
   }
