@@ -53,6 +53,16 @@ trait ConcurrencyLimiter {
     */
   def release(subKey: String, cost: Int): Unit
 
+  /**
+    * Return permits acquired by [[tryAcquire]] for a request that was shed before it ran, because
+    * some other limit it also had to pass refused it. The permits go back exactly as they would on
+    * [[release]], but the caller is accounted for as having been refused capacity rather than as
+    * having completed, which matters to any limiter whose policy depends on who is being turned
+    * away. The default treats it as a plain release, which is correct for a limiter that keeps no
+    * per-caller state.
+    */
+  def releaseDenied(subKey: String, cost: Int): Unit = release(subKey, cost)
+
   /** Number of permits currently held. Intended for reporting via gauges. */
   def usedPermits: Int
 

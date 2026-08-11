@@ -228,7 +228,10 @@ object RequestLimiter {
         return denied
       }
       if (!total.tryAcquire(subKey, requestCost)) {
-        bucketLimiter.release(subKey, requestCost)
+        // The bucket already admitted this request, so hand the permits back as a denial. A plain
+        // release would look identical to a completed request and hide the shed from the bucket's
+        // own policy.
+        bucketLimiter.releaseDenied(subKey, requestCost)
         deniedTotal.increment()
         return denied
       }

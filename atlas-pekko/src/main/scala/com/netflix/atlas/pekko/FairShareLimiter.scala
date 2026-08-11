@@ -242,18 +242,43 @@ final class FairShareLimiter(
     }
   }
 
-  override def release(subKey: String, cost: Int): Unit = synchronized {
-    val c = clamp(cost)
-    // Charge the release only up to what the caller actually holds, so a mis-paired or duplicate
-    // release cannot drive `total` below the real usage, which would let the bucket over-admit. A
-    // caller holding permits is never evicted, so its state is always here to be found; a sub-key
-    // that holds nothing is a no-op. The state is left in place so demerit and recency survive
-    // until it is pruned.
+  // Hand back up to what the caller actually holds, and report how much that was. Charging only
+  // what is really held means a mis-paired or duplicate release cannot drive `total` below the real
+  // usage, which would let the bucket over-admit. A caller holding permits is never evicted, so its
+  // state is always here to be found; a sub-key that holds nothing is a no-op. The state is left in
+  // place so demerit and recency survive until it is pruned.
+  private def releaseHeld(subKey: String, cost: Int): Int = {
     val state = callers.getOrElse(subKey, null)
-    if (state != null && state.used > 0) {
-      val released = math.min(state.used, c)
+    if (state == null || state.used == 0) 0
+    else {
+      val released = math.min(state.used, cost)
       state.used -= released
       total = math.max(0, total - released)
+      released
+    }
+  }
+
+  override def release(subKey: String, cost: Int): Unit = synchronized {
+    val _ = releaseHeld(subKey, clamp(cost))
+  }
+
+  override def releaseDenied(subKey: String, cost: Int): Unit = synchronized {
+    if (releaseHeld(subKey, clamp(cost)) > 0) {
+      // The permits came back because the request was refused, not because it ran, so record it as
+      // a denial. Otherwise a caller shed by another limit never accrues demerit however hard it
+      // hammers, and is never counted as wanting capacity, which would leave the others free to
+      // borrow the whole bucket while it waits. Nothing held means nothing was shed, so a
+      // mis-paired call stays the no-op that `release` makes it.
+      val now = clock.monotonicTime()
+      val state = callers(subKey)
+      // Count it as an attempt as well as a denial. The endpoint calls this immediately after the
+      // acquire it is undoing, so this is normally already the case, but the policy reads a denial
+      // as implying an attempt and should not depend on the caller for that.
+      state.lastSeen = now
+      state.demeritValue =
+        math.min(maxDemerit, state.demerit(now, decayPerNano, penaltyNanos) + demeritPerDenial)
+      state.demeritTime = now
+      state.lastDenied = now
     }
   }
 
