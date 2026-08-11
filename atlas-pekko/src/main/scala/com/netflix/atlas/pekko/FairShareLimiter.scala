@@ -32,8 +32,9 @@ import scala.collection.mutable
   * over a threshold it is treated as a hog: it is held below its fair share (floored at one permit,
   * never starved to zero) so headroom stays free for the others, and its own denials no longer
   * count as contention that would block others from borrowing. The demerit decays over time, so a
-  * caller that stops hammering recovers its full share and the ability to borrow. Recent denial,
-  * not current usage, is what marks a caller as wanting more capacity.
+  * caller that stops hammering recovers its full share and the ability to borrow, and in any case
+  * recovers once its demerit reaches `maxPenaltyDuration` past its last denial. Recent denial, not
+  * current usage, is what marks a caller as wanting more capacity.
   *
   * Fairness acts on admission decisions as permits churn rather than by preempting held permits, so
   * it converges to a fair allocation as requests complete.
@@ -69,6 +70,10 @@ import scala.collection.mutable
   *     Amount added to a caller's demerit each time it is denied.
   * @param decayPerSecond
   *     Rate at which a caller's demerit decays while it is not being denied.
+  * @param maxPenaltyDuration
+  *     Longest a caller stays penalized after its last denial. Demerit is clamped only at the point
+  *     where more of it can no longer contain a hog any further, so this bounds how long a penalty
+  *     lasts rather than how severe it gets.
   * @param maxTrackedCallers
   *     Cap on the number of sub-keys tracked individually, which bounds the retained state. Must be
   *     positive.
@@ -80,6 +85,7 @@ final class FairShareLimiter(
   penalizedThreshold: Double,
   demeritPerDenial: Double,
   decayPerSecond: Double,
+  maxPenaltyDuration: Duration,
   maxTrackedCallers: Int
 ) extends ConcurrencyLimiter {
 
@@ -95,10 +101,16 @@ final class FairShareLimiter(
   // tests, silently disabling contention detection and with it the fairness policy.
   require(decayPerSecond > 0.0, s"decayPerSecond must be positive: $decayPerSecond")
   require(demeritPerDenial > 0.0, s"demeritPerDenial must be positive: $demeritPerDenial")
+
+  require(
+    !maxPenaltyDuration.isNegative && !maxPenaltyDuration.isZero,
+    s"maxPenaltyDuration must be positive: $maxPenaltyDuration"
+  )
   require(!window.isNegative && !window.isZero, s"window must be positive: $window")
 
   private val windowNanos = window.toNanos
   private val decayPerNano = decayPerSecond / 1e9
+  private val penaltyNanos = maxPenaltyDuration.toNanos
 
   // Demerit past this point has no further effect on the cap: `share` never exceeds `budget`, so
   // the penalty is already at its floor. All the excess does is extend how long the caller stays
@@ -135,7 +147,7 @@ final class FairShareLimiter(
   // caller keeps its demerit until it fully decays, even after it ages out of the window, so a hog
   // cannot shed a penalty just by pausing for one window.
   private val scan: (String, CallerState) => Boolean = { (k, s) =>
-    val d = s.demerit(scanNow, decayPerNano)
+    val d = s.demerit(scanNow, decayPerNano, penaltyNanos)
     val active = s.used > 0 || scanNow - s.lastSeen <= windowNanos
     val keep = active || d > 0.0
     if (keep) {
@@ -180,7 +192,7 @@ final class FairShareLimiter(
   // which mirrors the pruning done by `scan`.
   private def observeOverflow(now: Long, current: CallerState): Unit = {
     if (overflowInUse) {
-      val d = overflow.demerit(now, decayPerNano)
+      val d = overflow.demerit(now, decayPerNano, penaltyNanos)
       val active = overflow.used > 0 || now - overflow.lastSeen <= windowNanos
       if (active) {
         scanActive += 1
@@ -222,7 +234,7 @@ final class FairShareLimiter(
 
     val active = math.max(1, scanActive)
     val share = math.ceil(budget.toDouble / active).toInt
-    val d = state.demerit(now, decayPerNano)
+    val d = state.demerit(now, decayPerNano, penaltyNanos)
     val cap =
       if (d >= penalizedThreshold)
         // A hog is contained below its fair share so headroom stays free for well-behaved bursts,
@@ -300,10 +312,19 @@ object FairShareLimiter {
       demeritTime = 0L
     }
 
-    /** Demerit decayed to `now`. */
-    def demerit(now: Long, decayPerNano: Double): Double = {
+    /**
+      * Demerit decayed to `now`. It decays linearly and is also dropped outright once it is older
+      * than `horizonNanos`, which bounds how long a penalty can last. Decay alone bounds it only by
+      * how much demerit was accrued, so without the horizon a burst of denials would hold a caller
+      * over the threshold for far longer than the burst itself.
+      */
+    def demerit(now: Long, decayPerNano: Double, horizonNanos: Long): Double = {
       if (demeritValue <= 0.0) 0.0
-      else math.max(0.0, demeritValue - (now - demeritTime) * decayPerNano)
+      else {
+        val age = now - demeritTime
+        if (age > horizonNanos) 0.0
+        else math.max(0.0, demeritValue - age * decayPerNano)
+      }
     }
   }
 }

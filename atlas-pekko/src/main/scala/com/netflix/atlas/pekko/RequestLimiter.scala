@@ -112,6 +112,7 @@ class RequestLimiter(config: Config, registry: Registry) {
           fairShare.penalizedThreshold,
           fairShare.demeritPerDenial,
           fairShare.decayPerSecond,
+          fairShare.maxPenaltyDuration,
           fairShare.maxTrackedCallers
         )
       else ConcurrencyLimiter(limits.defaultBucketBudget)
@@ -267,6 +268,7 @@ object RequestLimiter {
     penalizedThreshold: Double,
     demeritPerDenial: Double,
     decayPerSecond: Double,
+    maxPenaltyDuration: Duration,
     maxTrackedCallers: Int
   )
 
@@ -281,6 +283,7 @@ object RequestLimiter {
         |penalized-threshold = 3.0
         |demerit-per-denial = 1.0
         |decay-per-second = 0.3
+        |max-penalty-duration = 60s
         |max-tracked-callers = 1000
         |""".stripMargin
     )
@@ -293,6 +296,7 @@ object RequestLimiter {
         c.getDouble("penalized-threshold"),
         c.getDouble("demerit-per-denial"),
         c.getDouble("decay-per-second"),
+        c.getDuration("max-penalty-duration"),
         c.getInt("max-tracked-callers")
       )
     }

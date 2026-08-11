@@ -42,6 +42,7 @@ class FairShareLimiterSybilSuite extends FunSuite {
        |  penalized-threshold = 3.0
        |  demerit-per-denial = 1.0
        |  decay-per-second = 0.3
+       |  max-penalty-duration = 60s
        |  max-tracked-callers = 1000
        |}
        |endpoints {
@@ -70,6 +71,7 @@ class FairShareLimiterSybilSuite extends FunSuite {
       penalizedThreshold = 3.0,
       demeritPerDenial = 1.0,
       decayPerSecond = 0.3,
+      maxPenaltyDuration = Duration.ofSeconds(60),
       maxTrackedCallers = maxTracked
     )
   }
