@@ -481,4 +481,54 @@ class FairShareLimiterSuite extends FunSuite {
     limiter.release("hog", 1)
     assert(!limiter.tryAcquire("hog", 1))
   }
+
+  test("a denied release returns the permits and marks the caller as wanting capacity") {
+    val limiter = newLimiter(4, new ManualClock())
+
+    // "a" was admitted by this limiter but shed by another, so its permits come back as a denial.
+    assert(limiter.tryAcquire("a", 1))
+    limiter.releaseDenied("a", 1)
+    assertEquals(limiter.usedPermits, 0)
+
+    // "a" is now waiting, so "b" is held to its share of two rather than borrowing the whole
+    // bucket. A plain release would have left "a" invisible and "b" free to take all four.
+    assert(!limiter.tryAcquire("b", 4))
+    assert(limiter.tryAcquire("b", 2))
+  }
+
+  test("a plain release leaves the caller free to borrow") {
+    val limiter = newLimiter(4, new ManualClock())
+    assert(limiter.tryAcquire("a", 1))
+    limiter.release("a", 1)
+    assert(limiter.tryAcquire("b", 4))
+  }
+
+  test("a denied release accrues demerit, so a caller shed repeatedly becomes a hog") {
+    val clock = new ManualClock()
+    val limiter = newLimiter(100, clock)
+
+    // Shed over and over without backing off. Demerit has to accumulate, or a caller refused by
+    // another limit could hammer indefinitely without ever being contained.
+    (1 to 10).foreach { _ =>
+      assert(limiter.tryAcquire("hammer", 1))
+      limiter.releaseDenied("hammer", 1)
+    }
+    assert(limiter.tryAcquire("victim", 1))
+
+    // Penalized now, so it is held to its floor even though the bucket is nearly empty.
+    assert(!limiter.tryAcquire("hammer", 50))
+  }
+
+  test("a denied release for a caller holding nothing is a no-op") {
+    val limiter = newLimiter(4, new ManualClock())
+    assert(limiter.tryAcquire("a", 2))
+
+    // Nothing was shed, so nothing is recorded and no permits move.
+    limiter.releaseDenied("never-acquired", 4)
+    assertEquals(limiter.usedPermits, 2)
+
+    // "never-acquired" was not marked as wanting capacity, so "a" may still borrow.
+    assert(limiter.tryAcquire("a", 2))
+    assertEquals(limiter.usedPermits, 4)
+  }
 }

@@ -283,4 +283,44 @@ class RequestLimiterSuite extends FunSuite {
     // The freed permit is available first-come, including back to the same caller.
     assert(limiter.acquire(graphKey("hog"), 1).isDefined)
   }
+
+  // The endpoint total is consumed entirely by a dedicated caller, so the shared bucket's own
+  // budget is not what refuses requests: the total is.
+  private val totalBoundConfig =
+    """
+      |mode = enforce
+      |endpoints {
+      |  graph {
+      |    total-budget = 100
+      |    default-bucket-budget = 100
+      |    fair-share = true
+      |    caller-budgets {
+      |      vip = 100
+      |    }
+      |  }
+      |}
+      |""".stripMargin
+
+  test("a caller shed by the endpoint total still gets its share of the bucket") {
+    val registry = new DefaultRegistry()
+    val limiter = new RequestLimiter(config(totalBoundConfig), registry)
+
+    // vip fills the endpoint total from its own dedicated bucket.
+    val vip = (1 to 100).flatMap(_ => limiter.acquire(graphKey("vip", "vip"), 1))
+    assertEquals(vip.size, 100)
+
+    // b passes the shared bucket and is refused by the total. The shared bucket has to see that as
+    // a denial, or b is invisible to it and a is free to borrow everything once room appears.
+    assert(limiter.acquire(graphKey("b"), 1).isEmpty)
+    assertEquals(requests(registry, "graph", "denied", "total"), 1L)
+
+    // Room appears. a must be held to its share rather than taking the whole bucket.
+    vip.foreach(_.release())
+    val aHeld = (1 to 100).count(_ => limiter.acquire(graphKey("a"), 1).isDefined)
+    assertEquals(aHeld, 50)
+
+    // ...which leaves the capacity b was waiting for actually available to it.
+    val bHeld = (1 to 50).count(_ => limiter.acquire(graphKey("b"), 1).isDefined)
+    assertEquals(bHeld, 50)
+  }
 }

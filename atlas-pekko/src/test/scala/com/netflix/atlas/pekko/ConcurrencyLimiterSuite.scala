@@ -81,4 +81,12 @@ class ConcurrencyLimiterSuite extends FunSuite {
   test("maxPermits reflects the configured budget") {
     assertEquals(ConcurrencyLimiter(7).maxPermits, 7)
   }
+
+  test("a limiter with no per-caller state treats a denied release as a plain release") {
+    val limiter = ConcurrencyLimiter(4)
+    assert(limiter.tryAcquire("a", 3))
+    assertEquals(limiter.usedPermits, 3)
+    limiter.releaseDenied("a", 3)
+    assertEquals(limiter.usedPermits, 0)
+  }
 }
