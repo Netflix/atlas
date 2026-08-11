@@ -42,11 +42,13 @@ import scala.collection.mutable
   * Fairness is only as trustworthy as the `subKey`: a caller that can present many identities is
   * granted one share per identity, so the sub-key must be derived from an authenticated identity or
   * from an otherwise bounded set (see [[DefaultLimitKeyResolver]]). The number of tracked sub-keys
-  * is capped as a safeguard against a resolver that lets an untrusted value through, with callers
-  * beyond the cap sharing a single overflow state so they count as one contending caller between
-  * them. Note that the cap bounds the state retained, not the dilution: a caller presenting as many
-  * identities as the cap allows still gets that many shares, so the resolver is the defence and
-  * this is the backstop.
+  * is capped as a safeguard against a resolver that lets an untrusted value through: when the cap
+  * is reached the least recently seen caller that holds no permits is forgotten to make room, so
+  * every caller keeps a history of its own and an unfamiliar one never inherits another's demerit.
+  * A caller holding permits is never evicted, so the cap is a target rather than a hard ceiling and
+  * the set is bounded by the greater of the cap and the budget. Note that it bounds the state
+  * retained, not the dilution: a caller presenting as many identities as the cap allows still gets
+  * that many shares, so the resolver is the defence and this is the backstop.
   *
   * Performance: all per-caller state lives in a single map keyed by `subKey`, plus one shared state
   * for the callers past the cap, and the running total is maintained incrementally. `tryAcquire`
@@ -121,19 +123,6 @@ final class FairShareLimiter(
   private val callers = new mutable.HashMap[String, CallerState]()
   private var total = 0
 
-  // State shared by every caller seen while the map is already at `maxTrackedCallers`. Folding them
-  // onto one state keeps the tracked set bounded and makes them count as a single contending caller
-  // rather than one per sub-key. It lives outside the map so it is never pruned; `overflowInUse`
-  // records whether any caller is currently using it, since a state that has never been used must
-  // not be counted as active.
-  private val overflow = new CallerState()
-  private var overflowInUse = false
-
-  // Sub-keys that currently hold permits against the shared state, and how much each holds, so a
-  // release can be charged to the state that actually holds the caller's permits. Bounded by
-  // `budget`, since a holder holds at least one permit.
-  private val overflowHolders = new mutable.HashMap[String, Int]()
-
   // Scratch state for the single scan pass. Only touched while the monitor is held, so a single
   // reusable scan function can read it without capturing per-call variables (which would allocate).
   private var scanNow = 0L
@@ -141,6 +130,11 @@ final class FairShareLimiter(
   private var scanActive = 0
   private var scanContended = false
   private var scanCurrentActive = false
+
+  // Least recently seen caller that holds no permits, and so the one to evict if the cap is reached
+  // and a new caller has to be tracked. Chosen during the same pass rather than by a second walk.
+  private var scanStalestKey: String = null
+  private var scanStalestSeen = 0L
 
   // Prune callers that are no longer active and no longer carry demerit, count the active callers,
   // and detect whether another well-behaved caller was recently denied (and so wants capacity). A
@@ -163,49 +157,40 @@ final class FairShareLimiter(
       ) {
         scanContended = true
       }
+      // A caller holding permits is never a candidate: forgetting it would lose the permits it has
+      // yet to return. Everything else is fair game, oldest first.
+      if (s.used == 0 && (scanStalestKey == null || s.lastSeen < scanStalestSeen)) {
+        scanStalestKey = k
+        scanStalestSeen = s.lastSeen
+      }
     }
     keep
   }
 
   private def clamp(cost: Int): Int = math.min(budget, math.max(1, cost))
 
-  // State for a caller, tracked individually while there is room and folded onto the shared
-  // overflow state once the cap is reached. `getOrElse` with a null default avoids the `Option`
-  // that `get` would allocate on the request path.
+  // Every caller gets a state of its own. When the cap is reached the least recently seen caller
+  // that holds no permits is forgotten to make room, so an unfamiliar caller is never made to share
+  // another's history. A caller that is hammering is by definition recently seen, so it is never
+  // the one evicted and cannot shed a penalty by rotating identities; a caller quiet enough to be
+  // evicted has, by the same token, a demerit that has already decayed or is about to.
+  //
+  // `getOrElse` with a null default avoids the `Option` that `get` would allocate on the request
+  // path.
   private def stateFor(subKey: String): CallerState = {
     val existing = callers.getOrElse(subKey, null)
     if (existing != null) existing
-    // Tracking a caller that still holds permits against the shared state would strand them, since
-    // `release` would then look the caller up in the map and never reach the overflow state.
-    else if (callers.size < maxTrackedCallers && !overflowHolders.contains(subKey)) {
+    else {
+      // The cap is a target rather than a hard ceiling. If every tracked caller is holding permits
+      // there is nothing safe to evict, and the set is allowed past the cap; it stays bounded
+      // because a holder holds at least one permit, so there can be no more of them than `budget`.
+      if (callers.size >= maxTrackedCallers && scanStalestKey != null) {
+        callers.remove(scanStalestKey)
+        scanStalestKey = null
+      }
       val state = new CallerState()
       callers.put(subKey, state)
       state
-    } else {
-      overflowInUse = true
-      overflow
-    }
-  }
-
-  // The overflow state is not in the map, so the accounting the scan does for a tracked caller is
-  // applied to it by hand. It is reset rather than removed once it is idle and free of demerit,
-  // which mirrors the pruning done by `scan`.
-  private def observeOverflow(now: Long, current: CallerState): Unit = {
-    if (overflowInUse) {
-      val d = overflow.demerit(now, decayPerNano, penaltyNanos)
-      val active = overflow.used > 0 || now - overflow.lastSeen <= windowNanos
-      if (active) {
-        scanActive += 1
-        if (
-          !scanContended && (current ne overflow) && d < penalizedThreshold &&
-          overflow.lastDenied != NeverDenied && now - overflow.lastDenied <= windowNanos
-        ) {
-          scanContended = true
-        }
-      } else if (d <= 0.0) {
-        overflow.reset()
-        overflowInUse = false
-      }
     }
   }
 
@@ -214,23 +199,22 @@ final class FairShareLimiter(
     val c = clamp(cost)
 
     // Prune before choosing the caller's state so the cap is tested against the callers actually
-    // being tracked, not against entries this same pass is about to sweep. Choosing first would
-    // fold a caller onto the shared state while every slot it needed sat free, and
-    // `overflowHolders` would then keep it there for as long as it holds a permit.
+    // being tracked, not against entries this same pass is about to sweep, and so the eviction
+    // candidate is picked from what survives. Choosing first would evict a caller to make room the
+    // pass was about to free anyway.
     scanNow = now
     scanSubKey = subKey
     scanActive = 0
     scanContended = false
     scanCurrentActive = false
+    scanStalestKey = null
     callers.filterInPlace(scan)
 
     val state = stateFor(subKey)
     state.lastSeen = now
     // The caller in hand is active by definition, but the scan ran before its state was refreshed,
-    // so count it here unless the scan already did. A caller on the shared state is counted once,
-    // by `observeOverflow`, however many sub-keys are folded onto it.
-    if ((state ne overflow) && !scanCurrentActive) scanActive += 1
-    observeOverflow(now, state)
+    // so count it here unless the scan already did.
+    if (!scanCurrentActive) scanActive += 1
 
     val active = math.max(1, scanActive)
     val share = math.ceil(budget.toDouble / active).toInt
@@ -254,39 +238,33 @@ final class FairShareLimiter(
     } else {
       state.used += c
       total += c
-      if (state eq overflow) {
-        overflowHolders.update(subKey, overflowHolders.getOrElse(subKey, 0) + c)
-      }
       true
     }
   }
 
   override def release(subKey: String, cost: Int): Unit = synchronized {
     val c = clamp(cost)
-    // Charge the release to whichever state actually holds this caller's permits, and only up to
-    // what it holds, so a mis-paired or duplicate release cannot drive `total` below the real usage
-    // (which would let the bucket over-admit) nor take permits from another caller sharing the
-    // overflow state. The state object is left in place so demerit and recency survive until it is
-    // pruned.
-    val viaOverflow = overflowHolders.getOrElse(subKey, 0)
-    val state = if (viaOverflow > 0) overflow else callers.getOrElse(subKey, null)
-    val held = if (viaOverflow > 0) viaOverflow else if (state != null) state.used else 0
-    if (held > 0) {
-      val released = math.min(held, c)
+    // Charge the release only up to what the caller actually holds, so a mis-paired or duplicate
+    // release cannot drive `total` below the real usage, which would let the bucket over-admit. A
+    // caller holding permits is never evicted, so its state is always here to be found; a sub-key
+    // that holds nothing is a no-op. The state is left in place so demerit and recency survive
+    // until it is pruned.
+    val state = callers.getOrElse(subKey, null)
+    if (state != null && state.used > 0) {
+      val released = math.min(state.used, c)
       state.used -= released
       total = math.max(0, total - released)
-      if (viaOverflow > 0) {
-        if (released == viaOverflow) overflowHolders.remove(subKey)
-        else overflowHolders.update(subKey, viaOverflow - released)
-      }
     }
   }
 
   override def usedPermits: Int = synchronized(total)
   override def maxPermits: Int = budget
 
-  /** Number of callers being tracked individually, at most `maxTrackedCallers`. */
+  /** Number of callers being tracked individually. */
   private[pekko] def trackedCallers: Int = synchronized(callers.size)
+
+  /** Whether a state is currently held for the given sub-key. Exposed for tests. */
+  private[pekko] def isTracked(subKey: String): Boolean = synchronized(callers.contains(subKey))
 }
 
 object FairShareLimiter {
@@ -302,15 +280,6 @@ object FairShareLimiter {
     var lastDenied: Long = NeverDenied
     var demeritValue: Double = 0.0
     var demeritTime: Long = 0L
-
-    /** Return to the initial state so a shared state object can be reused once it is idle. */
-    def reset(): Unit = {
-      used = 0
-      lastSeen = 0L
-      lastDenied = NeverDenied
-      demeritValue = 0.0
-      demeritTime = 0L
-    }
 
     /**
       * Demerit decayed to `now`. It decays linearly and is also dropped outright once it is older
