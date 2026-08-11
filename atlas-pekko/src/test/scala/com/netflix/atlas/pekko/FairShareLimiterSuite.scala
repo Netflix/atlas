@@ -306,91 +306,6 @@ class FairShareLimiterSuite extends FunSuite {
     assertEquals(limiter.trackedCallers, 1)
   }
 
-  test("callers beyond the cap share one overflow entry") {
-    val limiter = newLimiter(100, new ManualClock(), maxTrackedCallers = 4)
-
-    // Fill the tracked set, then keep going with fresh sub-keys. The extra callers must not add
-    // tracked state, so the share seen by a caller stops shrinking once the cap is reached.
-    (1 to 500).foreach { i =>
-      val key = s"c$i"
-      assert(limiter.tryAcquire(key, 1))
-      limiter.release(key, 1)
-    }
-
-    assertEquals(limiter.trackedCallers, 4)
-
-    // Deny one of the tracked callers so that everyone is held to their share rather than free to
-    // borrow the whole budget; without that the cap below is `budget` and proves nothing.
-    assert(limiter.tryAcquire("c1", 100))
-    assert(!limiter.tryAcquire("c2", 1))
-    limiter.release("c1", 100)
-
-    // Four tracked callers plus the overflow entry is five active callers, so the share is 20. The
-    // next caller lands in overflow and is capped at the share the crowd holds jointly - neither
-    // starved to one permit nor free to take more than a share between them.
-    assert(!limiter.tryAcquire("c501", 21))
-    assert(limiter.tryAcquire("c501", 20))
-    assertEquals(limiter.usedPermits, 20)
-  }
-
-  test("permits held through the overflow entry survive the tracked set draining") {
-    val clock = new ManualClock()
-    val limiter = newLimiter(100, clock, maxTrackedCallers = 1)
-
-    // "filler" holds the one tracked slot, so "z" holds its permits against the shared entry.
-    assert(limiter.tryAcquire("filler", 1))
-    assert(limiter.tryAcquire("z", 10))
-    limiter.release("filler", 1)
-
-    // "filler" goes idle and is swept away, freeing the slot while "z" is still in flight. "z" must
-    // not be taken into the tracked set here: its release would then be charged to the new state
-    // and the permits it still holds against the shared entry would be lost from the budget.
-    advance(clock, 30)
-    assert(limiter.tryAcquire("sweeper", 1))
-    limiter.release("sweeper", 1)
-
-    assert(limiter.tryAcquire("z", 1))
-    limiter.release("z", 1)
-    limiter.release("z", 10)
-    assertEquals(limiter.usedPermits, 0)
-  }
-
-  test("one in-flight overflow request does not freeze the tracked set") {
-    val clock = new ManualClock()
-    val limiter = newLimiter(1000, clock, maxTrackedCallers = 4)
-
-    // Fill the tracked set, then push one caller onto the shared entry holding a long request.
-    (1 to 4).foreach { i =>
-      assert(limiter.tryAcquire(s"old-$i", 1))
-      limiter.release(s"old-$i", 1)
-    }
-    assert(limiter.tryAcquire("longrunner", 1))
-
-    // The old callers go idle and are swept away. Only "longrunner" is pinned to the shared entry;
-    // the callers arriving now must take the slots it freed rather than all being folded in behind
-    // it, which would collapse them onto a single share for as long as that one request runs.
-    advance(clock, 30)
-    (1 to 20).foreach { i =>
-      val key = s"new-$i"
-      assert(limiter.tryAcquire(key, 1))
-      limiter.release(key, 1)
-    }
-    assertEquals(limiter.trackedCallers, 4)
-  }
-
-  test("a release from a sub-key that holds nothing cannot take overflow permits") {
-    val limiter = newLimiter(100, new ManualClock(), maxTrackedCallers = 1)
-    assert(limiter.tryAcquire("tracked", 1))
-    assert(limiter.tryAcquire("holder", 40))
-    assertEquals(limiter.usedPermits, 41)
-
-    // "holder" reached the shared entry, but the entry is not a pool anyone may draw down: a
-    // release for a sub-key that never acquired must be a no-op, or the bucket over-admits by as
-    // much as the real holders are still holding.
-    limiter.release("never-acquired", 100)
-    assertEquals(limiter.usedPermits, 41)
-  }
-
   test("permits are fully returned when many callers churn past the cap") {
     // Every acquire is paired with exactly one release of the same cost, so once the run drains,
     // `usedPermits` must be zero. Far more callers than slots, so callers cross between the tracked
@@ -416,68 +331,6 @@ class FairShareLimiterSuite extends FunSuite {
 
     held.indices.foreach(i => held(i).foreach(c => limiter.release(s"caller-$i", c)))
     assertEquals(limiter.usedPermits, 0)
-  }
-
-  test("permits held through the overflow entry are released") {
-    val limiter = newLimiter(100, new ManualClock(), maxTrackedCallers = 1)
-    assert(limiter.tryAcquire("tracked", 1))
-
-    // "extra" is past the cap so it holds its permits against the shared overflow state. Release
-    // has to find that state by falling back to overflow, or the permits leak from the budget.
-    assert(limiter.tryAcquire("extra", 40))
-    assertEquals(limiter.usedPermits, 41)
-    limiter.release("extra", 40)
-    limiter.release("tracked", 1)
-    assertEquals(limiter.usedPermits, 0)
-  }
-
-  test("overflow callers count as one contending caller between them") {
-    val clock = new ManualClock()
-    val limiter = newLimiter(100, clock, maxTrackedCallers = 1)
-
-    // A crowd of untracked callers collapses onto a single overflow entry, so it marks contention
-    // once however large it is. Two denials keep its demerit below the penalty threshold, leaving
-    // it counted as a well-behaved caller that wants capacity.
-    assert(limiter.tryAcquire("honest", 100))
-    assert(!limiter.tryAcquire("flood-1", 1))
-    assert(!limiter.tryAcquire("flood-2", 1))
-    limiter.release("honest", 100)
-
-    // Two active callers, so the tracked caller is held to half the budget. Without the overflow
-    // entry the crowd would present one caller per sub-key and drive the share down to one.
-    var admitted = 0
-    while (admitted < 100 && limiter.tryAcquire("honest", 1)) admitted += 1
-    assertEquals(admitted, 50)
-  }
-
-  test("an overflow crowd that keeps hammering is penalized as a single hog") {
-    val clock = new ManualClock()
-    val limiter = newLimiter(100, clock, maxTrackedCallers = 1)
-
-    // Demerit accrues to the shared entry, so a sustained flood of untracked callers is penalized
-    // collectively rather than each sub-key arriving with a clean slate. Once over the threshold it
-    // no longer counts as contention, and the tracked caller is free to use the spare capacity.
-    assert(limiter.tryAcquire("honest", 100))
-    (1 to 500).foreach(i => assert(!limiter.tryAcquire(s"flood-$i", 1)))
-    limiter.release("honest", 100)
-
-    assert(limiter.tryAcquire("honest", 100))
-    assertEquals(limiter.usedPermits, 100)
-  }
-
-  test("the overflow entry is reset once it goes idle") {
-    val clock = new ManualClock()
-    val limiter = newLimiter(100, clock, maxTrackedCallers = 1)
-    assert(limiter.tryAcquire("tracked", 1))
-    assert(limiter.tryAcquire("extra", 1))
-    limiter.release("tracked", 1)
-    limiter.release("extra", 1)
-
-    // Once the untracked callers age out, the overflow entry stops counting as active and the
-    // tracked caller is alone again, free to use the whole budget.
-    advance(clock, 30)
-    assert(limiter.tryAcquire("tracked", 100))
-    assertEquals(limiter.usedPermits, 100)
   }
 
   test("a penalty does not outlast the maximum penalty duration") {
@@ -527,5 +380,105 @@ class FairShareLimiterSuite extends FunSuite {
     intercept[IllegalArgumentException] {
       tunedLimiter(maxPenaltyDuration = Duration.ofSeconds(-1))
     }
+  }
+
+  test("reaching the cap evicts the stalest idle caller, not the busiest") {
+    val clock = new ManualClock()
+    val limiter = newLimiter(100, clock, maxTrackedCallers = 3)
+
+    // Three callers, seen at increasing times, none holding anything.
+    assert(limiter.tryAcquire("oldest", 1))
+    limiter.release("oldest", 1)
+    advance(clock, 1)
+    assert(limiter.tryAcquire("middle", 1))
+    limiter.release("middle", 1)
+    advance(clock, 1)
+    assert(limiter.tryAcquire("newest", 1))
+    limiter.release("newest", 1)
+    assertEquals(limiter.trackedCallers, 3)
+
+    // A fourth arrival displaces the least recently seen, and the set stays at the cap.
+    advance(clock, 1)
+    assert(limiter.tryAcquire("arrival", 1))
+    assertEquals(limiter.trackedCallers, 3)
+    assert(!limiter.isTracked("oldest"))
+    assert(limiter.isTracked("middle"))
+    assert(limiter.isTracked("newest"))
+    assert(limiter.isTracked("arrival"))
+  }
+
+  test("a caller holding permits is never evicted") {
+    val clock = new ManualClock()
+    val limiter = newLimiter(100, clock, maxTrackedCallers = 2)
+
+    // "holder" is the least recently seen by a wide margin, but its permits are still out.
+    assert(limiter.tryAcquire("holder", 10))
+    advance(clock, 60)
+    assert(limiter.tryAcquire("other", 1))
+    limiter.release("other", 1)
+
+    // Room is made from the idle caller instead, and the set is allowed past the cap only while
+    // every member is holding something.
+    advance(clock, 1)
+    assert(limiter.tryAcquire("arrival", 1))
+    assert(limiter.isTracked("holder"))
+
+    // The holder's permits come back, which is only possible because its state survived.
+    limiter.release("holder", 10)
+    assertEquals(limiter.usedPermits, 1)
+  }
+
+  test("permits are returned in full when many callers churn past the cap") {
+    val clock = new ManualClock()
+    val budget = 1000
+    val limiter = newLimiter(budget, clock, maxTrackedCallers = 6)
+
+    // Far more callers than slots, each acquiring and releasing in strict pairs. Every permit has
+    // to come back: an evicted caller must never be one that still holds something.
+    (1 to 20000).foreach { i =>
+      val key = s"caller-${i % 40}"
+      if (limiter.tryAcquire(key, 1 + (i % 3))) limiter.release(key, 1 + (i % 3))
+      if (i % 500 == 0) advance(clock, 1)
+    }
+    assertEquals(limiter.usedPermits, 0)
+  }
+
+  test("an evicted caller does not hand its demerit to the next arrival") {
+    val clock = new ManualClock()
+    val limiter = newLimiter(100, clock, maxTrackedCallers = 2)
+
+    // Drive one caller well over the penalty threshold, then let it go quiet.
+    assert(limiter.tryAcquire("hog", 100))
+    (1 to 20).foreach(_ => assert(!limiter.tryAcquire("hog", 1)))
+    limiter.release("hog", 100)
+    advance(clock, 6)
+
+    // An unfamiliar caller arriving into a bucket with nothing held gets the whole budget, rather
+    // than inheriting a penalty from the caller whose slot it took.
+    assert(limiter.tryAcquire("filler", 1))
+    limiter.release("filler", 1)
+    advance(clock, 1)
+    assert(limiter.tryAcquire("innocent", 100))
+    assertEquals(limiter.usedPermits, 100)
+  }
+
+  test("a hog cannot shed its penalty by being evicted") {
+    val clock = new ManualClock()
+    val limiter = newLimiter(100, clock, maxTrackedCallers = 2)
+
+    // The hog keeps arriving, so it is never the least recently seen and never the eviction
+    // candidate however many other callers churn through the remaining slot.
+    assert(limiter.tryAcquire("hog", 100))
+    (1 to 20).foreach(_ => assert(!limiter.tryAcquire("hog", 1)))
+    (1 to 50).foreach { i =>
+      assert(!limiter.tryAcquire("hog", 1))
+      val key = s"churn-$i"
+      if (limiter.tryAcquire(key, 1)) limiter.release(key, 1)
+    }
+    assert(limiter.isTracked("hog"))
+
+    // Still penalized: a permit frees up and the hog cannot take it back.
+    limiter.release("hog", 1)
+    assert(!limiter.tryAcquire("hog", 1))
   }
 }
