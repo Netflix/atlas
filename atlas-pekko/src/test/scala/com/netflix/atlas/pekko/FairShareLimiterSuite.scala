@@ -24,6 +24,8 @@ class FairShareLimiterSuite extends FunSuite {
 
   private val window = Duration.ofSeconds(5)
 
+  private val penaltyDuration = Duration.ofSeconds(60)
+
   private def newLimiter(
     budget: Int,
     clock: ManualClock,
@@ -36,6 +38,7 @@ class FairShareLimiterSuite extends FunSuite {
       penalizedThreshold = 3.0,
       demeritPerDenial = 1.0,
       decayPerSecond = 0.3,
+      maxPenaltyDuration = penaltyDuration,
       maxTrackedCallers = maxTrackedCallers
     )
   }
@@ -205,11 +208,12 @@ class FairShareLimiterSuite extends FunSuite {
 
   // Build a limiter with one knob overridden, for the validation and edge-case tests below.
   private def tunedLimiter(
-    clock: ManualClock,
+    clock: ManualClock = new ManualClock(),
     budget: Int = 100,
     penalizedThreshold: Double = 3.0,
-    demeritPerDenial: Double,
-    decayPerSecond: Double = 0.3
+    demeritPerDenial: Double = 1.0,
+    decayPerSecond: Double = 0.3,
+    maxPenaltyDuration: Duration = penaltyDuration
   ): FairShareLimiter = {
     new FairShareLimiter(
       budget,
@@ -218,6 +222,7 @@ class FairShareLimiterSuite extends FunSuite {
       penalizedThreshold,
       demeritPerDenial,
       decayPerSecond,
+      maxPenaltyDuration,
       maxTrackedCallers = 1000
     )
   }
@@ -255,7 +260,16 @@ class FairShareLimiterSuite extends FunSuite {
 
   test("window must be positive") {
     intercept[IllegalArgumentException] {
-      new FairShareLimiter(100, new ManualClock(), Duration.ZERO, 3.0, 1.0, 0.3, 1000)
+      new FairShareLimiter(
+        100,
+        new ManualClock(),
+        Duration.ZERO,
+        3.0,
+        1.0,
+        0.3,
+        penaltyDuration,
+        1000
+      )
     }
   }
 
@@ -464,5 +478,54 @@ class FairShareLimiterSuite extends FunSuite {
     advance(clock, 30)
     assert(limiter.tryAcquire("tracked", 100))
     assertEquals(limiter.usedPermits, 100)
+  }
+
+  test("a penalty does not outlast the maximum penalty duration") {
+    val clock = new ManualClock()
+    val limiter = newLimiter(100, clock)
+
+    // Drive the demerit as far above the threshold as it will go. Decaying that at 0.3 per second
+    // would keep this caller penalized for minutes.
+    assert(limiter.tryAcquire("hog", 100))
+    (1 to 500).foreach(_ => assert(!limiter.tryAcquire("hog", 1)))
+    limiter.release("hog", 100)
+
+    // Still penalized part way through the horizon, so it is held to its floor. Note this attempt
+    // is itself denied, which restarts the horizon: it runs from the last denial, so a caller that
+    // keeps hammering stays penalized for as long as it keeps it up.
+    advance(clock, 30)
+    assert(limiter.tryAcquire("victim", 1))
+    assert(!limiter.tryAcquire("hog", 50))
+
+    // Once it stops being denied for the horizon the penalty is gone, whatever the demerit reached.
+    advance(clock, 61)
+    assert(limiter.tryAcquire("hog", 50))
+  }
+
+  test("the horizon runs from the last denial, not the first") {
+    val clock = new ManualClock()
+    val limiter = newLimiter(100, clock)
+
+    // Enough denials that the horizon, rather than the decay, is what would end the penalty.
+    assert(limiter.tryAcquire("hog", 100))
+    (1 to 500).foreach(_ => assert(!limiter.tryAcquire("hog", 1)))
+    limiter.release("hog", 100)
+
+    // Denied again most of the way through the horizon, which restarts it, so the caller is still
+    // penalized at a point well past the horizon measured from where it began.
+    advance(clock, 59)
+    assert(limiter.tryAcquire("victim", 1))
+    assert(!limiter.tryAcquire("hog", 50))
+    advance(clock, 30)
+    assert(!limiter.tryAcquire("hog", 50))
+  }
+
+  test("max penalty duration must be positive") {
+    intercept[IllegalArgumentException] {
+      tunedLimiter(maxPenaltyDuration = Duration.ofSeconds(0))
+    }
+    intercept[IllegalArgumentException] {
+      tunedLimiter(maxPenaltyDuration = Duration.ofSeconds(-1))
+    }
   }
 }
