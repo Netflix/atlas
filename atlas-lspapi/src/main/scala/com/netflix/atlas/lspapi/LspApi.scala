@@ -28,11 +28,7 @@ class LspApi(config: Config) extends WebApi {
 
   private val vocabulary = new CustomVocabulary(config)
 
-  private val glossary: Glossary = {
-    val path = config.getString("atlas.lsp.glossary")
-    if (path.isEmpty) Glossary.empty
-    else Glossary.load(path)
-  }
+  private val glossary: Glossary = Glossary.loadAll(config)
 
   def routes: Route = {
     pathPrefix("lsp" / "metrics") {

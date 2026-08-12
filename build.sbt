@@ -97,6 +97,7 @@ lazy val `atlas-lsp` = project
   .dependsOn(`atlas-core`, `atlas-json3`)
   .settings(libraryDependencies ++= Seq(
     Dependencies.lsp4j,
+    Dependencies.typesafeConfig,
     Dependencies.javaWebSocket % "test"
   ))
 

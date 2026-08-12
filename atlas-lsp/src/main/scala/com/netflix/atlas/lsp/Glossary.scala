@@ -16,6 +16,11 @@
 package com.netflix.atlas.lsp
 
 import com.netflix.atlas.json3.Json
+import com.typesafe.config.Config
+
+import java.io.File
+import java.util.jar.JarFile
+import scala.jdk.CollectionConverters.*
 
 case class Glossary(
   id: String,
@@ -65,6 +70,55 @@ object Glossary {
     }
     try Json.decode[Glossary](stream)
     finally stream.close()
+  }
+
+  /**
+   * Discovers and merges all glossary fragments, per the composability rules in
+   * GLOSSARY_SPEC.md: JSON fragments found on the classpath under
+   * `META-INF/atlas/glossary` are merged first, followed by any fragments
+   * listed in `atlas.lsp.glossary.files` (classpath resource paths), in config order.
+   */
+  def loadAll(config: Config): Glossary = {
+    val classpathFragments = loadAllFromClasspath()
+    val configuredPaths =
+      if (config.hasPath("atlas.lsp.glossary.files"))
+        config.getStringList("atlas.lsp.glossary.files").asScala.toList
+      else Nil
+    val configFragments = configuredPaths.filter(_.nonEmpty).map(load)
+    (classpathFragments ++ configFragments).foldLeft(empty)(merge)
+  }
+
+  /** Loads every JSON glossary fragment found under `META-INF/atlas/glossary/` on the classpath. */
+  private[lsp] def loadAllFromClasspath(): List[Glossary] = {
+    val basePath = "META-INF/atlas/glossary"
+    val dirUrls = getClass.getClassLoader.getResources(basePath).asScala.toList
+    dirUrls.flatMap { url =>
+      url.getProtocol match {
+        case "file" =>
+          val dir = new File(url.toURI)
+          if (dir.isDirectory) {
+            dir
+              .listFiles((_, name) => name.endsWith(".json"))
+              .toList
+              .sortBy(_.getName)
+              .map(f => load(s"$basePath/${f.getName}"))
+          } else Nil
+        case "jar" =>
+          val jarPath = url.getPath.substring(5, url.getPath.indexOf("!"))
+          val jar = new JarFile(jarPath)
+          try {
+            jar
+              .entries()
+              .asScala
+              .map(_.getName)
+              .filter(name => name.startsWith(s"$basePath/") && name.endsWith(".json"))
+              .toList
+              .sorted
+              .map(load)
+          } finally jar.close()
+        case _ => Nil
+      }
+    }
   }
 
   def merge(a: Glossary, b: Glossary): Glossary = {
