@@ -167,12 +167,23 @@ class GlossarySuite extends FunSuite {
     assert(cloudwatch.tagKeys.contains("aws.function"))
   }
 
+  test("loadAllFromClasspath: discovers netflix-ipc fragment") {
+    val fragments = Glossary.loadAllFromClasspath()
+    val ipc = fragments.find(_.id == "netflix-ipc").get
+    assert(ipc.metrics.contains("ipc.client.call"))
+    assert(ipc.metrics.contains("ipc.server.call"))
+    assert(ipc.metrics.contains("ipc.server.inflight"))
+    assert(ipc.tagKeys.contains("ipc.vip"))
+    assert(ipc.tagKeys.contains("owner"))
+  }
+
   test("loadAll: merges classpath fragments with configured files") {
     val config =
       ConfigFactory.parseString("""atlas.lsp.glossary.files = ["sample-glossary.json"]""")
     val merged = Glossary.loadAll(config)
     assert(merged.metrics.contains("aws.lambda.duration"))
     assert(merged.metrics.contains("sys.cpu.utilization"))
+    assert(merged.metrics.contains("ipc.client.call"))
   }
 
   test("loadAll: no configured files still discovers classpath fragments") {
