@@ -52,3 +52,26 @@ Currently supported capabilities:
 - **Diagnostics** — error and warning reporting for invalid expressions
 - **Code actions** — expression formatting, compression, and normalization via refactor/rewrite
 
+## Glossary
+
+`Glossary` (see [Glossary.scala](src/main/scala/com/netflix/atlas/lsp/Glossary.scala) and
+[GLOSSARY_SPEC.md](GLOSSARY_SPEC.md)) supplies metric/tag descriptions, units, and enumerated
+values that power hover text and completions in `AslDocumentAnalyzer`. This module ships only the
+mechanism, not any glossary data — `Glossary.loadAll(config)` auto-discovers every
+`META-INF/atlas/glossary/*.json` fragment on the classpath and merges in any additional files
+listed under `atlas.lsp.glossary.files` in config, so a fresh `AslLspServer`/`UriLspServer` gets
+the merged result for free as soon as a fragment-bearing jar or config entry is added.
+
+To add a fragment as a library author, ship a JSON file at that same classpath path in your jar —
+no code or config changes needed downstream. Deployment-specific or internal fragments (e.g.
+Netflix-owned metric catalogs) belong in the consuming application's own resources, not in this
+repo. To add one as an application owner without publishing a jar, point `atlas.lsp.glossary.files`
+at a classpath resource instead:
+
+```hocon
+atlas.lsp.glossary.files = [ "my-app-glossary.json" ]
+```
+
+See `GlossarySuite` for the merge/discovery semantics, and `GLOSSARY_SPEC.md` for the full JSON
+schema (`metrics`, `tagKeys`, `tagValues`, value types, and merge rules).
+

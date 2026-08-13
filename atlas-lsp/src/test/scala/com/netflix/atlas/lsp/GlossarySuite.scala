@@ -161,33 +161,22 @@ class GlossarySuite extends FunSuite {
   test("loadAllFromClasspath: discovers fragments under META-INF/atlas/glossary") {
     val fragments = Glossary.loadAllFromClasspath()
     val ids = fragments.map(_.id)
-    assert(ids.contains("aws-cloudwatch"))
-    val cloudwatch = fragments.find(_.id == "aws-cloudwatch").get
-    assert(cloudwatch.metrics.contains("aws.lambda.duration"))
-    assert(cloudwatch.tagKeys.contains("aws.function"))
-  }
-
-  test("loadAllFromClasspath: discovers netflix-ipc fragment") {
-    val fragments = Glossary.loadAllFromClasspath()
-    val ipc = fragments.find(_.id == "netflix-ipc").get
-    assert(ipc.metrics.contains("ipc.client.call"))
-    assert(ipc.metrics.contains("ipc.server.call"))
-    assert(ipc.metrics.contains("ipc.server.inflight"))
-    assert(ipc.tagKeys.contains("ipc.vip"))
-    assert(ipc.tagKeys.contains("owner"))
+    assert(ids.contains("test-fragment"))
+    val fragment = fragments.find(_.id == "test-fragment").get
+    assert(fragment.metrics.contains("test.fragment.metric"))
+    assert(fragment.tagKeys.contains("test.tag"))
   }
 
   test("loadAll: merges classpath fragments with configured files") {
     val config =
       ConfigFactory.parseString("""atlas.lsp.glossary.files = ["sample-glossary.json"]""")
     val merged = Glossary.loadAll(config)
-    assert(merged.metrics.contains("aws.lambda.duration"))
+    assert(merged.metrics.contains("test.fragment.metric"))
     assert(merged.metrics.contains("sys.cpu.utilization"))
-    assert(merged.metrics.contains("ipc.client.call"))
   }
 
   test("loadAll: no configured files still discovers classpath fragments") {
     val merged = Glossary.loadAll(ConfigFactory.empty())
-    assert(merged.metrics.contains("aws.lambda.duration"))
+    assert(merged.metrics.contains("test.fragment.metric"))
   }
 }

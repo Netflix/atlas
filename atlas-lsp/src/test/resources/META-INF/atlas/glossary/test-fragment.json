@@ -1,0 +1,20 @@
+{
+  "id": "test-fragment",
+  "description": "Test-only fragment used to exercise classpath discovery in GlossarySuite.",
+
+  "tagKeys": {
+    "test.tag": {
+      "description": "A tag key contributed by the test fragment.",
+      "category": "test"
+    }
+  },
+
+  "metrics": {
+    "test.fragment.metric": {
+      "description": "A metric contributed by the test fragment.",
+      "unit": "count",
+      "category": "test",
+      "type": "gauge"
+    }
+  }
+}
