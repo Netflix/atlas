@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.lsp
 
+import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
 class GlossarySuite extends FunSuite {
@@ -155,5 +156,27 @@ class GlossarySuite extends FunSuite {
     intercept[IllegalArgumentException] {
       Glossary.load("nonexistent.json")
     }
+  }
+
+  test("loadAllFromClasspath: discovers fragments under META-INF/atlas/glossary") {
+    val fragments = Glossary.loadAllFromClasspath()
+    val ids = fragments.map(_.id)
+    assert(ids.contains("test-fragment"))
+    val fragment = fragments.find(_.id == "test-fragment").get
+    assert(fragment.metrics.contains("test.fragment.metric"))
+    assert(fragment.tagKeys.contains("test.tag"))
+  }
+
+  test("loadAll: merges classpath fragments with configured files") {
+    val config =
+      ConfigFactory.parseString("""atlas.lsp.glossary.files = ["sample-glossary.json"]""")
+    val merged = Glossary.loadAll(config)
+    assert(merged.metrics.contains("test.fragment.metric"))
+    assert(merged.metrics.contains("sys.cpu.utilization"))
+  }
+
+  test("loadAll: no configured files still discovers classpath fragments") {
+    val merged = Glossary.loadAll(ConfigFactory.empty())
+    assert(merged.metrics.contains("test.fragment.metric"))
   }
 }
