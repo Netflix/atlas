@@ -35,6 +35,11 @@ import tools.jackson.databind.node.NullNode
   */
 object LwcMessages {
 
+  // Maximum number of tags allowed when parsing. This is used as a sanity
+  // check in case a bad payload comes in with a really large size that
+  // could exhaust memory.
+  private final val maxTags = 100_000
+
   // For reading arbitrary json structures for events
   private val mapper = Json.newMapperBuilder
     .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
@@ -408,6 +413,10 @@ object LwcMessages {
   private def parseTags(parser: JsonParser, n: Int): Map[String, String] = {
     if (n == 0) {
       SortedTagMap.empty
+    } else if (n < 0 || n > maxTags) {
+      throw new IllegalArgumentException(
+        s"requested tag count is invalid or exceeds limit ($n, max: $maxTags)"
+      )
     } else {
       val data = new Array[String](2 * n)
       var i = 0
