@@ -56,6 +56,27 @@ object Cors {
     }
   }
 
+  /**
+    * Check if the origin is allowed via an explicit pattern (specific host or subdomain,
+    * not a wildcard `*`).
+    *
+    * @param hosts
+    *     Set of host patterns to allow.
+    * @param origin
+    *     Origin value normally extracted from the request headers.
+    * @return
+    *     True if the hostname matches an explicit pattern.
+    */
+  def isExplicitHostAllowed(hosts: List[String], origin: String): Boolean = {
+    try {
+      val originHostname = extractHostname(origin)
+      checkExplicitOrigin(hosts, originHostname)
+    } catch {
+      case _: Exception =>
+        false
+    }
+  }
+
   private def extractHostname(origin: String): String = {
     if (origin.startsWith("http:") || origin.startsWith("https:"))
       Uri(origin).authority.host.address()
@@ -73,5 +94,17 @@ object Cors {
 
   private def checkOrigin(host: String, origin: String): Boolean = {
     (host == "*") || (host.startsWith(".") && origin.endsWith(host)) || (host == origin)
+  }
+
+  @scala.annotation.tailrec
+  private def checkExplicitOrigin(hosts: List[String], origin: String): Boolean = {
+    hosts match {
+      case h :: hs => checkExplicitOrigin(h, origin) || checkExplicitOrigin(hs, origin)
+      case Nil     => false
+    }
+  }
+
+  private def checkExplicitOrigin(host: String, origin: String): Boolean = {
+    (host.startsWith(".") && origin.endsWith(host)) || (host == origin)
   }
 }
