@@ -23,6 +23,8 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Keep
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.stream.testkit.scaladsl.TestSink
+import org.apache.pekko.stream.testkit.scaladsl.TestSource
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spectator.api.ManualClock
 import com.netflix.spectator.api.Registry
@@ -532,5 +534,74 @@ class StreamOpsSuite extends FunSuite {
       .runWith(Sink.head)
     val result = Await.result(future, Duration.Inf)
     assertEquals(result.size, chunkSize * numChunks)
+  }
+
+  //
+  // onDownstreamAbort
+  //
+  // These tests drive both ends of the stream with probes so the ordering is explicit.
+  // `upstream.expectCancellation()` only returns once the cancellation has propagated all
+  // the way to the source, which is strictly after the stage under test has handled it.
+  // That gives a happens-before edge without relying on timing.
+  //
+
+  test("onDownstreamAbort: action runs when downstream cancels early") {
+    val causes = new ArrayBlockingQueue[Throwable](1)
+    val (upstream, downstream) = TestSource[Int]()
+      .via(StreamOps.onDownstreamAbort[Int](causes.add))
+      .toMat(TestSink[Int]())(Keep.both)
+      .run()
+
+    downstream.request(1)
+    upstream.sendNext(1)
+    downstream.expectNext(1)
+    downstream.cancel()
+
+    upstream.expectCancellation()
+    assertEquals(causes.size(), 1)
+  }
+
+  test("onDownstreamAbort: action does not run when upstream completes first") {
+    val causes = new ArrayBlockingQueue[Throwable](1)
+    val (upstream, downstream) = TestSource[Int]()
+      .via(StreamOps.onDownstreamAbort[Int](causes.add))
+      .toMat(TestSink[Int]())(Keep.both)
+      .run()
+
+    downstream.request(1)
+    upstream.sendNext(1)
+    downstream.expectNext(1)
+    upstream.sendComplete()
+    downstream.expectComplete()
+
+    assertEquals(causes.size(), 0)
+  }
+
+  test("onDownstreamAbort: action does not run when upstream fails") {
+    val causes = new ArrayBlockingQueue[Throwable](1)
+    val (upstream, downstream) = TestSource[Int]()
+      .via(StreamOps.onDownstreamAbort[Int](causes.add))
+      .toMat(TestSink[Int]())(Keep.both)
+      .run()
+
+    downstream.request(1)
+    upstream.sendError(new IllegalStateException("boom"))
+    downstream.expectError()
+
+    assertEquals(causes.size(), 0)
+  }
+
+  test("onDownstreamAbort: failure in the action does not mask the cancellation") {
+    val (upstream, downstream) = TestSource[Int]()
+      .via(StreamOps.onDownstreamAbort[Int](_ => throw new IllegalStateException("boom")))
+      .toMat(TestSink[Int]())(Keep.both)
+      .run()
+
+    downstream.request(1)
+    upstream.sendNext(1)
+    downstream.expectNext(1)
+    downstream.cancel()
+
+    upstream.expectCancellation()
   }
 }
