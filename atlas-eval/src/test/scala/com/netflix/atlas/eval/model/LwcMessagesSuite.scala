@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.eval.model
 
+import java.io.ByteArrayOutputStream
 import java.util.Random
 import java.util.UUID
 import scala.util.Using
@@ -324,4 +325,42 @@ class LwcMessagesSuite extends FunSuite {
   }
 
   private def randomString: String = UUID.randomUUID().toString
+
+  test("batch: invalid tag count throws IllegalArgumentException") {
+    val baos = new ByteArrayOutputStream()
+    val gen = Json.newSmileGenerator(baos)
+    try {
+      gen.writeStartArray()
+      gen.writeNumber(2) // Datapoint
+      gen.writeNumber(1234567890L)
+      gen.writeString("id")
+      gen.writeNumber(100_001)
+      gen.writeNumber(1.0)
+      gen.writeEndArray()
+    } finally {
+      gen.close()
+    }
+    intercept[IllegalArgumentException] {
+      LwcMessages.parseBatch(ByteString.fromArrayUnsafe(baos.toByteArray))
+    }
+  }
+
+  test("batch: negative tag count throws IllegalArgumentException") {
+    val baos = new ByteArrayOutputStream()
+    val gen = Json.newSmileGenerator(baos)
+    try {
+      gen.writeStartArray()
+      gen.writeNumber(2) // Datapoint
+      gen.writeNumber(1234567890L)
+      gen.writeString("id")
+      gen.writeNumber(-1)
+      gen.writeNumber(1.0)
+      gen.writeEndArray()
+    } finally {
+      gen.close()
+    }
+    intercept[IllegalArgumentException] {
+      LwcMessages.parseBatch(ByteString.fromArrayUnsafe(baos.toByteArray))
+    }
+  }
 }
