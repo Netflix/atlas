@@ -45,6 +45,7 @@ import org.apache.pekko.stream.stage.GraphStageWithMaterializedValue
 
 import java.util.concurrent.BlockingQueue
 import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 
 /**
   * Utility functions for commonly used operations on Pekko streams. Most of these are for
@@ -315,6 +316,72 @@ object StreamOps extends StrictLogging {
     */
   def monitorFlow[T](registry: Registry, id: String): Flow[T, T, NotUsed] = {
     Flow[T].via(new MonitorFlow[T](registry, id))
+  }
+
+  /**
+    * Performs the specified action if the downstream cancels before the upstream has
+    * completed. When used on the source for an HTTP response entity, this indicates the
+    * client went away before the full response could be delivered.
+    *
+    * Note this is distinct from `watchTermination`, which completes successfully for a
+    * downstream cancellation and so cannot be used to tell an abandoned stream apart from
+    * one that finished normally.
+    *
+    * @param action
+    *     Action to perform, passed the cause reported for the cancellation. For a normal
+    *     cancellation this will be `SubscriptionWithCancelException.NoMoreElementsNeeded`.
+    */
+  def onDownstreamAbort[T](action: Throwable => Unit): Flow[T, T, NotUsed] = {
+    Flow[T].via(new OnDownstreamAbort[T](action))
+  }
+
+  private final class OnDownstreamAbort[T](action: Throwable => Unit)
+      extends GraphStage[FlowShape[T, T]] {
+
+    private val in = Inlet[T]("OnDownstreamAbort.in")
+    private val out = Outlet[T]("OnDownstreamAbort.out")
+
+    override val shape: FlowShape[T, T] = FlowShape(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+      new GraphStageLogic(shape) with InHandler with OutHandler {
+
+        private var upstreamDone = false
+
+        override def onPush(): Unit = {
+          push(out, grab(in))
+        }
+
+        override def onPull(): Unit = {
+          pull(in)
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          upstreamDone = true
+          completeStage()
+        }
+
+        override def onUpstreamFailure(t: Throwable): Unit = {
+          upstreamDone = true
+          failStage(t)
+        }
+
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          // Do not let a failure in the action mask the cancellation itself. The cancellation
+          // is propagated in a `finally` so it still happens if the action throws something
+          // that is not caught below.
+          try {
+            if (!upstreamDone) action(cause)
+          } catch {
+            case NonFatal(e) => logger.warn("onDownstreamAbort action failed", e)
+          } finally {
+            cancelStage(cause)
+          }
+        }
+
+        setHandlers(in, out, this)
+      }
+    }
   }
 
   private final class MonitorFlow[T](registry: Registry, id: String)
