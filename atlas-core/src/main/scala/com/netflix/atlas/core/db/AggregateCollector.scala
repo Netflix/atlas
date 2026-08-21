@@ -121,7 +121,12 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
       case Block.Max   => Math.maxNaN _
     }
 
-    blocks.foreach { b =>
+    // Explicit loop rather than `foreach`: the closure would capture the buffer, op,
+    // and the aggr/cf/multiple params, allocating a new object on every call. This is
+    // called once per block, so it shows up as a top allocation leaf.
+    var bs = blocks
+    while (bs.nonEmpty) {
+      val b = bs.head
       if (valueMask != null) {
         val v = buffer.aggrBlock(b, aggr, ConsolidationFunction.Sum, multiple, op)
         buffer.valueMask(valueMask, b, multiple)
@@ -130,6 +135,7 @@ abstract class SimpleAggregateCollector extends AggregateCollector {
         val v = buffer.aggrBlock(b, aggr, cf, multiple, op)
         valueCount += v
       }
+      bs = bs.tail
     }
     buffer.values.length
   }
@@ -290,9 +296,12 @@ class AllAggregateCollector extends LimitedAggregateCollector {
       case Block.Max   => Math.maxNaN _
     }
 
-    blocks.foreach { b =>
-      val v = buffer.aggrBlock(b, aggr, cf, multiple, op)
-      valueCount += v
+    // Explicit loop to avoid allocating a capturing closure per call, see the comment
+    // on SimpleAggregateCollector.add.
+    var bs = blocks
+    while (bs.nonEmpty) {
+      valueCount += buffer.aggrBlock(bs.head, aggr, cf, multiple, op)
+      bs = bs.tail
     }
 
     if (valueCount > 0) add(buffer)
