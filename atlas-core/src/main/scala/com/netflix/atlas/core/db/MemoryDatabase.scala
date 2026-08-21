@@ -229,7 +229,10 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
     val bufStart = context.start
     val bufEnd = context.end - cfStep
 
-    def newBuffer(tags: Map[String, String]): TimeSeriesBuffer = {
+    // Bound to a val rather than a local def: passing a def where a function is expected
+    // eta-expands at the call site, and since this captures cfStep/bufStart/bufEnd that
+    // would allocate a new function object for every block. Bind it once per query.
+    val newBuffer: Map[String, String] => TimeSeriesBuffer = { tags =>
       TimeSeriesBuffer(tags, cfStep, bufStart, bufEnd)
     }
 
@@ -249,6 +252,9 @@ class MemoryDatabase(registry: Registry, config: Config) extends Database {
         if (b.start <= bufEnd && blockEnd > bufStart - cfStep) {
           numAggrBlocks += 1
           collector.add(item.tags, List(b), aggr, expr.cf, multiple, newBuffer)
+          // Keep the closure Unit typed. Otherwise the Int result of add() becomes the
+          // value of the loop body and gets boxed into an Integer for every block.
+          ()
         }
       }
     }
