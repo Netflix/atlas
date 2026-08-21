@@ -96,4 +96,64 @@ class RoaringTagIndexBench {
   def findValuesAllMany(bh: Blackhole): Unit = {
     bh.consume(index.findValues(TagQuery(None, Some("nf.node"))))
   }
+
+  // Query shapes seen in production profiles for the find items path.
+  private val nodes = items.map(_.tags("nf.node")).toList
+
+  private val eqQuery = Query.Equal("nf.app", "atlas_backend")
+
+  private val notQuery =
+    Query.And(eqQuery, Query.Not(Query.Regex("nf.node", "abc")))
+
+  // The common production shape: a selective term AND'd with a negation. The result is
+  // a small subset, so materializing the complement of the negated term against the
+  // full set of items dominates the cost.
+  private val notSelectiveQuery =
+    Query.And(Query.Equal("nf.node", nodes.head), Query.Not(Query.Regex("nf.node", "abc")))
+
+  private val inOneQuery = Query.In("nf.node", nodes.take(1))
+
+  private val inManyQuery = Query.In("nf.node", nodes.take(100))
+
+  private val reQuery = Query.Regex("nf.node", "a")
+
+  private val andQuery = Query.And(eqQuery, Query.Equal("nf.stack", "dev"))
+
+  // Left-nested OR chain, the shape produced by expanding an `:in` query.
+  private val orChainQuery = Query.In("nf.node", nodes.take(100)).toOrQuery
+
+  @Benchmark
+  def findItemsNot(bh: Blackhole): Unit = {
+    bh.consume(index.findItems(TagQuery(Some(notQuery), limit = Integer.MAX_VALUE)))
+  }
+
+  @Benchmark
+  def findItemsNotSelective(bh: Blackhole): Unit = {
+    bh.consume(index.findItems(TagQuery(Some(notSelectiveQuery), limit = Integer.MAX_VALUE)))
+  }
+
+  @Benchmark
+  def findItemsAnd(bh: Blackhole): Unit = {
+    bh.consume(index.findItems(TagQuery(Some(andQuery), limit = Integer.MAX_VALUE)))
+  }
+
+  @Benchmark
+  def findItemsOrChain(bh: Blackhole): Unit = {
+    bh.consume(index.findItems(TagQuery(Some(orChainQuery), limit = Integer.MAX_VALUE)))
+  }
+
+  @Benchmark
+  def findItemsInOne(bh: Blackhole): Unit = {
+    bh.consume(index.findItems(TagQuery(Some(inOneQuery), limit = Integer.MAX_VALUE)))
+  }
+
+  @Benchmark
+  def findItemsInMany(bh: Blackhole): Unit = {
+    bh.consume(index.findItems(TagQuery(Some(inManyQuery), limit = Integer.MAX_VALUE)))
+  }
+
+  @Benchmark
+  def findItemsRegex(bh: Blackhole): Unit = {
+    bh.consume(index.findItems(TagQuery(Some(reQuery), limit = Integer.MAX_VALUE)))
+  }
 }

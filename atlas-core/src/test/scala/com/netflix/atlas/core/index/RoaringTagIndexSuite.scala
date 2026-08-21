@@ -316,11 +316,15 @@ class RoaringTagIndexSuite extends TagIndexSuite {
       .sorted
 
   private val inQuery: Query = Query.In(multiKey, multiVals.take(3))
+
+  // Single match: `in`/`strPattern` short circuit the union and hand back the shared
+  // bitmap stored in the index, so this is the riskiest input for the ownership rules.
+  private val singleValueIn: Query = Query.In(multiKey, List(multiVals.head))
   private val regexQuery: Query = Query.Regex(multiKey, multiVals.head.take(2))
   private val geQuery: Query = Query.GreaterThanEqual(multiKey, multiVals(multiVals.size / 2))
 
   private val leafQueries: List[Query] =
-    Query.True :: inQuery :: regexQuery :: geQuery ::
+    Query.True :: inQuery :: singleValueIn :: regexQuery :: geQuery ::
       sampleKeys.map(Query.HasKey.apply) :::
       sampleTags.map { case (k, v) => Query.Equal(k, v) }
 
@@ -328,10 +332,11 @@ class RoaringTagIndexSuite extends TagIndexSuite {
     val idx = freshIndex()
     val q = Query.Equal(sampleTags.head._1, sampleTags.head._2)
     val before = ids(idx, q)
-    // q is the first operand, evaluated via findOwned (must clone); the in-place
-    // `and` then mutates the accumulator. AND with *different* equality tags so the
-    // intersection is a strict subset -- if the clone is missing, q's stored bitmap
-    // shrinks. Guard against a vacuous setup: require at least one term to shrink q.
+    // q is the first operand and resolves to the bitmap stored in the index. AND with
+    // *different* equality tags so the intersection is a strict subset -- if `and`
+    // ever intersects into its operand rather than allocating a fresh result, q's
+    // stored bitmap shrinks. Guard against a vacuous setup: require at least one term
+    // to shrink q.
     assert(
       sampleTags.tail.exists {
         case (k, v) => ids(idx, Query.And(q, Query.Equal(k, v))).size < before.size
@@ -355,11 +360,20 @@ class RoaringTagIndexSuite extends TagIndexSuite {
       },
       "test setup is vacuous: no OR term grows the first operand"
     )
-    // in-place `or` would add bits to q's stored bitmap if it were not cloned.
+    // An `or` that unioned into its first operand would add bits to q's stored bitmap.
     sampleTags.tail.foreach {
       case (k, v) => idx.findItems(TagQuery(Some(Query.Or(q, Query.Equal(k, v)))))
     }
     assertEquals(ids(idx, q), before, "Equal result changed after OR -> shared bitmap mutated")
+  }
+
+  test("an OR chain matches the equivalent In query") {
+    // `or` folds a chain into the accumulator returned by the nested `or`; this locks
+    // the result against the same query expressed as a single In leaf.
+    val idx = freshIndex()
+    val chained = Query.In(multiKey, multiVals).toOrQuery
+    assert(!chained.isInstanceOf[Query.In], "test setup is vacuous: not an OR chain")
+    assertEquals(ids(idx, chained), ids(idx, Query.In(multiKey, multiVals)))
   }
 
   test("ownership: HasKey/True survive NOT and a deep compound battery") {
@@ -377,10 +391,16 @@ class RoaringTagIndexSuite extends TagIndexSuite {
       Query.And(Query.Not(a), Query.HasKey(sampleKeys.head)),
       Query.And(Query.And(a, Query.HasKey(sampleKeys.head)), b),
       Query.Or(Query.Or(a, b), Query.HasKey(sampleKeys.last)),
-      // Non-Equal leaves as the first (mutated) operand -- locks the invariant that
-      // In/Regex/range return fresh sets and don't need a copy in findOwned.
+      // Non-Equal leaves as operands. In/Regex may return a shared index bitmap when
+      // exactly one value matches, so neither and/or may mutate their operands.
       Query.And(inQuery, Query.HasKey(sampleKeys.head)),
+      Query.And(singleValueIn, Query.HasKey(sampleKeys.head)),
+      Query.Or(singleValueIn, a),
       Query.Or(regexQuery, a),
+      // OR chains: `or` folds into the accumulator of a nested `or`, so the fold must
+      // never start from a leaf's shared bitmap. Cover both nesting directions.
+      Query.Or(Query.Or(singleValueIn, regexQuery), b),
+      Query.Or(a, Query.Or(b, singleValueIn)),
       Query.And(geQuery, Query.HasKey(sampleKeys.head))
     )
     // Run twice to surface progressive corruption (each run would further
@@ -409,6 +429,26 @@ class RoaringTagIndexSuite extends TagIndexSuite {
       idx.findItems(TagQuery(None, limit = Int.MaxValue)).map(_.id),
       before,
       "all changed after offset query -> shared `all` was mutated"
+    )
+  }
+
+  test("ownership: offset query on a single-match In does not corrupt the index") {
+    // `in` returns the shared bitmap when only one value matches, so the offset>0
+    // path (which trims the prefix in place) must copy it first.
+    val idx = freshIndex()
+    val full = idx.findItems(TagQuery(Some(singleValueIn), limit = Int.MaxValue))
+    assert(full.size > 1, "test setup is vacuous: single-value In needs >1 matching item")
+    val before = full.map(_.id)
+    val someId = full(full.size / 2).id.toString
+    (0 until 2).foreach { _ =>
+      val paged =
+        idx.findItems(TagQuery(Some(singleValueIn), offset = someId, limit = Int.MaxValue))
+      assert(paged.size < full.size, "offset did not trim; offset>0 copy path not exercised")
+    }
+    assertEquals(
+      idx.findItems(TagQuery(Some(singleValueIn), limit = Int.MaxValue)).map(_.id),
+      before,
+      "In result changed after offset query -> shared bitmap was mutated"
     )
   }
 

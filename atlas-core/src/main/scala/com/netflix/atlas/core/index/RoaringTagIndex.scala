@@ -249,8 +249,11 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     * OWNERSHIP: the returned bitmap must be treated as READ-ONLY. For some queries it
     * is a shared reference into the index (e.g. the stored bitmap for an exact tag
     * match, or `all`), and mutating it would corrupt the index for every later query.
-    * Callers that need to mutate the result (in-place `and`/`or`, offset removal) must
-    * obtain an owned copy via [[findOwned]].
+    * The combinators (`and`, `or`, `andNot`) never mutate a bitmap that could be shared
+    * with the index, so they can consume this directly. Their own result is always
+    * freshly allocated, which is what lets `or` fold a chain into the accumulator
+    * returned by a nested `or`. Callers that need to mutate the result (offset removal
+    * in [[findItems]]) must obtain a copy via [[findOwned]].
     *
     * Offset is NOT applied here. Removing a fixed prefix range commutes with
     * and/or/andNot, so it is applied once on the final set at the top-level entry
@@ -280,17 +283,20 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     * cases that [[findReadOnly]] can answer with a shared index bitmap need a copy;
     * every other case already produces a freshly-allocated set.
     *
-    * MAINTENANCE: the shared-returning leaves are exactly `Equal` (`vidx.get`),
-    * `HasKey` (`keyIndex.get`), and `True` (`all`). If a new leaf is added that
-    * returns a stored index bitmap rather than a fresh one, it MUST be added to the
-    * match below, or using it as the left operand of `and`/`or` will corrupt the
-    * index. (See the "ownership" tests in RoaringTagIndexSuite.)
+    * MAINTENANCE: the shared-returning leaves are `Equal` (`vidx.get`), `HasKey`
+    * (`keyIndex.get`), `True` (`all`), and `In`/`PatternQuery` when exactly one value
+    * matches (see `UnionAccumulator`). If a new leaf is added that returns a stored
+    * index bitmap rather than a fresh one, it MUST be added to the match below, or
+    * mutating the result will corrupt the index. (See the "ownership" tests in
+    * RoaringTagIndexSuite.)
     */
   private def findOwned(query: Query): RoaringBitmap = {
     import com.netflix.atlas.core.model.Query.*
     query match {
-      case _: Equal | _: HasKey | True => ownedCopy(findReadOnly(query))
-      case _                           => findReadOnly(query)
+      case _: Equal | _: HasKey | _: In | _: PatternQuery | True =>
+        ownedCopy(findReadOnly(query))
+      case _ =>
+        findReadOnly(query)
     }
   }
 
@@ -312,20 +318,54 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   }
 
   private def and(q1: Query, q2: Query): RoaringBitmap = {
-    val s1 = findOwned(q1) // mutated in place below, so must be owned
-    if (s1.isEmpty) s1
-    else {
-      // Short circuit, only perform second query if s1 is not empty. `and` only reads
-      // s2, so a shared bitmap is fine here -- no copy needed.
-      s1.and(findReadOnly(q2))
-      s1
+    import com.netflix.atlas.core.model.Query.*
+    // A negated operand does not need to be materialized against the full set. Since
+    // `s1 AND NOT(q)` is `s1 \ q` and s1 is a subset of `all`, the andNot can be done
+    // directly against the sub-query. This avoids converting the run containers in
+    // `all` into bitmap containers just to throw most of the result away.
+    q1 match {
+      case Not(q) => andNot(q2, q)
+      case _      =>
+        q2 match {
+          case Not(q) => andNot(q1, q)
+          case _      =>
+            val s1 = findReadOnly(q1)
+            // Short circuit, only perform second query if s1 is not empty. Static `and`
+            // reads both operands and allocates just the intersection, which is
+            // typically much smaller than a copy of s1.
+            if (s1.isEmpty) new RoaringBitmap() else RoaringBitmap.and(s1, findReadOnly(q2))
+        }
     }
   }
 
+  /** Compute `q1 AND NOT(q2)` without materializing the complement of `q2`. */
+  private def andNot(q1: Query, q2: Query): RoaringBitmap = {
+    val s1 = findReadOnly(q1)
+    if (s1.isEmpty) new RoaringBitmap() else diff(s1, findReadOnly(q2))
+  }
+
   private def or(q1: Query, q2: Query): RoaringBitmap = {
-    val s1 = findOwned(q1)
-    s1.or(findReadOnly(q2)) // s2 only read, shared is fine
-    s1
+    import com.netflix.atlas.core.model.Query.*
+    // A nested `Or` has already allocated a fresh accumulator (see below), so the union
+    // can be folded into it. Without this, a chain such as `Or(Or(Or(a, b), c), d)` --
+    // the shape produced by expanding `:in` and by query normalization -- would copy the
+    // growing result at every level, making the chain quadratic in the result size.
+    q1 match {
+      case _: Or =>
+        val s1 = findReadOnly(q1)
+        s1.or(findReadOnly(q2))
+        s1
+      case _ =>
+        q2 match {
+          case _: Or =>
+            val s2 = findReadOnly(q2)
+            s2.or(findReadOnly(q1))
+            s2
+          case _ =>
+            // Static `or` reads both operands, so a shared bitmap from a leaf is fine.
+            RoaringBitmap.or(findReadOnly(q1), findReadOnly(q2))
+        }
+    }
   }
 
   private def equal(k: String, v: String): RoaringBitmap = {
@@ -395,15 +435,12 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()
     else {
-      val set = new LazyOrBitmap()
+      val set = new UnionAccumulator
       vs.foreach { v =>
         val vp = valueMap.get(v, -1)
-        val matchSet = vidx.get(vp)
-        if (matchSet != null)
-          set.naivelazyor(matchSet)
+        set.add(vidx.get(vp))
       }
-      set.repairAfterLazy()
-      set
+      set.result()
     }
   }
 
@@ -412,7 +449,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     val vidx = itemIndex.get(kp)
     if (vidx == null) new RoaringBitmap()
     else {
-      val set = new LazyOrBitmap()
+      val set = new UnionAccumulator
       val prefix = q.pattern.prefix()
       if (prefix != null) {
         val vp = findOffset(values, prefix, 0)
@@ -425,18 +462,17 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
         ) {
           val v = tagValue(tagIndex(i))
           if (q.check(values(v))) {
-            set.naivelazyor(vidx.get(v))
+            set.add(vidx.get(v))
           }
           i += 1
         }
       } else {
         vidx.foreach { (v, items) =>
           if (q.check(values(v)))
-            set.naivelazyor(items)
+            set.add(items)
         }
       }
-      set.repairAfterLazy()
-      set
+      set.result()
     }
   }
 
@@ -674,5 +710,46 @@ object RoaringTagIndex {
 
   private[index] def hasNonEmptyIntersection(b1: RoaringBitmap, b2: RoaringBitmap): Boolean = {
     RoaringBitmap.intersects(b1, b2)
+  }
+
+  /**
+    * Accumulator for the union of a set of bitmaps from the index. The lazy or
+    * accumulator is only created once there are at least two sets to combine. For
+    * the common cases of zero or one match that avoids promoting the containers to
+    * bitmap containers and repairing them afterwards.
+    *
+    * Note that with a single match the shared bitmap from the index is returned by
+    * [[result]], so it must be treated as read-only (see `findOwned`).
+    */
+  private[index] class UnionAccumulator {
+
+    private var first: RoaringBitmap = _
+    private var acc: LazyOrBitmap = _
+
+    def add(set: RoaringBitmap): Unit = {
+      if (set != null) {
+        if (acc != null) {
+          acc.naivelazyor(set)
+        } else if (first == null) {
+          first = set
+        } else {
+          acc = new LazyOrBitmap()
+          acc.naivelazyor(first)
+          acc.naivelazyor(set)
+          first = null
+        }
+      }
+    }
+
+    def result(): RoaringBitmap = {
+      if (acc != null) {
+        acc.repairAfterLazy()
+        acc
+      } else if (first != null) {
+        first
+      } else {
+        new RoaringBitmap()
+      }
+    }
   }
 }
