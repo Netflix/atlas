@@ -50,6 +50,10 @@ class RequestHandlerNoCompressionSuite extends MUnitRouteSuite {
       |  access-log = false
       |  close-probability = 0.0
       |}
+      |atlas.pekko.service-doc {
+      |  resource = ""
+      |  title = ""
+      |}
     """.stripMargin
   )
 
