@@ -58,7 +58,11 @@ class RequestAuthenticatorSuite extends MUnitRouteSuite {
       .exists(_.name() == "ipc.server.call")
   }
 
-  private def configWith(authenticator: Option[String], accessLog: Boolean = false): Config = {
+  private def configWith(
+    authenticator: Option[String],
+    accessLog: Boolean = false,
+    docResource: String = ""
+  ): Config = {
     val auth = authenticator.fold("")(c => s"""authenticator = "$c"""")
     ConfigFactory.parseString(s"""
         |atlas.pekko.api-endpoints = []
@@ -70,6 +74,10 @@ class RequestAuthenticatorSuite extends MUnitRouteSuite {
         |  access-log = $accessLog
         |  close-probability = 0.0
         |  $auth
+        |}
+        |atlas.pekko.service-doc {
+        |  resource = "$docResource"
+        |  title = ""
         |}
       """.stripMargin)
   }
@@ -164,6 +172,18 @@ class RequestAuthenticatorSuite extends MUnitRouteSuite {
     val route = RequestHandler.standardOptions(complete("secret"), settings)
     Get("/ok") ~> route ~> check {
       assertEquals(response.status, StatusCodes.OK)
+    }
+  }
+
+  test("rejecting authenticator: service doc is not exempt") {
+    val cls = classOf[RejectingAuthenticator].getName
+    val settings = RequestHandler.Settings(configWith(Some(cls), docResource = "www/llms.txt"))
+    val route = RequestHandler.standardOptions(complete("secret"), settings)
+    Get(ServiceDoc.wellKnownPath) ~> route ~> check {
+      // The link header proves the doc is enabled for this config, so the rejection below is
+      // coming from the authenticator rather than from an unmapped path.
+      assert(response.headers.exists(_.is("link")))
+      assertEquals(response.status, StatusCodes.Forbidden)
     }
   }
 

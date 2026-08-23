@@ -55,6 +55,10 @@ class RequestHandlerSuite extends MUnitRouteSuite {
       |  access-log = true
       |  close-probability = 0.0
       |}
+      |atlas.pekko.service-doc {
+      |  resource = "www/llms.txt"
+      |  title = "Test service guide"
+      |}
     """.stripMargin
   )
 
@@ -78,6 +82,23 @@ class RequestHandlerSuite extends MUnitRouteSuite {
   test("/ok") {
     Get("/ok") ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
+    }
+  }
+
+  test("service doc link header") {
+    Get("/not-found") ~> routes ~> check {
+      val link = response.headers.find(_.is("link")).map(_.value)
+      assertEquals(
+        link,
+        Some("</.well-known/llms.txt>; rel=service-doc; title=\"Test service guide\"")
+      )
+    }
+  }
+
+  test("service doc served at advertised location") {
+    Get("/.well-known/llms.txt") ~> routes ~> check {
+      assertEquals(response.status, StatusCodes.OK)
+      assert(responseAs[String].contains("Agent facing document"))
     }
   }
 
@@ -138,7 +159,9 @@ class RequestHandlerSuite extends MUnitRouteSuite {
     val header = RawHeader("Origin", origin)
     Get("/ok").addHeader(header) ~> routes ~> check {
       assertEquals(response.status, StatusCodes.OK)
-      assertEquals(response.headers, List(RawHeader("test", "12345")))
+      // The service doc link is present on every response, including this one
+      val headers = response.headers.filterNot(_.is("link"))
+      assertEquals(headers, List(RawHeader("test", "12345")))
     }
   }
 

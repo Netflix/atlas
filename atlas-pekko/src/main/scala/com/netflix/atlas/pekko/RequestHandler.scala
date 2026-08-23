@@ -114,6 +114,12 @@ object RequestHandler extends StrictLogging {
         .distinct
     }
 
+    // Lazy for the same reason as `requestAuthenticator` below: it resolves a classpath resource
+    // using the thread context class loader, so it must not be built eagerly for the
+    // `defaultSettings` singleton where both the config source and the current thread may not be
+    // the ones used when the routes are actually wired.
+    lazy val serviceDoc: ServiceDoc = ServiceDoc(config)
+
     val corsEnabled: Boolean = {
       config.getBoolean("atlas.pekko.request-handler.cors")
     }
@@ -173,7 +179,11 @@ object RequestHandler extends StrictLogging {
     // Placing the authenticator here, inside the exception/rejection handling, the access log, and
     // the CORS wrapper below, ensures its rejections are rendered by the standard error handling,
     // included in the access log, and carry CORS headers.
-    val finalRoutes = ok ~ settings.requestAuthenticator(route)
+    // Serve the agent facing service doc here rather than from an endpoint class so that the
+    // location advertised by the link header below is always mapped, whatever set of endpoints
+    // is configured. It is inside the authenticator so access to it is treated the same as any
+    // other route, and after the user routes so that it cannot shadow a configured endpoint.
+    val finalRoutes = ok ~ settings.requestAuthenticator(route ~ settings.serviceDoc.routes)
 
     // Automatically deal with compression
     val gzip =
@@ -199,11 +209,19 @@ object RequestHandler extends StrictLogging {
       else
         accessLog(settings.diagnosticHeaders) { close }
 
+    // Point clients at the agent facing service doc. Applied outside the access log so this
+    // fixed header is not recorded on every log entry, and as a default header so a route that
+    // sets its own `Link` header takes precedence.
+    val serviceDoc = settings.serviceDoc.linkHeader match {
+      case Some(h) => respondWithDefaultHeader(h) { log }
+      case None    => log
+    }
+
     // Add CORS headers to all responses
     if (settings.corsEnabled)
-      cors(settings.corsHostPatterns) { log }
+      cors(settings.corsHostPatterns) { serviceDoc }
     else
-      log
+      serviceDoc
   }
 
   def errorResponse(t: Throwable): HttpResponse = {
