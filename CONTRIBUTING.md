@@ -238,23 +238,9 @@ want to keep up with the churn and potential breakage of using the latest in pro
 
 ### Updating Documentation
 
-The main documentation for using Atlas is on the [GitHub wiki]. This wiki is not directly
-editable for several reasons:
+The Atlas documentation is published at [Atlas documentation] and maintained in the
+[atlas-docs] repository. To contribute changes, update the content in that repository and open
+a pull request there.
 
-1. We have had problems with spammers in the past putting up bogus pages
-2. GitHub does not allow pull requests for the wiki
-3. A number of the tedious steps like including sample graphs and formatting expressions are
-   easier to do with some scripting
-   
-The documentation is kept inline with the code as part of the [atlas-wiki] sub-project. To
-update the documentation, update the content in that sub-project and send in a PR just as you
-would for [contributing code](#contributing-code). Once the PR has been reviewed and merged, then
-one of the project maintainers will need to publish the changes to the wiki repository by
-running:
-
-```
-$ make publish-wiki
-```
-
-[GitHub wiki]: https://github.com/Netflix/atlas/wiki
-[atlas-wiki]: https://github.com/Netflix/atlas/tree/master/atlas-wiki/src/main
+[Atlas documentation]: https://netflix.github.io/atlas-docs/
+[atlas-docs]: https://github.com/Netflix/atlas-docs
