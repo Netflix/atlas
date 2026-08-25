@@ -6,13 +6,9 @@ else
 	SBT := cat /dev/null | project/sbt ++${TRAVIS_SCALA_VERSION}
 endif
 
-WIKI_PRG        := atlas-wiki/runMain com.netflix.atlas.wiki.Main
-WIKI_INPUT_DIR  := $(shell pwd)/atlas-wiki/src/main/resources
-WIKI_OUTPUT_DIR := $(shell pwd)/target/atlas.wiki
-
 LAUNCHER_JAR_URL := https://repo1.maven.org/maven2/com/netflix/iep/iep-launcher/6.0.6/iep-launcher-6.0.6.jar
 
-.PHONY: build snapshot release clean format update-wiki publish-wiki
+.PHONY: build snapshot release clean format
 
 build:
 	$(SBT) clean testFull checkLicenseHeaders scalafmtCheckAll
@@ -42,19 +38,6 @@ clean:
 
 format:
 	$(SBT) formatLicenseHeaders scalafmtAll
-
-$(WIKI_OUTPUT_DIR):
-	mkdir -p target
-	git clone git@github.com:Netflix/atlas.wiki.git $(WIKI_OUTPUT_DIR)
-
-update-wiki: $(WIKI_OUTPUT_DIR)
-	cd $(WIKI_OUTPUT_DIR) && git rm -rf *
-	$(SBT) "$(WIKI_PRG) $(WIKI_INPUT_DIR) $(WIKI_OUTPUT_DIR)"
-
-publish-wiki: update-wiki
-	cd $(WIKI_OUTPUT_DIR) && git add * && git status
-	cd $(WIKI_OUTPUT_DIR) && git commit -a -m "update wiki"
-	cd $(WIKI_OUTPUT_DIR) && git push origin master
 
 # Build a single runnable jar. The classpath is extracted from sbt by keeping only
 # .jar entries, which relies on exportJars being set (see project/BuildSettings.scala)
