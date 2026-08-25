@@ -187,7 +187,7 @@ class ExprApi extends WebApi {
     * associated with a graph expression. Output is a list of all distinct
     * queries used.
     *
-    * [1] https://github.com/Netflix/atlas/wiki/Reference-query
+    * [1] https://netflix.github.io/atlas-docs/asl/tutorial/#choosing
     */
   private def processQueriesRequest(expr: String, vocabName: String): HttpResponse = {
     val interpreter = newInterpreter(vocabName)
