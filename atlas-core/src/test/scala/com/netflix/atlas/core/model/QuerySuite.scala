@@ -656,4 +656,63 @@ class QuerySuite extends FunSuite {
     val q = Regex("a", "http:/*")
     assertEquals(q.toString, "a,http\\u003a\\u002f*,:re")
   }
+
+  /** Conjunction of `n` disjunctions, the dnf of which has 2^n clauses. */
+  private def orPairs(n: Int): Query = {
+    val pair = (i: Int) => Or(Equal(s"k$i", "a"), Equal(s"k$i", "b"))
+    (1 until n).foldLeft[Query](pair(0))((acc, i) => And(acc, pair(i)))
+  }
+
+  /** Same shape with the operators swapped, the cnf of which has 2^n clauses. */
+  private def andPairs(n: Int): Query = {
+    val pair = (i: Int) => And(Equal(s"k$i", "a"), Equal(s"k$i", "b"))
+    (1 until n).foldLeft[Query](pair(0))((acc, i) => Or(acc, pair(i)))
+  }
+
+  test("dnfList is bounded") {
+    // 2^14 clauses, above the largest expansion seen for expressions in use and well under
+    // the limit.
+    assertEquals(Query.dnfList(orPairs(14)).size, 16384)
+    intercept[IllegalArgumentException] {
+      Query.dnfList(orPairs(18))
+    }
+  }
+
+  test("dnfList bound applies to disjunctions") {
+    // Each side expands to 2^16 clauses, under the limit on its own. The concatenation is
+    // not a product, but it still has to be bounded or a handful of disjunctions can
+    // produce many times the limit.
+    intercept[IllegalArgumentException] {
+      Query.dnfList(Or(orPairs(16), orPairs(16)))
+    }
+  }
+
+  test("cnfList is bounded") {
+    assertEquals(Query.cnfList(andPairs(14)).size, 16384)
+    intercept[IllegalArgumentException] {
+      Query.cnfList(andPairs(18))
+    }
+  }
+
+  test("cnfList bound applies to conjunctions") {
+    intercept[IllegalArgumentException] {
+      Query.cnfList(And(andPairs(16), andPairs(16)))
+    }
+  }
+
+  test("expandInClauses is bounded") {
+    // Each `:in` is small enough to expand on its own, the product across the conjunction is
+    // what grows: 5^8 clauses.
+    val in = (i: Int) => In(s"k$i", List("a", "b", "c", "d", "e"))
+    val q = (1 until 8).foldLeft[Query](in(0))((acc, i) => And(acc, in(i)))
+    intercept[IllegalArgumentException] {
+      Query.expandInClauses(q)
+    }
+  }
+
+  test("expandInClauses allows expansion up to the limit") {
+    val in = (i: Int) => In(s"k$i", List("a", "b", "c", "d", "e"))
+    val q = (1 until 4).foldLeft[Query](in(0))((acc, i) => And(acc, in(i)))
+    assertEquals(Query.expandInClauses(q).size, 625)
+  }
 }
