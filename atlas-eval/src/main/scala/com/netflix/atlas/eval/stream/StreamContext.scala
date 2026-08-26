@@ -216,18 +216,38 @@ private[stream] class StreamContext(
   }
 
   private def validateDataExpr(expr: DataExpr): Unit = {
-    Query
-      .dnfList(expr.query)
-      .flatMap(q => Query.expandInClauses(q))
-      .foreach(validateQuery)
-  }
-
-  private def validateQuery(query: Query): Unit = {
-    val keys = Query.exactKeys(query) -- ignoredTagKeys
-    if (keys.isEmpty) {
-      val msg = s"rejected expensive query [$query], narrow the scope to a specific app or name"
+    if (!isScoped(expr.query)) {
+      val msg =
+        s"rejected expensive query [${expr.query}], narrow the scope to a specific app or name"
       throw new IllegalArgumentException(msg)
     }
+  }
+
+  /**
+    * Check that every clause of the disjunctive normal form is scoped by at least one tag key
+    * that is matched exactly and is not in `ignored-tag-keys`.
+    *
+    * Equivalent to expanding the `:in` clauses of each clause of `Query.dnfList` and requiring
+    * `Query.exactKeys` to be non-empty, but neither list is materialized. The expansion is not
+    * needed at all: every expansion of an `:in` produces `:eq` on the same key, so all
+    * expansions of a clause have the same set of exact keys. The disjunctive normal form is
+    * computed structurally by `everyClauseMatches`, since materializing it is exponential in
+    * the number of `:or` clauses.
+    */
+  private[stream] def isScoped(query: Query): Boolean = {
+    everyClauseMatches(query, isScopingLeaf)
+  }
+
+  /**
+    * Leaf queries that scope a clause: the key is matched exactly and is not ignored. An `:in`
+    * with more values than `Query.expandInClausesLimit` would not have been expanded into a set
+    * of `:eq` clauses, so it does not contribute an exact key.
+    */
+  private def isScopingLeaf(query: Query): Boolean = query match {
+    case Query.Equal(k, _) => !ignoredTagKeys.contains(k)
+    case Query.In(k, vs) if vs.lengthCompare(Query.expandInClausesLimit) <= 0 =>
+      !ignoredTagKeys.contains(k)
+    case _ => false
   }
 
   private def restrictsNameAndApp(query: Query): Unit = {
@@ -243,36 +263,45 @@ private[stream] class StreamContext(
     isRestricted(query, AppKeys) && isRestricted(query, NameKeys)
   }
 
-  /**
-    * Check that every clause of the disjunctive normal form is restricted to one of `keys`.
-    *
-    * Equivalent to `Query.dnfList(query).forall(isRestrictedClause(_, keys))`, but computed over
-    * the structure of the query rather than by materializing the DNF, which is exponential in
-    * the number of `:or` clauses. The cases mirror those of `Query.dnfList`: `:or` concatenates
-    * the clause lists, so every branch must be restricted, while `:and` forms the cross product,
-    * where every combined clause is restricted exactly when all clauses of one side are. That
-    * relies on `forall(a) || forall(b)` being the same as checking each pair, which holds since
-    * `dnfList` never returns an empty list.
-    */
-  private def isRestricted(query: Query, keys: Set[String]): Boolean = query match {
-    case Query.Or(q1, q2)           => isRestricted(q1, keys) && isRestricted(q2, keys)
-    case Query.And(q1, q2)          => isRestricted(q1, keys) || isRestricted(q2, keys)
-    case Query.Not(Query.And(a, b)) =>
-      isRestricted(Query.Not(a), keys) && isRestricted(Query.Not(b), keys)
-    case Query.Not(Query.Or(a, b)) =>
-      isRestricted(Query.Not(a), keys) || isRestricted(Query.Not(b), keys)
-    // `dnfList` leaves a double negation as a single clause without normalizing further, so the
-    // inner query is checked as a clause rather than recursively.
-    case Query.Not(Query.Not(q)) => isRestrictedClause(q, keys)
-    case q                       => isRestrictedClause(q, keys)
+  private def isRestricted(query: Query, keys: Set[String]): Boolean = {
+    everyClauseMatches(query, isRestrictingLeaf(keys, _))
   }
 
-  /** Check a single DNF clause, which is a conjunction of leaf queries. */
-  private def isRestrictedClause(query: Query, keys: Set[String]): Boolean = query match {
-    case Query.And(q1, q2) => isRestrictedClause(q1, keys) || isRestrictedClause(q2, keys)
+  /** Leaf queries that restrict a clause to one of `keys`. */
+  private def isRestrictingLeaf(keys: Set[String], query: Query): Boolean = query match {
     case Query.Equal(k, _) => keys.contains(k)
     case Query.In(k, _)    => keys.contains(k)
     case _                 => false
+  }
+
+  /**
+    * Check that every clause of the disjunctive normal form contains a leaf matching `leaf`.
+    *
+    * Equivalent to `Query.dnfList(query).forall(clauseMatches(_, leaf))`, but computed over the
+    * structure of the query rather than by materializing the DNF, which is exponential in the
+    * number of `:or` clauses. The cases mirror those of `Query.dnfList`: `:or` concatenates the
+    * clause lists, so every branch must match, while `:and` forms the cross product, where every
+    * combined clause matches exactly when all clauses of one side do. That relies on
+    * `forall(a) || forall(b)` being the same as checking each pair, which holds since `dnfList`
+    * never returns an empty list.
+    */
+  private def everyClauseMatches(query: Query, leaf: Query => Boolean): Boolean = query match {
+    case Query.Or(q1, q2)           => everyClauseMatches(q1, leaf) && everyClauseMatches(q2, leaf)
+    case Query.And(q1, q2)          => everyClauseMatches(q1, leaf) || everyClauseMatches(q2, leaf)
+    case Query.Not(Query.And(a, b)) =>
+      everyClauseMatches(Query.Not(a), leaf) && everyClauseMatches(Query.Not(b), leaf)
+    case Query.Not(Query.Or(a, b)) =>
+      everyClauseMatches(Query.Not(a), leaf) || everyClauseMatches(Query.Not(b), leaf)
+    // `dnfList` leaves a double negation as a single clause without normalizing further, so the
+    // inner query is checked as a clause rather than recursively.
+    case Query.Not(Query.Not(q)) => clauseMatches(q, leaf)
+    case q                       => clauseMatches(q, leaf)
+  }
+
+  /** Check a single DNF clause, which is a conjunction of leaf queries. */
+  private def clauseMatches(query: Query, leaf: Query => Boolean): Boolean = query match {
+    case Query.And(q1, q2) => clauseMatches(q1, leaf) || clauseMatches(q2, leaf)
+    case q                 => leaf(q)
   }
 
   /**

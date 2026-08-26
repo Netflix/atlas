@@ -27,6 +27,7 @@ import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
 
 class StreamContextSuite extends FunSuite {
 
@@ -138,13 +139,33 @@ class StreamContextSuite extends FunSuite {
   private lazy val hiResContext: StreamContext = newContext
 
   /** Message for the validation failure, or None if the data source is valid. */
-  private def hiResRejection(query: String): Option[String] = {
+  private def rejection(query: String, step: java.time.Duration): Option[String] = {
     val uri = s"http://localhost/api/v1/graph?q=$query"
-    val ds = new DataSource("hi-res", java.time.Duration.ofSeconds(5), uri)
+    val ds = new DataSource("test", step, uri)
     hiResContext.validateDataSource(ds).failed.toOption.map(_.getMessage)
   }
 
+  private def hiResRejection(query: String): Option[String] =
+    rejection(query, java.time.Duration.ofSeconds(5))
+
   private def hiResIsValid(query: String): Boolean = hiResRejection(query).isEmpty
+
+  /**
+    * Random query used to check the structural checks against the definition based on the
+    * disjunctive normal form.
+    */
+  private def genQuery(random: scala.util.Random, leaves: Vector[Query], depth: Int): Query = {
+    def sub: Query = genQuery(random, leaves, depth - 1)
+    def leaf: Query = leaves(random.nextInt(leaves.size))
+    if (depth == 0) leaf
+    else
+      random.nextInt(4) match {
+        case 0 => Query.And(sub, sub)
+        case 1 => Query.Or(sub, sub)
+        case 2 => Query.Not(sub)
+        case _ => leaf
+      }
+  }
 
   /**
     * Check that the query is rejected by the name and app restriction, not by some other
@@ -194,18 +215,8 @@ class StreamContextSuite extends FunSuite {
       Query.HasKey("name"),
       Query.Regex("name", "c.*")
     )
-    def gen(depth: Int): Query = {
-      if (depth == 0) leaves(random.nextInt(leaves.size))
-      else
-        random.nextInt(4) match {
-          case 0 => Query.And(gen(depth - 1), gen(depth - 1))
-          case 1 => Query.Or(gen(depth - 1), gen(depth - 1))
-          case 2 => Query.Not(gen(depth - 1))
-          case _ => leaves(random.nextInt(leaves.size))
-        }
-    }
     (0 until 2000).foreach { _ =>
-      val q = gen(4)
+      val q = genQuery(random, leaves, 4)
       assertEquals(
         hiResContext.isRestricted(q),
         dnfIsRestricted(q),
@@ -218,12 +229,92 @@ class StreamContextSuite extends FunSuite {
     // The disjunctive normal form for this query has 2^40 clauses, far more than could be
     // materialized. The structural check returns immediately.
     val leaf = (i: Int) => Query.Or(Query.Equal(s"k$i", "a"), Query.Equal(s"k$i", "b"))
-    val ors = (1 until 40).foldLeft[Query](leaf(0))((acc, i) => Query.And(acc, leaf(i)))
+    val ors = bigAnd(leaf)
     assert(!hiResContext.isRestricted(ors))
 
     // Both answers have to be produced structurally, otherwise an implementation that always
     // returned false would pass. Pinning name and nf.app makes the same query restricted.
     val pinned = Query.And(Query.Equal("name", "cpu"), Query.Equal("nf.app", "www"))
     assert(hiResContext.isRestricted(Query.And(pinned, ors)))
+  }
+
+  // The scoping check used to materialize the disjunctive normal form and expand the `:in`
+  // clauses of every clause before looking at the keys. Both are exponential: the dnf in the
+  // number of `:or` clauses, the expansion in the number of `:in` clauses. The tests below pin
+  // the behavior and check it against that definition.
+
+  /** `ignored-tag-keys` from the reference config, also used to build `hiResContext`. */
+  private val ignoredTagKeys = ConfigFactory
+    .load()
+    .getStringList("atlas.eval.stream.ignored-tag-keys")
+    .asScala
+    .toSet
+
+  /** Previous implementation, kept as the reference for the equivalence check. */
+  private def dnfIsScoped(query: Query): Boolean = {
+    Query
+      .dnfList(query)
+      .flatMap(q => Query.expandInClauses(q))
+      .forall(q => (Query.exactKeys(q) -- ignoredTagKeys).nonEmpty)
+  }
+
+  test("scope check rejects data sources that are not scoped") {
+    val step = java.time.Duration.ofMinutes(1)
+    val reason = "narrow the scope to a specific app or name"
+    assertEquals(rejection("name,cpu,:eq,:sum", step), None)
+    assert(rejection("name,foo,:re,:sum", step).exists(_.contains(reason)))
+
+    // An `:in` is only treated as an exact key if it is small enough to be expanded.
+    assertEquals(rejection("nf.app,(,a,b,c,d,e,),:in,:sum", step), None)
+    assert(rejection("nf.app,(,a,b,c,d,e,f,),:in,:sum", step).exists(_.contains(reason)))
+
+    // Ignored keys do not scope a query.
+    assert(ignoredTagKeys.contains("nf.region"))
+    assert(rejection("nf.region,us-east-1,:eq,:sum", step).exists(_.contains(reason)))
+  }
+
+  test("scope check matches the dnf definition for generated queries") {
+    val random = new scala.util.Random(42)
+    val leaves = Vector[Query](
+      Query.Equal("name", "cpu"),
+      Query.Equal("nf.app", "www"),
+      // Ignored keys, an exact match on one of these does not scope the query.
+      Query.Equal("nf.region", "us-east-1"),
+      Query.In("nf.account", List("1", "2")),
+      Query.In("name", List("cpu", "disk")),
+      Query.In("nf.app", List("a", "b", "c", "d", "e")),
+      // Too many values to be expanded, so it does not contribute an exact key.
+      Query.In("nf.app", List("a", "b", "c", "d", "e", "f")),
+      Query.HasKey("name"),
+      Query.Not(Query.Equal("name", "cpu")),
+      Query.Regex("name", "c.*")
+    )
+    (0 until 2000).foreach { _ =>
+      val q = genQuery(random, leaves, 3)
+      assertEquals(hiResContext.isScoped(q), dnfIsScoped(q), s"disagreement for query: $q")
+    }
+  }
+
+  test("scope check is not exponential in the number of or or in clauses") {
+    // The disjunctive normal form for these queries has 2^40 clauses, and each clause of the
+    // first would expand to 5^40 combinations. Neither could be materialized, the structural
+    // check returns immediately.
+    val ins = (i: Int) =>
+      Query.Or(
+        Query.In(s"k$i", List("a", "b", "c", "d", "e")),
+        Query.In(s"j$i", List("a", "b", "c", "d", "e"))
+      )
+    assert(hiResContext.isScoped(bigAnd(ins)))
+
+    // Both answers have to be produced structurally, otherwise an implementation that always
+    // returned true would pass. Ignored keys do not scope the query.
+    val ignored =
+      (i: Int) => Query.Or(Query.Equal("nf.region", s"r$i"), Query.Equal("nf.account", s"a$i"))
+    assert(!hiResContext.isScoped(bigAnd(ignored)))
+  }
+
+  /** Conjunction of 40 sub-queries, so the disjunctive normal form has at least 2^40 clauses. */
+  private def bigAnd(f: Int => Query): Query = {
+    (1 until 40).foldLeft(f(0))((acc, i) => Query.And(acc, f(i)))
   }
 }
