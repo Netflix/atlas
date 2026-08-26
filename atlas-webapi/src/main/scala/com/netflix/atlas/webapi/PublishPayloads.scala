@@ -41,6 +41,11 @@ object PublishPayloads {
   // could exhaust memory.
   private final val maxArraySize = 100_000
 
+  // Maximum number of tags for a single datapoint in the compact format. The flat key/value
+  // array allocated per datapoint holds twice the tag count, so this is half of `maxArraySize`
+  // to keep that allocation within the overall array limit.
+  private final val maxTagsPerDatapoint = maxArraySize / 2
+
   // Maximum number of tags allowed. This will be used to help pre-size buffers when
   // processing tag data.
   private final val maxPermittedTags = ApiSettings.maxPermittedTags
@@ -262,14 +267,36 @@ object PublishPayloads {
     finally parser.close()
   }
 
-  private def nextArraySize(parser: JsonParser): Int = {
-    val size = nextInt(parser)
-    if (size > maxArraySize) {
+  /**
+    * Read a count from the input and check that it is within the permitted range. The value is
+    * read as a long so that a value outside the range of an int is reported as an invalid count
+    * rather than surfacing as a coercion failure from the parser. The `name` is included in the
+    * message so a rejected payload indicates which count was bad.
+    */
+  private def nextSize(parser: JsonParser, name: String, max: Int = maxArraySize): Int = {
+    val size = nextLong(parser)
+    if (size < 0 || size > max) {
       throw new IllegalArgumentException(
-        s"requested buffer size exceeds limit ($size > $maxArraySize)"
+        s"$name is invalid or exceeds limit ($size, max: $max)"
       )
     }
-    size
+    size.toInt
+  }
+
+  /**
+    * Read an index into the string table and return the corresponding entry. The bound is the
+    * number of entries actually populated for this payload, not the length of the array: the
+    * array is reused across requests on the same thread and may be longer, with stale entries
+    * from a previous payload past `tableSize`.
+    */
+  private def nextTableString(parser: JsonParser, table: Array[String], tableSize: Int): String = {
+    val i = nextInt(parser)
+    if (i < 0 || i >= tableSize) {
+      throw new IllegalArgumentException(
+        s"string table index is out of bounds ($i, size: $tableSize)"
+      )
+    }
+    table(i)
   }
 
   private def getOrCreateStringArray(size: Int): Array[String] = {
@@ -319,7 +346,7 @@ object PublishPayloads {
     val strInterner = Interner.forStrings
 
     requireNextToken(parser, JsonToken.START_ARRAY)
-    val size = nextArraySize(parser)
+    val size = nextSize(parser, "string table size")
     val table = getOrCreateStringArray(size)
     var i = 0
     while (i < size) {
@@ -328,29 +355,30 @@ object PublishPayloads {
       i += 1
     }
 
-    val numDatapointTuples = nextInt(parser)
+    val numDatapointTuples = nextSize(parser, "number of datapoints", Int.MaxValue)
     // `intern` is fixed for the whole batch, so branch once and run a specialized loop rather
     // than re-checking it per datapoint.
-    if (intern) decodeCompactTuplesInterned(parser, table, numDatapointTuples, consumer)
-    else decodeCompactTuplesRaw(parser, table, numDatapointTuples, consumer)
+    if (intern) decodeCompactTuplesInterned(parser, table, size, numDatapointTuples, consumer)
+    else decodeCompactTuplesRaw(parser, table, size, numDatapointTuples, consumer)
   }
 
   private def decodeCompactTuplesRaw(
     parser: JsonParser,
     table: Array[String],
+    tableSize: Int,
     numTuples: Int,
     consumer: PublishConsumer
   ): Unit = {
     var i = 0
     while (i < numTuples) {
       val id = ItemId(nextString(parser))
-      val numTags = nextArraySize(parser)
+      val numTags = nextSize(parser, "tag count", maxTagsPerDatapoint)
       val len = 2 * numTags
       val tagsArray = new Array[String](len)
       var j = 0
       while (j < numTags) {
-        tagsArray(2 * j) = table(nextInt(parser))
-        tagsArray(2 * j + 1) = table(nextInt(parser))
+        tagsArray(2 * j) = nextTableString(parser, table, tableSize)
+        tagsArray(2 * j + 1) = nextTableString(parser, table, tableSize)
         j += 1
       }
       val tags = SortedTagMap.createUnsafe(tagsArray, len)
@@ -364,6 +392,7 @@ object PublishPayloads {
   private def decodeCompactTuplesInterned(
     parser: JsonParser,
     table: Array[String],
+    tableSize: Int,
     numTuples: Int,
     consumer: PublishConsumer
   ): Unit = {
@@ -376,13 +405,13 @@ object PublishPayloads {
     var i = 0
     while (i < numTuples) {
       val id = TaggedItem.internId(ItemId(nextString(parser)), wallTime)
-      val numTags = nextArraySize(parser)
+      val numTags = nextSize(parser, "tag count", maxTagsPerDatapoint)
       val len = 2 * numTags
       val buffer = probe.prepare(len)
       var j = 0
       while (j < numTags) {
-        buffer(2 * j) = table(nextInt(parser))
-        buffer(2 * j + 1) = table(nextInt(parser))
+        buffer(2 * j) = nextTableString(parser, table, tableSize)
+        buffer(2 * j + 1) = nextTableString(parser, table, tableSize)
         j += 1
       }
       val hashCode = SortedTagMap.computeHashCode(buffer, len)
