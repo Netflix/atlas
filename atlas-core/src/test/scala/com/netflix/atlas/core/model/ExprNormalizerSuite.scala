@@ -174,4 +174,30 @@ class ExprNormalizerSuite extends FunSuite {
       List("name,sps,:eq,:sum,(,nf.cluster,),:by,:approx-distinct-cumulative")
     )
   }
+
+  /**
+    * Query of `n` OR-pairs combined with `:and`. Converting to disjunctive normal form is a
+    * cross product, so the number of clauses is 2^n while the input grows linearly.
+    */
+  private def dnfExpansion(n: Int): String = {
+    val clauses = (0 until n).map(i => s"k$i,a,:eq,k$i,b,:eq,:or")
+    val ands = List.fill(n - 1)(":and")
+    (clauses ++ ands :+ ":sum").mkString(",")
+  }
+
+  test("normalize rejects excessive dnf expansion") {
+    // 2^18 clauses, more than the normal form allows. Check the message, the interpreter
+    // throws IllegalArgumentException for many unrelated reasons.
+    val e = intercept[IllegalArgumentException] {
+      normalize(dnfExpansion(18))
+    }
+    assert(e.getMessage.contains("query is too complex"), e.getMessage)
+  }
+
+  test("normalize allows modest dnf expansion") {
+    // 2^9 clauses ORd together, normalized as usual.
+    val results = normalize(dnfExpansion(9))
+    assertEquals(results.size, 1)
+    assertEquals(results.head.split(",:or", -1).length - 1, 511)
+  }
 }

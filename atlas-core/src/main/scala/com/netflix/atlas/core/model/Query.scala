@@ -106,7 +106,11 @@ object Query {
     }
   }
 
-  /** Converts the input query into conjunctive normal form. */
+  /**
+    * Converts the input query into conjunctive normal form. Throws an
+    * `IllegalArgumentException` if the normal form would exceed the clause limit, see
+    * `cnfList` for more information.
+    */
   def cnf(query: Query): Query = {
     cnfList(query).reduceLeft { (q1, q2) =>
       Query.And(q1, q2)
@@ -115,20 +119,25 @@ object Query {
 
   /**
     * Converts the input query into a list of sub-queries that should be ANDd
-    * together.
+    * together. Throws an `IllegalArgumentException` if the number of clauses would
+    * exceed `maxNormalFormClauses`.
     */
   def cnfList(query: Query): List[Query] = {
     query match {
-      case And(q1, q2)      => cnfList(q1) ::: cnfList(q2)
+      case And(q1, q2)      => concat(cnfList(q1), cnfList(q2))
       case Or(q1, q2)       => crossOr(cnfList(q1), cnfList(q2))
       case Not(And(q1, q2)) => cnfList(Or(Not(q1), Not(q2)))
-      case Not(Or(q1, q2))  => cnfList(Not(q1)) ::: cnfList(Not(q2))
+      case Not(Or(q1, q2))  => concat(cnfList(Not(q1)), cnfList(Not(q2)))
       case Not(Not(q))      => List(q)
       case q                => List(q)
     }
   }
 
-  /** Converts the input query into disjunctive normal form. */
+  /**
+    * Converts the input query into disjunctive normal form. Throws an
+    * `IllegalArgumentException` if the normal form would exceed the clause limit, see
+    * `dnfList` for more information.
+    */
   def dnf(query: Query): Query = {
     dnfList(query).reduceLeft { (q1, q2) =>
       Query.Or(q1, q2)
@@ -137,24 +146,58 @@ object Query {
 
   /**
     * Converts the input query into a list of sub-queries that should be ORd
-    * together.
+    * together. Throws an `IllegalArgumentException` if the number of clauses would
+    * exceed `maxNormalFormClauses`.
     */
   def dnfList(query: Query): List[Query] = {
     query match {
       case And(q1, q2)      => crossAnd(dnfList(q1), dnfList(q2))
-      case Or(q1, q2)       => dnfList(q1) ::: dnfList(q2)
-      case Not(And(q1, q2)) => dnfList(Not(q1)) ::: dnfList(Not(q2))
+      case Or(q1, q2)       => concat(dnfList(q1), dnfList(q2))
+      case Not(And(q1, q2)) => concat(dnfList(Not(q1)), dnfList(Not(q2)))
       case Not(Or(q1, q2))  => dnfList(And(Not(q1), Not(q2)))
       case Not(Not(q))      => List(q)
       case q                => List(q)
     }
   }
 
+  /**
+    * Maximum number of clauses allowed when converting a query to a normal form. The conversion
+    * distributes one operator over another, so the number of clauses is a product and grows
+    * exponentially with the number of operators being distributed. The limit is there to fail
+    * fast rather than do an unreasonable amount of work for a small input. A scan of the
+    * expressions in use found a maximum of around 12k clauses, so this leaves a good deal of
+    * room for legitimate queries.
+    */
+  private final val maxNormalFormClauses = 100_000
+
+  /**
+    * Check the size of a combined clause list before computing it. Every case that combines
+    * two clause lists is checked, not just the products. A product can only grow past the
+    * limit by going through this check, but so can a sum: each side of a concatenation can be
+    * just under the limit on its own, so checking only the products would allow a query with
+    * a handful of top level disjunctions to produce many times the limit.
+    */
+  private def checkClauseLimit(size: Long): Unit = {
+    if (size > maxNormalFormClauses) {
+      throw new IllegalArgumentException(
+        s"query is too complex, expansion would have at least $size clauses " +
+          s"(max: $maxNormalFormClauses)"
+      )
+    }
+  }
+
+  private def concat(qs1: List[Query], qs2: List[Query]): List[Query] = {
+    checkClauseLimit(qs1.size.toLong + qs2.size)
+    qs1 ::: qs2
+  }
+
   private def crossOr(qs1: List[Query], qs2: List[Query]): List[Query] = {
+    checkClauseLimit(qs1.size.toLong * qs2.size)
     for (q1 <- qs1; q2 <- qs2) yield Or(q1, q2)
   }
 
   private def crossAnd(qs1: List[Query], qs2: List[Query]): List[Query] = {
+    checkClauseLimit(qs1.size.toLong * qs2.size)
     for (q1 <- qs1; q2 <- qs2) yield And(q1, q2)
   }
 
@@ -165,13 +208,25 @@ object Query {
     * In order to avoid a massive combinatorial explosion clauses that have more than `limit`
     * expressions will not be expanded. The default limit is 5. It is somewhat arbitrary, but
     * seems to work well in practice for the current query data sets at Netflix.
+    *
+    * The `limit` only bounds a single `:in` clause. The product across a conjunction of them
+    * is bounded by `maxNormalFormClauses` and will throw an `IllegalArgumentException` rather
+    * than expand. Note that the bound applies to a single call: a caller that expands many
+    * queries, such as the clauses of a `dnfList`, needs to bound the overall result itself.
     */
   def expandInClauses(query: Query, limit: Int = 5): List[Query] = {
     query match {
       case Query.And(q1, q2) =>
+        // Expand each side once rather than re-expanding the right side for every clause of
+        // the left, and check the size of the product before computing it. The per-clause
+        // `limit` bounds a single `:in`, the product across a conjunction of them is what
+        // grows exponentially.
+        val as = expandInClauses(q1, limit)
+        val bs = expandInClauses(q2, limit)
+        checkClauseLimit(as.size.toLong * bs.size)
         for {
-          a <- expandInClauses(q1, limit)
-          b <- expandInClauses(q2, limit)
+          a <- as
+          b <- bs
         } yield {
           Query.And(a, b)
         }
