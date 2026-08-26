@@ -28,6 +28,9 @@ class PublishPayloadsSuite extends FunSuite {
 
   private val timestamp = 1636116180000L
 
+  // Valid ItemId for hand-written compact batch payloads, 16 bytes as hex.
+  private val compactId = "0" * 32
+
   private def datapointTuples(n: Int): List[DatapointTuple] = {
     datapoints(n).map(_.toTuple)
   }
@@ -225,6 +228,58 @@ class PublishPayloadsSuite extends FunSuite {
     assert(decoded.head.value.isNaN)
     assertEquals(decoded.head.tags, input.head.tags)
     assertEquals(decoded.tail, input.tail)
+  }
+
+  test("compact batch rejects negative string table size") {
+    val e = intercept[IllegalArgumentException] {
+      PublishPayloads.decodeCompactBatch("[-1,0]")
+    }
+    assert(e.getMessage.contains("invalid or exceeds limit"), e.getMessage)
+  }
+
+  test("compact batch rejects a string table size beyond the range of an int") {
+    val e = intercept[IllegalArgumentException] {
+      PublishPayloads.decodeCompactBatch("[9999999999,0]")
+    }
+    assert(e.getMessage.contains("string table size is invalid"), e.getMessage)
+  }
+
+  test("compact batch rejects negative datapoint count") {
+    val e = intercept[IllegalArgumentException] {
+      PublishPayloads.decodeCompactBatch(s"""[1,"a",-1,"$compactId",1,0,0,1234,1.0]""")
+    }
+    assert(e.getMessage.contains("number of datapoints is invalid"), e.getMessage)
+  }
+
+  test("compact batch rejects negative tag count") {
+    val payload = s"""[1,"a",1,"$compactId",-1,0,1.0]"""
+    val e = intercept[IllegalArgumentException] {
+      PublishPayloads.decodeCompactBatch(payload)
+    }
+    assert(e.getMessage.contains("invalid or exceeds limit"), e.getMessage)
+  }
+
+  test("compact batch rejects string table index past the table size") {
+    val payload = s"""[1,"a",1,"$compactId",1,0,1,1234,1.0]"""
+    val e = intercept[IllegalArgumentException] {
+      PublishPayloads.decodeCompactBatch(payload)
+    }
+    assert(e.getMessage.contains("string table index is out of bounds"), e.getMessage)
+  }
+
+  test("compact batch cannot read stale entries from a reused string table") {
+    // The string table array is cached per thread and only grown, never cleared. A payload
+    // declaring a smaller table must not be able to reach entries left by an earlier payload
+    // decoded on the same thread.
+    val first = s"""[3,"k","secret","z",1,"$compactId",1,0,1,1234,1.0]"""
+    val decoded = PublishPayloads.decodeCompactBatch(first)
+    assertEquals(decoded.head.tags, Map("k" -> "secret"))
+
+    val second = s"""[1,"a",1,"$compactId",1,0,1,1234,1.0]"""
+    val e = intercept[IllegalArgumentException] {
+      PublishPayloads.decodeCompactBatch(second)
+    }
+    assert(e.getMessage.contains("string table index is out of bounds"), e.getMessage)
   }
 
   test("encode and decode empty tuples list") {
