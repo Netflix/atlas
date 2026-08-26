@@ -203,13 +203,15 @@ private[stream] class StreamContext(
   }
 
   private def validateStyleExpr(styleExpr: StyleExpr, ds: DataSource): Unit = {
-    styleExpr.expr.dataExprs.foreach(validateDataExpr)
+    // `dataExprs` rebuilds the list on each access, extract it once for both checks.
+    val dataExprs = styleExpr.expr.dataExprs
+    dataExprs.foreach(validateDataExpr)
 
     // For hi-res streams, require more precise scoping that allows us to more efficiently
     // match the data and run it only where needed. This would ideally be applied everywhere,
     // but for backwards compatibility the 1m step is opted out for now.
     if (ds.step.toMillis < 60_000) {
-      styleExpr.expr.dataExprs.foreach(expr => restrictsNameAndApp(expr.query))
+      dataExprs.foreach(expr => restrictsNameAndApp(expr.query))
     }
   }
 
@@ -229,8 +231,7 @@ private[stream] class StreamContext(
   }
 
   private def restrictsNameAndApp(query: Query): Unit = {
-    val dnf = Query.dnfList(query)
-    if (!dnf.forall(isRestricted)) {
+    if (!isRestricted(query)) {
       throw new IllegalArgumentException(
         s"rejected expensive query [$query], hi-res streams " +
           "must restrict name and nf.app with :eq or :in"
@@ -238,12 +239,37 @@ private[stream] class StreamContext(
     }
   }
 
-  private def isRestricted(query: Query): Boolean = {
-    isRestricted(query, Set("nf.app", "nf.cluster", "nf.asg")) && isRestricted(query, Set("name"))
+  private[stream] def isRestricted(query: Query): Boolean = {
+    isRestricted(query, AppKeys) && isRestricted(query, NameKeys)
   }
 
+  /**
+    * Check that every clause of the disjunctive normal form is restricted to one of `keys`.
+    *
+    * Equivalent to `Query.dnfList(query).forall(isRestrictedClause(_, keys))`, but computed over
+    * the structure of the query rather than by materializing the DNF, which is exponential in
+    * the number of `:or` clauses. The cases mirror those of `Query.dnfList`: `:or` concatenates
+    * the clause lists, so every branch must be restricted, while `:and` forms the cross product,
+    * where every combined clause is restricted exactly when all clauses of one side are. That
+    * relies on `forall(a) || forall(b)` being the same as checking each pair, which holds since
+    * `dnfList` never returns an empty list.
+    */
   private def isRestricted(query: Query, keys: Set[String]): Boolean = query match {
-    case Query.And(q1, q2) => isRestricted(q1, keys) || isRestricted(q2, keys)
+    case Query.Or(q1, q2)           => isRestricted(q1, keys) && isRestricted(q2, keys)
+    case Query.And(q1, q2)          => isRestricted(q1, keys) || isRestricted(q2, keys)
+    case Query.Not(Query.And(a, b)) =>
+      isRestricted(Query.Not(a), keys) && isRestricted(Query.Not(b), keys)
+    case Query.Not(Query.Or(a, b)) =>
+      isRestricted(Query.Not(a), keys) || isRestricted(Query.Not(b), keys)
+    // `dnfList` leaves a double negation as a single clause without normalizing further, so the
+    // inner query is checked as a clause rather than recursively.
+    case Query.Not(Query.Not(q)) => isRestrictedClause(q, keys)
+    case q                       => isRestrictedClause(q, keys)
+  }
+
+  /** Check a single DNF clause, which is a conjunction of leaf queries. */
+  private def isRestrictedClause(query: Query, keys: Set[String]): Boolean = query match {
+    case Query.And(q1, q2) => isRestrictedClause(q1, keys) || isRestrictedClause(q2, keys)
     case Query.Equal(k, _) => keys.contains(k)
     case Query.In(k, _)    => keys.contains(k)
     case _                 => false
@@ -333,6 +359,12 @@ private[stream] class StreamContext(
 }
 
 private[stream] object StreamContext {
+
+  /** Keys that are considered to restrict a query to a particular application. */
+  private val AppKeys = Set("nf.app", "nf.cluster", "nf.asg")
+
+  /** Keys that are considered to restrict a query to a particular metric name. */
+  private val NameKeys = Set("name")
 
   /** Per-host data sources and the expression map derived from them, updated together. */
   case class HostState(dataSources: DataSources, dataExprMap: Map[String, List[DataSource]])
