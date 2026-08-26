@@ -202,19 +202,26 @@ object Query {
   }
 
   /**
+    * Default for the maximum number of values an `:in` clause can have and still be expanded
+    * by `expandInClauses`. It is somewhat arbitrary, but seems to work well in practice for the
+    * current query data sets at Netflix. Exposed so callers that reason about which clauses
+    * would be expanded do not have to duplicate the value.
+    */
+  val expandInClausesLimit: Int = 5
+
+  /**
     * Split :in queries into a list of queries using :eq. The query should be normalized ahead
     * of time so it is a string of conjunctions. See `dnfList` for more information.
     *
     * In order to avoid a massive combinatorial explosion clauses that have more than `limit`
-    * expressions will not be expanded. The default limit is 5. It is somewhat arbitrary, but
-    * seems to work well in practice for the current query data sets at Netflix.
+    * expressions will not be expanded. The default is `expandInClausesLimit`.
     *
     * The `limit` only bounds a single `:in` clause. The product across a conjunction of them
     * is bounded by `maxNormalFormClauses` and will throw an `IllegalArgumentException` rather
     * than expand. Note that the bound applies to a single call: a caller that expands many
     * queries, such as the clauses of a `dnfList`, needs to bound the overall result itself.
     */
-  def expandInClauses(query: Query, limit: Int = 5): List[Query] = {
+  def expandInClauses(query: Query, limit: Int = expandInClausesLimit): List[Query] = {
     query match {
       case Query.And(q1, q2) =>
         // Expand each side once rather than re-expanding the right side for every clause of
