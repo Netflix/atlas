@@ -102,11 +102,11 @@ class TagsApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi {
   private def tagString(ts: List[Tag]): String = ts.map(tagString).mkString("\n")
 
   private def offsetString(limit: Int, vs: List[String]): Option[String] = {
-    if (vs.size < limit) None else Some(vs.last)
+    if (vs.isEmpty || vs.size < limit) None else Some(vs.last)
   }
 
   private def offsetTag(limit: Int, vs: List[Tag]): Option[String] = {
-    if (vs.size < limit) None
+    if (vs.isEmpty || vs.size < limit) None
     else {
       val t = vs.last
       Some(s"${t.key},${t.value}")
@@ -144,7 +144,13 @@ object TagsApi {
 
     require(limit > 0, s"limit must be positive (got $limit)")
 
-    def actualLimit: Int = if (limit > ApiSettings.maxTagLimit) ApiSettings.maxTagLimit else limit
+    /**
+      * Requested limit after applying the configured maximum. Use this rather than `limit`
+      * for anything that reaches the index or the pagination check so the offset header
+      * always agrees with the data that was actually returned. Sampled once per request so
+      * a dynamic config update cannot make those two uses disagree.
+      */
+    val actualLimit: Int = math.min(limit, ApiSettings.maxTagLimit)
 
     def useText: Boolean = format.contains("txt")
 
@@ -161,7 +167,7 @@ object TagsApi {
 
     def toTagQuery(cq: Query): TagQuery = {
       val q = Some(query.fold(cq)(s => Query.And(toQuery(s), cq)))
-      TagQuery(q, key, offset.getOrElse(""), limit)
+      TagQuery(q, key, offset.getOrElse(""), actualLimit)
     }
 
     private def toQuery(s: String): Query = {

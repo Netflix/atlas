@@ -23,8 +23,10 @@ import com.netflix.atlas.core.db.StaticDatabase
 import com.netflix.atlas.core.index.TagIndex
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
+import com.netflix.atlas.core.model.Query
 import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.pekko.CallerContext
 import com.netflix.atlas.pekko.RequestHandler
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 
@@ -139,6 +141,25 @@ class TagsApiSuite extends MUnitRouteSuite {
   testGet("/api/v1/tags/name?verbose=1&format=txt") {
     val expected = (0 to 11).map(toTagText).mkString("\n")
     assertEquals(responseAs[String], expected)
+  }
+
+  test("tag query limit is clamped to max-limit") {
+    val req = TagsApi.Request(limit = Integer.MAX_VALUE)
+    assertEquals(req.toTagQuery(Query.True).limit, ApiSettings.maxTagLimit)
+  }
+
+  test("tag query limit is used as is when under max-limit") {
+    val limit = math.max(1, ApiSettings.maxTagLimit - 1)
+    val req = TagsApi.Request(limit = limit)
+    assertEquals(req.toTagQuery(Query.True).limit, limit)
+  }
+
+  test("db request limit is clamped for values lookup") {
+    val req = TagsApi.Request(key = Some("name"), limit = Integer.MAX_VALUE)
+    req.toDbRequest(CallerContext.Anonymous) match {
+      case r: TagsApi.ListValuesRequest => assertEquals(r.q.limit, ApiSettings.maxTagLimit)
+      case r                            => fail(s"unexpected request type: $r")
+    }
   }
 
   test("failure in db actor gets sent back") {
