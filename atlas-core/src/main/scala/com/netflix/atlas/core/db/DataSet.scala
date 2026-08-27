@@ -20,9 +20,14 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.core.model.*
 import com.netflix.atlas.core.util.TimeWave
+import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.Utils
 import com.netflix.spectator.api.histogram.PercentileBuckets
+import com.netflix.spectator.api.patterns.DistinctCountSketch
 
 private[db] object DataSet {
 
@@ -280,6 +285,234 @@ private[db] object DataSet {
     ds.withTags(tags)
   }
 
+  /**
+    * Concurrent viewers for a simulated live streaming event, published the way a
+    * [[com.netflix.spectator.api.patterns.DistinctCountSketch]] would publish it: one max gauge
+    * per register, tagged with `statistic=distinct` and a `distinct=R##` register id. Use with
+    * `:approx-distinct` to get the number of concurrent viewers, or
+    * `:approx-distinct-cumulative` for the number of unique viewers so far.
+    *
+    * The event runs once a day starting at [[eventStartHour]]:00 UTC:
+    *
+    *   - 30m ramp up to 1M concurrent viewers
+    *   - 2h holding at 1M, with 5% of the audience replaced every 15m
+    *   - 30m climb to 2M for the main event
+    *   - 30m holding at 2M
+    *   - 10m drop back to the baseline as the event ends
+    *
+    * Because viewers churn, the number of unique viewers over the event is larger than the
+    * number watching at any one time, which is the difference between the two operators.
+    */
+  def liveEventViewers: List[TimeSeries] = {
+    val registers = DistinctCountSketch.REGISTERS
+    viewerDevices.flatMap {
+      case (device, _, _) =>
+        (0 until registers).map { r =>
+          def f(t: Long): Double = viewerRegisters(device, t)(r)
+          val tags = Map(
+            TagKey.application -> "streaming",
+            "name"             -> "viewers.concurrent",
+            "device"           -> device,
+            "statistic"        -> "distinct",
+            TagKey.distinct    -> "R%02X".format(r)
+          )
+          TimeSeries(tags, new FunctionTimeSeq(DsType.Gauge, step, f))
+        }
+    }
+  }
+
+  /** Hour of the day, UTC, at which the simulated event starts. */
+  private val eventStartHour = 20
+
+  /**
+    * Devices the audience is split across, the share of the audience on each, and the id the
+    * device's viewers are numbered from.
+    *
+    * The estimate a sketch produces depends on how the particular set of ids happens to hash.
+    * With 64 registers that is worth more than 10% either way for a given set, enough that
+    * starting at zero shows the two million viewer peak as 2.3M and makes the shares of the
+    * devices look wrong relative to each other. The bases below are not special beyond being
+    * ones where the estimates land close to the intended figures, within about 5%, so the
+    * sample data illustrates the operators rather than the sampling error.
+    */
+  private val viewerDevices = List(
+    ("tv", 0.55, 270000000L),
+    ("phone", 0.30, 240000000L),
+    ("laptop", 0.15, 160000000L)
+  )
+
+  private val viewerShares: Map[String, Double] =
+    viewerDevices.map(d => d._1 -> d._2).toMap
+
+  private val peakViewers = 2000000L
+  private val plateauViewers = 1000000L
+
+  /** Viewers always watching, so the metric is not empty outside of the event. */
+  private val baselineViewers = 60000L
+
+  /** Number of ids covered by one pre-computed set of registers. */
+  private val viewerBlockSize = 1000
+
+  private val churnSteps = 8
+  private val churnStepSize = plateauViewers / 20 // 5% of the plateau audience
+
+  // Ranges are kept on block boundaries so a range is always an exact set of blocks. Without
+  // that the partial blocks at each end get merged whole and a small range, such as the
+  // baseline audience, ends up counting the ids on either side of it as well.
+  private def scaled(v: Long, share: Double): Long = {
+    math.round(v * share / viewerBlockSize) * viewerBlockSize
+  }
+
+  // Each device numbers its viewers from its own base, so the ranges never overlap and the
+  // ungrouped estimate is the union of the devices. The event churns through more ids than are
+  // ever watching at once, so a device's space has to cover the peak plus everything the churn
+  // retires, with the baseline audience on top of that. The parts are scaled and summed the
+  // same way `watching` computes them; scaling the sum instead would round differently and
+  // leave the event overlapping the baseline.
+  private val viewerIdsPerDevice: Map[String, Long] = {
+    viewerDevices.map {
+      case (device, share, _) =>
+        device -> (scaled(peakViewers, share) +
+          churnSteps * scaled(churnStepSize, share) +
+          scaled(baselineViewers, share))
+    }.toMap
+  }
+
+  /**
+    * Registers for a range of ids, built by recording them into a real sketch. Sketches merge
+    * by taking the max of each register, so the registers for a set of ids can be built from
+    * the registers of any partition of it. That is what lets the ranges below be assembled
+    * from pre-computed blocks rather than re-recording millions of ids for every interval.
+    */
+  private def sketchRegisters(base: Long, lo: Long, hi: Long): Array[Double] = {
+    val registry = new DefaultRegistry()
+    val sketch = DistinctCountSketch.get(registry, registry.createId("block"))
+    var i = lo
+    while (i < hi) {
+      sketch.record(base + i)
+      i += 1
+    }
+    val regs = new Array[Double](DistinctCountSketch.REGISTERS)
+    registry.gauges.forEach { g =>
+      val id = Utils.getTagValue(g.id, TagKey.distinct)
+      if (id != null) regs(Integer.parseInt(id.substring(1), 16)) = g.value()
+    }
+    regs
+  }
+
+  private lazy val viewerBlocks: Map[String, Array[Array[Double]]] = {
+    viewerDevices.map {
+      case (device, _, base) =>
+        val blocks = (viewerIdsPerDevice(device) / viewerBlockSize).toInt
+        device -> Array.tabulate(blocks) { b =>
+          sketchRegisters(base, b.toLong * viewerBlockSize, (b + 1).toLong * viewerBlockSize)
+        }
+    }.toMap
+  }
+
+  /** Merge the registers for the blocks covering `[lo, hi)` of the device's id space. */
+  private def mergeBlocks(into: Array[Double], device: String, lo: Long, hi: Long): Unit = {
+    if (hi > lo) {
+      val blocks = viewerBlocks(device)
+      // Only blocks fully inside the range are merged, so an unaligned bound rounds the range
+      // in rather than pulling in ids that are not watching.
+      val first = ((lo + viewerBlockSize - 1) / viewerBlockSize).toInt
+      val last = (hi / viewerBlockSize).toInt - 1
+      require(last < blocks.length, s"$device range [$lo, $hi) is outside the id space")
+      var b = first
+      while (b <= last) {
+        val regs = blocks(b)
+        var i = 0
+        while (i < regs.length) {
+          if (regs(i) > into(i)) into(i) = regs(i)
+          i += 1
+        }
+        b += 1
+      }
+    }
+  }
+
+  /**
+    * Ids watching at time `t`, as an offset range within the device's id space. Ids are handed
+    * out in order, so `hi` is everyone who has ever joined and `lo` advances as the churn
+    * retires the earliest arrivals.
+    */
+  private def watching(share: Double, t: Long): (Long, Long) = {
+    val minutes = (t % 86400000L - eventStartHour * 3600000L).toDouble / 60000.0
+    val plateau = scaled(plateauViewers, share)
+    val peak = scaled(peakViewers, share)
+    val stepSize = scaled(churnStepSize, share)
+
+    if (minutes < 0 || minutes >= 220) {
+      // Outside of the event, only the baseline audience is watching.
+      (0L, 0L)
+    } else if (minutes < 30) {
+      (0L, math.round(plateau * minutes / 30.0))
+    } else if (minutes < 150) {
+      // Holding at the plateau, replacing a slice of the audience every 15 minutes.
+      val completed = ((minutes - 30) / 15).toInt
+      val retired = stepSize * completed
+      (retired, plateau + retired)
+    } else {
+      val retired = stepSize * churnSteps
+      if (minutes < 180) {
+        // Climbing to the peak for the main event.
+        val extra = (peak - plateau) * (minutes - 150) / 30.0
+        (retired, plateau + retired + math.round(extra))
+      } else if (minutes < 210) {
+        (retired, peak + retired)
+      } else {
+        // Event over, everyone leaves within ten minutes. The event audience drains all the
+        // way out: the baseline audience is a separate range that is always merged in, so
+        // leaving a baseline sized slice of the event behind would count it twice.
+        val left = math.round(peak * (minutes - 210) / 10.0)
+        (math.min(retired + left, peak + retired), peak + retired)
+      }
+    }
+  }
+
+  /**
+    * Registers for the audience that is always watching. The baseline audience sits at the end
+    * of the device's id space so the event can churn through the rest without retiring it, and
+    * it does not vary with time, so it is merged once per device rather than per interval.
+    */
+  private lazy val viewerBaselineRegisters: Map[String, Array[Double]] = {
+    viewerDevices.map {
+      case (device, share, _) =>
+        val size = viewerIdsPerDevice(device)
+        val regs = new Array[Double](DistinctCountSketch.REGISTERS)
+        mergeBlocks(regs, device, size - scaled(baselineViewers, share), size)
+        device -> regs
+    }.toMap
+  }
+
+  private def viewerRegisters(device: String, t: Long): Array[Double] = {
+    val share = viewerShares(device)
+    val (lo, hi) = watching(share, t)
+    if (hi <= lo) {
+      // Outside of the event nothing beyond the baseline is watching, so there is nothing to
+      // merge and nothing worth caching.
+      viewerBaselineRegisters(device)
+    } else {
+      viewerRegisterCache.get(
+        device -> t,
+        _ => {
+          val regs = viewerBaselineRegisters(device).clone()
+          mergeBlocks(regs, device, lo, hi)
+          regs
+        }
+      )
+    }
+  }
+
+  // Every register of a device is asked for the same set of intervals in turn, so the merged
+  // registers for an interval are worth keeping rather than rebuilding them 64 times. The
+  // series are shared across concurrent requests, so this has to be a thread safe cache.
+  private val viewerRegisterCache: Cache[(String, Long), Array[Double]] = Caffeine
+    .newBuilder()
+    .maximumSize(16384)
+    .build[(String, Long), Array[Double]]()
+
   // For the sample data sets it doesn't matter much what the step size is, just use
   // a minute
   val step = 60000
@@ -333,7 +566,7 @@ private[db] object DataSet {
     * Some metrics with problems that are used to test alerting.
     */
   def staticAlertSet: List[TimeSeries] = {
-    smallStaticSet ::: staticSpsTimer ::: requestLatency ::: List(
+    smallStaticSet ::: staticSpsTimer ::: requestLatency ::: liveEventViewers ::: List(
       waveWithOutages,
       cpuSpikes,
       discoveryStatusUp,
