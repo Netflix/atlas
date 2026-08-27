@@ -166,9 +166,10 @@ object Query {
     * exponentially with the number of operators being distributed. The limit is there to fail
     * fast rather than do an unreasonable amount of work for a small input. A scan of the
     * expressions in use found a maximum of around 12k clauses, so this leaves a good deal of
-    * room for legitimate queries.
+    * room for legitimate queries. Exposed so callers that reason about the longest chain a
+    * normal form can produce do not have to duplicate the value.
     */
-  private final val maxNormalFormClauses = 100_000
+  private[model] val maxNormalFormClauses: Int = 100_000
 
   /**
     * Check the size of a combined clause list before computing it. Every case that combines
@@ -189,6 +190,77 @@ object Query {
   private def concat(qs1: List[Query], qs2: List[Query]): List[Query] = {
     checkClauseLimit(qs1.size.toLong + qs2.size)
     qs1 ::: qs2
+  }
+
+  /**
+    * Append a chain of `And` or `Or` sub-queries nested to the left. Conversion to a normal
+    * form reduces the clauses into a chain of one operator, and that chain can be as long as
+    * the clause limit allows, so it is walked iteratively. Recursing once per level would
+    * overflow the stack well before the limit is reached.
+    *
+    * The sub-queries are passed in rather than the operator itself, and the caller states which
+    * operator it is. That keeps the walk from ever appending the node it was called for, which
+    * would recurse back into this method.
+    *
+    * Only the operator of the caller is followed. A sub-query using the other operator is
+    * appended as a unit and starts a new chain, so the depth of the recursion is the number of
+    * times the two alternate rather than the length of either chain. A chain nested to the
+    * right is not flattened either, the normal forms do not produce that shape.
+    */
+  private def appendChain(
+    builder: java.lang.StringBuilder,
+    q1: Query,
+    q2: Query,
+    isAnd: Boolean
+  ): Unit = {
+    val token = if (isAnd) ",:and" else ",:or"
+
+    // The sub-queries on the right are appended in the opposite order to the one they are found
+    // in when walking down the left side, so they have to be held somewhere. Count the links
+    // first, which needs no storage, then fill an array of exactly that size. A chain can be as
+    // long as the clause limit allows, so this is one allocation rather than one per link.
+    var length = 1
+    var node: Query = q1
+    var counting = true
+    while (counting) {
+      node match {
+        case And(a, _) if isAnd => length += 1; node = a
+        case Or(a, _) if !isAnd => length += 1; node = a
+        case _                  => counting = false
+      }
+    }
+
+    if (length == 1) {
+      // A single operator, the common case, does not need the array at all.
+      q1.append(builder)
+      builder.append(',')
+      q2.append(builder)
+      builder.append(token)
+    } else {
+      // Both loops stop on the same condition, so the index cannot run past the start of the
+      // array. If they ever disagree it fails here rather than leaving an entry unset.
+      val rights = new Array[Query](length)
+      var i = length - 1
+      rights(i) = q2
+      node = q1
+      var filling = true
+      while (filling) {
+        node match {
+          case And(a, b) if isAnd => i -= 1; rights(i) = b; node = a
+          case Or(a, b) if !isAnd => i -= 1; rights(i) = b; node = a
+          case _                  => filling = false
+        }
+      }
+
+      node.append(builder)
+      i = 0
+      while (i < length) {
+        builder.append(',')
+        rights(i).append(builder)
+        builder.append(token)
+        i += 1
+      }
+    }
   }
 
   private def crossOr(qs1: List[Query], qs2: List[Query]): List[Query] = {
@@ -530,7 +602,7 @@ object Query {
     def labelString: String = s"(${q1.labelString}) and (${q2.labelString})"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, q1, q2, Interpreter.WordToken(":and"))
+      appendChain(builder, q1, q2, isAnd = true)
     }
   }
 
@@ -548,7 +620,7 @@ object Query {
     def labelString: String = s"(${q1.labelString}) or (${q2.labelString})"
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, q1, q2, Interpreter.WordToken(":or"))
+      appendChain(builder, q1, q2, isAnd = false)
     }
   }
 
