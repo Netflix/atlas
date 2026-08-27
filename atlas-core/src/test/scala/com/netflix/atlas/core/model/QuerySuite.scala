@@ -15,12 +15,15 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.util.SortedTagMap
 import munit.FunSuite
 
 class QuerySuite extends FunSuite {
 
   import com.netflix.atlas.core.model.Query.*
+
+  private val interpreter = Interpreter(QueryVocabulary.allWords)
 
   def matches(q: Query, tags: Map[String, String]): Boolean = {
     val result = q.matches(tags)
@@ -714,5 +717,86 @@ class QuerySuite extends FunSuite {
     val in = (i: Int) => In(s"k$i", List("a", "b", "c", "d", "e"))
     val q = (1 until 4).foldLeft[Query](in(0))((acc, i) => And(acc, in(i)))
     assertEquals(Query.expandInClauses(q).size, 625)
+  }
+
+  private def leaf(i: Int): Query = Equal("k", s"v$i")
+
+  /** Chain of `n` sub-queries nested to the left, the shape produced by `dnf` and `cnf`. */
+  private def chain(n: Int, op: (Query, Query) => Query): Query = {
+    (1 until n).foldLeft(leaf(0))((acc, i) => op(acc, leaf(i)))
+  }
+
+  /** Chain of `n` sub-queries nested to the right. */
+  private def rightChain(n: Int, op: (Query, Query) => Query): Query = {
+    (0 until n - 1).foldRight(leaf(n - 1))((i, acc) => op(leaf(i), acc))
+  }
+
+  /** Chain of `n` sub-queries nested to the left, alternating between the two operators. */
+  private def alternatingChain(n: Int): Query = {
+    (1 until n).foldLeft(leaf(0)) { (acc, i) =>
+      if (i % 2 == 0) And(acc, leaf(i)) else Or(acc, leaf(i))
+    }
+  }
+
+  /** Expected rendering of `chain(n, op)` where the operator is written as `token`. */
+  private def expectedChain(n: Int, token: String): String = {
+    val builder = new java.lang.StringBuilder
+    builder.append("k,v0,:eq")
+    (1 until n).foreach { i =>
+      builder.append(",k,v").append(i).append(",:eq,").append(token)
+    }
+    builder.toString
+  }
+
+  test("toString of a long or chain") {
+    // A query is allowed to expand to `Query.maxNormalFormClauses`, and `dnf` reduces the
+    // clauses into a chain nested to the left, so rendering has to handle a chain that long.
+    val q = chain(maxNormalFormClauses, Or.apply)
+    assertEquals(q.toString, expectedChain(maxNormalFormClauses, ":or"))
+  }
+
+  test("toString of a long and chain") {
+    val q = chain(maxNormalFormClauses, And.apply)
+    assertEquals(q.toString, expectedChain(maxNormalFormClauses, ":and"))
+  }
+
+  test("toString of a chain matches the recursive rendering") {
+    // The chains are short enough to render either way, so the iterative walk can be checked
+    // against the straightforward definition. Only the operator of the node being rendered is
+    // walked iteratively, so chains nested to the right and chains that alternate between the
+    // operators are covered as well.
+    val ops = List[(Query, Query) => Query](Or.apply, And.apply)
+    val queries = ops.flatMap(op => List(chain(64, op), rightChain(64, op))) :+ alternatingChain(64)
+    queries.foreach { q =>
+      val expected = new java.lang.StringBuilder
+      def recurse(sub: Query): Unit = sub match {
+        case Or(a, b)  => recurse(a); expected.append(','); recurse(b); expected.append(",:or")
+        case And(a, b) => recurse(a); expected.append(','); recurse(b); expected.append(",:and")
+        case other     => other.append(expected)
+      }
+      recurse(q)
+      assertEquals(q.toString, expected.toString)
+      // `exprString` is documented as executable by the interpreter, so it has to round trip.
+      assertEquals(interpreter.execute(q.toString).stack, List[Any](q))
+    }
+  }
+
+  test("toString of alternating and or nesting") {
+    // Chains of one operator interrupted by the other must still round trip.
+    val q = And(Or(Equal("a", "1"), Equal("b", "2")), Or(Equal("c", "3"), Equal("d", "4")))
+    assertEquals(q.toString, "a,1,:eq,b,2,:eq,:or,c,3,:eq,d,4,:eq,:or,:and")
+    assertEquals(interpreter.execute(q.toString).stack, List[Any](q))
+  }
+
+  test("toString of a chain with a sub-query at the head") {
+    // The walk down the left side of a chain stops on the first sub-query using the other
+    // operator, so the head of the chain is not always a leaf.
+    val q1 = And(And(Or(Equal("a", "1"), Equal("b", "2")), Equal("c", "3")), Equal("d", "4"))
+    assertEquals(q1.toString, "a,1,:eq,b,2,:eq,:or,c,3,:eq,:and,d,4,:eq,:and")
+    assertEquals(interpreter.execute(q1.toString).stack, List[Any](q1))
+
+    val q2 = Or(Or(And(Equal("a", "1"), Equal("b", "2")), Equal("c", "3")), Equal("d", "4"))
+    assertEquals(q2.toString, "a,1,:eq,b,2,:eq,:and,c,3,:eq,:or,d,4,:eq,:or")
+    assertEquals(interpreter.execute(q2.toString).stack, List[Any](q2))
   }
 }
