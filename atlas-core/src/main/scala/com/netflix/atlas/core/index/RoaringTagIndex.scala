@@ -334,7 +334,7 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     * the crossover is a single value wide and not worth a second threshold to chase.
     *
     * Negation shares the threshold but not the reasoning, so it is restricted by term type
-    * in [[walkTerm]] rather than by a second threshold. A negated walk keeps every candidate
+    * in `walkTerm` rather than by a second threshold. A negated walk keeps every candidate
     * the term rejects, so its result is nearly as large as `acc` and costs one roaring insert
     * per candidate, while `andNot` builds the same result container-wise. Whether that is
     * worth it turns on how expensive the union it replaces would have been, which is set by
