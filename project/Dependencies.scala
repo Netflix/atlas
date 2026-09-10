@@ -15,7 +15,7 @@ object Dependencies {
     val spectator   = "1.10.7"
     val spring      = "7.0.9"
 
-    val crossScala  = Seq(scala, "3.8.4")
+    val crossScala  = Seq(scala, "3.9.0")
   }
 
   import Versions.*
