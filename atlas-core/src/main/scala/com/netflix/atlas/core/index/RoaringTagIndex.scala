@@ -332,6 +332,30 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     * slower once a key has three or four values. Gating on the key's value count would recover
     * the `statistic` row and lose the `nf.region` one -- 119k of allocation to save 17us -- so
     * the crossover is a single value wide and not worth a second threshold to chase.
+    *
+    * Negation shares the threshold but not the reasoning, so it is restricted by term type
+    * in `walkTerm` rather than by a second threshold. A negated walk keeps every candidate
+    * the term rejects, so its result is nearly as large as `acc` and costs one roaring insert
+    * per candidate, while `andNot` builds the same result container-wise. Whether that is
+    * worth it turns on how expensive the union it replaces would have been, which is set by
+    * how many values the term merges -- not by `acc`. Measured on the 1M item index at
+    * acc 9.9k:
+    *
+    * {{{
+    * term                              walk                 andNot
+    * NOT re(name,^name_0)     10 vals   96,320 B / 249 us   231,296 B / 253 us
+    * NOT lt(name,name_1)      10 vals   96,320 B / 120 us   290,256 B / 252 us
+    * NOT In(name,[n0,n1])      2 vals  234,912 B / 221 us   335,528 B / 107 us
+    * NOT In(statistic,[c,t])   2 vals  109,024 B / 284 us   234,520 B /  57 us
+    * }}}
+    *
+    * Patterns and ranges merge enough values that the union is the expensive side and the
+    * walk wins outright. An `In` merges two to five values in practice, so its union is cheap
+    * and `andNot` wins on time by up to 5x while the walk only saves bytes; negated `In` is
+    * therefore left on the union path. Note this split is visible only on an index large
+    * enough for the leaves to be bitmap containers -- above 4096 entries per 64k block. On a
+    * small index every leaf is an array container, the union is cheap for every term type,
+    * and the walk looks worse across the board.
     */
   protected def itemScanThreshold: Int = 8192
 
@@ -470,23 +494,62 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   private def intersect(acc: RoaringBitmap, query: Query): RoaringBitmap = {
     import com.netflix.atlas.core.model.Query.*
     query match {
-      // `acc AND NOT(q)` is `acc \ q`. Since acc is a subset of `all`, this can go
-      // directly against the sub-query and never materializes the complement.
-      case Not(q)                                   => diff(acc, findReadOnly(q))
-      case In(k, vs) if walkCandidates(acc)         => andIn(acc, k, vs)
-      case q: PatternQuery if walkCandidates(acc)   => andPattern(acc, q)
-      case GreaterThan(k, v) if walkCandidates(acc) =>
-        andRange(acc, k, findOffset(values, v, 1), Int.MaxValue)
-      case GreaterThanEqual(k, v) if walkCandidates(acc) =>
-        andRange(acc, k, findOffset(values, v, 0), Int.MaxValue)
-      case LessThan(k, v) if walkCandidates(acc) =>
-        andRange(acc, k, 0, findOffsetLessThan(values, v, -1))
-      case LessThanEqual(k, v) if walkCandidates(acc) =>
-        andRange(acc, k, 0, findOffsetLessThan(values, v, 0))
-      // Everything else, including a union-building term once `acc` is too large to walk:
-      // `findReadOnly` materializes the union and this intersects it in one pass.
-      case q => RoaringBitmap.and(acc, findReadOnly(q))
+      case Not(q) =>
+        // `acc AND NOT(q)` is `acc \ q`. Walking keeps the candidates the term rejects, which
+        // avoids materializing the union just to subtract it. Falling back to `diff` still
+        // never materializes the complement, since acc is a subset of `all`.
+        val walked = walkTerm(acc, q, negate = true)
+        if (walked != null) walked else diff(acc, findReadOnly(q))
+      case q =>
+        val walked = walkTerm(acc, q, negate = false)
+        if (walked != null) walked else RoaringBitmap.and(acc, findReadOnly(q))
     }
+  }
+
+  /**
+    * Answer a union-building term by walking the candidates in `acc`, keeping those the term
+    * matches -- or those it rejects when `negate` is set. Returns null when the walk does not
+    * apply, leaving the caller to fall back to the union: either the term is not one of the
+    * shapes handled below, or `acc` is too large to walk (see [[walkCandidates]]).
+    *
+    * The term shape is matched before the size check, not after, so that an `AND` chain of
+    * terms this cannot handle at all -- the `Equal` conjuncts that dominate -- does not pay for
+    * a `getCardinality` per conjunct just to discard the answer.
+    *
+    * Only single-leaf terms are handled. A compound subexpression such as `NOT(a OR b)` can
+    * span several keys, which would need a general per-item predicate over the query tree
+    * rather than the per-term loops below; it is 1.6% of negations in production, so it stays
+    * on the union path.
+    */
+  private def walkTerm(acc: RoaringBitmap, query: Query, negate: Boolean): RoaringBitmap = {
+    import com.netflix.atlas.core.model.Query.*
+    query match {
+      // Positive only. A negated `In` is left to `andNot`: an `In` unions 2-5 values in
+      // practice, so its union is cheap and the container-wise `andNot` beats walking --
+      // measured at acc 9.9k, `NOT In(statistic,[count,totalTime])` is 57us via andNot
+      // against 284us walking, for 235k against 109k bytes. Patterns and ranges union far
+      // more values, so their union is the expensive side and the walk wins outright.
+      case In(k, vs) if !negate && walkCandidates(acc) => andIn(acc, k, vs)
+      case q: PatternQuery if walkCandidates(acc)      => andPattern(acc, q, negate)
+      case GreaterThan(k, v) if walkCandidates(acc)    =>
+        andRange(acc, k, findOffset(values, v, 1), Int.MaxValue, negate)
+      case GreaterThanEqual(k, v) if walkCandidates(acc) =>
+        andRange(acc, k, findOffset(values, v, 0), Int.MaxValue, negate)
+      case LessThan(k, v) if walkCandidates(acc) =>
+        andRange(acc, k, 0, findOffsetLessThan(values, v, -1), negate)
+      case LessThanEqual(k, v) if walkCandidates(acc) =>
+        andRange(acc, k, 0, findOffsetLessThan(values, v, 0), negate)
+      case _ => null
+    }
+  }
+
+  /**
+    * Result for a term that matches no item at all: nothing when positive, and every candidate
+    * when negated. The copy matters -- `acc` may still be a shared index bitmap on the first
+    * conjunct, and [[findItems]] mutates the set it gets back.
+    */
+  private def matchesNothing(acc: RoaringBitmap, negate: Boolean): RoaringBitmap = {
+    if (negate) acc.clone() else new RoaringBitmap()
   }
 
   private def walkCandidates(acc: RoaringBitmap): Boolean = {
@@ -496,9 +559,10 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   }
 
   /**
-    * `acc AND In(k, vs)`, evaluated by walking the candidate items. Only called once `acc` is
-    * small enough (see [[walkCandidates]]), so this is O(|acc|) and allocates just the result --
-    * never the union, which the surrounding `AND` would discard nearly all of.
+    * `acc AND In(k, vs)`, or `acc AND NOT In(k, vs)` when `negate` is set, evaluated by walking
+    * the candidate items. Only called once `acc` is small enough (see [[walkCandidates]]), so
+    * this is O(|acc|) and allocates just the result -- never the union, which the surrounding
+    * `AND` would discard nearly all of.
     *
     * MAINTENANCE: this loop is repeated in [[andPattern]] and [[andRange]] rather than shared
     * behind a predicate. A common `walk(acc, kp, Int => Boolean)` helper is tidier, but the
@@ -519,37 +583,49 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
           n += 1
         }
       }
-      util.Arrays.sort(vps, 0, n)
-      val result = new RoaringBitmap()
-      val iter = acc.getIntIterator
-      while (iter.hasNext) {
-        val pos = iter.next()
-        val v = getValue(pos, kp)
-        // Positions come out in ascending order, the cheap case for roaring inserts.
-        if (v >= 0 && util.Arrays.binarySearch(vps, 0, n, v) >= 0)
-          result.add(pos)
+      // None of the queried values exist in this index, which is routine on a shard that
+      // simply does not hold them. Walking would binary search an empty range for every
+      // candidate only to match none of them.
+      if (n == 0) new RoaringBitmap()
+      else {
+        util.Arrays.sort(vps, 0, n)
+        val result = new RoaringBitmap()
+        val iter = acc.getIntIterator
+        while (iter.hasNext) {
+          val pos = iter.next()
+          val v = getValue(pos, kp)
+          // Positions come out in ascending order, the cheap case for roaring inserts.
+          if (v >= 0 && util.Arrays.binarySearch(vps, 0, n, v) >= 0)
+            result.add(pos)
+        }
+        result
       }
-      result
     }
   }
 
   /**
-    * `acc AND q` for a pattern query, evaluated by walking the candidate items. The set of
+    * `acc AND q` for a pattern query, or `acc AND NOT q` when `negate` is set, evaluated by
+    * walking the candidate items. The set of
     * matching values is bounded by the data, not the query -- a loose pattern on a high
     * cardinality key matches hundreds of thousands of values -- so it is never collected; the
     * pattern is applied to each candidate's value instead. See [[andIn]] on why the loop is
     * repeated rather than shared.
     */
-  private def andPattern(acc: RoaringBitmap, q: Query.PatternQuery): RoaringBitmap = {
+  private def andPattern(
+    acc: RoaringBitmap,
+    q: Query.PatternQuery,
+    negate: Boolean
+  ): RoaringBitmap = {
     val kp = keyMap.get(q.k, -1)
-    if (itemIndex.get(kp) == null) new RoaringBitmap()
+    if (itemIndex.get(kp) == null) matchesNothing(acc, negate)
     else {
       val result = new RoaringBitmap()
       val iter = acc.getIntIterator
       while (iter.hasNext) {
         val pos = iter.next()
         val v = getValue(pos, kp)
-        if (v >= 0 && q.check(values(v)))
+        val matched = v >= 0 && q.check(values(v))
+        if (matched != negate)
           result.add(pos)
       }
       result
@@ -557,8 +633,8 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
   }
 
   /**
-    * `acc AND` a range term, evaluated by walking the candidate items. `lo` and `hi` are an
-    * inclusive range of positions in [[values]].
+    * `acc AND` a range term, or `acc AND NOT` it when `negate` is set, evaluated by walking the
+    * candidate items. `lo` and `hi` are an inclusive range of positions in [[values]].
     *
     * The range collapses to an integer comparison because `values` is sorted, so a value's
     * position orders the same way the value itself does. That makes this the cheapest of the
@@ -566,18 +642,26 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     * [[lessThan]] would otherwise build -- the widest union of the term types, since a range can
     * cover most of the values for a key. See [[andIn]] on why the loop is repeated.
     */
-  private def andRange(acc: RoaringBitmap, k: String, lo: Int, hi: Int): RoaringBitmap = {
+  private def andRange(
+    acc: RoaringBitmap,
+    k: String,
+    lo: Int,
+    hi: Int,
+    negate: Boolean
+  ): RoaringBitmap = {
     val kp = keyMap.get(k, -1)
     // `hi` is -1 when the bound sorts below every known value, which matches nothing.
-    if (itemIndex.get(kp) == null || hi < lo) new RoaringBitmap()
+    if (itemIndex.get(kp) == null || hi < lo) matchesNothing(acc, negate)
     else {
       val result = new RoaringBitmap()
       val iter = acc.getIntIterator
       while (iter.hasNext) {
         val pos = iter.next()
-        // lo is never negative, so this also rejects the -1 for an item without the key.
+        // lo is never negative, so this also rejects the -1 for an item without the key,
+        // which a negated term therefore keeps.
         val v = getValue(pos, kp)
-        if (v >= lo && v <= hi)
+        val matched = v >= lo && v <= hi
+        if (matched != negate)
           result.add(pos)
       }
       result
