@@ -11,7 +11,7 @@ object Dependencies {
     val log4j       = "2.26.1"
     val otel        = "1.64.0"
     val scala       = "2.13.18"
-    val slf4j       = "2.0.18"
+    val slf4j       = "2.0.19"
     val spectator   = "1.10.7"
     val spring      = "7.0.8"
 
