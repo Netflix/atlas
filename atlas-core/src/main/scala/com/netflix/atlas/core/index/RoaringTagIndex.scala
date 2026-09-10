@@ -305,6 +305,36 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     if (set.isEmpty) set else set.clone()
   }
 
+  /**
+    * Size of the accumulated set below which a union-building term (`In`, pattern) is
+    * evaluated by walking the candidate items instead of materializing the union.
+    *
+    * Set from a sweep of `acc` sizes across all four term types. At ~5k candidates the walk
+    * uses 2-6x fewer bytes than the union and is no slower for a range, a pattern or a
+    * multi-value `In`; a two value `In` is the one shape that pays, 65us against 39us, because
+    * its union is cheap to build. By 20k the walk is 2-4x slower across the board and by 150k
+    * it loses on bytes too, since it is O(|acc|) with a tag lookup per item.
+    *
+    * The crossover is genuinely per term type -- the union cost scales with how many values it
+    * merges, the walk cost with |acc| -- so a range tolerates a far higher threshold than a two
+    * value `In`. One threshold for all of them is deliberate, and it has a known cost: on a key
+    * with very few values the union has almost nothing to merge, so the walk saves bytes but
+    * loses time. Measured at ~2.5k candidates:
+    *
+    * {{{
+    * key          values   walk                 union
+    * statistic         3   47,016 B /  64 us    61,664 B /  22 us
+    * nf.region         4  100,744 B /  68 us   219,872 B /  50 us
+    * name             20   75,304 B /  74 us   219,094 B / 269 us
+    * }}}
+    *
+    * The walk always allocates less, which is what this path exists to fix, but is up to 3x
+    * slower once a key has three or four values. Gating on the key's value count would recover
+    * the `statistic` row and lose the `nf.region` one -- 119k of allocation to save 17us -- so
+    * the crossover is a single value wide and not worth a second threshold to chase.
+    */
+  protected def itemScanThreshold: Int = 8192
+
   private def diff(s1: RoaringBitmap, s2: RoaringBitmap): RoaringBitmap = {
     // Static andNot allocates a new owned result and reads (does not mutate) s1/s2,
     // so passing the shared `all` for s1 is safe.
@@ -317,31 +347,241 @@ class RoaringTagIndex[T <: TaggedItem](items: Array[T], stats: IndexStats) exten
     set
   }
 
-  private def and(q1: Query, q2: Query): RoaringBitmap = {
+  /**
+    * Cost of evaluating a conjunct on its own, used to order the terms of an `AND` chain.
+    * The cheap terms are the ones that can be answered with a bitmap already stored in the
+    * index; everything else has to build a union or a complement.
+    */
+  private def conjunctCost(query: Query): Long = {
     import com.netflix.atlas.core.model.Query.*
-    // A negated operand does not need to be materialized against the full set. Since
-    // `s1 AND NOT(q)` is `s1 \ q` and s1 is a subset of `all`, the andNot can be done
-    // directly against the sub-query. This avoids converting the run containers in
-    // `all` into bitmap containers just to throw most of the result away.
-    q1 match {
-      case Not(q) => andNot(q2, q)
-      case _      =>
-        q2 match {
-          case Not(q) => andNot(q1, q)
-          case _      =>
-            val s1 = findReadOnly(q1)
-            // Short circuit, only perform second query if s1 is not empty. Static `and`
-            // reads both operands and allocates just the intersection, which is
-            // typically much smaller than a copy of s1.
-            if (s1.isEmpty) new RoaringBitmap() else RoaringBitmap.and(s1, findReadOnly(q2))
-        }
+    // The cheap terms are answered with a bitmap already stored in the index. Order those
+    // by how many items they match so the accumulated set starts as small as possible;
+    // everything downstream is bounded by it. Cardinality is a sum over the containers of
+    // an already built bitmap, so this is cheap relative to evaluating the term.
+    //
+    // The tiers are spaced by 2^32 and the cardinality is an `Int`, so a within-tier
+    // ordering can never spill into the next tier.
+    def tier(t: Int): Long = t.toLong << 32
+    query match {
+      case False                       => tier(0)
+      case _: Equal | _: HasKey | True => tier(1) + findReadOnly(query).getCardinality
+      case _: In                       => tier(2)
+      case _: PatternQuery             => tier(3)
+      case _: GreaterThan | _: GreaterThanEqual | _: LessThan | _: LessThanEqual => tier(4)
+      case _: Or                                                                 => tier(5)
+      // A negation is applied as an `andNot` against the accumulated set, so it never
+      // materializes a complement as long as something cheaper goes first.
+      case _: Not => tier(6)
+      case _      => tier(5)
     }
   }
 
-  /** Compute `q1 AND NOT(q2)` without materializing the complement of `q2`. */
-  private def andNot(q1: Query, q2: Query): RoaringBitmap = {
-    val s1 = findReadOnly(q1)
-    if (s1.isEmpty) new RoaringBitmap() else diff(s1, findReadOnly(q2))
+  /** Number of leaves in an `AND` chain, used to size the array for [[flatten]] exactly. */
+  private def countConjuncts(query: Query): Int = {
+    query match {
+      case Query.And(q1, q2) => countConjuncts(q1) + countConjuncts(q2)
+      case _                 => 1
+    }
+  }
+
+  /**
+    * Write the leaves of an `AND` chain into `dest` starting at `pos`, returning the next
+    * free slot.
+    */
+  private def flatten(query: Query, dest: Array[Query], pos: Int): Int = {
+    query match {
+      case Query.And(q1, q2) => flatten(q2, dest, flatten(q1, dest, pos))
+      case q                 =>
+        dest(pos) = q
+        pos + 1
+    }
+  }
+
+  /**
+    * Order the conjuncts in place, cheapest first. Each term's cost is computed once up
+    * front rather than re-derived per comparison, since `conjunctCost` evaluates the cheap
+    * leaves to get their cardinality.
+    *
+    * An insertion sort over a pair of arrays keeps the whole plan down to two allocations
+    * for the two to five term chains that dominate. `sortBy` over a decorated list costs a
+    * tuple and a boxed `Long` per term plus the intermediate array and rebuilt lists, which
+    * is a lot of garbage to add to the very path this change exists to make quieter. It is
+    * also stable, so terms within a tier keep the order they were written in.
+    */
+  private def sortByCost(conjuncts: Array[Query]): Unit = {
+    val n = conjuncts.length
+    val costs = new Array[Long](n)
+    var i = 0
+    while (i < n) {
+      costs(i) = conjunctCost(conjuncts(i))
+      i += 1
+    }
+    i = 1
+    while (i < n) {
+      val cost = costs(i)
+      val q = conjuncts(i)
+      var j = i - 1
+      while (j >= 0 && costs(j) > cost) {
+        costs(j + 1) = costs(j)
+        conjuncts(j + 1) = conjuncts(j)
+        j -= 1
+      }
+      costs(j + 1) = cost
+      conjuncts(j + 1) = q
+      i += 1
+    }
+  }
+
+  /**
+    * Evaluate an `AND` chain. The conjuncts are flattened and evaluated cheapest first so
+    * the union-building terms (`In`, patterns, ranges) run against an already narrowed set
+    * rather than against the whole index.
+    *
+    * Ordering alone only buys the empty short circuit. The win is that once `acc` has been
+    * narrowed, a union-building term can be answered by walking the candidates rather than
+    * materializing the union -- which for a query such as `nf.app=x AND name IN (a, b)`
+    * means never promoting the `name` sets into 8k bitmap containers that the surrounding
+    * `AND` immediately discards.
+    */
+  private def and(q1: Query, q2: Query): RoaringBitmap = {
+    val n = countConjuncts(q1) + countConjuncts(q2)
+    val conjuncts = new Array[Query](n)
+    flatten(q2, conjuncts, flatten(q1, conjuncts, 0))
+    sortByCost(conjuncts)
+
+    // There are always at least two conjuncts, so when the first is non-empty the loop
+    // runs at least once and `acc` is replaced by an owned set. The empty check at the end
+    // covers the other path, where `acc` can still be a shared index bitmap (`all` on an
+    // empty index).
+    var acc = findReadOnly(conjuncts(0))
+    var i = 1
+    while (i < n && !acc.isEmpty) {
+      acc = intersect(acc, conjuncts(i))
+      i += 1
+    }
+    if (acc.isEmpty) new RoaringBitmap() else acc
+  }
+
+  /**
+    * Intersect an already computed set with one more conjunct. The result is always a
+    * freshly allocated set, so the caller may treat it as owned even though `acc` itself
+    * may be a shared bitmap from the index on the first call.
+    */
+  private def intersect(acc: RoaringBitmap, query: Query): RoaringBitmap = {
+    import com.netflix.atlas.core.model.Query.*
+    query match {
+      // `acc AND NOT(q)` is `acc \ q`. Since acc is a subset of `all`, this can go
+      // directly against the sub-query and never materializes the complement.
+      case Not(q)                                   => diff(acc, findReadOnly(q))
+      case In(k, vs) if walkCandidates(acc)         => andIn(acc, k, vs)
+      case q: PatternQuery if walkCandidates(acc)   => andPattern(acc, q)
+      case GreaterThan(k, v) if walkCandidates(acc) =>
+        andRange(acc, k, findOffset(values, v, 1), Int.MaxValue)
+      case GreaterThanEqual(k, v) if walkCandidates(acc) =>
+        andRange(acc, k, findOffset(values, v, 0), Int.MaxValue)
+      case LessThan(k, v) if walkCandidates(acc) =>
+        andRange(acc, k, 0, findOffsetLessThan(values, v, -1))
+      case LessThanEqual(k, v) if walkCandidates(acc) =>
+        andRange(acc, k, 0, findOffsetLessThan(values, v, 0))
+      // Everything else, including a union-building term once `acc` is too large to walk:
+      // `findReadOnly` materializes the union and this intersects it in one pass.
+      case q => RoaringBitmap.and(acc, findReadOnly(q))
+    }
+  }
+
+  private def walkCandidates(acc: RoaringBitmap): Boolean = {
+    // Cardinality is a sum of a stored count per container, so this allocates nothing and
+    // is proportional to the container count rather than the item count.
+    acc.getCardinality <= itemScanThreshold
+  }
+
+  /**
+    * `acc AND In(k, vs)`, evaluated by walking the candidate items. Only called once `acc` is
+    * small enough (see [[walkCandidates]]), so this is O(|acc|) and allocates just the result --
+    * never the union, which the surrounding `AND` would discard nearly all of.
+    *
+    * MAINTENANCE: this loop is repeated in [[andPattern]] and [[andRange]] rather than shared
+    * behind a predicate. A common `walk(acc, kp, Int => Boolean)` helper is tidier, but the
+    * per-candidate call site goes megamorphic as soon as a process evaluates more than one term
+    * type, and measured up to 10x slower on this path once it does.
+    */
+  private def andIn(acc: RoaringBitmap, k: String, vs: List[String]): RoaringBitmap = {
+    val kp = keyMap.get(k, -1)
+    if (itemIndex.get(kp) == null) new RoaringBitmap()
+    else {
+      // Bounded by the query rather than by the data, so materializing it is safe.
+      val vps = new Array[Int](vs.size)
+      var n = 0
+      vs.foreach { v =>
+        val vp = valueMap.get(v, -1)
+        if (vp >= 0) {
+          vps(n) = vp
+          n += 1
+        }
+      }
+      util.Arrays.sort(vps, 0, n)
+      val result = new RoaringBitmap()
+      val iter = acc.getIntIterator
+      while (iter.hasNext) {
+        val pos = iter.next()
+        val v = getValue(pos, kp)
+        // Positions come out in ascending order, the cheap case for roaring inserts.
+        if (v >= 0 && util.Arrays.binarySearch(vps, 0, n, v) >= 0)
+          result.add(pos)
+      }
+      result
+    }
+  }
+
+  /**
+    * `acc AND q` for a pattern query, evaluated by walking the candidate items. The set of
+    * matching values is bounded by the data, not the query -- a loose pattern on a high
+    * cardinality key matches hundreds of thousands of values -- so it is never collected; the
+    * pattern is applied to each candidate's value instead. See [[andIn]] on why the loop is
+    * repeated rather than shared.
+    */
+  private def andPattern(acc: RoaringBitmap, q: Query.PatternQuery): RoaringBitmap = {
+    val kp = keyMap.get(q.k, -1)
+    if (itemIndex.get(kp) == null) new RoaringBitmap()
+    else {
+      val result = new RoaringBitmap()
+      val iter = acc.getIntIterator
+      while (iter.hasNext) {
+        val pos = iter.next()
+        val v = getValue(pos, kp)
+        if (v >= 0 && q.check(values(v)))
+          result.add(pos)
+      }
+      result
+    }
+  }
+
+  /**
+    * `acc AND` a range term, evaluated by walking the candidate items. `lo` and `hi` are an
+    * inclusive range of positions in [[values]].
+    *
+    * The range collapses to an integer comparison because `values` is sorted, so a value's
+    * position orders the same way the value itself does. That makes this the cheapest of the
+    * three walks, and it avoids the union over every value in the range that [[greaterThan]] and
+    * [[lessThan]] would otherwise build -- the widest union of the term types, since a range can
+    * cover most of the values for a key. See [[andIn]] on why the loop is repeated.
+    */
+  private def andRange(acc: RoaringBitmap, k: String, lo: Int, hi: Int): RoaringBitmap = {
+    val kp = keyMap.get(k, -1)
+    // `hi` is -1 when the bound sorts below every known value, which matches nothing.
+    if (itemIndex.get(kp) == null || hi < lo) new RoaringBitmap()
+    else {
+      val result = new RoaringBitmap()
+      val iter = acc.getIntIterator
+      while (iter.hasNext) {
+        val pos = iter.next()
+        // lo is never negative, so this also rejects the -1 for an item without the key.
+        val v = getValue(pos, kp)
+        if (v >= lo && v <= hi)
+          result.add(pos)
+      }
+      result
+    }
   }
 
   private def or(q1: Query, q2: Query): RoaringBitmap = {
