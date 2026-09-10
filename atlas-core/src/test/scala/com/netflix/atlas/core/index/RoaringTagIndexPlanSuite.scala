@@ -15,8 +15,11 @@
  */
 package com.netflix.atlas.core.index
 
+import com.netflix.atlas.core.model.BasicTaggedItem
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.TaggedItem
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.util.SortedTagMap
 import munit.FunSuite
 
 import scala.util.Random
@@ -57,11 +60,13 @@ class RoaringTagIndexPlanSuite extends FunSuite {
     * for the id-offset paging below to make progress, and reordering the chain must not
     * disturb that. `items` is sorted by id, so this is already in the expected order.
     */
-  private def bruteForce(q: Query): List[String] = {
-    items.filter(i => q.matches(i.tags)).map(_.idString).toList
+  private def bruteForce(q: Query): List[String] = bruteForce(items, q)
+
+  private def bruteForce[I <: TaggedItem](is: Array[I], q: Query): List[String] = {
+    is.iterator.filter(i => q.matches(i.tags)).map(_.idString).toList
   }
 
-  private def resultOf(idx: TagIndex[TimeSeries], q: Query): List[String] = {
+  private def resultOf[I <: TaggedItem](idx: TagIndex[I], q: Query): List[String] = {
     idx.findItems(TagQuery(Some(q), limit = Integer.MAX_VALUE)).map(_.idString)
   }
 
@@ -183,6 +188,103 @@ class RoaringTagIndexPlanSuite extends FunSuite {
     val nameValue = valuesFor("name").head
     check(Query.And(app, Query.GreaterThan("nf.cluster", nameValue)))
     check(Query.And(app, Query.LessThan("nf.cluster", nameValue)))
+  }
+
+  test("negated terms match brute force, over present and absent keys") {
+    // Negation has to keep the items that do not carry the key at all: In/pattern/range all
+    // report false for a missing key, so NOT reports true.
+    val app = Query.Equal("nf.app", "nccp")
+    val clusters = valuesFor("nf.cluster").filter(_ != "nope")
+    val bounds = List("!", clusters.head, clusters(clusters.size / 2), clusters.last, "~", "nope")
+
+    // Every key in TagIndexSuite.dataset is on every item, so "missing" only reaches the
+    // key-is-not-in-the-index early return -- it never gets as far as the walk. The case where
+    // getValue returns -1 for some candidates and not others needs the dataset built in the
+    // next test.
+    List("nf.cluster", "missing").foreach { k =>
+      check(Query.And(app, Query.Not(Query.In(k, clusters.take(3)))))
+      check(Query.And(app, Query.Not(Query.In(k, List("nope")))))
+      check(Query.And(app, Query.Not(Query.Regex(k, "^" + clusters.head.take(2)))))
+      check(Query.And(app, Query.Not(Query.Regex(k, "nomatch"))))
+      bounds.foreach { b =>
+        check(Query.And(app, Query.Not(Query.GreaterThan(k, b))))
+        check(Query.And(app, Query.Not(Query.GreaterThanEqual(k, b))))
+        check(Query.And(app, Query.Not(Query.LessThan(k, b))))
+        check(Query.And(app, Query.Not(Query.LessThanEqual(k, b))))
+      }
+    }
+
+    // Compound subexpressions stay on the union path; they must still be correct.
+    check(
+      Query.And(
+        app,
+        Query.Not(
+          Query.Or(Query.Equal("nf.stack", "dev"), Query.In("nf.cluster", clusters.take(2)))
+        )
+      )
+    )
+    check(
+      Query.And(
+        app,
+        Query.Not(Query.And(Query.HasKey("name"), Query.In("nf.cluster", clusters.take(2))))
+      )
+    )
+  }
+
+  test("negated terms match brute force for random queries") {
+    val r = new Random(2024)
+    (0 until 300).foreach { _ =>
+      check(Query.And(randomLeaf(r), Query.Not(randomLeaf(r))))
+    }
+  }
+
+  test("negation keeps candidates that do not carry the key at all") {
+    // Every key in TagIndexSuite.dataset is on every item, so that dataset cannot exercise
+    // the case getValue returns -1 for some candidates and not others. In/pattern/range all
+    // report false for a missing key, so NOT must report true and keep the item -- the one
+    // thing an inverted test is most likely to get backwards.
+    // "uniq" keeps every item distinct. Without it the tags repeat with period
+    // lcm(3, 5, 7) = 105, so the 400 items would collapse to ~45 distinct tag maps -- and to
+    // ~45 distinct ids, since the id is derived from the tags.
+    val items = (0 until 400).map { i =>
+      val base = Map("nf.app" -> "app", "name" -> s"n_${i % 5}", "uniq" -> f"u_$i%03d")
+      // "opt" on two thirds of the items, "rare" on a handful.
+      val withOpt = if (i % 3 != 0) base + ("opt" -> s"v_${i % 7}") else base
+      val tags = if (i % 97 == 0) withOpt + ("rare" -> "yes") else withOpt
+      BasicTaggedItem(SortedTagMap(tags))
+    }.toArray
+    java.util.Arrays.sort(items, RoaringTagIndex.IdComparator)
+    assertEquals(items.map(_.idString).distinct.length, items.length)
+
+    class Idx(threshold: Int) extends RoaringTagIndex[BasicTaggedItem](items, new IndexStats()) {
+      override protected def itemScanThreshold: Int = threshold
+    }
+    val walkIdx = new Idx(Int.MaxValue)
+    val unionIdx = new Idx(0)
+
+    def verify(q: Query): Unit = {
+      val expected = bruteForce(items, q)
+      assertEquals(resultOf(walkIdx, q), expected, s"walk mismatch for: $q")
+      assertEquals(resultOf(unionIdx, q), expected, s"union mismatch for: $q")
+    }
+
+    val app = Query.Equal("nf.app", "app")
+    List("opt", "rare", "absent").foreach { k =>
+      List(
+        Query.In(k, List("v_1", "v_2")),
+        Query.In(k, List("nope")),
+        Query.Regex(k, "^v_"),
+        Query.Regex(k, "^zzz"),
+        Query.GreaterThan(k, "v_3"),
+        Query.GreaterThanEqual(k, "v_0"),
+        Query.LessThan(k, "v_3"),
+        Query.LessThanEqual(k, "zzz"),
+        Query.LessThan(k, "!")
+      ).foreach { term =>
+        verify(Query.And(app, term))
+        verify(Query.And(app, Query.Not(term)))
+      }
+    }
   }
 
   test("offset paging still works with a reordered chain") {
