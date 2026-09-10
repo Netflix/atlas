@@ -240,13 +240,13 @@ class StringFormatterSuite extends FunSuite {
 
   test("format: byte values") {
     assertEquals(StringFormatter.format("%d", 127.toByte), "127")
-    assertEquals(StringFormatter.format("%d", -1.toByte), "-1")
-    assertEquals(StringFormatter.format("%u", -1.toByte), "18446744073709551615")
+    assertEquals(StringFormatter.format("%d", (-1).toByte), "-1")
+    assertEquals(StringFormatter.format("%u", (-1).toByte), "18446744073709551615")
   }
 
   test("format: short values") {
     assertEquals(StringFormatter.format("%d", 32767.toShort), "32767")
-    assertEquals(StringFormatter.format("%d", -1.toShort), "-1")
+    assertEquals(StringFormatter.format("%d", (-1).toShort), "-1")
   }
 
   test("format: long values") {
