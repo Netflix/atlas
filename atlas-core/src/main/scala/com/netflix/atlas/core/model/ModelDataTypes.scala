@@ -33,6 +33,32 @@ object ModelDataTypes {
     }
   }
 
+  /**
+    * Matches values that can be coerced to a window size for the rolling operators. Numeric
+    * values are treated as a fixed number of datapoints and durations as an amount of time
+    * that is converted to a number of datapoints based on the step size.
+    */
+  case object RollingWindowType extends DataType {
+
+    def name: String = "Window"
+
+    override def description: String =
+      "number of datapoints, e.g. 20, or a duration, e.g. 5m"
+
+    def extract(value: Any): Option[Any] = unapply(value)
+
+    // Non-positive sizes are not matched rather than extracted and rejected later. The
+    // extractors are used for speculative matching, e.g. to choose between overloads or to
+    // generate editor diagnostics, so they must not throw. The factory methods keep the size
+    // restriction in one place rather than duplicating the conditions from the `require`
+    // checks on the window types.
+    def unapply(value: Any): Option[RollingWindow] = value match {
+      case DataType.IntType(n)      => RollingWindow.steps(n)
+      case DataType.DurationType(d) => RollingWindow.time(d)
+      case _                        => None
+    }
+  }
+
   /** Matches values that can be coerced to a ConsolidationFunction. */
   case object ConsolidationFunctionType extends DataType {
 

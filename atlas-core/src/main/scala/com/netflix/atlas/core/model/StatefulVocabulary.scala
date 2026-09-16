@@ -50,6 +50,7 @@ object StatefulVocabulary extends Vocabulary {
     CumulativeMax,
     Derivative,
     approxDistinctCumulative,
+    ApproxDistinctRolling,
     desTypedMacro("des-simple", List("10", "0.1", "0.5", ":des")),
     desTypedMacro("des-fast", List("10", "0.1", "0.02", ":des")),
     desTypedMacro("des-slower", List("10", "0.05", "0.03", ":des")),
@@ -95,6 +96,94 @@ object StatefulVocabulary extends Vocabulary {
       )
     )
   }
+
+  /**
+    * Rolling distinct count: max the sketch registers over a window before estimating. Unlike
+    * `:approx-distinct-cumulative` this cannot be expressed as a macro over the existing words
+    * because the window needs to be carried on the named rewrite so that it is preserved in the
+    * expression string.
+    */
+  case object ApproxDistinctRolling extends TypedWord {
+
+    override def name: String = "approx-distinct-rolling"
+
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "distinct count sketch query", TimeSeriesExprType),
+      Parameter("w", "window size", RollingWindowType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    // Same restrictions as :approx-distinct, the input must have data expressions that can be
+    // reshaped to the register grouping.
+    override def matches(stack: List[Any]): Boolean = {
+      super.matches(stack) && (stack match {
+        case _ :: TimeSeriesExprType(t) :: _ =>
+          t.dataExprs.nonEmpty && !t.dataExprs.exists(_.isInstanceOf[DataExpr.All])
+        case _ =>
+          false
+      })
+    }
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[TimeSeriesExpr]
+      val w = params(1).asInstanceOf[RollingWindow]
+      // :approx-distinct reshapes the input to the register grouping through the :rolling-max
+      // wrapper, so the rolling max is applied per register. Maxing the per-interval estimates
+      // would be wrong.
+      val evalExpr = MathExpr.ApproxDistinct(StatefulExpr.RollingMax(t, w))
+      val nr = MathExpr.NamedRewrite(name, t, List(w), evalExpr, context)
+      context.copy(stack = nr :: context.stack)
+    }
+
+    override def summary: String =
+      """
+        |Estimate the number of distinct values recorded into a distinct count sketch over a
+        |trailing window. Unlike `:approx-distinct`, which estimates each interval
+        |independently, this maxes the sketch registers across the window (via
+        |`:rolling-max`) before estimating, giving the number of distinct values seen within
+        |the window. Add `(,key,),:by` before the operator to break the estimate out by
+        |another dimension.
+        |
+        |Specify the window as a duration, `1m`, to get a fixed amount of time independent of
+        |the step size. A number of datapoints can also be used, but then the amount of time
+        |covered by the estimate will change when transitioning to a larger time frame that
+        |causes consolidation. If the step size is larger than the window, then a single
+        |interval already covers the window and the result is the same as `:approx-distinct`.
+      """.stripMargin.trim
+
+    override def examples: List[String] = List(
+      "name,server.uniqueUsers,:eq,1m",
+      "name,server.uniqueUsers,:eq,(,nf.region,),:by,1m"
+    )
+  }
+
+  // Shared description of the window parameter for the rolling operators. Kept in one place so
+  // the wording cannot drift between the operators, in particular the note about what a window
+  // of a single datapoint means, which is not the same for all of them.
+  private val windowSummary: String =
+    """
+      |The window size can be specified as a number of datapoints or as an amount of time.
+      |A number of datapoints, `5`, will consider the last 5 values, including the current
+      |value. The amount of time covered by the window will then change when transitioning
+      |to a larger time frame that causes consolidation. A duration, `5m`, will consider the
+      |values for the last 5 minutes independent of the step size. The duration is rounded
+      |down to the nearest step boundary, so a 5m window with a 2m step will result in a 4m
+      |window with two datapoints. If the step size is larger than the window, then the
+      |window will be a single datapoint.
+    """.stripMargin.trim
+
+  // Note for the operators where the result depends on the number of datapoints in the window
+  // rather than just the amount of time it covers.
+  private val datapointsSummary: String =
+    """
+      |Note that the result is still based on datapoints, so the value will change with the
+      |step size even when using a duration to keep the amount of time covered fixed.
+    """.stripMargin.trim
+
+  // Note for the operators that reduce to the identity function for a single datapoint window.
+  private val passthroughSummary: String =
+    "The input is then passed through unchanged."
 
   private def desTypedMacro(name: String, body: List[String]): TypedMacro = {
     val fullBody = (":dup" :: body) ::: List(name, ":named-rewrite")
@@ -150,19 +239,19 @@ object StatefulVocabulary extends Vocabulary {
 
     override def parameters: IndexedSeq[Parameter] = ArraySeq(
       Parameter("", "input time series", TimeSeriesExprType),
-      Parameter("n", "window size", DataType.IntType)
+      Parameter("w", "window size", RollingWindowType)
     )
 
     override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
 
     override def execute(context: Context, params: IndexedSeq[Any]): Context = {
       val t = params(0).asInstanceOf[TimeSeriesExpr]
-      val v = params(1).asInstanceOf[Int]
-      context.copy(stack = StatefulExpr.RollingCount(t, v) :: context.stack)
+      val w = params(1).asInstanceOf[RollingWindow]
+      context.copy(stack = StatefulExpr.RollingCount(t, w) :: context.stack)
     }
 
     override def summary: String =
-      """
+      s"""
         |Number of occurrences within a specified window. This operation is frequently used in
         |alerting expressions to reduce noise. For example:
         |
@@ -191,15 +280,12 @@ object StatefulVocabulary extends Vocabulary {
         || 1     | 3                |
         || 0     | 2                |
         |
-        |The window size, `n`, is the number of datapoints to consider, including the current
-        |value. Note that it is based on datapoints, not a specific amount of time. As a result,
-        |the number of occurrences will be reduced when transitioning to a larger time frame
-        |that causes consolidation.
+        |$windowSummary
         |
-        |
+        |$datapointsSummary
       """.stripMargin.trim
 
-    override def examples: List[String] = List(":random,0.4,:gt,5")
+    override def examples: List[String] = List(":random,0.4,:gt,5", ":random,0.4,:gt,5m")
   }
 
   case object RollingMin extends TypedWord with StylePassthrough {
@@ -208,19 +294,19 @@ object StatefulVocabulary extends Vocabulary {
 
     override def parameters: IndexedSeq[Parameter] = ArraySeq(
       Parameter("", "input time series", TimeSeriesExprType),
-      Parameter("n", "window size", DataType.IntType)
+      Parameter("w", "window size", RollingWindowType)
     )
 
     override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
 
     override def execute(context: Context, params: IndexedSeq[Any]): Context = {
       val t = params(0).asInstanceOf[TimeSeriesExpr]
-      val v = params(1).asInstanceOf[Int]
-      context.copy(stack = StatefulExpr.RollingMin(t, v) :: context.stack)
+      val w = params(1).asInstanceOf[RollingWindow]
+      context.copy(stack = StatefulExpr.RollingMin(t, w) :: context.stack)
     }
 
     override def summary: String =
-      """
+      s"""
         |Minimum value within a specified window. This operation can be used in
         |alerting expressions to find a lower bound for noisy data based on recent
         |samples. For example:
@@ -247,15 +333,12 @@ object StatefulVocabulary extends Vocabulary {
         || 1     | 1                |
         || 0     | 0                |
         |
-        |The window size, `n`, is the number of datapoints to consider including the current
-        |value. Note that it is based on datapoints not a specific amount of time. As a result the
-        |number of occurrences will be reduced when transitioning to a larger time frame that
-        |causes consolidation.
+        |$windowSummary $passthroughSummary
         |
         |Since: 1.6
       """.stripMargin.trim
 
-    override def examples: List[String] = List("name,sps,:eq,:sum,5")
+    override def examples: List[String] = List("name,sps,:eq,:sum,5", "name,sps,:eq,:sum,5m")
   }
 
   case object RollingMax extends TypedWord with StylePassthrough {
@@ -264,19 +347,19 @@ object StatefulVocabulary extends Vocabulary {
 
     override def parameters: IndexedSeq[Parameter] = ArraySeq(
       Parameter("", "input time series", TimeSeriesExprType),
-      Parameter("n", "window size", DataType.IntType)
+      Parameter("w", "window size", RollingWindowType)
     )
 
     override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
 
     override def execute(context: Context, params: IndexedSeq[Any]): Context = {
       val t = params(0).asInstanceOf[TimeSeriesExpr]
-      val v = params(1).asInstanceOf[Int]
-      context.copy(stack = StatefulExpr.RollingMax(t, v) :: context.stack)
+      val w = params(1).asInstanceOf[RollingWindow]
+      context.copy(stack = StatefulExpr.RollingMax(t, w) :: context.stack)
     }
 
     override def summary: String =
-      """
+      s"""
         |Maximum value within a specified window. This operation can be used in
         |alerting expressions to find a lower bound for noisy data based on recent
         |samples. For example:
@@ -303,15 +386,12 @@ object StatefulVocabulary extends Vocabulary {
         || 1     | 1                |
         || 0     | 1                |
         |
-        |The window size, `n`, is the number of datapoints to consider including the current
-        |value. Note that it is based on datapoints not a specific amount of time. As a result the
-        |number of occurrences will be reduced when transitioning to a larger time frame that
-        |causes consolidation.
+        |$windowSummary $passthroughSummary
         |
         |Since: 1.6
       """.stripMargin.trim
 
-    override def examples: List[String] = List("name,sps,:eq,:sum,5")
+    override def examples: List[String] = List("name,sps,:eq,:sum,5", "name,sps,:eq,:sum,5m")
   }
 
   case object RollingMean extends TypedWord with StylePassthrough {
@@ -320,7 +400,7 @@ object StatefulVocabulary extends Vocabulary {
 
     override def parameters: IndexedSeq[Parameter] = ArraySeq(
       Parameter("", "input time series", TimeSeriesExprType),
-      Parameter("n", "window size", DataType.IntType),
+      Parameter("w", "window size", RollingWindowType),
       Parameter("minNumValues", "minimum non-NaN values required", DataType.IntType)
     )
 
@@ -328,13 +408,13 @@ object StatefulVocabulary extends Vocabulary {
 
     override def execute(context: Context, params: IndexedSeq[Any]): Context = {
       val t = params(0).asInstanceOf[TimeSeriesExpr]
-      val n = params(1).asInstanceOf[Int]
+      val w = params(1).asInstanceOf[RollingWindow]
       val m = params(2).asInstanceOf[Int]
-      context.copy(stack = StatefulExpr.RollingMean(t, n, m) :: context.stack)
+      context.copy(stack = StatefulExpr.RollingMean(t, w, m) :: context.stack)
     }
 
     override def summary: String =
-      """
+      s"""
         |Mean of the values within a specified window. The mean will only be emitted
         |if there are at least a minimum number of actual values (not `NaN`) within
         |the window. Otherwise `NaN` will be emitted for that time period.
@@ -352,16 +432,16 @@ object StatefulVocabulary extends Vocabulary {
         || 1     | 1                   |
         || 0     | 0.667               |
         |
-        |The window size, `n`, is the number of datapoints to consider including the current
-        |value. There must be at least `minNumValues` non-NaN values within that window before
-        |it will emit a mean. Note that it is based on datapoints, not a specific amount of time.
-        |As a result the number of occurrences will be reduced when transitioning to a larger time
-        |frame that causes consolidation.
+        |$windowSummary
+        |
+        |There must be at least `minNumValues` non-NaN values within the window before it will
+        |emit a mean. If the window has fewer datapoints than `minNumValues`, for example a 1m
+        |window with a 1m step and a minimum of 3, then `NaN` will be emitted for all times.
         |
         |Since: 1.6
       """.stripMargin.trim
 
-    override def examples: List[String] = List("name,sps,:eq,:sum,5,3")
+    override def examples: List[String] = List("name,sps,:eq,:sum,5,3", "name,sps,:eq,:sum,5m,3")
   }
 
   case object RollingSum extends TypedWord with StylePassthrough {
@@ -370,19 +450,19 @@ object StatefulVocabulary extends Vocabulary {
 
     override def parameters: IndexedSeq[Parameter] = ArraySeq(
       Parameter("", "input time series", TimeSeriesExprType),
-      Parameter("n", "window size", DataType.IntType)
+      Parameter("w", "window size", RollingWindowType)
     )
 
     override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
 
     override def execute(context: Context, params: IndexedSeq[Any]): Context = {
       val t = params(0).asInstanceOf[TimeSeriesExpr]
-      val n = params(1).asInstanceOf[Int]
-      context.copy(stack = StatefulExpr.RollingSum(t, n) :: context.stack)
+      val w = params(1).asInstanceOf[RollingWindow]
+      context.copy(stack = StatefulExpr.RollingSum(t, w) :: context.stack)
     }
 
     override def summary: String =
-      """
+      s"""
         |Sum of the values within a specified window.
         |
         || Input | 3,:rolling-sum    |
@@ -398,15 +478,14 @@ object StatefulVocabulary extends Vocabulary {
         || 1     | 3.0                 |
         || 0     | 2.0                 |
         |
-        |The window size, `n`, is the number of datapoints to consider including the current
-        |value. Note that it is based on datapoints, not a specific amount of time.
-        |As a result the number of occurrences will be reduced when transitioning to a larger time
-        |frame that causes consolidation.
+        |$windowSummary $passthroughSummary
+        |
+        |$datapointsSummary
         |
         |Since: 1.6
       """.stripMargin.trim
 
-    override def examples: List[String] = List("name,sps,:eq,:sum,5,3")
+    override def examples: List[String] = List("name,sps,:eq,:sum,5", "name,sps,:eq,:sum,5m")
   }
 
   case object Des extends TypedWord with StylePassthrough {

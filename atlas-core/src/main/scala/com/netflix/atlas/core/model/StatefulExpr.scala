@@ -49,7 +49,7 @@ object StatefulExpr {
     override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
       // IgnoreN of 0 is used as an identity algorithm if the specified window is small
       // enough that no averaging will take place
-      val period = (window.toMillis / context.step).toInt
+      val period = RollingWindow.datapoints(window, context.step)
       if (period <= 1) OnlineIgnoreN(0) else OnlineTrend(period)
     }
 
@@ -131,82 +131,84 @@ object StatefulExpr {
   }
 
   /**
-    * Computes the number of true values over the last `n` intervals.
+    * Computes the number of true values within the window.
     */
-  case class RollingCount(expr: TimeSeriesExpr, n: Int) extends OnlineExpr {
+  case class RollingCount(expr: TimeSeriesExpr, window: RollingWindow) extends OnlineExpr {
 
     override protected def name: String = "rolling-count"
 
     override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
-      OnlineRollingCount(n)
+      OnlineRollingCount(window.period(context.step))
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, Interpreter.WordToken(s":$name"))
+      Interpreter.append(builder, expr, window, Interpreter.WordToken(s":$name"))
     }
   }
 
   /**
-    * Computes the minimum value over the last `n` intervals.
+    * Computes the minimum value within the window.
     */
-  case class RollingMin(expr: TimeSeriesExpr, n: Int) extends OnlineExpr {
+  case class RollingMin(expr: TimeSeriesExpr, window: RollingWindow) extends OnlineExpr {
 
     override protected def name: String = "rolling-min"
 
     override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
-      OnlineRollingMin(n)
+      OnlineRollingMin(window.period(context.step))
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, Interpreter.WordToken(s":$name"))
+      Interpreter.append(builder, expr, window, Interpreter.WordToken(s":$name"))
     }
   }
 
   /**
-    * Computes the maximum value over the last `n` intervals.
+    * Computes the maximum value within the window.
     */
-  case class RollingMax(expr: TimeSeriesExpr, n: Int) extends OnlineExpr {
+  case class RollingMax(expr: TimeSeriesExpr, window: RollingWindow) extends OnlineExpr {
 
     override protected def name: String = "rolling-max"
 
     override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
-      OnlineRollingMax(n)
+      OnlineRollingMax(window.period(context.step))
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, Interpreter.WordToken(s":$name"))
+      Interpreter.append(builder, expr, window, Interpreter.WordToken(s":$name"))
     }
   }
 
   /**
-    * Computes the mean of the values over the last `n` intervals.
+    * Computes the mean of the values within the window. If the window has fewer datapoints
+    * than `minNumValues`, then `NaN` will be emitted for all times.
     */
-  case class RollingMean(expr: TimeSeriesExpr, n: Int, minNumValues: Int) extends OnlineExpr {
+  case class RollingMean(expr: TimeSeriesExpr, window: RollingWindow, minNumValues: Int)
+      extends OnlineExpr {
 
     override protected def name: String = "rolling-mean"
 
     override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
-      OnlineRollingMean(n, minNumValues)
+      OnlineRollingMean(window.period(context.step), minNumValues)
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, minNumValues, Interpreter.WordToken(s":$name"))
+      Interpreter.append(builder, expr, window, minNumValues, Interpreter.WordToken(s":$name"))
     }
   }
 
   /**
-    * Computes the sum of the values over the last `n` intervals.
+    * Computes the sum of the values within the window.
     */
-  case class RollingSum(expr: TimeSeriesExpr, n: Int) extends OnlineExpr {
+  case class RollingSum(expr: TimeSeriesExpr, window: RollingWindow) extends OnlineExpr {
 
     override protected def name: String = "rolling-sum"
 
     override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
-      OnlineRollingSum(n)
+      OnlineRollingSum(window.period(context.step))
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, Interpreter.WordToken(s":$name"))
+      Interpreter.append(builder, expr, window, Interpreter.WordToken(s":$name"))
     }
   }
 

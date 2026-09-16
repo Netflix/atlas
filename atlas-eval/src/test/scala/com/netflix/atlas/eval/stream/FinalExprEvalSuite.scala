@@ -22,6 +22,7 @@ import org.apache.pekko.stream.scaladsl.Source
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.MathExpr
 import com.netflix.atlas.core.model.Query
+import com.netflix.atlas.core.model.RollingWindow
 import com.netflix.atlas.core.model.StatefulExpr
 import com.netflix.atlas.eval.model.AggrDatapoint
 import com.netflix.atlas.eval.model.AggrValuesInfo
@@ -718,7 +719,7 @@ class FinalExprEvalSuite extends FunSuite {
 
   test("stateful windows move even if there is no data for expr") {
     val exprA = DataExpr.Sum(Query.Equal("name", "a"))
-    val expr = StatefulExpr.RollingCount(exprA, 3)
+    val expr = StatefulExpr.RollingCount(exprA, RollingWindow.Steps(3))
     val tagsA = Map("name" -> "a")
     val input = List(
       sources(ds("a", s"http://atlas/graph?q=$expr")),
@@ -753,7 +754,7 @@ class FinalExprEvalSuite extends FunSuite {
           MathExpr.Add(exprA, MathExpr.Constant(0.0)),
           MathExpr.Constant(1.0)
         ),
-        5
+        RollingWindow.Steps(5)
       ),
       MathExpr.Constant(3.5)
     )
