@@ -86,10 +86,12 @@ class OnlineRollingMeanSuite extends BaseOnlineAlgorithmSuite {
     assertEquals(algo.next(5.0), 5.0)
   }
 
-  test("min < n") {
-    intercept[IllegalArgumentException] {
-      OnlineRollingMean(1, 2)
-    }
+  test("window smaller than min emits NaN") {
+    // The window can be derived from the step size, e.g. `1m,2,:rolling-mean` with a 1m step,
+    // so a window that can never satisfy the minimum emits NaN rather than failing.
+    val algo = OnlineRollingMean(1, 2)
+    assert(algo.next(1.0).isNaN)
+    assert(algo.next(2.0).isNaN)
   }
 
   test("min = 0") {

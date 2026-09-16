@@ -28,8 +28,11 @@ package com.netflix.atlas.core.algorithm
 case class OnlineRollingMean(buf: RollingBuffer, minNumValues: Int) extends OnlineAlgorithm {
 
   require(minNumValues > 0, "minimum number of values must be >= 1")
-  require(buf.values.length >= minNumValues, "minimum number of values must be <= window size")
 
+  // A window smaller than `minNumValues` can never satisfy the minimum, so `next` emits NaN
+  // for all times. That is not rejected here because the window size may be derived from the
+  // step size, e.g. `1m,3,:rolling-mean`, and the same expression should not start failing
+  // when the graph is zoomed out to a step that makes the window a single datapoint.
   private val buffer = new RollingSumBuffer(buf)
 
   override def next(v: Double): Double = {

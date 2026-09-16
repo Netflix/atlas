@@ -1092,11 +1092,15 @@ object MathExpr {
 
     override def eval(context: EvalContext, data: Map[DataExpr, List[TimeSeries]]): ResultSet = {
       val inner = registerExpr.eval(context, data)
+      // The state from the inner result must be propagated, not `context.state`. The input can
+      // be wrapped by a stateful operator, e.g. :approx-distinct-rolling wraps a :rolling-max,
+      // and the evaluation is chunked for streaming and `/api/v1/fetch`. Dropping the updated
+      // state would reset those buffers on every chunk.
       if (inner.data.isEmpty) {
-        inner
+        inner.copy(expr = this)
       } else if (evalGroupKeys.isEmpty) {
         val label = s"approx-distinct(${dataExprs.head.query.labelString})"
-        ResultSet(this, estimateDistinct(context, label, inner.data), context.state)
+        ResultSet(this, estimateDistinct(context, label, inner.data), inner.state)
       } else {
         val groups = inner.data.groupBy(_.tags - TagKey.distinct)
         val rs = groups.values.toList.flatMap { ts =>
@@ -1109,7 +1113,7 @@ object MathExpr {
             estimateDistinct(context, label, ts)
           }
         }
-        ResultSet(this, rs, context.state)
+        ResultSet(this, rs, inner.state)
       }
     }
 
