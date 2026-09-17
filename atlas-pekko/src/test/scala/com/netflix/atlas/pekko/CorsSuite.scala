@@ -33,4 +33,26 @@ class CorsSuite extends FunSuite {
     val origin = Cors.normalizedOrigin("https://123.45.67.89/")
     assertEquals(origin, None)
   }
+
+  test("isExplicitHostAllowed: explicit matches") {
+    val hosts = List("localhost", ".netflix.com")
+    assert(Cors.isExplicitHostAllowed(hosts, "http://localhost"))
+    assert(Cors.isExplicitHostAllowed(hosts, "https://foo.netflix.com"))
+    assert(Cors.isExplicitHostAllowed(hosts, "https://sub.foo.netflix.com"))
+    assert(!Cors.isExplicitHostAllowed(hosts, "https://foo.netflix.org"))
+    assert(!Cors.isExplicitHostAllowed(hosts, "http://localhost.evil.com"))
+  }
+
+  test("isExplicitHostAllowed: wildcard does not count as explicit") {
+    val hosts = List("*")
+    assert(!Cors.isExplicitHostAllowed(hosts, "http://localhost"))
+    assert(!Cors.isExplicitHostAllowed(hosts, "https://foo.netflix.com"))
+    assert(Cors.isOriginAllowed(hosts, "https://foo.netflix.com"))
+  }
+
+  test("isOriginAllowed: wildcard allows arbitrary origin") {
+    val hosts = List("*")
+    assert(Cors.isOriginAllowed(hosts, "https://example.com"))
+    assert(Cors.isOriginAllowed(hosts, "http://evil.com"))
+  }
 }
