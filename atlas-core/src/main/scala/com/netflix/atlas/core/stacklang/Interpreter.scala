@@ -29,8 +29,20 @@ import com.netflix.atlas.core.util.Strings
   *     Maximum number of items allowed on the stack. This is used to prevent expressions that
   *     can cause exponential stack growth using operations like `:each` and `:fcall`. The
   *     default of 1024 should be more than enough for legitimate use-cases.
+  * @param maxOperations
+  *     Maximum number of words and literals that may be executed for a single program. This
+  *     bounds the total work rather than the recursion depth, which is what prevents nested
+  *     looping operators from pegging a CPU. See [[EvalBudget]]. The token count for a program
+  *     is bounded by the expression length, so only the looping operators can push it up. The
+  *     default of 10000 was chosen by replaying a corpus of 1.1M production expressions: the
+  *     most expensive of them needed between 200 and 500 operations, so this leaves more than
+  *     an order of magnitude of headroom while keeping the worst case a couple of ms.
   */
-case class Interpreter(vocabulary: List[Word], maxStackSize: Int = 1024) {
+case class Interpreter(
+  vocabulary: List[Word],
+  maxStackSize: Int = Interpreter.defaultMaxStackSize,
+  maxOperations: Long = Interpreter.defaultMaxOperations
+) {
 
   import com.netflix.atlas.core.stacklang.Interpreter.*
 
@@ -88,6 +100,10 @@ case class Interpreter(vocabulary: List[Word], maxStackSize: Int = 1024) {
         s"stack overflow: list size exceeds limit of $maxStackSize"
       )
     }
+    // Charge for each token pulled into the list. `execute` only sees the opening parenthesis,
+    // so without this a loop body that rebuilds a large list literal on every iteration would
+    // cost a single operation while doing work proportional to the size of the list.
+    step.context.budget.consume()
     step.program match {
       case "(" :: tokens =>
         popAndPushList(depth + 1, "(" :: acc, accSize + 1, step.copy(program = tokens))
@@ -131,7 +147,13 @@ case class Interpreter(vocabulary: List[Word], maxStackSize: Int = 1024) {
         s"stack overflow: stack size exceeds limit of $maxStackSize"
       )
     }
-    if (s.program.isEmpty) s.context else execute(nextStep(s))
+    if (s.program.isEmpty) s.context
+    else {
+      // Bound the total work for the execution, not just the depth and stack size. Nested
+      // looping operators multiply the iteration count without increasing either of those.
+      s.context.budget.consume()
+      execute(nextStep(s))
+    }
   }
 
   final def executeProgram(
@@ -139,6 +161,10 @@ case class Interpreter(vocabulary: List[Word], maxStackSize: Int = 1024) {
     context: Context,
     unfreeze: Boolean = true
   ): Context = {
+    // A call depth of zero means this is the start of a top level execution rather than a
+    // nested call from a looping operator, so the budget applies to the whole execution even
+    // if the caller reuses a context.
+    if (context.callDepth == 0) context.budget.reset(maxOperations)
     val result = execute(Step(program, context.incrementCallDepth)).decrementCallDepth
     if (unfreeze) result.unfreeze else result
   }
@@ -162,11 +188,21 @@ case class Interpreter(vocabulary: List[Word], maxStackSize: Int = 1024) {
   }
 
   final def debug(program: List[Any], context: Context): List[Step] = {
-    val result = debugImpl(Nil, Step(program, context)) match {
+    // This is a top level execution, so it owns the budget. The call depth is incremented for
+    // the duration so that the nested `executeProgram` calls made by looping operators are not
+    // treated as top level and do not reset the budget on every iteration.
+    context.budget.reset(maxOperations)
+    val result = debugImpl(Nil, Step(program, context.incrementCallDepth)) match {
       case s :: steps => s.copy(context = s.context.unfreeze) :: steps
       case Nil        => Nil
     }
-    result.reverse
+    // The extra call depth is an implementation detail of the budget, so it is removed from
+    // the steps that are handed back and rendered by the debug endpoint. A word is free to
+    // return a context it built itself, which would have a depth of zero, and `Context`
+    // requires a non-negative depth, so only a depth that was actually incremented is undone.
+    result.reverse.map { s =>
+      if (s.context.callDepth > 0) s.copy(context = s.context.decrementCallDepth) else s
+    }
   }
 
   final def debug(program: List[Any]): List[Step] = {
@@ -191,6 +227,12 @@ case class Interpreter(vocabulary: List[Word], maxStackSize: Int = 1024) {
     val diagnostics = List.newBuilder[Diagnostic]
     var stack: List[Any] = Nil
     var currentVars: Map[String, Any] = vars
+
+    // One budget for the whole analysis. The contexts below are created with a call depth of
+    // one so that the nested `executeProgram` calls made by looping operators are not treated
+    // as top level executions, which would restore the budget on every iteration and leave
+    // this path, the one used by the language server, unbounded.
+    val budget = new EvalBudget(maxOperations)
 
     def buildNodes(ts: List[Token]): (List[SyntaxNode], List[Token]) = {
       val nodes = List.newBuilder[SyntaxNode]
@@ -245,7 +287,9 @@ case class Interpreter(vocabulary: List[Word], maxStackSize: Int = 1024) {
                       currentStack,
                       currentVars,
                       currentVars,
-                      features = Features.UNSTABLE
+                      features = Features.UNSTABLE,
+                      callDepth = 1,
+                      budget = budget
                     )
                     try {
                       val result = executeFirstMatchingWord(name, ws, ctx)
@@ -373,6 +417,12 @@ case class Interpreter(vocabulary: List[Word], maxStackSize: Int = 1024) {
 }
 
 object Interpreter {
+
+  /** Default value for `maxStackSize`, see [[Interpreter]]. */
+  val defaultMaxStackSize: Int = 1024
+
+  /** Default value for `maxOperations`, see [[Interpreter]]. */
+  val defaultMaxOperations: Long = 10000L
 
   case class Step(program: List[Any], context: Context)
 

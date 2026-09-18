@@ -53,7 +53,10 @@ public class UriLspServer implements LanguageServer, LanguageClientAware {
     }
 
     public UriLspServer(Vocabulary vocabulary, Glossary glossary) {
-        var interpreter = Interpreter.apply(vocabulary.allWords(), 1024);
+        var interpreter = Interpreter.apply(
+                vocabulary.allWords(),
+                Interpreter.defaultMaxStackSize(),
+                Interpreter.defaultMaxOperations());
         var aslAnalyzer = new AslDocumentAnalyzer(interpreter, glossary, this::client);
         this.analyzer = new UriDocumentAnalyzer(aslAnalyzer, this::client);
         this.textDocService = new AslTextDocumentService(analyzer);
