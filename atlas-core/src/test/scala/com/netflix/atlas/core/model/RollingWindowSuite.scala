@@ -104,6 +104,8 @@ class RollingWindowSuite extends FunSuite {
 
   test("non-positive window is not a valid expression") {
     intercept[IllegalStateException](parse("name,test,:eq,:sum,0,:rolling-max"))
+    intercept[IllegalStateException](parse("name,test,:eq,:sum,0,:delay"))
+    intercept[IllegalStateException](parse("name,test,:eq,:sum,-1,:delay"))
   }
 
   test("duration window covers the same amount of time at different steps") {
@@ -169,8 +171,49 @@ class RollingWindowSuite extends FunSuite {
     )
   }
 
+  test("delay shifts by the same amount of time at different steps") {
+    val expr = parse("name,test,:eq,:sum,1m,:delay")
+
+    // 30s step, 1m delay, so the input is shifted by two datapoints
+    assertEquals(
+      eval(expr, 30000L, 1.0, 2.0, 3.0, 4.0).mkString(","),
+      "NaN,NaN,1.0,2.0"
+    )
+
+    // 1m step, the delay is a single datapoint
+    assertEquals(
+      eval(expr, 60000L, 1.0, 2.0, 3.0, 4.0).mkString(","),
+      "NaN,1.0,2.0,3.0"
+    )
+  }
+
+  test("delay is a single step if the step is larger than the window") {
+    // The shift is a single datapoint rather than nothing, so at a 5m step a 1m delay shifts
+    // the input by 5m. This is the one case where the delay is not the requested amount of
+    // time, hence a separate test from the fixed duration cases above.
+    val expr = parse("name,test,:eq,:sum,1m,:delay")
+    assertEquals(
+      eval(expr, 300000L, 1.0, 2.0, 3.0, 4.0).mkString(","),
+      "NaN,1.0,2.0,3.0"
+    )
+  }
+
+  test("delay with a datapoint window shifts by a fixed number of intervals") {
+    val expr = parse("name,test,:eq,:sum,2,:delay")
+    assertEquals(
+      eval(expr, 30000L, 1.0, 2.0, 3.0, 4.0).mkString(","),
+      "NaN,NaN,1.0,2.0"
+    )
+    assertEquals(
+      eval(expr, 300000L, 1.0, 2.0, 3.0, 4.0).mkString(","),
+      "NaN,NaN,1.0,2.0"
+    )
+  }
+
   test("round trip toString") {
     val exprs = List(
+      "name,test,:eq,:sum,3,:delay",
+      "name,test,:eq,:sum,PT1M,:delay",
       "name,test,:eq,:sum,3,:rolling-count",
       "name,test,:eq,:sum,PT1M,:rolling-count",
       "name,test,:eq,:sum,3,:rolling-min",

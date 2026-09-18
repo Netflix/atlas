@@ -204,15 +204,15 @@ object StatefulVocabulary extends Vocabulary {
 
     override def parameters: IndexedSeq[Parameter] = ArraySeq(
       Parameter("", "input time series", TimeSeriesExprType),
-      Parameter("n", "number of datapoints to delay", DataType.IntType)
+      Parameter("w", "window size", RollingWindowType)
     )
 
     override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
 
     override def execute(context: Context, params: IndexedSeq[Any]): Context = {
       val t = params(0).asInstanceOf[TimeSeriesExpr]
-      val v = params(1).asInstanceOf[Int]
-      context.copy(stack = StatefulExpr.Delay(t, v) :: context.stack)
+      val w = params(1).asInstanceOf[RollingWindow]
+      context.copy(stack = StatefulExpr.Delay(t, w) :: context.stack)
     }
 
     override def summary: String =
@@ -222,15 +222,19 @@ object StatefulVocabulary extends Vocabulary {
         |window fetched with a DataExpr. Short delays can be useful for alerting to detect
         |changes in slightly shifted trend lines.
         |
-        |The window size, `n`, is the number of datapoints to consider, including the current
-        |value. Note that it is based on datapoints, not a specific amount of time. As a result,
-        |the number of occurrences will be reduced when transitioning to a larger time frame
-        |that causes consolidation.
+        |The window size can be specified as a number of datapoints or as an amount of time.
+        |A number of datapoints, `5`, will shift the input by 5 intervals. The amount of time
+        |covered by the shift will then change when transitioning to a larger time frame that
+        |causes consolidation. A duration, `5m`, will shift the input by 5 minutes independent
+        |of the step size. The duration is rounded down to the nearest step boundary, so a 5m
+        |delay with a 2m step will result in a 4m delay. If the step size is larger than the
+        |window, then the input is shifted by a single step.
         |
         | Since: 1.6
       """.stripMargin.trim
 
-    override def examples: List[String] = List("name,requestsPerSecond,:eq,:sum,5")
+    override def examples: List[String] =
+      List("name,requestsPerSecond,:eq,:sum,5", "name,requestsPerSecond,:eq,:sum,5m")
   }
 
   case object RollingCount extends TypedWord with StylePassthrough {
