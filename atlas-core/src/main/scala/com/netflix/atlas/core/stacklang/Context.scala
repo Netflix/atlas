@@ -36,6 +36,13 @@ import com.netflix.atlas.core.util.Features
   *     `:freeze` operator for more information.
   * @param features
   *     Set of features that are permitted for the execution.
+  * @param budget
+  *     Bounds the total amount of work for the execution. `copy` carries the reference, so
+  *     every context derived during an execution shares one counter. A context constructed
+  *     directly gets its own budget, but that budget starts empty: it is the driver of a top
+  *     level execution, [[Interpreter]]`.executeProgram` for a call depth of zero, and the
+  *     `debug` and `syntaxTree` entry points, that stocks it with `maxOperations`. All budgets
+  *     compare as equal, see [[EvalBudget]], so this does not affect how two contexts compare.
   */
 case class Context(
   interpreter: Interpreter,
@@ -44,7 +51,8 @@ case class Context(
   initialVariables: Map[String, Any] = Map.empty,
   frozenStack: List[Any] = Nil,
   features: Features = Features.STABLE,
-  callDepth: Int = 0
+  callDepth: Int = 0,
+  budget: EvalBudget = new EvalBudget(0L)
 ) {
 
   require(callDepth >= 0, "call depth cannot be negative")

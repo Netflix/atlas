@@ -55,7 +55,10 @@ public class AslLspServer implements LanguageServer, LanguageClientAware {
     }
 
     public AslLspServer(Vocabulary vocabulary, Glossary glossary) {
-        this.interpreter = Interpreter.apply(vocabulary.allWords(), 1024);
+        this.interpreter = Interpreter.apply(
+                vocabulary.allWords(),
+                Interpreter.defaultMaxStackSize(),
+                Interpreter.defaultMaxOperations());
         this.analyzer = new AslDocumentAnalyzer(interpreter, glossary, this::client);
         this.textDocService = new AslTextDocumentService(analyzer);
         this.workspaceService = new AslWorkspaceService();
