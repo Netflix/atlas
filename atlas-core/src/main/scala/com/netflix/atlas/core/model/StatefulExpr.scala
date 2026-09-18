@@ -114,19 +114,19 @@ object StatefulExpr {
   }
 
   /**
-    * Delay the input time series by `n` intervals. This can be useful for alerting to see
+    * Delay the input time series by the window size. This can be useful for alerting to see
     * if recent trends deviate from delayed trends.
     */
-  case class Delay(expr: TimeSeriesExpr, n: Int) extends OnlineExpr {
+  case class Delay(expr: TimeSeriesExpr, window: RollingWindow) extends OnlineExpr {
 
     override protected def name: String = "delay"
 
     override protected def newAlgorithmInstance(context: EvalContext): OnlineAlgorithm = {
-      OnlineDelay(n)
+      OnlineDelay(window.period(context.step))
     }
 
     override def append(builder: java.lang.StringBuilder): Unit = {
-      Interpreter.append(builder, expr, n, Interpreter.WordToken(s":$name"))
+      Interpreter.append(builder, expr, window, Interpreter.WordToken(s":$name"))
     }
   }
 
