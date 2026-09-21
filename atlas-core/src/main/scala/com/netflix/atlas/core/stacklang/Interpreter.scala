@@ -68,18 +68,14 @@ case class Interpreter(
 
   private def executeFirstMatchingWord(name: String, ws: List[Word], context: Context): Context = {
     executeFirstMatchingWordImpl(ws, context).getOrElse {
-      val stackSummary = Interpreter.typeSummary(context.stack)
-      val candidates = ws.map(_.signature).mkString("[", "], [", "]")
-      throw new IllegalStateException(
-        s"no matches for word ':$name' with stack $stackSummary, candidates: $candidates"
-      )
+      throw new StackMismatchException(name, context.stack, ws.map(_.signature))
     }
   }
 
   private def executeWord(name: String, context: Context): Context = {
     words.get(name) match {
       case Some(ws) => executeFirstMatchingWord(name, ws, context)
-      case None     => throw new IllegalStateException(s"unknown word ':$name'")
+      case None     => throw new UnknownWordException(name, context.stack)
     }
   }
 
@@ -277,7 +273,8 @@ case class Interpreter(
                 val stackBefore = currentStack
                 words.get(name) match {
                   case None =>
-                    val d = Diagnostic(token.span, s"unknown word ':$name'", Severity.Error)
+                    val msg = UnknownWordException.message(name)
+                    val d = Diagnostic(token.span, msg, Severity.Error)
                     diagnostics += d
                     nodes += WordNode(token, None, stackBefore, Some(d))
                   case Some(ws) =>
