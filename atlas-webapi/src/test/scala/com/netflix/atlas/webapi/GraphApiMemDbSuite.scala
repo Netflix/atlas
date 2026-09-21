@@ -64,7 +64,7 @@ class GraphApiMemDbSuite extends MUnitRouteSuite {
       assertEquals(response.status, StatusCodes.BadRequest)
       val msg = Json.decode[DiagnosticMessage](responseAs[String])
       assertEquals(msg.typeName, "error")
-      assertEquals(msg.message, "IllegalStateException: unknown word ':foo'")
+      assertEquals(msg.message, "UnknownWordException: unknown word ':foo'")
     }
   }
 

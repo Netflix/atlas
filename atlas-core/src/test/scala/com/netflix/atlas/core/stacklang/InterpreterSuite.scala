@@ -83,6 +83,25 @@ class InterpreterSuite extends FunSuite {
     assertEquals(e.getMessage, "unknown word ':unknown'")
   }
 
+  test("unknown word exposes the word and the stack it was reached with") {
+    val e = intercept[UnknownWordException] {
+      interpreter.executeProgram(List("foo", ":unknown"))
+    }
+    assertEquals(e.word, "unknown")
+    assertEquals(e.stack, List("foo"))
+    assert(e.isInstanceOf[InterpreterException])
+  }
+
+  test("word with no matches exposes the signatures that were tried") {
+    val e = intercept[StackMismatchException] {
+      interpreter.executeProgram(List(":no-match"))
+    }
+    assertEquals(e.word, "no-match")
+    assertEquals(e.stack, Nil)
+    assertEquals(e.signatures, List("exception"))
+    assert(e.isInstanceOf[InterpreterException])
+  }
+
   test("unmatched closing paren") {
     val e = intercept[IllegalStateException] {
       interpreter.executeProgram(List(")"))

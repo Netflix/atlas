@@ -77,7 +77,7 @@ class VocabularySuite extends FunSuite {
         | In:
         |
         |Out:
-        |IllegalStateException: no matches for word ':dup' with stack [], candidates: [a:Any -- Any Any]
+        |StackMismatchException: no matches for word ':dup' with stack [], candidates: [a:Any -- Any Any]
         |```
       """.stripMargin.trim
     assertEquals(TestVocabulary.toMarkdown, expected)
