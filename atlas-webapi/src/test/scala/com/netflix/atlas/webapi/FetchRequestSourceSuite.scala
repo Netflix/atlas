@@ -40,9 +40,11 @@ import org.apache.pekko.stream.testkit.scaladsl.TestSink
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import scala.concurrent.Await
 import scala.concurrent.duration.*
 import scala.jdk.CollectionConverters.*
+import scala.util.Failure
 
 class FetchRequestSourceSuite extends FunSuite {
 
@@ -56,6 +58,15 @@ class FetchRequestSourceSuite extends FunSuite {
       case GraphApi.DataRequest(ctx, exprs, _) =>
         val data = exprs.map(e => e -> List.empty[TimeSeries]).toMap
         sender() ! GraphApi.DataResponse(ctx.step, data)
+    }
+  }
+
+  /** Db actor that fails every request, e.g. the backend timed out. */
+  private class FailingDb extends Actor {
+
+    def receive: Receive = {
+      case _: GraphApi.DataRequest =>
+        sender() ! Failure(new TimeoutException("backend timed out"))
     }
   }
 
@@ -111,12 +122,12 @@ class FetchRequestSourceSuite extends FunSuite {
     override protected def newMaxGauge(id: Id): Gauge = delegate.maxGauge(id)
   }
 
-  private def withFixture(registry: Registry)(
+  private def withFixture(registry: Registry, db: => Actor = new EmptyDb)(
     f: (ActorSystem, Registry, Source[HttpEntity.ChunkStreamPart, ?]) => Unit
   ): Unit = {
     val system = ActorSystem(s"FetchRequestSourceSuite-${System.nanoTime()}")
     try {
-      system.actorOf(Props(new EmptyDb), "db")
+      system.actorOf(Props(db), "db")
       val uri = "/api/v2/fetch?q=name,sps,:eq,:sum&s=e-6h&e=now&step=1h"
       val graphCfg = grapher.toGraphConfig(HttpRequest(uri = uri))
       val response = FetchRequestSource.createResponse(system, graphCfg, registry)
@@ -167,6 +178,18 @@ class FetchRequestSourceSuite extends FunSuite {
       val text = parts.map(_.data().utf8String).mkString
       assert(text.startsWith("data: "), s"unexpected SSE payload: ${text.take(40)}")
       assertEquals(disconnects(registry), 0.0)
+    }
+  }
+
+  test("db failure is reported as an error") {
+    withFixture(new DefaultRegistry, new FailingDb) { (system, _, source) =>
+      implicit val sys: ActorSystem = system
+      val parts = Await.result(source.runWith(Sink.seq), 30.seconds)
+      val messages = parts.map(_.data().utf8String).toList
+      val errors = messages.filter(_.contains("\"type\":\"error\""))
+      assertEquals(errors.size, 1, messages.mkString)
+      assert(errors.head.contains("backend timed out"), errors.head)
+      assert(messages.last.contains("\"type\":\"close\""), messages.last)
     }
   }
 }
