@@ -55,6 +55,7 @@ import com.netflix.atlas.webapi.GraphApi.DataRequest
 import com.netflix.atlas.webapi.GraphApi.DataResponse
 
 import java.io.StringWriter
+import scala.util.Failure
 import scala.util.Using
 
 /**
@@ -109,10 +110,18 @@ object FetchRequestSource {
       .flatMapConcat { chunk =>
         val req = DataRequest(graphCfg).copy(context = chunk)
         val future = ask(dbRef, req)(Timeout(30.seconds))
+        // The db actor reports failures with a scala.util.Failure reply rather than
+        // Status.Failure, so the ask future completes successfully. It must fail the stream
+        // so the error is reported instead of the response looking like it has no data. Use
+        // Source.failed rather than throwing from a stage: the db actor may forward a fatal
+        // error, e.g. StackOverflowError, and a fatal error thrown from a stage is not caught
+        // by the stream, it escapes to the actor system and takes it down.
         Source
           .future(future)
-          .collect {
-            case DataResponse(s, data) => DataChunk(chunk.increaseStep(s), data)
+          .flatMapConcat {
+            case DataResponse(s, data) => Source.single(DataChunk(chunk.increaseStep(s), data))
+            case Failure(t)            => Source.failed(t)
+            case v                     => Source.failed(new MatchError(v))
           }
       }
       .via(new EvalFlow(graphCfg))
