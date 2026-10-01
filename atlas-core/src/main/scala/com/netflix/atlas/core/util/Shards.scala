@@ -205,8 +205,8 @@ object Shards {
     def instancesForIndex(i: Int): List[T] = {
       require(i >= 0, "index cannot be negative")
       val replicas = groups(i % groups.length)
-      replicas.map { group =>
-        group.instances((i / groups.length) % group.size)
+      replicas.collect {
+        case group if group.size > 0 => group.instances((i / groups.length) % group.size)
       }
     }
   }
