@@ -161,6 +161,18 @@ class ShardsSuite extends FunSuite {
     assertEquals(mapper.instanceForIndex(1), null)
   }
 
+  test("replica mapper with empty group") {
+    val groups = List(
+      Shards.Group("a", Array("0", "1")),
+      Shards.Group("a", Array.empty[String]),
+      Shards.Group("b", Array.empty[String])
+    )
+
+    val mapper = Shards.replicaMapper(groups)
+    assertEquals(mapper.instancesForIndex(0), List("0"))
+    assertEquals(mapper.instancesForIndex(1), Nil)
+  }
+
   test("local mapper containsIndex") {
     val groups = List(
       Shards.Group("a", Array(0, 1)),
