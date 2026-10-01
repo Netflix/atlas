@@ -198,29 +198,40 @@ object CustomDirectives {
       case None                                                 => pass
       case Some(origin) if !Cors.isOriginAllowed(hosts, origin) => pass
       case Some(origin)                                         =>
-        // '*' doesn't seem to work reliably so use requested origin if provided. If running from
-        // a local file we typically see 'null'.
+        val isExplicit = Cors.isExplicitHostAllowed(hosts, origin)
         val allow =
-          if (origin == "null") HttpOriginRange.`*` else HttpOriginRange(HttpOrigin(origin))
+          if (isExplicit)
+            HttpOriginRange(HttpOrigin(origin))
+          else
+            HttpOriginRange.`*`
 
         // List of headers to ignore for caching. For more details see:
         // https://bugs.chromium.org/p/chromium/issues/detail?id=409090
         // https://www.fastly.com/blog/caching-cors
         val vary = RawHeader("Vary", "Origin")
 
-        // Just allow all methods
-        val headers = List(
+        val allowMethods = `Access-Control-Allow-Methods`(
+          HttpMethods.GET,
+          HttpMethods.PATCH,
+          HttpMethods.POST,
+          HttpMethods.PUT,
+          HttpMethods.DELETE
+        )
+
+        // Per W3C CORS and Fetch specifications, Access-Control-Allow-Credentials must not be true
+        // when Access-Control-Allow-Origin is a wildcard (*). Only emit credentials header for
+        // explicitly allowed origins.
+        val baseHeaders = List(
           `Access-Control-Allow-Origin`.forRange(allow),
-          `Access-Control-Allow-Methods`(
-            HttpMethods.GET,
-            HttpMethods.PATCH,
-            HttpMethods.POST,
-            HttpMethods.PUT,
-            HttpMethods.DELETE
-          ),
-          `Access-Control-Allow-Credentials`(true),
+          allowMethods,
           vary
         )
+
+        val headers =
+          if (isExplicit)
+            `Access-Control-Allow-Credentials`(true) :: baseHeaders
+          else
+            baseHeaders
 
         // If specific headers are requested echo those back
         optionalHeaderValueByName("Access-Control-Request-Headers").flatMap {
