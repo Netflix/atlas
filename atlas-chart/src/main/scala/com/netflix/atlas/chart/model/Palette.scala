@@ -62,12 +62,14 @@ case class Palette(name: String, colorArray: ArraySeq[Color]) {
     * deterministic color.
     *
     * @param i
-    *   A positive integer value.
+    *   Integer value used to select the color, e.g. a hash code. Negative values select
+    *   the same color as the absolute value.
     * @return
     *   A deterministic color in the palette.
     */
   def colors(i: Int): Color = {
-    val index = math.abs(i) % colorArray.length
+    // Take the remainder before the absolute value, math.abs(Int.MinValue) is negative
+    val index = math.abs(i % colorArray.length)
     colorArray(index)
   }
 }

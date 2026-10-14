@@ -78,8 +78,9 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
       // sources message that arrives and should be consistent for the life of this stage
       private var step = -1L
 
-      // Sampled event expressions
-      private var sampledEventRecipients = Map.empty[DataExpr, List[ExprInfo]]
+      // Sampled event expressions matched with a list of data source ids that should
+      // receive the data for it
+      private var sampledEventRecipients = Map.empty[DataExpr, List[String]]
 
       // Each expression matched with a list of data source ids that should receive
       // the data for it
@@ -110,7 +111,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
         sampledEventRecipients = sources
           .flatMap { s =>
             exprInterpreter.parseSampleExpr(Uri(s.uri)).map { expr =>
-              expr.dataExpr -> ExprInfo(s.id, None)
+              expr.dataExpr -> s.id
             }
           }
           .groupBy(_._1)
@@ -129,14 +130,16 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
                 // expressions are maintained in an IdentityHashMap so if the instances change
                 // the state will be reset.
                 exprs.map { e =>
-                  val paletteName =
-                    if (graphCfg.flags.presentationMetadataEnabled) {
-                      val axis = e.axis.getOrElse(0)
-                      Some(graphCfg.flags.axisPalette(graphCfg.settings, axis))
-                    } else {
-                      None
-                    }
-                  previous.getOrElse(e, e) -> ExprInfo(s.id, paletteName)
+                  val expr = previous.getOrElse(e, e)
+                  // Created here so that the per expression values for the messages are
+                  // computed once and invalid style settings, e.g. an unknown palette, are
+                  // reported as an invalid expression
+                  val factory = new TimeSeriesMessage.Factory(
+                    expr,
+                    graphCfg.presentationPalette(expr),
+                    resolveColor = graphCfg.resolveColor
+                  )
+                  expr -> ExprInfo(s.id, factory)
                 }
               }
             } catch {
@@ -151,7 +154,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
 
         dataSourceIdToDataExprs = recipients
           .flatMap(styleExprAndIds =>
-            styleExprAndIds._2.map(id => id -> styleExprAndIds._1.expr.dataExprs.toSet)
+            styleExprAndIds._2.map(info => info -> styleExprAndIds._1.expr.dataExprs.toSet)
           )
           // Fold to mutable map to avoid creating new Map on every update
           .foldLeft(mutable.Map.empty[String, Set[DataExpr]]) {
@@ -205,11 +208,11 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
           case (expr, vs) =>
             sampledEventRecipients
               .get(expr)
-              .fold(List.empty[MessageEnvelope]) { infos =>
+              .fold(List.empty[MessageEnvelope]) { ids =>
                 val ts = vs.values.map(toTimeSeriesMessage)
                 ts.flatMap { msg =>
-                  infos.map { info =>
-                    new MessageEnvelope(info.id, msg)
+                  ids.map { id =>
+                    new MessageEnvelope(id, msg)
                   }
                 }
               }
@@ -238,7 +241,6 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
         val output = recipients
           .flatMap {
             case (styleExpr, infos) =>
-              val exprStr = styleExpr.toString
               val ids = infos.map(_.id)
               // Use an identity map for the state to ensure that multiple equivalent stateful
               // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
@@ -255,13 +257,7 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
                 // Create time series messages
                 infos.flatMap { info =>
                   data.map { t =>
-                    val ts = TimeSeriesMessage(
-                      styleExpr,
-                      context,
-                      t.withLabel(styleExpr.legend(t)),
-                      info.palette,
-                      Some(exprStr)
-                    )
+                    val ts = info.factory.create(context, t.withLabel(styleExpr.legend(t)))
                     new MessageEnvelope(info.id, ts)
                   }
                 }
@@ -354,5 +350,14 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
 
 object FinalExprEval {
 
-  case class ExprInfo(id: String, palette: Option[String])
+  /**
+    * Recipient for the data of an expression.
+    *
+    * @param id
+    *     Id of the data source that should receive the messages.
+    * @param factory
+    *     Factory for creating the time series messages for the data source. It is specific
+    *     to the data source as the presentation settings may vary.
+    */
+  case class ExprInfo(id: String, factory: TimeSeriesMessage.Factory)
 }

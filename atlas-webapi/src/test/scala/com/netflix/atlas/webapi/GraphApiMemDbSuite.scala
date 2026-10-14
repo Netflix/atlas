@@ -81,6 +81,19 @@ class GraphApiMemDbSuite extends MUnitRouteSuite {
     }
   }
 
+  test("fetch: hash palette is accepted") {
+    Get("/api/v2/fetch?q=1&palette=hash:armytage&hints=presentation-metadata") ~>
+      routes ~> check {
+        assertEquals(response.status, StatusCodes.OK)
+      }
+  }
+
+  test("fetch: named color is accepted") {
+    Get("/api/v2/fetch?q=1,blue1,:color&hints=presentation-metadata") ~> routes ~> check {
+      assertEquals(response.status, StatusCodes.OK)
+    }
+  }
+
   test("sendError txt") {
     Get("/api/v1/graph?q=:foo&format=txt") ~> routes ~> check {
       assertEquals(response.status, StatusCodes.BadRequest)

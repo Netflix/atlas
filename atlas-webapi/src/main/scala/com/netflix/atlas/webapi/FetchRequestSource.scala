@@ -18,11 +18,9 @@ package com.netflix.atlas.webapi
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import com.netflix.atlas.chart.JsonCodec
-import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StatefulExpr
-import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.core.util.IdentityMap
@@ -108,9 +106,15 @@ object FetchRequestSource {
 
     val metadataSrc = createMetadataSource(graphCfg)
 
-    // Resolve the palettes up front so that any failure fails the request immediately rather
-    // than after the response has started.
-    val exprs = resolvePalettes(graphCfg)
+    // Create the message factories up front so that any failure, e.g. an invalid palette,
+    // fails the request immediately rather than after the response has started.
+    val factories = graphCfg.exprs.map { s =>
+      new TimeSeriesMessage.Factory(
+        s,
+        graphCfg.presentationPalette(s),
+        resolveColor = graphCfg.resolveColor
+      )
+    }
 
     // Data expressions are the same for every chunk, only the time range changes
     val baseRequest = DataRequest(graphCfg)
@@ -134,7 +138,7 @@ object FetchRequestSource {
             case v                     => Source.failed(new MatchError(v))
           }
       }
-      .via(new EvalFlow(exprs))
+      .via(new EvalFlow(factories))
       .flatMapConcat(ts => Source(ts))
       .recover {
         case t: Throwable => DiagnosticMessage.error(t)
@@ -162,21 +166,6 @@ object FetchRequestSource {
       Source(graphDef :: plots.toList)
     } else {
       Source.empty
-    }
-  }
-
-  private def resolvePalettes(graphCfg: GraphConfig): List[(StyleExpr, Option[String])] = {
-    val metadata = graphCfg.flags.presentationMetadataEnabled
-    graphCfg.exprs.map { s =>
-      val palette =
-        if (metadata) {
-          val p = graphCfg.flags.axisPalette(graphCfg.settings, s.axis.getOrElse(0))
-          // Create the palette that will be used for the line colors so that an invalid
-          // palette name is rejected here rather than when the first data chunk is processed.
-          if (s.color.isEmpty) Palette.create(s.palette.getOrElse(p))
-          Some(p)
-        } else None
-      s -> palette
     }
   }
 
@@ -248,7 +237,7 @@ object FetchRequestSource {
     * be correct. This operator should get created a single time for a given execution so that
     * state is maintained overall.
     */
-  private class EvalFlow(exprs: List[(StyleExpr, Option[String])])
+  private class EvalFlow(factories: List[TimeSeriesMessage.Factory])
       extends GraphStage[FlowShape[DataChunk, List[TimeSeriesMessage]]] {
 
     private val in = Inlet[DataChunk]("EvalFlow.in")
@@ -260,9 +249,7 @@ object FetchRequestSource {
       new GraphStageLogic(shape) with InHandler with OutHandler {
 
         // Created for each materialization so that the state is not shared across runs
-        private val evaluators = exprs.map {
-          case (s, palette) => new ExprEvaluator(s, palette)
-        }
+        private val evaluators = factories.map(f => new ExprEvaluator(f))
 
         override def onPush(): Unit = {
           val chunk = grab(in)
@@ -280,12 +267,12 @@ object FetchRequestSource {
 
   /**
     * Evaluates an expression for each chunk. The values that do not depend on the time range
-    * are computed once rather than for each chunk, the number of chunks is unbounded for long
-    * ranges.
+    * are computed once by the message factory rather than for each chunk, the number of chunks
+    * is unbounded for long ranges.
     */
-  private class ExprEvaluator(expr: StyleExpr, palette: Option[String]) {
+  private class ExprEvaluator(factory: TimeSeriesMessage.Factory) {
 
-    private val exprStr = Some(expr.toString)
+    private val expr = factory.expr
 
     // State is kept for each expression and uses an identity map so that equivalent stateful
     // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
@@ -297,9 +284,7 @@ object FetchRequestSource {
       state = result.state
       result.data
         .filterNot(ts => isAllNaN(ts.data, context.start, context.end, context.step))
-        .map { ts =>
-          TimeSeriesMessage(expr, context, ts.withLabel(expr.legend(ts)), palette, exprStr)
-        }
+        .map(ts => factory.create(context, ts.withLabel(expr.legend(ts))))
     }
   }
 

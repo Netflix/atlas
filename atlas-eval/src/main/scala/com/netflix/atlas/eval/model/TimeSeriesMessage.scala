@@ -143,42 +143,84 @@ object TimeSeriesMessage {
     palette: Option[String] = None,
     exprStr: Option[String] = None
   ): TimeSeriesMessage = {
-    val query = exprStr.getOrElse(expr.toString)
-    val offset = Strings.toString(Duration.ofMillis(expr.offset))
-    val outputTags = ts.tags + (TagKey.offset -> offset)
-    val id = TaggedItem.computeId(outputTags + ("atlas.query" -> query)).toString
-    val data = ts.data.bounded(context.start, context.end)
-    TimeSeriesMessage(
-      id,
-      query,
-      expr.expr.finalGrouping,
-      context.start,
-      context.end,
-      context.step,
-      ts.label,
-      outputTags,
-      ArrayData(data.data),
-      palette.map(p => createStyleMetadata(expr, ts.label, p)),
-      Nil
-    )
+    new Factory(expr, palette, exprStr).create(context, ts)
   }
 
-  private def createStyleMetadata(
+  /**
+    * Creates time series messages for an expression. The values that only depend on the
+    * expression, such as the query string and the style metadata, are computed once. Use
+    * this when creating many messages for the same expression, e.g. for each time series of
+    * a group by or for each step of a stream.
+    *
+    * @param expr
+    *     Expression for the time series.
+    * @param palette
+    *     If defined then include presentation metadata. This is the default palette that is
+    *     used if the expression does not specify a color or palette. Construction will fail
+    *     if the style settings used for the lines, e.g. the palette, are invalid.
+    * @param exprStr
+    *     String view of the expression. Should match `expr`, if not specified it will be
+    *     computed.
+    * @param resolveColor
+    *     Used to map an explicit color setting on the expression to a color. The default only
+    *     supports hex colors, pass a theme aware resolver to support named colors.
+    */
+  final class Factory(
+    val expr: StyleExpr,
+    palette: Option[String],
+    exprStr: Option[String] = None,
+    resolveColor: String => Color = Strings.parseColor
+  ) {
+
+    private val query = exprStr.getOrElse(expr.toString)
+    private val offset = Strings.toString(Duration.ofMillis(expr.offset))
+    private val groupByKeys = expr.expr.finalGrouping
+    private val style = palette.map(p => createStyleFunction(expr, p, resolveColor))
+
+    /** Create a message for a time series from the expression. */
+    def create(context: EvalContext, ts: TimeSeries): TimeSeriesMessage = {
+      val outputTags = ts.tags + (TagKey.offset -> offset)
+      val id = TaggedItem.computeId(outputTags + ("atlas.query" -> query)).toString
+      val data = ts.data.bounded(context.start, context.end)
+      TimeSeriesMessage(
+        id,
+        query,
+        groupByKeys,
+        context.start,
+        context.end,
+        context.step,
+        ts.label,
+        outputTags,
+        ArrayData(data.data),
+        style.map(_.apply(ts.label)),
+        Nil
+      )
+    }
+  }
+
+  /**
+    * Returns a function that maps the label for a line to the style metadata. The settings
+    * are all validated here so that an invalid value will fail when the function is created
+    * rather than for each line.
+    */
+  private def createStyleFunction(
     expr: StyleExpr,
-    label: String,
-    dfltPalette: String
-  ): LineStyleMetadata = {
-    val color = expr.color.fold(colorFromPalette(expr, label, dfltPalette))(Strings.parseColor)
-    LineStyleMetadata(
-      plot = expr.axis.getOrElse(0),
-      color = color,
-      lineStyle = expr.lineStyle.fold(LineStyle.LINE)(LineStyle.parse),
-      lineWidth = expr.lineWidth
-    )
-  }
-
-  private def colorFromPalette(expr: StyleExpr, label: String, dfltPalette: String): Color = {
-    val palette = expr.palette.getOrElse(dfltPalette)
-    Palette.create(palette).colors(label.hashCode)
+    dfltPalette: String,
+    resolveColor: String => Color
+  ): String => LineStyleMetadata = {
+    val plot = expr.axis.getOrElse(0)
+    val lineStyle = expr.lineStyle.fold(LineStyle.LINE)(LineStyle.parse)
+    val lineWidth = expr.lineWidth
+    expr.color match {
+      case Some(c) =>
+        val metadata = LineStyleMetadata(plot, resolveColor(c), lineStyle, lineWidth)
+        _ => metadata
+      case None =>
+        // Colors are always selected based on the hash of the label, so the `hash:` prefix
+        // that is supported for graphs to enable that mode can be ignored
+        val palette = Palette.create(expr.palette.getOrElse(dfltPalette).stripPrefix("hash:"))
+        val template = LineStyleMetadata(plot, palette.colors(0), lineStyle, lineWidth)
+        label => template.copy(color = palette.colors(label.hashCode))
+    }
   }
 }
