@@ -89,70 +89,13 @@ class TimeSeriesMessageSuite extends FunSuite {
     assertNotEquals(other.create(context, newTimeSeries("a")).id, a.id)
   }
 
-  private val reds = Palette.create("reds")
-
-  private def line(color: Color): LineStyleMetadata = {
-    LineStyleMetadata(0, color, LineStyle.LINE, 1.0f)
-  }
-
-  /** Check the style metadata for a set of labels with armytage as the default palette. */
-  private def checkStyle(
-    settings: Map[String, String],
-    expected: String => LineStyleMetadata
-  ): Unit = {
-    val factory = new TimeSeriesMessage.Factory(newStyleExpr(settings), Some("armytage"))
-    // The hash code for polygenelubricants is Int.MinValue
-    List("a", "b", "c", "polygenelubricants").foreach { label =>
+  test("factory uses style function with the label") {
+    val style =
+      (label: String) => LineStyleMetadata(0, armytage.colors(label.hashCode), LineStyle.LINE, 1.0f)
+    val factory = new TimeSeriesMessage.Factory(newStyleExpr(Map.empty), Some(style))
+    List("a", "b", "c").foreach { label =>
       val msg = factory.create(context, newTimeSeries(label))
-      assertEquals(msg.styleMetadata, Some(expected(label)))
-    }
-  }
-
-  test("factory style: default palette") {
-    checkStyle(Map.empty, label => line(armytage.colors(label.hashCode)))
-  }
-
-  test("factory style: explicit color") {
-    checkStyle(Map("color" -> "f00"), _ => line(Color.RED))
-  }
-
-  test("factory style: expression palette") {
-    checkStyle(Map("palette" -> "reds"), label => line(reds.colors(label.hashCode)))
-  }
-
-  test("factory style: expression palette with hash prefix") {
-    checkStyle(Map("palette" -> "hash:reds"), label => line(reds.colors(label.hashCode)))
-  }
-
-  test("factory style: line settings") {
-    val settings = Map("palette" -> "(,f00,00f,)", "ls" -> "stack", "lw" -> "2", "axis" -> "1")
-    val palette = Palette.create("(,f00,00f,)")
-    checkStyle(
-      settings,
-      label => LineStyleMetadata(1, palette.colors(label.hashCode), LineStyle.STACK, 2.0f)
-    )
-  }
-
-  test("factory default palette with hash prefix") {
-    val factory = new TimeSeriesMessage.Factory(newStyleExpr(Map.empty), Some("hash:armytage"))
-    val msg = factory.create(context, newTimeSeries("a"))
-    assertEquals(msg.styleMetadata.map(_.color), Some(armytage.colors("a".hashCode)))
-  }
-
-  test("factory uses color resolver for explicit color") {
-    val expr = newStyleExpr(Map("color" -> "blue1"))
-    intercept[IllegalArgumentException] {
-      new TimeSeriesMessage.Factory(expr, Some("armytage"))
-    }
-    val factory =
-      new TimeSeriesMessage.Factory(expr, Some("armytage"), resolveColor = _ => Color.BLUE)
-    val msg = factory.create(context, newTimeSeries("a"))
-    assertEquals(msg.styleMetadata.map(_.color), Some(Color.BLUE))
-  }
-
-  test("factory with invalid line width fails on construction") {
-    intercept[IllegalArgumentException] {
-      new TimeSeriesMessage.Factory(newStyleExpr(Map("lw" -> "-1")), Some("armytage"))
+      assertEquals(msg.styleMetadata, Some(style(label)))
     }
   }
 
@@ -161,24 +104,19 @@ class TimeSeriesMessageSuite extends FunSuite {
     assertEquals(factory.create(context, newTimeSeries("a")).query, "foo")
   }
 
-  test("factory with invalid palette fails on construction") {
-    intercept[Exception] {
-      new TimeSeriesMessage.Factory(newStyleExpr(Map("palette" -> "bogus")), Some("armytage"))
-    }
-    intercept[Exception] {
-      new TimeSeriesMessage.Factory(newStyleExpr(Map.empty), Some("bogus"))
+  test("apply with palette") {
+    // The hash code for polygenelubricants is Int.MinValue
+    List("a", "b", "polygenelubricants").foreach { label =>
+      val msg =
+        TimeSeriesMessage(newStyleExpr(Map.empty), context, newTimeSeries(label), Some("armytage"))
+      val expected = LineStyleMetadata(0, armytage.colors(label.hashCode), LineStyle.LINE, 1.0f)
+      assertEquals(msg.styleMetadata, Some(expected))
     }
   }
 
-  test("factory ignores invalid palette without presentation metadata") {
-    val factory = new TimeSeriesMessage.Factory(newStyleExpr(Map("palette" -> "bogus")), None)
-    assertEquals(factory.create(context, newTimeSeries("a")).styleMetadata, None)
-  }
-
-  test("factory ignores palette if color is explicit") {
-    val expr = newStyleExpr(Map("palette" -> "bogus", "color" -> "f00"))
-    val factory = new TimeSeriesMessage.Factory(expr, Some("armytage"))
-    val msg = factory.create(context, newTimeSeries("a"))
+  test("apply with explicit color") {
+    val expr = newStyleExpr(Map("color" -> "f00"))
+    val msg = TimeSeriesMessage(expr, context, newTimeSeries("a"), Some("armytage"))
     assertEquals(msg.styleMetadata.map(_.color), Some(Color.RED))
   }
 }

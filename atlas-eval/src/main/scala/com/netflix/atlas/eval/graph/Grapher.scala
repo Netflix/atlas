@@ -20,7 +20,6 @@ import java.io.ByteArrayOutputStream
 import java.time.Duration
 import org.apache.pekko.http.scaladsl.model.HttpRequest
 import org.apache.pekko.http.scaladsl.model.Uri
-import com.netflix.atlas.chart.Colors
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.Layout
 import com.netflix.atlas.chart.model.LineDef
@@ -338,7 +337,7 @@ case class Grapher(settings: DefaultSettings) {
     val multiY = plotExprs.size > 1 && !GraphDef.ambiguousMultiY(config.flags.hints)
 
     val palette = newPalette(config.flags.palette)
-    val shiftPalette = newPalette(settings.offsetPalette(config.flags.theme))
+    val shiftPalette = newPalette(config.offsetPalette)
 
     val start = config.startMillis
     val end = config.endMillis
@@ -346,7 +345,6 @@ case class Grapher(settings: DefaultSettings) {
     val plots = plotExprs.toList.sortWith(_._1 < _._1).map {
       case (yaxis, exprs) =>
         val axisCfg = config.flags.getAxis(yaxis)
-        val dfltStyle = if (axisCfg.stack) LineStyle.STACK else LineStyle.LINE
 
         val statFormatter = axisCfg.tickLabelMode match {
           case TickLabelMode.BINARY =>
@@ -392,22 +390,17 @@ case class Grapher(settings: DefaultSettings) {
             newT.withLabel(s.legend(t.label, legendTags)) -> stats
           }
 
+          // Palette selection should be consistent with GraphConfig.linePalette. The palettes
+          // are shared so that colors are assigned in order across expressions on an axis.
           val palette = s.palette.map(newPalette).getOrElse {
-            s.color
-              .map { c =>
-                val color = settings.resolveColor(config.flags.theme, c)
-                val p = Palette.singleColor(color).iterator
-                (_: String) => p.next()
-              }
-              .getOrElse {
-                if (s.offset > 0L) shiftPalette else axisPalette
-              }
+            if (s.offset > 0L) shiftPalette else axisPalette
           }
+          val lineStyle = config.lineStyle(s)
+          val explicitColor = config.explicitColor(s)
 
           val lineDefs = labelledTS.sortWith(_._1.label < _._1.label).map {
             case (t, stats) =>
-              val lineStyle = s.lineStyle.fold(dfltStyle)(LineStyle.parse)
-              val color = s.color.fold {
+              val color = explicitColor.getOrElse {
                 val c = lineStyle match {
                   case LineStyle.HEATMAP =>
                     if (axisCfg.heatmapPalette.nonEmpty) {
@@ -420,13 +413,7 @@ case class Grapher(settings: DefaultSettings) {
                     heatmapColor
                   case _ => palette(t.label)
                 }
-                // Alpha setting if present will set the alpha value for the color automatically
-                // assigned by the palette. If using an explicit color it will have no effect as the
-                // alpha can be set directly using an ARGB hex format for the color.
-                s.alpha.fold(c)(a => Colors.withAlpha(c, a))
-              } { c =>
-                val resolved = settings.resolveColor(config.flags.theme, c)
-                s.alpha.fold(resolved)(a => Colors.withAlpha(resolved, a))
+                config.withAlpha(s, c)
               }
 
               LineDef(
@@ -434,7 +421,7 @@ case class Grapher(settings: DefaultSettings) {
                 query = Some(s.toString),
                 groupByKeys = s.expr.finalGrouping,
                 color = color,
-                lineStyle = s.lineStyle.fold(dfltStyle)(LineStyle.parse),
+                lineStyle = lineStyle,
                 lineWidth = s.lineWidth,
                 legendStats = stats
               )
