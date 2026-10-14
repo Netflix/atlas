@@ -16,6 +16,7 @@
 package com.netflix.atlas.eval.stream
 
 import com.netflix.atlas.chart.model.LineStyle
+import com.netflix.atlas.chart.model.Palette
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
@@ -800,5 +801,56 @@ class FinalExprEvalSuite extends FunSuite {
     val ts = timeseries.head.message().asInstanceOf[TimeSeriesMessage]
     assertEquals(ts.styleMetadata.get.color, Color.RED)
     assertEquals(ts.styleMetadata.get.lineStyle, LineStyle.STACK)
+  }
+
+  test("presentation metadata, named color") {
+    val expr = DataExpr.Sum(Query.Equal("name", "rps"))
+    val tags = Map("name" -> "rps")
+    val uri = s"http://atlas/graph?q=$expr,blue1,:color&theme=light&hints=presentation-metadata"
+    val input = List(
+      sources(ds("a", uri)),
+      group(1, AggrDatapoint(0, step, expr, "i-1", tags, 42.0))
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(isTimeSeries)
+    assertEquals(timeseries.size, 1)
+    val ts = timeseries.head.message().asInstanceOf[TimeSeriesMessage]
+    assertEquals(ts.styleMetadata.get.color, new Color(0x6BAED6))
+  }
+
+  test("presentation metadata, hash palette") {
+    val expr = DataExpr.Sum(Query.Equal("name", "rps"))
+    val tags = Map("name" -> "rps")
+    val uri = s"http://atlas/graph?q=$expr,hash:reds,:palette&hints=presentation-metadata"
+    val input = List(
+      sources(ds("a", uri)),
+      group(1, AggrDatapoint(0, step, expr, "i-1", tags, 42.0))
+    )
+
+    val output = run(input)
+
+    val timeseries = output.filter(isTimeSeries)
+    assertEquals(timeseries.size, 1)
+    val ts = timeseries.head.message().asInstanceOf[TimeSeriesMessage]
+    assertEquals(ts.styleMetadata.get.color, Palette.create("reds").colors(ts.label.hashCode))
+  }
+
+  test("presentation metadata, invalid palette") {
+    val expr = DataExpr.Sum(Query.Equal("name", "rps"))
+    val tags = Map("name" -> "rps")
+    val uri = s"http://atlas/graph?q=$expr,bogus,:palette&hints=presentation-metadata"
+    val input = List(
+      sources(ds("a", uri)),
+      group(1, AggrDatapoint(0, step, expr, "i-1", tags, 42.0)),
+      group(2, AggrDatapoint(0, step, expr, "i-1", tags, 43.0))
+    )
+
+    // Reported once when the data sources are updated rather than for each step
+    val output = run(input)
+    assertEquals(output.size, 1)
+    assertEquals(output.head.id, "a")
+    assert(output.head.message.toJson.contains("invalid expression"))
   }
 }

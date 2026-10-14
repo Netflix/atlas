@@ -97,4 +97,11 @@ class PaletteSuite extends FunSuite {
       Palette.create("foo")
     }
   }
+
+  test("colors: negative index") {
+    val p = Palette.create("armytage")
+    assertEquals(p.colors(-5), p.colors(5))
+    // math.abs(Int.MinValue) is negative, 2^31 % 24 == 8
+    assertEquals(p.colors(Int.MinValue), p.colors(8))
+  }
 }

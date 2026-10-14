@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.eval.graph
 
+import java.awt.Color
 import java.time.Instant
 import java.time.ZoneId
 import org.apache.pekko.http.scaladsl.model.ContentType
@@ -106,6 +107,20 @@ case class GraphConfig(
   val evalContext: EvalContext = {
     EvalContext(fstart.toEpochMilli, fend.toEpochMilli + stepSize, stepSize)
   }
+
+  /**
+    * Default palette to use for the presentation metadata of an expression. Returns None
+    * if presentation metadata is not enabled for the request.
+    */
+  def presentationPalette(expr: StyleExpr): Option[String] = {
+    if (flags.presentationMetadataEnabled)
+      Some(flags.axisPalette(settings, expr.axis.getOrElse(0)))
+    else
+      None
+  }
+
+  /** Resolve a color setting, named colors such as `blue1` are mapped based on the theme. */
+  def resolveColor(color: String): Color = settings.resolveColor(flags.theme, color)
 
   def withStep(newStep: Long): GraphConfig = {
     if (newStep == stepSize)
