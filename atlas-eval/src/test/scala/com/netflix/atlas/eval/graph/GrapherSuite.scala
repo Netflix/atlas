@@ -325,6 +325,23 @@ class GrapherSuite extends FunSuite {
     }
   }
 
+  test("reject theme that is not a theme config") {
+    List("", "width", "light.palette").foreach { theme =>
+      val uri = s"/api/v1/graph?e=2012-01-01T00:00&q=1&theme=$theme"
+      val e = intercept[IllegalArgumentException] {
+        grapher.toGraphConfig(Uri(uri))
+      }
+      assertEquals(e.getMessage, s"invalid theme: $theme")
+    }
+  }
+
+  test("reject invalid theme with explicit palette") {
+    val uri = "/api/v1/graph?e=2012-01-01T00:00&q=1&theme=bogus&palette=armytage"
+    intercept[IllegalArgumentException] {
+      grapher.toGraphConfig(Uri(uri))
+    }
+  }
+
   test("reject negative height") {
     val uri = "/api/v1/graph?e=2012-01-01T00:00&q=1&h=-5"
     intercept[IllegalArgumentException] {
