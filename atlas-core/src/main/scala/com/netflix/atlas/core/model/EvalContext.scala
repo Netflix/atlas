@@ -39,16 +39,25 @@ case class EvalContext(
   def bufferSize: Int = ((end - start) / step).toInt + 1
 
   def partition(oneStep: Long, unit: ChronoUnit): List[EvalContext] = {
-    val builder = List.newBuilder[EvalContext]
-    var t = Instant.ofEpochMilli(start).truncatedTo(unit).toEpochMilli
-    while (t < end) {
-      val e = t + oneStep
-      val stime = math.max(t, start)
-      val etime = math.min(e, end)
-      builder += EvalContext(stime, etime, step)
-      t = e
-    }
-    builder.result()
+    partitionIterator(oneStep, unit).toList
+  }
+
+  /**
+    * Lazy variant of `partition`. The number of partitions grows with the time range, so
+    * use this when the range is not bounded to avoid materializing all of them at once.
+    */
+  def partitionIterator(oneStep: Long, unit: ChronoUnit): Iterator[EvalContext] = {
+    require(oneStep > 0, s"partition step must be positive ($oneStep)")
+    val truncated = Instant.ofEpochMilli(start).truncatedTo(unit).toEpochMilli
+    // If the unit is larger than the partition step, then the partitions between the truncated
+    // time and the start time would be empty. Begin with the one that contains the start time.
+    val first = truncated + (start - truncated) / oneStep * oneStep
+    Iterator
+      .iterate(first)(_ + oneStep)
+      .takeWhile(_ < end)
+      .map { t =>
+        EvalContext(math.max(t, start), math.min(t + oneStep, end), step)
+      }
   }
 
   def partitionByHour: List[EvalContext] =
