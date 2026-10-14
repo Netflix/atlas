@@ -76,9 +76,9 @@ case class EvalContext(
 
     // Compute the new start / end time by rounding to step boundaries. The eval context
     // will end time is exclusive, so update by a step interval if the end time has changes
-    // due to rounding.
-    val s = start / newStep * newStep
-    val e = end / newStep * newStep
+    // due to rounding. Use floorDiv so that times before the epoch round down as well.
+    val s = Math.floorDiv(start, newStep) * newStep
+    val e = Math.floorDiv(end, newStep) * newStep
     if (end == e)
       EvalContext(s, e, newStep)
     else

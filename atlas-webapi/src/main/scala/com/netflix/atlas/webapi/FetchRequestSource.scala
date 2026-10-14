@@ -196,8 +196,8 @@ object FetchRequestSource {
 
   private def isAllNaN(seq: TimeSeq, s: Long, e: Long, step: Long): Boolean = {
     require(s <= e, "start must be <= end")
-    val end = e / step * step
-    var t = s / step * step
+    val end = Math.floorDiv(e, step) * step
+    var t = Math.floorDiv(s, step) * step
     while (t < end) {
       if (!seq(t).isNaN) return false
       t += step
@@ -217,7 +217,7 @@ object FetchRequestSource {
   }
 
   private def roundToStep(step: Long, i: Instant): Instant = {
-    Instant.ofEpochMilli(i.toEpochMilli / step * step)
+    Instant.ofEpochMilli(Math.floorDiv(i.toEpochMilli, step) * step)
   }
 
   /**

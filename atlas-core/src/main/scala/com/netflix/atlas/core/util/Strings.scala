@@ -535,6 +535,18 @@ object Strings {
   }
 
   /**
+    * Format an instant as an exact offset from the epoch, e.g. `epoch+1234ms`, that can be
+    * parsed with `parseDate`. A plain unix timestamp cannot be used to round trip arbitrary
+    * times because the unit is guessed from the magnitude when parsing, so times near the
+    * epoch or far in the future would be misinterpreted, and negative values are not
+    * supported.
+    */
+  def toEpochOffset(t: Instant): String = {
+    val millis = t.toEpochMilli
+    if (millis < 0) s"epoch-${-millis}ms" else s"epoch+${millis}ms"
+  }
+
+  /**
     * Returns the datetime object associated with a given reference point.
     */
   private def parseRefVar(refs: Map[String, ZonedDateTime], v: String): ZonedDateTime = {

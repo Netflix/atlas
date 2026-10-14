@@ -18,6 +18,7 @@ package com.netflix.atlas.core.util
 import java.awt.Color
 import java.math.BigInteger
 import java.time.Duration
+import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
@@ -368,6 +369,18 @@ class StringsSuite extends FunSuite {
 
   test("toString Duration: seconds") {
     assertEquals(Strings.toString(Duration.ofSeconds(5)), "5s")
+  }
+
+  test("toEpochOffset round trips with parseDate") {
+    List(Long.MinValue / 1000, -1L, 0L, 1L, 1_000_000L, Long.MaxValue / 1000).foreach { millis =>
+      val t = Instant.ofEpochMilli(millis)
+      assertEquals(parseDate(toEpochOffset(t)).toInstant, t)
+    }
+  }
+
+  test("toEpochOffset format") {
+    assertEquals(toEpochOffset(Instant.ofEpochMilli(1234L)), "epoch+1234ms")
+    assertEquals(toEpochOffset(Instant.ofEpochMilli(-1234L)), "epoch-1234ms")
   }
 
   test("parseDate, iso date only") {
