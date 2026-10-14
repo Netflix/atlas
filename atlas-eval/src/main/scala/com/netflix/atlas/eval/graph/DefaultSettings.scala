@@ -26,6 +26,8 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.util.Strings
 import com.netflix.atlas.eval.util.HostRewriter
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigUtil
+import com.typesafe.config.ConfigValueType
 
 import java.awt.Color
 
@@ -75,8 +77,13 @@ case class DefaultSettings(root: Config, config: Config) {
   val theme: String = config.getString("theme")
 
   private def themeConfig(theme: String): Config = {
-    if (config.hasPath(theme))
-      config.getConfig(theme)
+    // The theme comes from the request. Quote it so it is treated as a single key rather than
+    // a path expression and check that it refers to an object. Otherwise values such as an
+    // empty string, `width`, or `light.palette` would fail with a ConfigException rather than
+    // being rejected as an invalid theme.
+    val path = ConfigUtil.joinPath(theme)
+    if (config.hasPath(path) && config.getValue(path).valueType() == ConfigValueType.OBJECT)
+      config.getConfig(path)
     else
       throw new IllegalArgumentException(s"invalid theme: $theme")
   }

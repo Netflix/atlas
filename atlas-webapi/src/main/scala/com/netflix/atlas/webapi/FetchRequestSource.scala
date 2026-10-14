@@ -18,11 +18,14 @@ package com.netflix.atlas.webapi
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import com.netflix.atlas.chart.JsonCodec
+import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.core.model.DataExpr
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StatefulExpr
+import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.model.TimeSeq
 import com.netflix.atlas.core.model.TimeSeries
+import com.netflix.atlas.core.util.IdentityMap
 import com.netflix.atlas.eval.graph.GraphConfig
 import com.netflix.atlas.eval.model.TimeSeriesMessage
 import com.netflix.atlas.json3.Json
@@ -105,6 +108,10 @@ object FetchRequestSource {
 
     val metadataSrc = createMetadataSource(graphCfg)
 
+    // Resolve the palettes up front so that any failure fails the request immediately rather
+    // than after the response has started.
+    val exprs = resolvePalettes(graphCfg)
+
     // Data expressions are the same for every chunk, only the time range changes
     val baseRequest = DataRequest(graphCfg)
 
@@ -127,7 +134,7 @@ object FetchRequestSource {
             case v                     => Source.failed(new MatchError(v))
           }
       }
-      .via(new EvalFlow(graphCfg))
+      .via(new EvalFlow(exprs))
       .flatMapConcat(ts => Source(ts))
       .recover {
         case t: Throwable => DiagnosticMessage.error(t)
@@ -155,6 +162,21 @@ object FetchRequestSource {
       Source(graphDef :: plots.toList)
     } else {
       Source.empty
+    }
+  }
+
+  private def resolvePalettes(graphCfg: GraphConfig): List[(StyleExpr, Option[String])] = {
+    val metadata = graphCfg.flags.presentationMetadataEnabled
+    graphCfg.exprs.map { s =>
+      val palette =
+        if (metadata) {
+          val p = graphCfg.flags.axisPalette(graphCfg.settings, s.axis.getOrElse(0))
+          // Create the palette that will be used for the line colors so that an invalid
+          // palette name is rejected here rather than when the first data chunk is processed.
+          if (s.color.isEmpty) Palette.create(s.palette.getOrElse(p))
+          Some(p)
+        } else None
+      s -> palette
     }
   }
 
@@ -226,7 +248,7 @@ object FetchRequestSource {
     * be correct. This operator should get created a single time for a given execution so that
     * state is maintained overall.
     */
-  private class EvalFlow(graphCfg: GraphConfig)
+  private class EvalFlow(exprs: List[(StyleExpr, Option[String])])
       extends GraphStage[FlowShape[DataChunk, List[TimeSeriesMessage]]] {
 
     private val in = Inlet[DataChunk]("EvalFlow.in")
@@ -237,27 +259,14 @@ object FetchRequestSource {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
       new GraphStageLogic(shape) with InHandler with OutHandler {
 
-        private val metadata = graphCfg.flags.presentationMetadataEnabled
-
-        private var state = Map.empty[StatefulExpr, Any]
+        // Created for each materialization so that the state is not shared across runs
+        private val evaluators = exprs.map {
+          case (s, palette) => new ExprEvaluator(s, palette)
+        }
 
         override def onPush(): Unit = {
           val chunk = grab(in)
-          val cfg = graphCfg.withStep(chunk.context.step)
-          val ts = cfg.exprs
-            .flatMap { s =>
-              val palette =
-                if (metadata)
-                  Some(cfg.flags.axisPalette(cfg.settings, s.axis.getOrElse(0)))
-                else None
-              val context = chunk.context.copy(state = state)
-              val result = s.expr.eval(context, chunk.data)
-              state = result.state
-              result.data
-                .filterNot(ts => isAllNaN(ts.data, context.start, context.end, context.step))
-                .map(ts => TimeSeriesMessage(s, context, ts.withLabel(s.legend(ts)), palette))
-            }
-          push(out, ts)
+          push(out, evaluators.flatMap(_.eval(chunk)))
         }
 
         override def onPull(): Unit = {
@@ -266,6 +275,31 @@ object FetchRequestSource {
 
         setHandlers(in, out, this)
       }
+    }
+  }
+
+  /**
+    * Evaluates an expression for each chunk. The values that do not depend on the time range
+    * are computed once rather than for each chunk, the number of chunks is unbounded for long
+    * ranges.
+    */
+  private class ExprEvaluator(expr: StyleExpr, palette: Option[String]) {
+
+    private val exprStr = Some(expr.toString)
+
+    // State is kept for each expression and uses an identity map so that equivalent stateful
+    // expressions, e.g. derivative(a) + derivative(a), will have isolated state.
+    private var state: Map[StatefulExpr, Any] = IdentityMap.empty
+
+    def eval(chunk: DataChunk): List[TimeSeriesMessage] = {
+      val context = chunk.context.copy(state = state)
+      val result = expr.expr.eval(context, chunk.data)
+      state = result.state
+      result.data
+        .filterNot(ts => isAllNaN(ts.data, context.start, context.end, context.step))
+        .map { ts =>
+          TimeSeriesMessage(expr, context, ts.withLabel(expr.legend(ts)), palette, exprStr)
+        }
     }
   }
 

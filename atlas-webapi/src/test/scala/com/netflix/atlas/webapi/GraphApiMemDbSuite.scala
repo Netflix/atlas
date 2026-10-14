@@ -68,6 +68,19 @@ class GraphApiMemDbSuite extends MUnitRouteSuite {
     }
   }
 
+  test("fetch: invalid theme is rejected") {
+    Get("/api/v2/fetch?q=1&theme=bogus&palette=armytage&hints=presentation-metadata") ~>
+      routes ~> check {
+        assertEquals(response.status, StatusCodes.BadRequest)
+      }
+  }
+
+  test("fetch: invalid palette is rejected") {
+    Get("/api/v2/fetch?q=1&palette.0=bogus&hints=presentation-metadata") ~> routes ~> check {
+      assertEquals(response.status, StatusCodes.BadRequest)
+    }
+  }
+
   test("sendError txt") {
     Get("/api/v1/graph?q=:foo&format=txt") ~> routes ~> check {
       assertEquals(response.status, StatusCodes.BadRequest)

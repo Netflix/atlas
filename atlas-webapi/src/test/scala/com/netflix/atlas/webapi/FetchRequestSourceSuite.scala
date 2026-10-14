@@ -15,7 +15,9 @@
  */
 package com.netflix.atlas.webapi
 
+import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.EvalContext
+import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.eval.graph.Grapher
 import com.netflix.spectator.api.AbstractRegistry
@@ -69,6 +71,17 @@ class FetchRequestSourceSuite extends FunSuite {
     def receive: Receive = {
       case _: GraphApi.DataRequest =>
         sender() ! Failure(new TimeoutException("backend timed out"))
+    }
+  }
+
+  /** Db actor that responds with a series that increases by one for each step. */
+  private class IncreasingDb extends Actor {
+
+    def receive: Receive = {
+      case GraphApi.DataRequest(ctx, exprs, _) =>
+        val seq = new FunctionTimeSeq(DsType.Gauge, ctx.step, t => (t / ctx.step).toDouble)
+        val data = exprs.map(e => e -> List(TimeSeries(Map("name" -> "a"), seq))).toMap
+        sender() ! GraphApi.DataResponse(ctx.step, data)
     }
   }
 
@@ -247,6 +260,26 @@ class FetchRequestSourceSuite extends FunSuite {
         60_000L
       )
       assertEquals(contexts.asScala.toList, List(expected))
+    }
+  }
+
+  test("state is isolated for equivalent stateful expressions") {
+    // Two equal, but distinct, stateful expressions. They should each have their own state,
+    // otherwise the second would see the state already advanced by the first.
+    val q = "name,a,:eq,:sum,:derivative,name,a,:eq,:sum,:derivative"
+    val uri = s"/api/v2/fetch?q=$q&s=2024-01-01T00:00Z&e=2024-01-01T03:00Z&step=1m"
+    withFixture(new DefaultRegistry, new IncreasingDb, uri) { (system, _, source) =>
+      implicit val sys: ActorSystem = system
+      val parts = Await.result(source.runWith(Sink.seq), 30.seconds)
+      val messages = parts
+        .map(_.data().utf8String)
+        .filter(_.contains("\"type\":\"timeseries\""))
+        .toList
+      // One message for each expression and each of the 3 chunks
+      assertEquals(messages.size, 6, messages.mkString("\n"))
+      messages.grouped(2).foreach { pair =>
+        assertEquals(pair.last, pair.head)
+      }
     }
   }
 }

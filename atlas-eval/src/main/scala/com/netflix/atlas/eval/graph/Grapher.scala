@@ -129,8 +129,11 @@ case class Grapher(settings: DefaultSettings) {
 
     val vision = params.get("vision").map(v => VisionType.valueOf(v))
 
+    // Resolve the primary palette even if an explicit palette is provided so that an invalid
+    // theme will get rejected when the request is parsed.
     val theme = params.get("theme").getOrElse(settings.theme)
-    val palette = params.get("palette").getOrElse(settings.primaryPalette(theme))
+    val primaryPalette = settings.primaryPalette(theme)
+    val palette = params.get("palette").getOrElse(primaryPalette)
 
     val width = params.get("w").fold(settings.width)(_.toInt)
     val height = params.get("h").fold(settings.height)(_.toInt)
