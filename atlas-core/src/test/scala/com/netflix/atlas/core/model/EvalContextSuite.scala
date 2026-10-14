@@ -79,4 +79,16 @@ class EvalContextSuite extends FunSuite {
     val first = ctxt.partitionIterator(1L, ChronoUnit.MILLIS).take(2).toList
     assertEquals(first, List(EvalContext(0L, 1L, 1L), EvalContext(1L, 2L, 1L)))
   }
+
+  test("increase step, before epoch") {
+    val s = Instant.parse("1959-12-31T23:59:55Z").toEpochMilli
+    val e = Instant.parse("1960-01-01T00:00:05Z").toEpochMilli
+    val actual = EvalContext(s, e, 5_000L).increaseStep(60_000L)
+    val expected = EvalContext(
+      Instant.parse("1959-12-31T23:59:00Z").toEpochMilli,
+      Instant.parse("1960-01-01T00:01:00Z").toEpochMilli,
+      60_000L
+    )
+    assertEquals(actual, expected)
+  }
 }

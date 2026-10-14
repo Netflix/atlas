@@ -96,7 +96,7 @@ case class GraphConfig(
   }
 
   private def roundToStep(i: Instant): Instant = {
-    Instant.ofEpochMilli(i.toEpochMilli / stepSize * stepSize)
+    Instant.ofEpochMilli(Math.floorDiv(i.toEpochMilli, stepSize) * stepSize)
   }
 
   def engine: GraphEngine = settings.engines(format)
@@ -112,8 +112,8 @@ case class GraphConfig(
       return this
     copy(
       step = Some(s"${newStep}ms"),
-      start = Some(fstart.toEpochMilli.toString),
-      end = Some(fend.toEpochMilli.toString)
+      start = Some(Strings.toEpochOffset(fstart)),
+      end = Some(Strings.toEpochOffset(fend))
     )
   }
 

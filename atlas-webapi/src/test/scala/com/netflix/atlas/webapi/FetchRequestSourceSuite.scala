@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.webapi
 
+import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.TimeSeries
 import com.netflix.atlas.eval.graph.Grapher
 import com.netflix.spectator.api.AbstractRegistry
@@ -38,6 +39,7 @@ import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.stream.testkit.scaladsl.TestSink
 
+import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -132,6 +134,16 @@ class FetchRequestSourceSuite extends FunSuite {
     }
   }
 
+  /** Db actor that records the context for each request and responds with empty data. */
+  private class RecordingDb(contexts: java.util.Queue[EvalContext]) extends EmptyDb {
+
+    override def receive: Receive = {
+      case req: GraphApi.DataRequest =>
+        contexts.add(req.context)
+        super.receive(req)
+    }
+  }
+
   private val defaultUri = "/api/v2/fetch?q=name,sps,:eq,:sum&s=e-6h&e=now&step=1h"
 
   private def withFixture(
@@ -219,6 +231,22 @@ class FetchRequestSourceSuite extends FunSuite {
       probe.request(1)
       assert(latch.await(10, TimeUnit.SECONDS), "db was never queried")
       probe.cancel()
+    }
+  }
+
+  test("time range is rounded down to step boundary before epoch") {
+    val contexts = new java.util.concurrent.ConcurrentLinkedQueue[EvalContext]()
+    val uri =
+      "/api/v2/fetch?q=name,sps,:eq,:sum&s=1959-12-31T23:59:30Z&e=1960-01-01T00:10:30Z&step=1m"
+    withFixture(new DefaultRegistry, new RecordingDb(contexts), uri) { (system, _, source) =>
+      implicit val sys: ActorSystem = system
+      Await.result(source.runWith(Sink.ignore), 30.seconds)
+      val expected = EvalContext(
+        Instant.parse("1959-12-31T23:59:00Z").toEpochMilli,
+        Instant.parse("1960-01-01T00:10:00Z").toEpochMilli,
+        60_000L
+      )
+      assertEquals(contexts.asScala.toList, List(expected))
     }
   }
 }
