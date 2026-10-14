@@ -122,13 +122,28 @@ class FetchRequestSourceSuite extends FunSuite {
     override protected def newMaxGauge(id: Id): Gauge = delegate.maxGauge(id)
   }
 
-  private def withFixture(registry: Registry, db: => Actor = new EmptyDb)(
+  /** Db actor that releases a latch on the first request and responds with empty data. */
+  private class SignalDb(latch: CountDownLatch) extends EmptyDb {
+
+    override def receive: Receive = {
+      case req: GraphApi.DataRequest =>
+        latch.countDown()
+        super.receive(req)
+    }
+  }
+
+  private val defaultUri = "/api/v2/fetch?q=name,sps,:eq,:sum&s=e-6h&e=now&step=1h"
+
+  private def withFixture(
+    registry: Registry,
+    db: => Actor = new EmptyDb,
+    uri: String = defaultUri
+  )(
     f: (ActorSystem, Registry, Source[HttpEntity.ChunkStreamPart, ?]) => Unit
   ): Unit = {
     val system = ActorSystem(s"FetchRequestSourceSuite-${System.nanoTime()}")
     try {
       system.actorOf(Props(db), "db")
-      val uri = "/api/v2/fetch?q=name,sps,:eq,:sum&s=e-6h&e=now&step=1h"
       val graphCfg = grapher.toGraphConfig(HttpRequest(uri = uri))
       val response = FetchRequestSource.createResponse(system, graphCfg, registry)
       response.entity match {
@@ -190,6 +205,20 @@ class FetchRequestSourceSuite extends FunSuite {
       assertEquals(errors.size, 1, messages.mkString)
       assert(errors.head.contains("backend timed out"), errors.head)
       assert(messages.last.contains("\"type\":\"close\""), messages.last)
+    }
+  }
+
+  test("time chunks are generated lazily for large ranges") {
+    // 10k years at a 1m step is ~88M chunks. If they were all materialized before the
+    // first db request it would take a long time and could exhaust the heap.
+    val latch = new CountDownLatch(1)
+    val uri = "/api/v2/fetch?q=name,sps,:eq,:sum&s=now&e=s%2B10000y&step=1m"
+    withFixture(new DefaultRegistry, new SignalDb(latch), uri) { (system, _, source) =>
+      implicit val sys: ActorSystem = system
+      val probe = source.runWith(TestSink[HttpEntity.ChunkStreamPart]())
+      probe.request(1)
+      assert(latch.await(10, TimeUnit.SECONDS), "db was never queried")
+      probe.cancel()
     }
   }
 }

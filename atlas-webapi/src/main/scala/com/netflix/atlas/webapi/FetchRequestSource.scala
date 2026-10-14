@@ -93,12 +93,11 @@ object FetchRequestSource {
     import scala.concurrent.duration.*
 
     val dbRef = system.actorSelection("/user/db")
-    val chunks = {
-      val step = graphCfg.roundedStepSize
-      val (fstart, fend) = roundToStep(step, graphCfg.resStart, graphCfg.resEnd)
-      EvalContext(fstart.toEpochMilli, fend.toEpochMilli, step)
-        .partition(chunkSize * step, ChronoUnit.MILLIS)
-    }
+    // The number of chunks grows with the time range, which is not bounded, e.g. for long
+    // term queries against a slower backend, so generate them lazily as the stream runs.
+    val step = graphCfg.roundedStepSize
+    val (fstart, fend) = roundToStep(step, graphCfg.resStart, graphCfg.resEnd)
+    val context = EvalContext(fstart.toEpochMilli, fend.toEpochMilli, step)
 
     val heartbeatSrc = Source
       .repeat(DiagnosticMessage.info("heartbeat"))
@@ -106,9 +105,13 @@ object FetchRequestSource {
 
     val metadataSrc = createMetadataSource(graphCfg)
 
-    val dataSrc = Source(chunks)
+    // Data expressions are the same for every chunk, only the time range changes
+    val baseRequest = DataRequest(graphCfg)
+
+    val dataSrc = Source
+      .fromIterator(() => context.partitionIterator(chunkSize * step, ChronoUnit.MILLIS))
       .flatMapConcat { chunk =>
-        val req = DataRequest(graphCfg).copy(context = chunk)
+        val req = baseRequest.copy(context = chunk)
         val future = ask(dbRef, req)(Timeout(30.seconds))
         // The db actor reports failures with a scala.util.Failure reply rather than
         // Status.Failure, so the ask future completes successfully. It must fail the stream
