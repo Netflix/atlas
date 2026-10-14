@@ -15,7 +15,6 @@
  */
 package com.netflix.atlas.eval.model
 
-import java.awt.Color
 import java.time.Duration
 import com.netflix.atlas.chart.model.LineStyle
 import com.netflix.atlas.chart.model.Palette
@@ -131,7 +130,9 @@ object TimeSeriesMessage {
     * @param ts
     *     Time series to use for the message.
     * @param palette
-    *     If defined then include presentation metadata.
+    *     If defined then include presentation metadata. This only supports the settings on
+    *     the expression, use `GraphConfig.presentationStyle` with a `Factory` for style
+    *     metadata that is consistent with the graph rendering.
     * @param exprStr
     *     String view of the expression. Should match `expr`, but may be precomputed for
     *     group by expressions with many messages.
@@ -143,7 +144,7 @@ object TimeSeriesMessage {
     palette: Option[String] = None,
     exprStr: Option[String] = None
   ): TimeSeriesMessage = {
-    new Factory(expr, palette, exprStr).create(context, ts)
+    new Factory(expr, palette.map(p => createStyleFunction(expr, p)), exprStr).create(context, ts)
   }
 
   /**
@@ -154,28 +155,22 @@ object TimeSeriesMessage {
     *
     * @param expr
     *     Expression for the time series.
-    * @param palette
-    *     If defined then include presentation metadata. This is the default palette that is
-    *     used if the expression does not specify a color or palette. Construction will fail
-    *     if the style settings used for the lines, e.g. the palette, are invalid.
+    * @param style
+    *     If defined then include presentation metadata. Maps the label of a line to the
+    *     style, see `GraphConfig.presentationStyle`.
     * @param exprStr
     *     String view of the expression. Should match `expr`, if not specified it will be
     *     computed.
-    * @param resolveColor
-    *     Used to map an explicit color setting on the expression to a color. The default only
-    *     supports hex colors, pass a theme aware resolver to support named colors.
     */
   final class Factory(
     val expr: StyleExpr,
-    palette: Option[String],
-    exprStr: Option[String] = None,
-    resolveColor: String => Color = Strings.parseColor
+    style: Option[String => LineStyleMetadata],
+    exprStr: Option[String] = None
   ) {
 
     private val query = exprStr.getOrElse(expr.toString)
     private val offset = Strings.toString(Duration.ofMillis(expr.offset))
     private val groupByKeys = expr.expr.finalGrouping
-    private val style = palette.map(p => createStyleFunction(expr, p, resolveColor))
 
     /** Create a message for a time series from the expression. */
     def create(context: EvalContext, ts: TimeSeries): TimeSeriesMessage = {
@@ -198,26 +193,19 @@ object TimeSeriesMessage {
     }
   }
 
-  /**
-    * Returns a function that maps the label for a line to the style metadata. The settings
-    * are all validated here so that an invalid value will fail when the function is created
-    * rather than for each line.
-    */
+  /** Style based only on the settings of the expression, used for `apply`. */
   private def createStyleFunction(
     expr: StyleExpr,
-    dfltPalette: String,
-    resolveColor: String => Color
+    dfltPalette: String
   ): String => LineStyleMetadata = {
     val plot = expr.axis.getOrElse(0)
     val lineStyle = expr.lineStyle.fold(LineStyle.LINE)(LineStyle.parse)
     val lineWidth = expr.lineWidth
     expr.color match {
       case Some(c) =>
-        val metadata = LineStyleMetadata(plot, resolveColor(c), lineStyle, lineWidth)
+        val metadata = LineStyleMetadata(plot, Strings.parseColor(c), lineStyle, lineWidth)
         _ => metadata
       case None =>
-        // Colors are always selected based on the hash of the label, so the `hash:` prefix
-        // that is supported for graphs to enable that mode can be ignored
         val palette = Palette.create(expr.palette.getOrElse(dfltPalette).stripPrefix("hash:"))
         val template = LineStyleMetadata(plot, palette.colors(0), lineStyle, lineWidth)
         label => template.copy(color = palette.colors(label.hashCode))

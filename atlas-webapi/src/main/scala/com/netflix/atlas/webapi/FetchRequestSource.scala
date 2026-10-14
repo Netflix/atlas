@@ -109,11 +109,7 @@ object FetchRequestSource {
     // Create the message factories up front so that any failure, e.g. an invalid palette,
     // fails the request immediately rather than after the response has started.
     val factories = graphCfg.exprs.map { s =>
-      new TimeSeriesMessage.Factory(
-        s,
-        graphCfg.presentationPalette(s),
-        resolveColor = graphCfg.resolveColor
-      )
+      new TimeSeriesMessage.Factory(s, graphCfg.presentationStyle(s))
     }
 
     // Data expressions are the same for every chunk, only the time range changes

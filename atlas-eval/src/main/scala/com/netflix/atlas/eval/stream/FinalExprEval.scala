@@ -134,11 +134,8 @@ private[stream] class FinalExprEval(exprInterpreter: ExprInterpreter, enableNoDa
                   // Created here so that the per expression values for the messages are
                   // computed once and invalid style settings, e.g. an unknown palette, are
                   // reported as an invalid expression
-                  val factory = new TimeSeriesMessage.Factory(
-                    expr,
-                    graphCfg.presentationPalette(expr),
-                    resolveColor = graphCfg.resolveColor
-                  )
+                  val factory =
+                    new TimeSeriesMessage.Factory(expr, graphCfg.presentationStyle(expr))
                   expr -> ExprInfo(s.id, factory)
                 }
               }

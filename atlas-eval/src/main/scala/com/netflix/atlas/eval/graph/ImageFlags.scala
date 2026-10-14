@@ -39,6 +39,10 @@ case class ImageFlags(
     hints.contains("presentation-metadata")
   }
 
+  /**
+    * Palette for an axis that defaults to the primary palette for the theme. Kept for
+    * compatibility, use `GraphConfig.axisPalette` to also respect the `palette` parameter.
+    */
   def axisPalette(settings: DefaultSettings, index: Int): String = {
     axes.get(index) match {
       case Some(axis) => axis.palette.getOrElse(settings.primaryPalette(theme))

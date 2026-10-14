@@ -19,16 +19,20 @@ import java.awt.Color
 import java.time.Instant
 import java.time.ZoneId
 import org.apache.pekko.http.scaladsl.model.ContentType
+import com.netflix.atlas.chart.Colors
 import com.netflix.atlas.chart.GraphEngine
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LegendType
 import com.netflix.atlas.chart.model.LineDef
+import com.netflix.atlas.chart.model.LineStyle
+import com.netflix.atlas.chart.model.Palette
 import com.netflix.atlas.chart.model.PlotDef
 import com.netflix.atlas.core.model.EvalContext
 import com.netflix.atlas.core.model.StyleExpr
 import com.netflix.atlas.core.util.Features
 import com.netflix.atlas.core.util.Step
 import com.netflix.atlas.core.util.Strings
+import com.netflix.atlas.eval.model.LineStyleMetadata
 import com.netflix.atlas.pekko.CallerContext
 
 import scala.util.Try
@@ -108,19 +112,96 @@ case class GraphConfig(
     EvalContext(fstart.toEpochMilli, fend.toEpochMilli + stepSize, stepSize)
   }
 
-  /**
-    * Default palette to use for the presentation metadata of an expression. Returns None
-    * if presentation metadata is not enabled for the request.
-    */
-  def presentationPalette(expr: StyleExpr): Option[String] = {
-    if (flags.presentationMetadataEnabled)
-      Some(flags.axisPalette(settings, expr.axis.getOrElse(0)))
-    else
-      None
-  }
+  // The methods below determine the style for the lines of an expression. They are shared
+  // between rendering graphs and the presentation metadata so that they will be consistent.
 
   /** Resolve a color setting, named colors such as `blue1` are mapped based on the theme. */
   def resolveColor(color: String): Color = settings.resolveColor(flags.theme, color)
+
+  /** Palette for lines on an axis if the expression does not specify a palette or color. */
+  def axisPalette(axis: Int): String = {
+    flags.axes.get(axis).flatMap(_.palette).getOrElse(flags.palette)
+  }
+
+  /** Palette for lines of an expression that has an offset. */
+  def offsetPalette: String = settings.offsetPalette(flags.theme)
+
+  /**
+    * Palette for the lines of an expression if it does not have an explicit color. The
+    * value may have a `hash:` prefix to indicate that colors should be selected based on the
+    * hash of the label rather than in order.
+    */
+  def linePalette(expr: StyleExpr): String = {
+    expr.palette.getOrElse {
+      if (expr.offset > 0L) offsetPalette else axisPalette(expr.axis.getOrElse(0))
+    }
+  }
+
+  /** Line style for an expression, if not set it will be based on the axis settings. */
+  def lineStyle(expr: StyleExpr): LineStyle = {
+    expr.lineStyle.fold {
+      val stack = flags.axes.get(expr.axis.getOrElse(0)).exists(_.stack)
+      if (stack) LineStyle.STACK else LineStyle.LINE
+    }(LineStyle.parse)
+  }
+
+  /** Apply the alpha setting for the expression, if any, to a color. */
+  def withAlpha(expr: StyleExpr, color: Color): Color = {
+    expr.alpha.fold(color)(a => Colors.withAlpha(color, a))
+  }
+
+  /** Explicit color for the lines of an expression, if any, with the alpha applied. */
+  def explicitColor(expr: StyleExpr): Option[Color] = {
+    expr.color.map(c => withAlpha(expr, resolveColor(c)))
+  }
+
+  /** Returns true if a heatmap palette is configured for the axis. */
+  def hasHeatmapPalette(axis: Int): Boolean = {
+    flags.axes.get(axis).exists(_.heatmapPalette.nonEmpty)
+  }
+
+  /**
+    * Returns a function that maps the label for a line of the expression to the style for
+    * the presentation metadata. Returns None if presentation metadata is not enabled for the
+    * request. The settings are validated when creating the function, so it will fail if a
+    * setting such as the palette is invalid.
+    *
+    * The style is consistent with the graph rendering, including the vision type, except that
+    * palette colors are always selected based on the hash of the label. For a streaming
+    * use-case the full set of lines is not known so they cannot be assigned in order.
+    */
+  def presentationStyle(expr: StyleExpr): Option[String => LineStyleMetadata] = {
+    if (!flags.presentationMetadataEnabled) None
+    else {
+      val axis = expr.axis.getOrElse(0)
+      val lineStyle = this.lineStyle(expr)
+      val template = LineStyleMetadata(axis, Color.BLACK, lineStyle, expr.lineWidth)
+      val style: String => LineStyleMetadata = explicitColor(expr) match {
+        case Some(c) =>
+          val metadata = template.copy(color = flags.vision.convert(c))
+          _ => metadata
+        case None =>
+          // Alpha and vision type are applied to the palette up front so that the settings
+          // are validated here and the colors are not recomputed for each line.
+          val palette = {
+            val p = Palette.create(linePalette(expr).stripPrefix("hash:"))
+            expr.alpha.fold(p)(p.withAlpha).withVisionType(flags.vision)
+          }
+          if (lineStyle == LineStyle.HEATMAP) {
+            // Heatmaps use a single color for the axis. If a heatmap palette is configured,
+            // then the color is not used.
+            val c =
+              if (hasHeatmapPalette(axis)) withAlpha(expr, Color.BLACK)
+              else palette.colors(s"heatmap$axis".hashCode)
+            val metadata = template.copy(color = c)
+            _ => metadata
+          } else { label =>
+            template.copy(color = palette.colors(label.hashCode))
+          }
+      }
+      Some(style)
+    }
+  }
 
   def withStep(newStep: Long): GraphConfig = {
     if (newStep == stepSize)
