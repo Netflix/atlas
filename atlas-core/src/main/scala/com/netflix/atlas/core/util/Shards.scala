@@ -111,7 +111,7 @@ object Shards {
     * data is flowing into the system and there can be replicas for the groups.
     *
     * @param groups
-    *     Set of groups that makes up the complete deployment.
+    *     Set of groups that makes up the complete deployment. Cannot be empty.
     * @return
     *     Mapper for routing data to instances.
     */
@@ -195,18 +195,27 @@ object Shards {
     */
   class ReplicaMapper[T](groups: Array[List[Group[T]]]) {
 
+    require(groups.length > 0, "set of groups cannot be empty")
+
     /** Return the instances that should receive the data associated with `id`. */
     def instancesForId(id: BigInteger): List[T] = {
       val i = nonNegative(id.intValue())
       instancesForIndex(i)
     }
 
-    /** Return the instances that should receive the data for the file with the specified index. */
+    /**
+      * Return the instances that should receive the data for the file with the specified index.
+      * Replicas that do not have an instance for the slot, e.g. a new group during a deployment
+      * that is empty or has `null` entries for slots that are not yet filled, are skipped so they
+      * do not prevent routing to the other replicas. If none of the replicas have an instance,
+      * then an empty list will be returned.
+      */
     def instancesForIndex(i: Int): List[T] = {
       require(i >= 0, "index cannot be negative")
       val replicas = groups(i % groups.length)
-      replicas.map { group =>
-        group.instances((i / groups.length) % group.size)
+      val slot = i / groups.length
+      replicas.flatMap { group =>
+        if (group.size > 0) Option(group.instances(slot % group.size)) else None
       }
     }
   }
