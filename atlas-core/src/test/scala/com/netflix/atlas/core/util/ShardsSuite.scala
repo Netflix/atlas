@@ -264,6 +264,48 @@ class ShardsSuite extends FunSuite {
     assert(sum >= 20000 + 20000 / 3)
   }
 
+  test("replica mapper with empty replica") {
+    val groups = List(
+      Shards.Group("a", Array("0", "1")),
+      Shards.Group("a", Array.empty[String]),
+      Shards.Group("b", Array("2", "3"))
+    )
+
+    val mapper = Shards.replicaMapper(groups)
+    assertEquals(mapper.instancesForIndex(0), List("0"))
+    assertEquals(mapper.instancesForIndex(1), List("2"))
+    assertEquals(mapper.instancesForIndex(2), List("1"))
+  }
+
+  test("replica mapper with all replicas empty") {
+    val groups = List(
+      Shards.Group("a", Array("0", "1")),
+      Shards.Group("b", Array.empty[String]),
+      Shards.Group("b", Array.empty[String])
+    )
+
+    val mapper = Shards.replicaMapper(groups)
+    assertEquals(mapper.instancesForIndex(0), List("0"))
+    assertEquals(mapper.instancesForIndex(1), Nil)
+  }
+
+  test("replica mapper with missing instance for slot") {
+    val groups = List(
+      Shards.Group("a", Array("0", "1")),
+      Shards.Group("a", Array[String]("2", null))
+    )
+
+    val mapper = Shards.replicaMapper(groups)
+    assertEquals(mapper.instancesForIndex(0), List("0", "2"))
+    assertEquals(mapper.instancesForIndex(1), List("1"))
+  }
+
+  test("replica mapper with no groups") {
+    intercept[IllegalArgumentException] {
+      Shards.replicaMapper(List.empty[Shards.Group[String]])
+    }
+  }
+
   test("nonNegative max") {
     assertEquals(Shards.nonNegative(Integer.MAX_VALUE), Integer.MAX_VALUE)
   }
