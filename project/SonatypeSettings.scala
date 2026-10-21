@@ -11,16 +11,16 @@ object SonatypeSettings {
   private lazy val user = get("USERNAME")
   private lazy val pass = get("PASSWORD")
 
-  lazy val settings: Seq[Def.Setting[_]] = Seq(
+  lazy val settings: Seq[Def.Setting[?]] = Seq(
     organization := "com.netflix.atlas_v1",
     organizationName := "netflix",
-    organizationHomepage := Some(url("https://github.com/Netflix")),
-    homepage := Some(url("https://github.com/Netflix/atlas")),
+    organizationHomepage := Some(uri("https://github.com/Netflix")),
+    homepage := Some(uri("https://github.com/Netflix/atlas")),
     description := "In-memory time series database",
 
     scmInfo := Some(
       ScmInfo(
-        url("https://github.com/Netflix/atlas"),
+        uri("https://github.com/Netflix/atlas"),
         "scm:git@github.com:Netflix/atlas.git"
       )
     ),
@@ -30,14 +30,14 @@ object SonatypeSettings {
         id = "netflixgithub",
         name = "Netflix Open Source Development",
         email = "netflixoss@netflix.com",
-        url = url("https://github.com/Netflix")
+        url = uri("https://github.com/Netflix")
       )
     ),
 
     publishMavenStyle := true,
     pomIncludeRepository := { _ => false },
 
-    licenses += ("Apache 2" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
+    licenses += ("Apache 2" -> uri("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     credentials += Credentials("Sonatype Nexus Repository Manager", "central.sonatype.com", user, pass),
 
     publishTo := {
