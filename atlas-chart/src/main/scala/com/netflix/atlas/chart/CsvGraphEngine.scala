@@ -20,21 +20,37 @@ import java.io.OutputStreamWriter
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+import java.util.regex.Pattern
 
 import com.netflix.atlas.chart.model.GraphDef
 
 class CsvGraphEngine(val name: String, val contentType: String, sep: String) extends GraphEngine {
 
+  // Vertical whitespace: CR, LF, VT, FF, NEL, LS, and PS. Common readers treat each of
+  // these as a line break.
+  private val lineBreaks = Pattern.compile("\\v")
+
+  /**
+    * Escape a label for use within a quoted header field. Line breaks have already been
+    * replaced so each row stays on a single line. By default, embedded quotes are doubled
+    * (RFC 4180).
+    */
+  protected def escapeLabel(label: String): String = {
+    label.replace("\"", "\"\"")
+  }
+
+  private def encodeLabel(label: String): String = {
+    "\"" + escapeLabel(lineBreaks.matcher(label).replaceAll(" ")) + "\""
+  }
+
   def write(config: GraphDef, output: OutputStream): Unit = {
     val writer = new OutputStreamWriter(output, "UTF-8")
     val seriesList = config.plots.flatMap(_.lines)
-    val count = seriesList.size
     val numberFmt = config.numberFormat
     writer.append("\"timestamp\"")
-    (0 until count).zip(seriesList).map {
-      case (_, series) =>
-        val label = "\"%s\"".format(series.data.label)
-        writer.append(sep).append(label)
+    seriesList.foreach { series =>
+      writer.append(sep).append(encodeLabel(series.data.label))
     }
     writer.append("\n")
     val step = config.step
@@ -45,7 +61,7 @@ class CsvGraphEngine(val name: String, val contentType: String, sep: String) ext
       writer.append(t.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
       seriesList.foreach { series =>
         val v = series.data.data(timestamp)
-        val vstr = numberFmt.format(v)
+        val vstr = numberFmt.formatLocal(Locale.ROOT, v)
         writer.append(sep).append(vstr)
       }
       writer.append("\n")

@@ -19,4 +19,13 @@ package com.netflix.atlas.chart
   * Simple text output using tab as separators. The content-type is also set to `text/plain` to
   * make it more likely to render locally in a browser rather than treated as a download.
   */
-class TabSepGraphEngine extends CsvGraphEngine("txt", "text/plain", "\t")
+class TabSepGraphEngine extends CsvGraphEngine("txt", "text/plain", "\t") {
+
+  /**
+    * Tabs are replaced since many TSV readers split on tabs without honoring quotes. Embedded
+    * quotes are still doubled so readers that do honor quotes see the original label.
+    */
+  override protected def escapeLabel(label: String): String = {
+    super.escapeLabel(label.replace('\t', ' '))
+  }
+}
