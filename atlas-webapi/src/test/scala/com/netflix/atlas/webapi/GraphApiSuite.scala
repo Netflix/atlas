@@ -15,11 +15,16 @@
  */
 package com.netflix.atlas.webapi
 
+import org.apache.pekko.actor.ActorIdentity
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.actor.Identify
 import org.apache.pekko.actor.Props
 import org.apache.pekko.http.scaladsl.model.MediaTypes
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.headers.*
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
+import org.apache.pekko.testkit.TestKit
+import org.apache.pekko.testkit.TestProbe
 import com.netflix.atlas.chart.util.GraphAssertions
 import com.netflix.atlas.chart.util.PngImage
 import com.netflix.atlas.chart.util.SrcPath
@@ -88,6 +93,29 @@ class GraphApiSuite extends MUnitRouteSuite {
         val image = PngImage(responseAs[Array[Byte]])
         graphAssertions.assertEquals(image, imageFileName(uri), bless)
       }
+    }
+  }
+
+  test("invalid requests do not leak request actors") {
+    // Use a separate actor system so that any request actors that are left behind can be
+    // found by listing the children of the user guardian.
+    val actorSystem = ActorSystem("GraphApiSuite-invalid")
+    try {
+      val api = RequestHandler.standardOptions(new GraphApi(config, actorSystem).routes)
+      List("/api/v1/graph", "/api/v1/graph?q=1&w=abc", "/api/v1/graph?q=1&tz=Not/AZone").foreach {
+        uri =>
+          Get(uri) ~> api ~> check {
+            assertEquals(response.status, StatusCodes.BadRequest)
+          }
+      }
+
+      // If there are no children, then the selection sends a single reply with an empty ref.
+      // Otherwise, each child replies with its own ref.
+      val probe = TestProbe()(using actorSystem)
+      actorSystem.actorSelection("/user/*").tell(Identify(None), probe.ref)
+      assertEquals(probe.expectMsgType[ActorIdentity].ref, None)
+    } finally {
+      TestKit.shutdownActorSystem(actorSystem)
     }
   }
 
