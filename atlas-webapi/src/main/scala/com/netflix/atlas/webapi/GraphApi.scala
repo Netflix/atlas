@@ -38,8 +38,10 @@ class GraphApi(config: Config, implicit val actorRefFactory: ActorRefFactory) ex
     endpointPath("api" / "v1" / "graph") {
       get {
         extractCaller { caller => ctx =>
-          val reqHandler = actorRefFactory.actorOf(Props(new GraphRequestActor(grapher, registry)))
+          // Parse before creating the actor. If parsing fails, then the actor would never get
+          // a message and would never be stopped.
           val graphCfg = grapher.toGraphConfig(ctx.request, caller)
+          val reqHandler = actorRefFactory.actorOf(Props(new GraphRequestActor(grapher, registry)))
           val rc = ImperativeRequestContext(graphCfg, ctx)
           reqHandler ! rc
           rc.promise.future
