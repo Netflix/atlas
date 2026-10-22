@@ -101,15 +101,21 @@ object AccessLogger {
 
   private val owner = "atlas-pekko"
 
+  // Settings are read from the dynamic config so that overrides, such as the config files
+  // passed to the standalone main, are honored. A single snapshot is taken when this object
+  // is first used, so later dynamic config updates require a restart to take effect.
+  private val initialConfig: Config = ConfigManager.dynamicConfig()
+
   // Request header names (lower-cased) whose values should be redacted in the access log. Used
   // to keep secrets and bearer tokens forwarded by an upstream proxy (e.g. a proxy auth secret
   // or an end-to-end token) out of the logs. Empty by default; deployments opt in via config.
-  private val sensitiveHeaders: Set[String] = {
+  private val sensitiveHeaders: Set[String] = loadSensitiveHeaders(initialConfig)
+
+  private[pekko] def loadSensitiveHeaders(config: Config): Set[String] = {
     import scala.jdk.CollectionConverters.*
-    val config = ConfigManager.get()
     val path = "atlas.pekko.access-log.sensitive-headers"
     if (config.hasPath(path))
-      config.getStringList(path).asScala.map(_.toLowerCase(java.util.Locale.US)).toSet
+      config.getStringList(path).asScala.map(_.trim.toLowerCase(java.util.Locale.US)).toSet
     else
       Set.empty
   }
@@ -117,7 +123,7 @@ object AccessLogger {
   private[pekko] val ipcLogger = new IpcLogger(
     Spectator.globalRegistry(),
     LoggerFactory.getLogger(classOf[IpcLogger]),
-    new IpcConfig(ConfigManager.get().getConfig("atlas.pekko.ipc-logger"))
+    new IpcConfig(initialConfig.getConfig("atlas.pekko.ipc-logger"))
   )
 
   private class IpcConfig(config: Config) extends IpcLoggerConfig {
