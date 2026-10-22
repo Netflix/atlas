@@ -16,7 +16,12 @@
 package com.netflix.atlas.core.model
 
 import java.time.Duration
+
+import scala.collection.immutable.ArraySeq
+
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.stacklang.TypedMacro
+import com.netflix.atlas.core.stacklang.ast.Parameter
 import com.netflix.atlas.core.util.Features
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
@@ -356,5 +361,54 @@ class NamedRewriteSuite extends FunSuite {
     val actual = exprs.mkString(",")
     val expected = "name,a,:eq,region,east,:eq,:and,:approx-distinct-cumulative"
     assertEquals(actual, expected)
+  }
+
+  test("named-rewrite: name must be a known word") {
+    val e = intercept[IllegalArgumentException] {
+      rawEval("name,a,:eq,:dup,:sum,foo,:named-rewrite")
+    }
+    assert(e.getMessage.contains("unknown word: foo"))
+  }
+
+  test("named-rewrite: name cannot inject additional operations") {
+    // Escaped commas are a single token on the first parse, but would become separate
+    // operations when the display expression is rendered and executed again on rewrite.
+    val program = "name,a,:eq,:dup,:sum," +
+      "drop\\u002cname\\u002cb\\u002c:eq\\u002c:dup\\u002c:sum\\u002csum\\u002c:named-rewrite," +
+      ":named-rewrite"
+    val e = intercept[IllegalArgumentException] {
+      rawEval(program)
+    }
+    assert(e.getMessage.contains("unknown word: drop,name,b,:eq"))
+  }
+
+  test("named-rewrite: unstable name requires unstable features") {
+    val unstableAvg = TypedMacro(
+      "unstable-avg",
+      List(":dup", ":dup", ":sum", ":swap", ":count", ":div", "unstable-avg", ":named-rewrite"),
+      ArraySeq(Parameter("", "input time series", ModelDataTypes.TimeSeriesExprType)),
+      ArraySeq(ModelDataTypes.TimeSeriesExprType),
+      "Unstable average for testing.",
+      stable = false
+    )
+    val interp = Interpreter(unstableAvg :: new CustomVocabulary(config).allWords)
+
+    // Without the check, the rewrite would execute the unstable word even though it was
+    // not enabled for the original expression.
+    val e = intercept[IllegalStateException] {
+      interp.execute("name,a,:eq,:dup,:sum,unstable-avg,:named-rewrite")
+    }
+    assert(e.getMessage.contains("enable unstable features"))
+
+    val expr = interp.execute("name,a,:eq,:unstable-avg", Map.empty, U).stack.head
+    assertEquals(expr.toString, "name,a,:eq,:unstable-avg")
+  }
+
+  test("named-rewrite: name from a macro survives rewrite") {
+    val expr = rawEval("name,a,:eq,:avg").head
+    val rewritten = expr.rewrite {
+      case q: Query => Query.And(q, Query.Equal("region", "east"))
+    }
+    assertEquals(rewritten.toString, "name,a,:eq,region,east,:eq,:and,:avg")
   }
 }
