@@ -31,6 +31,7 @@ import com.netflix.atlas.core.stacklang.Vocabulary
 import com.netflix.atlas.core.stacklang.Word
 import com.netflix.atlas.core.stacklang.ast.DataType
 import com.netflix.atlas.core.stacklang.ast.Parameter
+import com.netflix.atlas.core.util.Features
 import com.netflix.spectator.api.histogram.PercentileBuckets
 
 object MathVocabulary extends Vocabulary {
@@ -637,10 +638,25 @@ object MathVocabulary extends Vocabulary {
 
     def execute(context: Context): Context = {
       val pf = executor(Context(context.interpreter, Nil, Map.empty))
-      if (pf.isDefinedAt(context.stack))
-        context.copy(stack = pf(context.stack))
-      else
-        invalidStack
+      context.stack match {
+        case (name: String) :: _ if pf.isDefinedAt(context.stack) =>
+          checkName(context, name)
+          context.copy(stack = pf(context.stack))
+        case _ =>
+          invalidStack
+      }
+    }
+
+    // The name is rendered as `:$name` and executed again, with unstable features enabled, if
+    // the expression is rewritten. It must refer to an existing word so that arbitrary strings
+    // cannot be injected into the re-executed program. It must also be stable unless unstable
+    // features are enabled, otherwise the rewrite could be used to bypass the feature gate.
+    private def checkName(context: Context, name: String): Unit = {
+      val ws = context.interpreter.lookup(name)
+      if (ws.isEmpty)
+        throw new IllegalArgumentException(s"invalid name for :named-rewrite, unknown word: $name")
+      if (context.features != Features.UNSTABLE && !ws.forall(_.isStable))
+        throw new IllegalStateException(s"to use :$name enable unstable features")
     }
 
     protected def matcher: PartialFunction[List[Any], Boolean] = {

@@ -410,6 +410,14 @@ case class Interpreter(
     words(name).filter(_.matches(stack))
   }
 
+  /**
+    * Return all words in the vocabulary with the given name, or an empty list if there is no
+    * such word.
+    */
+  final def lookup(name: String): List[Word] = {
+    words.getOrElse(name, Nil)
+  }
+
   override def toString: String = s"Interpreter(${vocabulary.size} words)"
 }
 
