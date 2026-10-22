@@ -23,7 +23,7 @@ object Cors {
 
   private val allowedHostPatterns = {
     import scala.jdk.CollectionConverters.*
-    ConfigManager.get().getStringList("atlas.pekko.cors-host-patterns").asScala.toList
+    ConfigManager.dynamicConfig().getStringList("atlas.pekko.cors-host-patterns").asScala.toList
   }
 
   /**

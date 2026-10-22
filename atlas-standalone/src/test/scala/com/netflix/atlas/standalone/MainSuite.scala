@@ -15,6 +15,8 @@
  */
 package com.netflix.atlas.standalone
 
+import java.nio.file.Files
+
 import munit.FunSuite
 
 class MainSuite extends FunSuite {
@@ -22,5 +24,22 @@ class MainSuite extends FunSuite {
   test("start/shutdown") {
     Main.main(Array.empty)
     Main.shutdown()
+  }
+
+  test("config files are merged, later files take precedence") {
+    val dir = Files.createTempDirectory("atlas-main-suite")
+    try {
+      val f1 = dir.resolve("a.conf")
+      val f2 = dir.resolve("b.conf")
+      Files.writeString(f1, "a = 1\nb = 1\nlist = [\"x\"]")
+      Files.writeString(f2, "b = 2")
+      val config = Main.mergeConfigFiles(Array(f1.toString, f2.toString))
+      assertEquals(config.getInt("a"), 1)
+      assertEquals(config.getInt("b"), 2)
+      assertEquals(config.getStringList("list").size(), 1)
+    } finally {
+      Files.list(dir).forEach(p => Files.delete(p))
+      Files.delete(dir)
+    }
   }
 }

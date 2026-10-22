@@ -34,7 +34,14 @@ object Main extends StrictLogging {
   private var app: com.netflix.iep.spring.Main = _
 
   private def loadAdditionalConfigFiles(files: Array[String]): Unit = {
-    files.foreach { f =>
+    // Setting the override replaces any previous override, so the files must be merged and
+    // set once. Otherwise only the last file would be used.
+    ConfigManager.dynamicConfigManager.setOverrideConfig(mergeConfigFiles(files))
+  }
+
+  /** Merge the config files, settings in later files take precedence. */
+  private[standalone] def mergeConfigFiles(files: Array[String]): Config = {
+    files.foldLeft(ConfigFactory.empty()) { (acc, f) =>
       logger.info(s"loading config file: $f")
       val file = new File(f)
       val c =
@@ -42,7 +49,7 @@ object Main extends StrictLogging {
           ConfigFactory.parseFileAnySyntax(file)
         else
           ConfigFactory.parseResourcesAnySyntax(f)
-      ConfigManager.dynamicConfigManager.setOverrideConfig(c)
+      c.withFallback(acc)
     }
   }
 
