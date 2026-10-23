@@ -4,16 +4,16 @@ import sbt.*
 
 object Dependencies {
   object Versions {
-    val pekko       = "1.7.0"
-    val pekkoHttpV  = "1.4.0"
-    val iep         = "6.0.8"
-    val jackson     = "3.2.2"
+    val pekko       = "1.7.1"
+    val pekkoHttpV  = "1.4.2"
+    val iep         = "6.0.9"
+    val jackson     = "3.2.4"
     val log4j       = "2.26.1"
-    val otel        = "1.65.0"
+    val otel        = "1.67.0"
     val scala       = "2.13.18"
-    val slf4j       = "2.0.19"
-    val spectator   = "1.10.7"
-    val spring      = "7.0.9"
+    val slf4j       = "2.0.20"
+    val spectator   = "1.10.9"
+    val spring      = "7.0.10"
 
     val crossScala  = Seq(scala, "3.9.0")
   }
@@ -28,7 +28,7 @@ object Dependencies {
   val pekkoStream       = "org.apache.pekko" %% "pekko-stream" % pekko
   val pekkoStreamTestkit= "org.apache.pekko" %% "pekko-stream-testkit" % pekko
   val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
-  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.2.4"
+  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.3.1"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "4.5.2"
   val hikariCP          = "com.zaxxer" % "HikariCP" % "7.1.0"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
@@ -53,9 +53,9 @@ object Dependencies {
   val munit             = "org.scalameta" %% "munit" % "1.3.6"
   val otelSdk           = "io.opentelemetry" % "opentelemetry-sdk" % otel
   val otelSdkTest       = "io.opentelemetry" % "opentelemetry-sdk-testing" % otel
-  val postgres          = "org.postgresql" % "postgresql" % "42.7.13"
+  val postgres          = "org.postgresql" % "postgresql" % "42.7.14"
   val postgresEmbedded  = "io.zonky.test" % "embedded-postgres" % "2.2.2"
-  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.6.23"
+  val roaringBitmap     = "org.roaringbitmap" % "RoaringBitmap" % "1.6.25"
   val scalaCompat       = "org.scala-lang.modules" %% "scala-collection-compat" % "2.14.0"
   val scalaCompatJdk8   = "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val scalaCompiler     = "org.scala-lang" % "scala-compiler"
