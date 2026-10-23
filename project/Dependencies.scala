@@ -28,7 +28,7 @@ object Dependencies {
   val pekkoStream       = "org.apache.pekko" %% "pekko-stream" % pekko
   val pekkoStreamTestkit= "org.apache.pekko" %% "pekko-stream-testkit" % pekko
   val pekkoTestkit      = "org.apache.pekko" %% "pekko-testkit" % pekko
-  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.2.4"
+  val caffeine          = "com.github.ben-manes.caffeine" % "caffeine" % "3.3.1"
   val equalsVerifier    = "nl.jqno.equalsverifier" % "equalsverifier" % "4.5.2"
   val hikariCP          = "com.zaxxer" % "HikariCP" % "7.1.0"
   val iepLeaderApi      = "com.netflix.iep" % "iep-leader-api" % iep
