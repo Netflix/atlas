@@ -25,7 +25,7 @@ import java.nio.ByteBuffer
 class ByteBufferInputStream(buffer: ByteBuffer) extends InputStream {
 
   override def read(): Int = {
-    if (buffer.hasRemaining) buffer.get() else -1
+    if (buffer.hasRemaining) buffer.get() & 0xFF else -1
   }
 
   override def read(buf: Array[Byte], offset: Int, length: Int): Int = {
