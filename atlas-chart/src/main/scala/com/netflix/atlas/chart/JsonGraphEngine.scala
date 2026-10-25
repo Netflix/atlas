@@ -55,7 +55,7 @@ class JsonGraphEngine extends GraphEngine {
     gen.writeEndArray()
 
     gen.writeArrayPropertyStart("values")
-    val step = config.step.asInstanceOf[Int]
+    val step = config.step
     val endTime = config.endTime.toEpochMilli
     var timestamp = config.startTime.toEpochMilli
     while (timestamp < endTime) {
@@ -74,10 +74,10 @@ class JsonGraphEngine extends GraphEngine {
     gen.writeEndArray()
 
     if (config.stats.inputLines > 0) {
-      val start = config.startTime.toEpochMilli / 1000
-      val end = config.endTime.toEpochMilli / 1000
+      val start = config.startTime.toEpochMilli
+      val end = config.endTime.toEpochMilli
       val graphLines = config.plots.map(_.data.size).sum
-      val graphDatapoints = graphLines * ((end - start) / (config.step / 1000) + 1)
+      val graphDatapoints = graphLines * ((end - start) / config.step + 1)
 
       gen.writeObjectPropertyStart("explain")
       gen.writeNumberProperty("dataFetchTime", config.loadTime)
