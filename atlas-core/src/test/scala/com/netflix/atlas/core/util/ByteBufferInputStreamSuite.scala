@@ -36,6 +36,16 @@ class ByteBufferInputStreamSuite extends FunSuite {
     assertEquals(in.read(), -1)
   }
 
+  test("read() returns unsigned byte values") {
+    val buffer = ByteBuffer.wrap(Array[Byte](-1, -128, 127, 0))
+    val in = new ByteBufferInputStream(buffer)
+    assertEquals(in.read(), 0xFF)
+    assertEquals(in.read(), 0x80)
+    assertEquals(in.read(), 0x7F)
+    assertEquals(in.read(), 0x00)
+    assertEquals(in.read(), -1)
+  }
+
   test("read(buf)") {
     val buffer = wrap("abc")
     val in = new ByteBufferInputStream(buffer)
