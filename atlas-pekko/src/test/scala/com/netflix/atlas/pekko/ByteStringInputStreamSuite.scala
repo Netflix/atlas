@@ -127,4 +127,32 @@ class ByteStringInputStreamSuite extends FunSuite {
 
   singleRead("empty", ByteString.empty)
   bulkRead("empty", ByteString.empty)
+
+  test("read with zero length returns 0 when data remains") {
+    val in = new ByteStringInputStream(ByteString("abc"))
+    assertEquals(in.read(new Array[Byte](4), 0, 0), 0)
+    assertEquals(in.read(), 'a'.toInt)
+  }
+
+  test("read with zero length returns 0 at end of stream") {
+    val in = new ByteStringInputStream(ByteString.empty)
+    assertEquals(in.read(new Array[Byte](0)), 0)
+    assertEquals(in.read(new Array[Byte](4)), -1)
+  }
+
+  test("read with invalid offset or length throws") {
+    // Less data remaining than the requested length, so the bounds check must not depend
+    // on how many bytes would actually be copied
+    val in = new ByteStringInputStream(ByteString("a"))
+    val buf = new Array[Byte](4)
+    intercept[IndexOutOfBoundsException](in.read(buf, -1, 1))
+    intercept[IndexOutOfBoundsException](in.read(buf, 0, -1))
+    intercept[IndexOutOfBoundsException](in.read(buf, 2, 3))
+    assertEquals(in.read(), 'a'.toInt)
+  }
+
+  test("read with invalid offset or length throws at end of stream") {
+    val in = new ByteStringInputStream(ByteString.empty)
+    intercept[IndexOutOfBoundsException](in.read(new Array[Byte](4), 10, 5))
+  }
 }

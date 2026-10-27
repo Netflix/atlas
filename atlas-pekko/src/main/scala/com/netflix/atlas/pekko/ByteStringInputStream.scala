@@ -16,6 +16,7 @@
 package com.netflix.atlas.pekko
 
 import java.io.InputStream
+import java.util.Objects
 import org.apache.pekko.util.ByteString
 
 import java.util.zip.GZIPInputStream
@@ -30,7 +31,7 @@ class ByteStringInputStream(data: ByteString) extends InputStream {
   private var current = buffers.next()
 
   private def nextBuffer(): Unit = {
-    if (!current.hasRemaining && buffers.hasNext) {
+    while (!current.hasRemaining && buffers.hasNext) {
       current = buffers.next()
     }
   }
@@ -41,10 +42,12 @@ class ByteStringInputStream(data: ByteString) extends InputStream {
   }
 
   override def read(bytes: Array[Byte], offset: Int, length: Int): Int = {
+    Objects.checkFromIndexSize(offset, length, bytes.length)
+    if (length == 0) return 0
     nextBuffer()
-    val amount = math.min(current.remaining(), length)
-    if (amount == 0) -1
+    if (!current.hasRemaining) -1
     else {
+      val amount = math.min(current.remaining(), length)
       current.get(bytes, offset, amount)
       amount
     }
