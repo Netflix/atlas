@@ -15,27 +15,28 @@
  */
 package com.netflix.atlas.chart
 
+import java.io.ByteArrayOutputStream
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
 import com.netflix.atlas.chart.model.GraphDef
 import com.netflix.atlas.chart.model.LineDef
 import com.netflix.atlas.chart.model.PlotDef
+import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
-import com.netflix.atlas.core.util.Streams
 import munit.FunSuite
 
 class JsonGraphEngineSuite extends FunSuite {
 
   val step = 60000
 
-  def constant(v: Double): TimeSeries = {
-    TimeSeries(Map("name" -> v.toString), new FunctionTimeSeq(DsType.Gauge, step, _ => v))
+  def constant(v: Double, s: Long = step): TimeSeries = {
+    TimeSeries(Map("name" -> v.toString), new FunctionTimeSeq(DsType.Gauge, s, _ => v))
   }
 
-  def constantSeriesDef(value: Double): LineDef = LineDef(constant(value))
+  def constantSeriesDef(value: Double, s: Long = step): LineDef = LineDef(constant(value, s))
 
   def label(vs: LineDef*): List[LineDef] = {
     vs.toList.zipWithIndex.map { case (v, i) => v.copy(data = v.data.withLabel(i.toString)) }
@@ -53,12 +54,26 @@ class JsonGraphEngineSuite extends FunSuite {
       startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
       endTime = ZonedDateTime.of(2012, 1, 1, 0, 3, 0, 0, ZoneOffset.UTC).toInstant
     )
+    process(engine, graphDef, expected)
+  }
 
-    val bytes = Streams.byteArray { out =>
-      engine.write(graphDef, out)
+  def process(engine: GraphEngine, graphDef: GraphDef, expected: String): Unit = {
+    // Bound the output size so a bug that prevents the values loop from terminating
+    // will fail quickly rather than hang the build.
+    val maxSize = 1_000_000
+    val out = new ByteArrayOutputStream() {
+      override def write(b: Int): Unit = {
+        if (size() + 1 > maxSize) throw new IllegalStateException("output too large")
+        super.write(b)
+      }
+
+      override def write(b: Array[Byte], off: Int, len: Int): Unit = {
+        if (size() + len > maxSize) throw new IllegalStateException("output too large")
+        super.write(b, off, len)
+      }
     }
-    val json = new String(bytes, "UTF-8")
-    assertEquals(json, strip(expected))
+    engine.write(graphDef, out)
+    assertEquals(out.toString("UTF-8"), strip(expected))
   }
 
   test("json") {
@@ -89,4 +104,89 @@ class JsonGraphEngineSuite extends FunSuite {
     process(new StdJsonGraphEngine, expected)
   }
 
+  test("stats.json") {
+    val expected =
+      """{
+        |"start":1325376000000,
+        |"end":1325376180000,
+        |"step":60000,
+        |"legend":["0","1"],
+        |"metrics":[{"name":"42.0"},{"name":"NaN"}],
+        |"stats":[{"count":3,"avg":42.0,"total":126.0,"max":42.0,"min":42.0,"last":42.0},{"count":0,"avg":"NaN","total":"NaN","max":"NaN","min":"NaN","last":"NaN"}],
+        |"notices":[]
+        |}"""
+
+    process(new StatsJsonGraphEngine, expected)
+  }
+
+  test("json with explain stats") {
+    val data = PlotDef(label(constantSeriesDef(42)))
+    val graphDef = GraphDef(
+      plots = List(data),
+      startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
+      endTime = ZonedDateTime.of(2012, 1, 1, 0, 3, 0, 0, ZoneOffset.UTC).toInstant,
+      loadTime = 123,
+      stats = CollectorStats(10, 5, 20, 10)
+    )
+    val expected =
+      """{
+        |"start":1325376000000,
+        |"step":60000,
+        |"legend":["0"],
+        |"metrics":[{"name":"42.0"}],
+        |"values":[[42.0],[42.0],[42.0]],
+        |"notices":[],
+        |"explain":{"dataFetchTime":123,"inputLines":10,"intermediateLines":20,"graphLines":1,"inputDatapoints":5,"intermediateDatapoints":10,"graphDatapoints":3}
+        |}"""
+    process(new JsonGraphEngine, graphDef, expected)
+  }
+
+  test("json subsecond step explain does not divide by zero") {
+    val subsecondStep = 500L
+    val data = PlotDef(label(constantSeriesDef(42, subsecondStep)))
+    val start = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
+    val end = start.plusMillis(1000)
+    val graphDef = GraphDef(
+      plots = List(data),
+      startTime = start,
+      endTime = end,
+      step = subsecondStep,
+      loadTime = 50,
+      stats = CollectorStats(1, 1, 2, 2)
+    )
+    val expected =
+      """{
+        |"start":1325376000000,
+        |"step":500,
+        |"legend":["0"],
+        |"metrics":[{"name":"42.0"}],
+        |"values":[[42.0],[42.0]],
+        |"notices":[],
+        |"explain":{"dataFetchTime":50,"inputLines":1,"intermediateLines":2,"graphLines":1,"inputDatapoints":1,"intermediateDatapoints":2,"graphDatapoints":2}
+        |}"""
+    process(new JsonGraphEngine, graphDef, expected)
+  }
+
+  test("json large step does not overflow") {
+    val largeStep = 2592000000L // 30 days > Int.MaxValue millis
+    val data = PlotDef(label(constantSeriesDef(42, largeStep)))
+    val start = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant
+    val end = start.plusMillis(largeStep * 2)
+    val graphDef = GraphDef(
+      plots = List(data),
+      startTime = start,
+      endTime = end,
+      step = largeStep
+    )
+    val expected =
+      s"""{
+        |"start":1325376000000,
+        |"step":$largeStep,
+        |"legend":["0"],
+        |"metrics":[{"name":"42.0"}],
+        |"values":[[42.0],[42.0]],
+        |"notices":[]
+        |}"""
+    process(new JsonGraphEngine, graphDef, expected)
+  }
 }

@@ -101,6 +101,13 @@ case class GraphDef(
   }
 
   require(timezones.nonEmpty, "at least one timezone must be specified for the chart")
+  require(step > 0, s"step must be positive: $step")
+
+  /**
+    * Number of datapoints for each line. The end time is exclusive, so this is the number of
+    * step intervals in the range.
+    */
+  def numDatapoints: Long = (endTime.toEpochMilli - startTime.toEpochMilli) / step
 
   /** Return the primary timezone to use for the graph. */
   def timezone: ZoneId = timezones.head
