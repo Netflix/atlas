@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.chart
 
+import java.io.ByteArrayOutputStream
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
@@ -25,7 +26,6 @@ import com.netflix.atlas.core.model.CollectorStats
 import com.netflix.atlas.core.model.DsType
 import com.netflix.atlas.core.model.FunctionTimeSeq
 import com.netflix.atlas.core.model.TimeSeries
-import com.netflix.atlas.core.util.Streams
 import munit.FunSuite
 
 class JsonGraphEngineSuite extends FunSuite {
@@ -43,7 +43,7 @@ class JsonGraphEngineSuite extends FunSuite {
   }
 
   def strip(expected: String): String = {
-    expected.stripMargin.replace("\r", "").split("\n").mkString("")
+    expected.stripMargin.split("\n").mkString("")
   }
 
   def process(engine: GraphEngine, expected: String): Unit = {
@@ -54,12 +54,26 @@ class JsonGraphEngineSuite extends FunSuite {
       startTime = ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant,
       endTime = ZonedDateTime.of(2012, 1, 1, 0, 3, 0, 0, ZoneOffset.UTC).toInstant
     )
+    process(engine, graphDef, expected)
+  }
 
-    val bytes = Streams.byteArray { out =>
-      engine.write(graphDef, out)
+  def process(engine: GraphEngine, graphDef: GraphDef, expected: String): Unit = {
+    // Bound the output size so a bug that prevents the values loop from terminating
+    // will fail quickly rather than hang the build.
+    val maxSize = 1_000_000
+    val out = new ByteArrayOutputStream() {
+      override def write(b: Int): Unit = {
+        if (size() + 1 > maxSize) throw new IllegalStateException("output too large")
+        super.write(b)
+      }
+
+      override def write(b: Array[Byte], off: Int, len: Int): Unit = {
+        if (size() + len > maxSize) throw new IllegalStateException("output too large")
+        super.write(b, off, len)
+      }
     }
-    val json = new String(bytes, "UTF-8")
-    assertEquals(json, strip(expected))
+    engine.write(graphDef, out)
+    assertEquals(out.toString("UTF-8"), strip(expected))
   }
 
   test("json") {
@@ -114,10 +128,6 @@ class JsonGraphEngineSuite extends FunSuite {
       loadTime = 123,
       stats = CollectorStats(10, 5, 20, 10)
     )
-    val bytes = Streams.byteArray { out =>
-      new JsonGraphEngine().write(graphDef, out)
-    }
-    val json = new String(bytes, "UTF-8")
     val expected =
       """{
         |"start":1325376000000,
@@ -126,9 +136,9 @@ class JsonGraphEngineSuite extends FunSuite {
         |"metrics":[{"name":"42.0"}],
         |"values":[[42.0],[42.0],[42.0]],
         |"notices":[],
-        |"explain":{"dataFetchTime":123,"inputLines":10,"intermediateLines":20,"graphLines":1,"inputDatapoints":5,"intermediateDatapoints":10,"graphDatapoints":4}
+        |"explain":{"dataFetchTime":123,"inputLines":10,"intermediateLines":20,"graphLines":1,"inputDatapoints":5,"intermediateDatapoints":10,"graphDatapoints":3}
         |}"""
-    assertEquals(json, strip(expected))
+    process(new JsonGraphEngine, graphDef, expected)
   }
 
   test("json subsecond step explain does not divide by zero") {
@@ -144,10 +154,6 @@ class JsonGraphEngineSuite extends FunSuite {
       loadTime = 50,
       stats = CollectorStats(1, 1, 2, 2)
     )
-    val bytes = Streams.byteArray { out =>
-      new JsonGraphEngine().write(graphDef, out)
-    }
-    val json = new String(bytes, "UTF-8")
     val expected =
       """{
         |"start":1325376000000,
@@ -156,9 +162,9 @@ class JsonGraphEngineSuite extends FunSuite {
         |"metrics":[{"name":"42.0"}],
         |"values":[[42.0],[42.0]],
         |"notices":[],
-        |"explain":{"dataFetchTime":50,"inputLines":1,"intermediateLines":2,"graphLines":1,"inputDatapoints":1,"intermediateDatapoints":2,"graphDatapoints":3}
+        |"explain":{"dataFetchTime":50,"inputLines":1,"intermediateLines":2,"graphLines":1,"inputDatapoints":1,"intermediateDatapoints":2,"graphDatapoints":2}
         |}"""
-    assertEquals(json, strip(expected))
+    process(new JsonGraphEngine, graphDef, expected)
   }
 
   test("json large step does not overflow") {
@@ -172,10 +178,6 @@ class JsonGraphEngineSuite extends FunSuite {
       endTime = end,
       step = largeStep
     )
-    val bytes = Streams.byteArray { out =>
-      new JsonGraphEngine().write(graphDef, out)
-    }
-    val json = new String(bytes, "UTF-8")
     val expected =
       s"""{
         |"start":1325376000000,
@@ -185,6 +187,6 @@ class JsonGraphEngineSuite extends FunSuite {
         |"values":[[42.0],[42.0]],
         |"notices":[]
         |}"""
-    assertEquals(json, strip(expected))
+    process(new JsonGraphEngine, graphDef, expected)
   }
 }

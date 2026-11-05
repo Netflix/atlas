@@ -73,11 +73,9 @@ class JsonGraphEngine extends GraphEngine {
     config.warnings.foreach(gen.writeString)
     gen.writeEndArray()
 
-    if (config.stats.inputLines > 0) {
-      val start = config.startTime.toEpochMilli
-      val end = config.endTime.toEpochMilli
-      val graphLines = config.plots.map(_.data.size).sum
-      val graphDatapoints = graphLines * ((end - start) / config.step + 1)
+    if (config.loadTime > 0 && config.stats.inputLines > 0) {
+      val graphLines = seriesList.size
+      val graphDatapoints = graphLines * config.numDatapoints
 
       gen.writeObjectPropertyStart("explain")
       gen.writeNumberProperty("dataFetchTime", config.loadTime)

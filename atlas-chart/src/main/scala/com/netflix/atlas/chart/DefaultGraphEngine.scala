@@ -116,8 +116,6 @@ class DefaultGraphEngine extends PngGraphEngine {
         }
       }
 
-      val start = config.startTime.toEpochMilli
-      val end = config.endTime.toEpochMilli
       val frame = Strings.toString(Duration.between(config.startTime, config.endTime))
       val endTime = ZonedDateTime.ofInstant(config.endTime, config.timezone).toString
       val step = Strings.toString(Duration.ofMillis(config.step))
@@ -131,8 +129,8 @@ class DefaultGraphEngine extends PngGraphEngine {
       )
 
       if (config.loadTime > 0 && config.stats.inputLines > 0) {
-        val graphLines = config.plots.map(_.data.size).sum
-        val graphDatapoints = graphLines * ((end - start) / (config.step / 1000) + 1)
+        val graphLines = config.plots.map(_.lines.size).sum
+        val graphDatapoints = graphLines * config.numDatapoints
         val stats = "Fetch: %sms (L: %s, %s, %s; D: %s, %s, %s)".format(
           config.loadTime.toString,
           UnitPrefix.format(config.stats.inputLines.toDouble),

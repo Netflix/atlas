@@ -54,7 +54,7 @@ class CsvGraphEngineSuite extends FunSuite {
       """"timestamp","a","b"
         |2012-01-01T00:00:00Z,42.000000,NaN
         |2012-01-01T00:01:00Z,42.000000,NaN
-        |""".stripMargin.replace("\r\n", "\n")
+        |""".stripMargin
     val actual = process(new CommaSepGraphEngine, List(line(42.0, "a"), line(Double.NaN, "b")))
     assertEquals(actual, expected)
   }
@@ -64,7 +64,7 @@ class CsvGraphEngineSuite extends FunSuite {
       """"timestamp","a","b"
         |2012-01-01T00:00:00Z,42.000000,NaN
         |2012-01-01T00:01:00Z,42.000000,NaN
-        |""".stripMargin.replace("\r\n", "\n").replace(",", "\t")
+        |""".stripMargin.replace(",", "\t")
     val actual = process(new TabSepGraphEngine, List(line(42.0, "a"), line(Double.NaN, "b")))
     assertEquals(actual, expected)
   }
