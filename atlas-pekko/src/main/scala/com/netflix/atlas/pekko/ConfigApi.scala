@@ -16,6 +16,7 @@
 package com.netflix.atlas.pekko
 
 import java.io.StringWriter
+import java.util.Locale
 import java.util.Properties
 
 import org.apache.pekko.actor.ActorRefFactory
@@ -33,6 +34,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
+import com.typesafe.config.ConfigValueFactory
 
 /**
   * API to browse the configuration for atlas. The endpoint listens on `/api/v2/config` and
@@ -40,8 +42,14 @@ import com.typesafe.config.ConfigRenderOptions
   * separated config path, e.g., `/api/v2/config/a.b.c`. A single query param, `format`, is
   * supported and can be used to dump the data as json, hocon, or properties. The default format
   * is json.
+  *
+  * The values for keys that contain one of the patterns in
+  * `atlas.pekko.config-api.redact-key-patterns` are replaced with a placeholder so that
+  * credentials in the config are not exposed.
   */
-class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+class ConfigApi(rawConfig: Config, implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+
+  private val config = ConfigApi.redact(rawConfig)
 
   private val formats: Map[String, Config => HttpResponse] = Map(
     "hocon"      -> formatHocon _,
@@ -117,5 +125,28 @@ class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) e
     props.store(writer, null)
     val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, writer.toString)
     HttpResponse(status = StatusCodes.OK, entity = entity)
+  }
+}
+
+object ConfigApi {
+
+  private val patternsKey = "atlas.pekko.config-api.redact-key-patterns"
+
+  private[pekko] val placeholder = "<redacted>"
+
+  /**
+    * Replace the value for any key that contains one of the configured patterns, ignoring
+    * case, with a placeholder.
+    */
+  private[pekko] def redact(config: Config): Config = {
+    import scala.jdk.CollectionConverters.*
+    val patterns = config.getStringList(patternsKey).asScala.map(_.toLowerCase(Locale.ROOT))
+    config.entrySet.asScala.foldLeft(config) { (c, entry) =>
+      val key = entry.getKey.toLowerCase(Locale.ROOT)
+      if (patterns.exists(key.contains))
+        c.withValue(entry.getKey, ConfigValueFactory.fromAnyRef(placeholder))
+      else
+        c
+    }
   }
 }
