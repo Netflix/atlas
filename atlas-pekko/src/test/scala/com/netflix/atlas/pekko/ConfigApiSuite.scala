@@ -113,4 +113,83 @@ class ConfigApiSuite extends MUnitRouteSuite {
     }
   }
 
+  private def redactedEndpoint: ConfigApi = {
+    val extra = ConfigFactory.parseString(
+      """
+        |db {
+        |  url = "jdbc:postgresql://localhost/atlas"
+        |  user = "atlas"
+        |  Password = "hunter2"
+        |  api-token = "abc123"
+        |}
+        |client.secret = "s3"
+        |client.id = "visible"
+        |""".stripMargin
+    )
+    new ConfigApi(extra.withFallback(sysConfig), system)
+  }
+
+  test("/config redacts values for keys that look like secrets") {
+    Get("/api/v2/config") ~> redactedEndpoint.routes ~> check {
+      val config = ConfigFactory.parseString(responseAs[String])
+      assertEquals(config.getString("db.Password"), ConfigApi.placeholder)
+      assertEquals(config.getString("db.api-token"), ConfigApi.placeholder)
+      assertEquals(config.getString("client.secret"), ConfigApi.placeholder)
+      assertEquals(config.getString("db.url"), "jdbc:postgresql://localhost/atlas")
+      assertEquals(config.getString("db.user"), "atlas")
+      assertEquals(config.getString("client.id"), "visible")
+    }
+  }
+
+  test("/config/db redacts values for keys that look like secrets") {
+    Get("/api/v2/config/db") ~> redactedEndpoint.routes ~> check {
+      val config = ConfigFactory.parseString(responseAs[String])
+      assertEquals(config.getString("Password"), ConfigApi.placeholder)
+      assertEquals(config.getString("user"), "atlas")
+    }
+  }
+
+  test("/config/db.Password redacts the value") {
+    Get("/api/v2/config/db.Password") ~> redactedEndpoint.routes ~> check {
+      val config = ConfigFactory.parseString(responseAs[String])
+      assertEquals(config.getString("value"), ConfigApi.placeholder)
+    }
+  }
+
+  test("/config format properties redacts values for keys that look like secrets") {
+    Get("/api/v2/config?format=properties") ~> redactedEndpoint.routes ~> check {
+      val body = responseAs[String]
+      assert(!body.contains("hunter2"))
+      assert(!body.contains("abc123"))
+    }
+  }
+
+  test("/config format hocon redacts values for keys that look like secrets") {
+    Get("/api/v2/config?format=hocon") ~> redactedEndpoint.routes ~> check {
+      assert(!responseAs[String].contains("hunter2"))
+    }
+  }
+
+  test("redact patterns can be changed") {
+    val cfg = ConfigFactory
+      .parseString("""atlas.pekko.config-api.redact-key-patterns = ["user"]""")
+      .withFallback(sysConfig)
+    val endpoint = new ConfigApi(cfg.withFallback(ConfigFactory.parseString("db.user = a")), system)
+    Get("/api/v2/config/db.user") ~> endpoint.routes ~> check {
+      val config = ConfigFactory.parseString(responseAs[String])
+      assertEquals(config.getString("value"), ConfigApi.placeholder)
+    }
+  }
+
+  test("redact patterns can be empty") {
+    val cfg = ConfigFactory
+      .parseString("atlas.pekko.config-api.redact-key-patterns = []")
+      .withFallback(sysConfig)
+    val endpoint = new ConfigApi(cfg.withFallback(ConfigFactory.parseString("db.pass = a")), system)
+    Get("/api/v2/config/db.pass") ~> endpoint.routes ~> check {
+      val config = ConfigFactory.parseString(responseAs[String])
+      assertEquals(config.getString("value"), "a")
+    }
+  }
+
 }
