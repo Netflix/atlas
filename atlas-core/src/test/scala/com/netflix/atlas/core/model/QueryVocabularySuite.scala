@@ -29,10 +29,26 @@ class QueryVocabularySuite extends FunSuite {
       ".*\\^\\$\\.\\?\\*\\+\\[\\]\\(\\)\\{\\}\\\\#&!%"
     )
     exp = interpreter.execute("a,space and ~,:contains").stack.head
+    assertEquals(exp.asInstanceOf[Query.Regex].v, ".*space and ~")
     assertEquals(
       exp.asInstanceOf[Query.Regex].pattern.toString,
-      ".*space\\u0020and\\u0020~"
+      ".*space\\x20and\\x20~"
     )
+  }
+
+  test("contains, escape pipe") {
+    val q = interpreter.execute("a,foo|bar,:contains").stack.head.asInstanceOf[Query.Regex]
+    assertEquals(q.v, ".*foo\\|bar")
+    assert(q.matches(Map("a" -> "x foo|bar y")))
+    assert(!q.matches(Map("a" -> "bar")))
+  }
+
+  test("contains, literal unicode escape text is not mangled") {
+    // The backslash is escaped, so the value is the literal text `\u0020`, not a space
+    val q = interpreter.execute("a,\\u005cu0020,:contains").stack.head.asInstanceOf[Query.Regex]
+    assertEquals(q.v, ".*\\\\u0020")
+    assert(q.matches(Map("a" -> "x\\u0020")))
+    assert(!q.matches(Map("a" -> "x ")))
   }
 
   test("contains, matches escaped") {
@@ -116,6 +132,13 @@ class QueryVocabularySuite extends FunSuite {
     assertEquals(exp.toString, re.toString)
   }
 
+  test("starts, escape pipe") {
+    val q = interpreter.execute("a,foo|bar,:starts").stack.head.asInstanceOf[Query.Regex]
+    assertEquals(q.v, "foo\\|bar")
+    assert(q.matches(Map("a" -> "foo|bar y")))
+    assert(!q.matches(Map("a" -> "bar")))
+  }
+
   test("ends, suffix and escape") {
     val exp = interpreter.execute("a,[foo],:ends").stack.head
     assertEquals(exp.asInstanceOf[Query.Regex].pattern.prefix(), null)
@@ -131,6 +154,13 @@ class QueryVocabularySuite extends FunSuite {
     assert(q.matches(Map("foo" -> "my $var.")))
     assert(!q.matches(Map("foo" -> "initialize my $var. [work-in-progress], not a range")))
     assert(!q.matches(Map("foo" -> "my $var. [work-in progress]")))
+  }
+
+  test("ends, escape pipe") {
+    val q = interpreter.execute("a,foo|bar,:ends").stack.head.asInstanceOf[Query.Regex]
+    assertEquals(q.v, ".*foo\\|bar$")
+    assert(q.matches(Map("a" -> "x foo|bar")))
+    assert(!q.matches(Map("a" -> "foo")))
   }
 
   test("ends with space") {
@@ -165,7 +195,7 @@ class QueryVocabularySuite extends FunSuite {
     val exp = interpreter.execute(s"a,$txt,:contains").stack.head
     assertEquals(
       exp.asInstanceOf[Query.Regex].pattern.toString,
-      ".*foo,\\u0020bar,\\u0020baz"
+      ".*foo,\\x20bar,\\x20baz"
     )
   }
 

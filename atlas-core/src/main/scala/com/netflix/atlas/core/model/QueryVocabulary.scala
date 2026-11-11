@@ -342,13 +342,20 @@ object QueryVocabulary extends Vocabulary {
       List("name,DiscoveryStatus_(UP|DOWN)", "name,discoverystatus_(Up|Down)", "ERROR:name")
   }
 
+  /**
+    * Escape a literal value for use in a regex pattern. Spaces are kept as is so the result
+    * is compatible with using `:re` directly.
+    */
+  private def escape(v: String): String = {
+    v.split(" ", -1).map(PatternUtils.escape).mkString(" ")
+  }
+
   case object Contains extends KeyValueWord {
 
     override def name: String = "contains"
 
     def newInstance(k: String, v: String): Query = {
-      // Ensure compatible space escaping with using :re directly
-      val escaped = PatternUtils.escape(v).replace("\\u0020", " ")
+      val escaped = escape(v)
       Query.Regex(k, s".*$escaped")
     }
 
@@ -383,8 +390,7 @@ object QueryVocabulary extends Vocabulary {
     override def name: String = "starts"
 
     def newInstance(k: String, v: String): Query = {
-      // Ensure compatible space escaping with using :re directly
-      val escaped = PatternUtils.escape(v).replace("\\u0020", " ")
+      val escaped = escape(v)
       Query.Regex(k, escaped)
     }
 
@@ -415,8 +421,7 @@ object QueryVocabulary extends Vocabulary {
     override def name: String = "ends"
 
     def newInstance(k: String, v: String): Query = {
-      // Ensure compatible space escaping with using :re directly
-      val escaped = PatternUtils.escape(v).replace("\\u0020", " ")
+      val escaped = escape(v)
       Query.Regex(k, s".*$escaped$$")
     }
 
