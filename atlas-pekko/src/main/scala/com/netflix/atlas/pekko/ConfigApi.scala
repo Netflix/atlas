@@ -19,6 +19,8 @@ import java.io.StringWriter
 import java.util.Locale
 import java.util.Properties
 
+import scala.util.matching.Regex
+
 import org.apache.pekko.actor.ActorRefFactory
 import org.apache.pekko.http.scaladsl.model.ContentTypes
 import org.apache.pekko.http.scaladsl.model.HttpEntity
@@ -33,8 +35,12 @@ import CustomDirectives.*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigList
+import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigRenderOptions
+import com.typesafe.config.ConfigValue
 import com.typesafe.config.ConfigValueFactory
+import com.typesafe.config.ConfigValueType
 
 /**
   * API to browse the configuration for atlas. The endpoint listens on `/api/v2/config` and
@@ -43,13 +49,13 @@ import com.typesafe.config.ConfigValueFactory
   * supported and can be used to dump the data as json, hocon, or properties. The default format
   * is json.
   *
-  * The values for keys that contain one of the patterns in
-  * `atlas.pekko.config-api.redact-key-patterns` are replaced with a placeholder so that
-  * credentials in the config are not exposed.
+  * Values that look like credentials, based on the patterns in
+  * `atlas.pekko.config-api.redact-key-patterns`, are replaced with a placeholder so that
+  * they are not exposed. See `ConfigApi.redact` for details.
   */
-class ConfigApi(rawConfig: Config, implicit val actorRefFactory: ActorRefFactory) extends WebApi {
+class ConfigApi(config: Config, implicit val actorRefFactory: ActorRefFactory) extends WebApi {
 
-  private val config = ConfigApi.redact(rawConfig)
+  private val redactedConfig = ConfigApi.redact(config)
 
   private val formats: Map[String, Config => HttpResponse] = Map(
     "hocon"      -> formatHocon _,
@@ -77,12 +83,12 @@ class ConfigApi(rawConfig: Config, implicit val actorRefFactory: ActorRefFactory
     val format = query.get("format").getOrElse("json")
     if (formats.contains(format)) {
       path match {
-        case Some(p) if !config.hasPath(p) =>
+        case Some(p) if !redactedConfig.hasPath(p) =>
           DiagnosticMessage.error(StatusCodes.NotFound, s"no matching path '$p'")
         case Some(p) =>
-          formats(format)(getPathValue(config, p))
+          formats(format)(getPathValue(redactedConfig, p))
         case None =>
-          formats(format)(config)
+          formats(format)(redactedConfig)
       }
     } else {
       val fmtList = formats.keySet.toList.sortWith(_ < _).mkString(", ")
@@ -130,23 +136,82 @@ class ConfigApi(rawConfig: Config, implicit val actorRefFactory: ActorRefFactory
 
 object ConfigApi {
 
+  import scala.jdk.CollectionConverters.*
+
   private val patternsKey = "atlas.pekko.config-api.redact-key-patterns"
 
-  private[pekko] val placeholder = "<redacted>"
+  /** Password portion of the user info for a URI, e.g. `postgresql://user:password@host`. */
+  private val UserInfoPassword = """(://[^/?#@\s:]*):[^/?#@\s]*@""".r
+
+  /** Query or matrix parameter, e.g. `?password=foo` or `;password=foo`. */
+  private val Param = """([?&;])([^=?&;#\s]+)=([^&;#\s]*)""".r
 
   /**
-    * Replace the value for any key that contains one of the configured patterns, ignoring
-    * case, with a placeholder.
+    * Redact values that may contain credentials:
+    *
+    * - Values for keys where the key name contains one of the configured patterns, ignoring
+    *   case, are replaced with a placeholder. If the value is an object, then it will be
+    *   searched recursively rather than replaced so that non-sensitive settings are still
+    *   visible. Boolean and null values are not considered sensitive.
+    * - Within string values, the password portion of URI user info and the values for query
+    *   parameters with a name that matches one of the patterns are replaced.
+    *
+    * Objects nested in lists are also searched.
     */
   private[pekko] def redact(config: Config): Config = {
-    import scala.jdk.CollectionConverters.*
-    val patterns = config.getStringList(patternsKey).asScala.map(_.toLowerCase(Locale.ROOT))
-    config.entrySet.asScala.foldLeft(config) { (c, entry) =>
-      val key = entry.getKey.toLowerCase(Locale.ROOT)
-      if (patterns.exists(key.contains))
-        c.withValue(entry.getKey, ConfigValueFactory.fromAnyRef(placeholder))
-      else
-        c
+    val patterns = Redaction.normalize(config.getStringList(patternsKey))
+
+    def isSensitive(name: String): Boolean = {
+      val n = name.toLowerCase(Locale.ROOT)
+      patterns.exists(n.contains)
     }
+
+    def redactString(str: String): String = {
+      val s = UserInfoPassword.replaceAllIn(
+        str,
+        m => Regex.quoteReplacement(s"${m.group(1)}:${Redaction.placeholder}@")
+      )
+      Param.replaceAllIn(
+        s,
+        m => {
+          val replacement =
+            if (isSensitive(m.group(2))) s"${m.group(1)}${m.group(2)}=${Redaction.placeholder}"
+            else m.matched
+          Regex.quoteReplacement(replacement)
+        }
+      )
+    }
+
+    def redactKey(key: String, value: ConfigValue): ConfigValue = {
+      value.valueType match {
+        case ConfigValueType.OBJECT | ConfigValueType.BOOLEAN | ConfigValueType.NULL =>
+          redactValue(value)
+        case _ if isSensitive(key) =>
+          ConfigValueFactory.fromAnyRef(Redaction.placeholder).withOrigin(value.origin)
+        case _ =>
+          redactValue(value)
+      }
+    }
+
+    def redactValue(value: ConfigValue): ConfigValue = {
+      value match {
+        case obj: ConfigObject =>
+          val redacted = obj.asScala.map { case (k, v) => k -> redactKey(k, v) }
+          ConfigValueFactory.fromMap(redacted.asJava).withOrigin(obj.origin)
+        case list: ConfigList =>
+          ConfigValueFactory
+            .fromIterable(list.asScala.map(redactValue).asJava)
+            .withOrigin(list.origin)
+        case _ if value.valueType == ConfigValueType.STRING =>
+          val str = value.unwrapped.asInstanceOf[String]
+          val redacted = redactString(str)
+          if (redacted == str) value
+          else ConfigValueFactory.fromAnyRef(redacted).withOrigin(value.origin)
+        case _ =>
+          value
+      }
+    }
+
+    redactValue(config.root).asInstanceOf[ConfigObject].toConfig
   }
 }
