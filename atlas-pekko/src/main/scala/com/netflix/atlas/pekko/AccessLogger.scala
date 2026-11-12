@@ -112,10 +112,9 @@ object AccessLogger {
   private val sensitiveHeaders: Set[String] = loadSensitiveHeaders(initialConfig)
 
   private[pekko] def loadSensitiveHeaders(config: Config): Set[String] = {
-    import scala.jdk.CollectionConverters.*
     val path = "atlas.pekko.access-log.sensitive-headers"
     if (config.hasPath(path))
-      config.getStringList(path).asScala.map(_.trim.toLowerCase(java.util.Locale.US)).toSet
+      Redaction.normalize(config.getStringList(path)).toSet
     else
       Set.empty
   }
@@ -189,7 +188,8 @@ object AccessLogger {
       .withHttpMethod(request.method.name)
       .withUri(request.uri.toString(), request.uri.path.toString())
     request.headers.foreach { h =>
-      val value = if (sensitiveHeaders.contains(h.lowercaseName())) "<redacted>" else h.value
+      val value =
+        if (sensitiveHeaders.contains(h.lowercaseName())) Redaction.placeholder else h.value
       entry.addRequestHeader(h.name, value)
     }
     entry.addRequestHeader("Content-Type", request.entity.contentType.value)
