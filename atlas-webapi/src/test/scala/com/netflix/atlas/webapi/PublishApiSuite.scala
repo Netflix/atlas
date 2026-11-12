@@ -21,6 +21,8 @@ import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
 import com.netflix.atlas.core.model.DatapointTuple
+import com.netflix.atlas.pekko.CallerContext
+import com.netflix.atlas.pekko.Principal
 import com.netflix.atlas.pekko.RequestHandler
 import com.netflix.atlas.pekko.testkit.MUnitRouteSuite
 import com.netflix.atlas.webapi.PublishApi.FailureMessage
@@ -203,6 +205,59 @@ class PublishApiSuite extends MUnitRouteSuite {
       assertEquals(lastUpdate, PublishPayloads.decodeBatch(json))
     }
   }
+
+  private val requireCallerRoutes = {
+    val api = new PublishApi {
+      override protected def requireCaller: Boolean = true
+    }
+    RequestHandler.standardOptions(api.routes)
+  }
+
+  private val identifiedCaller = {
+    val p = Principal(Principal.Kind.App, "test-app")
+    CallerContext(p, p, None)
+  }
+
+  private val batch = s"""{
+      "metrics": [
+        {
+          "tags": {"name": "cpuUser"},
+          "timestamp": ${System.currentTimeMillis()},
+          "value": 42.0
+        }
+      ]
+    }"""
+
+  test("require-caller is off by default") {
+    Post("/api/v1/publish", batch) ~> routes ~> check {
+      assertEquals(response.status, StatusCodes.OK)
+    }
+  }
+
+  test("require-caller rejects anonymous caller") {
+    lastUpdate = Nil
+    Post("/api/v1/publish", batch) ~> requireCallerRoutes ~> check {
+      assertEquals(response.status, StatusCodes.Unauthorized)
+      assertEquals(lastUpdate, Nil)
+    }
+  }
+
+  test("require-caller rejects anonymous caller on publish-fast") {
+    lastUpdate = Nil
+    Post("/api/v1/publish-fast", batch) ~> requireCallerRoutes ~> check {
+      assertEquals(response.status, StatusCodes.Unauthorized)
+      assertEquals(lastUpdate, Nil)
+    }
+  }
+
+  test("require-caller accepts identified caller") {
+    val req = Post("/api/v1/publish", batch).addAttribute(CallerContext.attr, identifiedCaller)
+    req ~> requireCallerRoutes ~> check {
+      assertEquals(response.status, StatusCodes.OK)
+      assertEquals(lastUpdate, PublishPayloads.decodeBatch(batch))
+    }
+  }
+
 }
 
 object PublishApiSuite {

@@ -17,6 +17,7 @@ package com.netflix.atlas.webapi
 
 import org.apache.pekko.actor.ActorRefFactory
 import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.server.Directives.*
 import org.apache.pekko.http.scaladsl.server.RequestContext
 import org.apache.pekko.http.scaladsl.server.Route
@@ -28,6 +29,7 @@ import com.netflix.atlas.json3.Json
 import com.netflix.atlas.json3.JsonSupport
 import com.netflix.atlas.pekko.CustomDirectives.*
 import com.netflix.atlas.pekko.DiagnosticMessage
+import com.netflix.atlas.pekko.Principal
 import com.netflix.atlas.pekko.WebApi
 import com.netflix.iep.config.ConfigManager
 import com.typesafe.scalalogging.StrictLogging
@@ -45,7 +47,15 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi w
 
   private val internWhileParsing = config.getBoolean("intern-while-parsing")
 
+  private val requireCallerSetting = config.getBoolean("require-caller")
+
   private val rules = ApiSettings.validationRules
+
+  /**
+    * If true, then requests where the caller could not be determined are rejected. The caller
+    * is established by the configured `RequestAuthenticator`.
+    */
+  protected def requireCaller: Boolean = requireCallerSetting
 
   def routes: Route = {
     post {
@@ -61,12 +71,22 @@ class PublishApi(implicit val actorRefFactory: ActorRefFactory) extends WebApi w
 
   private def handleReq: Route = {
     extractRequestContext { ctx =>
-      parseEntity(customJson(p => PublishPayloads.decodeBatch(p, internWhileParsing))) { values =>
-        val (good, bad) = validate(values)
-        val promise = Promise[RouteResult]()
-        val req = PublishRequest(good, bad, promise, ctx)
-        publishRef ! req
-        _ => promise.future
+      extractCaller { caller =>
+        if (requireCaller && caller.direct.kind == Principal.Kind.Unknown) {
+          ctx.request.discardEntityBytes(ctx.materializer)
+          complete(
+            DiagnosticMessage.error(StatusCodes.Unauthorized, "caller identity is required")
+          )
+        } else {
+          parseEntity(customJson(p => PublishPayloads.decodeBatch(p, internWhileParsing))) {
+            values =>
+              val (good, bad) = validate(values)
+              val promise = Promise[RouteResult]()
+              val req = PublishRequest(good, bad, promise, ctx)
+              publishRef ! req
+              _ => promise.future
+          }
+        }
       }
     }
   }
