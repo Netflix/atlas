@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.jdk.CollectionConverters.*
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.netflix.atlas.core.uri.ParsedUri
 import com.netflix.atlas.core.uri.QueryParam
 import com.netflix.atlas.core.uri.UriParser
@@ -95,14 +97,15 @@ class UriDocumentAnalyzer(
 
   /** Build and cache the offset map for a param to avoid rebuilding per call. */
   private def offsetMap(param: QueryParam): Array[Int] = {
-    offsetMapCache.computeIfAbsent(
-      param.value.text,
-      _ => UriParser.buildOffsetMap(param.value.text)
-    )
+    offsetMapCache.get(param.value.text, v => UriParser.buildOffsetMap(v))
   }
 
-  private val offsetMapCache =
-    new java.util.concurrent.ConcurrentHashMap[String, Array[Int]]()
+  /**
+    * Cache of offset maps keyed by the raw param value. The size is bounded since every
+    * edit to a document creates a new value and the LSP server may be long lived.
+    */
+  private val offsetMapCache: Cache[String, Array[Int]] =
+    Caffeine.newBuilder().maximumSize(100).build[String, Array[Int]]()
 
   private def rawOffsetToDecoded(param: QueryParam, uriOffset: Int): Int = {
     val rawRelative = uriOffset - param.value.start
@@ -111,6 +114,12 @@ class UriDocumentAnalyzer(
     var di = 0
     while (di + 1 < map.length && map(di + 1) <= rawRelative) {
       di += 1
+    }
+    // Multiple decoded chars can map to the same raw offset, e.g. a surrogate pair
+    // decoded from a 4-byte UTF-8 sequence. Use the first so the offset is not in
+    // the middle of the sequence.
+    while (di > 0 && map(di - 1) == map(di)) {
+      di -= 1
     }
     di
   }
