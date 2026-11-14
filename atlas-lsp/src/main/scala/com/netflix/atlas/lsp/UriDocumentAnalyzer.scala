@@ -127,6 +127,17 @@ class UriDocumentAnalyzer(
     param.value.start + rawRelative
   }
 
+  /**
+    * Translate a position in the decoded expression to a raw URI offset. The decoded
+    * expression can span multiple lines if it has encoded line breaks (e.g. `%0A`), so
+    * the line must be taken into account.
+    */
+  private def decodedPositionToRaw(param: QueryParam, pos: Position): Int = {
+    val offset =
+      AslTextDocumentService.positionToOffset(param.decodedValue, pos.getLine, pos.getCharacter)
+    decodedOffsetToRaw(param, offset)
+  }
+
   // -------------------------------------------------------------------
   // Known parameters
   // -------------------------------------------------------------------
@@ -397,11 +408,41 @@ class UriDocumentAnalyzer(
   // -------------------------------------------------------------------
 
   override def computeCodeActions(uri: String): List[Either[Command, CodeAction]] = {
+    codeActionsForParams(uri, _ => true)
+  }
+
+  /**
+    * Compute the code actions for the requested range. The document level actions for an
+    * expression, such as format and normalize, only apply to a single parameter. They are
+    * only returned for parameters that overlap the requested range so it is clear which
+    * expression will be modified.
+    */
+  override def computeCodeActions(
+    uri: String,
+    range: Range
+  ): List[Either[Command, CodeAction]] = {
+    if (range == null) computeCodeActions(uri)
+    else {
+      val actions =
+        codeActionsForParams(uri, param => CodeActions.overlaps(paramRange(param), range))
+      CodeActions.filterByRange(actions, range)
+    }
+  }
+
+  private def paramRange(param: QueryParam): Range = {
+    new Range(new Position(0, param.value.start), new Position(0, param.value.end))
+  }
+
+  private def codeActionsForParams(
+    uri: String,
+    include: QueryParam => Boolean
+  ): List[Either[Command, CodeAction]] = {
     val text = getText(uri)
     val parsed = UriParser.parse(text)
     parsed.query
       .filter(isExpression)
       .zipWithIndex
+      .filter(t => include(t._1))
       .flatMap {
         case (param, idx) =>
           val tempUri = s"$uri#${param.key.text}.$idx"
@@ -552,11 +593,7 @@ class UriDocumentAnalyzer(
     pos: Position,
     param: QueryParam
   ): Position = {
-    if (pos.getLine == 0) {
-      new Position(0, decodedOffsetToRaw(param, pos.getCharacter))
-    } else {
-      pos
-    }
+    new Position(0, decodedPositionToRaw(param, pos))
   }
 
   private def shiftRangeDecoded(
@@ -616,8 +653,8 @@ class UriDocumentAnalyzer(
             // Splice into the raw (percent-encoded) param value so that existing
             // encoding (e.g. %20 for spaces in legend text) is preserved. Translate
             // the decoded edit range to raw offsets, then encode only the new text.
-            val rawStart = decodedOffsetToRaw(param, edit.getRange.getStart.getCharacter)
-            val rawEnd = decodedOffsetToRaw(param, edit.getRange.getEnd.getCharacter)
+            val rawStart = decodedPositionToRaw(param, edit.getRange.getStart)
+            val rawEnd = decodedPositionToRaw(param, edit.getRange.getEnd)
             val encoded = Strings.urlEncode(newExpr)
             val newText = text.substring(0, rawStart) +
               encoded +
@@ -627,6 +664,13 @@ class UriDocumentAnalyzer(
           newChanges.put(docUri, shifted.asJava)
         }
         action.getEdit.setChanges(newChanges)
+      }
+      // Shift the diagnostics so the ranges are relative to the URI document. These are
+      // used to determine which actions are relevant for a given range.
+      if (action.getDiagnostics != null) {
+        action.getDiagnostics.asScala.foreach { d =>
+          if (d.getRange != null) d.setRange(shiftRangeDecoded(d.getRange, param))
+        }
       }
       Either.forRight(action)
     } else {

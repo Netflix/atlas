@@ -21,6 +21,7 @@ import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.DocumentSymbol
 import org.eclipse.lsp4j.Hover
 import org.eclipse.lsp4j.Location
+import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 
 /**
@@ -43,6 +44,14 @@ trait DocumentAnalyzer {
   def computeSemanticTokens(text: String): List[Integer]
 
   def computeCodeActions(uri: String): List[Either[Command, CodeAction]]
+
+  /**
+    * Compute the code actions that are relevant for the requested range. By default, this
+    * filters the actions for the whole document using [[CodeActions.filterByRange]].
+    */
+  def computeCodeActions(uri: String, range: Range): List[Either[Command, CodeAction]] = {
+    CodeActions.filterByRange(computeCodeActions(uri), range)
+  }
 
   def computeDefinition(uri: String, text: String, offset: Int): Option[Location]
 
