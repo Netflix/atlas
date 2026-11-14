@@ -110,7 +110,7 @@ public class AslTextDocumentService implements TextDocumentService {
     public CompletableFuture<java.util.List<Either<Command, CodeAction>>> codeAction(
             CodeActionParams params) {
         var uri = params.getTextDocument().getUri();
-        var actions = analyzer.computeCodeActions(uri);
+        var actions = analyzer.computeCodeActions(uri, params.getRange());
         var javaActions = CollectionConverters.asJava(actions);
         return CompletableFuture.completedFuture(new java.util.ArrayList<>(javaActions));
     }

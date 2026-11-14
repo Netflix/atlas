@@ -20,7 +20,9 @@ import scala.jdk.CollectionConverters.*
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.StandardVocabulary
 import com.netflix.atlas.core.uri.UriParser
+import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.PublishDiagnosticsParams
+import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.services.LanguageClient
 
 import munit.FunSuite
@@ -415,6 +417,71 @@ class UriDocumentAnalyzerSuite extends FunSuite {
     val actions = analyzer.computeCodeActions(uri)
     // The semicolon typo in ;swap should produce a quick-fix action
     assert(actions.nonEmpty, s"Expected code actions for typo: $actions")
+  }
+
+  test("computeCodeActions: diagnostics shifted to URI positions") {
+    val (analyzer, _) = newAnalyzerWithClient()
+    val text = "/api/v1/graph?q=a%2Cb,;swap"
+    val uri = "test:actions-shift"
+    analyzer.updateDocument(uri, text)
+    val action = analyzer
+      .computeCodeActions(uri)
+      .map(_.getRight)
+      .find(_.getTitle == "Replace with ':swap'")
+      .getOrElse(fail("missing typo quick fix"))
+    val range = action.getDiagnostics.get(0).getRange
+    val start = text.indexOf(";swap")
+    assertEquals(range.getStart.getLine, 0)
+    assertEquals(range.getStart.getCharacter, start)
+    assertEquals(range.getEnd.getCharacter, start + ";swap".length)
+  }
+
+  test("computeCodeActions: multi-line decoded expression") {
+    val (analyzer, _) = newAnalyzerWithClient()
+    val text = "/api/v1/graph?q=a,b,%0A;swap"
+    val uri = "test:actions-multiline"
+    analyzer.updateDocument(uri, text)
+    val action = analyzer
+      .computeCodeActions(uri)
+      .map(_.getRight)
+      .find(_.getTitle == "Replace with ':swap'")
+      .getOrElse(fail("missing typo quick fix"))
+    val range = action.getDiagnostics.get(0).getRange
+    val start = text.indexOf(";swap")
+    assertEquals(range, new Range(new Position(0, start), new Position(0, start + 5)))
+    val edit = action.getEdit.getChanges.get(uri).get(0)
+    assertEquals(edit.getNewText, "/api/v1/graph?q=a,b,%0A:swap")
+  }
+
+  test("computeCodeActions: document actions limited to param in range") {
+    val (analyzer, _) = newAnalyzerWithClient()
+    val q1 = "a,%20b,:swap"
+    val q2 = "c,%20d,:swap"
+    val text = s"/api/v1/graph?q=$q1&q=$q2"
+    val uri = "test:actions-params"
+    analyzer.updateDocument(uri, text)
+
+    def newTexts(range: Range): List[String] = {
+      analyzer
+        .computeCodeActions(uri, range)
+        .flatMap(a => Option(a.getRight.getEdit).toList)
+        .flatMap(_.getChanges.asScala.values.flatMap(_.asScala.map(_.getNewText)))
+    }
+
+    val all = newTexts(null)
+    val p1 = text.indexOf(q1) + 1
+    val first = newTexts(new Range(new Position(0, p1), new Position(0, p1)))
+    val p2 = text.indexOf(q2) + 1
+    val second = newTexts(new Range(new Position(0, p2), new Position(0, p2)))
+
+    assert(first.nonEmpty, s"expected actions for first param: $all")
+    assert(second.nonEmpty, s"expected actions for second param: $all")
+    assertEquals(first.size + second.size, all.size)
+    first.foreach(t => assert(t.endsWith(s"&q=$q2"), t))
+    second.foreach(t => assert(t.startsWith(s"/api/v1/graph?q=$q1&"), t))
+
+    // Cursor in the path does not overlap either param
+    assertEquals(newTexts(new Range(new Position(0, 2), new Position(0, 2))), Nil)
   }
 
   test("computeSemanticTokens: percent-encoded expression") {

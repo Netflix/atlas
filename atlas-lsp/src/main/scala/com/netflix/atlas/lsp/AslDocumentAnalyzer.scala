@@ -295,10 +295,16 @@ class AslDocumentAnalyzer(
     }
   }
 
+  /**
+    * Span for a regex usage covering the pattern and the word. This is the region that
+    * will be replaced by the quick fix.
+    */
+  private def regexSpan(u: RegexUsage): Span = Span(u.literal.span.start, u.word.span.end)
+
   /** Diagnostics for `:re` patterns that are likely mistakes or could be simplified. */
   private[lsp] def computeRegexDiagnostics(text: String, tree: SyntaxTree): List[Diagnostic] = {
     regexSuggestions(text, tree).map { u =>
-      Diagnostic(u.literal.span, u.suggestion.message, Severity.Info)
+      Diagnostic(regexSpan(u), u.suggestion.message, Severity.Info)
     }
   }
 
@@ -314,10 +320,10 @@ class AslDocumentAnalyzer(
       quickFix(
         uri,
         s"Replace with $replacement",
-        positions.range(u.literal.span),
+        positions.range(regexSpan(u)),
         s.message,
         DiagnosticSeverity.Information,
-        positions.range(u.literal.span.start, u.word.span.end),
+        positions.range(regexSpan(u)),
         replacement
       )
     }
@@ -338,7 +344,9 @@ class AslDocumentAnalyzer(
         quickFix(
           uri,
           s"Replace with data variant: $value,:offset",
-          positions.range(word.span),
+          // Cover the list and the word so the action is available if the cursor is
+          // anywhere in the region that will be modified.
+          positions.range(list.span.start, word.span.end),
           word.diagnostic.map(_.message).getOrElse(":offset is deprecated"),
           DiagnosticSeverity.Warning,
           positions.range(list.span),

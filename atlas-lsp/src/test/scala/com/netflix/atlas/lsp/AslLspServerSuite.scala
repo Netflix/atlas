@@ -294,14 +294,24 @@ class AslLspServerSuite extends FunSuite {
 
   private def requestCodeActions(
     server: AslLspServer,
+    uri: String,
+    range: Range
+  ): java.util.List[?] = {
+    val params = new CodeActionParams
+    params.setTextDocument(new TextDocumentIdentifier(uri))
+    params.setRange(range)
+    params.setContext(new CodeActionContext(java.util.List.of()))
+    server.getTextDocumentService.codeAction(params).get()
+  }
+
+  /** Request code actions for the range covering the whole document. */
+  private def requestCodeActions(
+    server: AslLspServer,
     uri: String
   ): java.util.List[?] = {
     val text = server.analyzer().getText(uri)
-    val params = new CodeActionParams
-    params.setTextDocument(new TextDocumentIdentifier(uri))
-    params.setRange(new Range(new Position(0, 0), new Position(0, text.length)))
-    params.setContext(new CodeActionContext(java.util.List.of()))
-    server.getTextDocumentService.codeAction(params).get()
+    val end = server.analyzer().offsetToPosition(text, text.length)
+    requestCodeActions(server, uri, new Range(new Position(0, 0), end))
   }
 
   test("initialize enables code actions") {
@@ -1085,13 +1095,13 @@ class AslLspServerSuite extends FunSuite {
   test("diagnostics: regex with dots suggests :starts") {
     val diags = regexDiagnostics("name,a.b.c,:re")
     assertEquals(diags.size, 1)
-    assert(diags.head.startsWith("[5-10] Info"), diags.head)
+    assert(diags.head.startsWith("[5-14] Info"), diags.head)
   }
 
   test("diagnostics: glob style regex suggests :starts") {
     val diags = regexDiagnostics("name,foo*,:re")
     assertEquals(diags.size, 1)
-    assert(diags.head.startsWith("[5-9] Info"), diags.head)
+    assert(diags.head.startsWith("[5-13] Info"), diags.head)
   }
 
   test("diagnostics: wildcard dots have no suggestion") {
@@ -1204,5 +1214,82 @@ class AslLspServerSuite extends FunSuite {
     val updated = s"name,$edit,:sum"
     val tree = server.analyzer().interpreter.syntaxTree(updated)
     assertEquals(tree.diagnostics.filter(_.severity == Severity.Error), Nil, updated)
+  }
+
+  //
+  // code actions: filter by range
+  //
+
+  private def requestCodeActionsAt(
+    server: AslLspServer,
+    uri: String,
+    start: Int,
+    end: Int
+  ): java.util.List[?] = {
+    requestCodeActions(server, uri, new Range(new Position(0, start), new Position(0, end)))
+  }
+
+  test("codeAction: quick fixes limited to requested range") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-range1"
+    val text = "name,a.b,:re,app,c.d,:re,:and,:sum"
+    openDocument(server, uri, text)
+
+    val first = codeActionTitles(requestCodeActionsAt(server, uri, 6, 6))
+    assert(first.contains("Replace with a.b,:starts"), first.toString)
+    assert(!first.contains("Replace with c.d,:starts"), first.toString)
+
+    val i = text.indexOf("c.d")
+    val second = codeActionTitles(requestCodeActionsAt(server, uri, i, i))
+    assert(second.contains("Replace with c.d,:starts"), second.toString)
+    assert(!second.contains("Replace with a.b,:starts"), second.toString)
+  }
+
+  test("codeAction: cursor at end of diagnostic range is included") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-range2"
+    openDocument(server, uri, "name,a.b,:re,:sum")
+    val titles = codeActionTitles(requestCodeActionsAt(server, uri, 8, 8))
+    assert(titles.contains("Replace with a.b,:starts"), titles.toString)
+  }
+
+  test("codeAction: quick fix for diagnostic on later line") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-range-multiline"
+    openDocument(server, uri, "name,sps,:eq,\nname,a.b,:re,:and,:sum")
+    val all = codeActionTitles(requestCodeActions(server, uri))
+    assert(all.contains("Replace with a.b,:starts"), all.toString)
+    val range = new Range(new Position(1, 6), new Position(1, 6))
+    val titles = codeActionTitles(requestCodeActions(server, uri, range))
+    assert(titles.contains("Replace with a.b,:starts"), titles.toString)
+  }
+
+  test("codeAction: document level actions are not limited by range") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-range3"
+    openDocument(server, uri, "nf.cluster,foo,:eq,name,a.b,:re,:and,:sum")
+    val titles = codeActionTitles(requestCodeActionsAt(server, uri, 0, 0))
+    assert(titles.contains("Normalize expression"), titles.toString)
+    assert(!titles.exists(_.startsWith("Replace with")), titles.toString)
+  }
+
+  test("codeAction: regex quick fix available with cursor on word") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-range-word"
+    val text = "name,a.b,:re,:sum"
+    openDocument(server, uri, text)
+    val i = text.indexOf(":re") + 1
+    val titles = codeActionTitles(requestCodeActionsAt(server, uri, i, i))
+    assert(titles.contains("Replace with a.b,:starts"), titles.toString)
+  }
+
+  test("codeAction: deprecated offset quick fix available with cursor in list") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-range-offset"
+    val text = "name,sps,:eq,:sum,(,1w,),:offset"
+    openDocument(server, uri, text)
+    val i = text.indexOf("1w")
+    val titles = codeActionTitles(requestCodeActionsAt(server, uri, i, i))
+    assert(titles.exists(_.contains("data variant")), titles.toString)
   }
 }
