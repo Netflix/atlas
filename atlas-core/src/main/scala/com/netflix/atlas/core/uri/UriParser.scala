@@ -156,56 +156,68 @@ object UriParser {
 
   /** Percent-decode a string, also converting `+` to space. Handles multi-byte UTF-8. */
   def percentDecode(s: String): String = {
-    val len = s.length
-    var i = 0
-    var needsDecode = false
-    while (i < len && !needsDecode) {
-      val ch = s.charAt(i)
-      if (ch == '%' || ch == '+') needsDecode = true
-      i += 1
-    }
-    if (!needsDecode) return s
+    if (!needsDecode(s)) s else decode(s, null)
+  }
 
-    val sb = new StringBuilder(len)
+  private def needsDecode(s: String): Boolean = {
+    s.indexOf('%') >= 0 || s.indexOf('+') >= 0
+  }
+
+  /**
+    * Percent-decode a string. If `map` is not null, then it will be filled in with the
+    * raw offset for each char in the decoded string. All chars that are decoded from a
+    * single UTF-8 sequence map to the position of the first `%` for that sequence. The
+    * map must have a length of at least `s.length`.
+    */
+  private def decode(s: String, map: Array[Int]): String = {
+    val len = s.length
+    val sb = new java.lang.StringBuilder(len)
     val buf = new Array[Byte](4) // max 4 bytes per UTF-8 codepoint
     var bufLen = 0
-    i = 0
+    var bufStart = 0 // raw offset for the first byte in the buffer
+    var i = 0
     while (i < len) {
       val ch = s.charAt(i)
-      if (ch == '%' && i + 2 < len) {
-        val hi = hexVal(s.charAt(i + 1))
-        val lo = hexVal(s.charAt(i + 2))
-        if (hi >= 0 && lo >= 0) {
-          buf(bufLen) = ((hi << 4) | lo).toByte
-          bufLen += 1
-          i += 3
-          // Flush when we have a complete UTF-8 sequence
-          if (bufLen >= utf8SeqLen(buf(0))) {
-            sb.append(new String(buf, 0, bufLen, java.nio.charset.StandardCharsets.UTF_8))
-            bufLen = 0
-          }
-        } else {
-          bufLen = flushBytes(buf, bufLen, sb)
-          sb.append(ch)
-          i += 1
-        }
+      val hi = if (ch == '%' && i + 2 < len) hexVal(s.charAt(i + 1)) else -1
+      val lo = if (hi >= 0) hexVal(s.charAt(i + 2)) else -1
+      if (hi >= 0 && lo >= 0) {
+        val b = ((hi << 4) | lo).toByte
+        // Any byte other than a continuation byte starts a new sequence. Flush the
+        // incomplete sequence so the chars for the new byte map to the right offset.
+        if ((b & 0xC0) != 0x80) bufLen = flushBytes(sb, buf, bufLen, bufStart, map)
+        if (bufLen == 0) bufStart = i
+        buf(bufLen) = b
+        bufLen += 1
+        i += 3
+        // Flush when we have a complete UTF-8 sequence
+        if (bufLen >= utf8SeqLen(buf(0)))
+          bufLen = flushBytes(sb, buf, bufLen, bufStart, map)
       } else {
-        bufLen = flushBytes(buf, bufLen, sb)
-        if (ch == '+') {
-          sb.append(' ')
-        } else {
-          sb.append(ch)
-        }
+        bufLen = flushBytes(sb, buf, bufLen, bufStart, map)
+        if (map != null) map(sb.length) = i
+        sb.append(if (ch == '+') ' ' else ch)
         i += 1
       }
     }
-    flushBytes(buf, bufLen, sb)
+    flushBytes(sb, buf, bufLen, bufStart, map)
     sb.toString
   }
 
-  private def flushBytes(buf: Array[Byte], bufLen: Int, sb: StringBuilder): Int = {
+  /**
+    * Append the decoded bytes in the buffer and record the raw start offset for the
+    * decoded chars. Returns the new buffer length, always 0.
+    */
+  private def flushBytes(
+    sb: java.lang.StringBuilder,
+    buf: Array[Byte],
+    bufLen: Int,
+    rawStart: Int,
+    map: Array[Int]
+  ): Int = {
     if (bufLen > 0) {
+      val start = sb.length
       sb.append(new String(buf, 0, bufLen, java.nio.charset.StandardCharsets.UTF_8))
+      if (map != null) java.util.Arrays.fill(map, start, sb.length, rawStart)
     }
     0
   }
@@ -228,33 +240,19 @@ object UriParser {
 
   /**
     * Build a mapping from decoded-string offset to raw-string offset.
-    * For percent-encoded sequences (`%XX`), one decoded char maps to the
-    * position of the `%` in the raw string. For `+` (space), one decoded
+    * For percent-encoded sequences (`%XX`), the decoded chars map to the
+    * position of the first `%` in the raw string. A multi-byte UTF-8 sequence,
+    * e.g. `%C3%A9`, decodes to a single char, or two chars for a surrogate pair,
+    * that all map to the start of the sequence. For `+` (space), one decoded
     * char maps to the `+` position. Returns an array where
-    * `result(decodedOffset)` gives the corresponding raw offset.
+    * `result(decodedOffset)` gives the corresponding raw offset. The last entry
+    * is a sentinel for the end position.
     */
   def buildOffsetMap(raw: String): Array[Int] = {
-    val len = raw.length
     // Upper bound: decoded length <= raw length
-    val map = new Array[Int](len + 1)
-    var ri = 0 // raw index
-    var di = 0 // decoded index
-    while (ri < len) {
-      map(di) = ri
-      val ch = raw.charAt(ri)
-      if (
-        ch == '%' && ri + 2 < len && hexVal(raw.charAt(ri + 1)) >= 0 && hexVal(
-          raw.charAt(ri + 2)
-        ) >= 0
-      ) {
-        ri += 3
-      } else {
-        ri += 1
-      }
-      di += 1
-    }
-    // Sentinel: end position
-    map(di) = ri
-    java.util.Arrays.copyOf(map, di + 1)
+    val map = new Array[Int](raw.length + 1)
+    val decoded = decode(raw, map)
+    map(decoded.length) = raw.length
+    java.util.Arrays.copyOf(map, decoded.length + 1)
   }
 }

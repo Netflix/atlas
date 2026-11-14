@@ -192,6 +192,15 @@ class UriDocumentAnalyzerSuite extends FunSuite {
     assert(edit.getRange.getStart.getCharacter >= 16, s"Expected shifted range: ${edit.getRange}")
   }
 
+  test("completions: cursor before supplementary character") {
+    val analyzer = newAnalyzer()
+    val prefix = "/api/v1/graph?q=a,b,:sw"
+    val text = prefix + "%F0%9F%98%80"
+    val items = analyzer.computeCompletions(text, prefix.length)
+    val labels = items.map(_.getLabel)
+    assert(labels.contains(":swap"), s"Expected :swap in: $labels")
+  }
+
   //
   // Semantic tokens
   //
@@ -482,6 +491,24 @@ class UriDocumentAnalyzerSuite extends FunSuite {
 
     // Cursor in the path does not overlap either param
     assertEquals(newTexts(new Range(new Position(0, 2), new Position(0, 2))), Nil)
+  }
+
+  test("computeCodeActions: positions after multi-byte UTF-8 sequence") {
+    val (analyzer, _) = newAnalyzerWithClient()
+    val text = "/api/v1/graph?q=caf%C3%A9,b,;swap"
+    val uri = "test:actions-utf8"
+    analyzer.updateDocument(uri, text)
+    val action = analyzer
+      .computeCodeActions(uri)
+      .map(_.getRight)
+      .find(_.getTitle == "Replace with ':swap'")
+      .getOrElse(fail("missing typo quick fix"))
+    val range = action.getDiagnostics.get(0).getRange
+    val start = text.indexOf(";swap")
+    assertEquals(range.getStart.getCharacter, start)
+    assertEquals(range.getEnd.getCharacter, start + ";swap".length)
+    val newText = action.getEdit.getChanges.get(uri).get(0).getNewText
+    assertEquals(newText, "/api/v1/graph?q=caf%C3%A9,b,:swap")
   }
 
   test("computeSemanticTokens: percent-encoded expression") {

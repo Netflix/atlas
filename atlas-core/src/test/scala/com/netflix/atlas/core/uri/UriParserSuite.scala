@@ -238,4 +238,84 @@ class UriParserSuite extends FunSuite {
     // map(0)=0 (%3D), map(1)=3 (%2C), map(2)=6 (sentinel)
     assertEquals(map.toList, List(0, 3, 6))
   }
+
+  test("buildOffsetMap: multi-byte UTF-8 sequence maps to start of sequence") {
+    // raw: "a%C3%A9b" -> decoded: "a" + U+00E9 + "b"
+    val map = UriParser.buildOffsetMap("a%C3%A9b")
+    assertEquals(map.toList, List(0, 1, 7, 8))
+  }
+
+  test("buildOffsetMap: supplementary character maps both chars to start") {
+    // raw: "%F0%9F%98%80x" -> decoded: U+1F600 (surrogate pair) + "x"
+    val map = UriParser.buildOffsetMap("%F0%9F%98%80x")
+    assertEquals(map.toList, List(0, 0, 12, 13))
+  }
+
+  test("buildOffsetMap: offsets after UTF-8 sequence are not shifted") {
+    val raw = "name,caf%C3%A9,:eq,name,a.b,:re,:and"
+    val decoded = UriParser.percentDecode(raw)
+    val map = UriParser.buildOffsetMap(raw)
+    assertEquals(map.length, decoded.length + 1)
+    val di = decoded.indexOf("a.b")
+    assertEquals(map(di), raw.indexOf("a.b"))
+  }
+
+  test("buildOffsetMap: invalid lead byte followed by encoded ASCII") {
+    // raw: "%C3%2Cb" -> decoded: U+FFFD + "," + "b"
+    assertEquals(UriParser.buildOffsetMap("%C3%2Cb").toList, List(0, 3, 6, 7))
+  }
+
+  test("buildOffsetMap: truncated sequence followed by encoded ASCII") {
+    // raw: "%E2%2C%3Ab" -> decoded: U+FFFD + "," + ":" + "b"
+    assertEquals(UriParser.buildOffsetMap("%E2%2C%3Ab").toList, List(0, 3, 6, 9, 10))
+  }
+
+  private val offsetMapInputs = List(
+    "",
+    "abc",
+    "a+b",
+    "a%26b",
+    "%3D%2C",
+    "a%C3%A9b",
+    "%E2%82%AC",
+    "%F0%9F%98%80x",
+    "%C3",
+    "%C3x",
+    "%C3%41",
+    "%FFa",
+    "%",
+    "a%",
+    "a%2",
+    "%zz",
+    "%C3%2Cb",
+    "%E2%82%2C",
+    "%E0%80%80a",
+    "a%2Cb+c%C3%A9%F0%9F%98%80%0A,:eq"
+  )
+
+  offsetMapInputs.foreach { raw =>
+    test(s"buildOffsetMap: consistent with percentDecode [$raw]") {
+      val decoded = UriParser.percentDecode(raw)
+      val map = UriParser.buildOffsetMap(raw)
+      assertEquals(map.length, decoded.length + 1)
+      assertEquals(map.last, raw.length)
+
+      // Each run of decoded chars that map to the same raw offset should match decoding
+      // the corresponding raw substring.
+      var a = 0
+      while (a < decoded.length) {
+        var b = a + 1
+        while (b < decoded.length && map(b) == map(a)) b += 1
+        val rawPart = raw.substring(map(a), map(b))
+        val part = decoded.substring(a, b)
+        assertEquals(UriParser.percentDecode(rawPart), part, s"[$a, $b)")
+
+        // Runs should not be merged with adjacent chars. Only an invalid sequence can
+        // result in multiple code points mapping to the same raw offset.
+        val single = part.codePointCount(0, part.length) == 1
+        assert(single || part.forall(_ == '\uFFFD'), s"[$a, $b) merged: $part")
+        a = b
+      }
+    }
+  }
 }
