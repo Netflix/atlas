@@ -293,6 +293,34 @@ class InterpreterSuite extends FunSuite {
     assertEquals(Interpreter.unescape(escaped), input)
   }
 
+  test("escape: comment end in value") {
+    val input = "a*/b"
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "a*\\u002fb")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: comment start and end share slash") {
+    val input = "a/*/b"
+    val escaped = Interpreter.escape(input)
+    assertEquals(escaped, "a\\u002f*\\u002fb")
+    assertEquals(Interpreter.unescape(escaped), input)
+  }
+
+  test("escape: slash not adjacent to star is unchanged") {
+    assertEquals(Interpreter.escape("/api/users"), "/api/users")
+  }
+
+  test("escape: toString with comment delimiters is parseable") {
+    val values = List("*/", "/*", "a*/b", "/api.*/users", "*/*", "/*/", "**//**", "*", "/")
+    values.foreach { v =>
+      val str = Interpreter.toString(v, "b")
+      val tokens = Interpreter.tokenize(str)
+      assertEquals(tokens.size, 2, s"[$v] => [$str]")
+      assertEquals(Interpreter(Nil).execute(str).stack, List("b", v), s"[$v] => [$str]")
+    }
+  }
+
   test("escape: value containing a literal unicode escape round-trips (#1926)") {
     // The value literally contains backslash-u-0041 (six chars), NOT the character 'A'.
     // (Built via concatenation so the Scala source itself does not contain a \\uXXXX sequence.)
