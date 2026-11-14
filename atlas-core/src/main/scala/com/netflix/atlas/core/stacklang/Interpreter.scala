@@ -598,22 +598,40 @@ object Interpreter {
     escapeCommentStart(builder, start)
   }
 
-  /** Escape comment start sequences so they are not interpreted as comment delimiters. */
+  /**
+    * Escape comment start and end sequences so they are not interpreted as comment
+    * delimiters. Any '/' that is adjacent to a '*' will be escaped.
+    */
   private def escapeCommentStart(str: String): String = {
-    str.replace("/*", "\\u002f*")
+    if (str.indexOf('/') < 0) str
+    else {
+      val builder = new java.lang.StringBuilder(str)
+      escapeCommentStart(builder, 0)
+      builder.toString
+    }
   }
 
-  /** Escape comment start sequences so they are not interpreted as comment delimiters. */
+  /**
+    * Escape comment start and end sequences so they are not interpreted as comment
+    * delimiters. Any '/' that is adjacent to a '*' will be escaped. Only the portion of
+    * the builder after `start` will be modified.
+    */
   private def escapeCommentStart(builder: java.lang.StringBuilder, start: Int): Unit = {
     var i = start
-    while (i < builder.length - 1) {
-      if (builder.charAt(i) == '/' && builder.charAt(i + 1) == '*') {
+    while (i < builder.length) {
+      if (builder.charAt(i) == '/' && isCommentDelimiter(builder, start, i)) {
         builder.replace(i, i + 1, "\\u002f")
-        i += 7 // skip past \u002F*
+        i += 6 // skip past the escape sequence
       } else {
         i += 1
       }
     }
+  }
+
+  /** Check if the '/' at position `i` is part of a comment start or end sequence. */
+  private def isCommentDelimiter(builder: java.lang.StringBuilder, start: Int, i: Int): Boolean = {
+    (i + 1 < builder.length && builder.charAt(i + 1) == '*') ||
+    (i > start && builder.charAt(i - 1) == '*')
   }
 
   /** Unescape unicode characters in the expression. */
