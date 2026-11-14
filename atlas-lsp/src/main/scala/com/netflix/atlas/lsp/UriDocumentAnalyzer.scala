@@ -449,16 +449,11 @@ class UriDocumentAnalyzer(
     val text = getText(uri)
     val parsed = UriParser.parse(text)
     parsed.query
-      .filter(isExpression)
-      .zipWithIndex
-      .filter(t => include(t._1))
-      .flatMap {
-        case (param, idx) =>
-          val tempUri = s"$uri#${param.key.text}.$idx"
-          asl.updateDocument(tempUri, param.decodedValue)
-          val actions = asl.computeCodeActions(tempUri)
-          asl.removeDocument(tempUri)
-          actions.map(shiftCodeActionDecoded(_, param, uri, text))
+      .filter(p => isExpression(p) && include(p))
+      .flatMap { param =>
+        // The edits are shifted to be relative to the URI document
+        val actions = asl.computeCodeActionsForText(uri, param.decodedValue)
+        actions.map(shiftCodeActionDecoded(_, param, uri, text))
       }
   }
 

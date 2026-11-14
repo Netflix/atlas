@@ -403,7 +403,18 @@ class AslDocumentAnalyzer(
   }
 
   def computeCodeActions(uri: String): List[Either[Command, CodeAction]] = {
-    val text = getText(uri)
+    computeCodeActionsForText(uri, getText(uri))
+  }
+
+  /**
+    * Compute the code actions for the given expression text. The `uri` is only used for
+    * the workspace edits. The document does not need to be registered, so this can be used
+    * for expressions embedded in other documents without publishing diagnostics for them.
+    */
+  private[lsp] def computeCodeActionsForText(
+    uri: String,
+    text: String
+  ): List[Either[Command, CodeAction]] = {
     if (text.isEmpty) return Nil
     val tree = interpreter.syntaxTree(text)
     val typoActions = computeTypoCodeActions(uri, text, tree)

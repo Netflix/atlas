@@ -40,16 +40,11 @@ class UriDocumentAnalyzerSuite extends FunSuite {
     new UriDocumentAnalyzer(asl)
   }
 
-  private def newAnalyzerWithClient(): (
-    UriDocumentAnalyzer,
-    java.util.concurrent.atomic.AtomicReference[PublishDiagnosticsParams]
-  ) = {
-    val captured =
-      new java.util.concurrent.atomic.AtomicReference[PublishDiagnosticsParams]()
-    val client = new LanguageClient {
+  private def newClient(onPublish: PublishDiagnosticsParams => Unit): LanguageClient = {
+    new LanguageClient {
       override def telemetryEvent(obj: Any): Unit = ()
       override def publishDiagnostics(params: PublishDiagnosticsParams): Unit = {
-        captured.set(params)
+        onPublish(params)
       }
       override def showMessage(params: org.eclipse.lsp4j.MessageParams): Unit = ()
       override def showMessageRequest(
@@ -57,6 +52,15 @@ class UriDocumentAnalyzerSuite extends FunSuite {
       ): java.util.concurrent.CompletableFuture[org.eclipse.lsp4j.MessageActionItem] = null
       override def logMessage(params: org.eclipse.lsp4j.MessageParams): Unit = ()
     }
+  }
+
+  private def newAnalyzerWithClient(): (
+    UriDocumentAnalyzer,
+    java.util.concurrent.atomic.AtomicReference[PublishDiagnosticsParams]
+  ) = {
+    val captured =
+      new java.util.concurrent.atomic.AtomicReference[PublishDiagnosticsParams]()
+    val client = newClient(p => captured.set(p))
     val interpreter = Interpreter(StandardVocabulary.allWords)
     val asl = new AslDocumentAnalyzer(interpreter)
     val analyzer = new UriDocumentAnalyzer(asl, () => client)
@@ -509,6 +513,24 @@ class UriDocumentAnalyzerSuite extends FunSuite {
     assertEquals(range.getEnd.getCharacter, start + ";swap".length)
     val newText = action.getEdit.getChanges.get(uri).get(0).getNewText
     assertEquals(newText, "/api/v1/graph?q=caf%C3%A9,b,:swap")
+  }
+
+  test("computeCodeActions: does not publish diagnostics for embedded expressions") {
+    val published = scala.collection.mutable.ListBuffer.empty[String]
+    val client = newClient(p => published += p.getUri)
+    val interpreter = Interpreter(StandardVocabulary.allWords)
+    // Give the ASL analyzer a client as well so any temporary documents would be visible
+    val asl = new AslDocumentAnalyzer(interpreter, clientSupplier = () => client)
+    val analyzer = new UriDocumentAnalyzer(asl, () => client)
+
+    val uri = "test:no-temp-docs"
+    analyzer.updateDocument(uri, "/api/v1/graph?q=a,b,;swap&q=c,d,;swap")
+    published.clear()
+    val actions = analyzer.computeCodeActions(uri)
+    val typoFixes = actions.map(_.getRight).filter(_.getTitle == "Replace with ':swap'")
+    assertEquals(typoFixes.size, 2, s"expected a typo fix for each param: $actions")
+    assertEquals(published.toList, Nil)
+    assert(asl.documents.isEmpty, s"unexpected documents: ${asl.documents.keySet}")
   }
 
   test("computeSemanticTokens: percent-encoded expression") {
