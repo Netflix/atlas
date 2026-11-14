@@ -38,8 +38,12 @@ class ExprNormalizer(config: Config) {
       .asInstanceOf[StyleExpr]
   }
 
+  /**
+    * Normalize the expression and convert to a string for display to users. The string uses
+    * the [[ReadableExprFormat]] so it may vary across versions.
+    */
   def normalizeToString(expr: StyleExpr): String = {
-    normalize(expr).toString
+    ReadableExprFormat(normalize(expr))
       .replace(",:const", "")
       .replace(",:line", "")
   }
