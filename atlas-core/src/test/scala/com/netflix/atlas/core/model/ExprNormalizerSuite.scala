@@ -42,6 +42,13 @@ class ExprNormalizerSuite extends FunSuite {
     assertEquals(normalize("name,sps,:eq"), List("name,sps,:eq,:sum"))
   }
 
+  test("simple regex uses readable form") {
+    assertEquals(
+      normalize("name,a\\.b,:re,app,foo,:contains,:and,:sum"),
+      List("name,a.b,:starts,app,foo,:contains,:and,:sum")
+    )
+  }
+
   test("multiple expressions") {
     assertEquals(
       normalize("name,sps,:eq,:dup,2,:mul,:swap"),
