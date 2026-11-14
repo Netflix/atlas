@@ -17,9 +17,12 @@ package com.netflix.atlas.lsp
 
 import scala.jdk.CollectionConverters.*
 
+import com.netflix.atlas.core.model.QueryVocabulary
 import com.netflix.atlas.core.model.StyleVocabulary
 import com.netflix.atlas.core.stacklang.Interpreter
 import com.netflix.atlas.core.stacklang.StandardVocabulary
+import com.netflix.atlas.core.stacklang.Word
+import com.netflix.atlas.core.stacklang.ast.Severity
 import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.CodeActionContext
 import org.eclipse.lsp4j.CodeActionParams
@@ -1065,5 +1068,141 @@ class AslLspServerSuite extends FunSuite {
     assert(deprecated.nonEmpty, s"expected DiagnosticTag.Deprecated in: $diags")
     val msg = deprecated.head.getMessage.getLeft
     assert(msg.contains("deprecated"), s"expected 'deprecated' in message: $msg")
+  }
+
+  //
+  // regex diagnostics and quick-fixes
+  //
+
+  private def regexDiagnostics(text: String): List[String] = {
+    val server = new AslLspServer(StyleVocabulary)
+    val tree = server.analyzer().interpreter.syntaxTree(text)
+    server.analyzer().computeRegexDiagnostics(text, tree).map { d =>
+      s"[${d.span.start}-${d.span.end}] ${d.severity} ${d.message}"
+    }
+  }
+
+  test("diagnostics: regex with dots suggests :starts") {
+    val diags = regexDiagnostics("name,a.b.c,:re")
+    assertEquals(diags.size, 1)
+    assert(diags.head.startsWith("[5-10] Info"), diags.head)
+  }
+
+  test("diagnostics: glob style regex suggests :starts") {
+    val diags = regexDiagnostics("name,foo*,:re")
+    assertEquals(diags.size, 1)
+    assert(diags.head.startsWith("[5-9] Info"), diags.head)
+  }
+
+  test("diagnostics: wildcard dots have no suggestion") {
+    assertEquals(regexDiagnostics("status,5..,:re"), Nil)
+  }
+
+  test("diagnostics: comment between pattern and word") {
+    assertEquals(regexDiagnostics("name,foo*, /* glob */ :re").size, 1)
+    assertEquals(regexDiagnostics("name,foo* /* c */,:re").size, 1)
+  }
+
+  test("diagnostics: complex regex has no suggestion") {
+    assertEquals(regexDiagnostics("name,(a|b),:re"), Nil)
+  }
+
+  test("diagnostics: :reic is ignored") {
+    assertEquals(regexDiagnostics("name,a.b.c,:reic"), Nil)
+  }
+
+  test("diagnostics: regex suggestion requires replacement word in vocabulary") {
+    def count(words: List[Word]): Int = {
+      val interpreter = Interpreter(words)
+      val analyzer = new AslDocumentAnalyzer(interpreter)
+      val text = "name,foo,:re"
+      analyzer.computeRegexDiagnostics(text, interpreter.syntaxTree(text)).size
+    }
+    assertEquals(count(List(QueryVocabulary.Regex)), 0)
+    assertEquals(count(List(QueryVocabulary.Regex, QueryVocabulary.Starts)), 1)
+  }
+
+  private def codeActionEdits(actions: java.util.List[?]): Seq[String] = {
+    (0 until actions.size()).flatMap { i =>
+      val either = actions.get(i).asInstanceOf[LspEither[Command, CodeAction]]
+      Option(either.getRight).flatMap(a => Option(a.getEdit)).toList.flatMap { e =>
+        e.getChanges.asScala.values.flatMap(_.asScala.map(_.getNewText))
+      }
+    }
+  }
+
+  test("codeAction: regex with dots offers :starts quick-fix") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-re1"
+    openDocument(server, uri, "name,a.b.c,:re,:sum")
+    val actions = requestCodeActions(server, uri)
+    assert(codeActionTitles(actions).contains("Replace with a.b.c,:starts"))
+    assert(codeActionEdits(actions).contains("a.b.c,:starts"))
+  }
+
+  test("codeAction: glob style regex offers :starts quick-fix") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-re2"
+    openDocument(server, uri, "name,foo*,:re,:sum")
+    val actions = requestCodeActions(server, uri)
+    assert(codeActionTitles(actions).contains("Replace with foo,:starts"))
+  }
+
+  test("codeAction: regex quick-fix range covers pattern through word") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-re4"
+    openDocument(server, uri, "name,foo*,\n  :re,:sum")
+    val actions = requestCodeActions(server, uri)
+    val edits = (0 until actions.size())
+      .map(i => actions.get(i).asInstanceOf[LspEither[Command, CodeAction]].getRight)
+      .filter(_.getTitle == "Replace with foo,:starts")
+      .flatMap(_.getEdit.getChanges.get(uri).asScala)
+    assertEquals(edits.size, 1)
+    assertEquals(edits.head.getRange, new Range(new Position(0, 5), new Position(1, 5)))
+  }
+
+  test("codeAction: regex replacement value is escaped") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-re3"
+    openDocument(server, uri, "name,.*a\\u002cb$,:re,:sum")
+    val actions = requestCodeActions(server, uri)
+    assert(codeActionEdits(actions).contains("a\\u002cb,:ends"), codeActionEdits(actions).toString)
+  }
+
+  test("codeAction: normalize and regex quick-fix agree") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-re-norm"
+    openDocument(server, uri, "name,a\\.b\\.c,:re,:sum")
+    val actions = requestCodeActions(server, uri)
+    val edits = codeActionEdits(actions)
+    assert(edits.contains("a.b.c,:starts"), edits.toString)
+    assert(edits.contains("name,a.b.c,:starts,:sum"), edits.toString)
+
+    // After applying, there should be no further regex suggestion or normalize action
+    val uri2 = "expr:ca-re-norm2"
+    openDocument(server, uri2, "name,a.b.c,:starts,:sum")
+    val titles = codeActionTitles(requestCodeActions(server, uri2))
+    assert(!titles.exists(_.startsWith("Replace with")), titles.toString)
+    assert(!titles.contains("Normalize expression"), titles.toString)
+  }
+
+  test("codeAction: no regex quick-fix if comments would be lost") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-re-comment"
+    openDocument(server, uri, "name,foo*, /* glob */ :re,:sum")
+    val titles = codeActionTitles(requestCodeActions(server, uri))
+    assert(!titles.exists(_.startsWith("Replace with")), titles.toString)
+  }
+
+  test("codeAction: regex quick-fix with comment end is parseable") {
+    val server = new AslLspServer(StyleVocabulary)
+    val uri = "expr:ca-re-comment-end"
+    val text = "name,\\u002fapi*\\u002fusers,:re,:sum"
+    openDocument(server, uri, text)
+    val edits = codeActionEdits(requestCodeActions(server, uri))
+    val edit = edits.find(_.endsWith(",:re")).getOrElse(fail(s"missing regex fix: $edits"))
+    val updated = s"name,$edit,:sum"
+    val tree = server.analyzer().interpreter.syntaxTree(updated)
+    assertEquals(tree.diagnostics.filter(_.severity == Severity.Error), Nil, updated)
   }
 }

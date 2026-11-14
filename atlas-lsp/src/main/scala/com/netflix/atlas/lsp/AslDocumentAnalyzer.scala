@@ -82,25 +82,27 @@ class AslDocumentAnalyzer(
   ): java.util.List[org.eclipse.lsp4j.Diagnostic] = {
     val tree = interpreter.syntaxTree(text)
     val paramDiags = computeParameterDiagnostics(tree)
-    val allDiags = tree.diagnostics ++ paramDiags
+    val regexDiags = computeRegexDiagnostics(text, tree)
+    val allDiags = tree.diagnostics ++ paramDiags ++ regexDiags
+    val positions = new Positions(text)
     val diags = allDiags.map { d =>
-      val severity = d.severity match {
-        case Severity.Error   => DiagnosticSeverity.Error
-        case Severity.Warning => DiagnosticSeverity.Warning
-        case Severity.Info    => DiagnosticSeverity.Information
-      }
-      val range = new Range(
-        offsetToPosition(text, d.span.start),
-        offsetToPosition(text, d.span.end)
-      )
+      val range = positions.range(d.span)
       val lspDiag =
-        new org.eclipse.lsp4j.Diagnostic(range, d.message, severity, "atlas")
+        new org.eclipse.lsp4j.Diagnostic(range, d.message, toLspSeverity(d.severity), "atlas")
       if (d.message.contains("is deprecated:")) {
         lspDiag.setTags(java.util.List.of(DiagnosticTag.Deprecated))
       }
       lspDiag
     }
     diags.asJava
+  }
+
+  private def toLspSeverity(severity: Severity): DiagnosticSeverity = {
+    severity match {
+      case Severity.Error   => DiagnosticSeverity.Error
+      case Severity.Warning => DiagnosticSeverity.Warning
+      case Severity.Info    => DiagnosticSeverity.Information
+    }
   }
 
   private[lsp] def publishDiagnostics(uri: String, text: String): Unit = {
@@ -246,44 +248,104 @@ class AslDocumentAnalyzer(
     }
   }
 
+  /** Usage of `:re` where the [[RegexAnalyzer]] has a suggestion. */
+  private case class RegexUsage(
+    literal: LiteralNode,
+    word: WordNode,
+    suggestion: RegexAnalyzer.Suggestion,
+    fixable: Boolean
+  )
+
+  /**
+    * Find usages of `:re` where the pattern is a literal before the word, possibly with
+    * comments in between, and the [[RegexAnalyzer]] has a suggestion. Only top level nodes
+    * are considered, a list pushes a List value so a literal within a list cannot be the
+    * pattern. Suggestions for words that are not part of the vocabulary are ignored.
+    *
+    * The quick fix replaces the text from the start of the literal to the end of the word,
+    * so it is only offered if that region does not contain any comments that would be lost.
+    */
+  private def regexSuggestions(text: String, tree: SyntaxTree): List[RegexUsage] = {
+    val nodes = tree.nodes.toIndexedSeq
+    nodes.indices.toList.flatMap { i =>
+      nodes(i) match {
+        case ln: LiteralNode =>
+          val j = nodes.indexWhere(n => !n.isInstanceOf[CommentNode], i + 1)
+          if (j < 0) Nil
+          else
+            nodes(j) match {
+              case wn: WordNode if wn.word.exists(_.name == "re") && wn.diagnostic.isEmpty =>
+                wn.stack.headOption
+                  .collect {
+                    case p: String if p == Interpreter.unescape(ln.token.value) => p
+                  }
+                  .flatMap(RegexAnalyzer.analyze)
+                  .filter(s => interpreter.lookup(s.word).nonEmpty)
+                  .map { s =>
+                    val fixable = !text.substring(ln.span.start, wn.span.end).contains("/*")
+                    RegexUsage(ln, wn, s, fixable)
+                  }
+                  .toList
+              case _ =>
+                Nil
+            }
+        case _ =>
+          Nil
+      }
+    }
+  }
+
+  /** Diagnostics for `:re` patterns that are likely mistakes or could be simplified. */
+  private[lsp] def computeRegexDiagnostics(text: String, tree: SyntaxTree): List[Diagnostic] = {
+    regexSuggestions(text, tree).map { u =>
+      Diagnostic(u.literal.span, u.suggestion.message, Severity.Info)
+    }
+  }
+
+  private[lsp] def computeRegexActions(
+    uri: String,
+    text: String,
+    tree: SyntaxTree
+  ): List[Either[Command, CodeAction]] = {
+    val positions = new Positions(text)
+    regexSuggestions(text, tree).filter(_.fixable).map { u =>
+      val s = u.suggestion
+      val replacement = s"${Interpreter.escape(s.value)},:${s.word}"
+      quickFix(
+        uri,
+        s"Replace with $replacement",
+        positions.range(u.literal.span),
+        s.message,
+        DiagnosticSeverity.Information,
+        positions.range(u.literal.span.start, u.word.span.end),
+        replacement
+      )
+    }
+  }
+
   private[lsp] def computeDeprecatedOffsetActions(
     uri: String,
     text: String,
     tree: SyntaxTree
   ): List[Either[Command, CodeAction]] = {
-    val actions = List.newBuilder[Either[Command, CodeAction]]
-    val nodes = tree.nodes
-    nodes.sliding(2).foreach {
+    val positions = new Positions(text)
+    tree.nodes.sliding(2).toList.collect {
       case List(list: ListNode, word: WordNode)
           if word.word.exists(_.deprecated.isDefined) &&
           word.token.value.stripPrefix(":") == "offset" &&
           list.children.size == 1 =>
         val value = text.substring(list.children.head.span.start, list.children.head.span.end)
-        val range = new Range(
-          offsetToPosition(text, list.span.start),
-          offsetToPosition(text, list.span.end)
-        )
-        val diagRange = new Range(
-          offsetToPosition(text, word.span.start),
-          offsetToPosition(text, word.span.end)
-        )
-        val lspDiag = new org.eclipse.lsp4j.Diagnostic(
-          diagRange,
+        quickFix(
+          uri,
+          s"Replace with data variant: $value,:offset",
+          positions.range(word.span),
           word.diagnostic.map(_.message).getOrElse(":offset is deprecated"),
           DiagnosticSeverity.Warning,
-          "atlas"
+          positions.range(list.span),
+          value,
+          List(DiagnosticTag.Deprecated)
         )
-        lspDiag.setTags(java.util.List.of(DiagnosticTag.Deprecated))
-        val edit = new TextEdit(range, value)
-        val wsEdit = new WorkspaceEdit(java.util.Map.of(uri, java.util.List.of(edit)))
-        val action = new CodeAction(s"Replace with data variant: $value,:offset")
-        action.setKind(CodeActionKind.QuickFix)
-        action.setDiagnostics(java.util.List.of(lspDiag))
-        action.setEdit(wsEdit)
-        actions += Either.forRight(action)
-      case _ =>
     }
-    actions.result()
   }
 
   private[lsp] def computeTypoCodeActions(
@@ -291,31 +353,45 @@ class AslDocumentAnalyzer(
     text: String,
     tree: SyntaxTree
   ): List[Either[Command, CodeAction]] = {
-    val actions = List.newBuilder[Either[Command, CodeAction]]
-    tree.diagnostics.foreach { d =>
-      val msg = d.message
-      if (msg.startsWith("did you mean ':") && msg.endsWith("'? (semicolon instead of colon)")) {
-        val name = msg.stripPrefix("did you mean ':").stripSuffix("'? (semicolon instead of colon)")
-        val range = new Range(
-          offsetToPosition(text, d.span.start),
-          offsetToPosition(text, d.span.end)
-        )
-        val lspDiag = new org.eclipse.lsp4j.Diagnostic(
+    val positions = new Positions(text)
+    val prefix = "did you mean ':"
+    val suffix = "'? (semicolon instead of colon)"
+    tree.diagnostics.collect {
+      case d if d.message.startsWith(prefix) && d.message.endsWith(suffix) =>
+        val name = d.message.stripPrefix(prefix).stripSuffix(suffix)
+        val range = positions.range(d.span)
+        quickFix(
+          uri,
+          s"Replace with ':$name'",
           range,
           d.message,
           DiagnosticSeverity.Warning,
-          "atlas"
+          range,
+          s":$name"
         )
-        val edit = new TextEdit(range, s":$name")
-        val wsEdit = new WorkspaceEdit(java.util.Map.of(uri, java.util.List.of(edit)))
-        val action = new CodeAction(s"Replace with ':$name'")
-        action.setKind(CodeActionKind.QuickFix)
-        action.setDiagnostics(java.util.List.of(lspDiag))
-        action.setEdit(wsEdit)
-        actions += Either.forRight(action)
-      }
     }
-    actions.result()
+  }
+
+  /** Create a quick fix action that replaces the text in `editRange` with `newText`. */
+  private def quickFix(
+    uri: String,
+    title: String,
+    diagRange: Range,
+    message: String,
+    severity: DiagnosticSeverity,
+    editRange: Range,
+    newText: String,
+    tags: List[DiagnosticTag] = Nil
+  ): Either[Command, CodeAction] = {
+    val lspDiag = new org.eclipse.lsp4j.Diagnostic(diagRange, message, severity, "atlas")
+    if (tags.nonEmpty) lspDiag.setTags(tags.asJava)
+    val edit = new TextEdit(editRange, newText)
+    val wsEdit = new WorkspaceEdit(java.util.Map.of(uri, java.util.List.of(edit)))
+    val action = new CodeAction(title)
+    action.setKind(CodeActionKind.QuickFix)
+    action.setDiagnostics(java.util.List.of(lspDiag))
+    action.setEdit(wsEdit)
+    Either.forRight(action)
   }
 
   def computeCodeActions(uri: String): List[Either[Command, CodeAction]] = {
@@ -324,7 +400,8 @@ class AslDocumentAnalyzer(
     val tree = interpreter.syntaxTree(text)
     val typoActions = computeTypoCodeActions(uri, text, tree)
     val deprecatedOffsetActions = computeDeprecatedOffsetActions(uri, text, tree)
-    val quickFixes = typoActions ++ deprecatedOffsetActions
+    val regexActions = computeRegexActions(uri, text, tree)
+    val quickFixes = typoActions ++ deprecatedOffsetActions ++ regexActions
     val hasErrors = tree.diagnostics.exists(_.severity == Severity.Error)
     if (hasErrors) return quickFixes
     val actions = List.newBuilder[Either[Command, CodeAction]]
@@ -1371,5 +1448,23 @@ class AslDocumentAnalyzer(
     val lineStarts = buildLineStarts(text)
     val (line, col) = offsetToLineCol(lineStarts, offset)
     new Position(line, col)
+  }
+
+  /**
+    * Helper for converting offsets to positions for a given text. The line starts are
+    * computed once so it is more efficient when converting many offsets.
+    */
+  private class Positions(text: String) {
+
+    private val lineStarts = buildLineStarts(text)
+
+    def position(offset: Int): Position = {
+      val (line, col) = offsetToLineCol(lineStarts, offset)
+      new Position(line, col)
+    }
+
+    def range(start: Int, end: Int): Range = new Range(position(start), position(end))
+
+    def range(span: Span): Range = range(span.start, span.end)
   }
 }
