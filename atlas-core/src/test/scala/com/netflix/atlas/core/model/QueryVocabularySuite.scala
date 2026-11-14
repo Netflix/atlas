@@ -32,7 +32,7 @@ class QueryVocabularySuite extends FunSuite {
     assertEquals(exp.asInstanceOf[Query.Regex].v, ".*space and ~")
     assertEquals(
       exp.asInstanceOf[Query.Regex].pattern.toString,
-      ".*space\\x20and\\x20~"
+      ".*space and ~"
     )
   }
 
@@ -195,7 +195,7 @@ class QueryVocabularySuite extends FunSuite {
     val exp = interpreter.execute(s"a,$txt,:contains").stack.head
     assertEquals(
       exp.asInstanceOf[Query.Regex].pattern.toString,
-      ".*foo,\\x20bar,\\x20baz"
+      ".*foo, bar, baz"
     )
   }
 
