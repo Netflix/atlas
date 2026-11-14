@@ -342,13 +342,8 @@ object QueryVocabulary extends Vocabulary {
       List("name,DiscoveryStatus_(UP|DOWN)", "name,discoverystatus_(Up|Down)", "ERROR:name")
   }
 
-  /**
-    * Escape a literal value for use in a regex pattern. Spaces are kept as is so the result
-    * is compatible with using `:re` directly.
-    */
-  private def escape(v: String): String = {
-    v.split(" ", -1).map(PatternUtils.escape).mkString(" ")
-  }
+  /** Escape a literal value for use in a regex pattern. */
+  private def escape(v: String): String = PatternUtils.escape(v)
 
   case object Contains extends KeyValueWord {
 
