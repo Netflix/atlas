@@ -32,8 +32,8 @@ class ModelExtractorsSuite extends FunSuite {
     }
   }
 
-  completionTest("name", 7)
-  completionTest("name,sps", 25)
+  completionTest("name", 8)
+  completionTest("name,sps", 26)
   completionTest("name,sps,:eq", 59)
   completionTest("name,sps,:eq,app,foo,:eq", 83)
   completionTest("name,sps,:eq,app,foo,:eq,:and,(,asg,)", 15)

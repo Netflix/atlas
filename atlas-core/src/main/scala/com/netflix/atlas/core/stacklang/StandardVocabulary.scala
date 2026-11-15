@@ -75,7 +75,14 @@ object StandardVocabulary extends Vocabulary {
       "Copy the top below the second: `a b -- b a b`.",
       List("a,b")
     ),
-    Macro("fcall", List(":get", ":call"), List("duplicate,(,:dup,),:set,a,duplicate")),
+    TypedMacro(
+      "fcall",
+      List(":get", ":call"),
+      ArraySeq(Parameter("name", "variable with the program to execute", StringType)),
+      ArraySeq.empty,
+      "Execute the program stored in a variable: shorthand for `:get :call`.",
+      List("duplicate,(,:dup,),:set,a,duplicate")
+    ),
     TypedMacro(
       "sset",
       List(":swap", ":set"),

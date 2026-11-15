@@ -16,6 +16,9 @@
 package com.netflix.atlas.core.model
 
 import com.netflix.atlas.core.stacklang.Interpreter
+import com.netflix.atlas.core.stacklang.TypedMacro
+import com.netflix.atlas.core.stacklang.TypedWord
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
@@ -163,5 +166,112 @@ class CustomVocabularySuite extends FunSuite {
       "80,:gt,15,:rolling-count,10,:gt,$node,:legend"
     val context2 = interpreter.execute(complexExprExplicit)
     assertEquals(context.stack, context2.stack)
+  }
+
+  test("custom average is typed") {
+    val w = vocab.words.find(_.name == "node-avg").get
+    assert(w.isInstanceOf[TypedWord])
+    assertEquals(w.signature, "q:Query -- TimeSeriesExpr")
+  }
+
+  private def typedWordConfig(body: String, outputType: String): String = {
+    s"""
+       |atlas.core.vocabulary {
+       |  words = [
+       |    {
+       |      name = "square"
+       |      body = "$body"
+       |      summary = "Compute the square of the input."
+       |      parameters = [
+       |        {
+       |          name = ""
+       |          type = "TimeSeriesExpr"
+       |          description = "input expression"
+       |        }
+       |      ]
+       |      outputs = ["$outputType"]
+       |      examples = ["2", "name,cpu,:eq"]
+       |    }
+       |  ]
+       |  custom-averages = []
+       |}
+    """.stripMargin
+  }
+
+  test("custom word: typed") {
+    val cfg = ConfigFactory.parseString(typedWordConfig(":dup,:mul", "TimeSeriesExpr"))
+    val v = new CustomVocabulary(cfg)
+    val w = v.words.head
+    assert(w.isInstanceOf[TypedMacro])
+    assertEquals(w.signature, "TimeSeriesExpr -- TimeSeriesExpr")
+    assertEquals(w.summary, "Compute the square of the input.")
+
+    val result = Interpreter(v.allWords).execute("2,:square")
+    assertEquals(result.stack, Interpreter(v.allWords).execute("2,2,:mul").stack)
+  }
+
+  test("custom word: typed, does not match stack") {
+    val cfg = ConfigFactory.parseString(typedWordConfig(":dup,:mul", "TimeSeriesExpr"))
+    val v = new CustomVocabulary(cfg)
+    assert(!v.words.head.matches(List(List("a"))))
+  }
+
+  test("custom word: unknown type") {
+    val cfg = ConfigFactory.parseString(typedWordConfig(":dup,:mul", "Foo"))
+    val e = intercept[IllegalArgumentException](new CustomVocabulary(cfg))
+    assert(e.getMessage.startsWith("unknown type 'Foo' for :square"))
+  }
+
+  test("custom word: body inconsistent with declared outputs") {
+    val cfg = ConfigFactory.parseString(typedWordConfig(":dup,:mul,a,:legend", "Query"))
+    val e = intercept[IllegalArgumentException](new CustomVocabulary(cfg))
+    assert(e.getMessage.startsWith("output of :square for example '2' does not match"))
+  }
+
+  test("custom word: body inconsistent with declared stack effect") {
+    val cfg = ConfigFactory.parseString(typedWordConfig(":dup", "TimeSeriesExpr"))
+    val e = intercept[IllegalArgumentException](new CustomVocabulary(cfg))
+    assert(e.getMessage.startsWith("stack effect of :square for example '2' does not match"))
+  }
+
+  test("custom word: typed, dependencies without the body words") {
+    // The same custom word config is also loaded with the event vocabulary, see
+    // ExprInterpreter, where the time series operators used by the body are not available.
+    val cfg = ConfigFactory.parseString(typedWordConfig(":dup,:mul", "TimeSeriesExpr"))
+    val v = new CustomVocabulary(cfg, List(EventVocabulary))
+    assert(v.words.head.isInstanceOf[TypedMacro])
+  }
+
+  test("custom word: typed, error examples are not checked") {
+    val cfg = ConfigFactory.parseString(
+      typedWordConfig(":dup,:mul", "TimeSeriesExpr").replace("\"name,cpu,:eq\"", "\"ERROR:a\"")
+    )
+    val v = new CustomVocabulary(cfg)
+    assertEquals(v.words.head.examples, List("2", "ERROR:a"))
+  }
+
+  test("custom word: typed, default summary") {
+    val cfg = ConfigFactory.parseString(
+      typedWordConfig(":dup,:mul", "TimeSeriesExpr").replace("summary =", "unused =")
+    )
+    val v = new CustomVocabulary(cfg)
+    assert(v.words.head.summary.startsWith("Shorthand equivalent to writing"))
+  }
+
+  test("custom word: outputs without parameters") {
+    val cfg = ConfigFactory.parseString(
+      typedWordConfig(":dup,:mul", "TimeSeriesExpr").replace("parameters =", "unused =")
+    )
+    intercept[ConfigException.Missing](new CustomVocabulary(cfg))
+  }
+
+  test("custom word: typed, examples checked against the custom word") {
+    // Name overlaps with a built-in operator that would match first via the interpreter and
+    // produce the declared output type
+    val cfg = ConfigFactory.parseString(
+      typedWordConfig(":dup,:mul,a,:legend", "TimeSeriesExpr").replace("\"square\"", "\"abs\"")
+    )
+    val e = intercept[IllegalArgumentException](new CustomVocabulary(cfg))
+    assert(e.getMessage.startsWith("output of :abs for example '2' does not match"))
   }
 }

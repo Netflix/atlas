@@ -20,7 +20,6 @@ import java.time.Duration
 import scala.collection.immutable.ArraySeq
 
 import com.netflix.atlas.core.stacklang.Context
-import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
 import com.netflix.atlas.core.stacklang.TypedMacro
 import com.netflix.atlas.core.stacklang.TypedWord
 import com.netflix.atlas.core.stacklang.Vocabulary
@@ -59,7 +58,37 @@ object StatefulVocabulary extends Vocabulary {
     desTypedMacro("sdes-fast", List("10", "0.1", "0.02", ":sdes")),
     desTypedMacro("sdes-slower", List("10", "0.05", "0.03", ":sdes")),
     desTypedMacro("sdes-slow", List("10", "0.03", "0.04", ":sdes")),
-    Macro("des-epic-signal", desEpicSignal, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4"))
+    TypedMacro(
+      "des-epic-signal",
+      desEpicSignal,
+      desEpicParameters,
+      ArraySeq(TimeSeriesExprType),
+      """
+        |Signal that is true when the input deviates from a DES prediction by more than both
+        |the noise and percent bounds. Legacy operator for compatibility with Epic alerts. The
+        |intermediate lines are stored as variables, see [style/:des-epic-viz](style-des-epic-viz).
+      """.stripMargin.trim,
+      List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4")
+    )
+  )
+
+  /** Parameters for the legacy Epic DES operators, `:des-epic-signal` and `:des-epic-viz`. */
+  private[model] def desEpicParameters: IndexedSeq[Parameter] = ArraySeq(
+    Parameter("", "input time series", TimeSeriesExprType),
+    Parameter("training", "training window size", DataType.IntType),
+    Parameter("alpha", "data smoothing factor", DataType.DoubleType),
+    Parameter("beta", "trend smoothing factor", DataType.DoubleType),
+    Parameter(
+      "maxPercent",
+      "percent above the prediction for the upper bound",
+      DataType.DoubleType
+    ),
+    Parameter(
+      "minPercent",
+      "percent below the prediction for the lower bound",
+      DataType.DoubleType
+    ),
+    Parameter("noise", "fixed amount around the prediction for the bounds", TimeSeriesExprType)
   )
 
   // Cumulative distinct count: max the sketch registers across time before estimating. This is

@@ -22,8 +22,6 @@ import scala.util.Try
 
 import com.netflix.atlas.core.stacklang.Context
 import com.netflix.atlas.core.stacklang.Interpreter
-import com.netflix.atlas.core.stacklang.SimpleWord
-import com.netflix.atlas.core.stacklang.StandardVocabulary.Macro
 import com.netflix.atlas.core.stacklang.TypedMacro
 import com.netflix.atlas.core.stacklang.TypedWord
 import com.netflix.atlas.core.stacklang.Vocabulary
@@ -121,7 +119,17 @@ object StyleVocabulary extends Vocabulary {
       List("name,sps,:eq,:sum,:dup,200e3,:gt")
     ),
     // Legacy macro for visualizing epic expressions
-    Macro("des-epic-viz", desEpicViz, List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4")),
+    TypedMacro(
+      "des-epic-viz",
+      desEpicViz,
+      StatefulVocabulary.desEpicParameters,
+      ArraySeq.fill(6)(PresentationType),
+      """
+        |Visualize the lines used for [stateful/:des-epic-signal](stateful-des-epic-signal):
+        |the signal as a vertical span, the input line, and the lower and upper bounds.
+      """.stripMargin.trim,
+      List("name,sps,:eq,:sum,10,0.1,0.5,0.2,0.2,4")
+    ),
     // Remove presentation settings
     StripStyle
   )
@@ -227,7 +235,7 @@ object StyleVocabulary extends Vocabulary {
     )
   }
 
-  case object Palette extends SimpleWord {
+  case object Palette extends TypedWord {
 
     override def name: String = "palette"
 
@@ -251,22 +259,19 @@ object StyleVocabulary extends Vocabulary {
         |Since: 1.6
       """.stripMargin.trim
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case (_: String) :: PresentationType(_) :: _                => true
-      case DataType.StringListType(_) :: PresentationType(_) :: _ => true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", PresentationType),
+      Parameter("v", "palette name or list of colors", PaletteType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case (v: String) :: PresentationType(t) :: s =>
-        val settings = t.settings + ("palette" -> v) - "color" - "alpha"
-        t.copy(settings = settings) :: s
-      case DataType.StringListType(vs) :: PresentationType(t) :: s =>
-        val v = vs.mkString("(,", ",", ",)")
-        val settings = t.settings + ("palette" -> v) - "color" - "alpha"
-        t.copy(settings = settings) :: s
-    }
+    override def outputs: IndexedSeq[DataType] = ArraySeq(PresentationType)
 
-    override def signature: String = "TimeSeriesExpr String -- StyleExpr"
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val t = params(0).asInstanceOf[StyleExpr]
+      val v = params(1).asInstanceOf[String]
+      val settings = t.settings + ("palette" -> v) - "color" - "alpha"
+      context.copy(stack = t.copy(settings = settings) :: context.stack)
+    }
 
     override def examples: List[String] = List(
       "name,sps,:eq,:sum,reds",
@@ -355,24 +360,30 @@ object StyleVocabulary extends Vocabulary {
     override def examples: List[String] = List("name,sps,:eq,:sum,(,0h,1d,1w,)")
   }
 
-  object Filter extends Word {
+  object Filter extends TypedWord {
 
     override def name: String = "filter"
 
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", PresentationType),
+      Parameter("", "filter expression", TimeSeriesExprType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(PresentationType)
+
+    // Only match if presentation settings have already been applied, otherwise the
+    // general filter operation should be used.
     override def matches(stack: List[Any]): Boolean = stack match {
       case TimeSeriesExprType(_) :: (_: StyleExpr) :: _ => true
       case _                                            => false
     }
 
-    override def execute(context: Context): Context = {
-      context.stack match {
-        case TimeSeriesExprType(ts) :: (se: StyleExpr) :: s =>
-          val rs = FilterVocabulary.Filter.execute(context.copy(stack = ts :: se.expr :: s))
-          val newExpr = se.copy(expr = rs.stack.head.asInstanceOf[TimeSeriesExpr])
-          rs.copy(stack = newExpr :: rs.stack.tail)
-        case _ =>
-          invalidStack
-      }
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val se = params(0).asInstanceOf[StyleExpr]
+      val ts = params(1).asInstanceOf[TimeSeriesExpr]
+      val rs = FilterVocabulary.Filter.execute(context.copy(stack = ts :: se.expr :: context.stack))
+      val newExpr = se.copy(expr = rs.stack.head.asInstanceOf[TimeSeriesExpr])
+      rs.copy(stack = newExpr :: rs.stack.tail)
     }
 
     override def summary: String =
@@ -381,8 +392,6 @@ object StyleVocabulary extends Vocabulary {
         |applying filters after presentation settings have been set. See the
         |[main filter page](filter-filter) for more details on general usage.
       """.stripMargin
-
-    override def signature: String = "StyleExpr TimeSeriesExpr -- StyleExpr"
 
     override def examples: List[String] =
       List("name,sps,:eq,:sum,(,nf.cluster,),:by,$nf.cluster,:legend,:stat-max,30e3,:gt")
