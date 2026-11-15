@@ -57,7 +57,9 @@ public class UriLspServer implements LanguageServer, LanguageClientAware {
                 vocabulary.allWords(),
                 Interpreter.defaultMaxStackSize(),
                 Interpreter.defaultMaxOperations());
-        var aslAnalyzer = new AslDocumentAnalyzer(interpreter, glossary, this::client);
+        // The ASL analyzer is only used for the embedded expressions, diagnostics are
+        // published by the URI analyzer so it does not need access to the client.
+        var aslAnalyzer = new AslDocumentAnalyzer(interpreter, glossary, () -> null);
         this.analyzer = new UriDocumentAnalyzer(aslAnalyzer, this::client);
         this.textDocService = new AslTextDocumentService(analyzer);
         this.workspaceService = new AslWorkspaceService();
