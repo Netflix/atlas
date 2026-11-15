@@ -54,7 +54,7 @@ class CustomDirectivesSuite extends MUnitRouteSuite {
 
     def routes: Route = {
       accessLog(List(zone)) {
-        respondWithCorsHeaders(List("*")) {
+        respondWithCorsHeaders(List("localhost", ".netflix.com")) {
           path("text") {
             get {
               val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "text response")
@@ -417,26 +417,85 @@ class CustomDirectivesSuite extends MUnitRouteSuite {
     }
   }
 
-  // Some browsers send this when a request is made from a file off the local filesystem
-  test("cors null origin") {
-    val headers = List(RawHeader("Origin", "null"))
+  test("cors with wildcard hosts") {
+    val wildcardRoute = respondWithCorsHeaders(List("*")) {
+      path("json") {
+        get {
+          val entity = HttpEntity(MediaTypes.`application/json`, "[1,2,3]")
+          complete(HttpResponse(status = StatusCodes.OK, entity = entity))
+        }
+      }
+    }
+
+    val headers = List(Origin(HttpOrigin("http://example.com")))
     val req = HttpRequest(HttpMethods.GET, Uri("/json"), headers)
-    req ~> endpoint.routes ~> check {
-      assert(headers.nonEmpty)
+    req ~> wildcardRoute ~> check {
+      assert(response.headers.nonEmpty)
+      var hasOrigin = false
+      var hasCredentials = false
       response.headers.foreach {
         case `Access-Control-Allow-Origin`(v) =>
           assertEquals("*", v.toString)
+          hasOrigin = true
         case `Access-Control-Allow-Methods`(vs) =>
           assertEquals("GET,PATCH,POST,PUT,DELETE", vs.map(_.name()).mkString(","))
-        case `Access-Control-Allow-Credentials`(v) =>
-          assert(v)
-        case h if h.is("netflix-zone") =>
-          assertEquals(h.value, "us-east-1e")
+        case `Access-Control-Allow-Credentials`(_) =>
+          hasCredentials = true
         case h if h.is("vary") =>
           assertEquals(h.value, "Origin")
         case h =>
           fail(s"unexpected header: $h")
       }
+      assert(hasOrigin)
+      assert(!hasCredentials)
+      val expected = """[1,2,3]"""
+      assertEquals(expected, responseAs[String])
+    }
+  }
+
+  // Some browsers send this when a request is made from a file off the local filesystem
+  test("cors null origin") {
+    val wildcardRoute = respondWithCorsHeaders(List("*")) {
+      path("json") {
+        get {
+          val entity = HttpEntity(MediaTypes.`application/json`, "[1,2,3]")
+          complete(HttpResponse(status = StatusCodes.OK, entity = entity))
+        }
+      }
+    }
+
+    val headers = List(RawHeader("Origin", "null"))
+    val req = HttpRequest(HttpMethods.GET, Uri("/json"), headers)
+    req ~> wildcardRoute ~> check {
+      assert(response.headers.nonEmpty)
+      var hasOrigin = false
+      var hasCredentials = false
+      response.headers.foreach {
+        case `Access-Control-Allow-Origin`(v) =>
+          assertEquals("*", v.toString)
+          hasOrigin = true
+        case `Access-Control-Allow-Methods`(vs) =>
+          assertEquals("GET,PATCH,POST,PUT,DELETE", vs.map(_.name()).mkString(","))
+        case `Access-Control-Allow-Credentials`(_) =>
+          hasCredentials = true
+        case h if h.is("vary") =>
+          assertEquals(h.value, "Origin")
+        case h =>
+          fail(s"unexpected header: $h")
+      }
+      assert(hasOrigin)
+      assert(!hasCredentials)
+      val expected = """[1,2,3]"""
+      assertEquals(expected, responseAs[String])
+    }
+  }
+
+  test("cors with disallowed origin") {
+    val headers = List(Origin(HttpOrigin("http://evil.com")))
+    val req = HttpRequest(HttpMethods.GET, Uri("/json"), headers)
+    req ~> endpoint.routes ~> check {
+      val corsHeaders = response.headers.filter(_.name().toLowerCase.startsWith("access-control-"))
+      assert(corsHeaders.isEmpty)
       val expected = """[1,2,3]"""
       assertEquals(expected, responseAs[String])
     }
