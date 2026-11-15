@@ -343,45 +343,41 @@ object MathVocabulary extends Vocabulary {
     override def examples: List[String] = List("name,sps,:eq,(,nf.cluster,),:by,nf.cluster,c")
   }
 
-  case object GroupBy extends SimpleWord {
+  case object GroupBy extends TypedWord {
 
     override def name: String = "by"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case StringListType(_) :: (t: AggrMathExpr) :: _ if t.expr.isGrouped =>
-        // Multi-level group by with an explicit aggregate specified
-        true
-      case StringListType(_) :: TimeSeriesExprType(t) :: _ if t.isGrouped =>
-        // Multi-level group by with an implicit aggregate of :sum
-        true
-      case StringListType(_) :: TimeSeriesExprType(_) :: _ =>
-        // Default data or math aggregate group by applied across math operations
-        true
-    }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", TimeSeriesExprType),
+      Parameter("keys", "tag keys to group by", StringListType)
+    )
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case StringListType(keys) :: (t: AggrMathExpr) :: stack if t.expr.isGrouped =>
-        // Multi-level group by with an explicit aggregate specified
-        MathExpr.GroupBy(t, keys) :: stack
-      case StringListType(keys) :: TimeSeriesExprType(t) :: stack if t.isGrouped =>
-        // Multi-level group by with an implicit aggregate of :sum
-        MathExpr.GroupBy(MathExpr.Sum(t), keys) :: stack
-      case StringListType(keys) :: TimeSeriesExprType(t) :: stack =>
-        // Default data group by applied across math operations
-        val f = t.rewrite {
-          case nr: NamedRewrite                      => nr.groupBy(keys)
-          case af: AggregateFunction                 => DataExpr.GroupBy(af, keys)
-          case af: AggrMathExpr if af.expr.isGrouped => MathExpr.GroupBy(af, keys)
-        }
-        f :: stack
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val keys = params(1).asInstanceOf[List[String]]
+      val result = params(0).asInstanceOf[TimeSeriesExpr] match {
+        case t: AggrMathExpr if t.expr.isGrouped =>
+          // Multi-level group by with an explicit aggregate specified
+          MathExpr.GroupBy(t, keys)
+        case t if t.isGrouped =>
+          // Multi-level group by with an implicit aggregate of :sum
+          MathExpr.GroupBy(MathExpr.Sum(t), keys)
+        case t =>
+          // Default data or math aggregate group by applied across math operations
+          t.rewrite {
+            case nr: NamedRewrite                      => nr.groupBy(keys)
+            case af: AggregateFunction                 => DataExpr.GroupBy(af, keys)
+            case af: AggrMathExpr if af.expr.isGrouped => MathExpr.GroupBy(af, keys)
+          }
+      }
+      context.copy(stack = result :: context.stack)
     }
 
     override def summary: String =
       """
         |Apply a common group by to all aggregation functions in the expression.
       """.stripMargin.trim
-
-    override def signature: String = "TimeSeriesExpr keys:List -- TimeSeriesExpr"
 
     override def examples: List[String] = List("name,sps,:eq,:avg,(,nf.cluster,)")
   }
@@ -1278,28 +1274,31 @@ object MathVocabulary extends Vocabulary {
     * percentile. The value should be a sum or group by. Other aggregate types, such as max, will
     * automatically be converted to sum.
     */
-  case object Percentiles extends SimpleWord {
+  case object Percentiles extends TypedWord {
 
     override def name: String = "percentiles"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
-      case DoubleListType(_) :: DataExprType(expr) :: _ =>
-        expr match {
-          case _: DataExpr.All => false
-          case _               => true
-        }
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", DataExprType),
+      Parameter("percentiles", "percentiles to estimate", DoubleListType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    override def matches(stack: List[Any]): Boolean = {
+      super.matches(stack) && !stack(1).isInstanceOf[DataExpr.All]
     }
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
-      case DoubleListType(pcts) :: DataExprType(t) :: stack =>
-        // Percentile always needs sum aggregate type, if others are used convert to sum
-        val expr = t match {
-          case af: AggregateFunction => DataExpr.GroupBy(toSum(af), List(TagKey.percentile))
-          case by: DataExpr.GroupBy  => DataExpr.GroupBy(toSum(by.af), TagKey.percentile :: by.keys)
-          case _                     =>
-            throw new IllegalArgumentException(":percentiles can only be used with :sum and :by")
-        }
-        MathExpr.Percentiles(expr, pcts) :: stack
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
+      val pcts = params(1).asInstanceOf[List[Double]]
+      // Percentile always needs sum aggregate type, if others are used convert to sum
+      val expr = params(0).asInstanceOf[DataExpr] match {
+        case af: AggregateFunction => DataExpr.GroupBy(toSum(af), List(TagKey.percentile))
+        case by: DataExpr.GroupBy  => DataExpr.GroupBy(toSum(by.af), TagKey.percentile :: by.keys)
+        case _                     =>
+          throw new IllegalArgumentException(":percentiles can only be used with :sum and :by")
+      }
+      context.copy(stack = MathExpr.Percentiles(expr, pcts) :: context.stack)
     }
 
     private def toSum(af: AggregateFunction): DataExpr.Sum = {
@@ -1321,28 +1320,34 @@ object MathVocabulary extends Vocabulary {
         |Since: 1.5.0 (first in 1.5.0-rc.4)
       """.stripMargin.trim
 
-    override def signature: String = "DataExpr percentiles:List -- Expr"
-
     override def examples: List[String] = List(
       "name,requestLatency,:eq,(,25,50,90,)"
     )
   }
 
-  case object ApproxDistinct extends SimpleWord {
+  case object ApproxDistinct extends TypedWord {
 
     override def name: String = "approx-distinct"
 
-    protected def matcher: PartialFunction[List[Any], Boolean] = {
+    override def parameters: IndexedSeq[Parameter] = ArraySeq(
+      Parameter("", "input expression", TimeSeriesExprType)
+    )
+
+    override def outputs: IndexedSeq[DataType] = ArraySeq(TimeSeriesExprType)
+
+    override def matches(stack: List[Any]): Boolean = stack match {
       case TimeSeriesExprType(t) :: _ =>
         t.dataExprs.nonEmpty && !t.dataExprs.exists(_.isInstanceOf[DataExpr.All])
+      case _ =>
+        false
     }
 
-    protected def executor: PartialFunction[List[Any], List[Any]] = {
+    override def execute(context: Context, params: IndexedSeq[Any]): Context = {
       // The estimator reshapes the input to the register grouping internally (forcing a max
       // aggregate grouped by the register key), including through wrappers such as
       // :cumulative-max. That is how :approx-distinct-cumulative composes.
-      case TimeSeriesExprType(t) :: stack =>
-        MathExpr.ApproxDistinct(t) :: stack
+      val t = params(0).asInstanceOf[TimeSeriesExpr]
+      context.copy(stack = MathExpr.ApproxDistinct(t) :: context.stack)
     }
 
     override def summary: String =
@@ -1359,8 +1364,6 @@ object MathVocabulary extends Vocabulary {
         |error of roughly 13%. Add `(,key,),:by` before the operator to break the estimate out by
         |another dimension.
       """.stripMargin.trim
-
-    override def signature: String = "TimeSeriesExpr -- Expr"
 
     override def examples: List[String] = List(
       "name,server.uniqueUsers,:eq",

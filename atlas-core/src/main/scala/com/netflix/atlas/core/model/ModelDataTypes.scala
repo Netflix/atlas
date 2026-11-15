@@ -156,4 +156,22 @@ object ModelDataTypes {
       case _            => None
     }
   }
+
+  /**
+    * Matches a palette for the `:palette` operator. The value can be the name of a palette,
+    * e.g. `reds`, or a list of colors. Lists are converted to the string form used for the
+    * palette setting, e.g. `(,f00,00f,)`.
+    */
+  case object PaletteType extends DataType {
+
+    def name: String = "Palette"
+
+    override def description: String = "palette name, e.g. reds, or list of colors"
+
+    def extract(value: Any): Option[Any] = value match {
+      case s: String                   => Some(s)
+      case DataType.StringListType(vs) => Some(vs.mkString("(,", ",", ",)"))
+      case _                           => None
+    }
+  }
 }
