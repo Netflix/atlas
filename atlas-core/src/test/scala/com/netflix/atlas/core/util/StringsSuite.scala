@@ -241,6 +241,13 @@ class StringsSuite extends FunSuite {
     assertEquals(urlDecode(expected.toLowerCase(Locale.US)), str)
   }
 
+  test("urlEncode: supplementary characters") {
+    // U+1F525 is a surrogate pair in UTF-16, both chars must be encoded together
+    val str = "a \uD83D\uDD25 b"
+    assertEquals(urlEncode(str), "a%20%F0%9F%94%A5%20b")
+    assertEquals(urlEncode("caf\u00E9"), "caf%C3%A9")
+  }
+
   test("urlEncode: CLDMTA-1582") {
     val str = "aggregator.http.post.(?!200)._count"
     val expected = "aggregator.http.post.(%3F!200)._count"

@@ -515,6 +515,22 @@ class UriDocumentAnalyzerSuite extends FunSuite {
     assertEquals(newText, "/api/v1/graph?q=caf%C3%A9,b,:swap")
   }
 
+  test("computeCodeActions: rewrite keeps supplementary characters") {
+    val (analyzer, _) = newAnalyzerWithClient()
+    val text = "/api/v1/graph?q=a,%20%F0%9F%94%A5,:swap"
+    val uri = "test:actions-supplementary"
+    analyzer.updateDocument(uri, text)
+    val newTexts = analyzer
+      .computeCodeActions(uri)
+      .flatMap(a => Option(a.getRight.getEdit).toList)
+      .flatMap(_.getChanges.asScala.values.flatMap(_.asScala.map(_.getNewText)))
+    assert(newTexts.nonEmpty, "expected rewrite actions")
+    newTexts.foreach { t =>
+      assert(t.contains("%F0%9F%94%A5"), t)
+      assert(!t.contains("%3F"), t)
+    }
+  }
+
   test("computeCodeActions: does not publish diagnostics for embedded expressions") {
     val published = scala.collection.mutable.ListBuffer.empty[String]
     val client = newClient(p => published += p.getUri)
