@@ -284,11 +284,16 @@ object Strings {
     var pos = 0
     while (pos < size) {
       val c = s.charAt(pos).toInt
-      if (c < 128)
+      if (c < 128) {
         buf.append(uriEscapes(c))
-      else
-        buf.append(URLEncoder.encode(c.toChar.toString, "UTF-8"))
-      pos += 1
+        pos += 1
+      } else {
+        // Encode the full code point so a surrogate pair is not split into two lone
+        // surrogates, which the UTF-8 encoder would replace with '?'.
+        val n = Character.charCount(s.codePointAt(pos))
+        buf.append(URLEncoder.encode(s.substring(pos, pos + n), "UTF-8"))
+        pos += n
+      }
     }
     buf.toString
   }
