@@ -51,6 +51,30 @@ class ExpressionSplitterSuite extends FunSuite {
     assertEquals(actual, expected)
   }
 
+  test("expression cache is bounded by expr-cache-max-size") {
+    val config = ConfigFactory
+      .parseString("atlas.lwcapi.expr-cache-max-size = 10")
+      .withFallback(ConfigFactory.load())
+    val bounded = new ExpressionSplitter(config)
+    (0 until 100).foreach { i =>
+      bounded.split(s"name,foo-$i,:eq,:sum", ExprType.TIME_SERIES, frequency1)
+    }
+    assert(bounded.cacheSize <= 10, s"cache size ${bounded.cacheSize}")
+  }
+
+  test("expression cache also bounds invalid expressions") {
+    val config = ConfigFactory
+      .parseString("atlas.lwcapi.expr-cache-max-size = 10")
+      .withFallback(ConfigFactory.load())
+    val bounded = new ExpressionSplitter(config)
+    (0 until 100).foreach { i =>
+      intercept[IllegalArgumentException] {
+        bounded.split(s"foo-$i", ExprType.TIME_SERIES, frequency1)
+      }
+    }
+    assert(bounded.cacheSize <= 10, s"cache size ${bounded.cacheSize}")
+  }
+
   test("throws IAE for invalid expressions") {
     val msg = intercept[IllegalArgumentException] {
       splitter.split("foo", ExprType.TIME_SERIES, frequency1)

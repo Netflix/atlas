@@ -51,10 +51,14 @@ class ExpressionSplitter(config: Config) {
     * to sync with. This cache prevents the reprocessing for expressions that have already
     * been seen recently.
     *
+    * The cache is also bounded by size so that a client sending many distinct expressions
+    * cannot grow it without limit.
+    *
     * Note: do not use LoadingCache, see `getFromCache`.
     */
   private val exprCache = Caffeine
     .newBuilder()
+    .maximumSize(config.getLong("atlas.lwcapi.expr-cache-max-size"))
     .expireAfterAccess(10, TimeUnit.MINUTES)
     .build[String, Try[List[DataExprMeta]]]()
 
@@ -100,6 +104,12 @@ class ExpressionSplitter(config: Config) {
     } else {
       value
     }
+  }
+
+  /** Number of entries in the expression cache after pending evictions. Used for tests. */
+  private[lwcapi] def cacheSize: Long = {
+    exprCache.cleanUp()
+    exprCache.estimatedSize()
   }
 
   def split(expression: String, exprType: ExprType, frequency: Long): List[Subscription] = {
