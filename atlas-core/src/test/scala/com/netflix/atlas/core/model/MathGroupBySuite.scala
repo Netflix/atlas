@@ -360,4 +360,37 @@ class MathGroupBySuite extends FunSuite {
     val exprExplicit = eval(inputExplicit)
     assertEquals(expr.toString, exprExplicit.toString)
   }
+
+  test("(,name,),:by,(,),:by") {
+    val e = intercept[IllegalArgumentException] {
+      groupBy(List(ts(1)), List("name"), Nil, MathExpr.Sum.apply)
+    }
+    assertEquals(e.getMessage, "requirement failed: key list for group by cannot be empty")
+  }
+
+  test("empty keys: :by word") {
+    List(
+      "name,sps,:eq,(,),:by",
+      "name,sps,:eq,:max,(,),:by",
+      "name,sps,:eq,:avg,(,),:by",
+      "name,sps,:eq,(,name,),:by,:max,(,),:by",
+      "name,sps,:eq,(,name,),:by,(,),:by",
+      "name,sps,:eq,name,cpu,:eq,:add,(,),:by"
+    ).foreach { expr =>
+      val e = intercept[IllegalArgumentException](interpreter.execute(expr))
+      assertEquals(e.getMessage, "requirement failed: key list for group by cannot be empty")
+    }
+  }
+
+  test("empty keys: :cg word is a no-op") {
+    List(
+      "name,sps,:eq,:sum",
+      "name,sps,:eq,:avg",
+      "name,sps,:eq,(,name,),:by",
+      "name,sps,:eq,(,name,),:by,:max",
+      "name,sps,:eq,:sum,5,:mul,:max"
+    ).foreach { input =>
+      assertEquals(eval(s"$input,(,),:cg").toString, eval(input).toString)
+    }
+  }
 }

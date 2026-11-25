@@ -284,6 +284,8 @@ object DataExpr {
 
   case class GroupBy(af: AggregateFunction, keys: List[String]) extends DataExpr {
 
+    require(keys.nonEmpty, "key list for group by cannot be empty")
+
     def query: Query = af.query
 
     def cf: ConsolidationFunction = af.cf
