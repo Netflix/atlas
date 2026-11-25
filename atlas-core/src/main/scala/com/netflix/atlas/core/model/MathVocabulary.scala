@@ -575,6 +575,9 @@ object MathVocabulary extends Vocabulary {
     }
 
     private def addCommonKeys(expr: TimeSeriesExpr, keys: List[String]): TimeSeriesExpr = {
+      // Adding an empty set of keys is a no-op. Without this check, ungrouped aggregates
+      // would be rewritten to a group by with an empty key list, which is not allowed.
+      if (keys.isEmpty) return expr
       val newExpr = expr.rewrite {
         case nr @ MathExpr.NamedRewrite(_, _: Query, _, e, _, _) if e.isGrouped =>
           nr.copy(evalExpr = addCommonKeys(e, keys))

@@ -15,6 +15,7 @@
  */
 package com.netflix.atlas.core.model
 
+import com.netflix.atlas.core.stacklang.Interpreter
 import munit.FunSuite
 
 class DataGroupBySuite extends FunSuite {
@@ -129,5 +130,20 @@ class DataGroupBySuite extends FunSuite {
       val lhsValue = t.tags("value").toDouble
       assertEquals(t.datapoint(start).value, 45.0 + lhsValue)
     }
+  }
+
+  test("empty keys") {
+    val e = intercept[IllegalArgumentException] {
+      DataExpr.GroupBy(DataExpr.Sum(Query.True), Nil)
+    }
+    assertEquals(e.getMessage, "requirement failed: key list for group by cannot be empty")
+  }
+
+  test("empty keys: :by word") {
+    val interpreter = Interpreter(DataVocabulary.allWords)
+    val e = intercept[IllegalArgumentException] {
+      interpreter.execute("name,sps,:eq,(,),:by")
+    }
+    assertEquals(e.getMessage, "requirement failed: key list for group by cannot be empty")
   }
 }

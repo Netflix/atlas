@@ -798,6 +798,7 @@ object MathExpr {
     // This variant should only be used if the data is already grouped and we are adding another
     // level. See DataExpr.GroupBy for the first level based on the raw data.
     require(expr.expr.isGrouped, "input expression must already be grouped with DataExpr.GroupBy")
+    require(keys.nonEmpty, "key list for group by cannot be empty")
 
     // We can only group using a subset of the previous group by results based on the final
     // grouping before the preceding aggregate.
